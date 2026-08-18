@@ -38,7 +38,9 @@ export class Changes {
 		this.coalesceMs = coalesceMs;
 		this.now = now;
 		this.subs = [];
-		this.state = { canUndo: false, canRedo: false, undoLabel: '', version: 0 };
+		this.state = { canUndo: false, canRedo: false, undoLabel: '', version: 0,
+			undoTop: null, truncated: false, truncatedHuman: false };
+		this.actor = null;       // our server-side session id, learned from the first ack we author
 		this.window = null;      // { label, ops, until }
 	}
 
@@ -92,12 +94,37 @@ export class Changes {
 	undo() { this.#flushWindow(); this.subs.forEach((fn) => fn({ verb: 'undo', expect: this.state.version })); }
 	redo() { this.#flushWindow(); this.subs.forEach((fn) => fn({ verb: 'redo', expect: this.state.version })); }
 
+	/*
+	D21 — reverse the whole top run as ONE action.
+
+	Offered when the top of the log is not yours: an agent's batch is N records, and taking it back
+	one Ctrl+Z at a time is both tedious and racy (another writer can interleave between them). The
+	server computed the run and told us where it starts, so the affordance and the verb cannot
+	disagree about how far back "all of it" goes.
+	*/
+	undoRun() {
+		const top = this.state.undoTop;
+		if (!top || !Number.isInteger(top.to)) return this.undo();
+		this.#flushWindow();
+		this.subs.forEach((fn) => fn({ verb: 'undo', expect: this.state.version, to: top.to }));
+	}
+
+	// what the readout offers, or null when the top is our own change (Ctrl+Z already says that)
+	foreignRun() {
+		const top = this.state.undoTop;
+		return top && top.actor && top.actor !== this.actor ? top : null;
+	}
+
 	// the server is authoritative about what is undoable; the UI just reflects it
-	setCounts({ canUndo, canRedo, version, undoLabel }) {
+	setCounts({ canUndo, canRedo, version, undoLabel, undoTop, truncated, truncatedHuman, actor }) {
 		if (canUndo !== undefined) this.state.canUndo = canUndo;
 		if (canRedo !== undefined) this.state.canRedo = canRedo;
 		if (version !== undefined) this.state.version = version;
 		if (undoLabel !== undefined) this.state.undoLabel = undoLabel;
+		if (undoTop !== undefined) this.state.undoTop = undoTop;
+		if (truncated !== undefined) this.state.truncated = truncated;
+		if (truncatedHuman !== undefined) this.state.truncatedHuman = truncatedHuman;
+		if (actor) this.actor = actor;   // our own session id, so we can tell our run from theirs
 	}
 
 	canUndo() { return this.state.canUndo; }

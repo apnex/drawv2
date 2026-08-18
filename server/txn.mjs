@@ -275,6 +275,17 @@ function stamp(model, log) {
 // created, which is why version cannot be the ring's length.
 export function undo(model, log, to = null) {
 	if (!log.canUndo()) return { ok: false, error: 'nothing to undo', version: log.version };
+	// D21 — `to` names the OLDEST record to reverse, and it must name one that is currently
+	// applied. Unvalidated, `undo {to: 0}` reverses the entire ring: the destructive verb would
+	// take an unbounded argument from the wire. It is refused, not clamped, because a client that
+	// sent a seq the ring no longer holds is working from a stale history and should be told.
+	if (to != null) {
+		if (!Number.isInteger(to)) return { ok: false, error: 'invalid undo target', version: log.version };
+		const applied = log.records.slice(0, log.cursor);
+		if (!applied.some((r) => r.seq === to)) {
+			return { ok: false, error: `no applied change with seq ${to}`, version: log.version };
+		}
+	}
 	const target = to == null ? log.records[log.cursor - 1].seq : to;
 	const ops = [];
 	while (log.cursor > 0 && log.records[log.cursor - 1].seq >= target) {

@@ -44,6 +44,29 @@ function buildEntity(model, kind, d) {
 // so the lock may have been reclaimed/released/expired in between; the verify +
 // store.commit run synchronously, so no writer can slip in between them.
 // "delete · 3 nodes, 2 links" — the agent-facing gloss, derived here so every reader agrees.
+// The agent-facing projection of a record. ONE definition, used by GET .../history and by the 409
+// recovery body — `inverse` is absent by construction rather than by two call sites remembering.
+function projectRecord(c, verbose = false) {
+	return {
+		seq: c.seq, at: c.at, by: c.by, actor: c.actor, label: c.label,
+		summary: summarise(c.ops),
+		...(verbose ? { ops: c.ops } : {}),      // `inverse` NEVER goes on the wire (GR13)
+	};
+}
+
+/*
+What a stale `expect` needs to know.
+
+A bare 409 tells a caller it lost a race and nothing else, so its only recovery is to refetch the
+whole document and diff. The records between what it believed and where the log actually is ARE
+the answer: who moved it, when, and what they did. Capped, because a caller that is thousands
+behind wants a resync, not a transcript.
+*/
+function recoveryRecords(log, expect, cap = 20) {
+	if (!log || !Number.isInteger(expect)) return [];
+	return log.records.filter((c) => c.seq > expect).slice(-cap).map((c) => projectRecord(c));
+}
+
 function summarise(ops) {
 	const counts = {};
 	for (const o of ops) {
@@ -59,7 +82,13 @@ function commitWrite(res, store, hub, locks, id, token, mutation, extra) {
 		: mutation.action === 'set' ? { op: 'set', kind: mutation.kind, id: mutation.entity.id, patch: mutation.entity }
 		: mutation.action === 'del' ? { op: 'del', kind: mutation.kind, id: mutation.entity.id }
 		: mutation;
-	const result = store.commit(id, { ops: [op], label: mutation.label }, 'server', `rest-${token.slice(0, 8)}`);
+	// A record with no label reads as a blank column in `draw history` and in the browser's undo
+	// affordance — the surfaces that exist so a human can tell what an agent did. The high-level
+	// verbs know their own intent, so they say it rather than leaving it to the reader.
+	const label = mutation.label || (mutation.action && mutation.kind
+		? `${{ put: 'create', set: 'move', del: 'delete' }[mutation.action] || mutation.action} ${mutation.kind}`
+		: '');
+	const result = store.commit(id, { ops: [op], label }, 'server', `rest-${token.slice(0, 8)}`);
 	if (!result.ok) return json(res, 422, { error: result.error });
 	// durability: a REST/agentic caller is one-shot — it has no reconnect backstop, so an acked
 	// write must be on disk, not merely in the ~200ms debounce window. Flush before acking. (The ws
@@ -147,14 +176,13 @@ export function handleRest(req, res, store, slides, locks, hub) {
 		const log = store.diagrams.get(parts[3])?.log;
 		const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
 		const verbose = url.searchParams.get('verbose') === '1';
-		const records = (log?.records ?? []).slice(-limit).map((c) => ({
-			seq: c.seq, at: c.at, by: c.by, actor: c.actor, label: c.label,
-			summary: summarise(c.ops),
-			...(verbose ? { ops: c.ops } : {}),      // `inverse` NEVER goes on the wire (GR13)
-		}));
+		const records = (log?.records ?? []).slice(-limit).map((c) => projectRecord(c, verbose));
 		return json(res, 200, {
 			version: log?.version ?? 0, canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
-			evicted: log?.evicted ?? 0, truncated: !!log?.truncated, records,
+			evicted: log?.evicted ?? 0, truncated: !!log?.truncated,
+			evictedHuman: log?.evictedHuman ?? 0, truncatedHuman: !!log?.truncatedHuman,
+			undoLabel: log?.peekUndo() ? projectRecord(log.peekUndo()) : null,
+			records,
 		}), true;
 	}
 	// model-state (status): the authoritative selection, readable like any collection
@@ -235,21 +263,34 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 			return json(res, 400, { error: 'expect required on undo/redo', code: 'expect-required', version: log?.version ?? 0 });
 		}
 		if (body.expect !== log?.version) {
-			return json(res, 409, { error: 'version conflict', code: 'version-conflict', version: log?.version ?? 0 });
+			return json(res, 409, {
+				error: 'version conflict', code: 'version-conflict', version: log?.version ?? 0,
+				// what moved under you, so the answer is reconcile rather than refetch-and-diff
+				since: recoveryRecords(log, body.expect),
+			});
 		}
-		const result = parts[4] === 'undo' ? store.undo(id) : store.redo(id);
+		// D21 — `to` reverses a RUN as one transaction: one version bump, one broadcast. The
+		// browser offers it as "undo all N changes by <actor>"; an agent uses it to back out its
+		// own batch without N round trips, each of which another writer could interleave.
+		const reversing = parts[4] === 'undo' ? log.peekUndo() : log.peekRedo();
+		const result = parts[4] === 'undo' ? store.undo(id, body.to ?? null) : store.redo(id);
 		if (!result.ok) return json(res, 422, { error: result.error, version: result.version });
 		store.flush(id);
 		const payload = { seq: null, from: null, at: Date.now(), by: 'server', actor: `rest-${token.slice(0, 8)}`,
 			label: parts[4], ops: result.ops, version: result.version,
+			// attribution: WHOSE change was reversed, so a readout can say "undid agent-1's move"
+			reversed: reversing ? { seq: reversing.seq, actor: reversing.actor, label: reversing.label } : null,
 			durableVersion: store.diagrams.get(id).dirty ? result.version - 1 : result.version,
-			canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated };
+			canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated,
+			truncatedHuman: !!log.truncatedHuman };
 		if (hub) hub.broadcast(id, 'change', payload);
 		return json(res, 200, payload);
 	}
 
-	// low-level: POST .../apply  { action, kind, entity }  (the websocket vocabulary)
-	if (parts[4] === 'apply' && parts.length === 5 && req.method === 'POST') {
+	// low-level: POST .../commit  — the transaction vocabulary, matching the websocket's `commit`.
+	// Renamed from .../apply (X1); the old path is gone rather than aliased, because an alias is a
+	// second surface to keep true and this is a single-tenant tool with a bundled CLI.
+	if (parts[4] === 'commit' && parts.length === 5 && req.method === 'POST') {
 		const body = await readJson(req);
 		if (!body) return json(res, 400, { error: 'invalid JSON body' });
 		return commitWrite(res, store, hub, locks, id, token, body);

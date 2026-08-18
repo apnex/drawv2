@@ -560,7 +560,7 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 	try {
 		// create two nodes via REST (agentic write path)
 		for (const [nid, x] of [['node-3a3a01', 270], ['node-3a3a02', 390]]) {
-			const r = await fetch(`${base}/api/v1/diagrams/${id}/apply`, {
+			const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 				method: 'POST', headers: H(lock.token),
 				body: JSON.stringify({ action: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: 270 } })
 			});
@@ -643,7 +643,7 @@ test('R3: a stray write method on a non-selection route keeps the clean 405 (PUT
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 	// PUT was added to the dispatch ONLY for /selection; every other PUT must still fall to a 405,
 	// not be misrouted through the lock gate into a 423/404.
-	for (const p of [`/api/v1/diagrams/${id}`, `/api/v1/diagrams/${id}/nodes`, `/api/v1/diagrams/${id}/apply`]) {
+	for (const p of [`/api/v1/diagrams/${id}`, `/api/v1/diagrams/${id}/nodes`, `/api/v1/diagrams/${id}/commit`]) {
 		assert.equal((await fetch(base + p, {
 			method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}'
 		})).status, 405, `PUT ${p} → 405 method not allowed`);

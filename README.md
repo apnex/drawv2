@@ -47,13 +47,26 @@ and the read-only REST API.
 
 ## Persistence & API
 
-Every committed edit auto-saves over the websocket (200ms batch pulse) — there is no
-save button. Diagrams persist as JSON in `diagrams/<id>.json` and survive restarts.
-Coordinates are **center-origin**: [0,0] is the canvas/slide center (x ±960, y ±540,
-node grid on multiples of 60); legacy top-left documents migrate automatically on load.
+Every committed edit auto-saves over the websocket — there is no save button. A commit is a
+user-action-rate event and goes out immediately; live drag frames never reach the wire at all.
+Diagrams persist as JSON in `diagrams/<id>.json`, each carrying its own change log, and survive
+restarts. Coordinates are **center-origin**: [0,0] is the canvas/slide center (x ±960, y ±540,
+node grid on multiples of 60).
 The header menu lists, creates, opens, renames, and deletes diagrams (the × button
 arms red on first click — deletion is the one non-undoable action). A fresh install
 seeds the example topology; deleting the last diagram reseeds it.
+
+**Durability, exactly.** Undo survives a **process** restart. A machine-level kill can lose the
+last 200 ms of websocket work — document and log together, consistent, never corrupt. There is no
+`fsync`: a write is `writeFileSync` + `renameSync`, atomic against a dying process but not against
+an unflushed page cache. The document and its log are one file, so a lost write never leaves a log
+describing a document that does not exist. REST writes are stronger on purpose — an agentic caller
+is one-shot with no reconnect backstop, so a REST 200 means *flushed*, not merely accepted.
+
+**Undo is the server's, not the tab's.** It reverses whoever's change is on top, so Ctrl+Z takes
+back an agent's write as readily as your own. When the top of the log belongs to someone else, the
+banner offers `Ctrl+Shift+Backspace` — *undo all N changes by `<actor>`* — which reverses the whole
+run as one transaction rather than N racy steps. `draw history` shows who did what.
 
 Every diagram has a stable id and a **deep link**: `http://localhost:8080/d/<diagram-id>`
 opens the editor on that diagram directly, and the address bar always tracks the
@@ -145,8 +158,8 @@ back). One side writes at a time — a control handoff, never concurrent editing
 
 ```
 TOK=$(curl -s -X POST localhost:8080/api/v1/diagrams/<id>/lock | jq -r .token)
-# low-level (the websocket vocabulary):
-curl -s -X POST localhost:8080/api/v1/diagrams/<id>/apply -H "X-Draw-Lock: $TOK" \
+# low-level (the transaction vocabulary the websocket uses):
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/commit -H "X-Draw-Lock: $TOK" \
      -d '{"action":"put","kind":"node","entity":{...}}'
 # high-level verbs (the server mints ids/names):
 curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/nodes      -H "X-Draw-Lock: $TOK" -d '{"type":"server","x":120,"y":-60}'
@@ -155,9 +168,23 @@ curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/lock       -H "X-Draw-Lock: $TOK"   # release
 ```
 
-Every write funnels through the same validation the websocket uses, then live-pushes
-the result to the browser. An idle lock auto-expires (~60s) so a crashed controller
-never strands a diagram.
+Every write funnels through the same validation — and the same single write path — the websocket
+uses, then broadcasts the change to the browser. An idle lock auto-expires (~60s) so a crashed
+controller never strands a diagram.
+
+Undo and redo are the one pair of verbs whose target is *implicit* — the top of a log another
+writer may have moved since you read it — so `expect` is mandatory on them, and only on them:
+
+```
+curl -s localhost:8080/api/v1/diagrams/<id>/history            # who changed what, and what is undoable
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" \
+     -d '{"expect":42}'                                        # 409 if the log moved; the body says how
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" \
+     -d '{"expect":42,"to":38}'                                # back out a whole run as ONE transaction
+```
+
+A stale `expect` answers 409 carrying the records that landed since — reconcile, rather than
+refetch and diff. `draw undo` is deliberately **not** a CLI verb: see `docs/spec/SCOPE.md`.
 
 ## Controls
 

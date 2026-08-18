@@ -128,7 +128,7 @@ test('REST: lock → apply (low-level) → release round-trip', async () => {
 	assert.equal(second.status, 409);
 
 	const before = (await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json()).length;
-	const r = await fetch(`${base}/api/v1/diagrams/${id}/apply`, {
+	const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 		method: 'POST', headers: H(lock.token),
 		body: JSON.stringify({ action: 'put', kind: 'node',
 			entity: { id: 'node-abc123', name: 'srv', type: 'server', x: 120, y: 120 } })
@@ -140,7 +140,7 @@ test('REST: lock → apply (low-level) → release round-trip', async () => {
 	const rel = await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
 	assert.equal(rel.status, 200);
 	// writes refused again after release
-	assert.equal((await fetch(`${base}/api/v1/diagrams/${id}/apply`, {
+	assert.equal((await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 		method: 'POST', headers: H(lock.token), body: JSON.stringify({ action: 'put', kind: 'node', entity: {} })
 	})).status, 423);
 });
@@ -273,7 +273,7 @@ test('REST: a malformed group body is refused, not a crash (server stays up)', a
 		// the server is still alive and serving afterward
 		assert.equal((await fetch(`${base}/health`)).status, 200);
 		// the low-level apply path is guarded by validation too
-		const r2 = await fetch(`${base}/api/v1/diagrams/${id}/apply`, {
+		const r2 = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 			method: 'POST', headers: H(lock.token),
 			body: JSON.stringify({ action: 'put', kind: 'group', entity: { id: 'group-aaaaaa', name: 'g', members: 7 } })
 		});
@@ -291,7 +291,7 @@ test('REST: a write whose token was released mid-flight is refused at commit', a
 	// release the lock, THEN apply with the now-stale token: must be refused (423)
 	await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
 	const before = (await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json()).length;
-	const r = await fetch(`${base}/api/v1/diagrams/${id}/apply`, {
+	const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 		method: 'POST', headers: H(lock.token),
 		body: JSON.stringify({ action: 'put', kind: 'node', entity: { id: 'node-zzzzzz', name: 'x', type: 'host', x: 0, y: 0 } })
 	});

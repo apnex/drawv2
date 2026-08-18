@@ -85,11 +85,11 @@ auto-layout). Coordinates are user-owned. References are mined for narrow mechan
    sides, but never split. Default = *editable* (the browser writes over the websocket; REST
    is read-only). A server-side controller (LLM, script, or a person at the CLI) `POST`s
    `/api/v1/diagrams/:id/lock` to become **Server-Locked**: it then writes over REST
-   (`/apply` + high-level `/nodes|/links|/zones|/groups` verbs, token via `X-Draw-Lock`,
+   (`/commit` + high-level `/nodes|/links|/zones|/groups` verbs, token via `X-Draw-Lock`,
    funneling through the same validated `store.commit`), the server live-pushes snapshots to
    the browser, and the browser goes read-only — its websocket writes are refused so it can
    never clobber the controller.
-   *(Amended 2026-08-18, CS1/CS3)* — the REST verb is `/commit`, not `/apply`, and what the
+   *(Amended 2026-08-18, CS1/CS3/CS6)* — the REST verb is `/commit`, not `/apply` (X1), and what the
    server live-pushes is the **change** (`change {…, ops}`), not a whole snapshot: a viewer
    applies the ops it is sent rather than reloading the document. Server-Locked itself is
    unchanged — one side writes at a time, the human reclaims anytime. The human reclaims anytime (force-release); an idle lock
@@ -274,6 +274,25 @@ All responses plain JSON, curl/jq-friendly.
   Setup documented in README.
 - One-way push only. No import, no live binding.
 
+## Durability — what is actually guaranteed
+
+**Undo survives a *process* restart. A machine-level kill can lose the last 200 ms of websocket
+work — document and log together, consistent, never corrupt.**
+
+Stated at exactly the strength the code makes, and no more. There is no `fsync` anywhere in the
+server: a write is `writeFileSync` + `renameSync`, which is atomic against a process dying but not
+against a kernel that has not yet flushed its page cache. The document and its change log are ONE
+file, so a lost write loses both together and never leaves a log describing a document that does
+not exist.
+
+REST writes are stronger, deliberately: an agentic caller is one-shot and has no reconnect
+backstop, so a REST 200 means flushed, not merely accepted. The 200 ms debounce applies to
+websocket work only, where a browser reconnects and replays its outbox.
+
+Recorded as deviation **X2**; `docs/BACKLOG.md` **B6** carries the revival trigger (any
+multi-instance or GCS-backed deployment — confirm the gcsfuse assumptions against a real bucket
+before relying on them).
+
 ## In scope (functions)
 
 Drawing: palette create, snap move, delete, clone, link draw (node edge drag), zone draw,
@@ -293,6 +312,15 @@ Product: README with real usage, one-command start, seeded example diagram, test
 the REST API) ships as a first-class agentic/operator surface; it is bundled in the single
 container. Still strictly read-only — it adds no mutation path, honoring single-writer
 ownership. (Supersedes the "CLI binary" exclusion below: that ruled out a *write* CLI.)
+
+*(Amended 2026-08-18, CS6)* — the write-CLI question is answered **no**; the exclusion stands.
+CS6 adds `draw history` (read) and does **not** add `draw undo` / `draw redo`, though the design
+listed them. The condition this CLI was admitted on is that it adds no mutation path, and undo is
+the *destructive* verb — the one the whole `expect`/reclaim apparatus exists to stop anyone issuing
+blind. A bash wrapper is one shell-history recall away from reversing work nobody meant to touch,
+and it cannot hold a lock across the two calls it would need. Agents keep
+`POST /api/v1/diagrams/:id/undo`, where the lock and `expect` gates live. Revisit only if an
+operator hits a case the REST call cannot serve.
 
 ## Explicitly out of scope
 

@@ -100,6 +100,23 @@ const sync = new Sync({
 			const n = rewound.from - rewound.to;
 			menu.banner.textContent = `⚠ server restarted — ${n} change${n === 1 ? '' : 's'} were not saved`;
 		}
+		/*
+		I14/D21 — the undo affordance.
+
+		Two things the user cannot otherwise know: that someone ELSE is on top of the undo stack
+		(so Ctrl+Z will reverse their work, not yours), and that the ring dropped a change you
+		made. A bounded, designed loss that no actor can perceive is not a bounded loss.
+		*/
+		const run = history.foreignRun && history.foreignRun();
+		if (run) {
+			menu.banner.textContent = `↶ Ctrl+Shift+Backspace undoes ${run.run} change${run.run === 1 ? '' : 's'} by ${run.actor}`;
+			menu.banner.title = `top of the log: "${run.label || run.by}" by ${run.actor}`;
+		} else {
+			menu.banner.title = '';
+		}
+		if (history.state && history.state.truncatedHuman) {
+			menu.banner.textContent = '⚠ undo history is full — your oldest changes are no longer undoable';
+		}
 		// D28/I16 — no submitted request is discarded without a user-visible notice.
 		if (error) menu.banner.textContent = `✗ ${error}`;
 		if (diagrams) {

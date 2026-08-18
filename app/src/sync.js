@@ -63,7 +63,7 @@ export class Sync {
 		if (!this.hydrated) return;
 		const txnId = `t${++this.txn}`;
 		const msg = request.verb
-			? { verb: request.verb, expect: request.expect, txnId }
+			? { verb: request.verb, expect: request.expect, to: request.to ?? null, txnId }
 			: { ops: request.ops, label: request.label, txnId };
 		this.outbox.push(msg);
 		this.persistOutbox();
@@ -77,7 +77,7 @@ export class Sync {
 		for (const msg of this.outbox) {
 			if (msg.sent) continue;
 			const ok = msg.verb
-				? this.net.send(msg.verb, { expect: msg.expect, txnId: msg.txnId })
+				? this.net.send(msg.verb, { expect: msg.expect, ...(msg.to != null ? { to: msg.to } : {}), txnId: msg.txnId })
 				: this.net.send('commit', { ops: msg.ops, label: msg.label, txnId: msg.txnId });
 			if (!ok) return;                            // socket closed mid-drain; retry on reconnect
 			msg.sent = true;
@@ -190,7 +190,8 @@ export class Sync {
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
 			this.locked = !!msg.body.locked;
 			if (this.locked) this.lockShownAt = Date.now();
-			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version });
+			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
+				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
 			if (this.pendingSlidesUrl) {
 				// a slides URL typed before hydration must survive the snapshot
 				const url = this.pendingSlidesUrl;
@@ -213,7 +214,8 @@ export class Sync {
 			const b = msg.body || {};
 			this.hydrated = true;
 			this.locked = !!b.locked;
-			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version });
+			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
+				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman });
 			this.replayOutbox({ reapply: false });
 			this.emitState({});
 			return;
@@ -225,7 +227,8 @@ export class Sync {
 		// our own request came back: reflect the server's authority, prune what is now durable
 		if (msg.cmd === 'ack') {
 			const b = msg.body || {};
-			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version, undoLabel: b.label });
+			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version, undoLabel: b.label,
+				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
 			const sent = this.outbox.find((m) => m.txnId === b.acked);
 			if (sent) sent.version = b.version;
 			this.pruneOutbox(b.durableVersion);
@@ -237,7 +240,8 @@ export class Sync {
 		// competing write landing under a live drag fights the preview (D12).
 		if (msg.cmd === 'change') {
 			const b = msg.body || {};
-			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version });
+			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
+				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman });
 			if (this.deferInbound && this.deferInbound()) { this.deferred.push(b); return; }
 			this.applyChange(b);
 			this.emitState({});

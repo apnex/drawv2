@@ -1531,6 +1531,15 @@ export class Input {
 		}
 
 		const meta = evt.ctrlKey || evt.metaKey;
+		// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking
+		// back N changes you did not make is a different intent from stepping back one you did,
+		// and it should not be reachable by holding a key down.
+		if (meta && evt.shiftKey && evt.key === 'Backspace') {
+			evt.preventDefault();
+			this.history.undoRun();
+			this.afterHistory();
+			return;
+		}
 		if (meta && evt.key.toLowerCase() === 'z') {
 			evt.preventDefault();
 			evt.shiftKey ? this.history.redo() : this.history.undo();

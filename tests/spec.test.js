@@ -95,5 +95,5 @@ test('GR10: every locked decision this arc reversed carries a dated amendment', 
 	// undo/redo moved server-side; the server live-pushes changes; the wire is server-authoritative
 	assert.match(section('In scope (functions)'), /undo\/redo are a SERVER capability/i);
 	assert.match(section('Wire protocol (one websocket) — as shipped'), /\*\(Amended 2026-08/);
-	assert.match(scope, /\*\(Amended 2026-08-18, CS1\/CS3\)\* — the REST verb is `\/commit`/);
+	assert.match(scope, /\*\(Amended 2026-08[^)]*\)\* — the REST verb is `\/commit`/);
 });

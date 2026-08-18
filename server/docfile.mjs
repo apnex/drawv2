@@ -30,6 +30,7 @@ export function serialize(doc, log) {
 		`\t\t"version": ${log.version},`,
 		`\t\t"cursor": ${log.cursor},`,
 		`\t\t"evicted": ${log.evicted},`,
+		`\t\t"evictedHuman": ${log.evictedHuman || 0},`,
 		'\t\t"records": [',
 		records,
 		'\t\t]',

@@ -45,7 +45,12 @@ export function snapshotBody(model, store, locks) {
 		// having to observe a change first (I11: the client never mints this, it only echoes it)
 		version: log ? log.version : 0,
 		canUndo: !!log?.canUndo(),
-		canRedo: !!log?.canRedo()
+		canRedo: !!log?.canRedo(),
+		// I14 — a bounded loss no actor can perceive is not a bounded loss, so it rides on
+		// hydration too, not only on the change that caused it
+		truncated: !!log?.truncated,
+		truncatedHuman: !!log?.truncatedHuman,
+		undoTop: topRun(log)
 	};
 }
 
@@ -59,8 +64,31 @@ export function syncBody(model, store, locks) {
 		version: log ? log.version : 0,
 		canUndo: !!log?.canUndo(),
 		canRedo: !!log?.canRedo(),
+		truncated: !!log?.truncated,
+		truncatedHuman: !!log?.truncatedHuman,
+		undoTop: topRun(log),
 		locked: locks ? locks.locked(id) : false
 	};
+}
+
+/*
+D21 — what the browser needs to offer "undo all N changes by <actor>".
+
+The client holds no log, so it cannot see how far back the top run goes; computing it here is one
+pass over records the server already has. `to` is the seq the client sends back, so the affordance
+and the verb cannot disagree about where the run starts.
+
+A run is consecutive applied records by ONE actor. It is offered when that actor is not you: undoing
+your own last change is what Ctrl+Z already means, and needs no explaining.
+*/
+function topRun(log) {
+	const top = log?.peekUndo();
+	if (!top) return null;
+	let i = log.cursor - 1;
+	let n = 0;
+	while (i >= 0 && log.records[i].actor === top.actor) { n++; i--; }
+	return { seq: top.seq, to: log.records[log.cursor - n].seq, run: n,
+		actor: top.actor, by: top.by, label: top.label };
 }
 
 // The change payload — one definition, used by the ws ack, the ws broadcast and the REST 200 body.
@@ -76,6 +104,7 @@ export function changeBody(change, store, id) {
 		version: log ? log.version : change.seq,
 		durableVersion: entry && !entry.dirty ? log.version : (log ? log.version - 1 : 0),
 		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(), truncated: !!log?.truncated,
+		truncatedHuman: !!log?.truncatedHuman, undoTop: topRun(log),
 	};
 }
 
@@ -201,12 +230,21 @@ export class Session {
 				if (body.expect != null && body.expect !== log?.version) {
 					return this.error('version conflict', 'version-conflict', body.txnId);
 				}
-				const res = cmd === 'undo' ? this.store.undo(this.diagramId) : this.store.redo(this.diagramId);
+				// D21 — `to` names the OLDEST change to reverse; the run comes back as ONE
+				// transaction, one version bump, one broadcast. Validated in txn.undo, which
+				// refuses a seq the ring does not currently hold rather than clamping it.
+				const reversing = cmd === 'undo' ? log?.peekUndo() : log?.peekRedo();
+				const res = cmd === 'undo'
+					? this.store.undo(this.diagramId, Number.isInteger(body.to) ? body.to : null)
+					: this.store.redo(this.diagramId);
 				if (!res.ok) return this.error(`${cmd} rejected: ${res.error}`, `${cmd}-rejected`, body.txnId);
 				const payload = { seq: null, from: null, at: Date.now(), by: 'client', actor: this.actor,
 					label: cmd, ops: res.ops, version: res.version,
+					// attribution: whose change this reversed, so the readout can name them
+					reversed: reversing ? { seq: reversing.seq, actor: reversing.actor, label: reversing.label } : null,
 					durableVersion: this.store.diagrams.get(this.diagramId).dirty ? res.version - 1 : res.version,
-					canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated };
+					canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated,
+					truncatedHuman: !!log.truncatedHuman, undoTop: topRun(log) };
 				this.send('ack', { ...payload, acked: body.txnId ?? null });
 				if (this.hub) this.hub.broadcast(this.diagramId, 'change', payload, this);
 				return;

@@ -128,6 +128,7 @@ function usage() {
     echo "  get <entity> [id|name]   Interrogate entities (nodes, links, zones, groups)"
     echo "  show                     Full diagram view: status + every entity table"
     echo "  status                   Summary of the active diagram"
+    echo "  history [limit]          Change log: who changed what, and what is undoable"
     echo ""
     echo "Projection:"
     echo "  push            Push the active diagram to its bound Google Slides deck"
@@ -248,6 +249,27 @@ case $CMD in
             echo -e "--- ${SECTION} (${COUNT}) ---"
             buildTable "$(echo "$DOC" | jq --arg q "" -f "${TPL_DIR}/${SECTION}.jq")"
         done
+        ;;
+
+    history)
+        # READ-ONLY, deliberately. `draw undo` is NOT offered: SCOPE.md admits this CLI only on the
+        # condition that it adds no mutation path, and undo is the destructive verb — the one the
+        # whole expect/reclaim apparatus exists to stop anyone issuing blind. A bash wrapper around
+        # it is a shell-history recall away from reversing work nobody meant to touch. Agents that
+        # need it have POST /api/v1/diagrams/:id/undo, where the lock and `expect` gates live.
+        ID=$(resolve_diagram "$TARGET_DIAGRAM") || exit 1
+        LIMIT="${2:-20}"
+        HIST=$(api "${APIHOST}/api/v1/diagrams/${ID}/history?limit=${LIMIT}") || exit 1
+        api_error "$HIST" && exit 1
+        if [[ -n "$OUTPUT_JSON" ]]; then echo "$HIST" | jq .; exit 0; fi
+
+        echo -e "${CYAN}--- DRAW HISTORY: $ID ---${NC}"
+        echo -e "Version: $(echo "$HIST" | jq -r .version)"
+        echo -e "Undo:    $(echo "$HIST" | jq -r 'if .canUndo then (.undoLabel.actor // "yes") + " · " + (.undoLabel.summary // "") else "nothing to undo" end')"
+        TRUNC=$(echo "$HIST" | jq -r '.evicted // 0')
+        [ "${TRUNC:-0}" != "0" ] && echo -e "${YELLOW}Dropped: ${TRUNC} older change(s) — beyond the ring, no longer undoable${NC}"
+        echo "---"
+        buildTable "$(echo "$HIST" | jq -f "${TPL_DIR}/history.jq")"
         ;;
 
     status)
