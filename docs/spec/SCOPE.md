@@ -76,9 +76,13 @@ auto-layout). Coordinates are user-owned. References are mined for narrow mechan
    is read-only). A server-side controller (LLM, script, or a person at the CLI) `POST`s
    `/api/v1/diagrams/:id/lock` to become **Server-Locked**: it then writes over REST
    (`/apply` + high-level `/nodes|/links|/zones|/groups` verbs, token via `X-Draw-Lock`,
-   funneling through the same validated `store.apply`), the server live-pushes snapshots to
+   funneling through the same validated `store.commit`), the server live-pushes snapshots to
    the browser, and the browser goes read-only — its websocket writes are refused so it can
-   never clobber the controller. The human reclaims anytime (force-release); an idle lock
+   never clobber the controller.
+   *(Amended 2026-08-18, CS1/CS3)* — the REST verb is `/commit`, not `/apply`, and what the
+   server live-pushes is the **change** (`change {…, ops}`), not a whole snapshot: a viewer
+   applies the ops it is sent rather than reloading the document. Server-Locked itself is
+   unchanged — one side writes at a time, the human reclaims anytime. The human reclaims anytime (force-release); an idle lock
    also TTL-expires so a crashed controller never strands a diagram. This stays faithful to
    "single writer": it is a *control handoff*, still exactly one writer at a time — no
    convergence, no conflict resolution, not multi-user. The browser surfaces it with a header
@@ -149,6 +153,38 @@ pushed, never clobbered by the snapshot. Mutations batch on a 200ms client pulse
 with same-entity set-coalescing (never across a del/put). Server never pushes model
 changes except snapshot-on-request and acks.
 
+*(Amended 2026-08-18, CS1–CS4 — see `docs/spec/COMMIT.md`)* — **the server owns the
+document.** The section above describes a client-authoritative wire and is superseded
+in four places. This amendment is late: **CS1 and CS3 each owed one and did not pay
+it**, so the lines below were false for three milestones rather than the one GR10
+allows. The four reversals:
+
+- **`apply {action, kind, entity}` → `commit {ops, label?, expect?, txnId?}`** (CS1). One
+  request carries a whole transaction, not one entity. The reply is
+  `ack {seq, from, version, durableVersion, canUndo, canRedo, ops, acked}`, not
+  `{rev}`, and errors are typed: `error {message, code, txnId}`.
+- **`push {doc}` is deleted** (CS4). A client never sends a document to overwrite one.
+  On RE-connect it sends `resume {diagram, version}` — a *belief* — and the server
+  answers `sync {version, canUndo, canRedo, locked}` if they are in step, a snapshot if
+  the client is behind, or a snapshot carrying `rewound {from, to}` if the client is
+  **ahead** (a server that restarted before flushing changes it had acked). Content
+  drawn before first hydration is no longer pushed over whichever diagram the server
+  named — it becomes a **new** diagram via `create {name, doc}`, whose id the server
+  mints and whose `doc.meta.id` is ignored.
+- **The 200ms client pulse is gone** (CS3). A commit is a user-action-rate event and
+  goes out immediately; what batches now is a *burst of same-shape edits* (arrow-key
+  nudges), coalesced into ONE change client-side. Live drag frames never reach the wire
+  at all — the sync layer subscribes to the commit boundary, not to the model.
+- **The server does push model changes** (CS1/CS3): every accepted transaction is
+  broadcast to the other sessions on that diagram as `change {…, ops}`, so a second tab
+  and an agent write converge without refetching. **Undo and redo are server
+  capabilities** (`undo`/`redo {expect, txnId?}`), reversing any writer's change, not
+  only the browser's own.
+
+Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, the
+server validates everything, sessions survive any payload, and the store reseeds rather
+than ever going empty. `meta.rev` in the entity block above is superseded at CS5.
+
 ## REST (read-only) + actions
 
 - `GET /api/v1/diagrams` — list
@@ -210,6 +246,13 @@ Drawing: palette create, snap move, delete, clone, link draw (node edge drag), z
 labels (double-click edit). Selection: click, marquee, multi-move. Undo/redo: client-side
 command stack. Persistence: continuous auto-save over WS, named diagrams (list/create/open/delete
 with two-click arming), first-boot example seed, hydrate on connect/reconnect. Slides: URL field + push button + idempotent sync.
+
+*(Amended 2026-08-18, CS3)* — **undo/redo are a SERVER capability**, not a client-side command
+stack. The stack was destroyed by any authoritative snapshot, and a REST write broadcast one — so
+Ctrl+Z could not reverse an agent's change, only lose your own. The server holds a bounded log of
+changes with their inverses; `undo`/`redo {expect}` reverse whoever's change is on top. The client
+keeps only a coalesce window, so a burst of nudges is still ONE undo step. See the wire-protocol
+amendment above and `docs/spec/COMMIT.md` §3 (D3, D14, D21).
 Product: README with real usage, one-command start, seeded example diagram, tests
 (model, protocol, slides mapping with mocked API, CLI integrity).
 *(Amended 2026-06-13)* — a sovereign **read-only `draw` CLI** (`cli/`, bash+curl+jq over

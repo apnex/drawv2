@@ -1,9 +1,9 @@
 /*
 REST API. Reads are always open (GET, curl/jq-friendly). WRITES require the
 diagram to be Server-Locked by the caller (POST .../lock → token → X-Draw-Lock
-header on every write); they funnel into the SAME validated store.apply() the
-websocket uses, then broadcast a fresh snapshot to the browsers viewing that
-diagram. The browser path (websocket) is refused while a diagram is locked, so
+header on every write); they funnel into the SAME validated store.commit() the
+websocket uses — THE ONE WRITE — then broadcast the resulting change to the
+browsers viewing that diagram. The browser path (websocket) is refused while a diagram is locked, so
 exactly one side writes at a time.
 */
 
@@ -30,7 +30,7 @@ function readJson(req) {
 }
 
 // build a full entity from the high-level verb payload, via the model's factories
-// (which mint the id/name); store.apply then validates it like any other mutation
+// (which mint the id/name); the planner then validates it like any other op
 function buildEntity(model, kind, d) {
 	if (kind === 'node') return model.makeNode(d.type, { x: d.x, y: d.y }, d.shape);
 	if (kind === 'link') return model.makeLink(d.src, d.dst);
@@ -39,10 +39,10 @@ function buildEntity(model, kind, d) {
 	return null;
 }
 
-// apply one mutation, broadcast the new snapshot to viewers, respond.
+// commit one transaction, broadcast the change to viewers, respond.
 // Re-verifies the token HERE — the lock gate ran before the (awaited) body read,
 // so the lock may have been reclaimed/released/expired in between; the verify +
-// store.apply run synchronously, so no writer can slip in between them.
+// store.commit run synchronously, so no writer can slip in between them.
 // "delete · 3 nodes, 2 links" — the agent-facing gloss, derived here so every reader agrees.
 function summarise(ops) {
 	const counts = {};

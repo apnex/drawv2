@@ -165,31 +165,83 @@ test('node shape persists over the wire; legacy (no shape) still applies; bad sh
 	c.close();
 });
 
-test('push replaces the document (reconnect resync)', async () => {
+// CS4 — `push` is gone. A client no longer sends a document to overwrite one; it says what it
+// believes it holds and the server decides. (Was: "push replaces the document".)
+test('resume: in step -> `sync`, no document; behind -> a snapshot', async () => {
 	const c = await connect();
 	c.send('hello', {});
 	const snap = await c.expect('snapshot');
-	const doc = snap.body.doc;
+	const id = snap.body.doc.meta.id;
+	assert.equal(typeof snap.body.version, 'number', 'a snapshot says which version it IS');
 
-	doc.nodes = [
-		{ id: 'node-cccc01', name: 'a', type: 'host', x: 30, y: 30 },
-		{ id: 'node-cccc02', name: 'b', type: 'router', x: 90, y: 30 }
-	];
-	doc.links = [{ id: 'link-cccc03', src: 'node-cccc01', dst: 'node-cccc02' }];
-	doc.zones = [];
-	doc.groups = [];
-	c.send('push', { doc });
-	await c.expect('ack');
+	// in step: the server sends the authority, not an O(doc) round trip
+	c.send('resume', { diagram: id, version: snap.body.version });
+	const sync = await c.expect('sync', 'snapshot');
+	assert.equal(sync.cmd, 'sync', 'in step: no document');
+	assert.equal(sync.body.version, snap.body.version);
+	for (const k of ['canUndo', 'canRedo', 'locked']) assert.ok(k in sync.body, `sync carries ${k}`);
+	assert.equal('doc' in sync.body, false, 'and carries no document at all');
 
-	const rest = await get(`/api/v1/diagrams/${doc.meta.id}`);
-	assert.equal(rest.body.nodes.length, 2);
-	assert.equal(rest.body.links.length, 1);
+	// behind: the server answers with the document
+	c.send('resume', { diagram: id, version: snap.body.version - 1 });
+	const back = await c.expect('sync', 'snapshot');
+	assert.equal(back.cmd, 'snapshot', 'behind: the whole document');
+	assert.equal(back.body.doc.meta.id, id);
+	assert.equal('rewound' in back.body, false, 'behind is not rewound');
 
-	// push with mismatched meta.id is rejected
-	const alien = { ...doc, meta: { ...doc.meta, id: 'diagram-ffffff' } };
-	c.send('push', { doc: alien });
+	c.send('resume', { diagram: 'diagram-ffffff', version: 0 });
 	const err = await c.expect('error');
-	assert.match(err.body.message, /does not match|unknown diagram/);
+	assert.equal(err.body.code, 'unknown-diagram');
+	c.close();
+});
+
+// D29 — the server restarted before flushing changes it had already acked, so it now holds LESS
+// than the client. `push` used to repair this by clobbering; deleting it without the rewind reply
+// would convert a repaired divergence into a SILENT revert.
+test('resume: a client AHEAD of the server is told it was rewound, not silently reverted', async () => {
+	const c = await connect();
+	c.send('hello', {});
+	const snap = await c.expect('snapshot');
+	const id = snap.body.doc.meta.id;
+
+	c.send('resume', { diagram: id, version: snap.body.version + 3 });
+	const reply = await c.expect('sync', 'snapshot');
+	assert.equal(reply.cmd, 'snapshot');
+	assert.deepEqual(reply.body.rewound, { from: snap.body.version + 3, to: snap.body.version });
+	assert.equal(reply.body.doc.meta.id, id, 'and the authoritative document comes with it');
+	c.close();
+});
+
+// I11 — no client authority over identity or version.
+test('I11: `create {doc}` mints the id, and a body `version` is ignored', async () => {
+	const c = await connect();
+	c.send('hello', {});
+	const before = (await c.expect('snapshot')).body;
+
+	const doc = {
+		meta: { id: 'diagram-ffffff', name: 'claimed' },
+		nodes: [{ id: 'node-cccc01', name: 'a', type: 'host', x: 30, y: 30 }],
+		waypoints: [], links: [], zones: [], groups: []
+	};
+	c.send('create', { name: 'adopted', doc });
+	const made = await c.expect('snapshot');
+	assert.notEqual(made.body.doc.meta.id, 'diagram-ffffff', 'the client cannot name a diagram');
+	assert.match(made.body.doc.meta.id, /^diagram-[0-9a-f]{6}$/, 'the server minted one');
+	assert.equal(made.body.doc.nodes.length, 1, 'the content came with it');
+	assert.equal(made.body.version, 0, 'a new diagram starts at 0 whatever the client believed');
+
+	// a client-supplied `version` in a commit body is ignored — only `expect` is a precondition
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cccc02', name: 'b', type: 'host', x: 90, y: 30 } }], version: 9999 });
+	const ack = await c.expect('ack');
+	assert.equal(ack.body.version, 1, 'the server minted the version, not the client');
+
+	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: 'node-cccc02' }], expect: 9999 });
+	const err = await c.expect('error');
+	assert.match(err.body.message, /version conflict/, 'but `expect` IS honoured, as a precondition');
+
+	// and the diagram the server first answered with is untouched (B2)
+	const untouched = await get(`/api/v1/diagrams/${before.doc.meta.id}`);
+	assert.equal(untouched.body.nodes.length, before.doc.nodes.length, 'the pre-existing diagram is intact');
 	c.close();
 });
 
@@ -198,12 +250,13 @@ test('create and open switch diagrams; meta rename persists', async () => {
 	c.send('hello', {});
 	const first = (await c.expect('snapshot')).body.doc.meta.id;
 
+	const listedBefore = (await get('/api/v1/diagrams')).body.length;
 	c.send('create', { name: 'second' });
 	const created = await c.expect('snapshot');
 	const secondId = created.body.doc.meta.id;
 	assert.notEqual(secondId, first);
 	assert.equal(created.body.doc.meta.name, 'second');
-	assert.equal(created.body.diagrams.length, 2);
+	assert.equal(created.body.diagrams.length, listedBefore + 1);
 
 	c.send('commit', { ops: [{ op: 'meta', patch: { name: 'renamed' } }] });
 	await c.expect('ack');
@@ -311,24 +364,34 @@ test('malformed websocket input gets error replies, session survives', async () 
 	c.close();
 });
 
-test('REGRESSION: push as the FIRST message on a fresh socket is accepted (reconnect resync)', async () => {
+// REGRESSION (rewritten at CS4): `resume` is the FIRST message on a fresh socket, so it must adopt
+// the session's diagram by itself — there is no `hello` before it. This is the shape the old
+// client-authoritative push had, minus the document.
+test('REGRESSION: resume as the FIRST message on a fresh socket adopts the diagram', async () => {
 	const c1 = await connect();
 	c1.send('hello', {});
-	const doc = (await c1.expect('snapshot')).body.doc;
+	const snap = (await c1.expect('snapshot')).body;
+	const id = snap.doc.meta.id;
 	c1.close();
 
-	// exactly what Sync does after a reconnect: push, no hello
-	doc.nodes = [{ id: 'node-abab01', name: 'recon', type: 'host', x: 90, y: 90 }];
-	doc.links = []; doc.zones = []; doc.groups = [];
+	// exactly what Sync does after a reconnect: resume, no hello
 	const c2 = await connect();
-	c2.send('push', { doc });
-	await c2.expect('ack');
+	c2.send('resume', { diagram: id, version: snap.version });
+	const reply = await c2.expect('sync', 'snapshot');
+	assert.equal(reply.cmd, 'sync');
 
-	// and subsequent applies on the adopted session work
+	// and the session is now bound: a commit lands without a hello ever being sent on this socket
 	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 150, y: 90 } }] });
 	await c2.expect('ack');
-	const rest = await get(`/api/v1/diagrams/${doc.meta.id}/nodes/node-abab02`);
+	const rest = await get(`/api/v1/diagrams/${id}/nodes/node-abab02`);
 	assert.equal(rest.status, 200);
+
+	// the outbox's replay contract: re-sending an accepted change is a NO-OP, never a double-apply
+	const versionAfter = (await get(`/api/v1/diagrams/${id}/history`)).body.version;
+	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 150, y: 90 } }] });
+	const replay = await c2.expect('ack');
+	assert.equal(replay.body.noop, true, 'the replayed change planned zero ops');
+	assert.equal((await get(`/api/v1/diagrams/${id}/history`)).body.version, versionAfter, 'and did not bump the version');
 	c2.close();
 });
 
@@ -542,7 +605,7 @@ test('meta slides patch is accepted; unknown slides fields are rejected', async 
 	c.close();
 });
 
-test('targeted hello, unknown open, set-on-missing, push meta sanitization', async () => {
+test('targeted hello, unknown open, set-on-missing, create-doc meta sanitization', async () => {
 	const c = await connect();
 	c.send('hello', {});
 	const snap = await c.expect('snapshot');
@@ -563,15 +626,19 @@ test('targeted hello, unknown open, set-on-missing, push meta sanitization', asy
 	err = await c.expect('error');
 	assert.match(err.body.message, /missing entity/);
 
-	// push with junk meta keys: rejected at the boundary
+	// junk meta keys: rejected at the boundary. CS4 moved this from `push` to `create {doc}` — the
+	// surviving bulk-ingest path, and the only one a client has left.
 	const doc = back.body.doc;
 	doc.nodes = []; doc.links = []; doc.zones = []; doc.groups = [];
-	c.send('push', { doc: { ...doc, meta: { ...doc.meta, junk: 'gone' } } });
+	c.send('create', { name: 'junk', doc: { ...doc, meta: { ...doc.meta, junk: 'gone' } } });
 	err = await c.expect('error');
+	assert.equal(err.body.code, 'create-rejected');
 	assert.match(err.body.message, /unknown meta key/);
-	c.send('push', { doc: { ...doc, meta: { ...doc.meta, rev: 'NaN-string' } } });
+	c.send('create', { name: 'junk', doc: { ...doc, meta: { ...doc.meta, rev: 'NaN-string' } } });
 	err = await c.expect('error');
 	assert.match(err.body.message, /invalid meta.rev/);
+	// a rejected create writes NOTHING: no diagram was minted for either attempt (I1, by purity)
+	assert.equal((await get('/api/v1/diagrams')).body.some((d) => d.name === 'junk'), false);
 	// prototype-chain ids never resolve: del rejected, REST 404s
 	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: '__proto__' }).id }] });
 	err = await c.expect('error');
@@ -582,19 +649,26 @@ test('targeted hello, unknown open, set-on-missing, push meta sanitization', asy
 	c.close();
 });
 
-test('push validateDoc rejections: duplicate ids and self-links', async () => {
+test('create {doc} validateDoc rejections: duplicate ids and self-links', async () => {
 	const c = await connect();
 	c.send('hello', {});
 	const doc = (await c.expect('snapshot')).body.doc;
+	const countBefore = (await get('/api/v1/diagrams')).body.length;
 
 	const node = { id: 'node-dada01', name: 'a', type: 'host', x: 30, y: 30 };
-	c.send('push', { doc: { ...doc, nodes: [node, { ...node }], links: [], zones: [], groups: [] } });
+	c.send('create', { name: 'dup', doc: { ...doc, nodes: [node, { ...node }], links: [], zones: [], groups: [] } });
 	let err = await c.expect('error');
 	assert.match(err.body.message, /duplicate id/);
 
-	c.send('push', { doc: { ...doc, nodes: [node], links: [{ id: 'link-dada02', src: node.id, dst: node.id }], zones: [], groups: [] } });
+	c.send('create', { name: 'self', doc: { ...doc, nodes: [node], links: [{ id: 'link-dada02', src: node.id, dst: node.id }], zones: [], groups: [] } });
 	err = await c.expect('error');
 	assert.match(err.body.message, /self-link|same node|missing node/);
+
+	c.send('create', { name: 'notadoc', doc: 'nope' });
+	err = await c.expect('error');
+	assert.match(err.body.message, /doc is not an object/);
+
+	assert.equal((await get('/api/v1/diagrams')).body.length, countBefore, 'no rejected create minted a diagram');
 	c.close();
 });
 
@@ -626,11 +700,12 @@ test('collection caps are enforced on apply', async () => {
 	const seeded = store.get(id).all('node').length;
 	for (let i = 0; i < 2000 - seeded; i++) {
 		const hex = i.toString(16).padStart(6, '0');
-		const err = store.apply(id, { action: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${i}`, type: 'host', x: 30, y: 30 } });
-		assert.equal(err, null);
+		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${i}`, type: 'host', x: 30, y: 30 } }] }, 'server');
+		assert.equal(res.ok, true);
 	}
-	const err = store.apply(id, { action: 'put', kind: 'node', entity: { id: 'node-ffffff', name: 'over', type: 'host', x: 30, y: 30 } });
-	assert.match(err, /limit/);
+	const over = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffffff', name: 'over', type: 'host', x: 30, y: 30 } }] }, 'server');
+	assert.equal(over.ok, false);
+	assert.match(over.error, /limit/);
 	store.flushAll();
 	fs.rmSync(dir, { recursive: true, force: true });
 });

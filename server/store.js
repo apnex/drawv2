@@ -110,11 +110,13 @@ export class Store {
 		return entry;
 	}
 
-	create(name) {
+	// Create a diagram, optionally WITH content. The content path is what a client uses when it
+	// has drawn something before the server answered: `create {name, doc}`. The id is minted here
+	// and `doc.meta.id` is ignored (I11) — a client cannot name, and therefore cannot target, an
+	// existing diagram. That targeting was B2. Returns { ok, model } | { ok:false, error }.
+	create(name, doc = null) {
 		const taken = Object.fromEntries([...this.diagrams.keys()].map((k) => [k, true]));
 		const id = newId('diagram', taken);
-		const model = new Model();
-		model.state.meta.id = id;
 		if (!name) {
 			// scan existing names: map size collides after deletes
 			const names = new Set([...this.diagrams.values()].map((e) => e.model.state.meta.name));
@@ -122,11 +124,25 @@ export class Store {
 			while (names.has(`diagram-${n}`)) n++;
 			name = `diagram-${n}`;
 		}
+		if (doc !== null) {
+			if (typeof doc !== 'object' || Array.isArray(doc)) return { ok: false, error: 'doc is not an object' };
+			// Validate the document as it will be INSTALLED, not as it arrived: the minted id and
+			// the server-side name are substituted first, so validation cannot pass on a value the
+			// store then discards. Nothing is installed unless it passes (I1, by purity).
+			const candidate = { ...doc, meta: { ...doc.meta, id, name } };
+			const err = validateDoc(candidate);
+			if (err) return { ok: false, error: err };
+			const entry = this.install(id, candidate);
+			this.markDirty(id);
+			return { ok: true, model: entry.model };
+		}
+		const model = new Model();
+		model.state.meta.id = id;
 		model.state.meta.name = name;
 		const entry = { model, log: new Log(0), dirty: false, timer: null, file: `${id}.json` };
 		this.diagrams.set(id, entry);
 		this.markDirty(id);
-		return model;
+		return { ok: true, model };
 	}
 
 	get(id) {
@@ -167,10 +183,6 @@ export class Store {
 	}
 
 	// ---- mutations (validated) ----
-	// install a whole validated doc into a live model — the SAVE seam shared by replace() (and, from S1a,
-	// the prism.commit save port). Runs only AFTER validation, so a rejected push never clobbers the live diagram.
-
-	// S1b: apply() is the 2nd, LOAD-CONSUMING consumer of prism.commit (replace()'s load was vacuous).
 	// THE ONE WRITE. Every writer reaches the model through here.
 	commit(id, request, by = 'client', actor = null) {
 		const entry = this.diagrams.get(id);
@@ -194,40 +206,6 @@ export class Store {
 		const res = txnRedo(entry.model, entry.log);
 		if (res.ok) this.markDirty(id);
 		return res;
-	}
-
-	// ADAPTER, dies at CS3 with its caller. Preserves the old single-mutation contract and its
-	// error strings so the 183 existing tests are the adapter-fidelity control.
-	apply(id, mutation) {
-		if (!this.get(id)) return 'unknown diagram';
-		const { action, kind, entity } = mutation || {};
-		const op = action === 'put' ? { op: 'put', kind, entity }
-			: action === 'set' ? { op: 'set', kind, id: entity?.id, patch: entity }
-			: action === 'del' ? { op: 'del', kind, id: entity?.id }
-			: { op: String(action) };
-		const res = this.commit(id, { ops: [op] }, 'server');
-		return res.ok ? null : (res.error || 'invalid');
-	}
-
-	// S1a: replace() is the FIRST cross-tenant consumer of prism.commit (after the arc engine) — the
-	// load -> mutate -> validate -> atomic-save-or-reject transaction, programmed with draw's pure-VALUE
-	// ports. mutate returns the migrated doc VALUE (never touches the live model); validate gates it;
-	// save installs it ONLY on success — so a malformed push still cannot clobber the live diagram, and
-	// the error order (validateDoc then id-check) is preserved. (Shape proof: replace's load is vacuous —
-	// the load->mutate dependency is exercised by apply() in S1b.)
-	// ADAPTER, dies at CS4 with `push`. Validates the whole document, then installs it — the same
-	// reject-writes-nothing order as before (validateDoc, then the id check), by purity: install()
-	// is not reached unless both pass. The Log survives the replacement: a whole-document push is
-	// not a change and must not destroy the diagram's history.
-	replace(id, doc) {
-		const entry = this.diagrams.get(id);
-		if (!entry) return 'unknown diagram';
-		const err = validateDoc(doc);
-		if (err) return err;
-		if (doc.meta.id !== id) return 'doc.meta.id does not match diagram';
-		this.install(id, doc, entry.log, entry.file);
-		this.markDirty(id);
-		return null;
 	}
 
 	patchMeta(id, patch) {

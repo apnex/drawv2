@@ -1,24 +1,32 @@
 /*
 Protocol — one websocket session per client. Envelope: { cmd, body } both ways
-(graph lineage). The client owns mutations; the server validates, applies,
-persists, and acks. The server pushes model changes only as a snapshot — to
-answer hello/open/create/push, OR (Server-Locked) to live-refresh viewers after
-a server-side write (via the Hub).
+(graph lineage). The SERVER owns the document; a client submits transactions and
+the server validates, applies, persists, acks and broadcasts. The server sends a
+whole document only when asked (hello/open/create/resume) or, Server-Locked, to
+live-refresh viewers after a server-side write (via the Hub).
 
 client -> server                          server -> client
-  hello  { diagram? }                       snapshot { doc, diagrams, locked }
-  open   { id }                             ack      { rev }
-  create { name? }                          diagrams { list }
-  apply  { action, kind, entity }           error    { message }
-  push   { doc }            (reconnect resync, client-authoritative)   lock { owner }
+  hello  { diagram? }                       snapshot { doc, diagrams, locked, version, canUndo, canRedo }
+  open   { id }                             sync     { version, canUndo, canRedo, locked }
+  create { name?, doc? }                    ack      { ...change, acked }
+  commit { ops, label?, expect?, txnId? }   change   { ...change }
+  undo   { expect, txnId? }                 diagrams { list }
+  redo   { expect, txnId? }                 error    { message, code, txnId }
+  resume { diagram, version }               lock     { owner }
   meta   { name?, slides? }
   select { ids }            (model-state: the authoritative selection)
   reclaim { id? }           (human takes control back from the server side)
   delete { id }             (answers with a snapshot of a surviving diagram)
   list   {}
 
-While a diagram is Server-Locked, client writes (apply/push/meta) are refused and
-the client is resynced read-only — it can never clobber the server-side controller.
+`resume` replaces `push`: a reconnecting client says what it BELIEVES it holds and
+the server answers — `sync` if they are in step (the client keeps its document and
+replays its outbox), a snapshot if it is behind, a snapshot marked `rewound` if it
+is ahead of the server (D29). The client never sends a document to overwrite one.
+Its only whole-document path is `create {doc}`, which mints a NEW diagram.
+
+While a diagram is Server-Locked, client writes (commit/undo/redo/meta/select) are
+refused and the client is resynced read-only — it can never clobber the controller.
 */
 
 // the snapshot payload, shared by the websocket and the REST broadcast path so
@@ -27,10 +35,31 @@ the client is resynced read-only — it can never clobber the server-side contro
 import crypto from 'node:crypto';
 
 export function snapshotBody(model, store, locks) {
+	const id = model.state.meta.id;
+	const log = store.diagrams.get(id)?.log;
 	return {
 		doc: model.toJSON(),
 		diagrams: store.list(),
-		locked: locks ? locks.locked(model.state.meta.id) : false
+		locked: locks ? locks.locked(id) : false,
+		// the version the document is AT, so a client can `resume` against it later without
+		// having to observe a change first (I11: the client never mints this, it only echoes it)
+		version: log ? log.version : 0,
+		canUndo: !!log?.canUndo(),
+		canRedo: !!log?.canRedo()
+	};
+}
+
+// The reply to a `resume` that finds the client already in step: no document, just the authority.
+// A full snapshot on every reconnect would be a needless O(doc) round trip for a client that is
+// already correct — and would discard the local selection and viewport with it.
+export function syncBody(model, store, locks) {
+	const id = model.state.meta.id;
+	const log = store.diagrams.get(id)?.log;
+	return {
+		version: log ? log.version : 0,
+		canUndo: !!log?.canUndo(),
+		canRedo: !!log?.canRedo(),
+		locked: locks ? locks.locked(id) : false
 	};
 }
 
@@ -134,8 +163,14 @@ export class Session {
 				return this.snapshot(model);
 			}
 			case 'create': {
+				// `doc` is the one whole-document path a client still has, and it can only ever
+				// CREATE: the id is minted here and `doc.meta.id` is ignored (I11), so offline work
+				// lands in a new diagram instead of overwriting whichever one the server answered
+				// with. That overwrite was B2.
 				const name = typeof body.name === 'string' ? body.name.slice(0, 64) : undefined;
-				return this.snapshot(this.store.create(name));
+				const res = this.store.create(name, body.doc || null);
+				if (!res.ok) return this.error(`create rejected: ${res.error}`, 'create-rejected', body.txnId);
+				return this.snapshot(res.model);
 			}
 			case 'commit': {
 				const model = this.current();
@@ -176,20 +211,24 @@ export class Session {
 				if (this.hub) this.hub.broadcast(this.diagramId, 'change', payload, this);
 				return;
 			}
-			case 'push': {
-				// a reconnecting client sends push as its FIRST message on the new
-				// socket — adopt the pushed doc's diagram if it exists in the store
-				let model = this.current();
-				if (!model && body.doc && body.doc.meta && this.store.get(body.doc.meta.id)) {
-					this.diagramId = body.doc.meta.id;
-					model = this.store.get(this.diagramId);
-				}
-				if (!model) return this.error('no diagram open (send hello first)');
-				// a reconnect must NEVER overwrite a server-side controller's work
-				if (this.rejectIfLocked(this.diagramId)) return;
-				const err = this.store.replace(this.diagramId, body.doc);
-				if (err) return this.error(`push rejected: ${err}`);
-				return this.send('ack', { rev: model.state.meta.rev });
+			case 'resume': {
+				// A reconnecting client's FIRST message on the new socket. It declares what it
+				// believes it holds; the server answers. It never sends a document — the diagram
+				// on disk is not the client's to overwrite (that was `push`, and B2 with it).
+				const model = this.store.get(body.diagram);
+				if (!model) return this.error(`unknown diagram: ${body.diagram}`, 'unknown-diagram');
+				this.diagramId = body.diagram;
+				const log = this.store.diagrams.get(this.diagramId).log;
+				// I11: the client's number is a BELIEF, never an authority. It selects which reply
+				// to send and is otherwise discarded — it can neither set nor advance the version.
+				const believed = Number.isInteger(body.version) ? body.version : null;
+				if (believed === log.version) return this.send('sync', syncBody(model, this.store, this.locks));
+				// D29: the client is AHEAD of us — it holds acked changes we lost (a restart before
+				// the flush). Say so. A bare snapshot here would revert its work in silence.
+				const rewound = believed !== null && believed > log.version
+					? { from: believed, to: log.version } : null;
+				const payload = snapshotBody(model, this.store, this.locks);
+				return this.send('snapshot', rewound ? { ...payload, rewound } : payload);
 			}
 
 			case 'select': {

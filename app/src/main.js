@@ -81,7 +81,7 @@ const net = new Net(`ws://${location.host}/ws`);
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
 	model, net, history, selection,
-	onState({ status, meta, diagrams, locked }) {
+	onState({ status, meta, diagrams, locked, error, rewound }) {
 		if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
 		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
@@ -94,6 +94,14 @@ const sync = new Sync({
 		if (document.activeElement !== menu.slidesUrl) menu.slidesUrl.value = meta.slides.url || '';
 		document.title = `draw·next — ${meta.name}`;
 		menu.banner.textContent = `${model.all('node').length} nodes · ${model.all('link').length} links · ${model.all('zone').length} zones`;
+		// D29 — the server came back holding LESS than we do: it restarted before flushing changes
+		// it had already acked. Say so. The alternative is reverting the user's work in silence.
+		if (rewound) {
+			const n = rewound.from - rewound.to;
+			menu.banner.textContent = `⚠ server restarted — ${n} change${n === 1 ? '' : 's'} were not saved`;
+		}
+		// D28/I16 — no submitted request is discarded without a user-visible notice.
+		if (error) menu.banner.textContent = `✗ ${error}`;
 		if (diagrams) {
 			menu.list.innerHTML = '';
 			diagrams.forEach((d) => { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; menu.list.appendChild(o); });

@@ -1,19 +1,27 @@
 import { applyOps } from '../../document/ops.mjs';
 
 /*
-Sync — wires the model to the wire. Unidirectional ownership (docs/spec/SCOPE.md):
-this client is the only writer. Every committed model change is forwarded as
-an apply delta, batched on a 200ms pulse with consecutive sets on the same
-entity coalesced (prism's metabolic pulse, client-side).
+Sync — wires the model to the wire. The SERVER owns the document; this client
+submits transactions through the commit boundary (Changes) and reflects what
+comes back. Every committed change goes out as one `commit`; nothing else can.
 
-Session semantics: hydrate once on first connect (server is persistence-of-
-record between sessions); on RE-connect, push the full local document instead
-(the client is authoritative during a session).
+Session semantics: hydrate on first connect (hello -> snapshot). On RE-connect,
+`resume {diagram, version}` — the client declares what it believes it holds and
+the server answers: `sync` if they are in step (keep the document, replay the
+outbox), a snapshot if it is behind, a snapshot marked `rewound` if it is AHEAD
+of the server (D29 — acked work the server lost, said out loud rather than
+reverted in silence). The client never sends a document to overwrite one; that
+was `push`, and it destroyed a real diagram whenever the user drew before the
+server answered (B2). Its one whole-document path is `create {name, doc}`, which
+mints a NEW diagram.
+
+The outbox holds what has been submitted but is not yet known durable, and is
+persisted (D30), so offline work survives a tab close and not merely a drop.
 */
 
-const PULSE_MS = 200;
 const MIN_LOCK_MS = 1000; // keep the amber indicator up at least this long so a fast lock is visible
 const LAST_DIAGRAM_KEY = 'draw.diagram';
+const OUTBOX_KEY = 'draw.outbox';
 
 export class Sync {
 	constructor({ model, net, history, selection, onState }) {
@@ -29,10 +37,10 @@ export class Sync {
 		this.locked = false;     // Server-Locked: a server-side controller owns writes
 		this.lockShownAt = 0;    // when the amber indicator went up (for the min dwell)
 		this.unlockTimer = null; // pending return-to-green after the min dwell
-		this.outbox = [];
 		this.selectionDirty = false; // a selection (model-state) change pending forward to the server (R2)
-		this.outbox = [];            // submitted, not yet known durable
+		this.outbox = [];            // submitted, not yet known durable; persisted (D30)
 		this.deferred = [];          // inbound changes held while a gesture is live (D12)
+		this.diagramId = null;       // the loaded diagram; what a resync and the outbox belong to
 		this.txn = 0;                // correlation ids, so a rejection can name its request
 
 		net.subscribe((msg) => this.onMessage(msg));
@@ -58,6 +66,7 @@ export class Sync {
 			? { verb: request.verb, expect: request.expect, txnId }
 			: { ops: request.ops, label: request.label, txnId };
 		this.outbox.push(msg);
+		this.persistOutbox();
 		this.drain();
 	}
 
@@ -78,6 +87,48 @@ export class Sync {
 	pruneOutbox(durableVersion) {
 		if (typeof durableVersion !== 'number') return;
 		this.outbox = this.outbox.filter((m) => !(m.sent && m.version !== undefined && m.version <= durableVersion));
+		this.persistOutbox();
+	}
+
+	/*
+	D30 — the outbox is persisted, so unsent work survives a tab close and not merely a socket drop.
+
+	Only commits are kept. An undo/redo carries `expect`, a version that is stale the moment the tab
+	closes; replaying one would earn a version-conflict, and reversing an unknown change on a later
+	session is not what the user asked for anyway.
+	*/
+	persistOutbox() {
+		try {
+			const pending = this.outbox.filter((m) => !m.verb).map(({ ops, label, txnId }) => ({ ops, label, txnId }));
+			if (!pending.length) localStorage.removeItem(OUTBOX_KEY);
+			else localStorage.setItem(OUTBOX_KEY, JSON.stringify({ diagram: this.model.state.meta.id, msgs: pending }));
+		} catch { /* private mode: the outbox is still correct in memory */ }
+	}
+
+	// Restore on hydration. TOLERATE-AND-DROP: a malformed record costs the replay, never the
+	// document — the same precedent the Log follows on a corrupt file.
+	restoreOutbox(diagramId) {
+		let saved = null;
+		try { saved = JSON.parse(localStorage.getItem(OUTBOX_KEY) || 'null'); } catch { /* corrupt */ }
+		if (!saved || saved.diagram !== diagramId || !Array.isArray(saved.msgs)) return;
+		const msgs = saved.msgs.filter((m) => m && Array.isArray(m.ops) && m.ops.length);
+		for (const m of msgs) this.outbox.push({ ops: m.ops, label: m.label, txnId: `t${++this.txn}` });
+	}
+
+	/*
+	Re-send what the server has not confirmed durable.
+
+	`reapply` says the local document was just replaced by an authoritative one, which does not
+	carry these changes — so they are applied locally as well as re-sent, the same order
+	Changes.commit uses. Replay is safe either way: every op is idempotent, so a change the server
+	DID receive plans zero ops and is accepted as a no-op rather than applied twice.
+	*/
+	replayOutbox({ reapply }) {
+		for (const m of this.outbox) {
+			m.sent = false;
+			if (reapply && Array.isArray(m.ops)) applyOps(this.model, m.ops);
+		}
+		this.drain();
 	}
 
 	// a selection (model-state) change is coalesced to a dirty flag and forwarded on the pulse, AFTER
@@ -90,7 +141,7 @@ export class Sync {
 
 	flush() {
 		// while Server-Locked the browser is read-only — never push edits up
-		if (this.locked) { this.outbox = []; this.selectionDirty = false; return; }
+		if (this.locked) { this.outbox = []; this.persistOutbox(); this.selectionDirty = false; return; }
 		if (!this.net.isOpen() || !this.hydrated) return;
 		this.drain();
 		if (this.selectionDirty) {
@@ -108,41 +159,38 @@ export class Sync {
 		if (msg.cmd === 'snapshot') {
 			const doc = msg.body.doc;
 			if (!this.expectLoad && !this.hydrated && this.localEntityCount() > 0 && !msg.body.locked) {
-				// the user drew content before the server answered (offline start /
-				// slow boot). Client is authoritative during a session: adopt the
-				// server diagram's identity, keep the local content, push it up.
-				// (Skipped when the diagram is Server-Locked — you can't author into
-				// it; fall through to a read-only load of the controller's state.)
-				this.loading = true;
-				this.model.state.meta = {
-					...this.model.state.meta,
-					id: doc.meta.id,
-					name: doc.meta.name,
-					slides: { ...this.model.state.meta.slides, ...(doc.meta.slides || {}) }
-				};
-				this.loading = false;
-				this.hydrated = true;
-				this.outbox = [];
+				/*
+				B2 — the user drew before the server answered (offline start, slow boot).
+
+				That work becomes a NEW diagram. The old path adopted the identity of whichever
+				diagram the server happened to answer with and pushed its own content over the top,
+				destroying real content that had nothing to do with this tab. The server mints the
+				id (I11); this doc's `meta.id` is ignored, so the browser cannot target anything.
+
+				Skipped while Server-Locked — you cannot author into a controlled diagram; fall
+				through to a read-only load of the controller's state.
+				*/
+				const local = this.model.toJSON();
 				if (this.pendingSlidesUrl) {
-					this.model.state.meta.slides.url = this.pendingSlidesUrl;
+					local.meta.slides = { ...local.meta.slides, url: this.pendingSlidesUrl };
 					this.pendingSlidesUrl = null;
 				}
-				this.net.send('push', { doc: this.model.toJSON() });
-				try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
-				this.setUrl(doc.meta.id);
-				this.emitState({ diagrams: msg.body.diagrams });
+				this.expectLoad = true;
+				this.net.send('create', { name: local.meta.name, doc: local });
 				return;
 			}
 			this.loading = true;
-			this.outbox = [];
 			this.model.load(doc); // model.load now restores the authoritative selection from doc.selection (R2) — no clear
 			this.loading = false;
+			const switched = this.hydrated && this.diagramId !== doc.meta.id;
 			this.hydrated = true;
 			this.expectLoad = false;
+			this.diagramId = doc.meta.id;
 			// the loaded diagram's lock state is authoritative — drop any pending dwell
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
 			this.locked = !!msg.body.locked;
 			if (this.locked) this.lockShownAt = Date.now();
+			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version });
 			if (this.pendingSlidesUrl) {
 				// a slides URL typed before hydration must survive the snapshot
 				this.model.state.meta.slides.url = this.pendingSlidesUrl;
@@ -151,7 +199,24 @@ export class Sync {
 			}
 			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
 			this.setUrl(doc.meta.id);
-			this.emitState({ diagrams: msg.body.diagrams });
+			// An outbox belongs to ONE diagram: a deliberate switch abandons it, a reload adopts
+			// what the last session left behind. The snapshot does not carry either, so unsent work
+			// is re-applied locally as well as re-sent (D30).
+			if (switched) { this.outbox = []; this.persistOutbox(); }
+			else this.restoreOutbox(doc.meta.id);
+			this.replayOutbox({ reapply: true });
+			this.emitState({ diagrams: msg.body.diagrams, rewound: msg.body.rewound });
+		}
+		// `resume` found us in step: no document, just the server's authority. The local model,
+		// selection and viewport all stand — and the outbox goes back out.
+		if (msg.cmd === 'sync') {
+			const b = msg.body || {};
+			this.hydrated = true;
+			this.locked = !!b.locked;
+			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version });
+			this.replayOutbox({ reapply: false });
+			this.emitState({});
+			return;
 		}
 		if (msg.cmd === 'lock') {
 			// the server handed write control to/from a server-side controller
@@ -191,7 +256,9 @@ export class Sync {
 				this.requestResync();
 			}
 			console.warn(`[ sync ] server: ${b.message} (${b.code || 'error'})`);
-			this.onState({ error: b.message, code: b.code });
+			// emitState, not onState: the readout reads meta/status off every state it is handed,
+			// so a bare { error } would throw on the way to displaying the error (D28/I16).
+			this.emitState({ error: b.message, code: b.code });
 		}
 	}
 
@@ -199,9 +266,9 @@ export class Sync {
 	// Used when this tab knows it has diverged — a rejected optimistic apply, or a change whose
 	// `from` is ahead of us (we missed one).
 	requestResync() {
-		if (!this.diagramId || !this.net.isOpen()) return;
+		if (!this.hydrated || !this.net.isOpen()) return;
 		this.expectLoad = true;
-		this.net.send('open', { id: this.diagramId });
+		this.net.send('open', { id: this.model.state.meta.id });
 	}
 
 	// A change from another writer. `from` is the version it applied to: equal to ours means we are
@@ -235,7 +302,8 @@ export class Sync {
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
 			if (!this.locked) this.lockShownAt = Date.now();
 			this.locked = true;
-			this.outbox = []; // drop any unsent local edits
+			this.outbox = []; // drop any unsent local edits — the controller owns the diagram now
+			this.persistOutbox();
 			this.emitState({});
 			return;
 		}
@@ -275,15 +343,14 @@ export class Sync {
 				try { last = localStorage.getItem(LAST_DIAGRAM_KEY); } catch { /* private mode */ }
 				this.net.send('hello', { diagram: this.urlDiagram() || last || undefined });
 			} else {
-				this.outbox = [];
-				if (this.locked) {
-					// can't push while Server-Locked — re-fetch the controller's state
-					this.expectLoad = true;
-					this.net.send('open', { id: this.model.state.meta.id });
-				} else {
-					// reconnect: local state is authoritative for this session
-					this.net.send('push', { doc: this.model.toJSON() });
-				}
+				// Reconnect. Say what we believe we hold and let the server decide — it answers
+				// `sync`, a snapshot, or a snapshot marked `rewound`. The outbox is NOT dropped:
+				// what it holds is precisely the work the server has not confirmed durable, and
+				// dropping it here is what made the old client-authoritative push necessary.
+				this.net.send('resume', {
+					diagram: this.model.state.meta.id,
+					version: this.changes.state.version
+				});
 			}
 		}
 		this.emitState({});
@@ -306,6 +373,7 @@ export class Sync {
 		this.hydrated = false;
 		this.expectLoad = true;
 		this.outbox = [];
+		this.persistOutbox();
 		this.net.send('open', { id });
 	}
 
@@ -315,6 +383,7 @@ export class Sync {
 		this.hydrated = false;
 		this.expectLoad = true;
 		this.outbox = [];
+		this.persistOutbox();
 		this.net.send('create', {});
 	}
 
@@ -324,6 +393,7 @@ export class Sync {
 		this.hydrated = false;
 		this.expectLoad = true;
 		this.outbox = [];
+		this.persistOutbox();
 		this.net.send('delete', { id: this.model.state.meta.id });
 	}
 

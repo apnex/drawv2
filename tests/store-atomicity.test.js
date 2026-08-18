@@ -26,8 +26,9 @@ test('apply: a REJECTED mutation writes NOTHING (model + flushed file byte-ident
 		const jsonBefore = JSON.stringify(model.toJSON());
 		const revBefore = model.state.meta.rev;
 
-		const err = store.apply(id, { action: 'set', kind: 'node', entity: { id: 'node-ffffff', name: 'x', type: 'host', shape: 'circle', x: 0, y: 0 } });
-		assert.match(err, /set on missing entity/);                       // rejected
+		const res = store.commit(id, { ops: [{ op: 'set', kind: 'node', id: 'node-ffffff', patch: { name: 'x', type: 'host', shape: 'circle', x: 0, y: 0 } }] }, 'server');
+		assert.equal(res.ok, false);
+		assert.match(res.error, /set on missing entity/);                 // rejected
 		assert.equal(JSON.stringify(model.toJSON()), jsonBefore, 'in-memory model unchanged');
 		assert.equal(model.state.meta.rev, revBefore, 'rev unchanged');
 
@@ -36,29 +37,30 @@ test('apply: a REJECTED mutation writes NOTHING (model + flushed file byte-ident
 	} finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('apply: a validateMutation-rejected mutation also writes nothing (gate error string preserved)', () => {
+test('commit: a validateMutation-rejected mutation also writes nothing (gate error string preserved)', () => {
 	const { store, dir, id, model } = freshStore();
 	try {
 		const revBefore = model.state.meta.rev;
 		// a link to a non-existent endpoint — rejected by validateMutation (referential integrity)
-		const err = store.apply(id, { action: 'put', kind: 'link', entity: { id: 'link-ffffff', src: 'node-ffffff', dst: 'node-eeeeee' } });
-		assert.match(err, /does not exist/);
+		const res = store.commit(id, { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-ffffff', src: 'node-ffffff', dst: 'node-eeeeee' } }] }, 'server');
+		assert.equal(res.ok, false);
+		assert.match(res.error, /does not exist/);
 		assert.equal(model.get('link', 'link-ffffff'), undefined, 'no link created');
 		assert.equal(model.state.meta.rev, revBefore, 'rev unchanged');
 	} finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('apply: an accepted del-node cascade applies atomically (link cascade-deleted) + advances rev', () => {
+test('commit: an accepted del-node cascade applies atomically (link cascade-deleted) + advances rev', () => {
 	const { store, dir, id, model } = freshStore();
 	try {
 		const nodeId = 'node-aaaaaa';
-		assert.equal(store.apply(id, { action: 'put', kind: 'node', entity: { id: nodeId, name: 'a', type: 'host', shape: 'circle', x: 120, y: 120 } }), null);
+		assert.equal(store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: nodeId, name: 'a', type: 'host', shape: 'circle', x: 120, y: 120 } }] }, 'server').ok, true);
 		const other = model.all('node').find((n) => n.id !== nodeId).id;
 		const linkId = 'link-aaaaaa';
-		assert.equal(store.apply(id, { action: 'put', kind: 'link', entity: { id: linkId, src: nodeId, dst: other } }), null);
+		assert.equal(store.commit(id, { ops: [{ op: 'put', kind: 'link', entity: { id: linkId, src: nodeId, dst: other } }] }, 'server').ok, true);
 
 		const revBefore = model.state.meta.rev;
-		assert.equal(store.apply(id, { action: 'del', kind: 'node', entity: { id: nodeId } }), null);
+		assert.equal(store.commit(id, { ops: [{ op: 'del', kind: 'node', id: nodeId }] }, 'server').ok, true);
 		assert.equal(model.get('node', nodeId), undefined, 'node deleted');
 		assert.equal(model.get('link', linkId), undefined, 'link cascade-deleted in the same logical mutation');
 		assert.ok(model.state.meta.rev > revBefore, 'rev advanced');

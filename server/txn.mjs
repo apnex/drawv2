@@ -124,6 +124,17 @@ function planMeta(model, op) {
 	return { ok: true, ops, inverse };
 }
 
+// Order-insensitive structural equality. An entity arriving from the wire may carry the same
+// fields in a different order than the stored one, and key order is not a change.
+function same(a, b) {
+	if (a === b) return true;
+	if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+	if (Array.isArray(a) !== Array.isArray(b)) return false;
+	const ka = Object.keys(a);
+	if (ka.length !== Object.keys(b).length) return false;
+	return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && same(a[k], b[k]));
+}
+
 function planPut(model, { kind, entity }) {
 	const before = model.get(kind, entity.id);
 	if (!before && model.all(kind).length >= MAX_COLLECTION) {
@@ -151,6 +162,11 @@ function planPut(model, { kind, entity }) {
 			}
 		}
 	}
+	// A put of an entity already present unchanged, with no group to steal from, changes nothing.
+	// Narrow it away — the same no-op rule planSet and planDel follow (I6). This is what makes an
+	// outbox replay free: a request the server already accepted costs a no-op ack, not a second
+	// version bump and a second record for a document that did not move.
+	if (before && ops.length === 1 && same(before, ops[0].entity)) return { ok: true, ops: [], inverse: [] };
 	return { ok: true, ops, inverse };
 }
 
