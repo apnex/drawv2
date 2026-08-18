@@ -1,0 +1,172 @@
+/*
+draw·next boot — the thin UI over the kernel. Wires the (ported) document model, command
+history, selection, input gesture machine, palette, label editor, readout, data-view, and
+server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number + the glyph art.
+*/
+
+import { sharedDefs, cellOf } from '../../kernel/index.mjs';
+import { el } from './painter.js';
+import { nodePoints, zonePoints } from './snap.js';
+import { Model } from '../../document/index.mjs';
+import { attachRelations } from '../../engine/index.mjs';
+import { History } from './commands.js';
+import { Renderer } from './renderer.js';
+import { Selection } from './selection.js';
+import { Input } from './input.js';
+import { Palette } from './palette.js';
+import { Net } from './net.js';
+import { Sync } from './sync.js';
+import { LabelEditor } from './labeledit.js';
+import { Readout } from './readout.js';
+import { DataView } from './dataview.js';
+
+const svg = document.getElementById('container');
+
+// kernel glyph + frame defs (the kernel owns the look)
+document.getElementById('kdefs').innerHTML = sharedDefs();
+
+// subtle grid dots: node grid always on, zone grid revealed while Shift held (CSS)
+const gridNodes = svg.querySelector('#grid-nodes');
+nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: 2 }, gridNodes));
+const gridZones = svg.querySelector('#grid-zones');
+zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: 5 }, gridZones));
+
+const model = new Model();
+attachRelations(model, { cellOf }); // R3 maintained reverse indices (first IVM) backing linksOf/linksAt/linkBetween/groupOf + R5 atCell; cellOf injected here (composition root) so engine/ imports no kernel; registered before other subscribers so they see a fresh index
+const history = new History(model);
+const renderer = new Renderer(model, svg);
+const selection = new Selection(model);
+selection.subscribe(() => renderer.reflectSelection(selection.list())); // renderer owns the 'selected' visual reflection
+const labels = new LabelEditor({ svg, model, history });
+const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
+const dataview = new DataView({ model, svg });
+readout.onUnitsChanged = (units) => dataview.setUnits(units);
+const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection });
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview });
+
+// help overlay: header button + click-outside-to-close
+const helpBtn = document.getElementById('help-btn');
+const help = document.getElementById('help');
+if (helpBtn && help) {
+	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });
+	help.addEventListener('click', (e) => { if (e.target === help) help.hidden = true; });
+}
+
+// W5 — diagram-as-UI: a clickable panel region fires 'draw:action' in run mode; the HOST wires it. This is
+// the self-hosting interface — the diagram emits actions, the app maps them to behaviour. 'help' is wired
+// real; the rest show a transient banner toast (safe — real destructive wiring is out of this slice's scope).
+window.addEventListener('draw:action', (e) => {
+	const action = e && e.detail && e.detail.action;
+	if (action === 'help') { if (help) help.hidden = false; return; }
+	const banner = document.getElementById('banner');
+	if (banner) banner.textContent = `▶ ${action}`;   // overwritten by the next sync status update (transient)
+});
+
+// ---- server sync + header menu ----
+const menu = {
+	name: document.getElementById('diagram-name'),
+	list: document.getElementById('diagram-list'),
+	create: document.getElementById('diagram-new'),
+	del: document.getElementById('diagram-del'),
+	lock: document.getElementById('lockstate'),
+	banner: document.getElementById('banner'),
+	slidesUrl: document.getElementById('slides-url'),
+	slidesPush: document.getElementById('slides-push')
+};
+
+let onStateLastId = null;
+const net = new Net(`ws://${location.host}/ws`);
+const sync = new Sync({
+	model, net, history, selection,
+	onState({ status, meta, diagrams, locked }) {
+		if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
+		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
+		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
+		input.setReadOnly(!!locked);
+		menu.name.disabled = !!locked;
+		menu.slidesUrl.disabled = !!locked;
+		if (onStateLastId && onStateLastId !== meta.id) disarmDelete();
+		onStateLastId = meta.id;
+		if (document.activeElement !== menu.name) menu.name.value = meta.name;
+		if (document.activeElement !== menu.slidesUrl) menu.slidesUrl.value = meta.slides.url || '';
+		document.title = `draw·next — ${meta.name}`;
+		menu.banner.textContent = `${model.all('node').length} nodes · ${model.all('link').length} links · ${model.all('zone').length} zones`;
+		if (diagrams) {
+			menu.list.innerHTML = '';
+			diagrams.forEach((d) => { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; menu.list.appendChild(o); });
+		}
+		menu.list.value = meta.id;
+		const current = menu.list.querySelector(`option[value="${meta.id}"]`);
+		if (current) current.textContent = meta.name;
+	}
+});
+
+menu.name.addEventListener('change', () => { sync.rename(menu.name.value); menu.name.blur(); menu.name.value = model.state.meta.name; });
+menu.list.addEventListener('change', () => { sync.openDiagram(menu.list.value); menu.list.blur(); });
+menu.lock.addEventListener('click', () => { if (sync.locked) sync.reclaim(); menu.lock.blur(); });
+menu.create.addEventListener('click', () => { sync.createDiagram(); menu.create.blur(); });
+
+// deleting a diagram is the one destructive, non-undoable action: arm then confirm
+function disarmDelete() {
+	clearTimeout(disarmDelete.timer);
+	menu.del.classList.remove('armed');
+	menu.del.textContent = '×';
+}
+menu.del.addEventListener('click', () => {
+	menu.del.blur();
+	if (!menu.del.classList.contains('armed')) {
+		menu.del.classList.add('armed');
+		menu.del.textContent = 'sure?';
+		menu.del.dataset.target = model.state.meta.id;
+		disarmDelete.timer = setTimeout(disarmDelete, 3000);
+		return;
+	}
+	const target = menu.del.dataset.target;
+	disarmDelete();
+	if (target !== model.state.meta.id) return;
+	sync.deleteDiagram();
+});
+
+// ---- Slides binding + push ----
+menu.slidesUrl.addEventListener('change', () => { sync.setSlidesUrl(menu.slidesUrl.value); menu.slidesUrl.blur(); menu.slidesUrl.value = model.state.meta.slides.url; });
+
+function flashPush(cls, label, ms = 2500) {
+	menu.slidesPush.className = cls;
+	menu.slidesPush.textContent = label;
+	clearTimeout(flashPush.timer);
+	if (ms > 0) flashPush.timer = setTimeout(() => { menu.slidesPush.className = ''; menu.slidesPush.textContent = '⇑ slides'; }, ms);
+}
+menu.slidesPush.addEventListener('click', async () => {
+	if (menu.slidesPush.disabled) return;
+	menu.slidesPush.blur();
+	menu.slidesPush.disabled = true;
+	flashPush('busy', '⇑ pushing…', 0);
+	const pushedId = model.state.meta.id;
+	try {
+		const res = await fetch(`/api/v1/diagrams/${pushedId}/sync/slides`, { method: 'POST' });
+		const body = await res.json();
+		if (res.status === 401 && body.authUrl) {
+			const tab = window.open(body.authUrl, '_blank');
+			flashPush(tab ? 'busy' : 'err', tab ? '⇑ authorize, then push again' : '✗ popup blocked — see console', tab ? 8000 : 6000);
+			if (!tab) console.warn('[ slides ] popup blocked — authorize at:', body.authUrl);
+		} else if (res.ok) {
+			sync.setSlidesBinding(pushedId, body.presentationId, body.pageId);
+			menu.slidesPush.title = `pushed to ${body.url}`;
+			flashPush('ok', `✓ ${body.entities} entities`);
+		} else {
+			console.warn('[ slides ]', body.error, body.help || '');
+			const reason = res.status === 503 ? 'no credentials (see README)' : body.code === 'no-url' ? 'no URL bound' : (body.code === 'bad-url' || body.code === 'no-page') ? 'bad URL' : body.partial ? 'failed — push again' : 'failed';
+			menu.slidesPush.title = body.error;
+			flashPush('err', `✗ ${reason}`, 5000);
+		}
+	} catch (err) {
+		console.warn('[ slides ]', err);
+		flashPush('err', '✗ failed', 4000);
+	} finally {
+		menu.slidesPush.disabled = false;
+	}
+});
+
+net.init();
+
+window.draw = { model, history, renderer, selection, input, palette, labels, readout, dataview, net, sync };

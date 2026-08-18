@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>draw — next (kernel)</title>
+		<link rel="stylesheet" href="/style.css">
+	</head>
+	<body>
+		<header id="menu">
+			<span id="logo">draw·next</span>
+			<input id="diagram-name" spellcheck="false" maxlength="64" title="diagram name">
+			<select id="diagram-list" title="open diagram"></select>
+			<button id="diagram-new" title="new diagram">+</button>
+			<button id="diagram-del" title="delete this diagram (click twice)">&#215;</button>
+			<input id="slides-url" spellcheck="false" maxlength="512" placeholder="Google Slides URL" title="bind this diagram to a presentation">
+			<button id="slides-push" title="push diagram to Slides as native shapes">&#8657; slides</button>
+			<span id="menu-spacer"></span>
+			<span id="banner"></span>
+			<button id="help-btn" title="keyboard shortcuts (/)">?</button>
+			<span id="lockstate" class="lock-offline" title="connecting…">offline</span>
+		</header>
+		<div id="help" hidden>
+			<div id="help-card">
+				<h2>draw·next — controls (kernel-rendered)</h2>
+				<table>
+					<tr><td>drag from palette</td><td>create node</td></tr>
+					<tr><td>1-7 / Q / tile click</td><td>stamp hand: arm a type (7 = waypoint), click stamps</td></tr>
+					<tr><td>w / waypoint (7)</td><td>routing pivot: bend a link (held-drag) or single-use link end</td></tr>
+					<tr><td>click node (hand held)</td><td>retype in place (fast-replace)</td></tr>
+					<tr><td>drag node</td><td>draw link</td></tr>
+					<tr><td>right-drag node</td><td>move (snaps to grid)</td></tr>
+					<tr><td>hold Shift</td><td>zone layer (zones inert otherwise)</td></tr>
+					<tr><td>Shift + drag canvas</td><td>draw zone</td></tr>
+					<tr><td>Shift + click / drag zone</td><td>select / move zone</td></tr>
+					<tr><td>drag canvas</td><td>marquee select (+ enclosed links)</td></tr>
+					<tr><td>click / Shift+click / Ctrl+click</td><td>select / add or toggle</td></tr>
+					<tr><td>double-click / F2</td><td>edit label</td></tr>
+					<tr><td>Ctrl + drag</td><td>clone (blue arming)</td></tr>
+					<tr><td>Ctrl + D</td><td>duplicate at remembered pitch</td></tr>
+					<tr><td>Z</td><td>wrap selection in a zone</td></tr>
+					<tr><td>C</td><td>close / open the selected multi-hop route</td></tr>
+					<tr><td>L / Shift+L</td><td>link selected nodes: chain / star</td></tr>
+					<tr><td>Tab</td><td>data view: show all coords / lengths / dims</td></tr>
+					<tr><td>Shift + arrows</td><td>resize selected zone / grow selected node span</td></tr>
+					<tr><td>t, then drag</td><td>text tool: tap t to arm, drag a text box (or click = 1×1), type to fill it</td></tr>
+					<tr><td>double-click a text box</td><td>edit its text</td></tr>
+					<tr><td>s</td><td>toggle selected node shape (circle ↔ square)</td></tr>
+					<tr><td>e</td><td>toggle edit mode (show the socket grid on content panels)</td></tr>
+					<tr><td>r</td><td>toggle run mode (panel buttons act; click an input to edit it)</td></tr>
+					<tr><td>drag link endpoint</td><td>re-plug onto another node</td></tr>
+					<tr><td>Alt + right-click</td><td>delete under cursor (red arming)</td></tr>
+					<tr><td>drag corner handle</td><td>resize selected zone</td></tr>
+					<tr><td>Shift held mid-drag</td><td>axis lock (ortho)</td></tr>
+					<tr><td>Shift + release on link target</td><td>chain next link</td></tr>
+					<tr><td>Space / Shift+Space</td><td>set / clear datum</td></tr>
+					<tr><td>arrow keys</td><td>nudge selection one cell</td></tr>
+					<tr><td>Delete / Backspace</td><td>delete selection</td></tr>
+					<tr><td>Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y</td><td>undo / redo</td></tr>
+					<tr><td>Ctrl+G / Ctrl+Shift+G</td><td>group / ungroup</td></tr>
+					<tr><td>Ctrl+A</td><td>select all</td></tr>
+					<tr><td>Escape</td><td>cancel / clear / close</td></tr>
+					<tr><td>/</td><td>this overlay</td></tr>
+				</table>
+			</div>
+		</div>
+		<div id="kdefs"></div>
+		<div id="content">
+			<aside id="palette"></aside>
+			<main id="stage">
+				<svg id="container" viewBox="-960 -540 1920 1080" xmlns="http://www.w3.org/2000/svg">
+					<rect id="canvas" x="-960" y="-540" width="1920" height="1080"/>
+					<g id="grid-nodes"></g>
+					<g id="grid-zones"></g>
+					<g id="snaplayer"></g>
+					<g id="zones"></g>
+					<g id="groups"></g>
+					<g id="links"></g>
+					<g id="waypoints"></g>
+					<g id="nodes"></g>
+					<g id="dataview"></g>
+					<g id="overlay"></g>
+				</svg>
+			</main>
+		</div>
+		<footer id="status"><span id="readout-bottom" class="readout"></span></footer>
+		<script type="module" src="/src/main.js"></script>
+	</body>
+</html>

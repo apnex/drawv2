@@ -1,0 +1,167 @@
+/*
+draw·next theme — interaction state classes (ported from client/style.css) with the KERNEL's
+colours; geometry SIZES are set inline by the renderer from the kernel spec, so nothing here
+hardcodes an extent. The kernel owns numbers; this owns state + chrome.
+*/
+
+/* ---- app frame ---- */
+html, body { margin: 0; height: 100%; background: #060606; font-family: monospace; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+#menu {
+	flex: 0 0 40px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+	background: #181818; border-bottom: 1px solid #262626; color: #aed581; user-select: none;
+}
+#logo { font-weight: bold; letter-spacing: 1px; }
+#menu input, #menu select, #menu button {
+	background: #101010; color: #ddddff; border: 1px solid #303030; border-radius: 4px;
+	font-family: monospace; font-size: 13px; padding: 4px 8px; outline: none;
+}
+#menu input:focus, #menu select:focus { border-color: #aed581; }
+#menu button { cursor: pointer; }
+#menu button:hover { border-color: #aed581; color: #aed581; }
+#diagram-name { width: 150px; }
+#slides-url { width: 220px; }
+#slides-push.busy { color: #ffd54f; border-color: #ffd54f; }
+#slides-push.ok { color: #aed581; border-color: #aed581; }
+#slides-push.err { color: #e57373; border-color: #e57373; }
+#diagram-del.armed, #diagram-del.armed:hover { color: #e57373; border-color: #e57373; }
+#menu-spacer { flex: 1; }
+#banner { font-size: 11px; color: #9a9; }
+#lockstate {
+	font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em;
+	padding: 3px 0; border-radius: 10px; color: #101010; display: inline-block; box-sizing: border-box;
+	width: 76px; text-align: center;
+}
+.lock-unlocked { background-color: #aed581; }
+.lock-locked   { background-color: #ffd54f; cursor: pointer; }
+.lock-offline  { background-color: #555; color: #ddd; }
+
+#content { display: flex; flex: 1; min-height: 0; }
+#palette {
+	width: 72px; flex: 0 0 72px; background: #181818; border-right: 1px solid #262626;
+	display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 6px; user-select: none;
+}
+.palette-item { width: 56px; height: 56px; border-radius: 8px; display: block; cursor: grab; touch-action: none; }
+.palette-item:hover { background: #242424; }
+.palette-item.held { background: #242424; outline: 2px solid #aed581; outline-offset: -2px; }
+.palette-item .digit-badge { font: 11px ui-monospace, monospace; fill: #555; }
+.palette-item.held .digit-badge { fill: #aed581; }
+
+#stage { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+#container { width: 100%; height: 100%; display: block; touch-action: none; }
+#canvas { fill: #101010; }
+/* W4 — edit mode: a subtle accent border cues that editing aids (the socket grid) are showing */
+#container.edit-mode #canvas { stroke: #4fc3f7; stroke-width: 2; stroke-opacity: 0.5; }
+/* W5 — run mode: clickable content regions ACT. The transparent hit rect captures only in run mode,
+   so view/edit clicks pass through to the node for normal gestures. A green border cues run mode. */
+.clickable { pointer-events: none; }
+#container.run-mode .clickable { pointer-events: all; cursor: pointer; }
+#container.run-mode .clickable[data-input] { cursor: text; }   /* W6 — an editable input region */
+#container.run-mode .clickable:hover { fill: rgba(79, 195, 247, 0.14); }
+#container.run-mode #canvas { stroke: #aed581; stroke-width: 2; stroke-opacity: 0.5; }
+#kdefs { position: absolute; width: 0; height: 0; }
+
+/* ---- icon primitives (kernel art) ---- */
+.hollow { fill: var(--fill, #ffffff); stroke: var(--icon, #aed581); stroke-width: 2; }
+.solid  { fill: var(--icon, #aed581); stroke: var(--icon, #aed581); stroke-width: 0.2; }
+.icon   { transform: scale(0.3); }
+.frame  { fill: var(--fill, #101010); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, #aed581); stroke-width: 2.1; }
+.socket { fill: none; stroke: #e0a85a; stroke-width: 0.6; stroke-dasharray: 2 2; }
+
+/* ---- node state (compose via CSS vars) ---- */
+.node { --icon: #aed581; --fill: #101010; --outer: #aed581; cursor: move; }
+.node.hover { --icon: #101010; --fill: #aed581; }
+.node.linkband { cursor: crosshair; }
+.node .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
+.node.selected .select-box { display: block; }
+.node.armed { --icon: #101010; --fill: #e57373; --outer: #e57373; cursor: not-allowed; }
+.node.armed-clone { --icon: #101010; --fill: #81d4fa; --outer: #81d4fa; cursor: copy; }
+.node.ghost { opacity: 0.6; pointer-events: none; }
+.node.ghost.blocked { --icon: #e57373; --outer: #e57373; }
+
+/* ---- labels (UI-owned) ---- */
+.label { font-family: monospace; font-size: 15px; fill: #ddddff; user-select: none; text-anchor: middle; }
+.label.zone-label { text-anchor: start; }
+.label-pill { fill: #101010; }
+
+/* ---- links (kernel colour; width is inline) ---- */
+.link { stroke: #4fc3f7; pointer-events: stroke; cursor: pointer; }
+.link.selected { stroke: #aed581; }
+.link.armed { stroke: #e57373; cursor: not-allowed; }
+.link.replugging { opacity: 0.15; }
+.link-live { stroke: #4fc3f7; stroke-width: 6; stroke-dasharray: 10 8; pointer-events: none; }
+
+/* ---- zones (kernel translucent fill; selection via var) ---- */
+.zone { --zstroke: #aab4c4; --zwidth: 1; }
+.zone.hover { --zwidth: 2; }
+.zone.selected { --zstroke: #aed581; }
+#container.zonegrid .zone { cursor: move; }
+.zone.armed { --zstroke: #e57373; cursor: not-allowed; }
+.zone.armed-clone { --zstroke: #81d4fa; cursor: copy; }
+.zone-rect { fill: #8fa3b8; fill-opacity: 0.13; stroke: var(--zstroke, #aab4c4); stroke-opacity: 0.55; stroke-width: var(--zwidth, 1); }
+
+/* ---- groups (draw-only hull; nodes stay the interaction targets) ---- */
+.group { pointer-events: none; }
+
+/* ---- waypoints (routing pivots; selectable/movable like nodes) ---- */
+.waypoint { cursor: move; }
+/* the ring is fill:none (hollow, so the route shows through), but the whole disc must be a
+   grab target — pointer-events:all makes the fill region hit-testable regardless of fill */
+.wp-ring { pointer-events: all; }
+.waypoint.hover .wp-ring { stroke-opacity: 1; }
+.waypoint.linkband { cursor: crosshair; }
+.waypoint .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
+.waypoint.selected .select-box { display: block; }
+.waypoint.armed .wp-ring { stroke: #e57373; stroke-opacity: 1; }
+.waypoint.armed .wp-dot { fill: #e57373; }
+/* stamp ghost (waypoint hand): ring has no inline stroke, so CSS provides it; red when blocked */
+.node.ghost .wp-ring { stroke: #4fc3f7; }
+.node.ghost .wp-dot { fill: #4fc3f7; }
+.node.ghost.blocked .wp-ring { stroke: #e57373; }
+.node.ghost.blocked .wp-dot { fill: #e57373; }
+
+/* ---- handles (zone resize + link re-plug) ---- */
+.handle { fill: #4fc3f7; stroke: #101010; stroke-width: 2; }
+.handle[data-corner="nw"], .handle[data-corner="se"] { cursor: nwse-resize; }
+.handle[data-corner="ne"], .handle[data-corner="sw"] { cursor: nesw-resize; }
+.handle[data-end] { cursor: grab; }
+
+/* ---- snap feedback + marquee + datum ---- */
+.gridline { stroke: #ddddff; stroke-width: 2; pointer-events: none; }
+.snapbox { rx: 6px; fill: #505050; stroke: #ddddff; stroke-width: 4; pointer-events: none; }
+.marquee { rx: 2px; stroke: #ddddff; stroke-width: 2; stroke-dasharray: 8 6; fill: #ddddff; fill-opacity: 0.08; pointer-events: none; }
+/* A1 — text-box draw preview (hold 't' + drag) + the armed-tool cursor */
+.textbox-preview { rx: 5px; fill: #101010; fill-opacity: 0.3; stroke: #aed581; stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+#container.texttool { cursor: crosshair; }
+.datum { fill: none; stroke: #ffd54f; stroke-width: 2; pointer-events: none; }
+
+/* ---- grid dots ---- */
+#grid-nodes circle { fill: #202020; pointer-events: none; }
+#grid-zones { visibility: hidden; }
+#container.zonegrid #grid-zones { visibility: visible; }
+#grid-zones circle { fill: #202020; pointer-events: none; }
+
+/* ---- footer readout ---- */
+#status { flex: 0 0 40px; display: flex; align-items: center; padding: 0 14px; background: #181818; border-top: 1px solid #262626; }
+.readout { font-family: monospace; font-size: 12px; color: #ddddff; cursor: pointer; white-space: nowrap; user-select: none; }
+
+/* ---- data view (Tab numeric overlay) ---- */
+#dataview { pointer-events: none; }
+.data-tag { font-family: monospace; font-size: 11px; fill: #ddddff; opacity: 0.6; user-select: none; }
+.data-pill { fill: #101010; opacity: 0.7; }
+
+/* ---- inline label editor ---- */
+#label-editor {
+	position: fixed; z-index: 10; background: #101010; color: #ddddff;
+	border: 1px solid #aed581; border-radius: 4px; font-family: monospace; font-size: 13px;
+	padding: 3px 6px; text-align: center; outline: none;
+}
+
+/* ---- help overlay ---- */
+#help { position: fixed; inset: 0; z-index: 20; background: rgba(6, 6, 6, 0.88); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#help[hidden] { display: none; }
+#help-card { background: #181818; border: 1px solid #aed581; border-radius: 8px; padding: 24px 32px; color: #ddddff; font-size: 13px; cursor: default; max-height: 85vh; overflow-y: auto; }
+#help-card h2 { color: #aed581; font-size: 15px; margin: 0 0 12px; }
+#help-card table { border-collapse: collapse; }
+#help-card td { padding: 3px 14px 3px 0; white-space: nowrap; }
+#help-card td:first-child { color: #aed581; }

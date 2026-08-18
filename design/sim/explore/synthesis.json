@@ -1,0 +1,124 @@
+{
+  "synth": {
+    "ranking": [
+      {
+        "name": "relay-gateway",
+        "clean": 6,
+        "verdict": "solid",
+        "oneLine": "The only strategy whose 6/6 is geometrically real: a per-route on-grid relay node dropped in a distinct FREE gap cell gives every route its own lane, so it alone passes offset without collinear overlap, never pierces a node, and lands every bend on a real grid cell (audited for determinism, count, degeneracy, render — zero defects)."
+      },
+      {
+        "name": "channel-bus",
+        "clean": 6,
+        "verdict": "flawed",
+        "oneLine": "One genuine defect: offset's two independent connections are forced onto a single reserved channel (y=90) and superimposed for 120px into one indistinguishable bus; its only other blemish is cosmetic (junction dots sprayed at every jog corner, not just real taps). Fanout overlap is by-design-correct (single source)."
+      },
+      {
+        "name": "fanout-junction",
+        "clean": 6,
+        "verdict": "flawed",
+        "oneLine": "Same offset overlap (every route shares one snapped mid-channel, line 130/138) PLUS two latent count gaps: fanout() ignores req.count entirely and centered()/Math.min silently under-delivers when count exceeds slots. Its one real win is emitting an actual junction element on the fanout rung."
+      },
+      {
+        "name": "staircase",
+        "clean": 6,
+        "verdict": "flawed",
+        "oneLine": "Two degenerate rungs from the single centred tread: offset's two routes coincide on y=90 for 120px AND fanout stacks all three routes on one x=0 trunk out of the node centre with NO junction element; plus a latent honor-count cap. Route shape is a one-step Z, not a real staircase."
+      },
+      {
+        "name": "center-direct",
+        "clean": 6,
+        "verdict": "flawed",
+        "oneLine": "Worst of the field: node-piercing on diag and fanout (the attach segment is drawn from the bare-node centre OUT through the frame+glyph), collinear overlap on offset, and a junction-less stacked fanout trunk — three render-visible defects, none of which GRC can structurally see."
+      }
+    ],
+    "winnerPerRung": [
+      {
+        "rung": "facing",
+        "strategy": "relay-gateway"
+      },
+      {
+        "rung": "offset",
+        "strategy": "relay-gateway"
+      },
+      {
+        "rung": "side",
+        "strategy": "relay-gateway"
+      },
+      {
+        "rung": "passthrough",
+        "strategy": "relay-gateway"
+      },
+      {
+        "rung": "diag",
+        "strategy": "relay-gateway"
+      },
+      {
+        "rung": "fanout",
+        "strategy": "fanout-junction"
+      }
+    ],
+    "recommended": {
+      "primary": "relay-gateway",
+      "rationale": "It is the only strategy where the 6/6 GRC-clean score is also geometrically well-formed: an adversarial audit (determinism, honors-count, degeneracy scan for collinear overlap / grazing / relay-on-content, full render inspection) found ZERO defects. Critically, it is the sole strategy that solves the offset rung honestly — by assigning each parallel route its own distinct free gap row (containerRoute lines 78-95, reversed-row nesting) so the two connections never share a lane. Every other candidate collapses parallel routes onto one snapped mid-channel and superimposes them, a degeneracy GRC's perpendicular-only crossings metric cannot detect. relay-gateway also avoids node-piercing (bare nodes attach at centre, but the relay sits in a verified-free cell so legs exit cleanly via axis-aligned runs, confirmed not a rounding loophole), keeps all bends on real grid cells, and honors count on every rung. It is the correct foundation for the kernel's port/side-assignment layer because its core primitive — reserve a distinct on-grid cell/lane per route — is the one primitive the whole walk proved necessary.",
+      "hybridNotes": "Promote relay-gateway as the base, but graft two things and fix two. GRAFT: (1) For pure 1->N fan-out, replace relay-gateway's heavier relay-NODE hub (nodeRoute lines 42-50, which injects a visible router glyph) with fanout-junction's explicit junction() element + stem + orthogonal taps (strat-fanout-junction.mjs lines 31-66) — a junction tap is the idiomatic bus primitive and the only correct realization of the fanout rung; just port over its count handling so taps respect req.count instead of emitting one per call. (2) Adopt the shared node-centre attach policy (all five carry it) as the single bare-node rule. FIX: (a) generalize relay-gateway's offset nesting from the tuned reversed-row heuristic for simple parallel bundles into a real lane allocator that handles arbitrary counts and overlapping x/y spans; (b) make the Math.min(ax,bx) / centered() cap fail loud or allocate extra lanes rather than silently under-deliver when count exceeds slots, and de-bias centered() (Math.floor is left-biased on odd remainders). GATING PREREQUISITE before any of this ships: GRC must gain (i) an anti-collinear-overlap rule (two distinct, non-sibling wires occupying the same axis line over a shared span) and (ii) a node-piercing rule (a centre-anchored segment must exit through the bbox face, not cross the body) — without these the checker keeps blessing the degenerate strategies. Untested gap to close: mixed container<->bare-node pairs are not exercised by any rung and would currently route a port onto a node edge; add a rung and route them through the node-centre path."
+    },
+    "principles": [
+      "GRC-clean != geometrically well-formed. Four of five strategies scored 6/6 yet were flawed because the gate has structural blind spots: its crossings metric counts only perpendicular interior intersections, so two distinct wires drawn on top of each other (collinear/parallel overlap) read as cross:0. A passing score is necessary, not sufficient — verification must instrument emitted geometry, never trust the gate alone.",
+      "The offset rung, not the headline fanout, is the discriminating probe. Forcing two or more INDEPENDENT parallel routes through a shared gap exposed the universal shortcut — every strategy except relay-gateway snapped both routes onto one shared mid-channel and superimposed them. A rung that demands lane separation is the single most valuable test in the suite.",
+      "Distinct connections demand distinct lanes. A single snapped mid-channel is the wrong primitive whenever routes are independent; the correct primitive is per-route lane/cell allocation (relay-gateway's distinct free gap row per route). Lane allocation, not midpoint snapping, is what the kernel must own.",
+      "Fan-out (N routes from ONE source) and parallel-independent (N point-to-point routes) are different problems and must be told apart. Overlap into a trunk is correct for a real single-source bus but wrong for independent connections. Strategies blind to the distinction either fake a bus by stacking with no junction, or short independent routes together. The interface must expose sibling DESCRIPTOR geometry so a real trunk + junction is authored, not emergent by topological luck.",
+      "Node-centre attachment trades a visible clearance violation for an invisible one. Attaching a bare node at its centre dodges the port-on-node rule, but the obstacle rule exempts the host node, so a centre-anchored segment can be drawn straight out through the frame+glyph and the checker cannot see it (center-direct). Centre-attach is only safe if the segment is constrained to EXIT via a bbox face — the kernel needs an explicit node-piercing rule.",
+      "Put the bend on a real, verifiably-free grid cell, not a convenient midpoint. Snapping corners to the sub-grid keeps coordinates integer and deterministic (all strats did this), but only relay-gateway parks the bend on an actual free gap CELL, which makes the route collision-checkable and auditable rather than relying on a midpoint that merely happens to be empty in these six scenes.",
+      "Honor-count is a latent failure class that hides behind under-provisioned tests. Several strategies silently cap or ignore count (fanout() ignores it; centered()/Math.min under-delivers past slot capacity; node slots cap at one). They pass only because every rung requests count <= capacity. The kernel must fail loudly or allocate more lanes when count exceeds capacity — never silently no-op.",
+      "Coincident wires render identically to a single wire, so a clean-looking PNG proves nothing. The degeneracies only surfaced by dumping every emitted coordinate and scanning for collinear overlap. Skeptical verification = re-run for determinism + dump coords + programmatic overlap/piercing scan + render, in that order."
+    ]
+  },
+  "verdicts": [
+    {
+      "name": "center-direct",
+      "grcClean": 6,
+      "verdict": "flawed",
+      "defects": [
+        "NODE-PIERCING (diag, fanout): bare-node endpoints attach to the node CENTER with no port, so the first/last wire segment is drawn from the center outward THROUGH the node frame+glyph. Render shows the line emanating from inside node a (diag) and node s (fanout). GRC misses it because the obstacle rule exempts the node a segment attaches to (attached() = within +/-frame.ext of center), so a wire stabbing its own host node is never penalized.",
+        "COLLINEAR ROUTE OVERLAP (offset): the two parallel routes compute an IDENTICAL mid channel (both snap to y=90, since both share A.bot=29 / B.top=151). Their horizontal runs (-120,90)->(60,90) and (-60,90)->(120,90) overlap over x in [-60,60] — two distinct wires drawn on top of each other, visually merged into one. GRC's crossings metric counts only perpendicular intersections, so collinear overlap reads as cross:0.",
+        "STACKED TRUNK, NO JUNCTION (fanout): strategy is pairwise (its own note: 'no fan-out bundling'), so all three s->t* routes start at s center; s->t0 and s->t2 emit an IDENTICAL first segment (0,0)->(0,90) and the s->t1 link (0,0)->(0,180) overlaps it too — three wires stacked on x=0, y in [0,90] with NO junction element at the branch point. The 'junction/bundling case' rung is not actually bundled. GRC requires no junction and cannot see the stacked overlap."
+      ]
+    },
+    {
+      "name": "channel-bus",
+      "grcClean": 6,
+      "verdict": "flawed",
+      "defects": [
+        "offset rung (count=2): the two distinct A->B routes are forced onto the SAME reserved channel (channelY=90) and their channel horizontals collinearly OVERLAP for 120px (verified H y=90 ov=120). Render shows one horizontal bus with 4 vertical drops: the two independent connections are superimposed/shorted and visually indistinguishable - a degenerate realization of count=2. GRC has no anti-overlap rule and crossings() ignores parallel/collinear overlap (only strict perpendicular interior crossings), so it scores 'clean' falsely. Inherent to the strategy: every jogging route shares one lane, so any 2+ jogging routes with overlapping x-spans collide.",
+        "Junctions are emitted at every jog corner rather than only at genuine bus taps - e.g. diag (a single isolated route) gets junction dots placed at both plain corners (0,-60) and (0,120). Cosmetic/semantic only, not a GRC failure."
+      ]
+    },
+    {
+      "name": "fanout-junction",
+      "grcClean": 6,
+      "verdict": "flawed",
+      "defects": [
+        "offset rung: two pairwise channel routes overlap COLLINEARLY for 120px on the shared mid-lane y=120 (segA [-120,120]->[60,120] vs segB [-60,120]->[120,120] coincide over x in [-60,60]). Two distinct wires are drawn on top of each other and merge into one indistinguishable line (visible in render). GRC does not catch this: its crossings metric counts only perpendicular v-by-h intersections, and no rule checks parallel/collinear overlap. channel() uses a single shared `mid` row for every route, so any offset multi-route fan overlaps.",
+        "fanout() ignores `count` entirely (latent): each 1->N link emits exactly one tap regardless of req.count; a fanout link with count>1 would silently drop the extra taps. Not exercised because all fanout rung links use count=1.",
+        "centered() silently caps emitted routes at the number of available cols/rows: if count exceeds a container's slot count, fewer routes than requested are drawn with no error/no-op signal. Not triggered by these rungs (count <= slots)."
+      ]
+    },
+    {
+      "name": "staircase",
+      "grcClean": 6,
+      "verdict": "flawed",
+      "defects": [
+        "fanout: s->t0, s->t1, s->t2 all originate at the source node CENTRE (0,0) and share the vertical trunk x=0, y in [0,90] — three routes drawn exactly on top of each other (collinear-coincident). No junction element is emitted, so the 'junction/bundling case' is faked by stacked overlay. GRC misses it: crossings is perpendicular-only and no rule tests collinear overlap.",
+        "offset: the single centred tread puts both routes on y=90; route1 x-range [-120,60] and route2 x-range [-60,120] coincide on x in [-60,60] (120px) — two routes drawn on top of each other. The header's claim that the centred tread handles offsets 'identically... and no wire ever crosses a node' ignores that it makes the parallel routes overlap each other.",
+        "latent honor-count gap (not triggered by the 6 rungs): centered() + Math.min(ax.length,bx.length) silently caps emitted routes at the smaller side's available lane count, so a request for more routes than a container has columns under-delivers with no GRC failure."
+      ]
+    },
+    {
+      "name": "relay-gateway",
+      "grcClean": 6,
+      "verdict": "solid",
+      "defects": []
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+node_modules/
+*.log
+.DS_Store
+diagrams/*.json
+diagrams/*.json.tmp
+secrets/
+google-credentials.json
+google-token.json
+cli/.draw_context
+.claude/

@@ -1,0 +1,17 @@
+.git
+.refs
+secrets/
+node_modules
+diagrams
+tests
+*.md
+docs/
+design/
+*.log
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+# the local CLI context pointer must never be baked into the image (.gitignore
+# does not affect the build context) — it would pin a stale dev diagram id
+cli/.draw_context

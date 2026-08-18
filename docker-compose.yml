@@ -1,0 +1,15 @@
+version: '3'
+services:
+  draw:
+    build: .
+    image: draw:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - SECRETS_DIR=/secrets
+    volumes:
+      - ./diagrams:/data
+      # credentials are no longer inside the data volume; mount them separately.
+      # not :ro — the OAuth refresh token is WRITTEN here on first authorization.
+      - ./secrets:/secrets
+    restart: unless-stopped
