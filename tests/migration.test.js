@@ -1,0 +1,95 @@
+/*
+CS5 — the migration, over old-shape fixtures.
+
+The transform is pure and tested here on its own, because the driver's dry run can only prove the
+migrated corpus BOOTS — it cannot prove the transform is right about a shape it never sees in the
+live corpus (a legacy doc, a doc with a log, a doc whose log is ahead of its recorded version).
+
+All 17 live files predate the log, so `version` will be 0 for every one of them. That is exactly
+why the log-bearing cases need fixtures: the live corpus does not exercise them.
+*/
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { migrateDoc, invariant } from '../tools/migrate-version.mjs';
+
+const node = (id, x = 0, y = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y });
+
+// a document in the PRE-CS5 shape: rev, grid, no version, no schema
+const oldDoc = (over = {}) => ({
+	meta: { id: 'diagram-aa0001', name: 'legacy', rev: 11052, grid: 'center',
+		slides: { url: 'https://docs.google.com/x', presentationId: 'p1', pageId: 'g1' } },
+	nodes: [node('node-aa0001', 60, 60), node('node-aa0002', -120, 300)],
+	waypoints: [],
+	links: [{ id: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' }],
+	zones: [{ id: 'zone-aa0004', name: 'dmz', x: 30, y: 30, w: 240, h: 180 }],
+	groups: [{ id: 'group-aa0005', name: 'g', members: ['node-aa0001', 'node-aa0002'] }],
+	selection: ['node-aa0001'],
+	...over,
+});
+
+test('the render counter is dropped, not renamed — version comes from the LOG', () => {
+	const m = migrateDoc(oldDoc(), null);
+	assert.equal('rev' in m.meta, false, 'rev is gone');
+	assert.equal('grid' in m.meta, false, 'grid is gone');
+	assert.equal(m.meta.version, 0, 'a file predating the log starts at 0, NOT at rev 11052');
+	assert.equal(m.meta.schema, 1, 'the generation discriminator grid was serving');
+	assert.deepEqual(Object.keys(m.meta).sort(), ['id', 'name', 'schema', 'slides', 'version']);
+});
+
+test('version is seeded from the file’s own persisted log', () => {
+	const m = migrateDoc(oldDoc(), { version: 42, cursor: 0, evicted: 0, records: [] });
+	assert.equal(m.meta.version, 42);
+});
+
+test('a log whose top record is ABOVE its recorded version takes the high-water mark', () => {
+	// re-minting a live seq would make two records share one number, and undo replays by seq
+	const log = { version: 3, cursor: 2, evicted: 0, records: [
+		{ seq: 4, from: 3, ops: [], inverse: [] },
+		{ seq: 5, from: 4, ops: [], inverse: [] },
+	] };
+	assert.equal(migrateDoc(oldDoc(), log).meta.version, 5);
+});
+
+test('the migration touches NO entity — every collection survives byte-for-byte', () => {
+	const before = oldDoc();
+	const m = migrateDoc(before, null);
+	assert.equal(invariant(m), invariant(before), 'the invariant is unchanged');
+	assert.deepEqual(m.nodes, before.nodes);
+	assert.deepEqual(m.links, before.links);
+	assert.deepEqual(m.zones, before.zones);
+	assert.deepEqual(m.groups, before.groups);
+	assert.deepEqual(m.selection, before.selection);
+	assert.deepEqual(m.meta.slides, before.meta.slides, 'the Slides binding survives');
+});
+
+test('the transform does not mutate its input', () => {
+	const before = oldDoc();
+	const copy = JSON.parse(JSON.stringify(before));
+	migrateDoc(before, null);
+	assert.deepEqual(before, copy, 'a dry run and a real run cannot diverge by mutation');
+});
+
+test('a doc missing slides entirely migrates to the empty binding, not to undefined', () => {
+	const bare = { meta: { id: 'diagram-bb0001', name: 'bare', rev: 7 }, nodes: [], waypoints: [], links: [], zones: [], groups: [] };
+	const m = migrateDoc(bare, null);
+	assert.deepEqual(m.meta.slides, { url: '', presentationId: '', pageId: '' });
+});
+
+test('invariant() CATCHES a mangled coordinate — the failure a count-only check passes', () => {
+	const before = oldDoc();
+	const mangled = migrateDoc(oldDoc(), null);
+	mangled.nodes[0].x = 61;                        // one pixel, one node, out of five entities
+	assert.notEqual(invariant(mangled), invariant(before));
+});
+
+test('invariant() ignores key order and collection order — a reserialization is not a change', () => {
+	const a = oldDoc();
+	const b = migrateDoc(oldDoc(), null);
+	b.nodes = [...b.nodes].reverse();
+	b.nodes[0] = Object.fromEntries(Object.entries(b.nodes[0]).reverse());
+	assert.equal(invariant(b), invariant(a));
+});

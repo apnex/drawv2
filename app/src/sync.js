@@ -277,7 +277,7 @@ export class Sync {
 	applyChange(body) {
 		const v = this.changes.state.version;
 		if (typeof body.from === 'number') {
-			if (body.from < v - 1) return;                 // a duplicate: ignore, never re-apply
+			if (body.from < v) return;                       // already applied: ignore, never re-apply
 			if (body.from > v) return this.requestResync();  // we missed one: repair, do not guess
 		}
 		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
