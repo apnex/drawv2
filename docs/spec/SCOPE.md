@@ -298,7 +298,8 @@ before relying on them).
 Drawing: palette create, snap move, delete, clone, link draw (node edge drag), zone draw,
 labels (double-click edit). Selection: click, marquee, multi-move. Undo/redo: client-side
 command stack. Persistence: continuous auto-save over WS, named diagrams (list/create/open/delete
-with two-click arming), first-boot example seed, hydrate on connect/reconnect. Slides: URL field + push button + idempotent sync.
+with two-click arming), first-boot example seed (from the tracked `examples/` corpus into the
+untracked runtime data dir — content and state are different things), hydrate on connect/reconnect. Slides: URL field + push button + idempotent sync.
 
 *(Amended 2026-08-18, CS3)* — **undo/redo are a SERVER capability**, not a client-side command
 stack. The stack was destroyed by any authoritative snapshot, and a REST write broadcast one — so

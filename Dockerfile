@@ -25,6 +25,10 @@ COPY kernel/ kernel/
 COPY engine/ engine/
 # the document substrate ESM (served at /document; imported by server/store.js + seed.js at boot)
 COPY document/ document/
+
+# the shipped example corpus — copied into $DATA_DIR on FIRST boot only (see server/store.js).
+# NOT the data dir: /data is a volume, and a fresh container must come up with content.
+COPY examples/ examples/
 # CLI on PATH; node must own cli/ so `draw context` can write .draw_context at runtime
 RUN ln -s /app/cli/draw.sh /usr/local/bin/draw && chown -R node:node /app/cli
 

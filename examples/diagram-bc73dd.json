@@ -1,0 +1,117 @@
+{
+	"meta": {
+		"id": "diagram-bc73dd",
+		"name": "diagram-3",
+		"version": 0,
+		"schema": 1,
+		"slides": {
+			"url": "",
+			"presentationId": "",
+			"pageId": ""
+		}
+	},
+	"nodes": [
+		{
+			"id": "node-e4e24d",
+			"name": "loadbalancer-1",
+			"type": "loadbalancer",
+			"shape": "circle",
+			"x": -240,
+			"y": 0
+		},
+		{
+			"id": "node-16aa8e",
+			"name": "loadbalancer-2",
+			"type": "loadbalancer",
+			"shape": "circle",
+			"x": -180,
+			"y": 0
+		},
+		{
+			"id": "node-2579ab",
+			"name": "loadbalancer-3",
+			"type": "loadbalancer",
+			"shape": "circle",
+			"x": -300,
+			"y": 0
+		},
+		{
+			"id": "node-8fde14",
+			"name": "loadbalancer-4",
+			"type": "loadbalancer",
+			"shape": "circle",
+			"x": -240,
+			"y": -120
+		},
+		{
+			"id": "node-2a6aba",
+			"name": "loadbalancer-5",
+			"type": "loadbalancer",
+			"shape": "circle",
+			"x": -180,
+			"y": -120
+		},
+		{
+			"id": "node-f207f7",
+			"name": "loadbalancer-6",
+			"type": "loadbalancer",
+			"shape": "circle",
+			"x": -300,
+			"y": -120
+		}
+	],
+	"waypoints": [],
+	"links": [
+		{
+			"id": "link-4d4fec",
+			"src": "node-f207f7",
+			"dst": "node-2579ab"
+		},
+		{
+			"id": "link-7a3dfd",
+			"src": "node-8fde14",
+			"dst": "node-e4e24d"
+		},
+		{
+			"id": "link-13c4c0",
+			"src": "node-2a6aba",
+			"dst": "node-16aa8e"
+		}
+	],
+	"zones": [
+		{
+			"id": "zone-563cfb",
+			"name": "zone-1",
+			"x": -330,
+			"y": -150,
+			"w": 180,
+			"h": 60
+		},
+		{
+			"id": "zone-a57d16",
+			"name": "zone-2",
+			"x": -330,
+			"y": -30,
+			"w": 180,
+			"h": 60
+		},
+		{
+			"id": "zone-f58722",
+			"name": "zone-3",
+			"x": -570,
+			"y": -30,
+			"w": 660,
+			"h": 360
+		},
+		{
+			"id": "zone-e2f48d",
+			"name": "zone-4",
+			"x": -570,
+			"y": -450,
+			"w": 660,
+			"h": 360
+		}
+	],
+	"groups": [],
+	"selection": []
+}

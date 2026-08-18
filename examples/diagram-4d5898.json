@@ -1,0 +1,65 @@
+{
+	"meta": {
+		"id": "diagram-4d5898",
+		"name": "diagram-6",
+		"version": 0,
+		"schema": 1,
+		"slides": {
+			"url": "",
+			"presentationId": "",
+			"pageId": ""
+		}
+	},
+	"nodes": [
+		{
+			"id": "node-38ec9a",
+			"name": "",
+			"type": "text",
+			"shape": "square",
+			"x": 0,
+			"y": 0,
+			"span": {
+				"cols": 3,
+				"rows": 2
+			},
+			"content": [
+				{
+					"at": [
+						0,
+						0
+					],
+					"cols": 3,
+					"rows": 2,
+					"content": "text",
+					"value": "box",
+					"align": "left"
+				}
+			]
+		},
+		{
+			"id": "node-eef20e",
+			"name": "router-1",
+			"type": "router",
+			"shape": "circle",
+			"x": -240,
+			"y": 0
+		}
+	],
+	"waypoints": [],
+	"links": [],
+	"zones": [],
+	"groups": [
+		{
+			"id": "group-25ef0f",
+			"name": "group-1",
+			"members": [
+				"node-38ec9a",
+				"node-eef20e"
+			]
+		}
+	],
+	"selection": [
+		"node-38ec9a",
+		"node-eef20e"
+	]
+}

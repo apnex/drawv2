@@ -17,6 +17,12 @@ import { serialize, parse } from './docfile.mjs';
 
 const FLUSH_MS = 200;
 
+// The store's own filename rule. ONE definition: the boot loader and the example seeder must agree
+// on what counts as a diagram file, or a name one accepts and the other ignores becomes a file that
+// exists but is never loaded. tools/migrate-version.mjs deliberately re-states it rather than
+// importing it — a migration must select by the rule as it was, not as it may later become.
+const FILE = /^diagram-[0-9a-f]{6}\.json$/;
+
 // The document generation. `meta.grid` was accidentally serving this role — a doc without it was
 // a pre-center-origin file — and dropping grid without a replacement would leave the format with
 // no discriminator at all for the next migration (D8).
@@ -39,10 +45,18 @@ function cleanMeta(id, meta = {}) {
 
 
 export class Store {
-	constructor(dataDir, { flushMs = FLUSH_MS, writeDoc = null, now = Date.now } = {}) {
+	/*
+	`examplesDir` is INJECTED, never discovered. A store that went looking for a sibling directory
+	would seed differently depending on where it was constructed from, which is the kind of
+	implicit dependency that makes a test pass for a reason nobody chose. The composition root
+	(server/server.js) decides; every other caller — including every test that is not about seeding
+	— gets the single programmatic example and is unaffected by whatever ships in examples/.
+	*/
+	constructor(dataDir, { flushMs = FLUSH_MS, writeDoc = null, now = Date.now, examplesDir = null } = {}) {
 		this.dir = dataDir;
 		this.flushMs = flushMs;
 		this.now = now;
+		this.examplesDir = examplesDir;
 		// the single write-to-disk primitive, injectable so a test can fail it or observe it
 		this.writeDoc = writeDoc || ((file, text) => {
 			const tmp = `${file}.tmp`;
@@ -59,7 +73,7 @@ export class Store {
 		// the data dir is shared with Google OAuth credential/token files:
 		// only diagram-named json is ours to parse
 		for (const file of fs.readdirSync(this.dir)) {
-			if (!/^diagram-[0-9a-f]{6}\.json$/.test(file)) continue;
+			if (!FILE.test(file)) continue;
 			candidates++;
 			try {
 				const { doc, log } = parse(fs.readFileSync(path.join(this.dir, file), 'utf8'));
@@ -99,10 +113,47 @@ export class Store {
 
 	// first boot (or last diagram deleted): the example topology, never an empty store
 	seed() {
+		const fromExamples = this.#seedFromExamples();
+		if (fromExamples) return fromExamples;
 		const doc = seedDoc();
 		const entry = this.install(doc.meta.id, doc);
 		this.markDirty(doc.meta.id);   // a seeded doc has no file yet — this is a creation, not a reload
 		return entry.model;
+	}
+
+	/*
+	First boot with a corpus: copy examples/ into the data dir.
+
+	The examples are tracked in git; the data dir is not (`.gitignore:4`), because the store
+	REWRITES these files on every edit and a runtime directory under version control shows a diff
+	every time anyone uses the app. On Cloud Run the data dir will be a mounted bucket, so the two
+	were always different things — this only names the difference.
+
+	TOLERATE-AND-DROP, and deliberately weaker than `init`'s rule: a malformed example is skipped
+	with a warning rather than refusing the boot. `init` throws because a file it cannot read is
+	the USER's data and losing it silently is unacceptable; an example is shipped content, and a
+	bad one is a packaging bug that must not stop a first-time user from getting a working app.
+	If NONE load, this returns null and the programmatic seed takes over — the store still never
+	comes up empty.
+	*/
+	#seedFromExamples() {
+		if (!this.examplesDir || !fs.existsSync(this.examplesDir)) return null;
+		let first = null;
+		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
+			try {
+				const { doc } = parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8'));
+				const err = validateDoc(doc);
+				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
+				if (this.diagrams.has(doc.meta.id)) continue;
+				const entry = this.install(doc.meta.id, doc);
+				this.markDirty(doc.meta.id);          // no file in the DATA dir yet — this is a creation
+				first = first || entry.model;
+			} catch (e) {
+				console.warn(`[ store ] skipping example ${file}: ${e.message}`);
+			}
+		}
+		if (first) console.log(`[ store ] seeded ${this.diagrams.size} example diagram(s) from ${this.examplesDir}`);
+		return first;
 	}
 
 	// The ONE whole-document entry: boot and create-with-content. Not a commit — it installs a

@@ -1,6 +1,9 @@
 node_modules/
 *.log
 .DS_Store
+# RUNTIME state, not content. The store rewrites these on every edit, so tracking them shows a
+# diff whenever anyone uses the app; on Cloud Run this directory is a mounted bucket. The shipped
+# corpus lives in examples/ (tracked) and is copied here on first boot.
 diagrams/*.json
 diagrams/*.json.tmp
 secrets/
@@ -8,4 +11,3 @@ google-credentials.json
 google-token.json
 cli/.draw_context
 .claude/
-diagrams.bak/

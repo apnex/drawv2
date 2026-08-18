@@ -4,6 +4,7 @@ draw server — CLI entry. Serves the client, the read-only REST API, and the
 persistence websocket on one port. State lives in <dataDir>/<diagram-id>.json.
 */
 
+import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 
 const args = process.argv.slice(2);
@@ -18,8 +19,12 @@ const dataDir = process.env.DATA_DIR || flag('data', undefined);
 const clientDir = process.env.CLIENT_DIR || flag('client', undefined);
 const secretsDir = process.env.SECRETS_DIR || flag('secrets', undefined);
 const host = process.env.HOST || flag('host', undefined);
+// The example corpus, shipped in the repo and copied into the data dir on FIRST boot only. The
+// data dir is runtime state (gitignored, a mounted bucket in production); examples/ is content.
+const examplesDir = process.env.EXAMPLES_DIR
+	|| flag('examples', fileURLToPath(new URL('../examples', import.meta.url)));
 
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host });
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir });
 console.log(`[ draw ] editor + API on http://localhost:${app.port} (ws on /ws)`);
 
 // a single bad request must never take the whole server (and every other

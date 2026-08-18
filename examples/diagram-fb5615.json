@@ -1,0 +1,47 @@
+{
+	"meta": {
+		"id": "diagram-fb5615",
+		"name": "diagram-4",
+		"version": 0,
+		"schema": 1,
+		"slides": {
+			"url": "",
+			"presentationId": "",
+			"pageId": ""
+		}
+	},
+	"nodes": [
+		{
+			"id": "node-532a2a",
+			"name": "",
+			"type": "text",
+			"shape": "square",
+			"x": 0,
+			"y": 0,
+			"span": {
+				"cols": 2,
+				"rows": 1
+			},
+			"content": [
+				{
+					"at": [
+						0,
+						0
+					],
+					"cols": 2,
+					"rows": 1,
+					"content": "text",
+					"value": "",
+					"align": "left"
+				}
+			]
+		}
+	],
+	"waypoints": [],
+	"links": [],
+	"zones": [],
+	"groups": [],
+	"selection": [
+		"node-532a2a"
+	]
+}

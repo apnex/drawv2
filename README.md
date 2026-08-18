@@ -53,8 +53,13 @@ Diagrams persist as JSON in `diagrams/<id>.json`, each carrying its own change l
 restarts. Coordinates are **center-origin**: [0,0] is the canvas/slide center (x ±960, y ±540,
 node grid on multiples of 60).
 The header menu lists, creates, opens, renames, and deletes diagrams (the × button
-arms red on first click — deletion is the one non-undoable action). A fresh install
-seeds the example topology; deleting the last diagram reseeds it.
+arms red on first click — deletion is the one non-undoable action).
+
+**`examples/` vs `diagrams/`.** `examples/` is the shipped corpus, tracked in git and copied into
+the data dir on **first boot only** — delete one and it stays deleted. `diagrams/` (or `$DATA_DIR`)
+is runtime state and is *not* tracked: the store rewrites a file on every edit, so a tracked runtime
+directory would show a diff whenever anyone used the app, and in a container it is a mounted volume
+anyway. Deleting the last diagram reseeds a single example rather than leaving the store empty.
 
 **Durability, exactly.** Undo survives a **process** restart. A machine-level kill can lose the
 last 200 ms of websocket work — document and log together, consistent, never corrupt. There is no

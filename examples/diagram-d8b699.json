@@ -1,0 +1,47 @@
+{
+	"meta": {
+		"id": "diagram-d8b699",
+		"name": "diagram-8",
+		"version": 0,
+		"schema": 1,
+		"slides": {
+			"url": "",
+			"presentationId": "",
+			"pageId": ""
+		}
+	},
+	"nodes": [
+		{
+			"id": "node-47b9c9",
+			"name": "",
+			"type": "text",
+			"shape": "square",
+			"x": 0,
+			"y": 0,
+			"span": {
+				"cols": 3,
+				"rows": 2
+			},
+			"content": [
+				{
+					"at": [
+						0,
+						0
+					],
+					"cols": 3,
+					"rows": 2,
+					"content": "text",
+					"value": "hi",
+					"align": "left"
+				}
+			]
+		}
+	],
+	"waypoints": [],
+	"links": [],
+	"zones": [],
+	"groups": [],
+	"selection": [
+		"node-47b9c9"
+	]
+}

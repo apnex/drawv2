@@ -1,0 +1,47 @@
+{
+	"meta": {
+		"id": "diagram-7bc886",
+		"name": "a1-demo",
+		"version": 0,
+		"schema": 1,
+		"slides": {
+			"url": "",
+			"presentationId": "",
+			"pageId": ""
+		}
+	},
+	"nodes": [
+		{
+			"id": "node-a483e0",
+			"name": "",
+			"type": "text",
+			"shape": "square",
+			"x": 0,
+			"y": 0,
+			"span": {
+				"cols": 3,
+				"rows": 2
+			},
+			"content": [
+				{
+					"at": [
+						0,
+						0
+					],
+					"cols": 3,
+					"rows": 2,
+					"content": "text",
+					"value": "hello canvas",
+					"align": "left"
+				}
+			]
+		}
+	],
+	"waypoints": [],
+	"links": [],
+	"zones": [],
+	"groups": [],
+	"selection": [
+		"node-a483e0"
+	]
+}

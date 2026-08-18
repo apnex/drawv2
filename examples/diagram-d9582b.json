@@ -1,0 +1,178 @@
+{
+	"meta": {
+		"id": "diagram-d9582b",
+		"name": "diagram-2",
+		"version": 0,
+		"schema": 1,
+		"slides": {
+			"url": "",
+			"presentationId": "",
+			"pageId": ""
+		}
+	},
+	"nodes": [
+		{
+			"id": "node-494074",
+			"name": "loadbalancer-1",
+			"type": "loadbalancer",
+			"x": 540,
+			"y": -360
+		},
+		{
+			"id": "node-908956",
+			"name": "server-1",
+			"type": "server",
+			"x": -720,
+			"y": -360
+		},
+		{
+			"id": "node-ab728e",
+			"name": "server-2",
+			"type": "server",
+			"x": -720,
+			"y": -120
+		},
+		{
+			"id": "node-ff9378",
+			"name": "server-10",
+			"type": "server",
+			"x": -540,
+			"y": -300
+		},
+		{
+			"id": "node-7c38ef",
+			"name": "server-4",
+			"type": "server",
+			"x": -300,
+			"y": -120
+		},
+		{
+			"id": "node-bb6274",
+			"name": "server-3",
+			"type": "server",
+			"x": -600,
+			"y": -180
+		}
+	],
+	"waypoints": [],
+	"links": [
+		{
+			"id": "link-dace81",
+			"src": "node-7c38ef",
+			"dst": "node-ab728e"
+		},
+		{
+			"id": "link-8baf65",
+			"src": "node-908956",
+			"dst": "node-ff9378"
+		}
+	],
+	"zones": [
+		{
+			"id": "zone-dff196",
+			"name": "zone-1",
+			"x": -30,
+			"y": -390,
+			"w": 180,
+			"h": 360
+		},
+		{
+			"id": "zone-e18209",
+			"name": "zone-2",
+			"x": -390,
+			"y": -390,
+			"w": 180,
+			"h": 360
+		},
+		{
+			"id": "zone-b15042",
+			"name": "zone-11",
+			"x": -630,
+			"y": 30,
+			"w": 180,
+			"h": 360
+		},
+		{
+			"id": "zone-ab965a",
+			"name": "zone-3",
+			"x": -390,
+			"y": 30,
+			"w": 180,
+			"h": 360
+		},
+		{
+			"id": "zone-28ef0e",
+			"name": "1",
+			"x": -210,
+			"y": 90,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-84fb81",
+			"name": "2",
+			"x": -210,
+			"y": 150,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-c2afb6",
+			"name": "3",
+			"x": -210,
+			"y": 210,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-b7ea29",
+			"name": "4",
+			"x": -210,
+			"y": 270,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-10ec9e",
+			"name": "zone-4",
+			"x": -90,
+			"y": 30,
+			"w": 180,
+			"h": 360
+		},
+		{
+			"id": "zone-580099",
+			"name": "zone-5",
+			"x": 90,
+			"y": 90,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-c1c6e2",
+			"name": "zone-6",
+			"x": 90,
+			"y": 150,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-da3997",
+			"name": "zone-7",
+			"x": 90,
+			"y": 210,
+			"w": 60,
+			"h": 60
+		},
+		{
+			"id": "zone-51d6fc",
+			"name": "zone-8",
+			"x": 90,
+			"y": 270,
+			"w": 60,
+			"h": 60
+		}
+	],
+	"groups": [],
+	"selection": []
+}

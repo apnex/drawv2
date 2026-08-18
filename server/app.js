@@ -101,7 +101,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 	}
 }
 
-export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host } = {}) {
+export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -113,7 +113,9 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host } 
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
 	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
-	const store = new Store(data);
+	// examplesDir is null unless the caller supplies one — only server/server.js does, so a test
+	// that constructs an app gets the single programmatic seed, not whatever ships in examples/.
+	const store = new Store(data, { examplesDir });
 	store.init();
 
 	const auth = new GoogleAuth(data, secrets);
