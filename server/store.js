@@ -11,7 +11,8 @@ import { Model, newId, NODE_EXT, ZONE_EXT } from '../document/index.mjs';
 import { seedDoc } from './seed.js';
 import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds } from './validate.js';
 import { groupAfterRemoval } from '../engine/index.mjs';
-import { commit } from './commit.mjs';
+import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
+import { Log } from './log.mjs';
 
 const FLUSH_MS = 200;
 
@@ -28,116 +29,61 @@ function cleanMeta(id, meta = {}) {
 	};
 }
 
-/*
-Legacy migration: docs written before the center-origin grid used top-left
-coordinates (node points at 30 + k*60). A uniform translation of (-930, -510)
-maps every legacy node-grid point exactly onto the new center grid (and zone
-corners onto the zone grid), preserving relative layout; only entities in the
-outermost right/bottom band clamp inward one cell.
-*/
-function migrateLegacy(doc) {
-	if (doc.meta && doc.meta.grid === 'center') return doc;
-	// NOTE: 930/510 here are the legacy top-left->center OFFSET (= hw-HALF), NOT the usable extent —
-	// numerically equal to ZONE_EXT today but semantically distinct, so they stay literal (do not alias).
-	const cx = (v) => v - 930;
-	const cy = (v) => v - 510;
-	const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-	(doc.nodes || []).forEach((n) => {
-		n.x = clamp(cx(n.x), -NODE_EXT.x, NODE_EXT.x);
-		n.y = clamp(cy(n.y), -NODE_EXT.y, NODE_EXT.y);
-	});
-	(doc.zones || []).forEach((z) => {
-		z.x = clamp(cx(z.x), -ZONE_EXT.x, ZONE_EXT.x);
-		z.y = clamp(cy(z.y), -ZONE_EXT.y, ZONE_EXT.y);
-		if (z.x + z.w > ZONE_EXT.x) z.w = Math.max(60, ZONE_EXT.x - z.x);
-		if (z.y + z.h > ZONE_EXT.y) z.h = Math.max(60, ZONE_EXT.y - z.y);
-	});
-	doc.meta = { ...(doc.meta || {}), grid: 'center' };
-	console.log(`[ store ] migrated ${doc.meta.id} to the center-origin grid`);
-	return doc;
-}
 
-// S1b: the mutation PLANNER — pure (reads the model, applies NOTHING). Runs the validateMutation gate,
-// then computes the ordered op-list for the mutation + its server-side cascade (idempotent with the
-// client's explicit cascade deltas). {ok:false,error} rejects BEFORE any write, so apply()-via-commit
-// keeps the reject-writes-nothing guarantee without a rollback (atomicity by purity). load-consuming —
-// this is what makes apply() a genuine 2nd consumer of prism.commit's load->mutate->validate->save.
-function planMutation(model, mutation) {
-	const err = validateMutation(model, mutation);
-	if (err) return { ok: false, error: err };
-	const { action, kind, entity } = mutation;
-	const ops = [];
-	const trimGroupsHolding = (memberId) => model.all('group').forEach((group) => {
-		if (!group.members.includes(memberId)) return;
-		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => m === memberId);
-		if (dissolve) ops.push({ action: 'del', kind: 'group', id: group.id });
-		else ops.push({ action: 'set', kind: 'group', id: group.id, patch: { members: remaining } });
-	});
-	if (action === 'put') {
-		if (!model.get(kind, entity.id) && model.all(kind).length >= 2000) return { ok: false, error: `${kind} collection limit reached` };
-		ops.push({ action: 'put', kind, entity: { ...entity, ...(entity.members ? { members: [...entity.members] } : {}) } });
-	}
-	if (action === 'set') {
-		if (!model.get(kind, entity.id)) return { ok: false, error: `set on missing entity: ${entity.id}` };
-		ops.push({ action: 'set', kind, id: entity.id, patch: { ...entity } });
-	}
-	if (action === 'del') {
-		if (kind === 'node') {
-			model.linksOf(entity.id).forEach((link) => ops.push({ action: 'del', kind: 'link', id: link.id }));
-			trimGroupsHolding(entity.id);
-		}
-		if (kind === 'waypoint') {
-			model.linksAt(entity.id).forEach((link) => {
-				if (link.src === entity.id || link.dst === entity.id) ops.push({ action: 'del', kind: 'link', id: link.id });
-				else ops.push({ action: 'set', kind: 'link', id: link.id, patch: { via: link.via.filter((w) => w !== entity.id) } });
-			});
-			trimGroupsHolding(entity.id);
-		}
-		ops.push({ action: 'del', kind, id: entity.id });
-	}
-	return { ok: true, ops };
-}
 
-// the SAVE seam: apply a planned op-list in order (the only write; each op emits -> onChange -> markDirty).
-function applyOps(model, ops) {
-	for (const op of ops) {
-		if (op.action === 'put') model.put(op.kind, op.entity);
-		else if (op.action === 'set') model.set(op.kind, op.id, op.patch);
-		else if (op.action === 'del') model.del(op.kind, op.id);
-	}
-}
 
 export class Store {
-	constructor(dataDir) {
+	constructor(dataDir, { flushMs = FLUSH_MS, writeDoc = null, now = Date.now } = {}) {
 		this.dir = dataDir;
-		this.diagrams = new Map(); // id -> { model, dirty, timer }
+		this.flushMs = flushMs;
+		this.now = now;
+		// the single write-to-disk primitive, injectable so a test can fail it or observe it
+		this.writeDoc = writeDoc || ((file, text) => {
+			const tmp = `${file}.tmp`;
+			fs.writeFileSync(tmp, text);
+			fs.renameSync(tmp, file);
+		});
+		this.diagrams = new Map(); // id -> { model, log, dirty, timer, file }
 	}
 
 	init() {
 		fs.mkdirSync(this.dir, { recursive: true });
+		let candidates = 0;
+		const failures = [];
 		// the data dir is shared with Google OAuth credential/token files:
 		// only diagram-named json is ours to parse
 		for (const file of fs.readdirSync(this.dir)) {
 			if (!/^diagram-[0-9a-f]{6}\.json$/.test(file)) continue;
+			candidates++;
 			try {
-				const doc = migrateLegacy(JSON.parse(fs.readFileSync(path.join(this.dir, file), 'utf8')));
+				const doc = JSON.parse(fs.readFileSync(path.join(this.dir, file), 'utf8'));
 				const err = validateDoc(doc);
 				if (err) {
+					failures.push(`${file}: ${err}`);
 					console.warn(`[ store ] skipping ${file}: ${err}`);
 					continue;
 				}
 				if (this.diagrams.has(doc.meta.id)) {
+					failures.push(`${file}: duplicate id ${doc.meta.id}`);
 					console.warn(`[ store ] skipping ${file}: duplicate id ${doc.meta.id}`);
 					continue;
 				}
 				if (file !== `${doc.meta.id}.json`) {
 					console.warn(`[ store ] ${file}: filename does not match meta.id ${doc.meta.id}`);
 				}
-				this.adopt(doc, file);
-				this.markDirty(doc.meta.id);
+				this.install(doc.meta.id, doc, Log.from(doc.log), file);
+				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
+				if (file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
 			} catch (e) {
+				failures.push(`${file}: ${e.message}`);
 				console.warn(`[ store ] skipping ${file}: ${e.message}`);
 			}
+		}
+		// D17/GR8: a data dir whose every candidate file failed is a broken deployment, not an empty
+		// one. Seeding there fabricates a plausible, complete, WRONG store and answers /health 200.
+		if (candidates > 0 && this.diagrams.size === 0) {
+			for (const why of failures) console.error(`[ store ] ${why}`);
+			throw new Error(`refusing to boot: ${candidates} diagram file(s) present, none loaded`);
 		}
 		if (this.diagrams.size === 0) this.seed();
 		console.log(`[ store ] ${this.diagrams.size} diagram(s) in ${this.dir}`);
@@ -146,19 +92,20 @@ export class Store {
 	// first boot (or last diagram deleted): the example topology, never an empty store
 	seed() {
 		const doc = seedDoc();
-		const entry = this.adopt(doc);
-		this.markDirty(doc.meta.id);
+		const entry = this.install(doc.meta.id, doc);
+		this.markDirty(doc.meta.id);   // a seeded doc has no file yet — this is a creation, not a reload
 		return entry.model;
 	}
 
-	adopt(doc, file = null) {
+	// The ONE whole-document entry: boot and create-with-content. Not a commit — it installs a
+	// document wholesale rather than deriving it from ops, so it is the single allow-listed
+	// model.load caller (GR3) and it replaces the Log in the same call.
+	install(id, doc, log = new Log(0), file = null) {
 		const model = new Model();
 		model.load(doc);
-		// disk docs get the same meta sanitation as pushed docs
-		model.state.meta = cleanMeta(doc.meta.id, doc.meta);
-		const entry = { model, dirty: false, timer: null, file: file || `${doc.meta.id}.json` };
-		model.onChange(() => this.markDirty(doc.meta.id));
-		this.diagrams.set(doc.meta.id, entry);
+		model.state.meta = cleanMeta(id, doc.meta);
+		const entry = { model, log, dirty: false, timer: null, file: file || `${id}.json` };
+		this.diagrams.set(id, entry);
 		return entry;
 	}
 
@@ -175,8 +122,7 @@ export class Store {
 			name = `diagram-${n}`;
 		}
 		model.state.meta.name = name;
-		const entry = { model, dirty: false, timer: null, file: `${id}.json` };
-		model.onChange(() => this.markDirty(id));
+		const entry = { model, log: new Log(0), dirty: false, timer: null, file: `${id}.json` };
 		this.diagrams.set(id, entry);
 		this.markDirty(id);
 		return model;
@@ -222,30 +168,44 @@ export class Store {
 	// ---- mutations (validated) ----
 	// install a whole validated doc into a live model — the SAVE seam shared by replace() (and, from S1a,
 	// the prism.commit save port). Runs only AFTER validation, so a rejected push never clobbers the live diagram.
-	loadInto(model, id, doc) {
-		model.load(doc);
-		model.state.meta = cleanMeta(id, doc.meta);
-		this.markDirty(id);
-	}
 
 	// S1b: apply() is the 2nd, LOAD-CONSUMING consumer of prism.commit (replace()'s load was vacuous).
-	// mutate = planMutation (reads the model — gate + cascade — applies nothing); validate = the additive
-	// slot, deliberately LIGHT (validateMutation is the gate; per-mutation validateDoc benchmarked at
-	// ~2900x the incremental gate, so the O(N) whole-doc check stays at the replace/load boundary, never
-	// the per-drag path); save = applyOps (the only write; emits drive markDirty). A rejected plan never
-	// reaches save, so the live model is untouched — reject-writes-nothing, by purity, no rollback needed.
+	// THE ONE WRITE. Every writer reaches the model through here.
+	commit(id, request, by = 'client', actor = null) {
+		const entry = this.diagrams.get(id);
+		if (!entry) return { ok: false, error: 'unknown diagram' };
+		const res = txnCommit(entry.model, entry.log, request, by, actor);
+		if (res.ok && res.change) this.markDirty(id);
+		return res;
+	}
+
+	undo(id, to = null) {
+		const entry = this.diagrams.get(id);
+		if (!entry) return { ok: false, error: 'unknown diagram' };
+		const res = txnUndo(entry.model, entry.log, to);
+		if (res.ok) this.markDirty(id);
+		return res;
+	}
+
+	redo(id) {
+		const entry = this.diagrams.get(id);
+		if (!entry) return { ok: false, error: 'unknown diagram' };
+		const res = txnRedo(entry.model, entry.log);
+		if (res.ok) this.markDirty(id);
+		return res;
+	}
+
+	// ADAPTER, dies at CS3 with its caller. Preserves the old single-mutation contract and its
+	// error strings so the 183 existing tests are the adapter-fidelity control.
 	apply(id, mutation) {
-		const model = this.get(id);
-		if (!model) return 'unknown diagram';
-		const res = commit({
-			load: () => model,
-			validate: () => [],
-			save: ({ model: m, ops }) => applyOps(m, ops),
-		}, (m) => {
-			const plan = planMutation(m, mutation);
-			return plan.ok ? { ok: true, store: { model: m, ops: plan.ops } } : { ok: false, error: plan.error };
-		});
-		return res.ok ? null : (res.error || res.violations?.[0] || 'invalid');
+		if (!this.get(id)) return 'unknown diagram';
+		const { action, kind, entity } = mutation || {};
+		const op = action === 'put' ? { op: 'put', kind, entity }
+			: action === 'set' ? { op: 'set', kind, id: entity?.id, patch: entity }
+			: action === 'del' ? { op: 'del', kind, id: entity?.id }
+			: { op: String(action) };
+		const res = this.commit(id, { ops: [op] }, 'server');
+		return res.ok ? null : (res.error || 'invalid');
 	}
 
 	// S1a: replace() is the FIRST cross-tenant consumer of prism.commit (after the arc engine) — the
@@ -254,23 +214,19 @@ export class Store {
 	// save installs it ONLY on success — so a malformed push still cannot clobber the live diagram, and
 	// the error order (validateDoc then id-check) is preserved. (Shape proof: replace's load is vacuous —
 	// the load->mutate dependency is exercised by apply() in S1b.)
+	// ADAPTER, dies at CS4 with `push`. Validates the whole document, then installs it — the same
+	// reject-writes-nothing order as before (validateDoc, then the id check), by purity: install()
+	// is not reached unless both pass. The Log survives the replacement: a whole-document push is
+	// not a change and must not destroy the diagram's history.
 	replace(id, doc) {
-		const model = this.get(id);
-		if (!model) return 'unknown diagram';
-		const res = commit({
-			load: () => model,                              // existence anchor only; the value-shaped mutate ignores it
-			validate: (next) => {
-				const e = validateDoc(next);
-				if (e) return [e];
-				if (next.meta.id !== id) return ['doc.meta.id does not match diagram'];
-				return [];
-			},
-			save: (next) => this.loadInto(model, id, next),
-		}, () => {
-			migrateLegacy(doc);   // a stale pre-upgrade tab may reconnect-push top-left coords (mutates the value)
-			return { ok: true, store: doc };
-		});
-		return res.ok ? null : (res.violations?.[0] || res.error);
+		const entry = this.diagrams.get(id);
+		if (!entry) return 'unknown diagram';
+		const err = validateDoc(doc);
+		if (err) return err;
+		if (doc.meta.id !== id) return 'doc.meta.id does not match diagram';
+		this.install(id, doc, entry.log, entry.file);
+		this.markDirty(id);
+		return null;
 	}
 
 	patchMeta(id, patch) {
@@ -305,7 +261,7 @@ export class Store {
 		entry.timer = setTimeout(() => {
 			entry.timer = null;
 			this.flush(id);
-		}, FLUSH_MS);
+		}, this.flushMs);
 		if (entry.timer.unref) entry.timer.unref();
 	}
 
@@ -316,8 +272,7 @@ export class Store {
 		entry.file = `${id}.json`; // canonical from first flush onward
 		const tmp = `${file}.tmp`;
 		try {
-			fs.writeFileSync(tmp, JSON.stringify(entry.model.toJSON(), null, '\t') + '\n');
-			fs.renameSync(tmp, file);
+			this.writeDoc(file, JSON.stringify(entry.model.toJSON(), null, '\t') + '\n');
 			entry.dirty = false; // only after the write actually landed
 		} catch (err) {
 			console.error(`[ store ] flush failed for ${id}: ${err.message}`);

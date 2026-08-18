@@ -1,0 +1,171 @@
+// GR5 — the differential oracle.
+//
+// server/txn.mjs#plan replaces the single-op planMutation that lived in server/store.js. The old
+// implementation is deleted; this asserts the new one agrees with it, over randomly generated
+// documents and mutations, before the reference is only reachable through git history.
+//
+// The reference is frozen at tests/fixtures/plan-reference.mjs. Seeded, so a failure reproduces.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Model } from '../document/index.mjs';
+import { plan } from '../server/txn.mjs';
+import { applyOps } from '../document/ops.mjs';
+import { planMutation } from './fixtures/plan-reference.mjs';
+
+// xorshift — deterministic, no dependency
+function rng(seed) {
+	let x = seed || 1;
+	return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 1e6) / 1e6; };
+}
+
+const hex = (n) => n.toString(16).padStart(6, '0').slice(-6);
+const pick = (r, xs) => xs[Math.floor(r() * xs.length) % xs.length];
+const coord = (r, ext) => Math.round((r() * 2 - 1) * ext / 60) * 60;
+
+// A random but structurally valid document: nodes, waypoints, links (some routed via waypoints),
+// zones, and groups drawn from the live nodes.
+function makeDoc(r, i) {
+	const nodes = Array.from({ length: 2 + Math.floor(r() * 5) }, (_, k) =>
+		({ id: `node-${hex(i * 100 + k)}`, name: `n${k}`, type: pick(r, ['host', 'router', 'server']), shape: 'circle', x: coord(r, 900), y: coord(r, 480) }));
+	const waypoints = Array.from({ length: Math.floor(r() * 3) }, (_, k) =>
+		({ id: `waypoint-${hex(i * 100 + 50 + k)}`, x: coord(r, 900), y: coord(r, 480) }));
+	const links = [];
+	for (let k = 0; k < 1 + Math.floor(r() * 3); k++) {
+		const a = pick(r, nodes), b = pick(r, nodes);
+		if (a.id === b.id) continue;
+		const via = waypoints.length && r() > 0.5 ? [pick(r, waypoints).id] : undefined;
+		links.push({ id: `link-${hex(i * 100 + 70 + k)}`, src: a.id, dst: b.id, ...(via ? { via } : {}) });
+	}
+	const groups = [];
+	if (nodes.length >= 2 && r() > 0.4) {
+		const members = nodes.slice(0, 2 + Math.floor(r() * (nodes.length - 2))).map((n) => n.id);
+		groups.push({ id: `group-${hex(i * 100 + 90)}`, name: 'g', members });
+	}
+	return { meta: { id: `diagram-${hex(i)}`, name: 'd', grid: 'center', slides: { url: '', presentationId: '', pageId: '' } },
+		nodes, waypoints, links, zones: [], groups };
+}
+
+// A random mutation in the OLD wire vocabulary, plus its equivalent in the new op vocabulary.
+function makeMutation(r, doc) {
+	const kinds = ['node', 'waypoint', 'link', 'zone', 'group'];
+
+	// ~20% deliberately invalid: a corpus in which nothing is ever rejected cannot prove the two
+	// planners agree on REJECTION, only on acceptance.
+	if (r() < 0.2) {
+		const bad = Math.floor(r() * 4);
+		if (bad === 0) {           // set on an entity that does not exist
+			const id = `node-${hex(800000 + Math.floor(r() * 1000))}`;
+			return [{ action: 'set', kind: 'node', entity: { id, x: 60 } }, { op: 'set', kind: 'node', id, patch: { id, x: 60 } }];
+		}
+		if (bad === 1) {           // out-of-surface coordinate
+			const e = { id: `node-${hex(810000 + Math.floor(r() * 1000))}`, name: 'x', type: 'host', shape: 'circle', x: 99999, y: 0 };
+			return [{ action: 'put', kind: 'node', entity: e }, { op: 'put', kind: 'node', entity: e }];
+		}
+		if (bad === 2) {           // unknown field
+			const e = { id: `node-${hex(820000 + Math.floor(r() * 1000))}`, name: 'x', type: 'host', shape: 'circle', x: 0, y: 0, bogus: 1 };
+			return [{ action: 'put', kind: 'node', entity: e }, { op: 'put', kind: 'node', entity: e }];
+		}
+		const e = { id: `link-${hex(830000 + Math.floor(r() * 1000))}`, src: 'node-ffffff', dst: 'node-fffffe' };
+		return [{ action: 'put', kind: 'link', entity: e }, { op: 'put', kind: 'link', entity: e }];   // dangling endpoints
+	}
+
+	const action = pick(r, ['put', 'set', 'del']);
+	if (action === 'del') {
+		const pool = kinds.flatMap((k) => (doc[`${k}s`] || []).map((e) => [k, e.id]));
+		if (!pool.length) return null;
+		const [kind, id] = pick(r, pool);
+		return [{ action: 'del', kind, entity: { id } }, { op: 'del', kind, id }];
+	}
+	if (action === 'set') {
+		const pool = [...doc.nodes, ...doc.waypoints].map((e) => [e.id.split('-')[0], e]);
+		if (!pool.length) return null;
+		const [kind, e] = pick(r, pool);
+		const patch = { id: e.id, x: coord(r, 900), y: coord(r, 480) };
+		return [{ action: 'set', kind, entity: patch }, { op: 'set', kind, id: e.id, patch }];
+	}
+	const id = `node-${hex(900000 + Math.floor(r() * 9000))}`;
+	const entity = { id, name: 'new', type: 'host', shape: 'circle', x: coord(r, 900), y: coord(r, 480) };
+	return [{ action: 'put', kind: 'node', entity }, { op: 'put', kind: 'node', entity }];
+}
+
+// The two planners emit the same ops in different shapes ({action,kind,entity|id|patch} vs
+// {op,kind,entity|id|patch}). Normalise to compare the DECISION, not the encoding.
+const norm = (ops) => ops.map((o) => {
+	const kind = o.kind, act = o.action || o.op;
+	if (act === 'del') return `del ${kind} ${o.id}`;
+	if (act === 'set') return `set ${kind} ${o.id} ${JSON.stringify(Object.fromEntries(Object.entries(o.patch).filter(([k]) => k !== 'id').sort()))}`;
+	return `put ${kind} ${JSON.stringify(Object.entries(o.entity).sort())}`;
+});
+
+test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mutations', () => {
+	const r = rng(20260818);
+	let compared = 0, rejectedBoth = 0;
+
+	for (let i = 1; i <= 1000; i++) {
+		const doc = makeDoc(r, i);
+		const model = new Model();
+		model.load(doc);
+		const pair = makeMutation(r, doc);
+		if (!pair) continue;
+		const [legacy, modern] = pair;
+
+		const before = JSON.stringify(model.toJSON());
+		const a = planMutation(model, legacy);
+		const b = plan(model, [modern]);
+		assert.equal(JSON.stringify(model.toJSON()), before, `iteration ${i}: planning mutated the model`);
+
+		if (!a.ok || !b.ok) {
+			assert.equal(a.ok, b.ok, `iteration ${i}: acceptance disagrees — legacy ${a.error}, modern ${b.error}`);
+			rejectedBoth++;
+			continue;
+		}
+		// The one deliberate divergence: plan() narrows a `set` to the keys that actually change,
+		// so a value-identical set is an empty plan where planMutation emitted a redundant op.
+		// plan() narrows a `set` to the keys that actually change; planMutation emitted the patch
+		// whole. Narrow the reference the same way so the comparison is about the DECISION.
+		const narrowLegacy = a.ops.map((o) => {
+			if (o.action !== 'set') return o;
+			const cur = model.get(o.kind, o.id) || {};
+			const patch = Object.fromEntries(Object.entries(o.patch).filter(([k, v]) => k !== 'id' && cur[k] !== v));
+			return Object.keys(patch).length ? { ...o, patch } : null;
+		}).filter(Boolean);
+		assert.deepEqual(norm(b.ops), norm(narrowLegacy), `iteration ${i}: op lists diverge for ${JSON.stringify(modern)}`);
+		compared++;
+	}
+	assert.ok(compared > 500, `expected a healthy sample, compared ${compared}`);
+	assert.ok(rejectedBoth > 0, 'the corpus should exercise rejection too');
+});
+
+test('GR5: plan() emits an inverse that restores the pre-state, over the same corpus', () => {
+	const r = rng(775533);
+	let checked = 0;
+
+	for (let i = 1; i <= 400; i++) {
+		const doc = makeDoc(r, i);
+		const model = new Model();
+		model.load(doc);
+		const pair = makeMutation(r, doc);
+		if (!pair) continue;
+		const p = plan(model, [pair[1]]);
+		if (!p.ok || !p.ops.length) continue;
+
+		// Order-insensitive by design: a put-based inverse appends a restored entity to the end of
+		// its collection, so undo does not restore intra-kind ordering. The pre-CS1 client undo had
+		// the identical property (app/src/commands.js applyEntry used model.put too), so this is not
+		// a CS1 regression — it is recorded as B10 with the renderer draw-order consequence.
+		const shape = (m) => {
+			const d = m.toJSON(); delete d.meta.rev;
+			for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+				d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
+			}
+			return JSON.stringify(d);
+		};
+		const before = shape(model);
+		applyOps(model, p.ops);
+		applyOps(model, p.inverse);
+		assert.equal(shape(model), before, `iteration ${i}: inverse did not restore for ${JSON.stringify(pair[1])}`);
+		checked++;
+	}
+	assert.ok(checked > 200, `expected a healthy sample, checked ${checked}`);
+});
