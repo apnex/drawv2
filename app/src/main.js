@@ -9,7 +9,7 @@ import { el } from './painter.js';
 import { nodePoints, zonePoints } from './snap.js';
 import { Model } from '../../document/index.mjs';
 import { attachRelations } from '../../engine/index.mjs';
-import { History } from './commands.js';
+import { Changes } from './changes.js';
 import { Renderer } from './renderer.js';
 import { Selection } from './selection.js';
 import { Input } from './input.js';
@@ -33,7 +33,7 @@ zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: 5 }, gridZones))
 
 const model = new Model();
 attachRelations(model, { cellOf }); // R3 maintained reverse indices (first IVM) backing linksOf/linksAt/linkBetween/groupOf + R5 atCell; cellOf injected here (composition root) so engine/ imports no kernel; registered before other subscribers so they see a fresh index
-const history = new History(model);
+const history = new Changes(model);   // the commit boundary; Sync subscribes to it, not to the model
 const renderer = new Renderer(model, svg);
 const selection = new Selection(model);
 selection.subscribe(() => renderer.reflectSelection(selection.list())); // renderer owns the 'selected' visual reflection
@@ -76,6 +76,9 @@ const menu = {
 
 let onStateLastId = null;
 const net = new Net(`ws://${location.host}/ws`);
+// D4 — the inversion. Sync subscribes to the COMMIT boundary, never to the model. There is then
+// no way to forward an uncommitted change, because uncommitted changes never pass through Changes.
+// A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
 	model, net, history, selection,
 	onState({ status, meta, diagrams, locked }) {
@@ -100,6 +103,8 @@ const sync = new Sync({
 		if (current) current.textContent = meta.name;
 	}
 });
+history.onCommit((request) => sync.submit(request));
+
 
 menu.name.addEventListener('change', () => { sync.rename(menu.name.value); menu.name.blur(); menu.name.value = model.state.meta.name; });
 menu.list.addEventListener('change', () => { sync.openDiagram(menu.list.value); menu.list.blur(); });

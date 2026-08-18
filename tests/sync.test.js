@@ -11,8 +11,12 @@ function harness() {
 	const net = { subscribe() {}, onStatus() {}, isOpen: () => true, send: (cmd, body) => sent.push({ cmd, body }) };
 	const model = new Model();
 	const selection = new Selection(model);
-	const sync = new Sync({ model, net, history: { clear() {} }, selection });
-	clearInterval(sync.pulse);   // drive flush() manually; don't leave the interval running
+	// a Changes-shaped stub: Sync reflects the server's authority through it, so a bare
+	// { clear() {} } no longer models the collaborator. There is no pulse to clear any more —
+	// commits go out on submit; only selection keeps a trailing flush.
+	const history = { clear() {}, setCounts() {}, state: { version: 0 } };
+	const sync = new Sync({ model, net, history, selection });
+	assert.equal(sync.pulse, undefined, 'there is no interval to stop: a commit is not polled');
 	sync.hydrated = true;        // forwarding requires hydration
 	return { sent, model, selection, sync };
 }

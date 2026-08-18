@@ -1,3 +1,5 @@
+import { applyOps } from '../../document/ops.mjs';
+
 /*
 Sync — wires the model to the wire. Unidirectional ownership (docs/spec/SCOPE.md):
 this client is the only writer. Every committed model change is forwarded as
@@ -18,6 +20,7 @@ export class Sync {
 		this.model = model;
 		this.net = net;
 		this.history = history;
+		this.changes = history;   // the commit boundary (Changes); named for what it now is
 		this.selection = selection;
 		this.onState = onState || (() => {});
 		this.hydrated = false;
@@ -26,32 +29,55 @@ export class Sync {
 		this.locked = false;     // Server-Locked: a server-side controller owns writes
 		this.lockShownAt = 0;    // when the amber indicator went up (for the min dwell)
 		this.unlockTimer = null; // pending return-to-green after the min dwell
-		this.queue = [];
+		this.outbox = [];
 		this.selectionDirty = false; // a selection (model-state) change pending forward to the server (R2)
+		this.outbox = [];            // submitted, not yet known durable
+		this.deferred = [];          // inbound changes held while a gesture is live (D12)
+		this.txn = 0;                // correlation ids, so a rejection can name its request
 
 		net.subscribe((msg) => this.onMessage(msg));
 		net.onStatus((status) => this.onStatus(status));
-		model.onChange((action, kind, entity) => this.onChange(action, kind, entity));
+		// NOT model.onChange — that is the RENDER signal, and app/src/input.js writes live drag
+		// state into the model on every pointer-move frame. Sync listens to the commit boundary,
+		// so an uncommitted preview cannot reach the wire (D4).
 		selection.subscribe(() => this.onSelectionChange()); // forward selection (model-state) to the server (R2)
-		this.pulse = setInterval(() => this.flush(), PULSE_MS);
+		// no pulse: a commit is a user-action-rate event, so it goes out immediately. Selection
+		// keeps a short trailing flush because Selection.changed() fires per entity during a cascade.
+		this.selectionTimer = null;
 	}
 
 	// ---- outbound ----
-	onChange(action, kind, entity) {
-		if (this.loading || action === 'load' || !this.hydrated) return;
-		const copy = { ...entity };
-		if (copy.members) copy.members = [...copy.members];
-		if (action === 'set') {
-			// coalesce into a queued set for this entity, but ANY del/put is an
-			// ordering barrier: group members and link endpoints are cross-entity
-			// references, so a set must never move earlier than a structural op
-			for (let i = this.queue.length - 1; i >= 0; i--) {
-				const q = this.queue[i];
-				if (q.action !== 'set') break;
-				if (q.kind === kind && q.entity.id === copy.id) { q.entity = copy; return; }
-			}
+
+	// The ONE outbound path. `request` is either a commit ({ops, label}) or an undo/redo verb.
+	// Everything the browser writes goes through here because everything goes through Changes.
+	submit(request) {
+		if (this.locked) return;                       // read-only while Server-Locked
+		if (!this.hydrated) return;
+		const txnId = `t${++this.txn}`;
+		const msg = request.verb
+			? { verb: request.verb, expect: request.expect, txnId }
+			: { ops: request.ops, label: request.label, txnId };
+		this.outbox.push(msg);
+		this.drain();
+	}
+
+	// The outbox holds what has been submitted but not yet acknowledged as DURABLE. Pruning on
+	// `ack` alone would drop a change the server has accepted but not yet flushed.
+	drain() {
+		if (!this.net.isOpen() || this.locked) return;
+		for (const msg of this.outbox) {
+			if (msg.sent) continue;
+			const ok = msg.verb
+				? this.net.send(msg.verb, { expect: msg.expect, txnId: msg.txnId })
+				: this.net.send('commit', { ops: msg.ops, label: msg.label, txnId: msg.txnId });
+			if (!ok) return;                            // socket closed mid-drain; retry on reconnect
+			msg.sent = true;
 		}
-		this.queue.push({ action, kind, entity: copy });
+	}
+
+	pruneOutbox(durableVersion) {
+		if (typeof durableVersion !== 'number') return;
+		this.outbox = this.outbox.filter((m) => !(m.sent && m.version !== undefined && m.version <= durableVersion));
 	}
 
 	// a selection (model-state) change is coalesced to a dirty flag and forwarded on the pulse, AFTER
@@ -64,12 +90,9 @@ export class Sync {
 
 	flush() {
 		// while Server-Locked the browser is read-only — never push edits up
-		if (this.locked) { this.queue = []; this.selectionDirty = false; return; }
+		if (this.locked) { this.outbox = []; this.selectionDirty = false; return; }
 		if (!this.net.isOpen() || !this.hydrated) return;
-		if (this.queue.length) {
-			this.queue.forEach((mutation) => this.net.send('apply', mutation));
-			this.queue = [];
-		}
+		this.drain();
 		if (this.selectionDirty) {
 			this.net.send('select', { ids: this.selection.list() }); // after the entity queue
 			this.selectionDirty = false;
@@ -99,7 +122,7 @@ export class Sync {
 				};
 				this.loading = false;
 				this.hydrated = true;
-				this.queue = [];
+				this.outbox = [];
 				if (this.pendingSlidesUrl) {
 					this.model.state.meta.slides.url = this.pendingSlidesUrl;
 					this.pendingSlidesUrl = null;
@@ -111,8 +134,7 @@ export class Sync {
 				return;
 			}
 			this.loading = true;
-			this.queue = [];
-			this.history.clear();
+			this.outbox = [];
 			this.model.load(doc); // model.load now restores the authoritative selection from doc.selection (R2) — no clear
 			this.loading = false;
 			this.hydrated = true;
@@ -135,9 +157,52 @@ export class Sync {
 			// the server handed write control to/from a server-side controller
 			this.applyLock(msg.body.owner === 'server');
 		}
-		if (msg.cmd === 'error') {
-			console.warn('[ sync ] server: ' + msg.body.message);
+		// our own request came back: reflect the server's authority, prune what is now durable
+		if (msg.cmd === 'ack') {
+			const b = msg.body || {};
+			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version, undoLabel: b.label });
+			const sent = this.outbox.find((m) => m.txnId === b.acked);
+			if (sent) sent.version = b.version;
+			this.pruneOutbox(b.durableVersion);
+			if (Array.isArray(b.ops) && (b.label === 'undo' || b.label === 'redo')) applyOps(this.model, b.ops);
+			this.emitState({});
+			return;
 		}
+		// someone else's change. Apply it, unless a gesture is mid-flight — a model.load or a
+		// competing write landing under a live drag fights the preview (D12).
+		if (msg.cmd === 'change') {
+			const b = msg.body || {};
+			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version });
+			if (this.deferInbound && this.deferInbound()) { this.deferred.push(b); return; }
+			this.applyChange(b);
+			this.emitState({});
+			return;
+		}
+		if (msg.cmd === 'error') {
+			// B3/I16: a rejection is surfaced against the request that caused it, never dropped
+			const b = msg.body || {};
+			const dropped = this.outbox.findIndex((m) => m.txnId === b.txnId);
+			if (dropped >= 0) this.outbox.splice(dropped, 1);
+			console.warn(`[ sync ] server: ${b.message} (${b.code || 'error'})`);
+			this.onState({ error: b.message, code: b.code });
+		}
+	}
+
+	// A change from another writer. `from` is the version it applied to: equal to ours means we are
+	// in step; BELOW ours is a duplicate and is ignored (re-applying would fight the local state);
+	// ABOVE ours means we missed one, so ask for the authoritative document.
+	applyChange(body) {
+		const v = this.changes.state.version;
+		if (typeof body.from === 'number' && body.from < v - 1) return;    // stale duplicate
+		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
+	}
+
+	// replay whatever landed while a gesture was in flight
+	releaseDeferred() {
+		const pending = this.deferred;
+		this.deferred = [];
+		pending.forEach((b) => this.applyChange(b));
+		if (pending.length) this.emitState({});
 	}
 
 	/*
@@ -151,7 +216,7 @@ export class Sync {
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
 			if (!this.locked) this.lockShownAt = Date.now();
 			this.locked = true;
-			this.queue = []; // drop any unsent local edits
+			this.outbox = []; // drop any unsent local edits
 			this.emitState({});
 			return;
 		}
@@ -191,7 +256,7 @@ export class Sync {
 				try { last = localStorage.getItem(LAST_DIAGRAM_KEY); } catch { /* private mode */ }
 				this.net.send('hello', { diagram: this.urlDiagram() || last || undefined });
 			} else {
-				this.queue = [];
+				this.outbox = [];
 				if (this.locked) {
 					// can't push while Server-Locked — re-fetch the controller's state
 					this.expectLoad = true;
@@ -221,7 +286,7 @@ export class Sync {
 		this.flush(); // don't lose the current pulse window's edits
 		this.hydrated = false;
 		this.expectLoad = true;
-		this.queue = [];
+		this.outbox = [];
 		this.net.send('open', { id });
 	}
 
@@ -230,7 +295,7 @@ export class Sync {
 		this.flush();
 		this.hydrated = false;
 		this.expectLoad = true;
-		this.queue = [];
+		this.outbox = [];
 		this.net.send('create', {});
 	}
 
@@ -239,7 +304,7 @@ export class Sync {
 		if (!this.net.isOpen() || !this.hydrated) return this.emitState({});
 		this.hydrated = false;
 		this.expectLoad = true;
-		this.queue = [];
+		this.outbox = [];
 		this.net.send('delete', { id: this.model.state.meta.id });
 	}
 
