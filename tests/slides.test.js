@@ -9,7 +9,7 @@ import { GoogleAuth } from '../server/slides/auth.js';
 
 const DOC = {
 	meta: {
-		id: 'diagram-000001', name: 'demo', rev: 1,
+		id: 'diagram-000001', name: 'demo', version: 1,
 		slides: { url: 'https://docs.google.com/presentation/d/PRES_ID-123/edit#slide=id.p7', presentationId: '', pageId: '' }
 	},
 	nodes: [

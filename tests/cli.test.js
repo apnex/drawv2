@@ -52,7 +52,7 @@ test('health: heartbeat renders status ok', async () => {
 test('diagrams: table fidelity (headers + seed row)', async () => {
 	const r = await cli(['diagrams']);
 	assert.equal(r.code, 0);
-	assert.match(r.out, /ID\s+NAME\s+REV/);
+	assert.match(r.out, /ID\s+NAME\s+VERSION/);
 	assert.match(r.out, /diagram-/);
 });
 
@@ -114,7 +114,7 @@ test('status: meta lines + entity counts', async () => {
 	const r = await cli(['status']);
 	assert.equal(r.code, 0);
 	assert.match(r.out, /DRAW STATUS: diagram-/);
-	assert.match(r.out, /Grid:\s+center/);
+	assert.match(r.out, /Schema:\s+1/);
 	assert.match(r.out, /NODES\s+8/);
 	assert.match(r.out, /Slides:\s+unbound/);
 });

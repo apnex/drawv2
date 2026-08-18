@@ -60,5 +60,5 @@ export function schemaToDoc(schema, meta = {}) {
 		} else if (e.kind === 'group') groups.push({ id: e.id, name: e.name || '', members: [...(e.members || [])] });
 	});
 	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.from, dst: r.route.to, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.close ? { closed: true } : {}) }); });
-	return { meta: { id: '', name: 'untitled', rev: 0, grid: 'center', slides: { url: '', presentationId: '', pageId: '' }, ...meta }, nodes, waypoints, links, zones, groups };
+	return { meta: { id: '', name: 'untitled', version: 0, schema: 1, slides: { url: '', presentationId: '', pageId: '' }, ...meta }, nodes, waypoints, links, zones, groups };
 }

@@ -52,8 +52,8 @@ export function applyOps(model, ops) {
 }
 
 // meta is config, not an entity: no id, and only the two keys a user can author. `slides.url` is
-// the user-pasted deck; presentationId/pageId are STATUS, written by the server after a push and
-// never carried in a Change (see Store.bindSlides).
+// the user-pasted deck; presentationId/pageId are STATUS, written by the server after a push
+// (Store.bindSlides) and never carried in a Change.
 function applyMeta(model, patch) {
 	const meta = model.state.meta;
 	if (patch.name !== undefined) meta.name = patch.name;

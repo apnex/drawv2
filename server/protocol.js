@@ -232,7 +232,7 @@ export class Session {
 			}
 
 			case 'select': {
-				// model-state (status): the authoritative selection. Mirrors meta — lock-gated, no rev bump.
+				// model-state (status): the authoritative selection. Mirrors meta — lock-gated, no version bump.
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;

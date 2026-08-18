@@ -244,6 +244,7 @@ export function commit(model, log, request, by = 'client', actor = null) {
 	applyOps(model, planned.ops);                                    // the sole mutation point
 	const from = log.version;
 	const seq = ++log.version;
+	stamp(model, log);                                               // D6: the document carries its own version
 	const change = {
 		seq, from, at: Date.now(), by, actor,
 		label: request.label || '',
@@ -252,6 +253,21 @@ export function commit(model, log, request, by = 'client', actor = null) {
 	};
 	log.append(change);
 	return { ok: true, change, version: log.version };
+}
+
+/*
+D6 — the document carries its own version, and it is the log's.
+
+Two counters that must agree is a defect waiting to happen, so there is one source and one mirror:
+the log mints, the document is stamped from it here, at the ONE place a version can change. It is
+stamped on undo and redo too, because those bump the version without appending a record — a
+mirror that only tracked commits would drift the first time anyone pressed Ctrl+Z.
+
+The mirror exists so a document is self-describing off-line: a file on disk, a GET response and a
+Slides push all say which version they are, without the reader having to hold the log.
+*/
+function stamp(model, log) {
+	model.state.meta.version = log.version;
 }
 
 // Undo reverses records down to (and including) `to`, as ONE transaction: one version bump, one
@@ -268,6 +284,7 @@ export function undo(model, log, to = null) {
 	if (!ops.length) return { ok: false, error: 'nothing to undo', version: log.version };
 	applyOps(model, ops);
 	log.version++;
+	stamp(model, log);
 	return { ok: true, ops, version: log.version };
 }
 
@@ -277,5 +294,6 @@ export function redo(model, log) {
 	applyOps(model, record.ops);
 	log.cursor++;
 	log.version++;
+	stamp(model, log);
 	return { ok: true, ops: record.ops, version: log.version };
 }

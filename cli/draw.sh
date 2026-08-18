@@ -239,7 +239,7 @@ case $CMD in
 
         echo -e "${CYAN}--- DRAW SHOW: $ID ---${NC}"
         echo -e "Name:    $(echo "$DOC" | jq -r .meta.name)"
-        echo -e "Rev:     $(echo "$DOC" | jq -r .meta.rev)"
+        echo -e "Version: $(echo "$DOC" | jq -r .meta.version)"
         SLIDES=$(echo "$DOC" | jq -r '.meta.slides.presentationId // empty')
         echo -e "Slides:  ${SLIDES:-unbound}"
         for SECTION in nodes links zones groups; do
@@ -258,8 +258,8 @@ case $CMD in
 
         echo -e "${CYAN}--- DRAW STATUS: $ID ---${NC}"
         echo -e "Name:    $(echo "$DOC" | jq -r .meta.name)"
-        echo -e "Rev:     $(echo "$DOC" | jq -r .meta.rev)"
-        echo -e "Grid:    $(echo "$DOC" | jq -r '.meta.grid // "legacy"') (60px pitch, [0,0] at center)"
+        echo -e "Version: $(echo "$DOC" | jq -r .meta.version)"
+        echo -e "Schema:  $(echo "$DOC" | jq -r '.meta.schema // "pre-CS5"') (60px pitch, [0,0] at center)"
         FF=$(curl -sf "$APIHOST/health" | jq -r '.flushFailures // 0')
         [ "${FF:-0}" != "0" ] && echo -e "Flush:   ${FF} FAILED — writes are not landing (see docs/BACKLOG.md B4)"
         SLIDES=$(echo "$DOC" | jq -r '.meta.slides.presentationId // empty')

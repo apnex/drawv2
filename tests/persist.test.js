@@ -23,7 +23,7 @@ function storeWith(dir) {
 // ---- I10: the file round-trips ----
 
 test('I10: parse(serialize(doc, log)) deep-equals the input, including a large record', () => {
-	const doc = { meta: { id: 'diagram-aaaaaa', name: 'x', grid: 'center', slides: { url: '', presentationId: '', pageId: '' } },
+	const doc = { meta: { id: 'diagram-aaaaaa', name: 'x', slides: { url: '', presentationId: '', pageId: '' } },
 		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
 	const log = new Log(0);
 	// a delete-all of a 65-entity diagram is the largest record the design admits

@@ -75,7 +75,7 @@ function commitWrite(res, store, hub, locks, id, token, mutation, extra) {
 // set the authoritative selection (model-state / status). Mirrors commitWrite: re-verify the token
 // (the lock gate ran before the awaited body read), set + flush-before-ack (a one-shot agentic caller
 // has no reconnect backstop), then broadcast a snapshot so every viewer reflects the agent's focus via
-// the persisted doc.selection. No rev bump — selection is status, not config (matches the ws 'select').
+// the persisted doc.selection. No version bump — selection is status, not config (matches the ws 'select').
 function commitSelection(res, store, hub, locks, id, token, ids) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	const err = store.setSelection(id, ids);
@@ -83,7 +83,7 @@ function commitSelection(res, store, hub, locks, id, token, ids) {
 	store.flush(id);
 	const model = store.get(id);
 	if (hub) hub.broadcast(id, 'snapshot', snapshotBody(model, store, locks));
-	return json(res, 200, { rev: model.state.meta.rev, selection: [...model.state.selection] });
+	return json(res, 200, { version: model.state.meta.version, selection: [...model.state.selection] });
 }
 
 // returns true if the request was handled (may complete asynchronously)
@@ -293,6 +293,10 @@ async function handleSlidesPush(req, res, store, slides, diagramId) {
 	}
 	try {
 		const report = await slides.sync.push(model.toJSON());
+		// remember where it landed, so a re-push targets the same slide rather than pages[0].
+		// Server-side because the server did the push: the CLI's `draw push` binds too, and the
+		// browser needs no round trip to record something it did not do.
+		store.bindSlides(diagramId, report.presentationId, report.pageId);
 		console.log(`[ slides ] pushed ${diagramId}: ${report.objects} objects -> ${report.presentationId}`);
 		return json(res, 200, report);
 	} catch (err) {

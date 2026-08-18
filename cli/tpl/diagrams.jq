@@ -1,1 +1,1 @@
-[ .[] | { ID: .id, NAME: .name, REV: .rev } ]
+[ .[] | { ID: .id, NAME: .name, VERSION: .version } ]

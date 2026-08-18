@@ -16,7 +16,7 @@ test('validateSelectionIds is shape-only over selectable kinds', () => {
 });
 
 const baseDoc = (selection) => ({
-	meta: { id: 'diagram-abc123', name: 'd', grid: 'center' },
+	meta: { id: 'diagram-abc123', name: 'd' },
 	nodes: [], waypoints: [], links: [], zones: [], groups: [], selection
 });
 

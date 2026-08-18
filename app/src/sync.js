@@ -193,9 +193,9 @@ export class Sync {
 			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version });
 			if (this.pendingSlidesUrl) {
 				// a slides URL typed before hydration must survive the snapshot
-				this.model.state.meta.slides.url = this.pendingSlidesUrl;
-				this.net.send('meta', { slides: { url: this.pendingSlidesUrl } });
+				const url = this.pendingSlidesUrl;
 				this.pendingSlidesUrl = null;
+				this.changes.commit({ label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url } } }] });
 			}
 			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
 			this.setUrl(doc.meta.id);
@@ -397,27 +397,33 @@ export class Sync {
 		this.net.send('delete', { id: this.model.state.meta.id });
 	}
 
+	/*
+	Renaming a diagram and binding a deck are CHANGES — config the user authored — so they go
+	through the commit boundary like every other one: applied locally, submitted as a `meta` op,
+	broadcast to the other tabs, undoable.
+
+	They used to be a `meta` command of their own. That command's server case was deleted at CS3a
+	when meta became an op, and nothing noticed for two milestones: every rename was answered
+	`unknown cmd: meta` and dropped. Found by `tests/spec.test.js`, which derives the wire
+	vocabulary from the server's own dispatch rather than trusting the document.
+	*/
 	rename(name) {
 		if (this.locked) return this.emitState({}); // read-only: revert the field
 		const trimmed = name.trim().slice(0, 64);
-		if (!trimmed) return this.emitState({});
-		this.model.state.meta.name = trimmed;
-		if (this.hydrated) this.net.send('meta', { name: trimmed });
+		if (!trimmed || trimmed === this.model.state.meta.name) return this.emitState({});
+		this.changes.commit({ label: 'rename', entries: [{ op: 'meta', patch: { name: trimmed } }] });
 		this.emitState({});
 	}
 
 	setSlidesUrl(url) {
 		if (this.locked) return this.emitState({}); // read-only: revert the field
-		this.model.state.meta.slides.url = url.trim().slice(0, 512);
-		if (this.hydrated) this.net.send('meta', { slides: { url: this.model.state.meta.slides.url } });
-		else this.pendingSlidesUrl = this.model.state.meta.slides.url; // replay after hydration
-	}
-
-	// remember which slide a successful push landed on (re-sync targets it);
-	// ignored if the user switched or deleted diagrams while the push was in flight
-	setSlidesBinding(diagramId, presentationId, pageId) {
-		if (this.model.state.meta.id !== diagramId) return;
-		Object.assign(this.model.state.meta.slides, { presentationId, pageId });
-		if (this.hydrated) this.net.send('meta', { slides: { presentationId, pageId } });
+		const trimmed = url.trim().slice(0, 512);
+		if (!this.hydrated) {
+			this.model.state.meta.slides.url = trimmed;
+			this.pendingSlidesUrl = trimmed;        // replay through the boundary after hydration
+			return;
+		}
+		if (trimmed === this.model.state.meta.slides.url) return;
+		this.changes.commit({ label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url: trimmed } } }] });
 	}
 }

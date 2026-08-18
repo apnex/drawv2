@@ -164,10 +164,10 @@ export function validateDoc(doc) {
 	}
 	if (!str(doc.meta.name || '', 64)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
-		if (!['id', 'name', 'rev', 'slides', 'grid'].includes(key)) return `unknown meta key: ${key}`;
+		if (!['id', 'name', 'version', 'schema', 'slides'].includes(key)) return `unknown meta key: ${key}`;
 	}
-	if ('grid' in doc.meta && doc.meta.grid !== 'center') return 'invalid meta.grid';
-	if ('rev' in doc.meta && !(Number.isFinite(doc.meta.rev) && doc.meta.rev >= 0)) return 'invalid meta.rev';
+	if ('schema' in doc.meta && doc.meta.schema !== 1) return `unsupported meta.schema: ${doc.meta.schema}`;
+	if ('version' in doc.meta && !(Number.isInteger(doc.meta.version) && doc.meta.version >= 0)) return 'invalid meta.version';
 	if ('slides' in doc.meta) {
 		const slides = doc.meta.slides;
 		if (!slides || typeof slides !== 'object' || Array.isArray(slides)) return 'invalid meta.slides';

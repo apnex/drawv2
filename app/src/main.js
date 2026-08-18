@@ -163,7 +163,6 @@ menu.slidesPush.addEventListener('click', async () => {
 			flashPush(tab ? 'busy' : 'err', tab ? '⇑ authorize, then push again' : '✗ popup blocked — see console', tab ? 8000 : 6000);
 			if (!tab) console.warn('[ slides ] popup blocked — authorize at:', body.authUrl);
 		} else if (res.ok) {
-			sync.setSlidesBinding(pushedId, body.presentationId, body.pageId);
 			menu.slidesPush.title = `pushed to ${body.url}`;
 			flashPush('ok', `✓ ${body.entities} entities`);
 		} else {

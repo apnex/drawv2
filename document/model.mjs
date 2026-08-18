@@ -28,7 +28,7 @@ export const kindOf = (id) => id.split('-')[0];
 export class Model {
 	constructor() {
 		this.state = {
-			meta: { id: '', name: 'untitled', rev: 0, grid: 'center', slides: { url: '', presentationId: '', pageId: '' } },
+			meta: { id: '', name: 'untitled', version: 0, schema: 1, slides: { url: '', presentationId: '', pageId: '' } },
 			nodes: {},
 			waypoints: {},
 			links: {},
@@ -44,8 +44,10 @@ export class Model {
 		this.subs.push(fn);
 	}
 
+	// A Model is a VALUE CONTAINER. It used to advance meta.rev here, which made every render
+	// signal a version bump — one drag was ~60 of them. Versioning is a property of a transaction,
+	// so it is minted where transactions are (server/txn.mjs), not where changes are drawn.
 	emit(action, kind, entity) {
-		if (action !== 'load') this.state.meta.rev++;
 		this.subs.forEach((fn) => fn(action, kind, entity));
 	}
 
@@ -265,9 +267,6 @@ export class Model {
 		});
 		if (doc.meta) {
 			this.state.meta = { ...this.state.meta, ...doc.meta, slides: { ...this.state.meta.slides, ...(doc.meta.slides || {}) } };
-			// the grid marker mirrors the DOCUMENT: a legacy doc must not inherit
-			// 'center' from the defaults, or the server cannot detect it on push
-			this.state.meta.grid = doc.meta.grid;
 		}
 		// model-state (status): restore the authoritative selection, reconciled to the config loaded
 		// above (tolerate-stale: drop ids that aren't a live selectable entity). Before emit. (MS1)

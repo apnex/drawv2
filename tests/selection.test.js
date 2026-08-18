@@ -32,7 +32,7 @@ test('Selection auto-prunes stale ids on document load', () => {
 	const n = m.makeNode('router', { x: 60, y: 0 }); m.put('node', n);
 	const sel = new Selection(m);
 	sel.set([n.id]);
-	m.load({ meta: { id: '', grid: 'center' }, nodes: [], waypoints: [], links: [], zones: [], groups: [] });
+	m.load({ meta: { id: '' }, nodes: [], waypoints: [], links: [], zones: [], groups: [] });
 	assert.equal(sel.size(), 0, 'load drops ids absent from the new document');
 });
 
@@ -71,7 +71,7 @@ test('Model round-trips selection through toJSON/load (model-state persistence)'
 test('Model.load tolerates a stale selection id (reconcile-to-live)', () => {
 	const m = new Model();
 	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
-	m.load({ meta: { id: '', grid: 'center' }, nodes: [{ id: a.id, type: 'router', x: 0, y: 0 }], waypoints: [], links: [], zones: [], groups: [], selection: [a.id, 'node-deadbe'] });
+	m.load({ meta: { id: '' }, nodes: [{ id: a.id, type: 'router', x: 0, y: 0 }], waypoints: [], links: [], zones: [], groups: [], selection: [a.id, 'node-deadbe'] });
 	assert.equal(m.state.selection.has(a.id), true, 'live id kept');
 	assert.equal(m.state.selection.has('node-deadbe'), false, 'stale id dropped');
 });
@@ -107,7 +107,7 @@ test('selection admits only selectable kinds — a group id cannot enter or pers
 	assert.equal(sel.has(g.id), false, 'group id refused (not a selectable kind)');
 	assert.ok(!m.toJSON().selection.includes(g.id), 'never emitted to the persisted doc');
 	// a hand-edited / corrupt doc.selection with a group id drops it on load (no whole-doc rejection)
-	m.load({ meta: { id: '', grid: 'center' }, nodes: [{ id: a.id, type: 'router', x: 0, y: 0 }], waypoints: [], links: [], zones: [], groups: [{ id: g.id, name: 'g', members: [a.id] }], selection: [a.id, g.id] });
+	m.load({ meta: { id: '' }, nodes: [{ id: a.id, type: 'router', x: 0, y: 0 }], waypoints: [], links: [], zones: [], groups: [{ id: g.id, name: 'g', members: [a.id] }], selection: [a.id, g.id] });
 	assert.equal(m.state.selection.has(g.id), false, 'group id dropped on load');
 	assert.equal(m.state.selection.has(a.id), true, 'selectable id kept');
 });

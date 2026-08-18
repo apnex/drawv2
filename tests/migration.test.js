@@ -93,3 +93,43 @@ test('invariant() ignores key order and collection order — a reserialization i
 	b.nodes[0] = Object.fromEntries(Object.entries(b.nodes[0]).reverse());
 	assert.equal(invariant(b), invariant(a));
 });
+
+// ---- end to end, through a real Store ----
+
+test('CS5 gate: a migrated corpus boots, and every entity is deep-equal through the new binary', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-mig-'));
+	try {
+		const docs = [oldDoc(), oldDoc({ meta: { id: 'diagram-bb0002', name: 'two', rev: 4, grid: 'center', slides: { url: '', presentationId: '', pageId: '' } } })];
+		const before = new Map();
+		for (const d of docs) {
+			before.set(d.meta.id, invariant(d));
+			fs.writeFileSync(path.join(dir, `${d.meta.id}.json`), JSON.stringify(migrateDoc(d, null), null, '\t') + '\n');
+		}
+
+		const { Store } = await import('../server/store.js');
+		const store = new Store(dir, { flushMs: 3_600_000 });
+		store.init();                                  // throws if any file fails the new whitelist
+		assert.equal(store.list().length, 2);
+
+		for (const { id } of store.list()) {
+			const loaded = store.get(id).toJSON();
+			assert.equal(invariant(loaded), before.get(id), `${id}: every entity survived`);
+			assert.equal(loaded.meta.version, store.diagrams.get(id).log.version, 'GR9: meta.version === log.version');
+			assert.equal(loaded.meta.schema, 1);
+			assert.equal('rev' in loaded.meta, false);
+			assert.equal('grid' in loaded.meta, false);
+		}
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('CS5 gate: an UNMIGRATED file is a named boot failure, never a silent reseed (GR8/D17)', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-old-'));
+	try {
+		const d = oldDoc();
+		fs.writeFileSync(path.join(dir, `${d.meta.id}.json`), JSON.stringify(d, null, '\t') + '\n');
+		const { Store } = await import('../server/store.js');
+		const store = new Store(dir, { flushMs: 3_600_000 });
+		assert.throws(() => store.init(), /refusing to boot/, 'the old shape is refused, loudly');
+		assert.equal(store.diagrams.size, 0, 'and nothing was seeded over it');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

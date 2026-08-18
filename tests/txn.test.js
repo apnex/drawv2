@@ -13,7 +13,9 @@ const fresh = () => ({ m: new Model(), log: new Log(0) });
 const put = (kind, entity) => ({ op: 'put', kind, entity });
 // meta.rev is the legacy per-mutation counter; it still increments until CS5 and is not part of
 // the document's identity. Compare the document, not the counter due to be deleted.
-const shape = (mm) => { const d = mm.toJSON(); delete d.meta.rev; return JSON.stringify(d); };
+// meta.version is a property of the TRANSACTION, not of the document: undo bumps it rather than
+// restoring it (D3), so a document-equality check must exclude it.
+const shape = (mm) => { const d = mm.toJSON(); delete d.meta.version; return JSON.stringify(d); };
 
 function seeded() {
 	const { m, log } = fresh();

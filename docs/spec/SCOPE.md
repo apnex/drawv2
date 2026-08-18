@@ -23,6 +23,16 @@ auto-layout). Coordinates are user-owned. References are mined for narrow mechan
    translation (preserves layout exactly; outermost right/bottom band clamps
    inward one cell). The Slides transform adds (+960, +540) before the pt
    conversion — slide fidelity unchanged.
+   *(Amended 2026-08-18, CS1/CS5)* — the **geometry above is unchanged**; its two
+   mechanisms are gone. Load-time legacy migration was deleted at **CS1**: a
+   quadrant-confined top-left document validates clean, so it loaded silently
+   displaced by (+930, +510) with no way back. A document that cannot be told
+   apart from a valid one must be REJECTED at the boundary, not guessed at, and
+   `Store.init` now refuses to boot rather than skipping the file and reseeding
+   over it (D17/GR8). `meta.grid` was deleted at **CS5** — it was 'center' on
+   every live file and its discriminator role passes to `meta.schema: 1`. There
+   are no legacy documents left: all 17 were migrated by
+   `tools/migrate-version.mjs`, verified per-entity.
 2. **Interaction**: modern conventions. Left-click select, drag from palette to create,
    Delete key deletes, marquee select.
    *(Amended 2026-06-12)* — **two-button gestures** (v1 convention restored): left-drag
@@ -114,7 +124,7 @@ class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding
 
 ```json
 {
-  "meta":   { "id": "diagram-x", "name": "demo", "rev": 12,
+  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 1,
               "slides": { "url": "", "presentationId": "", "pageId": "" } },
   "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 } ],
   "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6" } ],
@@ -135,35 +145,52 @@ class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding
 ## Wire protocol (one websocket) — as shipped
 
 Client → server:
-- `{cmd:"hello", body:{diagram?}}` → server replies `{cmd:"snapshot", body:{doc, diagrams}}`
-- `{cmd:"apply", body:{action:"put"|"set"|"del", kind, entity}}` → `{cmd:"ack", body:{rev}}`
-- `{cmd:"push", body:{doc}}` — full-document resync, client-authoritative → ack
-- diagram management: `open {id}`, `create {name?}`, `meta {name?, slides?}`,
+- `{cmd:"hello", body:{diagram?}}` → `{cmd:"snapshot", body:{doc, diagrams, locked, version, canUndo, canRedo}}`
+- `{cmd:"commit", body:{ops, label?, expect?, txnId?}}` → `{cmd:"ack", body:{seq, from, version,
+  durableVersion, canUndo, canRedo, ops, acked}}`. One request is one TRANSACTION: a whole
+  gesture, not one entity. `expect` is an optional compare-and-swap precondition.
+- `{cmd:"undo"|"redo", body:{expect, txnId?}}` → ack carrying the ops to apply
+- `{cmd:"resume", body:{diagram, version}}` — reconnect. The client states what it BELIEVES it
+  holds; the server answers `{cmd:"sync", body:{version, canUndo, canRedo, locked}}` if they are
+  in step, a snapshot if the client is behind, or a snapshot carrying `rewound:{from,to}` if the
+  client is ahead. **The client never sends a document to overwrite one.**
+- `{cmd:"create", body:{name?, doc?}}` — `doc` is the only whole-document path a client has, and
+  it can only CREATE: the server mints the id and ignores `doc.meta.id`
+- diagram management: `open {id}`, `select {ids}`, `reclaim {id?}`,
   `delete {id}` (answers with a snapshot of a surviving diagram; the store
-  reseeds the example rather than ever going empty), `list {}`
-- failures answer `{cmd:"error", body:{message}}`; sessions survive any payload
+  reseeds the example rather than ever going empty), `list {}`.
+  Renaming a diagram and binding a deck are CHANGES, so they travel as a `meta` op inside a
+  `commit` — undoable and broadcast like any other. The Slides binding
+  (`presentationId`/`pageId`) is status the SERVER records after a successful push.
+- failures answer `{cmd:"error", body:{message, code, txnId}}`; sessions survive any payload
+
+Server → client, unprompted: `{cmd:"change", body:{…, ops}}` — every accepted transaction is
+broadcast to the other sessions on that diagram, so a second tab and an agent write converge
+without refetching. `{cmd:"lock", body:{owner}}` on a Server-Locked handoff.
 
 Server: validates (janitor-lite: field whitelists, ranges, referential integrity,
-collection caps), applies to in-memory model, debounce-writes JSON to
+collection caps), commits through ONE write path, debounce-writes JSON to
 `diagrams/<id>.json` (200ms pulse, atomic tmp+rename). Deletes cascade server-side
 too, so a persisted document always reloads. On FIRST connect the client hydrates
-(hello → snapshot); on RE-connect it pushes its full local doc (client is
-authoritative during a session); content drawn before first hydration is kept and
-pushed, never clobbered by the snapshot. Mutations batch on a 200ms client pulse
-with same-entity set-coalescing (never across a del/put). Server never pushes model
-changes except snapshot-on-request and acks.
+(hello → snapshot); on RE-connect it sends `resume` and the server decides.
+Content drawn before first hydration becomes a NEW diagram via `create {doc}` —
+it is never pushed over the diagram the server happened to answer with. A commit
+goes out immediately (it is a user-action-rate event); what coalesces is a burst
+of same-shape edits, into ONE undoable change. Live drag frames never reach the
+wire at all.
 
-*(Amended 2026-08-18, CS1–CS4 — see `docs/spec/COMMIT.md`)* — **the server owns the
-document.** The section above describes a client-authoritative wire and is superseded
-in four places. This amendment is late: **CS1 and CS3 each owed one and did not pay
-it**, so the lines below were false for three milestones rather than the one GR10
-allows. The four reversals:
+*(Amended 2026-08-18, CS1–CS5 — see `docs/spec/COMMIT.md`)* — **the server owns the
+document.** The section above HAS BEEN REWRITTEN, not merely annotated: a wire
+reference is what a reader copies from, so a superseded-but-still-printed line gets
+sent. This amendment is late — **CS1 and CS3 each owed one and did not pay it**, so
+those lines were false for three milestones rather than the one GR10 allows, and
+nothing mechanized the check (now `tests/spec.test.js`). What changed:
 
 - **`apply {action, kind, entity}` → `commit {ops, label?, expect?, txnId?}`** (CS1). One
   request carries a whole transaction, not one entity. The reply is
   `ack {seq, from, version, durableVersion, canUndo, canRedo, ops, acked}`, not
   `{rev}`, and errors are typed: `error {message, code, txnId}`.
-- **`push {doc}` is deleted** (CS4). A client never sends a document to overwrite one.
+- **`push {doc}` was deleted** (CS4). A client never sends a document to overwrite one.
   On RE-connect it sends `resume {diagram, version}` — a *belief* — and the server
   answers `sync {version, canUndo, canRedo, locked}` if they are in step, a snapshot if
   the client is behind, or a snapshot carrying `rewound {from, to}` if the client is
@@ -171,7 +198,7 @@ allows. The four reversals:
   drawn before first hydration is no longer pushed over whichever diagram the server
   named — it becomes a **new** diagram via `create {name, doc}`, whose id the server
   mints and whose `doc.meta.id` is ignored.
-- **The 200ms client pulse is gone** (CS3). A commit is a user-action-rate event and
+- **The 200ms client pulse was removed** (CS3). A commit is a user-action-rate event and
   goes out immediately; what batches now is a *burst of same-shape edits* (arrow-key
   nudges), coalesced into ONE change client-side. Live drag frames never reach the wire
   at all — the sync layer subscribes to the commit boundary, not to the model.
@@ -181,9 +208,16 @@ allows. The four reversals:
   capabilities** (`undo`/`redo {expect, txnId?}`), reversing any writer's change, not
   only the browser's own.
 
+- **`meta.rev` → `meta.version`, and `meta.grid` is gone** (CS5). `rev` counted render
+  emissions — one drag advanced it ~60 times — and described no transaction. `version`
+  is minted once per accepted transaction and is what `expect` compares. `meta.schema`
+  takes over the generation-discriminator role `grid` was accidentally serving. The 17
+  live files were migrated by `tools/migrate-version.mjs`; the pre-CS5 binary cannot
+  read the result.
+
 Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, the
 server validates everything, sessions survive any payload, and the store reseeds rather
-than ever going empty. `meta.rev` in the entity block above is superseded at CS5.
+than ever going empty.
 
 ## REST (read-only) + actions
 

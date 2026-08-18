@@ -245,6 +245,67 @@ test('I11: `create {doc}` mints the id, and a body `version` is ignored', async 
 	c.close();
 });
 
+/*
+Renaming a diagram is a CHANGE, not a command of its own.
+
+`case 'meta'` was deleted at CS3a when meta became an op, and the browser kept sending `meta` for
+two milestones — every rename and every pasted Slides URL was answered `unknown cmd: meta` and
+dropped. Found by tests/spec.test.js, which derives the wire vocabulary from the server's own
+dispatch instead of trusting the document.
+*/
+test('a rename is an undoable, broadcast change — not a side-channel command', async () => {
+	const a = await connect();
+	a.send('hello', {});
+	const id = (await a.expect('snapshot')).body.doc.meta.id;
+
+	const b = await connect();
+	b.send('resume', { diagram: id, version: 0 });
+	await b.expect('sync', 'snapshot');
+
+	a.send('commit', { ops: [{ op: 'meta', patch: { name: 'renamed-by-a' } }], label: 'rename', txnId: 'r1' });
+	const ack = await a.expect('ack');
+	assert.equal(ack.body.label, 'rename');
+
+	const heard = await b.expect('change');
+	assert.equal(heard.body.ops[0].op, 'meta', 'the other tab was told');
+	assert.equal(heard.body.ops[0].patch.name, 'renamed-by-a');
+	assert.equal((await get(`/api/v1/diagrams/${id}`)).body.meta.name, 'renamed-by-a', 'and it persisted');
+
+	a.send('undo', { expect: ack.body.version });
+	await a.expect('ack');
+	assert.notEqual((await get(`/api/v1/diagrams/${id}`)).body.meta.name, 'renamed-by-a', 'a rename undoes');
+
+	// the retired command is refused, so a stale client fails loudly rather than silently
+	a.send('meta', { name: 'side-channel' });
+	assert.match((await a.expect('error')).body.message, /unknown cmd: meta/);
+	a.close(); b.close();
+});
+
+test('the Slides binding is STATUS the server records — not a change, and not the client’s to send', async () => {
+	const { Store } = await import('../server/store.js');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-bind-'));
+	try {
+		const store = new Store(dir, { flushMs: 3_600_000 });
+		store.init();
+		const id = store.list()[0].id;
+		const before = store.diagrams.get(id).log.version;
+
+		assert.equal(store.bindSlides(id, 'PRES_ID-123', 'g7'), null);
+		const meta = store.get(id).toJSON().meta;
+		assert.equal(meta.slides.presentationId, 'PRES_ID-123');
+		assert.equal(meta.slides.pageId, 'g7');
+		assert.equal(store.diagrams.get(id).log.version, before, 'status does not bump the version');
+		assert.equal(store.diagrams.get(id).log.canUndo(), false, 'and is not undoable');
+		assert.equal(store.bindSlides('diagram-ffffff', 'p', 'g'), 'unknown diagram');
+
+		// it survives a restart — a binding that does not persist re-targets pages[0] on re-push
+		store.flushAll();
+		const again = new Store(dir, { flushMs: 3_600_000 });
+		again.init();
+		assert.equal(again.get(id).toJSON().meta.slides.pageId, 'g7');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('create and open switch diagrams; meta rename persists', async () => {
 	const c = await connect();
 	c.send('hello', {});
@@ -634,9 +695,9 @@ test('targeted hello, unknown open, set-on-missing, create-doc meta sanitization
 	err = await c.expect('error');
 	assert.equal(err.body.code, 'create-rejected');
 	assert.match(err.body.message, /unknown meta key/);
-	c.send('create', { name: 'junk', doc: { ...doc, meta: { ...doc.meta, rev: 'NaN-string' } } });
+	c.send('create', { name: 'junk', doc: { ...doc, meta: { ...doc.meta, version: 'NaN-string' } } });
 	err = await c.expect('error');
-	assert.match(err.body.message, /invalid meta.rev/);
+	assert.match(err.body.message, /invalid meta.version/);
 	// a rejected create writes NOTHING: no diagram was minted for either attempt (I1, by purity)
 	assert.equal((await get('/api/v1/diagrams')).body.some((d) => d.name === 'junk'), false);
 	// prototype-chain ids never resolve: del rejected, REST 404s
@@ -677,7 +738,7 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 	fs.writeFileSync(path.join(dir, 'diagram-bad001.json'), 'not json at all {{{');
 	fs.writeFileSync(path.join(dir, 'diagram-bad002.json'), JSON.stringify({ meta: { id: 'diagram-bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
 	const good = {
-		meta: { id: 'diagram-aaaa11', name: 'good', rev: 0, slides: { url: '', presentationId: '', pageId: '' } },
+		meta: { id: 'diagram-aaaa11', name: 'good', version: 0, schema: 1, slides: { url: '', presentationId: '', pageId: '' } },
 		nodes: [], links: [], zones: [], groups: []
 	};
 	fs.writeFileSync(path.join(dir, 'diagram-aaaa11.json'), JSON.stringify(good));

@@ -28,7 +28,9 @@ const hex = (n) => n.toString(16).padStart(6, '0').slice(-6);
 const node = (id, x, y) => ({ id, name: id, type: 'host', shape: 'circle', x, y });
 const shape = (m) => {
 	const d = m.toJSON();
-	delete d.meta.rev;                                     // the legacy counter, gone at CS5
+	// the browser learns its version from the wire (ack/change), not by stamping the model, so a
+	// participant's meta.version lags between snapshots. Document equality is the claim here.
+	delete d.meta.version;
 	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
 		d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
 	}

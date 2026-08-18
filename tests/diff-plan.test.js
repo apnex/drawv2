@@ -42,7 +42,7 @@ function makeDoc(r, i) {
 		const members = nodes.slice(0, 2 + Math.floor(r() * (nodes.length - 2))).map((n) => n.id);
 		groups.push({ id: `group-${hex(i * 100 + 90)}`, name: 'g', members });
 	}
-	return { meta: { id: `diagram-${hex(i)}`, name: 'd', grid: 'center', slides: { url: '', presentationId: '', pageId: '' } },
+	return { meta: { id: `diagram-${hex(i)}`, name: 'd', slides: { url: '', presentationId: '', pageId: '' } },
 		nodes, waypoints, links, zones: [], groups };
 }
 
@@ -155,7 +155,7 @@ test('GR5: plan() emits an inverse that restores the pre-state, over the same co
 		// the identical property (app/src/commands.js applyEntry used model.put too), so this is not
 		// a CS1 regression — it is recorded as B10 with the renderer draw-order consequence.
 		const shape = (m) => {
-			const d = m.toJSON(); delete d.meta.rev;
+			const d = m.toJSON(); delete d.meta.version;
 			for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
 				d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
 			}

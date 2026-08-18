@@ -17,6 +17,11 @@ import { serialize, parse } from './docfile.mjs';
 
 const FLUSH_MS = 200;
 
+// The document generation. `meta.grid` was accidentally serving this role — a doc without it was
+// a pre-center-origin file — and dropping grid without a replacement would leave the format with
+// no discriminator at all for the next migration (D8).
+export const SCHEMA = 1;
+
 // rebuild meta from whitelisted fields only — never persist junk keys
 function cleanMeta(id, meta = {}) {
 	const slides = (meta.slides && typeof meta.slides === 'object') ? meta.slides : {};
@@ -24,8 +29,8 @@ function cleanMeta(id, meta = {}) {
 	return {
 		id,
 		name: String(meta.name || 'untitled').slice(0, 64),
-		rev: Number.isFinite(meta.rev) ? meta.rev : 0,
-		grid: 'center',
+		version: Number.isInteger(meta.version) && meta.version >= 0 ? meta.version : 0,
+		schema: SCHEMA,
 		slides: { url: str(slides.url), presentationId: str(slides.presentationId), pageId: str(slides.pageId) }
 	};
 }
@@ -72,7 +77,9 @@ export class Store {
 				if (file !== `${doc.meta.id}.json`) {
 					console.warn(`[ store ] ${file}: filename does not match meta.id ${doc.meta.id}`);
 				}
-				this.install(doc.meta.id, doc, Log.from(log), file);
+				// the doc's own version is the fallback: a file whose log block is absent or
+				// unreadable still knows which version it is (CS5 stamps it into meta).
+				this.install(doc.meta.id, doc, Log.from(log, doc.meta.version), file);
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
 				if (file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
 			} catch (e) {
@@ -159,7 +166,7 @@ export class Store {
 		return [...this.diagrams.values()].map((e) => ({
 			id: e.model.state.meta.id,
 			name: e.model.state.meta.name,
-			rev: e.model.state.meta.rev
+			version: e.model.state.meta.version
 		}));
 	}
 
@@ -227,6 +234,28 @@ export class Store {
 		const err = validateSelectionIds(ids);
 		if (err) return err;
 		model.setSelection(ids);
+		this.markDirty(id);
+		return null;
+	}
+
+	/*
+	The Slides binding: which deck and which slide this diagram's last successful push landed on.
+
+	STATUS, not config — the server performed the push, so the server records where it went, and
+	it is not a Change: it carries no user intent, must not be undoable, and must not bump the
+	version. `slides.url` (what the user pasted) IS config and travels as a `meta` op; these two
+	do not.
+
+	It had no writer at all between CS3a and CS5 — `case 'meta'` was deleted when meta became an
+	op, and the browser's `meta {slides:{presentationId,pageId}}` message was silently refused as
+	an unknown cmd. A binding that never persists re-targets `pages[0]` on the next push after a
+	restart, which is a wrong-slide overwrite, not a missing feature.
+	*/
+	bindSlides(id, presentationId, pageId) {
+		const model = this.get(id);
+		if (!model) return 'unknown diagram';
+		const str = (v) => (typeof v === 'string' ? v.slice(0, 512) : '');
+		Object.assign(model.state.meta.slides, { presentationId: str(presentationId), pageId: str(pageId) });
 		this.markDirty(id);
 		return null;
 	}

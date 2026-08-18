@@ -34,8 +34,8 @@ export function seedDoc() {
 		meta: {
 			id: make('diagram'),
 			name: 'example',
-			rev: 0,
-			grid: 'center',
+			version: 0,
+			schema: 1,
 			slides: { url: '', presentationId: '', pageId: '' }
 		},
 		nodes,
