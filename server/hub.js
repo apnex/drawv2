@@ -21,10 +21,20 @@ export class Hub {
 		this.sessions.delete(session);
 	}
 
-	// fan a message out to every session currently viewing this diagram
-	broadcast(diagramId, cmd, body) {
+	// Fan a message out to every session currently viewing this diagram, optionally excluding the
+	// one that originated it (which already applied the change locally).
+	//
+	// Each send is isolated: after CS3 this is the ONLY channel by which a viewer learns anything,
+	// and the caller has already applied, logged and flushed the transaction. A dead socket must
+	// not silence the other viewers, and must never turn a committed write into a 500.
+	broadcast(diagramId, cmd, body, except = null) {
 		this.sessions.forEach((s) => {
-			if (s.diagramId === diagramId) s.send(cmd, body);
+			if (s.diagramId !== diagramId || s === except) return;
+			try {
+				s.send(cmd, body);
+			} catch (err) {
+				console.warn(`[ hub ] session send failed: ${err.message}`);
+			}
 		});
 	}
 }

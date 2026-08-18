@@ -7,7 +7,7 @@ diagram. The browser path (websocket) is refused while a diagram is locked, so
 exactly one side writes at a time.
 */
 
-import { snapshotBody } from './protocol.js';
+import { snapshotBody, changeBody } from './protocol.js';
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -43,18 +43,33 @@ function buildEntity(model, kind, d) {
 // Re-verifies the token HERE — the lock gate ran before the (awaited) body read,
 // so the lock may have been reclaimed/released/expired in between; the verify +
 // store.apply run synchronously, so no writer can slip in between them.
+// "delete · 3 nodes, 2 links" — the agent-facing gloss, derived here so every reader agrees.
+function summarise(ops) {
+	const counts = {};
+	for (const o of ops) {
+		const k = `${o.op} ${o.kind || 'meta'}`;
+		counts[k] = (counts[k] || 0) + 1;
+	}
+	return Object.entries(counts).map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(', ');
+}
+
 function commitWrite(res, store, hub, locks, id, token, mutation, extra) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
-	const err = store.apply(id, mutation);
-	if (err) return json(res, 422, { error: err });
-	// durability: a REST/agentic caller is one-shot — unlike the browser (which re-pushes the whole
-	// doc on reconnect) it has no backstop, so an acked write must be on disk, not merely in the
-	// ~200ms debounce window. Flush synchronously before acking. (The ws path keeps the debounce —
-	// drag writes are high-frequency and self-heal on reconnect.)
+	const op = mutation.action === 'put' ? { op: 'put', kind: mutation.kind, entity: mutation.entity }
+		: mutation.action === 'set' ? { op: 'set', kind: mutation.kind, id: mutation.entity.id, patch: mutation.entity }
+		: mutation.action === 'del' ? { op: 'del', kind: mutation.kind, id: mutation.entity.id }
+		: mutation;
+	const result = store.commit(id, { ops: [op], label: mutation.label }, 'server', `rest-${token.slice(0, 8)}`);
+	if (!result.ok) return json(res, 422, { error: result.error });
+	// durability: a REST/agentic caller is one-shot — it has no reconnect backstop, so an acked
+	// write must be on disk, not merely in the ~200ms debounce window. Flush before acking. (The ws
+	// path keeps the debounce — drag writes are high-frequency and self-heal on reconnect.)
 	store.flush(id);
-	const model = store.get(id);
-	if (hub) hub.broadcast(id, 'snapshot', snapshotBody(model, store, locks));
-	return json(res, 200, { rev: model.state.meta.rev, ...(extra || {}) });
+	// a value-identical write is accepted and is not a change
+	if (!result.change) return json(res, 200, { version: result.version, noop: true, ...(extra || {}) });
+	const body = changeBody(result.change, store, id);
+	if (hub) hub.broadcast(id, 'change', body);
+	return json(res, 200, { ...body, ...(extra || {}) });
 }
 
 // set the authoritative selection (model-state / status). Mirrors commitWrite: re-verify the token
@@ -119,6 +134,29 @@ export function handleRest(req, res, store, slides, locks, hub) {
 	if (parts.length === 4) {
 		return json(res, 200, model.toJSON()), true;
 	}
+
+	// reads are always open (no lock): an agent must be able to see lock state and history without
+	// attempting a write and reading a 423.
+	if (parts[4] === 'lock' && parts.length === 5) {
+		return json(res, 200, {
+			owner: locks && locks.locked(parts[3]) ? 'server' : 'client',
+			heldUntil: locks && locks.heldUntil ? locks.heldUntil(parts[3]) : null,
+		}), true;
+	}
+	if (parts[4] === 'history' && parts.length === 5) {
+		const log = store.diagrams.get(parts[3])?.log;
+		const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
+		const verbose = url.searchParams.get('verbose') === '1';
+		const records = (log?.records ?? []).slice(-limit).map((c) => ({
+			seq: c.seq, at: c.at, by: c.by, actor: c.actor, label: c.label,
+			summary: summarise(c.ops),
+			...(verbose ? { ops: c.ops } : {}),      // `inverse` NEVER goes on the wire (GR13)
+		}));
+		return json(res, 200, {
+			version: log?.version ?? 0, canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
+			evicted: log?.evicted ?? 0, truncated: !!log?.truncated, records,
+		}), true;
+	}
 	// model-state (status): the authoritative selection, readable like any collection
 	if (parts.length === 5 && parts[4] === 'selection') {
 		return json(res, 200, { selection: [...model.state.selection] }), true;
@@ -145,8 +183,15 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		if (req.method === 'POST') {
 			const lock = locks.acquire(id);
 			if (!lock) return json(res, 409, { error: 'already server-locked by another controller' });
+			// D22: the human reclaimed recently — refuse, and say for how long, so a retry loop backs
+			// off instead of racing the remedy
+			if (lock.held) return json(res, 409, { error: 'reclaimed by the human', code: 'reclaimed', retryAfter: lock.retryAfter });
 			if (hub) hub.broadcast(id, 'lock', { owner: 'server' });
-			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt });
+			// hydrate the agent at its entry point: it should never have to ASK what the state is
+			const log = store.diagrams.get(id)?.log;
+			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt,
+				version: log?.version ?? 0, canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
+				logDepth: log?.records.length ?? 0, truncated: !!log?.truncated });
 		}
 		if (req.method === 'DELETE') {
 			if (!locks.release(id, req.headers['x-draw-lock'] || '')) {
@@ -177,6 +222,30 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		const body = await readJson(req);
 		if (!body || !Array.isArray(body.ids)) return json(res, 400, { error: 'expected JSON body { ids: [...] }' });
 		return commitSelection(res, store, hub, locks, id, token, body.ids);
+	}
+
+	// D14/GR11 — undo/redo are the ONE pair of verbs whose target is implicit: the top of a ring
+	// another writer may have moved since you read it. `expect` is therefore MANDATORY here, and
+	// only here; forward writes keep it optional so a curl one-liner still works.
+	if ((parts[4] === 'undo' || parts[4] === 'redo') && parts.length === 5 && req.method === 'POST') {
+		if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
+		const body = (await readJson(req)) || {};
+		const log = store.diagrams.get(id)?.log;
+		if (body.expect == null) {
+			return json(res, 400, { error: 'expect required on undo/redo', code: 'expect-required', version: log?.version ?? 0 });
+		}
+		if (body.expect !== log?.version) {
+			return json(res, 409, { error: 'version conflict', code: 'version-conflict', version: log?.version ?? 0 });
+		}
+		const result = parts[4] === 'undo' ? store.undo(id) : store.redo(id);
+		if (!result.ok) return json(res, 422, { error: result.error, version: result.version });
+		store.flush(id);
+		const payload = { seq: null, from: null, at: Date.now(), by: 'server', actor: `rest-${token.slice(0, 8)}`,
+			label: parts[4], ops: result.ops, version: result.version,
+			durableVersion: store.diagrams.get(id).dirty ? result.version - 1 : result.version,
+			canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated };
+		if (hub) hub.broadcast(id, 'change', payload);
+		return json(res, 200, payload);
 	}
 
 	// low-level: POST .../apply  { action, kind, entity }  (the websocket vocabulary)

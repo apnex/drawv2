@@ -85,14 +85,14 @@ test('apply put/set/del roundtrip, REST reflects it, disk persists it', async ()
 	const diagramId = snap.body.doc.meta.id;
 
 	const node = { id: 'node-aaaa01', name: 'web-1', type: 'host', x: 210, y: 210 };
-	c.send('apply', { action: 'put', kind: 'node', entity: node });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: node }] });
 	await c.expect('ack');
 
 	let rest = await get(`/api/v1/diagrams/${diagramId}/nodes/node-aaaa01`);
 	assert.equal(rest.status, 200);
 	assert.equal(rest.body.name, 'web-1');
 
-	c.send('apply', { action: 'set', kind: 'node', entity: { id: 'node-aaaa01', x: 270 } });
+	c.send('commit', { ops: [{ op: 'set', kind: 'node', id: ({ id: 'node-aaaa01', x: 270 }).id, patch: { id: 'node-aaaa01', x: 270 } }] });
 	await c.expect('ack');
 	rest = await get(`/api/v1/diagrams/${diagramId}/nodes/node-aaaa01`);
 	assert.equal(rest.body.x, 270);
@@ -102,7 +102,7 @@ test('apply put/set/del roundtrip, REST reflects it, disk persists it', async ()
 	const onDisk = JSON.parse(fs.readFileSync(path.join(dataDir, `${diagramId}.json`), 'utf8'));
 	assert.equal(onDisk.nodes.find((n) => n.id === 'node-aaaa01').x, 270);
 
-	c.send('apply', { action: 'del', kind: 'node', entity: { id: 'node-aaaa01' } });
+	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-aaaa01' }).id }] });
 	await c.expect('ack');
 	rest = await get(`/api/v1/diagrams/${diagramId}/nodes/node-aaaa01`);
 	assert.equal(rest.status, 404);
@@ -116,22 +116,22 @@ test('invalid mutations are rejected and not applied', async () => {
 	const diagramId = snap.body.doc.meta.id;
 
 	// bad id format
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-XYZ', name: 'x', type: 'host', x: 30, y: 30 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-XYZ', name: 'x', type: 'host', x: 30, y: 30 } }] });
 	let err = await c.expect('error');
 	assert.match(err.body.message, /invalid id/);
 
 	// off-canvas coordinates
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-bbbb01', name: 'x', type: 'host', x: -2000, y: 30 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb01', name: 'x', type: 'host', x: -2000, y: 30 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /invalid value/);
 
 	// unknown field
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-bbbb02', name: 'x', type: 'host', x: 30, y: 30, evil: 1 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb02', name: 'x', type: 'host', x: 30, y: 30, evil: 1 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 
 	// dangling link
-	c.send('apply', { action: 'put', kind: 'link', entity: { id: 'link-bbbb03', src: 'node-bbbb04', dst: 'node-bbbb05' } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-bbbb03', src: 'node-bbbb04', dst: 'node-bbbb05' } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /does not exist/);
 
@@ -147,13 +147,13 @@ test('node shape persists over the wire; legacy (no shape) still applies; bad sh
 	const diagramId = snap.body.doc.meta.id;
 
 	// a square node round-trips and persists
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'sq', type: 'host', shape: 'square', x: 60, y: 60 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'sq', type: 'host', shape: 'square', x: 60, y: 60 } }] });
 	await c.expect('ack');
 	// a node WITHOUT shape is still valid (the field is optional — backward compat)
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-dddd02', name: 'leg', type: 'host', x: 120, y: 60 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd02', name: 'leg', type: 'host', x: 120, y: 60 } }] });
 	await c.expect('ack');
 	// an unknown shape is rejected
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-dddd03', name: 'tri', type: 'host', shape: 'triangle', x: 180, y: 60 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd03', name: 'tri', type: 'host', shape: 'triangle', x: 180, y: 60 } }] });
 	const err = await c.expect('error');
 	assert.match(err.body.message, /invalid value/);
 
@@ -205,7 +205,7 @@ test('create and open switch diagrams; meta rename persists', async () => {
 	assert.equal(created.body.doc.meta.name, 'second');
 	assert.equal(created.body.diagrams.length, 2);
 
-	c.send('meta', { name: 'renamed' });
+	c.send('commit', { ops: [{ op: 'meta', patch: { name: 'renamed' } }] });
 	await c.expect('ack');
 	const list = await get('/api/v1/diagrams');
 	assert.ok(list.body.some((d) => d.id === secondId && d.name === 'renamed'));
@@ -215,7 +215,7 @@ test('create and open switch diagrams; meta rename persists', async () => {
 	assert.equal(reopened.body.doc.meta.id, first);
 
 	// mutations after open land in the reopened diagram
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'n', type: 'host', x: 30, y: 30 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'n', type: 'host', x: 30, y: 30 } }] });
 	await c.expect('ack');
 	const nodes = await get(`/api/v1/diagrams/${first}/nodes`);
 	assert.ok(nodes.body.some((n) => n.id === 'node-dddd01'));
@@ -300,7 +300,7 @@ test('malformed websocket input gets error replies, session survives', async () 
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown cmd/);
 
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-eeee01', name: 'x', type: 'host', x: 30, y: 30 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-eeee01', name: 'x', type: 'host', x: 30, y: 30 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /no diagram open/);
 
@@ -325,7 +325,7 @@ test('REGRESSION: push as the FIRST message on a fresh socket is accepted (recon
 	await c2.expect('ack');
 
 	// and subsequent applies on the adopted session work
-	c2.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 150, y: 90 } });
+	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 150, y: 90 } }] });
 	await c2.expect('ack');
 	const rest = await get(`/api/v1/diagrams/${doc.meta.id}/nodes/node-abab02`);
 	assert.equal(rest.status, 200);
@@ -337,22 +337,22 @@ test('REGRESSION: prototype-pollution shaped payloads are rejected, session surv
 	c.send('hello', {});
 	await c.expect('snapshot');
 
-	c.send('apply', { action: 'put', kind: 'node', entity: JSON.parse('{"id":"node-cdcd01","name":"x","type":"host","x":30,"y":30,"__proto__":{"polluted":1}}') });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: JSON.parse('{"id":"node-cdcd01","name":"x","type":"host","x":30,"y":30,"__proto__":{"polluted":1}}') }] });
 	let err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 	assert.equal({}.polluted, undefined);
 
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-cdcd02', name: 'x', type: 'host', x: 30, y: 30, constructor: 'evil' } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd02', name: 'x', type: 'host', x: 30, y: 30, constructor: 'evil' } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 
-	c.send('apply', { action: 'put', kind: 'evil', entity: { id: 'node-cdcd03' } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'evil', entity: { id: 'node-cdcd03' } }] });
 	err = await c.expect('error');
 
 	// session still alive and functional
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-cdcd04', name: 'ok', type: 'host', x: 30, y: 30 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd04', name: 'ok', type: 'host', x: 30, y: 30 } }] });
 	await c.expect('ack');
-	c.send('apply', { action: 'del', kind: 'node', entity: { id: 'node-cdcd04' } });
+	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-cdcd04' }).id }] });
 	await c.expect('ack');
 	c.close();
 });
@@ -364,16 +364,16 @@ test('REGRESSION: bare del-node cascades links and groups server-side (doc alway
 
 	const mk = (id, x) => ({ id, name: id, type: 'host', x, y: 270 });
 	for (const [id, x] of [['node-efef01', 270], ['node-efef02', 390], ['node-efef03', 510]]) {
-		c.send('apply', { action: 'put', kind: 'node', entity: mk(id, x) });
+		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: mk(id, x) }] });
 		await c.expect('ack');
 	}
-	c.send('apply', { action: 'put', kind: 'link', entity: { id: 'link-efef04', src: 'node-efef01', dst: 'node-efef02' } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-efef04', src: 'node-efef01', dst: 'node-efef02' } }] });
 	await c.expect('ack');
-	c.send('apply', { action: 'put', kind: 'group', entity: { id: 'group-efef05', name: 'g', members: ['node-efef01', 'node-efef02', 'node-efef03'] } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'group', entity: { id: 'group-efef05', name: 'g', members: ['node-efef01', 'node-efef02', 'node-efef03'] } }] });
 	await c.expect('ack');
 
 	// a bare node delete with NO explicit cascade deltas
-	c.send('apply', { action: 'del', kind: 'node', entity: { id: 'node-efef01' } });
+	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-efef01' }).id }] });
 	await c.expect('ack');
 
 	const doc = (await get(`/api/v1/diagrams/${diagramId}`)).body;
@@ -394,7 +394,7 @@ test('R2: ws select persists the selection (model-state) and survives a restart'
 	c.send('hello', {});
 	const diagramId = (await c.expect('snapshot')).body.doc.meta.id;
 	for (const [id, x] of [['node-5e1e01', 270], ['node-5e1e02', 390]]) {
-		c.send('apply', { action: 'put', kind: 'node', entity: { id, name: id, type: 'host', x, y: 270 } });
+		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id, name: id, type: 'host', x, y: 270 } }] });
 		await c.expect('ack');
 	}
 	c.send('select', { ids: ['node-5e1e01', 'node-5e1e02'] });   // forward the selection (model-state)
@@ -531,12 +531,12 @@ test('meta slides patch is accepted; unknown slides fields are rejected', async 
 	c.send('hello', {});
 	const diagramId = (await c.expect('snapshot')).body.doc.meta.id;
 
-	c.send('meta', { slides: { url: 'https://docs.google.com/presentation/d/abc123' } });
+	c.send('commit', { ops: [{ op: 'meta', patch: { slides: { url: 'https://docs.google.com/presentation/d/abc123' } } }] });
 	await c.expect('ack');
 	const doc = (await get(`/api/v1/diagrams/${diagramId}`)).body;
 	assert.match(doc.meta.slides.url, /abc123/);
 
-	c.send('meta', { slides: { evil: 'x' } });
+	c.send('commit', { ops: [{ op: 'meta', patch: { slides: { evil: 'x' } } }] });
 	const err = await c.expect('error');
 	assert.match(err.body.message, /unknown slides field/);
 	c.close();
@@ -559,7 +559,7 @@ test('targeted hello, unknown open, set-on-missing, push meta sanitization', asy
 	let err = await c.expect('error');
 	assert.match(err.body.message, /unknown diagram/);
 
-	c.send('apply', { action: 'set', kind: 'node', entity: { id: 'node-abcd99', x: 90 } });
+	c.send('commit', { ops: [{ op: 'set', kind: 'node', id: ({ id: 'node-abcd99', x: 90 }).id, patch: { id: 'node-abcd99', x: 90 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /missing entity/);
 
@@ -573,7 +573,7 @@ test('targeted hello, unknown open, set-on-missing, push meta sanitization', asy
 	err = await c.expect('error');
 	assert.match(err.body.message, /invalid meta.rev/);
 	// prototype-chain ids never resolve: del rejected, REST 404s
-	c.send('apply', { action: 'del', kind: 'node', entity: { id: '__proto__' } });
+	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: '__proto__' }).id }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /valid entity.id/);
 	for (const probe of ['__proto__', 'constructor', 'hasOwnProperty']) {
@@ -655,10 +655,10 @@ test('delete removes a diagram, its file, and hands the session a survivor', asy
 	assert.equal((await get(`/api/v1/diagrams/${doomedId}`)).status, 404);
 
 	// the session continues working on the survivor
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-de1e01', name: 'alive', type: 'host', x: 30, y: 30 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-de1e01', name: 'alive', type: 'host', x: 30, y: 30 } }] });
 	await c.expect('ack');
 	assert.ok(after.body.doc.meta.id === homeId || true);
-	c.send('apply', { action: 'del', kind: 'node', entity: { id: 'node-de1e01' } });
+	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-de1e01' }).id }] });
 	await c.expect('ack');
 
 	// unknown id errors cleanly
@@ -705,7 +705,7 @@ test('server restart reloads persisted state from disk', async () => {
 	c.send('hello', {});
 	const snap = await c.expect('snapshot');
 	const diagramId = snap.body.doc.meta.id;
-	c.send('apply', { action: 'put', kind: 'node', entity: { id: 'node-ffff01', name: 'persisted', type: 'server', x: 510, y: 510 } });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffff01', name: 'persisted', type: 'server', x: 510, y: 510 } }] });
 	await c.expect('ack');
 	c.close();
 

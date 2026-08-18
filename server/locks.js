@@ -13,8 +13,10 @@ always frees itself and the behavior is deterministic for tests (inject `now`).
 import crypto from 'node:crypto';
 
 export class Locks {
-	constructor({ ttlMs = 60000, now = () => Date.now() } = {}) {
+	constructor({ ttlMs = 60000, holdMs = 30000, now = () => Date.now() } = {}) {
 		this.ttlMs = ttlMs;
+		this.holdMs = holdMs;
+		this.holds = new Map();   // diagramId -> heldUntil (D22, the post-reclaim human hold)
 		this.now = now;
 		this.map = new Map(); // diagramId -> { token, expiresAt }
 	}
@@ -34,9 +36,15 @@ export class Locks {
 		return !!this._live(id);
 	}
 
-	// claim the server-side write lock; null if another live controller holds it
+	// claim the server-side write lock; null if another live controller holds it, or if the human
+	// has just reclaimed and the hold has not lapsed
 	acquire(id) {
 		if (this._live(id)) return null;
+		const hold = this.holds.get(id);
+		if (hold !== undefined) {
+			if (hold > this.now()) return { held: true, retryAfter: hold - this.now() };
+			this.holds.delete(id);
+		}
 		const token = crypto.randomBytes(16).toString('hex');
 		const expiresAt = this.now() + this.ttlMs;
 		this.map.set(id, { token, expiresAt });
@@ -68,6 +76,21 @@ export class Locks {
 	// the human owns the tool and can always take the wheel back.
 	reclaim(id) {
 		this.map.delete(id);
+		// D22: a bare release is raceable — an agent's retry loop can re-acquire before the human's
+		// next action lands, which makes reclaim-then-undo (the designated remedy for agent damage)
+		// unreliable. Hold the diagram briefly for the human; cleared by their first commit.
+		this.holds.set(id, this.now() + this.holdMs);
+	}
+
+	// the human's first write ends the hold early — they have taken the wheel, so an agent may
+	// contend again on the normal terms
+	releaseHold(id) {
+		this.holds.delete(id);
+	}
+
+	heldUntil(id) {
+		const t = this.holds.get(id);
+		return t !== undefined && t > this.now() ? t : null;
 	}
 
 	// drop every lapsed lock, returning their diagram ids. Lazy TTL keeps reads

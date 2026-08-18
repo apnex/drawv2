@@ -30,7 +30,7 @@ import { Model } from '../document/index.mjs';
 import { applyOps, clone } from '../document/ops.mjs';
 import { COMPOSITE, OPTIONAL } from '../document/shape.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
-import { validateMutation } from './validate.js';
+import { validateMutation, validateMetaPatch } from './validate.js';
 
 export const MAX_OPS = 2000;              // per REQUEST
 export const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
@@ -107,6 +107,9 @@ function planOne(model, op) {
 
 function planMeta(model, op) {
 	const patch = op.patch || {};
+	// the server never trusts the wire: the same gate patchMeta ran, now inside the transaction
+	const err = validateMetaPatch(patch);
+	if (err) return { ok: false, error: err };
 	const meta = model.state.meta;
 	const ops = [];
 	const inverse = [];
