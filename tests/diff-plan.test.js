@@ -84,6 +84,19 @@ function makeMutation(r, doc) {
 		const patch = { id: e.id, x: coord(r, 900), y: coord(r, 480) };
 		return [{ action: 'set', kind, entity: patch }, { op: 'set', kind, id: e.id, patch }];
 	}
+	// ~15%: re-put an entity that is ALREADY in the document, byte for byte. CS6 taught plan() to
+	// narrow this to zero ops (X8) and the frozen oracle does not — so without this case the ONE
+	// planner behaviour CS6 changed sits outside the differential, and GR5 goes green while blind
+	// to it. The corpus has to reach the change, or the guardrail is decoration.
+	if (r() < 0.15) {
+		const pool = [...doc.nodes, ...doc.waypoints, ...doc.links, ...doc.groups];
+		if (pool.length) {
+			const e = pick(r, pool);
+			const kind = e.id.split('-')[0];
+			const same = JSON.parse(JSON.stringify(e));
+			return [{ action: 'put', kind, entity: same }, { op: 'put', kind, entity: same }, 'identical-put'];
+		}
+	}
 	const id = `node-${hex(900000 + Math.floor(r() * 9000))}`;
 	const entity = { id, name: 'new', type: 'host', shape: 'circle', x: coord(r, 900), y: coord(r, 480) };
 	return [{ action: 'put', kind: 'node', entity }, { op: 'put', kind: 'node', entity }];
@@ -100,7 +113,7 @@ const norm = (ops) => ops.map((o) => {
 
 test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mutations', () => {
 	const r = rng(20260818);
-	let compared = 0, rejectedBoth = 0;
+	let compared = 0, rejectedBoth = 0, narrowedPuts = 0;
 
 	for (let i = 1; i <= 1000; i++) {
 		const doc = makeDoc(r, i);
@@ -108,7 +121,7 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 		model.load(doc);
 		const pair = makeMutation(r, doc);
 		if (!pair) continue;
-		const [legacy, modern] = pair;
+		const [legacy, modern, note] = pair;
 
 		const before = JSON.stringify(model.toJSON());
 		const a = planMutation(model, legacy);
@@ -130,11 +143,53 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 			const patch = Object.fromEntries(Object.entries(o.patch).filter(([k, v]) => k !== 'id' && cur[k] !== v));
 			return Object.keys(patch).length ? { ...o, patch } : null;
 		}).filter(Boolean);
+		/*
+		The SECOND deliberate divergence (X8, new at CS6): plan() narrows a put whose entity is
+		already present unchanged to zero ops; the frozen oracle emits the redundant put.
+
+		The oracle is NOT edited to match — that is the whole point of freezing it. The divergence
+		is named, bounded and asserted instead: the modern plan must be EMPTY, the legacy plan must
+		be exactly the one redundant put, and the group-steal case is excluded (a put that also
+		steals members is not a no-op and must not narrow).
+		*/
+		if (note === 'identical-put' && b.ops.length === 0) {
+			assert.equal(a.ops.length, 1, `iteration ${i}: the oracle should emit exactly the redundant put`);
+			assert.equal(a.ops[0].action, 'put');
+			narrowedPuts++;
+			continue;
+		}
 		assert.deepEqual(norm(b.ops), norm(narrowLegacy), `iteration ${i}: op lists diverge for ${JSON.stringify(modern)}`);
 		compared++;
 	}
 	assert.ok(compared > 500, `expected a healthy sample, compared ${compared}`);
 	assert.ok(rejectedBoth > 0, 'the corpus should exercise rejection too');
+	assert.ok(narrowedPuts > 20, `the corpus must REACH the CS6 narrowing, hit it ${narrowedPuts} times`);
+});
+
+// X8 claims the narrowing is suppressed when the put also steals group members. A no-op that
+// silently skipped the "node in at most one group" repair would reintroduce B1 through the back
+// door, so the claim is asserted rather than trusted.
+test('GR5/X8: an identical put that ALSO steals group members is NOT narrowed away', () => {
+	const model = new Model();
+	model.load({ meta: { id: 'diagram-aa0001', name: 'd', slides: { url: '', presentationId: '', pageId: '' } },
+		nodes: [1, 2, 3].map((n) => ({ id: `node-aa000${n}`, name: `n${n}`, type: 'host', shape: 'circle', x: n * 60, y: 0 })),
+		waypoints: [], links: [], zones: [],
+		groups: [
+			{ id: 'group-aa0004', name: 'a', members: ['node-aa0001', 'node-aa0002'] },
+			{ id: 'group-aa0005', name: 'b', members: ['node-aa0002', 'node-aa0003'] },
+		] });
+
+	// re-put group-aa0004 EXACTLY as stored: identical, but group b still holds node-aa0002
+	const same = JSON.parse(JSON.stringify(model.get('group', 'group-aa0004')));
+	const p = plan(model, [{ op: 'put', kind: 'group', entity: same }]);
+	assert.equal(p.ok, true);
+	assert.ok(p.ops.length > 1, 'not narrowed — the steal is real work');
+	assert.ok(p.ops.some((o) => o.kind === 'group' && o.id === 'group-aa0005'), 'group b is repaired');
+
+	// and once the invariant holds, the same put IS narrowed
+	applyOps(model, p.ops);
+	const again = plan(model, [{ op: 'put', kind: 'group', entity: same }]);
+	assert.deepEqual(again.ops, [], 'nothing left to steal, nothing to do');
 });
 
 test('GR5: plan() emits an inverse that restores the pre-state, over the same corpus', () => {
