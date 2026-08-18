@@ -217,6 +217,10 @@ export function validateDoc(doc) {
 		const err = validateSelectionIds(doc.selection);
 		if (err) return err;
 	}
+	// the change log (store-owned) is TOLERATED, never gated: a malformed or truncated log costs
+	// undo history, but rejecting the doc for it would make the whole diagram vanish on boot
+	// (the store skips invalid docs at load). Log.from drops what it cannot read. Same rationale
+	// as the selection key above.
 	return null;
 }
 

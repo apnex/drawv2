@@ -70,12 +70,26 @@ export class Log {
 		return { version: this.version, cursor: this.cursor, evicted: this.evicted, records: this.records };
 	}
 
-	// `fallback` seeds version for a document written before the log existed.
+	// A record we cannot read is worse than one we drop: undo would apply `record.inverse` blind.
+	// Shape-check each, keep the readable ones, discard the rest.
+	static #readable(c) {
+		return !!c && typeof c === 'object' && !Array.isArray(c)
+			&& Number.isInteger(c.seq) && Number.isInteger(c.from)
+			&& Array.isArray(c.ops) && Array.isArray(c.inverse);
+	}
+
+	// `fallback` seeds version for a document written before the log existed. TOLERATE-AND-DROP:
+	// a malformed log costs undo history; it must never cost the diagram (server/store.js skips a
+	// doc that fails validation, so a throw here would make the whole diagram vanish on boot).
 	static from(json, fallback = 0) {
 		const log = new Log(Number.isInteger(json?.version) ? json.version : fallback);
 		if (Array.isArray(json?.records)) {
-			log.records = json.records;
-			log.bytes = json.records.reduce((n, c) => n + sizeOf(c), 0);
+			const kept = json.records.filter((c) => Log.#readable(c));
+			if (kept.length !== json.records.length) {
+				console.warn(`[ log ] dropped ${json.records.length - kept.length} unreadable record(s)`);
+			}
+			log.records = kept;
+			log.bytes = kept.reduce((n, c) => n + sizeOf(c), 0);
 		}
 		log.cursor = Number.isInteger(json?.cursor) ? Math.min(json.cursor, log.records.length) : log.records.length;
 		log.evicted = Number.isInteger(json?.evicted) ? json.evicted : 0;

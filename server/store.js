@@ -13,6 +13,7 @@ import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds 
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
 import { Log } from './log.mjs';
+import { serialize, parse } from './docfile.mjs';
 
 const FLUSH_MS = 200;
 
@@ -56,7 +57,7 @@ export class Store {
 			if (!/^diagram-[0-9a-f]{6}\.json$/.test(file)) continue;
 			candidates++;
 			try {
-				const doc = JSON.parse(fs.readFileSync(path.join(this.dir, file), 'utf8'));
+				const { doc, log } = parse(fs.readFileSync(path.join(this.dir, file), 'utf8'));
 				const err = validateDoc(doc);
 				if (err) {
 					failures.push(`${file}: ${err}`);
@@ -71,7 +72,7 @@ export class Store {
 				if (file !== `${doc.meta.id}.json`) {
 					console.warn(`[ store ] ${file}: filename does not match meta.id ${doc.meta.id}`);
 				}
-				this.install(doc.meta.id, doc, Log.from(doc.log), file);
+				this.install(doc.meta.id, doc, Log.from(log), file);
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
 				if (file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
 			} catch (e) {
@@ -253,6 +254,14 @@ export class Store {
 	}
 
 	// ---- persistence ----
+	// total flush failures across all diagrams — surfaced by GET /health and `draw status` so a
+	// backend that is silently failing to persist is visible before the next restart loses work.
+	flushFailures() {
+		let n = 0;
+		for (const entry of this.diagrams.values()) n += entry.flushFailures || 0;
+		return n;
+	}
+
 	markDirty(id) {
 		const entry = this.diagrams.get(id);
 		if (!entry) return;
@@ -272,10 +281,22 @@ export class Store {
 		entry.file = `${id}.json`; // canonical from first flush onward
 		const tmp = `${file}.tmp`;
 		try {
-			this.writeDoc(file, JSON.stringify(entry.model.toJSON(), null, '\t') + '\n');
+			this.writeDoc(file, serialize(entry.model.toJSON(), entry.log));
 			entry.dirty = false; // only after the write actually landed
+			// GR9: the ring never holds a seq above the watermark that describes it
+			if (!entry.log.records.every((r) => r.seq <= entry.log.version)) {
+				throw new Error(`log invariant: a record seq exceeds version ${entry.log.version}`);
+			}
 		} catch (err) {
-			console.error(`[ store ] flush failed for ${id}: ${err.message}`);
+			// B4: the entry is still dirty but markDirty already nulled the timer, so without an
+			// explicit reschedule recovery waits for the next edit or SIGTERM. Retry, and COUNT —
+			// a retry that repairs the mechanism silently leaves the failure unobservable.
+			entry.flushFailures = (entry.flushFailures || 0) + 1;
+			console.error(`[ store ] flush failed for ${id} (${entry.flushFailures}): ${err.message}`);
+			if (!entry.timer) {
+				entry.timer = setTimeout(() => { entry.timer = null; this.flush(id); }, this.flushMs);
+				if (entry.timer.unref) entry.timer.unref();
+			}
 		}
 	}
 

@@ -77,7 +77,10 @@ export function handleRest(req, res, store, slides, locks, hub) {
 	const parts = url.pathname.split('/').filter(Boolean);
 
 	if (url.pathname === '/health') {
-		return json(res, 200, { status: 'ok', diagrams: store.list().length }), true;
+		// flushFailures: a retried flush repairs the mechanism but leaves the failure invisible.
+		// Surfacing it is what makes B4's retry observable rather than merely survivable.
+		const flushFailures = store.flushFailures();
+		return json(res, 200, { status: flushFailures ? 'degraded' : 'ok', diagrams: store.list().length, flushFailures }), true;
 	}
 	if (parts[0] !== 'api') return false;
 	if (parts[1] !== 'v1' || parts[2] !== 'diagrams') {
