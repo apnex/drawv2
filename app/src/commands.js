@@ -1,89 +1,38 @@
 /*
-Commands — every committed user action is a command: a list of primitive entries
-applied to the model, each invertible. History is a bounded undo/redo stack.
+Commands — request builders. Every committed user action becomes a command: a label and a list of
+entries describing the FORWARD intent. app/src/changes.js applies them locally and submits them.
 
-Entry ops:
-  { op: 'put', kind, entity }                  do: put     undo: del
-  { op: 'del', kind, entity }                  do: del     undo: put
-  { op: 'set', kind, id, before, after }       do: set(after)  undo: set(before)
+  { op: 'put', kind, entity }        create or replace
+  { op: 'del', kind, entity }        remove (the entity rides along for the local apply)
+  { op: 'set', kind, id, after }     change these fields
+
+No entry carries `before` any more. The inverse is derived server-side by the planner, which is the
+only place that holds the pre-state at the moment each op is decided — so computing it here was
+both duplicated and, for anything the server cascades, incomplete.
+
+The cascade closures below survive on purpose. They are a LOCAL PROJECTION: a disconnected browser
+must not build a document whose links dangle, and the server's planner re-derives the same cascade
+idempotently over the explicit ops (an already-deleted link yields no further op). What went is the
+inverse-building, not the closure.
 */
 
 import { groupAfterRemoval } from '../../engine/index.mjs';
+import { clone } from '../../document/ops.mjs';
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history
-function clone(entity) {
-	const copy = { ...entity };
-	if (copy.members) copy.members = [...copy.members];
-	if (copy.via) copy.via = [...copy.via];
-	if (copy.span) copy.span = { ...copy.span };   // node footprint — own object per history entry (W1)
-	if (copy.content) copy.content = copy.content.map((r) => ({ ...r, ...(r.at ? { at: [...r.at] } : {}) }));   // content regions (W2)
-	return copy;
-}
-
-function applyEntry(model, entry, forward) {
-	if (entry.op === 'put') {
-		forward ? model.put(entry.kind, clone(entry.entity)) : model.del(entry.kind, entry.entity.id);
-	} else if (entry.op === 'del') {
-		forward ? model.del(entry.kind, entry.entity.id) : model.put(entry.kind, clone(entry.entity));
-	} else if (entry.op === 'set') {
-		model.set(entry.kind, entry.id, forward ? entry.after : entry.before);
-	}
-}
-
-export class History {
-	constructor(model, limit = 100) {
-		this.model = model;
-		this.limit = limit;
-		this.stack = [];
-		this.index = 0; // entries below index are undoable
-	}
-
-	// apply a command and push it onto the stack
-	commit(command) {
-		if (!command || command.entries.length === 0) return;
-		command.entries.forEach((entry) => applyEntry(this.model, entry, true));
-		this.stack.length = this.index; // drop redo tail
-		this.stack.push(command);
-		if (this.stack.length > this.limit) this.stack.shift();
-		this.index = this.stack.length;
-	}
-
-	canUndo() { return this.index > 0; }
-	canRedo() { return this.index < this.stack.length; }
-
-	// history never crosses a diagram boundary
-	clear() {
-		this.stack = [];
-		this.index = 0;
-	}
-
-	undo() {
-		if (!this.canUndo()) return;
-		const command = this.stack[--this.index];
-		[...command.entries].reverse().forEach((entry) => applyEntry(this.model, entry, false));
-	}
-
-	redo() {
-		if (!this.canRedo()) return;
-		const command = this.stack[this.index++];
-		command.entries.forEach((entry) => applyEntry(this.model, entry, true));
-	}
-}
-
 // ---- command builders ----
 
 export function createEntity(kind, entity) {
-	return { label: `create ${kind}`, entries: [{ op: 'put', kind, entity: clone(entity) }] };
+	return { label: `create ${kind}`, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
 }
 
-// moves: [{ kind: 'node'|'zone', id, before: {x,y}, after: {x,y} }]
+// moves: [{ kind: 'node'|'zone', id, after: {x,y} }]
 export function moveEntities(moves) {
 	return {
 		label: 'move',
 		entries: moves.map((m) => ({
 			op: 'set', kind: m.kind, id: m.id,
-			before: { x: m.before.x, y: m.before.y },
 			after: { x: m.after.x, y: m.after.y }
 		}))
 	};
@@ -123,7 +72,7 @@ export function deleteSelection(model, ids) {
 			if (deletedLinks.has(link.id) || !Array.isArray(link.via)) return;
 			const remaining = link.via.filter((w) => !deletedWaypoints.has(w));
 			if (remaining.length !== link.via.length) {
-				entries.push({ op: 'set', kind: 'link', id: link.id, before: { via: [...link.via] }, after: { via: remaining } });
+				entries.push({ op: 'set', kind: 'link', id: link.id, after: { via: remaining } });
 			}
 		});
 	}
@@ -134,22 +83,21 @@ export function deleteSelection(model, ids) {
 	model.all('group').forEach((group) => {
 		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => deletedNodes.has(m) || deletedWaypoints.has(m));
 		if (ids.has(group.id) || dissolve) {
-			entries.push({ op: 'del', kind: 'group', entity: clone(group) });
+			entries.push({ op: 'del', kind: 'group', entity: clone('group', group) });
 		} else if (remaining.length < group.members.length) {
 			entries.push({
 				op: 'set', kind: 'group', id: group.id,
-				before: { members: [...group.members] },
 				after: { members: remaining }
 			});
 		}
 	});
 	ids.forEach((id) => {
-		if (model.get('zone', id)) entries.push({ op: 'del', kind: 'zone', entity: clone(model.get('zone', id)) });
+		if (model.get('zone', id)) entries.push({ op: 'del', kind: 'zone', entity: clone('zone', model.get('zone', id)) });
 	});
-	deletedLinks.forEach((id) => entries.push({ op: 'del', kind: 'link', entity: clone(model.get('link', id)) }));
-	deletedNodes.forEach((id) => entries.push({ op: 'del', kind: 'node', entity: clone(model.get('node', id)) }));
+	deletedLinks.forEach((id) => entries.push({ op: 'del', kind: 'link', entity: clone('link', model.get('link', id)) }));
+	deletedNodes.forEach((id) => entries.push({ op: 'del', kind: 'node', entity: clone('node', model.get('node', id)) }));
 	// waypoints last (leaf entities → restored FIRST on undo, before via-restore + link-restore)
-	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: 'waypoint', entity: clone(model.get('waypoint', id)) }));
+	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: 'waypoint', entity: clone('waypoint', model.get('waypoint', id)) }));
 
 	return { label: 'delete', entries };
 }
@@ -164,11 +112,10 @@ export function createGroup(model, memberIds) {
 		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => members.includes(m));
 		if (remaining.length === group.members.length) return;
 		if (dissolve) {
-			entries.push({ op: 'del', kind: 'group', entity: clone(group) });
+			entries.push({ op: 'del', kind: 'group', entity: clone('group', group) });
 		} else {
 			entries.push({
 				op: 'set', kind: 'group', id: group.id,
-				before: { members: [...group.members] },
 				after: { members: remaining }
 			});
 		}
@@ -187,7 +134,7 @@ export function setContentValue(model, nodeId, idx, value) {
 	const before = dup(node.content);
 	const after = dup(node.content);
 	after[idx].value = value;
-	return { label: 'edit', entries: [{ op: 'set', kind: 'node', id: nodeId, before: { content: before }, after: { content: after } }] };
+	return { label: 'edit', entries: [{ op: 'set', kind: 'node', id: nodeId, after: { content: after } }] };
 }
 
 // toggle each selected node's frame shape (circle <-> square) — one undoable command. Non-node ids and
@@ -195,7 +142,7 @@ export function setContentValue(model, nodeId, idx, value) {
 export function reshapeNodes(model, ids) {
 	const entries = ids.map((id) => model.get('node', id)).filter(Boolean).map((n) => {
 		const before = n.shape || 'circle';
-		return { op: 'set', kind: 'node', id: n.id, before: { shape: before }, after: { shape: before === 'square' ? 'circle' : 'square' } };
+		return { op: 'set', kind: 'node', id: n.id, after: { shape: before === 'square' ? 'circle' : 'square' } };
 	});
 	return { label: 'reshape', entries };
 }
@@ -203,7 +150,7 @@ export function reshapeNodes(model, ids) {
 export function renameEntity(kind, id, before, after) {
 	return {
 		label: 'rename',
-		entries: [{ op: 'set', kind, id, before: { name: before }, after: { name: after } }]
+		entries: [{ op: 'set', kind, id, after: { name: after } }]
 	};
 }
 
@@ -216,16 +163,12 @@ export function cloneEntities(clones) {
 	};
 }
 
-export function ungroup(model, groupId) {
-	return ungroupAll(model, [groupId]);
-}
-
 // one undoable command covering every group being dissolved
 export function ungroupAll(model, groupIds) {
 	const entries = [];
 	groupIds.forEach((id) => {
 		const group = model.get('group', id);
-		if (group) entries.push({ op: 'del', kind: 'group', entity: clone(group) });
+		if (group) entries.push({ op: 'del', kind: 'group', entity: clone('group', group) });
 	});
 	return { label: 'ungroup', entries };
 }

@@ -182,10 +182,26 @@ export class Sync {
 			// B3/I16: a rejection is surfaced against the request that caused it, never dropped
 			const b = msg.body || {};
 			const dropped = this.outbox.findIndex((m) => m.txnId === b.txnId);
-			if (dropped >= 0) this.outbox.splice(dropped, 1);
+			if (dropped >= 0) {
+				this.outbox.splice(dropped, 1);
+				// The commit was applied LOCALLY before it was submitted — that is what makes a
+				// gesture feel instant. A rejection therefore leaves this tab holding a change the
+				// server refused, and it will never converge on its own. Ask for authoritative
+				// state. (Found by tests/convergence.test.js, not by reasoning about it.)
+				this.requestResync();
+			}
 			console.warn(`[ sync ] server: ${b.message} (${b.code || 'error'})`);
 			this.onState({ error: b.message, code: b.code });
 		}
+	}
+
+	// Re-open the current diagram: the server answers with a snapshot, which is authoritative.
+	// Used when this tab knows it has diverged — a rejected optimistic apply, or a change whose
+	// `from` is ahead of us (we missed one).
+	requestResync() {
+		if (!this.diagramId || !this.net.isOpen()) return;
+		this.expectLoad = true;
+		this.net.send('open', { id: this.diagramId });
 	}
 
 	// A change from another writer. `from` is the version it applied to: equal to ours means we are
@@ -193,7 +209,10 @@ export class Sync {
 	// ABOVE ours means we missed one, so ask for the authoritative document.
 	applyChange(body) {
 		const v = this.changes.state.version;
-		if (typeof body.from === 'number' && body.from < v - 1) return;    // stale duplicate
+		if (typeof body.from === 'number') {
+			if (body.from < v - 1) return;                 // a duplicate: ignore, never re-apply
+			if (body.from > v) return this.requestResync();  // we missed one: repair, do not guess
+		}
 		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
 	}
 

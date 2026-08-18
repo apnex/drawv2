@@ -194,7 +194,7 @@ test('W6: setContentValue writes the new value into the region and is history-is
 	m.put('node', n);
 	const cmd = setContentValue(m, n.id, 1, 'edited');
 	assert.equal(cmd.entries[0].after.content[1].value, 'edited');
-	assert.equal(cmd.entries[0].before.content[1].value, 'b');
+	assert.equal(cmd.entries[0].after.content[0].value, m.get('node', n.id).content[0].value, 'untouched regions carry through unchanged');
 	assert.notEqual(cmd.entries[0].after.content, n.content, 'the snapshot does not alias the live content array');
 	assert.equal(n.content[1].value, 'b', 'the live node is untouched until the command applies');
 });
@@ -234,8 +234,10 @@ test('reshapeNodes toggles node frame shape (circle<->square), undoable-shaped, 
 	const cmd = reshapeNodes(m, [a.id, b.id, 'zone-00cc01']);   // the non-node id is skipped
 	assert.equal(cmd.entries.length, 2, 'only the two nodes');
 	const ea = cmd.entries.find((e) => e.id === a.id), eb = cmd.entries.find((e) => e.id === b.id);
-	assert.deepEqual([ea.before, ea.after], [{ shape: 'circle' }, { shape: 'square' }]);
-	assert.deepEqual([eb.before, eb.after], [{ shape: 'square' }, { shape: 'circle' }]);
+	// forward intent only — the inverse is the server's to derive from the pre-state
+	assert.deepEqual(ea.after, { shape: 'square' }, 'circle toggles to square');
+	assert.deepEqual(eb.after, { shape: 'circle' }, 'square toggles to circle');
+	assert.equal('before' in ea, false, 'no entry carries a before-state any more');
 });
 
 test('span-aware group hull: the hull encloses a multi-cell member\'s full footprint (not just its anchor)', () => {
