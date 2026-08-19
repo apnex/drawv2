@@ -68,7 +68,11 @@ existing startMove/startClone, which already had this shape — the design was l
 modes and this finishes it rather than imposing it.
 */
 const GESTURES = {
+	move:  { update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey) },
+	clone: { update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey) },
+
 	pending: {
+		update: (i, pos, evt) => i.escalate(pos, evt, i.readOnly || i.ctx.hit.kind === 'link', (x, p) => x.startMove(p), 'move'),
 		start: (i, hit, pos, evt) => {
 			i.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');   // for zones Shift is the layer key, not selection-add
 			i.ctx.orthoReady = !evt.shiftKey;
@@ -77,10 +81,16 @@ const GESTURES = {
 	},
 
 	'clone-pending': {
+		update: (i, pos, evt) => i.escalate(pos, evt, false, (x, p) => x.startClone(p), 'clone'),
 		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
 	},
 
 	resize: {
+		update: (i, pos) => {
+			const box = resizeBox(pos, i.ctx.fixedCorner);
+			i.model.set('zone', i.ctx.zone, box);   // live preview writes the shared Model (B7)
+			i.readout.setBox(box);
+		},
 		start: (i, hit) => {
 			const zoneId = i.selection.list().find((id) => kindOf(id) === 'zone');
 			const zone = i.model.get('zone', zoneId);
@@ -95,6 +105,13 @@ const GESTURES = {
 	},
 
 	replug: {
+		update: (i, pos) => {
+			// the fixed end is anchored; the dragged end follows the cursor / hovered node
+			const target = nodeAt(i.model, pos);
+			i.ctx.line.update(i.ctx.fixed, target || pos);
+			i.retarget(target, i.ctx.fixedId);
+			i.readout.setLink(i.ctx.fixed.name || '?', (target && target.id !== i.ctx.fixedId) ? (target.name || '?') : snapNode(pos));
+		},
 		start: (i, hit, pos) => {
 			const linkId = i.selection.list().find((id) => kindOf(id) === 'link');
 			const link = i.model.get('link', linkId);
@@ -110,6 +127,12 @@ const GESTURES = {
 	},
 
 	link: {
+		update: (i, pos) => {
+			const target = endpointAt(i.model, pos);
+			i.updateLinkPreview(pos);
+			i.retarget(target, i.ctx.src.id);
+			i.readout.setLink(i.ctx.src.name || '?', (target && target.id !== i.ctx.src.id) ? (target.name || '?') : snapNode(pos));
+		},
 		start: (i, hit, pos, evt) => {
 			const src = i.model.get(hit.kind, hit.id);
 			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
@@ -121,6 +144,11 @@ const GESTURES = {
 	},
 
 	zone: {
+		update: (i, pos) => {
+			const box = resolveBox(i.ctx.p1, snapZone(pos));
+			i.ctx.rect.update(box);
+			i.readout.setBox(box);
+		},
 		start: (i, hit, pos) => {
 			const p1 = snapZone(pos);
 			const ctx = { p1, rect: previewRect(i.overlay, 'zone-rect preview') };
@@ -130,10 +158,16 @@ const GESTURES = {
 	},
 
 	marquee: {
+		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
 		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, 'marquee') })
 	},
 
 	textbox: {
+		update: (i, pos) => {
+			const box = frameSpan(i.ctx.p1, snapNode(pos));
+			i.ctx.rect.update(box);
+			i.readout.setBox(box);
+		},
 		start: (i, hit, pos) => {
 			if (i.labels.isOpen()) i.labels.close(true);
 			const p1 = snapNode(pos);
@@ -648,107 +682,54 @@ export class Input {
 		[...(ctx.placed || [])].reverse().forEach((wp) => this.model.del('waypoint', wp.id));
 	}
 
+	/*
+	One move → the live gesture's own `update`. The mode switch this replaces was eight branches
+	deep; each is now the entry that owns the rest of that gesture's lifecycle.
+	*/
 	onMove(evt) {
-		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
+		const moving = this.mode === 'move' || this.mode === 'clone';
+		this.overlayUi.zoneGrid(evt.shiftKey, moving);
 		const pos = toCanvas(evt, this.svg);
 		this.lastPos = pos;
+
 		if (!this.mode) {
+			// idle: the stamp ghost rides the snapped cell and the readout states the landing
 			const snapped = snapNode(pos);
 			const blocked = this.handBlocked(snapped);
 			this.palette.trackHand(snapped, blocked);
 			this.readout.setCursor(snapped, this.palette.hand, blocked);
 			return this.idleAffordance(evt);
 		}
+		GESTURES[this.mode].update?.(this, pos, evt);
+	}
 
-		if (this.mode === 'pending') {
-			if (!this.readOnly && dist(pos, this.ctx.start) > DRAG_THRESHOLD && this.ctx.hit.kind !== 'link') {
-				this.startMove(pos);
-				// re-evaluate the layer indicator and render the first frame now
-				// that the mode is 'move' (not on the next event)
-				if (this.mode === 'move') {
-					this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
-					this.updateMove(pos, evt.shiftKey);
-				}
-			}
-			return;
+	// pending → move / clone-pending → clone: the escalation, and the SECOND gate point. A press is
+	// not yet a mutation (INPUT.md §4), so `press` is mutates:false and the drag is where the
+	// read-only decision actually has to be made.
+	// highlight the entity a drag would land on, and un-highlight the one it left. Identical in the
+	// link and replug updates, so it lives once.
+	retarget(target, excludeId) {
+		if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
+			this.renderer.setState(this.ctx.target, 'hover', false);
+			this.ctx.target = null;
 		}
-		if (this.mode === 'clone-pending') {
-			if (dist(pos, this.ctx.start) > DRAG_THRESHOLD) {
-				this.startClone(pos);
-				if (this.mode === 'clone') {
-					this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
-					this.updateMove(pos, evt.shiftKey);
-				}
-			}
-			return;
-		}
-		if (this.mode === 'move' || this.mode === 'clone') {
-			this.updateMove(pos, evt.shiftKey);
-			return;
-		}
-		if (this.mode === 'link') {
-			const target = endpointAt(this.model, pos);
-			this.updateLinkPreview(pos);
-			if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
-				this.renderer.setState(this.ctx.target, 'hover', false);
-				this.ctx.target = null;
-			}
-			if (target && target.id !== this.ctx.src.id) {
-				this.ctx.target = target.id;
-				this.renderer.setState(target.id, 'hover', true);
-			}
-			this.readout.setLink(this.ctx.src.name || '?',
-				(target && target.id !== this.ctx.src.id) ? (target.name || '?') : snapNode(pos));
-			return;
-		}
-		if (this.mode === 'replug') {
-			// the fixed end is anchored; the dragged end follows the cursor / hovered node
-			const target = nodeAt(this.model, pos);
-			this.ctx.line.update(this.ctx.fixed, target || pos);
-			if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
-				this.renderer.setState(this.ctx.target, 'hover', false);
-				this.ctx.target = null;
-			}
-			if (target && target.id !== this.ctx.fixedId) {
-				this.ctx.target = target.id;
-				this.renderer.setState(target.id, 'hover', true);
-			}
-			this.readout.setLink(this.ctx.fixed.name || '?',
-				(target && target.id !== this.ctx.fixedId) ? (target.name || '?') : snapNode(pos));
-			return;
-		}
-		if (this.mode === 'zone') {
-			const box = resolveBox(this.ctx.p1, snapZone(pos));
-			this.ctx.rect.update(box);
-			this.readout.setBox(box);
-			return;
-		}
-		if (this.mode === 'textbox') {
-			const box = frameSpan(this.ctx.p1, snapNode(pos));
-			this.ctx.rect.update(box);
-			this.readout.setBox(box);
-			return;
-		}
-		if (this.mode === 'marquee') {
-			this.ctx.rect.update(resolveBox(this.ctx.p1, pos));
-			return;
-		}
-		if (this.mode === 'resize') {
-			const box = resizeBox(pos, this.ctx.fixedCorner);
-			this.model.set('zone', this.ctx.zone, box);
-			this.readout.setBox(box);
+		if (target && target.id !== excludeId) {
+			this.ctx.target = target.id;
+			this.renderer.setState(target.id, 'hover', true);
 		}
 	}
 
-	/*
-	Live move/clone update — the single source of the rendered position.
-	Ortho lock: Shift held constrains to the dominant axis (AutoCAD ORTHO).
-	Press-time Shift belongs to press semantics (zone layer, selection-add):
-	the lock arms only once Shift has been seen released during the drag.
-	ctx.orthoActive records the flag of the LAST rendered frame; the commit
-	must use it (never re-sample at release) so preview and commit agree even
-	when Shift changes state while the pointer is stationary.
-	*/
+	escalate(pos, evt, threshold, begin, become) {
+		if (dist(pos, this.ctx.start) <= DRAG_THRESHOLD) return;
+		if (threshold) return;
+		begin(this, pos);
+		if (this.mode === become) {
+			// re-evaluate the layer indicator and render the first frame NOW, not on the next event
+			this.overlayUi.zoneGrid(evt.shiftKey, true);
+			this.updateMove(pos, evt.shiftKey);
+		}
+	}
+
 	updateMove(pos, shiftHeld) {
 		if (!shiftHeld) this.ctx.orthoReady = true;
 		const ortho = !!shiftHeld && !!this.ctx.orthoReady;

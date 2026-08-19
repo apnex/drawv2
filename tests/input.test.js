@@ -508,3 +508,58 @@ test('B42: the tool is still armable, and still works, once control is reclaimed
 		assert.equal(h.commits.length, 1, 'a gate is a gate, not a wall');
 	} finally { h.restore(); }
 });
+
+/*
+H6.4 — the gesture table drives the full lifecycle, not just `start`.
+
+Escalation is the SECOND gate point (INPUT.md §4): a press is not yet a mutation, so `press` is
+`mutates:false` and the read-only decision has to be made again when the drag begins. One flag
+cannot know whether you are about to drag.
+
+These drive real pointer sequences through the table — down, move past the threshold, up — because
+the escalation is the one part of the recognizer's contract that a single event cannot exercise.
+*/
+const onEntity = (id, x, y, mod = {}) => pointer(x, y, {
+	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
+	...mod,
+});
+
+test('H6.4: a right-drag escalates pending → move and commits the transition', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.input.onDown(onEntity(a.id, 0, 0, { button: 2 }));
+		h.input.onMove(onEntity(a.id, 180, 0, { button: 2 }));
+		h.input.onUp(onEntity(a.id, 180, 0, { button: 2 }));
+
+		assert.equal(h.commits.length, 1, 'one drag is one change');
+		assert.equal(h.model.get('node', a.id).x, 180, 'and it landed on the grid');
+	} finally { h.restore(); }
+});
+
+test('H6.4: Ctrl+right-drag escalates clone-pending → clone', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.input.onDown(onEntity(a.id, 0, 0, { button: 2, ctrlKey: true }));
+		h.input.onMove(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
+		h.input.onUp(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
+
+		assert.equal(h.commits.length, 1);
+		assert.equal(h.model.all('node').length, 2, 'the original stayed, the copy landed');
+	} finally { h.restore(); }
+});
+
+test('H6.4: while Server-Locked a press still selects, but the drag never escalates', () => {
+	const h = makeInput({ readOnly: true });
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.input.onDown(onEntity(a.id, 0, 0));
+		assert.ok(h.selection.has(a.id), 'click-select survives the gate — SCOPE decision 5');
+
+		h.input.onMove(onEntity(a.id, 180, 0));
+		h.input.onUp(onEntity(a.id, 180, 0));
+		assert.equal(h.commits.length, 0, 'but the escalation is refused');
+		assert.equal(h.model.get('node', a.id).x, 0, 'and nothing moved, even locally');
+	} finally { h.restore(); }
+});

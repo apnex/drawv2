@@ -226,9 +226,13 @@ All ten modes, one contract:
 GESTURES[mode] = { start(ctx, pos, evt) → ctx, update(ctx, pos, evt), commit(ctx, pos, evt), cancel(ctx) }
 ```
 
-Measured today, only **move**, **clone** and **link** carry explicit lifecycle methods; `resize` has
-half; the other six are inlined in `dispatchUp`. The shape is latent in three of ten — H6 finishes a
-design already half-present rather than imposing one.
+`start` and `update` are unified as of H6.4: all ten modes carry both, and `onDown`/`onMove` are 26
+and 16 lines of routing. `commit` and `cancel` still dispatch through `dispatchUp`/`cancelDrag` and
+are the same shape of work, deliberately left as a separate step — rewriting four dispatchers in one
+commit leaves nothing to bisect when the net goes red.
+
+The shape was latent in three of ten modes before the arc, so this finishes a design already
+half-present rather than imposing one.
 
 **Invariants that survive the rewrite:**
 
