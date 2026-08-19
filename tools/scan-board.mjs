@@ -81,6 +81,23 @@ for (const [id, r] of rows) {
 	}
 }
 
+/*
+R4 — a milestone marked DONE has no unfinished items.
+
+R3 compares each item against its row, which is why it stayed silent while H3 read DONE with three
+TODO items under it: every individual pair AGREED (item TODO, row open). Agreement is not
+completion. The heading is the thing a reader trusts at a glance, so it is the thing most worth
+checking, and it was the one thing nothing checked.
+*/
+const milestoneState = {};
+for (const m of board.matchAll(/^##\s+(H\d)[^\n]*?`(\w+)`/gm)) milestoneState[m[1]] = m[2];
+for (const it of items) {
+	const h = it.h.split('.')[0];
+	if (milestoneState[h] === 'DONE' && !it.done) {
+		fail(`${BOARD} ${h} is marked DONE but ${it.h} is still open — a heading a reader trusts must be true`);
+	}
+}
+
 // R3 — DONE and CLOSED move together (contract rule 2)
 for (const it of items) {
 	for (const id of it.ids) {
