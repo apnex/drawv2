@@ -145,7 +145,7 @@ No code. The house rule is that the register is written before the implementatio
 
 ---
 
-## H1 — stop the data loss · `TODO`
+## H1 — stop the data loss · `DONE`
 
 `S1` + one adjacent `S4`. **All server-side, all reachable by suites that already exist** — which is why
 this runs before the harness. **H1.1 should land on its own, immediately.**
@@ -156,7 +156,7 @@ this runs before the harness. **H1.1 should land on its own, immediately.**
 | H1.2 | Adversarial-string round-trip: 7 replacement patterns, the empty-body log-drop, and the end-to-end restart. All three verified **red first**; 35/35 real files byte-identical after | B13 | — | — | `DONE` |
 | H1.3 | Per-entry `flushedVersion` recorded in `flush()`; `Store.log(id)` + `Store.durableVersion(id)` retire all 10 hand-walked sites and all 3 spellings of the rule; `scan-writers` extended to keep the boundary shut (**proven to bite**) | **B15**, B26 (part) | **S1 · M** | D13, D30, A1, A3 | `DONE` |
 | H1.4 | GR9 post-condition moved out of the write's try/catch; own counter (`invariantFailures`), own `/health` status (`corrupt` vs `degraded`), own message, surfaced in `draw status` | **B20** | S4 · S | GR9 | `DONE` |
-| H1.5 | `readJson`: settle on `'aborted'`/`'close'`; accumulate `Buffer`s and cap on bytes. **Promoted from H4** — A7's mandate is that no actor is permanently blocked, and a >1 MB body hangs the request forever | **B24** | S4 · **A7 mandate** · S | A7 | `TODO` |
+| H1.5 | `readJson` settles on every terminal event, accumulates `Buffer`s, caps on BYTES, and answers **413** with `Connection: close` instead of destroying the socket. **Promoted from H4** by the axiom review | **B24** | S4 · **A7 mandate** · S | A7 | `DONE` |
 
 **Exit:** B13, B15, B20, B24 closed. Each fix has a test verified red against the pre-fix tree. `npm run gate` green.
 

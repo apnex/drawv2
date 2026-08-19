@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Locks } from '../server/locks.js';
+import http from 'node:http';
 import { createApp } from '../server/app.js';
 
 // ---- Locks unit (injected clock, no timers) ----
@@ -310,4 +311,71 @@ test('REST: lock + apply persists to disk (survives via the store)', async () =>
 	app.store.flushAll();
 	const onDisk = JSON.parse(fs.readFileSync(path.join(dataDir, `${id}.json`), 'utf8'));
 	assert.ok(onDisk.zones.some((z) => z.w === 180 && z.h === 120));
+});
+
+/*
+B24 — the body reader must always settle, and must not corrupt what it reads.
+
+Three defects lived in five lines of `readJson`:
+
+  (1) On the size trip it called `req.destroy()` and resolved NOTHING. `'end'` does not fire on a
+      destroyed request and `'error'` is not guaranteed, so the promise never settled, the `await`
+      in handleWrite never continued, and the closure leaked. A7's named `Blocked Actor` — an actor
+      paused indefinitely with no resume path — and the router's `.catch()` could not fire, because
+      nothing ever rejected.
+  (2) `buf += chunk` decodes each Buffer independently, so a multibyte character split across a
+      chunk boundary becomes U+FFFD. A CJK node name landing near a chunk edge is silently mangled.
+  (3) The cap counted decoded CHARACTERS, not bytes.
+
+A destroyed socket is also not an actionable signal (A7): the caller cannot tell "too large" from
+"the network died", so it cannot know whether to retry or to shrink. Oversize now answers 413.
+*/
+test('B24: an oversize body answers 413 instead of hanging the request forever', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const huge = JSON.stringify({ type: 'host', x: 60, y: 60, name: 'x'.repeat(2 * 1024 * 1024) });
+		const answered = await Promise.race([
+			fetch(`${base}/api/v1/diagrams/${id}/nodes`, { method: 'POST', headers: H(lock.token), body: huge })
+				.then((r) => r.status).catch((e) => `threw:${e.cause?.code || e.name}`),
+			new Promise((r) => setTimeout(() => r('HUNG'), 4000)),
+		]);
+		assert.notEqual(answered, 'HUNG', 'the request never settled — the promise leaked');
+		assert.equal(answered, 413, 'and it says WHY, so the caller knows to shrink rather than retry');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
+	}
+});
+
+test('B24: a multibyte name split across chunk boundaries is not mangled', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		// The low-level /commit verb, because POST /nodes MINTS the name server-side and would
+		// never carry the string under test. And the split is DELIBERATE rather than left to a
+		// 64 KiB boundary: we cut one 3-byte character in half across two socket writes, which is
+		// the exact condition `buf += chunk` decoded to U+FFFD.
+		const name = '設計図';
+		const payload = Buffer.from(JSON.stringify({ action: 'put', kind: 'node',
+			entity: { id: 'node-c24001', name, type: 'host', shape: 'circle', x: 180, y: 180 } }), 'utf8');
+		const mid = payload.indexOf(Buffer.from('設', 'utf8')) + 1;   // one byte into a 3-byte character
+		assert.ok(mid > 1 && mid < payload.length, 'the split lands inside a multibyte character');
+
+		const status = await new Promise((resolve, reject) => {
+			const r = http.request(`${base}/api/v1/diagrams/${id}/commit`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token, 'Content-Length': payload.length }
+			}, (rs) => { rs.resume(); rs.on('end', () => resolve(rs.statusCode)); });
+			r.on('error', reject);
+			r.write(payload.subarray(0, mid));            // first half of the character
+			setTimeout(() => r.end(payload.subarray(mid)), 20);   // second half, a separate 'data' event
+		});
+		assert.equal(status, 200, 'the write was accepted');
+
+		const node = await (await fetch(`${base}/api/v1/diagrams/${id}/nodes/node-c24001`)).json();
+		assert.equal(node.name, name, 'the name survived the split intact');
+		assert.ok(!node.name.includes('\uFFFD'), 'no replacement characters');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
+	}
 });

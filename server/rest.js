@@ -20,13 +20,65 @@ function json(res, code, body) {
 	res.end(JSON.stringify(body, null, '\t') + '\n');
 }
 
+/*
+Read a JSON request body — B24. Three defects lived in the five lines this replaces.
+
+(1) On the size trip it called `req.destroy()` and resolved NOTHING. `'end'` does not fire on a
+    destroyed request and `'error'` is not guaranteed, so the promise never settled: the `await` in
+    handleWrite never continued and its closure leaked, permanently, per oversize request. A7's
+    named `Blocked Actor` — an actor paused indefinitely with no resume path — and the router's
+    `.catch()` could not save it, because nothing ever rejected.
+(2) `buf += chunk` invokes the default UTF-8 decode on each Buffer independently, so a multibyte
+    character split across a chunk boundary decoded to U+FFFD. A CJK name near a chunk edge landed
+    silently mangled.
+(3) The cap counted decoded CHARACTERS, not bytes, so it was not the limit it claimed to be.
+
+Now: bytes accumulate as Buffers and are decoded ONCE, at the end; the cap is a byte cap; and every
+terminal event settles exactly once — `'close'` is the backstop, so no transport outcome can leave
+the promise pending. Oversize resolves a sentinel and the caller answers 413, because a destroyed
+socket is not an actionable signal (A7): the caller cannot distinguish "too large" from "the network
+died", and so cannot know whether to shrink the payload or retry it unchanged.
+*/
+const MAX_BODY_BYTES = 1e6;
+const OVERSIZE = Symbol('body-too-large');
+
 function readJson(req) {
 	return new Promise((resolve) => {
-		let buf = '';
-		req.on('data', (c) => { buf += c; if (buf.length > 1e6) req.destroy(); });
-		req.on('end', () => { try { resolve(JSON.parse(buf || '{}')); } catch { resolve(null); } });
-		req.on('error', () => resolve(null));
+		const chunks = [];
+		let bytes = 0, settled = false;
+		const settle = (v) => { if (!settled) { settled = true; resolve(v); } };
+		req.on('data', (c) => {
+			bytes += c.length;                       // c is a Buffer: length is BYTES
+			if (bytes > MAX_BODY_BYTES) { req.pause(); return settle(OVERSIZE); }
+			chunks.push(c);
+		});
+		req.on('end', () => { try { settle(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { settle(null); } });
+		req.on('error', () => settle(null));
+		req.on('aborted', () => settle(null));
+		req.on('close', () => settle(null));         // the backstop — destroy/abort/reset all land here
 	});
+}
+
+/*
+Answer for a body that could not be READ (as opposed to one that was read and is invalid).
+Returns true when it has responded, so the caller returns without answering twice.
+
+The connection MUST close. We stopped reading partway through the body, so the rest of it is still
+in flight on a keep-alive socket; answering 413 and leaving the connection open desynchronises the
+pipeline and the NEXT request on that socket hangs forever — which is B24's own defect, moved one
+request downstream. Draining the remainder is the alternative and it is worse: it spends unbounded
+bandwidth and time reading a payload we have already refused.
+
+`Connection: close` tells the client not to reuse the socket; destroying it once the response has
+flushed discards whatever is still arriving. Found by the multibyte test in tests/locks.test.js,
+which began timing out the moment this path was introduced.
+*/
+function bodyRejected(req, res, value) {
+	if (value !== OVERSIZE) return false;
+	res.setHeader('Connection', 'close');
+	res.once('finish', () => req.destroy());
+	json(res, 413, { error: `request body exceeds ${MAX_BODY_BYTES} bytes`, code: 'body-too-large', limit: MAX_BODY_BYTES });
+	return true;
 }
 
 // build a full entity from the high-level verb payload, via the model's factories
@@ -254,6 +306,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 	if (parts[4] === 'selection' && parts.length === 5) {
 		if (req.method !== 'PUT') return json(res, 405, { error: 'selection: PUT to set' });
 		const body = await readJson(req);
+		if (bodyRejected(req, res, body)) return;
 		if (!body || !Array.isArray(body.ids)) return json(res, 400, { error: 'expected JSON body { ids: [...] }' });
 		return commitSelection(res, store, hub, locks, id, token, body.ids);
 	}
@@ -263,7 +316,9 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 	// only here; forward writes keep it optional so a curl one-liner still works.
 	if ((parts[4] === 'undo' || parts[4] === 'redo') && parts.length === 5 && req.method === 'POST') {
 		if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
-		const body = (await readJson(req)) || {};
+		const raw = await readJson(req);
+		if (bodyRejected(req, res, raw)) return;
+		const body = raw || {};
 		const log = store.log(id);
 		if (body.expect == null) {
 			return json(res, 400, { error: 'expect required on undo/redo', code: 'expect-required', version: log?.version ?? 0 });
@@ -298,6 +353,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 	// second surface to keep true and this is a single-tenant tool with a bundled CLI.
 	if (parts[4] === 'commit' && parts.length === 5 && req.method === 'POST') {
 		const body = await readJson(req);
+		if (bodyRejected(req, res, body)) return;
 		if (!body) return json(res, 400, { error: 'invalid JSON body' });
 		return commitWrite(res, store, hub, locks, id, token, body);
 	}
@@ -308,6 +364,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 
 	if (req.method === 'POST' && parts.length === 5) {
 		const data = await readJson(req);
+		if (bodyRejected(req, res, data)) return;
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
 		const entity = buildEntity(model, kind, data);
 		if (!entity) return json(res, 422, { error: `cannot create ${kind}` });
@@ -315,6 +372,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 	}
 	if (req.method === 'PATCH' && parts.length === 6) {
 		const data = await readJson(req);
+		if (bodyRejected(req, res, data)) return;
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
 		return commitWrite(res, store, hub, locks, id, token, { action: 'set', kind, entity: { ...data, id: parts[5] } });
 	}
