@@ -159,6 +159,22 @@ test('GR6 fault (i): a dropped change is DETECTED, and a repair restores converg
 	} finally { cleanup(env.dir); }
 });
 
+/*
+Scope, stated because it was previously implied and wrong.
+
+This exercises the CONVERGENCE property: if a viewer holds an inbound change while a gesture is live
+and applies it on release, does everyone still agree at quiescence? The hold itself is simulated by
+this harness (`q.gesture` / `q.deferred`, :46 and :67) — these peers are not real `Sync` instances.
+
+For two milestones that was a fake pass in the way that mattered: GR6 names the fault as "deliver a
+change while B has `input.mode !== null`", which reads as the real mechanism, and the real mechanism
+was NOT CONNECTED — `deferInbound` was read and assigned nowhere (B19). A simulated queue converged
+beautifully while the product had none.
+
+The wiring is now pinned where it can actually fail: `tests/input.test.js` drives a real `Input`
+through `bindGestureDefer` and asserts both directions. This test keeps its own job — convergence
+under reordering — and no longer implies the other.
+*/
 test('GR6 fault (ii): a change landing under a live gesture is deferred, not applied mid-drag', () => {
 	const env = setup(777);
 	try {

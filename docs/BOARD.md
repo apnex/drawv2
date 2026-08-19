@@ -179,20 +179,20 @@ Promoted onto the critical path by the triage pass: **H3 cannot start without H2
 
 ---
 
-## H3 — silent divergence and wrong results · `WIP`
+## H3 — silent divergence and wrong results · `DONE`
 
 Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the two `S` fixes are hours, not days.
 
 | # | Item | Row | Sev · Size | Violates | Status |
 |---|---|---|---|---|---|
 | H3.1 | The Server-Locked gate made **semantic, not positional**: inspection verbs (Ctrl+A, Space) hoisted above it, mutation paths (run-mode inline edit, text tool, `t`) gated below it, and the run-mode split honoured — actions still fire, editing does not. Closes **B18** and **B37** together | **B18**, **B37** | **S2 · S** | SCOPE-5, I16 | `DONE` |
-| H3.2 | Wire the D12 defer rule: `sync.deferInbound = () => input.isGesturing()` at the composition root, `sync.releaseDeferred()` in `onUp`/`cancelDrag` | **B19** | **S2 · S** | D12 | `TODO` |
+| H3.2 | `bindGestureDefer(input, sync)` — a **named unit**, not two loose assignments; `onUp` wrapped so the release fires on every exit path | **B19** | **S2 · S** | D12 | `DONE` |
 | H3.3 | All three burst gestures rewired onto `Changes.amend`; `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks deleted (**-45 lines**). `Changes.flush()` added so a burst still cannot span a selection change | **B14** | S3 · S | D11 | `DONE` |
 | H3.4 | One per-kind cloner; waypoints seed and clone (without inventing a `name`); `via` remapped through the id map with missing bends pulled into the closure; `closed` carried | **B30** | **S2 · M** | — | `DONE` |
 | H3.5 | **T0** taxonomy ratified (`HIERARCHY.md` §0) · **T1** `anchor` freed (5 senses → 1) · **T2** `Model.pathOf()` is the sole route→path resolver, 4 hand-rolled sites retired, endpoints resolve via `endpointOf` | **B29** | **S2 · M** | A3 | `DONE` |
 | H5.5 | Retire the dead kernel `link` element and the `wire` abstraction that exists to accommodate it | **B38** | S5 · S | A3 | `TODO` |
-| H3.6 | Exercise GR6 fault (ii) against the now-real defer queue — it currently tests a queue that does not exist | B19 | — | GR6 | `TODO` |
-| H3.7 | Correct **B7**'s row once its mitigation is genuinely in place | B7 | — | — | `TODO` |
+| H3.6 | GR6 fault (ii) now **states its scope**: it proves convergence under reordering with a simulated hold; the WIRING is pinned in `tests/input.test.js` against a real `Input` | B19 | — | GR6 | `DONE` |
+| H3.7 | **B7**'s row corrected — its D12 mitigation is real as of H3.2 | B7 | — | — | `DONE` |
 
 **Exit:** B14, B18, B19, B29, B30 closed. No path applies a mutation locally while Server-Locked; no surface
 reports a number it cannot justify.

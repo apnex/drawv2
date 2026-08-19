@@ -81,6 +81,9 @@ export class Input {
 		this.armed = null;     // { id, cls }
 		this.lastDelta = { x: GAP, y: 0 }; // remembered pitch for Ctrl+D duplicate
 		this.readOnly = false; // Server-Locked: inspect + select only, no mutations
+		// D12 — fires when an in-flight gesture ends, however it ends. Sync listens so inbound changes
+		// deferred during the gesture replay at exactly the moment the preview stops moving (B19).
+		this.onGestureEnd = () => {};
 		this.textTool = false; // A1 — 't' held: drag draws a text box (mirrors Shift+drag-zone)
 		this.help = document.getElementById('help');
 
@@ -158,8 +161,11 @@ export class Input {
 		return this.model.all('node').find((n) => inFootprint(n, pos, slop));
 	}
 
+	// a PREDICATE returns a boolean: this used to hand back `null` when idle, which is only
+	// distinguishable from `false` at a call site that compares strictly — and D12's defer rule
+	// is now such a caller (bindGestureDefer).
 	isGesturing() {
-		return this.mode && this.mode !== 'pending' && this.mode !== 'clone-pending';
+		return !!this.mode && this.mode !== 'pending' && this.mode !== 'clone-pending';
 	}
 
 	// ---- pointer down ----
@@ -840,7 +846,21 @@ export class Input {
 	}
 
 	// ---- pointer up ----
+	/*
+	`onUp` returns early on almost every path — one per gesture mode — so a hook at the bottom fires
+	for a marquee and nothing else. D12's release has to run however the gesture ended, so it is a
+	wrapper rather than a line at the end, and it runs in a `finally`: a throwing commit handler must
+	not strand the deferred queue forever, which would be a worse failure than the one it replaced.
+
+	It fires AFTER dispatch, not before: a deferred remote change must land after this gesture's own
+	commit, or the two arrive out of order.
+	*/
 	onUp(evt) {
+		const wasGesturing = this.isGesturing();
+		try { this.dispatchUp(evt); } finally { if (wasGesturing) this.onGestureEnd(); }
+	}
+
+	dispatchUp(evt) {
 		if (!this.mode) return;
 		// only the left button drives link mode: a right-button release during a
 		// chain (chord delete, stray right-click) must never commit a segment
@@ -1006,6 +1026,7 @@ export class Input {
 				entries: [{ op: 'set', kind: 'zone', id: ctx.zone, before, after }]
 			});
 		}
+		this.onGestureEnd();
 	}
 
 	// re-enter link mode from a node (chain wiring), with live readout
@@ -1123,6 +1144,7 @@ export class Input {
 		this.readout.clearTransient();
 		this.refreshHover(null);
 		if (evt) this.syncZoneGrid(evt); // layer indicator follows Shift again
+		this.onGestureEnd();
 	}
 
 	// ---- hover + arming ----

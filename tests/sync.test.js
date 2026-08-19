@@ -53,3 +53,45 @@ test('R2: a selection-only change still flushes (empty entity queue)', () => {
 	assert.equal(sent.length, before + 1, 'the selection-only change flushed');
 	assert.equal(sent[sent.length - 1].cmd, 'select');
 });
+
+/*
+B19 / D12 — inbound changes defer while a gesture is in flight.
+
+D12: "inbound changes apply immediately EXCEPT while `input.mode !== null`, where they queue and
+apply on gesture end — otherwise a remote change lands under a live drag preview." Both halves were
+built and neither was connected: `deferInbound` is read at sync.js:245 and was assigned nowhere, so
+`this.deferred` never filled and `releaseDeferred()` was never called.
+
+That mattered twice over. B7 (preview writes into the shared Model, once per pointer-move frame) has
+been recorded as *mitigated by D12's defer rule* since CS3 — mitigated by a rule that was not
+running. And GR6's fault (ii) injects a change while a viewer is mid-gesture, so it was exercising a
+queue that did not exist: a documented chaos path passing vacuously.
+*/
+
+test('B19: a change arriving mid-gesture is queued, not applied under the preview', () => {
+	const { sync, model } = harness();
+	sync.hydrated = true;
+	let gesturing = true;
+	sync.deferInbound = () => gesturing;
+
+	const nodeId = 'node-de1e01';
+	sync.onMessage({ cmd: 'change', body: { from: sync.changes.state.version, version: sync.changes.state.version + 1,
+		ops: [{ op: 'put', kind: 'node', entity: { id: nodeId, name: 'remote', type: 'host', shape: 'circle', x: 60, y: 60 } }] } });
+
+	assert.equal(model.get('node', nodeId), undefined, 'nothing lands while the gesture is live');
+
+	gesturing = false;
+	sync.releaseDeferred();
+	assert.ok(model.get('node', nodeId), 'and it applies the moment the gesture ends');
+});
+
+test('B19: with no gesture in flight, a change applies immediately', () => {
+	const { sync, model } = harness();
+	sync.hydrated = true;
+	sync.deferInbound = () => false;
+
+	const nodeId = 'node-de1e02';
+	sync.onMessage({ cmd: 'change', body: { from: sync.changes.state.version, version: sync.changes.state.version + 1,
+		ops: [{ op: 'put', kind: 'node', entity: { id: nodeId, name: 'remote', type: 'host', shape: 'circle', x: 0, y: 0 } }] } });
+	assert.ok(model.get('node', nodeId), 'the defer rule must not become a delay on the normal path');
+});

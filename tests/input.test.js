@@ -17,6 +17,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { validateEntity } from '../server/validate.js';
+import { bindGestureDefer } from '../app/src/sync.js';
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -418,5 +419,50 @@ test('B30: every entity a clone emits passes the SERVER validator', () => {
 			assert.equal(op.op, 'put');
 			assert.equal(validateEntity(op.kind, op.entity), null, `${op.kind} ${op.entity.id} was rejected: ${validateEntity(op.kind, op.entity)}`);
 		}
+	} finally { h.restore(); }
+});
+
+/*
+B19 — the WIRING, not the mechanism.
+
+The two sync.test.js cases set `deferInbound` by hand and always passed: the mechanism was never
+broken. What was missing was the connection, and a loose property assignment at the composition root
+is precisely the thing that gets forgotten — it was, for two milestones, while B7's row recorded the
+rule as its mitigation and GR6's fault (ii) exercised a queue that did not exist.
+
+So this drives the REAL Input through the REAL binding. It fails if `bindGestureDefer` stops being
+called with both directions, which no test of the mechanism alone can detect.
+*/
+test('B19: bindGestureDefer connects a live gesture to the inbound queue, both directions', () => {
+	const h = makeInput();
+	try {
+		const released = [];
+		const fakeSync = { deferInbound: null, releaseDeferred: () => released.push(1) };
+		bindGestureDefer(h.input, fakeSync);
+
+		assert.equal(typeof fakeSync.deferInbound, 'function', 'sync must be able to ASK whether a gesture is live');
+		assert.equal(fakeSync.deferInbound(), false, 'idle: nothing to defer');
+
+		seedNodes(h.model, [[0, 0]]);
+		h.input.onDown(pointer(0, 0));                       // marquee — a real in-flight gesture
+		h.input.onMove(pointer(120, 120));
+		assert.equal(fakeSync.deferInbound(), true, 'mid-gesture: inbound must queue');
+		assert.equal(released.length, 0, 'and nothing has been released yet');
+
+		h.input.onUp(pointer(120, 120));
+		assert.equal(fakeSync.deferInbound(), false, 'the gesture is over');
+		assert.ok(released.length >= 1, 'and the queue was released — the other direction of the binding');
+	} finally { h.restore(); }
+});
+
+test('B19: a cancelled gesture releases the queue too — Escape must not strand it', () => {
+	const h = makeInput();
+	try {
+		const released = [];
+		bindGestureDefer(h.input, { deferInbound: null, releaseDeferred: () => released.push(1) });
+		seedNodes(h.model, [[0, 0]]);
+		h.input.onDown(pointer(0, 0));
+		h.input.cancelDrag();
+		assert.ok(released.length >= 1, 'however a gesture ends, the deferred changes must land');
 	} finally { h.restore(); }
 });

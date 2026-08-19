@@ -23,6 +23,24 @@ const MIN_LOCK_MS = 1000; // keep the amber indicator up at least this long so a
 const LAST_DIAGRAM_KEY = 'draw.diagram';
 const OUTBOX_KEY = 'draw.outbox';
 
+/*
+Connect the gesture FSM to the inbound queue — D12, and the fix for B19.
+
+Both halves of the defer rule existed from CS3 and neither was ever connected: `deferInbound` was
+read and assigned nowhere, so `deferred` never filled and `releaseDeferred` never ran. That is the
+failure shape this codebase keeps producing — designed, written, tested in isolation, never wired —
+and a loose property assignment at the composition root is exactly what gets forgotten.
+
+Making it a named function with both directions in one place does two things a pair of assignments
+cannot: it can be called by a test, and half of it cannot be written without the other half being
+visibly absent.
+*/
+export function bindGestureDefer(input, sync) {
+	sync.deferInbound = () => input.isGesturing();
+	input.onGestureEnd = () => sync.releaseDeferred();
+	return sync;
+}
+
 export class Sync {
 	constructor({ model, net, history, selection, onState }) {
 		this.model = model;

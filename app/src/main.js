@@ -15,7 +15,7 @@ import { Selection } from './selection.js';
 import { Input } from './input.js';
 import { Palette } from './palette.js';
 import { Net } from './net.js';
-import { Sync } from './sync.js';
+import { Sync, bindGestureDefer } from './sync.js';
 import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
 import { DataView } from './dataview.js';
@@ -129,6 +129,8 @@ const sync = new Sync({
 	}
 });
 history.onCommit((request) => sync.submit(request));
+// D12 — a remote change must not land under a live drag preview (B19)
+bindGestureDefer(input, sync);
 
 
 menu.name.addEventListener('change', () => { sync.rename(menu.name.value); menu.name.blur(); menu.name.value = model.state.meta.name; });
