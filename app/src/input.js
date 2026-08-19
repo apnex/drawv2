@@ -33,6 +33,7 @@ Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.m
 */
 
 import { Overlay } from './overlay.js';
+import { RECOGNIZE, resolveRule } from './recognize.js';
 import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, waypointFree, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
@@ -49,6 +50,95 @@ const frameSpan = (a, b) => {
 	const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y), x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
 	return { x: x0 - NODE_R, y: y0 - NODE_R, w: (x1 - x0) + 2 * NODE_R, h: (y1 - y0) + 2 * NODE_R,
 		origin: { x: x0, y: y0 }, cols: Math.round((x1 - x0) / GAP) + 1, rows: Math.round((y1 - y0) / GAP) + 1 };
+};
+
+/*
+GESTURES — one entry per mode, one uniform shape (INPUT.md §7).
+
+	start(input, hit, pos, evt) → ctx
+
+`start` is all H6.4 unifies. `update`, `commit` and `cancel` still dispatch through the switches in
+onMove / dispatchUp / cancelDrag; folding those in is the same shape of work and is deliberately a
+separate step, because rewriting four dispatchers in one commit would leave nothing to bisect if the
+net went red.
+
+The bodies are the branches they replace, moved not rewritten. `move` and `clone` delegate to the
+existing startMove/startClone, which already had this shape — the design was latent in three of ten
+modes and this finishes it rather than imposing it.
+*/
+const GESTURES = {
+	pending: {
+		start: (i, hit, pos, evt) => {
+			i.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');   // for zones Shift is the layer key, not selection-add
+			i.ctx.orthoReady = !evt.shiftKey;
+			return i.ctx;
+		}
+	},
+
+	'clone-pending': {
+		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
+	},
+
+	resize: {
+		start: (i, hit) => {
+			const zoneId = i.selection.list().find((id) => kindOf(id) === 'zone');
+			const zone = i.model.get('zone', zoneId);
+			if (!zone) return null;
+			// the FIXED corner is the one OPPOSITE the grabbed handle
+			const corners = {
+				nw: { x: zone.x + zone.w, y: zone.y + zone.h }, ne: { x: zone.x, y: zone.y + zone.h },
+				sw: { x: zone.x + zone.w, y: zone.y },          se: { x: zone.x, y: zone.y }
+			};
+			return { zone: zoneId, fixedCorner: corners[hit.id], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
+		}
+	},
+
+	replug: {
+		start: (i, hit, pos) => {
+			const linkId = i.selection.list().find((id) => kindOf(id) === 'link');
+			const link = i.model.get('link', linkId);
+			if (!link) return null;
+			const fixedId = hit.end === 'src' ? link.dst : link.src;
+			const fixed = i.model.endpointOf(fixedId);   // an anchor is a node OR a waypoint (B29)
+			if (!fixed) return null;
+			i.renderer.setState(linkId, 'replugging', true);   // de-emphasize the real line while dragging
+			const ctx = { linkId, end: hit.end, fixedId, fixed, before: { src: link.src, dst: link.dst }, line: previewLine(i.overlay), target: null };
+			ctx.line.update(fixed, pos);
+			return ctx;
+		}
+	},
+
+	link: {
+		start: (i, hit, pos, evt) => {
+			const src = i.model.get(hit.kind, hit.id);
+			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
+			i.overlayUi.clearHover();
+			i.ctx = { src, path: previewPath(i.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [] };
+			i.updateLinkPreview(pos);
+			return i.ctx;
+		}
+	},
+
+	zone: {
+		start: (i, hit, pos) => {
+			const p1 = snapZone(pos);
+			const ctx = { p1, rect: previewRect(i.overlay, 'zone-rect preview') };
+			ctx.rect.update(resolveBox(p1, p1));
+			return ctx;
+		}
+	},
+
+	marquee: {
+		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, 'marquee') })
+	},
+
+	textbox: {
+		start: (i, hit, pos) => {
+			if (i.labels.isOpen()) i.labels.close(true);
+			const p1 = snapNode(pos);
+			return { p1, rect: previewRect(i.overlay, 'textbox-preview') };
+		}
+	},
 };
 
 export class Input {
@@ -161,173 +251,68 @@ export class Input {
 		}
 	}
 
+	/*
+	One press → one rule → one gesture. The 167-line nest this replaces is now three things: a
+	surface-mode guard, a live-gesture hook, and an ordered table (app/src/recognize.js).
+	*/
 	onDown(evt) {
-		// W5 — RUN mode: the diagram ACTS as UI. A click on a clickable region fires its action (the host
-		// app wires it via the 'draw:action' event); every other gesture (select/drag/stamp) is suppressed.
-		if (this.renderer.mode === 'run') {
-			if (evt.button !== 0) return;
-			const t = evt.target.closest && evt.target.closest('[data-action],[data-input]');
-			if (t && t.dataset.action) {   // W5 — a button: fire its action
-				evt.preventDefault();
-				window.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));
-			} else if (t && t.dataset.input !== undefined && !this.readOnly) {   // W6 — an input: edit its value inline
-				// B18 — run mode splits ACROSS the Server-Locked boundary, which is why a blanket guard
-				// could not sit above this branch. Firing an action is inspection: it dispatches
-				// `draw:action` to the host and commits nothing, so it stays live while locked. Opening
-				// the inline editor is authoring: its commit would be applied locally and then dropped
-				// by Sync (sync.js:62), diverging the tab permanently with no resync and no notice.
-				evt.preventDefault();
-				const node = t.closest('.node');
-				if (node) this.labels.openContent(node.id, Number(t.dataset.idx), t);
-			}
-			return;
-		}
-		// A1 — text tool ('t' held): a drag draws a grid-snapped text box (mirrors Shift+drag-zone); a click
-		// makes a 1×1. Intercepts before normal hit dispatch so it works anywhere on the canvas.
-		if (this.textTool && evt.button === 0) {
-			if (this.labels.isOpen()) this.labels.close(true);
-			const pos = toCanvas(evt, this.svg);
-			const p1 = snapNode(pos);
-			this.mode = 'textbox';
-			try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
-			this.ctx = { p1, rect: previewRect(this.overlay, 'textbox-preview') };
-			this.ctx.rect.update(frameSpan(p1, p1));
-			return;
-		}
+		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
+		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
+		if (this.renderer.mode === 'run') return this.runModePress(evt);
+
+		// chain wiring: the live gesture CONSUMES this press. Not a rule about starting one.
+		if (this.mode === 'link' && evt.button === 0) { this.ctx.chained = false; return; }
+
 		if (this.labels.isOpen()) this.labels.close(true);
-		this.palette.hideHand(); // ghost never rides along a gesture
+		this.palette.hideHand();
+
+		const hit = hitOf(evt);
 		const pos = toCanvas(evt, this.svg);
 		this.lastPos = pos;
-		const hit = hitOf(evt);
+		const rule = resolveRule(RECOGNIZE, hit, evt, this.ruleCtx());
+		if (!rule) return;
 
-		// read-only: left-click selects, left-drag marquees; nothing mutates
-		if (this.readOnly) {
-			if (evt.button !== 0) return;
-			try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
-			if (hit.kind === 'node' || hit.kind === 'zone' || hit.kind === 'link') {
-				this.beginPress(hit, pos, evt.shiftKey);
-			} else {
-				this.mode = 'marquee';
-				this.ctx = { p1: pos, rect: previewRect(this.overlay, 'marquee') };
-			}
-			return;
-		}
-		// chain wiring leaves link mode live across releases: a press while
-		// chaining is the start of the next release, never a cancel
-		if (this.mode === 'link' && evt.button === 0) {
-			try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
-			return;
-		}
-		if (evt.button === 2) {
-			// Alt+right-click: surgical delete of the armed entity under the cursor
-			if (evt.altKey) {
-				if (!this.isGesturing() && hit.id && hit.kind !== 'handle') {
-					this.overlayUi.disarm();
-					this.history.commit(commands.deleteSelection(this.model, new Set([hit.id])));
-					// selection auto-prunes on the delete's emits (selection.js)
-				}
-				return;
-			}
-			// right-press on a node/zone/waypoint: the move gesture (drag) or a plain select (click)
-			if (hit.kind !== 'node' && hit.kind !== 'zone' && hit.kind !== 'waypoint') return;
-			if (this.mode) this.cancelDrag(evt); // a second press never stacks on an active gesture
-			try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
-			if (evt.ctrlKey) {
-				// Ctrl turns the move-drag into a clone-drag, whichever button moves
-				this.mode = 'clone-pending';
-				this.ctx = { hit, start: pos, orthoReady: !evt.shiftKey };
-				return;
-			}
-			// for zones Shift is the layer key, not selection-add
-			this.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');
-			this.ctx.orthoReady = !evt.shiftKey;
-			return;
-		}
-		if (evt.button !== 0) return;
-		if (this.mode) this.cancelDrag(evt); // a second press never stacks on an active gesture
-		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
+		if (this.mode) this.cancelDrag(evt);   // a second press never stacks on an active gesture
+		this.overlayUi.zoneGrid(evt.shiftKey, false);
 		try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
 
-		if (hit.kind === 'handle') {
-			const zoneId = this.selection.list().find((id) => kindOf(id) === 'zone');
-			const zone = this.model.get('zone', zoneId);
-			if (!zone) return;
-			const corners = {
-				nw: { x: zone.x + zone.w, y: zone.y + zone.h },
-				ne: { x: zone.x, y: zone.y + zone.h },
-				sw: { x: zone.x + zone.w, y: zone.y },
-				se: { x: zone.x, y: zone.y }
-			};
-			this.mode = 'resize';
-			this.ctx = { zone: zoneId, fixedCorner: corners[hit.id], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
-			return;
-		}
+		if (rule.run) return this[rule.run](hit, evt, pos);
+		const handler = GESTURES[rule.gesture];
+		this.mode = rule.gesture;
+		this.ctx = handler.start(this, hit, pos, evt) || {};
+	}
 
-		// link endpoint handle: drag this end onto another node to rewire the link
-		if (hit.kind === 'lhandle') {
-			const linkId = this.selection.list().find((id) => kindOf(id) === 'link');
-			const link = this.model.get('link', linkId);
-			if (!link) return;
-			const fixedId = hit.end === 'src' ? link.dst : link.src;
-			const fixed = this.model.endpointOf(fixedId);   // an anchor is a node OR a waypoint (B29)
-			if (!fixed) return;
-			this.mode = 'replug';
-			this.renderer.setState(linkId, 'replugging', true); // de-emphasize the real line while dragging
-			this.ctx = {
-				linkId, end: hit.end, fixedId, fixed,
-				before: { src: link.src, dst: link.dst },
-				line: previewLine(this.overlay), target: null
-			};
-			this.ctx.line.update(fixed, pos);
-			return;
-		}
+	// what a rule predicate may ask about the world — never Input itself
+	ruleCtx() {
+		return {
+			readOnly: this.readOnly,
+			tool: this.textTool,
+			waypointFree: (id) => waypointFree(this.model, id),
+		};
+	}
 
-		// Ctrl+press on an entity: clone gesture (drag) or selection toggle (click);
-		// links can't anchor a clone but Ctrl+click still toggles them
-		if (evt.ctrlKey && (hit.kind === 'node' || hit.kind === 'zone' || hit.kind === 'link')) {
-			this.mode = 'clone-pending';
-			this.ctx = { hit, start: pos, orthoReady: !evt.shiftKey };
-			return;
-		}
-
-		if (hit.kind === 'node' || (hit.kind === 'waypoint' && waypointFree(this.model, hit.id))) {
-			// a node, or a FREE waypoint, is a link source; release without a drag is a click-select
-			const src = this.model.get(hit.kind, hit.id);
-			// pointer capture swallows the boundary pointerout in link mode
-			this.renderer.setState(src.id, 'hover', false);
-	
-			this.mode = 'link';
-			this.ctx = { src, path: previewPath(this.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [] };
-			this.updateLinkPreview(pos);
-			return;
-		}
-		if (hit.kind === 'waypoint') {
-			// occupied waypoint (free ones started a link above): left-click SELECTS only — never moves.
-			// Moving a waypoint is right-drag, like nodes (which never move on the left button).
-			if (evt.shiftKey) this.selection.toggle(hit.id);
-			else if (!this.selection.has(hit.id)) this.selection.set([hit.id]);
-			this.focusId = hit.id;
-			return;
-		}
-		if (hit.kind === 'zone' || hit.kind === 'link') {
-			// for zones Shift is the layer key, not selection-add
-			this.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');
-			this.ctx.orthoReady = !evt.shiftKey;
-			return;
-		}
-		// empty canvas
-		if (evt.shiftKey) {
-			const p1 = snapZone(pos);
-			this.mode = 'zone';
-			this.ctx = { p1, rect: previewRect(this.overlay, 'zone-rect preview') };
-			this.ctx.rect.update(resolveBox(p1, p1));
-		} else {
-			this.mode = 'marquee';
-			this.ctx = { p1: pos, rect: previewRect(this.overlay, 'marquee') };
+	runModePress(evt) {
+		if (evt.button !== 0) return;
+		const t = evt.target.closest && evt.target.closest('[data-action],[data-input]');
+		if (t && t.dataset.action) {
+			evt.preventDefault();
+			window.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));
+		} else if (t && t.dataset.input !== undefined && !this.readOnly) {
+			// run mode straddles the gate: firing an action commits nothing and stays live while
+			// locked; opening the inline editor authors a change and does not (B18).
+			evt.preventDefault();
+			const node = t.closest('.node');
+			if (node) this.labels.openContent(node.id, Number(t.dataset.idx), t);
 		}
 	}
 
-	// a press on an entity: selection now, possibly a move-drag later
+	deleteUnderCursor(hit) {
+		if (this.isGesturing()) return;
+		this.history.commit(commands.deleteSelection(this.model, [hit.id]));
+		this.afterHistory();
+	}
+
+
 	beginPress(hit, pos, shift) {
 		this.mode = 'pending';
 		this.ctx = { hit, start: pos, shift };

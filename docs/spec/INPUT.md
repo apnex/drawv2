@@ -134,6 +134,33 @@ Three properties the ladder cannot have:
 
 ---
 
+### The resolved matrix  *(generated from `RECOGNIZE`, H6.4)*
+
+Because the rules are data, the whole recognizer can be printed and checked — which is how two
+defects were found the moment it existed, neither reachable by reading the nest it replaced:
+
+| hit | plain | shift | ctrl | alt+R | R | **locked** |
+|---|---|---|---|---|---|---|
+| canvas | marquee | zone | marquee | — | — | marquee |
+| node | link | link | clone-pending | delete | pending | pending |
+| zone | pending | pending | clone-pending | delete | pending | pending |
+| link | pending | pending | clone-pending | delete | — | pending |
+| waypoint | link | link | link | delete | pending | **pending** |
+| handle | resize | resize | resize | — | — | **—** |
+| lhandle | replug | replug | replug | — | — | **—** |
+
+**Two defects the matrix exposed.** A handle carries an `id` (its corner name) and a link-endpoint
+handle carries `end` rather than `id`, so the naive tail rules `!!h.id` → select and `!h.id` →
+marquee were both wrong: a locked press on a resize handle fell through to *select-by-id*, setting
+the selection to a non-entity — which `Selection` rejects, silently CLEARING the selection and
+hiding the very handles being grabbed — and a locked press on a link handle started a marquee. Both
+rules are now keyed on the kind (`selectable(h)`, `kind === 'canvas'`).
+
+**One improvement, deliberate.** A locked press on a waypoint now selects it. It previously started
+a marquee, because the hand-written read-only branch enumerated node/zone/link and forgot waypoints
+— the same omission family as B29, and it disappears rather than being fixed: the tail rule admits
+every selectable kind, so there is no list to forget.
+
 ## 5. The Server-Locked gate
 
 > **A verb runs while Server-Locked if and only if it does not mutate.**
@@ -208,7 +235,8 @@ design already half-present rather than imposing one.
 | `commands.js` | Turn an intent plus a selection into one committable change. | `lastDelta` |
 | `overlay.js` ✓ | Draw transient feedback for the current pointer and selection. | `hovered` `armed` `datumEl` crosshair |
 | `keymap.js` | Map a keystroke to an intent, and say whether it mutates. | the table |
-| `input.js` | Drive one in-flight pointer gesture from press to commit. | `mode` `ctx` `lastPos` |
+| `input.js` ◑ | Drive one in-flight pointer gesture from press to commit. | `mode` `ctx` `lastPos` |
+| `recognize.js` ✓ | Decide WHICH gesture a press starts, and whether it mutates. | the table |
 
 **Not modules, deliberately:** `readOnly` is a predicate (§5); `focusId` belongs to label editing;
 `help` to `main.js`. And there are **no per-gesture files** — ten handlers of 30–60 lines belong
