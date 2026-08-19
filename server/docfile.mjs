@@ -36,8 +36,26 @@ export function serialize(doc, log) {
 		'\t\t]',
 		'\t}',
 	].filter((l) => l !== '').join('\n');
-	// splice the block in before the document's closing brace
-	return body.replace(/\n\}$/, ',\n' + block + '\n}') + '\n';
+
+	/*
+	Append the block before the document's closing brace, by SLICING — never by
+	`String.replace(regex, string)`.
+
+	B13: the replacement argument to `String.prototype.replace` is a pattern, not a literal, so
+	`$&`, $-backtick, `$'`, `$1` and `$$` inside `block` expand. `block` carries every log record,
+	a record carries entity names, and a name is any string (validate.js FIELDS.node.name). A node
+	named `a$&b` therefore injected the matched `"\n}"` into a JSON string literal and produced a
+	file that no longer parsed — written successfully, `dirty` cleared, silent until the next boot,
+	where D17/GR8 turned it into a refusal to start. The old form also anchored on /\n\}$/ and
+	dropped the whole log when the body did not match.
+
+	Slicing has neither failure mode: no pattern is interpreted, and the position is computed
+	rather than matched.
+	*/
+	if (!body.endsWith('}')) throw new Error(`docfile.serialize: document body is not a JSON object, got ${JSON.stringify(body.slice(0, 40))}`);
+	const head = body.slice(0, -1).trimEnd();          // everything up to, excluding, the closing brace
+	const sep = head.endsWith('{') ? '\n' : ',\n';     // only the EMPTY document has no member to comma after
+	return head + sep + block + '\n}\n';
 }
 
 // Splits a file back into { doc, log }. The log is returned as raw JSON for Log.from to

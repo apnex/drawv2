@@ -134,8 +134,8 @@ this runs before the harness. **H1.1 should land on its own, immediately.**
 
 | # | Item | Row | Sev · Size | Violates | Status |
 |---|---|---|---|---|---|
-| H1.1 | `serialize` — function-form `replace`, or build structurally. Ship standalone | **B13** | **S1 · S** | D18; false-fires GR8/I15 | `TODO` |
-| H1.2 | Adversarial-string round-trip: `$&`, `` $` ``, `$'`, `$1`, and a `body` not ending `"\n}"` | B13 | — | — | `TODO` |
+| H1.1 | `serialize` — built structurally by slicing; no `replace`, no pattern interpretation. Shipped standalone | **B13** | **S1 · S** | D18; false-fires GR8/I15 | `DONE` |
+| H1.2 | Adversarial-string round-trip: 7 replacement patterns, the empty-body log-drop, and the end-to-end restart. All three verified **red first**; 35/35 real files byte-identical after | B13 | — | — | `DONE` |
 | H1.3 | Per-entry `flushedVersion` set in `flush()`; a `Store` accessor replacing the 10 hand-walked `diagrams.get(id)?.log` sites | **B15**, B26 (part) | **S1 · M** | D13, D30 | `TODO` |
 | H1.4 | Move the GR9 post-condition out of the write's try/catch; distinct counter and `/health` signal | **B20** | S4 · S | GR9 | `TODO` |
 

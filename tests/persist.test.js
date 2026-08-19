@@ -39,6 +39,64 @@ test('I10: parse(serialize(doc, log)) deep-equals the input, including a large r
 	assert.deepEqual(back.log, log.toJSON());
 });
 
+/*
+B13 — a `$` in any entity name must not corrupt the file.
+
+`serialize` splices the log block in with `String.replace(regex, string)`, and in a string
+replacement `$&`, $-backtick, `$'`, `$1` and `$$` are REPLACEMENT PATTERNS, not literals. The block
+carries every log record, a record carries entity names, and a name is any string
+(`server/validate.js` FIELDS.node.name = `str(v, 64)`). `$&` expands to the matched `"\n}"` and
+injects a raw newline into a JSON string literal.
+
+Why this is worse than a bad write: the write SUCCEEDS and `entry.dirty` is cleared
+(`server/store.js:343`), so nothing reports it. The file is unreadable only at the next boot,
+where `Store.init` skips it — and if it is the only diagram, D17/GR8 makes the process refuse to
+start. A user naming a node `$&` is a persistent boot failure plus the loss of that diagram's log.
+*/
+const ADVERSARIAL = ['a$&b', "a$'b", 'a$`b', 'a$1b', 'a$$b', '$&', '$`'];
+
+test('B13: a replacement-pattern entity name round-trips through the file', () => {
+	for (const name of ADVERSARIAL) {
+		const doc = { meta: { id: 'diagram-aaaaaa', name: 'x', slides: { url: '', presentationId: '', pageId: '' } },
+			nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
+		const log = new Log(0);
+		log.version++;
+		log.append({ seq: 1, from: 0, at: 1, by: 'client', actor: 'a', label: 'rename',
+			ops: [{ op: 'put', kind: 'node', entity: { ...node('node-aaaaaa'), name } }], inverse: [] });
+
+		const text = serialize(doc, log);
+		let back;
+		assert.doesNotThrow(() => { back = parse(text); },
+			`a node named ${JSON.stringify(name)} produced an unparseable file`);
+		assert.equal(back.log.records[0].ops[0].entity.name, name,
+			`the name did not survive serialize: ${JSON.stringify(name)}`);
+	}
+});
+
+test('B13: the log block survives a document body that does not end in "\\n}"', () => {
+	// the splice is anchored on /\n\}$/; anything that does not match drops the whole log SILENTLY.
+	const log = new Log(0);
+	log.version++;
+	log.append({ seq: 1, from: 0, at: 1, by: 'client', actor: 'a', label: 'x', ops: [], inverse: [] });
+	const back = parse(serialize({}, log));
+	assert.deepEqual(back.log, log.toJSON(), 'an empty document body must not lose the log');
+});
+
+test('B13: a $-named node survives a restart — the corruption escalated to a boot refusal', () => {
+	const dir = tmp();
+	try {
+		const a = storeWith(dir);
+		a.s.commit(a.id, { label: 'create', ops: [put('node', { ...node('node-bd0001', 300), name: 'a$&b' })] }, 'server', 't');
+		a.s.flush(a.id);
+
+		const b = new Store(dir);            // a different process would see exactly this
+		assert.doesNotThrow(() => b.init(), 'the store refused to boot on a file it corrupted itself');
+		const named = b.get(a.id).all('node').find((n) => n.id === 'node-bd0001');
+		assert.equal(named.name, 'a$&b', 'the name came back intact');
+		assert.ok(b.diagrams.get(a.id).log.records.length >= 1, 'and the log came back with it');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('I10: the document half stays pretty-printed and carries no log key', () => {
 	const dir = tmp();
 	try {
