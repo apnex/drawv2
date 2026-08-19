@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor } from '../../kernel/index.mjs';
+import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -19,7 +19,6 @@ const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
 const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // unknown glyph → host fit-box (no crash)
 // a node's multi-cell footprint (W1): px extent beyond a 1×1 frame (+x/+y from the origin cell), and a
 // cheap signature for change-detect. No span / 1×1 → {0,0} / null, so a 1×1 node renders byte-identically.
-const spanPx = (e) => ({ sw: e.span ? (e.span.cols - 1) * STD.pitch : 0, sh: e.span ? (e.span.rows - 1) * STD.pitch : 0 });
 const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.span.cols}x${e.span.rows}` : null;
 // W2 content regions: a node carries content (text/glyph in its socket grid). contentSig drives re-render
 // on a content change; absent ⇒ no attr (plain node stays byte-identical). hexColor keeps SVG attrs safe.
@@ -134,7 +133,7 @@ export class Renderer {
 	// null when no member resolves (avoids ±Infinity), matching the kernel's empty-group guard.
 	groupBox(entity) {
 		const members = entity.members.map((id) => this.model.endpointOf(id)).filter(Boolean)
-			.map((m) => { const { sw, sh } = spanPx(m); return { x: m.x, y: m.y, w: sw, h: sh }; });   // span-aware footprint
+			.map((m) => { const { sw, sh } = spanExtent(m.span); return { x: m.x, y: m.y, w: sw, h: sh }; });   // span-aware footprint
 		return groupHull(members, L_STD.group.ext);   // one authority shared with the kernel resolve (now footprint-aware)
 	}
 
@@ -143,7 +142,7 @@ export class Renderer {
 		if (kind === 'node') {
 			const g = el('g', { id: entity.id, class: 'node' }, this.layers.nodes);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			const { sw, sh } = spanPx(entity), sig = spanSig(entity), csig = contentSig(entity);
+			const { sw, sh } = spanExtent(entity.span), sig = spanSig(entity), csig = contentSig(entity);
 			if (sig || csig) {   // a panel (content) or multi-cell node → a sized rounded-rect frame (same .frame styling)
 				if (sig) g.setAttribute('data-span', sig);
 				// a panel's corner FOLLOWS its shape (like a 1×1 node, toggled by 's'): circle → the circle radius
@@ -230,7 +229,7 @@ export class Renderer {
 			const label = dom.querySelector('.label');
 			if (label && label.textContent !== entity.name) {
 				label.textContent = entity.name || '';
-				const pw = pillWidth(entity.name), sw = spanPx(entity).sw;
+				const pw = pillWidth(entity.name), sw = spanExtent(entity.span).sw;
 				setAttrs(dom.querySelector('.label-pill'), { x: sw / 2 - pw / 2, width: pw });
 			}
 			this.model.linksOf(entity.id).forEach((link) => this.update('link', link));

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
-import { CANVAS, GAP, NODE_EXT, ZONE_EXT, snapNode, snapZone, resolveBox, pointInBox, dist, nodePoints } from '../app/src/snap.js';
+import { CANVAS, GAP, NODE_EXT, ZONE_EXT, spanExtent, snapNode, snapZone, resolveBox, pointInBox, dist, nodePoints } from '../app/src/snap.js';
 import { SURFACE, NODE_EXT as DOC_NODE_EXT, ZONE_EXT as DOC_ZONE_EXT } from '../model/index.mjs';
 
 // Grid math lives in app/src/snap.js (shipped). The center-origin geometry was ported from the
@@ -72,4 +72,36 @@ test('CL3 single-source: snap re-exports the model/ surface + extents (no diverg
 	assert.deepEqual(snap.CANVAS, { w: 1920, h: 1080, hw: 960, hh: 540 });
 	assert.deepEqual(snap.NODE_EXT, { x: 900, y: 480 });
 	assert.deepEqual(snap.ZONE_EXT, { x: 930, y: 510 });
+});
+
+/*
+spanExtent — a node's footprint beyond its 1×1 frame, in px. One owner.
+
+`(span.cols - 1) * pitch` had FIVE spellings: `spanPx` in the renderer and `spanExt` in input were
+the same function under two names, and readout and onDblClick each inlined it again. `scan-twins`
+could not see them — they are one-liners, below its `MIN_LINES` floor, which is a real limitation of
+that detector and the reason this one needed a human. The two remaining `span` computations are
+genuinely different and stay: `engine/relations.mjs` keys CELLS, `kernel/adapt.mjs` builds cell
+RANGES. Same field, different questions.
+
+Takes the span, not the entity: the kernel has no business knowing what an entity looks like.
+*/
+test('spanExtent: a 1×1 node has no extent beyond its frame', () => {
+	assert.deepEqual(spanExtent(undefined), { sw: 0, sh: 0 }, 'absent span = a plain node');
+	assert.deepEqual(spanExtent({ cols: 1, rows: 1 }), { sw: 0, sh: 0 });
+});
+
+test('spanExtent: extent is the cells BEYOND the first, in px', () => {
+	assert.deepEqual(spanExtent({ cols: 2, rows: 1 }), { sw: GAP, sh: 0 });
+	assert.deepEqual(spanExtent({ cols: 1, rows: 3 }), { sw: 0, sh: 2 * GAP });
+	assert.deepEqual(spanExtent({ cols: 4, rows: 4 }), { sw: 3 * GAP, sh: 3 * GAP });
+});
+
+test('spanExtent: the far edge of a span lands on the node grid', () => {
+	// the property the footprint maths exists for: anchor + extent is itself a grid point, so a
+	// multi-cell node's far edge is snappable and a marquee over it is exact
+	for (const cols of [1, 2, 5, 12]) {
+		const { sw } = spanExtent({ cols, rows: 1 });
+		assert.equal(sw % GAP, 0, `cols=${cols} lands off-grid`);
+	}
 });

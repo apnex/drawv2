@@ -8,7 +8,7 @@ clicking any mount toggles, persisted.
 */
 
 import { kindOf } from '../../model/index.mjs';
-import { GAP } from './snap.js';
+import { GAP, spanExtent } from './snap.js';
 
 const UNITS_KEY = 'draw.units';
 
@@ -142,7 +142,7 @@ export class Readout {
 			const entity = this.model.get(kind, id);
 			if (!entity || entity.x === undefined) return;
 			let w = entity.w || 0, h = entity.h || 0;
-			if (kind === 'node' && entity.span) { w = (entity.span.cols - 1) * GAP; h = (entity.span.rows - 1) * GAP; }   // span-aware footprint
+			if (kind === 'node' && entity.span) { const e = spanExtent(entity.span); w = e.sw; h = e.sh; }   // span-aware footprint
 			minX = Math.min(minX, entity.x); minY = Math.min(minY, entity.y);
 			maxX = Math.max(maxX, entity.x + w); maxY = Math.max(maxY, entity.y + h);
 			centers.push({ x: entity.x + w / 2, y: entity.y + h / 2 });

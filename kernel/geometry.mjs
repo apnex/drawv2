@@ -48,6 +48,23 @@ export function bboxOf(el, L = L_STD) {
 	return null;
 }
 
+/*
+A node's footprint BEYOND its 1×1 frame, in px — the extent a multi-cell span adds on +x/+y.
+
+One owner. This was five spellings of `(span.cols - 1) * pitch`: `spanPx` in the client renderer and
+`spanExt` in input were the same function under two names, and the readout and the double-click
+hit-test each inlined it again. `tools/scan-twins.mjs` cannot see one-liners — they fall below its
+MIN_LINES floor — so this is the class of duplication a detector will not find and a reader must.
+
+Takes the SPAN, not the entity: the kernel has no business knowing an entity's shape. Two other
+`span` computations are deliberately NOT folded in, because they answer different questions with the
+same field — `engine/relations.mjs` keys occupied CELLS, `kernel/adapt.mjs` builds cell RANGES.
+*/
+export const spanExtent = (span, V = STD) => ({
+	sw: span ? (span.cols - 1) * V.pitch : 0,
+	sh: span ? (span.rows - 1) * V.pitch : 0
+});
+
 // group hull = bbox of member CENTRES padded by `ext` on all sides. centres = [{x,y},…];
 // null for no members (avoids ±Infinity). One authority shared by the engine (resolve) and the
 // live renderer so the two group-hull computations never drift.

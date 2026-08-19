@@ -32,7 +32,7 @@ Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.m
   Escape            cancel / clear / close overlay              ?       help overlay
 */
 
-import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
+import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
@@ -51,9 +51,8 @@ const frameSpan = (a, b) => {
 };
 // a multi-cell node's footprint extent beyond its origin in px (0 for a 1×1 node / waypoint) + helpers to
 // hit-test / overlap a node by its whole FOOTPRINT (not just the origin point) — span-awareness for the editor.
-const spanExt = (n) => ({ sw: n.span ? (n.span.cols - 1) * GAP : 0, sh: n.span ? (n.span.rows - 1) * GAP : 0 });
-const inFootprint = (n, pos, pad = 0) => { const { sw, sh } = spanExt(n); return pos.x >= n.x - pad && pos.x <= n.x + sw + pad && pos.y >= n.y - pad && pos.y <= n.y + sh + pad; };
-const footprintHits = (n, box, pad = 0) => { const { sw, sh } = spanExt(n);   // node footprint rect ∩ a box (marquee)
+const inFootprint = (n, pos, pad = 0) => { const { sw, sh } = spanExtent(n.span); return pos.x >= n.x - pad && pos.x <= n.x + sw + pad && pos.y >= n.y - pad && pos.y <= n.y + sh + pad; };
+const footprintHits = (n, box, pad = 0) => { const { sw, sh } = spanExtent(n.span);   // node footprint rect ∩ a box (marquee)
 	return n.x - pad <= box.x + box.w && n.x + sw + pad >= box.x && n.y - pad <= box.y + box.h && n.y + sh + pad >= box.y; };
 
 export class Input {
@@ -1091,7 +1090,7 @@ export class Input {
 			if (m.kind === 'node' || m.kind === 'waypoint') {
 				// clamp the FOOTPRINT: the origin stays ≥ -EXT and the far cell (origin + span) stays ≤ +EXT
 				const n = m.kind === 'node' ? this.model.get('node', m.id) : null;
-				const { sw, sh } = n ? spanExt(n) : { sw: 0, sh: 0 };
+				const { sw, sh } = spanExtent(n && n.span);
 				minX = Math.max(minX, -NODE_EXT.x - m.before.x); maxX = Math.min(maxX, NODE_EXT.x - sw - m.before.x);
 				minY = Math.max(minY, -NODE_EXT.y - m.before.y); maxY = Math.min(maxY, NODE_EXT.y - sh - m.before.y);
 			} else {
@@ -1282,8 +1281,7 @@ export class Input {
 		// A1 — a TEXT BOX is hit by its whole FOOTPRINT (not just the origin cell), so double-clicking ANYWHERE
 		// on the box edits its text. (A plain node / panel still routes to the name-edit / icon test below.)
 		const tbs = this.model.all('node').filter((n) => Array.isArray(n.content) && n.content.length === 1 && n.content[0].content === 'text'
-			&& pos.x >= n.x - NODE_R && pos.x <= n.x + (n.span ? (n.span.cols - 1) * GAP : 0) + NODE_R
-			&& pos.y >= n.y - NODE_R && pos.y <= n.y + (n.span ? (n.span.rows - 1) * GAP : 0) + NODE_R);
+			&& inFootprint(n, pos, NODE_R));
 		const tb = tbs[tbs.length - 1]; // topmost (last-rendered)
 		if (tb) {
 			if (this.mode) this.cancelDrag(evt);

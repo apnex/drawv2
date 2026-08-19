@@ -12,7 +12,7 @@ export { renderScene, renderElement, sharedDefs, DRAW_ORDER, selBox, renderConte
 export { grc, RULES, crossings } from './grc.mjs';
 export { roundedPath, gridSnap } from './router.mjs';
 export { docToSchema, schemaToDoc } from './adapt.mjs';
-export { px, cellPx, cellCenter, cellOf, groupHull, bboxOf } from './geometry.mjs';
+export { px, cellPx, cellCenter, cellOf, groupHull, bboxOf, spanExtent } from './geometry.mjs';
 
 import { resolve } from './engine.mjs';
 import { renderScene } from './renderer.mjs';
