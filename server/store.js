@@ -163,7 +163,11 @@ export class Store {
 		const model = new Model();
 		model.load(doc);
 		model.state.meta = cleanMeta(id, doc.meta);
-		const entry = { model, log, dirty: false, timer: null, file: file || `${id}.json` };
+		// B15 — a diagram READ FROM a file is durable at the version that file carries; one being
+		// created has nothing on disk yet and is durable at nothing. `file` is the discriminator:
+		// init() passes the filename it loaded, create() does not.
+		const entry = { model, log, dirty: false, timer: null, file: file || `${id}.json`,
+			flushedVersion: file ? log.version : 0 };
 		this.diagrams.set(id, entry);
 		return entry;
 	}
@@ -341,6 +345,10 @@ export class Store {
 		try {
 			this.writeDoc(file, serialize(entry.model.toJSON(), entry.log));
 			entry.dirty = false; // only after the write actually landed
+			// B15 — and so is the watermark. This is the ONLY place a version becomes durable, so
+			// it is recorded here, from the log that was actually just written, rather than guessed
+			// downstream from `dirty`.
+			entry.flushedVersion = entry.log.version;
 		} catch (err) {
 			// B4: the entry is still dirty but markDirty already nulled the timer, so without an
 			// explicit reschedule recovery waits for the next edit or SIGTERM. Retry, and COUNT —
@@ -374,6 +382,28 @@ export class Store {
 			const bad = entry.log.records.filter((r) => r.seq > entry.log.version).map((r) => r.seq);
 			console.error(`[ store ] GR9 log invariant breached for ${id} (${entry.invariantFailures}): seq ${bad.join(',')} exceeds version ${entry.log.version}`);
 		}
+	}
+
+	/*
+	The log for a diagram, and the version of it that is actually on disk — B15 / A3 `Air-Gap`.
+
+	These exist because ten sites outside this class reached into `store.diagrams.get(id)` to read
+	`.log` and `.dirty` directly, and then each re-derived the durability rule for itself. It was
+	spelled three different ways at three sites — only one of which null-guarded — which is exactly
+	why it was wrong in more than one place at once. A rule with no home gets re-remembered.
+
+	`durableVersion` is the watermark `flush()` recorded, never a guess from `dirty`. `dirty` answers
+	"is anything unwritten?"; the wire needs "how far can the client prune its outbox?" (D30), and
+	`version - 1` answers that only when exactly one commit is outstanding.
+	*/
+	log(id) {
+		return this.diagrams.get(id)?.log;
+	}
+
+	durableVersion(id) {
+		const entry = this.diagrams.get(id);
+		if (!entry) return 0;
+		return entry.flushedVersion ?? 0;
 	}
 
 	// total GR9 invariant breaches across all diagrams — surfaced by GET /health SEPARATELY from

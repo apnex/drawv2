@@ -179,7 +179,7 @@ export function handleRest(req, res, store, slides, locks, hub) {
 		}), true;
 	}
 	if (parts[4] === 'history' && parts.length === 5) {
-		const log = store.diagrams.get(parts[3])?.log;
+		const log = store.log(parts[3]);
 		const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
 		const verbose = url.searchParams.get('verbose') === '1';
 		const records = (log?.records ?? []).slice(-limit).map((c) => projectRecord(c, verbose));
@@ -222,7 +222,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 			if (lock.held) return json(res, 409, { error: 'reclaimed by the human', code: 'reclaimed', retryAfter: lock.retryAfter });
 			if (hub) hub.broadcast(id, 'lock', { owner: 'server' });
 			// hydrate the agent at its entry point: it should never have to ASK what the state is
-			const log = store.diagrams.get(id)?.log;
+			const log = store.log(id);
 			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt,
 				version: log?.version ?? 0, canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
 				logDepth: log?.records.length ?? 0, truncated: !!log?.truncated });
@@ -264,7 +264,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 	if ((parts[4] === 'undo' || parts[4] === 'redo') && parts.length === 5 && req.method === 'POST') {
 		if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 		const body = (await readJson(req)) || {};
-		const log = store.diagrams.get(id)?.log;
+		const log = store.log(id);
 		if (body.expect == null) {
 			return json(res, 400, { error: 'expect required on undo/redo', code: 'expect-required', version: log?.version ?? 0 });
 		}
@@ -286,7 +286,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 			label: parts[4], ops: result.ops, version: result.version,
 			// attribution: WHOSE change was reversed, so a readout can say "undid agent-1's move"
 			reversed: reversing ? { seq: reversing.seq, actor: reversing.actor, label: reversing.label } : null,
-			durableVersion: store.diagrams.get(id).dirty ? result.version - 1 : result.version,
+			durableVersion: store.durableVersion(id),
 			canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated,
 			truncatedHuman: !!log.truncatedHuman };
 		if (hub) hub.broadcast(id, 'change', payload);

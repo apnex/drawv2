@@ -36,7 +36,7 @@ import crypto from 'node:crypto';
 
 export function snapshotBody(model, store, locks) {
 	const id = model.state.meta.id;
-	const log = store.diagrams.get(id)?.log;
+	const log = store.log(id);
 	return {
 		doc: model.toJSON(),
 		diagrams: store.list(),
@@ -59,7 +59,7 @@ export function snapshotBody(model, store, locks) {
 // already correct — and would discard the local selection and viewport with it.
 export function syncBody(model, store, locks) {
 	const id = model.state.meta.id;
-	const log = store.diagrams.get(id)?.log;
+	const log = store.log(id);
 	return {
 		version: log ? log.version : 0,
 		canUndo: !!log?.canUndo(),
@@ -95,14 +95,13 @@ function topRun(log) {
 // `ops` is included so a receiver can apply the change without refetching; `inverse` NEVER goes on
 // the wire (it is the server's undo material, and it doubles the payload).
 export function changeBody(change, store, id) {
-	const entry = store.diagrams.get(id);
-	const log = entry?.log;
+	const log = store.log(id);
 	return {
 		seq: change.seq, from: change.from, at: change.at,
 		by: change.by, actor: change.actor, label: change.label,
 		ops: change.ops,
 		version: log ? log.version : change.seq,
-		durableVersion: entry && !entry.dirty ? log.version : (log ? log.version - 1 : 0),
+		durableVersion: store.durableVersion(id),
 		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(), truncated: !!log?.truncated,
 		truncatedHuman: !!log?.truncatedHuman, undoTop: topRun(log),
 	};
@@ -218,7 +217,7 @@ export class Session {
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;
-				const log = this.store.diagrams.get(this.diagramId)?.log;
+				const log = this.store.log(this.diagramId);
 				// D14/GR11: undo's target is IMPLICIT — the top of a shared ring another writer may
 				// have moved. A session that did not author the top record must say which version it
 				// believes it is undoing.
@@ -242,7 +241,7 @@ export class Session {
 					label: cmd, ops: res.ops, version: res.version,
 					// attribution: whose change this reversed, so the readout can name them
 					reversed: reversing ? { seq: reversing.seq, actor: reversing.actor, label: reversing.label } : null,
-					durableVersion: this.store.diagrams.get(this.diagramId).dirty ? res.version - 1 : res.version,
+					durableVersion: this.store.durableVersion(this.diagramId),
 					canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated,
 					truncatedHuman: !!log.truncatedHuman, undoTop: topRun(log) };
 				this.send('ack', { ...payload, acked: body.txnId ?? null });
@@ -256,7 +255,7 @@ export class Session {
 				const model = this.store.get(body.diagram);
 				if (!model) return this.error(`unknown diagram: ${body.diagram}`, 'unknown-diagram');
 				this.diagramId = body.diagram;
-				const log = this.store.diagrams.get(this.diagramId).log;
+				const log = this.store.log(this.diagramId);
 				// I11: the client's number is a BELIEF, never an authority. It selects which reply
 				// to send and is otherwise discarded — it can neither set nor advance the version.
 				const believed = Number.isInteger(body.version) ? body.version : null;

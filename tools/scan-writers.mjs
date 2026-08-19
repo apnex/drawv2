@@ -35,11 +35,24 @@ const EXT = /\.(js|mjs)$/;
 const MUTATE = /\b(?:this\.)?(?:model|scratch|proj|entry\.model)\.(put|set|del)\s*\(/g;
 const LOAD = /\b(?:this\.)?(?:model|scratch|proj|entry\.model)\.load\s*\(/g;
 
+/*
+B15 / A3 `Air-Gap` — nobody reaches into Store's private diagram Map.
+
+`store.diagrams` is an implementation detail. Ten sites in protocol.js and rest.js walked into it
+to read `.log` and `.dirty`, and each then re-derived the durability rule for itself — three sites,
+three different spellings, only one null-guarded. That divergence IS B15: a rule with no home gets
+re-remembered, and re-remembered wrong. Store now owns `log(id)` and `durableVersion(id)`.
+
+Scanned as source because the boundary is only violated at author time and the violation is
+invisible at runtime — the code works, it just re-implements a rule it does not own.
+*/
+const REACH = /\bdiagrams\.get\s*\(/g;
+
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
-	'document/ops.mjs': { mutate: null, load: 0 },
-	'server/store.js': { mutate: 0, load: 1 },
-	'server/txn.mjs': { mutate: 0, load: 1 },
+	'document/ops.mjs': { mutate: null, load: 0, reach: 0 },
+	'server/store.js': { mutate: 0, load: 1, reach: null },   // it owns the Map
+	'server/txn.mjs': { mutate: 0, load: 1, reach: 0 },
 };
 
 function walk(dir, out = []) {
@@ -62,14 +75,23 @@ const hits = (text, re) => {
 let bad = 0;
 let mutations = 0;
 let loads = 0;
+let reaches = 0;
 
 for (const file of ROOTS.flatMap((r) => walk(r))) {
 	const text = fs.readFileSync(file, 'utf8');
-	const allow = ALLOW[file] ?? { mutate: 0, load: 0 };
+	const allow = ALLOW[file] ?? { mutate: 0, load: 0, reach: 0 };
 	const m = hits(text, MUTATE);
 	const l = hits(text, LOAD);
+	const r = hits(text, REACH);
 	mutations += m.length;
 	loads += l.length;
+	reaches += r.length;
+
+	if (allow.reach !== null && r.length !== allow.reach) {
+		bad++;
+		console.log(`  \u2717 ${file}: ${r.length} reach(es) into store.diagrams, allowed ${allow.reach} — use Store.log(id) / Store.durableVersion(id)`);
+		r.forEach((h) => console.log(`      :${h.line}  ${h.text.trim()}`));
+	}
 
 	if (allow.mutate !== null && m.length !== allow.mutate) {
 		bad++;
@@ -94,9 +116,14 @@ if (loads === 0) {
 	bad++;
 }
 
-console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s) across ${ROOTS.join('/')}`);
+if (reaches === 0) {
+	console.log('  \u2717 NO store.diagrams access matched at all — the scan is broken, not the tree clean');
+	bad++;
+}
+
+console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}`);
 if (bad) {
 	console.log(`\n  FAIL — ${bad} allow-list violation(s). An out-of-band write corrupts every stored inverse below it, silently.\n`);
 	process.exit(1);
 }
-console.log('  PASS — one writer (document/ops.mjs#applyOps); load confined to Store.install + plan()\n');
+console.log('  PASS — one writer (document/ops.mjs#applyOps); load confined to Store.install + plan(); store internals unreached\n');

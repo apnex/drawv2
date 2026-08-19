@@ -154,7 +154,7 @@ this runs before the harness. **H1.1 should land on its own, immediately.**
 |---|---|---|---|---|---|
 | H1.1 | `serialize` — built structurally by slicing; no `replace`, no pattern interpretation. Shipped standalone | **B13** | **S1 · S** | D18; false-fires GR8/I15 | `DONE` |
 | H1.2 | Adversarial-string round-trip: 7 replacement patterns, the empty-body log-drop, and the end-to-end restart. All three verified **red first**; 35/35 real files byte-identical after | B13 | — | — | `DONE` |
-| H1.3 | Per-entry `flushedVersion` set in `flush()`; a `Store` accessor replacing the 10 hand-walked `diagrams.get(id)?.log` sites | **B15**, B26 (part) | **S1 · M** | D13, D30 | `TODO` |
+| H1.3 | Per-entry `flushedVersion` recorded in `flush()`; `Store.log(id)` + `Store.durableVersion(id)` retire all 10 hand-walked sites and all 3 spellings of the rule; `scan-writers` extended to keep the boundary shut (**proven to bite**) | **B15**, B26 (part) | **S1 · M** | D13, D30, A1, A3 | `DONE` |
 | H1.4 | GR9 post-condition moved out of the write's try/catch; own counter (`invariantFailures`), own `/health` status (`corrupt` vs `degraded`), own message, surfaced in `draw status` | **B20** | S4 · S | GR9 | `DONE` |
 | H1.5 | `readJson`: settle on `'aborted'`/`'close'`; accumulate `Buffer`s and cap on bytes. **Promoted from H4** — A7's mandate is that no actor is permanently blocked, and a >1 MB body hangs the request forever | **B24** | S4 · **A7 mandate** · S | A7 | `TODO` |
 

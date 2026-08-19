@@ -159,6 +159,66 @@ test('B20: a breach is re-checked on the next write, not reported once and forgo
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+/*
+B15 — `durableVersion` must name what is actually on disk.
+
+It was derived from a BOOLEAN (`entry.dirty`) with no flushed watermark, spelled three different
+ways at three sites (protocol.js:105 with null-guards, protocol.js:245 and rest.js:283 without).
+`dirty` answers "is there anything unwritten?", which is not the question: with three commits
+inside one 200 ms debounce window the ack for v3 reported `durableVersion: 2` while NOTHING had
+been flushed and the true durable version was 0.
+
+The client prunes its persisted outbox on this number (D30), so it discards work that exists only
+in memory. D29's rewind detects the loss on reconnect — but the outbox, which is the recovery
+material, is already gone. A1 `Ephemeral Truth Loss`, inside the window B6 declares safe.
+*/
+test('B15: durableVersion names the flushed watermark, not the absence of dirt', () => {
+	const dir = tmp();
+	try {
+		const s = new Store(dir, { flushMs: 100000 });   // nothing auto-flushes during the test
+		s.init();
+		const id = s.list()[0].id;
+
+		assert.equal(s.durableVersion(id), s.diagrams.get(id).log.version, 'a freshly-loaded diagram is fully durable');
+		const atLoad = s.durableVersion(id);
+
+		s.commit(id, { ops: [put('node', node('node-c00001', 60))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-c00002', 120))] }, 'server', 't');
+		const third = s.commit(id, { ops: [put('node', node('node-c00003', 180))] }, 'server', 't');
+
+		assert.equal(s.durableVersion(id), atLoad, 'three commits in one window flushed NOTHING, so nothing new is durable');
+		assert.ok(s.durableVersion(id) < third.version - 1, 'the old `version - 1` guess over-reported by two');
+
+		s.flush(id);
+		assert.equal(s.durableVersion(id), third.version, 'after the flush, everything is durable');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B15: a failed write leaves durableVersion behind, and a later success advances it', () => {
+	const dir = tmp();
+	try {
+		let fail = false;
+		const s = new Store(dir, { flushMs: 100000, writeDoc: (f, t) => {
+			if (fail) throw new Error('backend unavailable');
+			fs.writeFileSync(f, t);
+		} });
+		s.init();
+		const id = s.list()[0].id;
+		s.flush(id);
+		const durable = s.durableVersion(id);
+
+		fail = true;
+		const r = s.commit(id, { ops: [put('node', node('node-c10001', 60))] }, 'server', 't');
+		s.flush(id);
+		assert.equal(s.durableVersion(id), durable, 'a write that threw did not make anything durable');
+		assert.ok(s.flushFailures() > 0, 'and it is counted as the I/O failure it is');
+
+		fail = false;
+		s.flush(id);
+		assert.equal(s.durableVersion(id), r.version, 'the retry that landed advanced the watermark');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 // ---- I5 across a restart ----
 
 test('I5: undo survives a process restart', () => {
