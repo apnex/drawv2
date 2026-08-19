@@ -251,6 +251,79 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 
 ---
 
+## H6 — decompose `input.js` · `TODO`
+
+**B35**, promoted from a deferral to a scheduled arc (approved 2026-08-19). Runs **after H3–H5**: the
+five H3 rows are user-visible severities that should not wait behind a structural arc, and each is
+easier to verify once this lands, not harder. Governed by **A3 Sovereign Composition**; the house
+pattern is already demonstrated by `kernel/` · `engine/` · `document/` — sovereign siblings importing
+nothing from each other, composed only at roots.
+
+### What the measurement says
+
+`input.js` is 1,609 lines / 53 methods / 11 gesture modes / 14 mutable state fields / 23 commit sites.
+
+| | lines | |
+|---|---|---|
+| **stateless** (20 methods) | **312** | movable with zero FSM risk |
+| stateful, non-dispatcher (29) | 582 | need an owner named first |
+| the 4 dispatchers | **656** | `onKeyDown` 224 · `onUp` 169 · `onDown` 162 · `onMove` 101 |
+
+State coupling, by how many methods touch each field: `mode` 16 · `ctx` 12 · `lastPos` 8 · `readOnly` 7 ·
+`focusId` 7 · `hovered` 6 · `textTool` 4 · `lastDelta` 4 · `snap` 4 · `armed` 3 · `lastResize` 3 · `help` 3 ·
+`lastNudge` 2 · `datumEl` 2. The `mode`+`ctx` pair is the only genuinely central state; the rest are small
+clusters that already have natural owners.
+
+**The decisive finding: 4 of the 11 gesture modes already carry a `start*/update*/commit*` triple**
+(move, clone, link, resize); the other 7 are inlined in `onUp`. The uniform shape is **latent** — the
+if-ladder is hiding it. Stage 3 finishes a design that is already half-present rather than imposing one.
+
+### Target — each duty is one sentence. If it needs "and", it is two units.
+
+| Unit | Duty | Owns | Interface |
+|---|---|---|---|
+| `pick.js` **new** | Resolve a canvas point to the entity under it. | — pure | `hitAt(model,pos,opts)`, `nodeAt`, `endpointAt`, `occupiedAt` |
+| `snap.js` *extend* | Constrain a position or delta to the grid and the surface. | — pure | `+ clampDelta`, `snappedDelta`, `orthoDelta`, `resizeBox` |
+| `commands.js` *complete* | Turn an intent plus a selection into one committable change. | — pure | `+ wrapInZone`, `chain`, `duplicate`, `cloneClosure`, `nudge` |
+| `overlay.js` **new** | Draw transient feedback for the current pointer and selection. | `hovered` `armed` `datumEl` `snap` | `hover(id)`, `arm(id,cls)`, `handles(sel)`, `datum(pos)` |
+| `keymap.js` **new** | Map a keystroke to an intent. | — table | `resolve(evt, ctx) -> intent \| null` |
+| `input.js` *residue* | Drive one in-flight pointer gesture from press to commit. | `mode` `ctx` `lastPos` | `GESTURES[mode] = {start, update, commit, cancel}` |
+
+**Three new files, not eight.** Two duties fold into modules that already exist, per A3 *Earned Exposure*
+— a concern earns a boundary by being one concern, not by being noticed. `commands.js` is already the home
+for intent→command, which is exactly why **8 of the 23 commit sites bypassing it** is a completion job and
+not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uniform handlers.
+
+### Deliberately NOT done
+
+- **`readOnly` does not become a module.** One concern, ~10 lines; a module for it is *Ceremony Bloat*. It
+  becomes an explicit guard at the **two** entry points (pointer, key) — which is also **B18**'s fix, since
+  that leak exists precisely because the guard sits mid-function instead of at the boundary.
+- **No per-gesture files.** Eleven handlers of 30–60 lines belong in one module with the table. Splitting
+  them fragments one answer across eleven reads, which A3 warns about as clearly as it warns about God
+  Objects.
+
+### Stages — each independently verifiable
+
+| # | Stage | Risk | Proof |
+|---|---|---|---|
+| H6.1 | The characterization net already exists (**H2.1**, commit-boundary only) | — | it is Stage 0, written once and never touched again |
+| H6.2 | Lift the 312 stateless lines into `pick.js` / `snap.js` / `commands.js` | none | net green + `git diff` shows moved-not-modified |
+| H6.3 | Name the owners; each state field becomes private to exactly one unit | low | net green; 14 public fields → 3 on `input.js` |
+| H6.4 | Invert the dispatchers — gesture table + keymap table | **real** | net green; `onDown/onMove/onUp` ~40 lines each |
+| H6.5 | Seal it: `scan-writers` fails on `mode`/`ctx` read outside `input.js`, and on `document.`/`window.` in any client module but `main.js`/`painter.js` | — | proven by injection (X13) |
+
+**Exit:** `input.js` states one duty in one sentence. Boundary violations are caught by tooling, not review
+(A3 signal 5). The H2.1 net is unchanged from the day it was written — which is the whole proof that
+behaviour was preserved.
+
+> **Why the net must assert only at the commit boundary.** `Changes.onCommit` is sovereign to how a gesture
+> was produced (D4), so tests written there survive every stage untouched. Tests asserting on `input.mode`
+> or `input.ctx` would break at H6.3 and H6.4 and would become a *tax* on the refactor rather than its net —
+> which is exactly how a harness ends up ratifying the God Object it was built to remove.
+
+---
+
 ## Held — on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired. Scored so the comparison is a judgement, not an omission.
