@@ -55,14 +55,23 @@ function fakeEl(tag = 'div', id = '') {
 		setAttributeNS(_ns, k, v) { this.attrs[k] = String(v); },
 		getAttribute(k) { return this.attrs[k] ?? null; },
 		removeAttribute(k) { delete this.attrs[k]; },
-		appendChild(c) { this.children.push(c); return c; },
+		appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
 		removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
-		remove() {},
+		// a real detach: setDatumMarker removes its marker and re-adds, so a no-op remove() would
+		// leave every datum ever placed in the layer and the count assertions would be meaningless
+		remove() { if (this.parentNode) this.parentNode.removeChild(this); },
 		addEventListener() {},
 		removeEventListener() {},
 		closest() { return null; },
 		querySelector(sel) { return this.byId?.[sel] ?? fakeEl('g', sel.replace('#', '')); },
-		querySelectorAll() { return []; },
+		// a real class lookup over children. Returning [] made element REMOVAL untestable: code that
+		// clears a layer by `querySelectorAll('.handle').forEach(h => h.remove())` silently cleared
+		// nothing, so a "handles disappear" assertion could never fail.
+		querySelectorAll(sel) {
+			const cls = sel.startsWith('.') ? sel.slice(1) : null;
+			if (!cls) return [];
+			return this.children.filter((c) => (c.attrs.class || '').split(' ').includes(cls));
+		},
 		getBoundingClientRect() { return { left: 0, top: 0, width: 1920, height: 1080 }; },
 		get ownerDocument() { return globalThis.document; },
 		// SVG-only, and the reason a stub beats jsdom here: jsdom implements neither, so a jsdom
@@ -140,6 +149,11 @@ export function makeInput({ readOnly = false, bare = false } = {}) {
 
 	return {
 		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette,
+		// the transient-feedback layers, so a test can ask "what is drawn right now" without
+		// reaching into Input. H6 moves this code into overlay.js; these accessors do not move.
+		layers: svg.byId,
+		drawn: (layer, cls) => (svg.byId[layer]?.children ?? []).filter((c) => (c.attrs.class || '').split(' ').includes(cls)),
+		stateCalls: (name) => calls.filter((c) => c.name === name).map((c) => c.args),
 		called: (name) => calls.some((c) => c.name === name),
 		// the ops of the single change a gesture produced; throws loudly on 0 or 2+, because a
 		// gesture emitting two changes is the defect (B14's coalescing) as often as none is.
