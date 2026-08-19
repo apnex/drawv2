@@ -466,3 +466,45 @@ test('B19: a cancelled gesture releases the queue too — Escape must not strand
 		assert.ok(released.length >= 1, 'however a gesture ends, the deferred changes must land');
 	} finally { h.restore(); }
 });
+
+/*
+B42 — a tool armed BEFORE the lock survives it.
+
+H3.1 made the Server-Locked gate semantic by hoisting inspection verbs above it and gating the
+mutation ones. It gated `t` — the key that ARMS the text tool — but not the `textTool` branch in
+onDown, which sits above the read-only gate. So the sequence "arm the tool, then get locked" walks
+straight past it: a text box is authored, applied locally, and dropped by Sync (sync.js:62).
+Permanent silent divergence, which is the exact failure B18 was about.
+
+Found by AUDITING the recognizer for docs/spec/INPUT.md rather than by a test failing — the ordered
+branches of onDown were written out as a table, and this one was visibly above a gate it depends on.
+That is the argument for the recognizer being a table: the ordering is the thing that is wrong, and
+in a 167-line ladder the ordering is invisible.
+
+The positional fix was incomplete in precisely the way positional fixes always are.
+*/
+test('B42: a text tool armed before the lock does not survive it', () => {
+	const h = makeInput();
+	try {
+		h.input.onKeyDown(key('t'));       // armed while editable
+		h.input.setReadOnly(true);         // an agent takes the lock
+		h.input.onDown(pointer(0, 0));
+		h.input.onUp(pointer(0, 0));
+
+		assert.equal(h.commits.length, 0, 'a locked client must not author a text box');
+		assert.equal(h.model.all('node').length, 0, 'and must not apply one locally either');
+	} finally { h.restore(); }
+});
+
+test('B42: the tool is still armable, and still works, once control is reclaimed', () => {
+	const h = makeInput();
+	try {
+		h.input.onKeyDown(key('t'));
+		h.input.setReadOnly(true);
+		h.input.setReadOnly(false);        // the human reclaims
+		h.input.onKeyDown(key('t'));       // re-arm — the lock disarmed it, so this is a fresh arm
+		h.input.onDown(pointer(0, 0));
+		h.input.onUp(pointer(0, 0));
+		assert.equal(h.commits.length, 1, 'a gate is a gate, not a wall');
+	} finally { h.restore(); }
+});

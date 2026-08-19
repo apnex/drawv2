@@ -175,9 +175,16 @@ export class Input {
 		this.readOnly = on;
 		this.palette.readOnly = on;
 		if (on) {
+			// Every ARMED intent dies with the lock, not just the in-flight gesture. B42: `t` was
+			// gated at the keypress but the text tool, once armed, outlived the lock and authored a
+			// box on the next click — the branch sits above the read-only gate in onDown. Arming the
+			// hand and arming the delete chord were already cleared here; the text tool was the one
+			// held tool nobody added. That asymmetry is what H6's held-tool unification removes.
 			if (this.mode) this.cancelDrag();
 			this.palette.setHand(null);
 			this.disarm();
+			this.textTool = false;
+			this.svg.classList.remove('texttool');
 		}
 	}
 

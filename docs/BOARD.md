@@ -256,6 +256,11 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 
 ## H6 — decompose `input.js` · `TODO`
 
+> **Design: `docs/spec/INPUT.md`** — the input system now has a sovereign spec, which is the point.
+> Every other layer was specified before it was built; this one accreted, and it is the densest
+> source of defects in the tree (B14, B18, B19, B37, B42 — five defects, three shapes, one file,
+> none of them a logic error). H6 implements that spec; the spec outlives H6.
+
 **B35**, promoted from a deferral to a scheduled arc (approved 2026-08-19). Runs **after H3–H5**: the
 five H3 rows are user-visible severities that should not wait behind a structural arc, and each is
 easier to verify once this lands, not harder. Governed by **A3 Sovereign Composition**; the house
