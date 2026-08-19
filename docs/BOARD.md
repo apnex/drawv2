@@ -185,7 +185,7 @@ Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the t
 
 | # | Item | Row | Sev · Size | Violates | Status |
 |---|---|---|---|---|---|
-| H3.1 | Hoist the `readOnly` guard above the run-mode and text-tool branches in `onDown`, and above `t` in `onKeyDown`; give `LabelEditor` its own | **B18** | **S2 · S** | SCOPE-5, I16 | `TODO` |
+| H3.1 | The Server-Locked gate made **semantic, not positional**: inspection verbs (Ctrl+A, Space) hoisted above it, mutation paths (run-mode inline edit, text tool, `t`) gated below it, and the run-mode split honoured — actions still fire, editing does not. Closes **B18** and **B37** together | **B18**, **B37** | **S2 · S** | SCOPE-5, I16 | `DONE` |
 | H3.2 | Wire the D12 defer rule: `sync.deferInbound = () => input.isGesturing()` at the composition root, `sync.releaseDeferred()` in `onUp`/`cancelDrag` | **B19** | **S2 · S** | D12 | `TODO` |
 | H3.3 | Rewire nudge + both key-resizes onto `Changes.amend`; delete `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks | **B14** | S3 · S | D11 | `BLOCKED` on H2.1 |
 | H3.4 | Clone waypoints into the closure; carry `via`/`closed` through the id map | **B30** | **S2 · M** | — | `TODO` |

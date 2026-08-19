@@ -188,7 +188,12 @@ export class Input {
 			if (t && t.dataset.action) {   // W5 — a button: fire its action
 				evt.preventDefault();
 				window.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));
-			} else if (t && t.dataset.input !== undefined) {   // W6 — an input: edit its value inline
+			} else if (t && t.dataset.input !== undefined && !this.readOnly) {   // W6 — an input: edit its value inline
+				// B18 — run mode splits ACROSS the Server-Locked boundary, which is why a blanket guard
+				// could not sit above this branch. Firing an action is inspection: it dispatches
+				// `draw:action` to the host and commits nothing, so it stays live while locked. Opening
+				// the inline editor is authoring: its commit would be applied locally and then dropped
+				// by Sync (sync.js:62), diverging the tab permanently with no resync and no notice.
 				evt.preventDefault();
 				const node = t.closest('.node');
 				if (node) this.labels.openContent(node.id, Number(t.dataset.idx), t);
@@ -1395,7 +1400,9 @@ export class Input {
 		}
 		// A1 — tap 't' to ARM/disarm the text tool (a TOGGLE — you don't hold the key while you mouse;
 		// auto-repeat ignored). Armed: a canvas drag draws a text box; drawing one (or Esc / re-tap) disarms.
-		if ((evt.key === 't' || evt.key === 'T') && !evt.repeat && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
+		// 't' arms a MUTATION tool, so it belongs below the Server-Locked boundary — but it sits above
+		// it in the ladder, which is B18's third leak. Gated explicitly until H6's keymap makes it a flag.
+		if ((evt.key === 't' || evt.key === 'T') && !evt.repeat && !evt.ctrlKey && !evt.metaKey && !evt.altKey && !this.readOnly) {
 			this.textTool = !this.textTool;
 			this.svg.classList.toggle('texttool', this.textTool);
 			return;
@@ -1439,8 +1446,48 @@ export class Input {
 			}
 			return;
 		}
-		// Server-Locked: Escape / help / Tab (handled above) stay; every mutation key
-		// below is inert — the browser is read-only until control is reclaimed
+		/*
+		── THE SERVER-LOCKED BOUNDARY (B18 / B37) ────────────────────────────────────────────────
+		Everything ABOVE this line is INSPECTION and works while locked. Everything BELOW MUTATES
+		and is inert until control is reclaimed. SCOPE decision 5: "selection, the data view, and
+		the readout still work, but no mutations."
+
+		This gate used to be a bare early-return dropped partway down the ladder, so whether a verb
+		was gated depended on where its branch happened to sit — not on whether it mutates. That
+		produced BOTH errors at once: three mutation paths above it (B18) and two inspection verbs
+		below it (B37). Ctrl+A and Space were moved up here for that reason; Tab was already above
+		it and worked, which is what proved position alone was deciding.
+
+		Adding a verb? Decide which side it belongs on. This split is positional and hand-maintained
+		until H6's `keymap.js` gives every entry a `mutates` flag and the gate filters on THAT — at
+		which point this comment and this line both disappear.
+		─────────────────────────────────────────────────────────────────────────────────────────*/
+
+		// select-all — pure selection, commits nothing (B37)
+		if ((evt.ctrlKey || evt.metaKey) && evt.key.toLowerCase() === 'a') {
+			evt.preventDefault();
+			this.selection.set([
+				...this.model.all('node').map((n) => n.id),
+				...this.model.all('zone').map((z) => z.id),
+				...this.model.all('link').map((l) => l.id)
+			]);
+			return;
+		}
+		// datum — a local origin for the readout, zero model impact (B37)
+		if (evt.key === ' ' && !this.isGesturing()) {
+			evt.preventDefault();
+			if (evt.shiftKey) {
+				this.readout.setDatum(null);
+				this.setDatumMarker(null);
+				return;
+			}
+			if (!this.lastPos) return; // pointer off-canvas: nothing to anchor
+			const datum = snapNode(this.lastPos);
+			this.readout.setDatum(datum);
+			this.setDatumMarker(datum);
+			return;
+		}
+
 		if (this.readOnly) return;
 		// 'w' drops/threads a waypoint: during a link draw it adds a bend to the route (mouse stays
 		// held — no button release); when idle it places a standalone waypoint. Handled BEFORE the
@@ -1454,20 +1501,6 @@ export class Input {
 		// raw unsnapped coordinates, and history/delete would capture or corrupt them
 		if (this.isGesturing()) return;
 
-		if (evt.key === ' ') {
-			// datum: a local origin for the readout (KiCad space-bar convention)
-			evt.preventDefault();
-			if (evt.shiftKey) {
-				this.readout.setDatum(null);
-				this.setDatumMarker(null);
-				return;
-			}
-			if (!this.lastPos) return; // pointer off-canvas: nothing to anchor
-			const datum = snapNode(this.lastPos);
-			this.readout.setDatum(datum);
-			this.setDatumMarker(datum);
-			return;
-		}
 		// ---- stamp hand: digits arm a type, Q pipettes, Enter stamps at the ghost.
 		// Idle-only (this.mode covers pending too): a held press owns the selection
 		// and the pointer, so hand keys must not act under it ----
@@ -1554,15 +1587,6 @@ export class Input {
 			evt.preventDefault();
 			this.history.redo();
 			this.afterHistory();
-			return;
-		}
-		if (meta && evt.key.toLowerCase() === 'a') {
-			evt.preventDefault();
-			this.selection.set([
-				...this.model.all('node').map((n) => n.id),
-				...this.model.all('zone').map((z) => z.id),
-				...this.model.all('link').map((l) => l.id)
-			]);
 			return;
 		}
 		if (meta && evt.key.toLowerCase() === 'd') {

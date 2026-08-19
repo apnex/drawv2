@@ -64,10 +64,10 @@ function fakeEl(tag = 'div', id = '') {
 		querySelector(sel) { return this.byId?.[sel] ?? fakeEl('g', sel.replace('#', '')); },
 		querySelectorAll() { return []; },
 		getBoundingClientRect() { return { left: 0, top: 0, width: 1920, height: 1080 }; },
+		get ownerDocument() { return globalThis.document; },
 		// SVG-only, and the reason a stub beats jsdom here: jsdom implements neither, so a jsdom
 		// harness would need the same fiction with more machinery around it.
 		getScreenCTM() { return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }; },
-		createSVGPoint() { return { x: 0, y: 0, matrixTransform: (m) => ({ x: this.x, y: this.y }) }; },
 	};
 	return el;
 }
@@ -85,6 +85,13 @@ export function installDom() {
 	};
 	globalThis.window = { addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; } };
 	globalThis.CustomEvent = class { constructor(type, init) { this.type = type; Object.assign(this, init); } };
+	// painter.toCanvas builds a DOMPoint and applies the inverse screen CTM. With the identity CTM
+	// above, canvas coordinates equal client coordinates — which is what lets a test say
+	// `pointer(60, 60)` and mean the cell at (60, 60).
+	globalThis.DOMPoint = class {
+		constructor(x = 0, y = 0) { this.x = x; this.y = y; }
+		matrixTransform(m) { return { x: this.x * m.a + this.y * m.c + m.e, y: this.x * m.b + this.y * m.d + m.f }; }
+	};
 	return () => {
 		globalThis.document = prevDoc; globalThis.window = prevWin;
 	};
@@ -97,7 +104,7 @@ A real Model, a real Changes, a real Selection, a real Input. The collaborators 
 stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
 can show a gesture did not, say, open the label editor, without asserting on pixels.
 */
-export function makeInput({ readOnly = false } = {}) {
+export function makeInput({ readOnly = false, bare = false } = {}) {
 	const restore = installDom();
 
 	const model = new Model();
@@ -109,6 +116,14 @@ export function makeInput({ readOnly = false } = {}) {
 	const rec = (name) => (...args) => { calls.push({ name, args }); };
 	const renderer = { mode: 'view', setMode: rec('renderer.setMode'), setState: rec('renderer.setState'), clearState: rec('renderer.clearState') };
 	const labels = { isOpen: () => false, open: rec('labels.open'), openContent: rec('labels.openContent'), close: rec('labels.close') };
+	// Recording collaborators. Asserting that a gesture did or did not REACH one of these is still a
+	// boundary assertion — it is the contract between Input and its peer, not Input's internal state.
+	const readout = { setCursor: rec('readout.setCursor'), setDrag: rec('readout.setDrag'), setBox: rec('readout.setBox'),
+		setLink: rec('readout.setLink'), setDatum: rec('readout.setDatum'), clearTransient: rec('readout.clearTransient'),
+		render: rec('readout.render'), flash: rec('readout.flash'), dims: () => '', signed: () => '' };
+	const palette = { hand: null, setHand: rec('palette.setHand'), toggleHand: rec('palette.toggleHand'),
+		trackHand: rec('palette.trackHand'), hideHand: rec('palette.hideHand') };
+	const dataview = { toggle: rec('dataview.toggle') };
 
 	const svg = fakeEl('svg', 'canvas');
 	svg.byId = { '#overlay': fakeEl('g', 'overlay'), '#snaplayer': fakeEl('g', 'snaplayer') };
@@ -117,11 +132,15 @@ export function makeInput({ readOnly = false } = {}) {
 	const commits = [];
 	history.onCommit((request) => commits.push(request));
 
-	const input = new Input({ svg, model, history, selection, renderer, labels });
+	// `bare` omits the optional collaborators entirely, exercising Input's own null-object defaults.
+	const input = bare
+		? new Input({ svg, model, history, selection, renderer, labels })
+		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview });
 	if (readOnly) input.setReadOnly(true);
 
 	return {
-		input, model, history, selection, svg, commits, calls, restore,
+		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette,
+		called: (name) => calls.some((c) => c.name === name),
 		// the ops of the single change a gesture produced; throws loudly on 0 or 2+, because a
 		// gesture emitting two changes is the defect (B14's coalescing) as often as none is.
 		soleCommit() {

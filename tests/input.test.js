@@ -15,7 +15,7 @@ its row, never asserted as correct and never written around.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
+import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -136,7 +136,7 @@ test('while Server-Locked, mutation keys emit nothing', () => {
 	} finally { h.restore(); }
 });
 
-test('while Server-Locked, selection still works — inspection is not mutation', { todo: 'B37 — Ctrl+A sits behind the blanket readOnly guard; fixed at H3.1' }, () => {
+test('while Server-Locked, selection still works — inspection is not mutation', () => {
 	const h = makeInput({ readOnly: true });
 	try {
 		seedNodes(h.model, [[0, 0], [60, 0]]);
@@ -185,4 +185,110 @@ test('B14: Shift+arrow resizes the lone selected zone', { todo: 'B14 — throws 
 		assert.deepEqual(opKinds(c.ops), ['set/zone']);
 		assert.equal(c.ops[0].patch.w, 180);
 	} finally { h.restore(); }
+});
+
+/*
+B18 + B37 — the read-only gate is POSITIONAL, not semantic.
+
+Server-Locked is enforced by a bare `if (this.readOnly) return;` partway down `onDown` (:213) and
+partway down `onKeyDown` (:1444). Whether a verb is gated therefore depends on where its branch
+happens to sit in the ladder, not on whether it mutates. That produces both errors at once:
+
+  B18  three MUTATION paths sit ABOVE their guard and run while locked — run-mode content edit,
+       the text tool's press, and `t` arming the text tool. Each applies locally and is then
+       dropped by Sync (sync.js:62): permanent silent divergence, no resync, no notice.
+  B37  two INSPECTION verbs sit BELOW their guard and are wrongly blocked — Ctrl+A and Space/datum
+       — though SCOPE decision 5 promises "selection, the data view, and the readout still work".
+       Tab/dataview sits in front of the guard and does work, which is the proof that position, and
+       nothing else, is deciding.
+
+Fixed together in H3.1 because they are one edit in two directions. The durable fix is H6's keymap
+table, where each entry declares whether it mutates and the gate filters on the flag.
+*/
+
+test('B18: while Server-Locked, a run-mode click must not reach the label editor', () => {
+	const h = makeInput({ readOnly: true });
+	try {
+		h.renderer.mode = 'run';
+		const hitEl = { dataset: { input: '', idx: '0' }, closest: () => ({ id: 'node-aa0001' }), querySelector: () => null };
+		const target = { tagName: 'rect', closest: () => hitEl };
+		h.input.onDown(pointer(100, 100, { target }));
+		assert.equal(h.called('labels.openContent'), false, 'a locked client must not open an editor whose commit it cannot send');
+	} finally { h.restore(); }
+});
+
+test('B18: while Server-Locked, the text tool cannot be armed', () => {
+	const h = makeInput({ readOnly: true });
+	try {
+		h.input.onKeyDown(key('t'));
+		h.input.onDown(pointer(0, 0));
+		h.input.onUp(pointer(0, 0));
+		assert.equal(h.commits.length, 0, 'a locked client must not author a text box');
+		assert.equal(h.model.all('node').length, 0, 'and must not apply one locally either');
+	} finally { h.restore(); }
+});
+
+test('B37: while Server-Locked, Space still sets a datum — the readout is not a mutation', () => {
+	const h = makeInput({ readOnly: true });
+	try {
+		h.input.onMove(pointer(60, 60));
+		h.input.onKeyDown(key(' '));
+		assert.equal(h.called('readout.setDatum'), true, 'SCOPE decision 5: the readout still works while locked');
+		assert.equal(h.commits.length, 0, 'and it commits nothing, because a datum is not a change');
+	} finally { h.restore(); }
+});
+
+test('Input constructs with no readout/palette/dataview — the null objects are TOTAL', () => {
+	// Pins the defect the harness found on its first run: the defaults advertised these as optional
+	// and then threw on readout.signed/dims/flash, so Ctrl+D was unreachable without a real readout.
+	const h = makeInput({ bare: true });
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.selection.set([a.id]);
+		assert.doesNotThrow(() => h.input.onKeyDown(key('d', { ctrlKey: true })));
+		assert.equal(h.commits.length, 1);
+	} finally { h.restore(); }
+});
+
+test('while Server-Locked, a run-mode ACTION still fires — it commits nothing', () => {
+	// The other half of B18's run-mode split, and the guard against "fixed" meaning "blocked
+	// everything". Firing `draw:action` dispatches to the host and mutates no document, so it is
+	// inspection and stays live. Blocking it would be B37 all over again, in a new place.
+	const h = makeInput({ readOnly: true });
+	try {
+		let fired = null;
+		globalThis.window.dispatchEvent = (e) => { fired = e; return true; };
+		h.renderer.mode = 'run';
+		const hitEl = { dataset: { action: 'ping' }, closest: () => ({ id: 'node-aa0001' }) };
+		const target = { tagName: 'rect', closest: () => hitEl };
+		h.input.onDown(pointer(100, 100, { target }));
+
+		assert.ok(fired, 'the action reached the host');
+		assert.equal(fired.detail.action, 'ping');
+		assert.equal(h.commits.length, 0, 'and changed nothing');
+	} finally { h.restore(); }
+});
+
+test('unlocked, the same three paths still work — the gate is a gate, not a wall', () => {
+	// The regression guard for H3.1. Three `!this.readOnly` clauses were added; each could have
+	// broken the normal path instead of only the locked one, which would trade B18 for a new B37.
+	{	// run-mode inline edit
+		const h = makeInput();
+		try {
+			h.renderer.mode = 'run';
+			const hitEl = { dataset: { input: '', idx: '0' }, closest: () => ({ id: 'node-aa0001' }), querySelector: () => null };
+			h.input.onDown(pointer(100, 100, { target: { tagName: 'rect', closest: () => hitEl } }));
+			assert.equal(h.called('labels.openContent'), true, 'run-mode editing works when unlocked');
+		} finally { h.restore(); }
+	}
+	{	// the text tool arms and authors a box
+		const h = makeInput();
+		try {
+			h.input.onKeyDown(key('t'));
+			h.input.onDown(pointer(0, 0));
+			h.input.onUp(pointer(0, 0));
+			assert.equal(h.commits.length, 1, 'the text tool authors when unlocked');
+			assert.deepEqual(opKinds(h.soleCommit().ops), ['put/node']);
+		} finally { h.restore(); }
+	}
 });
