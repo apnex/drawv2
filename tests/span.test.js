@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { Model } from '../document/index.mjs';
 import { attachRelations } from '../engine/index.mjs';
 import { resolve, renderElement, renderContentRegion, bboxOf, selBox, cellOf, STD, L_STD } from '../kernel/index.mjs';
@@ -325,4 +326,57 @@ test('W3: the control bar is ONE panel + content regions, rendered by the real k
 	for (const v of ['draw', 'scene-1', 'open ▾', 'slides', 'online']) assert.ok(svg.includes('>' + v + '<'), `renders "${v}"`);
 	assert.match(svg, /rx="13"/);                          // the status pill
 	assert.match(svg, /fill="#aed581"/);                  // brand text / pill fill
+});
+
+/*
+B38 — the kernel's element vocabulary has no dead kinds.
+
+`geometry.mjs` exported a `link` element (`{kind:'link', x1,y1,x2,y2}`) that **nothing anywhere
+constructed**: `resolve()` emits node, waypoint, zone, group and path, never link. Four consumers
+handled the kind regardless — two in the renderer, two in the GRC — and `wire` existed for the sole
+purpose of unifying a LIVE kind (`path`) with a DEAD one so the rule-checkers could iterate both.
+
+A straight line is a two-point path, so nothing was lost by deleting it, and deleting it frees the
+word `link` to mean exactly one thing: the document entity. That was the only genuine cross-layer
+name collision in the system (HIERARCHY §0, connection taxonomy).
+
+This asserts the property rather than the absence, so a NEW dead kind fails the same way.
+*/
+test('B38: every element kind the kernel handles is a kind resolve() can emit', () => {
+	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8') + fs.readFileSync('kernel/grc.mjs', 'utf8');
+	const handled = new Set([...src.matchAll(/kind === '(\w+)'/g)].map((m) => m[1]));
+
+	// What the engine can actually PUT IN A SCENE — read from what resolve() imports from geometry,
+	// not from which constructors happen to exist. The distinction is the whole point: a dead
+	// constructor still declares its kind, so testing against geometry.mjs would have passed while
+	// the dead kind sat there. Measured from the importer, the only thing that can emit.
+	const eng = fs.readFileSync('kernel/engine.mjs', 'utf8');
+	const imported = eng.match(/import \{([^}]*)\} from '\.\/geometry\.mjs'/)[1];
+	const constructible = new Set(imported.split(',').map((n) => n.trim()).filter(Boolean));
+
+	/*
+	Two kinds are handled without being emitted by resolve(), and both are DECLARED, not dead:
+	`port` and `junction` are `[LOCKED]` in docs/spec/ATOMICS.md (the 10px port, the junction pad,
+	parallel-link capacity) and are anchors under the ratified taxonomy. The connection grammar that
+	places them is the next design arc; the renderer and GRC already know how to draw and check them.
+	Deleting them would delete locked design work, which is a different act from deleting dead code.
+
+	`link` was neither: a straight connection IS a two-point path, so it was superseded rather than
+	pending, and it forced `wire` to exist purely to unify a live kind with a dead one.
+	*/
+	const DECLARED = new Set(['port', 'junction']);
+	const dead = [...handled].filter((k) => !constructible.has(k) && !DECLARED.has(k));
+	assert.deepEqual(dead, [], `the kernel handles element kinds nothing can construct: ${dead.join(', ')}`);
+});
+
+test('B38: a straight connection is a two-point path — no separate element kind needed', () => {
+	const sch = { entities: [
+		{ id: 'node-000001', kind: 'node', cell: [0, 0] },
+		{ id: 'node-000002', kind: 'node', cell: [2, 0] },
+	], relations: [{ id: 'link-000001', route: { from: 'node-000001', to: 'node-000002' } }] };
+	const { scene } = resolve(sch);
+	const wires = scene.filter((e) => e.kind === 'path');
+	assert.equal(wires.length, 1);
+	assert.equal(wires[0].pts.length, 2, 'straight: two anchors, no bends');
+	assert.equal(scene.some((e) => e.kind === 'link'), false, 'and no `link` element is produced');
 });

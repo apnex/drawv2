@@ -103,7 +103,6 @@ function socketGridSvg(cols, rows, V) {
 function renderEl(el, V, L, opts = {}) {
 	if (el.kind === 'zone') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${TOKENS.zoneFill}" fill-opacity="${TOKENS.zoneFillOp}" stroke="${TOKENS.zoneStroke}" stroke-opacity="${TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
 	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${TOKENS.group}" stroke-width="1.1"/>`;
-	if (el.kind === 'link') return `<line x1="${el.x1}" y1="${el.y1}" x2="${el.x2}" y2="${el.y2}" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round"/>`;
 	if (el.kind === 'path') return `<path d="${roundedPath(el.pts, el.radius, el.close)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"/>`;
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is
@@ -154,7 +153,7 @@ export function renderElement(el, V = STD, L = L_STD, opts = {}) { return render
 // the kind → draw-order rank, exported so a host can order its own per-entity DOM consistently.
 // Region decorations (zone fill, group hull) sit at the BACK; the graph (links, nodes) in front:
 // zone → group → link/path → junction/waypoint (over the path) → ports → nodes.
-export const DRAW_ORDER = { zone: 0, group: 1, link: 2, path: 2, junction: 3, waypoint: 3, port: 4, node: 5 };
+export const DRAW_ORDER = { zone: 0, group: 1, path: 2, junction: 3, waypoint: 3, port: 4, node: 5 };
 
 const ORDER = DRAW_ORDER;
 
@@ -182,7 +181,6 @@ export function renderScene(elements, V = STD, L = L_STD, pad = 18, opts = {}) {
 	for (const el of elements) {
 		const b = bboxOf(el, L);
 		if (b) { ext(b.x, b.y); ext(b.x + b.w, b.y + b.h); }
-		else if (el.kind === 'link') { ext(el.x1, el.y1); ext(el.x2, el.y2); }
 		else if (el.kind === 'path') for (const [x, y] of el.pts) ext(x, y);
 	}
 	const vbX = minX - pad, vbY = minY - pad, vbW = (maxX - minX) + 2 * pad, vbH = (maxY - minY) + 2 * pad;

@@ -1,7 +1,6 @@
 // GEOMETRY RULE CHECK (the DRC). Consumes a resolved scene; returns per-rule pass/fail with
 // the exact geometric reason — every failure must be diagnosable so we can hypothesise a fix.
-// Links and routed PATHS are unified as "wires", so the turning-path rules (ortho, attachment,
-// obstacle, overlap) judge both. A WAYPOINT is a permeable routing anchor: a wire may end or
+// The turning-path rules (ortho, attachment, obstacle, overlap) judge every path. A WAYPOINT is a permeable routing anchor: a path may end or
 // bend at one (attachment), but it is NOT a solid obstacle (a path threads through it).
 import { bboxOf } from './geometry.mjs';
 import { segmentsOf } from './router.mjs';
@@ -11,14 +10,18 @@ const frac = (v) => Math.abs(v - Math.round(v)) > 1e-6;
 const overlapArea = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 const isAxis = ([a, b]) => a[0] === b[0] || a[1] === b[1];
 
-// every link/path as a unified wire { pts, close }
-const wiresOf = (els) => els.flatMap((el) =>
-	el.kind === 'link' ? [{ pts: [[el.x1, el.y1], [el.x2, el.y2]], close: false }]
-		: el.kind === 'path' ? [{ pts: el.pts, close: el.close }] : []);
+/*
+The paths in a scene. This was `wiresOf`, and `wire` was a union type: it existed so the rule
+checkers could iterate a `link` element and a `path` element together. Nothing ever constructed a
+`link` element (B38), so the union had one live member and the abstraction was pure ceremony over a
+filter. Deleting the dead kind collapses it, and frees `link` to mean exactly one thing in this
+system — the document entity (HIERARCHY §0).
+*/
+const pathsOf = (els) => els.filter((el) => el.kind === 'path');
 
 export function grc(elements, V, L) {
 	const pitch = V.pitch, sub = pitch / 2, fe = L.frame.ext;
-	const wires = wiresOf(elements);
+	const paths = pathsOf(elements);
 	const out = [];
 
 	// rule 1 — grid-snap / determinism: no fractional coords; node centres on the node grid;
@@ -27,7 +30,6 @@ export function grc(elements, V, L) {
 	// `cell-align` consideration, deliberately NOT failed here.)
 	const off = [];
 	for (const el of elements) {
-		if (el.kind === 'link') { for (const c of [el.x1, el.y1, el.x2, el.y2]) if (frac(c)) off.push(`fractional@${c}`); continue; }
 		if (el.kind === 'path') {
 			// no fractional coord anywhere; interior CORNERS (the routing-determinism points)
 			// ride the sub-grid; ENDPOINTS are exempt — they attach to a port/edge (which may
@@ -62,12 +64,12 @@ export function grc(elements, V, L) {
 	}
 	out.push({ rule: 'clearance', pass: clashes.length === 0, why: [...new Set(clashes)].join(', ') });
 
-	// rule 3 — attachment: every wire's free ENDS coincide with a port/node/junction/waypoint.
+	// rule 3 — attachment: every path's free ENDS coincide with a port/node/junction/waypoint.
 	// (closed paths have no free ends.)
 	const anchors = elements.filter((el) => el.kind === 'port' || el.kind === 'node' || el.kind === 'junction' || el.kind === 'waypoint').map((el) => [el.cx, el.cy]);
 	const at = (x, y) => anchors.some(([ax, ay]) => Math.hypot(ax - x, ay - y) < 1.5);
 	const dangling = [];
-	for (const w of wires) {
+	for (const w of paths) {
 		if (w.close) continue;
 		const a = w.pts[0], b = w.pts[w.pts.length - 1];
 		if (!at(a[0], a[1])) dangling.push(`(${a[0]},${a[1]})`);
@@ -81,12 +83,12 @@ export function grc(elements, V, L) {
 	for (let i = 0; i < zones.length; i++) for (let j = i + 1; j < zones.length; j++) if (overlapArea(zones[i], zones[j]) > 1e-6) squish.push(`zones[${i},${j}]`);
 	out.push({ rule: 'reserve', pass: squish.length === 0, why: squish.join(', ') });
 
-	// rule 5 — ortho: every wire segment axis-aligned (no diagonals)
+	// rule 5 — ortho: every path segment axis-aligned (no diagonals)
 	const diag = [];
-	for (const w of wires) for (const s of segmentsOf(w.pts, w.close)) if (!isAxis(s)) diag.push(`(${s[0][0]},${s[0][1]})-(${s[1][0]},${s[1][1]})`);
+	for (const w of paths) for (const s of segmentsOf(w.pts, w.close)) if (!isAxis(s)) diag.push(`(${s[0][0]},${s[0][1]})-(${s[1][0]},${s[1][1]})`);
 	out.push({ rule: 'ortho', pass: diag.length === 0, why: diag.join(' ') });
 
-	// rule 6 — obstacle: a wire segment must not pass through a NODE's interior unless it
+	// rule 6 — obstacle: a path segment must not pass through a NODE's interior unless it
 	// attaches there. Nodes are SOLID cell-residents; zones and waypoints are permeable.
 	const nodes = elements.filter((el) => el.kind === 'node');
 	const attached = (p, nd) => Math.abs(p[0] - nd.cx) <= fe + 1e-6 && Math.abs(p[1] - nd.cy) <= fe + 1e-6;
@@ -99,15 +101,15 @@ export function grc(elements, V, L) {
 		return false;
 	};
 	const hits = [];
-	for (const w of wires) for (const s of segmentsOf(w.pts, w.close)) for (const nd of nodes) if (segHitsNode(s, nd)) hits.push(`@(${nd.cx},${nd.cy})`);
+	for (const w of paths) for (const s of segmentsOf(w.pts, w.close)) for (const nd of nodes) if (segHitsNode(s, nd)) hits.push(`@(${nd.cx},${nd.cy})`);
 	out.push({ rule: 'obstacle', pass: hits.length === 0, why: [...new Set(hits)].join(' ') });
 
-	// rule 7 — overlap: two DISTINCT wires must not run collinear over a shared SPAN. Drawing one
-	// wire on top of another reads as a single wire and is invisible to the crossings metric
+	// rule 7 — overlap: two DISTINCT paths must not run collinear over a shared SPAN. Drawing one
+	// path on top of another reads as a single path and is invisible to the crossings metric
 	// (which only counts perpendicular hits). Touching at a point is fine (a crossing/junction);
 	// a shared segment length is not. This is the rule the routing walk proved was missing.
 	const segs = [];
-	wires.forEach((w, wi) => segmentsOf(w.pts, w.close).forEach((s) => { if (s[0][0] !== s[1][0] || s[0][1] !== s[1][1]) segs.push({ s, wi }); }));
+	paths.forEach((w, wi) => segmentsOf(w.pts, w.close).forEach((s) => { if (s[0][0] !== s[1][0] || s[0][1] !== s[1][1]) segs.push({ s, wi }); }));
 	const ov = [];
 	for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++) {
 		if (segs[i].wi === segs[j].wi) continue;
@@ -129,7 +131,7 @@ export function grc(elements, V, L) {
 export const RULES = ['grid-snap', 'clearance', 'attachment', 'reserve', 'ortho', 'obstacle', 'overlap'];
 
 // crossings metric (informational, NOT a gate — orthogonal crossings are legal in schematics):
-// count of intersection points between segments of DIFFERENT wires.
+// count of intersection points between segments of DIFFERENT paths.
 const segCross = (s1, s2) => {
 	const [a, b] = s1, [c, d] = s2;
 	const v1 = a[0] === b[0], v2 = c[0] === d[0];
@@ -140,7 +142,7 @@ const segCross = (s1, s2) => {
 	return X > xLo && X < xHi && Y > yLo && Y < yHi;               // strict interior crossing
 };
 export function crossings(elements) {
-	const segs = wiresOf(elements).flatMap((w, wi) => segmentsOf(w.pts, w.close).map((s) => ({ s, wi })));
+	const segs = pathsOf(elements).flatMap((w, wi) => segmentsOf(w.pts, w.close).map((s) => ({ s, wi })));
 	let n = 0;
 	for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++)
 		if (segs[i].wi !== segs[j].wi && segCross(segs[i].s, segs[j].s)) n++;

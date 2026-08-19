@@ -190,7 +190,7 @@ Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the t
 | H3.3 | All three burst gestures rewired onto `Changes.amend`; `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks deleted (**-45 lines**). `Changes.flush()` added so a burst still cannot span a selection change | **B14** | S3 · S | D11 | `DONE` |
 | H3.4 | One per-kind cloner; waypoints seed and clone (without inventing a `name`); `via` remapped through the id map with missing bends pulled into the closure; `closed` carried | **B30** | **S2 · M** | — | `DONE` |
 | H3.5 | **T0** taxonomy ratified (`HIERARCHY.md` §0) · **T1** `anchor` freed (5 senses → 1) · **T2** `Model.pathOf()` is the sole route→path resolver, 4 hand-rolled sites retired, endpoints resolve via `endpointOf` | **B29** | **S2 · M** | A3 | `DONE` |
-| H5.5 | Retire the dead kernel `link` element and the `wire` abstraction that exists to accommodate it | **B38** | S5 · S | A3 | `TODO` |
+| H5.5 | Dead `link` element and `wire` retired; GRC speaks *path*; `port`/`junction` recorded as **declared, not dead** | **B38** | S5 · S | A3 | `DONE` |
 | H3.6 | GR6 fault (ii) now **states its scope**: it proves convergence under reordering with a simulated hold; the WIRING is pinned in `tests/input.test.js` against a real `Input` | B19 | — | GR6 | `DONE` |
 | H3.7 | **B7**'s row corrected — its D12 mitigation is real as of H3.2 | B7 | — | — | `DONE` |
 

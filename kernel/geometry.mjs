@@ -34,7 +34,6 @@ export const waypoint = (cx, cy) => ({ kind: 'waypoint', cx, cy });
 export const zone = (x, y, w, h) => ({ kind: 'zone', x, y, w, h });
 export const group = (x, y, w, h) => ({ kind: 'group', x, y, w, h });
 export const port = (cx, cy, o = {}) => ({ kind: 'port', cx, cy, style: o.style || 'square', size: o.size || 10 });
-export const link = (x1, y1, x2, y2) => ({ kind: 'link', x1, y1, x2, y2 });
 export const junction = (cx, cy) => ({ kind: 'junction', cx, cy });       // a tap point on a trunk
 // path = a routed polyline through grid waypoints (px). The router renders it with rounded
 // corners; GRC validates its turns. `pts` = [[x,y], …]; radius defaults to the locked bend.
