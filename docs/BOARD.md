@@ -170,7 +170,7 @@ Promoted onto the critical path by the triage pass: **H3 cannot start without H2
 |---|---|---|---|---|
 | H2.1 | Client harness — `tests/fixtures/client-harness.mjs`, ~150 lines of stubs, no dependency. Real `Model`/`Changes`/`Selection`/`Input`; assertions **only** at the commit boundary, enforced by `scan-writers`. 13 characterization tests; B14 ×3 and B37 ×1 marked `todo`, never written around | **B23** | S5 · **A9 mandate** · L | `DONE` |
 | H2.2 | `tests/gate.test.js` — GR1's own self-check, **6 probes proven to bite**. Writing it found that `gate:install` wrote to `.git/hooks/` while a global `core.hooksPath` sent git elsewhere: **the gate had never run on a push**. Replaced by `tools/install-hook.sh`, which resolves git's real hook path and confines itself to this repo | **B21** | S4 · S | `DONE` |
-| H2.3 | CI, or a recorded decision not to have it | B21 | — | `TODO` (decision) |
+| H2.3 | **Ruled: no CI.** drawv2 has no git remote, so CI has nowhere to run; the local hook plus `gate.test.js` is the whole gate. Deviation **X14**, time-boxed — expires on the first push to a remote, which the owner has stated is coming | B21 | — | `DONE` |
 | H2.4 | `tools/scan-board.mjs` (**GR14**) — R1 citations resolve, R2 milestones exist, R3 `DONE` and `CLOSED` move together. Wired into `npm run gate`; **5 probes proven to bite**. Contract rules 4 and 5 are judgement, deliberately not faked | — | — | `DONE` |
 | H2.5 | `tests/diff-inverse.test.js` — GR5's missing half, covering the 8 inline commit sites. **Or** retire it with a recorded deviation | **B22** | S4 · **L** | `BLOCKED` on decision |
 | H2.6 | Extend the harness to `Renderer`, `Selection`, `LabelEditor` | B23 | — | `TODO` |
