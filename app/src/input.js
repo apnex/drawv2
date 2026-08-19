@@ -44,6 +44,7 @@ import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 
 const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
+const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
 // footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
@@ -1211,15 +1212,16 @@ export class Input {
 
 	onDatum(evt) {
 		evt.preventDefault();
-		if (evt.shiftKey) {
-			this.readout.setDatum(null);
-			this.overlayUi.datum(null);
-			return;
-		}
 		if (!this.lastPos) return;   // pointer off-canvas: nothing to anchor
 		const datum = snapNode(this.lastPos);
 		this.readout.setDatum(datum);
 		this.overlayUi.datum(datum);
+	}
+
+	onDatumClear(evt) {
+		evt.preventDefault();
+		this.readout.setDatum(null);
+		this.overlayUi.datum(null);
 	}
 
 	// 'w' drops/threads a waypoint: mid-route it adds a bend (the button is still held), idle it
@@ -1264,17 +1266,24 @@ export class Input {
 
 	onArrowKey(evt) {
 		evt.preventDefault();
-		const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[evt.key];
+		const dir = ARROW[evt.key];
+		if (dir) this.nudge(dir[0], dir[1]);
+	}
+
+	// Shift+arrow. Both resize paths self-guard on the selection kind, so exactly one of them acts:
+	// a lone zone grows by a cell, a lone node grows its span by a cell, anything else is a no-op.
+	onResizeStep(evt) {
+		evt.preventDefault();
+		const dir = ARROW[evt.key];
 		if (!dir) return;
-		// Shift+arrow resizes the lone selected zone OR grows the lone selected node's span; plain
-		// arrow nudges. Both resize paths self-guard on the selection kind, so only one acts.
-		if (evt.shiftKey) { this.resizeZoneByKey(dir[0], dir[1]); this.resizeNodeByKey(dir[0], dir[1]); }
-		else this.nudge(dir[0], dir[1]);
+		this.resizeZoneByKey(dir[0], dir[1]);
+		this.resizeNodeByKey(dir[0], dir[1]);
 	}
 
 	onWrapKey(evt) { evt.preventDefault(); this.wrapInZone(); }
 	onCloseKey(evt) { evt.preventDefault(); this.toggleClosePath(); }
-	onChainKey(evt) { evt.preventDefault(); this.linkSelectedNodes(evt.shiftKey); }
+	onChainKey(evt) { evt.preventDefault(); this.linkSelectedNodes(false); }
+	onStarKey(evt)  { evt.preventDefault(); this.linkSelectedNodes(true); }
 
 	onRenameKey(evt) {
 		evt.preventDefault();
@@ -1288,18 +1297,19 @@ export class Input {
 	// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking back N
 	// changes you did not make is a different intent from stepping back one you did.
 	onUndoRun(evt) { evt.preventDefault(); this.history.undoRun(); this.afterHistory(); }
-	onUndoKey(evt) { evt.preventDefault(); evt.shiftKey ? this.history.redo() : this.history.undo(); this.afterHistory(); }
+	onUndoKey(evt) { evt.preventDefault(); this.history.undo(); this.afterHistory(); }
 	onRedoKey(evt) { evt.preventDefault(); this.history.redo(); this.afterHistory(); }
 	onDuplicate(evt) { evt.preventDefault(); this.duplicateSelection(); }   // claims the bookmark shortcut
 
 	onGroupKey(evt) {
 		evt.preventDefault();
-		if (evt.shiftKey) {
-			const groups = new Set(this.selection.groupable().map((id) => this.model.groupOf(id)).filter(Boolean).map((g) => g.id));
-			this.history.commit(commands.ungroupAll(this.model, [...groups]));
-		} else {
-			this.history.commit(commands.createGroup(this.model, this.selection.groupable()));
-		}
+		this.history.commit(commands.createGroup(this.model, this.selection.groupable()));
+	}
+
+	onUngroupKey(evt) {
+		evt.preventDefault();
+		const groups = new Set(this.selection.groupable().map((id) => this.model.groupOf(id)).filter(Boolean).map((g) => g.id));
+		this.history.commit(commands.ungroupAll(this.model, [...groups]));
 	}
 
 	onDeleteKey(evt) {

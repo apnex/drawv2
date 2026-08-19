@@ -24,6 +24,20 @@ the diff unreviewable and told the net nothing new.
 const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;
 const meta = (e) => e.ctrlKey || e.metaKey;
 const is = (e, k) => e.key.toLowerCase() === k;
+const arrow = (e) => e.key.startsWith('Arrow');
+
+/*
+B48 — Shift is matched HERE, not re-read in the handler.
+
+`plain()` tests ctrl/meta/alt and deliberately leaves Shift free, which is right for chords like
+Ctrl+Shift+G but was wrong as a default: five bindings matched one entry and then branched on
+`evt.shiftKey` inside their handler. The table under-reported its own key surface, and for history it
+was simply false — `redo` matched only Ctrl+Y while Ctrl+Shift+Z matched the entry named `undo`.
+
+A rule's id must name the verb the keystroke performs. That is the property that makes this table
+worth reading, and it is what B42 was found by. Where Shift selects a different verb the entries are
+split; nothing re-reads Shift after the match.
+*/
 
 export const KEYMAP = [
 	// ---- modifier feedback: not verbs, and they must reach a live drag (ortho arms mid-gesture) ----
@@ -42,7 +56,8 @@ export const KEYMAP = [
 
 	// ---- inspection: SCOPE decision 5 promises these keep working while locked ----
 	{ id: 'select-all', mutates: false, when: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll' },
-	{ id: 'datum',      mutates: false, when: (e) => e.key === ' ',         run: 'onDatum' },
+	{ id: 'datum',       mutates: false, when: (e) => e.key === ' ' && !e.shiftKey, run: 'onDatum' },
+	{ id: 'datum-clear', mutates: false, when: (e) => e.key === ' ' && e.shiftKey,  run: 'onDatumClear' },
 
 	// ---- authoring ----
 	// `w` is the one mutating verb that belongs DURING a gesture: dropping a bend mid-route is the
@@ -53,16 +68,20 @@ export const KEYMAP = [
 	{ id: 'hand',      mutates: true, when: (e) => /^[1-7]$/.test(e.key) && plain(e),           run: 'onHandDigit' },
 	{ id: 'pipette',   mutates: true, when: (e) => is(e, 'q') && plain(e),                      run: 'onPipette' },
 	{ id: 'stamp',     mutates: true, when: (e) => e.key === 'Enter',                           run: 'onStampKey' },
-	{ id: 'nudge',     mutates: true, when: (e) => e.key.startsWith('Arrow'),                   run: 'onArrowKey' },
+	{ id: 'nudge',       mutates: true, when: (e) => arrow(e) && !e.shiftKey,                   run: 'onArrowKey' },
+	{ id: 'resize-step', mutates: true, when: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep' },
 	{ id: 'wrap',      mutates: true, when: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
 	{ id: 'close',     mutates: true, when: (e) => is(e, 'c') && plain(e),                      run: 'onCloseKey' },
-	{ id: 'chain',     mutates: true, when: (e) => is(e, 'l') && plain(e),                      run: 'onChainKey' },
+	{ id: 'chain',     mutates: true, when: (e) => is(e, 'l') && plain(e) && !e.shiftKey,       run: 'onChainKey' },
+	{ id: 'star',      mutates: true, when: (e) => is(e, 'l') && plain(e) && e.shiftKey,        run: 'onStarKey' },
 	{ id: 'rename',    mutates: true, when: (e) => e.key === 'F2',                              run: 'onRenameKey' },
 
 	/*
 	History. `undo-run` must precede `delete`, and it is the ONLY place in this table where order
 	decides anything — enumerated, not assumed: every other keystroke matches exactly one entry, so
-	between disjoint rules the ordering is decoration.
+	between disjoint rules the ordering is decoration. That enumeration is now a test rather than a
+	claim in a comment (`tests/input.test.js`, "still exactly one overlapping pair"), because B48
+	added four entries and the property had to survive them.
 
 	Ctrl+Shift+Backspace matches both. It means "reverse another writer's whole run" (D21), which is
 	deliberately not Ctrl+Z — taking back N changes you did not make is a different intent from
@@ -70,10 +89,11 @@ export const KEYMAP = [
 	first, that intent would silently become "delete the selection".
 	*/
 	{ id: 'undo-run', mutates: true, when: (e) => meta(e) && e.shiftKey && e.key === 'Backspace', run: 'onUndoRun' },
-	{ id: 'undo',     mutates: true, when: (e) => meta(e) && is(e, 'z'),                          run: 'onUndoKey' },
-	{ id: 'redo',     mutates: true, when: (e) => meta(e) && is(e, 'y'),                          run: 'onRedoKey' },
+	{ id: 'undo',     mutates: true, when: (e) => meta(e) && is(e, 'z') && !e.shiftKey,            run: 'onUndoKey' },
+	{ id: 'redo',     mutates: true, when: (e) => meta(e) && (is(e, 'y') || (is(e, 'z') && e.shiftKey)), run: 'onRedoKey' },
 	{ id: 'dup',      mutates: true, when: (e) => meta(e) && is(e, 'd'),                          run: 'onDuplicate' },
-	{ id: 'group',    mutates: true, when: (e) => meta(e) && is(e, 'g'),                          run: 'onGroupKey' },
+	{ id: 'group',    mutates: true, when: (e) => meta(e) && is(e, 'g') && !e.shiftKey,            run: 'onGroupKey' },
+	{ id: 'ungroup',  mutates: true, when: (e) => meta(e) && is(e, 'g') && e.shiftKey,             run: 'onUngroupKey' },
 	{ id: 'delete',   mutates: true, when: (e) => e.key === 'Delete' || e.key === 'Backspace',    run: 'onDeleteKey' },
 ];
 

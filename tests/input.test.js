@@ -19,6 +19,7 @@ import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mj
 import { validateEntity } from '../server/validate.js';
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
+import { KEYMAP, resolveKey } from '../app/src/keymap.js';
 import { Palette } from '../app/src/palette.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
 
@@ -781,4 +782,118 @@ test('B36: a zone resize pins the corner opposite the grabbed handle', () => {
 		assert.equal(after.y + after.h, 300, 'and in y');
 		assert.ok(after.x < 0, 'while NW followed the pointer');
 	} finally { h.restore(); }
+});
+
+/*
+B48 — the keymap resolves the INTENT, not just the key.
+
+`plain()` deliberately ignores Shift, so five bindings used to match one entry and re-branch inside
+their handler. The table therefore under-reported its own key surface, and in one case said
+something false: `redo` matched only Ctrl+Y, while Ctrl+Shift+Z matched `undo` and was redirected to
+redo in the handler. A reader of the table concluded Ctrl+Shift+Z undoes.
+
+That matters because the table's whole value is being readable as the complete key surface — B42 was
+found by writing a ladder out as a table and seeing what the ordering hid. These tests pin each
+Shift variant to its own verb so the split cannot silently re-merge.
+*/
+test('B48: Ctrl+Shift+Z redoes — the table no longer says it undoes', () => {
+	const h = makeInput();
+	try {
+		h.input.onKeyDown(key('z', { ctrlKey: true, shiftKey: true }));
+		assert.deepEqual(h.commits.map((c) => c.verb), ['redo']);
+
+		h.reset();
+		h.input.onKeyDown(key('z', { ctrlKey: true }));
+		assert.deepEqual(h.commits.map((c) => c.verb), ['undo'], 'and plain Ctrl+Z still undoes');
+
+		h.reset();
+		h.input.onKeyDown(key('y', { ctrlKey: true }));
+		assert.deepEqual(h.commits.map((c) => c.verb), ['redo'], 'Ctrl+Y remains the other route to redo');
+	} finally { h.restore(); }
+});
+
+test('B48: Shift+L stars from the first selection; plain L chains', () => {
+	for (const [star, expected] of [[false, 'chain'], [true, 'star']]) {
+		const h = makeInput();
+		try {
+			const [a, b, c] = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
+			h.selection.set([a.id, b.id, c.id]);
+			h.input.onKeyDown(key('l', { shiftKey: star }));
+
+			assert.equal(h.soleCommit().label, expected);
+			assert.equal(h.model.all('link').length, 2, 'two links either way');
+			// the topology is the point: a star has both links touching the FIRST node
+			const touchingA = h.model.all('link').filter((l) => l.src === a.id || l.dst === a.id).length;
+			assert.equal(touchingA, star ? 2 : 1, `${expected} wires the right shape`);
+		} finally { h.restore(); }
+	}
+});
+
+test('B48: Ctrl+Shift+G ungroups; Ctrl+G groups', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		h.selection.set([a.id, b.id]);
+
+		h.input.onKeyDown(key('g', { ctrlKey: true }));
+		assert.equal(h.soleCommit().label, 'group');
+		assert.equal(h.model.all('group').length, 1);
+
+		h.reset();
+		h.selection.set([a.id, b.id]);
+		h.input.onKeyDown(key('g', { ctrlKey: true, shiftKey: true }));
+		assert.equal(h.soleCommit().label, 'ungroup');
+		assert.equal(h.model.all('group').length, 0, 'the group is gone, not re-made');
+	} finally { h.restore(); }
+});
+
+/*
+B48's actual defect was never behavioural — Ctrl+Shift+Z always redid. What was wrong is that the
+TABLE said otherwise: the keystroke matched the entry named `undo`, and the handler quietly
+redirected. The three tests above are regression guards for the split and pass either way; this is
+the one that fails on the pre-split table, because the thing being fixed is whether a rule's id
+tells the truth about what the keystroke does.
+*/
+test('B48: the matched rule NAMES the verb — the table is readable as the key surface', () => {
+	const cases = [
+		[' ',         {},                            'datum'],
+		[' ',         { shiftKey: true },            'datum-clear'],
+		['ArrowLeft', {},                            'nudge'],
+		['ArrowLeft', { shiftKey: true },            'resize-step'],
+		['l',         {},                            'chain'],
+		['l',         { shiftKey: true },            'star'],
+		['z',         { ctrlKey: true },             'undo'],
+		['z',         { ctrlKey: true, shiftKey: true }, 'redo'],
+		['y',         { ctrlKey: true },             'redo'],
+		['g',         { ctrlKey: true },             'group'],
+		['g',         { ctrlKey: true, shiftKey: true }, 'ungroup'],
+	];
+	const ctx = { readOnly: false, helpOpen: false, gesturing: false };
+	for (const [k, mod, id] of cases) {
+		const rule = resolveKey(key(k, mod), ctx);
+		assert.ok(rule, `${id}: nothing matched`);
+		assert.equal(rule.id, id, `${JSON.stringify(mod)}+${k} must resolve to '${id}', got '${rule.id}'`);
+	}
+});
+
+test('B48: splitting kept the table unambiguous — still exactly one overlapping pair', () => {
+	// The ordering claim in keymap.js is that Ctrl+Shift+Backspace is the ONLY keystroke matching
+	// more than one entry. Four new entries could have broken that, so it is re-enumerated rather
+	// than assumed — the same discipline that found the claim was wrong the first time.
+	const keys = [' ', 'Escape', 'Tab', 'Enter', 'Delete', 'Backspace', 'F2', '/', '?', 'Shift', 'Alt', 'Control',
+		...'abcdefghijklmnopqrstuvwxyz', ...'1234567',
+		'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+	const mods = [{}, { shiftKey: true }, { ctrlKey: true }, { ctrlKey: true, shiftKey: true },
+		{ altKey: true }, { metaKey: true }];
+	const overlaps = [];
+	for (const k of keys) {
+		for (const m of mods) {
+			const e = key(k, m);
+			const hits = KEYMAP.filter((r) => r.when(e, {}));
+			if (hits.length > 1) overlaps.push(`${JSON.stringify(m)}+${k} -> ${hits.map((h) => h.id).join('/')}`);
+		}
+	}
+	assert.deepEqual(overlaps, [
+		'{"ctrlKey":true,"shiftKey":true}+Backspace -> undo-run/delete',
+	], 'exactly one ordered pair, and it is the D21 one keymap.js documents');
 });

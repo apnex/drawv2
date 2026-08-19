@@ -177,6 +177,15 @@ Defaults are the safe ones: a new entry mutates, and is inert during help and du
 until its author says otherwise. A key added carelessly **fails closed** rather than becoming the
 next B42.
 
+**A rule's id names the verb.** `plain()` tests ctrl/meta/alt and leaves Shift free — right for a
+chord like `Ctrl+Shift+G`, wrong as a default. Five bindings used to match one entry and then branch
+on `evt.shiftKey` inside the handler, so the table under-reported the surface it exists to describe.
+For history it was outright false: `redo` matched only `Ctrl+Y`, while `Ctrl+Shift+Z` matched the
+entry named `undo` and was redirected in the handler. B48 split the four cases where Shift selects a
+different verb — `datum`/`datum-clear`, `nudge`/`resize-step`, `undo`/`redo`, `group`/`ungroup` — and
+`chain`/`star` with them, in preference to teaching the dispatcher to pass arguments for a single
+case. 27 entries became 31 and nothing re-reads Shift after the match.
+
 **Order decides exactly one keystroke, and it is enumerated rather than assumed.** Every other combo
 matches a single entry, so between disjoint rules the ordering is decoration. The exception is
 `Ctrl+Shift+Backspace`, which matches both `undo-run` and `delete`: D21's *reverse another writer's
@@ -281,9 +290,8 @@ before the common teardown, which is why it cannot just be the first line of `co
 | `snap.js` ✓ | Constrain a position or delta to the grid and the surface. | — |
 | `commands.js` | Turn an intent plus a selection into one committable change. | `lastDelta` |
 | `overlay.js` ✓ | Draw transient feedback for the current pointer and selection. | `hovered` `armed` `datumEl` crosshair |
-| `keymap.js` | Map a keystroke to an intent, and say whether it mutates. | the table |
 | `input.js` ◑ | Drive one in-flight pointer gesture from press to commit. | `mode` `ctx` `lastPos` |
-| `keymap.js` ✓ | Map a keystroke to an intent, and say whether it mutates. | the table |
+| `keymap.js` ✓ | Map a keystroke to **one named verb**, and say whether it mutates. | the table |
 | `recognize.js` ✓ | Decide WHICH gesture a press starts, and whether it mutates. | the table |
 
 **Not modules, deliberately:** `readOnly` is a predicate (§5); `focusId` belongs to label editing;
