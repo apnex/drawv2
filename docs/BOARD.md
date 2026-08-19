@@ -318,7 +318,7 @@ not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uni
 | H6.1 | The characterization net (**H2.1**) — ✅ landed, commit-boundary only, sealed by a scanner | — | Stage 0: written once, must be **unchanged** when the arc ends |
 | H6.2 | **Tier A landed**: `pick.js` (new, 78) + drag geometry into `snap.js`. `input.js` **1653 → 1562**. Tier B (command builders) is a shape change, not a move — taken with H6.3 | low | net green throughout; 380 tests unchanged |
 | H6.3 | **overlay.js lands** — 4 fields and ~90 lines move; `input.js` **1562 → 1477**, 13 fields → 9. Event handlers stay on Input and delegate | low | net green; the affordance suite re-verified to bite in the code's NEW home |
-| H6.4 | Invert the dispatchers — gesture table + keymap table | **real** | net green; `onDown/onMove/onUp` ~40 lines each |
+| H6.4 | **Both tables land.** `onDown` 167→26, `onKeyDown` 243→12. `recognize.js` + `keymap.js`; the gate is one predicate over `mutates`. `input.js` **1653→1391** | real | net green throughout; both tables exercised exhaustively and proven to bite |
 | H6.5 | Seal it: `scan-writers` fails on `mode`/`ctx` read outside `input.js`, and on `document.`/`window.` in any client module but `main.js`/`painter.js` | — | proven by injection (X13) |
 
 **Exit:** `input.js` states one duty in one sentence. Boundary violations are caught by tooling, not review

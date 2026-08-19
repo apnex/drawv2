@@ -34,6 +34,7 @@ Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.m
 
 import { Overlay } from './overlay.js';
 import { RECOGNIZE, resolveRule } from './recognize.js';
+import { resolveKey } from './keymap.js';
 import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, waypointFree, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
@@ -1178,255 +1179,183 @@ export class Input {
 	}
 
 	// ---- keyboard ----
+	/*
+	One keystroke → one entry → one handler. The 243-line ladder this replaces had three guards
+	interleaved at different depths, so whether a key worked depended on which of them it happened to
+	sit below (INPUT.md §4). Each entry now declares its own tolerances and the dispatcher applies
+	them uniformly.
+	*/
 	onKeyDown(evt) {
 		// typing contexts (header menu, label editor) never reach canvas shortcuts
 		const tag = evt.target.tagName;
 		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-		if (evt.key === 'Shift') {
-			if (this.mode === 'move' || this.mode === 'clone') {
-				// re-render the drag NOW: the commit follows the last rendered frame
-				if (this.lastPos) this.updateMove(this.lastPos, true);
-			} else {
-				this.svg.classList.add('zonegrid');
-			}
-		}
-		if (evt.key === 'Alt') {
-			evt.preventDefault(); // keep Firefox's menu bar out of the delete chord
-			this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
-		}
-		if (evt.key === 'Control') this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
+		const rule = resolveKey(evt, {
+			readOnly: this.readOnly,
+			helpOpen: !!(this.help && !this.help.hidden),
+			gesturing: this.isGesturing(),
+		});
+		if (rule) this[rule.run](evt);
+	}
 
-		// W4/W5 — interaction mode. 'e' toggles EDIT (shows the socket grid); 'r' toggles RUN (clickable
-		// content regions act). Either key from its own mode returns to the clean VIEW.
-		if ((evt.key === 'e' || evt.key === 'E') && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-			this.renderer.setMode(this.renderer.mode === 'edit' ? 'view' : 'edit');
-			return;
-		}
-		if ((evt.key === 'r' || evt.key === 'R') && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-			this.renderer.setMode(this.renderer.mode === 'run' ? 'view' : 'run');
-			return;
-		}
-		// A1 — tap 't' to ARM/disarm the text tool (a TOGGLE — you don't hold the key while you mouse;
-		// auto-repeat ignored). Armed: a canvas drag draws a text box; drawing one (or Esc / re-tap) disarms.
-		// 't' arms a MUTATION tool, so it belongs below the Server-Locked boundary — but it sits above
-		// it in the ladder, which is B18's third leak. Gated explicitly until H6's keymap makes it a flag.
-		if ((evt.key === 't' || evt.key === 'T') && !evt.repeat && !evt.ctrlKey && !evt.metaKey && !evt.altKey && !this.readOnly) {
-			this.textTool = !this.textTool;
-			this.svg.classList.toggle('texttool', this.textTool);
-			return;
-		}
-		// 's' — toggle the frame shape (circle <-> square) of the selected node(s)
-		if ((evt.key === 's' || evt.key === 'S') && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-			if (this.readOnly) return;
-			const cmd = commands.reshapeNodes(this.model, this.selection.list());
-			if (cmd.entries.length) this.history.commit(cmd);
-			return;
-		}
+	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
 
-		if (evt.key === 'Escape') {
-			// priority: close help > cancel gesture > disarm text tool > clear hand > clear selection
-			if (this.help && !this.help.hidden) return this.toggleHelp(false);
-			if (this.mode) this.cancelDrag(evt);
-			else if (this.textTool) { this.textTool = false; this.svg.classList.remove('texttool'); }
-			else if (this.palette.hand) {
-				this.palette.setHand(null);
-				this.readout.setCursor(this.lastPos ? snapNode(this.lastPos) : null);
-			} else this.selection.clear();
-			return;
-		}
-		if (evt.key === '/' || evt.key === '?') {
-			// the bare key toggles help — no Shift required
-			evt.preventDefault(); // keep Firefox's quick-find out of it
-			return this.toggleHelp();
-		}
-		// the open help overlay is keyboard-modal (Escape and ? handled above)
-		if (this.help && !this.help.hidden) return;
-		// Tab toggles the numeric data-view overlay — a read-only view, so it works
-		// even mid-gesture (no model mutation). Claim it only when the canvas holds
-		// focus: if a control is focused, let Tab/Shift+Tab traverse the toolbar
-		if (evt.key === 'Tab') {
-			const t = evt.target;
-			const onControl = t && typeof t.closest === 'function'
-				&& t.closest('button, a[href], select, input, textarea, [tabindex]');
-			if (!onControl) {
-				evt.preventDefault();
-				this.dataview.toggle();
-			}
-			return;
-		}
-		/*
-		── THE SERVER-LOCKED BOUNDARY (B18 / B37) ────────────────────────────────────────────────
-		Everything ABOVE this line is INSPECTION and works while locked. Everything BELOW MUTATES
-		and is inert until control is reclaimed. SCOPE decision 5: "selection, the data view, and
-		the readout still work, but no mutations."
-
-		This gate used to be a bare early-return dropped partway down the ladder, so whether a verb
-		was gated depended on where its branch happened to sit — not on whether it mutates. That
-		produced BOTH errors at once: three mutation paths above it (B18) and two inspection verbs
-		below it (B37). Ctrl+A and Space were moved up here for that reason; Tab was already above
-		it and worked, which is what proved position alone was deciding.
-
-		Adding a verb? Decide which side it belongs on. This split is positional and hand-maintained
-		until H6's `keymap.js` gives every entry a `mutates` flag and the gate filters on THAT — at
-		which point this comment and this line both disappear.
-		─────────────────────────────────────────────────────────────────────────────────────────*/
-
-		// select-all — pure selection, commits nothing (B37)
-		if ((evt.ctrlKey || evt.metaKey) && evt.key.toLowerCase() === 'a') {
-			evt.preventDefault();
-			this.selection.set([
-				...this.model.all('node').map((n) => n.id),
-				...this.model.all('zone').map((z) => z.id),
-				...this.model.all('link').map((l) => l.id)
-			]);
-			return;
-		}
-		// datum — a local origin for the readout, zero model impact (B37)
-		if (evt.key === ' ' && !this.isGesturing()) {
-			evt.preventDefault();
-			if (evt.shiftKey) {
-				this.readout.setDatum(null);
-				this.overlayUi.datum(null);
-				return;
-			}
-			if (!this.lastPos) return; // pointer off-canvas: nothing to anchor
-			const datum = snapNode(this.lastPos);
-			this.readout.setDatum(datum);
-			this.overlayUi.datum(datum);
-			return;
-		}
-
-		if (this.readOnly) return;
-		// 'w' drops/threads a waypoint: during a link draw it adds a bend to the route (mouse stays
-		// held — no button release); when idle it places a standalone waypoint. Handled BEFORE the
-		// gesture guard below, since dropping a bend mid-draw is the whole point.
-		if ((evt.key === 'w' || evt.key === 'W') && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-			if (this.mode === 'link') { evt.preventDefault(); this.dropRouteWaypoint(); return; }
-			if (!this.mode) { evt.preventDefault(); this.placeWaypoint(); return; }
-			return;
-		}
-		// no mutation shortcuts while a gesture is in flight: mid-drag the model holds
-		// raw unsnapped coordinates, and history/delete would capture or corrupt them
-		if (this.isGesturing()) return;
-
-		// ---- stamp hand: digits arm a type, Q pipettes, Enter stamps at the ghost.
-		// Idle-only (this.mode covers pending too): a held press owns the selection
-		// and the pointer, so hand keys must not act under it ----
-		if (!this.mode) {
-			if (/^[1-7]$/.test(evt.key) && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-				this.palette.toggleHand(evt.key === '7' ? 'waypoint' : NODE_TYPES[Number(evt.key) - 1]);
-				this.refreshHand();
-				return;
-			}
-			if (evt.key === 'q' || evt.key === 'Q') {
-				// pipette: pick the type under the cursor; empty cursor clears the hand
-				const over = this.lastPos && nodeAt(this.model, this.lastPos);
-				this.palette.setHand(over ? over.type : null);
-				this.refreshHand();
-				return;
-			}
-			if (evt.key === 'Enter' && this.palette.hand) {
-				// mouseless chaining: stamp at the ghost, then re-evaluate the cell
-				// (it is occupied now — the feedback must say so without a mouse move)
-				evt.preventDefault();
-				if (this.lastPos) {
-					this.stampAt(this.lastPos);
-					this.refreshHand();
-				}
-				return;
-			}
-		}
-		if (evt.key.startsWith('Arrow')) {
-			evt.preventDefault();
-			const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[evt.key];
-			if (!dir) return;
-			// Shift+arrow resizes the lone selected zone OR grows the lone selected node's span; plain arrow
-			// nudges. Both resize paths self-guard on the selection kind, so only the matching one acts.
-			if (evt.shiftKey) { this.resizeZoneByKey(dir[0], dir[1]); this.resizeNodeByKey(dir[0], dir[1]); }
-			else this.nudge(dir[0], dir[1]);
-			return;
-		}
-		// Z wraps the selection in a fitted zone (bare key; Ctrl+Z is undo, below)
-		if (evt.key.toLowerCase() === 'z' && !evt.ctrlKey && !evt.metaKey) {
-			evt.preventDefault();
-			this.wrapInZone();
-			return;
-		}
-		// C closes/opens the selected multi-hop route (loops dst back to src)
-		if (evt.key.toLowerCase() === 'c' && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-			evt.preventDefault();
-			this.toggleClosePath();
-			return;
-		}
-		// L chains the selected nodes; Shift+L stars from the first-selected
-		if (evt.key.toLowerCase() === 'l' && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
-			evt.preventDefault();
-			this.linkSelectedNodes(evt.shiftKey);
-			return;
-		}
-		if (evt.key === 'F2') {
-			evt.preventDefault();
-			// prefer the directly-clicked entity: group expansion makes single
-			// selection impossible for grouped nodes
-			const ids = this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group');
-			const target = (this.focusId && ids.includes(this.focusId)) ? this.focusId
-				: (ids.length === 1 ? ids[0] : null);
-			if (target) this.labels.open(kindOf(target), target);
-			return;
-		}
-
-		const meta = evt.ctrlKey || evt.metaKey;
-		// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking
-		// back N changes you did not make is a different intent from stepping back one you did,
-		// and it should not be reachable by holding a key down.
-		if (meta && evt.shiftKey && evt.key === 'Backspace') {
-			evt.preventDefault();
-			this.history.undoRun();
-			this.afterHistory();
-			return;
-		}
-		if (meta && evt.key.toLowerCase() === 'z') {
-			evt.preventDefault();
-			evt.shiftKey ? this.history.redo() : this.history.undo();
-			this.afterHistory();
-			return;
-		}
-		if (meta && evt.key.toLowerCase() === 'y') {
-			evt.preventDefault();
-			this.history.redo();
-			this.afterHistory();
-			return;
-		}
-		if (meta && evt.key.toLowerCase() === 'd') {
-			evt.preventDefault(); // claim the browser bookmark shortcut
-			this.duplicateSelection();
-			return;
-		}
-		if (meta && evt.key.toLowerCase() === 'g') {
-			evt.preventDefault();
-			if (evt.shiftKey) {
-				const groups = new Set(this.selection.groupable()
-					.map((id) => this.model.groupOf(id)).filter(Boolean).map((g) => g.id));
-				this.history.commit(commands.ungroupAll(this.model, [...groups]));
-			} else {
-				this.history.commit(commands.createGroup(this.model, this.selection.groupable()));
-			}
-			return;
-		}
-		if ((evt.key === 'Delete' || evt.key === 'Backspace') && this.selection.size() > 0) {
-			evt.preventDefault();
-			this.history.commit(commands.deleteSelection(this.model, new Set(this.selection.list())));
-			// selection auto-prunes on the delete's emits (selection.js)
+	onShiftDown(evt) {
+		if (this.mode === 'move' || this.mode === 'clone') {
+			// re-render the drag NOW: the commit follows the last rendered frame
+			if (this.lastPos) this.updateMove(this.lastPos, true);
+		} else {
+			this.svg.classList.add('zonegrid');
 		}
 	}
 
+	onArmingKey(evt) {
+		if (evt.key === 'Alt') evt.preventDefault();   // keep Firefox's menu bar out of the delete chord
+		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
+	}
+
+	// W4/W5 — 'e' toggles EDIT (shows the socket grid), 'r' toggles RUN (content regions act).
+	// Either key from its own mode returns to the clean VIEW.
+	onEditMode() { this.renderer.setMode(this.renderer.mode === 'edit' ? 'view' : 'edit'); }
+	onRunMode() { this.renderer.setMode(this.renderer.mode === 'run' ? 'view' : 'run'); }
+
+	onDataView(evt) {
+		// claim Tab only when the canvas holds focus, so it can still traverse the toolbar
+		const t = evt.target;
+		if (t && typeof t.closest === 'function' && t.closest('button, a[href], select, input, textarea, [tabindex]')) return;
+		evt.preventDefault();
+		this.dataview.toggle();
+	}
+
+	onEscape(evt) {
+		// priority: close help > cancel gesture > disarm the tool > clear hand > clear selection
+		if (this.help && !this.help.hidden) return this.toggleHelp(false);
+		if (this.mode) this.cancelDrag(evt);
+		else if (this.textTool) { this.textTool = false; this.svg.classList.remove('texttool'); }
+		else if (this.palette.hand) {
+			this.palette.setHand(null);
+			this.readout.setCursor(this.lastPos ? snapNode(this.lastPos) : null);
+		} else this.selection.clear();
+	}
+
+	onHelpKey(evt) {
+		evt.preventDefault();   // keep Firefox's quick-find out of it
+		this.toggleHelp();
+	}
+
+	onSelectAll(evt) {
+		evt.preventDefault();
+		this.selection.set([
+			...this.model.all('node').map((n) => n.id),
+			...this.model.all('zone').map((z) => z.id),
+			...this.model.all('link').map((l) => l.id)
+		]);
+	}
+
+	onDatum(evt) {
+		evt.preventDefault();
+		if (evt.shiftKey) {
+			this.readout.setDatum(null);
+			this.overlayUi.datum(null);
+			return;
+		}
+		if (!this.lastPos) return;   // pointer off-canvas: nothing to anchor
+		const datum = snapNode(this.lastPos);
+		this.readout.setDatum(datum);
+		this.overlayUi.datum(datum);
+	}
+
+	// 'w' drops/threads a waypoint: mid-route it adds a bend (the button is still held), idle it
+	// places a standalone one. The one mutating verb that belongs DURING a gesture.
+	onWaypointKey(evt) {
+		if (this.mode === 'link') { evt.preventDefault(); return this.dropRouteWaypoint(); }
+		if (!this.mode) { evt.preventDefault(); this.placeWaypoint(); }
+	}
+
+	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
+	onTextTool() {
+		this.textTool = !this.textTool;
+		this.svg.classList.toggle('texttool', this.textTool);
+	}
+
+	onReshape() {
+		const cmd = commands.reshapeNodes(this.model, this.selection.list());
+		if (cmd.entries.length) this.history.commit(cmd);
+	}
+
+	// ---- the stamp hand. Idle-only: a held press owns the selection and the pointer. ----
+	onHandDigit(evt) {
+		if (this.mode) return;
+		this.palette.toggleHand(evt.key === '7' ? 'waypoint' : NODE_TYPES[Number(evt.key) - 1]);
+		this.refreshHand();
+	}
+
+	onPipette() {
+		if (this.mode) return;
+		const over = this.lastPos && nodeAt(this.model, this.lastPos);
+		this.palette.setHand(over ? over.type : null);
+		this.refreshHand();
+	}
+
+	onStampKey(evt) {
+		if (this.mode || !this.palette.hand) return;
+		// mouseless chaining: stamp at the ghost, then re-evaluate the cell — it is occupied now,
+		// and the feedback must say so without a mouse move
+		evt.preventDefault();
+		if (this.lastPos) { this.stampAt(this.lastPos); this.refreshHand(); }
+	}
+
+	onArrowKey(evt) {
+		evt.preventDefault();
+		const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[evt.key];
+		if (!dir) return;
+		// Shift+arrow resizes the lone selected zone OR grows the lone selected node's span; plain
+		// arrow nudges. Both resize paths self-guard on the selection kind, so only one acts.
+		if (evt.shiftKey) { this.resizeZoneByKey(dir[0], dir[1]); this.resizeNodeByKey(dir[0], dir[1]); }
+		else this.nudge(dir[0], dir[1]);
+	}
+
+	onWrapKey(evt) { evt.preventDefault(); this.wrapInZone(); }
+	onCloseKey(evt) { evt.preventDefault(); this.toggleClosePath(); }
+	onChainKey(evt) { evt.preventDefault(); this.linkSelectedNodes(evt.shiftKey); }
+
+	onRenameKey(evt) {
+		evt.preventDefault();
+		// prefer the directly-clicked entity: group expansion makes single selection impossible
+		// for grouped nodes
+		const ids = this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group');
+		const target = (this.focusId && ids.includes(this.focusId)) ? this.focusId : (ids.length === 1 ? ids[0] : null);
+		if (target) this.labels.open(kindOf(target), target);
+	}
+
+	// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking back N
+	// changes you did not make is a different intent from stepping back one you did.
+	onUndoRun(evt) { evt.preventDefault(); this.history.undoRun(); this.afterHistory(); }
+	onUndoKey(evt) { evt.preventDefault(); evt.shiftKey ? this.history.redo() : this.history.undo(); this.afterHistory(); }
+	onRedoKey(evt) { evt.preventDefault(); this.history.redo(); this.afterHistory(); }
+	onDuplicate(evt) { evt.preventDefault(); this.duplicateSelection(); }   // claims the bookmark shortcut
+
+	onGroupKey(evt) {
+		evt.preventDefault();
+		if (evt.shiftKey) {
+			const groups = new Set(this.selection.groupable().map((id) => this.model.groupOf(id)).filter(Boolean).map((g) => g.id));
+			this.history.commit(commands.ungroupAll(this.model, [...groups]));
+		} else {
+			this.history.commit(commands.createGroup(this.model, this.selection.groupable()));
+		}
+	}
+
+	onDeleteKey(evt) {
+		if (this.selection.size() === 0) return;
+		evt.preventDefault();
+		this.history.commit(commands.deleteSelection(this.model, new Set(this.selection.list())));
+		// selection auto-prunes on the delete's emits (selection.js)
+	}
+
 	/*
-	Event handlers stay HERE and delegate. INPUT.md §8 splits it that way deliberately: input owns
-	the wiring to the DOM, overlay owns the state and the drawing. Deleting these during H6.3 broke
-	four affordance tests, and the lesson is worth keeping — asserting on BEHAVIOUR is not sufficient
-	on its own, because a test still has to INVOKE through something. The event surface is that
-	something: it is what the browser calls, so it is the one part of Input a test may lean on.
+	Event handlers stay HERE and delegate. INPUT.md §8 splits it that way: input owns the wiring to
+	the DOM, overlay owns the state and the drawing. (Deleted twice during H6 by slices that ran to
+	`onKeyUp` — the second time is why they now sit above the key handlers, out of the blast radius.)
 	*/
 	onHover(evt, on) {
 		this.overlayUi.hover(hitOf(evt), on, evt, this.isGesturing());

@@ -161,6 +161,28 @@ a marquee, because the hand-written read-only branch enumerated node/zone/link a
 — the same omission family as B29, and it disappears rather than being fixed: the tail rule admits
 every selectable kind, so there is no list to forget.
 
+### The keymap, and where order actually matters
+
+`onKeyDown` had **three guards interleaved at different depths** — the help modal, Server-Locked,
+and gesture-in-flight — so whether a key worked depended on which of them it happened to sit below.
+Each entry now declares its own tolerances and the dispatcher applies them uniformly:
+
+| flag | meaning | who sets it |
+|---|---|---|
+| `mutates` | authors a change → refused while Server-Locked | every entry |
+| `duringHelp` | meaningful with the help overlay open | only `Escape`, `?`, and the modifier keys |
+| `duringGesture` | meaningful mid-drag | only `Escape`, `Shift`, and **`w`** — dropping a bend IS the point |
+
+Defaults are the safe ones: a new entry mutates, and is inert during help and during a gesture,
+until its author says otherwise. A key added carelessly **fails closed** rather than becoming the
+next B42.
+
+**Order decides exactly one keystroke, and it is enumerated rather than assumed.** Every other combo
+matches a single entry, so between disjoint rules the ordering is decoration. The exception is
+`Ctrl+Shift+Backspace`, which matches both `undo-run` and `delete`: D21's *reverse another writer's
+whole run* must win, or that intent silently becomes *delete the selection*. Verified by reordering
+the two and watching it break.
+
 ## 5. The Server-Locked gate
 
 > **A verb runs while Server-Locked if and only if it does not mutate.**
@@ -236,6 +258,7 @@ design already half-present rather than imposing one.
 | `overlay.js` ✓ | Draw transient feedback for the current pointer and selection. | `hovered` `armed` `datumEl` crosshair |
 | `keymap.js` | Map a keystroke to an intent, and say whether it mutates. | the table |
 | `input.js` ◑ | Drive one in-flight pointer gesture from press to commit. | `mode` `ctx` `lastPos` |
+| `keymap.js` ✓ | Map a keystroke to an intent, and say whether it mutates. | the table |
 | `recognize.js` ✓ | Decide WHICH gesture a press starts, and whether it mutates. | the table |
 
 **Not modules, deliberately:** `readOnly` is a predicate (§5); `focusId` belongs to label editing;
