@@ -65,7 +65,11 @@ export class Input {
 		this.selection = selection;
 		this.renderer = renderer;
 		this.labels = labels;
-		this.readout = readout || { setCursor() {}, setDrag() {}, setBox() {}, setLink() {}, setDatum() {}, clearTransient() {}, render() {} };
+		// A null object must be TOTAL or it is a trap: this one advertised that `readout` is optional
+		// and then threw on `signed`/`dims`/`flash`, so Ctrl+D and the zone/box gestures were reachable
+		// only with a real readout injected. Latent because main.js always passes one — found the first
+		// time anything else constructed Input (the H2.1 harness). Keep in step with the call sites.
+		this.readout = readout || { setCursor() {}, setDrag() {}, setBox() {}, setLink() {}, setDatum() {}, clearTransient() {}, render() {}, dims() { return ''; }, signed() { return ''; }, flash() {} };
 		this.palette = palette || { hand: null, setHand() {}, toggleHand() {}, trackHand() {}, hideHand() {} };
 		this.dataview = dataview || { toggle() {} };
 		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)

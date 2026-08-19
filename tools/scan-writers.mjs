@@ -48,6 +48,21 @@ invisible at runtime — the code works, it just re-implements a rule it does no
 */
 const REACH = /\bdiagrams\.get\s*\(/g;
 
+/*
+H2.1 / H6 — the harness must stay a NET, not become a TAX.
+
+Tests over the client assert at the commit boundary: "this input emits these ops". `Changes.onCommit`
+is sovereign to how a gesture was produced (D4), so those assertions survive H6's decomposition
+untouched — including H6.4, which rewrites onDown/onMove/onUp into a gesture table. A test reading
+`input.mode` or `input.ctx` would break there, and the net built to ENABLE the refactor would become
+the thing that makes it expensive. That is precisely how a harness ends up ratifying the God Object
+it was written to remove.
+
+Cheap to hold now (no test reads them), expensive to retrofit later — so it is held now.
+*/
+const INTERNALS = /\b(?:input|inp|h\.input)\.(mode|ctx)\b/g;
+const TEST_ROOT = 'tests';
+
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
 	'document/ops.mjs': { mutate: null, load: 0, reach: 0 },
@@ -64,6 +79,12 @@ function walk(dir, out = []) {
 	return out;
 }
 
+// Blank out comments before matching, preserving line numbers. Without this the INTERNALS rule
+// flags the comments that EXPLAIN the rule — which it did, immediately, on its first run.
+const decomment = (text) => text
+	.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+	.replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + ' '.repeat(m.length - p.length));
+
 const hits = (text, re) => {
 	const out = [];
 	for (const m of text.matchAll(re)) {
@@ -76,6 +97,17 @@ let bad = 0;
 let mutations = 0;
 let loads = 0;
 let reaches = 0;
+
+// the client-internals rule, scanned over tests/ only
+let internals = 0;
+for (const file of walk(TEST_ROOT)) {
+	const h = hits(decomment(fs.readFileSync(file, 'utf8')), INTERNALS);
+	if (!h.length) continue;
+	internals += h.length;
+	bad++;
+	console.log(`  \u2717 ${file}: ${h.length} read(s) of client gesture internals — assert at the commit boundary instead`);
+	h.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+}
 
 for (const file of ROOTS.flatMap((r) => walk(r))) {
 	const text = fs.readFileSync(file, 'utf8');
@@ -121,7 +153,7 @@ if (reaches === 0) {
 	bad++;
 }
 
-console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}`);
+console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/`);
 if (bad) {
 	console.log(`\n  FAIL — ${bad} allow-list violation(s). An out-of-band write corrupts every stored inverse below it, silently.\n`);
 	process.exit(1);

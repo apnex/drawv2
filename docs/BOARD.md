@@ -168,7 +168,7 @@ Promoted onto the critical path by the triage pass: **H3 cannot start without H2
 
 | # | Item | Row | Sev · Size | Status |
 |---|---|---|---|---|
-| H2.1 | Client harness — jsdom or minimal stubs, able to drive a synthetic gesture and a synthetic keypress to a commit. Start with the three dead key paths so **B14** has a red test to go green against | **B23** | S5 · **L** | `TODO` |
+| H2.1 | Client harness — `tests/fixtures/client-harness.mjs`, ~150 lines of stubs, no dependency. Real `Model`/`Changes`/`Selection`/`Input`; assertions **only** at the commit boundary, enforced by `scan-writers`. 13 characterization tests; B14 ×3 and B37 ×1 marked `todo`, never written around | **B23** | S5 · **A9 mandate** · L | `DONE` |
 | H2.2 | `tests/gate.test.js` — GR1's own self-check, **6 probes proven to bite**. Writing it found that `gate:install` wrote to `.git/hooks/` while a global `core.hooksPath` sent git elsewhere: **the gate had never run on a push**. Replaced by `tools/install-hook.sh`, which resolves git's real hook path and confines itself to this repo | **B21** | S4 · S | `DONE` |
 | H2.3 | CI, or a recorded decision not to have it | B21 | — | `TODO` (decision) |
 | H2.4 | `tools/scan-board.mjs` (**GR14**) — R1 citations resolve, R2 milestones exist, R3 `DONE` and `CLOSED` move together. Wired into `npm run gate`; **5 probes proven to bite**. Contract rules 4 and 5 are judgement, deliberately not faked | — | — | `DONE` |
@@ -307,7 +307,7 @@ not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uni
 
 | # | Stage | Risk | Proof |
 |---|---|---|---|
-| H6.1 | The characterization net already exists (**H2.1**, commit-boundary only) | — | it is Stage 0, written once and never touched again |
+| H6.1 | The characterization net (**H2.1**) — ✅ landed, commit-boundary only, sealed by a scanner | — | Stage 0: written once, must be **unchanged** when the arc ends |
 | H6.2 | Lift the 312 stateless lines into `pick.js` / `snap.js` / `commands.js` | none | net green + `git diff` shows moved-not-modified |
 | H6.3 | Name the owners; each state field becomes private to exactly one unit | low | net green; 14 public fields → 3 on `input.js` |
 | H6.4 | Invert the dispatchers — gesture table + keymap table | **real** | net green; `onDown/onMove/onUp` ~40 lines each |
