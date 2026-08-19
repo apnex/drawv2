@@ -1,0 +1,287 @@
+# draw — board
+
+The **live, triaged, prioritised queue**. What we are doing next, in order.
+
+`docs/BACKLOG.md` is the durable *record* — append-and-close, every row evidenced, nothing ever deleted.
+This file is the *plan* — mutable, reorderable, and short. They are maintained together and checked against
+each other.
+
+> **Opened 2026-08-19** from a full-tree audit at the close of the CS arc (CS1–CS6). Seeded with
+> `BACKLOG.md` rows **B13–B33**.
+> **Triaged 2026-08-19** — every active row scored and re-sorted; see [what triage changed](#what-the-triage-pass-changed).
+
+---
+
+## The contract between BOARD and BACKLOG
+
+Five rules. They exist so the plan can move fast without the record losing fidelity.
+
+1. **Every board item cites a `B` row.** A finding with no row is not ready for the board — it gets a row
+   first, with `[V, file:line]` evidence, per the BACKLOG's own "Adding a row" contract.
+2. **Closing a board item closes its `B` row in the same commit.** Never one without the other.
+3. **A `B` row that is `Open` with a revival trigger is NOT on the board** until its trigger fires. They are
+   listed under [Held](#held--on-the-record-not-on-the-board) so the comparison is explicit rather than implied by absence.
+4. **The board is reorderable; items may be dropped.** But a dropped item is not deleted silently — its `B`
+   row is rewritten with the reason as a revival trigger. Explicit deferral is permitted; silence is not.
+5. **A fix ships with a test proven to fail against the pre-fix code.** X13's lesson, applied by default:
+   *a guardrail must be shown to bite before it is counted.*
+
+**Reconciliation is mechanizable and should be** — see `H2.4`. Every `Closes` value in BACKLOG naming an
+`H` milestone must exist here; every board item must cite a live `B` row.
+
+**Status:** `TODO` · `WIP` · `BLOCKED` · `DONE` · `DROPPED`
+
+---
+
+## Triage scale
+
+Milestones are grouped by **severity**, not by which files they touch. Grouping by theme was the flaw in the
+first cut of this board: it let two user-visible wrong-result defects sit in the last milestone because they
+happened to live next to the cleanup work.
+
+**Severity** — what it does to someone
+
+| | | |
+|---|---|---|
+| **S1** | **data-loss** | corrupts or destroys data, or silently discards work the system already accepted |
+| **S2** | **silent-wrong** | a confidently incorrect result, or a divergence the user cannot see and the system will not repair |
+| **S3** | **broken** | an advertised capability throws or does nothing |
+| **S4** | **degraded** | works, but misreports; or a capability gap that blocks a legitimate caller |
+| **S5** | **internal** | no behavioural consequence — dead code, duplication, drift |
+
+**Visible** — `user` · `agent` · `operator` · `internal`
+**Size** — `S` (a few lines) · `M` (half a day) · `L` (structural)
+
+Severity orders the milestones. Size orders within them, smallest first — a one-line fix for an S1 has no
+reason to wait behind an S1 that needs a harness.
+
+---
+
+## Triage ledger
+
+All 18 active rows, scored. Held rows are [below](#held--on-the-record-not-on-the-board).
+
+| Row | Sev | Visible | Size | Milestone | One line |
+|---|---|---|---|---|---|
+| **B13** | **S1** | user | **S** | **H1** | a `$` in any name corrupts the file; silent until restart, then refuses to boot |
+| **B15** | **S1** | user | M | **H1** | `durableVersion` over-reports → the outbox is pruned of work never flushed |
+| **B20** | S4 | operator | **S** | **H1** | GR9's assert sits in the I/O catch; permanently degrades `/health`, never re-checks |
+| **B23** | S5 | internal | **L** | **H2** | no test constructs any client class — the enabler of B14, B18, B19 |
+| **B21** | S4 | internal | **S** | **H2** | `tests/gate.test.js` absent; a fresh clone is entirely ungated |
+| **B22** | S4 | internal | **L** | **H2** | `tests/diff-inverse.test.js` absent; GR5's oracle covers 15 of 23 shapes |
+| **B18** | **S2** | user | **S** | **H3** | read-only leaks 3 mutation paths → permanent silent divergence |
+| **B19** | **S2** | user | **S** | **H3** | D12's defer rule never wired; a remote change fights a live drag |
+| **B14** | S3 | user | **S** | **H3** | nudge + both key-resizes throw; three advertised gestures dead |
+| **B30** | **S2** | user | M | **H3** | cloning a routed link silently straightens it |
+| **B29** | **S2** | user | M | **H3** | the data view reports the wrong length for every routed link |
+| **B16** | **S2**† | agent | M | **H4** | `expect` discarded on REST forward writes — CAS an agent believes it has |
+| **B17** | S4 | user | **S** | **H4** | `undoTop` missing from the REST broadcast; the undo affordance goes stale |
+| **B25** | S4 | agent | **S** | **H4** | `create {doc}` seeds a `meta.version` the log does not share |
+| **B24** | S4 | agent | **S** | **H4** | `readJson` never settles above 1 MB; the request hangs forever |
+| **B26** | S5 | internal | **S** | **H5** | `patchMeta` + 4 unused imports + dead `tmp` |
+| **B31** | S5 | internal | **S** | **H5** | five documented paths do not exist |
+| **B28** | S5 | internal | **L** | **H5** | `schema.js` is not the production path; the region renderer is cloned |
+
+† **B16 is S2 in consequence, low in likelihood.** An agent sending `expect` on a forward write has no CAS
+protection and will silently overwrite another writer. Nothing in-tree does this today — the CLI is
+read-only and the browser uses the websocket — so it is ranked below the client S2s. It rises the moment a
+second writer exists.
+
+---
+
+## What the triage pass changed
+
+Four movements, and one finding that matters more than the reordering:
+
+- **B18, B19 promoted H4 → H3.** Both are `S2` and both are `S`. B18 is a guard hoist; B19 is three lines of
+  composition-root wiring. Severe, tiny, and they were queued fourth.
+- **B30, B29 promoted H5 → H3.** Both are `S2` and user-visible. Grouping them as "client dedupe" let the
+  theme carry the ranking — B29 in particular reports a **confidently wrong number** in a tool whose stated
+  bar is *"zero ambiguity between intent and result — the machine states what will happen, in numbers."*
+- **B24, B25 demoted H3 → H4.** Genuinely `S4`, agent-facing, no observed trigger.
+- **B14 demoted H1 → H3.** Not because it matters less, but because it is `S3` and cannot be fixed before
+  the harness exists. Keeping it in H1 was wishful sequencing.
+
+**The finding: the client harness (B23) is now on the critical path, not a follow-up.** Five of the six
+remaining severe rows are client-side, and rule 5 means none can be fixed before a test can construct
+`Input`. That partially vindicates the *"net first"* option declined at planning time — but only for the
+client half. **H1 stays first** because B13/B15/B20 are server-side and `tests/persist.test.js` and
+`tests/store-atomicity.test.js` already reach them.
+
+So the arc is: **server data-loss now → build the client net → then the client severities.**
+
+---
+
+## H0 — seed the registers · `WIP`
+
+No code. The house rule is that the register is written before the implementation.
+
+| # | Item | Row | Status |
+|---|---|---|---|
+| H0.1 | Land `B13`–`B33` on `docs/BACKLOG.md` with evidence citations | — | `DONE` |
+| H0.2 | Correct **B7**: its stated D12 mitigation does not exist (see B19) | B7 | `DONE` |
+| H0.3 | This board, triaged and scored | — | `DONE` |
+| H0.4 | Resolve the four [decisions required](#decisions-required) below | — | `TODO` |
+
+**Exit:** registers current, decisions taken, H1 sequenced.
+
+---
+
+## H1 — stop the data loss · `TODO`
+
+`S1` + one adjacent `S4`. **All server-side, all reachable by suites that already exist** — which is why
+this runs before the harness. **H1.1 should land on its own, immediately.**
+
+| # | Item | Row | Sev · Size | Violates | Status |
+|---|---|---|---|---|---|
+| H1.1 | `serialize` — function-form `replace`, or build structurally. Ship standalone | **B13** | **S1 · S** | D18; false-fires GR8/I15 | `TODO` |
+| H1.2 | Adversarial-string round-trip: `$&`, `` $` ``, `$'`, `$1`, and a `body` not ending `"\n}"` | B13 | — | — | `TODO` |
+| H1.3 | Per-entry `flushedVersion` set in `flush()`; a `Store` accessor replacing the 10 hand-walked `diagrams.get(id)?.log` sites | **B15**, B26 (part) | **S1 · M** | D13, D30 | `TODO` |
+| H1.4 | Move the GR9 post-condition out of the write's try/catch; distinct counter and `/health` signal | **B20** | S4 · S | GR9 | `TODO` |
+
+**Exit:** B13, B15, B20 closed. Each fix has a test verified red against the pre-fix tree. `npm run gate` green.
+
+---
+
+## H2 — build the net · `TODO`
+
+Promoted onto the critical path by the triage pass: **H3 cannot start without H2.1.**
+
+| # | Item | Row | Sev · Size | Status |
+|---|---|---|---|---|
+| H2.1 | Client harness — jsdom or minimal stubs, able to drive a synthetic gesture and a synthetic keypress to a commit. Start with the three dead key paths so **B14** has a red test to go green against | **B23** | S5 · **L** | `TODO` |
+| H2.2 | `tests/gate.test.js` — GR1's own self-check. The pre-push hook is local and untracked, so a fresh clone is entirely ungated | **B21** | S4 · S | `TODO` |
+| H2.3 | CI, or a recorded decision not to have it | B21 | — | `TODO` (decision) |
+| H2.4 | `tools/scan-board.mjs` (**propose as GR14**) — every board item cites a live `B` row; every `Closes H<n>` names a milestone here. Add to `npm run gate`. In GR2's spirit | — | — | `TODO` |
+| H2.5 | `tests/diff-inverse.test.js` — GR5's missing half, covering the 8 inline commit sites. **Or** retire it with a recorded deviation | **B22** | S4 · **L** | `BLOCKED` on decision |
+| H2.6 | Extend the harness to `Renderer`, `Selection`, `LabelEditor` | B23 | — | `TODO` |
+
+**Exit:** B21, B22, B23 closed. `npm run gate` green **from a fresh clone**, not just this working copy.
+
+---
+
+## H3 — silent divergence and wrong results · `TODO`
+
+Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the two `S` fixes are hours, not days.
+
+| # | Item | Row | Sev · Size | Violates | Status |
+|---|---|---|---|---|---|
+| H3.1 | Hoist the `readOnly` guard above the run-mode and text-tool branches in `onDown`, and above `t` in `onKeyDown`; give `LabelEditor` its own | **B18** | **S2 · S** | SCOPE-5, I16 | `TODO` |
+| H3.2 | Wire the D12 defer rule: `sync.deferInbound = () => input.isGesturing()` at the composition root, `sync.releaseDeferred()` in `onUp`/`cancelDrag` | **B19** | **S2 · S** | D12 | `TODO` |
+| H3.3 | Rewire nudge + both key-resizes onto `Changes.amend`; delete `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks | **B14** | S3 · S | D11 | `BLOCKED` on H2.1 |
+| H3.4 | Clone waypoints into the closure; carry `via`/`closed` through the id map | **B30** | **S2 · M** | — | `TODO` |
+| H3.5 | One `endpointOf` pass across the seven waypoint-blind surfaces; fix the data view's link length for routed links | **B29** | **S2 · M** | — | `TODO` |
+| H3.6 | Exercise GR6 fault (ii) against the now-real defer queue — it currently tests a queue that does not exist | B19 | — | GR6 | `TODO` |
+| H3.7 | Correct **B7**'s row once its mitigation is genuinely in place | B7 | — | — | `TODO` |
+
+**Exit:** B14, B18, B19, B29, B30 closed. No path applies a mutation locally while Server-Locked; no surface
+reports a number it cannot justify.
+
+---
+
+## H4 — agent surface · `TODO`
+
+All `S4` except B16's `expect` half. Each item amends `README.md` / `SCOPE.md` **in the same commit** (GR10).
+
+| # | Item | Row | Sev · Size | Violates | Status |
+|---|---|---|---|---|---|
+| H4.1 | Forward `body.expect` to `store.commit` on REST forward writes. Currently discarded while the code claims it is optional | **B16** | **S2† · S** | D14 | `TODO` |
+| H4.2 | `POST .../commit` accepts `{ops}` — the vocabulary it is documented to accept. Unlocks multi-op transactions for agents | **B16** | S4 · M | GR10, X1 | `TODO` |
+| H4.3 | One shared `reversalBody(…)` across both transports; restores `undoTop` to the REST broadcast; unifies the `expect` and `to` policies | **B17** | S4 · S | D21 | `TODO` |
+| H4.4 | `create {doc}` — force `version: 0` in the candidate. One line | **B25** | S4 · S | D6, I11 | `TODO` |
+| H4.5 | `readJson`: settle on `'aborted'`/`'close'`; accumulate `Buffer`s and cap on bytes | **B24** | S4 · S | — | `TODO` |
+| H4.6 | Extend `tests/spec.test.js` to derive the REST surface from the router, as it already does for the ws dispatch. X9 found B11 and B12 that way | — | — | GR10 | `TODO` |
+
+**Exit:** B16, B17, B24, B25 closed. Spec and wire agree in both directions, mechanically.
+
+---
+
+## H5 — hygiene · `TODO`
+
+All `S5`. Nothing here changes behaviour; everything here reduces the chance of the next B14.
+
+| # | Item | Row | Sev · Size | Status |
+|---|---|---|---|---|
+| H5.1 | Delete `Store.patchMeta`, the four unused imports, the dead `const tmp` | **B26** | S5 · S | `TODO` |
+| H5.2 | Repoint or delete the five dangling doc references; correct the I/GR pinning-test column; consider extending GR2's scanner beyond §7 | **B31** | S5 · S | `TODO` |
+| H5.3 | **Decide `schema.js`'s fate** (below), then execute: route the live renderer through `docToSchema`/`resolve`, or relabel it and extract the shared content-region renderer | **B28** | S5 · **L** | `BLOCKED` on decision |
+| H5.4 | Remaining duplication ledger: span→px in 6 places, two crosshair owners, the zone-corner maps, two drag thresholds in different unit systems. Each merged or justified in place | B28 | S5 · M | `TODO` |
+
+**Exit:** duplication ledger closed or each survivor carries a reason. Zero dangling references.
+
+> **Note — the rename question travels with H5.3.** Three names in this tree fail plain-text search, and all
+> three are entangled with the `schema.js` decision rather than separable from it:
+>
+> - **`renderer` resolves to two files** — `kernel/renderer.mjs` and `app/src/renderer.js`, one a line-for-line
+>   clone of the other. This *is* B28; whichever way the decision goes, one of the two names changes or one
+>   of the two files stops existing.
+> - **`kernel/engine.mjs` vs the `engine/` substrate** — two unrelated concepts, one word. `kernel/engine.mjs`
+>   resolves a schema into a scene; `engine/` maintains the relational indices. A search for "engine" lands on
+>   both and the reader has to disambiguate by path, which is exactly what a name should have done.
+> - **`app/src/schema.js` vs the kernel's schema concept** — and per B28 the app one is not even reachable
+>   from the running client.
+>
+> So the H5.3 decision is not only *"is `docToSchema` the production path?"* — it is also *"what are these
+> three things called afterwards?"* Renaming before the decision would be churn; renaming after it is one
+> commit. **Do not split them.** Assessed against `write-discoverable-code` (rules: one definition site per
+> symbol; do not rely on the module path to disambiguate a generic name).
+>
+> The rest of the tree passes: `grc.mjs`, `docfile.mjs`, `txn.mjs`, `locks.js`, `geometry.mjs`, `router.mjs`
+> and `surface.mjs` are domain words that grep uniquely, and the three `index.mjs` files are thin re-export
+> entry points, which the rule explicitly permits.
+
+---
+
+## Held — on the record, not on the board
+
+Open `BACKLOG` rows whose trigger has not fired. Scored so the comparison is a judgement, not an omission.
+
+| Row | Sev | Held item | Revival trigger |
+|---|---|---|---|
+| **B6** | **S1** | No `fsync` anywhere | any multi-instance or GCS-backed deployment |
+| **B33** | S3 | No auth; CORS `*` on writes; ws has no origin check | any deployment reachable beyond loopback |
+| **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
+| **B10** | **S2** | Put-based inverse loses intra-kind ordering → stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
+| **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
+| **B32** | S4 | REST cannot create or delete a diagram | an agentic workflow needing to provision or retire one — **ruling first**, X12 applies |
+| **B9** | S5 | No durable accountability record beyond the 100-record ring | compliance, multi-tenant, or an incident review needing history older than the ring (N12) |
+
+**B6 is the uncomfortable one.** It is `S1` and it is held. That is defensible only because X2 records the
+deviation and N5 states the guarantee at exactly the strength the code makes — but note that **B15 is the
+same failure mode inside the window B6 declares safe**, which is why B15 is H1 and B6 is not.
+
+---
+
+## Decisions required
+
+Four, all in H0.4. Each blocks work that should not start until it is answered.
+
+1. **`schema.js` (B28).** Is `docToSchema` → `kernel.resolve()` the production render path, or a test/export
+   adapter? Two files describe it as production and the live client never calls it, while
+   `app/src/renderer.js` carries a line-for-line clone of the kernel's content-region code. Routing the
+   client through the kernel is the larger change and the more coherent end state; relabelling is honest and
+   cheap. **Blocks H5.3.**
+2. **GR5's second half (B22).** Build `tests/diff-inverse.test.js` against the frozen fixture, or retire it
+   with a recorded deviation? GR5 says the opportunity is *"destroyed permanently once the old code is
+   gone"* — it is gone. **Blocks H2.5.**
+3. **CI (B21).** A tracked enforcement point, or an explicit ruling that the local pre-push hook plus
+   `tests/gate.test.js` is the whole gate. Today a fresh clone has neither. **Blocks H2.3.**
+4. **REST diagram lifecycle (B32).** Ruling before building. X12 answered the same question `no` for
+   `draw undo` on the grounds that the destructive verb must keep its gates.
+
+---
+
+## Not in this arc
+
+Deliberately excluded so the arc has an edge:
+
+- **Refactoring the four oversized functions** (`onKeyDown` 223 lines, `onUp` 167, `onDown` 160,
+  `onMove` 91). They are the natural target *after* H2 gives them coverage — not before. A refactor without
+  a net is how B14 happened.
+- **Performance** — the per-pointermove linear `nodeAt` scans, `contentSig`'s `JSON.stringify` per `set`,
+  `Model.nextName`'s O(N·total) clone cost. Real, all measured-small at current document sizes, none
+  user-visible. Revive on a document that makes one of them show.
+- **Any geometry work.** `HIERARCHY.md` is explicit that connections are the open frontier and containment
+  is locked; the GRC walk has two surviving variants at rung 8 of 11, and `ATOMICS.md` still has the
+  ±29-vs-±30 container-edge handle open. **That is a design arc, not a hardening arc.** It starts clean once
+  this board is empty.
