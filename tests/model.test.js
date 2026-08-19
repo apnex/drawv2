@@ -164,3 +164,58 @@ test('kindOf derives the kind from the id of each kind', () => {
 	assert.equal(kindOf(zone.id), 'zone');
 	assert.equal(kindOf(group.id), 'group');
 });
+
+/*
+pathOf — resolving a ROUTE to a PATH (docs/spec/HIERARCHY.md §0, connection taxonomy).
+
+A route is an ordered list of anchors and carries no coordinates; a path is an ordered list of
+coordinates and carries no identity. `link` owns a route (`src`, `via[]`, `dst`); this resolves it.
+
+It lives in `document/` because document owns the entities that carry the coordinates — the kernel
+never sees a Model. It returns `[[x,y],…]`, the canonical PATH shape, so the value hands straight to
+the kernel's `roundedPath` with no conversion at any consumer. Entities are `{x,y}`; paths are
+tuples. Two shapes, one rule.
+
+Before this existed the resolution was hand-rolled at four sites and two of them were wrong (B29):
+the data view measured straight-line distance ignoring `via`, and re-plug handles were positioned on
+the straight src→dst line.
+*/
+
+const linked = () => {
+	const m = new Model();
+	const a = m.makeNode('host', { x: 0, y: 0 });
+	const b = m.makeNode('host', { x: 120, y: 0 });
+	const w = m.makeWaypoint({ x: 60, y: 60 });
+	[['node', a], ['node', b], ['waypoint', w]].forEach(([k, e]) => m.put(k, e));
+	return { m, a, b, w };
+};
+
+test('pathOf: a straight link is a two-point path', () => {
+	const { m, a, b } = linked();
+	const l = m.makeLink(a.id, b.id);
+	m.put('link', l);
+	assert.deepEqual(m.pathOf(l), [[0, 0], [120, 0]]);
+});
+
+test('pathOf: a routed link threads its via anchors in order', () => {
+	const { m, a, b, w } = linked();
+	const l = { ...m.makeLink(a.id, b.id), via: [w.id] };
+	m.put('link', l);
+	assert.deepEqual(m.pathOf(l), [[0, 0], [60, 60], [120, 0]], 'src, then every bend, then dst');
+});
+
+test('pathOf: a waypoint may be an ENDPOINT, not only a bend', () => {
+	const { m, a, w } = linked();
+	const l = m.makeLink(a.id, w.id);
+	m.put('link', l);
+	assert.deepEqual(m.pathOf(l), [[0, 0], [60, 60]], 'an anchor is an anchor — node or waypoint');
+});
+
+test('pathOf: a dangling route resolves to nothing, never a partial path', () => {
+	const { m, a } = linked();
+	const l = m.makeLink(a.id, 'node-dead01');
+	m.put('link', l);
+	assert.equal(m.pathOf(l), null, 'half a path would render as a line to nowhere');
+	const l2 = { ...m.makeLink(a.id, a.id), via: ['waypoint-dead1'] };
+	assert.equal(m.pathOf(l2), null, 'a missing BEND is as dangling as a missing end');
+});

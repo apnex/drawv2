@@ -112,6 +112,43 @@ export class Model {
 		return this.get('node', id) || this.get('waypoint', id);
 	}
 
+	/*
+	Resolve a link's ROUTE to a PATH — docs/spec/HIERARCHY.md §0, connection taxonomy.
+
+	A route is an ordered list of ANCHORS and carries no coordinates (`src`, `via[]`, `dst`); a path
+	is an ordered list of coordinates and carries no identity. This is the one place that crosses
+	between them, and it lives here because `document/` owns the entities holding the coordinates —
+	the kernel never sees a Model.
+
+	Returns `[[x, y], …]`, the canonical PATH shape, NOT `{x,y}`. Entities are objects, paths are
+	tuples: two shapes, one rule, so the value hands straight to the kernel's `roundedPath` with no
+	conversion at any consumer. An anchor is a node OR a waypoint (`endpointOf`), and a `via` bend is
+	always a waypoint entity.
+
+	A route that cannot fully resolve returns null rather than a partial path — half a path renders
+	as a line to nowhere. This was hand-rolled at four sites before it had a name, and two of them
+	were wrong: the data view measured `dist(src, dst)` ignoring every bend, and re-plug handles were
+	placed on the straight src→dst line (B29).
+	*/
+	pathOf(link) {
+		if (!link) return null;
+		// An anchor is an entity REFERENCE or a bare position. The kernel's resolveRoute already
+		// admits both (an entity id, or a cell coord as a free anchor); admitting the same here is
+		// what lets the LIVE link preview — whose final anchor is the cursor, not yet an entity —
+		// use this one resolver instead of hand-rolling a fourth copy.
+		const at = (ref) => (ref && typeof ref === 'object' ? ref : this.endpointOf(ref));
+		const src = at(link.src), dst = at(link.dst);
+		if (!src || !dst) return null;
+		const path = [[src.x, src.y]];
+		for (const id of link.via || []) {
+			const w = this.get('waypoint', id);
+			if (!w) return null;                    // a missing BEND is as dangling as a missing end
+			path.push([w.x, w.y]);
+		}
+		path.push([dst.x, dst.y]);
+		return path;
+	}
+
 	linkBetween(a, b) {
 		if (this.index) return this.index.linkBetween(a, b);
 		return this.all('link').find((l) =>

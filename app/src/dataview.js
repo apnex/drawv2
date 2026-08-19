@@ -61,10 +61,15 @@ export class DataView {
 		});
 		// links: length at the midpoint, on a backing pill (lines cross other geometry)
 		this.model.all('link').forEach((l) => {
-			const s = this.model.get('node', l.src);
-			const d = this.model.get('node', l.dst);
-			if (!s || !d) return;
-			this.tag((s.x + d.x) / 2, (s.y + d.y) / 2, `${this.n(Math.round(dist(s, d)))}${u}`, true);
+			// B29 — the THREADED length: every segment of the resolved path, not dist(src, dst).
+			// A routed link is longer than the straight line between its ends, and reporting the
+			// straight line is a confidently wrong number in a tool that exists to state exact ones.
+			const path = this.model.pathOf(l);
+			if (!path) return;
+			let len = 0;
+			for (let i = 1; i < path.length; i++) len += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
+			const mid = path[Math.floor(path.length / 2)];   // label at a real point ON the route
+			this.tag(mid[0], mid[1], `${this.n(Math.round(len))}${u}`, true);
 		});
 	}
 

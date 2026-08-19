@@ -179,7 +179,7 @@ Promoted onto the critical path by the triage pass: **H3 cannot start without H2
 
 ---
 
-## H3 — silent divergence and wrong results · `TODO`
+## H3 — silent divergence and wrong results · `DONE`
 
 Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the two `S` fixes are hours, not days.
 
@@ -189,7 +189,7 @@ Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the t
 | H3.2 | Wire the D12 defer rule: `sync.deferInbound = () => input.isGesturing()` at the composition root, `sync.releaseDeferred()` in `onUp`/`cancelDrag` | **B19** | **S2 · S** | D12 | `TODO` |
 | H3.3 | All three burst gestures rewired onto `Changes.amend`; `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks deleted (**-45 lines**). `Changes.flush()` added so a burst still cannot span a selection change | **B14** | S3 · S | D11 | `DONE` |
 | H3.4 | One per-kind cloner; waypoints seed and clone (without inventing a `name`); `via` remapped through the id map with missing bends pulled into the closure; `closed` carried | **B30** | **S2 · M** | — | `DONE` |
-| H3.5 | **T0** ratify the connection taxonomy (`HIERARCHY.md` §0) · **T1** free the word `anchor` (5 senses → 1) · **T2** `Model.pathOf()` + rewire the 4 hand-rolled polyline sites + the 4 `endpointOf` fixes | **B29** | **S2 · M** | A3 | `WIP` |
+| H3.5 | **T0** taxonomy ratified (`HIERARCHY.md` §0) · **T1** `anchor` freed (5 senses → 1) · **T2** `Model.pathOf()` is the sole route→path resolver, 4 hand-rolled sites retired, endpoints resolve via `endpointOf` | **B29** | **S2 · M** | A3 | `DONE` |
 | H5.5 | Retire the dead kernel `link` element and the `wire` abstraction that exists to accommodate it | **B38** | S5 · S | A3 | `TODO` |
 | H3.6 | Exercise GR6 fault (ii) against the now-real defer queue — it currently tests a queue that does not exist | B19 | — | GR6 | `TODO` |
 | H3.7 | Correct **B7**'s row once its mitigation is genuinely in place | B7 | — | — | `TODO` |

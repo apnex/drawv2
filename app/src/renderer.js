@@ -132,12 +132,10 @@ export class Renderer {
 	// A link with no via is a 2-point path (straight) — visually identical to the old line. When
 	// `closed`, the route loops dst → src as a rounded polygon (the router's close arg rounds the
 	// src/dst corners too) — a multi-hop route turned into a ring.
+	// route → path → curve. `pathOf` resolves the anchors (document); `roundedPath` bends it (kernel).
 	linkPath(entity) {
-		const ep = (id) => this.model.endpointOf(id);   // endpoint = node OR waypoint
-		const src = ep(entity.src), dst = ep(entity.dst);
-		if (!src || !dst) return null;
-		const via = (entity.via || []).map((id) => this.model.get('waypoint', id)).filter(Boolean);
-		return roundedPath([[src.x, src.y], ...via.map((w) => [w.x, w.y]), [dst.x, dst.y]], BEND_R, !!entity.closed);
+		const path = this.model.pathOf(entity);
+		return path && roundedPath(path, BEND_R, !!entity.closed);
 	}
 
 	// group hull = the bbox of member node centres, padded to ±group.ext (the kernel spec).

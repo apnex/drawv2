@@ -284,7 +284,7 @@ export class Input {
 			const link = this.model.get('link', linkId);
 			if (!link) return;
 			const fixedId = hit.end === 'src' ? link.dst : link.src;
-			const fixed = this.model.get('node', fixedId);
+			const fixed = this.model.endpointOf(fixedId);   // an anchor is a node OR a waypoint (B29)
 			if (!fixed) return;
 			this.mode = 'replug';
 			this.renderer.setState(linkId, 'replugging', true); // de-emphasize the real line while dragging
@@ -667,9 +667,9 @@ export class Input {
 	updateLinkPreview(pos) {
 		const target = this.endpointAt(pos);
 		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
-		const via = (this.ctx.via || []).map((id) => this.model.get('waypoint', id)).filter(Boolean);
-		const pts = [[this.ctx.src.x, this.ctx.src.y], ...via.map((w) => [w.x, w.y]), [end.x, end.y]];
-		this.ctx.path.update(roundedPath(pts, BEND_R));
+		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
+		const path = this.model.pathOf({ src: this.ctx.src, via: this.ctx.via, dst: end });
+		if (path) this.ctx.path.update(roundedPath(path, BEND_R));
 	}
 
 	// commit a finished route: the materialised waypoints + the link (with via) as ONE undo step
@@ -1206,17 +1206,19 @@ export class Input {
 		const size = 12;
 
 		if (kindOf(id) === 'link') {
-			const link = this.model.get('link', id);
-			const src = link && this.model.get('node', link.src);
-			const dst = link && this.model.get('node', link.dst);
-			if (!src || !dst) return;
-			// sit each handle on the line, just outside its node (clear of the icon)
-			const d = dist(src, dst) || 1;
-			const off = Math.min(NODE_R + 6, d * 0.4);
-			const ux = (dst.x - src.x) / d, uy = (dst.y - src.y) / d;
+			const path = this.model.pathOf(this.model.get('link', id));
+			if (!path) return;
+			// B29 — each handle sits on the route's OWN first/last segment, not on a straight line
+			// between the ends. On a routed link those are different directions entirely, and the
+			// handles used to float off the path they were supposed to grab.
+			const along = (from, to) => {
+				const d = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
+				const off = Math.min(NODE_R + 6, d * 0.4);
+				return { x: from[0] + (to[0] - from[0]) / d * off, y: from[1] + (to[1] - from[1]) / d * off };
+			};
 			const ends = {
-				src: { x: src.x + ux * off, y: src.y + uy * off },
-				dst: { x: dst.x - ux * off, y: dst.y - uy * off }
+				src: along(path[0], path[1]),
+				dst: along(path[path.length - 1], path[path.length - 2])
 			};
 			Object.entries(ends).forEach(([end, p]) => {
 				const handle = el('rect', {

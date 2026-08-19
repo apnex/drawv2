@@ -122,9 +122,14 @@ export class Readout {
 			if (kind === 'node') return `${entity.name || 'node'} ${this.pair(entity.x, entity.y)}${this.rel(entity.x, entity.y)}`;
 			if (kind === 'zone') return `${entity.name || 'zone'} ${this.pair(entity.x, entity.y)} ${this.dims(entity.w, entity.h)}${this.rel(entity.x, entity.y)}`;
 			if (kind === 'link') {
-				const src = this.model.get('node', entity.src);
-				const dst = this.model.get('node', entity.dst);
-				return `${src?.name || '?'} ↔ ${dst?.name || '?'}`;
+				// an ANCHOR is a node OR a waypoint (B29). A waypoint has no name — it is a bend, not a
+				// component — so it reads as its position, which is the only thing that identifies it.
+				const nameOf = (id) => {
+					const e = this.model.endpointOf(id);
+					if (!e) return '?';
+					return e.name || this.pair(e.x, e.y);
+				};
+				return `${nameOf(entity.src)} ↔ ${nameOf(entity.dst)}`;
 			}
 			return id;
 		}
