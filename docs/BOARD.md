@@ -225,7 +225,7 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 | H5.1 | Dead surface deleted through §7.4 (7 rows); `scan-dead` in the gate | **B26** | S5 · S | `DONE` |
 | H5.2 | Doc drift repointed; `scan-docrefs` extended to **code comments** and in the gate | **B31** | S5 · S | `DONE` |
 | H5.3 | ~~Decide `schema.js`'s fate~~ — **resolved by PROMOTION**: the kernel renderer got the consumer it always lacked, `GET /d/<id>.svg` | **B28** | S5 · L | `DONE` |
-| H5.6 | Extract the ~11 lines of text-layout maths the two renderers genuinely share | **B40** | S5 · S | `TODO` |
+| H5.6 | `contentLayout()` owns the arithmetic; both renderers own only emission. `scan-twins` ALLOW list now **empty** | **B40** | S5 · S | `DONE` |
 | H5.4 | Remaining duplication ledger: span→px in 6 places, two crosshair owners, the zone-corner maps, two drag thresholds in different unit systems. Each merged or justified in place | B28 | S5 · M | `TODO` |
 
 **Exit:** duplication ledger closed or each survivor carries a reason. Zero dangling references.

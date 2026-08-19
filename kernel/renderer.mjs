@@ -21,7 +21,48 @@ export function selBox(L, spanW = 0, spanH = 0) {
 
 // ---- content rendering (W2) — the kernel now renders TEXT (reverses "kernel defers labels") ----
 const escText = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const hexColor = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c)) ? c : null;   // SVG-attr safe; else default
+export const hexColor = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c)) ? c : null;   // SVG-attr safe; else default
+
+/*
+The LAYOUT of a content region — where its box sits, and where each line of text lands. B40.
+
+Two renderers legitimately exist: this one produces a complete SVG document for a non-browser caller
+(`GET /d/:id.svg`), and `app/src/renderer.js` maintains live, individually addressable elements for a
+person editing. Two duties, both real — but they must not both own the ARITHMETIC, and they did. The
+socket-grid union, the alignment mapping, the padding and the greedy wrap were byte-identical in
+both, interleaved with the emission code that legitimately differs. That interleaving is why a
+contiguous-window duplicate scan finds nothing here and only a set comparison surfaced it (B40, 30%).
+
+Pure: no DOM, no strings — callers emit. A single-row region returns one line centred on the box, so
+no caller re-implements the `rows <= 1` branch either.
+*/
+export function contentLayout(r, V = STD, L = L_STD) {
+	const P = V.pitch, SE = L.socket.ext;
+	const [oc, orow] = r.at || [0, 0], cols = r.cols || 1, rows = r.rows || 1;
+	const x0 = oc * P - SE, y0 = orow * P - SE, w = (cols - 1) * P + 2 * SE, h = (rows - 1) * P + 2 * SE;  // socket-grid union
+	const cx = x0 + w / 2, cy = y0 + h / 2;
+	const al = r.align || 'center', pad = 8;
+	const tx = al === 'left' ? x0 + pad : al === 'right' ? x0 + w - pad : x0 + w / 2;
+	const anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
+	const fill = hexColor(r.fill) || '#e6e9ee';
+	const value = r.value == null ? '' : String(r.value);
+
+	let lines;
+	if (rows <= 1) lines = [{ text: value, y: cy }];
+	else {
+		const cpl = Math.max(1, Math.floor((w - 2 * pad) / 9)), lh = 18;
+		const wrapped = [];
+		let curr = '';
+		for (const wd of value.split(/\s+/)) {
+			const t = curr ? curr + ' ' + wd : wd;
+			if (t.length > cpl && curr) { wrapped.push(curr); curr = wd; } else curr = t;
+		}
+		if (curr) wrapped.push(curr);
+		const yTop = cy - (wrapped.length - 1) * lh / 2;
+		lines = wrapped.map((text, i) => ({ text, y: yTop + i * lh }));
+	}
+	return { x0, y0, w, h, cx, cy, cols, rows, tx, anchor, fill, lines };
+}
 const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = 15 } = {}) =>
 	`<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="ui-monospace,monospace" font-size="${size}" fill="${fill}">${escText(s)}</text>`;
 
@@ -31,9 +72,7 @@ const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = 15 } = {}) =
 // (design/widgets/render.mjs renderContent). label/input/button/pill are all text + optional outline/fill.
 export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 	const P = V.pitch, SE = L.socket.ext, S = V.socket;
-	const [oc, or] = r.at || [0, 0], cols = r.cols || 1, rows = r.rows || 1;
-	const x0 = oc * P - SE, y0 = or * P - SE, w = (cols - 1) * P + 2 * SE, h = (rows - 1) * P + 2 * SE;  // socket-grid union
-	const cx = x0 + w / 2, cy = y0 + h / 2;
+	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines } = contentLayout(r, V, L);
 	// W5/W6 — an interactive region gets a transparent hit rect on top, CSS-gated to capture only in run
 	// mode: a button (action → data-action, fires draw:action) or an editable input (input → data-input +
 	// the region index, opens the inline editor). action sanitized for the attribute.
@@ -44,19 +83,10 @@ export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 		const [bx, by, bw, bh] = GLYPH_BB[r.glyph] || GLYPH_BB.host;
 		return `<svg x="${cx - S / 2}" y="${cy - S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-${r.glyph}"/></svg>` + hit;
 	}
-	// text: optional outline (box ON the socket border, never beyond) + alignment; multi-row → paragraph wrap
+	// text: optional outline (box ON the socket border, never beyond); lines arrive already placed
 	let out = '';
 	if (r.outline) out += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="${typeof r.rx === 'number' ? r.rx : 3}" fill="${hexColor(r.bg) || '#0a0a0a'}" stroke="${hexColor(r.accent) || TOKENS.port}" stroke-width="1.3"/>`;
-	const al = r.align || 'center', pad = 8, fill = hexColor(r.fill) || '#e6e9ee';
-	const tx = al === 'left' ? x0 + pad : al === 'right' ? x0 + w - pad : x0 + w / 2;
-	const anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
-	if (rows <= 1) return out + TXT(tx, cy, r.value, { anchor, fill }) + hit;
-	const cpl = Math.max(1, Math.floor((w - 2 * pad) / 9)), lh = 18, words = String(r.value == null ? '' : r.value).split(/\s+/), lines = [];
-	let curr = '';
-	for (const wd of words) { const t = curr ? curr + ' ' + wd : wd; if (t.length > cpl && curr) { lines.push(curr); curr = wd; } else curr = t; }
-	if (curr) lines.push(curr);
-	const yTop = cy - (lines.length - 1) * lh / 2;
-	lines.forEach((ln, i) => { out += TXT(tx, yTop + i * lh, ln, { anchor, fill }); });
+	for (const ln of lines) out += TXT(tx, ln.y, ln.text, { anchor, fill });
 	return out + hit;
 }
 

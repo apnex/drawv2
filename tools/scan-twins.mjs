@@ -32,8 +32,8 @@ const KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'return', 'el
 
 // pair -> why the shared lines are permitted to stay. Reviewed at each milestone close.
 const ALLOW = {
-	'app/src/renderer.js:contentDom <-> kernel/renderer.mjs:renderContentRegion':
-		'B40 — the two renderers have two legitimate duties (live DOM vs export document) but must not both own the text-layout maths; extraction scheduled H5.6',
+	// Empty, and that is the point: the tree's one twin (B40) was extracted at H5.6 rather than
+	// excused. An ALLOW entry is a standing exception, so it should be rare and it should shrink.
 };
 
 function walk(dir, out = []) {

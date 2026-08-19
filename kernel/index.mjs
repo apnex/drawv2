@@ -8,7 +8,7 @@
 //   check(schema)   → [{ rule, pass, why }]     (resolve → GRC)
 export { STD, L_STD, derive, BEND_R } from './spec.mjs';
 export { resolve } from './engine.mjs';
-export { renderScene, renderElement, sharedDefs, DRAW_ORDER, selBox, renderContentRegion } from './renderer.mjs';
+export { renderScene, renderElement, sharedDefs, DRAW_ORDER, selBox, renderContentRegion, contentLayout, hexColor } from './renderer.mjs';
 export { grc, RULES, crossings } from './grc.mjs';
 export { roundedPath, gridSnap } from './router.mjs';
 export { docToSchema, schemaToDoc } from './adapt.mjs';

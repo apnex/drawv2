@@ -90,3 +90,52 @@ test('B29: the data view does not skip a link whose endpoint is a waypoint', () 
 		assert.ok(tags.some((t) => t.includes(String(len))), `a waypoint-ended link has a length too: ${JSON.stringify(tags)}`);
 	} finally { restore(); }
 });
+
+/*
+B40 — one owner for the content-region arithmetic.
+
+The two renderers stay (different duties: live addressable elements for editing vs a complete
+document for `/d/:id.svg`), but the socket-grid union, the alignment mapping, the padding and the
+greedy wrap were byte-identical in both. They agreed on the day they were written; nothing would
+have failed on the day they stopped.
+
+The invariant worth pinning is not "the function exists" — it is that both renderers place text at
+the SAME coordinates. That is what the copy silently threatened and what a shared owner guarantees.
+*/
+
+import { contentLayout, renderContentRegion } from '../kernel/index.mjs';
+
+const REGIONS = [
+	{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' },
+	{ at: [0, 0], cols: 3, rows: 2, content: 'text', value: 'the quick brown fox jumps over the lazy dog', align: 'left' },
+	{ at: [1, 2], cols: 2, rows: 3, content: 'text', value: 'wrap me across several lines please', align: 'right' },
+	{ at: [0, 0], cols: 2, rows: 1, content: 'text', value: '', align: 'center' },
+	{ at: [0, 0], cols: 4, rows: 4, content: 'text', value: 'x '.repeat(60), fill: '#ff0000' },
+];
+
+test('B40: the kernel renderer emits text at exactly the coordinates contentLayout computes', () => {
+	for (const r of REGIONS) {
+		const layout = contentLayout(r);
+		const svg = renderContentRegion(r);
+		const ys = [...svg.matchAll(/<text x="([-\d.]+)" y="([-\d.]+)"/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
+		assert.equal(ys.length, layout.lines.length, `line count for ${JSON.stringify(r.value).slice(0, 30)}`);
+		ys.forEach((p, i) => {
+			assert.equal(p.x, layout.tx, 'x follows the shared alignment');
+			assert.equal(p.y, layout.lines[i].y, 'y follows the shared wrap');
+		});
+	}
+});
+
+test('B40: the wrap is deterministic and centred on the box', () => {
+	const l = contentLayout({ at: [0, 0], cols: 3, rows: 3, content: 'text', value: 'alpha beta gamma delta epsilon zeta' });
+	assert.ok(l.lines.length > 1, 'it wrapped');
+	const ys = l.lines.map((x) => x.y);
+	const mid = (ys[0] + ys[ys.length - 1]) / 2;
+	assert.equal(mid, l.cy, 'the block is centred on the region, however many lines it has');
+	assert.deepEqual(ys.map((y, i) => (i ? y - ys[i - 1] : 18)), ys.map(() => 18), 'uniform line height');
+});
+
+test('B40: an empty region still yields one placed line, so no caller re-implements rows<=1', () => {
+	const l = contentLayout({ at: [0, 0], cols: 1, rows: 1, content: 'text', value: null });
+	assert.deepEqual(l.lines, [{ text: '', y: l.cy }]);
+});

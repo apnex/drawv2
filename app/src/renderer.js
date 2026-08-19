@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull } from '../../kernel/index.mjs';
+import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -24,18 +24,17 @@ const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.s
 // W2 content regions: a node carries content (text/glyph in its socket grid). contentSig drives re-render
 // on a content change; absent ⇒ no attr (plain node stays byte-identical). hexColor keeps SVG attrs safe.
 const contentSig = (e) => (e.content && e.content.length) ? JSON.stringify(e.content) : null;
-const hexColor = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c)) ? c : null;
 
 // render ONE content region into a node's <g> (node-local px) — mirrors kernel/renderer.mjs
 // renderContentRegion. Text via textContent (XSS-safe); multi-row wraps as a paragraph.
 function contentDom(r, parent, idx = 0) {
-	const P = STD.pitch, SE = L_STD.socket.ext, S = SOCKET;
-	const [oc, or] = r.at || [0, 0], cols = r.cols || 1, rows = r.rows || 1;
-	const x0 = oc * P - SE, y0 = or * P - SE, w = (cols - 1) * P + 2 * SE, h = (rows - 1) * P + 2 * SE;
-	const cx = x0 + w / 2, cy = y0 + h / 2;
-	// W5/W6 — an interactive region gets a transparent hit rect on top; CSS gives it pointer-events + cursor
-	// ONLY in run mode, so view/edit clicks pass through to the node for normal gestures. A button (action →
-	// fires draw:action) or an editable input (input → data-idx, opens the inline editor). Appended LAST.
+	// LAYOUT is the kernel's (contentLayout); EMISSION is ours. The two renderers have different
+	// duties — live addressable elements here, a complete document there — but shared arithmetic was
+	// a copy waiting to drift (B40).
+	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines } = contentLayout(r);
+	const S = SOCKET;
+	// W5/W6 — an interactive region gets a transparent hit rect on top; CSS gives it pointer-events +
+	// cursor ONLY in run mode, so view/edit clicks pass through to the node. Appended LAST.
 	const addHit = () => {
 		if (r.action && /^[a-z0-9-]+$/.test(r.action)) el('rect', { class: 'clickable', 'data-action': r.action, x: x0, y: y0, width: w, height: h, fill: 'transparent' }, parent);
 		else if (r.input) el('rect', { class: 'clickable', 'data-input': '', 'data-idx': String(idx), x: x0, y: y0, width: w, height: h, fill: 'transparent' }, parent);
@@ -47,17 +46,10 @@ function contentDom(r, parent, idx = 0) {
 		addHit(); return;
 	}
 	if (r.outline) el('rect', { class: 'content-box', x: x0, y: y0, width: w, height: h, rx: (typeof r.rx === 'number' ? r.rx : 3), fill: hexColor(r.bg) || '#0a0a0a', stroke: hexColor(r.accent) || TOKENS.port, 'stroke-width': 1.3 }, parent);
-	const al = r.align || 'center', pad = 8, fill = hexColor(r.fill) || '#e6e9ee';
-	const tx = al === 'left' ? x0 + pad : al === 'right' ? x0 + w - pad : x0 + w / 2;
-	const anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
-	const mkText = (x, y, s) => { const t = el('text', { class: 'content-text', x, y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-family': 'ui-monospace,monospace', 'font-size': 15, fill }, parent); t.textContent = s; };
-	if (rows <= 1) { mkText(tx, cy, r.value == null ? '' : String(r.value)); addHit(); return; }
-	const cpl = Math.max(1, Math.floor((w - 2 * pad) / 9)), lh = 18, words = String(r.value == null ? '' : r.value).split(/\s+/), lines = [];
-	let curr = '';
-	for (const wd of words) { const tt = curr ? curr + ' ' + wd : wd; if (tt.length > cpl && curr) { lines.push(curr); curr = wd; } else curr = tt; }
-	if (curr) lines.push(curr);
-	const yTop = cy - (lines.length - 1) * lh / 2;
-	lines.forEach((ln, i) => mkText(tx, yTop + i * lh, ln));
+	for (const ln of lines) {
+		const t = el('text', { class: 'content-text', x: tx, y: ln.y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-family': 'ui-monospace,monospace', 'font-size': 15, fill }, parent);
+		t.textContent = ln.text;
+	}
 	addHit();
 }
 
