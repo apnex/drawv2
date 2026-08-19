@@ -200,7 +200,7 @@ The second axis from the original framing; almost entirely undecided.
 - **SHIPPED:** frame/glyph decoupling — node = frame `shape` × glyph `type`; per-node
   `shape` field (circle\|square). Commit `b89418a`.
 - **WORKING TREE (uncommitted):** rounded selection brackets, ±24 rx8 10px arms
-  (`client/src/renderer.js`). Sized for node-42; would move to ±23 under node-40.
+  (`app/src/renderer.js`). Sized for node-42; would move to ±23 under node-40.
 - **NOT BUILT YET:** group rendering (groups have no visual at all today); zones on
   the cell grid + gutter (today zones are independent w×h rects, half-offset grid);
   the node-40 resize and its ripple (NODE_R, frame defs, glyph scale, hit-test slop,
@@ -286,7 +286,7 @@ connection grammar. **Retain every permutation in the preview** (never delete) �
    `build.mjs` so SVG renders *from* this data (today it builds SVG strings directly).
 2. **rung library** — `design/rungs/*.mjs`: each rung a topology generator returning
    scene-data (containers + relationships), connection-style-agnostic.
-3. **DRC checker** — `design/grc.mjs`: scene-data → pass/fail per *auto* criterion
+3. **DRC checker** — **BUILT** as `kernel/grc.mjs`: scene-data → pass/fail per *auto* criterion
    (grid-snap, clearance, overlap, on-grid attachment, reserve-not-squish).
 4. **matrix page** — render the variant × rung grid + per-cell scorecard; sectioned
    (containment · connection · routing).

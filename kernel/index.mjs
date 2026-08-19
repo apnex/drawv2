@@ -16,8 +16,7 @@ export { px, cellPx, cellCenter, cellOf, groupHull, bboxOf } from './geometry.mj
 
 import { resolve } from './engine.mjs';
 import { renderScene } from './renderer.mjs';
-import { grc, crossings } from './grc.mjs';
+import { grc } from './grc.mjs';
 
 export function render(schema, pad) { const { V, L, scene } = resolve(schema); return renderScene(scene, V, L, pad); }
 export function check(schema) { const { V, L, scene } = resolve(schema); return grc(scene, V, L); }
-export function evaluate(schema) { const { V, L, scene } = resolve(schema); return { results: grc(scene, V, L), cross: crossings(scene) }; }

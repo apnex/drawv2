@@ -52,9 +52,6 @@ export function roundedPath(pts, radius = 20, close = false) {
 export const snap1 = (v, step) => Math.round(v / step) * step;
 export const gridSnap = (pts, step) => pts.map(([x, y]) => [snap1(x, step), snap1(y, step)]);
 
-// corners (interior vertices) of a waypoint list — what GRC's corner-on-grid rule inspects
-export const cornersOf = (pts, close = false) => (close ? pts : pts.slice(1, -1));
-
 // segments of a waypoint list, for ortho / crossing checks
 export function segmentsOf(pts, close = false) {
 	const segs = [];

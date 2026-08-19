@@ -150,10 +150,6 @@ export function deletePlan(presentation, targetPageId, modelIds) {
 	return { requests: ids.map((objectId) => ({ deleteObject: { objectId } })), staleDeleted };
 }
 
-export function deleteRequests(presentation, targetPageId, modelIds) {
-	return deletePlan(presentation, targetPageId, modelIds).requests;
-}
-
 /*
 Create requests for the whole document. Z-order = creation order:
 background, zones (labels inline), links, nodes, node labels.

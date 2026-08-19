@@ -20,8 +20,6 @@ inverse below it with no error at the time of corruption.
 
 import { COMPOSITE } from './shape.mjs';
 
-export const OPS = ['put', 'set', 'del', 'meta'];
-
 // A copy deep enough that the result shares no mutable structure with the original. Walks the
 // COMPOSITE table rather than an if-ladder, so a new nested field is declared in one place.
 // Load-bearing twice over: a stored inverse must not alias the live model (undo would replay a

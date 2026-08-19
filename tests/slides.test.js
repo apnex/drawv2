@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseSlidesUrl, deleteRequests, createRequests, connectRequests, groupRequests, makeScale, OWNED_ID } from '../server/slides/transform.js';
+import { parseSlidesUrl, deletePlan, createRequests, connectRequests, groupRequests, makeScale, OWNED_ID } from '../server/slides/transform.js';
 import { SlidesSync } from '../server/slides/sync.js';
 import { GoogleAuth } from '../server/slides/auth.js';
 
@@ -180,7 +180,7 @@ test('deleteRequests: full pattern wipe on target slide, model-ids-only elsewher
 			}
 		]
 	};
-	const ids = deleteRequests(presentation, 'p1', modelIds).map((r) => r.deleteObject.objectId);
+	const ids = deletePlan(presentation, 'p1', modelIds).requests.map((r) => r.deleteObject.objectId);
 	assert.deepEqual(ids.sort(), ['g_allmine', 'g_nested', 'link-aaaa03', 'node-0dd001', 'node-aaaa01--label']);
 	assert.ok(!ids.includes('zone-bbbb01'), 'sibling diagram pushes are never touched');
 });

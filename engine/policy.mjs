@@ -2,8 +2,7 @@
 Policy — pure, shared invariant + cascade RULES over the entity graph. No DOM, no Model
 binding: every rule takes plain inputs so BOTH consumers apply the SAME rule — the client
 (app/, building ordered + invertible command entries for undo) and the server (server/,
-applying idempotent mutations as the safety net). The first tenant of the engine/ substrate
-(see docs/history/PRISMV2-DESIGN.md); it grows as later rungs land (negation/aggregate invariants, the
+applying idempotent mutations as the safety net). The first tenant of the engine/ substrate; it grows as later rungs land (negation/aggregate invariants, the
 cascade controller). Until then this is a small, behaviour-identical extraction.
 */
 

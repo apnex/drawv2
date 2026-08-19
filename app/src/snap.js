@@ -34,7 +34,6 @@ export function snapZone(pos) {
 	};
 }
 
-export function samePos(a, b) { return a.x === b.x && a.y === b.y; }
 
 export function resolveBox(p1, p2) {
 	return { x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y), w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y) };

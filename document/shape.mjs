@@ -36,6 +36,3 @@ export const OPTIONAL = {
 	zone:     new Set(),
 	waypoint: new Set(),
 };
-
-export const isComposite = (kind, field) => COMPOSITE[kind]?.has(field) ?? false;
-export const isOptional  = (kind, field) => OPTIONAL[kind]?.has(field) ?? false;

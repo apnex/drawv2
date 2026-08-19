@@ -222,8 +222,8 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 
 | # | Item | Row | Sev · Size | Status |
 |---|---|---|---|---|
-| H5.1 | Delete `Store.patchMeta`, the four unused imports, the dead `const tmp` | **B26** | S5 · S | `TODO` |
-| H5.2 | Repoint or delete the five dangling doc references; correct the I/GR pinning-test column; consider extending GR2's scanner beyond §7 | **B31** | S5 · S | `TODO` |
+| H5.1 | Dead surface deleted through §7.4 (7 rows); `scan-dead` in the gate | **B26** | S5 · S | `DONE` |
+| H5.2 | Doc drift repointed; `scan-docrefs` extended to **code comments** and in the gate | **B31** | S5 · S | `DONE` |
 | H5.3 | ~~Decide `schema.js`'s fate~~ — **resolved by PROMOTION**: the kernel renderer got the consumer it always lacked, `GET /d/<id>.svg` | **B28** | S5 · L | `DONE` |
 | H5.6 | Extract the ~11 lines of text-layout maths the two renderers genuinely share | **B40** | S5 · S | `TODO` |
 | H5.4 | Remaining duplication ledger: span→px in 6 places, two crosshair owners, the zone-corner maps, two drag thresholds in different unit systems. Each merged or justified in place | B28 | S5 · M | `TODO` |
@@ -239,7 +239,7 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 > - **`kernel/engine.mjs` vs the `engine/` substrate** — two unrelated concepts, one word. `kernel/engine.mjs`
 >   resolves a schema into a scene; `engine/` maintains the relational indices. A search for "engine" lands on
 >   both and the reader has to disambiguate by path, which is exactly what a name should have done.
-> - **`app/src/schema.js` vs the kernel's schema concept** — and per B28 the app one is not even reachable
+> - **`kernel/adapt.mjs` vs the kernel's schema concept** — and per B28 the app one is not even reachable
 >   from the running client.
 >
 > So the H5.3 decision is not only *"is `docToSchema` the production path?"* — it is also *"what are these

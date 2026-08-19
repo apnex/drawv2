@@ -26,12 +26,11 @@ are vendored into `theme.mjs`.
 ## Public API (`index.mjs`)
 
 ```js
-import { resolve, render, check, evaluate, STD, L_STD, derive, BEND_R } from './kernel/index.mjs';
+import { resolve, render, check, STD, L_STD, derive, BEND_R } from './kernel/index.mjs';
 
 resolve(schema)  // → { V, L, scene, byId }   the deterministic core
 render(schema)   // → SVG string               (resolve → renderer)
 check(schema)    // → [{ rule, pass, why }]     (resolve → GRC)
-evaluate(schema) // → { results, cross }         GRC + crossings count
 ```
 
 ## Schema

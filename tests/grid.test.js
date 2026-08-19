@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
-import { CANVAS, GAP, NODE_EXT, ZONE_EXT, snapNode, snapZone, samePos, resolveBox, pointInBox, dist, nodePoints } from '../app/src/snap.js';
+import { CANVAS, GAP, NODE_EXT, ZONE_EXT, snapNode, snapZone, resolveBox, pointInBox, dist, nodePoints } from '../app/src/snap.js';
 import { SURFACE, NODE_EXT as DOC_NODE_EXT, ZONE_EXT as DOC_ZONE_EXT } from '../document/index.mjs';
 
 // Grid math lives in app/src/snap.js (shipped). The center-origin geometry was ported from the
@@ -63,13 +63,6 @@ test('dist is euclidean', () => {
 });
 
 // ---- shipped-only additions ----
-
-test('samePos is exact equality on both axes', () => {
-	assert.equal(samePos({ x: 60, y: -120 }, { x: 60, y: -120 }), true);
-	assert.equal(samePos({ x: 60, y: -120 }, { x: 60, y: 120 }), false, 'y differs');
-	assert.equal(samePos({ x: 0, y: 0 }, { x: 60, y: 0 }), false, 'x differs');
-	assert.equal(samePos(snapNode({ x: 14, y: -14 }), { x: 0, y: 0 }), true, 'composes with the snap result');
-});
 
 test('CL3 single-source: snap re-exports the document/ surface + extents (no divergent copy)', () => {
 	// identical object references prove snap.js does not own a parallel literal (cleanliness #2)

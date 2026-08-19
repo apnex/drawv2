@@ -42,6 +42,9 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 		['GR3 scan-writers', 'tools/scan-writers.mjs', 'tools/scan-writers.mjs'],
 		['GR2 scan-claims', 'tools/scan-claims.mjs', 'tools/scan-claims.mjs'],
 		['GR14 scan-board', 'tools/scan-board.mjs', 'tools/scan-board.mjs'],
+		['GR15 scan-dead', 'tools/scan-dead.mjs', 'tools/scan-dead.mjs'],
+		['GR15 scan-twins', 'tools/scan-twins.mjs', 'tools/scan-twins.mjs'],
+		['GR15 scan-docrefs', 'tools/scan-docrefs.mjs', 'tools/scan-docrefs.mjs'],
 	]) {
 		assert.ok(gate.includes(needle), `the gate no longer runs ${what} (looked for "${needle}")`);
 		assert.ok(fs.existsSync(path.join(root, file)), `the gate names ${file} and it does not exist`);
