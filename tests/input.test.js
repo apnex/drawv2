@@ -148,12 +148,13 @@ test('while Server-Locked, selection still works — inspection is not mutation'
 
 // ---- B14: three advertised gestures that throw. Marked, never written around. ----
 
-test('B14: an arrow nudge emits one move change', { todo: 'B14 — throws on this.history.stack; fixed at H3.3' }, () => {
+test('B14: an arrow nudge emits one move change', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
 		h.input.onKeyDown(key('ArrowRight'));
+		h.history.flush();   // D11's window is open until it closes; nothing reaches the wire before
 
 		const c = h.soleCommit();
 		assert.deepEqual(opKinds(c.ops), ['set/node']);
@@ -161,25 +162,29 @@ test('B14: an arrow nudge emits one move change', { todo: 'B14 — throws on thi
 	} finally { h.restore(); }
 });
 
-test('B14: a burst of nudges coalesces into ONE change', { todo: 'B14 — D11 window unwired; fixed at H3.3' }, () => {
+test('B14: a burst of nudges coalesces into ONE change', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
 		for (let i = 0; i < 5; i++) h.input.onKeyDown(key('ArrowRight'));
+		assert.equal(h.commits.length, 0, 'mid-burst, nothing has gone out yet');
+		h.history.flush();
 
 		assert.equal(h.commits.length, 1, 'five keystrokes, one undo step');
+		assert.equal(h.soleCommit().ops.length, 5, 'five sets inside it, applied in order');
 		assert.equal(h.model.get('node', a.id).x, 300);
 	} finally { h.restore(); }
 });
 
-test('B14: Shift+arrow resizes the lone selected zone', { todo: 'B14 — throws on this.history.stack; fixed at H3.3' }, () => {
+test('B14: Shift+arrow resizes the lone selected zone', () => {
 	const h = makeInput();
 	try {
 		const z = h.model.makeZone({ x: -30, y: -30, w: 120, h: 120 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 		h.input.onKeyDown(key('ArrowRight', { shiftKey: true }));
+		h.history.flush();
 
 		const c = h.soleCommit();
 		assert.deepEqual(opKinds(c.ops), ['set/zone']);
@@ -291,4 +296,38 @@ test('unlocked, the same three paths still work — the gate is a gate, not a wa
 			assert.deepEqual(opKinds(h.soleCommit().ops), ['put/node']);
 		} finally { h.restore(); }
 	}
+});
+
+test('B14: Shift+arrow grows the lone selected node span — the W1 authoring gesture', () => {
+	const h = makeInput();
+	try {
+		const [n] = seedNodes(h.model, [[0, 0]]);
+		h.selection.set([n.id]);
+		h.input.onKeyDown(key('ArrowRight', { shiftKey: true }));
+		h.input.onKeyDown(key('ArrowDown', { shiftKey: true }));
+		h.history.flush();
+
+		const c = h.soleCommit();
+		assert.equal(c.label, 'resize');
+		assert.deepEqual(c.ops.at(-1).patch.span, { cols: 2, rows: 2 }, 'two presses, one change, cumulative span');
+	} finally { h.restore(); }
+});
+
+test('D11: a burst does NOT span a selection change', () => {
+	// Preserved deliberately. Input used to hold its own coalescing state and null it on selection
+	// change; rewiring onto Changes.amend would have dropped that silently, folding two different
+	// entity sets into one undoable change. The seam moved into Changes.flush() with the window.
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [0, 60]]);
+		h.selection.set([a.id]);
+		h.input.onKeyDown(key('ArrowRight'));
+		h.selection.set([b.id]);          // closes the window
+		h.input.onKeyDown(key('ArrowRight'));
+		h.history.flush();
+
+		assert.equal(h.commits.length, 2, 'two entities nudged across a selection change is two undo steps');
+		assert.equal(h.opsOf(0)[0].id, a.id);
+		assert.equal(h.opsOf(1)[0].id, b.id);
+	} finally { h.restore(); }
 });

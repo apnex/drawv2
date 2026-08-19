@@ -40,7 +40,6 @@ import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 
 const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
-const NUDGE_COALESCE_MS = 600;
 const MIN_ZONE = GAP;       // one cell
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
@@ -80,17 +79,15 @@ export class Input {
 		this.ctx = {};
 		this.hovered = null;
 		this.armed = null;     // { id, cls }
-		this.lastNudge = null;  // { t, cmd } — arrow-nudge coalescing
-		this.lastResize = null; // { t, cmd } — Shift+arrow zone-resize coalescing
 		this.lastDelta = { x: GAP, y: 0 }; // remembered pitch for Ctrl+D duplicate
 		this.readOnly = false; // Server-Locked: inspect + select only, no mutations
 		this.textTool = false; // A1 — 't' held: drag draws a text box (mirrors Shift+drag-zone)
 		this.help = document.getElementById('help');
 
 		selection.subscribe(() => {
-			// a coalescing burst never spans a selection change
-			this.lastNudge = null;
-			this.lastResize = null;
+			// a coalescing burst never spans a selection change — the window now lives in Changes
+			// (D11), so the seam moved there with it rather than being dropped
+			this.history.flush();
 			this.refreshHandles();
 			this.readout.render();
 		});
@@ -1281,25 +1278,19 @@ export class Input {
 		const delta = this.clampDelta(moved, { x: dx * GAP, y: dy * GAP });
 		if (delta.x === 0 && delta.y === 0) return;
 
-		const now = Date.now();
-		const top = this.history.stack[this.history.index - 1];
-		const sameSet = this.lastNudge && top === this.lastNudge.cmd
-			&& top.entries.length === moved.length
-			&& moved.every((m) => top.entries.some((e) => e.id === m.id && e.kind === m.kind));
-		if (sameSet && now - this.lastNudge.t < NUDGE_COALESCE_MS) {
-			this.lastNudge.cmd.entries.forEach((entry) => {
-				entry.after = { x: entry.after.x + delta.x, y: entry.after.y + delta.y };
-				this.model.set(entry.kind, entry.id, entry.after);
-			});
-			this.lastNudge.t = now;
-			return;
-		}
-		const cmd = commands.moveEntities(moved.map((m) => ({
+		/*
+		D11 — a burst of arrow keys is ONE undo step, and the window that makes it one lives in
+		`Changes` (client-side, label-keyed, 600ms). B14: this used to reach into
+		`history.stack[history.index - 1]` to mutate the top of a local undo stack in place. That
+		stack was deleted at CS3 when undo moved server-side, so the expression was
+		`undefined[NaN]` and THREW — arrow-key nudge did nothing at all for two milestones. The
+		replacement (`Changes.amend`) was written and tested at CS3; no call site was ever rewired.
+		Each call reads the CURRENT position, so successive amends accumulate correctly.
+		*/
+		this.history.amend(commands.moveEntities(moved.map((m) => ({
 			kind: m.kind, id: m.id, before: m.before,
 			after: { x: m.before.x + delta.x, y: m.before.y + delta.y }
-		})));
-		this.history.commit(cmd);
-		this.lastNudge = { t: now, cmd };
+		}))));
 	}
 
 	// ---- Shift+arrow: grow/shrink the lone selected zone one cell, NW-anchored ----
@@ -1315,20 +1306,8 @@ export class Input {
 		if (w === before.w && h === before.h) return;
 		const after = { x: zone.x, y: zone.y, w, h };
 
-		// coalesce a burst into one undo step (mirrors nudge)
-		const now = Date.now();
-		const top = this.history.stack[this.history.index - 1];
-		const sameZone = this.lastResize && top === this.lastResize.cmd
-			&& top.entries.length === 1 && top.entries[0].id === zone.id;
-		if (sameZone && now - this.lastResize.t < NUDGE_COALESCE_MS) {
-			top.entries[0].after = after; // before stays the original geometry
-			this.model.set('zone', zone.id, after);
-			this.lastResize.t = now;
-			return;
-		}
-		const cmd = { label: 'resize', entries: [{ op: 'set', kind: 'zone', id: zone.id, before, after }] };
-		this.history.commit(cmd);
-		this.lastResize = { t: now, cmd };
+		// one undo step per burst — the window is in Changes, keyed on the 'resize' label (D11/B14)
+		this.history.amend({ label: 'resize', entries: [{ op: 'set', kind: 'zone', id: zone.id, before, after }] });
 	}
 
 	// ---- Shift+arrow: grow/shrink the lone selected NODE's span one cell (anchor fixed, +col/+row) ----
@@ -1346,20 +1325,8 @@ export class Input {
 		if (cols === cur.cols && rows === cur.rows) return;
 		const after = { span: { cols, rows } };
 
-		// coalesce a burst into one undo step (mirrors nudge / zone resize)
-		const now = Date.now();
-		const top = this.history.stack[this.history.index - 1];
-		const sameNode = this.lastResize && top === this.lastResize.cmd
-			&& top.entries.length === 1 && top.entries[0].id === node.id;
-		if (sameNode && now - this.lastResize.t < NUDGE_COALESCE_MS) {
-			top.entries[0].after = after; // before stays the original span
-			this.model.set('node', node.id, after);
-			this.lastResize.t = now;
-			return;
-		}
-		const cmd = { label: 'resize', entries: [{ op: 'set', kind: 'node', id: node.id, before, after }] };
-		this.history.commit(cmd);
-		this.lastResize = { t: now, cmd };
+		// one undo step per burst — same window, same label as the zone path (D11/B14)
+		this.history.amend({ label: 'resize', entries: [{ op: 'set', kind: 'node', id: node.id, before, after }] });
 	}
 
 	// ---- help overlay ----

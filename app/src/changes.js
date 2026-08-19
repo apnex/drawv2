@@ -78,6 +78,17 @@ export class Changes {
 		this.#emit(request);
 	}
 
+	/*
+	Close the open window now, emitting whatever it holds.
+
+	Public because a burst must not span a SELECTION CHANGE: nudging A, selecting B, then nudging B
+	inside the 600ms window would otherwise fold two different entity sets into one undoable change.
+	Input reset its own coalescing state on selection change for exactly this reason (B14's old
+	`lastNudge = null`); rewiring onto `amend` would have dropped that property silently, so the
+	window it moved into gets the same seam.
+	*/
+	flush() { this.#flushWindow(); }
+
 	#flushWindow() {
 		if (!this.window) return;
 		const w = this.window;

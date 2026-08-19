@@ -187,7 +187,7 @@ Every row `S2` or `S3`, every row user-visible. Ordered smallest-first — the t
 |---|---|---|---|---|---|
 | H3.1 | The Server-Locked gate made **semantic, not positional**: inspection verbs (Ctrl+A, Space) hoisted above it, mutation paths (run-mode inline edit, text tool, `t`) gated below it, and the run-mode split honoured — actions still fire, editing does not. Closes **B18** and **B37** together | **B18**, **B37** | **S2 · S** | SCOPE-5, I16 | `DONE` |
 | H3.2 | Wire the D12 defer rule: `sync.deferInbound = () => input.isGesturing()` at the composition root, `sync.releaseDeferred()` in `onUp`/`cancelDrag` | **B19** | **S2 · S** | D12 | `TODO` |
-| H3.3 | Rewire nudge + both key-resizes onto `Changes.amend`; delete `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks | **B14** | S3 · S | D11 | `BLOCKED` on H2.1 |
+| H3.3 | All three burst gestures rewired onto `Changes.amend`; `lastNudge`/`lastResize`/`NUDGE_COALESCE_MS` and the three duplicated coalesce blocks deleted (**-45 lines**). `Changes.flush()` added so a burst still cannot span a selection change | **B14** | S3 · S | D11 | `DONE` |
 | H3.4 | Clone waypoints into the closure; carry `via`/`closed` through the id map | **B30** | **S2 · M** | — | `TODO` |
 | H3.5 | One `endpointOf` pass across the seven waypoint-blind surfaces; fix the data view's link length for routed links | **B29** | **S2 · M** | — | `TODO` |
 | H3.6 | Exercise GR6 fault (ii) against the now-real defer queue — it currently tests a queue that does not exist | B19 | — | GR6 | `TODO` |
