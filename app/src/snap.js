@@ -57,3 +57,82 @@ export function zonePoints() {
 	for (let y = -ZONE_EXT.y; y <= ZONE_EXT.y; y += GAP) for (let x = -ZONE_EXT.x; x <= ZONE_EXT.x; x += GAP) points.push({ x, y });
 	return points;
 }
+
+/*
+── DRAG GEOMETRY ─────────────────────────────────────────────────────────────────────────────────
+Constrain a proposed movement to the grid and the surface. Lifted from `input.js` at H6.2 with the
+bodies unchanged; `this.model` became a parameter. These belong here rather than in a new module
+because the duty is already snap.js's — "constrain a position or delta to the grid and the surface"
+— and A3 says a concern earns a boundary by being one concern, not by being noticed.
+─────────────────────────────────────────────────────────────────────────────────────────────────*/
+
+const MIN_ZONE = GAP;   // a zone is never smaller than one cell
+
+// axis lock (AutoCAD ORTHO): collapse the smaller component so a drag runs true
+export function orthoDelta(delta, ortho) {
+	if (!ortho) return delta;
+	return Math.abs(delta.x) >= Math.abs(delta.y) ? { x: delta.x, y: 0 } : { x: 0, y: delta.y };
+}
+
+/*
+Clamp a delta so EVERY moved entity stays on the surface — the whole set moves together or the
+drag is refused at the edge, so a multi-select never tears apart. Clamps the FOOTPRINT, not the
+origin: a multi-cell node's far edge must stay inside the extent too, and the clamped value is
+re-quantised to the grid so the group lands on cells rather than against the wall.
+*/
+export function clampDelta(model, moved, delta) {
+	let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
+	moved.forEach((m) => {
+		if (m.kind === 'node' || m.kind === 'waypoint') {
+			const n = m.kind === 'node' ? model.get('node', m.id) : null;
+			const { sw, sh } = spanExtent(n && n.span);
+			minX = Math.max(minX, -NODE_EXT.x - m.before.x); maxX = Math.min(maxX, NODE_EXT.x - sw - m.before.x);
+			minY = Math.max(minY, -NODE_EXT.y - m.before.y); maxY = Math.min(maxY, NODE_EXT.y - sh - m.before.y);
+		} else {
+			const entity = model.get('zone', m.id);
+			if (!entity) return;
+			minX = Math.max(minX, -ZONE_EXT.x - m.before.x); maxX = Math.min(maxX, ZONE_EXT.x - entity.w - m.before.x);
+			minY = Math.max(minY, -ZONE_EXT.y - m.before.y); maxY = Math.min(maxY, ZONE_EXT.y - entity.h - m.before.y);
+		}
+	});
+	const clampAxis = (v, lo, hi) => {
+		if (v < lo) return Math.ceil(lo / GAP) * GAP;
+		if (v > hi) return Math.floor(hi / GAP) * GAP;
+		return v;
+	};
+	return { x: clampAxis(delta.x, minX, maxX), y: clampAxis(delta.y, minY, maxY) };
+}
+
+/*
+The delta a drag should commit: ortho-locked, snapped against the BASE entity (CAD's base point),
+then clamped for the whole set. Snapping the base rather than each entity is what keeps a
+multi-select rigid — every member moves by one delta, so relative positions are preserved exactly.
+*/
+export function snappedDelta(model, ctx, pos, ortho) {
+	const base = ctx.moved.find((m) => m.id === ctx.baseId) || ctx.moved[0];
+	const rawDelta = orthoDelta({ x: pos.x - ctx.start.x, y: pos.y - ctx.start.y }, ortho);
+	const baseRaw = { x: base.before.x + rawDelta.x, y: base.before.y + rawDelta.y };
+	const baseSnapped = base.kind === 'zone' ? snapZone(baseRaw) : snapNode(baseRaw);
+	return clampDelta(model, ctx.moved, { x: baseSnapped.x - base.before.x, y: baseSnapped.y - base.before.y });
+}
+
+/*
+A zone resize box from the dragged corner and the FIXED one. Enforces a one-cell minimum by pushing
+INWARD when the fixed corner sits on an edge — a blind push there would be clamped straight back to
+zero width.
+*/
+export function resizeBox(pos, fixedCorner) {
+	const corner = snapZone(pos);
+	if (Math.abs(corner.x - fixedCorner.x) < MIN_ZONE) {
+		const dir = corner.x >= fixedCorner.x ? 1 : -1;
+		corner.x = fixedCorner.x + dir * MIN_ZONE;
+		if (corner.x < -ZONE_EXT.x || corner.x > ZONE_EXT.x) corner.x = fixedCorner.x - dir * MIN_ZONE;
+	}
+	if (Math.abs(corner.y - fixedCorner.y) < MIN_ZONE) {
+		const dir = corner.y >= fixedCorner.y ? 1 : -1;
+		corner.y = fixedCorner.y + dir * MIN_ZONE;
+		if (corner.y < -ZONE_EXT.y || corner.y > ZONE_EXT.y) corner.y = fixedCorner.y - dir * MIN_ZONE;
+	}
+	const box = resolveBox(fixedCorner, corner);
+	return { x: box.x, y: box.y, w: box.w, h: box.h };
+}

@@ -32,7 +32,8 @@ Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.m
   Escape            cancel / clear / close overlay              ?       help overlay
 */
 
-import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
+import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, waypointFree, inFootprint, footprintHits } from './pick.js';
+import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
@@ -40,7 +41,6 @@ import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 
 const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
-const MIN_ZONE = GAP;       // one cell
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
 // footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
@@ -49,11 +49,6 @@ const frameSpan = (a, b) => {
 	return { x: x0 - NODE_R, y: y0 - NODE_R, w: (x1 - x0) + 2 * NODE_R, h: (y1 - y0) + 2 * NODE_R,
 		origin: { x: x0, y: y0 }, cols: Math.round((x1 - x0) / GAP) + 1, rows: Math.round((y1 - y0) / GAP) + 1 };
 };
-// a multi-cell node's footprint extent beyond its origin in px (0 for a 1×1 node / waypoint) + helpers to
-// hit-test / overlap a node by its whole FOOTPRINT (not just the origin point) — span-awareness for the editor.
-const inFootprint = (n, pos, pad = 0) => { const { sw, sh } = spanExtent(n.span); return pos.x >= n.x - pad && pos.x <= n.x + sw + pad && pos.y >= n.y - pad && pos.y <= n.y + sh + pad; };
-const footprintHits = (n, box, pad = 0) => { const { sw, sh } = spanExtent(n.span);   // node footprint rect ∩ a box (marquee)
-	return n.x - pad <= box.x + box.w && n.x + sw + pad >= box.x && n.y - pad <= box.y + box.h && n.y + sh + pad >= box.y; };
 
 export class Input {
 	constructor({ svg, model, history, selection, renderer, labels, readout, palette, dataview }) {
@@ -134,31 +129,7 @@ export class Input {
 	}
 
 	// ---- hit helpers ----
-	hit(evt) {
-		const target = evt.target;
-		if (!target.closest) return { kind: 'canvas', id: null };
-		if (target.classList && target.classList.contains('handle')) {
-			// link endpoint handles carry data-end; zone corner handles carry data-corner
-			if (target.dataset.end) return { kind: 'lhandle', end: target.dataset.end };
-			return { kind: 'handle', id: target.dataset.corner };
-		}
-		const nodeG = target.closest('g.node:not(.ghost)');
-		if (nodeG) return { kind: 'node', id: nodeG.id };
-		const wpG = target.closest('g.waypoint');
-		if (wpG) return { kind: 'waypoint', id: wpG.id };
-		// zones live on the Shift layer: inert backdrop unless Shift is held,
-		// so clicks and marquees pass through them to the canvas
-		const zoneG = target.closest('g.zone');
-		if (zoneG) return evt.shiftKey ? { kind: 'zone', id: zoneG.id } : { kind: 'canvas', id: null };
-		if (target.classList && target.classList.contains('link')) return { kind: 'link', id: target.id };
-		return { kind: 'canvas', id: null };
-	}
 
-	nodeAt(pos, slop = NODE_R + 4) {
-		// footprint-aware: a multi-cell node is hittable across its WHOLE span, not just near its origin
-		// (1×1 → a ±slop box ≈ the old circular radius). Backs select / move / link-target / re-plug.
-		return this.model.all('node').find((n) => inFootprint(n, pos, slop));
-	}
 
 	// a PREDICATE returns a boolean: this used to hand back `null` when idle, which is only
 	// distinguishable from `false` at a call site that compares strictly — and D12's defer rule
@@ -225,7 +196,7 @@ export class Input {
 		this.palette.hideHand(); // ghost never rides along a gesture
 		const pos = toCanvas(evt, this.svg);
 		this.lastPos = pos;
-		const hit = this.hit(evt);
+		const hit = hitOf(evt);
 
 		// read-only: left-click selects, left-drag marquees; nothing mutates
 		if (this.readOnly) {
@@ -317,7 +288,7 @@ export class Input {
 			return;
 		}
 
-		if (hit.kind === 'node' || (hit.kind === 'waypoint' && this.waypointFree(hit.id))) {
+		if (hit.kind === 'node' || (hit.kind === 'waypoint' && waypointFree(this.model, hit.id))) {
 			// a node, or a FREE waypoint, is a link source; release without a drag is a click-select
 			const src = this.model.get(hit.kind, hit.id);
 			// pointer capture swallows the boundary pointerout in link mode
@@ -488,7 +459,7 @@ export class Input {
 			const e = this.model.get(kind, id);
 			return { kind, id, before: { x: e.x, y: e.y } };
 		});
-		const delta = this.clampDelta(refs, { ...this.lastDelta });
+		const delta = clampDelta(this.model, refs, { ...this.lastDelta });
 		const cells = (v) => this.readout.signed(v / GAP);
 		if (delta.x === 0 && delta.y === 0) {
 			this.readout.flash(`✗ no room Δ[${cells(this.lastDelta.x)}, ${cells(this.lastDelta.y)}]`);
@@ -597,9 +568,6 @@ export class Input {
 
 	// ---- pointer move ----
 	// a node already on this exact grid point (a stamp must never overlap) — engine occupancy index (R13)
-	occupied(p) {
-		return this.model.occupiedAt(p);
-	}
 
 	// stamp the held type at the snapped cell; refuses occupied cells
 	stampAt(pos) {
@@ -607,14 +575,14 @@ export class Input {
 		if (!type) return false;
 		const snapped = snapNode(pos);
 		if (type === 'waypoint') {
-			if (this.occupiedAny(snapped)) return false;
+			if (occupiedAnyAt(this.model, snapped)) return false;
 			const wp = this.model.makeWaypoint(snapped);
 			this.history.commit(commands.createEntity('waypoint', wp));
 			this.selection.set([wp.id]);
 			this.focusId = wp.id;
 			return true;
 		}
-		if (this.occupied(snapped)) return false;
+		if (occupiedAt(this.model, snapped)) return false;
 		const node = this.model.makeNode(type, snapped);
 		this.history.commit(commands.createEntity('node', node));
 		this.selection.set([node.id]); // the hand stays armed; selection follows
@@ -623,31 +591,22 @@ export class Input {
 	}
 
 	// a cell already holding a node OR a waypoint (a waypoint must not stack on either) — index (R13)
-	occupiedAny(p) {
-		return this.model.occupiedAnyAt(p);
-	}
 
 	// a waypoint with no link referencing it (endpoint or via) — free to become a link end / bend
-	waypointFree(id) { return this.model.linksAt(id).length === 0; }
 
 	// a valid link endpoint under the cursor: a node, or a FREE waypoint (occupied ones can't take a link)
-	endpointAt(pos) {
-		const n = this.nodeAt(pos);
-		if (n) return n;
-		return this.model.all('waypoint').find((w) => dist(w, pos) <= NODE_R && this.waypointFree(w.id)) || null;
-	}
 
 	// stamp-hand occupied check: a waypoint needs an empty cell (no node OR waypoint); a node only no node
 	handBlocked(snapped) {
 		if (!this.palette.hand) return false;
-		return this.palette.hand === 'waypoint' ? this.occupiedAny(snapped) : this.occupied(snapped);
+		return this.palette.hand === 'waypoint' ? occupiedAnyAt(this.model, snapped) : occupiedAt(this.model, snapped);
 	}
 
 	// 'w' when idle: drop a standalone waypoint at the snapped cursor cell (empty cells only)
 	placeWaypoint() {
 		if (!this.lastPos) return false;
 		const snapped = snapNode(this.lastPos);
-		if (this.occupiedAny(snapped)) return false;
+		if (occupiedAnyAt(this.model, snapped)) return false;
 		const wp = this.model.makeWaypoint(snapped);
 		this.history.commit(commands.createEntity('waypoint', wp));
 		this.selection.set([wp.id]);
@@ -663,10 +622,10 @@ export class Input {
 		const existing = this.model.waypointAt(snapped);   // engine occupancy index (R13)
 		if (existing) {
 			if (existing.id === this.ctx.src.id) return;        // don't thread the source itself
-			if (!this.waypointFree(existing.id)) return;        // occupied by another link
+			if (!waypointFree(this.model, existing.id)) return;        // occupied by another link
 			if (!this.ctx.via.includes(existing.id)) this.ctx.via.push(existing.id);
 		} else {
-			if (this.occupied(snapped)) return;        // a node cell — refuse
+			if (occupiedAt(this.model, snapped)) return;        // a node cell — refuse
 			const wp = this.model.makeWaypoint(snapped);
 			this.model.put('waypoint', wp);            // live (visible); committed on release
 			this.ctx.via.push(wp.id);
@@ -677,7 +636,7 @@ export class Input {
 
 	// the live route preview: a rounded polyline through src → threaded waypoints → cursor/target
 	updateLinkPreview(pos) {
-		const target = this.endpointAt(pos);
+		const target = endpointAt(this.model, pos);
 		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
 		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
 		const path = this.model.pathOf({ src: this.ctx.src, via: this.ctx.via, dst: end });
@@ -740,7 +699,7 @@ export class Input {
 			return;
 		}
 		if (this.mode === 'link') {
-			const target = this.endpointAt(pos);
+			const target = endpointAt(this.model, pos);
 			this.updateLinkPreview(pos);
 			if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
 				this.renderer.setState(this.ctx.target, 'hover', false);
@@ -756,7 +715,7 @@ export class Input {
 		}
 		if (this.mode === 'replug') {
 			// the fixed end is anchored; the dragged end follows the cursor / hovered node
-			const target = this.nodeAt(pos);
+			const target = nodeAt(this.model, pos);
 			this.ctx.line.update(this.ctx.fixed, target || pos);
 			if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
 				this.renderer.setState(this.ctx.target, 'hover', false);
@@ -787,7 +746,7 @@ export class Input {
 			return;
 		}
 		if (this.mode === 'resize') {
-			const box = this.resizeBox(pos, this.ctx.fixedCorner);
+			const box = resizeBox(pos, this.ctx.fixedCorner);
 			this.model.set('zone', this.ctx.zone, box);
 			this.readout.setBox(box);
 		}
@@ -806,10 +765,10 @@ export class Input {
 		if (!shiftHeld) this.ctx.orthoReady = true;
 		const ortho = !!shiftHeld && !!this.ctx.orthoReady;
 		this.ctx.orthoActive = ortho;
-		const rawDelta = this.orthoDelta(
+		const rawDelta = orthoDelta(
 			{ x: pos.x - this.ctx.start.x, y: pos.y - this.ctx.start.y }, ortho);
 		// clamp live: out-of-bounds coordinates must never reach the model
-		const delta = this.clampDelta(this.ctx.moved, rawDelta);
+		const delta = clampDelta(this.model, this.ctx.moved, rawDelta);
 		this.ctx.moved.forEach((m) => {
 			this.model.set(m.kind, m.id, {
 				x: m.before.x + delta.x,
@@ -826,27 +785,10 @@ export class Input {
 		});
 	}
 
-	resizeBox(pos, fixedCorner) {
-		const corner = snapZone(pos); // already clamped to the canvas
-		// enforce minimum one cell, pushing toward the canvas interior when the
-		// the fixed corner sits on an edge (a blind push would be clamped back to w/h = 0)
-		if (Math.abs(corner.x - fixedCorner.x) < MIN_ZONE) {
-			const dir = corner.x >= fixedCorner.x ? 1 : -1;
-			corner.x = fixedCorner.x + dir * MIN_ZONE;
-			if (corner.x < -ZONE_EXT.x || corner.x > ZONE_EXT.x) corner.x = fixedCorner.x - dir * MIN_ZONE;
-		}
-		if (Math.abs(corner.y - fixedCorner.y) < MIN_ZONE) {
-			const dir = corner.y >= fixedCorner.y ? 1 : -1;
-			corner.y = fixedCorner.y + dir * MIN_ZONE;
-			if (corner.y < -ZONE_EXT.y || corner.y > ZONE_EXT.y) corner.y = fixedCorner.y - dir * MIN_ZONE;
-		}
-		const box = resolveBox(fixedCorner, corner);
-		return { x: box.x, y: box.y, w: box.w, h: box.h };
-	}
 
 	// crosshair cursor + ring emphasis when idle over a node: left-drag draws a link
 	idleAffordance(evt) {
-		const hit = this.hit(evt);
+		const hit = hitOf(evt);
 		if (hit.kind !== 'node') return;
 		this.renderer.setState(hit.id, 'linkband', !evt.ctrlKey && !evt.altKey);
 	}
@@ -904,7 +846,7 @@ export class Input {
 		if (mode === 'link') {
 			ctx.path.remove();
 			if (ctx.target) this.renderer.setState(ctx.target, 'hover', false);
-			const target = this.endpointAt(pos);
+			const target = endpointAt(this.model, pos);
 			const srcAlive = this.model.endpointOf(ctx.src.id);
 			const hasVia = !!(ctx.via && ctx.via.length);
 			// a valid endpoint under the cursor: a node / free waypoint, distinct from src, not a via bend
@@ -955,7 +897,7 @@ export class Input {
 			if (ctx.target) this.renderer.setState(ctx.target, 'hover', false);
 			this.renderer.setState(ctx.linkId, 'replugging', false);
 			const link = this.model.get('link', ctx.linkId);
-			const target = this.nodeAt(pos);
+			const target = nodeAt(this.model, pos);
 			if (link && target && target.id !== ctx.fixedId) {
 				const newSrc = ctx.end === 'src' ? target.id : link.src;
 				const newDst = ctx.end === 'dst' ? target.id : link.dst;
@@ -1023,7 +965,7 @@ export class Input {
 			return;
 		}
 		if (mode === 'resize') {
-			const after = this.resizeBox(pos, ctx.fixedCorner);
+			const after = resizeBox(pos, ctx.fixedCorner);
 			const before = ctx.before;
 			this.model.set('zone', ctx.zone, { ...before });
 			if (after.x === before.x && after.y === before.y && after.w === before.w && after.h === before.h) return;
@@ -1046,7 +988,7 @@ export class Input {
 	commitMove(ctx, pos, ortho) {
 		ctx.moved = ctx.moved.filter((m) => this.model.get(m.kind, m.id));
 		if (ctx.moved.length === 0) return;
-		const delta = this.snappedDelta(ctx, pos, ortho);
+		const delta = snappedDelta(this.model, ctx, pos, ortho);
 		const moves = ctx.moved.map((m) => ({
 			kind: m.kind, id: m.id,
 			before: m.before,
@@ -1061,7 +1003,7 @@ export class Input {
 
 	commitClone(ctx, pos, ortho) {
 		ctx.moved = ctx.moved.filter((m) => this.model.get(m.kind, m.id));
-		const delta = ctx.moved.length ? this.snappedDelta(ctx, pos, ortho) : { x: 0, y: 0 };
+		const delta = ctx.moved.length ? snappedDelta(this.model, ctx, pos, ortho) : { x: 0, y: 0 };
 		ctx.moved.forEach((m) => {
 			this.model.set(m.kind, m.id, { x: m.before.x + delta.x, y: m.before.y + delta.y });
 		});
@@ -1075,48 +1017,9 @@ export class Input {
 	}
 
 	// zero the minor axis of a delta when the ortho lock is engaged
-	orthoDelta(delta, ortho) {
-		if (!ortho) return delta;
-		return Math.abs(delta.x) >= Math.abs(delta.y)
-			? { x: delta.x, y: 0 }
-			: { x: 0, y: delta.y };
-	}
 
-	snappedDelta(ctx, pos, ortho) {
-		const base = ctx.moved.find((m) => m.id === ctx.baseId) || ctx.moved[0];
-		const rawDelta = this.orthoDelta({ x: pos.x - ctx.start.x, y: pos.y - ctx.start.y }, ortho);
-		const baseRaw = { x: base.before.x + rawDelta.x, y: base.before.y + rawDelta.y };
-		const baseSnapped = base.kind === 'zone' ? snapZone(baseRaw) : snapNode(baseRaw);
-		return this.clampDelta(ctx.moved, { x: baseSnapped.x - base.before.x, y: baseSnapped.y - base.before.y });
-	}
 
 	// clamp a delta so every moved entity stays on the canvas
-	clampDelta(moved, delta) {
-		let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
-		moved.forEach((m) => {
-			if (m.kind === 'node' || m.kind === 'waypoint') {
-				// clamp the FOOTPRINT: the origin stays ≥ -EXT and the far cell (origin + span) stays ≤ +EXT
-				const n = m.kind === 'node' ? this.model.get('node', m.id) : null;
-				const { sw, sh } = spanExtent(n && n.span);
-				minX = Math.max(minX, -NODE_EXT.x - m.before.x); maxX = Math.min(maxX, NODE_EXT.x - sw - m.before.x);
-				minY = Math.max(minY, -NODE_EXT.y - m.before.y); maxY = Math.min(maxY, NODE_EXT.y - sh - m.before.y);
-			} else {
-				const entity = this.model.get('zone', m.id);
-				if (!entity) return;
-				minX = Math.max(minX, -ZONE_EXT.x - m.before.x); maxX = Math.min(maxX, ZONE_EXT.x - entity.w - m.before.x);
-				minY = Math.max(minY, -ZONE_EXT.y - m.before.y); maxY = Math.min(maxY, ZONE_EXT.y - entity.h - m.before.y);
-			}
-		});
-		const clampAxis = (v, lo, hi) => {
-			if (v < lo) return Math.ceil(lo / GAP) * GAP;
-			if (v > hi) return Math.floor(hi / GAP) * GAP;
-			return v;
-		};
-		return {
-			x: clampAxis(delta.x, minX, maxX),
-			y: clampAxis(delta.y, minY, maxY)
-		};
-	}
 
 	cancelDrag(evt) {
 		if (this.mode === 'move') {
@@ -1156,7 +1059,7 @@ export class Input {
 	// ---- hover + arming ----
 	onHover(evt, on) {
 		if (this.isGesturing()) return;
-		const hit = this.hit(evt);
+		const hit = hitOf(evt);
 		if (!hit.id || hit.kind === 'handle') return;
 		this.renderer.setState(hit.id, 'hover', on);
 		if (!on) this.renderer.setState(hit.id, 'linkband', false);
@@ -1330,7 +1233,7 @@ export class Input {
 			if (entity) moved.push({ kind, id, before: { x: entity.x, y: entity.y } });
 		});
 		if (moved.length === 0) return;
-		const delta = this.clampDelta(moved, { x: dx * GAP, y: dy * GAP });
+		const delta = clampDelta(this.model, moved, { x: dx * GAP, y: dy * GAP });
 		if (delta.x === 0 && delta.y === 0) return;
 
 		/*
@@ -1534,7 +1437,7 @@ export class Input {
 			}
 			if (evt.key === 'q' || evt.key === 'Q') {
 				// pipette: pick the type under the cursor; empty cursor clears the hand
-				const over = this.lastPos && this.nodeAt(this.lastPos);
+				const over = this.lastPos && nodeAt(this.model, this.lastPos);
 				this.palette.setHand(over ? over.type : null);
 				this.refreshHand();
 				return;

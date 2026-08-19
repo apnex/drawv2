@@ -198,10 +198,13 @@ design already half-present rather than imposing one.
 
 ## 8. Units and duties
 
+✓ = landed (H6.2).
+
+
 | Unit | Duty | Owns |
 |---|---|---|
-| `pick.js` | Resolve a canvas point to the entity under it. | — |
-| `snap.js` | Constrain a position or delta to the grid and the surface. | — |
+| `pick.js` ✓ | Resolve a canvas point to the entity under it. | — |
+| `snap.js` ✓ | Constrain a position or delta to the grid and the surface. | — |
 | `commands.js` | Turn an intent plus a selection into one committable change. | `lastDelta` |
 | `overlay.js` | Draw transient feedback for the current pointer and selection. | `hovered` `armed` `datumEl` crosshair |
 | `keymap.js` | Map a keystroke to an intent, and say whether it mutates. | the table |

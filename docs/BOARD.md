@@ -316,7 +316,7 @@ not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uni
 | # | Stage | Risk | Proof |
 |---|---|---|---|
 | H6.1 | The characterization net (**H2.1**) — ✅ landed, commit-boundary only, sealed by a scanner | — | Stage 0: written once, must be **unchanged** when the arc ends |
-| H6.2 | Lift the 312 stateless lines into `pick.js` / `snap.js` / `commands.js` | none | net green + `git diff` shows moved-not-modified |
+| H6.2 | **Tier A landed**: `pick.js` (new, 78) + drag geometry into `snap.js`. `input.js` **1653 → 1562**. Tier B (command builders) is a shape change, not a move — taken with H6.3 | low | net green throughout; 380 tests unchanged |
 | H6.3 | Name the owners; each state field becomes private to exactly one unit | low | net green; 14 public fields → 3 on `input.js` |
 | H6.4 | Invert the dispatchers — gesture table + keymap table | **real** | net green; `onDown/onMove/onUp` ~40 lines each |
 | H6.5 | Seal it: `scan-writers` fails on `mode`/`ctx` read outside `input.js`, and on `document.`/`window.` in any client module but `main.js`/`painter.js` | — | proven by injection (X13) |
