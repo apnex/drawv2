@@ -32,6 +32,7 @@ Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.m
   Escape            cancel / clear / close overlay              ?       help overlay
 */
 
+import { Overlay } from './overlay.js';
 import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, waypointFree, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
@@ -66,13 +67,14 @@ export class Input {
 		this.palette = palette || { hand: null, setHand() {}, toggleHand() {}, trackHand() {}, hideHand() {} };
 		this.dataview = dataview || { toggle() {} };
 		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)
-		this.datumEl = null;   // datum marker on #snaplayer
 		this.overlay = svg.querySelector('#overlay');
-		this.snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
+		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
+		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, lastPos).
+		this.overlayUi = new Overlay({ svg, model, selection, renderer });
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
-		this.hovered = null;
-		this.armed = null;     // { id, cls }
+
+
 		this.lastDelta = { x: GAP, y: 0 }; // remembered pitch for Ctrl+D duplicate
 		this.readOnly = false; // Server-Locked: inspect + select only, no mutations
 		// D12 — fires when an in-flight gesture ends, however it ends. Sync listens so inbound changes
@@ -85,26 +87,26 @@ export class Input {
 			// a coalescing burst never spans a selection change — the window now lives in Changes
 			// (D11), so the seam moved there with it rather than being dropped
 			this.history.flush();
-			this.refreshHandles();
+			this.overlayUi.handles();
 			this.readout.render();
 		});
 		model.onChange((action, kind, entity) => {
 			// zone resize handles + link endpoint handles track their entity's geometry
-			if (kind === 'zone' || kind === 'link' || action === 'load') this.refreshHandles();
+			if (kind === 'zone' || kind === 'link' || action === 'load') this.overlayUi.handles();
 			// a gesture must not survive a document swap (chain mode has no held
 			// button, so the header menu is reachable mid-gesture)
 			if (action === 'load' && this.mode) this.cancelDrag();
 			// hovered/armed state must die with its entity (chord delete, undo, load)
 			if (action === 'del' || action === 'load') {
-				if (this.hovered && (action === 'load' || entity.id === this.hovered)) {
-					this.renderer.clearState(this.hovered, 'hover', 'linkband');
-					this.hovered = null;
-					this.disarm();
+				if (this.overlayUi.hovered && (action === 'load' || entity.id === this.overlayUi.hovered)) {
+					this.renderer.clearState(this.overlayUi.hovered, 'hover', 'linkband');
+			
+					this.overlayUi.disarm();
 				}
 				if (action === 'load' && this.labels.isOpen()) this.labels.close(false);
 				if (action === 'load') {
 					this.readout.setDatum(null);
-					this.setDatumMarker(null);
+					this.overlayUi.datum(null);
 					this.palette.setHand(null); // the hand never survives a document swap
 					this.readout.setCursor(null);
 				}
@@ -153,7 +155,7 @@ export class Input {
 			// held tool nobody added. That asymmetry is what H6's held-tool unification removes.
 			if (this.mode) this.cancelDrag();
 			this.palette.setHand(null);
-			this.disarm();
+			this.overlayUi.disarm();
 			this.textTool = false;
 			this.svg.classList.remove('texttool');
 		}
@@ -220,7 +222,7 @@ export class Input {
 			// Alt+right-click: surgical delete of the armed entity under the cursor
 			if (evt.altKey) {
 				if (!this.isGesturing() && hit.id && hit.kind !== 'handle') {
-					this.disarm();
+					this.overlayUi.disarm();
 					this.history.commit(commands.deleteSelection(this.model, new Set([hit.id])));
 					// selection auto-prunes on the delete's emits (selection.js)
 				}
@@ -243,7 +245,7 @@ export class Input {
 		}
 		if (evt.button !== 0) return;
 		if (this.mode) this.cancelDrag(evt); // a second press never stacks on an active gesture
-		this.syncZoneGrid(evt);
+		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
 		try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
 
 		if (hit.kind === 'handle') {
@@ -293,7 +295,7 @@ export class Input {
 			const src = this.model.get(hit.kind, hit.id);
 			// pointer capture swallows the boundary pointerout in link mode
 			this.renderer.setState(src.id, 'hover', false);
-			this.hovered = null;
+	
 			this.mode = 'link';
 			this.ctx = { src, path: previewPath(this.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [] };
 			this.updateLinkPreview(pos);
@@ -661,7 +663,7 @@ export class Input {
 	}
 
 	onMove(evt) {
-		this.syncZoneGrid(evt);
+		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
 		const pos = toCanvas(evt, this.svg);
 		this.lastPos = pos;
 		if (!this.mode) {
@@ -678,7 +680,7 @@ export class Input {
 				// re-evaluate the layer indicator and render the first frame now
 				// that the mode is 'move' (not on the next event)
 				if (this.mode === 'move') {
-					this.syncZoneGrid(evt);
+					this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
 					this.updateMove(pos, evt.shiftKey);
 				}
 			}
@@ -688,7 +690,7 @@ export class Input {
 			if (dist(pos, this.ctx.start) > DRAG_THRESHOLD) {
 				this.startClone(pos);
 				if (this.mode === 'clone') {
-					this.syncZoneGrid(evt);
+					this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
 					this.updateMove(pos, evt.shiftKey);
 				}
 			}
@@ -778,7 +780,7 @@ export class Input {
 		const base = this.ctx.moved.find((m) => m.id === this.ctx.baseId) || this.ctx.moved[0];
 		const raw = { x: base.before.x + delta.x, y: base.before.y + delta.y };
 		const target = base.kind === 'zone' ? snapZone(raw) : snapNode(raw);   // node + waypoint → node grid
-		this.snap.show(target);
+		this.overlayUi.crosshair.show(target);
 		this.readout.setDrag(target, {
 			x: (target.x - base.before.x) / GAP,
 			y: (target.y - base.before.y) / GAP
@@ -819,8 +821,8 @@ export class Input {
 		this.mode = null;
 		this.ctx = {};
 		this.readout.clearTransient();
-		this.refreshHover(pos);
-		this.syncZoneGrid(evt); // gesture over: layer indicator follows Shift again
+		this.overlayUi.refreshHover(pos);
+		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone'); // gesture over: layer indicator follows Shift again
 
 		if (mode === 'pending') return;
 		if (mode === 'clone-pending') {
@@ -832,14 +834,14 @@ export class Input {
 			return;
 		}
 		if (mode === 'move') {
-			this.snap.hide();
+			this.overlayUi.crosshair.hide();
 			// commit with the flag of the last RENDERED frame, never re-sampled:
 			// Shift may have changed state since with the pointer stationary
 			this.commitMove(ctx, pos, ctx.orthoActive);
 			return;
 		}
 		if (mode === 'clone') {
-			this.snap.hide();
+			this.overlayUi.crosshair.hide();
 			this.commitClone(ctx, pos, ctx.orthoActive);
 			return;
 		}
@@ -912,7 +914,7 @@ export class Input {
 					});
 				}
 			}
-			this.refreshHandles(); // handles ride the (possibly new) endpoints
+			this.overlayUi.handles(); // handles ride the (possibly new) endpoints
 			return;
 		}
 		if (mode === 'zone') {
@@ -1024,13 +1026,13 @@ export class Input {
 	cancelDrag(evt) {
 		if (this.mode === 'move') {
 			this.ctx.moved.forEach((m) => this.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y }));
-			this.snap.hide();
+			this.overlayUi.crosshair.hide();
 		}
 		if (this.mode === 'clone') {
 			// uncommitted clones vanish entirely
 			[...this.ctx.clones].reverse().forEach((c) => this.model.del(c.kind, c.entity.id));
 			this.selection.clear();
-			this.snap.hide();
+			this.overlayUi.crosshair.hide();
 		}
 		if (this.mode === 'link') {
 			if (this.ctx.path) this.ctx.path.remove();
@@ -1051,59 +1053,17 @@ export class Input {
 		this.mode = null;
 		this.ctx = {};
 		this.readout.clearTransient();
-		this.refreshHover(null);
-		if (evt) this.syncZoneGrid(evt); // layer indicator follows Shift again
+		this.overlayUi.refreshHover(null);
+		if (evt) this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone'); // layer indicator follows Shift again
 		this.onGestureEnd();
 	}
 
 	// ---- hover + arming ----
-	onHover(evt, on) {
-		if (this.isGesturing()) return;
-		const hit = hitOf(evt);
-		if (!hit.id || hit.kind === 'handle') return;
-		this.renderer.setState(hit.id, 'hover', on);
-		if (!on) this.renderer.setState(hit.id, 'linkband', false);
-		this.hovered = on ? hit.id : (this.hovered === hit.id ? null : this.hovered);
-		this.updateArming(evt);
-	}
 
-	refreshHover(pos) {
-		if (!this.hovered) return this.disarm();
-		const id = this.hovered;
-		const ent = this.model.get(kindOf(id), id);
-		// a node stays hovered anywhere within its FOOTPRINT; a waypoint stays within its radius
-		const still = pos && ent && ent.x !== undefined && (kindOf(id) === 'node' ? inFootprint(ent, pos, NODE_R) : dist(ent, pos) <= NODE_R);
-		if (!still) {
-			this.renderer.clearState(id, 'hover', 'linkband');
-			this.hovered = null;
-		}
-		this.disarm();
-	}
 
 	// Alt arms red (delete), Ctrl arms blue (clone) on the hovered entity
-	updateArming(evt) {
-		this.disarm();
-		if (this.readOnly || !this.hovered || this.isGesturing()) return;
-		const kind = kindOf(this.hovered);
-		if (evt.altKey) {
-			this.armed = { id: this.hovered, cls: 'armed' };
-		} else if (evt.ctrlKey && (kind === 'node' || kind === 'zone')) {
-			this.armed = { id: this.hovered, cls: 'armed-clone' };
-		}
-		if (this.armed) this.renderer.setState(this.armed.id, this.armed.cls, true);
-	}
 
-	disarm() {
-		if (!this.armed) return;
-		this.renderer.clearState(this.armed.id, 'armed', 'armed-clone');
-		this.armed = null;
-	}
 
-	syncZoneGrid(evt) {
-		// ortho-lock owns Shift mid-move/clone: no zone-grid flash during those drags
-		const moving = this.mode === 'move' || this.mode === 'clone';
-		this.svg.classList.toggle('zonegrid', !!evt.shiftKey && !moving);
-	}
 
 	// after a hand change at idle: ghost and readout reflect it immediately
 	refreshHand() {
@@ -1115,69 +1075,8 @@ export class Input {
 	}
 
 	// datum marker: a small diamond-cross on the snap layer (pointer-inert)
-	setDatumMarker(pos) {
-		if (this.datumEl) {
-			this.datumEl.remove();
-			this.datumEl = null;
-		}
-		if (!pos) return;
-		this.datumEl = el('path', {
-			class: 'datum',
-			d: 'M 0 -8 L 8 0 L 0 8 L -8 0 Z M 0 -13 L 0 -8 M 0 8 L 0 13 M -13 0 L -8 0 M 8 0 L 13 0',
-			transform: `translate(${pos.x},${pos.y})`
-		}, this.svg.querySelector('#snaplayer'));
-	}
 
 	// ---- handles: zone corners (resize) and link endpoints (re-plug) ----
-	refreshHandles() {
-		this.overlay.querySelectorAll('.handle').forEach((h) => h.remove());
-		const ids = this.selection.list();
-		if (ids.length !== 1) return;
-		const id = ids[0];
-		const size = 12;
-
-		if (kindOf(id) === 'link') {
-			const path = this.model.pathOf(this.model.get('link', id));
-			if (!path) return;
-			// B29 — each handle sits on the route's OWN first/last segment, not on a straight line
-			// between the ends. On a routed link those are different directions entirely, and the
-			// handles used to float off the path they were supposed to grab.
-			const along = (from, to) => {
-				const d = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
-				const off = Math.min(NODE_R + 6, d * 0.4);
-				return { x: from[0] + (to[0] - from[0]) / d * off, y: from[1] + (to[1] - from[1]) / d * off };
-			};
-			const ends = {
-				src: along(path[0], path[1]),
-				dst: along(path[path.length - 1], path[path.length - 2])
-			};
-			Object.entries(ends).forEach(([end, p]) => {
-				const handle = el('rect', {
-					class: 'handle', width: size, height: size,
-					x: p.x - size / 2, y: p.y - size / 2, rx: 6
-				}, this.overlay);
-				handle.dataset.end = end;
-			});
-			return;
-		}
-
-		if (kindOf(id) !== 'zone') return;
-		const zone = this.model.get('zone', id);
-		if (!zone) return;
-		const corners = {
-			nw: { x: zone.x, y: zone.y },
-			ne: { x: zone.x + zone.w, y: zone.y },
-			sw: { x: zone.x, y: zone.y + zone.h },
-			se: { x: zone.x + zone.w, y: zone.y + zone.h }
-		};
-		Object.entries(corners).forEach(([corner, p]) => {
-			const handle = el('rect', {
-				class: 'handle', width: size, height: size,
-				x: p.x - size / 2, y: p.y - size / 2, rx: 2
-			}, this.overlay);
-			handle.dataset.corner = corner;
-		});
-	}
 
 	// ---- label editing ----
 	onDblClick(evt) {
@@ -1309,9 +1208,9 @@ export class Input {
 		}
 		if (evt.key === 'Alt') {
 			evt.preventDefault(); // keep Firefox's menu bar out of the delete chord
-			this.updateArming(evt);
+			this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 		}
-		if (evt.key === 'Control') this.updateArming(evt);
+		if (evt.key === 'Control') this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 
 		// W4/W5 — interaction mode. 'e' toggles EDIT (shows the socket grid); 'r' toggles RUN (clickable
 		// content regions act). Either key from its own mode returns to the clean VIEW.
@@ -1403,13 +1302,13 @@ export class Input {
 			evt.preventDefault();
 			if (evt.shiftKey) {
 				this.readout.setDatum(null);
-				this.setDatumMarker(null);
+				this.overlayUi.datum(null);
 				return;
 			}
 			if (!this.lastPos) return; // pointer off-canvas: nothing to anchor
 			const datum = snapNode(this.lastPos);
 			this.readout.setDatum(datum);
-			this.setDatumMarker(datum);
+			this.overlayUi.datum(datum);
 			return;
 		}
 
@@ -1537,6 +1436,22 @@ export class Input {
 		}
 	}
 
+	/*
+	Event handlers stay HERE and delegate. INPUT.md §8 splits it that way deliberately: input owns
+	the wiring to the DOM, overlay owns the state and the drawing. Deleting these during H6.3 broke
+	four affordance tests, and the lesson is worth keeping — asserting on BEHAVIOUR is not sufficient
+	on its own, because a test still has to INVOKE through something. The event surface is that
+	something: it is what the browser calls, so it is the one part of Input a test may lean on.
+	*/
+	onHover(evt, on) {
+		this.overlayUi.hover(hitOf(evt), on, evt, this.isGesturing());
+		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
+	}
+
+	syncZoneGrid(evt) {
+		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
+	}
+
 	onKeyUp(evt) {
 		if (evt.key === 'Shift') {
 			this.svg.classList.remove('zonegrid');
@@ -1545,13 +1460,13 @@ export class Input {
 				this.updateMove(this.lastPos, false);
 			}
 			// the zone layer just went inert: a hovered zone must drop its states
-			if (this.hovered && kindOf(this.hovered) === 'zone') {
-				this.renderer.clearState(this.hovered, 'hover');
-				this.hovered = null;
-				this.disarm();
+			if (this.overlayUi.hovered && kindOf(this.overlayUi.hovered) === 'zone') {
+				this.renderer.clearState(this.overlayUi.hovered, 'hover');
+		
+				this.overlayUi.disarm();
 			}
 		}
-		if (evt.key === 'Alt' || evt.key === 'Control') this.updateArming(evt);
+		if (evt.key === 'Alt' || evt.key === 'Control') this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
 	afterHistory() {

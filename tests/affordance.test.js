@@ -44,13 +44,11 @@ test('Alt arms the hovered entity red; Ctrl arms it clone-blue', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onHover(over(a.id, 0, 0), true);
-
-		h.input.updateArming({ altKey: true, ctrlKey: false });
+		h.input.onHover(over(a.id, 0, 0, { altKey: true }), true);
 		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'armed'),
 			'Alt is the delete chord — threat may shout (DESIGN U2)');
 
-		h.input.updateArming({ altKey: false, ctrlKey: true });
+		h.input.onHover(over(a.id, 0, 0, { ctrlKey: true }), true);
 		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'armed-clone'),
 			'Ctrl is the clone chord');
 	} finally { h.restore(); }
@@ -60,8 +58,7 @@ test('arming is suppressed while Server-Locked — a locked client must not prom
 	const h = makeInput({ readOnly: true });
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onHover(over(a.id, 0, 0), true);
-		h.input.updateArming({ altKey: true, ctrlKey: false });
+		h.input.onHover(over(a.id, 0, 0, { altKey: true }), true);
 		assert.equal(h.stateCalls('renderer.setState').some(([, cls]) => cls === 'armed'), false,
 			'arming red says "this click deletes" — while locked it does not');
 	} finally { h.restore(); }
