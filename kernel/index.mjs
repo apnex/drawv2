@@ -11,6 +11,7 @@ export { resolve } from './engine.mjs';
 export { renderScene, renderElement, sharedDefs, DRAW_ORDER, selBox, renderContentRegion } from './renderer.mjs';
 export { grc, RULES, crossings } from './grc.mjs';
 export { roundedPath, gridSnap } from './router.mjs';
+export { docToSchema, schemaToDoc } from './adapt.mjs';
 export { px, cellPx, cellCenter, cellOf, groupHull, bboxOf } from './geometry.mjs';
 
 import { resolve } from './engine.mjs';

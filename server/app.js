@@ -16,6 +16,7 @@ import { Session } from './protocol.js';
 import { handleRest } from './rest.js';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
+import { svgDocument } from './svg.mjs';
 import { GoogleAuth } from './slides/auth.js';
 import { SlidesSync } from './slides/sync.js';
 
@@ -144,6 +145,32 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 		if (req.method !== 'GET') {
 			res.writeHead(405);
 			return res.end();
+		}
+		/*
+		`/d/<id>.svg` — the diagram you are looking at, as a downloadable image.
+
+		A sibling of the deep link rather than an /api/v1 route, because it is not a description of
+		the model: it is the picture, for someone who has `/d/<id>` open and wants the same thing as
+		a file. `curl -O` then yields `<id>.svg` rather than a file called `svg`. It must be matched
+		BEFORE static handling, which owns `/d/` today and would otherwise look for a file on disk.
+		A read, so no lock — the same rule the rest of GET follows.
+		*/
+		const asSvg = url.pathname.match(/^\/d\/(diagram-[0-9a-f]{6})\.svg$/);
+		if (asSvg) {
+			const model = store.get(asSvg[1]);
+			if (!model) {
+				res.writeHead(404, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify({ error: `unknown diagram: ${asSvg[1]}` }) + '\n');
+			}
+			const body = svgDocument(model.toJSON());
+			res.writeHead(200, {
+				'Content-Type': 'image/svg+xml; charset=utf-8',
+				'Cache-Control': 'no-store',
+				'Access-Control-Allow-Origin': '*',
+				// a browser navigating here RENDERS it; `curl -O` and a download both name the file
+				'Content-Disposition': `inline; filename="${asSvg[1]}.svg"`
+			});
+			return res.end(body);
 		}
 		// the new thin UI + the kernel ESM, mounted beside the legacy client during migration
 		if (hasApp && (url.pathname === '/next' || url.pathname.startsWith('/next/'))) return serveFrom(req, res, appDir, '/next');

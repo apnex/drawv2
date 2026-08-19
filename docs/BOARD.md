@@ -224,7 +224,8 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 |---|---|---|---|---|
 | H5.1 | Delete `Store.patchMeta`, the four unused imports, the dead `const tmp` | **B26** | S5 · S | `TODO` |
 | H5.2 | Repoint or delete the five dangling doc references; correct the I/GR pinning-test column; consider extending GR2's scanner beyond §7 | **B31** | S5 · S | `TODO` |
-| H5.3 | **Decide `schema.js`'s fate** (below), then execute: route the live renderer through `docToSchema`/`resolve`, or relabel it and extract the shared content-region renderer | **B28** | S5 · **L** | `BLOCKED` on decision |
+| H5.3 | ~~Decide `schema.js`'s fate~~ — **resolved by PROMOTION**: the kernel renderer got the consumer it always lacked, `GET /d/<id>.svg` | **B28** | S5 · L | `DONE` |
+| H5.6 | Extract the ~11 lines of text-layout maths the two renderers genuinely share | **B40** | S5 · S | `TODO` |
 | H5.4 | Remaining duplication ledger: span→px in 6 places, two crosshair owners, the zone-corner maps, two drag thresholds in different unit systems. Each merged or justified in place | B28 | S5 · M | `TODO` |
 
 **Exit:** duplication ledger closed or each survivor carries a reason. Zero dangling references.

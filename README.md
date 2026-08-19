@@ -197,6 +197,18 @@ curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" 
      -d '{"expect":42,"to":38}'                                # back out a whole run as ONE transaction
 ```
 
+**Download the picture.** Any diagram renders to a self-contained SVG by adding `.svg` to its deep
+link — the same URL you are already looking at:
+
+```
+http://localhost:8080/d/<diagram-id>.svg     # renders in the browser
+curl -O localhost:8080/d/<diagram-id>.svg    # saves <diagram-id>.svg
+```
+
+Self-contained means it stands alone: the glyph artwork and the styles travel inside the file, so it
+opens in a browser, an editor, or an `<img>` with nothing else to fetch. Each shape carries its
+entity id, so an export can be traced back to the model. Read-only — no lock.
+
 **Actions** are not model mutations and take no lock — they act on the outside world:
 
 ```

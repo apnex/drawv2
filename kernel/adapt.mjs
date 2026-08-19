@@ -1,7 +1,13 @@
-// SCHEMA ADAPTER — translate the app's document model (px, center-origin, the persisted JSON
+// SCHEMA ADAPTER — translate a stored document (px, center-origin, the persisted JSON
 // shape) ↔ the kernel's declarative schema (cell coords). The document stays the source of
 // truth + the persistence/wire format; the schema is DERIVED for rendering + validation only.
 // Pure (no DOM): usable in the browser and headlessly in node.
+//
+// It lives in `kernel/` because it PRODUCES a kernel schema, and it takes the document as plain
+// data — it imports nothing from `document/`, so hosting it here adds no dependency edge between
+// sovereign peers and leaves the kernel self-sufficient for export. It was in `app/src/`, where the
+// browser never called it: the client renders live DOM directly and the kernel renderer is the
+// EXPORT authority. That mislocation is why it read as dead code (B28).
 //
 //   doc  node  { id, name, type, shape, x, y }   →  { id, kind:'node', cell:[cx,cy], frame, glyph, sel }
 //   doc  zone  { id, name, x, y, w, h }           →  { id, kind:'zone', span:{cols,rows} }
@@ -10,7 +16,8 @@
 //
 // The zone grid is half-cell-offset (edges at ±P/2 + k·P); covered node-cells:
 //   c0 = (x + P/2)/P   c1 = (x + w − P/2)/P   (and rows from y,h)
-import { STD, cellOf } from '../../kernel/index.mjs';
+import { STD } from './spec.mjs';
+import { cellOf } from './geometry.mjs';
 
 const P = STD.pitch;                              // 60 — the single source of pitch
 const cell = cellOf;                              // px → cell, single-sourced from the kernel

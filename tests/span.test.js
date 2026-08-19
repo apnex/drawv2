@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Model } from '../document/index.mjs';
 import { attachRelations } from '../engine/index.mjs';
 import { resolve, renderElement, renderContentRegion, bboxOf, selBox, cellOf, STD, L_STD } from '../kernel/index.mjs';
-import { docToSchema, schemaToDoc } from '../app/src/schema.js';
+import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
 import { validateEntity, validateDoc } from '../server/validate.js';
 import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
 import { controlBarDoc } from './fixtures/control-bar-doc.mjs';

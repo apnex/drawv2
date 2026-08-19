@@ -128,6 +128,24 @@ export const DRAW_ORDER = { zone: 0, group: 1, link: 2, path: 2, junction: 3, wa
 
 const ORDER = DRAW_ORDER;
 
+/*
+The root carries `xmlns`. Inside an HTML page a browser INFERS the SVG namespace, so the editor
+worked without it for as long as the kernel's output was only ever injected into a page. Served
+standalone as image/svg+xml the document is parsed as XML, which has no implicit namespace — the
+browser then shows a parse failure instead of the diagram. The attribute costs nothing and makes
+the output a valid SVG document rather than a fragment that happens to work in one context.
+*/
+/*
+Every element that has a source id is wrapped in `<g id="…">`.
+
+`resolve()` already carries the entity id onto each scene element "so an interactive host can map
+scene → DOM" — but the string renderer dropped it, so an exported file had no way back to the model.
+Emitting it costs one wrapper and makes a download traceable: you can find a node in the file, diff
+two exports meaningfully, or script against one. Classes stay on the inner elements, so the CSS is
+untouched.
+*/
+const tagged = (el, svg) => (el.id ? `<g id="${el.id}">${svg}</g>` : svg);
+
 export function renderScene(elements, V = STD, L = L_STD, pad = 18, opts = {}) {
 	let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
 	const ext = (x, y) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); };
@@ -139,9 +157,9 @@ export function renderScene(elements, V = STD, L = L_STD, pad = 18, opts = {}) {
 	}
 	const vbX = minX - pad, vbY = minY - pad, vbW = (maxX - minX) + 2 * pad, vbH = (maxY - minY) + 2 * pad;
 	const sorted = [...elements].sort((a, b) => ORDER[a.kind] - ORDER[b.kind]);
-	return `<svg class="scene" viewBox="${vbX} ${vbY} ${vbW} ${vbH}">
+	return `<svg xmlns="http://www.w3.org/2000/svg" class="scene" viewBox="${vbX} ${vbY} ${vbW} ${vbH}">
 	  <rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="${TOKENS.panel}"/>
-	  ${sorted.map((el) => renderEl(el, V, L, opts)).join('')}
+	  ${sorted.map((el) => tagged(el, renderEl(el, V, L, opts))).join('')}
 	</svg>`;
 }
 

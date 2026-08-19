@@ -246,6 +246,12 @@ than ever going empty.
 - `GET /health`
 - `POST /api/v1/diagrams/:id/sync/slides` — action endpoint (not a model mutation); also
   triggered by the canvas push button
+- `GET /d/:id.svg` — the diagram as a **self-contained SVG document** (glyph defs + styles inlined,
+  each shape carrying its entity id). A sibling of the `/d/:id` deep link rather than an `/api/v1`
+  route, because it is not a description of the model — it is the picture, for a caller that is not
+  the browser. *(Added 2026-08-19.)* This is the consumer the kernel renderer always lacked: the
+  client renderer maintains live, individually addressable elements for a person editing, and the
+  kernel renderer produces a complete document for everyone else. Two renderers, two duties.
 
 All responses plain JSON, curl/jq-friendly.
 
