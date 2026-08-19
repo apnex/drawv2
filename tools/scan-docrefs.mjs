@@ -56,6 +56,10 @@ const ALLOW = {
 	'docs/BACKLOG.md:docs/history/PRISMV2-DESIGN.md': 'as above (B31 evidence)',
 	'docs/BACKLOG.md:app/src/schema.js': 'as above (B31 evidence) — the row names the path it was repointed FROM',
 	'docs/BACKLOG.md:client/src/renderer.js': 'as above (B31 evidence)',
+	// A FORWARD reference: a plan may name a path that does not exist yet. Bare filenames are already
+	// skipped (which is why H6's pick.js / overlay.js / keymap.js do not trip), so only a proposed
+	// path WITH a directory needs recording. Delete this entry when B41 lands and the path is real.
+	'docs/BACKLOG.md:model/model.mjs': 'B41 proposes this name; the rename has not happened yet',
 };
 
 /*
