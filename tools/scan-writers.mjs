@@ -85,6 +85,30 @@ const STALE_BEFORE = /\bbefore\s*:/g;
 const CLIENT_ROOT = 'app/src';
 const BUILDER = 'app/src/commands.js';
 
+/*
+B45 / GR17 — the DOM stays where the DOM belongs.
+
+A GLOBAL reach: bare `document.` or `window.`, not `this.window` (Changes' coalescing window) and not
+the word in a comment. Reaching an INJECTED element is fine and common — `renderer.js` is built
+entirely on an `svg` it was handed, and reads as DOM-heavy to a naive grep while being perfectly
+composable. What is sealed here is the difference between the two.
+
+Allowed by FILE and not by count, unlike the model rules above, and the difference is deliberate. A
+model mutation is a discrete hazard, so each one is worth counting. Here the hazard is a LAYER losing
+its purity — palette.js building its ninth element is not a new risk, whereas snap.js building its
+first is. Counting main.js's churn would add friction and catch nothing.
+
+Measured 2026-08-19: 14 of 18 client modules reach zero DOM globals, including every unit H6
+extracted. Those 14 are the asset; this rule exists so a fifteenth cannot quietly become a fourth.
+*/
+const DOM_GLOBAL = /(?<![.\w$])(document|window)\s*\./g;
+const DOM_ALLOW = new Set([
+	'app/src/main.js',       // the composition root — it OWNS the page
+	'app/src/painter.js',    // the DOM helper every other module goes through
+	'app/src/palette.js',    // builds and owns the palette widget
+	'app/src/labeledit.js',  // builds and owns the inline editor
+]);
+
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
 	'model/ops.mjs': { mutate: null, load: 0, reach: 0 },
@@ -134,9 +158,12 @@ for (const file of walk(TEST_ROOT)) {
 // the command-boundary rule (B44), scanned over the client
 let handbuilt = 0;
 let builders = 0;
+let domReaches = 0;
+let domFree = 0;
 for (const file of walk(CLIENT_ROOT)) {
 	const text = decomment(fs.readFileSync(file, 'utf8'));
-	if (file.replace(/\\/g, '/') === BUILDER) {
+	const isBuilder = file.replace(/\\/g, '/') === BUILDER;
+	if (isBuilder) {
 		builders = (text.match(/^export function /gm) || []).length;
 		const stale = hits(text, STALE_BEFORE);
 		if (stale.length) {
@@ -144,14 +171,49 @@ for (const file of walk(CLIENT_ROOT)) {
 			console.log(`  \u2717 ${file}: ${stale.length} entr(ies) carry \`before\` — changes.js drops it; the server derives the inverse`);
 			stale.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
 		}
-		continue;
 	}
-	const h = hits(text, HANDBUILT);
-	if (!h.length) continue;
-	handbuilt += h.length;
+	// the builder file is exempt from the hand-built rule ONLY — it is still held to the DOM and
+	// gesture-state rules below, which an early `continue` here quietly skipped
+	const h = isBuilder ? [] : hits(text, HANDBUILT);
+	if (h.length) {
+		handbuilt += h.length;
+		bad++;
+		console.log(`  \u2717 ${file}: ${h.length} hand-built command(s) — add a builder to ${BUILDER} instead`);
+		h.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+	}
+
+	// GR17 — DOM globals, allowed by file
+	const rel = file.replace(/\\/g, '/');
+	const d = hits(text, DOM_GLOBAL);
+	if (d.length) {
+		if (DOM_ALLOW.has(rel)) {
+			domReaches += d.length;
+		} else {
+			bad++;
+			console.log(`  \u2717 ${rel}: ${d.length} DOM global(s) — inject the element or the host surface instead (B45)`);
+			d.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+		}
+	} else if (!DOM_ALLOW.has(rel)) {
+		domFree++;
+	}
+
+	// H6.5 — Input's gesture state is Input's. Same rule already held over tests/; the reason is the
+	// same and the blast radius is larger, because a peer module reading `mode` re-creates the God
+	// Object by reference. `this.mode` (renderer's view mode) and `editing.mode` are different
+	// concepts and deliberately do not match.
+	if (rel !== 'app/src/input.js') {
+		const g = hits(text, INTERNALS);
+		if (g.length) {
+			bad++;
+			internals += g.length;
+			console.log(`  \u2717 ${rel}: ${g.length} read(s) of Input's gesture state — it is sovereign to how a gesture was produced (D4)`);
+			g.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+		}
+	}
+}
+if (domReaches === 0) {
+	console.log(`  \u2717 NO DOM globals matched in ${[...DOM_ALLOW].join(', ')} — the scan is broken, not the tree clean`);
 	bad++;
-	console.log(`  \u2717 ${file}: ${h.length} hand-built command(s) — add a builder to ${BUILDER} instead`);
-	h.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
 }
 if (builders === 0) {
 	console.log(`  \u2717 NO builders found in ${BUILDER} — the scan is broken, not the tree clean`);
@@ -202,9 +264,13 @@ if (reaches === 0) {
 	bad++;
 }
 
-console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/; ${handbuilt} hand-built command(s) against ${builders} builders`);
+console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/; ${handbuilt} hand-built command(s) against ${builders} builders; ${domFree} DOM-free client module(s), ${domReaches} reach(es) in the ${DOM_ALLOW.size} that own the page`);
 if (bad) {
-	console.log(`\n  FAIL — ${bad} allow-list violation(s). An out-of-band write corrupts every stored inverse below it, silently.\n`);
+	console.log(`\n  FAIL — ${bad} violation(s) above. This scanner holds four boundaries, and each fails silently at
+  runtime rather than loudly: an out-of-band model write corrupts every stored inverse below it; a
+  hand-built command omits what the builder would have supplied; a DOM global welds a module to the
+  page it happens to run in; and a peer reading Input's gesture state rebuilds the God Object by
+  reference. None of these throw. That is why they are caught here.\n`);
 	process.exit(1);
 }
 console.log('  PASS — one writer (model/ops.mjs#applyOps); load confined to Store.install + plan(); store internals unreached\n');

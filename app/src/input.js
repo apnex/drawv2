@@ -335,7 +335,14 @@ const GESTURES = {
 };
 
 export class Input {
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, dataview }) {
+	/*
+	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
+	the browser. Injected rather than reached for (B45): Input is the class H6 exists to decompose, and
+	a module that grabs its own collaborators cannot be composed differently or tested without a global.
+	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
+	owners of one node.
+	*/
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help }) {
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
@@ -364,7 +371,7 @@ export class Input {
 		// deferred during the gesture replay at exactly the moment the preview stops moving (B19).
 		this.onGestureEnd = () => {};
 		this.textTool = false; // A1 — 't' held: drag draws a text box (mirrors Shift+drag-zone)
-		this.help = document.getElementById('help');
+		this.help = help;
 
 		selection.subscribe(() => {
 			// a coalescing burst never spans a selection change — the window now lives in Changes
@@ -408,8 +415,9 @@ export class Input {
 		svg.addEventListener('pointerover', (e) => this.onHover(e, true));
 		svg.addEventListener('pointerout', (e) => this.onHover(e, false));
 		svg.addEventListener('dblclick', (e) => this.onDblClick(e));
-		window.addEventListener('keydown', (e) => this.onKeyDown(e));
-		window.addEventListener('keyup', (e) => this.onKeyUp(e));
+		this.host = host;
+		host.addEventListener('keydown', (e) => this.onKeyDown(e));
+		host.addEventListener('keyup', (e) => this.onKeyUp(e));
 		svg.addEventListener('contextmenu', (e) => e.preventDefault());
 	}
 
@@ -489,7 +497,7 @@ export class Input {
 		const t = evt.target.closest && evt.target.closest('[data-action],[data-input]');
 		if (t && t.dataset.action) {
 			evt.preventDefault();
-			window.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));
+			this.host.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));
 		} else if (t && t.dataset.input !== undefined && !this.readOnly) {
 			// run mode straddles the gate: firing an action commits nothing and stays live while
 			// locked; opening the inline editor authors a change and does not (B18).

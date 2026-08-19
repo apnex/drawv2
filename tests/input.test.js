@@ -264,15 +264,16 @@ test('while Server-Locked, a run-mode ACTION still fires — it commits nothing'
 	// inspection and stays live. Blocking it would be B37 all over again, in a new place.
 	const h = makeInput({ readOnly: true });
 	try {
-		let fired = null;
-		globalThis.window.dispatchEvent = (e) => { fired = e; return true; };
 		h.renderer.mode = 'run';
 		const hitEl = { dataset: { action: 'ping' }, closest: () => ({ id: 'node-aa0001' }) };
 		const target = { tagName: 'rect', closest: () => hitEl };
 		h.input.onDown(pointer(100, 100, { target }));
 
-		assert.ok(fired, 'the action reached the host');
-		assert.equal(fired.detail.action, 'ping');
+		// B45 — the host is injected now, so this reads the real outbound boundary instead of
+		// monkey-patching globalThis mid-test
+		assert.equal(h.dispatched.length, 1, 'the action reached the host');
+		assert.equal(h.dispatched[0].detail.action, 'ping');
+		assert.equal(h.dispatched[0].detail.id, 'node-aa0001');
 		assert.equal(h.commits.length, 0, 'and changed nothing');
 	} finally { h.restore(); }
 });
@@ -699,5 +700,30 @@ test('B44: the migrated commands still do their jobs', () => {
 		assert.equal(h.model.get('link', link.id).closed, true, 'C closes a multi-hop route');
 		h.input.toggleClosePath();
 		assert.equal(h.model.get('link', link.id).closed, false, 'and re-opens it');
+	} finally { h.restore(); }
+});
+
+/*
+B45 — Input's collaborators all arrive through its constructor, including the host surface.
+
+The point is composability, not purity for its own sake: a module that reaches for `window` can only
+be tested by installing a fake global, and can only ever run in one kind of page. These assert the
+injected surface is genuinely the one used, so the seal is behavioural and not just a scanner rule.
+*/
+test('B45: keyboard listeners bind to the injected host, not a global', () => {
+	const bound = [];
+	const host = { addEventListener: (t) => bound.push(t), removeEventListener() {}, dispatchEvent() { return true; } };
+	const h = makeInput({ host });
+	try {
+		assert.deepEqual(bound.sort(), ['keydown', 'keyup'], 'both key listeners went to the host it was given');
+	} finally { h.restore(); }
+});
+
+test('B45: the help element is the injected one — not a second lookup of the same id', () => {
+	const h = makeInput();
+	try {
+		assert.equal(h.input.help, h.help, 'one owner of #help, and it is the composition root');
+		h.input.onKeyDown(key('?', { shiftKey: true }));
+		assert.equal(h.help.hidden, false, 'and toggling help acts on that very element');
 	} finally { h.restore(); }
 });

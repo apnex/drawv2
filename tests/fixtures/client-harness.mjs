@@ -113,7 +113,7 @@ A real Model, a real Changes, a real Selection, a real Input. The collaborators 
 stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
 can show a gesture did not, say, open the label editor, without asserting on pixels.
 */
-export function makeInput({ readOnly = false, bare = false } = {}) {
+export function makeInput({ readOnly = false, bare = false, host: hostOverride = null } = {}) {
 	const restore = installDom();
 
 	const model = new Model();
@@ -137,18 +137,37 @@ export function makeInput({ readOnly = false, bare = false } = {}) {
 	const svg = fakeEl('svg', 'canvas');
 	svg.byId = { '#overlay': fakeEl('g', 'overlay'), '#snaplayer': fakeEl('g', 'snaplayer') };
 
+	/*
+	B45 — the host surface and the help element are INJECTED, not reached for. Input used to take
+	`window` and `#help` from globals, which meant this harness could only supply them by installing
+	fakes on globalThis. It still installs a DOM (painter.js needs one to build elements), but Input's
+	own collaborators now arrive through its constructor like every other one.
+
+	`host` records dispatched events rather than swallowing them: the previous stub's `dispatchEvent`
+	was a no-op returning true, so the W5 `draw:action` handoff could only be observed by a test that
+	monkey-patched globalThis mid-run. That is now the harness's job.
+	*/
+	const dispatched = [];
+	const host = hostOverride || {
+		addEventListener() {}, removeEventListener() {},
+		dispatchEvent(e) { dispatched.push(e); return true; },
+	};
+	const help = fakeEl('div', 'help');
+
 	// the commit boundary — the ONLY surface these tests assert on
 	const commits = [];
 	history.onCommit((request) => commits.push(request));
 
 	// `bare` omits the optional collaborators entirely, exercising Input's own null-object defaults.
 	const input = bare
-		? new Input({ svg, model, history, selection, renderer, labels })
-		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview });
+		? new Input({ svg, model, history, selection, renderer, labels, host, help })
+		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help });
 	if (readOnly) input.setReadOnly(true);
 
 	return {
-		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette,
+		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette, help,
+		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
+		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without
 		// reaching into Input. H6 moves this code into overlay.js; these accessors do not move.
 		layers: svg.byId,
@@ -162,7 +181,7 @@ export function makeInput({ readOnly = false, bare = false } = {}) {
 			return commits[0];
 		},
 		opsOf(i = 0) { return commits[i]?.ops ?? []; },
-		reset() { commits.length = 0; calls.length = 0; },
+		reset() { commits.length = 0; calls.length = 0; dispatched.length = 0; },
 	};
 }
 

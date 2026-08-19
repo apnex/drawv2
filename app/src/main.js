@@ -42,11 +42,12 @@ const readout = new Readout({ model, selection, elements: [document.getElementBy
 const dataview = new DataView({ model, svg });
 readout.onUnitsChanged = (units) => dataview.setUnits(units);
 const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection });
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview });
 
-// help overlay: header button + click-outside-to-close
+// help overlay: header button + click-outside-to-close. Resolved HERE and injected — Input used to
+// look the same element up for itself, so the id had two owners (B45).
 const helpBtn = document.getElementById('help-btn');
 const help = document.getElementById('help');
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host: window, help });
 if (helpBtn && help) {
 	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });
 	help.addEventListener('click', (e) => { if (e.target === help) help.hidden = true; });
