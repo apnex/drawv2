@@ -117,7 +117,7 @@ export class Model {
 
 	A route is an ordered list of ANCHORS and carries no coordinates (`src`, `via[]`, `dst`); a path
 	is an ordered list of coordinates and carries no identity. This is the one place that crosses
-	between them, and it lives here because `document/` owns the entities holding the coordinates —
+	between them, and it lives here because `model/` owns the entities holding the coordinates —
 	the kernel never sees a Model.
 
 	Returns `[[x, y], …]`, the canonical PATH shape, NOT `{x,y}`. Entities are objects, paths are

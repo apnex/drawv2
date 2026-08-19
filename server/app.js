@@ -110,7 +110,7 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 	const appDir = path.resolve(root, '..', 'app');       // also mounted at /next (back-compat alias)
 	const kernelDir = path.resolve(root, '..', 'kernel');  // the geometry kernel ESM (mounted at /kernel)
 	const engineDir = path.resolve(root, '..', 'engine');  // the relational engine ESM (mounted at /engine)
-	const documentDir = path.resolve(root, '..', 'document'); // the document substrate ESM (mounted at /document)
+	const modelDir = path.resolve(root, '..', 'model'); // the model substrate ESM (mounted at /model)
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
 	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
@@ -134,7 +134,7 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 	const hasApp = fs.existsSync(path.join(appDir, 'index.html'));
 	const hasKernel = fs.existsSync(path.join(kernelDir, 'index.mjs'));
 	const hasEngine = fs.existsSync(path.join(engineDir, 'index.mjs'));
-	const hasDocument = fs.existsSync(path.join(documentDir, 'index.mjs'));
+	const hasModel = fs.existsSync(path.join(modelDir, 'index.mjs'));
 
 	const server = http.createServer(async (req, res) => {
 		const url = new URL(req.url, 'http://localhost');
@@ -176,7 +176,7 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 		if (hasApp && (url.pathname === '/next' || url.pathname.startsWith('/next/'))) return serveFrom(req, res, appDir, '/next');
 		if (hasKernel && url.pathname.startsWith('/kernel/')) return serveFrom(req, res, kernelDir, '/kernel');
 		if (hasEngine && url.pathname.startsWith('/engine/')) return serveFrom(req, res, engineDir, '/engine');
-		if (hasDocument && url.pathname.startsWith('/document/')) return serveFrom(req, res, documentDir, '/document');
+		if (hasModel && url.pathname.startsWith('/model/')) return serveFrom(req, res, modelDir, '/model');
 		if (!hasClient) {
 			res.writeHead(404, { 'Content-Type': 'application/json' });
 			return res.end(JSON.stringify({ error: 'API-only mode; editor client not bundled' }) + '\n');

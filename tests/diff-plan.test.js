@@ -8,9 +8,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { plan } from '../server/txn.mjs';
-import { applyOps } from '../document/ops.mjs';
+import { applyOps } from '../model/ops.mjs';
 import { planMutation } from './fixtures/plan-reference.mjs';
 
 // xorshift — deterministic, no dependency

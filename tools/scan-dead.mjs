@@ -27,7 +27,7 @@ Usage: node tools/scan-dead.mjs [--verbose]
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PROD = ['kernel', 'engine', 'document', 'app/src', 'server', 'tools', 'cli'];
+const PROD = ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli'];
 const TESTS = ['tests'];
 const EXT = /\.(js|mjs)$/;
 

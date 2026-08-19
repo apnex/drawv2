@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { Changes } from '../app/src/changes.js';
 
 const node = (id, x = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0 });

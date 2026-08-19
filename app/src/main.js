@@ -7,7 +7,7 @@ server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number 
 import { sharedDefs, cellOf } from '../../kernel/index.mjs';
 import { el } from './painter.js';
 import { nodePoints, zonePoints } from './snap.js';
-import { Model } from '../../document/index.mjs';
+import { Model } from '../../model/index.mjs';
 import { attachRelations } from '../../engine/index.mjs';
 import { Changes } from './changes.js';
 import { Renderer } from './renderer.js';

@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { plan, commit, undo, redo, MAX_OPS } from '../server/txn.mjs';
 import { Log } from '../server/log.mjs';
 

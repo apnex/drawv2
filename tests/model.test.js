@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model, newId, kindOf } from '../document/index.mjs';
+import { Model, newId, kindOf } from '../model/index.mjs';
 
 test('newId produces prefixed 6-hex ids and avoids collisions', () => {
 	const id = newId('node');
@@ -107,7 +107,7 @@ test('node shape is a first-class field, defaults to circle, survives roundtrip'
 	assert.equal(restored.get('node', b.id).shape, 'square');
 });
 
-// ---- shipped-only coverage (document/model.mjs): waypoint kind + link via[] + kindOf ----
+// ---- shipped-only coverage (model/model.mjs): waypoint kind + link via[] + kindOf ----
 
 test('waypoint entities are a first-class kind that round-trips put/get + toJSON/load', () => {
 	const model = new Model();
@@ -171,7 +171,7 @@ pathOf — resolving a ROUTE to a PATH (docs/spec/HIERARCHY.md §0, connection t
 A route is an ordered list of anchors and carries no coordinates; a path is an ordered list of
 coordinates and carries no identity. `link` owns a route (`src`, `via[]`, `dst`); this resolves it.
 
-It lives in `document/` because document owns the entities that carry the coordinates — the kernel
+It lives in `model/` because document owns the entities that carry the coordinates — the kernel
 never sees a Model. It returns `[[x,y],…]`, the canonical PATH shape, so the value hands straight to
 the kernel's `roundedPath` with no conversion at any consumer. Entities are `{x,y}`; paths are
 tuples. Two shapes, one rule.

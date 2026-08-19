@@ -4,7 +4,7 @@
 // Pure (no DOM): usable in the browser and headlessly in node.
 //
 // It lives in `kernel/` because it PRODUCES a kernel schema, and it takes the document as plain
-// data — it imports nothing from `document/`, so hosting it here adds no dependency edge between
+// data — it imports nothing from `model/`, so hosting it here adds no dependency edge between
 // sovereign peers and leaves the kernel self-sufficient for export. It was in `app/src/`, where the
 // browser never called it: the client renders live DOM directly and the kernel renderer is the
 // EXPORT authority. That mislocation is why it read as dead code (B28).

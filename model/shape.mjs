@@ -14,7 +14,7 @@ The two sets are genuinely different and that is not an accident: `link.closed` 
 scalar, `group.members` is composite but mandatory, `node.shape` is optional but scalar. A single
 merged list would be wrong in both directions.
 
-Downstream this table is the source for: clone()'s deep-copy walk (document/ops.mjs), the
+Downstream this table is the source for: clone()'s deep-copy walk (model/ops.mjs), the
 set-inverse absent-key rule (an inverse that must remove a key rather than restore a value uses a
 whole-entity put — see server/txn.mjs), and validateEntity's optional-field allowance.
 */

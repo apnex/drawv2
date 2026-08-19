@@ -11,7 +11,7 @@ cannot disagree:
   { op:'meta', patch }            { name?, slides:{url?} } — config meta, no id
 
 Sovereign: this module knows the Model and the shape table, nothing else. No server, no wire, no
-store. Both peers load it — document/ is mounted at /document (server/app.js:150).
+store. Both peers load it — model/ is mounted at /model (server/app.js:150).
 
 `applyOps` is the single mutation point in the system. A source scan (tools/scan-writers.mjs)
 fails on any model.put/set/del outside it, because an out-of-band write corrupts every stored

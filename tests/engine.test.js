@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { attachRelations } from '../engine/index.mjs';
 import { cellOf, px, STD } from '../kernel/index.mjs';
 

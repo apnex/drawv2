@@ -17,7 +17,7 @@ inverse-building, not the closure.
 */
 
 import { groupAfterRemoval } from '../../engine/index.mjs';
-import { clone } from '../../document/ops.mjs';
+import { clone } from '../../model/ops.mjs';
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history

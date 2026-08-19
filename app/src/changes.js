@@ -15,7 +15,7 @@ A commit applies locally first (the gesture must feel instant) and submits the s
 redo are server round-trips: the reply carries the ops to apply, because the server owns the log.
 */
 
-import { applyOps } from '../../document/ops.mjs';
+import { applyOps } from '../../model/ops.mjs';
 
 // History carried the inverse in each entry (`before`) because it replayed inverses itself. The
 // server derives the inverse from the pre-state now, so only the forward intent travels.

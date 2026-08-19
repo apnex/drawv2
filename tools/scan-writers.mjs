@@ -11,7 +11,7 @@ document, later, with nothing to point at. That failure has to be caught in the 
 The allow-list is by FILE AND COUNT, not by pattern. A count is what catches the case the pattern
 misses: a SECOND load appearing inside a file that legitimately has one.
 
-  document/ops.mjs   put/set/del   the sole mutation point (applyOps)
+  model/ops.mjs      put/set/del   the sole mutation point (applyOps)
   server/store.js    load x1       Store.install — the whole-document entry
   server/txn.mjs     load x1       plan()'s scratch projection: a THROWAWAY Model that never
                                    escapes the planner, which is how "reject writes nothing"
@@ -27,7 +27,7 @@ Usage: node tools/scan-writers.mjs
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOTS = ['server', 'document'];
+const ROOTS = ['server', 'model'];
 const EXT = /\.(js|mjs)$/;
 
 // Receivers that are Models in this tree. `del` is Model-only (a Map deletes with `delete`), so it
@@ -65,7 +65,7 @@ const TEST_ROOT = 'tests';
 
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
-	'document/ops.mjs': { mutate: null, load: 0, reach: 0 },
+	'model/ops.mjs': { mutate: null, load: 0, reach: 0 },
 	'server/store.js': { mutate: 0, load: 1, reach: null },   // it owns the Map
 	'server/txn.mjs': { mutate: 0, load: 1, reach: 0 },
 };
@@ -158,4 +158,4 @@ if (bad) {
 	console.log(`\n  FAIL — ${bad} allow-list violation(s). An out-of-band write corrupts every stored inverse below it, silently.\n`);
 	process.exit(1);
 }
-console.log('  PASS — one writer (document/ops.mjs#applyOps); load confined to Store.install + plan(); store internals unreached\n');
+console.log('  PASS — one writer (model/ops.mjs#applyOps); load confined to Store.install + plan(); store internals unreached\n');

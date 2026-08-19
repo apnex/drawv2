@@ -14,7 +14,7 @@ RUN apk add --no-cache bash curl jq util-linux
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-# the server's runtime imports come from server/ + engine/ + document/ (sovereign peers);
+# the server’s runtime imports come from server/ + engine/ + model/ (sovereign peers);
 # the legacy client/ was RETIRED (CL5) — the editor is served from app/ (client/ preserved on app-v1)
 COPY server/ server/
 COPY cli/ cli/
@@ -23,8 +23,8 @@ COPY app/ app/
 COPY kernel/ kernel/
 # the relational engine ESM (served at /engine; imported by server/store.js at boot)
 COPY engine/ engine/
-# the document substrate ESM (served at /document; imported by server/store.js + seed.js at boot)
-COPY document/ document/
+# the model substrate ESM (served at /model; imported by server/store.js + seed.js at boot)
+COPY model/ model/
 
 # the shipped example corpus — copied into $DATA_DIR on FIRST boot only (see server/store.js).
 # NOT the data dir: /data is a volume, and a fresh container must come up with content.

@@ -4,7 +4,7 @@ diagram"). Entity ids are generated fresh each time so two seeded diagrams
 can never collide as Slides objectIds in the same presentation.
 */
 
-import { newId } from '../document/index.mjs';
+import { newId } from '../model/index.mjs';
 
 export function seedDoc() {
 	const taken = {};

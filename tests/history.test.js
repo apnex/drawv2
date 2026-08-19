@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { Log, LOG_MAX, LOG_HARD_MAX } from '../server/log.mjs';
 import { commit, undo } from '../server/txn.mjs';
 import { Store } from '../server/store.js';

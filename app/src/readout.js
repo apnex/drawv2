@@ -7,7 +7,7 @@ Units: model px, or cm under the 19.2cm metric deck standard (÷100);
 clicking any mount toggles, persisted.
 */
 
-import { kindOf } from '../../document/index.mjs';
+import { kindOf } from '../../model/index.mjs';
 import { GAP } from './snap.js';
 
 const UNITS_KEY = 'draw.units';

@@ -74,7 +74,7 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			model.all('waypoint').forEach((w) => cellWaypoint.put(w));
 		},
 
-		// ---- the query helpers — semantics mirror document/model.mjs EXACTLY (order-insensitive) ----
+		// ---- the query helpers — semantics mirror model/model.mjs EXACTLY (order-insensitive) ----
 		linksOf(nodeId) {                                         // links where src/dst === nodeId
 			const s = incident.get(nodeId); if (!s) return [];
 			const out = []; s.forEach((lid) => { const l = model.get('link', lid); if (l && (l.src === nodeId || l.dst === nodeId)) out.push(l); });

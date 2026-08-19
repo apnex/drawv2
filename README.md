@@ -42,7 +42,7 @@ npm test             # node:test suites: core + server + slides (mocked API) + C
 ```
 
 The editor (the kernel-rendered `app/` thin UI) is served by the draw server at `/`; it needs
-the server for its module mounts (`/kernel`, `/engine`, `/document`), persistence (websocket),
+the server for its module mounts (`/kernel`, `/engine`, `/model`), persistence (websocket),
 and the read-only REST API.
 
 ## Persistence & API
@@ -260,7 +260,7 @@ app/             browser editor — kernel-rendered thin UI (vanilla ES modules,
   src/           renderer, input, commands, painter, selection, snap (grid math),
                  palette, labeledit, readout (coordinate HUD), net (ws pipe),
                  sync (model<->wire), main (boot/wiring)
-document/        sovereign document Model — entity store + id helpers + surface/extent constants
+model/           sovereign Model — entity store + id helpers + surface/extent constants
 kernel/          sovereign geometry — resolve(schema)->scene, routing, GRC, locked spec
 engine/          sovereign relational substrate — incidence / membership / occupancy indices
 server/          persistence server: app, server (entry), store, protocol, rest,

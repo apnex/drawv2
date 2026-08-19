@@ -56,10 +56,6 @@ const ALLOW = {
 	'docs/BACKLOG.md:docs/history/PRISMV2-DESIGN.md': 'as above (B31 evidence)',
 	'docs/BACKLOG.md:app/src/schema.js': 'as above (B31 evidence) — the row names the path it was repointed FROM',
 	'docs/BACKLOG.md:client/src/renderer.js': 'as above (B31 evidence)',
-	// A FORWARD reference: a plan may name a path that does not exist yet. Bare filenames are already
-	// skipped (which is why H6's pick.js / overlay.js / keymap.js do not trip), so only a proposed
-	// path WITH a directory needs recording. Delete this entry when B41 lands and the path is real.
-	'docs/BACKLOG.md:model/model.mjs': 'B41 proposes this name; the rename has not happened yet',
 };
 
 /*
@@ -68,7 +64,7 @@ reader somewhere with the same authority a doc does. Scanning only .md missed ni
 including two `see docs/history/PRISMV2-DESIGN.md` pointers to a file deleted long ago. Found by
 running the audit, not by designing it.
 */
-const CODE_ROOTS = ['kernel', 'engine', 'document', 'app/src', 'server', 'cli'];
+const CODE_ROOTS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli'];
 const CODE_EXT = /\.(js|mjs)$/;
 
 const docs = [];
@@ -83,7 +79,7 @@ const docs = [];
 
 const PATHLIKE = /`([A-Za-z0-9_.\-/]+\.(?:js|mjs|md|json|sh|html|css|svg))(?:[:#][^`]*)?`/g;
 // in code, the common form carries no backticks
-const BARE = /(?<![\w/`])((?:docs|design|kernel|engine|document|app|server|tests|tools|cli)\/[A-Za-z0-9_.\-/]+\.(?:js|mjs|md|json))/g;
+const BARE = /(?<![\w/`])((?:docs|design|kernel|engine|model|app|server|tests|tools|cli)\/[A-Za-z0-9_.\-/]+\.(?:js|mjs|md|json))/g;
 
 function codeFiles(dir, out = []) {
 	if (!fs.existsSync(dir)) return out;

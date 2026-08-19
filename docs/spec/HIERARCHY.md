@@ -43,10 +43,10 @@ ones. This is the canon. It is enforced, not merely stated — see *Enforcement*
 | Term | Definition | Carries | Layer | Owner |
 |---|---|---|---|---|
 | **anchor** | a point that can be referenced by a route or attached to by a path end | — | kernel + document | shared vocabulary |
-| **route** | an ordered list of anchors | topology | document (`link.src/via/dst`), kernel schema (`{from,via,to}`) | `document/` |
-| **path** | an ordered list of coordinates | geometry | `Model.pathOf()` → `[[x,y],…]`; kernel scene `path {pts,radius,close}` | `document/` resolves, `kernel/` draws |
-| **link** | the document entity owning a route, plus identity and `closed` | both | document | `document/` |
-| **waypoint** | a placeable anchor entity — a bend a user can select and move | — | document | `document/` |
+| **route** | an ordered list of anchors | topology | document (`link.src/via/dst`), kernel schema (`{from,via,to}`) | `model/` |
+| **path** | an ordered list of coordinates | geometry | `Model.pathOf()` → `[[x,y],…]`; kernel scene `path {pts,radius,close}` | `model/` resolves, `kernel/` draws |
+| **link** | the document entity owning a route, plus identity and `closed` | both | document | `model/` |
+| **waypoint** | a placeable anchor entity — a bend a user can select and move | — | document | `model/` |
 
 **What may be an anchor** — one set, not two. Today `engine.resolveRoute` accepts `node | waypoint |
 cell` while `grc` rule 3 accepts `node | waypoint | port | junction`; that divergence is an accident
@@ -62,7 +62,7 @@ contract already specifies and hands straight to `roundedPath` with no conversio
 
 | Layer | Duty, one sentence |
 |---|---|
-| `document/` | Say what is connected, and through which points. |
+| `model/` | Say what is connected, and through which points. |
 | `kernel/` | Say how a path is drawn, and whether it is legal. |
 | `engine/` | Say what references what. |
 | `app/` | Compose the three. |

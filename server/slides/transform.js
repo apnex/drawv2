@@ -7,7 +7,7 @@ Geometry: the 1920x1080 canvas maps 1:1 onto a 16:9 slide (720x405 PT),
 so 1 canvas px = 0.375 PT. The dark theme travels with the diagram.
 */
 
-import { SURFACE } from '../../document/index.mjs';
+import { SURFACE } from '../../model/index.mjs';
 
 const NODE_R = 21;
 const HUB_R = 3; // the center-attachment hub: a 6px dot whose every site IS the center

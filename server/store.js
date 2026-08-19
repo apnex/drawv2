@@ -7,7 +7,7 @@ server; everything is validated before it touches a model.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { Model, newId, NODE_EXT, ZONE_EXT } from '../document/index.mjs';
+import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
 import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds } from './validate.js';
 import { groupAfterRemoval } from '../engine/index.mjs';

@@ -5,9 +5,9 @@ Node grid: multiples of pitch from origin. Zone grid: half-cell offset (±pitch/
 Extent clamps stay a UI concern (canvas margins).
 */
 import { STD, L_STD } from '../../kernel/index.mjs';
-// CL3: canvas surface + usable extents come from the sovereign document/ substrate (single source).
+// CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode/snapZone/grid-points reference NODE_EXT/ZONE_EXT locally.
-import { SURFACE, NODE_EXT, ZONE_EXT } from '../../document/index.mjs';
+import { SURFACE, NODE_EXT, ZONE_EXT } from '../../model/index.mjs';
 export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
 export const HALF = GAP / 2;
 export const NODE_R = L_STD.frame.ext;            // node frame half-extent — from the kernel spec (20)

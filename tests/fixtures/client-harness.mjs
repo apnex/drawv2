@@ -27,7 +27,7 @@ leaving it to memory.
 ──────────────────────────────────────────────────────────────────────────────────────────────
 */
 
-import { Model } from '../../document/index.mjs';
+import { Model } from '../../model/index.mjs';
 import { attachRelations } from '../../engine/index.mjs';
 import { cellOf } from '../../kernel/index.mjs';
 import { Changes } from '../../app/src/changes.js';

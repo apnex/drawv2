@@ -1,4 +1,4 @@
-import { applyOps } from '../../document/ops.mjs';
+import { applyOps } from '../../model/ops.mjs';
 
 /*
 Sync — wires the model to the wire. The SERVER owns the document; this client

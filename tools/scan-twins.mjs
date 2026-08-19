@@ -21,7 +21,7 @@ Usage: node tools/scan-twins.mjs [--verbose]
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOTS = ['kernel', 'engine', 'document', 'app/src', 'server'];
+const ROOTS = ['kernel', 'engine', 'model', 'app/src', 'server'];
 const EXT = /\.(js|mjs)$/;
 const THRESHOLD = 0.25;      // Jaccard over normalised, comment-free lines
 const MIN_LINES = 6;         // below this, similarity is noise

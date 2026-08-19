@@ -4,7 +4,7 @@ radically narrowed). The server never trusts the wire: every mutation and every
 pushed document is validated for shape, ranges, and referential integrity.
 */
 
-import { SURFACE } from '../document/index.mjs';
+import { SURFACE } from '../model/index.mjs';
 
 const ID = /^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$/;
 const SELECTABLE = /^(node|waypoint|link|zone)-[0-9a-f]{6}$/;   // selectable kinds (group/diagram excluded)

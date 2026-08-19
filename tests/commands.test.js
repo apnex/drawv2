@@ -10,10 +10,10 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { createEntity, moveEntities, deleteSelection, createGroup, ungroupAll,
 	setContentValue, reshapeNodes, renameEntity } from '../app/src/commands.js';
-import { applyOps } from '../document/ops.mjs';
+import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 
 const node = (id, x = 0, extra = {}) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0, ...extra });

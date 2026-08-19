@@ -93,7 +93,7 @@ socket-grid union as one box (bridging the inter-socket gaps) — that sub-quest
 Nothing built now touches it. The one guardrail: `content` stays an extensible object.
 
 ## Seams each rung threads (for execution)
-`document/model.mjs` (KINDS/makeX + the optional fields) · `kernel/adapt.mjs` (docToSchema) ·
+`model/model.mjs` (KINDS/makeX + the optional fields) · `kernel/adapt.mjs` (docToSchema) ·
 `kernel/spec.mjs`/`kernel/renderer.mjs`/`kernel/engine.mjs` (rect frame, content render, span resolve) ·
 `kernel/geometry.mjs` (`bboxOf`) · `server/validate.js` (KINDS/FIELDS/OPTIONAL/SELECTABLE/EXT — in lockstep,
 or reload 400s) · `app/src/commands.js` (span-aware occupancy) · `app/src/input.js` (author drag-to-span; mode later).

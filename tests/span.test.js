@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { attachRelations } from '../engine/index.mjs';
 import { resolve, renderElement, renderContentRegion, bboxOf, selBox, cellOf, STD, L_STD } from '../kernel/index.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';

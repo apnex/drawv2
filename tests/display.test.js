@@ -13,7 +13,7 @@ ambiguity between intent and result — the machine states what will happen, in 
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Readout } from '../app/src/readout.js';
 import { DataView } from '../app/src/dataview.js';

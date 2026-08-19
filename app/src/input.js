@@ -35,7 +35,7 @@ Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.m
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
-import { newId, kindOf } from '../../document/index.mjs';
+import { newId, kindOf } from '../../model/index.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 

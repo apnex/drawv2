@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { Model } from '../document/index.mjs';
+import { Model } from '../model/index.mjs';
 import { Store } from '../server/store.js';
 import { Session } from '../server/protocol.js';
 import { Selection } from '../app/src/selection.js';

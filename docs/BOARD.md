@@ -226,7 +226,7 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 | H5.2 | Doc drift repointed; `scan-docrefs` extended to **code comments** and in the gate | **B31** | S5 · S | `DONE` |
 | H5.3 | ~~Decide `schema.js`'s fate~~ — **resolved by PROMOTION**: the kernel renderer got the consumer it always lacked, `GET /d/<id>.svg` | **B28** | S5 · L | `DONE` |
 | H5.6 | `contentLayout()` owns the arithmetic; both renderers own only emission. `scan-twins` ALLOW list now **empty** | **B40** | S5 · S | `DONE` |
-| H5.7 | Rename `document/` → `model/` — one spelling covers three concepts (substrate, DOM global, persisted diagram). Coordinated across filesystem + imports + the `/document` HTTP mount + Dockerfile. **Before H6** | **B41** | S5 · M | A3 | `TODO` |
+| H5.7 | `document/` → `model/` — filesystem, 32 imports, the `/model` HTTP mount and the Dockerfile in one commit; `doc` deliberately untouched | **B41** | S5 · M | A3 | `DONE` |
 | H5.4 | Remaining duplication ledger: span→px in 6 places, two crosshair owners, the zone-corner maps, two drag thresholds in different unit systems. Each merged or justified in place | B28 | S5 · M | `TODO` |
 
 **Exit:** duplication ledger closed or each survivor carries a reason. Zero dangling references.
@@ -259,7 +259,7 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 **B35**, promoted from a deferral to a scheduled arc (approved 2026-08-19). Runs **after H3–H5**: the
 five H3 rows are user-visible severities that should not wait behind a structural arc, and each is
 easier to verify once this lands, not harder. Governed by **A3 Sovereign Composition**; the house
-pattern is already demonstrated by `kernel/` · `engine/` · `document/` — sovereign siblings importing
+pattern is already demonstrated by `kernel/` · `engine/` · `model/` — sovereign siblings importing
 nothing from each other, composed only at roots.
 
 ### What the measurement says

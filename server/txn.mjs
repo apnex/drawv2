@@ -26,9 +26,9 @@ transaction shape the ports were dead weight. The substitution seam it offered r
 out, as the Store's injected {flushMs, writeDoc, now}.
 */
 
-import { Model } from '../document/index.mjs';
-import { applyOps, clone } from '../document/ops.mjs';
-import { COMPOSITE, OPTIONAL } from '../document/shape.mjs';
+import { Model } from '../model/index.mjs';
+import { applyOps, clone } from '../model/ops.mjs';
+import { COMPOSITE, OPTIONAL } from '../model/shape.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 
