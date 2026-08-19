@@ -377,27 +377,53 @@ export class Input {
 	cloneClosure(seedIds) {
 		const idMap = new Map();
 		const clones = [];
-		seedIds.forEach((id) => {
-			const kind = kindOf(id);
-			if (kind !== 'node' && kind !== 'zone') return;
-			const src = this.model.get(kind, id);
-			if (!src) return;
+		// One cloner for every placeable kind. A waypoint is `{id, x, y}` and nothing else
+		// (server/validate.js FIELDS.waypoint), so it must NOT be given a name — stamping one on
+		// would invent a field the server rejects, and the clone would apply locally then be refused
+		// on the wire. Naming is therefore per-kind, not universal.
+		const cloneEntity = (kind, src) => {
 			const copy = { ...src, id: newId(kind, this.model.collection(kind)) };
-			copy.name = this.model.nextName(kind === 'node' ? src.type : 'zone');
-			idMap.set(id, copy.id);
+			if (kind === 'node') copy.name = this.model.nextName(src.type);
+			else if (kind === 'zone') copy.name = this.model.nextName('zone');
+			idMap.set(src.id, copy.id);
 			this.model.put(kind, copy);
 			clones.push({ kind, entity: copy });
+			return copy;
+		};
+
+		seedIds.forEach((id) => {
+			const kind = kindOf(id);
+			if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;   // B30: waypoints are placeable and selectable
+			const src = this.model.get(kind, id);
+			if (src) cloneEntity(kind, src);
 		});
 		if (idMap.size === 0) return null;
 
-		// links whose both endpoints were cloned
+		/*
+		Links whose BOTH endpoints were cloned — carrying the route, not just the ends (B30).
+
+		A link's `via` list and its `closed` flag are authored geometry: dropping them turns a
+		multi-hop route into a straight line silently, which is loss of intent rather than a
+		cosmetic difference. Any via waypoint not already in the clone set is pulled in here, because
+		a cloned route needs its own bends — pointing the copy at the ORIGINAL waypoints would make
+		two links share them, which the validator forbids outright (a waypoint belongs to at most one
+		link, in at most one role).
+		*/
 		this.model.all('link').forEach((link) => {
-			if (idMap.has(link.src) && idMap.has(link.dst) && !idMap.has(link.id)) {
-				const copy = { id: newId('link', this.model.collection('link')), src: idMap.get(link.src), dst: idMap.get(link.dst) };
-				idMap.set(link.id, copy.id);
-				this.model.put('link', copy);
-				clones.push({ kind: 'link', entity: copy });
-			}
+			if (!idMap.has(link.src) || !idMap.has(link.dst) || idMap.has(link.id)) return;
+			const via = Array.isArray(link.via) ? link.via : [];
+			via.forEach((wid) => {
+				if (idMap.has(wid)) return;
+				const w = this.model.get('waypoint', wid);
+				if (w) cloneEntity('waypoint', w);
+			});
+			const copy = { id: newId('link', this.model.collection('link')), src: idMap.get(link.src), dst: idMap.get(link.dst) };
+			const mapped = via.map((wid) => idMap.get(wid)).filter(Boolean);
+			if (mapped.length) copy.via = mapped;
+			if (link.closed) copy.closed = true;
+			idMap.set(link.id, copy.id);
+			this.model.put('link', copy);
+			clones.push({ kind: 'link', entity: copy });
 		});
 		// groups fully contained in the clone set
 		this.model.all('group').forEach((group) => {
@@ -442,7 +468,7 @@ export class Input {
 	the canvas; if both axes clamp to zero it refuses rather than overlap.
 	*/
 	duplicateSelection() {
-		const seeds = this.selection.list().filter((id) => kindOf(id) === 'node' || kindOf(id) === 'zone');
+		const seeds = this.selection.list().filter((id) => ['node', 'zone', 'waypoint'].includes(kindOf(id)));   // B30
 		if (seeds.length === 0) return;
 		// clamp the pitch against the ORIGINALS (clones start at the same spots)
 		const refs = seeds.map((id) => {

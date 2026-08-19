@@ -16,6 +16,7 @@ its row, never asserted as correct and never written around.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
+import { validateEntity } from '../server/validate.js';
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -329,5 +330,93 @@ test('D11: a burst does NOT span a selection change', () => {
 		assert.equal(h.commits.length, 2, 'two entities nudged across a selection change is two undo steps');
 		assert.equal(h.opsOf(0)[0].id, a.id);
 		assert.equal(h.opsOf(1)[0].id, b.id);
+	} finally { h.restore(); }
+});
+
+/*
+B30 — cloning a routed link silently straightens it.
+
+`cloneClosure` seeds only node|zone, so waypoints are never cloned, and it rebuilds a cloned link
+as `{id, src, dst}` — dropping `via` and `closed`. Ctrl+drag or Ctrl+D over a multi-hop route
+therefore produces straight links, with no warning and no readout flash. A route is part of the
+link's meaning, so this is silent loss of authored intent, not a cosmetic difference.
+
+Note the trap in the fix: `validate.js` allows a waypoint exactly `{id, x, y}`. The seed loop stamps
+`copy.name = nextName(...)` on everything it clones, so adding waypoints to it naively invents a
+field the server rejects — the clone would apply locally and then be refused on the wire.
+*/
+
+const routed = (h) => {
+	const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
+	const w = h.model.makeWaypoint({ x: 60, y: 60 });
+	h.model.put('waypoint', w);
+	const link = { ...h.model.makeLink(a.id, b.id), via: [w.id] };
+	h.model.put('link', link);
+	return { a, b, w, link };
+};
+
+test('B30: duplicating a routed link keeps its route', () => {
+	const h = makeInput();
+	try {
+		const { a, b, w } = routed(h);
+		h.selection.set([a.id, b.id]);
+		h.input.onKeyDown(key('d', { ctrlKey: true }));
+
+		const ops = h.soleCommit().ops;
+		const link = ops.find((o) => o.kind === 'link')?.entity;
+		assert.ok(link, 'the link was cloned');
+		assert.equal(link.via?.length, 1, 'the clone kept its bend');
+		assert.notEqual(link.via[0], w.id, 'and the bend is the CLONED waypoint, not the original');
+
+		const wp = ops.filter((o) => o.kind === 'waypoint').map((o) => o.entity);
+		assert.equal(wp.length, 1, 'the via waypoint was pulled into the closure');
+		assert.deepEqual(Object.keys(wp[0]).sort(), ['id', 'x', 'y'], 'a waypoint is {id,x,y} — a clone must not invent a name');
+	} finally { h.restore(); }
+});
+
+test('B30: a closed route stays closed when duplicated', () => {
+	const h = makeInput();
+	try {
+		const { a, b } = routed(h);
+		const link = h.model.all('link')[0];
+		h.model.set('link', link.id, { closed: true });
+		h.selection.set([a.id, b.id]);
+		h.input.onKeyDown(key('d', { ctrlKey: true }));
+
+		const clone = h.soleCommit().ops.find((o) => o.kind === 'link')?.entity;
+		assert.equal(clone.closed, true, '`closed` is authored state and travels with the clone');
+	} finally { h.restore(); }
+});
+
+test('B30: an explicitly selected waypoint is cloned', () => {
+	const h = makeInput();
+	try {
+		const { w } = routed(h);
+		h.selection.set([w.id]);
+		h.input.onKeyDown(key('d', { ctrlKey: true }));
+
+		const ops = h.soleCommit().ops;
+		assert.equal(ops.length, 1);
+		assert.equal(ops[0].kind, 'waypoint', 'a waypoint is selectable, so it is duplicable');
+		assert.notEqual(ops[0].entity.id, w.id);
+	} finally { h.restore(); }
+});
+
+test('B30: every entity a clone emits passes the SERVER validator', () => {
+	// The trap this fix had to avoid, checked across the real boundary rather than by inspection.
+	// The seed loop used to stamp a name on everything it cloned; a waypoint admits only {id,x,y},
+	// so a naive fix would have applied locally and then been refused on the wire — the exact
+	// silent-divergence shape B18 was about, arriving from the other direction.
+	const h = makeInput();
+	try {
+		const { a, b } = routed(h);
+		h.model.set('link', h.model.all('link')[0].id, { closed: true });
+		h.selection.set([a.id, b.id]);
+		h.input.onKeyDown(key('d', { ctrlKey: true }));
+
+		for (const op of h.soleCommit().ops) {
+			assert.equal(op.op, 'put');
+			assert.equal(validateEntity(op.kind, op.entity), null, `${op.kind} ${op.entity.id} was rejected: ${validateEntity(op.kind, op.entity)}`);
+		}
 	} finally { h.restore(); }
 });
