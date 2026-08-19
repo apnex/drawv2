@@ -147,20 +147,20 @@ const expectOf = (req) => {
 	return Number.isInteger(n) ? n : NaN;        // NaN => present but unusable; never silently ignored
 };
 
-function commitWrite(res, store, hub, locks, id, token, mutation, extra, expect) {
+/*
+The one write tail for every REST forward write — B16.
+
+It takes OPS, the same vocabulary the websocket's `commit` takes, because /commit is documented as
+exactly that and was not: it accepted a single legacy `{action, kind, entity}` mutation, so the ws
+shape answered 422 and MULTI-OP TRANSACTIONS were unreachable over REST. An agent had to issue N
+round trips, each a window another writer could interleave — the hazard `undo {to}` exists to
+mitigate. The legacy adapter is retired rather than aliased (X1: an alias is a second surface to
+keep true); the high-level verbs now build ops directly, which is all the adapter ever did for them.
+*/
+function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
-	const op = mutation.action === 'put' ? { op: 'put', kind: mutation.kind, entity: mutation.entity }
-		: mutation.action === 'set' ? { op: 'set', kind: mutation.kind, id: mutation.entity.id, patch: mutation.entity }
-		: mutation.action === 'del' ? { op: 'del', kind: mutation.kind, id: mutation.entity.id }
-		: mutation;
-	// A record with no label reads as a blank column in `draw history` and in the browser's undo
-	// affordance — the surfaces that exist so a human can tell what an agent did. The high-level
-	// verbs know their own intent, so they say it rather than leaving it to the reader.
-	const label = mutation.label || (mutation.action && mutation.kind
-		? `${{ put: 'create', set: 'move', del: 'delete' }[mutation.action] || mutation.action} ${mutation.kind}`
-		: '');
 	if (Number.isNaN(expect)) return json(res, 400, { error: 'X-Draw-Expect must be an integer version', code: 'expect-malformed' });
-	const result = store.commit(id, { ops: [op], label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`);
+	const result = store.commit(id, { ops, label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`);
 	if (!result.ok) {
 		// a failed precondition is a CONFLICT, not a malformed request: the caller re-reads and retries
 		const conflict = /version conflict/i.test(result.error);
@@ -187,7 +187,12 @@ function commitSelection(res, store, hub, locks, id, token, ids) {
 	if (err) return json(res, 422, { error: err });
 	store.flush(id);
 	const model = store.get(id);
-	if (hub) hub.broadcast(id, 'snapshot', snapshotBody(model, store, locks));
+	// B34 — a selection EVENT, not the whole document. Selection is the highest-frequency,
+	// lowest-information write in the system: an agent sweeping focus re-transmitted the entire
+	// document per step (A12 `Projection, not dump`; D7 already ruled the server broadcasts a change,
+	// not a snapshot, and this was the one write path that never got the memo). `actor` rides it
+	// because a viewer watching an agent work needs to know WHOSE focus moved.
+	if (hub) hub.broadcast(id, 'selection', { ids: [...model.state.selection], actor: `rest-${token.slice(0, 8)}` });
 	return json(res, 200, { version: model.state.meta.version, selection: [...model.state.selection] });
 }
 
@@ -374,7 +379,10 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		const body = await readJson(req);
 		if (bodyRejected(req, res, body)) return;
 		if (!body) return json(res, 400, { error: 'invalid JSON body' });
-		return commitWrite(res, store, hub, locks, id, token, body, undefined, expectOf(req));
+		if (!Array.isArray(body.ops)) {
+			return json(res, 400, { error: 'commit takes { ops: [...], label? } — the transaction vocabulary the websocket uses', code: 'ops-required' });
+		}
+		return commitWrite(res, store, hub, locks, id, token, body.ops, body.label || '', undefined, expectOf(req));
 	}
 
 	// high-level verbs on a collection
@@ -387,16 +395,16 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
 		const entity = buildEntity(model, kind, data);
 		if (!entity) return json(res, 422, { error: `cannot create ${kind}` });
-		return commitWrite(res, store, hub, locks, id, token, { action: 'put', kind, entity }, { id: entity.id }, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, [{ op: 'put', kind, entity }], `create ${kind}`, { id: entity.id }, expectOf(req));
 	}
 	if (req.method === 'PATCH' && parts.length === 6) {
 		const data = await readJson(req);
 		if (bodyRejected(req, res, data)) return;
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
-		return commitWrite(res, store, hub, locks, id, token, { action: 'set', kind, entity: { ...data, id: parts[5] } }, undefined, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, [{ op: 'set', kind, id: parts[5], patch: { ...data, id: parts[5] } }], `move ${kind}`, undefined, expectOf(req));
 	}
 	if (req.method === 'DELETE' && parts.length === 6) {
-		return commitWrite(res, store, hub, locks, id, token, { action: 'del', kind, entity: { id: parts[5] } }, undefined, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, [{ op: 'del', kind, id: parts[5] }], `delete ${kind}`, undefined, expectOf(req));
 	}
 	return json(res, 404, { error: 'not found' });
 }

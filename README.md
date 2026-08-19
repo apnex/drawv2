@@ -151,8 +151,10 @@ Reads are always open:
 curl -s localhost:8080/health | jq
 curl -s localhost:8080/api/v1/diagrams | jq
 curl -s localhost:8080/api/v1/diagrams/<id> | jq
-curl -s localhost:8080/api/v1/diagrams/<id>/nodes | jq          # links|zones|groups too
+curl -s localhost:8080/api/v1/diagrams/<id>/nodes | jq          # also /links /zones /groups
 curl -s localhost:8080/api/v1/diagrams/<id>/nodes/<nodeId> | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/selection | jq        # the authoritative selection
+curl -s localhost:8080/api/v1/diagrams/<id>/history | jq          # who changed what
 ```
 
 **Writes** are normally the browser's alone (over the websocket). A *server-side
@@ -163,15 +165,22 @@ back). One side writes at a time — a control handoff, never concurrent editing
 
 ```
 TOK=$(curl -s -X POST localhost:8080/api/v1/diagrams/<id>/lock | jq -r .token)
-# low-level (the transaction vocabulary the websocket uses):
+# low-level (the transaction vocabulary the websocket uses) — ops travel as a batch, and a batch
+# is ONE change: one version bump, one undo step, no window for another writer to interleave
 curl -s -X POST localhost:8080/api/v1/diagrams/<id>/commit -H "X-Draw-Lock: $TOK" \
-     -d '{"action":"put","kind":"node","entity":{...}}'
+     -d '{"ops":[{"op":"put","kind":"node","entity":{...}}],"label":"create node"}'
 # high-level verbs (the server mints ids/names):
 curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/nodes      -H "X-Draw-Lock: $TOK" -d '{"type":"server","x":120,"y":-60}'
 curl -s -X PATCH  localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock: $TOK" -d '{"x":240}'
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock: $TOK"
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/lock       -H "X-Draw-Lock: $TOK"   # release
 ```
+
+`expect` is an optional compare-and-swap on any forward write, and travels as a **header** —
+`-H "X-Draw-Expect: 42"` — because a forward write's body is an entity payload and a reserved key
+there would collide with field validation. A stale one answers **409** and writes nothing. On undo
+and redo `expect` is mandatory and rides the body instead, because there the body *is* control:
+control fields ride the body only where the body is control.
 
 Every write funnels through the same validation — and the same single write path — the websocket
 uses, then broadcasts the change to the browser. An idle lock auto-expires (~60s) so a crashed
@@ -186,6 +195,12 @@ curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" 
      -d '{"expect":42}'                                        # 409 if the log moved; the body says how
 curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" \
      -d '{"expect":42,"to":38}'                                # back out a whole run as ONE transaction
+```
+
+**Actions** are not model mutations and take no lock — they act on the outside world:
+
+```
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/sync/slides   # push to the bound deck
 ```
 
 A stale `expect` answers 409 carrying the records that landed since — reconcile, rather than

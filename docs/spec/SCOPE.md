@@ -156,7 +156,10 @@ Client → server:
   client is ahead. **The client never sends a document to overwrite one.**
 - `{cmd:"create", body:{name?, doc?}}` — `doc` is the only whole-document path a client has, and
   it can only CREATE: the server mints the id and ignores `doc.meta.id`
-- diagram management: `open {id}`, `select {ids}`, `reclaim {id?}`,
+- `{cmd:"select", body:{ids}}` → `ack`, and the server broadcasts `{cmd:"selection", body:{ids, actor}}`
+  to the other sessions on that diagram. Selection is model-state, not a change: no version bump, not
+  undoable — but it IS a first-class event, because it is what lets a human watch an agent work.
+- diagram management: `open {id}`, `reclaim {id?}`,
   `delete {id}` (answers with a snapshot of a surviving diagram; the store
   reseeds the example rather than ever going empty), `list {}`.
   Renaming a diagram and binding a deck are CHANGES, so they travel as a `meta` op inside a
@@ -214,6 +217,22 @@ nothing mechanized the check (now `tests/spec.test.js`). What changed:
   takes over the generation-discriminator role `grid` was accidentally serving. The 17
   live files were migrated by `tools/migrate-version.mjs`; the pre-CS5 binary cannot
   read the result.
+
+*(Amended 2026-08-19, H4)* — three agent-facing surfaces corrected, none visible to the browser:
+
+- **`POST /api/v1/diagrams/:id/commit` takes `{ops, label?}`** — the transaction vocabulary it was
+  always documented as taking and never did. It accepted a single legacy `{action, kind, entity}`
+  mutation, so the websocket's own shape answered 422 and **multi-op transactions were unreachable
+  over REST**: an agent had to issue N round trips, each a window another writer could interleave.
+  The legacy shape is **gone, not aliased** (X1 — an alias is a second surface to keep true).
+- **`expect` on forward writes rides the `X-Draw-Expect` header** and now actually reaches the
+  transaction; it was silently discarded, so an agent believing it held a compare-and-swap held
+  nothing. Mandatory `expect` on undo/redo keeps the body form, and is now enforced on the
+  **websocket** as well — it had been waived for redo entirely and for undo by the record's own
+  author, contrary to D14 (**B39**).
+- **Selection broadcasts as `selection {ids, actor}`** on both transports. REST shipped a whole
+  document snapshot for a focus change; the websocket broadcast nothing at all, so two viewers never
+  shared a selection. Neither was right.
 
 Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, the
 server validates everything, sessions survive any payload, and the store reseeds rather

@@ -59,7 +59,7 @@ test('GR10: SCOPE.md documents no command the server has stopped answering', () 
 		...[...wire.matchAll(/`([a-z]+) \{/g)].map((m) => m[1]),
 	]);
 	// server→client reply names are not dispatched commands
-	for (const reply of ['snapshot', 'sync', 'ack', 'change', 'error', 'diagrams', 'lock']) claimed.delete(reply);
+	for (const reply of ['snapshot', 'sync', 'ack', 'change', 'error', 'diagrams', 'lock', 'selection']) claimed.delete(reply);
 	const dead = [...claimed].filter((c) => !live.has(c));
 	assert.deepEqual(dead, [], `SCOPE.md still documents commands the server refuses: ${dead.join(', ')}`);
 });
@@ -85,6 +85,40 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	for (const key of whitelist[1].match(/'(\w+)'/g).map((k) => k.slice(1, -1))) {
 		assert.ok(entities.includes(`"${key}"`), `meta.${key} is validated but not documented`);
 	}
+});
+
+/*
+H4.6 — the REST surface is DERIVED from the router, exactly as the ws vocabulary is.
+
+Only the websocket was derived, and the gap showed: `/commit` was documented as "the transaction
+vocabulary the websocket uses" while taking a legacy single-mutation shape, and README printed a
+`-d '{"action":...}'` line an agent would copy and get a 422 from. A token grep would not have found
+that; derivation does, which is the whole lesson of X9 (it caught B11 and B12 on its first run).
+*/
+const rest = fs.readFileSync('server/rest.js', 'utf8');
+
+test('GR10: every REST route the server answers is documented in README', () => {
+	const readme = fs.readFileSync('README.md', 'utf8');
+	// the collection verbs the router dispatches on
+	const collections = rest.match(/const COLLECTIONS = \{([^}]*)\}/)[1].match(/(\w+):/g).map((k) => k.slice(0, -1));
+	for (const c of collections) {
+		assert.ok(readme.includes(`/${c}`), `REST serves /${c} and README never mentions it`);
+	}
+	// the named sub-routes: parts[4] === 'x' branches
+	const routes = [...rest.matchAll(/parts\[4\] === '([a-z]+)'/g)].map((m) => m[1]);
+	for (const r of new Set(routes)) {
+		assert.ok(readme.includes(`/${r}`), `REST serves /${r} and README never mentions it`);
+	}
+});
+
+test('GR10: README prints no REST body shape the server refuses', () => {
+	const readme = fs.readFileSync('README.md', 'utf8');
+	// /commit takes { ops: [...] }. The legacy single-mutation form is retired, so README must not
+	// print it — a wire reference is what a reader copies, and a superseded line gets sent.
+	assert.equal(/-d '\{"action":/.test(readme), false, 'README still prints the retired /commit shape');
+	assert.match(readme, /"ops":\[/, 'README must show the shape /commit actually takes');
+	// and the precondition header, which is the only way to send `expect` on a forward write
+	assert.match(readme, /X-Draw-Expect/, 'expect travels as a header on forward writes and README must say so');
 });
 
 test('GR10: every locked decision this arc reversed carries a dated amendment', () => {

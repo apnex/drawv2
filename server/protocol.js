@@ -298,7 +298,12 @@ export class Session {
 				if (this.rejectIfLocked(this.diagramId)) return;
 				const err = this.store.setSelection(this.diagramId, body.ids);
 				if (err) return this.error(`select rejected: ${err}`);
-				return this.send('ack', { ok: true });
+				// B34 — the ws used to broadcast NOTHING here while REST shipped a whole snapshot, so
+				// the two transports disagreed on whether selection was even shareable. It is: a
+				// first-class event, carrying who moved the focus.
+				const ids = [...model.state.selection];
+				if (this.hub) this.hub.broadcast(this.diagramId, 'selection', { ids, actor: this.actor }, this);
+				return this.send('ack', { ok: true, acked: body.txnId ?? null });
 			}
 			case 'reclaim': {
 				// the human takes control back from the server side (force-release).

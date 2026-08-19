@@ -562,7 +562,7 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		for (const [nid, x] of [['node-3a3a01', 270], ['node-3a3a02', 390]]) {
 			const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 				method: 'POST', headers: H(lock.token),
-				body: JSON.stringify({ action: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: 270 } })
+				body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: 270 } }] })
 			});
 			assert.equal(r.status, 200);
 		}
@@ -577,9 +577,11 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		assert.equal(put.status, 200);
 		assert.deepEqual((await put.json()).selection.sort(), ['node-3a3a01', 'node-3a3a02'], 'PUT echoes the selection');
 
-		// the viewer reflects the agent's focus via the broadcast snapshot (doc.selection)
-		const snap = await viewer.expect('snapshot');
-		assert.deepEqual([...snap.body.doc.selection].sort(), ['node-3a3a01', 'node-3a3a02'], 'viewer reflects the agent selection');
+		// the viewer reflects the agent's focus via the selection EVENT (B34 — this was a whole
+		// snapshot: the entire document re-transmitted for a focus change)
+		const evt = await viewer.expect('selection');
+		assert.deepEqual([...evt.body.ids].sort(), ['node-3a3a01', 'node-3a3a02'], 'viewer reflects the agent selection');
+		assert.ok(evt.body.actor, 'and knows whose focus it is');
 		viewer.close();
 
 		// GET .../selection reflects it; the full doc carries it (flush-before-ack durability)
@@ -910,4 +912,29 @@ test('B25/I11: create {doc} IGNORES a well-formed client version but REJECTS a m
 	c.send('create', { name: 'v-bad', doc: { ...doc, meta: { ...doc.meta, version: 'NaN-string' } } });
 	assert.match((await c.expect('error')).body.message, /invalid meta.version/);
 	c.close();
+});
+
+test('B34: the websocket broadcasts selection too — the gap between the transports closes', async () => {
+	// The ws `select` case set the selection and replied `ack {ok:true}` — it broadcast NOTHING, so
+	// two viewers never shared a selection, while REST shipped an entire snapshot for the same
+	// change. Neither was right. Selection is a first-class EVENT: it is what lets a human watch an
+	// agent work, and what a future view or animation attributes a transition to.
+	const a = await connect(); a.send('hello', {});
+	const snap = await a.expect('snapshot');
+	const id = snap.body.doc.meta.id;
+	// author a node rather than assuming the shared seed still has one — this suite mutates it
+	a.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-5e1ec7', name: 'sel', type: 'host', shape: 'circle', x: 480, y: 480 } }], label: 'create node' });
+	await a.expect('ack');
+	const nodeId = 'node-5e1ec7';
+
+	const b = await connect(); b.send('hello', { diagram: id });
+	await b.expect('snapshot');
+
+	a.send('select', { ids: [nodeId] });
+	await a.expect('ack');
+
+	const evt = await b.expect('selection');
+	assert.deepEqual(evt.body.ids, [nodeId], 'the other viewer was told what is selected');
+	assert.ok(evt.body.actor, 'and by whom');
+	a.close(); b.close();
 });

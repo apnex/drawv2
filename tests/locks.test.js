@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Locks } from '../server/locks.js';
 import http from 'node:http';
+import WebSocket from 'ws';
 import { createApp } from '../server/app.js';
 
 // ---- Locks unit (injected clock, no timers) ----
@@ -131,8 +132,8 @@ test('REST: lock → apply (low-level) → release round-trip', async () => {
 	const before = (await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json()).length;
 	const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 		method: 'POST', headers: H(lock.token),
-		body: JSON.stringify({ action: 'put', kind: 'node',
-			entity: { id: 'node-abc123', name: 'srv', type: 'server', x: 120, y: 120 } })
+		body: JSON.stringify({ ops: [{ op: 'put', kind: 'node',
+			entity: { id: 'node-abc123', name: 'srv', type: 'server', x: 120, y: 120 } }] })
 	});
 	assert.equal(r.status, 200);
 	const after = (await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json()).length;
@@ -142,7 +143,7 @@ test('REST: lock → apply (low-level) → release round-trip', async () => {
 	assert.equal(rel.status, 200);
 	// writes refused again after release
 	assert.equal((await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
-		method: 'POST', headers: H(lock.token), body: JSON.stringify({ action: 'put', kind: 'node', entity: {} })
+		method: 'POST', headers: H(lock.token), body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: {} }] })
 	})).status, 423);
 });
 
@@ -276,7 +277,7 @@ test('REST: a malformed group body is refused, not a crash (server stays up)', a
 		// the low-level apply path is guarded by validation too
 		const r2 = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 			method: 'POST', headers: H(lock.token),
-			body: JSON.stringify({ action: 'put', kind: 'group', entity: { id: 'group-aaaaaa', name: 'g', members: 7 } })
+			body: JSON.stringify({ ops: [{ op: 'put', kind: 'group', entity: { id: 'group-aaaaaa', name: 'g', members: 7 } }] })
 		});
 		assert.equal(r2.status, 422);
 		assert.equal((await fetch(`${base}/health`)).status, 200);
@@ -294,7 +295,7 @@ test('REST: a write whose token was released mid-flight is refused at commit', a
 	const before = (await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json()).length;
 	const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 		method: 'POST', headers: H(lock.token),
-		body: JSON.stringify({ action: 'put', kind: 'node', entity: { id: 'node-zzzzzz', name: 'x', type: 'host', x: 0, y: 0 } })
+		body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: 'node-zzzzzz', name: 'x', type: 'host', x: 0, y: 0 } }] })
 	});
 	assert.equal(r.status, 423);
 	const after = (await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json()).length;
@@ -356,8 +357,8 @@ test('B24: a multibyte name split across chunk boundaries is not mangled', async
 		// 64 KiB boundary: we cut one 3-byte character in half across two socket writes, which is
 		// the exact condition `buf += chunk` decoded to U+FFFD.
 		const name = '設計図';
-		const payload = Buffer.from(JSON.stringify({ action: 'put', kind: 'node',
-			entity: { id: 'node-c24001', name, type: 'host', shape: 'circle', x: 180, y: 180 } }), 'utf8');
+		const payload = Buffer.from(JSON.stringify({ ops: [{ op: 'put', kind: 'node',
+			entity: { id: 'node-c24001', name, type: 'host', shape: 'circle', x: 180, y: 180 } }] }), 'utf8');
 		const mid = payload.indexOf(Buffer.from('設', 'utf8')) + 1;   // one byte into a 3-byte character
 		assert.ok(mid > 1 && mid < payload.length, 'the split lands inside a multibyte character');
 
@@ -445,4 +446,92 @@ test('B17: the REST reversal payload carries undoTop, like the websocket one', a
 		assert.equal(r.status, 200);
 		assert.ok('undoTop' in body, 'a viewer needs undoTop to keep its "undo all N by <actor>" affordance current');
 	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+/*
+H4b — /commit speaks the transaction vocabulary (B16), and selection is an event (B34).
+
+/commit was named for the websocket's `commit` and documented as "the transaction vocabulary the
+websocket uses", but it took a single legacy `{action, kind, entity}` mutation. Two consequences:
+the ws shape `{ops:[…]}` answered 422, and MULTI-OP TRANSACTIONS were unreachable over REST — an
+agent had to issue N round trips, each one a window another writer could interleave, which is the
+exact hazard `undo {to}` exists to mitigate.
+
+Replaced, not aliased. X1's own words: "the old path is gone rather than aliased, because an alias
+is a second surface to keep true."
+*/
+
+test('B16: POST /commit takes {ops} — the vocabulary the websocket uses', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
+			method: 'POST', headers: H(lock.token),
+			body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: 'node-c0de01', name: 'n', type: 'host', shape: 'circle', x: 300, y: 300 } }], label: 'create node' }) });
+		assert.equal(r.status, 200);
+		assert.equal((await r.json()).label, 'create node');
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+test('B16: a multi-op transaction is ONE change and ONE version bump', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const before = (await (await fetch(`${base}/api/v1/diagrams/${id}`)).json()).meta.version;
+		const ops = [
+			{ op: 'put', kind: 'node', entity: { id: 'node-c0de02', name: 'a', type: 'host', shape: 'circle', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-c0de03', name: 'b', type: 'host', shape: 'circle', x: 420, y: 0 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-c0de04', src: 'node-c0de02', dst: 'node-c0de03' } },
+		];
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
+			method: 'POST', headers: H(lock.token), body: JSON.stringify({ ops, label: 'wire pair' }) });
+		assert.equal(r.status, 200);
+		const body = await r.json();
+		assert.equal(body.ops.length, 3, 'three ops travelled as one transaction');
+		assert.equal(body.version, before + 1, 'one version bump, not three — no window for an interleave');
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+test('B16: the legacy {action,kind,entity} shape is REFUSED, not silently aliased', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
+			method: 'POST', headers: H(lock.token),
+			body: JSON.stringify({ action: 'put', kind: 'node', entity: { id: 'node-c0de05', name: 'x', type: 'host', shape: 'circle', x: 0, y: 0 } }) });
+		assert.equal(r.status, 400, 'an alias is a second surface to keep true (X1)');
+		assert.equal((await r.json()).code, 'ops-required');
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+test('B34: setting the selection over REST broadcasts a selection EVENT, not the whole document', async () => {
+	// Observed through a real websocket client, so this exercises the actual fan-out rather than a
+	// stubbed hub. Selection is the highest-frequency, lowest-information write in the system: an
+	// agent sweeping focus used to re-transmit the entire document per step (A12 Projection, not
+	// dump). D7 had already ruled the server broadcasts a change, not a snapshot; this was the one
+	// write path that never got the memo.
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	const ws = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
+	const seen = [];
+	await new Promise((r) => ws.on('open', r));
+	ws.on('message', (d) => seen.push(JSON.parse(d.toString())));
+	ws.send(JSON.stringify({ cmd: 'hello', body: { diagram: id } }));
+	await new Promise((r) => setTimeout(r, 120));
+	seen.length = 0;
+	try {
+		const nodes = await (await fetch(`${base}/api/v1/diagrams/${id}/nodes`)).json();
+		const ids = nodes.slice(0, 1).map((n) => n.id);
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/selection`, {
+			method: 'PUT', headers: H(lock.token), body: JSON.stringify({ ids }) });
+		assert.equal(r.status, 200);
+		await new Promise((res) => setTimeout(res, 120));
+
+		assert.deepEqual(seen.map((m) => m.cmd), ['selection'], 'one lean event, not a document');
+		assert.deepEqual(seen[0].body.ids, ids);
+		assert.ok(seen[0].body.actor, 'and it says WHO — a viewer watching an agent needs attribution');
+	} finally {
+		ws.close();
+		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
+	}
 });
