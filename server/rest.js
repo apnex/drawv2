@@ -123,8 +123,14 @@ export function handleRest(req, res, store, slides, locks, hub) {
 	if (url.pathname === '/health') {
 		// flushFailures: a retried flush repairs the mechanism but leaves the failure invisible.
 		// Surfacing it is what makes B4's retry observable rather than merely survivable.
+		// invariantFailures: a GR9 breach reported as ITSELF (B20). `degraded` says the environment
+		// is failing us and a retry may fix it; `corrupt` says this process mis-minted a seq and no
+		// retry will. They shared a counter and a status until B20, so an operator could not tell a
+		// flaky disk from a bug in the log — the two need opposite responses.
 		const flushFailures = store.flushFailures();
-		return json(res, 200, { status: flushFailures ? 'degraded' : 'ok', diagrams: store.list().length, flushFailures }), true;
+		const invariantFailures = store.invariantFailures();
+		const status = invariantFailures ? 'corrupt' : flushFailures ? 'degraded' : 'ok';
+		return json(res, 200, { status, diagrams: store.list().length, flushFailures, invariantFailures }), true;
 	}
 	if (parts[0] !== 'api') return false;
 	if (parts[1] !== 'v1' || parts[2] !== 'diagrams') {

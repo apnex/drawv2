@@ -282,8 +282,12 @@ case $CMD in
         echo -e "Name:    $(echo "$DOC" | jq -r .meta.name)"
         echo -e "Version: $(echo "$DOC" | jq -r .meta.version)"
         echo -e "Schema:  $(echo "$DOC" | jq -r '.meta.schema // "pre-CS5"') (60px pitch, [0,0] at center)"
-        FF=$(curl -sf "$APIHOST/health" | jq -r '.flushFailures // 0')
+        HEALTH=$(curl -sf "$APIHOST/health")
+        FF=$(echo "$HEALTH" | jq -r '.flushFailures // 0')
+        IF=$(echo "$HEALTH" | jq -r '.invariantFailures // 0')
         [ "${FF:-0}" != "0" ] && echo -e "Flush:   ${FF} FAILED — writes are not landing (see docs/BACKLOG.md B4)"
+        # a GR9 breach is not a flush failure: no retry repairs it, and the operator's response differs (B20)
+        [ "${IF:-0}" != "0" ] && echo -e "Log:     ${IF} GR9 BREACH — a record seq exceeds its watermark; this process mis-minted (see docs/BACKLOG.md B20)"
         SLIDES=$(echo "$DOC" | jq -r '.meta.slides.presentationId // empty')
         echo -e "Slides:  ${SLIDES:-unbound}"
         echo "---"

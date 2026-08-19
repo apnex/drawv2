@@ -111,6 +111,54 @@ test('I10: the document half stays pretty-printed and carries no log key', () =>
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+/*
+B20 — a GR9 invariant breach is not an I/O failure and must not be reported as one.
+
+The assert lived INSIDE the write's try/catch, so a structural breach took the B4 recovery path
+designed for a failing `renameSync`. Four consequences, all wrong: the write had already SUCCEEDED
+and `dirty` was already false; the catch counted `flushFailures` and logged "flush failed", which
+is not what happened; `/health` then reported `degraded` FOREVER because that counter never
+decrements; and the rescheduled retry returned immediately at the `!entry.dirty` guard, so the
+real breach was reported exactly once, mislabelled, and never re-checked.
+
+A structural invariant violation and a transient I/O failure are different failures. They do not
+share a counter, a message, or a recovery path — a retry cannot repair a log that mis-mints a seq.
+*/
+test('B20: a GR9 breach is counted and named as an invariant failure, not a flush failure', () => {
+	const dir = tmp();
+	try {
+		const { s, id } = storeWith(dir);
+		s.commit(id, { ops: [put('node', node('node-be0001', 60))] }, 'server', 't');
+		s.flush(id);
+
+		const log = s.diagrams.get(id).log;
+		log.records[log.records.length - 1].seq = log.version + 5;   // a record above its own watermark
+		s.commit(id, { ops: [put('node', node('node-be0002', 120))] }, 'server', 't');
+		s.flush(id);
+
+		assert.equal(s.flushFailures(), 0, 'a structural breach is NOT an I/O failure and must not be counted as one');
+		assert.equal(s.invariantFailures(), 1, 'it is counted as what it is');
+		assert.ok(fs.existsSync(path.join(dir, `${id}.json`)), 'and the document is still persisted — the breach is in the log accounting, not the user data');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B20: a breach is re-checked on the next write, not reported once and forgotten', () => {
+	const dir = tmp();
+	try {
+		const { s, id } = storeWith(dir);
+		s.commit(id, { ops: [put('node', node('node-bf0001', 60))] }, 'server', 't');
+		s.flush(id);
+		const log = s.diagrams.get(id).log;
+		log.records[log.records.length - 1].seq = log.version + 5;
+
+		s.commit(id, { ops: [put('node', node('node-bf0002', 120))] }, 'server', 't');
+		s.flush(id);
+		s.commit(id, { ops: [put('node', node('node-bf0003', 180))] }, 'server', 't');
+		s.flush(id);
+		assert.equal(s.invariantFailures(), 2, 'the breach is still there, so it is still reported');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 // ---- I5 across a restart ----
 
 test('I5: undo survives a process restart', () => {

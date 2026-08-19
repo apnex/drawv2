@@ -341,10 +341,6 @@ export class Store {
 		try {
 			this.writeDoc(file, serialize(entry.model.toJSON(), entry.log));
 			entry.dirty = false; // only after the write actually landed
-			// GR9: the ring never holds a seq above the watermark that describes it
-			if (!entry.log.records.every((r) => r.seq <= entry.log.version)) {
-				throw new Error(`log invariant: a record seq exceeds version ${entry.log.version}`);
-			}
 		} catch (err) {
 			// B4: the entry is still dirty but markDirty already nulled the timer, so without an
 			// explicit reschedule recovery waits for the next edit or SIGTERM. Retry, and COUNT —
@@ -356,6 +352,37 @@ export class Store {
 				if (entry.timer.unref) entry.timer.unref();
 			}
 		}
+
+		/*
+		GR9, checked OUTSIDE the write's try/catch — B20.
+
+		The ring must never hold a seq above the watermark that describes it. This used to sit
+		inside the try, so a breach took B4's recovery path: counted as `flushFailures`, logged as
+		"flush failed", retried by a reschedule that returned immediately at the `!entry.dirty`
+		guard above. A structural breach was therefore reported once, under the wrong name, and
+		never re-checked — while `/health` stayed `degraded` forever on a counter that only rises.
+
+		It is deliberately NOT a throw and NOT a refusal to write. The breach is in the log's
+		accounting, not in the user's document, and refusing to persist would trade real work for
+		a bookkeeping bug (I15 cuts the other way here: fabricating success is the sin, losing data
+		to a counter is not the remedy). So: write the document, then report the breach as itself —
+		its own counter, its own `/health` signal, its own greppable message, and re-checked on
+		every subsequent write for as long as it is true.
+		*/
+		if (!entry.log.records.every((r) => r.seq <= entry.log.version)) {
+			entry.invariantFailures = (entry.invariantFailures || 0) + 1;
+			const bad = entry.log.records.filter((r) => r.seq > entry.log.version).map((r) => r.seq);
+			console.error(`[ store ] GR9 log invariant breached for ${id} (${entry.invariantFailures}): seq ${bad.join(',')} exceeds version ${entry.log.version}`);
+		}
+	}
+
+	// total GR9 invariant breaches across all diagrams — surfaced by GET /health SEPARATELY from
+	// flushFailures. A breach means the log mis-minted a seq; a flush failure means the disk said no.
+	// One is a bug in this process, the other is the environment: same symptom, opposite remedies.
+	invariantFailures() {
+		let n = 0;
+		for (const entry of this.diagrams.values()) n += entry.invariantFailures || 0;
+		return n;
 	}
 
 	flushAll() {
