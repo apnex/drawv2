@@ -316,7 +316,7 @@ not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uni
 | # | Stage | Risk | Proof |
 |---|---|---|---|
 | H6.1 | The characterization net (**H2.1**) — ✅ landed, commit-boundary only, sealed by a scanner | — | Stage 0: written once, must be **unchanged** when the arc ends |
-| H6.2 | **Tier A landed**: `pick.js` (new, 78) + drag geometry into `snap.js`. `input.js` **1653 → 1562**. Tier B (command builders) is a shape change, not a move — taken with H6.3 | low | net green throughout; 380 tests unchanged |
+| H6.2 | `DONE` — Tier A: `pick.js` (78) + drag geometry into `snap.js`. **Tier B**: the last 11 hand-built commands become builders (`input.js` 8, `sync.js` 3), closing **B44**; `scan-writers` now enforces the command boundary | low | net green; the new rule counted against pre-fix HEAD (8+3) and both halves proven by injection |
 | H6.3 | **overlay.js lands** — 4 fields and ~90 lines move; `input.js` **1562 → 1477**, 13 fields → 9. Event handlers stay on Input and delegate | low | net green; the affordance suite re-verified to bite in the code's NEW home |
 | H6.4 | `DONE` — two tables + the full gesture lifecycle. `onDown` 167→26, `onKeyDown` 243→12, `onMove` 91→16, `dispatchUp` 168→13, `cancelDrag` 34→9. Found and closed **B43**. `input.js` **1653→1362** | real | 386 tests; B43 proven red against the genuine pre-fix code |
 | H6.5 | Seal it: `scan-writers` fails on `mode`/`ctx` read outside `input.js`, and on `document.`/`window.` in any client module but `main.js`/`painter.js` | — | proven by injection (X13) |

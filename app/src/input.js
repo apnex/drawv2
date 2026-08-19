@@ -122,7 +122,7 @@ const GESTURES = {
 			const before = ctx.before;
 			i.model.set('zone', ctx.zone, { ...before });   // rewind the live preview; history owns the real edit
 			if (after.x === before.x && after.y === before.y && after.w === before.w && after.h === before.h) return;
-			i.history.commit({ label: 'resize', entries: [{ op: 'set', kind: 'zone', id: ctx.zone, before, after }] });
+			i.history.commit(commands.resizeZone(ctx.zone, after));
 		},
 		cancel: (i, ctx) => i.model.set('zone', ctx.zone, { ...ctx.before }),   // a cancelled gesture is a no-op
 		update: (i, pos) => {
@@ -156,8 +156,7 @@ const GESTURES = {
 				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
 				// commit only a genuine, non-duplicate retarget; else leave the link as-is
 				if (target.id !== wasAt && !i.model.linkBetween(newSrc, newDst)) {
-					i.history.commit({ label: 'replug', entries: [{ op: 'set', kind: 'link', id: ctx.linkId,
-						before: { src: ctx.before.src, dst: ctx.before.dst }, after: { src: newSrc, dst: newDst } }] });
+					i.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
 				}
 			}
 			i.overlayUi.handles();   // handles ride the (possibly new) endpoints
@@ -222,9 +221,7 @@ const GESTURES = {
 				// chain anchor (that click ends the run, selecting)
 				if (i.model.get('node', ctx.src.id) && hand && hand !== 'waypoint' && !ctx.chained
 					&& !evt.shiftKey && !evt.ctrlKey && !evt.altKey && hand !== ctx.src.type) {
-					// fast-replace: retype in place — id/name/links/position survive
-					i.history.commit({ label: 'retype', entries: [{ op: 'set', kind: 'node', id: ctx.src.id,
-						before: { type: ctx.src.type }, after: { type: hand } }] });
+					i.history.commit(commands.retypeNode(ctx.src.id, hand));
 					i.selection.set([ctx.src.id]);
 					i.focusId = ctx.src.id;
 					return;
@@ -714,10 +711,7 @@ export class Input {
 			return;
 		}
 		const closed = !link.closed;
-		this.history.commit({
-			label: closed ? 'close path' : 'open path',
-			entries: [{ op: 'set', kind: 'link', id: link.id, before: { closed: !!link.closed }, after: { closed } }]
-		});
+		this.history.commit(commands.toggleClosed(link));
 		this.readout.flash(closed ? 'path closed' : 'path open');
 	}
 
@@ -740,11 +734,7 @@ export class Input {
 			created.push(link);
 		});
 		if (created.length === 0) return;
-		// entities are already in the model; the command re-puts them idempotently
-		this.history.commit({
-			label: star ? 'star' : 'chain',
-			entries: created.map((l) => ({ op: 'put', kind: 'link', entity: { ...l } }))
-		});
+		this.history.commit(commands.linkNodes(created, star));
 		this.selection.set(created.map((l) => l.id));
 		this.readout.flash(`+${created.length} link${created.length > 1 ? 's' : ''}`);
 	}
@@ -830,11 +820,7 @@ export class Input {
 	commitRoute(ctx, dstId, via) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
 		this.model.put('link', link);
-		const entries = [
-			...(ctx.placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: { ...wp } })),
-			{ op: 'put', kind: 'link', entity: { ...link } }
-		];
-		this.history.commit({ label: via && via.length ? 'route' : 'link', entries });
+		this.history.commit(commands.routeLink(ctx.placed, link));
 		this.selection.set([link.id]);
 	}
 
@@ -1101,7 +1087,7 @@ export class Input {
 		Each call reads the CURRENT position, so successive amends accumulate correctly.
 		*/
 		this.history.amend(commands.moveEntities(moved.map((m) => ({
-			kind: m.kind, id: m.id, before: m.before,
+			kind: m.kind, id: m.id,
 			after: { x: m.before.x + delta.x, y: m.before.y + delta.y }
 		}))));
 	}
@@ -1112,15 +1098,13 @@ export class Input {
 		if (ids.length !== 1 || kindOf(ids[0]) !== 'zone') return; // single-zone only
 		const zone = this.model.get('zone', ids[0]);
 		if (!zone) return;
-		const before = { x: zone.x, y: zone.y, w: zone.w, h: zone.h };
 		// NW corner fixed; minimum one cell; clamped to the canvas
 		const w = Math.min(Math.max(zone.w + dx * GAP, GAP), ZONE_EXT.x - zone.x);
 		const h = Math.min(Math.max(zone.h + dy * GAP, GAP), ZONE_EXT.y - zone.y);
-		if (w === before.w && h === before.h) return;
-		const after = { x: zone.x, y: zone.y, w, h };
+		if (w === zone.w && h === zone.h) return;
 
 		// one undo step per burst — the window is in Changes, keyed on the 'resize' label (D11/B14)
-		this.history.amend({ label: 'resize', entries: [{ op: 'set', kind: 'zone', id: zone.id, before, after }] });
+		this.history.amend(commands.resizeZone(zone.id, { x: zone.x, y: zone.y, w, h }));
 	}
 
 	// ---- Shift+arrow: grow/shrink the lone selected NODE's span one cell (origin fixed, +col/+row) ----
@@ -1132,14 +1116,12 @@ export class Input {
 		const node = this.model.get('node', ids[0]);
 		if (!node) return;
 		const cur = node.span || { cols: 1, rows: 1 };
-		const before = { span: { cols: cur.cols, rows: cur.rows } };
 		const cols = Math.min(Math.max(cur.cols + dx, 1), 64);
 		const rows = Math.min(Math.max(cur.rows + dy, 1), 64);
 		if (cols === cur.cols && rows === cur.rows) return;
-		const after = { span: { cols, rows } };
 
 		// one undo step per burst — same window, same label as the zone path (D11/B14)
-		this.history.amend({ label: 'resize', entries: [{ op: 'set', kind: 'node', id: node.id, before, after }] });
+		this.history.amend(commands.resizeNodeSpan(node.id, { cols, rows }));
 	}
 
 	// ---- help overlay ----

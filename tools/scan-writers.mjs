@@ -63,6 +63,28 @@ Cheap to hold now (no test reads them), expensive to retrofit later — so it is
 const INTERNALS = /\b(?:input|inp|h\.input)\.(mode|ctx)\b/g;
 const TEST_ROOT = 'tests';
 
+/*
+B44 — the command boundary. Every committed action must come from a builder in commands.js.
+
+Same argument as the one-writer rule above, one level up. A hand-built command is an out-of-band
+write into the HISTORY pipeline: it looks correct at the call site and is wrong only in what it
+omits. Both drifts found in H6.2 were of that kind and neither was detectable by running the code —
+four commands carried a dead `before` the wire discards, and two aliased the live store through a
+shallow spread because `via` is COMPOSITE. commands.js STATED both rules at the top of the file the
+whole time. A stated invariant with no check is a comment, and this is what makes it a rule.
+*/
+// A { label, entries } literal, however wrapped — including the SHORTHAND form `{ label, entries }`,
+// which the first draft missed: commitRoute built its entries into a local and passed it by
+// shorthand, so it read as a builder call and was not one. Verified by counting against pre-fix HEAD.
+const HANDBUILT = /\blabel\s*:[\s\S]{0,140}?\bentries\s*[:,}\]]/g;
+// `before` as a KEY anywhere in the builder file. Deliberately blunt: commands.js has no legitimate
+// use for one (`renameEntity` takes a `before` PARAMETER, which has no colon), so a narrower pattern
+// would only be a place for the next drift to hide. The first draft of this rule anchored to
+// line-start, matched nothing, and passed — which is why it is now verified by injection.
+const STALE_BEFORE = /\bbefore\s*:/g;
+const CLIENT_ROOT = 'app/src';
+const BUILDER = 'app/src/commands.js';
+
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
 	'model/ops.mjs': { mutate: null, load: 0, reach: 0 },
@@ -109,6 +131,33 @@ for (const file of walk(TEST_ROOT)) {
 	h.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
 }
 
+// the command-boundary rule (B44), scanned over the client
+let handbuilt = 0;
+let builders = 0;
+for (const file of walk(CLIENT_ROOT)) {
+	const text = decomment(fs.readFileSync(file, 'utf8'));
+	if (file.replace(/\\/g, '/') === BUILDER) {
+		builders = (text.match(/^export function /gm) || []).length;
+		const stale = hits(text, STALE_BEFORE);
+		if (stale.length) {
+			bad++;
+			console.log(`  \u2717 ${file}: ${stale.length} entr(ies) carry \`before\` — changes.js drops it; the server derives the inverse`);
+			stale.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+		}
+		continue;
+	}
+	const h = hits(text, HANDBUILT);
+	if (!h.length) continue;
+	handbuilt += h.length;
+	bad++;
+	console.log(`  \u2717 ${file}: ${h.length} hand-built command(s) — add a builder to ${BUILDER} instead`);
+	h.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+}
+if (builders === 0) {
+	console.log(`  \u2717 NO builders found in ${BUILDER} — the scan is broken, not the tree clean`);
+	bad++;
+}
+
 for (const file of ROOTS.flatMap((r) => walk(r))) {
 	const text = fs.readFileSync(file, 'utf8');
 	const allow = ALLOW[file] ?? { mutate: 0, load: 0, reach: 0 };
@@ -153,7 +202,7 @@ if (reaches === 0) {
 	bad++;
 }
 
-console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/`);
+console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/; ${handbuilt} hand-built command(s) against ${builders} builders`);
 if (bad) {
 	console.log(`\n  FAIL — ${bad} allow-list violation(s). An out-of-band write corrupts every stored inverse below it, silently.\n`);
 	process.exit(1);

@@ -1,4 +1,5 @@
 import { applyOps } from '../../model/ops.mjs';
+import * as commands from './commands.js';
 
 /*
 Sync — wires the model to the wire. The SERVER owns the document; this client
@@ -214,7 +215,7 @@ export class Sync {
 				// a slides URL typed before hydration must survive the snapshot
 				const url = this.pendingSlidesUrl;
 				this.pendingSlidesUrl = null;
-				this.changes.commit({ label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url } } }] });
+				this.changes.commit(commands.bindSlides(url));
 			}
 			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
 			this.setUrl(doc.meta.id);
@@ -433,7 +434,7 @@ export class Sync {
 		if (this.locked) return this.emitState({}); // read-only: revert the field
 		const trimmed = name.trim().slice(0, 64);
 		if (!trimmed || trimmed === this.model.state.meta.name) return this.emitState({});
-		this.changes.commit({ label: 'rename', entries: [{ op: 'meta', patch: { name: trimmed } }] });
+		this.changes.commit(commands.renameDocument(trimmed));
 		this.emitState({});
 	}
 
@@ -446,6 +447,6 @@ export class Sync {
 			return;
 		}
 		if (trimmed === this.model.state.meta.slides.url) return;
-		this.changes.commit({ label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url: trimmed } } }] });
+		this.changes.commit(commands.bindSlides(trimmed));
 	}
 }

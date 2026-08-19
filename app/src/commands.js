@@ -172,3 +172,65 @@ export function ungroupAll(model, groupIds) {
 	});
 	return { label: 'ungroup', entries };
 }
+
+// ---- H6.2 Tier B: the last six, previously built by hand inside input.js (B44) ----
+// They lived there because each is a one-liner at its call site. That is exactly why they drifted:
+// four carried a dead `before` and two aliased the live store through a shallow spread, both against
+// rules stated at the top of THIS file. A builder cannot disagree with its own module.
+
+// drag a zone corner: the committed geometry (the live preview already wrote it; history owns the edit)
+export function resizeZone(id, after) {
+	return { label: 'resize', entries: [{ op: 'set', kind: 'zone', id, after: { x: after.x, y: after.y, w: after.w, h: after.h } }] };
+}
+
+// Shift+arrow: grow/shrink the lone selected node's span one cell (W1). Same 'resize' label as the
+// zone path on purpose — one coalescing window covers a burst of either (D11).
+export function resizeNodeSpan(id, span) {
+	return { label: 'resize', entries: [{ op: 'set', kind: 'node', id, after: { span: { cols: span.cols, rows: span.rows } } }] };
+}
+
+// re-plug: rewire one end of a link onto another node
+export function replugLink(id, src, dst) {
+	return { label: 'replug', entries: [{ op: 'set', kind: 'link', id, after: { src, dst } }] };
+}
+
+// fast-replace: retype a node in place — id/name/links/position survive
+export function retypeNode(id, type) {
+	return { label: 'retype', entries: [{ op: 'set', kind: 'node', id, after: { type } }] };
+}
+
+// C — close/open a multi-hop route. The label states which way it went, so undo reads correctly.
+export function toggleClosed(link) {
+	const closed = !link.closed;
+	return { label: closed ? 'close path' : 'open path', entries: [{ op: 'set', kind: 'link', id: link.id, after: { closed } }] };
+}
+
+// L / Shift+L — wire selected nodes with no pointer travel. The links are already in the model (put
+// eagerly so the next id cannot collide); the command re-puts them idempotently.
+export function linkNodes(links, star) {
+	return { label: star ? 'star' : 'chain', entries: links.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })) };
+}
+
+// a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the
+// link never references a bend that does not exist yet.
+export function routeLink(placed, link) {
+	return {
+		label: link.via && link.via.length ? 'route' : 'link',
+		entries: [
+			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			{ op: 'put', kind: 'link', entity: clone('link', link) }
+		]
+	};
+}
+
+// ---- document metadata. `meta` is a single record, so these patch it rather than an entity. ----
+// Both were written out by hand in sync.js, and `bind slides` twice — the second copy is why this
+// exists as a builder rather than a third literal.
+
+export function renameDocument(name) {
+	return { label: 'rename', entries: [{ op: 'meta', patch: { name } }] };
+}
+
+export function bindSlides(url) {
+	return { label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url } } }] };
+}

@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { validateEntity } from '../server/validate.js';
 import { bindGestureDefer } from '../app/src/sync.js';
+import * as commands from '../app/src/commands.js';
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -630,5 +631,73 @@ test('H6.4: a right-button release during link mode does not commit a segment', 
 		h.input.onUp(onEntity(b.id, 180, 0, { button: 0 }));
 		assert.equal(h.model.all('link').length, 1, 'the left release ends the link normally');
 		assert.equal(h.model.linkBetween(a.id, b.id) ? 1 : 0, 1, 'between the two nodes dragged');
+	} finally { h.restore(); }
+});
+
+/*
+B44 / H6.2 Tier B — every committed action comes from a builder.
+
+These assert the two invariants commands.js states at the top of itself and, until now, only stated:
+no entry carries `before` (changes.js drops it; the server derives the inverse from its own
+pre-state), and a `put` entry never aliases the live store. Both were violated by commands built
+inline, and neither violation was observable by running the app — which is why the enforcement is a
+scanner and these tests cover the behaviour the migration had to preserve.
+*/
+test('B44: no builder emits a `before` — the wire drops it and the server derives the inverse', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		h.model.put('zone', z);
+		const link = h.model.makeLink(a.id, b.id);
+		h.model.put('link', link);
+
+		const built = [
+			commands.resizeZone(z.id, { x: 0, y: 0, w: 9, h: 9 }),
+			commands.resizeNodeSpan(a.id, { cols: 2, rows: 3 }),
+			commands.replugLink(link.id, a.id, b.id),
+			commands.retypeNode(a.id, 'host'),
+			commands.toggleClosed(link),
+			commands.renameDocument('x'),
+			commands.bindSlides('u'),
+			commands.linkNodes([link], false),
+			commands.routeLink([], link),
+		];
+		for (const cmd of built) {
+			for (const e of cmd.entries) {
+				assert.ok(!('before' in e), `${cmd.label} still carries before`);
+			}
+		}
+	} finally { h.restore(); }
+});
+
+test('B44: a put builder deep-copies `via`, so history never aliases the live link', () => {
+	const live = { id: 'link-x', src: 'a', dst: 'b', via: ['w1', 'w2'] };
+
+	const routed = commands.routeLink([], live);
+	live.via.push('w3');
+	assert.equal(routed.entries[0].entity.via.length, 2, 'routeLink must not alias the live via array');
+
+	const chained = commands.linkNodes([live], false);
+	live.via.push('w4');
+	assert.equal(chained.entries[0].entity.via.length, 3, 'linkNodes must not alias it either');
+});
+
+test('B44: the migrated commands still do their jobs', () => {
+	const h = makeInput();
+	try {
+		const [a, b, c] = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
+
+		h.selection.set([a.id, b.id, c.id]);
+		h.input.linkSelectedNodes(false);
+		assert.equal(h.model.all('link').length, 2, 'chain wires n1-n2, n2-n3');
+
+		const link = h.model.all('link')[0];
+		h.model.set('link', link.id, { via: ['w1'] });
+		h.selection.set([link.id]);
+		h.input.toggleClosePath();
+		assert.equal(h.model.get('link', link.id).closed, true, 'C closes a multi-hop route');
+		h.input.toggleClosePath();
+		assert.equal(h.model.get('link', link.id).closed, false, 'and re-opens it');
 	} finally { h.restore(); }
 });
