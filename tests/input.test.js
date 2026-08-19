@@ -563,3 +563,72 @@ test('H6.4: while Server-Locked a press still selects, but the drag never escala
 		assert.equal(h.model.get('node', a.id).x, 0, 'and nothing moved, even locally');
 	} finally { h.restore(); }
 });
+
+/*
+H6.4 — commit and cancel join the table, so a gesture's whole lifecycle is one entry.
+
+B43 is the reason this matters. `dispatchUp` ended with a trailing `onGestureEnd()` that only
+`resize` could reach, because all fourteen other branches returned early. Correctness by "every
+branch remembers to return" is not correctness; `onUp`'s `finally` now owns the hook alone.
+*/
+const handle = (corner, x, y) => pointer(x, y, {
+	target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { corner }, closest: () => null },
+});
+
+test('B43: a resize commit fires the gesture-end hook exactly once', () => {
+	const h = makeInput();
+	try {
+		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		h.model.put('zone', z);
+		h.selection.set([z.id]);
+
+		h.input.onDown(handle('se', 300, 300));
+		let fired = 0;
+		h.input.onGestureEnd = () => fired++;
+		h.input.onMove(handle('se', 480, 480));
+		// the live preview moved, so the handle genuinely armed a resize — this test is not vacuous
+		assert.equal(h.model.get('zone', z.id).w, 510, 'the grabbed handle is dragging the zone');
+		h.input.onUp(handle('se', 480, 480));
+
+		assert.equal(fired, 1, 'D12 fires once per gesture — a double replay is the latent bug');
+		assert.equal(h.model.get('zone', z.id).w, 510, 'and the resize committed');
+		assert.equal(h.commits.length, 1);
+	} finally { h.restore(); }
+});
+
+test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
+	const h = makeInput();
+	try {
+		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		h.model.put('zone', z);
+		h.selection.set([z.id]);
+
+		h.input.onDown(handle('se', 300, 300));
+		h.input.onMove(handle('se', 480, 480));
+		assert.equal(h.model.get('zone', z.id).w, 510, 'the live preview writes the shared Model (B7)');
+
+		h.input.cancelDrag();
+		assert.equal(h.model.get('zone', z.id).w, 300, 'and a cancel rewinds it');
+		assert.equal(h.commits.length, 0, 'with nothing in history');
+
+		// the gesture is really over, not merely rewound: further movement must not resize
+		h.input.onMove(handle('se', 600, 600));
+		assert.equal(h.model.get('zone', z.id).w, 300, 'a dead gesture does not track the pointer');
+	} finally { h.restore(); }
+});
+
+test('H6.4: a right-button release during link mode does not commit a segment', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		h.input.onDown(onEntity(a.id, 0, 0));
+		h.input.onMove(onEntity(b.id, 180, 0));
+		h.input.onUp(onEntity(b.id, 180, 0, { button: 2 }));
+		assert.equal(h.model.all('link').length, 0, 'a stray right-release commits no segment');
+
+		// and the gesture is still LIVE, not silently dead: the real release still lands the link
+		h.input.onUp(onEntity(b.id, 180, 0, { button: 0 }));
+		assert.equal(h.model.all('link').length, 1, 'the left release ends the link normally');
+		assert.equal(h.model.linkBetween(a.id, b.id) ? 1 : 0, 1, 'between the two nodes dragged');
+	} finally { h.restore(); }
+});

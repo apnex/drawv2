@@ -226,13 +226,34 @@ All ten modes, one contract:
 GESTURES[mode] = { start(ctx, pos, evt) → ctx, update(ctx, pos, evt), commit(ctx, pos, evt), cancel(ctx) }
 ```
 
-`start` and `update` are unified as of H6.4: all ten modes carry both, and `onDown`/`onMove` are 26
-and 16 lines of routing. `commit` and `cancel` still dispatch through `dispatchUp`/`cancelDrag` and
-are the same shape of work, deliberately left as a separate step — rewriting four dispatchers in one
-commit leaves nothing to bisect when the net goes red.
+Complete as of H6.4. All four dispatchers are routing — `onDown` 26, `onMove` 16, `dispatchUp` 13,
+`cancelDrag` 9, from 167 / 91 / 168 / 34. The shape was latent in three of ten modes before the arc,
+so this finishes a design already half-present rather than imposing one.
 
-The shape was latent in three of ten modes before the arc, so this finishes a design already
-half-present rather than imposing one.
+| mode | start | update | commit | cancel |
+|---|:-:|:-:|:-:|:-:|
+| `move` | · | ✓ | ✓ | ✓ |
+| `clone` | · | ✓ | ✓ | ✓ |
+| `pending` | ✓ | ✓ | · | · |
+| `clone-pending` | ✓ | ✓ | ✓ | · |
+| `resize` | ✓ | ✓ | ✓ | ✓ |
+| `replug` | ✓ | ✓ | ✓ | ✓ |
+| `link` | ✓ | ✓ | ✓ | ✓ |
+| `zone` | ✓ | ✓ | ✓ | ✓ |
+| `marquee` | ✓ | ✓ | ✓ | ✓ |
+| `textbox` | ✓ | ✓ | ✓ | ✓ |
+
+**The blanks are claims, not gaps.** `move` and `clone` have no `start` because nothing starts them
+from a press — they exist only as the escalation of `pending` / `clone-pending`, which is why that
+escalation is the second gate point. `pending` has no `commit` or `cancel` because a press that
+never became a drag already did its work in `beginPress`; releasing it is genuinely nothing.
+`clone-pending` has no `cancel` because no clone exists yet to destroy. A mode acquiring one of
+these later is a real design change and should read as one.
+
+One mode carries a fifth slot. `link` declares `ignoreUp(evt)` — a precondition on the *release*,
+not on the commit: only the left button ends a link, so a right-button release during a chain (a
+chord delete, a stray right-click) leaves the gesture live instead of committing a segment. It runs
+before the common teardown, which is why it cannot just be the first line of `commit`.
 
 **Invariants that survive the rewrite:**
 

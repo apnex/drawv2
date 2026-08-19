@@ -68,8 +68,32 @@ existing startMove/startClone, which already had this shape — the design was l
 modes and this finishes it rather than imposing it.
 */
 const GESTURES = {
-	move:  { update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey) },
-	clone: { update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey) },
+	move: {
+		update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey),
+		commit: (i, ctx, pos) => {
+			i.overlayUi.crosshair.hide();
+			// commit with the flag of the last RENDERED frame, never re-sampled: Shift may have
+			// changed state since, with the pointer stationary
+			i.commitMove(ctx, pos, ctx.orthoActive);
+		},
+		cancel: (i, ctx) => {
+			ctx.moved.forEach((m) => i.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y }));
+			i.overlayUi.crosshair.hide();
+		}
+	},
+
+	clone: {
+		update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey),
+		commit: (i, ctx, pos) => {
+			i.overlayUi.crosshair.hide();
+			i.commitClone(ctx, pos, ctx.orthoActive);
+		},
+		cancel: (i, ctx) => {
+			[...ctx.clones].reverse().forEach((c) => i.model.del(c.kind, c.entity.id));   // uncommitted clones vanish entirely
+			i.selection.clear();
+			i.overlayUi.crosshair.hide();
+		}
+	},
 
 	pending: {
 		update: (i, pos, evt) => i.escalate(pos, evt, i.readOnly || i.ctx.hit.kind === 'link', (x, p) => x.startMove(p), 'move'),
@@ -81,11 +105,26 @@ const GESTURES = {
 	},
 
 	'clone-pending': {
+		commit: (i, ctx) => {
+			// Ctrl+click without drag: toggle selection (draw.io behavior)
+			if (i.model.get(ctx.hit.kind, ctx.hit.id)) {
+				i.selection.toggle(ctx.hit.id);
+				i.focusId = ctx.hit.id;
+			}
+		},
 		update: (i, pos, evt) => i.escalate(pos, evt, false, (x, p) => x.startClone(p), 'clone'),
 		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
 	},
 
 	resize: {
+		commit: (i, ctx, pos) => {
+			const after = resizeBox(pos, ctx.fixedCorner);
+			const before = ctx.before;
+			i.model.set('zone', ctx.zone, { ...before });   // rewind the live preview; history owns the real edit
+			if (after.x === before.x && after.y === before.y && after.w === before.w && after.h === before.h) return;
+			i.history.commit({ label: 'resize', entries: [{ op: 'set', kind: 'zone', id: ctx.zone, before, after }] });
+		},
+		cancel: (i, ctx) => i.model.set('zone', ctx.zone, { ...ctx.before }),   // a cancelled gesture is a no-op
 		update: (i, pos) => {
 			const box = resizeBox(pos, i.ctx.fixedCorner);
 			i.model.set('zone', i.ctx.zone, box);   // live preview writes the shared Model (B7)
@@ -105,6 +144,30 @@ const GESTURES = {
 	},
 
 	replug: {
+		commit: (i, ctx, pos) => {
+			ctx.line.remove();
+			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
+			i.renderer.setState(ctx.linkId, 'replugging', false);
+			const link = i.model.get('link', ctx.linkId);
+			const target = nodeAt(i.model, pos);
+			if (link && target && target.id !== ctx.fixedId) {
+				const newSrc = ctx.end === 'src' ? target.id : link.src;
+				const newDst = ctx.end === 'dst' ? target.id : link.dst;
+				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
+				// commit only a genuine, non-duplicate retarget; else leave the link as-is
+				if (target.id !== wasAt && !i.model.linkBetween(newSrc, newDst)) {
+					i.history.commit({ label: 'replug', entries: [{ op: 'set', kind: 'link', id: ctx.linkId,
+						before: { src: ctx.before.src, dst: ctx.before.dst }, after: { src: newSrc, dst: newDst } }] });
+				}
+			}
+			i.overlayUi.handles();   // handles ride the (possibly new) endpoints
+		},
+		cancel: (i, ctx) => {
+			// a cancelled re-plug is a no-op: drop the preview, restore the real line
+			ctx.line.remove();
+			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
+			i.renderer.setState(ctx.linkId, 'replugging', false);
+		},
 		update: (i, pos) => {
 			// the fixed end is anchored; the dragged end follows the cursor / hovered node
 			const target = nodeAt(i.model, pos);
@@ -127,6 +190,58 @@ const GESTURES = {
 	},
 
 	link: {
+		// only the LEFT button drives link mode: a right-button release during a chain (chord delete,
+		// stray right-click) must never commit a segment. A precondition on the release, so it has to
+		// run before the common teardown — hence its own slot rather than a line inside `commit`.
+		ignoreUp: (evt) => evt.button !== 0,
+		commit: (i, ctx, pos, evt) => {
+			ctx.path.remove();
+			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
+			const target = endpointAt(i.model, pos);
+			const srcAlive = i.model.endpointOf(ctx.src.id);
+			const hasVia = !!(ctx.via && ctx.via.length);
+			// a valid endpoint under the cursor: a node / free waypoint, distinct from src, not a via bend
+			const validTarget = srcAlive && target && target.id !== ctx.src.id && !(ctx.via || []).includes(target.id);
+			// resolve the destination: the endpoint under the cursor, ELSE end at the LAST dropped
+			// waypoint — so releasing after `w` commits the route, terminating at that waypoint
+			let dst = validTarget ? target.id : null;
+			const via = [...(ctx.via || [])];
+			if (!dst && via.length) dst = via.pop();
+			if (dst && srcAlive && dst !== ctx.src.id && !i.model.linkBetween(ctx.src.id, dst)) {
+				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
+				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links
+				return;
+			}
+			if (validTarget && evt.shiftKey && !hasVia) {
+				i.chainFrom(target, pos);   // already-linked target: skip the duplicate but keep the chain run alive
+				return;
+			}
+			if (srcAlive && !hasVia && dist(pos, ctx.start) <= DRAG_THRESHOLD) {
+				const hand = i.palette.hand;
+				// fast-replace gate mirrors the stamp gate (plain click only) and never fires on a
+				// chain anchor (that click ends the run, selecting)
+				if (i.model.get('node', ctx.src.id) && hand && hand !== 'waypoint' && !ctx.chained
+					&& !evt.shiftKey && !evt.ctrlKey && !evt.altKey && hand !== ctx.src.type) {
+					// fast-replace: retype in place — id/name/links/position survive
+					i.history.commit({ label: 'retype', entries: [{ op: 'set', kind: 'node', id: ctx.src.id,
+						before: { type: ctx.src.type }, after: { type: hand } }] });
+					i.selection.set([ctx.src.id]);
+					i.focusId = ctx.src.id;
+					return;
+				}
+				// a no-drag press is still a click: select (mirrors beginPress semantics)
+				i.focusId = ctx.src.id;
+				if (ctx.shift) i.selection.toggle(ctx.src.id);
+				else if (!i.selection.has(ctx.src.id)) i.selection.set([ctx.src.id]);
+				return;
+			}
+			i.cleanupRoute(ctx);   // invalid target, duplicate, or route released off a node: discard placed waypoints
+		},
+		cancel: (i, ctx) => {
+			if (ctx.path) ctx.path.remove();
+			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
+			i.cleanupRoute(ctx);
+		},
 		update: (i, pos) => {
 			const target = endpointAt(i.model, pos);
 			i.updateLinkPreview(pos);
@@ -144,6 +259,16 @@ const GESTURES = {
 	},
 
 	zone: {
+		commit: (i, ctx, pos) => {
+			ctx.rect.remove();
+			const box = resolveBox(ctx.p1, snapZone(pos));
+			if (box.w > 0 && box.h > 0) {
+				const zone = i.model.makeZone(box);
+				i.history.commit(commands.createEntity('zone', zone));
+				i.selection.set([zone.id]);
+			}
+		},
+		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => {
 			const box = resolveBox(i.ctx.p1, snapZone(pos));
 			i.ctx.rect.update(box);
@@ -158,11 +283,47 @@ const GESTURES = {
 	},
 
 	marquee: {
+		commit: (i, ctx, pos, evt) => {
+			ctx.rect.remove();
+			const box = resolveBox(ctx.p1, pos);
+			if (box.w < DRAG_THRESHOLD && box.h < DRAG_THRESHOLD) {
+				// a plain click with a held hand stamps at the snapped cell (an occupied-cell refusal
+				// still consumes the click: it meant "stamp", never "deselect")
+				if (i.palette.hand && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+					i.stampAt(pos);
+					i.refreshHand();   // the cell is occupied now: feedback must say so
+					return;
+				}
+				if (!evt.shiftKey) i.selection.clear();
+				return;
+			}
+			// zones are not marquee-pickable (Shift layer); select them directly
+			const picked = [];
+			i.model.all('node').forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
+			i.model.all('waypoint').forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
+			// a link comes along when BOTH its endpoints (node or waypoint) are inside the box
+			const inBox = new Set(picked);
+			i.model.all('link').forEach((l) => { if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id); });
+			evt.shiftKey ? i.selection.add(picked) : i.selection.set(picked);
+		},
+		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
 		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, 'marquee') })
 	},
 
 	textbox: {
+		commit: (i, ctx, pos) => {
+			ctx.rect.remove();
+			const f = frameSpan(ctx.p1, snapNode(pos));   // origin + span counts (a click → 1×1)
+			const tb = i.model.makeTextBox(f.origin, { cols: f.cols, rows: f.rows });
+			i.history.commit(commands.createEntity('node', tb));
+			i.selection.set([tb.id]);
+			i.textTool = false; i.svg.classList.remove('texttool');   // one box per arm — re-tap 't' for another
+			// open the inline editor on the text region, positioned over the new box's frame
+			const frameEl = i.svg.ownerDocument.getElementById(tb.id);
+			if (frameEl) i.labels.openContent(tb.id, 0, frameEl.querySelector('[data-layer="frame"]') || frameEl);
+		},
+		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => {
 			const box = frameSpan(i.ctx.p1, snapNode(pos));
 			i.ctx.rect.update(box);
@@ -777,176 +938,26 @@ export class Input {
 		try { this.dispatchUp(evt); } finally { if (wasGesturing) this.onGestureEnd(); }
 	}
 
+	/*
+	One release → the live gesture's own `commit`. The 168-line mode ladder this replaces ended with
+	a trailing `onGestureEnd()` that only `resize` could reach, because every other branch returned
+	early (B43). `onUp`'s `finally` is now the single owner of that hook, so it fires exactly once per
+	gesture BY CONSTRUCTION rather than by fourteen branches each remembering to return.
+	*/
 	dispatchUp(evt) {
 		if (!this.mode) return;
-		// only the left button drives link mode: a right-button release during a
-		// chain (chord delete, stray right-click) must never commit a segment
-		if (this.mode === 'link' && evt.button !== 0) return;
+		const g = GESTURES[this.mode];
+		if (g.ignoreUp?.(evt)) return;   // a release this gesture does not accept: stay live
 		const pos = toCanvas(evt, this.svg);
-		const mode = this.mode;
 		const ctx = this.ctx;
 		this.mode = null;
 		this.ctx = {};
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(pos);
-		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone'); // gesture over: layer indicator follows Shift again
-
-		if (mode === 'pending') return;
-		if (mode === 'clone-pending') {
-			// Ctrl+click without drag: toggle selection (draw.io behavior)
-			if (this.model.get(ctx.hit.kind, ctx.hit.id)) {
-				this.selection.toggle(ctx.hit.id);
-				this.focusId = ctx.hit.id;
-			}
-			return;
-		}
-		if (mode === 'move') {
-			this.overlayUi.crosshair.hide();
-			// commit with the flag of the last RENDERED frame, never re-sampled:
-			// Shift may have changed state since with the pointer stationary
-			this.commitMove(ctx, pos, ctx.orthoActive);
-			return;
-		}
-		if (mode === 'clone') {
-			this.overlayUi.crosshair.hide();
-			this.commitClone(ctx, pos, ctx.orthoActive);
-			return;
-		}
-		if (mode === 'link') {
-			ctx.path.remove();
-			if (ctx.target) this.renderer.setState(ctx.target, 'hover', false);
-			const target = endpointAt(this.model, pos);
-			const srcAlive = this.model.endpointOf(ctx.src.id);
-			const hasVia = !!(ctx.via && ctx.via.length);
-			// a valid endpoint under the cursor: a node / free waypoint, distinct from src, not a via bend
-			const validTarget = srcAlive && target && target.id !== ctx.src.id && !(ctx.via || []).includes(target.id);
-			// resolve the destination: the endpoint under the cursor, ELSE end at the LAST dropped
-			// waypoint — so releasing after `w` commits the route, terminating at that waypoint
-			let dst = validTarget ? target.id : null;
-			let via = [...(ctx.via || [])];
-			if (!dst && via.length) dst = via.pop();
-			if (dst && srcAlive && dst !== ctx.src.id && !this.model.linkBetween(ctx.src.id, dst)) {
-				this.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
-				if (validTarget && evt.shiftKey && !hasVia) { this.chainFrom(target, pos); return; } // chain only plain links
-				return;
-			}
-			if (validTarget && evt.shiftKey && !hasVia) {
-				// already-linked target: skip the duplicate but keep the chain run alive
-				this.chainFrom(target, pos);
-				return;
-			}
-			if (srcAlive && !hasVia && dist(pos, ctx.start) <= DRAG_THRESHOLD) {
-				const hand = this.palette.hand;
-				// fast-replace gate mirrors the stamp gate (plain click only) and
-				// never fires on a chain anchor (that click ends the run, selecting)
-				if (this.model.get('node', ctx.src.id) && hand && hand !== 'waypoint' && !ctx.chained
-					&& !evt.shiftKey && !evt.ctrlKey && !evt.altKey && hand !== ctx.src.type) {
-					// fast-replace: retype in place — id/name/links/position survive
-					this.history.commit({
-						label: 'retype',
-						entries: [{ op: 'set', kind: 'node', id: ctx.src.id,
-							before: { type: ctx.src.type }, after: { type: hand } }]
-					});
-					this.selection.set([ctx.src.id]);
-					this.focusId = ctx.src.id;
-					return;
-				}
-				// a no-drag press is still a click: select (mirrors beginPress semantics)
-				this.focusId = ctx.src.id;
-				if (ctx.shift) this.selection.toggle(ctx.src.id);
-				else if (!this.selection.has(ctx.src.id)) this.selection.set([ctx.src.id]);
-				return;
-			}
-			// invalid target, duplicate, or route released off a node: discard placed waypoints
-			this.cleanupRoute(ctx);
-			return;
-		}
-		if (mode === 'replug') {
-			ctx.line.remove();
-			if (ctx.target) this.renderer.setState(ctx.target, 'hover', false);
-			this.renderer.setState(ctx.linkId, 'replugging', false);
-			const link = this.model.get('link', ctx.linkId);
-			const target = nodeAt(this.model, pos);
-			if (link && target && target.id !== ctx.fixedId) {
-				const newSrc = ctx.end === 'src' ? target.id : link.src;
-				const newDst = ctx.end === 'dst' ? target.id : link.dst;
-				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
-				// commit only a genuine, non-duplicate retarget; else leave the link as-is
-				if (target.id !== wasAt && !this.model.linkBetween(newSrc, newDst)) {
-					this.history.commit({
-						label: 'replug',
-						entries: [{ op: 'set', kind: 'link', id: ctx.linkId,
-							before: { src: ctx.before.src, dst: ctx.before.dst },
-							after: { src: newSrc, dst: newDst } }]
-					});
-				}
-			}
-			this.overlayUi.handles(); // handles ride the (possibly new) endpoints
-			return;
-		}
-		if (mode === 'zone') {
-			ctx.rect.remove();
-			const box = resolveBox(ctx.p1, snapZone(pos));
-			if (box.w > 0 && box.h > 0) {
-				const zone = this.model.makeZone(box);
-				this.history.commit(commands.createEntity('zone', zone));
-				this.selection.set([zone.id]);
-			}
-			return;
-		}
-		if (mode === 'textbox') {
-			ctx.rect.remove();
-			const f = frameSpan(ctx.p1, snapNode(pos));   // origin + span counts (a click → 1×1)
-			const tb = this.model.makeTextBox(f.origin, { cols: f.cols, rows: f.rows });
-			this.history.commit(commands.createEntity('node', tb));
-			this.selection.set([tb.id]);
-			this.textTool = false; this.svg.classList.remove('texttool');   // one box per arm — disarm, then re-tap 't' for another
-			// open the inline editor on the text region, positioned over the new box's frame
-			const frameEl = this.svg.ownerDocument.getElementById(tb.id);
-			if (frameEl) this.labels.openContent(tb.id, 0, frameEl.querySelector('[data-layer="frame"]') || frameEl);
-			return;
-		}
-		if (mode === 'marquee') {
-			ctx.rect.remove();
-			const box = resolveBox(ctx.p1, pos);
-			if (box.w < DRAG_THRESHOLD && box.h < DRAG_THRESHOLD) {
-				// a plain click with a held hand stamps at the snapped cell
-				// (an occupied-cell refusal still consumes the click: it meant
-				// "stamp", never "deselect")
-				if (this.palette.hand && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
-					this.stampAt(pos);
-					this.refreshHand(); // the cell is occupied now: feedback must say so
-					return;
-				}
-				if (!evt.shiftKey) this.selection.clear();
-				return;
-			}
-			// zones are not marquee-pickable (Shift layer); select them directly
-			const picked = [];
-			this.model.all('node').forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware: marquee over a box's body selects it
-			this.model.all('waypoint').forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
-			// a link comes along when BOTH its endpoints (node or waypoint) are inside the box
-			const inBox = new Set(picked);
-			this.model.all('link').forEach((l) => {
-				if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id);
-			});
-			evt.shiftKey ? this.selection.add(picked) : this.selection.set(picked);
-			return;
-		}
-		if (mode === 'resize') {
-			const after = resizeBox(pos, ctx.fixedCorner);
-			const before = ctx.before;
-			this.model.set('zone', ctx.zone, { ...before });
-			if (after.x === before.x && after.y === before.y && after.w === before.w && after.h === before.h) return;
-			this.history.commit({
-				label: 'resize',
-				entries: [{ op: 'set', kind: 'zone', id: ctx.zone, before, after }]
-			});
-		}
-		this.onGestureEnd();
+		this.overlayUi.zoneGrid(evt.shiftKey, false);   // gesture over: the layer indicator follows Shift again
+		g.commit?.(this, ctx, pos, evt);
 	}
 
-	// re-enter link mode from a node (chain wiring), with live readout
 	chainFrom(node, pos) {
 		this.mode = 'link';
 		this.ctx = { src: node, path: previewPath(this.overlay), target: null, start: pos, shift: false, chained: true, via: [], placed: [] };
@@ -990,38 +1001,16 @@ export class Input {
 
 	// clamp a delta so every moved entity stays on the canvas
 
+	// One abort → the live gesture's own `cancel`, then the same teardown a commit does. Reached by
+	// pointercancel, Escape, and a document swap mid-gesture (a chain has no held button, so the
+	// header menu is live during one).
 	cancelDrag(evt) {
-		if (this.mode === 'move') {
-			this.ctx.moved.forEach((m) => this.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y }));
-			this.overlayUi.crosshair.hide();
-		}
-		if (this.mode === 'clone') {
-			// uncommitted clones vanish entirely
-			[...this.ctx.clones].reverse().forEach((c) => this.model.del(c.kind, c.entity.id));
-			this.selection.clear();
-			this.overlayUi.crosshair.hide();
-		}
-		if (this.mode === 'link') {
-			if (this.ctx.path) this.ctx.path.remove();
-			if (this.ctx.target) this.renderer.setState(this.ctx.target, 'hover', false);
-			this.cleanupRoute(this.ctx);
-		}
-		if (this.mode === 'replug') {
-			// a cancelled re-plug is a no-op: drop the preview, restore the real line
-			this.ctx.line.remove();
-			if (this.ctx.target) this.renderer.setState(this.ctx.target, 'hover', false);
-			this.renderer.setState(this.ctx.linkId, 'replugging', false);
-		}
-		if (this.mode === 'zone' || this.mode === 'marquee' || this.mode === 'textbox') this.ctx.rect.remove();
-		if (this.mode === 'resize') {
-			// a cancelled gesture is a no-op: restore the pre-drag geometry
-			this.model.set('zone', this.ctx.zone, { ...this.ctx.before });
-		}
+		GESTURES[this.mode]?.cancel?.(this, this.ctx);
 		this.mode = null;
 		this.ctx = {};
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(null);
-		if (evt) this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone'); // layer indicator follows Shift again
+		if (evt) this.overlayUi.zoneGrid(evt.shiftKey, false);
 		this.onGestureEnd();
 	}
 
