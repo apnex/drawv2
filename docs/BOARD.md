@@ -52,8 +52,20 @@ happened to live next to the cleanup work.
 **Visible** — `user` · `agent` · `operator` · `internal`
 **Size** — `S` (a few lines) · `M` (half a day) · `L` (structural)
 
-Severity orders the milestones. Size orders within them, smallest first — a one-line fix for an S1 has no
-reason to wait behind an S1 that needs a harness.
+**Axiom** — which standing commitment in `mission-kit/axioms` the row breaches, and whether the breach is
+of the axiom's **mandate** (the invariant itself) or of a **signal** (an enforcement mechanic). drawv2
+satisfies `any-system`, `stateful`, `declarative`, `multi-agent`, `llm-in-the-loop` and partially
+`autonomous`, so effectively the whole set is in force.
+
+> **Ordering rule.** The first cut of this board ordered on impact-severity alone, which was derived from
+> intuition rather than from the axioms. Those two signals disagree, and the disagreement is real
+> information, so both are kept and **ordering takes the higher of the two**. `readJson` hanging forever
+> (**B24**) is only `S4` by user impact — no observed trigger — but it is **A7's named `Blocked Actor`
+> fault against an explicit mandate** (*"no actor is permanently blocked by a system error"*), so it moves
+> into H1. The absence of client tests (**B23**) is `S5` by impact and an **A9 mandate gap** — half the
+> entropy battery, which A9 requires to cover *"client caches and network transports, not just the central
+> service"* — which is why it sits on the critical path despite the score. Collapsing the two scales would
+> have hidden both facts; the earlier board did, and B23's `S5` label openly contradicted its placement.
 
 ---
 
@@ -61,26 +73,31 @@ reason to wait behind an S1 that needs a harness.
 
 All 18 active rows, scored. Held rows are [below](#held--on-the-record-not-on-the-board).
 
-| Row | Sev | Visible | Size | Milestone | One line |
-|---|---|---|---|---|---|
-| **B13** | **S1** | user | **S** | **H1** | a `$` in any name corrupts the file; silent until restart, then refuses to boot |
-| **B15** | **S1** | user | M | **H1** | `durableVersion` over-reports → the outbox is pruned of work never flushed |
-| **B20** | S4 | operator | **S** | **H1** | GR9's assert sits in the I/O catch; permanently degrades `/health`, never re-checks |
-| **B23** | S5 | internal | **L** | **H2** | no test constructs any client class — the enabler of B14, B18, B19 |
-| **B21** | S4 | internal | **S** | **H2** | `tests/gate.test.js` absent; a fresh clone is entirely ungated |
-| **B22** | S4 | internal | **L** | **H2** | `tests/diff-inverse.test.js` absent; GR5's oracle covers 15 of 23 shapes |
-| **B18** | **S2** | user | **S** | **H3** | read-only leaks 3 mutation paths → permanent silent divergence |
-| **B19** | **S2** | user | **S** | **H3** | D12's defer rule never wired; a remote change fights a live drag |
-| **B14** | S3 | user | **S** | **H3** | nudge + both key-resizes throw; three advertised gestures dead |
-| **B30** | **S2** | user | M | **H3** | cloning a routed link silently straightens it |
-| **B29** | **S2** | user | M | **H3** | the data view reports the wrong length for every routed link |
-| **B16** | **S2**† | agent | M | **H4** | `expect` discarded on REST forward writes — CAS an agent believes it has |
-| **B17** | S4 | user | **S** | **H4** | `undoTop` missing from the REST broadcast; the undo affordance goes stale |
-| **B25** | S4 | agent | **S** | **H4** | `create {doc}` seeds a `meta.version` the log does not share |
-| **B24** | S4 | agent | **S** | **H4** | `readJson` never settles above 1 MB; the request hangs forever |
-| **B26** | S5 | internal | **S** | **H5** | `patchMeta` + 4 unused imports + dead `tmp` |
-| **B31** | S5 | internal | **S** | **H5** | five documented paths do not exist |
-| **B28** | S5 | internal | **L** | **H5** | `schema.js` is not the production path; the region renderer is cloned |
+| Row | Sev | Axiom | Visible | Size | Milestone | One line |
+|---|---|---|---|---|---|---|
+| **B13** | **S1** | A8 · A7 mandate | user | **S** | **H1** ✅ | a `$` in any name corrupts the file; silent until restart, then refuses to boot |
+| **B15** | **S1** | **A1 mandate** | user | M | **H1** | `durableVersion` over-reports → the outbox is pruned of work never flushed |
+| **B24** | S4 | **A7 mandate** | agent | **S** | **H1** ⬆ | `readJson` never settles above 1 MB — A7 `Blocked Actor`, verbatim |
+| **B20** | S4 | A7 signal | operator | **S** | **H1** | GR9's assert sits in the I/O catch; permanently degrades `/health`, never re-checks |
+| **B23** | S5 | **A9 mandate** | internal | **L** | **H2** | no client tests — half the entropy battery A9 requires is absent |
+| **B21** | S4 | A8 signal | internal | **S** | **H2** | `tests/gate.test.js` absent; a fresh clone is entirely ungated |
+| **B22** | S4 | A8 signal | internal | **L** | **H2** | `tests/diff-inverse.test.js` absent; GR5's oracle covers 15 of 23 shapes |
+| **B18** | **S2** | **A7 mandate** | user | **S** | **H3** | read-only leaks 3 mutation paths → A7 `Silent Collapse` |
+| **B19** | **S2** | **A7 mandate** · A9 | user | **S** | **H3** | D12's defer rule never wired; GR6 fault (ii) tests a queue that does not exist |
+| **B14** | S3 | A2 signal | user | **S** | **H3** | nudge + both key-resizes throw; three advertised gestures dead |
+| **B30** | **S2** | A7 mandate | user | M | **H3** | cloning a routed link silently straightens it |
+| **B29** | **S2** | **A5 mandate** | user | M | **H3** | the data view reports the wrong length for every routed link |
+| **B16** | **S2**† | **A2** `Doc-Code Drift` | agent | M | **H4** | `expect` discarded on REST forward writes — CAS an agent believes it has |
+| **B34** | S4 | **A12** `Projection, not dump` | agent | **S** | **H4** ✚ | `commitSelection` broadcasts the whole document where every write broadcasts a delta |
+| **B17** | S4 | A5 signal | user | **S** | **H4** | `undoTop` missing from the REST broadcast; the undo affordance goes stale |
+| **B25** | S4 | A1 signal | agent | **S** | **H4** | `create {doc}` seeds a `meta.version` the log does not share |
+| **B26** | S5 | **A3** `Air-Gap` | internal | **S** | **H5** | `patchMeta` + 4 unused imports + 10 hand-walked store internals |
+| **B31** | S5 | **A2** `Doc-Code Drift` | internal | **S** | **H5** | five documented paths do not exist |
+| **B28** | S5 | **A3** `Law of One` | internal | **L** | **H5** | `schema.js` is not the production path; the region renderer is cloned |
+
+⬆ **B24 promoted H4 → H1** by the axiom review — server-side, `S`, no harness needed, and A7's mandate is
+explicit that no actor may be permanently blocked. ✚ **B34 is new** (filed by the same review; it was an
+audit finding that had never been banked). ✅ closed.
 
 † **B16 is S2 in consequence, low in likelihood.** An agent sending `expect` on a forward write has no CAS
 protection and will silently overwrite another writer. Nothing in-tree does this today — the CLI is
@@ -98,7 +115,8 @@ Four movements, and one finding that matters more than the reordering:
 - **B30, B29 promoted H5 → H3.** Both are `S2` and user-visible. Grouping them as "client dedupe" let the
   theme carry the ranking — B29 in particular reports a **confidently wrong number** in a tool whose stated
   bar is *"zero ambiguity between intent and result — the machine states what will happen, in numbers."*
-- **B24, B25 demoted H3 → H4.** Genuinely `S4`, agent-facing, no observed trigger.
+- **B25 demoted H3 → H4.** Genuinely `S4`, agent-facing, no observed trigger. *(B24 was demoted with it,
+  then promoted to H1 by the axiom review below — impact said `S4`, the A7 mandate said otherwise.)*
 - **B14 demoted H1 → H3.** Not because it matters less, but because it is `S3` and cannot be fixed before
   the harness exists. Keeping it in H1 was wishful sequencing.
 
@@ -138,8 +156,9 @@ this runs before the harness. **H1.1 should land on its own, immediately.**
 | H1.2 | Adversarial-string round-trip: 7 replacement patterns, the empty-body log-drop, and the end-to-end restart. All three verified **red first**; 35/35 real files byte-identical after | B13 | — | — | `DONE` |
 | H1.3 | Per-entry `flushedVersion` set in `flush()`; a `Store` accessor replacing the 10 hand-walked `diagrams.get(id)?.log` sites | **B15**, B26 (part) | **S1 · M** | D13, D30 | `TODO` |
 | H1.4 | Move the GR9 post-condition out of the write's try/catch; distinct counter and `/health` signal | **B20** | S4 · S | GR9 | `TODO` |
+| H1.5 | `readJson`: settle on `'aborted'`/`'close'`; accumulate `Buffer`s and cap on bytes. **Promoted from H4** — A7's mandate is that no actor is permanently blocked, and a >1 MB body hangs the request forever | **B24** | S4 · **A7 mandate** · S | A7 | `TODO` |
 
-**Exit:** B13, B15, B20 closed. Each fix has a test verified red against the pre-fix tree. `npm run gate` green.
+**Exit:** B13, B15, B20, B24 closed. Each fix has a test verified red against the pre-fix tree. `npm run gate` green.
 
 ---
 
@@ -189,10 +208,10 @@ All `S4` except B16's `expect` half. Each item amends `README.md` / `SCOPE.md` *
 | H4.2 | `POST .../commit` accepts `{ops}` — the vocabulary it is documented to accept. Unlocks multi-op transactions for agents | **B16** | S4 · M | GR10, X1 | `TODO` |
 | H4.3 | One shared `reversalBody(…)` across both transports; restores `undoTop` to the REST broadcast; unifies the `expect` and `to` policies | **B17** | S4 · S | D21 | `TODO` |
 | H4.4 | `create {doc}` — force `version: 0` in the candidate. One line | **B25** | S4 · S | D6, I11 | `TODO` |
-| H4.5 | `readJson`: settle on `'aborted'`/`'close'`; accumulate `Buffer`s and cap on bytes | **B24** | S4 · S | — | `TODO` |
+| H4.5 | A `selection` delta, or `change` carrying a selection op — stop shipping the whole document on the highest-frequency, lowest-information write. Same two files as H4.3 | **B34** | S4 · **A12** · S | D7, A12 | `TODO` |
 | H4.6 | Extend `tests/spec.test.js` to derive the REST surface from the router, as it already does for the ws dispatch. X9 found B11 and B12 that way | — | — | GR10 | `TODO` |
 
-**Exit:** B16, B17, B24, B25 closed. Spec and wire agree in both directions, mechanically.
+**Exit:** B16, B17, B25, B34 closed. Spec and wire agree in both directions, mechanically.
 
 ---
 
@@ -273,15 +292,18 @@ Four, all in H0.4. Each blocks work that should not start until it is answered.
 
 ## Not in this arc
 
-Deliberately excluded so the arc has an edge:
+Deliberately excluded so the arc has an edge. **Each now carries a durable marker** — the axiom review
+found all three were deferred in this file only, and this file is mutable, so clearing the board would
+have erased them (A14 *Insight Depreciation*; a breach of BACKLOG's own "Adding a row" contract):
 
-- **Refactoring the four oversized functions** (`onKeyDown` 223 lines, `onUp` 167, `onDown` 160,
-  `onMove` 91). They are the natural target *after* H2 gives them coverage — not before. A refactor without
-  a net is how B14 happened.
-- **Performance** — the per-pointermove linear `nodeAt` scans, `contentSig`'s `JSON.stringify` per `set`,
-  `Model.nextName`'s O(N·total) clone cost. Real, all measured-small at current document sizes, none
-  user-visible. Revive on a document that makes one of them show.
-- **Any geometry work.** `HIERARCHY.md` is explicit that connections are the open frontier and containment
+- **Refactoring `input.js` and its four oversized functions** (`onKeyDown` **224** lines, `onUp` **169**,
+  `onDown` **162**, `onMove` **101**) — now **B35**, trigger: *B23's harness is green*. They are the natural
+  target *after* H2 gives them coverage, never before. A refactor without a net is how B14 happened.
+- **Performance** — the five known costs — now **B36**, trigger: *a measured frame drop*. All sub-threshold
+  today and none measured; measure before optimising.
+- **Any geometry work.** Deliberately **not** given a B row: `docs/spec/HIERARCHY.md` §0/§7 and
+  `design/walk/FINDINGS.md` are already its durable record, and a duplicate would be ceremony, not
+  zero-loss. `HIERARCHY.md` is explicit that connections are the open frontier and containment
   is locked; the GRC walk has two surviving variants at rung 8 of 11, and `ATOMICS.md` still has the
   ±29-vs-±30 container-edge handle open. **That is a design arc, not a hardening arc.** It starts clean once
   this board is empty.
