@@ -897,3 +897,73 @@ test('B48: splitting kept the table unambiguous — still exactly one overlappin
 		'{"ctrlKey":true,"shiftKey":true}+Backspace -> undo-run/delete',
 	], 'exactly one ordered pair, and it is the D21 one keymap.js documents');
 });
+
+/*
+B47 — `preventDefault` is a property of the binding, declared once, not repeated in 17 handlers.
+
+The defect was not the repetition. It was that six handlers omitted the call and nothing recorded
+whether that was a decision or a lapse — going back to the pre-H6.4 ladder, none of them ever had
+it and no comment said why. A table field makes every non-prevention deliberate and visible.
+
+`prevent: false` carries two distinct legitimate reasons, and this pins both so neither can be
+"tidied" into the other: Escape must let the browser exit fullscreen, while five handlers claim
+their key only on the path that acts — a runtime condition a static table cannot see.
+*/
+test('B47: the dispatcher claims a bound key by default', () => {
+	const h = makeInput();
+	try {
+		let prevented = 0;
+		const press = (k, mod = {}) => {
+			const e = key(k, mod);
+			e.preventDefault = () => { prevented++; };
+			h.input.onKeyDown(e);
+			return prevented;
+		};
+		prevented = 0; press('z', { ctrlKey: true });
+		assert.equal(prevented, 1, 'Ctrl+Z is ours');
+		prevented = 0; press('s');
+		assert.equal(prevented, 1, "'s' is ours too — it used to silently let the browser act");
+		prevented = 0; press('F9');
+		assert.equal(prevented, 0, 'an UNBOUND key is never claimed');
+	} finally { h.restore(); }
+});
+
+test('B47: Escape stays the browser\'s — the one binding that must not be claimed', () => {
+	const h = makeInput();
+	try {
+		let prevented = 0;
+		const e = key('Escape');
+		e.preventDefault = () => { prevented++; };
+		h.input.onKeyDown(e);
+		assert.equal(prevented, 0, 'exiting fullscreen and cancelling an IME composition are the browser\'s');
+	} finally { h.restore(); }
+});
+
+test('B47: a conditional claimer prevents only on the path that acts', () => {
+	const h = makeInput();
+	try {
+		const press = () => {
+			let n = 0;
+			const e = key('Delete');
+			e.preventDefault = () => { n++; };
+			h.input.onKeyDown(e);
+			return n;
+		};
+		h.selection.clear();
+		assert.equal(press(), 0, 'nothing selected: Delete was not ours to take');
+
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.selection.set([a.id]);
+		assert.equal(press(), 1, 'with a selection it acts, so it claims the key');
+	} finally { h.restore(); }
+});
+
+test('B47: every entry declares prevent, or inherits the safe default', () => {
+	const optOut = KEYMAP.filter((r) => r.prevent === false).map((r) => r.id).sort();
+	assert.deepEqual(optOut, ['alt', 'control', 'dataview', 'delete', 'escape', 'stamp', 'waypoint'],
+		'the opt-outs are a closed, reviewed set — a new one has to be argued for here');
+	for (const r of KEYMAP) {
+		assert.ok(r.prevent === undefined || r.prevent === false,
+			`${r.id}: prevent is opt-out only; true is the default and stating it is noise`);
+	}
+});

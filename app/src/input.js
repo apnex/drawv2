@@ -1153,7 +1153,9 @@ export class Input {
 			helpOpen: !!(this.help && !this.help.hidden),
 			gesturing: this.isGesturing(),
 		});
-		if (rule) this[rule.run](evt);
+		if (!rule) return;
+		if (rule.prevent !== false) evt.preventDefault();   // B47 — bind a key and you own it
+		this[rule.run](evt);
 	}
 
 	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
@@ -1196,13 +1198,12 @@ export class Input {
 		} else this.selection.clear();
 	}
 
-	onHelpKey(evt) {
-		evt.preventDefault();   // keep Firefox's quick-find out of it
+	onHelpKey() {
+		  // keep Firefox's quick-find out of it
 		this.toggleHelp();
 	}
 
-	onSelectAll(evt) {
-		evt.preventDefault();
+	onSelectAll() {
 		this.selection.set([
 			...this.model.all('node').map((n) => n.id),
 			...this.model.all('zone').map((z) => z.id),
@@ -1210,16 +1211,14 @@ export class Input {
 		]);
 	}
 
-	onDatum(evt) {
-		evt.preventDefault();
+	onDatum() {
 		if (!this.lastPos) return;   // pointer off-canvas: nothing to anchor
 		const datum = snapNode(this.lastPos);
 		this.readout.setDatum(datum);
 		this.overlayUi.datum(datum);
 	}
 
-	onDatumClear(evt) {
-		evt.preventDefault();
+	onDatumClear() {
 		this.readout.setDatum(null);
 		this.overlayUi.datum(null);
 	}
@@ -1265,7 +1264,6 @@ export class Input {
 	}
 
 	onArrowKey(evt) {
-		evt.preventDefault();
 		const dir = ARROW[evt.key];
 		if (dir) this.nudge(dir[0], dir[1]);
 	}
@@ -1273,20 +1271,18 @@ export class Input {
 	// Shift+arrow. Both resize paths self-guard on the selection kind, so exactly one of them acts:
 	// a lone zone grows by a cell, a lone node grows its span by a cell, anything else is a no-op.
 	onResizeStep(evt) {
-		evt.preventDefault();
 		const dir = ARROW[evt.key];
 		if (!dir) return;
 		this.resizeZoneByKey(dir[0], dir[1]);
 		this.resizeNodeByKey(dir[0], dir[1]);
 	}
 
-	onWrapKey(evt) { evt.preventDefault(); this.wrapInZone(); }
-	onCloseKey(evt) { evt.preventDefault(); this.toggleClosePath(); }
-	onChainKey(evt) { evt.preventDefault(); this.linkSelectedNodes(false); }
-	onStarKey(evt)  { evt.preventDefault(); this.linkSelectedNodes(true); }
+	onWrapKey() { this.wrapInZone(); }
+	onCloseKey() { this.toggleClosePath(); }
+	onChainKey() { this.linkSelectedNodes(false); }
+	onStarKey()  { this.linkSelectedNodes(true); }
 
-	onRenameKey(evt) {
-		evt.preventDefault();
+	onRenameKey() {
 		// prefer the directly-clicked entity: group expansion makes single selection impossible
 		// for grouped nodes
 		const ids = this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group');
@@ -1296,18 +1292,16 @@ export class Input {
 
 	// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking back N
 	// changes you did not make is a different intent from stepping back one you did.
-	onUndoRun(evt) { evt.preventDefault(); this.history.undoRun(); this.afterHistory(); }
-	onUndoKey(evt) { evt.preventDefault(); this.history.undo(); this.afterHistory(); }
-	onRedoKey(evt) { evt.preventDefault(); this.history.redo(); this.afterHistory(); }
-	onDuplicate(evt) { evt.preventDefault(); this.duplicateSelection(); }   // claims the bookmark shortcut
+	onUndoRun() { this.history.undoRun(); this.afterHistory(); }
+	onUndoKey() { this.history.undo(); this.afterHistory(); }
+	onRedoKey() { this.history.redo(); this.afterHistory(); }
+	onDuplicate() { this.duplicateSelection(); }   // claims the bookmark shortcut
 
-	onGroupKey(evt) {
-		evt.preventDefault();
+	onGroupKey() {
 		this.history.commit(commands.createGroup(this.model, this.selection.groupable()));
 	}
 
-	onUngroupKey(evt) {
-		evt.preventDefault();
+	onUngroupKey() {
 		const groups = new Set(this.selection.groupable().map((id) => this.model.groupOf(id)).filter(Boolean).map((g) => g.id));
 		this.history.commit(commands.ungroupAll(this.model, [...groups]));
 	}

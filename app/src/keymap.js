@@ -27,6 +27,29 @@ const is = (e, k) => e.key.toLowerCase() === k;
 const arrow = (e) => e.key.startsWith('Arrow');
 
 /*
+B47 — `prevent` says whether the DISPATCHER claims the key, and it defaults to TRUE.
+
+Bind a key and you own it: that is the safe default, because a binding that lets the browser also
+act on the same keystroke is almost always a bug, and the six handlers that omitted
+`preventDefault()` were indistinguishable from ones that forgot. Making it a table field is what
+turns an omission into a decision.
+
+`prevent: false` means only that the dispatcher does not claim it unconditionally. Two different
+reasons appear below and both are legitimate:
+
+  a BROWSER DEFAULT MUST SURVIVE   `escape` — exiting fullscreen and cancelling an IME composition
+                                   are the browser's to handle, and swallowing them is user-hostile.
+
+  THE HANDLER CLAIMS IT ONLY WHEN  `alt`/`control` (Alt only, to keep Firefox's menu bar out of the
+  IT ACTS                          delete chord), `dataview` (Tab only when the canvas holds focus,
+                                   so it can still traverse the toolbar), and `waypoint` / `stamp` /
+                                   `delete`, which prevent only on the path that does something.
+
+That second reason is a condition on RUNTIME STATE, which a static table cannot see — so those
+handlers keep their own call rather than the table pretending to know.
+*/
+
+/*
 B48 — Shift is matched HERE, not re-read in the handler.
 
 `plain()` tests ctrl/meta/alt and deliberately leaves Shift free, which is right for chords like
@@ -42,17 +65,17 @@ split; nothing re-reads Shift after the match.
 export const KEYMAP = [
 	// ---- modifier feedback: not verbs, and they must reach a live drag (ortho arms mid-gesture) ----
 	{ id: 'shift',   mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Shift',   run: 'onShiftDown' },
-	{ id: 'alt',     mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Alt',     run: 'onArmingKey' },
-	{ id: 'control', mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Control', run: 'onArmingKey' },
+	{ id: 'alt',     prevent: false, mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Alt',     run: 'onArmingKey' },
+	{ id: 'control', prevent: false, mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Control', run: 'onArmingKey' },
 
 	// ---- modal + always-available ----
-	{ id: 'escape',  mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Escape', run: 'onEscape' },
+	{ id: 'escape',  prevent: false, mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === 'Escape', run: 'onEscape' },
 	{ id: 'help',    mutates: false, duringGesture: true, duringHelp: true, when: (e) => e.key === '/' || e.key === '?', run: 'onHelpKey' },
 
 	// ---- view state: no model change, so live while Server-Locked ----
 	{ id: 'edit-mode', mutates: false, when: (e) => is(e, 'e') && plain(e), run: 'onEditMode' },
 	{ id: 'run-mode',  mutates: false, when: (e) => is(e, 'r') && plain(e), run: 'onRunMode' },
-	{ id: 'dataview',  mutates: false, when: (e) => e.key === 'Tab',        run: 'onDataView' },
+	{ id: 'dataview',  prevent: false, mutates: false, when: (e) => e.key === 'Tab',        run: 'onDataView' },
 
 	// ---- inspection: SCOPE decision 5 promises these keep working while locked ----
 	{ id: 'select-all', mutates: false, when: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll' },
@@ -62,12 +85,12 @@ export const KEYMAP = [
 	// ---- authoring ----
 	// `w` is the one mutating verb that belongs DURING a gesture: dropping a bend mid-route is the
 	// whole point of it, and the mouse button is still held.
-	{ id: 'waypoint',  mutates: true, duringGesture: true, when: (e) => is(e, 'w') && plain(e), run: 'onWaypointKey' },
+	{ id: 'waypoint',  prevent: false, mutates: true, duringGesture: true, when: (e) => is(e, 'w') && plain(e), run: 'onWaypointKey' },
 	{ id: 'text-tool', mutates: true, when: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
 	{ id: 'reshape',   mutates: true, when: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
 	{ id: 'hand',      mutates: true, when: (e) => /^[1-7]$/.test(e.key) && plain(e),           run: 'onHandDigit' },
 	{ id: 'pipette',   mutates: true, when: (e) => is(e, 'q') && plain(e),                      run: 'onPipette' },
-	{ id: 'stamp',     mutates: true, when: (e) => e.key === 'Enter',                           run: 'onStampKey' },
+	{ id: 'stamp',     prevent: false, mutates: true, when: (e) => e.key === 'Enter',                           run: 'onStampKey' },
 	{ id: 'nudge',       mutates: true, when: (e) => arrow(e) && !e.shiftKey,                   run: 'onArrowKey' },
 	{ id: 'resize-step', mutates: true, when: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep' },
 	{ id: 'wrap',      mutates: true, when: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
@@ -94,7 +117,7 @@ export const KEYMAP = [
 	{ id: 'dup',      mutates: true, when: (e) => meta(e) && is(e, 'd'),                          run: 'onDuplicate' },
 	{ id: 'group',    mutates: true, when: (e) => meta(e) && is(e, 'g') && !e.shiftKey,            run: 'onGroupKey' },
 	{ id: 'ungroup',  mutates: true, when: (e) => meta(e) && is(e, 'g') && e.shiftKey,             run: 'onUngroupKey' },
-	{ id: 'delete',   mutates: true, when: (e) => e.key === 'Delete' || e.key === 'Backspace',    run: 'onDeleteKey' },
+	{ id: 'delete',   prevent: false, mutates: true, when: (e) => e.key === 'Delete' || e.key === 'Backspace',    run: 'onDeleteKey' },
 ];
 
 /*
