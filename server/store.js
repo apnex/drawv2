@@ -194,7 +194,20 @@ export class Store {
 			const candidate = { ...doc, meta: { ...doc.meta, id, name } };
 			const err = validateDoc(candidate);
 			if (err) return { ok: false, error: err };
-			const entry = this.install(id, candidate);
+			/*
+			B25 — version is minted by the LOG and is never carried in from the wire.
+
+			Validated AS IT ARRIVED, then installed at 0. The order is the point: a MALFORMED version
+			must still be rejected at the boundary (D17 — a document that cannot be told apart from a
+			valid one is refused, never repaired silently), while a well-formed but client-chosen one
+			is simply ignored (I11). Forcing 0 before validation would have collapsed those two into
+			"silently accept anything", which is how a trust boundary stops being one.
+
+			Without this, `create {doc:{meta:{version:999}}}` installed a model claiming 999 against a
+			fresh Log at 0 — two different numbers for one document until the first commit re-stamped
+			it, breaking D6's one-source-one-mirror contract.
+			*/
+			const entry = this.install(id, { ...candidate, meta: { ...candidate.meta, version: 0 } });
 			this.markDirty(id);
 			return { ok: true, model: entry.model };
 		}

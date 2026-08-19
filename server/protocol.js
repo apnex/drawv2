@@ -107,6 +107,28 @@ export function changeBody(change, store, id) {
 	};
 }
 
+/*
+The payload for a REVERSAL (undo/redo) — one definition, used by both transports.
+
+changeBody cannot serve here: undo and redo append no record (D3), so there is no Change to project.
+Both transports therefore hand-built this, and they drifted — REST omitted `undoTop`, so a browser
+watching an agent undo over REST lost its "undo all N by <actor>" affordance (B17). The drift was
+not a typo; it is what happens when one rule has two spellings, which is also how B15 happened.
+*/
+export function reversalBody(store, id, { ops, version }, { by, actor, label, reversed }) {
+	const log = store.log(id);
+	return {
+		seq: null, from: null, at: Date.now(), by, actor, label,
+		ops, version,
+		// attribution: WHOSE change was reversed, so a readout can say "undid agent-1's move"
+		reversed: reversed ? { seq: reversed.seq, actor: reversed.actor, label: reversed.label } : null,
+		durableVersion: store.durableVersion(id),
+		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
+		truncated: !!log?.truncated, truncatedHuman: !!log?.truncatedHuman,
+		undoTop: topRun(log),
+	};
+}
+
 // The ack a writer receives for its own request: the change, plus the correlation id it sent.
 export function ackBody(change, store, id, txnId) {
 	return { ...changeBody(change, store, id), acked: txnId ?? null };
@@ -221,9 +243,15 @@ export class Session {
 				// D14/GR11: undo's target is IMPLICIT — the top of a shared ring another writer may
 				// have moved. A session that did not author the top record must say which version it
 				// believes it is undoing.
-				const top = log?.peekUndo();
-				const mine = cmd === 'undo' ? (top && top.actor === this.actor) : true;
-				if (!mine && body.expect == null) {
+				/*
+				D14 is [LOCKED]: `expect` is MANDATORY on undo and redo. This gate used to waive it
+				for redo entirely, and for undo whenever you authored the top record — but "I wrote
+				the top record" is exactly the belief D14 exists to distrust. The ring is shared, and
+				another writer can interleave between the read that formed the belief and the undo
+				that acts on it. Tightened to match REST and the decision; safe because the browser
+				already sends expect on every undo and redo (app/src/changes.js:94-95).
+				*/
+				if (body.expect == null) {
 					return this.error('expect required on undo/redo', 'expect-required', body.txnId);
 				}
 				if (body.expect != null && body.expect !== log?.version) {
@@ -237,13 +265,8 @@ export class Session {
 					? this.store.undo(this.diagramId, Number.isInteger(body.to) ? body.to : null)
 					: this.store.redo(this.diagramId);
 				if (!res.ok) return this.error(`${cmd} rejected: ${res.error}`, `${cmd}-rejected`, body.txnId);
-				const payload = { seq: null, from: null, at: Date.now(), by: 'client', actor: this.actor,
-					label: cmd, ops: res.ops, version: res.version,
-					// attribution: whose change this reversed, so the readout can name them
-					reversed: reversing ? { seq: reversing.seq, actor: reversing.actor, label: reversing.label } : null,
-					durableVersion: this.store.durableVersion(this.diagramId),
-					canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated,
-					truncatedHuman: !!log.truncatedHuman, undoTop: topRun(log) };
+				const payload = reversalBody(this.store, this.diagramId, res,
+					{ by: 'client', actor: this.actor, label: cmd, reversed: reversing });
 				this.send('ack', { ...payload, acked: body.txnId ?? null });
 				if (this.hub) this.hub.broadcast(this.diagramId, 'change', payload, this);
 				return;

@@ -379,3 +379,70 @@ test('B24: a multibyte name split across chunk boundaries is not mangled', async
 		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
 	}
 });
+
+/*
+H4a — `expect` on REST forward writes (B16), and the reversal payload (B17).
+
+D14 makes `expect` optional on forward writes and mandatory on undo/redo. On REST it was neither:
+`commitWrite` built `{ops, label}` and discarded everything else, so a body `expect` was **silently
+ignored**. An agent believing it held a compare-and-swap held nothing, and would overwrite another
+writer's change while thinking it was protected. Low likelihood today (the CLI is read-only and the
+browser uses the websocket), high consequence the moment a second writer exists.
+
+It travels as a HEADER, not a body key, because a forward write's body IS an entity payload —
+`POST /nodes -d '{"type":"host"}'` — and a reserved `expect` key there would collide with field
+validation. undo/redo keep the body form: their body is control, not payload. One statable rule:
+control fields ride the body only where the body is control.
+*/
+
+const withExpect = (token, expect) => ({ ...H(token), ...(expect === undefined ? {} : { 'X-Draw-Expect': String(expect) }) });
+
+test('B16: a matching X-Draw-Expect lets the write through', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const v = (await (await fetch(`${base}/api/v1/diagrams/${id}`)).json()).meta.version;
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/nodes`, {
+			method: 'POST', headers: withExpect(lock.token, v), body: JSON.stringify({ type: 'host', x: 60, y: 60 }) });
+		assert.equal(r.status, 200);
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+test('B16: a STALE X-Draw-Expect is refused, and writes nothing', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const before = await (await fetch(`${base}/api/v1/diagrams/${id}`)).json();
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/nodes`, {
+			method: 'POST', headers: withExpect(lock.token, before.meta.version - 1), body: JSON.stringify({ type: 'host', x: 120, y: 120 }) });
+		assert.equal(r.status, 409, 'a stale precondition is a conflict, not a silent success');
+
+		const after = await (await fetch(`${base}/api/v1/diagrams/${id}`)).json();
+		assert.equal(after.meta.version, before.meta.version, 'I1 — a rejected write changes nothing');
+		assert.equal(after.nodes.length, before.nodes.length);
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+test('B16: no X-Draw-Expect still writes — it is OPTIONAL on forward writes (D14)', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/nodes`, {
+			method: 'POST', headers: H(lock.token), body: JSON.stringify({ type: 'host', x: 180, y: 180 }) });
+		assert.equal(r.status, 200, 'a curl one-liner must still work');
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});
+
+test('B17: the REST reversal payload carries undoTop, like the websocket one', async () => {
+	const id = await did();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		await fetch(`${base}/api/v1/diagrams/${id}/nodes`, { method: 'POST', headers: H(lock.token), body: JSON.stringify({ type: 'host', x: 240, y: 240 }) });
+		const v = (await (await fetch(`${base}/api/v1/diagrams/${id}`)).json()).meta.version;
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/undo`, {
+			method: 'POST', headers: H(lock.token), body: JSON.stringify({ expect: v }) });
+		const body = await r.json();
+		assert.equal(r.status, 200);
+		assert.ok('undoTop' in body, 'a viewer needs undoTop to keep its "undo all N by <actor>" affordance current');
+	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
+});

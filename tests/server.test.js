@@ -853,3 +853,61 @@ test('server restart reloads persisted state from disk', async () => {
 	assert.equal(rest.status, 200);
 	assert.equal(rest.body.name, 'persisted');
 });
+
+/*
+D14 on the websocket — H4a.
+
+D14 is [LOCKED] and reads: `expect` is optional on forward writes and MANDATORY on undo and redo.
+REST enforced that; the websocket did not. Its gate was
+
+    const mine = cmd === 'undo' ? (top && top.actor === this.actor) : true;
+    if (!mine && body.expect == null) return this.error('expect required…');
+
+so REDO never required `expect` at all, and UNDO did not require it when you authored the top
+record. "I wrote the top record" is exactly the belief D14 exists to distrust: another writer can
+interleave between the read that formed the belief and the undo that acts on it, and the ring is
+shared. Tightened to match REST and the decision. Safe by construction — the browser already sends
+`expect` on every undo and redo (app/src/changes.js:94-95).
+*/
+test('D14: the websocket refuses undo AND redo without expect, even for the author', async () => {
+	const a = await connect();
+	a.send('hello', {});
+	const snap = await a.expect('snapshot');
+	const id = snap.body.doc.meta.id;
+
+	a.send('commit', { ops: [{ op: 'meta', patch: { name: 'd14-probe' } }], label: 'rename' });
+	const ack = await a.expect('ack');
+
+	// this session authored the top record — previously that alone waived the precondition
+	a.send('undo', {});
+	const e1 = await a.expect('error');
+	assert.equal(e1.body.code, 'expect-required', 'authorship is not a substitute for a precondition');
+
+	a.send('undo', { expect: ack.body.version });
+	const undone = await a.expect('ack');
+
+	a.send('redo', {});
+	const e2 = await a.expect('error');
+	assert.equal(e2.body.code, 'expect-required', 'redo is a reversal too, and its target is just as implicit');
+
+	a.send('redo', { expect: undone.body.version });
+	await a.expect('ack');
+	a.close();
+});
+
+test('B25/I11: create {doc} IGNORES a well-formed client version but REJECTS a malformed one', async () => {
+	const c = await connect();
+	c.send('hello', {});
+	const doc = (await c.expect('snapshot')).body.doc;
+
+	// well-formed but not the client's to choose: ignored, and the mirror agrees with the log (D6)
+	c.send('create', { name: 'v-probe', doc: { ...doc, meta: { ...doc.meta, version: 999 } } });
+	const made = await c.expect('snapshot');
+	assert.equal(made.body.doc.meta.version, 0, 'the client cannot mint a version any more than an id');
+	assert.equal(made.body.version, made.body.doc.meta.version, 'log and document report the same number');
+
+	// malformed: still refused at the boundary, never silently repaired (D17)
+	c.send('create', { name: 'v-bad', doc: { ...doc, meta: { ...doc.meta, version: 'NaN-string' } } });
+	assert.match((await c.expect('error')).body.message, /invalid meta.version/);
+	c.close();
+});

@@ -205,10 +205,10 @@ All `S4` except B16's `expect` half. Each item amends `README.md` / `SCOPE.md` *
 
 | # | Item | Row | Sev · Size | Violates | Status |
 |---|---|---|---|---|---|
-| H4.1 | Forward `body.expect` to `store.commit` on REST forward writes. Currently discarded while the code claims it is optional | **B16** | **S2† · S** | D14 | `TODO` |
+| H4.1 | `expect` rides the **`X-Draw-Expect` header** and reaches the transaction; a stale one answers 409 and writes nothing | **B16** | **S2† · S** | D14 | `DONE` |
 | H4.2 | `POST .../commit` accepts `{ops}` — the vocabulary it is documented to accept. Unlocks multi-op transactions for agents | **B16** | S4 · M | GR10, X1 | `TODO` |
-| H4.3 | One shared `reversalBody(…)` across both transports; restores `undoTop` to the REST broadcast; unifies the `expect` and `to` policies | **B17** | S4 · S | D21 | `TODO` |
-| H4.4 | `create {doc}` — force `version: 0` in the candidate. One line | **B25** | S4 · S | D6, I11 | `TODO` |
+| H4.3 | `reversalBody()` shared by both transports; `undoTop` restored to REST; surfaced and closed **B39** (the ws waived D14 on undo/redo) | **B17**, **B39** | S4 · S | D21, D14 | `DONE` |
+| H4.4 | `create {doc}` validates as-arrived, installs at 0 — malformed rejected (D17), well-formed ignored (I11) | **B25** | S4 · S | D6, I11 | `DONE` |
 | H4.5 | A `selection` delta, or `change` carrying a selection op — stop shipping the whole document on the highest-frequency, lowest-information write. Same two files as H4.3 | **B34** | S4 · **A12** · S | D7, A12 | `TODO` |
 | H4.6 | Extend `tests/spec.test.js` to derive the REST surface from the router, as it already does for the ws dispatch. X9 found B11 and B12 that way | — | — | GR10 | `TODO` |
 

@@ -7,7 +7,7 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
-import { snapshotBody, changeBody } from './protocol.js';
+import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -128,7 +128,26 @@ function summarise(ops) {
 	return Object.entries(counts).map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(', ');
 }
 
-function commitWrite(res, store, hub, locks, id, token, mutation, extra) {
+/*
+`expect` rides the X-Draw-Expect HEADER on forward writes, not the body.
+
+A forward write's body IS an entity payload — `POST /nodes -d '{"type":"host","x":60}'` — so a
+reserved `expect` key there would collide with field validation and differ per verb. The header is
+uniform across /commit, POST, PATCH and DELETE, and mirrors how the lock token already travels.
+undo/redo keep the body form because THEIR body is control, not payload. One statable rule: control
+fields ride the body only where the body is control.
+
+B16: this was silently DISCARDED. commitWrite built {ops, label} and dropped everything else, so an
+agent believing it held a compare-and-swap held nothing (D14).
+*/
+const expectOf = (req) => {
+	const raw = req.headers['x-draw-expect'];
+	if (raw === undefined) return undefined;
+	const n = Number(raw);
+	return Number.isInteger(n) ? n : NaN;        // NaN => present but unusable; never silently ignored
+};
+
+function commitWrite(res, store, hub, locks, id, token, mutation, extra, expect) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	const op = mutation.action === 'put' ? { op: 'put', kind: mutation.kind, entity: mutation.entity }
 		: mutation.action === 'set' ? { op: 'set', kind: mutation.kind, id: mutation.entity.id, patch: mutation.entity }
@@ -140,8 +159,13 @@ function commitWrite(res, store, hub, locks, id, token, mutation, extra) {
 	const label = mutation.label || (mutation.action && mutation.kind
 		? `${{ put: 'create', set: 'move', del: 'delete' }[mutation.action] || mutation.action} ${mutation.kind}`
 		: '');
-	const result = store.commit(id, { ops: [op], label }, 'server', `rest-${token.slice(0, 8)}`);
-	if (!result.ok) return json(res, 422, { error: result.error });
+	if (Number.isNaN(expect)) return json(res, 400, { error: 'X-Draw-Expect must be an integer version', code: 'expect-malformed' });
+	const result = store.commit(id, { ops: [op], label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`);
+	if (!result.ok) {
+		// a failed precondition is a CONFLICT, not a malformed request: the caller re-reads and retries
+		const conflict = /version conflict/i.test(result.error);
+		return json(res, conflict ? 409 : 422, { error: result.error, ...(conflict ? { code: 'version-conflict', version: result.version } : {}) });
+	}
 	// durability: a REST/agentic caller is one-shot — it has no reconnect backstop, so an acked
 	// write must be on disk, not merely in the ~200ms debounce window. Flush before acking. (The ws
 	// path keeps the debounce — drag writes are high-frequency and self-heal on reconnect.)
@@ -337,13 +361,8 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		const result = parts[4] === 'undo' ? store.undo(id, body.to ?? null) : store.redo(id);
 		if (!result.ok) return json(res, 422, { error: result.error, version: result.version });
 		store.flush(id);
-		const payload = { seq: null, from: null, at: Date.now(), by: 'server', actor: `rest-${token.slice(0, 8)}`,
-			label: parts[4], ops: result.ops, version: result.version,
-			// attribution: WHOSE change was reversed, so a readout can say "undid agent-1's move"
-			reversed: reversing ? { seq: reversing.seq, actor: reversing.actor, label: reversing.label } : null,
-			durableVersion: store.durableVersion(id),
-			canUndo: !!log.canUndo(), canRedo: !!log.canRedo(), truncated: !!log.truncated,
-			truncatedHuman: !!log.truncatedHuman };
+		const payload = reversalBody(store, id, result,
+			{ by: 'server', actor: `rest-${token.slice(0, 8)}`, label: parts[4], reversed: reversing });
 		if (hub) hub.broadcast(id, 'change', payload);
 		return json(res, 200, payload);
 	}
@@ -355,7 +374,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		const body = await readJson(req);
 		if (bodyRejected(req, res, body)) return;
 		if (!body) return json(res, 400, { error: 'invalid JSON body' });
-		return commitWrite(res, store, hub, locks, id, token, body);
+		return commitWrite(res, store, hub, locks, id, token, body, undefined, expectOf(req));
 	}
 
 	// high-level verbs on a collection
@@ -368,16 +387,16 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
 		const entity = buildEntity(model, kind, data);
 		if (!entity) return json(res, 422, { error: `cannot create ${kind}` });
-		return commitWrite(res, store, hub, locks, id, token, { action: 'put', kind, entity }, { id: entity.id });
+		return commitWrite(res, store, hub, locks, id, token, { action: 'put', kind, entity }, { id: entity.id }, expectOf(req));
 	}
 	if (req.method === 'PATCH' && parts.length === 6) {
 		const data = await readJson(req);
 		if (bodyRejected(req, res, data)) return;
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
-		return commitWrite(res, store, hub, locks, id, token, { action: 'set', kind, entity: { ...data, id: parts[5] } });
+		return commitWrite(res, store, hub, locks, id, token, { action: 'set', kind, entity: { ...data, id: parts[5] } }, undefined, expectOf(req));
 	}
 	if (req.method === 'DELETE' && parts.length === 6) {
-		return commitWrite(res, store, hub, locks, id, token, { action: 'del', kind, entity: { id: parts[5] } });
+		return commitWrite(res, store, hub, locks, id, token, { action: 'del', kind, entity: { id: parts[5] } }, undefined, expectOf(req));
 	}
 	return json(res, 404, { error: 'not found' });
 }
