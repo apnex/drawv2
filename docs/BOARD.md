@@ -169,9 +169,9 @@ Promoted onto the critical path by the triage pass: **H3 cannot start without H2
 | # | Item | Row | Sev · Size | Status |
 |---|---|---|---|---|
 | H2.1 | Client harness — jsdom or minimal stubs, able to drive a synthetic gesture and a synthetic keypress to a commit. Start with the three dead key paths so **B14** has a red test to go green against | **B23** | S5 · **L** | `TODO` |
-| H2.2 | `tests/gate.test.js` — GR1's own self-check. The pre-push hook is local and untracked, so a fresh clone is entirely ungated | **B21** | S4 · S | `TODO` |
+| H2.2 | `tests/gate.test.js` — GR1's own self-check, **6 probes proven to bite**. Writing it found that `gate:install` wrote to `.git/hooks/` while a global `core.hooksPath` sent git elsewhere: **the gate had never run on a push**. Replaced by `tools/install-hook.sh`, which resolves git's real hook path and confines itself to this repo | **B21** | S4 · S | `DONE` |
 | H2.3 | CI, or a recorded decision not to have it | B21 | — | `TODO` (decision) |
-| H2.4 | `tools/scan-board.mjs` (**propose as GR14**) — every board item cites a live `B` row; every `Closes H<n>` names a milestone here. Add to `npm run gate`. In GR2's spirit | — | — | `TODO` |
+| H2.4 | `tools/scan-board.mjs` (**GR14**) — R1 citations resolve, R2 milestones exist, R3 `DONE` and `CLOSED` move together. Wired into `npm run gate`; **5 probes proven to bite**. Contract rules 4 and 5 are judgement, deliberately not faked | — | — | `DONE` |
 | H2.5 | `tests/diff-inverse.test.js` — GR5's missing half, covering the 8 inline commit sites. **Or** retire it with a recorded deviation | **B22** | S4 · **L** | `BLOCKED` on decision |
 | H2.6 | Extend the harness to `Renderer`, `Selection`, `LabelEditor` | B23 | — | `TODO` |
 
