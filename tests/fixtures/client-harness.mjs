@@ -32,6 +32,8 @@ import { attachRelations } from '../../engine/index.mjs';
 import { cellOf } from '../../kernel/index.mjs';
 import { Changes } from '../../app/src/changes.js';
 import { Selection } from '../../app/src/selection.js';
+import { crosshair } from '../../app/src/painter.js';
+import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 
 // ---- the smallest DOM the client's constructors actually touch ----
@@ -46,7 +48,7 @@ function fakeClassList() {
 	};
 }
 
-function fakeEl(tag = 'div', id = '') {
+export function fakeEl(tag = 'div', id = '') {
 	const el = {
 		tagName: tag.toUpperCase(), id, hidden: true, children: [], dataset: {}, style: {},
 		classList: fakeClassList(),
@@ -153,6 +155,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		dispatchEvent(e) { dispatched.push(e); return true; },
 	};
 	const help = fakeEl('div', 'help');
+	// B36 — the single crosshair main.js owns, injected here the same way. Sharing it is the point:
+	// two instances on one layer is the defect, so the harness must not quietly create a second.
+	const snap = crosshair(svg.byId['#snaplayer'], CANVAS, GAP);
 
 	// the commit boundary — the ONLY surface these tests assert on
 	const commits = [];
@@ -160,12 +165,12 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 
 	// `bare` omits the optional collaborators entirely, exercising Input's own null-object defaults.
 	const input = bare
-		? new Input({ svg, model, history, selection, renderer, labels, host, help })
-		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help });
+		? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
+		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap });
 	if (readOnly) input.setReadOnly(true);
 
 	return {
-		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette, help,
+		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette, help, snap,
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
 		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without

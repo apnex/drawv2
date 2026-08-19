@@ -21,15 +21,14 @@ not acquire an opinion about mutation, which is precisely the coupling that prod
 ─────────────────────────────────────────────────────────────────────────────────────────────────*/
 
 import { el } from './painter.js';
-import { crosshair } from './painter.js';
-import { CANVAS, GAP, NODE_R, dist } from './snap.js';
+import { CANVAS, GAP, NODE_R, dist, zoneCorners } from './snap.js';
 import { inFootprint } from './pick.js';
 import { kindOf } from '../../model/index.mjs';
 
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, model, selection, renderer }) {
+	constructor({ svg, model, selection, renderer, snap }) {
 		this.svg = svg;
 		this.model = model;
 		this.selection = selection;
@@ -40,7 +39,11 @@ export class Overlay {
 		this.hovered = null;      // the entity under the pointer, or null
 		this.armed = null;        // { id, cls } — the delete / clone chord's target
 		this.datumEl = null;      // the local-origin marker
-		this.crosshair = crosshair(this.snapLayer, CANVAS, GAP);
+		// B36 — ONE crosshair on #snaplayer, injected. Overlay and Palette each used to construct their
+		// own on that same layer, so two could be drawn at once. Nothing showed it because Input's
+		// onDown happens to hide the stamp hand first, which is correctness by remembering rather
+		// than by construction. One instance makes the second impossible.
+		this.crosshair = snap;
 	}
 
 	// ---- hover ----
@@ -154,10 +157,7 @@ export class Overlay {
 		if (kindOf(id) !== 'zone') return;
 		const z = this.model.get('zone', id);
 		if (!z) return;
-		this.#place({
-			nw: { x: z.x, y: z.y }, ne: { x: z.x + z.w, y: z.y },
-			sw: { x: z.x, y: z.y + z.h }, se: { x: z.x + z.w, y: z.y + z.h }
-		}, 2, 'corner');
+		this.#place(zoneCorners(z), 2, 'corner');
 	}
 
 	// one rect per named point, tagged with the dataset key the recognizer reads back

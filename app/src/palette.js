@@ -7,19 +7,35 @@ click) whose ghost rides the snapped cell; input.js stamps it on click.
 */
 
 import { CANVAS, GAP, snapNode } from './snap.js';
-import { toCanvas, ghostNode, crosshair } from './painter.js';
+import { toCanvas, ghostNode } from './painter.js';
 import * as commands from './commands.js';
 
 export const NODE_TYPES = ['host', 'server', 'loadbalancer', 'firewall', 'vxlan', 'router'];
 
+/*
+B36 asked whether this and input.js's DRAG_THRESHOLD are one constant written twice. They are not,
+and the reason is worth stating rather than leaving as two bare numbers.
+
+  DRAG_THRESHOLD  4   CANVAS units — a press becomes a drag. Measured after toCanvas(), so it is a
+                      distance in document space and survives pan/zoom: four units is four units
+                      whatever the viewport is doing.
+  CLICK_SLOP      5   SCREEN pixels — a tile press was a click, not a drag off the palette. Measured
+                      on raw clientX/clientY, because a palette tile is chrome: it lives outside the
+                      canvas transform and never moves with it.
+
+Collapsing them would mean comparing a document-space distance with a screen-space one, which are
+equal only at 1:1 zoom. Two constants is the correct answer; two ANONYMOUS constants was not.
+*/
+const CLICK_SLOP = 5;
+
 export class Palette {
-	constructor({ container, svg, model, history, selection }) {
+	constructor({ container, svg, model, history, selection, snap }) {
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
 		this.overlay = svg.querySelector('#overlay');
-		this.snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
+		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
 		this.hand = null;      // held node type (stamp hand), or null
 		this.handGhost = null;
@@ -159,7 +175,7 @@ export class Palette {
 		const pos = toCanvas(evt, this.svg);
 		if (!this.inCanvas(pos)) {
 			// a click on the tile (no drag) toggles the stamp hand
-			if (Math.hypot(evt.clientX - sx, evt.clientY - sy) < 5) this.toggleHand(type);
+			if (Math.hypot(evt.clientX - sx, evt.clientY - sy) < CLICK_SLOP) this.toggleHand(type);
 			return;
 		}
 		const snapped = snapNode(pos);

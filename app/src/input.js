@@ -36,7 +36,7 @@ import { Overlay } from './overlay.js';
 import { RECOGNIZE, resolveRule } from './recognize.js';
 import { resolveKey } from './keymap.js';
 import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, waypointFree, inFootprint, footprintHits } from './pick.js';
-import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist } from './snap.js';
+import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
@@ -135,11 +135,8 @@ const GESTURES = {
 			const zone = i.model.get('zone', zoneId);
 			if (!zone) return null;
 			// the FIXED corner is the one OPPOSITE the grabbed handle
-			const corners = {
-				nw: { x: zone.x + zone.w, y: zone.y + zone.h }, ne: { x: zone.x, y: zone.y + zone.h },
-				sw: { x: zone.x + zone.w, y: zone.y },          se: { x: zone.x, y: zone.y }
-			};
-			return { zone: zoneId, fixedCorner: corners[hit.id], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
+			const fixedCorner = zoneCorners(zone)[OPPOSITE_CORNER[hit.id]];
+			return { zone: zoneId, fixedCorner, before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
 		}
 	},
 
@@ -342,7 +339,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap }) {
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
@@ -360,7 +357,7 @@ export class Input {
 		this.overlay = svg.querySelector('#overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, lastPos).
-		this.overlayUi = new Overlay({ svg, model, selection, renderer });
+		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap });
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
 

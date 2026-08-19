@@ -5,8 +5,8 @@ server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number 
 */
 
 import { sharedDefs, cellOf } from '../../kernel/index.mjs';
-import { el } from './painter.js';
-import { nodePoints, zonePoints } from './snap.js';
+import { el, crosshair } from './painter.js';
+import { nodePoints, zonePoints, CANVAS, GAP } from './snap.js';
 import { Model } from '../../model/index.mjs';
 import { attachRelations } from '../../engine/index.mjs';
 import { Changes } from './changes.js';
@@ -41,13 +41,16 @@ const labels = new LabelEditor({ svg, model, history });
 const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
 const dataview = new DataView({ model, svg });
 readout.onUnitsChanged = (units) => dataview.setUnits(units);
-const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection });
+// B36 — one crosshair on #snaplayer, owned here and shared. Overlay and Palette each built their
+// own, which is two owners of one layer; the composition root is where that gets decided.
+const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
+const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap });
 
 // help overlay: header button + click-outside-to-close. Resolved HERE and injected — Input used to
 // look the same element up for itself, so the id had two owners (B45).
 const helpBtn = document.getElementById('help-btn');
 const help = document.getElementById('help');
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host: window, help });
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host: window, help, snap });
 if (helpBtn && help) {
 	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });
 	help.addEventListener('click', (e) => { if (e.target === help) help.hidden = true; });

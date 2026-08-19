@@ -19,6 +19,8 @@ import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mj
 import { validateEntity } from '../server/validate.js';
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
+import { Palette } from '../app/src/palette.js';
+import { fakeEl } from './fixtures/client-harness.mjs';
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -725,5 +727,58 @@ test('B45: the help element is the injected one — not a second lookup of the s
 		assert.equal(h.input.help, h.help, 'one owner of #help, and it is the composition root');
 		h.input.onKeyDown(key('?', { shiftKey: true }));
 		assert.equal(h.help.hidden, false, 'and toggling help acts on that very element');
+	} finally { h.restore(); }
+});
+
+/*
+B36 remainder — one crosshair, one corner table.
+
+The crosshair defect was never visible: Overlay and Palette each built their own on #snaplayer, and
+the only reason two were never drawn at once is that onDown happens to call palette.hideHand() before
+starting a gesture. Correct by remembering, not by construction — B43's shape exactly. This asserts
+the shared instance, because that is what makes a second one impossible rather than merely absent.
+*/
+test('B36: Overlay and Palette share ONE crosshair, so #snaplayer has a single owner', () => {
+	const h = makeInput();
+	try {
+		const layer = h.layers['#snaplayer'];
+		assert.equal(layer.children.length, 0, 'nothing drawn at rest');
+
+		// the PALETTE path: an armed stamp hand tracks the snapped cell
+		const palette = new Palette({
+			container: fakeEl('div'), svg: h.svg, model: h.model,
+			history: h.history, selection: h.selection, snap: h.snap,
+		});
+		palette.setHand('host');
+		palette.trackHand({ x: 0, y: 0 }, false);
+		const oneCrosshair = layer.children.filter((c) => c.tagName !== 'G').length;
+		assert.ok(oneCrosshair > 0, 'the palette drew a crosshair, or this test proves nothing');
+
+		// the INPUT path, on the same layer, without the palette having hidden its own first.
+		// Two owners put two crosshairs here; one owner moves the one that exists.
+		h.input.overlayUi.crosshair.show({ x: 180, y: 180 });
+		assert.equal(
+			layer.children.filter((c) => c.tagName !== 'G').length, oneCrosshair,
+			'still exactly one crosshair — Overlay and Palette are driving the same instance',
+		);
+	} finally { h.restore(); }
+});
+
+test('B36: a zone resize pins the corner opposite the grabbed handle', () => {
+	const h = makeInput();
+	try {
+		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		h.model.put('zone', z);
+		h.selection.set([z.id]);
+
+		// grab NW and drag it outward past the origin; SE must not move
+		h.input.onDown(handle('nw', 0, 0));
+		h.input.onMove(handle('nw', -180, -180));
+		h.input.onUp(handle('nw', -180, -180));
+
+		const after = h.model.get('zone', z.id);
+		assert.equal(after.x + after.w, 300, 'the SE corner stayed put in x');
+		assert.equal(after.y + after.h, 300, 'and in y');
+		assert.ok(after.x < 0, 'while NW followed the pointer');
 	} finally { h.restore(); }
 });

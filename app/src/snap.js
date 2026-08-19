@@ -117,6 +117,25 @@ export function snappedDelta(model, ctx, pos, ortho) {
 }
 
 /*
+The four corners of a zone, named the way the handles are. B36 — this was written out twice with the
+coordinates transposed: overlay.js placed handles at the ACTUAL corners, and input.js listed, for
+each handle, the OPPOSITE corner to pin during a resize. Same four expressions, related by a mapping
+that existed only in the reader's head.
+
+Splitting it into a corner table plus an explicit OPPOSITE makes that relationship the thing being
+stated, instead of something you recover by comparing two literals.
+*/
+export const zoneCorners = (z) => ({
+	nw: { x: z.x,       y: z.y },
+	ne: { x: z.x + z.w, y: z.y },
+	sw: { x: z.x,       y: z.y + z.h },
+	se: { x: z.x + z.w, y: z.y + z.h },
+});
+
+// grab a handle, and the corner diagonally across from it is the one that stays put
+export const OPPOSITE_CORNER = { nw: 'se', ne: 'sw', sw: 'ne', se: 'nw' };
+
+/*
 A zone resize box from the dragged corner and the FIXED one. Enforces a one-cell minimum by pushing
 INWARD when the fixed corner sits on an edge — a blind push there would be clamped straight back to
 zero width.
