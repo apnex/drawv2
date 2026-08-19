@@ -54,6 +54,8 @@ const ALLOW = {
 	'docs/BACKLOG.md:design/shot.mjs': 'as above (B31 evidence)',
 	'docs/BACKLOG.md:docs/spec/CLEANLINESS.md': 'as above (B31 evidence)',
 	'docs/BACKLOG.md:docs/history/PRISMV2-DESIGN.md': 'as above (B31 evidence)',
+	'docs/BACKLOG.md:app/src/schema.js': 'as above (B31 evidence) — the row names the path it was repointed FROM',
+	'docs/BACKLOG.md:client/src/renderer.js': 'as above (B31 evidence)',
 };
 
 /*
