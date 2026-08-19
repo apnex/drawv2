@@ -20,7 +20,7 @@ export const cellOf = (v, V = STD) => Math.round(v / V.pitch) + 0;
 // ---- element constructors (px coords, center-origin) ----
 // The RESOLVED primitives — a flat scene is a list of these.
 // A node anchors at (cx,cy) = its origin-cell centre. spanW/spanH are the px EXTENT BEYOND a 1×1
-// frame (a multi-cell footprint grows +x/+y from the anchor); both 0 ⇒ today's 1-cell node, and
+// frame (a multi-cell footprint grows +x/+y from the origin); both 0 ⇒ today's 1-cell node, and
 // the fields are omitted so a 1×1 node element stays byte-identical. (W1 — multi-cell span foundation.)
 export const node = (cx, cy, o = {}) => {
 	const n = { kind: 'node', cx, cy, frame: o.frame || 'circle', glyph: o.glyph || 'router', sel: !!o.sel };

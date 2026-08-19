@@ -29,6 +29,56 @@ stress-test is the completeness proof. **Steps are not locked until they survive
 - cell / zone = space / region (a sheet or area) · group = a functional bundle of components
 - selection = the current working scope · connection = a net/wire (incl. container↔container, single or parallel)
 
+### Connection taxonomy [LOCKED 2026-08-19]
+
+The connection layer had four words for overlapping ideas and one word (`anchor`) for five different
+ones. This is the canon. It is enforced, not merely stated — see *Enforcement* below.
+
+**The chain, in one line:**
+
+> An **ANCHOR** is a referenceable point. A **ROUTE** is an ordered list of anchors — topology, no
+> coordinates. Resolving a route against its entities' positions yields a **PATH** — an ordered list
+> of coordinates, no identity. A **LINK** is the document entity that owns a route.
+
+| Term | Definition | Carries | Layer | Owner |
+|---|---|---|---|---|
+| **anchor** | a point that can be referenced by a route or attached to by a path end | — | kernel + document | shared vocabulary |
+| **route** | an ordered list of anchors | topology | document (`link.src/via/dst`), kernel schema (`{from,via,to}`) | `document/` |
+| **path** | an ordered list of coordinates | geometry | `Model.pathOf()` → `[[x,y],…]`; kernel scene `path {pts,radius,close}` | `document/` resolves, `kernel/` draws |
+| **link** | the document entity owning a route, plus identity and `closed` | both | document | `document/` |
+| **waypoint** | a placeable anchor entity — a bend a user can select and move | — | document | `document/` |
+
+**What may be an anchor** — one set, not two. Today `engine.resolveRoute` accepts `node | waypoint |
+cell` while `grc` rule 3 accepts `node | waypoint | port | junction`; that divergence is an accident
+of implementation order, not a design. The set is **`node · waypoint · port · junction · cell`**.
+Ports and junctions are anchors that no schema can yet *name* — closing that gap is geometry work
+(ATOMICS: the container-edge handle is still open at ±29 vs ±30), not naming work.
+
+**Two shapes, one rule.** Entities are `{x, y}`. Paths are `[[x, y], …]`. This is taxonomy, not
+drift: a path is a path in every layer, so `Model.pathOf()` returns the shape the kernel's `pts`
+contract already specifies and hands straight to `roundedPath` with no conversion anywhere.
+
+**Duties.**
+
+| Layer | Duty, one sentence |
+|---|---|
+| `document/` | Say what is connected, and through which points. |
+| `kernel/` | Say how a path is drawn, and whether it is legal. |
+| `engine/` | Say what references what. |
+| `app/` | Compose the three. |
+
+**`anchor` means exactly one thing.** It previously meant five, which is why the word was useless in
+a search. Freed 2026-08-19: the span origin is now `origin`, the held corner in a resize is
+`fixedCorner`, the entity a multi-entity drag is measured from is `base` (CAD's *base point*), and
+the label editor's screen position is `placement`. The SVG `text-anchor` attribute is a web-platform
+term and is deliberately untouched.
+
+**Enforcement.** A taxonomy that is not mechanized is a style guide. `tools/scan-writers.mjs` is
+extended to fail on: `anchor` used in any sense but the canonical one, a second polyline builder
+outside `Model.pathOf`, and (after the kernel cut) any surviving `wire` or scene-kind `link`.
+
+---
+
 **Principles (enforced everywhere):**
 1. **Determinism over aesthetics** — snap to grid; exact coordinates; reproducible, not arranged by eye (schematic-grade).
 2. **Orthogonal composability** — content (nodes/groups) vs space (cells/zones), shape vs glyph, containment vs connection: independent axes that combine with no special cases.

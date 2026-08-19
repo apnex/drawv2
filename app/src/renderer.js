@@ -17,7 +17,7 @@ const ZONE_R = L_STD.zone.r;           // zone corner radius (14)
 const NODE_LABEL_Y = FE + 18;          // label baseline below the frame
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
 const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // unknown glyph → host fit-box (no crash)
-// a node's multi-cell footprint (W1): px extent beyond a 1×1 frame (+x/+y from the anchor cell), and a
+// a node's multi-cell footprint (W1): px extent beyond a 1×1 frame (+x/+y from the origin cell), and a
 // cheap signature for change-detect. No span / 1×1 → {0,0} / null, so a 1×1 node renders byte-identically.
 const spanPx = (e) => ({ sw: e.span ? (e.span.cols - 1) * STD.pitch : 0, sh: e.span ? (e.span.rows - 1) * STD.pitch : 0 });
 const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.span.cols}x${e.span.rows}` : null;

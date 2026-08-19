@@ -30,7 +30,7 @@ export class LabelEditor {
 		const entity = this.model.get(kind, id);
 		if (!entity) return;
 
-		const anchor = kind === 'node'
+		const placement = kind === 'node'
 			? this.toScreen({ x: entity.x, y: entity.y + NODE_R + 6 })
 			: this.toScreen({ x: entity.x + 10, y: entity.y + 6 });
 
@@ -41,8 +41,8 @@ export class LabelEditor {
 		input.value = entity.name || '';
 		const width = 160;
 		input.style.width = `${width}px`;
-		input.style.left = `${kind === 'node' ? anchor.x - width / 2 : anchor.x}px`;
-		input.style.top = `${anchor.y}px`;
+		input.style.left = `${kind === 'node' ? placement.x - width / 2 : placement.x}px`;
+		input.style.top = `${placement.y}px`;
 
 		input.addEventListener('keydown', (evt) => {
 			evt.stopPropagation();

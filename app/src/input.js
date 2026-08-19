@@ -43,14 +43,14 @@ const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
 const MIN_ZONE = GAP;       // one cell
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
-// footprint (anchor cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
+// footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
 const frameSpan = (a, b) => {
 	const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y), x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
 	return { x: x0 - NODE_R, y: y0 - NODE_R, w: (x1 - x0) + 2 * NODE_R, h: (y1 - y0) + 2 * NODE_R,
-		anchor: { x: x0, y: y0 }, cols: Math.round((x1 - x0) / GAP) + 1, rows: Math.round((y1 - y0) / GAP) + 1 };
+		origin: { x: x0, y: y0 }, cols: Math.round((x1 - x0) / GAP) + 1, rows: Math.round((y1 - y0) / GAP) + 1 };
 };
-// a multi-cell node's footprint extent beyond its anchor in px (0 for a 1×1 node / waypoint) + helpers to
-// hit-test / overlap a node by its whole FOOTPRINT (not just the anchor point) — span-awareness for the editor.
+// a multi-cell node's footprint extent beyond its origin in px (0 for a 1×1 node / waypoint) + helpers to
+// hit-test / overlap a node by its whole FOOTPRINT (not just the origin point) — span-awareness for the editor.
 const spanExt = (n) => ({ sw: n.span ? (n.span.cols - 1) * GAP : 0, sh: n.span ? (n.span.rows - 1) * GAP : 0 });
 const inFootprint = (n, pos, pad = 0) => { const { sw, sh } = spanExt(n); return pos.x >= n.x - pad && pos.x <= n.x + sw + pad && pos.y >= n.y - pad && pos.y <= n.y + sh + pad; };
 const footprintHits = (n, box, pad = 0) => { const { sw, sh } = spanExt(n);   // node footprint rect ∩ a box (marquee)
@@ -153,7 +153,7 @@ export class Input {
 	}
 
 	nodeAt(pos, slop = NODE_R + 4) {
-		// footprint-aware: a multi-cell node is hittable across its WHOLE span, not just near its anchor
+		// footprint-aware: a multi-cell node is hittable across its WHOLE span, not just near its origin
 		// (1×1 → a ±slop box ≈ the old circular radius). Backs select / move / link-target / re-plug.
 		return this.model.all('node').find((n) => inFootprint(n, pos, slop));
 	}
@@ -274,7 +274,7 @@ export class Input {
 				se: { x: zone.x, y: zone.y }
 			};
 			this.mode = 'resize';
-			this.ctx = { zone: zoneId, anchor: corners[hit.id], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
+			this.ctx = { zone: zoneId, fixedCorner: corners[hit.id], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
 			return;
 		}
 
@@ -363,9 +363,9 @@ export class Input {
 			if (entity) moved.push({ kind, id, before: { x: entity.x, y: entity.y } });
 		});
 		if (moved.length === 0) { this.mode = null; return; }
-		const anchor = this.ctx.hit;
+		const base = this.ctx.hit;
 		this.mode = 'move';
-		this.ctx = { ...this.ctx, moved, anchorKind: anchor.kind, anchorId: anchor.id };
+		this.ctx = { ...this.ctx, moved, baseKind: base.kind, baseId: base.id };
 	}
 
 	/*
@@ -456,9 +456,9 @@ export class Input {
 		const moved = clones
 			.filter((c) => c.kind === 'node' || c.kind === 'zone')
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
-		const anchorId = idMap.get(hit.id);
+		const baseId = idMap.get(hit.id);
 		this.mode = 'clone';
-		this.ctx = { ...this.ctx, clones, moved, anchorKind: hit.kind, anchorId };
+		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId };
 		this.selection.set(moved.map((m) => m.id));
 	}
 
@@ -775,7 +775,7 @@ export class Input {
 			return;
 		}
 		if (this.mode === 'resize') {
-			const box = this.resizeBox(pos, this.ctx.anchor);
+			const box = this.resizeBox(pos, this.ctx.fixedCorner);
 			this.model.set('zone', this.ctx.zone, box);
 			this.readout.setBox(box);
 		}
@@ -804,31 +804,31 @@ export class Input {
 				y: m.before.y + delta.y
 			});
 		});
-		const anchor = this.ctx.moved.find((m) => m.id === this.ctx.anchorId) || this.ctx.moved[0];
-		const raw = { x: anchor.before.x + delta.x, y: anchor.before.y + delta.y };
-		const target = anchor.kind === 'zone' ? snapZone(raw) : snapNode(raw);   // node + waypoint → node grid
+		const base = this.ctx.moved.find((m) => m.id === this.ctx.baseId) || this.ctx.moved[0];
+		const raw = { x: base.before.x + delta.x, y: base.before.y + delta.y };
+		const target = base.kind === 'zone' ? snapZone(raw) : snapNode(raw);   // node + waypoint → node grid
 		this.snap.show(target);
 		this.readout.setDrag(target, {
-			x: (target.x - anchor.before.x) / GAP,
-			y: (target.y - anchor.before.y) / GAP
+			x: (target.x - base.before.x) / GAP,
+			y: (target.y - base.before.y) / GAP
 		});
 	}
 
-	resizeBox(pos, anchor) {
+	resizeBox(pos, fixedCorner) {
 		const corner = snapZone(pos); // already clamped to the canvas
 		// enforce minimum one cell, pushing toward the canvas interior when the
-		// anchor sits on an edge (a blind push would be clamped back to w/h = 0)
-		if (Math.abs(corner.x - anchor.x) < MIN_ZONE) {
-			const dir = corner.x >= anchor.x ? 1 : -1;
-			corner.x = anchor.x + dir * MIN_ZONE;
-			if (corner.x < -ZONE_EXT.x || corner.x > ZONE_EXT.x) corner.x = anchor.x - dir * MIN_ZONE;
+		// the fixed corner sits on an edge (a blind push would be clamped back to w/h = 0)
+		if (Math.abs(corner.x - fixedCorner.x) < MIN_ZONE) {
+			const dir = corner.x >= fixedCorner.x ? 1 : -1;
+			corner.x = fixedCorner.x + dir * MIN_ZONE;
+			if (corner.x < -ZONE_EXT.x || corner.x > ZONE_EXT.x) corner.x = fixedCorner.x - dir * MIN_ZONE;
 		}
-		if (Math.abs(corner.y - anchor.y) < MIN_ZONE) {
-			const dir = corner.y >= anchor.y ? 1 : -1;
-			corner.y = anchor.y + dir * MIN_ZONE;
-			if (corner.y < -ZONE_EXT.y || corner.y > ZONE_EXT.y) corner.y = anchor.y - dir * MIN_ZONE;
+		if (Math.abs(corner.y - fixedCorner.y) < MIN_ZONE) {
+			const dir = corner.y >= fixedCorner.y ? 1 : -1;
+			corner.y = fixedCorner.y + dir * MIN_ZONE;
+			if (corner.y < -ZONE_EXT.y || corner.y > ZONE_EXT.y) corner.y = fixedCorner.y - dir * MIN_ZONE;
 		}
-		const box = resolveBox(anchor, corner);
+		const box = resolveBox(fixedCorner, corner);
 		return { x: box.x, y: box.y, w: box.w, h: box.h };
 	}
 
@@ -959,8 +959,8 @@ export class Input {
 		}
 		if (mode === 'textbox') {
 			ctx.rect.remove();
-			const f = frameSpan(ctx.p1, snapNode(pos));   // anchor + span counts (a click → 1×1)
-			const tb = this.model.makeTextBox(f.anchor, { cols: f.cols, rows: f.rows });
+			const f = frameSpan(ctx.p1, snapNode(pos));   // origin + span counts (a click → 1×1)
+			const tb = this.model.makeTextBox(f.origin, { cols: f.cols, rows: f.rows });
 			this.history.commit(commands.createEntity('node', tb));
 			this.selection.set([tb.id]);
 			this.textTool = false; this.svg.classList.remove('texttool');   // one box per arm — disarm, then re-tap 't' for another
@@ -997,7 +997,7 @@ export class Input {
 			return;
 		}
 		if (mode === 'resize') {
-			const after = this.resizeBox(pos, ctx.anchor);
+			const after = this.resizeBox(pos, ctx.fixedCorner);
 			const before = ctx.before;
 			this.model.set('zone', ctx.zone, { ...before });
 			if (after.x === before.x && after.y === before.y && after.w === before.w && after.h === before.h) return;
@@ -1056,11 +1056,11 @@ export class Input {
 	}
 
 	snappedDelta(ctx, pos, ortho) {
-		const anchor = ctx.moved.find((m) => m.id === ctx.anchorId) || ctx.moved[0];
+		const base = ctx.moved.find((m) => m.id === ctx.baseId) || ctx.moved[0];
 		const rawDelta = this.orthoDelta({ x: pos.x - ctx.start.x, y: pos.y - ctx.start.y }, ortho);
-		const anchorRaw = { x: anchor.before.x + rawDelta.x, y: anchor.before.y + rawDelta.y };
-		const anchorSnapped = anchor.kind === 'zone' ? snapZone(anchorRaw) : snapNode(anchorRaw);
-		return this.clampDelta(ctx.moved, { x: anchorSnapped.x - anchor.before.x, y: anchorSnapped.y - anchor.before.y });
+		const baseRaw = { x: base.before.x + rawDelta.x, y: base.before.y + rawDelta.y };
+		const baseSnapped = base.kind === 'zone' ? snapZone(baseRaw) : snapNode(baseRaw);
+		return this.clampDelta(ctx.moved, { x: baseSnapped.x - base.before.x, y: baseSnapped.y - base.before.y });
 	}
 
 	// clamp a delta so every moved entity stays on the canvas
@@ -1068,7 +1068,7 @@ export class Input {
 		let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
 		moved.forEach((m) => {
 			if (m.kind === 'node' || m.kind === 'waypoint') {
-				// clamp the FOOTPRINT: the anchor stays ≥ -EXT and the far cell (anchor + span) stays ≤ +EXT
+				// clamp the FOOTPRINT: the origin stays ≥ -EXT and the far cell (origin + span) stays ≤ +EXT
 				const n = m.kind === 'node' ? this.model.get('node', m.id) : null;
 				const { sw, sh } = n ? spanExt(n) : { sw: 0, sh: 0 };
 				minX = Math.max(minX, -NODE_EXT.x - m.before.x); maxX = Math.min(maxX, NODE_EXT.x - sw - m.before.x);
@@ -1255,7 +1255,7 @@ export class Input {
 		// would resolve to a NEIGHBOUR for nodes one cell apart
 		const pos = toCanvas(evt, this.svg);
 		if (this.readOnly) return; // no editing while Server-Locked
-		// A1 — a TEXT BOX is hit by its whole FOOTPRINT (not just the anchor cell), so double-clicking ANYWHERE
+		// A1 — a TEXT BOX is hit by its whole FOOTPRINT (not just the origin cell), so double-clicking ANYWHERE
 		// on the box edits its text. (A plain node / panel still routes to the name-edit / icon test below.)
 		const tbs = this.model.all('node').filter((n) => Array.isArray(n.content) && n.content.length === 1 && n.content[0].content === 'text'
 			&& pos.x >= n.x - NODE_R && pos.x <= n.x + (n.span ? (n.span.cols - 1) * GAP : 0) + NODE_R
@@ -1336,9 +1336,9 @@ export class Input {
 		this.history.amend({ label: 'resize', entries: [{ op: 'set', kind: 'zone', id: zone.id, before, after }] });
 	}
 
-	// ---- Shift+arrow: grow/shrink the lone selected NODE's span one cell (anchor fixed, +col/+row) ----
-	// The multi-cell authoring gesture (W1). Mirrors resizeZoneByKey: anchor (NW) fixed, min 1 cell, capped
-	// at the validator's 64, coalesced into one undo step. content stays the glyph at the anchor cell.
+	// ---- Shift+arrow: grow/shrink the lone selected NODE's span one cell (origin fixed, +col/+row) ----
+	// The multi-cell authoring gesture (W1). Mirrors resizeZoneByKey: origin (NW) fixed, min 1 cell, capped
+	// at the validator's 64, coalesced into one undo step. content stays the glyph at the origin cell.
 	resizeNodeByKey(dx, dy) {
 		const ids = this.selection.list();
 		if (ids.length !== 1 || kindOf(ids[0]) !== 'node') return; // single-node only

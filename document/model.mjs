@@ -189,7 +189,7 @@ export class Model {
 		return { id: newId('link', this.collection('link')), src, dst };
 	}
 
-	// a routing pivot — a placeable cell-centre anchor a link's route threads through
+	// a placeable ANCHOR — a cell-centre point a link's route can thread through and bend at
 	makeWaypoint(pos) {
 		return { id: newId('waypoint', this.collection('waypoint')), x: pos.x, y: pos.y };
 	}

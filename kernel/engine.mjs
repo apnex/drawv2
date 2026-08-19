@@ -7,7 +7,7 @@
 //   variant: 'standard',                         // optional (only `standard` for now)
 //   entities: [
 //     { id, kind:'node',     cell:[cx,cy], span?:{cols:[c0,c1],rows:[r0,r1]}, content?:[region…], frame?, glyph?, sel? },
-//       (cell = the anchor/origin cell — glyph centre; span = the multi-cell footprint, absent ⇒ 1×1;
+//       (cell = the ORIGIN cell — glyph centre; span = the multi-cell footprint, absent ⇒ 1×1;
 //        content = regions in the socket grid: { at:[col,row], cols, rows, content:'text'|'glyph', value/glyph, align?, outline?, bg?, rx?, fill? })
 //     { id, kind:'waypoint', cell:[cx,cy] },                      // a placeable routing pivot
 //     { id, kind:'zone',     span:{cols:[c0,c1], rows:[r0,r1]} }, // node-cell span → ladder hull
@@ -43,7 +43,7 @@ export function resolve(schema) {
 		if (e.kind !== 'node') continue;
 		const [cx, cy] = cellPx(e.cell, V);
 		const o = { frame: e.frame, glyph: e.glyph, sel: e.sel };
-		// a multi-cell footprint → px extent beyond a 1×1 frame, from the anchor cell (+x/+y); 1×1 span → 0 → omitted.
+		// a multi-cell footprint → px extent beyond a 1×1 frame, from the origin cell (+x/+y); 1×1 span → 0 → omitted.
 		if (e.span) { o.spanW = (e.span.cols[1] - e.span.cols[0]) * V.pitch; o.spanH = (e.span.rows[1] - e.span.rows[0]) * V.pitch; }
 		const el = node(cx, cy, o);
 		if (e.content) el.content = e.content;   // W2 content regions (text/glyph in the socket grid) — pass through to the renderer

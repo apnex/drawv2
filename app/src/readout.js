@@ -76,7 +76,7 @@ export class Readout {
 		return (v > 0 ? '+' : '') + v;
 	}
 
-	// gesture feedback: where the anchor will land / live box dimensions
+	// gesture feedback: where the drag base will land / live box dimensions
 	setDrag(pos, cells) {
 		const d = cells ? ` Δ[${this.signed(cells.x)}, ${this.signed(cells.y)}]` : '';
 		this.transient = `→ ${this.pair(pos.x, pos.y)}${d}${this.rel(pos.x, pos.y)}`;

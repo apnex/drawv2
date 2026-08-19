@@ -25,7 +25,7 @@ const hexColor = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c))
 const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = 15 } = {}) =>
 	`<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="ui-monospace,monospace" font-size="${size}" fill="${fill}">${escText(s)}</text>`;
 
-// a CONTENT region inside a node, in node-LOCAL px (anchor cell centre = 0,0). A region occupies a merged
+// a CONTENT region inside a node, in node-LOCAL px (origin cell centre = 0,0). A region occupies a merged
 // sub-grid at offset `at` [col,row] sized cols×rows of the node's 26px socket grid, holding TEXT (align +
 // optional outline/fill/radius; multi-row wraps as a paragraph) or a GLYPH. Ported from the settled mock
 // (design/widgets/render.mjs renderContent). label/input/button/pill are all text + optional outline/fill.
@@ -60,7 +60,7 @@ export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 	return out + hit;
 }
 
-// the per-cell 26px socket grid for a panel interior (node-local px; anchor cell = 0,0). An alignment
+// the per-cell 26px socket grid for a panel interior (node-local px; origin cell = 0,0). An alignment
 // aid that shows where content regions snap. Interim: always-on for content panels; W4 (edit mode) will
 // gate it (show while editing, hide in the clean view).
 function socketGridSvg(cols, rows, V) {
