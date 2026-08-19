@@ -675,30 +675,15 @@ export class Input {
 	entities, given a 30px margin and rounded OUT to the enclosing zone-grid
 	rectangle (for pure-node selections the +30 already lands on the grid).
 	*/
+	// Z — wrap the selection in a fitted zone. The box arithmetic is commands.wrapSelection's (B46);
+	// what stays is the consequence: select the new zone and say what was made.
 	wrapInZone() {
-		const ids = this.selection.list();
-		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, boxed = 0;
-		ids.forEach((id) => {
-			const kind = kindOf(id);
-			const e = this.model.get(kind, id);
-			if (!e || e.x === undefined) return;
-			minX = Math.min(minX, e.x); minY = Math.min(minY, e.y);
-			maxX = Math.max(maxX, e.x + (e.w || 0)); maxY = Math.max(maxY, e.y + (e.h || 0));
-			boxed++;
-		});
-		if (boxed === 0) return; // empty or link-only selection
-		// snap-out to the zone grid (±HALF + k*GAP), then clamp to extents
-		const floorZ = (v) => Math.floor((v - HALF) / GAP) * GAP + HALF;
-		const ceilZ = (v) => Math.ceil((v - HALF) / GAP) * GAP + HALF;
-		const x = Math.max(floorZ(minX - HALF), -ZONE_EXT.x);
-		const y = Math.max(floorZ(minY - HALF), -ZONE_EXT.y);
-		const x2 = Math.min(ceilZ(maxX + HALF), ZONE_EXT.x);
-		const y2 = Math.min(ceilZ(maxY + HALF), ZONE_EXT.y);
-		const box = { x, y, w: Math.max(x2 - x, GAP), h: Math.max(y2 - y, GAP) };
-		const zone = this.model.makeZone(box);
-		this.history.commit(commands.createEntity('zone', zone));
+		const cmd = commands.wrapSelection(this.model, this.selection.list());
+		if (!cmd.entries.length) return;   // empty or link-only selection
+		const zone = cmd.entries[0].entity;
+		this.history.commit(cmd);
 		this.selection.set([zone.id]);
-		this.readout.flash(`zone ${this.readout.dims(box.w, box.h)}`);
+		this.readout.flash(`zone ${this.readout.dims(zone.w, zone.h)}`);
 	}
 
 	/*
@@ -1070,65 +1055,8 @@ export class Input {
 		this.labels.open(target.kind, target.id);   // name edit (text boxes are handled by the footprint check above)
 	}
 
-	// ---- arrow nudge (coalesced into one undo step per burst) ----
-	nudge(dx, dy) {
-		const moved = [];
-		this.selection.list().forEach((id) => {
-			const kind = kindOf(id);
-			if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;
-			const entity = this.model.get(kind, id);
-			if (entity) moved.push({ kind, id, before: { x: entity.x, y: entity.y } });
-		});
-		if (moved.length === 0) return;
-		const delta = clampDelta(this.model, moved, { x: dx * GAP, y: dy * GAP });
-		if (delta.x === 0 && delta.y === 0) return;
 
-		/*
-		D11 — a burst of arrow keys is ONE undo step, and the window that makes it one lives in
-		`Changes` (client-side, label-keyed, 600ms). B14: this used to reach into
-		`history.stack[history.index - 1]` to mutate the top of a local undo stack in place. That
-		stack was deleted at CS3 when undo moved server-side, so the expression was
-		`undefined[NaN]` and THREW — arrow-key nudge did nothing at all for two milestones. The
-		replacement (`Changes.amend`) was written and tested at CS3; no call site was ever rewired.
-		Each call reads the CURRENT position, so successive amends accumulate correctly.
-		*/
-		this.history.amend(commands.moveEntities(moved.map((m) => ({
-			kind: m.kind, id: m.id,
-			after: { x: m.before.x + delta.x, y: m.before.y + delta.y }
-		}))));
-	}
 
-	// ---- Shift+arrow: grow/shrink the lone selected zone one cell, NW-anchored ----
-	resizeZoneByKey(dx, dy) {
-		const ids = this.selection.list();
-		if (ids.length !== 1 || kindOf(ids[0]) !== 'zone') return; // single-zone only
-		const zone = this.model.get('zone', ids[0]);
-		if (!zone) return;
-		// NW corner fixed; minimum one cell; clamped to the canvas
-		const w = Math.min(Math.max(zone.w + dx * GAP, GAP), ZONE_EXT.x - zone.x);
-		const h = Math.min(Math.max(zone.h + dy * GAP, GAP), ZONE_EXT.y - zone.y);
-		if (w === zone.w && h === zone.h) return;
-
-		// one undo step per burst — the window is in Changes, keyed on the 'resize' label (D11/B14)
-		this.history.amend(commands.resizeZone(zone.id, { x: zone.x, y: zone.y, w, h }));
-	}
-
-	// ---- Shift+arrow: grow/shrink the lone selected NODE's span one cell (origin fixed, +col/+row) ----
-	// The multi-cell authoring gesture (W1). Mirrors resizeZoneByKey: origin (NW) fixed, min 1 cell, capped
-	// at the validator's 64, coalesced into one undo step. content stays the glyph at the origin cell.
-	resizeNodeByKey(dx, dy) {
-		const ids = this.selection.list();
-		if (ids.length !== 1 || kindOf(ids[0]) !== 'node') return; // single-node only
-		const node = this.model.get('node', ids[0]);
-		if (!node) return;
-		const cur = node.span || { cols: 1, rows: 1 };
-		const cols = Math.min(Math.max(cur.cols + dx, 1), 64);
-		const rows = Math.min(Math.max(cur.rows + dy, 1), 64);
-		if (cols === cur.cols && rows === cur.rows) return;
-
-		// one undo step per burst — same window, same label as the zone path (D11/B14)
-		this.history.amend(commands.resizeNodeSpan(node.id, { cols, rows }));
-	}
 
 	// ---- help overlay ----
 	toggleHelp(show) {
@@ -1263,9 +1191,16 @@ export class Input {
 		if (this.lastPos) { this.stampAt(this.lastPos); this.refreshHand(); }
 	}
 
+	/*
+	D11 — a burst of arrow keys is ONE undo step, and the window that makes it one lives in `Changes`
+	(client-side, label-keyed, 600ms). B14: this used to reach into `history.stack[history.index - 1]`
+	to mutate the top of a local undo stack in place. That stack was deleted at CS3 when undo moved
+	server-side, so the expression was `undefined[NaN]` and THREW — arrow-key nudge did nothing at all
+	for two milestones. Each amend reads the CURRENT position, so successive ones accumulate.
+	*/
 	onArrowKey(evt) {
 		const dir = ARROW[evt.key];
-		if (dir) this.nudge(dir[0], dir[1]);
+		if (dir) this.history.amend(commands.nudgeSelection(this.model, this.selection.list(), dir[0], dir[1]));
 	}
 
 	// Shift+arrow. Both resize paths self-guard on the selection kind, so exactly one of them acts:
@@ -1273,8 +1208,10 @@ export class Input {
 	onResizeStep(evt) {
 		const dir = ARROW[evt.key];
 		if (!dir) return;
-		this.resizeZoneByKey(dir[0], dir[1]);
-		this.resizeNodeByKey(dir[0], dir[1]);
+		const ids = this.selection.list();
+		// both builders self-guard on the selection kind, so exactly one of them yields entries
+		this.history.amend(commands.resizeZoneStep(this.model, ids, dir[0], dir[1]));
+		this.history.amend(commands.resizeNodeStep(this.model, ids, dir[0], dir[1]));
 	}
 
 	onWrapKey() { this.wrapInZone(); }

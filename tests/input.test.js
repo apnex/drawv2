@@ -20,6 +20,7 @@ import { validateEntity } from '../server/validate.js';
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP, resolveKey } from '../app/src/keymap.js';
+import { GAP, NODE_EXT } from '../app/src/snap.js';
 import { Palette } from '../app/src/palette.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
 
@@ -966,4 +967,64 @@ test('B47: every entry declares prevent, or inherits the safe default', () => {
 		assert.ok(r.prevent === undefined || r.prevent === false,
 			`${r.id}: prevent is opt-out only; true is the default and stating it is noise`);
 	}
+});
+
+/*
+B46 (pure half) — four builders that COMPUTE moved to commands.js.
+
+They are testable directly now, which is the point: each takes a model and a selection and answers
+"what change does this intent produce", with no Input, no event and no gesture state. They self-guard
+and return empty entries, because `Changes.commit`/`amend` both no-op on an empty command — that is
+what lets the call sites be one line.
+*/
+test('B46: wrapSelection fits a zone to the selection, and yields nothing for a link-only one', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 180]]);
+		const cmd = commands.wrapSelection(h.model, [a.id, b.id]);
+		const zone = cmd.entries[0].entity;
+		assert.ok(zone.x < 0 && zone.y < 0, 'the box snaps OUT past the nodes');
+		assert.ok(zone.x + zone.w > 180 && zone.y + zone.h > 180, 'and encloses the far one');
+
+		const link = h.model.makeLink(a.id, b.id);
+		h.model.put('link', link);
+		assert.equal(commands.wrapSelection(h.model, [link.id]).entries.length, 0,
+			'a link has no x — nothing to wrap');
+		assert.equal(commands.wrapSelection(h.model, []).entries.length, 0);
+	} finally { h.restore(); }
+});
+
+test('B46: nudgeSelection clamps at the canvas edge and yields nothing when it cannot move', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		const cmd = commands.nudgeSelection(h.model, [a.id], 1, 0);
+		assert.equal(cmd.entries[0].after.x, GAP, 'one cell right');
+
+		// park it ON the node extent — note that is NODE_EXT, not CANVAS.hw: the canvas is wider than
+		// the area a node may occupy, and clamping to the wrong one reads as a passing test that
+		// proves nothing (from CANVAS.hw the clamp pulls the node BACK, a perfectly real change).
+		h.model.set('node', a.id, { x: NODE_EXT.x });
+		assert.equal(commands.nudgeSelection(h.model, [a.id], 1, 0).entries.length, 0,
+			'clamped flat against the edge — no change, so no command');
+		assert.equal(commands.nudgeSelection(h.model, [a.id], -1, 0).entries.length, 1,
+			'but it can still come back the other way');
+	} finally { h.restore(); }
+});
+
+test('B46: the two Shift+arrow builders self-guard, so exactly one ever acts', () => {
+	const h = makeInput();
+	try {
+		const [n] = seedNodes(h.model, [[0, 0]]);
+		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		h.model.put('zone', z);
+
+		assert.equal(commands.resizeNodeStep(h.model, [z.id], 1, 0).entries.length, 0, 'zone selected: node builder is silent');
+		assert.equal(commands.resizeZoneStep(h.model, [z.id], 1, 0).entries.length, 1, 'zone builder acts');
+
+		assert.equal(commands.resizeZoneStep(h.model, [n.id], 1, 0).entries.length, 0, 'node selected: zone builder is silent');
+		assert.equal(commands.resizeNodeStep(h.model, [n.id], 1, 0).entries[0].after.span.cols, 2, 'node builder grows the span');
+
+		assert.equal(commands.resizeZoneStep(h.model, [z.id, n.id], 1, 0).entries.length, 0, 'a MIXED selection resizes nothing');
+	} finally { h.restore(); }
 });

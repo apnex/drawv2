@@ -18,6 +18,8 @@ inverse-building, not the closure.
 
 import { groupAfterRemoval } from '../../engine/index.mjs';
 import { clone } from '../../model/ops.mjs';
+import { kindOf } from '../../model/index.mjs';
+import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history
@@ -233,4 +235,81 @@ export function renameDocument(name) {
 
 export function bindSlides(url) {
 	return { label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url } } }] };
+}
+
+/*
+---- H6.9 / B46: builders that COMPUTE, not just shape ----
+
+These four were written inside input.js, where they read as gesture code because a key press is what
+triggers them. None of them touches `mode`, `ctx` or an event: each takes the model and a selection
+and answers "what change does this intent produce". That is this module's sentence, so they belong
+here — the same argument as B44, in the form GR16 cannot see, because they called a builder rather
+than writing a `{label, entries}` literal.
+
+They self-guard and return EMPTY ENTRIES when there is nothing to do, following `createGroup` and
+`reshapeNodes`. `Changes.commit` and `Changes.amend` both no-op on an empty command, so a caller
+never needs a guard of its own — which is what lets the call sites collapse to one line.
+*/
+
+// Z — fit a zone around the selection: the bounding box, snapped OUT to the zone grid (±HALF + k·GAP)
+// and clamped to the canvas. Link-only or empty selections produce nothing.
+export function wrapSelection(model, ids) {
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, boxed = 0;
+	ids.forEach((id) => {
+		const e = model.get(kindOf(id), id);
+		if (!e || e.x === undefined) return;
+		minX = Math.min(minX, e.x); minY = Math.min(minY, e.y);
+		maxX = Math.max(maxX, e.x + (e.w || 0)); maxY = Math.max(maxY, e.y + (e.h || 0));
+		boxed++;
+	});
+	if (boxed === 0) return { label: 'create zone', entries: [] };
+	const floorZ = (v) => Math.floor((v - HALF) / GAP) * GAP + HALF;
+	const ceilZ = (v) => Math.ceil((v - HALF) / GAP) * GAP + HALF;
+	const x = Math.max(floorZ(minX - HALF), -ZONE_EXT.x);
+	const y = Math.max(floorZ(minY - HALF), -ZONE_EXT.y);
+	const x2 = Math.min(ceilZ(maxX + HALF), ZONE_EXT.x);
+	const y2 = Math.min(ceilZ(maxY + HALF), ZONE_EXT.y);
+	return createEntity('zone', model.makeZone({ x, y, w: Math.max(x2 - x, GAP), h: Math.max(y2 - y, GAP) }));
+}
+
+// arrow keys — shift the movable part of the selection one cell, clamped so nothing leaves the canvas
+export function nudgeSelection(model, ids, dx, dy) {
+	const moved = [];
+	ids.forEach((id) => {
+		const kind = kindOf(id);
+		if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;
+		const e = model.get(kind, id);
+		if (e) moved.push({ kind, id, before: { x: e.x, y: e.y } });
+	});
+	if (moved.length === 0) return { label: 'move', entries: [] };
+	const delta = clampDelta(model, moved, { x: dx * GAP, y: dy * GAP });
+	if (delta.x === 0 && delta.y === 0) return { label: 'move', entries: [] };
+	return moveEntities(moved.map((m) => ({
+		kind: m.kind, id: m.id, after: { x: m.before.x + delta.x, y: m.before.y + delta.y },
+	})));
+}
+
+// Shift+arrow on a LONE zone — NW corner fixed, minimum one cell, clamped to the canvas
+export function resizeZoneStep(model, ids, dx, dy) {
+	const none = { label: 'resize', entries: [] };
+	if (ids.length !== 1 || kindOf(ids[0]) !== 'zone') return none;
+	const zone = model.get('zone', ids[0]);
+	if (!zone) return none;
+	const w = Math.min(Math.max(zone.w + dx * GAP, GAP), ZONE_EXT.x - zone.x);
+	const h = Math.min(Math.max(zone.h + dy * GAP, GAP), ZONE_EXT.y - zone.y);
+	if (w === zone.w && h === zone.h) return none;
+	return resizeZone(zone.id, { x: zone.x, y: zone.y, w, h });
+}
+
+// Shift+arrow on a LONE node — grow its span one cell (W1). Origin fixed, capped at the validator's 64.
+export function resizeNodeStep(model, ids, dx, dy) {
+	const none = { label: 'resize', entries: [] };
+	if (ids.length !== 1 || kindOf(ids[0]) !== 'node') return none;
+	const node = model.get('node', ids[0]);
+	if (!node) return none;
+	const cur = node.span || { cols: 1, rows: 1 };
+	const cols = Math.min(Math.max(cur.cols + dx, 1), 64);
+	const rows = Math.min(Math.max(cur.rows + dy, 1), 64);
+	if (cols === cur.cols && rows === cur.rows) return none;
+	return resizeNodeSpan(node.id, { cols, rows });
 }

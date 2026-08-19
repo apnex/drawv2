@@ -77,11 +77,45 @@ whole time. A stated invariant with no check is a comment, and this is what make
 // which the first draft missed: commitRoute built its entries into a local and passed it by
 // shorthand, so it read as a builder call and was not one. Verified by counting against pre-fix HEAD.
 const HANDBUILT = /\blabel\s*:[\s\S]{0,140}?\bentries\s*[:,}\]]/g;
-// `before` as a KEY anywhere in the builder file. Deliberately blunt: commands.js has no legitimate
-// use for one (`renameEntity` takes a `before` PARAMETER, which has no colon), so a narrower pattern
-// would only be a place for the next drift to hide. The first draft of this rule anchored to
-// line-start, matched nothing, and passed — which is why it is now verified by injection.
-const STALE_BEFORE = /\bbefore\s*:/g;
+/*
+`before` as a key IN A COMMAND ENTRY — an object literal that also carries `op:`.
+
+This was blunt (any `before:` in the file at all) and the justification was that commands.js has no
+legitimate use for one. That did not survive contact: H6.9 moved `nudgeSelection` here, and it builds
+a local `{kind, id, before}` list because that is `clampDelta`'s parameter contract in snap.js. The
+blunt rule flagged it, correctly by its own letter and wrongly by its intent.
+
+So the rule now says what the invariant actually is: `before` inside a literal that also carries
+`op:` is an entry holding a pre-state the wire discards; `before` anywhere else is a local working
+value and none of this rule's business.
+
+Brace-matched rather than pattern-matched, and that was not the first choice. A regex pairing the two
+keys cannot work: an entry's `before` value is itself an object, so `[^{}]*` between the keys fails
+the moment the real shape appears — verified by injecting both key orders and watching one of them
+sail through. Walking out to the enclosing literal is a few more lines and is simply correct.
+*/
+const entriesCarryingBefore = (text) => {
+	const out = [];
+	for (const m of text.matchAll(/\bop\s*:/g)) {
+		let i = m.index, depth = 0;
+		while (i > 0 && !(text[i] === '{' && depth === 0)) {      // out to this literal's `{`
+			if (text[i] === '}') depth++;
+			else if (text[i] === '{') depth--;
+			i--;
+		}
+		let j = i, d = 0;
+		do {                                                       // and forward to its `}`
+			if (text[j] === '{') d++;
+			else if (text[j] === '}') d--;
+			j++;
+		} while (d > 0 && j < text.length);
+		const literal = text.slice(i, j);
+		if (/\bbefore\s*:/.test(literal)) {
+			out.push({ line: text.slice(0, m.index).split('\n').length, text: literal.replace(/\s+/g, ' ').slice(0, 90) });
+		}
+	}
+	return out;
+};
 const CLIENT_ROOT = 'app/src';
 const BUILDER = 'app/src/commands.js';
 
@@ -165,7 +199,7 @@ for (const file of walk(CLIENT_ROOT)) {
 	const isBuilder = file.replace(/\\/g, '/') === BUILDER;
 	if (isBuilder) {
 		builders = (text.match(/^export function /gm) || []).length;
-		const stale = hits(text, STALE_BEFORE);
+		const stale = entriesCarryingBefore(text);
 		if (stale.length) {
 			bad++;
 			console.log(`  \u2717 ${file}: ${stale.length} entr(ies) carry \`before\` — changes.js drops it; the server derives the inverse`);
