@@ -1,0 +1,31 @@
+# GR1 — promotion to trunk is gated by a deterministic proof, not a habit.
+#
+# This workflow is X14's closing condition. Until the first push there was no remote, so CI had
+# nowhere to run and the local pre-push hook WAS the whole gate; that deviation was accepted and
+# time-boxed to exactly this moment.
+#
+# It runs `npm run gate` — the same command the hook runs and the same one a developer runs by
+# hand. Not a re-listing of the steps: a workflow that enumerates the scanners itself would drift
+# from package.json silently, and tests/gate.test.js already asserts that script contains every
+# component GR1 names.
+name: gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'          # matches the Dockerfile's runtime
+          cache: npm
+      # `npm ci` runs `prepare`, which installs the pre-push hook. That is not ceremony here: it is
+      # what lets tests/gate.test.js ASSERT the hook exists rather than warn, on a fresh checkout.
+      - run: npm ci
+      - run: npm run gate

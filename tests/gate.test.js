@@ -16,11 +16,17 @@ What this file can and cannot prove:
         missing and a shell `-f` chain reports only a non-zero exit.
   CAN   the hook, IF installed, actually invokes the gate — a stale or neutered hook is worse than
         no hook, because it looks like enforcement.
-  CANNOT that any given clone is gated at all. `.git/hooks/` is never tracked by git, so a fresh
-        clone has NO hook and no CI (`.github/` does not exist). Until that is answered — B21,
-        board item H2.3 — GR1's claim holds only for a machine where someone has run
-        `npm run gate:install` by hand. This file makes the gap explicit rather than papering it
-        over with a conditional skip, which would be exactly the hollow guardrail X13 names.
+  CAN   that this clone is gated AT ALL. It could not until H7: `.git/hooks/` is never tracked, so
+        a fresh clone had no hook, and with no remote there was no CI either — GR1's claim held
+        only where someone had run `npm run gate:install` by hand. X14 accepted that and time-boxed
+        it to the first push. Two things closed it: `.github/workflows/gate.yml` runs the gate on
+        every push and PR, and `prepare` installs the hook during `npm install`, so a fresh clone
+        arrives gated and the check below can ASSERT instead of warn.
+
+That last part is why the flip was not the one-line change X14 predicted. Asserting alone would
+have broken SCOPE.md's definition of done — fresh clone, npm install, tests pass — because the hook
+does not exist until someone installs it. Making installation part of `npm install` is what makes
+the assertion both true and honest.
 */
 
 import { test } from 'node:test';
@@ -91,12 +97,12 @@ test('GR1: an installed hook actually invokes the gate — a neutered hook is wo
 		return;   // not a git checkout (a tarball, or the Docker build context) — nothing to assert
 	}
 	const p = path.isAbsolute(hook) ? hook : path.resolve(root, hook);
-	if (!fs.existsSync(p)) {
-		// The honest state, not a silent pass: this clone is UNGATED. Recorded as B21; the fix is
-		// H2.3's decision (CI, or an explicit ruling that the local hook is the whole gate).
-		console.error('  [ gate ] no pre-push hook installed — this clone is ungated (B21). Run: npm run gate:install');
-		return;
-	}
+	// X14 EXPIRED at the first push (H7). This was a console warning while there was no CI and no
+	// remote, because failing here would have broken "fresh clone -> npm install -> tests pass".
+	// `prepare` now installs the hook during npm install, so an absent hook means someone removed
+	// it or the install was skipped — either way this clone is ungated and should say so loudly.
+	assert.ok(fs.existsSync(p),
+		`no pre-push hook at ${p} — this clone is UNGATED. \`npm install\` installs it; \`npm run gate:install\` repairs it.`);
 	const body = fs.readFileSync(p, 'utf8');
 	assert.ok(body.includes('npm run gate'), 'a pre-push hook is installed but does not run the gate — it looks like enforcement and is not');
 	assert.ok((fs.statSync(p).mode & 0o111) !== 0, 'the pre-push hook is not executable, so git silently skips it');

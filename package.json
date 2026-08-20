@@ -1,7 +1,7 @@
 {
 	"name": "draw",
 	"version": "0.1.0",
-	"description": "Strictly minimal grid-aligned diagramming tool — browser editor, server persistence, one-way Google Slides sync",
+	"description": "Strictly minimal grid-aligned diagramming tool \u2014 browser editor, server persistence, one-way Google Slides sync",
 	"license": "MIT",
 	"private": true,
 	"type": "module",
@@ -12,7 +12,8 @@
 		"start": "node server/server.js",
 		"test": "node --test tests/*.test.js",
 		"gate": "npm test && node tools/scan-writers.mjs && node tools/scan-claims.mjs docs/spec/COMMIT.md#7 docs/spec/COMMIT-DELETIONS.md && node tools/scan-board.mjs && node tools/scan-dead.mjs && node tools/scan-twins.mjs && node tools/scan-docrefs.mjs",
-		"gate:install": "sh tools/install-hook.sh"
+		"gate:install": "sh tools/install-hook.sh",
+		"prepare": "npm run gate:install"
 	},
 	"dependencies": {
 		"ws": "^8.21.0"

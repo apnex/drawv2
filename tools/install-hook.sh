@@ -18,6 +18,14 @@
 # lands where git will really find it.
 set -e
 
+# Run from `prepare`, so it fires on every `npm install` — including inside the Docker build, where
+# there is no .git at all, and from a tarball. Neither is a git checkout and neither can be gated;
+# exiting 0 keeps `npm install` working there rather than failing the image build over a hook.
+if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+	echo "note: not a git checkout — no pre-push hook to install."
+	exit 0
+fi
+
 root=$(git rev-parse --show-toplevel)
 hook=$(cd "$root" && git rev-parse --git-path hooks/pre-push)
 case "$hook" in
