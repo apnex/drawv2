@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  html,body{margin:0;padding:0;width:520px;height:520px;background:transparent}
+  svg{display:block}
+</style></head><body>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="-60 -60 120 120">
+  <circle fill="#101010" stroke="#aed581" stroke-width="3.5" cx="0" cy="0" r="56"/>
+  <g transform="scale(0.85)">
+    <!-- theme.mjs order: solid arrows FIRST -->
+    <g transform="translate(-5,-12)" fill="#aed581" stroke="#aed581" stroke-width="2">
+      <path id="a" d="M2 8 L38 8 Q40 8 40 6 L40 2 Q40 0 42 1 L54 11 Q56 12 54 13 L42 23 Q40 24 40 22 L40 18 Q40 16 38 16 L2 16 Q0 16 0 14 L0 10 Q0 8 2 8 Z"/>
+      <use href="#a" transform="rotate(90 5 12)"/>
+      <use href="#a" transform="rotate(180 5 12)"/>
+      <use href="#a" transform="rotate(270 5 12)"/>
+    </g>
+    <!-- hollow group SECOND, so the r=15 hub sits on top and reads hollow -->
+    <g fill="#101010" stroke="#aed581" stroke-width="5">
+      <ellipse transform="rotate(45 0 0)" rx="35" ry="10"/>
+      <ellipse transform="rotate(-45 0 0)" rx="35" ry="10"/>
+      <circle r="15"/>
+    </g>
+  </g>
+</svg></body></html>

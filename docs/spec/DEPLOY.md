@@ -138,6 +138,33 @@ That is acceptable while there is one user, and it is the reason workspaces are 
 
 ---
 
+## IAP is per backend service, not per path
+
+IAP attaches to a backend service and protects everything routed to it.\
+There is no path-level exclusion, so anything that must stay public cannot simply be a route on the application.
+
+This matters immediately, because publishing an External consent screen requires a reachable privacy policy.\
+Google's verification fetches `https://draw.apnex.io/privacy`, and if that path is behind IAP the fetch is answered with a sign-in redirect and the check fails.\
+The requirement and the protection are in direct conflict, and the load balancer is where it is resolved:
+```text
+draw.apnex.io/privacy  -> backend bucket, public, no IAP
+draw.apnex.io/*        -> backend service -> serverless NEG -> Cloud Run, IAP on
+```
+
+Serving the privacy page from a bucket rather than the application is the point, not an implementation detail.\
+An application route is behind IAP by construction, and a bucket-served page also survives the service being down and needs no code.
+
+Two related cases are open rather than decided.
+
+`/oauth2callback` (`server/app.js:145`) is the Slides OAuth redirect.\
+The user reaching it has already signed in through IAP, so it will probably pass -- and "probably" is doing enough work in that sentence to deserve a test rather than an assumption.
+
+`/d/<id>.svg` is unauthenticated by nature today: a self-contained image at a URL.\
+Behind IAP it becomes private, which is arguably correct and also means no README, document or deck can embed a live diagram.\
+If embedding matters it is the same url-map question, and it is cheaper to decide before the cutover than after.
+
+---
+
 ## Deferred, deliberately
 
 ### Workspaces
