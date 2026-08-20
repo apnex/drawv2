@@ -326,6 +326,15 @@ command stack. Persistence: continuous auto-save over WS, named diagrams (list/c
 with two-click arming), first-boot example seed (from the tracked `examples/` corpus into the
 untracked runtime data dir — content and state are different things), hydrate on connect/reconnect. Slides: URL field + push button + idempotent sync.
 
+*(Amended 2026-08-20, H9)* — **the example corpus becomes a TEMPLATE set, not a first-boot seed.**
+Under per-diagram access control the old behaviour is wrong twice: the corpus is shared state every
+principal can edit, and no principal has a starting point of their own. Templates are read from the
+image, never written to the store, and listed to everyone; the first mutation against one forks a
+new diagram with a new id, owned by the caller. The invariant the first-boot rule protected is
+unchanged and is the reason this is safe — **deleted user work never returns**. A template is not
+user work, so a template reappearing after its fork is deleted is not a resurrection; what stays
+impossible is the deleted fork coming back. Designed in `docs/spec/ACCESS.md`, not yet built.
+
 *(Amended 2026-08-18, CS3)* — **undo/redo are a SERVER capability**, not a client-side command
 stack. The stack was destroyed by any authoritative snapshot, and a REST write broadcast one — so
 Ctrl+Z could not reverse an agent's change, only lose your own. The server holds a bounded log of

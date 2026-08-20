@@ -207,6 +207,63 @@ A scanner asserting that every handler under `/connect` performs the grant check
 
 ---
 
+## Who may sign in at all
+
+Authorization decides what a principal reaches; this decides whether they get as far as being one.
+
+The goal is that anyone with a Google account can sign in, and that signing in grants nothing.\
+Those two halves must land together.\
+Opening sign-in before the grant model exists does not share a diagram -- it publishes the whole store with write access, because `list()` returns everything and `protocol.js:323` gates `delete` only on whether a server-side controller holds the lock.
+
+IAM can express two of the three shapes wanted, and not the third.
+
+| Intent | Mechanism |
+|---|---|
+| One named person, internal or external | `user:someone@example.com` on `roles/iap.httpsResourceAccessor` |
+| Everyone in a domain we own | `domain:apnex.com.au` -- valid only for a Workspace or Cloud Identity domain |
+| Only consumer Google accounts | no IAM expression exists |
+
+`domain:gmail.com` is not available, because `domain:` names a customer domain rather than Google's consumer namespace.\
+The only IAM member covering arbitrary Google accounts is `allAuthenticatedUsers`, which carries no restriction whatsoever.
+
+So a domain allowlist belongs in the application, checked against `X-Goog-Authenticated-User-Email` before any grant lookup.\
+It is per-application rather than org-wide, it can name `gmail.com`, and it composes with grants instead of competing with them.\
+The org policy `iam.allowedPolicyMemberDomains` is the alternative and is the wrong tool: it constrains every IAM policy in the project, not this application, and still cannot name a consumer domain.
+
+The intended end state is `allAuthenticatedUsers` at the IAP layer with the allowlist and default-deny in the application, so a stranger signs in successfully and sees an empty list.
+
+---
+
+## Examples become templates, and writing forks
+
+Today the example corpus is copied into the data dir on first boot and becomes real, shared, mutable diagrams.\
+Under per-user access that is wrong twice over: the corpus is shared state everyone can edit, and there is no per-user starting point.
+
+Examples become **templates** instead.\
+They are read from the image, never written to the store, and listed to every principal.\
+The first mutation against a template forks it -- a new diagram, a new id, owned by the caller, seeded from the template's content.
+
+### The amendment this requires
+
+`examples.test.js:73` asserts that deleting an example does not bring it back, recording the reason as *"seeding is FIRST BOOT only -- a re-seeding store would resurrect deleted work forever"*.
+
+The invariant behind that sentence survives intact, and stating it precisely is what makes the reversal safe: **deleted user work never returns**.\
+A template is not user work.\
+A template reappearing after its fork is deleted is not a resurrection, because the template was never the caller's to delete -- what must remain impossible is the deleted *fork* returning.
+
+So the reversal is narrower than it appears.\
+`GR10` requires a dated amendment for a reversed decision, and it belongs in `SCOPE.md` beside the seeding rule rather than here.
+
+### Undecided
+
+Whether a fork shadows its template in the listing, or appears beside it.\
+Shadowing reads better -- the diagram is simply yours now -- but it makes the listing a merge of two sources rather than a query over one.
+
+What becomes of the eleven diagrams currently in `gs://diagrams.apnex.io`.\
+They are the seeded examples from before this change, so under templates they are orphans with no owner: they are either adopted by the operator or deleted, and the choice should be explicit rather than incidental.
+
+---
+
 ## Open
 
 Expiry is optional, and whether a default expiry is offered at mint is undecided.
