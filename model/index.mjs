@@ -4,5 +4,5 @@
 // (cleanliness #1 — sibling substrates import nothing from each other). Reachable at boot
 // (Dockerfile COPY model/) and over HTTP (server/app.js mounts it at /model), like engine/.
 // surface.mjs holds the shared canvas/extent magnitudes (CL3) — the single source for client + server.
-export { Model, newId, kindOf } from './model.mjs';
+export { Model, newId, kindOf, projection } from './model.mjs';
 export { SURFACE, NODE_EXT, ZONE_EXT } from './surface.mjs';

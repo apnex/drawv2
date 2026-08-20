@@ -12,10 +12,14 @@ The allow-list is by FILE AND COUNT, not by pattern. A count is what catches the
 misses: a SECOND load appearing inside a file that legitimately has one.
 
   model/ops.mjs      put/set/del   the sole mutation point (applyOps)
+  model/model.mjs    load x1       projection() — a THROWAWAY Model that never escapes its caller.
+                                   It was the planner's private helper ("reject writes nothing"
+                                   holds by purity, not rollback) until B46 found the client had the
+                                   identical need: allocate entity k against the entity k-1 just
+                                   invented. Two consumers, one per side of the wire, so it moved
+                                   to the substrate — and this allowance moved with it.
   server/store.js    load x1       Store.install — the whole-document entry
-  server/txn.mjs     load x1       plan()'s scratch projection: a THROWAWAY Model that never
-                                   escapes the planner, which is how "reject writes nothing"
-                                   holds by purity rather than by rollback
+  server/txn.mjs     load x0       none of its own now; it calls model/projection()
 
 That second load is a real second caller. The spec says "no module other than Store.install calls
 model.load"; the planner does, on a Model it constructs and discards. Allow-listing it explicitly
@@ -146,8 +150,9 @@ const DOM_ALLOW = new Set([
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
 	'model/ops.mjs': { mutate: null, load: 0, reach: 0 },
+	'model/model.mjs': { mutate: 0, load: 1, reach: 0 },      // projection()'s scratch — H6.10
 	'server/store.js': { mutate: 0, load: 1, reach: null },   // it owns the Map
-	'server/txn.mjs': { mutate: 0, load: 1, reach: 0 },
+	'server/txn.mjs': { mutate: 0, load: 0, reach: 0 },
 };
 
 function walk(dir, out = []) {
@@ -307,4 +312,4 @@ if (bad) {
   reference. None of these throw. That is why they are caught here.\n`);
 	process.exit(1);
 }
-console.log('  PASS — one writer (model/ops.mjs#applyOps); load confined to Store.install + plan(); store internals unreached\n');
+console.log('  PASS — one writer (model/ops.mjs#applyOps); load confined to Store.install + projection(); store internals unreached\n');

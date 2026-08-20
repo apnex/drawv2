@@ -26,7 +26,7 @@ transaction shape the ports were dead weight. The substitution seam it offered r
 out, as the Store's injected {flushMs, writeDoc, now}.
 */
 
-import { Model } from '../model/index.mjs';
+import { projection } from '../model/index.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE, OPTIONAL } from '../model/shape.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
@@ -35,15 +35,6 @@ import { validateMutation, validateMetaPatch } from './validate.js';
 export const MAX_OPS = 2000;              // per REQUEST
 export const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
 const LABEL = /^[a-z0-9 -]{0,32}$/;
-
-// A scratch Model carrying the same content, so op k can be validated against the state left by
-// op k-1 without touching the live one. Two O(doc) passes per transaction — at gesture rate, not
-// at pointer-move rate, which is why the browser must send one request per command.
-function projection(model) {
-	const scratch = new Model();
-	scratch.load(model.toJSON());
-	return scratch;
-}
 
 // The inverse of a `set` restores the previous value of exactly the keys the patch touches. If the
 // patch introduces a key the entity did not have, no `set` can express "remove it again" — so the

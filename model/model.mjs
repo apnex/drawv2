@@ -12,6 +12,26 @@ const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 const KEY = { node: 'nodes', waypoint: 'waypoints', link: 'links', zone: 'zones', group: 'groups' };
 const SELECTABLE = new Set(['node', 'waypoint', 'link', 'zone']);   // selectable kinds — MUST match server/validate.js SELECTABLE (a group/diagram is never selected directly)
 
+/*
+A throwaway Model carrying the same content as `model`, so a step can be decided against the state
+left by the step before it WITHOUT touching the live one.
+
+Both sides of the wire have this problem and it is the same problem. `server/txn.mjs` plans op k
+against the state op k-1 left, which is how "a rejected request wrote nothing" holds by purity
+rather than by rollback. `app/src/commands.js` allocates entity k against the entity k-1 it just
+invented — ids, names, and the duplicate-link check all read the namespace, and all three go wrong
+if that namespace cannot see the batch in flight.
+
+It lived privately in the planner until a second, independent consumer appeared (B46). Two O(doc)
+passes, paid at gesture rate on the client and per request on the server — never at pointer-move
+rate, which is why the browser sends one request per command.
+*/
+export function projection(model) {
+	const scratch = new Model();
+	scratch.load(model.toJSON());
+	return scratch;
+}
+
 export function newId(kind, taken = {}) {
 	let id;
 	do {
