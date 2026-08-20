@@ -370,6 +370,7 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 | H8.4 | Manual image build to Artifact Registry, deploy to Cloud Run `australia-southeast1` | — | S3 · M | `DONE` |
 | H8.5 | Serverless NEG, backend service, host rule, certificate MAP attach (atomic — ignores classic certs), DNS cutover | **B58** | S3 · M | `DONE` |
 | H8.7 | Public `/about`, `/privacy`, `/terms` on a separate backend bucket — IAP has no path exclusion, so verification cannot reach an app route | — | S2 · S | `DONE` |
+| H8.8 | The REST/agent surface is behind IAP and the CLI sends no credential — decide how an agent authenticates | **B61** | S2 · M | `TODO` |
 | H8.6 | IAP on the backend service; consent screen is in **Testing**, not published — test users only | **B57** | S2 · S | `DONE` |
 
 ## Held — on the record, not on the board
