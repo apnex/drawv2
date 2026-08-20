@@ -352,6 +352,8 @@ running it than by writing it down.
 | H7.2 | `scan-docrefs` resolves against `git ls-files`, not the filesystem — it had been satisfied by gitignored files on the developer's disk | **B49** | S4 · S | `DONE` |
 | H7.3 | README rewritten to mission-kit's doc style: S9 order, S4 journeys, OAuth tutorial extracted to `docs/slides-setup.md`. 281 -> 214 lines | **B50** | S4 · M | `DONE` |
 | H7.4 | Gate the doc style, so B50 cannot recur | **B51** | S4 · M | `TODO` |
+| H7.5 | Repair the Docker build broken by the `prepare` hook | **B52** | S2 · S | `DONE` |
+| H7.6 | Build the image in CI and probe it, so packaging regressions cannot ship | **B53** | S3 · M | `TODO` |
 
 ## Held — on the record, not on the board
 
