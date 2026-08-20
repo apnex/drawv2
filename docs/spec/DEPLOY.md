@@ -172,6 +172,36 @@ The flush would then be triggered by unrelated traffic instead of by elapsed tim
 Verified against the running service rather than assumed: it seeded eleven examples from the image, flushed every one to the bucket, took a REST write whose GCS generation visibly advanced, and after a forced restart reloaded the same eleven objects instead of reseeding.\
 A reseed would have minted new ids and grown the bucket, so the fingerprint being unchanged is what distinguishes reload from re-creation.
 
+### The cutover, as executed
+
+Steps 1 to 3 are done and `draw.apnex.io` resolves to the load balancer with a valid certificate for the first time in its life:
+```text
+neg-draw        serverless NEG -> Cloud Run draw (australia-southeast1)
+svc-draw        EXTERNAL backend service -> neg-draw
+map-apnex-io    + host rule draw.apnex.io -> svc-draw   (4 hosts now)
+cm-apnex-io     certificate map, one PRIMARY entry -> cert-apnex-io-wildcard
+vs-apnex-io     certificate map attached
+DNS             draw.apnex.io  CNAME -> A 35.201.120.148
+```
+
+The map attach was the step that could have broken three live hostnames, so it was measured rather than trusted.\
+Baselines were taken first -- `apnex.io` 200, `raw.apnex.io` 404, `ois.apnex.io` 401 -- and all three returned exactly those codes afterwards, now served by the wildcard.\
+Propagation took roughly ninety seconds, during which the proxy still presented the old per-hostname certificates, so an immediate check would have read as a failed attach rather than an incomplete one.
+
+`draw.apnex.io` was verified against the load balancer IP with SNI BEFORE the DNS change, which is the whole benefit of having provisioned the certificate in advance: the hostname could be proven to serve a valid certificate while it still pointed somewhere else entirely.
+
+The classic certificates are deliberately still attached to the proxy.\
+They are ignored while the map is present, and detaching the map restores them, so rollback is one command rather than a re-provisioning exercise.
+
+### Why draw.apnex.io answers 403
+
+It is not broken.\
+The Cloud Run service is deployed `--no-allow-unauthenticated`, so the load balancer reaches it and Cloud Run declines -- which is the correct state to flip DNS into, because the hostname becomes real without exposing anything.
+
+Ingress was also narrowed to `internal-and-cloud-load-balancing`.\
+That closes a hole which would otherwise open the moment IAP arrives: IAP requires the service to accept unauthenticated traffic, at which point the `run.app` URL would have been a way around IAP altogether.\
+Doing it now means the bypass never exists rather than being closed after the fact.
+
 ### A quota override that is not a rate limit
 
 The first two builds failed with `toomanyrequests` from Artifact Registry, which reads as contention and is not.\
