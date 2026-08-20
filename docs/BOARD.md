@@ -365,7 +365,7 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 | # | Item | Row | Sev · Size | Status |
 |---|---|---|---|---|
 | H8.1 | Widen the persistence seam to `{list, read, write, remove}`, filesystem default, pure refactor | **B55** | S3 · M | `DONE` |
-| H8.2 | GCS adapter on raw `fetch`, `ifGenerationMatch` for compare-and-swap | **B6** | S2 · L | `TODO` |
+| H8.2 | Make the seam async, then the GCS adapter on raw `fetch` with `ifGenerationMatch` for compare-and-swap | **B6**, **B59** | S2 · L | `TODO` |
 | H8.3 | Slides refresh token moves off the ephemeral filesystem | **B56** | S3 · S | `TODO` |
 | H8.4 | Manual image build to Artifact Registry, deploy to Cloud Run `australia-southeast1` | — | S3 · M | `TODO` |
 | H8.5 | Serverless NEG, backend service, `ssl-draw-apnex-io`, host rule, DNS cutover | — | S3 · M | `TODO` |
