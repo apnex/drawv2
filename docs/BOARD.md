@@ -216,7 +216,7 @@ All `S4` except B16's `expect` half. Each item amends `README.md` / `SCOPE.md` *
 
 ---
 
-## H5 — hygiene · `TODO`
+## H5 — hygiene · `DONE`
 
 All `S5`. Nothing here changes behaviour; everything here reduces the chance of the next B14.
 
@@ -254,7 +254,7 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 
 ---
 
-## H6 — decompose `input.js` · `TODO`
+## H6 — decompose `input.js` · `DONE`
 
 > **Design: `docs/spec/INPUT.md`** — the input system now has a sovereign spec, which is the point.
 > Every other layer was specified before it was built; this one accreted, and it is the densest
@@ -315,9 +315,9 @@ not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uni
 
 | # | Stage | Risk | Proof |
 |---|---|---|---|
-| H6.1 | The characterization net (**H2.1**) — ✅ landed, commit-boundary only, sealed by a scanner | — | Stage 0: written once, must be **unchanged** when the arc ends |
+| H6.1 | `DONE` — the characterization net (**H2.1**) landed, commit-boundary only, sealed by a scanner | — | Stage 0: written once, must be **unchanged** when the arc ends |
 | H6.2 | `DONE` — Tier A: `pick.js` (78) + drag geometry into `snap.js`. **Tier B**: the last 11 hand-built commands become builders (`input.js` 8, `sync.js` 3), closing **B44**; `scan-writers` now enforces the command boundary | low | net green; the new rule counted against pre-fix HEAD (8+3) and both halves proven by injection |
-| H6.3 | **overlay.js lands** — 4 fields and ~90 lines move; `input.js` **1562 → 1477**, 13 fields → 9. Event handlers stay on Input and delegate | low | net green; the affordance suite re-verified to bite in the code's NEW home |
+| H6.3 | `DONE` — **overlay.js lands**: 4 fields and ~90 lines move; `input.js` **1562 → 1477**, 13 fields → 9. Event handlers stay on Input and delegate | low | net green; the affordance suite re-verified to bite in the code's NEW home |
 | H6.4 | `DONE` — two tables + the full gesture lifecycle. `onDown` 167→26, `onKeyDown` 243→12, `onMove` 91→16, `dispatchUp` 168→13, `cancelDrag` 34→9. Found and closed **B43**. `input.js` **1653→1362** | real | 386 tests; B43 proven red against the genuine pre-fix code |
 | H6.5 | `DONE` — the seal, **narrower than this row originally claimed**. It said DOM should fail outside `main.js`/`painter.js`; measured, that would have flagged `palette.js` and `labeledit.js`, whose job IS building their widget. The real asset was that **14 of 18 client modules already reach zero DOM globals**, every H6 unit among them. GR17 seals those 14 and allows the 4 that own the page. `input.js` became the fourteenth by injecting `host` + `help`, closing **B45** and retiring a duplicate `#help` lookup. The gesture-state rule extends from `tests/` to `app/src/` | — | proven by injection ×5, incl. the DOM rule against genuine pre-fix `input.js`; `renderer.mode` and `editing.mode` verified NOT to false-positive |
 | H6.6 | `DONE` — **B36's remainder**, the last H6 item. One crosshair owner instead of two (`main.js` owns it, `Overlay`+`Palette` share it); `zoneCorners` + `OPPOSITE_CORNER` replace two transposed corner literals; the palette's magic `5` becomes `CLICK_SLOP` with the unit-system difference from `DRAG_THRESHOLD` written down | — | 393 tests; corner + crosshair rules each proven red against the genuine pre-fix arrangement |
@@ -339,6 +339,17 @@ behaviour was preserved.
 > which is exactly how a harness ends up ratifying the God Object it was built to remove.
 
 ---
+
+## H7 — ship it · `DONE`
+
+The push that expires **X14**. Its first CI run immediately found a guardrail that had been weaker
+than its own output claimed for two milestones — which is the argument for CI, made better by
+running it than by writing it down.
+
+| # | Item | Row | Sev · Size | Status |
+|---|---|---|---|---|
+| H7.1 | Public remote `apnex/drawv2`; `.github/workflows/gate.yml` runs `npm run gate` on push + PR; `prepare` installs the pre-push hook during `npm install`, so `gate.test.js` can ASSERT the hook rather than warn without breaking *fresh clone → npm install → tests pass*. **X14 discharged** | — | S3 · M | `DONE` |
+| H7.2 | `scan-docrefs` resolves against `git ls-files`, not the filesystem — it had been satisfied by gitignored files on the developer's disk | **B49** | S4 · S | `DONE` |
 
 ## Held — on the record, not on the board
 

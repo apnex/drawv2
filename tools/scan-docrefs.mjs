@@ -18,6 +18,7 @@ Usage: node tools/scan-docrefs.mjs [--verbose]
 */
 
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 // files whose purpose is to name things that no longer exist
@@ -27,8 +28,36 @@ const HISTORICAL = new Set([
 	'design/README.md',                // explicitly "mostly DEFUNCT / historical", superseded by kernel/
 ]);
 
-// reference -> why it does not resolve on disk. Reviewed at each milestone close.
+/*
+Resolution is against the TRACKED tree, not the working tree.
+
+This scanner used `fs.existsSync` and therefore answered differently on different machines. It went
+green locally and red in CI on the first push (H7): README cites `secrets/google-credentials.json`
+and `docs/` cites a seeded `diagrams/*.json`, both of which exist on the developer's disk and are
+GITIGNORED, so a fresh clone has neither. A guardrail whose answer depends on whose machine it runs
+on is not a guardrail — and a doc reference means "a reader who clones this can find it", which is
+exactly what `git ls-files` measures.
+
+Directories are matched by prefix, since a doc may legitimately cite `examples/` or `kernel/`.
+*/
+const tracked = new Set(
+	execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n').filter(Boolean)
+);
+const trackedDirs = new Set();
+for (const f of tracked) {
+	const parts = f.split('/');
+	for (let i = 1; i < parts.length; i++) trackedDirs.add(parts.slice(0, i).join('/'));
+}
+const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, ''));
+
+// reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	'docs/BACKLOG.md:secrets/google-credentials.json': 'B49 cites the paths that exposed the defect AS ITS EVIDENCE — same as B31 below',
+	'docs/BACKLOG.md:secrets/google-token.json': 'as above (B49 evidence)',
+	'docs/BACKLOG.md:diagrams/diagram-000001.json': 'as above (B49 evidence)',
+	'README.md:secrets/google-credentials.json': 'runtime, gitignored: the user downloads it during OAuth setup — README is telling them where to put it',
+	'README.md:secrets/google-token.json': 'runtime, gitignored: written by the OAuth flow on first authorization',
+	'docs/spec/COMMIT.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',
 	'docs/spec/ATOMICS.md:design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
 	'docs/spec/ATOMICS.md:design/sim/handles.mjs': 'as above — provenance citation, not a live path',
@@ -101,7 +130,7 @@ for (const doc of docs) {
 		total++;
 		if (ref.startsWith('http') || !ref.includes('/')) continue;   // bare filenames are ambiguous
 		const candidates = [ref, path.join(path.dirname(doc), ref)];
-		if (candidates.some((c) => fs.existsSync(c))) continue;
+		if (candidates.some((c) => inRepo(c))) continue;
 		const key = `${doc}:${ref}`;
 		broken.push({ key, doc, ref, allowed: !!ALLOW[key] });
 	}
@@ -113,7 +142,7 @@ for (const src of CODE_ROOTS.flatMap((r) => codeFiles(r))) {
 		const ref = m[1];
 		total++;
 		if (ref.startsWith('http') || !ref.includes('/')) continue;   // a bare filename may be a forward reference
-		if (fs.existsSync(ref)) continue;
+		if (inRepo(ref)) continue;
 		const key = `${src}:${ref}`;
 		broken.push({ key, doc: src, ref, allowed: !!ALLOW[key] });
 	}
