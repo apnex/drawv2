@@ -14,6 +14,7 @@ import { groupAfterRemoval } from '../engine/index.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
 import { Log } from './log.mjs';
 import { serialize, parse } from './docfile.mjs';
+import { fsFiles } from './files.mjs';
 
 const FLUSH_MS = 200;
 
@@ -52,31 +53,28 @@ export class Store {
 	(server/server.js) decides; every other caller — including every test that is not about seeding
 	— gets the single programmatic example and is unaffected by whatever ships in examples/.
 	*/
-	constructor(dataDir, { flushMs = FLUSH_MS, writeDoc = null, now = Date.now, examplesDir = null } = {}) {
+	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null } = {}) {
 		this.dir = dataDir;
 		this.flushMs = flushMs;
 		this.now = now;
 		this.examplesDir = examplesDir;
-		// the single write-to-disk primitive, injectable so a test can fail it or observe it
-		this.writeDoc = writeDoc || ((file, text) => {
-			const tmp = `${file}.tmp`;
-			fs.writeFileSync(tmp, text);
-			fs.renameSync(tmp, file);
-		});
+		// B55 -- the WHOLE persistence surface, injectable. Was `writeDoc` alone, which left boot's
+		// list and read, and delete's three removals, reaching `fs` directly: a backend that is not
+		// a filesystem could not be supplied at all. Four verbs over names, never paths.
+		this.files = files || fsFiles(dataDir);
 		this.diagrams = new Map(); // id -> { model, log, dirty, timer, file }
 	}
 
 	init() {
-		fs.mkdirSync(this.dir, { recursive: true });
-		let candidates = 0;
+		let candidates = 0;   // the backend created its own storage when it was constructed
 		const failures = [];
 		// the data dir is shared with Google OAuth credential/token files:
 		// only diagram-named json is ours to parse
-		for (const file of fs.readdirSync(this.dir)) {
+		for (const file of this.files.list()) {
 			if (!FILE.test(file)) continue;
 			candidates++;
 			try {
-				const { doc, log } = parse(fs.readFileSync(path.join(this.dir, file), 'utf8'));
+				const { doc, log } = parse(this.files.read(file));
 				const err = validateDoc(doc);
 				if (err) {
 					failures.push(`${file}: ${err}`);
@@ -247,9 +245,10 @@ export class Store {
 		}
 		this.diagrams.delete(id);
 		try {
-			fs.rmSync(path.join(this.dir, entry.file), { force: true });
-			fs.rmSync(path.join(this.dir, `${id}.json`), { force: true });
-			fs.rmSync(path.join(this.dir, `${id}.json.tmp`), { force: true });
+			// the backend owns the temp artefact of its own write strategy, so this no longer
+			// names a `.json.tmp` -- that was filesystem shape leaking into the caller (B55)
+			this.files.remove(entry.file);
+			this.files.remove(`${id}.json`);
 		} catch (err) {
 			console.warn(`[ store ] could not remove ${id}.json: ${err.message}`);
 		}
@@ -352,11 +351,9 @@ export class Store {
 	flush(id) {
 		const entry = this.diagrams.get(id);
 		if (!entry || !entry.dirty) return;
-		const file = path.join(this.dir, `${id}.json`);
 		entry.file = `${id}.json`; // canonical from first flush onward
-		const tmp = `${file}.tmp`;
 		try {
-			this.writeDoc(file, serialize(entry.model.toJSON(), entry.log));
+			this.files.write(entry.file, serialize(entry.model.toJSON(), entry.log));
 			entry.dirty = false; // only after the write actually landed
 			// B15 — and so is the watermark. This is the ONLY place a version becomes durable, so
 			// it is recorded here, from the log that was actually just written, rather than guessed

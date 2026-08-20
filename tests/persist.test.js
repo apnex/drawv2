@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
+import { fsFiles } from '../server/files.mjs';
 import { Log } from '../server/log.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
 
@@ -198,10 +199,13 @@ test('B15: a failed write leaves durableVersion behind, and a later success adva
 	const dir = tmp();
 	try {
 		let fail = false;
-		const s = new Store(dir, { flushMs: 100000, writeDoc: (f, t) => {
+		// B55 -- the seam is the whole file surface now, so a fault is injected by wrapping one
+		// verb of the real backend rather than replacing the only one that existed.
+		const real = fsFiles(dir);
+		const s = new Store(dir, { flushMs: 100000, files: { ...real, write(name, text) {
 			if (fail) throw new Error('backend unavailable');
-			fs.writeFileSync(f, t);
-		} });
+			real.write(name, text);
+		} } });
 		s.init();
 		const id = s.list()[0].id;
 		s.flush(id);
@@ -333,7 +337,8 @@ test('I9: an observer of every write never sees ops without their record', () =>
 	const dir = tmp();
 	try {
 		const seen = [];
-		const s = new Store(dir, { writeDoc: (file, text) => { seen.push(parse(text)); fs.writeFileSync(file, text); } });
+		const real = fsFiles(dir);
+		const s = new Store(dir, { files: { ...real, write(name, text) { seen.push(parse(text)); real.write(name, text); } } });
 		s.init();
 		const id = s.list()[0].id;
 		s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
@@ -352,10 +357,11 @@ test('B4: a failed write retries without a further edit, and is counted', async 
 	const dir = tmp();
 	try {
 		let fail = true;
-		const s = new Store(dir, { flushMs: 10, writeDoc: (file, text) => {
+		const real = fsFiles(dir);
+		const s = new Store(dir, { flushMs: 10, files: { ...real, write(name, text) {
 			if (fail) throw new Error('backend unavailable');
-			fs.writeFileSync(file, text);
-		} });
+			real.write(name, text);
+		} } });
 		s.init();
 		const id = s.list()[0].id;
 		s.commit(id, { ops: [put('node', node('node-fa0001', 60))] }, 'server', 't');
@@ -383,4 +389,48 @@ test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-
 		const { validateDoc } = await import('../server/validate.js');
 		assert.equal(validateDoc(raw), null, 'a validator that knows nothing of `log` still accepts the file');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+B55 -- the seam is real, not nominal.
+
+The point of widening `writeDoc` into `{list, read, write, remove}` is that a backend which is not a
+filesystem can be supplied by injection. Passing tests against the filesystem default do not
+demonstrate that: they would pass just as well if the store still reached `fs` behind the seam.
+
+So this store runs on a Map. No directory is created, nothing touches disk, and the four verbs take
+names because an object store has keys rather than paths -- which is the shape the GCS adapter needs
+(DEPLOY.md, H8.2).
+*/
+test('B55: the store runs on a backend with no filesystem at all', () => {
+	const mem = new Map();
+	const files = {
+		list: () => [...mem.keys()],
+		read: (name) => {
+			if (!mem.has(name)) throw new Error(`no such object: ${name}`);
+			return mem.get(name);
+		},
+		write: (name, text) => { mem.set(name, text); },
+		remove: (name) => { mem.delete(name); },
+	};
+
+	const s = new Store('/nonexistent/never-created', { flushMs: 10000, files });
+	s.init();                                     // seeds, because the backend is empty
+	const id = s.list()[0].id;
+	assert.ok(id, 'a diagram exists after boot');
+
+	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
+	s.flush(id);
+	assert.equal(mem.size, 1, 'the flush landed in the Map, not on disk');
+	assert.ok(mem.get(`${id}.json`).includes('node-ea0001'), 'and it carries the change');
+
+	// a second store over the SAME backend reads it back - the round trip is the real proof
+	const s2 = new Store('/nonexistent/never-created', { flushMs: 10000, files });
+	s2.init();
+	assert.equal(s2.list().length, 1, 'the second store found the document');
+	assert.ok(s2.get(id).get('node', 'node-ea0001'), 'and parsed the node out of it');   // get(id) is the model
+
+	s2.remove(id);
+	assert.equal(mem.size, 0, 'remove reached the backend too');
+	assert.equal(fs.existsSync('/nonexistent/never-created'), false, 'no directory was ever created');
 });
