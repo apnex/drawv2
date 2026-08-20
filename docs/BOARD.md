@@ -326,6 +326,7 @@ not a new sibling. Projected: `input.js` **1,609 → ~900**, one concern, 11 uni
 | H6.9 | `DONE` — **B46 pure half**: 4 computing builders move to `commands.js`; `input.js` **1353→1290**. GR16's `before` rule narrowed from file-blunt to entry-scoped after it produced its first false positive | — | 405 tests; 3 builder tests proven red, and GR16 re-verified on BOTH key orders |
 | H6.10 | `DONE` — `projection()` promoted from `server/txn.mjs` to `model/`; the server moves first so the promotion is proven by the existing suite before the client depends on it | — | scan-writers caught the load-ledger shift in both directions; allow-list updated deliberately |
 | H6.11 | `DONE` — **B46 closes**. `cloneSubgraph` + `linkNodes` allocate against a projection; `commitRoute`'s put deleted as redundant. `input.js` **1353→1218**, `commands.js` 237→412 | — | 409 tests; both projections proven to bite by substituting the live model |
+| H6.12 | `DONE` — `focusId` moves to `labeledit.js` per §8. Input wrote it from nine places and read it from none; the one reader was F2's target choice | — | 411 tests; first attempt tested the HARNESS — the stub reimplemented the rule and passed against broken product code, so it now borrows the real method |
 
 **Exit:** `input.js` states one duty in one sentence. Boundary violations are caught by tooling, not review
 (A3 signal 5). The H2.1 net is unchanged from the day it was written — which is the whole proof that

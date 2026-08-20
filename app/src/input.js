@@ -110,7 +110,7 @@ const GESTURES = {
 			// Ctrl+click without drag: toggle selection (draw.io behavior)
 			if (i.model.get(ctx.hit.kind, ctx.hit.id)) {
 				i.selection.toggle(ctx.hit.id);
-				i.focusId = ctx.hit.id;
+				i.labels.setFocus(ctx.hit.id);
 			}
 		},
 		update: (i, pos, evt) => i.escalate(pos, evt, false, (x, p) => x.startClone(p), 'clone'),
@@ -221,11 +221,11 @@ const GESTURES = {
 					&& !evt.shiftKey && !evt.ctrlKey && !evt.altKey && hand !== ctx.src.type) {
 					i.history.commit(commands.retypeNode(ctx.src.id, hand));
 					i.selection.set([ctx.src.id]);
-					i.focusId = ctx.src.id;
+					i.labels.setFocus(ctx.src.id);
 					return;
 				}
 				// a no-drag press is still a click: select (mirrors beginPress semantics)
-				i.focusId = ctx.src.id;
+				i.labels.setFocus(ctx.src.id);
 				if (ctx.shift) i.selection.toggle(ctx.src.id);
 				else if (!i.selection.has(ctx.src.id)) i.selection.set([ctx.src.id]);
 				return;
@@ -515,7 +515,7 @@ export class Input {
 	beginPress(hit, pos, shift) {
 		this.mode = 'pending';
 		this.ctx = { hit, start: pos, shift };
-		this.focusId = hit.id; // F2's deterministic target within group selections
+		this.labels.setFocus(hit.id); // F2's deterministic target within group selections
 		if (shift) {
 			this.selection.toggle(hit.id);
 		} else if (!this.selection.has(hit.id)) {
@@ -666,14 +666,14 @@ export class Input {
 			const wp = this.model.makeWaypoint(snapped);
 			this.history.commit(commands.createEntity('waypoint', wp));
 			this.selection.set([wp.id]);
-			this.focusId = wp.id;
+			this.labels.setFocus(wp.id);
 			return true;
 		}
 		if (occupiedAt(this.model, snapped)) return false;
 		const node = this.model.makeNode(type, snapped);
 		this.history.commit(commands.createEntity('node', node));
 		this.selection.set([node.id]); // the hand stays armed; selection follows
-		this.focusId = node.id;
+		this.labels.setFocus(node.id);
 		return true;
 	}
 
@@ -697,7 +697,7 @@ export class Input {
 		const wp = this.model.makeWaypoint(snapped);
 		this.history.commit(commands.createEntity('waypoint', wp));
 		this.selection.set([wp.id]);
-		this.focusId = wp.id;
+		this.labels.setFocus(wp.id);
 		return true;
 	}
 
@@ -956,7 +956,7 @@ export class Input {
 		if (tb) {
 			if (this.mode) this.cancelDrag(evt);
 			this.selection.set([tb.id]);
-			this.focusId = tb.id;
+			this.labels.setFocus(tb.id);
 			const g = this.svg.ownerDocument.getElementById(tb.id);
 			return this.labels.openContent(tb.id, 0, (g && g.querySelector('[data-layer="frame"]')) || g);
 		}
@@ -979,7 +979,7 @@ export class Input {
 		if (this.mode) this.cancelDrag(evt);
 		// rename implies selection: handles/readout/F2 follow the edited entity
 		this.selection.set([target.id]);
-		this.focusId = target.id;
+		this.labels.setFocus(target.id);
 		this.labels.open(target.kind, target.id);   // name edit (text boxes are handled by the footprint check above)
 	}
 
@@ -1148,11 +1148,7 @@ export class Input {
 	onStarKey()  { this.linkSelectedNodes(true); }
 
 	onRenameKey() {
-		// prefer the directly-clicked entity: group expansion makes single selection impossible
-		// for grouped nodes
-		const ids = this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group');
-		const target = (this.focusId && ids.includes(this.focusId)) ? this.focusId : (ids.length === 1 ? ids[0] : null);
-		if (target) this.labels.open(kindOf(target), target);
+		this.labels.openFocused(this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group'));
 	}
 
 	// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking back N

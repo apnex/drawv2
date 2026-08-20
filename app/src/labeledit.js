@@ -4,6 +4,7 @@ the entity's label; Enter/blur commits an undoable rename, Escape cancels.
 */
 
 import { NODE_R } from './snap.js';
+import { kindOf } from '../../model/index.mjs';
 import * as commands from './commands.js';
 
 const MAX_NAME = 64;
@@ -14,6 +15,34 @@ export class LabelEditor {
 		this.model = model;
 		this.history = history;
 		this.input = null;
+		/*
+		The entity the user last touched DIRECTLY — a press, a stamp, a drop. "Focus" here means
+		that, not DOM focus (the editor's own input is `this.input`); the name is kept because
+		`focusId` is already the codebase's word for it.
+
+		It exists because F2 needs ONE target and a selection may hold several: group expansion makes
+		single selection impossible for a grouped node, so "rename the selected thing" has no answer
+		without knowing which one was actually clicked. It lived on Input, which wrote it from nine
+		places and read it from none — INPUT.md §8 said it belongs to label editing, and this is that.
+		*/
+		this.focusId = null;
+	}
+
+	// record the directly-touched entity. Never validated on write: entities die (undo, chord
+	// delete) and a stale id is harmless because openFocused only trusts one still in the selection.
+	setFocus(id) {
+		this.focusId = id;
+	}
+
+	/*
+	F2 — open the rename editor on the best target in `ids`.
+
+	Prefers the directly-touched entity when it is still selected, else the lone selection, else
+	nothing. Links and groups are not renameable here and are filtered by the caller's selection.
+	*/
+	openFocused(ids) {
+		const target = (this.focusId && ids.includes(this.focusId)) ? this.focusId : (ids.length === 1 ? ids[0] : null);
+		if (target) this.open(kindOf(target), target);
 	}
 
 	isOpen() {

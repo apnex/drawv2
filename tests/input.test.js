@@ -1112,3 +1112,50 @@ test('B46: a routed link commits once, with its bend, and lands selected', () =>
 		assert.ok(h.selection.has(link.id), 'and the route is selected');
 	} finally { h.restore(); }
 });
+
+/*
+H6.12 — `focusId` moves to the label editor (INPUT.md §8: "focusId belongs to label editing").
+
+Input wrote it from nine places and read it from none. The single reader was F2, deciding which
+entity to rename when the selection holds several — which it does whenever a grouped node is picked,
+because group expansion makes single selection impossible.
+
+Worth testing rather than just moving: the behaviour was previously unassertable, since the harness's
+labels stub swallowed the call.
+*/
+test('H6.12: F2 renames the entity you actually clicked, not an arbitrary one of the group', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		h.selection.set([a.id, b.id]);
+
+		// click b directly, then press F2 with BOTH still selected
+		const at = (id, x, y) => pointer(x, y, {
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
+		});
+		h.input.onDown(at(b.id, 180, 0, { shiftKey: true }));
+		h.input.onUp(at(b.id, 180, 0, { shiftKey: true }));
+		h.input.onKeyDown(key('F2'));
+
+		const opened = h.stateCalls('labels.open');
+		assert.equal(opened.length, 1, 'exactly one editor opened');
+		assert.equal(opened[0][1], b.id, 'and on the node that was pressed');
+	} finally { h.restore(); }
+});
+
+test('H6.12: a stale focus is ignored — the selection decides', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		h.labels.setFocus('node-deadbeef');   // an entity that never existed / has since died
+
+		h.selection.set([a.id]);
+		h.input.onKeyDown(key('F2'));
+		assert.equal(h.stateCalls('labels.open')[0][1], a.id, 'a lone selection is unambiguous');
+
+		h.reset();
+		h.selection.set([a.id, b.id]);
+		h.input.onKeyDown(key('F2'));
+		assert.equal(h.stateCalls('labels.open').length, 0, 'but an ambiguous one with no live focus opens nothing');
+	} finally { h.restore(); }
+});

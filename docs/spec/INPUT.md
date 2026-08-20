@@ -294,7 +294,7 @@ before the common teardown, which is why it cannot just be the first line of `co
 | `keymap.js` ✓ | Map a keystroke to **one named verb**, and say whether it mutates. | the table |
 | `recognize.js` ✓ | Decide WHICH gesture a press starts, and whether it mutates. | the table |
 
-**Not modules, deliberately:** `readOnly` is a predicate (§5); `focusId` belongs to label editing;
+**Not modules, deliberately:** `readOnly` is a predicate (§5); `focusId` belongs to label editing (moved there, H6.12);
 `help` to `main.js`. And there are **no per-gesture files** — ten handlers of 30–60 lines belong
 beside their table, because splitting them fragments one answer across ten reads.
 

@@ -31,6 +31,7 @@ import { Model } from '../../model/index.mjs';
 import { attachRelations } from '../../engine/index.mjs';
 import { cellOf } from '../../kernel/index.mjs';
 import { Changes } from '../../app/src/changes.js';
+import { LabelEditor } from '../../app/src/labeledit.js';
 import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
@@ -126,7 +127,22 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const calls = [];
 	const rec = (name) => (...args) => { calls.push({ name, args }); };
 	const renderer = { mode: 'view', setMode: rec('renderer.setMode'), setState: rec('renderer.setState'), clearState: rec('renderer.clearState') };
-	const labels = { isOpen: () => false, open: rec('labels.open'), openContent: rec('labels.openContent'), close: rec('labels.close') };
+	// A stub must be TOTAL or it is a trap — the same lesson Input's own readout null-object records.
+	// `focusId` moved here at H6.12, so the stub tracks it for real rather than swallowing the call:
+	// a test can then assert F2 picked the directly-touched entity, which was unassertable before.
+	const labels = {
+		focusId: null,
+		isOpen: () => false,
+		open: rec('labels.open'),
+		openContent: rec('labels.openContent'),
+		close: rec('labels.close'),
+		// BORROWED, not reimplemented. Writing the rule out a second time here made the H6.12 tests
+		// exercise this file instead of the product — they passed happily against a labeledit.js
+		// whose logic had been broken on purpose. The stub supplies the state (`focusId`) and the
+		// sink (`open`); the DECISION stays the real one, so breaking it fails these tests.
+		setFocus: LabelEditor.prototype.setFocus,
+		openFocused: LabelEditor.prototype.openFocused,
+	};
 	// Recording collaborators. Asserting that a gesture did or did not REACH one of these is still a
 	// boundary assertion — it is the contract between Input and its peer, not Input's internal state.
 	const readout = { setCursor: rec('readout.setCursor'), setDrag: rec('readout.setDrag'), setBox: rec('readout.setBox'),
