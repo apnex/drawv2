@@ -65,16 +65,16 @@ export class Store {
 		this.diagrams = new Map(); // id -> { model, log, dirty, timer, file }
 	}
 
-	init() {
+	async init() {
 		let candidates = 0;   // the backend created its own storage when it was constructed
 		const failures = [];
 		// the data dir is shared with Google OAuth credential/token files:
 		// only diagram-named json is ours to parse
-		for (const file of this.files.list()) {
+		for (const file of await this.files.list()) {
 			if (!FILE.test(file)) continue;
 			candidates++;
 			try {
-				const { doc, log } = parse(this.files.read(file));
+				const { doc, log } = parse(await this.files.read(file));
 				const err = validateDoc(doc);
 				if (err) {
 					failures.push(`${file}: ${err}`);
@@ -236,7 +236,7 @@ export class Store {
 		}));
 	}
 
-	remove(id) {
+	async remove(id) {
 		const entry = this.diagrams.get(id);
 		if (!entry) return 'unknown diagram';
 		if (entry.timer) {
@@ -247,8 +247,8 @@ export class Store {
 		try {
 			// the backend owns the temp artefact of its own write strategy, so this no longer
 			// names a `.json.tmp` -- that was filesystem shape leaking into the caller (B55)
-			this.files.remove(entry.file);
-			this.files.remove(`${id}.json`);
+			await this.files.remove(entry.file);
+			await this.files.remove(`${id}.json`);
 		} catch (err) {
 			console.warn(`[ store ] could not remove ${id}.json: ${err.message}`);
 		}
@@ -341,19 +341,22 @@ export class Store {
 		if (!entry) return;
 		entry.dirty = true;
 		if (entry.timer) return;
+		// B59 -- flush() is async now, and this caller cannot await it: it is a timer, not a
+		// request. An unhandled rejection here would reach server.js's last-resort net and be
+		// reported as anonymous, so the catch is explicit and names the diagram it lost.
 		entry.timer = setTimeout(() => {
 			entry.timer = null;
-			this.flush(id);
+			this.flush(id).catch((err) => console.error(`[ store ] background flush failed for ${id}: ${err.message}`));
 		}, this.flushMs);
 		if (entry.timer.unref) entry.timer.unref();
 	}
 
-	flush(id) {
+	async flush(id) {
 		const entry = this.diagrams.get(id);
 		if (!entry || !entry.dirty) return;
 		entry.file = `${id}.json`; // canonical from first flush onward
 		try {
-			this.files.write(entry.file, serialize(entry.model.toJSON(), entry.log));
+			await this.files.write(entry.file, serialize(entry.model.toJSON(), entry.log));
 			entry.dirty = false; // only after the write actually landed
 			// B15 — and so is the watermark. This is the ONLY place a version becomes durable, so
 			// it is recorded here, from the log that was actually just written, rather than guessed
@@ -366,7 +369,7 @@ export class Store {
 			entry.flushFailures = (entry.flushFailures || 0) + 1;
 			console.error(`[ store ] flush failed for ${id} (${entry.flushFailures}): ${err.message}`);
 			if (!entry.timer) {
-				entry.timer = setTimeout(() => { entry.timer = null; this.flush(id); }, this.flushMs);
+				entry.timer = setTimeout(() => { entry.timer = null; this.flush(id).catch((e) => console.error(`[ store ] retry flush failed for ${id}: ${e.message}`)); }, this.flushMs);
 				if (entry.timer.unref) entry.timer.unref();
 			}
 		}
@@ -425,11 +428,11 @@ export class Store {
 		return n;
 	}
 
-	flushAll() {
+	async flushAll() {
 		for (const id of this.diagrams.keys()) {
 			const entry = this.diagrams.get(id);
 			if (entry.timer) { clearTimeout(entry.timer); entry.timer = null; }
-			this.flush(id);
+			await this.flush(id);
 		}
 	}
 }

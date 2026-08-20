@@ -10,10 +10,16 @@ Four verbs, and they take NAMES rather than paths. That is the load-bearing deta
 has keys, not directories, so a seam that passed `path.join(dir, file)` around would push filesystem
 shape into a place that has none. The implementation owns where a name lives.
 
-  list()             -> string[]   every document name currently stored
-  read(name)         -> string     utf8 text, throws if absent
-  write(name, text)  -> void       atomic: a reader sees the old text or the new, never a splice
-  remove(name)       -> void       idempotent, absent is success
+  list()             -> Promise<string[]>   every document name currently stored
+  read(name)         -> Promise<string>     utf8 text, rejects if absent
+  write(name, text)  -> Promise<void>       atomic: a reader sees the old text or the new, never a splice
+  remove(name)       -> Promise<void>       idempotent, absent is success
+
+Every verb is ASYNC, including the filesystem one that has no need to be (B59). The seam shipped
+synchronous, which quietly excluded the backend it was built for: there is no synchronous HTTP, so
+`read(name) -> string` is unsatisfiable over GCS. A seam whose contract only the incumbent can meet
+is not a seam. The filesystem implementation stays `*Sync` underneath because that is genuinely the
+cheapest correct thing on a local disk -- what changed is the CONTRACT, not its cost here.
 
 What this deliberately does NOT cover is `examples/`. That corpus is read-only content baked into
 the image, and it is read straight from disk in every deployment -- only the mutable store moves.
@@ -34,19 +40,19 @@ export function fsFiles(dir) {
 	fs.mkdirSync(dir, { recursive: true });
 	const at = (name) => path.join(dir, name);
 	return {
-		list() {
+		async list() {
 			return fs.readdirSync(dir);
 		},
-		read(name) {
+		async read(name) {
 			return fs.readFileSync(at(name), 'utf8');
 		},
-		write(name, text) {
+		async write(name, text) {
 			const file = at(name);
 			const tmp = `${file}.tmp`;
 			fs.writeFileSync(tmp, text);
 			fs.renameSync(tmp, file);
 		},
-		remove(name) {
+		async remove(name) {
 			// `force` makes absence success rather than an error, which is what idempotent means
 			// here: delete is called on a best-effort basis and must not throw on a second attempt.
 			fs.rmSync(at(name), { force: true });

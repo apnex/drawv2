@@ -150,7 +150,7 @@ test('`sync` (in step) keeps the local document and replays the outbox', () => {
 	assert.equal(t.changes.canUndo(), true, 'the server’s authority came through');
 });
 
-test('D29: a client AHEAD of the server is TOLD, not silently reverted', () => {
+test('D29: a client AHEAD of the server is TOLD, not silently reverted', async () => {
 	storage.clear();
 	const t = tab();
 	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 9 } });
@@ -222,7 +222,7 @@ test('D30: an outbox belonging to ANOTHER diagram is not replayed into this one'
 	assert.equal(only(back.sent, 'commit').length, 1, 'and its own diagram gets all of it');
 });
 
-test('D30: a corrupt persisted outbox costs the replay, never the document', () => {
+test('D30: a corrupt persisted outbox costs the replay, never the document', async () => {
 	storage.clear();
 	storage.set('draw.outbox', '{not json');
 	const t = tab();
@@ -276,14 +276,14 @@ function fakeWs() {
 	};
 }
 
-test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked change is never silently reverted', () => {
+test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked change is never silently reverted', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rewind-'));
 	try {
 		// a long debounce stands in for a process that dies before its flush fires
 		const s1 = new Store(dir, { flushMs: 3_600_000 });
-		s1.init();
+		await s1.init();
 		const id = s1.list()[0].id;
-		s1.flushAll();                                       // the seed reaches disk...
+		await s1.flushAll();                                       // the seed reaches disk...
 
 		const res = s1.commit(id, { label: 'create', ops: [
 			{ op: 'put', kind: 'node', entity: node('node-0a0001', 60, 60) },
@@ -293,7 +293,7 @@ test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked chan
 
 		// the process dies. A new one boots on the same directory.
 		const s2 = new Store(dir, { flushMs: 3_600_000 });
-		s2.init();
+		await s2.init();
 		const reloaded = s2.diagrams.get(id).log.version;
 		assert.ok(reloaded < acked, 'the restart really did lose an acked change');
 		assert.equal(s2.get(id).get('node', 'node-0a0001'), undefined);
@@ -309,11 +309,11 @@ test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked chan
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('resume: unknown diagram is a typed refusal, and never binds the session', () => {
+test('resume: unknown diagram is a typed refusal, and never binds the session', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
 	try {
 		const store = new Store(dir, { flushMs: 3_600_000 });
-		store.init();
+		await store.init();
 		const ws = fakeWs();
 		const session = new Session(ws, store);
 		ws.recv('resume', { diagram: 'diagram-ffffff', version: 0 });

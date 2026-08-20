@@ -35,8 +35,14 @@ process.on('unhandledRejection', (err) => {
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
-	process.on(signal, () => {
-		app.store.flushAll();
+	// B59 -- flushAll is async, so the exit MUST wait for it. Firing and exiting would discard
+	// every debounced write at shutdown, which on Cloud Run is the normal way a revision ends.
+	process.on(signal, async () => {
+		try {
+			await app.store.flushAll();
+		} catch (err) {
+			console.error(`[ draw ] flush on ${signal} failed: ${err.message}`);
+		}
 		process.exit(0);
 	});
 }

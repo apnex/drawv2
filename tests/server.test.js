@@ -286,7 +286,7 @@ test('the Slides binding is STATUS the server records — not a change, and not 
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-bind-'));
 	try {
 		const store = new Store(dir, { flushMs: 3_600_000 });
-		store.init();
+		await store.init();
 		const id = store.list()[0].id;
 		const before = store.diagrams.get(id).log.version;
 
@@ -299,9 +299,9 @@ test('the Slides binding is STATUS the server records — not a change, and not 
 		assert.equal(store.bindSlides('diagram-ffffff', 'p', 'g'), 'unknown diagram');
 
 		// it survives a restart — a binding that does not persist re-targets pages[0] on re-push
-		store.flushAll();
+		await store.flushAll();
 		const again = new Store(dir, { flushMs: 3_600_000 });
-		again.init();
+		await again.init();
 		assert.equal(again.get(id).toJSON().meta.slides.pageId, 'g7');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -758,7 +758,7 @@ test('collection caps are enforced on apply', async () => {
 	const { Store } = await import('../server/store.js');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cap-'));
 	const store = new Store(dir);
-	store.init();
+	await store.init();
 	const id = store.list()[0].id;
 	const seeded = store.get(id).all('node').length;
 	for (let i = 0; i < 2000 - seeded; i++) {
@@ -769,7 +769,7 @@ test('collection caps are enforced on apply', async () => {
 	const over = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffffff', name: 'over', type: 'host', x: 30, y: 30 } }] }, 'server');
 	assert.equal(over.ok, false);
 	assert.match(over.error, /limit/);
-	store.flushAll();
+	await store.flushAll();
 	fs.rmSync(dir, { recursive: true, force: true });
 });
 

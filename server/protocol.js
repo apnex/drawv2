@@ -145,7 +145,8 @@ export class Session {
 		this.locks = locks;
 		this.diagramId = null;
 		if (hub) hub.add(this);
-		ws.on('message', (data) => this.onMessage(data));
+		// onMessage is async; nothing can await a socket event, so the rejection is caught here.
+		ws.on('message', (data) => this.onMessage(data).catch((err) => console.error(`[ session ] unhandled: ${err && err.message}`)));
 		ws.on('close', () => { if (hub) hub.remove(this); });
 		ws.on('error', () => {});
 	}
@@ -182,7 +183,7 @@ export class Session {
 		return true;
 	}
 
-	onMessage(data) {
+	async onMessage(data) {
 		let msg;
 		try {
 			msg = JSON.parse(data.toString());
@@ -192,7 +193,11 @@ export class Session {
 		if (!msg || typeof msg.cmd !== 'string') return this.error('missing cmd');
 		const body = (msg.body && typeof msg.body === 'object') ? msg.body : {};
 		try {
-			this.dispatch(msg.cmd, body);
+			// B59 -- AWAITED. dispatch is async now, and an unawaited call would settle after this
+			// try block exits, so the catch below would stop catching: a rejection would escape as
+			// an unhandled rejection instead of an error reply, which is exactly the crash vector
+			// this handler exists to deny.
+			await this.dispatch(msg.cmd, body);
 		} catch (err) {
 			// a session must survive any payload; validation should catch everything
 			// before here, but a crash vector must never take the server down
@@ -200,7 +205,7 @@ export class Session {
 		}
 	}
 
-	dispatch(cmd, body) {
+	async dispatch(cmd, body) {
 		switch (cmd) {
 			case 'hello': {
 				const model = (body.diagram && this.store.get(body.diagram)) || this.store.first();
@@ -319,7 +324,7 @@ export class Session {
 				if (!this.store.get(body.id)) return this.error(`unknown diagram: ${body.id}`);
 				// don't let the browser delete a diagram a server-side controller owns
 				if (this.locks && this.locks.locked(body.id)) return this.error('server-locked: read-only');
-				const err = this.store.remove(body.id);
+				const err = await this.store.remove(body.id);
 				if (err) return this.error(err);
 				console.log(`[ session ] deleted diagram ${body.id}`);
 				if (this.diagramId === body.id) this.diagramId = null;

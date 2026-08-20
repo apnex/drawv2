@@ -9,18 +9,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
 
-function freshStore() {
+async function freshStore() {
 	const dir = mkdtempSync(path.join(os.tmpdir(), 'store-atom-'));
 	const store = new Store(dir);
-	store.init();                 // empty dir -> seeds one diagram
+	await store.init();                 // empty dir -> seeds one diagram
 	const id = store.list()[0].id;
 	return { store, dir, id, model: store.get(id) };
 }
 
-test('commit: a REJECTED mutation writes NOTHING (model + flushed file byte-identical, version unchanged)', () => {
-	const { store, dir, id, model } = freshStore();
+test('commit: a REJECTED mutation writes NOTHING (model + flushed file byte-identical, version unchanged)', async () => {
+	const { store, dir, id, model } = await freshStore();
 	try {
-		store.flush(id);
+		await store.flush(id);
 		const file = path.join(dir, `${id}.json`);
 		const fileBefore = readFileSync(file, 'utf8');
 		const jsonBefore = JSON.stringify(model.toJSON());
@@ -32,13 +32,13 @@ test('commit: a REJECTED mutation writes NOTHING (model + flushed file byte-iden
 		assert.equal(JSON.stringify(model.toJSON()), jsonBefore, 'in-memory model unchanged');
 		assert.equal(model.state.meta.version, versionBefore, 'version unchanged');
 
-		store.flush(id);
+		await store.flush(id);
 		assert.equal(readFileSync(file, 'utf8'), fileBefore, 'flushed file byte-identical');
 	} finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('commit: a validateMutation-rejected mutation also writes nothing (gate error string preserved)', () => {
-	const { store, dir, id, model } = freshStore();
+test('commit: a validateMutation-rejected mutation also writes nothing (gate error string preserved)', async () => {
+	const { store, dir, id, model } = await freshStore();
 	try {
 		const versionBefore = model.state.meta.version;
 		// a link to a non-existent endpoint — rejected by validateMutation (referential integrity)
@@ -50,8 +50,8 @@ test('commit: a validateMutation-rejected mutation also writes nothing (gate err
 	} finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('commit: an accepted del-node cascade applies atomically (link cascade-deleted) + advances version', () => {
-	const { store, dir, id, model } = freshStore();
+test('commit: an accepted del-node cascade applies atomically (link cascade-deleted) + advances version', async () => {
+	const { store, dir, id, model } = await freshStore();
 	try {
 		const nodeId = 'node-aaaaaa';
 		assert.equal(store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: nodeId, name: 'a', type: 'host', shape: 'circle', x: 120, y: 120 } }] }, 'server').ok, true);

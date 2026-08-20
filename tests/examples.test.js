@@ -50,53 +50,53 @@ test('an example starts clean: version 0, no log, nothing to undo', () => {
 	}
 });
 
-test('first boot copies the corpus into an empty data dir, and it PERSISTS', () => {
+test('first boot copies the corpus into an empty data dir, and it PERSISTS', async () => {
 	const dir = tmp();
 	try {
 		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		store.init();
+		await store.init();
 		const shipped = fs.readdirSync(EXAMPLES).filter((f) => f.endsWith('.json')).length;
 		assert.equal(store.list().length, shipped, 'every example loaded');
 		assert.equal(fs.readdirSync(dir).length, 0, 'nothing written yet — the flush is debounced');
 
-		store.flushAll();
+		await store.flushAll();
 		assert.equal(fs.readdirSync(dir).filter((f) => f.endsWith('.json')).length, shipped,
 			'seeding is a CREATION: the examples are now the data dir, not a live reference to the repo');
 
 		// second boot loads from the data dir; the examples are not consulted again
 		const again = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		again.init();
+		await again.init();
 		assert.equal(again.list().length, shipped);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('a user who deletes an example does NOT get it back on the next boot', () => {
+test('a user who deletes an example does NOT get it back on the next boot', async () => {
 	const dir = tmp();
 	try {
 		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		store.init();
-		store.flushAll();
+		await store.init();
+		await store.flushAll();
 		const victim = store.list()[0].id;
-		assert.equal(store.remove(victim), null);
-		store.flushAll();
+		assert.equal(await store.remove(victim), null);
+		await store.flushAll();
 
 		const again = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		again.init();
+		await again.init();
 		assert.equal(again.list().some((d) => d.id === victim), false,
 			'seeding is FIRST BOOT only — a re-seeding store would resurrect deleted work forever');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('without examplesDir the store seeds the single programmatic example — every other test is unaffected', () => {
+test('without examplesDir the store seeds the single programmatic example — every other test is unaffected', async () => {
 	const dir = tmp();
 	try {
 		const store = new Store(dir, { flushMs: 3_600_000 });
-		store.init();
+		await store.init();
 		assert.equal(store.list().length, 1, 'the injected dependency really is opt-in');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('a malformed example is skipped, not fatal — a packaging bug must not block a first run', () => {
+test('a malformed example is skipped, not fatal — a packaging bug must not block a first run', async () => {
 	const dir = tmp();
 	const badExamples = tmp();
 	try {
@@ -106,7 +106,7 @@ test('a malformed example is skipped, not fatal — a packaging bug must not blo
 		fs.writeFileSync(path.join(badExamples, 'diagram-bad001.json'), '{ not json');
 
 		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: badExamples });
-		assert.doesNotThrow(() => store.init());
+		await assert.doesNotReject(() => store.init());
 		assert.equal(store.list().length, 3, 'the good ones loaded');
 
 		// and if NONE load, the programmatic seed still guarantees a non-empty store
@@ -114,7 +114,7 @@ test('a malformed example is skipped, not fatal — a packaging bug must not blo
 		fs.writeFileSync(path.join(allBad, 'diagram-bad002.json'), '{ not json');
 		const dir2 = tmp();
 		const s2 = new Store(dir2, { flushMs: 3_600_000, examplesDir: allBad });
-		s2.init();
+		await s2.init();
 		assert.equal(s2.list().length, 1, 'fell back to the programmatic seed — never an empty store');
 		fs.rmSync(allBad, { recursive: true, force: true });
 		fs.rmSync(dir2, { recursive: true, force: true });
@@ -124,12 +124,12 @@ test('a malformed example is skipped, not fatal — a packaging bug must not blo
 	}
 });
 
-test('D17/GR8 is NOT weakened: a broken DATA dir still refuses to boot, examples or not', () => {
+test('D17/GR8 is NOT weakened: a broken DATA dir still refuses to boot, examples or not', async () => {
 	const dir = tmp();
 	try {
 		fs.writeFileSync(path.join(dir, 'diagram-aa0001.json'), '{ not json');
 		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		assert.throws(() => store.init(), /refusing to boot/,
+		await assert.rejects(() => store.init(), /refusing to boot/,
 			'user data that cannot be read is an outage; seeding examples over it would be data loss');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

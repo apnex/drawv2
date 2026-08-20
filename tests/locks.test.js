@@ -309,7 +309,7 @@ test('REST: lock + apply persists to disk (survives via the store)', async () =>
 		method: 'POST', headers: H(lock.token), body: JSON.stringify({ x: -90, y: -90, w: 180, h: 120 })
 	});
 	await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
-	app.store.flushAll();
+	await app.store.flushAll();
 	const onDisk = JSON.parse(fs.readFileSync(path.join(dataDir, `${id}.json`), 'utf8'));
 	assert.ok(onDisk.zones.some((z) => z.w === 180 && z.h === 120));
 });

@@ -15,9 +15,9 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cs2-'));
 const node = (id, x = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0 });
 const put = (kind, entity) => ({ op: 'put', kind, entity });
 
-function storeWith(dir) {
+async function storeWith(dir) {
 	const s = new Store(dir);
-	s.init();
+	await s.init();
 	return { s, id: s.list()[0].id };
 }
 
@@ -83,27 +83,27 @@ test('B13: the log block survives a document body that does not end in "\\n}"', 
 	assert.deepEqual(back.log, log.toJSON(), 'an empty document body must not lose the log');
 });
 
-test('B13: a $-named node survives a restart — the corruption escalated to a boot refusal', () => {
+test('B13: a $-named node survives a restart — the corruption escalated to a boot refusal', async () => {
 	const dir = tmp();
 	try {
-		const a = storeWith(dir);
+		const a = await storeWith(dir);
 		a.s.commit(a.id, { label: 'create', ops: [put('node', { ...node('node-bd0001', 300), name: 'a$&b' })] }, 'server', 't');
 		a.s.flush(a.id);
 
 		const b = new Store(dir);            // a different process would see exactly this
-		assert.doesNotThrow(() => b.init(), 'the store refused to boot on a file it corrupted itself');
+		await assert.doesNotReject(() => b.init(), 'the store refused to boot on a file it corrupted itself');
 		const named = b.get(a.id).all('node').find((n) => n.id === 'node-bd0001');
 		assert.equal(named.name, 'a$&b', 'the name came back intact');
 		assert.ok(b.diagrams.get(a.id).log.records.length >= 1, 'and the log came back with it');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('I10: the document half stays pretty-printed and carries no log key', () => {
+test('I10: the document half stays pretty-printed and carries no log key', async () => {
 	const dir = tmp();
 	try {
-		const { s, id } = storeWith(dir);
+		const { s, id } = await storeWith(dir);
 		s.commit(id, { ops: [put('node', node('node-ba0001', 300))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		const text = fs.readFileSync(path.join(dir, `${id}.json`), 'utf8');
 		assert.match(text, /\n\t"nodes": \[/, 'the document is still diffable');
 		assert.match(text, /\n\t"log": \{/, 'the log is a sibling key');
@@ -125,17 +125,17 @@ real breach was reported exactly once, mislabelled, and never re-checked.
 A structural invariant violation and a transient I/O failure are different failures. They do not
 share a counter, a message, or a recovery path — a retry cannot repair a log that mis-mints a seq.
 */
-test('B20: a GR9 breach is counted and named as an invariant failure, not a flush failure', () => {
+test('B20: a GR9 breach is counted and named as an invariant failure, not a flush failure', async () => {
 	const dir = tmp();
 	try {
-		const { s, id } = storeWith(dir);
+		const { s, id } = await storeWith(dir);
 		s.commit(id, { ops: [put('node', node('node-be0001', 60))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 
 		const log = s.diagrams.get(id).log;
 		log.records[log.records.length - 1].seq = log.version + 5;   // a record above its own watermark
 		s.commit(id, { ops: [put('node', node('node-be0002', 120))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 
 		assert.equal(s.flushFailures(), 0, 'a structural breach is NOT an I/O failure and must not be counted as one');
 		assert.equal(s.invariantFailures(), 1, 'it is counted as what it is');
@@ -143,19 +143,19 @@ test('B20: a GR9 breach is counted and named as an invariant failure, not a flus
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('B20: a breach is re-checked on the next write, not reported once and forgotten', () => {
+test('B20: a breach is re-checked on the next write, not reported once and forgotten', async () => {
 	const dir = tmp();
 	try {
-		const { s, id } = storeWith(dir);
+		const { s, id } = await storeWith(dir);
 		s.commit(id, { ops: [put('node', node('node-bf0001', 60))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		const log = s.diagrams.get(id).log;
 		log.records[log.records.length - 1].seq = log.version + 5;
 
 		s.commit(id, { ops: [put('node', node('node-bf0002', 120))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		s.commit(id, { ops: [put('node', node('node-bf0003', 180))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		assert.equal(s.invariantFailures(), 2, 'the breach is still there, so it is still reported');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -173,11 +173,11 @@ The client prunes its persisted outbox on this number (D30), so it discards work
 in memory. D29's rewind detects the loss on reconnect — but the outbox, which is the recovery
 material, is already gone. A1 `Ephemeral Truth Loss`, inside the window B6 declares safe.
 */
-test('B15: durableVersion names the flushed watermark, not the absence of dirt', () => {
+test('B15: durableVersion names the flushed watermark, not the absence of dirt', async () => {
 	const dir = tmp();
 	try {
 		const s = new Store(dir, { flushMs: 100000 });   // nothing auto-flushes during the test
-		s.init();
+		await s.init();
 		const id = s.list()[0].id;
 
 		assert.equal(s.durableVersion(id), s.diagrams.get(id).log.version, 'a freshly-loaded diagram is fully durable');
@@ -190,12 +190,12 @@ test('B15: durableVersion names the flushed watermark, not the absence of dirt',
 		assert.equal(s.durableVersion(id), atLoad, 'three commits in one window flushed NOTHING, so nothing new is durable');
 		assert.ok(s.durableVersion(id) < third.version - 1, 'the old `version - 1` guess over-reported by two');
 
-		s.flush(id);
+		await s.flush(id);
 		assert.equal(s.durableVersion(id), third.version, 'after the flush, everything is durable');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('B15: a failed write leaves durableVersion behind, and a later success advances it', () => {
+test('B15: a failed write leaves durableVersion behind, and a later success advances it', async () => {
 	const dir = tmp();
 	try {
 		let fail = false;
@@ -206,36 +206,36 @@ test('B15: a failed write leaves durableVersion behind, and a later success adva
 			if (fail) throw new Error('backend unavailable');
 			real.write(name, text);
 		} } });
-		s.init();
+		await s.init();
 		const id = s.list()[0].id;
-		s.flush(id);
+		await s.flush(id);
 		const durable = s.durableVersion(id);
 
 		fail = true;
 		const r = s.commit(id, { ops: [put('node', node('node-c10001', 60))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		assert.equal(s.durableVersion(id), durable, 'a write that threw did not make anything durable');
 		assert.ok(s.flushFailures() > 0, 'and it is counted as the I/O failure it is');
 
 		fail = false;
-		s.flush(id);
+		await s.flush(id);
 		assert.equal(s.durableVersion(id), r.version, 'the retry that landed advanced the watermark');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 // ---- I5 across a restart ----
 
-test('I5: undo survives a process restart', () => {
+test('I5: undo survives a process restart', async () => {
 	const dir = tmp();
 	try {
-		const a = storeWith(dir);
+		const a = await storeWith(dir);
 		const before = a.s.get(a.id).all('node').length;
 		a.s.commit(a.id, { label: 'create', ops: [put('node', node('node-bb0001', 300))] }, 'server', 't');
 		a.s.flush(a.id);
 		assert.equal(a.s.get(a.id).all('node').length, before + 1);
 
 		const b = new Store(dir);            // a different process would see exactly this
-		b.init();
+		await b.init();
 		assert.equal(b.get(a.id).all('node').length, before + 1, 'the change persisted');
 		const r = b.undo(a.id);
 		assert.equal(r.ok, true, 'undo is available after a restart');
@@ -245,10 +245,10 @@ test('I5: undo survives a process restart', () => {
 
 // ---- GR9 / I12: the watermark survives ----
 
-test('I12: version is monotonic ACROSS restarts and no seq is re-minted', () => {
+test('I12: version is monotonic ACROSS restarts and no seq is re-minted', async () => {
 	const dir = tmp();
 	try {
-		const a = storeWith(dir);
+		const a = await storeWith(dir);
 		for (const n of ['node-ca0001', 'node-ca0002', 'node-ca0003']) {
 			a.s.commit(a.id, { ops: [put('node', node(n, 60))] }, 'server', 't');
 		}
@@ -256,7 +256,7 @@ test('I12: version is monotonic ACROSS restarts and no seq is re-minted', () => 
 		const pre = a.s.diagrams.get(a.id).log.version;
 		assert.ok(pre >= 3);
 
-		const b = new Store(dir); b.init();
+		const b = new Store(dir); await b.init();
 		assert.equal(b.diagrams.get(a.id).log.version, pre, 'the watermark came back');
 		const r = b.commit(a.id, { ops: [put('node', node('node-ca0004', 120))] }, 'server', 't');
 		assert.equal(r.version, pre + 1, 'the next change continues the sequence');
@@ -290,10 +290,10 @@ test('I14: the only record is never evicted, however large', () => {
 	assert.equal(log.evicted, 0);
 });
 
-test('I14: evicted survives a restart', () => {
+test('I14: evicted survives a restart', async () => {
 	const dir = tmp();
 	try {
-		const a = storeWith(dir);
+		const a = await storeWith(dir);
 		const entry = a.s.diagrams.get(a.id);
 		for (let i = 1; i <= 120; i++) {
 			entry.log.version++;
@@ -303,7 +303,7 @@ test('I14: evicted survives a restart', () => {
 		assert.ok(dropped > 0);
 		a.s.markDirty(a.id); a.s.flush(a.id);
 
-		const b = new Store(dir); b.init();
+		const b = new Store(dir); await b.init();
 		assert.equal(b.diagrams.get(a.id).log.evicted, dropped, 'the count of what was lost is itself durable');
 		assert.equal(b.diagrams.get(a.id).log.truncated, true);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -311,19 +311,19 @@ test('I14: evicted survives a restart', () => {
 
 // ---- I13: corruption tolerance ----
 
-test('I13: a malformed log costs history, never the diagram', () => {
+test('I13: a malformed log costs history, never the diagram', async () => {
 	for (const broken of ['null', '"nonsense"', '{"records":"not an array"}', '{"version":"x","records":[1,2]}']) {
 		const dir = tmp();
 		try {
-			const { s, id } = storeWith(dir);
+			const { s, id } = await storeWith(dir);
 			s.commit(id, { ops: [put('node', node('node-da0001', 60))] }, 'server', 't');
-			s.flush(id);
+			await s.flush(id);
 			const file = path.join(dir, `${id}.json`);
 			const { doc } = parse(fs.readFileSync(file, 'utf8'));
 			// re-write with a corrupt log block
 			fs.writeFileSync(file, JSON.stringify({ ...doc, log: JSON.parse(broken) }, null, '\t') + '\n');
 
-			const b = new Store(dir); b.init();
+			const b = new Store(dir); await b.init();
 			assert.equal(b.list().length, 1, `the diagram survived a log of ${broken}`);
 			assert.equal(b.get(id).all('node').length, doc.nodes.length, 'and its content is intact');
 			assert.equal(b.diagrams.get(id).log.records.length, 0, 'history is empty, not corrupt');
@@ -333,16 +333,16 @@ test('I13: a malformed log costs history, never the diagram', () => {
 
 // ---- I9: ops and their record publish together ----
 
-test('I9: an observer of every write never sees ops without their record', () => {
+test('I9: an observer of every write never sees ops without their record', async () => {
 	const dir = tmp();
 	try {
 		const seen = [];
 		const real = fsFiles(dir);
 		const s = new Store(dir, { files: { ...real, write(name, text) { seen.push(parse(text)); real.write(name, text); } } });
-		s.init();
+		await s.init();
 		const id = s.list()[0].id;
 		s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		const last = seen[seen.length - 1];
 		const hasNode = last.doc.nodes.some((n) => n.id === 'node-ea0001');
 		const hasRecord = (last.log?.records || []).some((r) => r.ops.some((o) => o.entity?.id === 'node-ea0001'));
@@ -362,10 +362,10 @@ test('B4: a failed write retries without a further edit, and is counted', async 
 			if (fail) throw new Error('backend unavailable');
 			real.write(name, text);
 		} } });
-		s.init();
+		await s.init();
 		const id = s.list()[0].id;
 		s.commit(id, { ops: [put('node', node('node-fa0001', 60))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		assert.ok(s.flushFailures() > 0, 'the failure is counted, not swallowed');
 		assert.equal(s.diagrams.get(id).dirty, true, 'and the entry is still dirty');
 
@@ -381,9 +381,9 @@ test('B4: a failed write retries without a further edit, and is counted', async 
 test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-level key', async () => {
 	const dir = tmp();
 	try {
-		const { s, id } = storeWith(dir);
+		const { s, id } = await storeWith(dir);
 		s.commit(id, { ops: [put('node', node('node-ga0001', 60))] }, 'server', 't');
-		s.flush(id);
+		await s.flush(id);
 		const raw = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
 		assert.ok(raw.log, 'the file carries a log');
 		const { validateDoc } = await import('../server/validate.js');
@@ -402,7 +402,7 @@ So this store runs on a Map. No directory is created, nothing touches disk, and 
 names because an object store has keys rather than paths -- which is the shape the GCS adapter needs
 (DEPLOY.md, H8.2).
 */
-test('B55: the store runs on a backend with no filesystem at all', () => {
+test('B55: the store runs on a backend with no filesystem at all', async () => {
 	const mem = new Map();
 	const files = {
 		list: () => [...mem.keys()],
@@ -415,22 +415,71 @@ test('B55: the store runs on a backend with no filesystem at all', () => {
 	};
 
 	const s = new Store('/nonexistent/never-created', { flushMs: 10000, files });
-	s.init();                                     // seeds, because the backend is empty
+	await s.init();                                     // seeds, because the backend is empty
 	const id = s.list()[0].id;
 	assert.ok(id, 'a diagram exists after boot');
 
 	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
-	s.flush(id);
+	await s.flush(id);
 	assert.equal(mem.size, 1, 'the flush landed in the Map, not on disk');
 	assert.ok(mem.get(`${id}.json`).includes('node-ea0001'), 'and it carries the change');
 
 	// a second store over the SAME backend reads it back - the round trip is the real proof
 	const s2 = new Store('/nonexistent/never-created', { flushMs: 10000, files });
-	s2.init();
+	await s2.init();
 	assert.equal(s2.list().length, 1, 'the second store found the document');
 	assert.ok(s2.get(id).get('node', 'node-ea0001'), 'and parsed the node out of it');   // get(id) is the model
 
-	s2.remove(id);
+	await s2.remove(id);
 	assert.equal(mem.size, 0, 'remove reached the backend too');
 	assert.equal(fs.existsSync('/nonexistent/never-created'), false, 'no directory was ever created');
+});
+
+/*
+B59 -- the seam accepts a backend that cannot answer synchronously.
+
+B55 ran the store on a `Map` and I called that proof the seam was swappable. It was not: a `Map`
+answers instantly, and the backend the seam exists for is HTTP, which cannot. The property I checked
+was "not filesystem-bound"; the property that mattered was "not synchronous", and those came apart
+exactly where GCS lives.
+
+So this backend defers every verb across a real macrotask and, on read, hands back a value that
+never existed synchronously. If any caller in the store reads the return value instead of awaiting
+it, it sees a Promise where text should be, and the parse dies.
+*/
+const defer = (v) => new Promise((res) => setTimeout(() => res(v), 1));
+
+test('B59: the store runs on a backend that answers only asynchronously', async () => {
+	const mem = new Map();
+	const seen = [];
+	const files = {
+		async list() { return defer([...mem.keys()]); },
+		async read(name) {
+			if (!mem.has(name)) throw new Error(`no such object: ${name}`);
+			return defer(mem.get(name));
+		},
+		async write(name, text) { seen.push(name); await defer(null); mem.set(name, text); },
+		async remove(name) { await defer(null); mem.delete(name); },
+	};
+
+	const s = new Store('/nonexistent/async-only', { flushMs: 10000, files });
+	await s.init();
+	const id = s.list()[0].id;
+
+	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
+	await s.flush(id);
+	assert.equal(mem.size, 1, 'the flush completed against an async backend');
+	assert.ok(mem.get(`${id}.json`).includes('node-ea0001'));
+
+	// B15's watermark must reflect a write that actually LANDED, not one merely started. If flush
+	// resolved before the backend did, this would be advanced on a promise rather than on durability.
+	assert.equal(s.durableVersion(id), s.log(id).version, 'durable only after the write settled');
+
+	// the round trip is the part a synchronous Map could never have exercised
+	const s2 = new Store('/nonexistent/async-only', { flushMs: 10000, files });
+	await s2.init();
+	assert.ok(s2.get(id).get('node', 'node-ea0001'), 'a second store read it back over the async seam');
+
+	await s2.remove(id);
+	assert.equal(mem.size, 0, 'remove settled too');
 });

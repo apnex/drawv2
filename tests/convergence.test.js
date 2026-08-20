@@ -83,10 +83,10 @@ function world(store, id) {
 	return w;
 }
 
-function setup(seed) {
+async function setup(seed) {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-conv-'));
 	const store = new Store(dir);
-	store.init();
+	await store.init();
 	const id = store.list()[0].id;
 	const w = world(store, id);
 	const a = participant(store, id, 'tab-a', w);
@@ -130,8 +130,8 @@ function drive(env, count) {
 	return store.get(id);
 }
 
-test('GR6: two browsers and a server converge over 200 seeded mixed transactions', () => {
-	const env = setup(20260818);
+test('GR6: two browsers and a server converge over 200 seeded mixed transactions', async () => {
+	const env = await setup(20260818);
 	try {
 		const server = drive(env, 200);
 		assert.equal(shape(env.a.model), shape(server), 'tab-a agrees with the server');
@@ -140,8 +140,8 @@ test('GR6: two browsers and a server converge over 200 seeded mixed transactions
 	} finally { cleanup(env.dir); }
 });
 
-test('GR6 fault (i): a dropped change is DETECTED, and a repair restores convergence', () => {
-	const env = setup(4242);
+test('GR6 fault (i): a dropped change is DETECTED, and a repair restores convergence', async () => {
+	const env = await setup(4242);
 	try {
 		drive(env, 40);
 		// tab-b misses exactly one change
@@ -175,8 +175,8 @@ The wiring is now pinned where it can actually fail: `tests/input.test.js` drive
 through `bindGestureDefer` and asserts both directions. This test keeps its own job — convergence
 under reordering — and no longer implies the other.
 */
-test('GR6 fault (ii): a change landing under a live gesture is deferred, not applied mid-drag', () => {
-	const env = setup(777);
+test('GR6 fault (ii): a change landing under a live gesture is deferred, not applied mid-drag', async () => {
+	const env = await setup(777);
 	try {
 		drive(env, 30);
 		const target = env.b.model.all('node')[0];
@@ -194,8 +194,8 @@ test('GR6 fault (ii): a change landing under a live gesture is deferred, not app
 	} finally { cleanup(env.dir); }
 });
 
-test('GR6 fault (iii): a writer that disconnects mid-stream loses nothing it committed', () => {
-	const env = setup(31337);
+test('GR6 fault (iii): a writer that disconnects mid-stream loses nothing it committed', async () => {
+	const env = await setup(31337);
 	try {
 		drive(env, 30);
 		// tab-b goes offline: it stops receiving, but tab-a keeps writing
@@ -216,8 +216,8 @@ test('GR6 fault (iii): a writer that disconnects mid-stream loses nothing it com
 	} finally { cleanup(env.dir); }
 });
 
-test('GR6: an agent write reaches both browsers', () => {
-	const env = setup(9001);
+test('GR6: an agent write reaches both browsers', async () => {
+	const env = await setup(9001);
 	try {
 		drive(env, 20);
 		// the agent writes through the store directly, as REST does, and the hub fans it out

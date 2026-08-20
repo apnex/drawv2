@@ -108,7 +108,7 @@ test('CS5 gate: a migrated corpus boots, and every entity is deep-equal through 
 
 		const { Store } = await import('../server/store.js');
 		const store = new Store(dir, { flushMs: 3_600_000 });
-		store.init();                                  // throws if any file fails the new whitelist
+		await store.init();                                  // throws if any file fails the new whitelist
 		assert.equal(store.list().length, 2);
 
 		for (const { id } of store.list()) {
@@ -129,7 +129,7 @@ test('CS5 gate: an UNMIGRATED file is a named boot failure, never a silent resee
 		fs.writeFileSync(path.join(dir, `${d.meta.id}.json`), JSON.stringify(d, null, '\t') + '\n');
 		const { Store } = await import('../server/store.js');
 		const store = new Store(dir, { flushMs: 3_600_000 });
-		assert.throws(() => store.init(), /refusing to boot/, 'the old shape is refused, loudly');
+		await assert.rejects(() => store.init(), /refusing to boot/, 'the old shape is refused, loudly');
 		assert.equal(store.diagrams.size, 0, 'and nothing was seeded over it');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

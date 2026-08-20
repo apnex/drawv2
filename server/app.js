@@ -106,7 +106,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
-export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -121,7 +121,7 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 	// examplesDir is null unless the caller supplies one — only server/server.js does, so a test
 	// that constructs an app gets the single programmatic seed, not whatever ships in examples/.
 	const store = new Store(data, { examplesDir });
-	store.init();
+	await store.init();
 
 	const auth = new GoogleAuth(data, secrets);
 	const slides = { auth, sync: new SlidesSync(auth) };
@@ -228,10 +228,12 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 				server,
 				store,
 				port: server.address().port,
-				close() {
+				async close() {
 					clearInterval(sweepTimer);
 					clearInterval(pingTimer);
-					store.flushAll();
+					// B59 -- awaited, not fired: close() is what tests use to assert durability,
+					// and an unawaited flush would let the socket shut before the write landed.
+					await store.flushAll();
 					wss.clients.forEach((ws) => ws.terminate());
 					return new Promise((done) => server.close(done));
 				}

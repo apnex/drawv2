@@ -157,7 +157,7 @@ round trips, each a window another writer could interleave — the hazard `undo 
 mitigate. The legacy adapter is retired rather than aliased (X1: an alias is a second surface to
 keep true); the high-level verbs now build ops directly, which is all the adapter ever did for them.
 */
-function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect) {
+async function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	if (Number.isNaN(expect)) return json(res, 400, { error: 'X-Draw-Expect must be an integer version', code: 'expect-malformed' });
 	const result = store.commit(id, { ops, label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`);
@@ -169,7 +169,7 @@ function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expec
 	// durability: a REST/agentic caller is one-shot — it has no reconnect backstop, so an acked
 	// write must be on disk, not merely in the ~200ms debounce window. Flush before acking. (The ws
 	// path keeps the debounce — drag writes are high-frequency and self-heal on reconnect.)
-	store.flush(id);
+	await store.flush(id);
 	// a value-identical write is accepted and is not a change
 	if (!result.change) return json(res, 200, { version: result.version, noop: true, ...(extra || {}) });
 	const body = changeBody(result.change, store, id);
@@ -181,11 +181,11 @@ function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expec
 // (the lock gate ran before the awaited body read), set + flush-before-ack (a one-shot agentic caller
 // has no reconnect backstop), then broadcast a snapshot so every viewer reflects the agent's focus via
 // the persisted doc.selection. No version bump — selection is status, not config (matches the ws 'select').
-function commitSelection(res, store, hub, locks, id, token, ids) {
+async function commitSelection(res, store, hub, locks, id, token, ids) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	const err = store.setSelection(id, ids);
 	if (err) return json(res, 422, { error: err });
-	store.flush(id);
+	await store.flush(id);
 	const model = store.get(id);
 	// B34 — a selection EVENT, not the whole document. Selection is the highest-frequency,
 	// lowest-information write in the system: an agent sweeping focus re-transmitted the entire
@@ -365,7 +365,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		const reversing = parts[4] === 'undo' ? log.peekUndo() : log.peekRedo();
 		const result = parts[4] === 'undo' ? store.undo(id, body.to ?? null) : store.redo(id);
 		if (!result.ok) return json(res, 422, { error: result.error, version: result.version });
-		store.flush(id);
+		await store.flush(id);
 		const payload = reversalBody(store, id, result,
 			{ by: 'server', actor: `rest-${token.slice(0, 8)}`, label: parts[4], reversed: reversing });
 		if (hub) hub.broadcast(id, 'change', payload);

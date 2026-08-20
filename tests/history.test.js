@@ -131,15 +131,15 @@ function fakeWs() {
 	};
 }
 
-function live() {
+async function live() {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-hist-'));
 	const store = new Store(dir, { flushMs: 3_600_000 });
-	store.init();
+	await store.init();
 	return { dir, store, id: store.list()[0].id };
 }
 
-test('D21: the server computes the top RUN, so the browser can offer "undo all N by <actor>"', () => {
-	const env = live();
+test('D21: the server computes the top RUN, so the browser can offer "undo all N by <actor>"', async () => {
+	const env = await live();
 	try {
 		for (let i = 1; i <= 4; i++) {
 			env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node(`node-${hex(i)}`, 60 * i, 300) }], label: 'create' }, 'server', 'agent-7');
@@ -161,8 +161,8 @@ test('D21: the server computes the top RUN, so the browser can offer "undo all N
 	} finally { fs.rmSync(env.dir, { recursive: true, force: true }); }
 });
 
-test('D21: a run STOPS at a different actor — you cannot sweep away someone else’s work with your own', () => {
-	const env = live();
+test('D21: a run STOPS at a different actor — you cannot sweep away someone else’s work with your own', async () => {
+	const env = await live();
 	try {
 		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0001', 60, 300) }] }, 'client', 'tab-a');
 		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0002', 120, 300) }] }, 'server', 'agent-7');
