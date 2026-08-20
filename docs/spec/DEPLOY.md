@@ -153,6 +153,34 @@ Detaching the certificate map restores the classic certificates, so step 5 rever
 DNS no longer reverses, however: the v1 bucket has been deleted, so pointing the CNAME back yields `404` rather than the old generation.\
 The 2021 deployment is recoverable only from `github.com/apnex/draw`, and nothing about the cutover depends on it.
 
+### What is deployed
+
+Live as a private Cloud Run service, not yet reachable at `draw.apnex.io`:
+```text
+draw            australia-southeast1, min=1 max=1, --no-cpu-throttling
+image           australia-southeast1-docker.pkg.dev/labops/apnex/draw
+identity        sa-draw@labops.iam.gserviceaccount.com
+                objectAdmin on gs://diagrams.apnex.io ONLY -- no project-wide storage role
+BUCKET          diagrams.apnex.io
+ingress         --no-allow-unauthenticated, so nothing is public before IAP exists
+```
+
+`--no-cpu-throttling` is a correctness setting here rather than a performance one.\
+Cloud Run throttles CPU between requests by default, and the store debounces its writes on a `setTimeout`, so a throttled instance would not run the timer until the next request happened to arrive.\
+The flush would then be triggered by unrelated traffic instead of by elapsed time, which is not what the debounce means.
+
+Verified against the running service rather than assumed: it seeded eleven examples from the image, flushed every one to the bucket, took a REST write whose GCS generation visibly advanced, and after a forced restart reloaded the same eleven objects instead of reseeding.\
+A reseed would have minted new ids and grown the bucket, so the fingerprint being unchanged is what distinguishes reload from re-creation.
+
+### A quota override that is not a rate limit
+
+The first two builds failed with `toomanyrequests` from Artifact Registry, which reads as contention and is not.\
+`artifactregistry.googleapis.com/user_requests` had a **consumer override of 60/min** on this project, against a Google default of `-1` for unlimited, while every project-level limit sat untouched at 60000/min.\
+A Docker push moves several layers in parallel and retries each, so 60 is exhausted immediately -- and it explains why the last successful regional build in this project was in 2021.
+
+The override was deleted, restoring the default, after which the same build succeeded in 29 seconds.\
+It is recorded because the error names rate limiting and the cause was configuration, which is the kind of mismatch that costs an afternoon.
+
 ---
 
 ## Identity
