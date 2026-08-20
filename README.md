@@ -1,6 +1,6 @@
 # draw
 
-A strictly minimal, grid-aligned diagramming tool that pushes to Google Slides as native, editable shapes.
+A strictly minimal diagramming tool with precise, programmable geometry, drivable by a human or an agent.
 
 **Status:** working.\
 Node 18+, no build step, one runtime dependency (`ws`).

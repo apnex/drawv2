@@ -1,7 +1,7 @@
 {
 	"name": "draw",
 	"version": "0.1.0",
-	"description": "A strictly minimal, grid-aligned diagramming tool. The document lives on the server, so a human or an agent can drive it one writer at a time over REST, and push it to Google Slides as native editable shapes.",
+	"description": "A strictly minimal diagramming tool with precise, programmable geometry: a user-owned grid that maps 1:1 onto a Google Slide. The server-held document is drivable by a human or an agent over REST, one writer at a time, and pushes to Slides as native editable shapes rather than an image.",
 	"license": "MIT",
 	"private": true,
 	"type": "module",
