@@ -6,6 +6,7 @@ persistence websocket on one port. State lives in <dataDir>/<diagram-id>.json.
 
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
+import { gcsFiles } from './files.mjs';
 
 const args = process.argv.slice(2);
 function flag(name, fallback) {
@@ -24,7 +25,22 @@ const host = process.env.HOST || flag('host', undefined);
 const examplesDir = process.env.EXAMPLES_DIR
 	|| flag('examples', fileURLToPath(new URL('../examples', import.meta.url)));
 
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir });
+/*
+BUCKET selects the object store; its absence selects the local filesystem -- B6.
+
+Explicit rather than inferred. The alternative was to detect Cloud Run from the environment and
+switch silently, which makes the most consequential choice in the process invisible at the call
+site and untestable anywhere else. One variable, named after the thing it supplies, and the log line
+below says which backend actually won.
+
+`examplesDir` is unaffected on purpose: the corpus is read-only content in the image, and only the
+mutable store moves to GCS (files.mjs).
+*/
+const bucket = process.env.BUCKET || flag('bucket', undefined);
+const files = bucket ? gcsFiles(bucket) : null;
+if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
+
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files });
 console.log(`[ draw ] editor + API on http://localhost:${app.port} (ws on /ws)`);
 
 // a single bad request must never take the whole server (and every other
