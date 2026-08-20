@@ -32,6 +32,7 @@ import { attachRelations } from '../../engine/index.mjs';
 import { cellOf } from '../../kernel/index.mjs';
 import { Changes } from '../../app/src/changes.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
+import { Palette } from '../../app/src/palette.js';
 import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
@@ -148,8 +149,20 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const readout = { setCursor: rec('readout.setCursor'), setDrag: rec('readout.setDrag'), setBox: rec('readout.setBox'),
 		setLink: rec('readout.setLink'), setDatum: rec('readout.setDatum'), clearTransient: rec('readout.clearTransient'),
 		render: rec('readout.render'), flash: rec('readout.flash'), dims: () => '', signed: () => '' };
-	const palette = { hand: null, setHand: rec('palette.setHand'), toggleHand: rec('palette.toggleHand'),
-		trackHand: rec('palette.trackHand'), hideHand: rec('palette.hideHand') };
+	// The held-tool state is REAL here, not recorded-and-swallowed: H6.13 moved `textTool` onto the
+	// palette, and B42 was precisely a tool surviving a lock — so a stub that forgets it cannot catch
+	// the regression it exists for. `releaseTools` borrows the real one for the same reason
+	// H6.12's labels stub does: a reimplementation would let the product break silently.
+	const palette = {
+		hand: null, textTool: false,
+		setHand(type) { this.hand = type || null; calls.push({ name: 'palette.setHand', args: [type] }); },
+		toggleHand: rec('palette.toggleHand'),
+		trackHand: rec('palette.trackHand'),
+		hideHand: rec('palette.hideHand'),
+		setTextTool(on) { this.textTool = !!on; calls.push({ name: 'palette.setTextTool', args: [!!on] }); },
+		holding: Palette.prototype.holding,
+		releaseTools: Palette.prototype.releaseTools,
+	};
 	const dataview = { toggle: rec('dataview.toggle') };
 
 	const svg = fakeEl('svg', 'canvas');

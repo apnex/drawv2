@@ -313,7 +313,7 @@ const GESTURES = {
 			const tb = i.model.makeTextBox(f.origin, { cols: f.cols, rows: f.rows });
 			i.history.commit(commands.createEntity('node', tb));
 			i.selection.set([tb.id]);
-			i.textTool = false; i.svg.classList.remove('texttool');   // one box per arm — re-tap 't' for another
+			i.palette.setTextTool(false);   // one box per arm — re-tap 't' for another
 			// open the inline editor on the text region, positioned over the new box's frame
 			const frameEl = i.svg.ownerDocument.getElementById(tb.id);
 			if (frameEl) i.labels.openContent(tb.id, 0, frameEl.querySelector('[data-layer="frame"]') || frameEl);
@@ -352,7 +352,10 @@ export class Input {
 		// only with a real readout injected. Latent because main.js always passes one — found the first
 		// time anything else constructed Input (the H2.1 harness). Keep in step with the call sites.
 		this.readout = readout || { setCursor() {}, setDrag() {}, setBox() {}, setLink() {}, setDatum() {}, clearTransient() {}, render() {}, dims() { return ''; }, signed() { return ''; }, flash() {} };
-		this.palette = palette || { hand: null, setHand() {}, toggleHand() {}, trackHand() {}, hideHand() {} };
+		// TOTAL, per the note above: `textTool`, `setTextTool`, `holding` and `releaseTools` joined the
+		// palette's surface at H6.13 and belong here too, or `bare` construction throws on the first `t`.
+		this.palette = palette || { hand: null, textTool: false, setHand() {}, toggleHand() {}, trackHand() {},
+			hideHand() {}, setTextTool() {}, holding() { return false; }, releaseTools() {} };
 		this.dataview = dataview || { toggle() {} };
 		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)
 		this.overlay = svg.querySelector('#overlay');
@@ -368,7 +371,6 @@ export class Input {
 		// D12 — fires when an in-flight gesture ends, however it ends. Sync listens so inbound changes
 		// deferred during the gesture replay at exactly the moment the preview stops moving (B19).
 		this.onGestureEnd = () => {};
-		this.textTool = false; // A1 — 't' held: drag draws a text box (mirrors Shift+drag-zone)
 		this.help = help;
 
 		selection.subscribe(() => {
@@ -443,10 +445,8 @@ export class Input {
 			// hand and arming the delete chord were already cleared here; the text tool was the one
 			// held tool nobody added. That asymmetry is what H6's held-tool unification removes.
 			if (this.mode) this.cancelDrag();
-			this.palette.setHand(null);
+			this.palette.releaseTools();   // B42 — every armed tool, not a list someone has to maintain
 			this.overlayUi.disarm();
-			this.textTool = false;
-			this.svg.classList.remove('texttool');
 		}
 	}
 
@@ -485,7 +485,7 @@ export class Input {
 	ruleCtx() {
 		return {
 			readOnly: this.readOnly,
-			tool: this.textTool,
+			tool: this.palette.textTool,
 			waypointFree: (id) => waypointFree(this.model, id),
 		};
 	}
@@ -1047,7 +1047,7 @@ export class Input {
 		// priority: close help > cancel gesture > disarm the tool > clear hand > clear selection
 		if (this.help && !this.help.hidden) return this.toggleHelp(false);
 		if (this.mode) this.cancelDrag(evt);
-		else if (this.textTool) { this.textTool = false; this.svg.classList.remove('texttool'); }
+		else if (this.palette.textTool) this.palette.setTextTool(false);
 		else if (this.palette.hand) {
 			this.palette.setHand(null);
 			this.readout.setCursor(this.lastPos ? snapNode(this.lastPos) : null);
@@ -1088,8 +1088,7 @@ export class Input {
 
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
 	onTextTool() {
-		this.textTool = !this.textTool;
-		this.svg.classList.toggle('texttool', this.textTool);
+		this.palette.setTextTool(!this.palette.textTool);
 	}
 
 	onReshape() {

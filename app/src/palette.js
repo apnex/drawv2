@@ -37,7 +37,19 @@ export class Palette {
 		this.overlay = svg.querySelector('#overlay');
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
+		/*
+		The two HELD TOOLS. Both are "armed, waiting for a canvas action", and they are separate
+		fields rather than one because they are consumed differently: a hand STAMPS on click and needs
+		a type to stamp, the text tool DRAGS a frame and is a mode. Collapsing them to one value would
+		make every `hand` consumer special-case a type that cannot be stamped.
+
+		What they DO share is a lifecycle, and that is what B42 was: `setReadOnly` cleared the hand and
+		the delete arming and forgot the text tool, so a tool armed before a Server-Locked handoff
+		outlived it and authored a box on the next click. The asymmetry existed because the list of
+		things to clear lived at each call site. `releaseTools()` is that list, here, once.
+		*/
 		this.hand = null;      // held node type (stamp hand), or null
+		this.textTool = false; // A1 — 't' armed: a drag draws a text box (mirrors Shift+drag-zone)
 		this.handGhost = null;
 		this.readOnly = false; // Server-Locked: no creation from the palette
 		this.items = {};       // type -> tile element
@@ -64,6 +76,24 @@ export class Palette {
 		// ANY change drops the ghost: its icon is baked at creation, so a stale
 		// ghost would show a different type than the click will stamp
 		this.hideHand();
+	}
+
+	// A1 — arm/disarm the text tool. A toggle, not a held key: you do not hold `t` while you mouse.
+	setTextTool(on) {
+		this.textTool = !!on;
+		this.svg.classList.toggle('texttool', this.textTool);
+	}
+
+	// is ANY authoring tool armed? The predicate B42 needed and nobody had.
+	holding() {
+		return !!this.hand || this.textTool;
+	}
+
+	// drop every armed tool. One call, so a THIRD tool is added here rather than at each site that
+	// has to remember it — a document swap, a Server-Locked handoff, an Escape.
+	releaseTools() {
+		this.setHand(null);
+		this.setTextTool(false);
 	}
 
 	// ghost rides the SNAPPED cell; red when the cell is occupied (won't stamp)
