@@ -368,9 +368,9 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 | H8.2 | Make the seam async, then the GCS adapter on raw `fetch` with `ifGenerationMatch` for compare-and-swap | **B6**, **B59** | S2 · L | `TODO` |
 | H8.3 | Slides refresh token moves off the ephemeral filesystem | **B56** | S3 · S | `TODO` |
 | H8.4 | Manual image build to Artifact Registry, deploy to Cloud Run `australia-southeast1` | — | S3 · M | `TODO` |
-| H8.5 | Serverless NEG, backend service, `ssl-draw-apnex-io`, host rule, DNS cutover | — | S3 · M | `TODO` |
+| H8.5 | Serverless NEG, backend service, host rule, certificate MAP attach (atomic — ignores classic certs), DNS cutover | **B58** | S3 · M | `TODO` |
 | H8.7 | Public `/privacy` on a separate backend — IAP has no path exclusion, so the consent-screen check cannot reach an app route | — | S2 · S | `TODO` |
-| H8.6 | IAP on the backend service, consent screen already published | — | S2 · S | `TODO` |
+| H8.6 | IAP on the backend service; consent screen is in **Testing**, not published — test users only | **B57** | S2 · S | `TODO` |
 
 ## Held — on the record, not on the board
 

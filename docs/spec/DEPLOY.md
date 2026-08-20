@@ -110,16 +110,48 @@ fwd-apnex-io (35.201.120.148:443) -> vs-apnex-io -> map-apnex-io
    hosts: apnex.io, raw.apnex.io, ois.apnex.io
 ```
 
+### Certificates: one wildcard, provisioned before it is needed
+
+The obvious move was a fourth classic certificate, `ssl-draw-apnex-io`, alongside the three.\
+That was rejected, and the reason generalises past this hostname.
+
+A classic Google-managed certificate validates only once the domain already resolves to the load balancer, so it cannot be readied in advance -- and worse, failed attempts back off exponentially, so a certificate created before the DNS flip is SLOWER to activate afterwards than one created at the moment of cutover (B58).\
+Pointing the name at both the old and new targets to cover the gap is not available either: multi-perspective validation requires the records resolve only to the load balancer address.\
+The window was therefore unavoidable on that path, and it lands after the old generation is already gone.
+
+Certificate Manager removes the window rather than shortening it, because DNS authorization validates over a `_acme-challenge` CNAME instead of over live traffic.\
+Wildcards are the second reason and the larger one: classic managed certificates cannot issue them at all, so `*.apnex.io` collapses three per-hostname certificates into one and pre-covers every subdomain this estate ever adds.\
+`draw.apnex.io` then needs no certificate work, and neither does the hostname after it.
+
+Both are already done -- the certificate was provisioned while `draw.apnex.io` still resolved elsewhere, which is the property being bought:
+```text
+auth-apnex-io            DNS authorization -> _acme-challenge.apnex.io CNAME
+cert-apnex-io-wildcard   apnex.io, *.apnex.io   ACTIVE, both domains AUTHORIZED
+```
+
+The apex is listed separately on purpose: a wildcard covers one subdomain level and does NOT match the bare domain.
+
+### The cutover
+
 | Step | Change |
 |---|---|
 | 1 | Serverless NEG pointing at the Cloud Run service |
 | 2 | Backend service wrapping that NEG, with IAP enabled on it |
-| 3 | `ssl-draw-apnex-io` managed certificate, attached to `vs-apnex-io` |
-| 4 | Host rule for `draw.apnex.io` on `map-apnex-io` |
-| 5 | DNS: replace the CNAME with an A record at `35.201.120.148` |
-| 6 | Plaintext callers upgrade for free -- `fwd-apnex-io-http` already redirects |
+| 3 | Host rule for `draw.apnex.io` on `map-apnex-io` |
+| 4 | Certificate map carrying `cert-apnex-io-wildcard`, with a PRIMARY entry |
+| 5 | Attach the map to `vs-apnex-io` -- see the warning below |
+| 6 | DNS: replace the CNAME with an A record at `35.201.120.148` |
+| 7 | Plaintext callers upgrade for free -- `fwd-apnex-io-http` already redirects |
 
-DNS is the cutover and the rollback: point the CNAME back and the old generation returns.
+Step 5 is the only irreversible-feeling one, and it is an atomic swap rather than a blend.\
+A proxy carrying a certificate map IGNORES every classic certificate attached to it, so the map must already cover `apnex.io`, `raw.apnex.io` and `ois.apnex.io` before it is attached or those three hostnames break the instant it lands.\
+The wildcard covers all of them, which is why one certificate is safer here than four, not merely tidier.\
+A primary map entry is required as well, because clients that do not send SNI have nothing to select on and fail to connect without one.
+
+Rollback differs per step, and this is worth stating plainly because it changed.\
+Detaching the certificate map restores the classic certificates, so step 5 reverses cleanly.\
+DNS no longer reverses, however: the v1 bucket has been deleted, so pointing the CNAME back yields `404` rather than the old generation.\
+The 2021 deployment is recoverable only from `github.com/apnex/draw`, and nothing about the cutover depends on it.
 
 ---
 
