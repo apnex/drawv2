@@ -20,6 +20,10 @@ This exists because the deployment changes assumptions the code currently rests 
 | Identity | IAP, Google SSO, no application-side user model yet |
 | Object versioning | off to begin with |
 | Tenancy | shared workspace; one user today |
+| Project | `labops`, number `531843488473` |
+| Region | `australia-southeast1`, matching the two services already there |
+| Hostname | `draw.apnex.io`, succeeding the 2021 generation |
+| Data bucket | `gs://diagrams.apnex.io`, `australia-southeast1` |
 
 ---
 
@@ -81,6 +85,44 @@ It matters because it turns **D34** -- two revisions overlapping during a deploy
 
 ---
 
+## The target project, and a name that is not unique
+
+The project id is `labops`.\
+There is a SECOND project whose id is `labops-389703` and whose display NAME is also "labops", and it is not the target.\
+Both answer to "labops" in conversation, which is exactly the ambiguity that deploys something into the wrong place, so the id is written down rather than the name.
+
+---
+
+## Succeeding draw.apnex.io
+
+`draw.apnex.io` is the address of the 2021 generation, `github.com/apnex/draw`, and drawv2 takes it over.
+
+It is served today by a direct CNAME to `c.storage.googleapis.com`, which is bucket website hosting.\
+That pattern has no TLS: the host answers `200` over HTTP and nothing at all over HTTPS.\
+So the address has never had a certificate, and succeeding it fixes that rather than preserving it.
+
+Because it was never behind the load balancer, it appears in no url-map, and the migration is an addition to existing infrastructure rather than new infrastructure.
+
+The estate already establishes the shape three times over -- one managed certificate per hostname, all attached to one HTTPS proxy, host rules on one url-map:
+```text
+fwd-apnex-io (35.201.120.148:443) -> vs-apnex-io -> map-apnex-io
+   certs: ssl-apnex-io, ssl-raw-apnex-io, ssl-ois-apnex-io
+   hosts: apnex.io, raw.apnex.io, ois.apnex.io
+```
+
+| Step | Change |
+|---|---|
+| 1 | Serverless NEG pointing at the Cloud Run service |
+| 2 | Backend service wrapping that NEG, with IAP enabled on it |
+| 3 | `ssl-draw-apnex-io` managed certificate, attached to `vs-apnex-io` |
+| 4 | Host rule for `draw.apnex.io` on `map-apnex-io` |
+| 5 | DNS: replace the CNAME with an A record at `35.201.120.148` |
+| 6 | Plaintext callers upgrade for free -- `fwd-apnex-io-http` already redirects |
+
+DNS is the cutover and the rollback: point the CNAME back and the old generation returns.
+
+---
+
 ## Identity
 
 IAP in front, Google SSO, and no application-side user model in this phase.
@@ -135,9 +177,30 @@ Open question: does a `412` refetch and replay, or refuse and surface?
 `Store.init` seeds the example corpus when the data directory is empty, which against a bucket means a list returning nothing and eleven puts on a cold bucket.\
 Open question: should a fresh cloud deployment seed at all, or start genuinely empty?
 
-### Domain, certificates, load balancer, project
+### Build and deploy pipeline
 
-Constraints not yet captured.
+Cloud Build is enabled and Artifact Registry already holds an `apnex` Docker repository, so the pieces exist and the Dockerfile builds today.
+
+Two questions are open, and neither is about YAML.
+
+What triggers a build.\
+A push to `main` needs the GitHub connection configured; a manual `gcloud builds submit` needs nothing and is honest for a single-user tool.
+
+Whether the build re-runs the gate.\
+GitHub Actions already runs the suite and the scanners on every push, so re-running them in Cloud Build duplicates the cost -- but not re-running means the image is built from code the pipeline itself never verified.
+
+This is also what answers **B53**, the open row recording that nothing in the gate builds the image, which is how **B52** shipped a broken `npm ci`.\
+It only answers it if a failed build actually blocks something.
+
+### Bucket naming
+
+`gs://diagrams.apnex.io`, following the estate convention of domain-shaped bucket names.
+
+The convention buys guaranteed global uniqueness, and it costs one dependency: GCS requires domain verification for any bucket name containing a dot.\
+Five existing dotted buckets prove that verification is live for `apnex.io` today, and the name is unclaimed globally.\
+It has no effect on the adapter, which passes the bucket name as a path segment where dots are unremarkable.
+
+A bucket's location is immutable, so `australia-southeast1` means creating it there rather than moving it later.
 
 ---
 
@@ -147,6 +210,17 @@ Constraints not yet captured.
 
 Its recorded revival trigger is *any multi-instance or GCS-backed deployment*, and this is one.\
 The adapter is what answers it: durability becomes the object store's rather than an absent `fsync`.
+
+### Deleting the v1 bucket
+
+`gs://draw.apnex.io` holds the 2021 deployment and is being purged, with the bucket recreated under a different name.
+
+The claim that the code is safe on GitHub was CHECKED rather than accepted.\
+Nineteen objects, sixteen byte-identical to `apnex/draw@HEAD`, and three -- `core/engineer.js`, `core/loader.js`, `main.js` -- differing from it.\
+Those three match commit `5dc62139` (2022-01-03), two days before the final push, so the bucket is a slightly stale deploy rather than divergent work and every byte in it exists in git history.
+
+Had they matched no commit, the deletion would have destroyed the only copy.\
+That is the reason the check happened rather than the reason it was skipped.
 
 ### The Slides refresh token has nowhere to live
 
