@@ -18,7 +18,7 @@ inverse-building, not the closure.
 
 import { groupAfterRemoval } from '../../engine/index.mjs';
 import { clone } from '../../model/ops.mjs';
-import { kindOf } from '../../model/index.mjs';
+import { kindOf, newId, projection } from '../../model/index.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 
 // entities are cloned at every command boundary: the live store object must never
@@ -161,7 +161,7 @@ export function renameEntity(kind, id, before, after) {
 export function cloneEntities(clones) {
 	return {
 		label: 'clone',
-		entries: clones.map((c) => ({ op: 'put', kind: c.kind, entity: c.entity }))
+		entries: clones.map((c) => ({ op: 'put', kind: c.kind, entity: clone(c.kind, c.entity) }))
 	};
 }
 
@@ -207,10 +207,29 @@ export function toggleClosed(link) {
 	return { label: closed ? 'close path' : 'open path', entries: [{ op: 'set', kind: 'link', id: link.id, after: { closed } }] };
 }
 
-// L / Shift+L — wire selected nodes with no pointer travel. The links are already in the model (put
-// eagerly so the next id cannot collide); the command re-puts them idempotently.
-export function linkNodes(links, star) {
-	return { label: star ? 'star' : 'chain', entries: links.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })) };
+/*
+L / Shift+L — wire the selected nodes with no pointer travel. L chains them in selection order;
+Shift+L stars the first to every other. Existing pairs are skipped.
+
+Built against a projection, and the duplicate check is why. `input.js` had to put each new link into
+the LIVE model as it went, because `linkBetween` is what skips an existing pair and it reads the
+model — so a selection like [a, b, a] would author a-b twice if the first were not already there.
+That is a second, independent reason for the same eager put the clone path needed, and the same
+scratch removes it.
+*/
+export function linkNodes(model, nodeIds, star) {
+	const scratch = projection(model);
+	const pairs = star
+		? nodeIds.slice(1).map((n) => [nodeIds[0], n])
+		: nodeIds.slice(0, -1).map((n, i) => [n, nodeIds[i + 1]]);
+	const created = [];
+	pairs.forEach(([a, b]) => {
+		if (a === b || scratch.linkBetween(a, b)) return;   // skip self + existing, INCLUDING this batch
+		const link = scratch.makeLink(a, b);
+		scratch.put('link', link);
+		created.push(link);
+	});
+	return { label: star ? 'star' : 'chain', entries: created.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })) };
 }
 
 // a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the
@@ -312,4 +331,81 @@ export function resizeNodeStep(model, ids, dx, dy) {
 	const rows = Math.min(Math.max(cur.rows + dy, 1), 64);
 	if (cols === cur.cols && rows === cur.rows) return none;
 	return resizeNodeSpan(node.id, { cols, rows });
+}
+
+/*
+Clone a subgraph — the closure, computed against a PROJECTION so nothing real is touched.
+
+This was `input.js#cloneClosure`, where it had to `put` each copy into the live model as it went.
+That put was doing allocation, not authoring: `newId` reads the collection, `nextName` rebuilds its
+set from the model, and both go wrong for sibling k if k-1 is not there yet. Proven by removing the
+puts and cloning three hosts — `[host-4, host-4, host-4]`. A scratch projection gives the batch a
+namespace that already contains itself, which is the same trick `server/txn.mjs` plans with.
+
+What comes back is inert: plain entities in no model at all. MATERIALISING them is the caller's
+decision and the two callers differ, which is exactly why it does not belong in here. A clone DRAG
+puts them live so they render under the pointer (INPUT.md I-IN5 — live preview writes the shared
+Model); Ctrl+D never shows them and goes straight to a commit.
+*/
+export function cloneSubgraph(model, seedIds) {
+	const scratch = projection(model);       // allocate against a namespace that includes the batch
+	const idMap = new Map();
+	const clones = [];
+
+	// One cloner per placeable kind. A waypoint is `{id, x, y}` and nothing else
+	// (server/validate.js FIELDS.waypoint), so it must NOT be given a name — inventing a field the
+	// server rejects makes the clone apply locally and then be refused on the wire.
+	const cloneEntity = (kind, src) => {
+		const copy = { ...src, id: newId(kind, scratch.collection(kind)) };
+		if (kind === 'node') copy.name = scratch.nextName(src.type);
+		else if (kind === 'zone') copy.name = scratch.nextName('zone');
+		idMap.set(src.id, copy.id);
+		scratch.put(kind, copy);             // the THROWAWAY, so sibling k+1 can see it
+		clones.push({ kind, entity: copy });
+		return copy;
+	};
+
+	seedIds.forEach((id) => {
+		const kind = kindOf(id);
+		if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;   // B30: waypoints are placeable
+		const src = model.get(kind, id);
+		if (src) cloneEntity(kind, src);
+	});
+	if (idMap.size === 0) return null;
+
+	/*
+	Links whose BOTH endpoints were cloned — carrying the route, not just the ends (B30).
+
+	A link's `via` list and its `closed` flag are authored geometry: dropping them turns a multi-hop
+	route into a straight line silently, which is loss of intent rather than a cosmetic difference.
+	Any via waypoint not already in the clone set is pulled in here, because a cloned route needs its
+	OWN bends — pointing the copy at the originals would make two links share them, which the
+	validator forbids outright (a waypoint belongs to at most one link, in at most one role).
+	*/
+	model.all('link').forEach((link) => {
+		if (!idMap.has(link.src) || !idMap.has(link.dst) || idMap.has(link.id)) return;
+		const via = Array.isArray(link.via) ? link.via : [];
+		via.forEach((wid) => {
+			if (idMap.has(wid)) return;
+			const w = model.get('waypoint', wid);
+			if (w) cloneEntity('waypoint', w);
+		});
+		const copy = { id: newId('link', scratch.collection('link')), src: idMap.get(link.src), dst: idMap.get(link.dst) };
+		const mapped = via.map((wid) => idMap.get(wid)).filter(Boolean);
+		if (mapped.length) copy.via = mapped;
+		if (link.closed) copy.closed = true;
+		idMap.set(link.id, copy.id);
+		scratch.put('link', copy);
+		clones.push({ kind: 'link', entity: copy });
+	});
+
+	// groups fully contained in the clone set
+	model.all('group').forEach((group) => {
+		if (group.members.length > 0 && group.members.every((m) => idMap.has(m))) {
+			const copy = scratch.makeGroup(group.members.map((m) => idMap.get(m)));
+			scratch.put('group', copy);
+			clones.push({ kind: 'group', entity: copy });
+		}
+	});
+	return { clones, idMap };
 }

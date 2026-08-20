@@ -288,7 +288,7 @@ before the common teardown, which is why it cannot just be the first line of `co
 |---|---|---|
 | `pick.js` ✓ | Resolve a canvas point to the entity under it. | — |
 | `snap.js` ✓ | Constrain a position or delta to the grid and the surface. | — |
-| `commands.js` | Turn an intent plus a selection into one committable change. | `lastDelta` |
+| `commands.js` ✓ | Turn an intent plus a selection into one committable change. | `lastDelta` |
 | `overlay.js` ✓ | Draw transient feedback for the current pointer and selection. | `hovered` `armed` `datumEl` crosshair |
 | `input.js` ◑ | Drive one in-flight pointer gesture from press to commit. | `mode` `ctx` `lastPos` |
 | `keymap.js` ✓ | Map a keystroke to **one named verb**, and say whether it mutates. | the table |

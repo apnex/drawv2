@@ -537,73 +537,6 @@ export class Input {
 		this.ctx = { ...this.ctx, moved, baseKind: base.kind, baseId: base.id };
 	}
 
-	/*
-	Materialize a copy of a subgraph spanned by seedIds — nodes, selected zones,
-	links between cloned nodes, fully-contained groups — putting every copy into
-	the model at its ORIGINAL position. Returns { clones, idMap } (null if the
-	seeds hold no node/zone). Shared by the clone DRAG and Ctrl+D duplicate.
-	*/
-	cloneClosure(seedIds) {
-		const idMap = new Map();
-		const clones = [];
-		// One cloner for every placeable kind. A waypoint is `{id, x, y}` and nothing else
-		// (server/validate.js FIELDS.waypoint), so it must NOT be given a name — stamping one on
-		// would invent a field the server rejects, and the clone would apply locally then be refused
-		// on the wire. Naming is therefore per-kind, not universal.
-		const cloneEntity = (kind, src) => {
-			const copy = { ...src, id: newId(kind, this.model.collection(kind)) };
-			if (kind === 'node') copy.name = this.model.nextName(src.type);
-			else if (kind === 'zone') copy.name = this.model.nextName('zone');
-			idMap.set(src.id, copy.id);
-			this.model.put(kind, copy);
-			clones.push({ kind, entity: copy });
-			return copy;
-		};
-
-		seedIds.forEach((id) => {
-			const kind = kindOf(id);
-			if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;   // B30: waypoints are placeable and selectable
-			const src = this.model.get(kind, id);
-			if (src) cloneEntity(kind, src);
-		});
-		if (idMap.size === 0) return null;
-
-		/*
-		Links whose BOTH endpoints were cloned — carrying the route, not just the ends (B30).
-
-		A link's `via` list and its `closed` flag are authored geometry: dropping them turns a
-		multi-hop route into a straight line silently, which is loss of intent rather than a
-		cosmetic difference. Any via waypoint not already in the clone set is pulled in here, because
-		a cloned route needs its own bends — pointing the copy at the ORIGINAL waypoints would make
-		two links share them, which the validator forbids outright (a waypoint belongs to at most one
-		link, in at most one role).
-		*/
-		this.model.all('link').forEach((link) => {
-			if (!idMap.has(link.src) || !idMap.has(link.dst) || idMap.has(link.id)) return;
-			const via = Array.isArray(link.via) ? link.via : [];
-			via.forEach((wid) => {
-				if (idMap.has(wid)) return;
-				const w = this.model.get('waypoint', wid);
-				if (w) cloneEntity('waypoint', w);
-			});
-			const copy = { id: newId('link', this.model.collection('link')), src: idMap.get(link.src), dst: idMap.get(link.dst) };
-			const mapped = via.map((wid) => idMap.get(wid)).filter(Boolean);
-			if (mapped.length) copy.via = mapped;
-			if (link.closed) copy.closed = true;
-			idMap.set(link.id, copy.id);
-			this.model.put('link', copy);
-			clones.push({ kind: 'link', entity: copy });
-		});
-		// groups fully contained in the clone set
-		this.model.all('group').forEach((group) => {
-			if (group.members.length > 0 && group.members.every((m) => idMap.has(m))) {
-				const copy = this.model.makeGroup(group.members.map((m) => idMap.get(m)));
-				this.model.put('group', copy);
-				clones.push({ kind: 'group', entity: copy });
-			}
-		});
-		return { clones, idMap };
-	}
 
 	/*
 	Clone (Ctrl+drag): materialize the subgraph copy, then drag the copies;
@@ -618,16 +551,19 @@ export class Input {
 			return;
 		}
 		if (!this.selection.has(hit.id)) this.selection.set([hit.id]);
-		const result = this.cloneClosure(this.selection.list());
+		const result = commands.cloneSubgraph(this.model, this.selection.list());
 		if (!result) { this.mode = null; this.ctx = {}; return; }
 		const { clones, idMap } = result;
+
+		// the clones come back inert. A drag has to SHOW them, so they go into the live model here —
+		// I-IN5, live preview writes the shared Model. Ctrl+D never materialises them at all.
+		clones.forEach((c) => this.model.put(c.kind, c.entity));
 
 		const moved = clones
 			.filter((c) => c.kind === 'node' || c.kind === 'zone')
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
-		const baseId = idMap.get(hit.id);
 		this.mode = 'clone';
-		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId };
+		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId: idMap.get(hit.id) };
 		this.selection.set(moved.map((m) => m.id));
 	}
 
@@ -651,19 +587,17 @@ export class Input {
 			this.readout.flash(`✗ no room Δ[${cells(this.lastDelta.x)}, ${cells(this.lastDelta.y)}]`);
 			return;
 		}
-		const result = this.cloneClosure(seeds);
+		const result = commands.cloneSubgraph(this.model, seeds);
 		if (!result) return;
-		// shift the positioned clones by the pitch, then snapshot for history
+
+		// the clones are inert objects, so the pitch is applied to them directly. This used to put
+		// them live, model.set each one, then read every position back out — three steps to do what
+		// the commit does anyway.
 		result.clones.forEach((c) => {
-			if (c.kind === 'node' || c.kind === 'zone') {
-				this.model.set(c.kind, c.entity.id, { x: c.entity.x + delta.x, y: c.entity.y + delta.y });
-			}
+			if (c.kind === 'node' || c.kind === 'zone') { c.entity.x += delta.x; c.entity.y += delta.y; }
 		});
-		const clones = result.clones
-			.filter((c) => this.model.get(c.kind, c.entity.id))
-			.map((c) => ({ kind: c.kind, entity: { ...this.model.get(c.kind, c.entity.id) } }));
-		this.history.commit(commands.cloneEntities(clones));
-		const placed = clones.filter((c) => c.kind === 'node' || c.kind === 'zone');
+		this.history.commit(commands.cloneEntities(result.clones));
+		const placed = result.clones.filter((c) => c.kind === 'node' || c.kind === 'zone');
 		this.selection.set(placed.map((c) => c.entity.id));
 		this.afterHistory();
 		this.lastDelta = delta; // tap-tap-tap repeats the same pitch
@@ -706,28 +640,17 @@ export class Input {
 		this.readout.flash(closed ? 'path closed' : 'path open');
 	}
 
-	/*
-	L / Shift+L — wire the selected nodes with no pointer travel. L chains them in
-	selection order (n1-n2, n2-n3, ...); Shift+L stars the first-selected to every
-	other. Existing pairs are skipped (no duplicate); the whole batch is one undo step.
-	*/
+	// L / Shift+L — the wiring itself is commands.linkNodes'; what stays is selecting the result
+	// and saying how many landed.
 	linkSelectedNodes(star) {
 		const nodes = this.selection.selectedNodes(); // Set insertion order
 		if (nodes.length < 2) return;
-		const pairs = star
-			? nodes.slice(1).map((n) => [nodes[0], n])
-			: nodes.slice(0, -1).map((n, i) => [n, nodes[i + 1]]);
-		const created = [];
-		pairs.forEach(([a, b]) => {
-			if (a === b || this.model.linkBetween(a, b)) return; // skip self + existing
-			const link = this.model.makeLink(a, b);
-			this.model.put('link', link); // put now so the next id can't collide
-			created.push(link);
-		});
-		if (created.length === 0) return;
-		this.history.commit(commands.linkNodes(created, star));
-		this.selection.set(created.map((l) => l.id));
-		this.readout.flash(`+${created.length} link${created.length > 1 ? 's' : ''}`);
+		const cmd = commands.linkNodes(this.model, nodes, star);
+		if (!cmd.entries.length) return;
+		this.history.commit(cmd);
+		const ids = cmd.entries.map((e) => e.entity.id);
+		this.selection.set(ids);
+		this.readout.flash(`+${ids.length} link${ids.length > 1 ? 's' : ''}`);
 	}
 
 	// ---- pointer move ----
@@ -807,10 +730,15 @@ export class Input {
 		if (path) this.ctx.path.update(roundedPath(path, BEND_R));
 	}
 
-	// commit a finished route: the materialised waypoints + the link (with via) as ONE undo step
+	/*
+	Commit a finished route: the materialised waypoints + the link (with via) as ONE undo step.
+
+	No eager put. This one made a single link, so it never had the batch-allocation problem the clone
+	and chain paths had — it was writing the link live a line before `history.commit` re-put it
+	through `applyOps` anyway. Verified redundant by removing it against a real route gesture (H6.11).
+	*/
 	commitRoute(ctx, dstId, via) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
-		this.model.put('link', link);
 		this.history.commit(commands.routeLink(ctx.placed, link));
 		this.selection.set([link.id]);
 	}

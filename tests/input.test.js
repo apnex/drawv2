@@ -665,7 +665,7 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 			commands.toggleClosed(link),
 			commands.renameDocument('x'),
 			commands.bindSlides('u'),
-			commands.linkNodes([link], false),
+			commands.linkNodes(h.model, [a.id, b.id], false),
 			commands.routeLink([], link),
 		];
 		for (const cmd of built) {
@@ -683,9 +683,11 @@ test('B44: a put builder deep-copies `via`, so history never aliases the live li
 	live.via.push('w3');
 	assert.equal(routed.entries[0].entity.via.length, 2, 'routeLink must not alias the live via array');
 
-	const chained = commands.linkNodes([live], false);
+	// cloneEntities is the other builder handed entities it did not create. It was the ONE put
+	// builder still spreading them shallowly until H6.11.
+	const cloned = commands.cloneEntities([{ kind: 'link', entity: live }]);
 	live.via.push('w4');
-	assert.equal(chained.entries[0].entity.via.length, 3, 'linkNodes must not alias it either');
+	assert.equal(cloned.entries[0].entity.via.length, 3, 'cloneEntities must not alias it either');
 });
 
 test('B44: the migrated commands still do their jobs', () => {
@@ -1026,5 +1028,87 @@ test('B46: the two Shift+arrow builders self-guard, so exactly one ever acts', (
 		assert.equal(commands.resizeNodeStep(h.model, [n.id], 1, 0).entries[0].after.span.cols, 2, 'node builder grows the span');
 
 		assert.equal(commands.resizeZoneStep(h.model, [z.id, n.id], 1, 0).entries.length, 0, 'a MIXED selection resizes nothing');
+	} finally { h.restore(); }
+});
+
+/*
+B46 (allocating half) — a scratch projection replaces the eager put.
+
+Three builders had to write into the LIVE model as they worked, for two different reasons that look
+the same from the call site: `newId` and `nextName` read the namespace to stay unique, and
+`linkBetween` reads it to skip an existing pair. Both break for sibling k when k-1 is not there yet.
+`model/projection()` — the planner's own trick, promoted — gives the batch a namespace containing
+itself, so nothing real is touched until the command is committed.
+*/
+test('B46: cloneSubgraph names siblings uniquely and touches nothing real', () => {
+	const h = makeInput();
+	try {
+		const ns = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
+		const before = h.model.all('node').length;
+
+		const { clones } = commands.cloneSubgraph(h.model, ns.map((n) => n.id));
+		const names = clones.map((c) => c.entity.name);
+		assert.equal(new Set(names).size, 3, `siblings must not collide, got ${JSON.stringify(names)}`);
+		assert.equal(new Set(clones.map((c) => c.entity.id)).size, 3, 'nor may their ids');
+		assert.equal(h.model.all('node').length, before, 'and the live model is untouched');
+	} finally { h.restore(); }
+});
+
+test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const wp = h.model.makeWaypoint({ x: 180, y: 60 });
+		h.model.put('waypoint', wp);
+		const link = { ...h.model.makeLink(a.id, b.id), via: [wp.id], closed: true };
+		h.model.put('link', link);
+
+		const { clones } = commands.cloneSubgraph(h.model, [a.id, b.id]);
+		const copy = clones.find((c) => c.kind === 'link').entity;
+		assert.equal(copy.closed, true, 'the closed flag is authored geometry, not decoration');
+		assert.equal(copy.via.length, 1);
+		assert.notEqual(copy.via[0], wp.id, 'the bend is the copy\'s own — sharing it is invalid');
+		assert.ok(clones.some((c) => c.kind === 'waypoint'), 'so the waypoint was pulled into the set');
+	} finally { h.restore(); }
+});
+
+test('B46: linkNodes will not author the same pair twice within one batch', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		// a-b then b-a: the second is the same pair, and only a projection that already holds the
+		// first can see that. Against the live model it needs an eager put; against nothing at all
+		// it authors a duplicate.
+		const cmd = commands.linkNodes(h.model, [a.id, b.id, a.id], false);
+		assert.equal(cmd.entries.length, 1, 'one link, not two');
+
+		h.history.commit(cmd);
+		assert.equal(commands.linkNodes(h.model, [a.id, b.id], false).entries.length, 0,
+			'and an ALREADY committed pair is still skipped');
+	} finally { h.restore(); }
+});
+
+test('B46: a routed link commits once, with its bend, and lands selected', () => {
+	// commitRoute's eager put was removed as redundant; this drives the whole gesture so that
+	// "redundant" is a measured claim rather than an absence of coverage.
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const at = (id, x, y) => pointer(x, y, {
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
+		});
+		h.input.onDown(at(a.id, 0, 0));
+		h.input.onMove(at(a.id, 180, 60));
+		h.input.onKeyDown(key('w'));            // drop a bend mid-route
+		h.input.onMove(at(b.id, 360, 0));
+		h.input.onUp(at(b.id, 360, 0));
+
+		assert.equal(h.commits.length, 1, 'waypoint + link are ONE undo step');
+		assert.equal(h.soleCommit().label, 'route');
+		const link = h.model.all('link')[0];
+		assert.equal(h.model.all('link').length, 1);
+		assert.equal(link.via.length, 1, 'the bend rode along');
+		assert.equal(h.model.all('waypoint').length, 1);
+		assert.ok(h.selection.has(link.id), 'and the route is selected');
 	} finally { h.restore(); }
 });
