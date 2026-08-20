@@ -8,7 +8,9 @@ the other.
 
 `examplesDir` is INJECTED rather than discovered, which is why these tests must pass it explicitly:
 a store that went looking for a sibling directory would seed differently depending on where it was
-constructed from, and every other test in this suite would silently start booting 17 diagrams.
+constructed from, and every other test in this suite would silently start booting the whole shipped
+corpus. No count is named here on purpose: the corpus is curated, and a number in prose goes stale
+the first time it is.
 */
 
 import { test } from 'node:test';
