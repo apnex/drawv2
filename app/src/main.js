@@ -14,7 +14,7 @@ import { Renderer } from './renderer.js';
 import { Selection } from './selection.js';
 import { Input } from './input.js';
 import { Palette } from './palette.js';
-import { Net } from './net.js';
+import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
@@ -79,7 +79,7 @@ const menu = {
 };
 
 let onStateLastId = null;
-const net = new Net(`ws://${location.host}/ws`);
+const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on http
 // D4 — the inversion. Sync subscribes to the COMMIT boundary, never to the model. There is then
 // no way to forward an uncommitted change, because uncommitted changes never pass through Changes.
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.

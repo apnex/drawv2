@@ -95,3 +95,22 @@ test('B19: with no gesture in flight, a change applies immediately', () => {
 		ops: [{ op: 'put', kind: 'node', entity: { id: nodeId, name: 'remote', type: 'host', shape: 'circle', x: 0, y: 0 } }] } });
 	assert.ok(model.get('node', nodeId), 'the defer rule must not become a delay on the normal path');
 });
+
+/*
+B60 -- the websocket scheme follows the page, and is not asserted.
+
+`main.js` hardcoded `ws://`. On http://localhost that is correct, which is why every test and every
+previous run agreed with it; on https it is blocked as mixed content, so the editor loaded and then
+sat empty against a server that was holding the documents. The bug was unreachable by construction
+until the first HTTPS deployment, so the fix is a pure function specifically to make it reachable.
+*/
+import { wsUrl } from '../app/src/net.js';
+
+test('B60: an https page gets wss, and an http page still gets ws', () => {
+	assert.equal(wsUrl({ protocol: 'https:', host: 'draw.apnex.io' }), 'wss://draw.apnex.io/ws',
+		'a literal ws:// here is blocked as mixed content and the canvas never populates');
+	assert.equal(wsUrl({ protocol: 'http:', host: 'localhost:8080' }), 'ws://localhost:8080/ws',
+		'local development is unchanged — this is the case the old code got right');
+	// a non-default port must survive, since that is how every local instance runs
+	assert.equal(wsUrl({ protocol: 'https:', host: 'example.com:8443' }), 'wss://example.com:8443/ws');
+});

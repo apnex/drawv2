@@ -138,7 +138,7 @@ The apex is listed separately on purpose: a wildcard covers one subdomain level 
 | 1 | Serverless NEG pointing at the Cloud Run service |
 | 2 | Backend service wrapping that NEG, with IAP enabled on it |
 | 3 | Host rule for `draw.apnex.io` on `map-apnex-io` |
-| 4 | Certificate map carrying `cert-apnex-io-wildcard`, with a PRIMARY entry |
+| 4 | Certificate map carrying `cert-apnex-io-wildcard`, with one entry PER HOSTNAME |
 | 5 | Attach the map to `vs-apnex-io` -- see the warning below |
 | 6 | DNS: replace the CNAME with an A record at `35.201.120.148` |
 | 7 | Plaintext callers upgrade for free -- `fwd-apnex-io-http` already redirects |
@@ -146,7 +146,11 @@ The apex is listed separately on purpose: a wildcard covers one subdomain level 
 Step 5 is the only irreversible-feeling one, and it is an atomic swap rather than a blend.\
 A proxy carrying a certificate map IGNORES every classic certificate attached to it, so the map must already cover `apnex.io`, `raw.apnex.io` and `ois.apnex.io` before it is attached or those three hostnames break the instant it lands.\
 The wildcard covers all of them, which is why one certificate is safer here than four, not merely tidier.\
-A primary map entry is required as well, because clients that do not send SNI have nothing to select on and fail to connect without one.
+A primary map entry alone is NOT sufficient, and that cost an hour to learn.\
+It is the obvious design -- one wildcard certificate, one primary entry, every hostname matched -- and it is correct for TLS and wrong for IAP: an IAP-protected backend behind a primary entry answers `401` with error code 52, `Hostname/SSL certificate mismatch`, which names the certificate and not the real cause.\
+Google states it only in the error-code table: *"IAP does not support primary certificate map entries.\
+Use separate entries to map each certificate to the correct hostname."*\
+So the map carries an explicit entry per hostname, all pointing at the same wildcard, with the primary retained purely as the fallback for clients that send no SNI.
 
 Rollback differs per step, and this is worth stating plainly because it changed.\
 Detaching the certificate map restores the classic certificates, so step 5 reverses cleanly.\
@@ -193,7 +197,16 @@ Propagation took roughly ninety seconds, during which the proxy still presented 
 The classic certificates are deliberately still attached to the proxy.\
 They are ignored while the map is present, and detaching the map restores them, so rollback is one command rather than a re-provisioning exercise.
 
-### Why draw.apnex.io answers 403
+### Identity, as configured
+
+IAP is enabled on `svc-draw` with a Google-managed OAuth client, and `aobersnel@apnex.com.au` holds `roles/iap.httpsResourceAccessor` on it.\
+Cloud Run then had to accept unauthenticated traffic, because IAP terminates identity at the load balancer and cannot forward a Cloud Run credential.\
+That is only safe because ingress was already narrowed: the `run.app` URL returns `404` from outside, so the sole route in is the load balancer, and the load balancer is behind IAP.
+
+The order was deliberate -- IAP first, then open Cloud Run.\
+Reversed, there is a window where the load balancer serves the application to anyone who asks.
+
+### Why draw.apnex.io answered 403 before IAP
 
 It is not broken.\
 The Cloud Run service is deployed `--no-allow-unauthenticated`, so the load balancer reaches it and Cloud Run declines -- which is the correct state to flip DNS into, because the hostname becomes real without exposing anything.

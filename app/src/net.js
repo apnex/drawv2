@@ -8,6 +8,21 @@ Ported verbatim from client/src/net.js — the wire protocol is unchanged across
 
 const RETRY_MS = 3000;
 
+/*
+The websocket URL, derived from the page rather than asserted -- B60.
+
+`main.js` hardcoded `ws://`, which is correct on `http://localhost` and fatal on HTTPS: the browser
+blocks the mixed-content connection, `hello` never completes, and the editor renders an empty canvas
+against a server holding the documents perfectly well. The scheme is not a constant, it is a
+function of how the page itself was served.
+
+Pure, and exported, so the rule can be tested without a DOM -- the defect it replaces was invisible
+precisely because nothing could reach it.
+*/
+export function wsUrl({ protocol, host }) {
+	return `${protocol === 'https:' ? 'wss:' : 'ws:'}//${host}/ws`;
+}
+
 export class Net {
 	constructor(url) {
 		this.url = url;
