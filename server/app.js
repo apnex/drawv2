@@ -102,7 +102,11 @@ async function handleOAuthCallback(req, res, url, slides) {
 	}
 }
 
-export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null } = {}) {
+// B54 - how long a client may stay silent before it is presumed gone. Two rounds of this is the
+// worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
+const PING_MS = 30000;
+
+export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -185,7 +189,26 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 	});
 
 	const wss = new WebSocketServer({ server, path: '/ws' });
-	wss.on('connection', (ws) => new Session(ws, store, hub, locks));
+	wss.on('connection', (ws) => {
+		// B54 - liveness. `close` evicts a session for every disconnect that produces a TCP FIN, but
+		// a peer that vanishes without one (lid closed, partition, NAT idle-timeout) never sends it,
+		// and the socket sits in the Hub at readyState OPEN forever while the client reconnects
+		// beside it. A pong resets the flag; missing one whole round is what "gone" means here.
+		ws.isAlive = true;
+		ws.on('pong', () => { ws.isAlive = true; });
+		new Session(ws, store, hub, locks);
+	});
+
+	// ONE sweep for every client, not a timer per socket. `terminate()` is deliberate: it produces
+	// the `close` event the session FSM already handles, so liveness adds no second eviction path.
+	const pingTimer = setInterval(() => {
+		wss.clients.forEach((ws) => {
+			if (ws.isAlive === false) return ws.terminate();
+			ws.isAlive = false;
+			ws.ping();
+		});
+	}, pingMs);
+	pingTimer.unref();
 
 	// liveness: a crashed controller's lock frees itself by TTL; sweep so the
 	// freed diagram's viewers are told it's editable again (lazy TTL alone is silent)
@@ -207,6 +230,7 @@ export function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, e
 				port: server.address().port,
 				close() {
 					clearInterval(sweepTimer);
+					clearInterval(pingTimer);
 					store.flushAll();
 					wss.clients.forEach((ws) => ws.terminate());
 					return new Promise((done) => server.close(done));

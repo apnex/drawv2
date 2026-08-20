@@ -354,6 +354,7 @@ running it than by writing it down.
 | H7.4 | Gate the doc style, so B50 cannot recur | **B51** | S4 · M | `TODO` |
 | H7.5 | Repair the Docker build broken by the `prepare` hook | **B52** | S2 · S | `DONE` |
 | H7.6 | Build the image in CI and probe it, so packaging regressions cannot ship | **B53** | S3 · M | `TODO` |
+| H7.7 | Evict half-open sockets with a ws ping sweep | **B54** | S4 · S | `DONE` |
 
 ## Held — on the record, not on the board
 

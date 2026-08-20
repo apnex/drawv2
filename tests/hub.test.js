@@ -14,6 +14,13 @@ a 500 for the writer who already has their change on disk.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Hub } from '../server/hub.js';
+import { createApp } from '../server/app.js';
+import { WebSocket } from 'ws';
+import net from 'node:net';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 // the narrow duck-typed Session the Hub speaks: { diagramId, send(cmd, body) }
 function viewer(diagramId, { throws = false } = {}) {
@@ -76,4 +83,40 @@ test('GR12: a removed session stops receiving — a closed socket is not a perma
 	hub.remove(v);
 	hub.broadcast('diagram-aa0001', 'change', { seq: 1 });
 	assert.equal(v.got.length, 0);
+});
+
+/*
+B54 - liveness. A session leaves the Hub on `close`, which covers every disconnect that produces a
+TCP FIN. A peer that vanishes WITHOUT one never sends it, so the socket sat at readyState OPEN
+forever while the client reconnected beside it.
+
+The half-open peer here is a raw TCP socket that completes the WebSocket handshake and then simply
+never answers. That matters: pausing a `ws` client also blinds it to its own eviction, so the first
+two versions of this test reported a leak that was really a measurement error. A raw socket stays
+readable and can observe the server hanging up on it.
+*/
+test('B54: a peer that stops answering is evicted; one that answers is not', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-ka-'));
+	const app = await createApp({ dataDir: dir, port: 0, host: '127.0.0.1', pingMs: 40 });
+	try {
+		const silent = net.connect(app.port, '127.0.0.1');
+		let hungUp = false;
+		silent.on('close', () => { hungUp = true; });
+		silent.on('error', () => {});
+		await new Promise((r) => silent.on('connect', r));
+		silent.write('GET /ws HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+			+ `Sec-WebSocket-Key: ${crypto.randomBytes(16).toString('base64')}\r\nSec-WebSocket-Version: 13\r\n\r\n`);
+		await new Promise((r) => silent.once('data', r));      // 101 Switching Protocols
+
+		const healthy = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
+		await new Promise((r) => healthy.on('open', r));
+
+		await new Promise((r) => setTimeout(r, 400));           // ~10 ping rounds
+
+		assert.equal(hungUp, true, 'the half-open peer was never evicted - it would hold a session and an fd forever');
+		assert.equal(healthy.readyState, 1, 'a client that pongs must survive the sweep, or liveness is a disconnect bug');
+		healthy.terminate();
+	} finally {
+		await app.close();
+	}
 });
