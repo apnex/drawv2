@@ -1,7 +1,7 @@
 {
 	"name": "draw",
 	"version": "0.1.0",
-	"description": "A strictly minimal diagramming tool with precise, programmable geometry: a deterministic, center-origin grid that renders headlessly to SVG. The server-held document is drivable by a human or an agent over REST, one writer at a time, and pushes to Google Slides as native editable shapes rather than an image.",
+	"description": "A strictly minimal diagramming tool on a precise, programmable grid. Diagrams are interactive UI as code: regions carry actions and editable inputs, and the app draws its own control bar as a diagram. The server-held document is drivable by a human or an agent over REST, and pushes to Google Slides.",
 	"license": "MIT",
 	"private": true,
 	"type": "module",
