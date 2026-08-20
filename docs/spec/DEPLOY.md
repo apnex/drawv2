@@ -215,6 +215,22 @@ Ingress was also narrowed to `internal-and-cloud-load-balancing`.\
 That closes a hole which would otherwise open the moment IAP arrives: IAP requires the service to accept unauthenticated traffic, at which point the `run.app` URL would have been a way around IAP altogether.\
 Doing it now means the bypass never exists rather than being closed after the fact.
 
+### The public pages, and why there are three
+
+`bb-draw-public` fronts `gs://draw-apnex-io-public` and takes `/about`, `/privacy` and `/terms` off the application, outside IAP.\
+Everything else on `draw.apnex.io` stays behind sign-in, verified after the change: `/`, `/api/v1/diagrams` and `/src/main.js` all still answer `302`.
+
+Scoping this to the privacy policy alone was wrong, and the correction is worth recording because the requirement is larger than it first appears.\
+Google will not accept an external app for verification while any of the homepage, privacy policy or terms links are missing, and verification is the thing that makes a custom name and logo appear at all.\
+The homepage carries two further conditions that collide with IAP directly: it must describe the application's functionality, and it *"can not be only a login page"*.
+
+`draw.apnex.io/` is exactly a login page to an anonymous reviewer, because IAP answers it with a redirect to `accounts.google.com`.\
+So the homepage is `/about` rather than the site root -- nothing in the requirement demands the root, only that the declared homepage describes the app and links to the privacy policy, which it does.\
+It also links to `github.com/apnex/drawv2`, which gives a reviewer the source rather than an assertion.
+
+The pages live in `public/` in the repository and are copied to the bucket.\
+Keeping them only in cloud storage would leave the text unversioned, unreviewable, and invisible to anyone reading the code.
+
 ### A quota override that is not a rate limit
 
 The first two builds failed with `toomanyrequests` from Artifact Registry, which reads as contention and is not.\

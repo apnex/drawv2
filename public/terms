@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>draw — Terms of Service</title>
+<style>
+  body { max-width: 46rem; margin: 3rem auto; padding: 0 1.25rem;
+         font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         color: #1a1a1a; background: #fff; }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.05rem; margin-top: 2rem; }
+  .sub { color: #666; margin-top: 0; }
+  code { background: #f4f4f4; padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+  nav { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #e5e5e5; font-size: .95rem; }
+  nav a { margin-right: 1.25rem; }
+</style>
+</head>
+<body>
+<h1>draw — Terms of Service</h1>
+<p class="sub">Last updated 20 August 2026</p>
+
+<p>These terms govern use of the draw application at <code>draw.apnex.io</code>, operated by apnex.</p>
+
+<h2>Access</h2>
+<p>draw is a private, single-operator tool provided to invited users. Access is granted at the
+operator's discretion and may be withdrawn at any time. You must sign in with a Google account, and
+you are responsible for activity carried out under your account.</p>
+
+<h2>Acceptable use</h2>
+<p>Do not use draw to store or transmit unlawful content, attempt to gain unauthorised access to it
+or to any connected Google account, or interfere with its operation.</p>
+
+<h2>Your content</h2>
+<p>You retain ownership of the diagrams you create. The operator stores them only in order to provide
+the service, as described in the <a href="/privacy">Privacy Policy</a>.</p>
+
+<h2>Google Slides</h2>
+<p>If you connect Google Slides, you authorise draw to create and modify presentations in your Google
+account solely to push diagrams you explicitly choose. You may revoke this at any time at
+<a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
+
+<h2>No warranty</h2>
+<p>draw is provided "as is", without warranty of any kind. It is a personal project, not a commercial
+service, and no availability, retention or fitness-for-purpose guarantee is offered. Keep your own
+copies of anything you cannot afford to lose.</p>
+
+<h2>Limitation of liability</h2>
+<p>To the extent permitted by law, the operator is not liable for any loss or damage arising from use
+of, or inability to use, draw, including loss of data.</p>
+
+<h2>Changes</h2>
+<p>These terms may be updated. Continued use after a change constitutes acceptance of the revised
+terms.</p>
+
+<nav>
+  <a href="/about">About</a>
+  <a href="/privacy">Privacy Policy</a>
+  <a href="https://github.com/apnex/drawv2">Source</a>
+</nav>
+</body>
+</html>

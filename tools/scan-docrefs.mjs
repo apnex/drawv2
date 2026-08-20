@@ -52,6 +52,7 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	'docs/spec/DEPLOY.md:/src/main.js': 'a URL path, not a repository path -- app/ is served at the web root, so the client bundle is fetched from /src/main.js. Named because it is the request used to prove the app itself is still behind IAP.',
 	'docs/spec/DEPLOY.md:core/engineer.js': 'a file of the 2021 generation (github.com/apnex/draw), named as evidence that the v1 bucket was a stale deploy rather than divergent work',
 	'docs/spec/DEPLOY.md:core/loader.js': 'as above - v1 provenance, not a path in this repository',
 	'docs/BACKLOG.md:secrets/google-credentials.json': 'B49 cites the paths that exposed the defect AS ITS EVIDENCE — same as B31 below',
