@@ -240,7 +240,12 @@ The adapter is what answers it: durability becomes the object store's rather tha
 
 ### Deleting the v1 bucket
 
-`gs://draw.apnex.io` holds the 2021 deployment and is being purged, with the bucket recreated under a different name.
+`gs://draw.apnex.io` held the 2021 deployment and has been purged -- nineteen objects and the bucket itself, 76162 bytes, every object stamped `2022-01-02T22:49:31Z` from a single upload.
+
+The hostname now answers `404`, and the successor bucket is `gs://diagrams.apnex.io` rather than a recreation of this name.
+
+Purging the bucket did NOT free the hostname, and the two were never coupled.\
+`draw.apnex.io` is a CNAME to `c.storage.googleapis.com`, so deleting the bucket only changes what that name resolves TO; the name moves when DNS moves, which is a separate act with its own cost recorded below.
 
 The claim that the code is safe on GitHub was CHECKED rather than accepted.\
 Nineteen objects, sixteen byte-identical to `apnex/draw@HEAD`, and three -- `core/engineer.js`, `core/loader.js`, `main.js` -- differing from it.\
