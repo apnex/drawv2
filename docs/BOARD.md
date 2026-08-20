@@ -340,7 +340,7 @@ behaviour was preserved.
 
 ---
 
-## H7 — ship it · `DONE`
+## H7 — ship it · `WIP`
 
 The push that expires **X14**. Its first CI run immediately found a guardrail that had been weaker
 than its own output claimed for two milestones — which is the argument for CI, made better by
@@ -350,6 +350,8 @@ running it than by writing it down.
 |---|---|---|---|---|
 | H7.1 | Public remote `apnex/drawv2`; `.github/workflows/gate.yml` runs `npm run gate` on push + PR; `prepare` installs the pre-push hook during `npm install`, so `gate.test.js` can ASSERT the hook rather than warn without breaking *fresh clone → npm install → tests pass*. **X14 discharged** | — | S3 · M | `DONE` |
 | H7.2 | `scan-docrefs` resolves against `git ls-files`, not the filesystem — it had been satisfied by gitignored files on the developer's disk | **B49** | S4 · S | `DONE` |
+| H7.3 | README rewritten to mission-kit's doc style: S9 order, S4 journeys, OAuth tutorial extracted to `docs/slides-setup.md`. 281 -> 214 lines | **B50** | S4 · M | `DONE` |
+| H7.4 | Gate the doc style, so B50 cannot recur | **B51** | S4 · M | `TODO` |
 
 ## Held — on the record, not on the board
 
