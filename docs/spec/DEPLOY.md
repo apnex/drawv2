@@ -2,8 +2,10 @@
 
 The plan for running `draw` on Google Cloud.
 
-**Status:** design, not implemented.\
-Nothing in this document has shipped, and the sections marked OPEN are still being decided.
+**Status:** largely shipped.\
+The application runs on Cloud Run behind IAP at `draw.apnex.io`, on GCS, with a wildcard certificate.\
+Sections headed *as executed* record what was actually done rather than what was planned, and the sections marked OPEN are still being decided.\
+Access control is designed but not built, and lives in `docs/spec/ACCESS.md`.
 
 This exists because the deployment changes assumptions the code currently rests on, and those assumptions should be argued in one place before any of them are edited.
 

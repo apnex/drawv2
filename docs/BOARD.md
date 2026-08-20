@@ -373,6 +373,21 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 | H8.8 | The REST/agent surface is behind IAP and the CLI sends no credential — decide how an agent authenticates | **B61** | S2 · M | `TODO` |
 | H8.6 | IAP on the backend service; consent screen is in **Testing**, not published — test users only | **B57** | S2 · S | `DONE` |
 
+## H9 -- access control · `TODO`
+
+Per-diagram authorization, designed in `docs/spec/ACCESS.md`.\
+Two authentication methods -- Google identity via IAP, and connection codes over REST -- resolving to one grant model.
+
+| # | Item | Cites | Size | State |
+|---|---|---|---|---|
+| H9.1 | Principal + grant model: `(principal, diagram) -> read \| write`, stored in `meta` as server-recorded status, never a commit | — | S3 · L | `TODO` |
+| H9.2 | Consume `X-Goog-Authenticated-User-Email`; `list()` and every read/write path filter by grant | — | S3 · M | `TODO` |
+| H9.3 | Enforce `read` server-side on every mutating path; drive Server-Locked from the grant | — | S2 · M | `TODO` |
+| H9.4 | Locks become principal-scoped and ACL-gated; revocation invalidates an in-flight lock — reverses `locks.js:8`, needs a dated amendment | — | S2 · M | `TODO` |
+| H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, revoke | — | S3 · L | `TODO` |
+| H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
+| H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
+
 ## Held — on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired. Scored so the comparison is a judgement, not an omission.

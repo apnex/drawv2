@@ -1,0 +1,221 @@
+# Access control
+
+Who may read and write which diagram, and how they prove it.
+
+**Status:** design, not implemented.\
+Nothing here has shipped.\
+The sections marked OPEN are still being decided.
+
+This exists because two workflows that sound similar need different machinery, and both are blocked on the same absent thing.\
+Sharing one diagram with a person, and handing a code to an agent, differ in how the caller authenticates and agree in what the server must then decide.\
+Arguing that in one place is cheaper than discovering it twice.
+
+---
+
+## Decided
+
+| Axis | Decision |
+|---|---|
+| Granularity | per diagram; collection or project scope deferred |
+| Levels | `read` and `write` |
+| Where the ACL lives | `meta`, as server-recorded status, never a commit |
+| Principals | a Google identity from IAP, or a connection code -- the same kind of thing |
+| Level lives on | the grant, not the principal |
+| Code shape | 14-16 characters, Crockford base32, from `crypto.randomBytes` |
+| Code at rest | hashed; the plaintext is shown once at mint and never again |
+| Code transport | `Authorization: Bearer`, never a query parameter |
+| Code expiry | optional |
+| Code surface | REST only for now; no websocket |
+| Route | path prefix `/connect/v1`, outside IAP |
+| Locks | principal-scoped and ACL-gated, enforced server-side |
+| Compatibility | breaking changes are allowed; nothing is aliased for the old shape |
+
+---
+
+## The constraint that shapes everything
+
+IAP is an edge gate, and its grants are all-or-nothing.\
+`roles/iap.httpsResourceAccessor` admits a principal to the *backend service*, which is the whole application, and there is no expression in IAP for "this one diagram".
+
+So the moment an outside person is admitted at all, IAP has finished its work, and today they would see everything: `store.js:231` returns every diagram from `list()` to every caller, and no `owner`, `tenant`, `acl` or `userId` exists anywhere in the schema, the store, the protocol or the REST plane.\
+`rest.js:377` says so outright -- *"this is a single-tenant tool"*.
+
+IAP answers **who are you**.\
+Nothing currently answers **what may you touch**, and that is the substrate both workflows need.
+
+A second consequence follows immediately and is easy to miss.\
+A connection code presented to a path behind IAP is rejected at the edge, so the application never sees the header and cannot honour it.\
+Token authentication is therefore not a feature that can be added to the existing API -- it requires a route IAP does not guard.
+
+---
+
+## Two authentication methods, one authorization model
+
+A **principal** is whoever is asking.\
+It is either a Google identity supplied by IAP as `X-Goog-Authenticated-User-Email`, or a connection code presented as a bearer token.\
+The application currently ignores the IAP header entirely, which is a deliberate deferral rather than an oversight, and this is what ends it.
+
+A **grant** is `(principal, diagram) -> read | write`.
+
+Keeping the level on the grant rather than on the principal is the decision most likely to be revisited, so the reasoning is recorded rather than assumed.\
+The grant table must exist regardless, because one person may legitimately hold `read` on one diagram and `write` on another.\
+Putting a level on the code as well would create a second authorization mechanism that has to agree with the first, and one access check with a branch in it -- which is where the bug would eventually be.
+
+The cost is that a code's powers are not evident from the code itself, and must be looked up.\
+That is a display problem, answered by showing a code's grants wherever the code is shown, and it is a smaller problem than two mechanisms drifting.
+
+A refinement was considered and deferred: the code could carry a **ceiling**, with effective permission `min(ceiling, grant)`, so that "this is a read-only code" is durable against a mis-click in the grant UI.\
+It costs one field and is painful to retrofit, which is the argument for it; it is more than the first version needs, which is the argument against.
+
+---
+
+## Where the ACL lives, and why it is not a commit
+
+In `meta`, written the way `bindSlides` writes -- `store.js:321` assigns to `model.state.meta.slides` and calls `markDirty(id)`, deliberately bypassing `commit()`.\
+`server.test.js:284` pins the category: *"the Slides binding is STATUS the server records -- not a change, and not the client's to send"*.
+
+The reason this matters for an ACL is sharper than symmetry.\
+`store.js:359` flushes `serialize(model.toJSON(), entry.log)`, the document **and** the log, on every write.\
+An ACL change routed through `commit()` would therefore be undoable -- and undo silently restoring access for someone just revoked is a security failure, not a usability quirk.\
+Bypassing `commit()` avoids it by construction rather than by a rule someone has to remember.
+
+An ACL is not a secret, which is what makes `meta` an acceptable home: knowing *who* has access is not the same as *having* access.\
+A connection code is the opposite, and this is the trap the same mechanism sets.\
+Anything written into the model is retained in the log permanently, survives deletion of the entity that carried it, and is carried into `/d/<id>.svg`.\
+So a code must never enter the document at any point, not even briefly.
+
+---
+
+## Read-only already exists
+
+The client has a complete read-only mode.\
+`input.js:370` declares `this.readOnly = false; // Server-Locked: inspect + select only, no mutations`, with `setReadOnly()` at `:437`, and six tests pin what it suppresses -- mutation keys, arming, the label editor, the text tool -- and what it preserves, which is selection, datum and the readout.
+
+That gives three representations rather than two, and the middle one is the useful one:
+
+| Representation | What the viewer gets |
+|---|---|
+| `/d/<id>.svg` | a static snapshot, with no live updates, selection or inspection |
+| editor, Server-Locked | live, selectable, measurable, inspectable, and unable to mutate |
+| editor, unlocked | read-write |
+
+So `read` costs an access check rather than a feature.
+
+A URL suffix is a representation and not a permission, and the distinction is load-bearing.\
+If `.svg` decided access, read-only would be bypassed by deleting four characters from the address bar.\
+The ACL decides; the suffix only selects what is served to a principal already permitted.
+
+Server-Locked is client-side suppression, which for an untrusted principal is decoration.\
+A hand-written request bypasses it entirely, so `read` must be refused **server-side** on every mutating path, with Server-Locked as the interface honestly reflecting a decision the server has already made.
+
+---
+
+## Connection codes
+
+### Shape
+
+Short, human-transcribable, and shaped like an invite code: 14-16 characters of Crockford base32, displayed as `XXXX-XXXX-XXXX-XXXX` with the hyphens purely cosmetic.\
+That alphabet is chosen rather than inherited -- it omits `I`, `L`, `O` and `U`, so there is no confusion between `1`, `l` and `I` or between `0` and `O`, it cannot accidentally spell anything unfortunate, and it decodes case-insensitively with `O` read as `0`.
+
+### Why short codes are safe here, and what would make them unsafe
+
+At five bits per character, 14 characters is 70 bits and 16 is 80.
+
+| Length | Entropy | Online guessing at 10k/s | Offline, if the hash store leaks |
+|---|---|---|---|
+| 14 | 70 bits | ~3.7 billion years | ~370 years |
+| 16 | 80 bits | ~10^12 years | ~370,000 years |
+
+Online guessing is therefore never the threat, which has a consequence worth stating so it is not re-argued: any request throttling added later is denial-of-service protection and must not be described as credential protection.
+
+The binding constraint is offline cracking if the hash store leaks, and both lengths survive it comfortably with a fast hash.\
+A slow key-derivation function would buy nothing, because slow hashing exists to defend *low-entropy* secrets and there is nothing here to guess.\
+Note that this reasoning is specific to these lengths: at meaningfully shorter codes it inverts, and the KDF starts doing real work.
+
+Two things become load-bearing at this size that would not be at 256 bits.
+
+Generation must use `crypto.randomBytes`, never `Math.random()`.\
+A weak generator makes the length irrelevant, and that -- rather than the arithmetic -- is what kills short codes in practice.
+
+The code must not carry a prefix that eats its own budget.\
+A `draw_<id>_<secret>` structure inside a 16-character total leaves roughly 45 bits, which is crackable offline in hours.\
+Any prefix must be additional to the entropy rather than carved out of it.
+
+### Lookup and storage
+
+A public identifier for direct lookup was considered and rejected as solving a problem this deployment does not have.\
+At a few dozen codes the server hashes the presented value and looks it up, which is constant time and needs no prefix.
+
+Codes live outside the document, and outside the diagram files.\
+`store.js:25` restricts the store to `/^diagram-[0-9a-f]{6}\.json$/`, so a second object can sit beside them in the bucket without the store trying to parse it as a diagram.\
+This is the one genuinely new piece of structure in this design: the store has never persisted a second *kind* of thing, and that is a larger change than adding a field.
+
+### Audit is already present
+
+`txn.mjs:240` writes `{ seq, from, at, by, actor }` into every log record, and the REST path already populates `actor` -- a production write during the H8.4 smoke test recorded `actor: "rest-d82fcefd"`.\
+A connection code becomes the actor, and history answers "who did this" with no new machinery.
+
+---
+
+## The lock becomes principal-scoped
+
+`locks.js:8` states the current design outright: *"it is a pure state machine over opaque tokens"*, with `this.map` holding `diagramId -> { token, expiresAt }` and no notion of who the holder is.
+
+Possession of the token is therefore the authority, and that is the hole.\
+Revoking a principal's grant while it holds a lock leaves the lock working until its TTL expires, because the lock cannot consult an ACL for a principal it does not record.\
+Principal-scoping is what makes revocation take effect immediately.
+
+It gates the other end too.\
+`acquire(id)` takes no principal and succeeds whenever the lock is free, so a `read` principal could take a write lease today.\
+The ACL check belongs on acquire, not only on commit.
+
+The two axes stay separate, and merging them would be a mistake.\
+A lock answers *someone else is driving*; an ACL answers *you may not drive*.\
+They need different answers on the wire, because `423` is temporary and worth retrying while `403` is not, and an agent that confuses them either spins forever or gives up permanently.
+
+This reverses a stated decision, so it carries a dated amendment.\
+`GR10` has a test asserting that every locked decision reversed in an arc is amended rather than quietly changed.
+
+---
+
+## The route
+
+The code-authenticated surface lives at `/connect/v1`, outside IAP, leaving every path the editor uses behind IAP untouched.
+
+A hostname was the alternative and was rejected on a concrete constraint.\
+A wildcard certificate covers one label, so `*.apnex.io` covers `draw.apnex.io` but **not** `api.draw.apnex.io`, which would need a new certificate carrying `*.draw.apnex.io`.\
+A sibling name such as `draw-api.apnex.io` would be covered, but a path prefix needs no new DNS record, no new certificate and no second backend hostname to reason about.
+
+The name was chosen against the alternatives rather than picked.\
+`/link/` is unusable because `link` is a model entity with 61 uses across `validate.js` and `model.mjs`, and the route would be undiscoverable by search.\
+`/agent/` is rejected because `agent` already denotes the *calling program* in `rest.js` and `locks.js`, so reusing it conflates the caller with the surface, and it over-narrows -- a person with `curl` uses this path too.\
+`/token/` and `/key/` name the mechanism and would age badly the moment authentication changes.\
+`/open/` and `/public/` are actively misleading, because the surface is authenticated and merely not by IAP, which is exactly the misconception that would get someone hurt.\
+`/share/` names the *other* workflow, which does not live here.
+
+`/connect` matches the vocabulary already in use, collides with nothing, and names the boundary rather than the consumer or the mechanism, so it survives adding a further kind of principal later.
+
+The `v1` is kept, and the argument for it is stronger here than on `/api`.\
+`/api/v1` is consumed only by the editor shipped in the same image, so both sides move together and it can be broken freely.\
+`/connect/v1` is consumed by third parties who cannot be coordinated with, and versioning matters precisely where nobody can be called.
+
+### The boundary should be structural
+
+The failure mode of this design is a route added under `/connect` without an authorization check, because IAP is not there to catch the omission.\
+That is the same shape `scan-writers` already guards for DOM access under `GR17` and for command builders under `GR16`.\
+A scanner asserting that every handler under `/connect` performs the grant check would make the boundary enforced rather than remembered.
+
+---
+
+## Open
+
+Expiry is optional, and whether a default expiry is offered at mint is undecided.
+
+The persistence format for grants and codes is undecided, beyond living outside the diagram files.
+
+Whether the code carries a ceiling in addition to the grant is deferred rather than rejected.
+
+Whether `/d/<id>.svg` remains reachable without any principal at all is unresolved, and is inherited from `DEPLOY.md` rather than introduced here.
+
+The workflow set is assumed to be the two described.\
+If others exist, the grant model is the part most likely to need widening.
