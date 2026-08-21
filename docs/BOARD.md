@@ -167,7 +167,7 @@ No code. The house rule is that the register is written before the implementatio
 | H0.1 | Land `B13`–`B33` on `docs/BACKLOG.md` with evidence citations | — | `DONE` |
 | H0.2 | Correct **B7**: its stated D12 mitigation does not exist (see B19) | B7 | `DONE` |
 | H0.3 | This board, triaged and scored | — | `DONE` |
-| H0.4 | Resolve the four [decisions required](#decisions-required) below | — | `TODO` |
+| H0.4 | Resolve the ONE remaining [decision required](#decisions-required) — B32, the REST diagram lifecycle. Three of the original four were answered by later work and the section said otherwise | **B32** | `TODO` |
 
 **Exit:** registers current, decisions taken, H1 sequenced.
 
@@ -452,6 +452,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 · S | `DONE` |
 | H10.18 | A `del` entry with no entity threw in the browser and shipped — every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
 | H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one — the asymmetry that turned a correct rejection into a broken fix | **B87** | S2 · S | `TODO` |
+| H10.20 | Scanner: a board claim of the form *blocks Hn.m* must agree with that item's state — prose is outside R6, so a paragraph can assert that finished work is blocked | **B88** | S3 · S | `TODO` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 · L | `TODO` |
 | H10.17 | Share the constants restated across files — `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 · M | `TODO` |
@@ -484,20 +485,37 @@ same failure mode inside the window B6 declares safe**, which is why B15 is H1 a
 
 ## Decisions required
 
-Four, all in H0.4. Each blocks work that should not start until it is answered.
+**One, not four.** Corrected 2026-08-21: three of the four were answered by later work that never
+came back to amend this section, and every "blocks" claim below was false — H5.3, H2.5 and H2.3
+are all `DONE`. A section asserting that finished work is blocked is worse than no section, because
+a reader takes it as the current state of the plan.
 
-1. **`schema.js` (B28).** Is `docToSchema` → `kernel.resolve()` the production render path, or a test/export
-   adapter? Two files describe it as production and the live client never calls it, while
-   `app/src/renderer.js` carries a line-for-line clone of the kernel's content-region code. Routing the
-   client through the kernel is the larger change and the more coherent end state; relabelling is honest and
-   cheap. **Blocks H5.3.**
-2. **GR5's second half (B22).** Build `tests/diff-inverse.test.js` against the frozen fixture, or retire it
-   with a recorded deviation? GR5 says the opportunity is *"destroyed permanently once the old code is
-   gone"* — it is gone. **Blocks H2.5.**
-3. **CI (B21).** A tracked enforcement point, or an explicit ruling that the local pre-push hook plus
-   `tests/gate.test.js` is the whole gate. Today a fresh clone has neither. **Blocks H2.3.**
-4. **REST diagram lifecycle (B32).** Ruling before building. X12 answered the same question `no` for
-   `draw undo` on the grounds that the destructive verb must keep its gates.
+Worth naming how it survived: `H9.18` was written this morning to catch a milestone HEADING that
+disagrees with the items beneath it, and it does not look at prose. A paragraph claiming to block a
+DONE item passes the gate cleanly. Registered as **B88**.
+
+### Live
+
+1. **REST diagram lifecycle (B32).** An agent cannot create or delete a diagram: `POST
+   /api/v1/diagrams` and `DELETE` do not exist, so the CLI can drive a document it cannot provision
+   or retire. Ruling required before building. X12 answered the analogous question `no` for `draw
+   undo` on the grounds that the destructive verb must keep its gates, so `DELETE` plausibly
+   inherits that reasoning and `POST` plausibly does not — but they are two rulings, not one.
+   **Relevant now:** H9.5 and H9.6 build the authentication for an agent surface whose lifecycle
+   verbs this decision governs.
+
+### Resolved, and by what
+
+2. **`schema.js` (B28)** — answered by fact rather than by ruling. `docToSchema` → `kernel.resolve()`
+   IS a production path: `server/svg.mjs:17` renders every `/d/<id>.svg` through it. It is the
+   *export* authority, not the client's, and `app/src/renderer.js:6` now says so. The clone the
+   decision was really about is gone: `renderer.js:10` imports `contentLayout` from the kernel and
+   `:30` records the split — layout is the kernel's, emission is the client's, deliberately.
+3. **GR5's second half (B22)** — retired, not built. `H2.5`: *a differential needs two
+   implementations and client-side inverse building has zero*, recorded as **X15**.
+4. **CI (B21)** — it exists. `.github/workflows/gate.yml` runs `npm run gate` on push and PR, and
+   `H2.3` carries the re-ruling. The claim below it that *a fresh clone has neither* was true when
+   written and false since H7.
 
 ---
 
