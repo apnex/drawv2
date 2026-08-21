@@ -142,7 +142,7 @@ That places repair of the verification layer above every feature, because it is 
 |---|---|---|---|
 | ~~1~~ | H9.16 `DONE` | verifier | The composition root is unscanned; B70 was one missing property in one object literal and it took production down. Static, cheap, certain. |
 | ~~2~~ | H9.11 `DONE` | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
-| 3 | H9.18 | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
+| ~~3~~ | H9.18 `DONE` | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
 | — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
 | 4 | H10.1 | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
 | 5 | H10.2 | adjacency | One field. Unblocks the identity label, any sharing UI, and H9.5 and H9.6, none of which can begin without it. |
@@ -198,8 +198,8 @@ Promoted onto the critical path by the triage pass: **H3 cannot start without H2
 |---|---|---|---|---|
 | H2.1 | Client harness — `tests/fixtures/client-harness.mjs`, ~150 lines of stubs, no dependency. Real `Model`/`Changes`/`Selection`/`Input`; assertions **only** at the commit boundary, enforced by `scan-writers`. 13 characterization tests; B14 ×3 and B37 ×1 marked `todo`, never written around | **B23** | S5 · **A9 mandate** · L | `DONE` |
 | H2.2 | `tests/gate.test.js` — GR1's own self-check, **6 probes proven to bite**. Writing it found that `gate:install` wrote to `.git/hooks/` while a global `core.hooksPath` sent git elsewhere: **the gate had never run on a push**. Replaced by `tools/install-hook.sh`, which resolves git's real hook path and confines itself to this repo | **B21** | S4 · S | `DONE` |
-| H2.3 | **Re-ruled at H7: CI EXISTS.** The no-CI ruling was scoped to “no remote, so nowhere to run”. `apnex/drawv2` is now public, `.github/workflows/gate.yml` runs `npm run gate` on push + PR, `prepare` installs the pre-push hook during `npm install`, and `gate.test.js` asserts the hook instead of warning. **X14 discharged** | — | verified on a real fresh clone: assert red before install, green after; global `core.hooksPath` redirect handled (B21) |
-| H2.4 | `tools/scan-board.mjs` (**GR14**) — R1 citations resolve, R2 milestones exist, R3 `DONE` and `CLOSED` move together, **R4 a milestone marked DONE has no open items** (added after H3 was marked DONE with three items outstanding — R3 stayed silent because each pair *agreed*, and agreement is not completion). Wired into `npm run gate`; 6 probes proven to bite | — | — | `DONE` |
+| H2.3 | **Re-ruled at H7: CI EXISTS.** The no-CI ruling was scoped to “no remote, so nowhere to run”. `apnex/drawv2` is now public, `.github/workflows/gate.yml` runs `npm run gate` on push + PR, `prepare` installs the pre-push hook during `npm install`, and `gate.test.js` asserts the hook instead of warning. **X14 discharged**, verified on a real fresh clone: assert red before install, green after; global `core.hooksPath` redirect handled (B21) | — | S2 · M | `DONE` |
+| H2.4 | `tools/scan-board.mjs` (**GR14**) — R1 citations resolve, R2 milestones exist, R3 `DONE` and `CLOSED` move together, **R4 a milestone marked DONE has no open citing items**, **R5 every item declares a state**, **R6 a heading agrees with the states beneath it in both directions** (added after H3 was marked DONE with three items outstanding — R3 stayed silent because each pair *agreed*, and agreement is not completion). Wired into `npm run gate`; 6 probes proven to bite | — | — | `DONE` |
 | H2.5 | **Retired** (**X15**) — a differential needs two implementations and client-side inverse building has zero: it was removed at CS3, not replaced. I3/I4's round-trip property covers the risk more strongly than a differential would have | **B22** | S4 · L | `DONE` |
 | H2.6 | **Rescoped**: not “three more classes” but *the affordance surface*, which is the one H6 unit with no commit-boundary observable. 8 tests, 5 H6.3-shaped regressions proven caught | **B23** | S5 · M | A3 | `DONE` |
 
@@ -429,7 +429,8 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.15 | Cutover: enable authorization on the live service — build, deploy image with `IAP_AUDIENCE` and `OWNER` together, adopt the 12, verify the owner reaches them through IAP | **B67**, **B70** | S1 · M | `DONE` |
 | H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures — the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `DONE` |
 | H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch — a flag that is on in the only deployment that exists is a second code path nobody runs | — | S3 · S | `TODO` |
-| H9.18 | Scanner: a milestone header must agree with the states beneath it, and a number written in an item must not contradict one the repo can compute | **B77** | S2 · S | `TODO` |
+| H9.18 | Scanner: every item declares a state, and a heading agrees with the states beneath it in both directions | **B77** | S2 · S | `DONE` |
+| H9.20 | Scanner: a stated count must not contradict one the repo can compute — deferred from H9.18, needs the convention decided before it is enforceable | **B77** | S3 · M | `TODO` |
 | H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 · S | `DONE` |
 
 ## H10 -- client surface and observability · `TODO`

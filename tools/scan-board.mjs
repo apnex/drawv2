@@ -26,8 +26,13 @@ Usage: node tools/scan-board.mjs
 
 import fs from 'node:fs';
 
-const BOARD = 'docs/BOARD.md';
-const BACKLOG = 'docs/BACKLOG.md';
+// `--root <dir>` so the rules can be driven over fixtures. Without it the only way to prove R5
+// and R6 FAIL correctly is to corrupt the real board, and a check whose failure path is untested
+// is what B77 and B78 both were.
+const rootArg = process.argv.indexOf('--root');
+const DIR = rootArg > -1 ? `${process.argv[rootArg + 1]}/` : '';
+const BOARD = `${DIR}docs/BOARD.md`;
+const BACKLOG = `${DIR}docs/BACKLOG.md`;
 
 const board = fs.readFileSync(BOARD, 'utf8');
 const backlog = fs.readFileSync(BACKLOG, 'utf8');
@@ -56,12 +61,22 @@ for (const line of backlog.split('\n')) {
 // ---- BOARD: milestone headings, and the item rows that cite a B row
 const milestones = new Set([...board.matchAll(/^##\s+(H\d+)\b/gm)].map((m) => m[1]));
 const cited = new Set();
-const items = [];         // { h, ids: [Bnn], done: bool }
+const items = [];         // { h, ids: [Bnn], done: bool } -- CITING rows only, for R1/R3
+const allRows = [];       // EVERY item row, for R5/R6 (B77)
 for (const line of board.split('\n')) {
 	const m = /^\|\s*(H\d+\.\d+)\s*\|/.exec(line);
 	const ids = [...line.matchAll(/\*\*(B\d+)\*\*/g)].map((x) => x[1]);
 	ids.forEach((id) => cited.add(id));
-	if (m && ids.length) items.push({ h: m[1], ids, done: /`DONE`/.test(line) });
+	if (m) {
+		// The board carries two conventions and both are legitimate. H0-H5 and H7-H10 put the state
+		// in a trailing Status column; H6's table is `# | Stage | Risk | Proof` and prefixes the
+		// Stage cell instead. Requiring the last cell would have forced a rewrite of a milestone
+		// that closed months ago, so the rule is that a row DECLARES a state, and the last token
+		// wins where a row somehow carries two.
+		const tokens = [...line.matchAll(/`(DONE|TODO|WIP|BLOCKED)`/g)].map((x) => x[1]);
+		allRows.push({ h: m[1], state: tokens.length ? tokens[tokens.length - 1] : null, line });
+		if (ids.length) items.push({ h: m[1], ids, done: /`DONE`/.test(line) });
+	}
 }
 // citations outside item tables (the ledger, the held list, prose) still count for R1
 for (const x of board.matchAll(/\*\*(B\d+)\*\*/g)) cited.add(x[1]);
@@ -91,11 +106,45 @@ checking, and it was the one thing nothing checked.
 */
 const milestoneState = {};
 for (const m of board.matchAll(/^##\s+(H\d+)[^\n]*?`(\w+)`/gm)) milestoneState[m[1]] = m[2];
-for (const it of items) {
-	const h = it.h.split('.')[0];
-	if (milestoneState[h] === 'DONE' && !it.done) {
-		fail(`${BOARD} ${h} is marked DONE but ${it.h} is still open — a heading a reader trusts must be true`);
-	}
+
+/*
+R5 — every item row declares a state, in the last cell (B77).
+
+R4 read `items`, which holds only rows that cite a B row, so an uncited row was invisible to it.
+H2.3 had FOUR cells where the table has five, its state column held prose, and R4 could not see
+that either: the row cites nothing, so it was never in the list R4 iterates. A row with no state
+is not a neutral omission -- R6 below has to count it as something, and a reader takes the absence
+as whatever the surrounding rows imply.
+*/
+for (const r of allRows) {
+	if (!r.state) fail(`${BOARD} ${r.h} declares no state in its last cell — DONE, TODO, WIP or BLOCKED`);
+}
+
+/*
+R6 — a milestone heading agrees with the states beneath it (B77).
+
+R4 checked one direction over a subset: a DONE heading with an open CITING item. It could not see
+the case that actually shipped, which was H9 reading `TODO` above thirteen DONE items for most of
+a session. The heading is what a reader takes first, so a milestone that has largely landed while
+announcing it has not started is the most misleading state the board can be in.
+
+Both directions, over every row rather than the citing ones:
+  DONE  every item done          -- nothing left, or the heading lies
+  TODO  no item done             -- work has begun, so the heading is stale
+  WIP   at least one of each     -- otherwise it is TODO or DONE and should say so
+*/
+const perMilestone = {};
+for (const r of allRows) {
+	const h = r.h.split('.')[0];
+	(perMilestone[h] ||= { done: 0, open: 0 })[r.state === 'DONE' ? 'done' : 'open']++;
+}
+for (const [h, n] of Object.entries(perMilestone)) {
+	const st = milestoneState[h];
+	if (!st) continue;
+	if (st === 'DONE' && n.open) fail(`${BOARD} ${h} is marked DONE with ${n.open} item(s) still open — a heading a reader trusts must be true`);
+	if (st === 'TODO' && n.done) fail(`${BOARD} ${h} is marked TODO with ${n.done} item(s) already DONE — the heading is stale`);
+	if (st === 'WIP' && !n.done) fail(`${BOARD} ${h} is marked WIP with nothing DONE — it is TODO`);
+	if (st === 'WIP' && !n.open) fail(`${BOARD} ${h} is marked WIP with nothing open — it is DONE`);
 }
 
 // R3 — DONE and CLOSED move together (contract rule 2)

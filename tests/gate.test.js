@@ -217,3 +217,56 @@ test('GR15/B62: an internal use does not earn an export, and prose never does', 
 	assert.match(out, /PASS/, 'and the tree satisfies the stricter rule');
 	assert.doesNotMatch(out, /stale-allow/, 'with no exemption outliving its reason');
 });
+
+/*
+GR14/B77 -- the board's content, not only its structure.
+
+scan-board checked that citations resolve and that DONE and CLOSED agree, and passed continuously
+while H9 read `TODO` above thirteen DONE items, H2.3 carried four cells where the table has five
+with prose where its state belongs, and H2 read `DONE` with that item open. R4 existed and could
+see none of it: it iterates only rows that cite a B row, so an uncited row was outside its reach.
+
+Driven over fixtures. Asserting the real board is clean proves the rules agree with today's file,
+not that they can tell a violation from a compliance.
+*/
+test('GR14/B77: a heading must agree with the states beneath it, and every item must declare one', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'board-'));
+	fs.mkdirSync(path.join(dir, 'docs'));
+	fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), '| **B1** | a row | `[V]` | OPEN |\n');
+	const write = (body) => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'), body);
+	const run = () => {
+		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
+		catch (e) { return { out: e.stdout || '', code: e.status }; }
+	};
+	const rows = (...r) => `## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${r.join('\n')}\n`;
+	try {
+		// the shape that shipped: a heading claiming nothing has started, above finished work
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |').replace('`WIP`', '`TODO`'));
+		let r = run();
+		assert.equal(r.code, 1);
+		assert.match(r.out, /marked TODO with 1 item\(s\) already DONE/, 'a stale heading is named');
+
+		// H2.3's shape: a row whose state cell holds something else, and which cites nothing
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | — | prose where a state goes |'));
+		r = run();
+		assert.equal(r.code, 1);
+		assert.match(r.out, /H1\.2 declares no state/, 'an uncited stateless row is reachable now');
+
+		// H2's shape: DONE heading over an open item
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | — | S1 | `TODO` |').replace('`WIP`', '`DONE`'));
+		r = run();
+		assert.equal(r.code, 1);
+		assert.match(r.out, /marked DONE with 1 item\(s\) still open/);
+
+		// and WIP must mean what it says, in both directions
+		write(rows('| H1.1 | a | **B1** | S1 | `TODO` |'));
+		assert.match(run().out, /marked WIP with nothing DONE/);
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |'));
+		assert.match(run().out, /marked WIP with nothing open/);
+
+		// the compliant case passes, so the rules are not simply always red
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | — | S1 | `TODO` |'));
+		r = run();
+		assert.equal(r.code, 0, 'a mixed WIP milestone with stated items is clean');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
