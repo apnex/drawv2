@@ -31,6 +31,7 @@ import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE, OPTIONAL } from '../model/shape.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
+import { violations } from '../model/invariants.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
 const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
@@ -77,6 +78,31 @@ export function plan(model, ops) {
 		applyOps(proj, step.ops);              // advance the projection for op i+1
 		out.push(...step.ops);
 		inv.unshift(...step.inverse);          // pre-reversed: undo replays inv in order
+	}
+	/*
+	B81 -- the document invariants, checked once against the state this transaction would produce.
+
+	On the RESULT rather than per op, because a batch may transiently violate and end valid:
+	deleting a straight link and clearing another link's route in the same transaction is legal,
+	and a per-op check would refuse a state that never becomes durable.
+
+	A backstop, not the primary mechanism. The waypoint cascade already removes a link that would
+	be left colliding, so a well-formed operation never arrives here failing. What arrives here is
+	the path nobody thought about -- `set` clearing a `via` directly, which reaches no cascade and
+	no authoring guard, and which is the reason the rule could not stay at the call sites.
+	*/
+	const after = violations(proj);
+	if (after.length) {
+		/*
+		Only what this transaction INTRODUCES. Refusing on the post-state alone would mean a
+		document that somehow reached a bad state could never be repaired, because the repair is
+		itself a transaction and would be refused for the condition it exists to remove. Found by
+		the GR5 corpus, whose generator predates the rule and produces such documents freely --
+		a case I would not have thought of, and a lockout rather than a mere inconvenience.
+		*/
+		const before = new Set(violations(model));
+		const introduced = after.filter((v) => !before.has(v));
+		if (introduced.length) return { ok: false, error: introduced[0], at: -1 };
 	}
 	return { ok: true, ops: out, inverse: inv };
 }
@@ -201,14 +227,50 @@ function planDel(model, { kind, id }) {
 		trimGroupsHolding(id);
 	}
 	if (kind === 'waypoint') {
+		/*
+		B81: stripping a waypoint can leave a link STRAIGHT, and a pair carries only one straight
+		link. Where the strip would produce a colliding duplicate the link is deleted with the
+		waypoint instead, in the same undoable step.
+
+		That matches the branch below it: a waypoint that is a link's ENDPOINT already deletes the
+		link rather than stripping it, on the same principle -- a link that cannot survive the
+		operation does not limp on in a degenerate form. Refusing the waypoint deletion outright
+		was the alternative and was rejected: being told you may not delete a waypoint because of
+		a link you were not thinking about is a worse answer than removing the link that could
+		not exist.
+
+		An EXISTING straight link outranks one that would be created by this strip, so the route
+		yields to the direct link rather than the reverse.
+		*/
+		const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
+		const dying = new Set();
+		const stripped = [];
 		for (const link of model.linksAt(id)) {
-			if (link.src === id || link.dst === id) {
+			if (link.src === id || link.dst === id) dying.add(link.id);
+			else stripped.push(link);
+		}
+		const straightPairs = new Set();
+		for (const l of model.all('link')) {
+			if (dying.has(l.id) || (l.via && l.via.length)) continue;
+			straightPairs.add(pairKey(l));
+		}
+
+		for (const link of model.linksAt(id)) {
+			if (dying.has(link.id)) {
 				ops.push({ op: 'del', kind: 'link', id: link.id });
 				inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
-			} else {
-				ops.push({ op: 'set', kind: 'link', id: link.id, patch: { via: link.via.filter((w) => w !== id) } });
-				inverse.unshift({ op: 'set', kind: 'link', id: link.id, patch: { via: [...link.via] } });
 			}
+		}
+		for (const link of stripped) {
+			const remaining = link.via.filter((w) => w !== id);
+			if (remaining.length === 0 && straightPairs.has(pairKey(link))) {
+				ops.push({ op: 'del', kind: 'link', id: link.id });
+				inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
+				continue;
+			}
+			if (remaining.length === 0) straightPairs.add(pairKey(link));
+			ops.push({ op: 'set', kind: 'link', id: link.id, patch: { via: remaining } });
+			inverse.unshift({ op: 'set', kind: 'link', id: link.id, patch: { via: [...link.via] } });
 		}
 		trimGroupsHolding(id);
 	}

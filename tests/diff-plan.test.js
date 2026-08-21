@@ -113,7 +113,7 @@ const norm = (ops) => ops.map((o) => {
 
 test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mutations', () => {
 	const r = rng(20260818);
-	let compared = 0, rejectedBoth = 0, narrowedPuts = 0;
+	let compared = 0, rejectedBoth = 0, narrowedPuts = 0, collisionDroppedLinks = 0, invariantRefusals = 0;
 
 	for (let i = 1; i <= 1000; i++) {
 		const doc = makeDoc(r, i);
@@ -128,6 +128,27 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 		const b = plan(model, [modern]);
 		assert.equal(JSON.stringify(model.toJSON()), before, `iteration ${i}: planning mutated the model`);
 
+		/*
+		The FOURTH deliberate divergence (B81): plan() enforces a document invariant the frozen
+		oracle never had -- at most one straight link between a pair -- so it REFUSES a put or set
+		the oracle accepted. The corpus reaches this freely because its generator predates the rule.
+
+		Bounded structurally rather than by trusting the message: the refused op must be one that
+		would leave a straight link on a pair that already carries one. A refusal for any other
+		reason, or on any other shape, is still a real disagreement and still fails.
+		*/
+		if (a.ok && !b.ok && /straight links between/.test(b.error || '')) {
+			const ent = modern.entity || model.get('link', modern.id);
+			const patched = modern.op === 'set' ? { ...ent, ...modern.patch } : ent;
+			assert.equal(modern.kind, 'link', `iteration ${i}: the invariant fired on a non-link op`);
+			assert.ok(!patched.via || patched.via.length === 0,
+				`iteration ${i}: the invariant fired on an op that does not produce a straight link`);
+			const key = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
+			assert.ok(model.all('link').some((x) => x.id !== patched.id && (!x.via || !x.via.length)
+				&& key(x) === key(patched)), `iteration ${i}: no existing straight link to collide with`);
+			invariantRefusals++;
+			continue;
+		}
 		if (!a.ok || !b.ok) {
 			assert.equal(a.ok, b.ok, `iteration ${i}: acceptance disagrees — legacy ${a.error}, modern ${b.error}`);
 			rejectedBoth++;
@@ -158,12 +179,50 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 			narrowedPuts++;
 			continue;
 		}
+		/*
+		The THIRD deliberate divergence (B81, new at H10.10): deleting a waypoint that is a link's
+		only bend leaves that link straight, and a pair carries only one straight link. Where the
+		strip would produce a colliding duplicate, plan() DELETES the link; the frozen oracle
+		strips it to `via: []` and leaves the collision in the document.
+
+		Named and bounded rather than smoothed over, and not by re-deriving the rule here -- that
+		would let the test agree with itself. The assertion is structural: wherever the two differ,
+		the modern op must be a `del` of a link the oracle merely `set`, and the document must
+		already hold a straight link on that pair, which is the only circumstance the rule fires
+		in. Anything else is a real divergence and still fails.
+		*/
+		const legacyById = new Map(narrowLegacy.filter((o) => o.kind === 'link').map((o) => [o.id, o]));
+		const straightPair = (l) => {
+			const key = l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`;
+			return model.all('link').some((x) => x.id !== l.id && (!x.via || !x.via.length)
+				&& (x.src < x.dst ? `${x.src}|${x.dst}` : `${x.dst}|${x.src}`) === key);
+		};
+		const collisionDels = b.ops.filter((o) => {
+			if (o.op !== 'del' || o.kind !== 'link') return false;
+			const was = legacyById.get(o.id);
+			if (!was || was.action !== 'set' || !was.patch || was.patch.via?.length !== 0) return false;
+			const live = model.get('link', o.id);
+			return !!live && straightPair(live);
+		});
+		if (collisionDels.length) {
+			const ids = new Set(collisionDels.map((o) => o.id));
+			collisionDroppedLinks += ids.size;
+			assert.deepEqual(
+				norm(b.ops.filter((o) => !(o.kind === 'link' && ids.has(o.id)))),
+				norm(narrowLegacy.filter((o) => !(o.kind === 'link' && ids.has(o.id)))),
+				`iteration ${i}: divergence beyond the B81 collision rule`,
+			);
+			compared++;
+			continue;
+		}
 		assert.deepEqual(norm(b.ops), norm(narrowLegacy), `iteration ${i}: op lists diverge for ${JSON.stringify(modern)}`);
 		compared++;
 	}
 	assert.ok(compared > 500, `expected a healthy sample, compared ${compared}`);
 	assert.ok(rejectedBoth > 0, 'the corpus should exercise rejection too');
 	assert.ok(narrowedPuts > 20, `the corpus must REACH the CS6 narrowing, hit it ${narrowedPuts} times`);
+	assert.ok(invariantRefusals > 0,
+		`the corpus must REACH the B81 invariant, hit it ${invariantRefusals} times — a divergence nothing exercises is not proven`);
 });
 
 // X8 claims the narrowing is suppressed when the put also steals group members. A no-op that

@@ -230,3 +230,91 @@ test('commit: every change carries by + actor', () => {
 	assert.equal(r.change.actor, 'agent-7');
 	assert.equal(r.change.seq, r.version, 'seq is the version after the change');
 });
+
+/*
+B81 -- one straight link per pair, enforced on what a transaction PRODUCES.
+
+H10.9 put the rule at the two authoring sites in the client. `set` is a first-class op, so a
+commit over either transport could clear a link's `via` and reach the forbidden state without
+passing either guard. A rule enforced at call sites is a convention; this makes it a property of
+the model, checked once in the planner.
+
+The cascade ruling is (b): where deleting a waypoint would leave a link colliding, the link is
+deleted with it. That matches the branch beside it, where a waypoint that is a link's ENDPOINT
+already deletes the link rather than stripping it to a degenerate form.
+*/
+function pairWithBoth() {
+	const { m, log } = seeded();                                    // node-aa0001 -- node-aa0002, straight
+	commit(m, log, { ops: [
+		put('waypoint', { id: 'waypoint-bb0001', x: 0, y: -80 }),
+		put('link', { id: 'link-bb0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-bb0001'] }),
+	] }, 'server', 't');
+	return { m, log };
+}
+
+test('B81: deleting the only bend of a routed link deletes the link when a straight one exists', () => {
+	const { m, log } = pairWithBoth();
+	assert.equal(m.all('link').length, 2, 'a straight link and a routed one');
+
+	const r = commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-bb0001' }] }, 'server', 't');
+	assert.equal(r.ok, true, 'the waypoint deletion is NOT refused — that was the rejected alternative');
+	assert.equal(m.get('waypoint', 'waypoint-bb0001'), undefined, 'the waypoint is gone');
+	assert.equal(m.get('link', 'link-bb0002'), undefined,
+		'and so is the link that would have been left as a straight duplicate');
+	assert.ok(m.get('link', 'link-aa0003'), 'the ORIGINAL straight link survives — it outranks the route');
+});
+
+test('B81: with no straight link on the pair, the same deletion merely strips the bend', () => {
+	const { m, log } = pairWithBoth();
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
+
+	commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-bb0001' }] }, 'server', 't');
+	const survivor = m.get('link', 'link-bb0002');
+	assert.ok(survivor, 'the link survives, because nothing collides with it');
+	assert.deepEqual(survivor.via, [], 'stripped to straight, which is the unchanged behaviour');
+});
+
+test('B81: the deletion is ONE undoable step, and undo restores both', () => {
+	const { m, log } = pairWithBoth();
+	// content only: undo advances the version by design, so comparing whole documents would
+	// compare the counter and not the restoration
+	const content = () => { const d = m.toJSON(); delete d.meta; return JSON.stringify(d); };
+	const before = content();
+	const r = commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-bb0001' }] }, 'server', 't');
+	assert.equal(m.all('link').length, 1, 'the link went with the waypoint');
+
+	const back = undo(m, log, null);
+	assert.equal(back.ok, true);
+	assert.equal(content(), before,
+		'ONE step back restores the waypoint AND the link deleted alongside it');
+	assert.ok(r.version > 0, 'and it was a single version bump forward');
+});
+
+test('B81: a bare `set` clearing via is refused — the path no call-site guard covers', () => {
+	const { m, log } = pairWithBoth();
+	const r = commit(m, log, { ops: [
+		{ op: 'set', kind: 'link', id: 'link-bb0002', patch: { via: [] } },
+	] }, 'server', 't');
+	assert.equal(r.ok, false, 'the invariant refuses it');
+	assert.match(r.error, /straight links between/, 'and names what is wrong');
+	assert.deepEqual(m.get('link', 'link-bb0002').via, ['waypoint-bb0001'], 'nothing was written');
+});
+
+test('B81: an already-broken document can still be repaired, not bricked', () => {
+	// reached by loading, not by committing -- the state predates the rule, exactly as the GR5
+	// corpus does. Refusing every write to it would make the repair itself impossible.
+	const { m, log } = seeded();
+	const doc = m.toJSON();
+	doc.links.push({ id: 'link-cc0001', src: 'node-aa0001', dst: 'node-aa0002', name: 'dupe' });
+	m.load(doc);
+	assert.equal(m.all('link').length, 2, 'two straight links on one pair, loaded not committed');
+
+	const move = commit(m, log, { ops: [
+		{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: -180 } },
+	] }, 'server', 't');
+	assert.equal(move.ok, true, 'an unrelated write is NOT refused for a pre-existing violation');
+
+	const fix = commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-cc0001' }] }, 'server', 't');
+	assert.equal(fix.ok, true, 'and the repair goes through');
+	assert.equal(m.all('link').length, 1);
+});

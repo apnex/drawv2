@@ -70,12 +70,29 @@ export function deleteSelection(model, ids) {
 	// missing waypoint (links being deleted carry their via away). On undo (reversed) the via is
 	// restored LAST — after the waypoint is put back (waypoint dels are last → restored first).
 	if (deletedWaypoints.size) {
+		/*
+		B81, mirroring server/txn.mjs: a strip that would leave a link STRAIGHT is a deletion
+		instead when the pair already carries a straight link, because only one may exist. This is
+		a local projection of the server's rule, like the rest of this cascade -- the server is
+		authoritative and its planner refuses the state outright, so a client that guessed wrong
+		would see its optimistic view corrected rather than a wrong document persisted.
+		*/
+		const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
+		const straightPairs = new Set();
+		model.all('link').forEach((l) => {
+			if (deletedLinks.has(l.id) || (Array.isArray(l.via) && l.via.length)) return;
+			straightPairs.add(pairKey(l));
+		});
 		model.all('link').forEach((link) => {
 			if (deletedLinks.has(link.id) || !Array.isArray(link.via)) return;
 			const remaining = link.via.filter((w) => !deletedWaypoints.has(w));
-			if (remaining.length !== link.via.length) {
-				entries.push({ op: 'set', kind: 'link', id: link.id, after: { via: remaining } });
+			if (remaining.length === link.via.length) return;
+			if (remaining.length === 0 && straightPairs.has(pairKey(link))) {
+				entries.push({ op: 'del', kind: 'link', id: link.id });
+				return;
 			}
+			if (remaining.length === 0) straightPairs.add(pairKey(link));
+			entries.push({ op: 'set', kind: 'link', id: link.id, after: { via: remaining } });
 		});
 	}
 
