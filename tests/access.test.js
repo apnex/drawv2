@@ -264,3 +264,66 @@ test('H9.2b: createApp turns authorization on and adopts, so the operator is not
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
 });
+
+/*
+H9.2c -- the principal reaches the handlers.
+
+`principalOf` is injected rather than signing a real assertion, because what is under test here is
+the plumbing, not the verifier: H9.2a already proved the verifier refuses everything it should.
+Injecting keeps this test about whether the identity actually arrives at REST and the websocket.
+*/
+test('H9.2c: REST GET /diagrams returns only what the caller holds', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-rest-authz-${Math.random().toString(36).slice(2)}`);
+	let who = OWNER;
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0,
+		authz: true, owner: OWNER, principalOf: async () => who,
+	});
+	try {
+		const url = `http://127.0.0.1:${app.port}/api/v1/diagrams`;
+
+		const mine = await (await fetch(url)).json();
+		assert.equal(mine.length, 1, 'the owner sees the adopted diagram');
+
+		who = GUEST;
+		const theirs = await (await fetch(url)).json();
+		assert.deepEqual(theirs, [], 'a different principal sees nothing at all');
+
+		who = null;
+		const nobody = await (await fetch(url)).json();
+		assert.deepEqual(nobody, [], 'and an unidentified caller sees nothing');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+test('H9.2c: /health reports the true total, deliberately unfiltered', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-health-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0,
+		authz: true, owner: OWNER, principalOf: async () => GUEST,
+	});
+	try {
+		const health = await (await fetch(`http://127.0.0.1:${app.port}/health`)).json();
+		assert.equal(health.diagrams, 1,
+			'health is an operational signal about the process, not a view of a principal\u2019s data');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+test('H9.2c: with authz off the principal is ignored, so nothing changes', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-off-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0, principalOf: async () => null,
+	});
+	try {
+		const list = await (await fetch(`http://127.0.0.1:${app.port}/api/v1/diagrams`)).json();
+		assert.equal(list.length, 1, 'an unidentified caller still sees everything when authz is off');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});

@@ -197,7 +197,7 @@ async function commitSelection(res, store, hub, locks, id, token, ids) {
 }
 
 // returns true if the request was handled (may complete asynchronously)
-export function handleRest(req, res, store, slides, locks, hub) {
+export function handleRest(req, res, store, slides, locks, hub, principal = null) {
 	const url = new URL(req.url, 'http://localhost');
 	const parts = url.pathname.split('/').filter(Boolean);
 
@@ -211,7 +211,7 @@ export function handleRest(req, res, store, slides, locks, hub) {
 		const flushFailures = store.flushFailures();
 		const invariantFailures = store.invariantFailures();
 		const status = invariantFailures ? 'corrupt' : flushFailures ? 'degraded' : 'ok';
-		return json(res, 200, { status, diagrams: store.list().length, flushFailures, invariantFailures }), true;
+		return json(res, 200, { status, diagrams: store.total(), flushFailures, invariantFailures }), true;
 	}
 	if (parts[0] !== 'api') return false;
 	if (parts[1] !== 'v1' || parts[2] !== 'diagrams') {
@@ -243,7 +243,7 @@ export function handleRest(req, res, store, slides, locks, hub) {
 
 	// ---- reads (GET) ----
 	if (parts.length === 3) {
-		return json(res, 200, store.list()), true;
+		return json(res, 200, store.list(principal)), true;
 	}
 	const model = store.get(parts[3]);
 	if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;

@@ -258,6 +258,18 @@ export class Store {
 	}
 
 	/*
+	How many documents this process holds, regardless of who is asking.
+
+	Separate from `list()` on purpose. "What may this principal see" and "how much is this process
+	holding" are different questions, and health asked the first one by accident -- with
+	authorization on it passed no principal, filtered everything out, and reported zero diagrams
+	forever while the store was full.
+	*/
+	total() {
+		return this.diagrams.size;
+	}
+
+	/*
 	The diagrams a principal may see, which with authorization off is all of them.
 
 	Filtering here rather than at each call site is deliberate: `list` is the surface that tells a

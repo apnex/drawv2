@@ -34,12 +34,12 @@ refused and the client is resynced read-only — it can never clobber the contro
 // whether the diagram is currently Server-Locked (read-only for it).
 import crypto from 'node:crypto';
 
-export function snapshotBody(model, store, locks) {
+export function snapshotBody(model, store, locks, principal = null) {
 	const id = model.state.meta.id;
 	const log = store.log(id);
 	return {
 		doc: model.toJSON(),
-		diagrams: store.list(),
+		diagrams: store.list(principal),
 		locked: locks ? locks.locked(id) : false,
 		// the version the document is AT, so a client can `resume` against it later without
 		// having to observe a change first (I11: the client never mints this, it only echoes it)
@@ -135,10 +135,12 @@ export function ackBody(change, store, id, txnId) {
 }
 
 export class Session {
-	constructor(ws, store, hub = null, locks = null) {
+	constructor(ws, store, hub = null, locks = null, principal = null) {
 		// a stable per-session identity: the `actor` on every Change it authors, and what lets
 		// undo tell 'my own last change' from 'someone else's'
 		this.actor = `s-${crypto.randomUUID().slice(0, 8)}`;
+		// who this socket is, resolved once at the upgrade; null when authorization is off
+		this.principal = principal;
 		this.ws = ws;
 		this.store = store;
 		this.hub = hub;
@@ -166,7 +168,7 @@ export class Session {
 
 	snapshot(model) {
 		this.diagramId = model.state.meta.id;
-		this.send('snapshot', snapshotBody(model, this.store, this.locks));
+		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal));
 	}
 
 	current() {
@@ -292,7 +294,7 @@ export class Session {
 				// the flush). Say so. A bare snapshot here would revert its work in silence.
 				const rewound = believed !== null && believed > log.version
 					? { from: believed, to: log.version } : null;
-				const payload = snapshotBody(model, this.store, this.locks);
+				const payload = snapshotBody(model, this.store, this.locks, this.principal);
 				return this.send('snapshot', rewound ? { ...payload, rewound } : payload);
 			}
 
@@ -332,7 +334,7 @@ export class Session {
 				return this.snapshot(this.store.first());
 			}
 			case 'list':
-				return this.send('diagrams', { list: this.store.list() });
+				return this.send('diagrams', { list: this.store.list(this.principal) });
 			default:
 				return this.error(`unknown cmd: ${cmd}`);
 		}

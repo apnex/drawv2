@@ -14,6 +14,7 @@ import { WebSocketServer } from 'ws';
 import { Store } from './store.js';
 import { Session } from './protocol.js';
 import { handleRest } from './rest.js';
+import { iapIdentity } from './identity.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
 import { svgDocument } from './svg.mjs';
@@ -106,7 +107,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '' } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', audience = '', principalOf = null } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -122,6 +123,15 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	// that constructs an app gets the single programmatic seed, not whatever ships in examples/.
 	// `files` null means the Store picks its filesystem default; server.js supplies gcsFiles when
 	// BUCKET is set (B6). The app itself stays ignorant of which backend it got.
+	/*
+	The one place a request becomes a principal -- ACCESS.md.
+
+	`principalOf` is injectable so a test can supply an identity without minting a signed assertion,
+	and it resolves to nobody when no audience is configured. Nobody is the correct answer there:
+	with authorization off the store ignores the principal entirely, and with it on a request that
+	proves nothing should carry nothing.
+	*/
+	const identify = principalOf || (audience ? iapIdentity({ audience }) : async () => null);
 	const store = new Store(data, { examplesDir, files, authz });
 	await store.init();
 	/*
@@ -159,7 +169,10 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (url.pathname === '/oauth2callback' && req.method === 'GET') {
 			return handleOAuthCallback(req, res, url, slides);
 		}
-		if (handleRest(req, res, store, slides, locks, hub)) return;
+		// resolved here rather than inside the router, so every REST handler receives a principal
+		// and none of them reads a header (ACCESS.md -- one boundary)
+		const principal = await identify(req.headers).catch(() => null);
+		if (handleRest(req, res, store, slides, locks, hub, principal)) return;
 		if (req.method !== 'GET') {
 			res.writeHead(405);
 			return res.end();
@@ -203,14 +216,17 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	});
 
 	const wss = new WebSocketServer({ server, path: '/ws' });
-	wss.on('connection', (ws) => {
+	wss.on('connection', (ws, request) => {
 		// B54 - liveness. `close` evicts a session for every disconnect that produces a TCP FIN, but
 		// a peer that vanishes without one (lid closed, partition, NAT idle-timeout) never sends it,
 		// and the socket sits in the Hub at readyState OPEN forever while the client reconnects
 		// beside it. A pong resets the flag; missing one whole round is what "gone" means here.
 		ws.isAlive = true;
 		ws.on('pong', () => { ws.isAlive = true; });
-		new Session(ws, store, hub, locks);
+		// the upgrade request carries the same IAP headers as any other; resolving once per socket
+		// rather than per message is right because the identity cannot change mid-connection
+		identify(request?.headers || {}).catch(() => null)
+			.then((principal) => new Session(ws, store, hub, locks, principal));
 	});
 
 	// ONE sweep for every client, not a timer per socket. `terminate()` is deliberate: it produces
