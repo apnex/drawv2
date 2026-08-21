@@ -198,3 +198,44 @@ test('H9.8: multiple domains, and a comma-separated string, both work', async ()
 	const str = domainGate(fixed('user:a@gmail.com'), ' apnex.com.au , gmail.com ');
 	assert.equal(await str({}), 'user:a@gmail.com', 'whitespace and a bare string are tolerated');
 });
+
+/*
+B68 -- a refusal that names itself.
+
+Nine paths returned a bare null, so a misconfigured audience and an absent header were the same
+observable event. These assert the reason rather than only the null, because the null was never
+the part that was broken.
+*/
+test('B68: each refusal reports a distinct reason, and the success case reports too', async () => {
+	const seen = [];
+	const aud = '/projects/1/global/backendServices/2';
+	const id = iapIdentity({ audience: aud, keys: async () => null, onRefuse: (r, d) => seen.push([r, d]) });
+
+	assert.equal(await id({}), null);
+	assert.equal(await id({ 'x-goog-iap-jwt-assertion': 'a.b' }), null);
+	assert.equal(await id({ 'x-goog-iap-jwt-assertion': 'not.valid.b64' }), null);
+	assert.deepEqual(seen.map((s) => s[0]), ['no-assertion-header', 'malformed-jws', 'unparseable-jws'],
+		'three different causes, three different names');
+});
+
+test('B68: a wrong audience says so, and says both sides', async () => {
+	const seen = [];
+	const head = Buffer.from(JSON.stringify({ alg: 'ES256', kid: 'k' })).toString('base64url');
+	const claims = Buffer.from(JSON.stringify({
+		iss: 'https://cloud.google.com/iap', aud: '/projects/1/global/backendServices/WRONG',
+		email: 'a@b.co', exp: Math.floor(Date.now() / 1000) + 600,
+	})).toString('base64url');
+	// verification is stubbed to succeed so the audience check is what the test reaches
+	const id = iapIdentity({
+		audience: '/projects/1/global/backendServices/RIGHT',
+		keys: async () => ({ kty: 'EC' }), onRefuse: (r, d) => seen.push([r, d]),
+	});
+	const realVerify = crypto.verify;
+	crypto.createPublicKey = () => ({});
+	crypto.verify = () => true;
+	try {
+		assert.equal(await id({ 'x-goog-iap-jwt-assertion': `${head}.${claims}.sig` }), null);
+	} finally { crypto.verify = realVerify; }
+	assert.equal(seen[0][0], 'wrong-audience', 'the single most likely misconfiguration is named');
+	assert.match(seen[0][1], /got .*WRONG want .*RIGHT/, 'and both sides are reported, or it is unactionable');
+});

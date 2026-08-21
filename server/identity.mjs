@@ -50,34 +50,57 @@ export function jwkSource({ fetch: f = globalThis.fetch, now = Date.now, refetch
 }
 
 /*
+One line per distinct reason, not per request. A misconfigured audience refuses every request, so
+logging each one buries the fact in its own repetition; logging the first announces it. Goes to
+`console.warn` deliberately -- on Cloud Run nothing written to stdout reaches Cloud Logging at all
+(B69), so a diagnostic printed with `console.log` would be written and then lost.
+*/
+function warnOnceRefusal() {
+	const seen = new Set();
+	return (reason, detail) => {
+		if (seen.has(reason)) return;
+		seen.add(reason);
+		console.warn(`[ identity ] refusing assertions: ${reason}${detail ? ` -- ${detail}` : ''}`);
+	};
+}
+
+/*
 Verify the assertion and return the principal it proves, or null.
 
 Returns null rather than throwing for anything that merely fails to authenticate, because "no
 principal" is the ordinary case for an unauthenticated request and a throw would make the caller
 treat absence as an outage.
 */
-export function iapIdentity({ audience, keys = jwkSource(), now = Date.now, onMismatch = null } = {}) {
+export function iapIdentity({ audience, keys = jwkSource(), now = Date.now, onMismatch = null,
+	onRefuse = warnOnceRefusal() } = {}) {
 	if (!audience) throw new Error('an audience is required to verify an IAP assertion');
 
 	return async function principalOf(headers = {}) {
+		// B68: every refusal names itself. Nine paths used to return a bare null, which made a
+		// misconfigured audience and an absent header the same observable event -- a uniform
+		// denial with nothing to read. The reason never carries the token or the signature; the
+		// values it does carry (audience, issuer, kid) are already public configuration.
+		const no = (reason, detail) => { onRefuse(reason, detail); return null; };
+
 		const token = headers['x-goog-iap-jwt-assertion'];
-		if (!token || typeof token !== 'string') return null;
+		if (!token || typeof token !== 'string') return no('no-assertion-header');
 
 		const parts = token.split('.');
-		if (parts.length !== 3) return null;
+		if (parts.length !== 3) return no('malformed-jws', `${parts.length} segments`);
 
 		let head, claims;
 		try {
 			head = b64urlJson(parts[0]);
 			claims = b64urlJson(parts[1]);
-		} catch { return null; }
+		} catch { return no('unparseable-jws'); }
 
 		// pinned, not read: accepting the token's own choice of algorithm is how `alg: none` and
 		// the RS256-key-as-HMAC-secret confusions work
-		if (head.alg !== ALG || !head.kid) return null;
+		if (head.alg !== ALG) return no('unexpected-alg', `${head.alg}, expected ${ALG}`);
+		if (!head.kid) return no('no-kid');
 
 		const jwk = await keys(head.kid);
-		if (!jwk) return null;
+		if (!jwk) return no('unknown-kid', head.kid);
 
 		let ok = false;
 		try {
@@ -86,18 +109,19 @@ export function iapIdentity({ audience, keys = jwkSource(), now = Date.now, onMi
 			// ieee-p1363 every signature fails verification and the cause is invisible.
 			ok = crypto.verify('sha256', Buffer.from(`${parts[0]}.${parts[1]}`),
 				{ key, dsaEncoding: 'ieee-p1363' }, Buffer.from(parts[2], 'base64url'));
-		} catch { return null; }
-		if (!ok) return null;
+		} catch (err) { return no('verify-threw', err.message); }
+		if (!ok) return no('bad-signature');
 
-		if (claims.iss !== ISSUER) return null;
-		if (claims.aud !== audience) return null;
+		if (claims.iss !== ISSUER) return no('wrong-issuer', `${claims.iss}`);
+		// the single most likely misconfiguration, so it reports both sides
+		if (claims.aud !== audience) return no('wrong-audience', `got ${claims.aud} want ${audience}`);
 
 		const t = Math.floor(now() / 1000);
-		if (!Number.isFinite(claims.exp) || claims.exp + SKEW_S < t) return null;
-		if (Number.isFinite(claims.iat) && claims.iat - SKEW_S > t) return null;
+		if (!Number.isFinite(claims.exp) || claims.exp + SKEW_S < t) return no('expired');
+		if (Number.isFinite(claims.iat) && claims.iat - SKEW_S > t) return no('issued-in-future');
 
 		const email = typeof claims.email === 'string' ? claims.email : '';
-		if (!email) return null;
+		if (!email) return no('no-email-claim');
 
 		/*
 		The convenience header as Google intends it: a cross-check, never an input.
@@ -112,7 +136,12 @@ export function iapIdentity({ audience, keys = jwkSource(), now = Date.now, onMi
 			if (claimed && claimed !== email) onMismatch({ signed: email, header: claimed });
 		}
 
-		return `user:${email}`;
+		const principal = `user:${email}`;
+		// and the success case names itself once too: a token that verifies but resolves to a
+		// principal other than the expected owner produces no refusal at all, so without this the
+		// only symptom is a uniform denial with a valid token behind it
+		onRefuse('resolved', principal);
+		return principal;
 	};
 }
 
