@@ -152,10 +152,12 @@ const GESTURES = {
 				const newSrc = ctx.end === 'src' ? target.id : link.src;
 				const newDst = ctx.end === 'dst' ? target.id : link.dst;
 				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
-				// commit a genuine retarget; a duplicate is allowed only when THIS link is routed,
-				// so the two do not land on top of each other (B72)
+				// commit a genuine retarget. A routed link may join a pair that already has links;
+				// a straight one may only join a pair that has no straight link yet (B72, B80).
 				const routed = !!(link.via && link.via.length);
-				if (target.id !== wasAt && (routed || !i.model.linkBetween(newSrc, newDst))) {
+				const straightExists = i.model.linksBetween(newSrc, newDst)
+					.some((l) => l.id !== ctx.linkId && (!l.via || !l.via.length));
+				if (target.id !== wasAt && (routed || !straightExists)) {
 					i.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
 				}
 			}
@@ -219,8 +221,12 @@ const GESTURES = {
 			(`design/walk/FINDINGS.md`, rung `3-parallel3`); that is H10.7 and needs spacing this
 			does not attempt. This is the editor rule only.
 			*/
-			const duplicate = i.model.linkBetween(ctx.src.id, dst);
-			if (dst && srcAlive && dst !== ctx.src.id && (!duplicate || via.length)) {
+			// B80: the refusal is about STRAIGHT links colliding, so it must ask whether a straight
+			// one already exists -- not whether anything does. Keying it on `linkBetween` meant a
+			// direct link became impossible the moment a routed one was drawn, which made the
+			// order a person happened to draw in decide what they could have.
+			const straightExists = i.model.linksBetween(ctx.src.id, dst).some((l) => !l.via || !l.via.length);
+			if (dst && srcAlive && dst !== ctx.src.id && (via.length || !straightExists)) {
 				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
 				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links
 				return;

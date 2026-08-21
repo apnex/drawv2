@@ -85,10 +85,20 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			const out = []; s.forEach((lid) => { const l = model.get('link', lid); if (l) out.push(l); });
 			return out;
 		},
-		linkBetween(a, b) {                                       // the (≤1) endpoint-pair link between a and b
+		// AN endpoint-pair link between a and b, not THE one. The `(<=1)` this comment used to
+		// claim stopped being true at B72, when a pair became able to carry a straight link and
+		// routed ones beside it (B80). `incident` was never keyed on the pair, so nothing was
+		// stored wrongly -- only described wrongly.
+		linkBetween(a, b) {
 			const s = incident.get(a); if (!s) return undefined;
 			for (const lid of s) { const l = model.get('link', lid); if (l && ((l.src === a && l.dst === b) || (l.src === b && l.dst === a))) return l; }
 			return undefined;
+		},
+		linksBetween(a, b) {                                      // every link joining a and b
+			const s = incident.get(a); if (!s) return [];
+			const out = [];
+			for (const lid of s) { const l = model.get('link', lid); if (l && ((l.src === a && l.dst === b) || (l.src === b && l.dst === a))) out.push(l); }
+			return out;
 		},
 		groupOf(id) {                                             // the group whose members include id, else undefined
 			const gid = member.get(id);

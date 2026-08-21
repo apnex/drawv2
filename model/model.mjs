@@ -172,9 +172,19 @@ export class Model {
 		return path;
 	}
 
+	// whether a and b are connected at all. Since B72 a pair may carry several links, so this
+	// returns AN endpoint-pair link and not THE one -- use linksBetween to reason about which.
 	linkBetween(a, b) {
 		if (this.index) return this.index.linkBetween(a, b);
 		return this.all('link').find((l) =>
+			(l.src === a && l.dst === b) || (l.src === b && l.dst === a));
+	}
+
+	// every link joining a and b (B80). One pair may hold a straight link and routed ones beside
+	// it, and a caller deciding whether to author another has to see them all to tell.
+	linksBetween(a, b) {
+		if (this.index) return this.index.linksBetween(a, b);
+		return this.all('link').filter((l) =>
 			(l.src === a && l.dst === b) || (l.src === b && l.dst === a));
 	}
 

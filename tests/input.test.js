@@ -1203,3 +1203,57 @@ test('B72: a second link between the same pair is allowed when it carries a bend
 		assert.ok(h.model.all('link').some((l) => l.via && l.via.length === 1), 'the second carries its bend');
 	} finally { h.restore(); }
 });
+
+/*
+B80 -- a straight link is permitted IN ADDITION to routed paths, whichever order they are drawn.
+
+H10.4 keyed the refusal on `linkBetween` -- does ANY link exist -- when the rule is about straight
+links colliding with each other. So a direct link became impossible the moment a routed one was
+drawn, and the order a person happened to draw in decided what they could end up with. The B72
+test missed it because it only ever drew straight-then-routed; this drives the other order, which
+is the one the director hit.
+*/
+test('B80: routed first then straight — the direct link is still permitted', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const at = (id, x, y) => pointer(x, y, {
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s2) => (s2.includes('node') ? { id } : null) },
+		});
+		const routed = () => {
+			h.input.onDown(at(a.id, 0, 0)); h.input.onMove(at(a.id, 180, 60));
+			h.input.onKeyDown(key('w'));
+			h.input.onMove(at(b.id, 360, 0)); h.input.onUp(at(b.id, 360, 0));
+		};
+		const plain = () => { h.input.onDown(at(a.id, 0, 0)); h.input.onMove(at(b.id, 360, 0)); h.input.onUp(at(b.id, 360, 0)); };
+
+		routed();
+		assert.equal(h.model.all('link').length, 1, 'the routed path commits');
+
+		plain();
+		assert.equal(h.model.all('link').length, 2,
+			'and a direct link is STILL available — a routed path must not consume the straight slot');
+		assert.equal(h.model.all('link').filter((l) => !l.via || !l.via.length).length, 1,
+			'exactly one straight link');
+
+		plain();
+		assert.equal(h.model.all('link').length, 2,
+			'but only one: a second straight link would render on top of the first');
+	} finally { h.restore(); }
+});
+
+test('B80: linksBetween reports every link joining a pair, where linkBetween reports one', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const w = h.model.makeWaypoint({ x: 180, y: -40 }); h.model.put('waypoint', w);
+		const straight = h.model.makeLink(a.id, b.id); h.model.put('link', straight);
+		const bent = h.model.makeLink(a.id, b.id); bent.via = [w.id]; h.model.put('link', bent);
+
+		assert.equal(h.model.linksBetween(a.id, b.id).length, 2, 'both are reported');
+		assert.equal(h.model.linksBetween(b.id, a.id).length, 2, 'and the pair is unordered');
+		assert.ok(h.model.linkBetween(a.id, b.id), 'the singular still answers "are they connected"');
+		assert.equal(h.model.linksBetween(a.id, b.id).filter((l) => !l.via || !l.via.length).length, 1,
+			'which is the question the link gate actually needs to ask');
+	} finally { h.restore(); }
+});
