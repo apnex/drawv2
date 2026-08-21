@@ -327,3 +327,96 @@ test('H9.2c: with authz off the principal is ignored, so nothing changes', async
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
 });
+
+/*
+H9.3 -- every mutating path refuses a principal without write.
+
+Listing was filtered in H9.2b, which hides a diagram but does not protect it: a principal who knows
+an id could still open and change one it holds nothing on. These assert the gate itself, on each of
+the seven methods that can alter a diagram, because a gate on six of seven is not a gate.
+*/
+// the same two shapes persist.test.js uses; local rather than shared, since a test helper
+// imported across files is a dependency between tests that nothing declares
+const node = (id, x = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0 });
+const put = (kind, entity) => ({ op: 'put', kind, entity });
+const put1 = () => ({ label: 'x', ops: [put('node', node('node-ee0001', 60))] });
+
+async function guarded() {
+	const dir = tmp();
+	const s = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await s.init();
+	const id = [...s.diagrams.keys()][0];
+	s.setOwner(id, OWNER);
+	return { s, dir, id };
+}
+
+test('H9.3: a stranger cannot mutate by any route', async () => {
+	const { s, dir, id } = await guarded();
+	try {
+		const before = s.log(id).version;
+		assert.match(s.commit(id, put1(), 'client', 'a', GUEST).error, /forbidden/);
+		assert.match(s.undo(id, null, GUEST).error, /forbidden/);
+		assert.match(s.redo(id, GUEST).error, /forbidden/);
+		assert.match(s.patchMeta(id, { name: 'stolen' }, GUEST), /forbidden/);
+		assert.match(s.setSelection(id, [], GUEST), /forbidden/);
+		assert.match(s.bindSlides(id, 'p', 'g', GUEST), /forbidden/);
+		assert.match(await s.remove(id, GUEST), /forbidden/);
+
+		assert.equal(s.log(id).version, before, 'and nothing moved');
+		assert.equal(s.get(id).state.meta.name, 'example', 'the name is untouched');
+		assert.ok(s.get(id), 'the diagram still exists');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.3: a read grant reads but does not write', async () => {
+	const { s, dir, id } = await guarded();
+	try {
+		s.grant(id, GUEST, 'read', OWNER);
+		assert.equal(s.list(GUEST).length, 1, 'read means it is visible');
+		assert.match(s.commit(id, put1(), 'client', 'a', GUEST).error, /forbidden/,
+			'but read is not write, which is the whole point of two levels');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.3: a write grant writes, and the owner always can', async () => {
+	const { s, dir, id } = await guarded();
+	try {
+		s.grant(id, GUEST, 'write', OWNER);
+		assert.ok(s.commit(id, put1(), 'client', 'a', GUEST).ok, 'a write grantee may write');
+		assert.ok(s.commit(id, { label: 'y', ops: [put('node', node('node-ee0002', 100))] },
+			'client', 'b', OWNER).ok, 'and so may the owner');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+The refusal is 403-shaped, not 423-shaped.
+
+A lock says someone else is driving and is worth retrying; this says you may not, ever, until a
+grant changes. An agent that confuses them either spins forever or gives up permanently.
+*/
+test('H9.3: a refusal is marked forbidden, distinct from a lock', async () => {
+	const { s, dir, id } = await guarded();
+	try {
+		const res = s.commit(id, put1(), 'client', 'a', GUEST);
+		assert.equal(res.forbidden, true, 'callers can map this to 403 rather than 423');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.3: a caller that forgets the principal is refused, not allowed', async () => {
+	const { s, dir, id } = await guarded();
+	try {
+		assert.match(s.commit(id, put1()).error, /forbidden/,
+			'fail-closed: an un-updated call site becomes a visible failure, never a silent hole');
+		assert.match(await s.remove(id), /forbidden/);
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.3: with authz off none of this applies, and the tool stays single-tenant', async () => {
+	const dir = tmp();
+	try {
+		const s = new Store(dir, { flushMs: 3_600_000 });
+		await s.init();
+		const id = [...s.diagrams.keys()][0];
+		assert.ok(s.commit(id, put1(), 'client', 'a').ok, 'no principal, no identity, no gate');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

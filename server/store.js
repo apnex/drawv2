@@ -287,9 +287,11 @@ export class Store {
 		}));
 	}
 
-	async remove(id) {
+	async remove(id, principal) {
 		const entry = this.diagrams.get(id);
 		if (!entry) return 'unknown diagram';
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return denied;
 		if (entry.timer) {
 			clearTimeout(entry.timer);
 			entry.timer = null;
@@ -308,34 +310,61 @@ export class Store {
 	}
 
 	// ---- mutations (validated) ----
+	/*
+	The one write gate -- H9.3. Returns an error string when a principal may not, else null.
+
+	Every mutating method calls this, rather than each caller remembering to. The principal is a
+	trailing parameter, so a caller that has not been updated passes `undefined` and is REFUSED
+	once authorization is on. That direction is deliberate: a missed call site becomes a visible
+	failure instead of a silent hole, which is the only safe way to add a gate to seven methods.
+
+	With authorization off it always allows, because there is no identity to judge and the store is
+	the single-tenant tool it has always been.
+	*/
+	#mayWrite(id, principal) {
+		if (!this.authz) return null;
+		const level = this.access(id, principal);
+		if (level === 'owner' || level === 'write') return null;
+		// 403, not 423: a lock is someone else driving and is worth retrying, this is not
+		return 'forbidden: no write access to this diagram';
+	}
+
 	// THE ONE WRITE. Every writer reaches the model through here.
-	commit(id, request, by = 'client', actor = null) {
+	commit(id, request, by = 'client', actor = null, principal) {
 		const entry = this.diagrams.get(id);
 		if (!entry) return { ok: false, error: 'unknown diagram' };
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return { ok: false, error: denied, forbidden: true };
 		const res = txnCommit(entry.model, entry.log, request, by, actor);
 		if (res.ok && res.change) this.markDirty(id);
 		return res;
 	}
 
-	undo(id, to = null) {
+	undo(id, to = null, principal) {
 		const entry = this.diagrams.get(id);
 		if (!entry) return { ok: false, error: 'unknown diagram' };
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return { ok: false, error: denied, forbidden: true };
 		const res = txnUndo(entry.model, entry.log, to);
 		if (res.ok) this.markDirty(id);
 		return res;
 	}
 
-	redo(id) {
+	redo(id, principal) {
 		const entry = this.diagrams.get(id);
 		if (!entry) return { ok: false, error: 'unknown diagram' };
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return { ok: false, error: denied, forbidden: true };
 		const res = txnRedo(entry.model, entry.log);
 		if (res.ok) this.markDirty(id);
 		return res;
 	}
 
-	patchMeta(id, patch) {
+	patchMeta(id, patch, principal) {
 		const model = this.get(id);
 		if (!model) return 'unknown diagram';
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return denied;
 		const err = validateMetaPatch(patch);
 		if (err) return err;
 		if (patch.name) model.state.meta.name = patch.name.trim();
@@ -346,9 +375,11 @@ export class Store {
 
 	// model-state (status): set the authoritative selection (shape-validated; the Model expands-to-group,
 	// reconciles-to-live, and admits only selectable kinds). The debounced flush persists it. (R2)
-	setSelection(id, ids) {
+	setSelection(id, ids, principal) {
 		const model = this.get(id);
 		if (!model) return 'unknown diagram';
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return denied;
 		const err = validateSelectionIds(ids);
 		if (err) return err;
 		model.setSelection(ids);
@@ -369,9 +400,11 @@ export class Store {
 	an unknown cmd. A binding that never persists re-targets `pages[0]` on the next push after a
 	restart, which is a wrong-slide overwrite, not a missing feature.
 	*/
-	bindSlides(id, presentationId, pageId) {
+	bindSlides(id, presentationId, pageId, principal) {
 		const model = this.get(id);
 		if (!model) return 'unknown diagram';
+		const denied = this.#mayWrite(id, principal);
+		if (denied) return denied;
 		const str = (v) => (typeof v === 'string' ? v.slice(0, 512) : '');
 		Object.assign(model.state.meta.slides, { presentationId: str(presentationId), pageId: str(pageId) });
 		this.markDirty(id);

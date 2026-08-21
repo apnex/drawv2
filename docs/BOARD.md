@@ -385,7 +385,9 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.2b | `list()` filters by grant behind an `authz` switch; `OWNER` adopts what predates ownership; boot refuses `BUCKET` without `IAP_AUDIENCE` | — | S3 · M | `DONE` |
 | H9.2c | Plumb the principal from the request into REST and websocket handlers — the boundary exists but no handler calls it yet | — | S3 · M | `DONE` |
 | H9.11 | `scan-dead` treats a self-mention as a consumer, so a comment can exempt an export | **B62** | S2 · S | `TODO` |
-| H9.3 | Enforce `read` server-side on every mutating path; drive Server-Locked from the grant | — | S2 · M | `TODO` |
+| H9.3a | Enforce write at the store: all seven mutating methods gated, fail-closed on a missing principal | — | S2 · M | `DONE` |
+| H9.3b | Pass the principal from REST and websocket handlers into the seven gated methods, and map `forbidden` to `403` | — | S2 · M | `TODO` |
+| H9.3c | Drive the client's Server-Locked mode from a `read` grant, so the UI reflects what the server already enforces | — | S2 · S | `TODO` |
 | H9.4 | Locks become principal-scoped and ACL-gated; revocation invalidates an in-flight lock — reverses `locks.js:8`, needs a dated amendment | — | S2 · M | `TODO` |
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, revoke | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
