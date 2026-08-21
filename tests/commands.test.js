@@ -145,3 +145,54 @@ test('ungroupAll removes every named group in one command', () => {
 	apply(m, ungroupAll(m, ['group-ia0001', 'group-ia0002']));
 	assert.equal(m.all('group').length, 0);
 });
+
+/*
+B87 -- every entry a builder emits must survive the conversion Changes performs on it.
+
+`commands.js:6` documents a `del` entry as `{ op, kind, entity }` and `changes.js:24` reads
+`entry.entity.id`, so an entry carrying `id` instead throws before any op reaches the wire. The
+B81 cascade emitted exactly that and shipped, because the tests above assert over `entries`
+directly and the one that converts them never reached this branch.
+
+Driven through `apply`, which is the REAL `Changes`. Reimplementing `toOp` here was my first
+attempt and would have been worthless: a copy of the converter can agree with a broken builder.
+*/
+test('B87: the B81 cascade entry survives the real Changes — it threw, and shipped', () => {
+	const m = seeded();                                            // node-aa0001 -- node-aa0002 straight
+	m.put('waypoint', { id: 'waypoint-aa0005', x: 30, y: -40 });
+	m.put('link', { id: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0005'] });
+
+	const cmd = deleteSelection(m, new Set(['waypoint-aa0005']));
+	const del = cmd.entries.find((e) => e.op === 'del' && e.kind === 'link');
+	assert.ok(del, 'the colliding link is deleted with the waypoint (B81)');
+	assert.ok(del.entity, 'and the entity rides along, as commands.js:6 requires');
+
+	const sent = apply(m, cmd);
+	assert.ok(sent, 'the command converted and committed rather than throwing');
+	assert.ok(sent.ops.some((o) => o.op === 'del' && o.kind === 'link' && o.id === 'link-aa0006'),
+		'and the op names the link');
+});
+
+test('B87: every del entry a builder emits carries an entity, across every branch here', () => {
+	const cases = () => {
+		const m = seeded();
+		m.put('waypoint', { id: 'waypoint-aa0005', x: 30, y: -40 });
+		m.put('link', { id: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0005'] });
+		m.put('group', { id: 'group-aa0007', name: 'g', members: ['node-aa0002', 'node-aa0003'] });
+		return m;
+	};
+	for (const [what, build] of [
+		['waypoint whose strip would collide', (m) => deleteSelection(m, new Set(['waypoint-aa0005']))],
+		['node carrying links away', (m) => deleteSelection(m, new Set(['node-aa0001']))],
+		['group emptied below two', (m) => deleteSelection(m, new Set(['node-aa0002']))],
+		['ungroup', (m) => ungroupAll(m, ['node-aa0002'])],
+	]) {
+		const m = cases();
+		const cmd = build(m);
+		for (const e of (cmd?.entries || [])) {
+			if (e.op !== 'del') continue;
+			assert.ok(e.entity && e.entity.id, `${what}: a ${e.kind} del with no entity`);
+		}
+		assert.doesNotThrow(() => apply(m, cmd), `${what}: the whole command converts`);
+	}
+});

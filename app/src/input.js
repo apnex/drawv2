@@ -40,6 +40,7 @@ import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, 
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
+import { isStraight } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 
@@ -154,9 +155,9 @@ const GESTURES = {
 				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
 				// commit a genuine retarget. A routed link may join a pair that already has links;
 				// a straight one may only join a pair that has no straight link yet (B72, B80).
-				const routed = !!(link.via && link.via.length);
+				const routed = !isStraight(link);
 				const straightExists = i.model.linksBetween(newSrc, newDst)
-					.some((l) => l.id !== ctx.linkId && (!l.via || !l.via.length));
+					.some((l) => l.id !== ctx.linkId && isStraight(l));
 				if (target.id !== wasAt && (routed || !straightExists)) {
 					i.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
 				}
@@ -225,7 +226,7 @@ const GESTURES = {
 			// one already exists -- not whether anything does. Keying it on `linkBetween` meant a
 			// direct link became impossible the moment a routed one was drawn, which made the
 			// order a person happened to draw in decide what they could have.
-			const straightExists = i.model.linksBetween(ctx.src.id, dst).some((l) => !l.via || !l.via.length);
+			const straightExists = i.model.linksBetween(ctx.src.id, dst).some(isStraight);
 			if (dst && srcAlive && dst !== ctx.src.id && (via.length || !straightExists)) {
 				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
 				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links

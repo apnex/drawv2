@@ -449,7 +449,9 @@ Every item here was found by using the application rather than by running the ga
 | H10.11 | Resolve straight-link capacity from a node-kind config property, settable at runtime by operator or API — the seam exists, the configuration does not | **B81** | S4 · L | `TODO` |
 | H10.12 | "No entity is in two groups" becomes an invariant — it was enforced on `put` only, so a `set` produced a document the client and server read differently | **B82** | S1 · M | `DONE` |
 | H10.13 | Document invariants get the surface the log invariant already has: checked at load and creation, counted, reported through `/health` — never a refusal | **B83** | S2 · S | `DONE` |
-| H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does, and test that the two cascades agree | **B84** | S2 · S | `TODO` |
+| H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 · S | `DONE` |
+| H10.18 | A `del` entry with no entity threw in the browser and shipped — every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
+| H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one — the asymmetry that turned a correct rejection into a broken fix | **B87** | S2 · S | `TODO` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 · L | `TODO` |
 | H10.17 | Share the constants restated across files — `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 · M | `TODO` |

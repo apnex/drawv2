@@ -19,6 +19,7 @@ inverse-building, not the closure.
 import { groupAfterRemoval } from '../../engine/index.mjs';
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/index.mjs';
+import { isStraight, pairKey } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 
 // entities are cloned at every command boundary: the live store object must never
@@ -77,10 +78,9 @@ export function deleteSelection(model, ids) {
 		authoritative and its planner refuses the state outright, so a client that guessed wrong
 		would see its optimistic view corrected rather than a wrong document persisted.
 		*/
-		const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
 		const straightPairs = new Set();
 		model.all('link').forEach((l) => {
-			if (deletedLinks.has(l.id) || (Array.isArray(l.via) && l.via.length)) return;
+			if (deletedLinks.has(l.id) || !isStraight(l)) return;
 			straightPairs.add(pairKey(l));
 		});
 		model.all('link').forEach((link) => {
@@ -88,7 +88,7 @@ export function deleteSelection(model, ids) {
 			const remaining = link.via.filter((w) => !deletedWaypoints.has(w));
 			if (remaining.length === link.via.length) return;
 			if (remaining.length === 0 && straightPairs.has(pairKey(link))) {
-				entries.push({ op: 'del', kind: 'link', id: link.id });
+				entries.push({ op: 'del', kind: 'link', entity: clone('link', link) });
 				return;
 			}
 			if (remaining.length === 0) straightPairs.add(pairKey(link));
@@ -253,7 +253,7 @@ export function linkNodes(model, nodeIds, star) {
 // link never references a bend that does not exist yet.
 export function routeLink(placed, link) {
 	return {
-		label: link.via && link.via.length ? 'route' : 'link',
+		label: isStraight(link) ? 'link' : 'route',
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
 			{ op: 'put', kind: 'link', entity: clone('link', link) }

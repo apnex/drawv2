@@ -31,7 +31,7 @@ import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE, OPTIONAL } from '../model/shape.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
-import { violations } from '../model/invariants.mjs';
+import { violations, isStraight, pairKey } from '../model/invariants.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
 const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
@@ -242,7 +242,6 @@ function planDel(model, { kind, id }) {
 		An EXISTING straight link outranks one that would be created by this strip, so the route
 		yields to the direct link rather than the reverse.
 		*/
-		const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
 		const dying = new Set();
 		const stripped = [];
 		for (const link of model.linksAt(id)) {
@@ -251,7 +250,7 @@ function planDel(model, { kind, id }) {
 		}
 		const straightPairs = new Set();
 		for (const l of model.all('link')) {
-			if (dying.has(l.id) || (l.via && l.via.length)) continue;
+			if (dying.has(l.id) || !isStraight(l)) continue;
 			straightPairs.add(pairKey(l));
 		}
 

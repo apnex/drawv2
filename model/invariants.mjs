@@ -41,7 +41,19 @@ function straightCapacity(_model, _a, _b) {
 	return 1;
 }
 
-const isStraight = (l) => !l.via || l.via.length === 0;
+/*
+The vocabulary the rules are written in, exported for the same reason the rules live here (B84).
+
+`straightCapacity` was made sovereign and these were left private, so every caller re-derived
+them: `pairKey` was hand-written three times and "is this link straight" had six spellings, three
+of them negated. Re-deriving a predicate slightly differently is precisely the failure B81 was
+filed for, so the module that owns the rule owns the words it is written in.
+
+`pairKey` orders the endpoints because a link from a to b joins the same pair as one from b to a;
+callers that key a Map on a pair need that and would otherwise each remember to sort.
+*/
+export const isStraight = (l) => !l.via || l.via.length === 0;
+export const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
 
 /*
 Every violated invariant in the document, as sentences. Plural because reporting the first and
@@ -102,7 +114,7 @@ export function violations(model, { groupAfterRemoval = null } = {}) {
 	for (const link of model.all('link')) {
 		if (!isStraight(link)) continue;
 		// unordered: a link from a to b and one from b to a join the same pair
-		const key = link.src < link.dst ? `${link.src}|${link.dst}` : `${link.dst}|${link.src}`;
+		const key = pairKey(link);
 		const seen = straightByPair.get(key) || [];
 		seen.push(link);
 		straightByPair.set(key, seen);
