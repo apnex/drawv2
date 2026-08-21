@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
 import { validateDoc, validateMetaPatch } from '../server/validate.js';
+import { createApp } from '../server/app.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-acl-'));
 const OWNER = 'user:owner@apnex.com.au';
@@ -177,4 +178,89 @@ test('H9.1: a created diagram cannot carry its own ownership in from the wire', 
 			'but the ownership it claimed was discarded — authorization is never carried by a document');
 		assert.equal(res.model.state.meta.owner, '', 'the diagram is unowned, awaiting setOwner');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+H9.2b -- listing is filtered by grant, and only when authorization is on.
+*/
+const OTHER = 'user:other@example.com';
+
+test('H9.2b: with authz off, list() is unchanged and ignores the principal', async () => {
+	const dir = tmp();
+	try {
+		const s = new Store(dir, { flushMs: 3_600_000 });
+		await s.init();
+		assert.equal(s.list().length, 1, 'single-tenant behaviour survives untouched');
+		assert.equal(s.list(GUEST).length, 1, 'a principal changes nothing while authz is off');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.2b: with authz on, a principal sees only what it holds', async () => {
+	const dir = tmp();
+	try {
+		const s = new Store(dir, { flushMs: 3_600_000, authz: true });
+		await s.init();
+		const mine = s.list(null);
+		assert.equal(mine.length, 0, 'an unowned diagram belongs to nobody and is listed to nobody');
+
+		const id = [...s.diagrams.keys()][0];
+		s.setOwner(id, OWNER);
+		assert.equal(s.list(OWNER).length, 1, 'the owner sees it');
+		assert.equal(s.list(GUEST).length, 0, 'a stranger does not');
+		assert.equal(s.list(null).length, 0, 'and neither does an unauthenticated caller');
+
+		s.grant(id, GUEST, 'read', OWNER);
+		assert.equal(s.list(GUEST).length, 1, 'a read grant is enough to see that it exists');
+
+		s.revoke(id, GUEST, OWNER);
+		assert.equal(s.list(GUEST).length, 0, 'and revoking removes it from view');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+Listing leaks less than reading, and more than nothing.
+
+A missed filter here does not hand over a document's contents, but it does disclose that a diagram
+exists and what its owner chose to call it. That is why the filter lives in one place.
+*/
+test('H9.2b: one principal cannot see another principal\u2019s diagram in the listing', async () => {
+	const dir = tmp();
+	try {
+		const s = new Store(dir, { flushMs: 3_600_000, authz: true });
+		await s.init();
+		const a = [...s.diagrams.keys()][0];
+		s.setOwner(a, OWNER);
+		const b = s.create('theirs').model.state.meta.id;
+		s.setOwner(b, OTHER);
+
+		assert.deepEqual(s.list(OWNER).map((d) => d.id), [a]);
+		assert.deepEqual(s.list(OTHER).map((d) => d.id), [b], 'names do not leak across owners either');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.2b: adopt claims only the unowned, and is idempotent', async () => {
+	const dir = tmp();
+	try {
+		const s = new Store(dir, { flushMs: 3_600_000, authz: true });
+		await s.init();
+		const keep = s.create('already theirs').model.state.meta.id;
+		s.setOwner(keep, OTHER);
+
+		assert.equal(s.adopt(OWNER), 1, 'exactly the one unowned diagram was claimed');
+		assert.equal(s.access(keep, OTHER), 'owner', 'an owned diagram is never taken');
+		assert.equal(s.adopt(OWNER), 0, 'running it again claims nothing');
+		assert.equal(s.list(OWNER).length, 1);
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.2b: createApp turns authorization on and adopts, so the operator is not locked out', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-authz-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER });
+	try {
+		assert.ok(app.store.list(OWNER).length > 0, 'the seeded diagram was adopted at boot');
+		assert.equal(app.store.list(GUEST).length, 0, 'and nobody else sees it');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
 });

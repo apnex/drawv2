@@ -70,7 +70,17 @@ export class Store {
 	(server/server.js) decides; every other caller — including every test that is not about seeding
 	— gets the single programmatic example and is unaffected by whatever ships in examples/.
 	*/
-	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null } = {}) {
+	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null, authz = false } = {}) {
+		/*
+		Authorization is OFF unless asked for -- ACCESS.md.
+
+		Filtering by grant is meaningless without an identity, and there is no identity unless IAP
+		is configured, so a store that enforced unconditionally would make every local run empty.
+		The dangerous combination is production WITHOUT it, and that is refused at boot in
+		`server.js` rather than defaulted to here: a silent fallback to open is precisely the
+		failure this whole milestone exists to prevent.
+		*/
+		this.authz = authz;
 		this.dir = dataDir;
 		this.flushMs = flushMs;
 		this.now = now;
@@ -247,8 +257,18 @@ export class Store {
 		return entry ? entry.model : null;
 	}
 
-	list() {
-		return [...this.diagrams.values()].map((e) => ({
+	/*
+	The diagrams a principal may see, which with authorization off is all of them.
+
+	Filtering here rather than at each call site is deliberate: `list` is the surface that tells a
+	caller what exists, so a missed filter does not leak a document's contents but does leak that it
+	exists and what it is called. One place to be right.
+	*/
+	list(principal = null) {
+		const visible = this.authz
+			? [...this.diagrams.values()].filter((e) => this.access(e.model.state.meta.id, principal))
+			: [...this.diagrams.values()];
+		return visible.map((e) => ({
 			id: e.model.state.meta.id,
 			name: e.model.state.meta.name,
 			version: e.model.state.meta.version
@@ -368,6 +388,22 @@ export class Store {
 		if (meta.owner && meta.owner === principal) return 'owner';
 		const level = meta.grants?.[principal];
 		return level === 'read' || level === 'write' ? level : null;
+	}
+
+	/*
+	Claim every unowned diagram for a principal -- H9.10.
+
+	The eleven diagrams already in the bucket predate ownership, so under a grant filter they would
+	belong to nobody and be visible to nobody. Adoption is explicit and one-shot rather than a rule
+	that unowned means public, because "visible to whoever asks" is not a default anyone should get
+	by accident. Idempotent, since `setOwner` refuses a diagram that already has an owner.
+	*/
+	adopt(principal) {
+		let claimed = 0;
+		for (const id of this.diagrams.keys()) {
+			if (this.setOwner(id, principal) === null) claimed++;
+		}
+		return claimed;
 	}
 
 	// an unowned diagram is claimable; an owned one is not, so ownership cannot be taken by asking

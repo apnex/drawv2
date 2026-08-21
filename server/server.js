@@ -37,10 +37,29 @@ below says which backend actually won.
 mutable store moves to GCS (files.mjs).
 */
 const bucket = process.env.BUCKET || flag('bucket', undefined);
+
+/*
+Authorization -- ACCESS.md. IAP_AUDIENCE turns it on; OWNER claims what predates it.
+
+The combination that must never happen quietly is a real deployment with authorization off, so it
+is refused rather than defaulted. BUCKET means this is running against the shared object store,
+and without an audience there is no identity, and without identity `list()` returns every diagram
+to every caller. Booting anyway would look completely healthy while being wide open, which is the
+exact failure mode this milestone exists to remove.
+*/
+const audience = process.env.IAP_AUDIENCE || '';
+const owner = process.env.OWNER || '';
+if (bucket && !audience) {
+	console.error('[ draw ] refusing to boot: BUCKET is set but IAP_AUDIENCE is not, so no request '
+		+ 'carries an identity and every diagram would be listed to every caller. Set IAP_AUDIENCE to '
+		+ 'the backend service audience, or unset BUCKET to run locally.');
+	process.exit(1);
+}
+if (audience) console.log(`[ draw ] authorization: on${owner ? `, adopting unowned diagrams for ${owner}` : ''}`);
 const files = bucket ? gcsFiles(bucket) : null;
 if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files });
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(audience), owner });
 console.log(`[ draw ] editor + API on http://localhost:${app.port} (ws on /ws)`);
 
 // a single bad request must never take the whole server (and every other

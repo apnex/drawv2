@@ -106,7 +106,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '' } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -122,8 +122,20 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	// that constructs an app gets the single programmatic seed, not whatever ships in examples/.
 	// `files` null means the Store picks its filesystem default; server.js supplies gcsFiles when
 	// BUCKET is set (B6). The app itself stays ignorant of which backend it got.
-	const store = new Store(data, { examplesDir, files });
+	const store = new Store(data, { examplesDir, files, authz });
 	await store.init();
+	/*
+	Adoption runs after init and before anything can ask what exists -- H9.10.
+
+	Diagrams written before ownership existed belong to nobody, so under a grant filter they are
+	visible to nobody. Claiming them is explicit and idempotent rather than implicit, because the
+	alternative rule -- unowned means anyone may see it -- is a default nobody should acquire by
+	accident.
+	*/
+	if (owner) {
+		const claimed = store.adopt(owner);
+		if (claimed) console.log(`[ store ] adopted ${claimed} unowned diagram(s) for ${owner}`);
+	}
 
 	const auth = new GoogleAuth(data, secrets);
 	const slides = { auth, sync: new SlidesSync(auth) };

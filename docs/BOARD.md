@@ -382,7 +382,8 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 |---|---|---|---|---|
 | H9.1 | Principal + grant model: `(principal, diagram) -> read \| write`, stored in `meta` as server-recorded status, never a commit | — | S3 · L | `DONE` |
 | H9.2a | Authentication boundary: verify `x-goog-iap-jwt-assertion`, emit a principal, cross-check the email header | — | S3 · M | `DONE` |
-| H9.2b | Wire the boundary in; `list()` and every read/write path filter by grant | — | S3 · M | `TODO` |
+| H9.2b | `list()` filters by grant behind an `authz` switch; `OWNER` adopts what predates ownership; boot refuses `BUCKET` without `IAP_AUDIENCE` | — | S3 · M | `DONE` |
+| H9.2c | Plumb the principal from the request into REST and websocket handlers — the boundary exists but no handler calls it yet | — | S3 · M | `TODO` |
 | H9.11 | `scan-dead` treats a self-mention as a consumer, so a comment can exempt an export | **B62** | S2 · S | `TODO` |
 | H9.3 | Enforce `read` server-side on every mutating path; drive Server-Locked from the grant | — | S2 · M | `TODO` |
 | H9.4 | Locks become principal-scoped and ACL-gated; revocation invalidates an in-flight lock — reverses `locks.js:8`, needs a dated amendment | — | S2 · M | `TODO` |
@@ -391,7 +392,7 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
 | H9.8 | Domain allowlist in the app, checked against the IAP identity before any grant lookup — IAM cannot name a consumer domain | — | S2 · S | `TODO` |
 | H9.9 | Examples become templates; first write forks a per-owner copy — reverses the first-boot seed, amended in `SCOPE.md` | — | S3 · L | `TODO` |
-| H9.10 | Decide the fate of the 11 unowned diagrams now in `gs://diagrams.apnex.io` — adopt or delete, explicitly | — | S3 · S | `TODO` |
+| H9.10 | Decide the fate of the 11 unowned diagrams now in `gs://diagrams.apnex.io` — adopt or delete, explicitly | — | S3 · S | `DONE` |
 
 ## Held — on the record, not on the board
 
