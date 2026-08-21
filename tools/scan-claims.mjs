@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // scan-claims — GR2. No deletion may ship without evidence beside it.
 //
 // Scope (Ruling B): the deletion tables in COMMIT.md §8, and all of COMMIT-DELETIONS.md.

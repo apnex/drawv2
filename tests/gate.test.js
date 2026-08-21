@@ -270,3 +270,24 @@ test('GR14/B77: a heading must agree with the states beneath it, and every item 
 		assert.equal(r.code, 0, 'a mixed WIP milestone with stated items is clean');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+GR1 -- every tool is invocable the way it declares.
+
+Eight of nine carried `#!/usr/bin/env node` and not one was executable, so the shebang was
+decorative: `./tools/scan-dead.mjs` failed and only `node tools/scan-dead.mjs` worked. The ninth
+had no shebang at all, so the convention was not consistently absent either. Small, and worth a
+check rather than a fix alone, because a mode bit is exactly the kind of thing that is lost in a
+patch and noticed by nobody.
+*/
+test('GR1: every tool declares a shebang and is executable, so both invocations work', () => {
+	const dir = path.join(root, 'tools');
+	const tools = fs.readdirSync(dir).filter((f) => f.endsWith('.mjs'));
+	assert.ok(tools.length >= 9, 'the tools directory is populated');
+	for (const t of tools) {
+		const p = path.join(dir, t);
+		assert.match(fs.readFileSync(p, 'utf8').split('\n')[0], /^#!\/usr\/bin\/env node$/,
+			`tools/${t} has no shebang, so ./tools/${t} would be run by the shell`);
+		assert.ok(fs.statSync(p).mode & 0o111, `tools/${t} is not executable, so its shebang is decorative`);
+	}
+});
