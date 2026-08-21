@@ -48,7 +48,10 @@ export const kindOf = (id) => id.split('-')[0];
 export class Model {
 	constructor() {
 		this.state = {
-			meta: { id: '', name: 'untitled', version: 0, schema: 1, slides: { url: '', presentationId: '', pageId: '' } },
+			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status like `slides`:
+			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
+			// An empty owner means unowned, which is what every diagram predating H9 is.
+			meta: { id: '', name: 'untitled', version: 0, schema: 1, owner: '', grants: {}, slides: { url: '', presentationId: '', pageId: '' } },
 			nodes: {},
 			waypoints: {},
 			links: {},
@@ -307,7 +310,7 @@ export class Model {
 
 	// ---- document (de)serialization — the persisted JSON shape from docs/spec/SCOPE.md ----
 	toJSON() {
-		const doc = { meta: { ...this.state.meta, slides: { ...this.state.meta.slides } } };
+		const doc = { meta: { ...this.state.meta, grants: { ...this.state.meta.grants }, slides: { ...this.state.meta.slides } } };
 		KINDS.forEach((kind) => {
 			doc[KEY[kind]] = this.all(kind).map((e) => ({ ...e }));
 		});
@@ -323,7 +326,9 @@ export class Model {
 			});
 		});
 		if (doc.meta) {
-			this.state.meta = { ...this.state.meta, ...doc.meta, slides: { ...this.state.meta.slides, ...(doc.meta.slides || {}) } };
+			// grants REPLACE rather than merge: a revoked principal must not survive a reload by
+			// hiding in the previous state, which a spread of the old over the new would allow.
+			this.state.meta = { ...this.state.meta, ...doc.meta, grants: { ...(doc.meta.grants || {}) }, slides: { ...this.state.meta.slides, ...(doc.meta.slides || {}) } };
 		}
 		// model-state (status): restore the authoritative selection, reconciled to the config loaded
 		// above (tolerate-stale: drop ids that aren't a live selectable entity). Before emit. (MS1)

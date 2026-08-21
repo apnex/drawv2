@@ -6,6 +6,9 @@ pushed document is validated for shape, ranges, and referential integrity.
 
 import { SURFACE } from '../model/index.mjs';
 
+// A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
+// confused for one another. Length-capped like every other free string the wire accepts.
+const PRINCIPAL = /^(user:[^\s@]{1,64}@[^\s@]{1,190}|code:[0-9a-z]{1,64})$/;
 const ID = /^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$/;
 const SELECTABLE = /^(node|waypoint|link|zone)-[0-9a-f]{6}$/;   // selectable kinds (group/diagram excluded)
 const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
@@ -164,10 +167,31 @@ export function validateDoc(doc) {
 	}
 	if (!str(doc.meta.name || '', 64)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
-		if (!['id', 'name', 'version', 'schema', 'slides'].includes(key)) return `unknown meta key: ${key}`;
+		if (!['id', 'name', 'version', 'schema', 'owner', 'grants', 'slides'].includes(key)) return `unknown meta key: ${key}`;
 	}
 	if ('schema' in doc.meta && doc.meta.schema !== 1) return `unsupported meta.schema: ${doc.meta.schema}`;
 	if ('version' in doc.meta && !(Number.isInteger(doc.meta.version) && doc.meta.version >= 0)) return 'invalid meta.version';
+	/*
+	Authorization, validated as strictly as geometry -- ACCESS.md.
+
+	A principal is namespaced so the two kinds cannot be confused: `user:<email>` for a Google
+	identity from IAP, `code:<id>` for a connection code. An unprefixed string is refused rather
+	than guessed at, because guessing is how a code becomes a user.
+
+	`owner` may be empty, which means unowned -- the state of every diagram predating H9.
+	*/
+	if ('owner' in doc.meta && doc.meta.owner !== '' && !PRINCIPAL.test(doc.meta.owner || '')) {
+		return 'invalid meta.owner';
+	}
+	if ('grants' in doc.meta) {
+		const grants = doc.meta.grants;
+		if (!grants || typeof grants !== 'object' || Array.isArray(grants)) return 'invalid meta.grants';
+		for (const [principal, level] of Object.entries(grants)) {
+			if (!PRINCIPAL.test(principal)) return `invalid grant principal: ${principal}`;
+			if (level !== 'read' && level !== 'write') return `invalid grant level for ${principal}: ${level}`;
+		}
+	}
+
 	if ('slides' in doc.meta) {
 		const slides = doc.meta.slides;
 		if (!slides || typeof slides !== 'object' || Array.isArray(slides)) return 'invalid meta.slides';

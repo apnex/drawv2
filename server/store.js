@@ -30,14 +30,31 @@ const FILE = /^diagram-[0-9a-f]{6}\.json$/;
 export const SCHEMA = 1;
 
 // rebuild meta from whitelisted fields only — never persist junk keys
-function cleanMeta(id, meta = {}) {
+/*
+Rebuild meta from an allowlist, so an unknown or hostile key cannot ride in on a document.
+
+`trusted` says the document came off our own storage rather than off the wire, and it gates
+authorization only. Without it, `create {doc:{meta:{owner:...}}}` would let a caller install
+itself as owner of the diagram it is creating -- the keys validate, so nothing else would stop
+it. Owner and grants are established by `setOwner` and `grant`, never by presenting a document
+that claims them (ACCESS.md).
+*/
+function cleanMeta(id, meta = {}, trusted = false) {
 	const slides = (meta.slides && typeof meta.slides === 'object') ? meta.slides : {};
 	const str = (v) => typeof v === 'string' ? v.slice(0, 512) : '';
+	const grants = {};
+	if (trusted && meta.grants && typeof meta.grants === 'object' && !Array.isArray(meta.grants)) {
+		for (const [principal, level] of Object.entries(meta.grants)) {
+			if (level === 'read' || level === 'write') grants[str(principal)] = level;
+		}
+	}
 	return {
 		id,
 		name: String(meta.name || 'untitled').slice(0, 64),
 		version: Number.isInteger(meta.version) && meta.version >= 0 ? meta.version : 0,
 		schema: SCHEMA,
+		owner: trusted ? str(meta.owner) : '',
+		grants,
 		slides: { url: str(slides.url), presentationId: str(slides.presentationId), pageId: str(slides.pageId) }
 	};
 }
@@ -160,7 +177,9 @@ export class Store {
 	install(id, doc, log = new Log(0), file = null) {
 		const model = new Model();
 		model.load(doc);
-		model.state.meta = cleanMeta(id, doc.meta);
+		// `file` means this document came off our own storage, which is the only source allowed to
+		// carry authorization -- init() passes it, create() does not (ACCESS.md).
+		model.state.meta = cleanMeta(id, doc.meta, Boolean(file));
 		// B15 — a diagram READ FROM a file is durable at the version that file carries; one being
 		// created has nothing on disk yet and is durable at nothing. `file` is the discriminator:
 		// init() passes the filename it loaded, create() does not.
@@ -330,6 +349,60 @@ export class Store {
 	// ---- persistence ----
 	// total flush failures across all diagrams — surfaced by GET /health and `draw status` so a
 	// backend that is silently failing to persist is visible before the next restart loses work.
+	/*
+	Authorization -- ACCESS.md. Owner and grants, written the way `bindSlides` writes.
+
+	These deliberately bypass `commit()`, and the reason is sharper than consistency with the
+	Slides binding. `flush()` serializes the document AND the log, so a grant routed through a
+	commit would be undoable -- and undo silently restoring access for a principal just revoked is
+	a security failure rather than a usability quirk. Bypassing the transaction avoids it by
+	construction instead of by a rule someone has to keep remembering.
+
+	`access(id, principal)` is the single check every caller should ask, so the rule has one home.
+	It is used here to gate granting itself: only an owner may change who else may reach a diagram.
+	*/
+	access(id, principal) {
+		const model = this.get(id);
+		if (!model || !principal) return null;
+		const meta = model.state.meta;
+		if (meta.owner && meta.owner === principal) return 'owner';
+		const level = meta.grants?.[principal];
+		return level === 'read' || level === 'write' ? level : null;
+	}
+
+	// an unowned diagram is claimable; an owned one is not, so ownership cannot be taken by asking
+	setOwner(id, principal) {
+		const model = this.get(id);
+		if (!model) return 'unknown diagram';
+		if (model.state.meta.owner) return 'already owned';
+		model.state.meta.owner = principal;
+		this.markDirty(id);
+		return null;
+	}
+
+	grant(id, principal, level, by) {
+		const model = this.get(id);
+		if (!model) return 'unknown diagram';
+		if (this.access(id, by) !== 'owner') return 'only the owner may grant';
+		if (level !== 'read' && level !== 'write') return `invalid level: ${level}`;
+		if (principal === model.state.meta.owner) return 'the owner already has full access';
+		model.state.meta.grants = { ...model.state.meta.grants, [principal]: level };
+		this.markDirty(id);
+		return null;
+	}
+
+	revoke(id, principal, by) {
+		const model = this.get(id);
+		if (!model) return 'unknown diagram';
+		if (this.access(id, by) !== 'owner') return 'only the owner may revoke';
+		// absent is success: revoking twice must not be an error, or a retry becomes a failure
+		const grants = { ...model.state.meta.grants };
+		delete grants[principal];
+		model.state.meta.grants = grants;
+		this.markDirty(id);
+		return null;
+	}
+
 	flushFailures() {
 		let n = 0;
 		for (const entry of this.diagrams.values()) n += entry.flushFailures || 0;

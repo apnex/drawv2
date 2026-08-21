@@ -125,6 +125,8 @@ class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding
 ```json
 {
   "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 1,
+              "owner": "user:someone@example.com",
+              "grants": { "user:other@example.com": "read", "code:k7f3q2": "write" },
               "slides": { "url": "", "presentationId": "", "pageId": "" } },
   "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 } ],
   "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6" } ],
@@ -132,6 +134,14 @@ class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding
   "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ]
 }
 ```
+
+`owner` and `grants` are AUTHORIZATION and are server-recorded status, not document content.\
+They are written by the store rather than by a commit, so they carry no undo record -- a grant that undo could
+reverse would restore access to a principal just revoked.\
+A principal is `user:<email>` or `code:<id>`, namespaced so a code can never be mistaken for a person, and a
+level is `read` or `write`.\
+Neither key is writable through a meta patch, and neither survives arriving on a document from the wire.\
+Designed in `docs/spec/ACCESS.md`; enforcement is H9.3 and not yet built.
 
 - node: a `shape` frame (the outer shell — `circle` | `square`) with a `type` glyph
   attached in its middle, snapped to a grid point, with editable label. Frame and glyph
