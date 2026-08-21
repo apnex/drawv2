@@ -257,6 +257,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 			resolve({
 				server,
 				store,
+				locks,
 				port: server.address().port,
 				async close() {
 					clearInterval(sweepTimer);

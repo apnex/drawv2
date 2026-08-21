@@ -318,6 +318,14 @@ export class Session {
 				const id = body.id || this.diagramId;
 				const model = this.store.get(id);
 				if (!model) return this.error(`unknown diagram: ${id}`);
+				// B64: "the browser user owns the tool" was true when every browser user was the
+				// owner. Force-releasing another controller's lock is a write capability -- a
+				// reader could otherwise break a legitimate agent's session at will -- and it is
+				// also the owner's remedy against a lock held by someone since revoked, which is
+				// why locks need not track who holds them.
+				if (!this.store.canWrite(id, this.principal)) {
+					return this.error('forbidden: no write access to this diagram', 'forbidden');
+				}
 				if (this.locks) this.locks.reclaim(id);
 				if (this.hub) this.hub.broadcast(id, 'lock', { owner: 'client' });
 				return this.snapshot(model);

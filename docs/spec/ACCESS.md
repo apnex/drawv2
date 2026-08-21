@@ -201,7 +201,11 @@ A connection code becomes the actor, and history answers "who did this" with no 
 `locks.js:8` states the current design outright: *"it is a pure state machine over opaque tokens"*, with `this.map` holding `diagramId -> { token, expiresAt }` and no notion of who the holder is.
 
 Possession of the token is therefore the authority, and that is the hole.\
-Revoking a principal's grant while it holds a lock leaves the lock working until its TTL expires, because the lock cannot consult an ACL for a principal it does not record.\
+Corrected 2026-08-21 (H9.4, B63): this said a revoked principal's lock keeps working until its TTL expires.\
+The lock does keep working; the consequence does not follow.\
+Commit checks the ACL on every call, so a revoked principal's write is refused the moment the grant is dropped whether or not it holds a lock.\
+What survives revocation is occupancy of the single write slot, which is a denial of service and not a disclosure.\
+The remedy is reclaim, already unconditional for the owner, which is why the lock need not record who holds it and why `locks.js` stays a state machine over opaque tokens.\
 Principal-scoping is what makes revocation take effect immediately.
 
 It gates the other end too.\

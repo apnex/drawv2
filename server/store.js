@@ -321,10 +321,18 @@ export class Store {
 	With authorization off it always allows, because there is no identity to judge and the store is
 	the single-tenant tool it has always been.
 	*/
-	#mayWrite(id, principal) {
-		if (!this.authz) return null;
+	// the write predicate, public because authorization is not only about mutating the model:
+	// taking the server-side write lock is a write capability held outside this class (B63), and a
+	// second copy of this rule in the caller is a rule that drifts. `#mayWrite` is the same
+	// question phrased as an error string, for the mutators that return one.
+	canWrite(id, principal) {
+		if (!this.authz) return true;
 		const level = this.access(id, principal);
-		if (level === 'owner' || level === 'write') return null;
+		return level === 'owner' || level === 'write';
+	}
+
+	#mayWrite(id, principal) {
+		if (this.canWrite(id, principal)) return null;
 		// 403, not 423: a lock is someone else driving and is worth retrying, this is not
 		return 'forbidden: no write access to this diagram';
 	}

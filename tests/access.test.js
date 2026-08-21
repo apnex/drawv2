@@ -14,6 +14,8 @@ import path from 'node:path';
 import { Store } from '../server/store.js';
 import { validateDoc, validateMetaPatch } from '../server/validate.js';
 import { createApp } from '../server/app.js';
+import { Session } from '../server/protocol.js';
+import { Locks } from '../server/locks.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-acl-'));
 const OWNER = 'user:owner@apnex.com.au';
@@ -480,5 +482,109 @@ test('H9.3b: a read grant is refused a write over REST', async () => {
 	} finally {
 		await app.close();
 		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+/*
+H9.4 -- the write slot is a write capability.
+
+Two routes mutate nothing in the store and so were missed by the H9.3a sweep over the seven
+mutating methods: acquiring the server lock, and reclaiming it. Neither writes, both decide who
+may. The damage is availability rather than confidentiality (B63): a reader cannot commit through
+a lock it holds, because commit checks the ACL independently -- it can only sit in the single
+write slot and keep the owner out of it.
+
+Nothing here asserts that a lock knows who holds it, because it does not and need not. Reclaim,
+once gated, is the owner's remedy against a lock held by someone since revoked, which is what
+makes tracking the holder unnecessary and keeps `locks.js` a state machine over opaque tokens.
+*/
+test('H9.4: a read grant cannot take the write lock', async () => {
+	let who = OWNER;
+	const { app, dataDir, base } = await live(() => who);
+	try {
+		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;
+		assert.equal(app.store.grant(id, GUEST, 'read', OWNER), null);
+
+		who = GUEST;
+		const no = await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' });
+		assert.equal(no.status, 403, 'a reader is refused the write slot');
+		assert.equal((await no.json()).code, 'forbidden', 'never retry this — 409 would say otherwise');
+
+		who = OWNER;
+		const ok = await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' });
+		assert.equal(ok.status, 200, 'and the slot was left free for the owner');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+test('H9.4: a revoked holder is evicted by the owner reclaiming, not by waiting out the TTL', async () => {
+	let who = OWNER;
+	const { app, dataDir, base } = await live(() => who);
+	try {
+		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;
+		assert.equal(app.store.grant(id, GUEST, 'write', OWNER), null);
+
+		who = GUEST;
+		const held = await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json();
+		assert.ok(held.token, 'a write grant legitimately takes the lock');
+
+		app.store.revoke(id, GUEST, OWNER);
+		const gone = await fetch(`${base}/diagrams/${id}/commit`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': held.token },
+			body: JSON.stringify(body),
+		});
+		assert.equal(gone.status, 403, 'revocation bites immediately — the lock buys the write nothing');
+		assert.ok(app.locks.verify(id, held.token), 'but the slot is still occupied, which is the real damage');
+
+		app.locks.reclaim(id);
+		assert.equal(app.locks.verify(id, held.token), false, 'the owner takes the slot back without a TTL wait');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+// reclaim is reached over the websocket, so it must be tested there. Asserting it through
+// `locks.reclaim` directly would exercise the state machine and skip the gate entirely --
+// the check would pass with no authorization in the file at all.
+function fakeWs() {
+	const out = [];
+	const handlers = {};
+	return {
+		readyState: 1, out,
+		on(ev, fn) { handlers[ev] = fn; },
+		send(text) { out.push(JSON.parse(text)); },
+		recv(cmd, body) { handlers.message(Buffer.from(JSON.stringify({ cmd, body }))); },
+		last: (cmd) => [...out].reverse().find((m) => m.cmd === cmd),
+	};
+}
+
+test('H9.4: a reader cannot reclaim, so it cannot break a legitimate agent\'s lock', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const id = store.list(OWNER, { all: true })[0]?.id ?? [...store.diagrams.keys()][0];
+	store.setOwner(id, OWNER);
+	assert.equal(store.grant(id, GUEST, 'read', OWNER), null);
+
+	const locks = new Locks();
+	const agent = locks.acquire(id);
+	assert.ok(agent.token, 'an agent holds the lock');
+
+	try {
+		const rws = fakeWs();
+		new Session(rws, store, null, locks, GUEST);
+		rws.recv('reclaim', { id });
+		assert.equal(rws.last('error')?.body.code, 'forbidden', 'the reader is refused');
+		assert.ok(locks.verify(id, agent.token), "and the agent's lock survived");
+
+		const ows = fakeWs();
+		new Session(ows, store, null, locks, OWNER);
+		ows.recv('reclaim', { id });
+		assert.equal(locks.verify(id, agent.token), false, 'the owner still takes the wheel back');
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
 	}
 });

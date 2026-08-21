@@ -388,7 +388,7 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.3a | Enforce write at the store: all seven mutating methods gated, fail-closed on a missing principal | — | S2 · M | `DONE` |
 | H9.3b | Pass the principal from REST and websocket handlers into the seven gated methods, and map `forbidden` to `403` | — | S2 · M | `DONE` |
 | H9.3c | Drive the client's Server-Locked mode from a `read` grant, so the UI reflects what the server already enforces | — | S2 · S | `TODO` |
-| H9.4 | Locks become principal-scoped and ACL-gated; revocation invalidates an in-flight lock — reverses `locks.js:8`, needs a dated amendment | — | S2 · M | `TODO` |
+| H9.4 | ACL-gate the two routes that decide who may write but write nothing: lock acquire and reclaim | **B63**, **B64** | S2 · M | `DONE` |
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, revoke | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |

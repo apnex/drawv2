@@ -306,6 +306,12 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	// lock lifecycle: POST .../lock to acquire, DELETE .../lock to release
 	if (parts[4] === 'lock' && parts.length === 5) {
 		if (req.method === 'POST') {
+			// B63: the write slot is a write capability, so a reader must not take it. Checked here
+			// and not in `locks` — acquiring is not a store mutation, which is why the H9.3a sweep
+			// over the seven mutating methods never reached this route.
+			if (!store.canWrite(id, principal)) {
+				return json(res, 403, { error: 'forbidden: no write access to this diagram', code: 'forbidden' });
+			}
 			const lock = locks.acquire(id);
 			if (!lock) return json(res, 409, { error: 'already server-locked by another controller' });
 			// D22: the human reclaimed recently — refuse, and say for how long, so a retry loop backs
