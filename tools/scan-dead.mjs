@@ -33,6 +33,8 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
+	'server/identity.mjs:iapIdentity': 'H9.2 -- the authentication boundary is built and proven, but nothing calls it until list() filters by grant in the same milestone. TEST-ONLY is the honest state; wiring it early would mean computing a principal and discarding it.',
+	'server/identity.mjs:jwkSource': 'as above -- injectable so the verifier can be tested against a locally generated key rather than a captured token.',
 	'kernel/fixtures.mjs:FIXTURES': 'canonical reference scenes — consumed by the spec viewer and by eye, not by code',
 	'kernel/adapt.mjs:schemaToDoc': 'the inverse half of the export adapter; kept with docToSchema so the pair is one concept (import is unbuilt — B31-adjacent)',
 };
