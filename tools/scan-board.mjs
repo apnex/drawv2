@@ -64,7 +64,11 @@ const cited = new Set();
 const items = [];         // { h, ids: [Bnn], done: bool } -- CITING rows only, for R1/R3
 const allRows = [];       // EVERY item row, for R5/R6 (B77)
 for (const line of board.split('\n')) {
-	const m = /^\|\s*(H\d+\.\d+)\s*\|/.exec(line);
+	// B92: the letter suffix is part of the board's own convention -- H9.2a/b/c, H9.3a/b/c, H9.4b/c/d
+	// are items, and a pattern ending at the digits exempted all nine from R1, R3, R5 and R6. This is
+	// B78 in the same file, where a single-digit milestone class could not match H10: an id pattern
+	// narrower than the board's convention exempts rows instead of erroring, so the gate stays green.
+	const m = /^\|\s*(H\d+\.\d+[a-z]?)\s*\|/.exec(line);
 	const ids = [...line.matchAll(/\*\*(B\d+)\*\*/g)].map((x) => x[1]);
 	ids.forEach((id) => cited.add(id));
 	if (m) {
@@ -172,7 +176,9 @@ if (rows.size === 0) fail(`no BACKLOG rows matched at all — the scan is broken
 if (cited.size === 0) fail(`no board citations matched at all — the scan is broken, not the board empty`);
 if (milestones.size === 0) fail(`no board milestones matched at all — the scan is broken`);
 
-console.log(`  scan-board: ${rows.size} row(s), ${cited.size} citation(s), ${milestones.size} milestone(s), ${items.length} item(s)`);
+// `items` is the CITING subset; `allRows` is every item row. Reporting the subset as "item(s)" (B92)
+// made the board look smaller than it is, so both are named for what they actually count.
+console.log(`  scan-board: ${rows.size} row(s), ${cited.size} citation(s), ${milestones.size} milestone(s), ${allRows.length} item(s), ${items.length} citing`);
 if (bad) {
 	console.log(`\n  FAIL — ${bad} BOARD/BACKLOG contract violation(s). The plan and the record disagree.\n`);
 	process.exit(1);

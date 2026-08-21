@@ -126,8 +126,8 @@ test('GR14/B78: scan-board counts a two-digit milestone and its items', () => {
 		`scan-board still spells a milestone H\\d in ${single.length} place(s); H10 cannot match`);
 
 	const out = execFileSync('node', ['tools/scan-board.mjs'], { encoding: 'utf8' });
-	const m = /(\d+) milestone\(s\), (\d+) item\(s\)/.exec(out);
-	assert.ok(m, 'scan-board reports a milestone and item count');
+	const m = /(\d+) milestone\(s\), (\d+) item\(s\), (\d+) citing/.exec(out);
+	assert.ok(m, 'scan-board reports a milestone, item and citing count');
 
 	const board = fs.readFileSync(new URL('../docs/BOARD.md', import.meta.url), 'utf8');
 	assert.equal(Number(m[1]), [...board.matchAll(/^##\s+(H\d+)\b/gm)].length,
@@ -138,9 +138,52 @@ test('GR14/B78: scan-board counts a two-digit milestone and its items', () => {
 	// of this test counted every H-numbered row, disagreed with the scanner by 24, and reported
 	// the ledger table as a defect. Re-deriving a number loosely and calling the difference a bug
 	// is the failure this whole row exists to catch.
-	const rows = board.split('\n').filter((l) => /^\|\s*H\d+\.\d+\s*\|/.test(l) && /\*\*B\d+\*\*/.test(l));
-	assert.equal(Number(m[2]), rows.length, 'every citing item row is counted, H10 included');
+	// B92 widened this to the lettered suffix, and split the two numbers apart: the summary used to
+	// print the citing subset under the name "item(s)".
+	const itemRows = board.split('\n').filter((l) => /^\|\s*H\d+\.\d+[a-z]?\s*\|/.test(l));
+	const rows = itemRows.filter((l) => /\*\*B\d+\*\*/.test(l));
+	assert.equal(Number(m[2]), itemRows.length, 'every item row is counted, H10 and lettered ids included');
+	assert.equal(Number(m[3]), rows.length, 'and the citing subset is reported as the subset it is');
 	assert.ok(rows.some((l) => /^\|\s*H10\./.test(l)), 'the board actually contains a two-digit item to count');
+	assert.ok(itemRows.some((l) => /^\|\s*H\d+\.\d+[a-z]\s*\|/.test(l)), 'and a lettered one');
+});
+
+/*
+B92 -- a lettered item is an item, and the rules must reach it.
+
+The board splits an item into H9.2a/b/c and H9.4b/c/d, and the scanner's id pattern stopped at the
+digits, so nine rows -- seven of them DONE -- were exempt from R1, R3, R5 and R6 while the gate
+said PASS. Counting is not enough to prove the repair: what matters is that a RULE now fires on
+such a row. This builds a board whose lettered item is DONE while its B row is open, which is
+exactly the R3 contract, and asserts the scanner REFUSES it.
+*/
+test('GR14/B92: a rule fires on a lettered item, not only on an unlettered one', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b92-'));
+	fs.mkdirSync(path.join(dir, 'docs'));
+	// The disposition must PROMISE a milestone or R3 skips the row by design (scan-board.mjs:161),
+	// so the fixture opens with `**H1**` and is not marked CLOSED. Read from the scanner rather than
+	// assumed: the first draft of this fixture said `OPEN`, R3 correctly ignored it, and the test
+	// would have reported a green baseline as the repair.
+	fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), '| **B1** | a row | `[V]` | **H1** closes there |\n');
+	const run = () => {
+		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
+		catch (e) { return { out: e.stdout || '', code: e.status }; }
+	};
+	// a DONE item citing a B row that is not CLOSED -- the R3 contract, the rule the scanner header
+	// calls the one that silently rots. The heading reads DONE so R6 agrees and R3 is alone in play.
+	const write = (id) => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+		`## H1 — m · \`DONE\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n| ${id} | a | **B1** | S1 | \`DONE\` |\n`);
+	try {
+		write('H1.1');
+		const plain = run();
+		assert.equal(plain.code, 1, 'baseline: R3 refuses an unlettered DONE item whose B row is open');
+
+		write('H1.1a');
+		const lettered = run();
+		assert.equal(lettered.code, 1,
+			'and it must refuse the lettered one identically — before B92 the row was invisible, so this passed');
+		assert.match(lettered.out, /H1\.1a/, 'the refusal names the lettered id, so it is genuinely parsed');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 /*

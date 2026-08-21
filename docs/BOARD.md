@@ -419,10 +419,13 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.3c | Give the client its own read-only state, distinct from Server-Locked, driven by the server's write predicate | **B65** | S2 · M | `DONE` |
 | H9.4 | ACL-gate the two routes that decide who may write but write nothing: lock acquire and reclaim | **B63**, **B64** | S2 · M | `DONE` |
 | H9.4b | Agent identity separate from credential: `agent:<name>` is the principal, a code authenticates as it — revoking or rotating a code must not orphan what the agent owns | — | S2 · M | `DONE` |
-| H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable | — | S2 · M | `TODO` |
+| H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable. BLOCKED on H9.4d: with no grant surface the fallback is unreachable in production | — | S2 · M | `TODO` |
+| H9.4d | Grant administration on the IAP surface — an owner can grant and revoke, which nothing in the deployed system can do today; prerequisite for H9.4c, which would otherwise add a second unreachable API | **B90** | S2 · M | `TODO` |
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, rotate, revoke — a credential FOR an agent identity, not a principal | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
+| H9.24 | `scan-board` misses every lettered item (`H9.2a`, `H9.4b`, …) — 9 rows, 7 of them DONE, all in H9, exempt from R1/R3/R5/R6; and the summary calls a citing-row subset "items" | **B92** | S2 · S | ``DONE` |
+| H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes — either widen the check to public methods or narrow the sentence | **B91** | S2 · S | `TODO` |
 | H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `TODO` |
 | H9.22 | Long-poll: `history?since=&wait=` — the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | — | S4 · M | `TODO` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup — IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
