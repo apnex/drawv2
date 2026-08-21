@@ -144,7 +144,7 @@ That places repair of the verification layer above every feature, because it is 
 | ~~2~~ | H9.11 `DONE` | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
 | ~~3~~ | H9.18 `DONE` | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
 | — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
-| 4 | H10.1 | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
+| ~~4~~ | H10.1 `DONE` | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
 | 5 | H10.2 | adjacency | One field. Unblocks the identity label, any sharing UI, and H9.5 and H9.6, none of which can begin without it. |
 | 6 | H10.3 | adjacency | The client twin of B68. Turns B71 and B72 from malfunctions into visible refusals, which is what makes them self-diagnosing. |
 | 7 | H7.6 | verifier | Converts a per-deploy manual tax into one-time capital. Larger than the three scanners above, so it follows them. |
@@ -433,14 +433,14 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.20 | Scanner: a stated count must not contradict one the repo can compute — deferred from H9.18, needs the convention decided before it is enforceable | **B77** | S3 · M | `TODO` |
 | H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 · S | `DONE` |
 
-## H10 -- client surface and observability · `TODO`
+## H10 -- client surface and observability · `WIP`
 
 The half of the system a person actually touches, and the half with no verifier behind it.\
 Every item here was found by using the application rather than by running the gate, which is itself the argument for the observability items ranking above the cosmetic ones.
 
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
-| H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — today it silently deletes work in progress | **B71** | S2 · M | `TODO` |
+| H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — it silently deleted work in progress | **B71** | S2 · M | `DONE` |
 | H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `TODO` |
 | H10.3 | A durable status surface for the last server event, right-aligned in `#status` — errors currently survive until the next message | **B74** | S2 · M | `TODO` |
 | H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `TODO` |

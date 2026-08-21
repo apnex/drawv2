@@ -114,3 +114,76 @@ test('B60: an https page gets wss, and an http page still gets ws', () => {
 	// a non-default port must survive, since that is how every local instance runs
 	assert.equal(wsUrl({ protocol: 'https:', host: 'example.com:8443' }), 'wss://example.com:8443/ws');
 });
+
+/*
+B71 -- an unsolicited snapshot must not land under a live gesture.
+
+D12 was written for exactly this hazard and covered only the `change` branch. `model.load` fires
+the load handler in input.js, which cancels the gesture, and a cancelled link gesture deletes every
+waypoint the user placed -- so a lock handoff, a resync, a reclaim or a reconnect that is behind
+would erase a route mid-draw, silently. That is the reported symptom: the link fails to connect and
+the path clears.
+
+Driven through Sync with a gesture predicate rather than a real Input, because what is under test
+is the deferral, not the gesture. B19 already proves bindGestureDefer wires the two together.
+*/
+function deferrable() {
+	const sent = [];
+	let recv;
+	const net = { status: 'open', subscribe(fn) { recv = fn; }, onStatus() {}, isOpen: () => true,
+		send: (cmd, body) => { sent.push({ cmd, body }); return true; } };
+	const model = new Model();
+	const sync = new Sync({ model, net, history: { clear() {}, setCounts() {}, state: { version: 0 } },
+		selection: new Selection(model) });
+	let gesturing = false;
+	sync.deferInbound = () => gesturing;
+	return { sync, model, sent, recv: (m) => recv(m), gesture: (on) => { gesturing = on; } };
+}
+// built from a real Model rather than hand-rolled: my first version used objects where the
+// collections are arrays, and the failure surfaced inside model.load rather than in the assertion
+const snap = (id, version) => {
+	const doc = new Model().toJSON();
+	doc.meta = { ...doc.meta, id, version };
+	return { cmd: 'snapshot', body: { doc, diagrams: [], mayWrite: true, locked: false, version } };
+};
+
+test('B71: a snapshot arriving mid-gesture is held, not applied under the preview', () => {
+	const t = deferrable();
+	t.recv(snap('diagram-aaa001', 1));
+	assert.equal(t.sync.diagramId, 'diagram-aaa001', 'the first snapshot hydrates normally');
+
+	t.gesture(true);
+	t.recv(snap('diagram-bbb002', 2));
+	assert.equal(t.sync.diagramId, 'diagram-aaa001', 'the document did NOT change under the gesture');
+	assert.ok(t.sync.deferredSnapshot, 'it is held');
+
+	t.gesture(false);
+	t.sync.releaseDeferred();
+	assert.equal(t.sync.diagramId, 'diagram-bbb002', 'and lands the moment the gesture ends');
+	assert.equal(t.sync.deferredSnapshot, null, 'the hold is cleared');
+});
+
+test('B71: a held snapshot supersedes held changes, because it is whole state', () => {
+	const t = deferrable();
+	t.recv(snap('diagram-aaa001', 1));
+	t.gesture(true);
+	t.recv({ cmd: 'change', body: { version: 2, ops: [] } });
+	t.recv(snap('diagram-ccc003', 9));
+	assert.equal(t.sync.deferred.length, 1, 'the change queued');
+	assert.ok(t.sync.deferredSnapshot, 'and so did the snapshot');
+
+	t.gesture(false);
+	t.sync.releaseDeferred();
+	assert.equal(t.sync.diagramId, 'diagram-ccc003', 'the snapshot won');
+	assert.equal(t.sync.deferred.length, 0, 'and the older deltas were dropped, not replayed onto it');
+});
+
+test('B71: a snapshot the user ASKED for is not held — that would feel stuck, not safe', () => {
+	const t = deferrable();
+	t.recv(snap('diagram-aaa001', 1));
+	t.gesture(true);
+	t.sync.expectLoad = true;             // set by openDiagram / createDiagram
+	t.recv(snap('diagram-ddd004', 3));
+	assert.equal(t.sync.diagramId, 'diagram-ddd004', 'a deliberate open lands immediately');
+	assert.equal(t.sync.deferredSnapshot, null, 'nothing was held');
+});

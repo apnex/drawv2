@@ -63,6 +63,7 @@ export class Sync {
 		this.selectionDirty = false; // a selection (model-state) change pending forward to the server (R2)
 		this.outbox = [];            // submitted, not yet known durable; persisted (D30)
 		this.deferred = [];          // inbound changes held while a gesture is live (D12)
+		this.deferredSnapshot = null; // an unsolicited snapshot held the same way (B71)
 		this.diagramId = null;       // the loaded diagram; what a resync and the outbox belong to
 		this.txn = 0;                // correlation ids, so a rejection can name its request
 
@@ -188,60 +189,23 @@ export class Sync {
 
 	onMessage(msg) {
 		if (msg.cmd === 'snapshot') {
-			const doc = msg.body.doc;
-			if (!this.expectLoad && !this.hydrated && this.localEntityCount() > 0 && !msg.body.locked) {
-				/*
-				B2 — the user drew before the server answered (offline start, slow boot).
+			/*
+			B71 -- D12 covers `change` and never covered `snapshot`, which is the branch that actually
+			destroys work. `model.load` fires the load handler in `input.js`, which cancels any live
+			gesture, and a cancelled link gesture deletes every waypoint the user placed. A lock
+			handoff, a resync after a rejection, a reclaim, or a reconnect that is behind all arrive as
+			snapshots, so any of them could erase a route mid-draw with no message.
 
-				That work becomes a NEW diagram. The old path adopted the identity of whichever
-				diagram the server happened to answer with and pushed its own content over the top,
-				destroying real content that had nothing to do with this tab. The server mints the
-				id (I11); this doc's `meta.id` is ignored, so the browser cannot target anything.
-
-				Skipped while Server-Locked — you cannot author into a controlled diagram; fall
-				through to a read-only load of the controller's state.
-				*/
-				const local = this.model.toJSON();
-				if (this.pendingSlidesUrl) {
-					local.meta.slides = { ...local.meta.slides, url: this.pendingSlidesUrl };
-					this.pendingSlidesUrl = null;
-				}
-				this.expectLoad = true;
-				this.net.send('create', { name: local.meta.name, doc: local });
+			Only UNSOLICITED snapshots are held. One the user asked for carries `expectLoad` -- opening
+			a diagram, creating one -- and a gesture on the diagram they are leaving is moot; holding
+			that would make the app feel stuck rather than safe.
+			*/
+			if (!this.expectLoad && this.deferInbound && this.deferInbound()) {
+				// last one wins: a snapshot is whole state, so an older one has nothing left to say
+				this.deferredSnapshot = msg;
 				return;
 			}
-			this.loading = true;
-			this.model.load(doc); // model.load now restores the authoritative selection from doc.selection (R2) — no clear
-			this.loading = false;
-			const switched = this.hydrated && this.diagramId !== doc.meta.id;
-			this.hydrated = true;
-			this.expectLoad = false;
-			this.diagramId = doc.meta.id;
-			// the loaded diagram's lock state is authoritative — drop any pending dwell
-			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
-			this.locked = !!msg.body.locked;
-			// H9.3c: fail closed on a missing field, matching the H9.3a convention. A snapshot
-			// that forgot to say should present as unwritable rather than silently offer edits
-			// the server will refuse -- and a test will notice the former.
-			this.mayWrite = msg.body.mayWrite === true;
-			if (this.locked) this.lockShownAt = Date.now();
-			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
-				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
-			if (this.pendingSlidesUrl) {
-				// a slides URL typed before hydration must survive the snapshot
-				const url = this.pendingSlidesUrl;
-				this.pendingSlidesUrl = null;
-				this.changes.commit(commands.bindSlides(url));
-			}
-			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
-			this.setUrl(doc.meta.id);
-			// An outbox belongs to ONE diagram: a deliberate switch abandons it, a reload adopts
-			// what the last session left behind. The snapshot does not carry either, so unsent work
-			// is re-applied locally as well as re-sent (D30).
-			if (switched) { this.outbox = []; this.persistOutbox(); }
-			else this.restoreOutbox(doc.meta.id);
-			this.replayOutbox({ reapply: true });
-			this.emitState({ diagrams: msg.body.diagrams, rewound: msg.body.rewound });
+			return this.applySnapshot(msg);
 		}
 		// `resume` found us in step: no document, just the server's authority. The local model,
 		// selection and viewport all stand — and the outbox goes back out.
@@ -301,6 +265,65 @@ export class Sync {
 		}
 	}
 
+	// Load a snapshot. Split out of `onMessage` so B71's deferral has somewhere to send a held
+	// message when the gesture ends, instead of re-entering the handler past its own guard.
+	applySnapshot(msg) {
+			const doc = msg.body.doc;
+			if (!this.expectLoad && !this.hydrated && this.localEntityCount() > 0 && !msg.body.locked) {
+				/*
+				B2 — the user drew before the server answered (offline start, slow boot).
+
+				That work becomes a NEW diagram. The old path adopted the identity of whichever
+				diagram the server happened to answer with and pushed its own content over the top,
+				destroying real content that had nothing to do with this tab. The server mints the
+				id (I11); this doc's `meta.id` is ignored, so the browser cannot target anything.
+
+				Skipped while Server-Locked — you cannot author into a controlled diagram; fall
+				through to a read-only load of the controller's state.
+				*/
+				const local = this.model.toJSON();
+				if (this.pendingSlidesUrl) {
+					local.meta.slides = { ...local.meta.slides, url: this.pendingSlidesUrl };
+					this.pendingSlidesUrl = null;
+				}
+				this.expectLoad = true;
+				this.net.send('create', { name: local.meta.name, doc: local });
+				return;
+			}
+			this.loading = true;
+			this.model.load(doc); // model.load now restores the authoritative selection from doc.selection (R2) — no clear
+			this.loading = false;
+			const switched = this.hydrated && this.diagramId !== doc.meta.id;
+			this.hydrated = true;
+			this.expectLoad = false;
+			this.diagramId = doc.meta.id;
+			// the loaded diagram's lock state is authoritative — drop any pending dwell
+			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
+			this.locked = !!msg.body.locked;
+			// H9.3c: fail closed on a missing field, matching the H9.3a convention. A snapshot
+			// that forgot to say should present as unwritable rather than silently offer edits
+			// the server will refuse -- and a test will notice the former.
+			this.mayWrite = msg.body.mayWrite === true;
+			if (this.locked) this.lockShownAt = Date.now();
+			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
+				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
+			if (this.pendingSlidesUrl) {
+				// a slides URL typed before hydration must survive the snapshot
+				const url = this.pendingSlidesUrl;
+				this.pendingSlidesUrl = null;
+				this.changes.commit(commands.bindSlides(url));
+			}
+			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
+			this.setUrl(doc.meta.id);
+			// An outbox belongs to ONE diagram: a deliberate switch abandons it, a reload adopts
+			// what the last session left behind. The snapshot does not carry either, so unsent work
+			// is re-applied locally as well as re-sent (D30).
+			if (switched) { this.outbox = []; this.persistOutbox(); }
+			else this.restoreOutbox(doc.meta.id);
+			this.replayOutbox({ reapply: true });
+			this.emitState({ diagrams: msg.body.diagrams, rewound: msg.body.rewound });
+	}
+
 	// Re-open the current diagram: the server answers with a snapshot, which is authoritative.
 	// Used when this tab knows it has diverged — a rejected optimistic apply, or a change whose
 	// `from` is ahead of us (we missed one).
@@ -326,6 +349,17 @@ export class Sync {
 	releaseDeferred() {
 		const pending = this.deferred;
 		this.deferred = [];
+		/*
+		B71 -- a held snapshot supersedes held changes and is applied instead of them.
+
+		A snapshot is whole state, so replaying deltas that predate it would be applying history on
+		top of the present. Draining the queue first and then loading would reach the same document
+		by a longer route, but only if every queued change is older than the snapshot, and nothing
+		available here establishes that. Dropping them is the claim that can be justified.
+		*/
+		const snap = this.deferredSnapshot;
+		this.deferredSnapshot = null;
+		if (snap) return this.applySnapshot(snap);
 		pending.forEach((b) => this.applyChange(b));
 		if (pending.length) this.emitState({});
 	}
