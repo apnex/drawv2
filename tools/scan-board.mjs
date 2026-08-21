@@ -49,16 +49,16 @@ for (const line of backlog.split('\n')) {
 	`**H3.** …`, `**CLOSED H1.1** …`, `**Closed CS1** …`, `**Open. REVIVAL TRIGGER…** …`. Matching
 	the convention instead of the keyword is what makes the two distinguishable.
 	*/
-	const verdict = /^\s*\*\*(CLOSED|Closed)?\s*(H\d)?/.exec(disposition) || [];
+	const verdict = /^\s*\*\*(CLOSED|Closed)?\s*(H\d+)?/.exec(disposition) || [];
 	rows.set(m[1], { closes: verdict[2] || null, closed: !!verdict[1] });
 }
 
 // ---- BOARD: milestone headings, and the item rows that cite a B row
-const milestones = new Set([...board.matchAll(/^##\s+(H\d)\b/gm)].map((m) => m[1]));
+const milestones = new Set([...board.matchAll(/^##\s+(H\d+)\b/gm)].map((m) => m[1]));
 const cited = new Set();
 const items = [];         // { h, ids: [Bnn], done: bool }
 for (const line of board.split('\n')) {
-	const m = /^\|\s*(H\d\.\d+)\s*\|/.exec(line);
+	const m = /^\|\s*(H\d+\.\d+)\s*\|/.exec(line);
 	const ids = [...line.matchAll(/\*\*(B\d+)\*\*/g)].map((x) => x[1]);
 	ids.forEach((id) => cited.add(id));
 	if (m && ids.length) items.push({ h: m[1], ids, done: /`DONE`/.test(line) });
@@ -90,7 +90,7 @@ completion. The heading is the thing a reader trusts at a glance, so it is the t
 checking, and it was the one thing nothing checked.
 */
 const milestoneState = {};
-for (const m of board.matchAll(/^##\s+(H\d)[^\n]*?`(\w+)`/gm)) milestoneState[m[1]] = m[2];
+for (const m of board.matchAll(/^##\s+(H\d+)[^\n]*?`(\w+)`/gm)) milestoneState[m[1]] = m[2];
 for (const it of items) {
 	const h = it.h.split('.')[0];
 	if (milestoneState[h] === 'DONE' && !it.done) {

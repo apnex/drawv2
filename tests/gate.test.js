@@ -107,3 +107,36 @@ test('GR1: an installed hook actually invokes the gate — a neutered hook is wo
 	assert.ok(body.includes('npm run gate'), 'a pre-push hook is installed but does not run the gate — it looks like enforcement and is not');
 	assert.ok((fs.statSync(p).mode & 0o111) !== 0, 'the pre-push hook is not executable, so git silently skips it');
 });
+
+/*
+B78 -- the scanner must see every milestone, including two-digit ones.
+
+`H\d` cannot match `H10`: `H1` consumes the first two characters and the `\b` then fails against
+the `0`. So a milestone numbered ten or higher did not exist as far as GR14 was concerned, and the
+gate announced this by passing. The failure mode is UNDERCOUNTING, not erroring, which is why this
+asserts a number rather than an exit code -- a test that only ran the scanner would have been
+green throughout the defect.
+*/
+test('GR14/B78: scan-board counts a two-digit milestone and its items', () => {
+	const src = fs.readFileSync(new URL('../tools/scan-board.mjs', import.meta.url), 'utf8');
+	const single = [...src.matchAll(/H\\d(?!\+)/g)];
+	assert.equal(single.length, 0,
+		`scan-board still spells a milestone H\\d in ${single.length} place(s); H10 cannot match`);
+
+	const out = execFileSync('node', ['tools/scan-board.mjs'], { encoding: 'utf8' });
+	const m = /(\d+) milestone\(s\), (\d+) item\(s\)/.exec(out);
+	assert.ok(m, 'scan-board reports a milestone and item count');
+
+	const board = fs.readFileSync(new URL('../docs/BOARD.md', import.meta.url), 'utf8');
+	assert.equal(Number(m[1]), [...board.matchAll(/^##\s+(H\d+)\b/gm)].length,
+		'every milestone heading is counted, two digits included');
+
+	// An item row is one that names a milestone AND cites a B row -- the scanner's own rule
+	// (scan-board.mjs:61-64). Mirrored deliberately rather than approximated: an earlier version
+	// of this test counted every H-numbered row, disagreed with the scanner by 24, and reported
+	// the ledger table as a defect. Re-deriving a number loosely and calling the difference a bug
+	// is the failure this whole row exists to catch.
+	const rows = board.split('\n').filter((l) => /^\|\s*H\d+\.\d+\s*\|/.test(l) && /\*\*B\d+\*\*/.test(l));
+	assert.equal(Number(m[2]), rows.length, 'every citing item row is counted, H10 included');
+	assert.ok(rows.some((l) => /^\|\s*H10\./.test(l)), 'the board actually contains a two-digit item to count');
+});

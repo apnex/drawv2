@@ -130,6 +130,34 @@ So the arc is: **server data-loss now → build the client net → then the clie
 
 ---
 
+## Next slice — ordered by A14 capital-forward value
+
+Ranked by deleted future friction rather than by size or by how recently something was noticed.\
+A14 weighs adjacency to load-bearing infrastructure, mechanization of toil, and lessons becoming invariants before build, and it names recurrence of an already-mined lesson as a fault in its own right.
+
+The organizing finding is that four production defects shipped in one cutover -- B67, B68, B70, and the withdrawn B69 -- and every one passed through a green gate of 483 tests and six scanners.\
+That places repair of the verification layer above every feature, because it is the multiplier on all work that follows.
+
+| Order | Item | Tier | Why it ranks here |
+|---|---|---|---|
+| 1 | H9.16 | verifier | The composition root is unscanned; B70 was one missing property in one object literal and it took production down. Static, cheap, certain. |
+| 2 | H9.11 | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
+| 3 | H9.18 | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
+| — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
+| 4 | H10.1 | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
+| 5 | H10.2 | adjacency | One field. Unblocks the identity label, any sharing UI, and H9.5 and H9.6, none of which can begin without it. |
+| 6 | H10.3 | adjacency | The client twin of B68. Turns B71 and B72 from malfunctions into visible refusals, which is what makes them self-diagnosing. |
+| 7 | H7.6 | verifier | Converts a per-deploy manual tax into one-time capital. Larger than the three scanners above, so it follows them. |
+| 8 | H9.17 | dead path | `authz` defaults off while the only deployment runs it on, so every test exercises the path production does not. |
+| 9 | H9.9 | feature | Cheapest to build while there is still exactly one user. |
+| 10 | H9.5, H9.6, H9.7, H8.8 | feature | The agent surface, and B61. Largest remaining block; blocked on nothing except H10.2. |
+| 11 | H8.3 | feature | The Slides token outlives a restart. Independent of everything above. |
+| 12 | H10.4, H10.5, H10.6, H7.4 | local | Real, small, and compounding into nothing. Take them opportunistically rather than scheduling them. |
+
+The ranking's one concession to convenience is that H10.2 and H10.3 together cost well under a day and clear two reported issues, so they are worth carrying alongside the scanners rather than after them.
+
+---
+
 ## H0 — seed the registers · `WIP`
 
 No code. The house rule is that the register is written before the implementation.
@@ -401,6 +429,24 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.15 | Cutover: enable authorization on the live service — build, deploy image with `IAP_AUDIENCE` and `OWNER` together, adopt the 12, verify the owner reaches them through IAP | **B67**, **B70** | S1 · M | `DONE` |
 | H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures — the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `TODO` |
 | H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch — a flag that is on in the only deployment that exists is a second code path nobody runs | — | S3 · S | `TODO` |
+| H9.18 | Scanner: a milestone header must agree with the states beneath it, and a number written in an item must not contradict one the repo can compute | **B77** | S2 · S | `TODO` |
+| H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 · S | `DONE` |
+
+## H10 -- client surface and observability · `TODO`
+
+The half of the system a person actually touches, and the half with no verifier behind it.\
+Every item here was found by using the application rather than by running the gate, which is itself the argument for the observability items ranking above the cosmetic ones.
+
+| # | Item | Cites | Size | State |
+|---|---|---|---|---|
+| H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — today it silently deletes work in progress | **B71** | S2 · M | `TODO` |
+| H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `TODO` |
+| H10.3 | A durable status surface for the last server event, right-aligned in `#status` — errors currently survive until the next message | **B74** | S2 · M | `TODO` |
+| H10.4 | A refused duplicate link keeps the waypoints and says why — needs the product ruling first | **B72** | S3 · S | `TODO` |
+| H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 · S | `TODO` |
+| H10.6 | Reconcile the help text and the keymap on `7` mid-drag — one of them is lying | **B73** | S4 · S | `TODO` |
+
+---
 
 ## Held — on the record, not on the board
 
