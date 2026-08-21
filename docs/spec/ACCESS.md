@@ -52,8 +52,20 @@ Token authentication is therefore not a feature that can be added to the existin
 ## Two authentication methods, one authorization model
 
 A **principal** is whoever is asking.\
-It is either a Google identity supplied by IAP as `X-Goog-Authenticated-User-Email`, or a connection code presented as a bearer token.\
-The application currently ignores the IAP header entirely, which is a deliberate deferral rather than an oversight, and this is what ends it.
+It is either a Google identity established by IAP, or a connection code presented as a bearer token.\
+The application currently ignores IAP's identity entirely, which is a deliberate deferral rather than an oversight, and this is what ends it.
+
+The identity comes from the signed assertion, not from the convenience header, and the distinction is not pedantic.\
+IAP sends `X-Goog-Authenticated-User-Email`, but Google states plainly that *"you shouldn't rely on them as a security mechanism"* and that an application *"must validate every request by checking the `x-goog-iap-jwt-assertion` HTTP request header"*.\
+Today nothing can reach this service except through IAP -- ingress is load-balancer-only and `run.invoker` is held solely by the IAP service agent -- but that is a configuration invariant rather than a cryptographic one.\
+Widening ingress once, or broadening the invoker binding, silently converts a trusted header into a forgeable claim, and nothing would fail visibly at the moment it happened.
+
+So the JWT is the source of truth, verified against Google's public keys with the audience `/projects/531843488473/global/backendServices/<service-id>`.\
+The keys are public and the audience is a string, so this needs no secret and no SDK.\
+The email header is then a cross-check rather than an input, which is exactly the role Google assigns it.
+
+One format detail that would otherwise be found by a failing lookup rather than by reading: the header value carries a namespace prefix, `accounts.google.com:someone@example.com`, so it is not a bare address.\
+A principal is `user:someone@example.com`, so the prefix is stripped rather than passed through.
 
 A **grant** is `(principal, diagram) -> read | write`.
 

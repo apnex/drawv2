@@ -381,7 +381,7 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
 | H9.1 | Principal + grant model: `(principal, diagram) -> read \| write`, stored in `meta` as server-recorded status, never a commit | — | S3 · L | `DONE` |
-| H9.2 | Consume `X-Goog-Authenticated-User-Email`; `list()` and every read/write path filter by grant | — | S3 · M | `TODO` |
+| H9.2 | Verify `x-goog-iap-jwt-assertion` for identity (the email header is a cross-check, not a source); `list()` and every read/write path filter by grant | — | S3 · L | `TODO` |
 | H9.3 | Enforce `read` server-side on every mutating path; drive Server-Locked from the grant | — | S2 · M | `TODO` |
 | H9.4 | Locks become principal-scoped and ACL-gated; revocation invalidates an in-flight lock — reverses `locks.js:8`, needs a dated amendment | — | S2 · M | `TODO` |
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, revoke | — | S3 · L | `TODO` |
