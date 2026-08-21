@@ -318,3 +318,84 @@ test('B81: an already-broken document can still be repaired, not bricked', () =>
 	assert.equal(fix.ok, true, 'and the repair goes through');
 	assert.equal(m.all('link').length, 1);
 });
+
+/*
+B82/B85 -- group rules become properties of the document rather than repairs on one op kind.
+
+`planPut` steals overlapping members, which is a remedy. `planSet` had no group handling at all,
+so a `set` patching `members` walked past the remedy and produced a document the two peers read
+differently: the client's index declares membership single-valued and answers last-write-wins,
+the server has no index and answers first-in-order, and `groupOf` drives both selection expansion
+and the renderer hull.
+
+The threshold for "too few to be a group" is NOT restated in the invariant. `engine/policy.mjs`
+owns it, `model/` and `engine/` are sovereign peers, so the rule is injected by the composition
+point that already depends on both -- the same shape as `cellOf` into `attachRelations`.
+*/
+function twoGroups() {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		...[0, 1, 2, 3].map((i) => put('node', node(`node-cc000${i}`, i * 60))),
+		put('group', { id: 'group-dd0001', name: 'g1', members: ['node-cc0000', 'node-cc0001'] }),
+		put('group', { id: 'group-dd0002', name: 'g2', members: ['node-cc0002', 'node-cc0003'] }),
+	] }, 'server', 't');
+	return { m, log };
+}
+
+test('B82: a `set` cannot put a node in two groups — the path planPut never covered', () => {
+	const { m, log } = twoGroups();
+	const r = commit(m, log, { ops: [
+		{ op: 'set', kind: 'group', id: 'group-dd0002', patch: { members: ['node-cc0002', 'node-cc0003', 'node-cc0000'] } },
+	] }, 'server', 't');
+	assert.equal(r.ok, false, 'refused');
+	assert.match(r.error, /member of both group-dd0001 and group-dd0002/, 'and names both groups');
+	assert.deepEqual(m.get('group', 'group-dd0002').members, ['node-cc0002', 'node-cc0003'],
+		'nothing was written');
+});
+
+test('B82: `put` still STEALS rather than refusing — the remedy is unchanged', () => {
+	const { m, log } = twoGroups();
+	const r = commit(m, log, { ops: [
+		put('group', { id: 'group-dd0003', name: 'g3', members: ['node-cc0000', 'node-cc0002'] }),
+	] }, 'server', 't');
+	assert.equal(r.ok, true, 'a put is a remedy, not a violation — it takes the members');
+	assert.equal(m.get('group', 'group-dd0001'), undefined, 'and dissolves what it emptied below two');
+	assert.deepEqual(m.get('group', 'group-dd0003').members, ['node-cc0000', 'node-cc0002']);
+});
+
+test('B85: a group must hold at least two distinct members', () => {
+	const { m, log } = twoGroups();
+	const one = commit(m, log, { ops: [
+		put('group', { id: 'group-dd0004', name: 'g4', members: ['node-cc0000'] }),
+	] }, 'server', 't');
+	assert.equal(one.ok, false, 'a one-member group is refused server-side, not only in the browser');
+	assert.match(one.error, /too few to be a group/);
+
+	const dup = commit(m, log, { ops: [
+		put('group', { id: 'group-dd0005', name: 'g5', members: ['node-cc0000', 'node-cc0000'] }),
+	] }, 'server', 't');
+	assert.equal(dup.ok, false, 'and so is one that lists the same member twice');
+	assert.match(dup.error, /lists the same member twice/);
+});
+
+test('B85: the threshold comes from policy, not from a number the invariant invented', async () => {
+	const { violations } = await import('../model/invariants.mjs');
+	const { m, log } = twoGroups();
+	// a node in NO group, so the only thing wrong with the document is the size of this group.
+	// My first version used a node that was already grouped, which tripped the exclusivity check
+	// and made the assertion below pass for the wrong reason.
+	commit(m, log, { ops: [put('node', node('node-cc0009', 400))] }, 'server', 't');
+	const doc = m.toJSON();
+	doc.groups.push({ id: 'group-dd0006', name: 'g6', members: ['node-cc0009'] });
+	m.load(doc);
+
+	assert.deepEqual(violations(m), [],
+		'with no policy supplied the group checks are SKIPPED — never a threshold this file guessed');
+	const never = () => false;
+	assert.ok(violations(m, { groupAfterRemoval: (mem) => ({ remaining: mem, dissolve: mem.length < 2 }) })
+		.some((v) => /too few/.test(v)), 'with the real shape of the rule it fires');
+	assert.deepEqual(violations(m, { groupAfterRemoval: (mem) => ({ remaining: mem, dissolve: false }) })
+		.filter((v) => /too few/.test(v)), [],
+		'and a policy that dissolves nothing reports nothing — the invariant defers to it entirely');
+	assert.equal(typeof never, 'function');
+});

@@ -483,3 +483,45 @@ test('B59: the store runs on a backend that answers only asynchronously', async 
 	await s2.remove(id);
 	assert.equal(mem.size, 0, 'remove settled too');
 });
+
+/*
+B83 -- a document loaded with a violation is REPORTED, and still opens.
+
+`Store.install` is the one choke point every whole-document path passes: `init` off disk,
+`create({doc})` off the wire, and the example seed. All three ran `validateDoc`, none ran
+`violations()`, so a document carrying a cross-entity violation was admitted in silence and
+mentioned nowhere.
+
+Refusing was the wrong answer and is not what this does. `txn.mjs` deliberately admits an
+already-violating document so it can be repaired; refusing at load would brick exactly the files
+that most need opening. This is the treatment the GR9 log invariant already gets a few tests
+above -- count it, name it, and let `/health` say `corrupt` rather than `degraded`.
+*/
+test('B83: a document with a cross-entity violation LOADS, and is counted', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-'));
+	const doc = {
+		meta: { id: 'diagram-ee0001', name: 'broken', version: 0, schema: 1, owner: '', grants: {}, slides: {} },
+		nodes: [0, 1].map((i) => ({ id: `node-ee000${i}`, name: `n${i}`, type: 'host', shape: 'circle', x: i * 60, y: 0 })),
+		waypoints: [], zones: [], groups: [], selection: [],
+		// two straight links on one pair: writable before the rule existed, uncreatable now
+		links: [{ id: 'link-ee0002', src: 'node-ee0000', dst: 'node-ee0001' },
+			{ id: 'link-ee0003', src: 'node-ee0000', dst: 'node-ee0001' }],
+	};
+	fs.writeFileSync(path.join(dir, 'diagram-ee0001.json'), JSON.stringify(doc, null, '\t'));
+
+	const s = new Store(dir, { flushMs: 3_600_000 });
+	await s.init();
+	try {
+		assert.ok(s.get('diagram-ee0001'), 'the document OPENED — reporting is not refusing');
+		assert.equal(s.invariantFailures(), 1, 'and the violation was counted, like a GR9 breach');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B83: a clean document counts nothing — the check is not always red', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-ok-'));
+	const s = new Store(dir, { flushMs: 3_600_000 });
+	await s.init();
+	try {
+		assert.equal(s.invariantFailures(), 0);
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

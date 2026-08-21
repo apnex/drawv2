@@ -11,6 +11,7 @@ import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
 import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds } from './validate.js';
 import { groupAfterRemoval } from '../engine/index.mjs';
+import { violations } from '../model/invariants.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
 import { Log } from './log.mjs';
 import { serialize, parse } from './docfile.mjs';
@@ -195,6 +196,25 @@ export class Store {
 		// init() passes the filename it loaded, create() does not.
 		const entry = { model, log, dirty: false, timer: null, file: file || `${id}.json`,
 			flushedVersion: file ? log.version : 0 };
+		/*
+		B83 -- document invariants get the surface the log invariant already has.
+
+		`install` is the one choke point every whole-document path passes: `init` off disk,
+		`create({doc})` off the wire, and the example seed. Each of them ran `validateDoc`, which
+		checks shape and referential integrity, and none of them ran `violations()`, so a document
+		carrying a cross-entity violation was admitted in silence and mentioned nowhere.
+
+		REPORTED, never refused. `txn.mjs` deliberately admits an already-violating document so it
+		can be repaired -- refusing here would brick exactly the files that most need opening, and
+		would turn a diagnostic into a denial of service against the operator's own data. This is
+		the treatment GR9 already gets a few methods below: count it, name it, and let `/health`
+		distinguish `corrupt` from `degraded`.
+		*/
+		const broken = violations(model, { groupAfterRemoval });
+		if (broken.length) {
+			entry.invariantFailures = broken.length;
+			console.error(`[ store ] ${id} loaded with ${broken.length} invariant violation(s): ${broken.join('; ')}`);
+		}
 		this.diagrams.set(id, entry);
 		return entry;
 	}

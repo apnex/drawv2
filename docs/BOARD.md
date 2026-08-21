@@ -447,10 +447,10 @@ Every item here was found by using the application rather than by running the ga
 | H10.9 | One straight link per pair, permitted alongside any number of routed ones — H10.4 keyed the refusal on any link, so drawing order decided what was reachable | **B80** | S2 · S | `DONE` |
 | H10.10 | The rule becomes a document invariant in a sovereign validator, and the waypoint cascade deletes a link it would leave colliding | **B81** | S2 · M | `DONE` |
 | H10.11 | Resolve straight-link capacity from a node-kind config property, settable at runtime by operator or API — the seam exists, the configuration does not | **B81** | S4 · L | `TODO` |
-| H10.12 | "No entity is in two groups" becomes an invariant — enforced on `put` only today, so a `set` produces a document the client and server read differently | **B82** | S1 · M | `TODO` |
-| H10.13 | Document invariants get the surface the log invariant already has: checked at load and creation, counted, reported through `/health` — never a refusal | **B83** | S2 · S | `TODO` |
+| H10.12 | "No entity is in two groups" becomes an invariant — it was enforced on `put` only, so a `set` produced a document the client and server read differently | **B82** | S1 · M | `DONE` |
+| H10.13 | Document invariants get the surface the log invariant already has: checked at load and creation, counted, reported through `/health` — never a refusal | **B83** | S2 · S | `DONE` |
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does, and test that the two cascades agree | **B84** | S2 · S | `TODO` |
-| H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `TODO` |
+| H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 · L | `TODO` |
 | H10.17 | Share the constants restated across files — `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 · M | `TODO` |
 | H10.7 | Parallel connections between two containers, count bounded by the column span — designed and walked in `design/walk/FINDINGS.md`, never implemented | **B72** | S4 · L | `TODO` |

@@ -91,7 +91,7 @@ export function plan(model, ops) {
 	the path nobody thought about -- `set` clearing a `via` directly, which reaches no cascade and
 	no authoring guard, and which is the reason the rule could not stay at the call sites.
 	*/
-	const after = violations(proj);
+	const after = violations(proj, { groupAfterRemoval });
 	if (after.length) {
 		/*
 		Only what this transaction INTRODUCES. Refusing on the post-state alone would mean a
@@ -100,7 +100,7 @@ export function plan(model, ops) {
 		the GR5 corpus, whose generator predates the rule and produces such documents freely --
 		a case I would not have thought of, and a lockout rather than a mere inconvenience.
 		*/
-		const before = new Set(violations(model));
+		const before = new Set(violations(model, { groupAfterRemoval }));
 		const introduced = after.filter((v) => !before.has(v));
 		if (introduced.length) return { ok: false, error: introduced[0], at: -1 };
 	}

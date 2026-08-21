@@ -50,9 +50,54 @@ a repair tool wants the whole set.
 
 Returns [] for a clean document, so a caller reads emptiness as health without a sentinel.
 */
-export function violations(model) {
+export function violations(model, { groupAfterRemoval = null } = {}) {
 	const out = [];
 	const straightByPair = new Map();
+
+	/*
+	B82 -- no entity is a member of two groups.
+
+	The rule already existed, in `planPut`, as a repair: putting a group STEALS overlapping members
+	from any other. But a repair attached to one op kind is not a property of the document, and
+	`planSet` has no group handling at all, so a `set` patching `members` walked past it. The
+	document that results does not merely look wrong, it MEANS different things to the two peers:
+	the client's relational index declares membership single-valued and answers last-write-wins,
+	while the server has no index and falls back to a first-match scan. `groupOf` drives selection
+	expansion and the renderer hull, so a click selects one thing in the browser and another on the
+	server, and neither is wrong by its own reading.
+	*/
+	const owner = new Map();
+	for (const g of model.all('group')) {
+		for (const m of new Set(g.members || [])) {
+			const held = owner.get(m);
+			if (held && held !== g.id) out.push(`${m} is a member of both ${held} and ${g.id}`);
+			else owner.set(m, g.id);
+		}
+	}
+
+	/*
+	B85 -- a group holds at least two distinct members.
+
+	The threshold is NOT restated here. `engine/policy.mjs` declares itself the single authority
+	for it, and `model/` and `engine/` are sovereign peers -- neither imports the other -- so the
+	rule is injected by the composition point that already depends on both, exactly as `cellOf` is
+	injected into `attachRelations` so that engine imports no kernel. Asking whether a group would
+	dissolve with NOTHING removed is the same question as whether it is under the minimum, phrased
+	in the vocabulary that owns the number.
+
+	Skipped rather than guessed when no policy is supplied: a caller that cannot provide the rule
+	gets the checks that need no rule, and never a threshold this file invented.
+	*/
+	if (groupAfterRemoval) {
+		for (const g of model.all('group')) {
+			const members = g.members || [];
+			const distinct = [...new Set(members)];
+			if (distinct.length !== members.length) out.push(`${g.id} lists the same member twice`);
+			if (groupAfterRemoval(distinct, () => false).dissolve) {
+				out.push(`${g.id} holds ${distinct.length} member(s), too few to be a group`);
+			}
+		}
+	}
 
 	for (const link of model.all('link')) {
 		if (!isStraight(link)) continue;
