@@ -23,7 +23,7 @@ import { Sync } from '../app/src/sync.js';
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-acl-'));
 const OWNER = 'user:owner@apnex.com.au';
 const GUEST = 'user:guest@example.com';
-const CODE = 'code:k7f3q2';
+const CODE = 'agent:k7f3q2';
 
 async function owned() {
 	const dir = tmp();
@@ -867,7 +867,7 @@ test('B76: the snapshot names the principal, and it is the principal not an emai
 	try {
 		const mine = snapshotBody(store.get(id), store, null, OWNER);
 		assert.equal(mine.principal, OWNER, 'namespaced, so the client never parses an identity');
-		assert.match(mine.principal, /^user:/, 'the prefix rides along — user: and code: must stay distinct');
+		assert.match(mine.principal, /^user:/, 'the prefix rides along — user: and agent: must stay distinct');
 
 		// the distinguishing property: the document already carried every principal, so this must
 		// tell them apart rather than merely be present
@@ -880,4 +880,41 @@ test('B76: the snapshot names the principal, and it is the principal not an emai
 		const anon = snapshotBody(off.get([...off.diagrams.keys()][0]), off, null, null);
 		assert.equal(anon.principal, null, 'with authz off there is no principal, and none is invented');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+H9.4b -- a principal is an IDENTITY; a connection code is a CREDENTIAL for one.
+
+`code:` used to be a principal, which made the credential and the identity the same object and
+caused three problems that each looked independent: revoking a code destroyed an owner and
+orphaned what it held, rotating one lost every grant made to the old value, and a code could not
+be reused across diagrams because the code WAS the grant. ACCESS.md's 2026-08-21 amendment rules
+the split; this is the grammar half of it.
+
+The grammar is asserted rather than the regex, because the point is which strings the system will
+and will not accept as an identity, and narrowing a grammar later is the change you cannot make.
+*/
+const principalDoc = (owner) => ({
+	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 1, owner },
+	nodes: [], waypoints: [], links: [], zones: [], groups: [],
+});
+const acceptsPrincipal = (p) => validateDoc(principalDoc(p)) === null;
+
+test('H9.4b: an agent identity is a principal and a bare code is not', () => {
+	assert.equal(acceptsPrincipal('agent:planner'), true, 'an agent identity is a principal');
+	assert.equal(acceptsPrincipal('user:a@b.co'), true, 'so is a Google identity');
+	assert.equal(acceptsPrincipal('code:k7f3q2'), false,
+		'a code is NOT — it authenticates as an identity, it is not one');
+	assert.equal(acceptsPrincipal('planner'), false, 'and an unprefixed string is refused rather than guessed');
+});
+
+test('H9.4b: the agent grammar refuses what would make two identities look like one', () => {
+	assert.equal(acceptsPrincipal('agent:Planner'), false,
+		'uppercase is refused — agent:Planner and agent:planner as distinct principals is a confusion attack');
+	assert.equal(acceptsPrincipal('agent:a:b'), false, 'a colon is refused, so the namespace prefix stays unambiguous');
+	assert.equal(acceptsPrincipal('agent:'), false, 'an empty name is not a name');
+	assert.equal(acceptsPrincipal('agent:-lead'), false, 'a leading hyphen is refused; the DNS label shape is the model');
+	assert.equal(acceptsPrincipal(`agent:${'a'.repeat(63)}`), true, '63 characters is the bound');
+	assert.equal(acceptsPrincipal(`agent:${'a'.repeat(64)}`), false, 'and 64 is past it');
+	assert.equal(acceptsPrincipal('agent:ci-planner-2'), true, 'hyphens and digits inside are fine');
 });

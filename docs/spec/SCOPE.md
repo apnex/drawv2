@@ -126,7 +126,7 @@ class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding
 {
   "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 1,
               "owner": "user:someone@example.com",
-              "grants": { "user:other@example.com": "read", "code:k7f3q2": "write" },
+              "grants": { "user:other@example.com": "read", "agent:planner": "write" },
               "slides": { "url": "", "presentationId": "", "pageId": "" } },
   "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 } ],
   "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6" } ],
@@ -138,14 +138,15 @@ class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding
 `owner` and `grants` are AUTHORIZATION and are server-recorded status, not document content.\
 They are written by the store rather than by a commit, so they carry no undo record -- a grant that undo could
 reverse would restore access to a principal just revoked.\
-A principal is `user:<email>` or `code:<id>`, namespaced so a code can never be mistaken for a person, and a
+A principal is `user:<email>` or `agent:<name>`, namespaced so an agent can never be mistaken for a person, and a
 level is `read` or `write`.\
+An agent name is lowercase, starts alphanumeric, allows hyphens, and is bounded at 63 -- the DNS label shape, chosen because case-variant identities are a confusion attack rather than a convenience.\
 Neither key is writable through a meta patch, and neither survives arriving on a document from the wire.\
 Designed in `docs/spec/ACCESS.md`.\
 Corrected 2026-08-21 (B89): this read *enforcement is H9.3 and not yet built*, which stopped being true at H9.3a.\
 Writes are gated at all seven mutating store methods, reads at `hello`, `open`, the REST document and log, and `/d/<id>.svg` (B67), and lock acquisition and reclaim at H9.4.\
-Pending and not yet built: ACCESS.md's 2026-08-21 amendment rules that `code:<id>` becomes a CREDENTIAL rather than a principal, replaced by an `agent:<name>` identity it authenticates as, and that a grant may name an OWNER as well as a diagram.\
-This paragraph describes what the code does today; that amendment describes what it is agreed to become.
+A connection code is a CREDENTIAL that authenticates as an agent identity, and is deliberately NOT a principal (H9.4b): conflating them meant revoking a code destroyed an owner, rotating one lost every grant, and a code could not be reused across diagrams because the code was the grant.\
+Still pending from the same amendment and not yet built: a grant may name an OWNER as well as a diagram, so an agent granted on a person reaches everything that person owns.
 
 - node: a `shape` frame (the outer shell — `circle` | `square`) with a `type` glyph
   attached in its middle, snapped to a grid point, with editable label. Frame and glyph

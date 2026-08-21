@@ -185,8 +185,8 @@ test('H9.8: an empty allowlist restricts nothing, and never invents a principal'
 test('H9.8: a code principal carries no domain and is not judged on one', async () => {
 	// refusing `code:` here would be a domain rule deciding something that is not a domain
 	// question; codes authenticate by another route with its own gate (H9.5/9.6)
-	const gate = domainGate(fixed('code:abc123'), ['apnex.com.au']);
-	assert.equal(await gate({}), 'code:abc123');
+	const gate = domainGate(fixed('agent:abc123'), ['apnex.com.au']);
+	assert.equal(await gate({}), 'agent:abc123');
 	const weird = domainGate(fixed('user:no-at-sign'), ['apnex.com.au']);
 	assert.equal(await weird({}), null, 'but a user principal with no domain at all is refused');
 });

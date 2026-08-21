@@ -8,7 +8,19 @@ import { SURFACE } from '../model/index.mjs';
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
-const PRINCIPAL = /^(user:[^\s@]{1,64}@[^\s@]{1,190}|code:[0-9a-z]{1,64})$/;
+/*
+A principal is a durable IDENTITY. H9.4b: `code:` was here and is not a principal -- a connection
+code is a CREDENTIAL that authenticates as an `agent:` identity, and conflating the two meant
+revoking a code destroyed an owner, rotating one lost every grant, and a code could not be reused
+across diagrams because the code WAS the grant. ACCESS.md's 2026-08-21 amendment rules the split.
+
+The agent grammar is deliberately narrow, and narrowing later is the change you cannot make.
+Lowercase only, because `agent:Planner` and `agent:planner` as distinct principals is a confusion
+attack rather than a convenience -- the domain allowlist already case-folds for the same reason.
+No colon, so the namespace prefix stays unambiguous. Sixty-three characters and a leading
+alphanumeric, which is the DNS label shape and therefore already familiar to anyone naming one.
+*/
+const PRINCIPAL = /^(user:[^\s@]{1,64}@[^\s@]{1,190}|agent:[a-z0-9][a-z0-9-]{0,62})$/;
 const ID = /^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$/;
 const SELECTABLE = /^(node|waypoint|link|zone)-[0-9a-f]{6}$/;   // selectable kinds (group/diagram excluded)
 const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
@@ -175,7 +187,7 @@ export function validateDoc(doc) {
 	Authorization, validated as strictly as geometry -- ACCESS.md.
 
 	A principal is namespaced so the two kinds cannot be confused: `user:<email>` for a Google
-	identity from IAP, `code:<id>` for a connection code. An unprefixed string is refused rather
+	identity from IAP, `agent:<name>` for an agent identity. An unprefixed string is refused rather
 	than guessed at, because guessing is how a code becomes a user.
 
 	`owner` may be empty, which means unowned -- the state of every diagram predating H9.

@@ -58,7 +58,7 @@ export function snapshotBody(model, store, locks, principal = null) {
 		mayWrite: store.canWrite(id, principal),
 		/*
 		B76: who the client is. The PRINCIPAL, not the email -- the browser must never have to
-		parse an identity, and `user:` vs `code:` is the distinction that matters to anything
+		parse an identity, and `user:` vs `agent:` is the distinction that matters to anything
 		built on this. Null when authorization is off, which is honest: there is no principal.
 
 		This is the client's own identity and nobody else's. `meta.owner` and `meta.grants` were

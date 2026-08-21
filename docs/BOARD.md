@@ -418,7 +418,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.3b | Pass the principal from REST and websocket handlers into the seven gated methods, and map `forbidden` to `403` | — | S2 · M | `DONE` |
 | H9.3c | Give the client its own read-only state, distinct from Server-Locked, driven by the server's write predicate | **B65** | S2 · M | `DONE` |
 | H9.4 | ACL-gate the two routes that decide who may write but write nothing: lock acquire and reclaim | **B63**, **B64** | S2 · M | `DONE` |
-| H9.4b | Agent identity separate from credential: `agent:<name>` is the principal, a code authenticates as it — revoking or rotating a code must not orphan what the agent owns | — | S2 · M | `TODO` |
+| H9.4b | Agent identity separate from credential: `agent:<name>` is the principal, a code authenticates as it — revoking or rotating a code must not orphan what the agent owns | — | S2 · M | `DONE` |
 | H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable | — | S2 · M | `TODO` |
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, rotate, revoke — a credential FOR an agent identity, not a principal | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
