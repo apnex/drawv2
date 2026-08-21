@@ -443,7 +443,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — it silently deleted work in progress | **B71** | S2 · M | `DONE` |
 | H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `TODO` |
 | H10.3 | A durable status surface for the last server event, right-aligned in `#status` — errors currently survive until the next message | **B74** | S2 · M | `TODO` |
-| H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `TODO` |
+| H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `DONE` |
 | H10.7 | Parallel connections between two containers, count bounded by the column span — designed and walked in `design/walk/FINDINGS.md`, never implemented | **B72** | S4 · L | `TODO` |
 | H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 · M | `TODO` |
 | H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 · S | `TODO` |

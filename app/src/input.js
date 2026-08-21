@@ -152,8 +152,10 @@ const GESTURES = {
 				const newSrc = ctx.end === 'src' ? target.id : link.src;
 				const newDst = ctx.end === 'dst' ? target.id : link.dst;
 				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
-				// commit only a genuine, non-duplicate retarget; else leave the link as-is
-				if (target.id !== wasAt && !i.model.linkBetween(newSrc, newDst)) {
+				// commit a genuine retarget; a duplicate is allowed only when THIS link is routed,
+				// so the two do not land on top of each other (B72)
+				const routed = !!(link.via && link.via.length);
+				if (target.id !== wasAt && (routed || !i.model.linkBetween(newSrc, newDst))) {
 					i.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
 				}
 			}
@@ -204,7 +206,21 @@ const GESTURES = {
 			let dst = validTarget ? target.id : null;
 			const via = [...(ctx.via || [])];
 			if (!dst && via.length) dst = via.pop();
-			if (dst && srcAlive && dst !== ctx.src.id && !i.model.linkBetween(ctx.src.id, dst)) {
+			/*
+			B72 -- a ROUTED link may duplicate an existing pair; a straight one may not.
+
+			The permission is grounded in the route, not in the pair. Two links carrying different
+			bends fan out and are both visible, which is the whole point of placing a waypoint
+			between two nodes. A second STRAIGHT link renders exactly on top of the first: allowing
+			it would trade the silent discard this row was filed for against a silent duplicate,
+			which is not an improvement.
+
+			The design end state is up to N parallel connections bounded by the column span
+			(`design/walk/FINDINGS.md`, rung `3-parallel3`); that is H10.7 and needs spacing this
+			does not attempt. This is the editor rule only.
+			*/
+			const duplicate = i.model.linkBetween(ctx.src.id, dst);
+			if (dst && srcAlive && dst !== ctx.src.id && (!duplicate || via.length)) {
 				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
 				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links
 				return;

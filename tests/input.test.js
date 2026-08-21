@@ -1159,3 +1159,47 @@ test('H6.12: a stale focus is ignored — the selection decides', () => {
 		assert.equal(h.stateCalls('labels.open').length, 0, 'but an ambiguous one with no live focus opens nothing');
 	} finally { h.restore(); }
 });
+
+/*
+B72 -- a routed link may duplicate an existing pair; a straight one may not.
+
+Ruled by the director: parallel paths that carry a waypoint fan out and do not collide. The
+reasoning is the discriminator and narrows the rule -- a second STRAIGHT link between the same two
+nodes renders exactly on top of the first, so permitting it would trade the silent discard this
+row was filed for against a silent duplicate.
+
+Before this, the refusal ALSO deleted every waypoint the user had just placed (cleanupRoute), and
+did so asymmetrically: with no bend the same rejected release fell through to click-select and
+looked harmless. That asymmetry is what made it read as a waypoint bug.
+*/
+test('B72: a second link between the same pair is allowed when it carries a bend', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const at = (id, x, y) => pointer(x, y, {
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s2) => (s2.includes('node') ? { id } : null) },
+		});
+		const plain = () => { h.input.onDown(at(a.id, 0, 0)); h.input.onMove(at(b.id, 360, 0)); h.input.onUp(at(b.id, 360, 0)); };
+		const routed = () => {
+			h.input.onDown(at(a.id, 0, 0));
+			h.input.onMove(at(a.id, 180, 60));
+			h.input.onKeyDown(key('w'));
+			h.input.onMove(at(b.id, 360, 0));
+			h.input.onUp(at(b.id, 360, 0));
+		};
+
+		plain();
+		assert.equal(h.model.all('link').length, 1, 'the first link commits');
+
+		plain();
+		assert.equal(h.model.all('link').length, 1,
+			'a straight duplicate is still refused — it would render exactly on top of the first');
+
+		routed();
+		assert.equal(h.model.all('link').length, 2,
+			'a routed duplicate IS allowed: the bend makes it a distinct, visible path');
+		assert.equal(h.model.all('waypoint').length, 1,
+			'and the waypoint survived — the refusal used to delete every one the user placed');
+		assert.ok(h.model.all('link').some((l) => l.via && l.via.length === 1), 'the second carries its bend');
+	} finally { h.restore(); }
+});
