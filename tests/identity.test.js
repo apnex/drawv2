@@ -239,3 +239,24 @@ test('B68: a wrong audience says so, and says both sides', async () => {
 	assert.equal(seen[0][0], 'wrong-audience', 'the single most likely misconfiguration is named');
 	assert.match(seen[0][1], /got .*WRONG want .*RIGHT/, 'and both sides are reported, or it is unactionable');
 });
+
+import { identitySource } from '../server/identity.mjs';
+
+/*
+H9.25/B93 -- the seam between configuration and mechanism.
+
+One branch today, and the point of the function is that a second one costs nothing elsewhere. What
+must hold is that "no source" is representable and distinct from "a source that rejects everyone":
+the first is local development with authorization off, the second is a misconfiguration, and
+conflating them is how a store ends up open. server.js rules on which is acceptable; this reports.
+*/
+test('H9.25: an identity source is resolved from configuration, and absence is a real answer', () => {
+	assert.equal(identitySource({}), null, 'nothing configured is nobody — not a stub that says yes');
+	assert.equal(identitySource({ IAP_AUDIENCE: '' }), null, 'an empty audience is not a source');
+
+	const src = identitySource({ IAP_AUDIENCE: '/projects/1/global/backendServices/2' });
+	assert.ok(src, 'an audience yields a source');
+	assert.equal(typeof src.principalOf, 'function', 'which carries the resolver the app is handed');
+	assert.match(src.name, /IAP/, 'and names itself, because the boot line reports which one is live');
+	assert.match(src.name, /backendServices\/2/, 'including the audience, so a wrong one is visible at boot');
+});

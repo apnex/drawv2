@@ -184,3 +184,26 @@ export function domainGate(principalOf, domains = []) {
 		return allow.has(principal.slice(at + 1).toLowerCase()) ? principal : null;
 	};
 }
+
+/*
+The one place configuration becomes an identity source -- H9.25.
+
+`authz` used to be spelled `Boolean(process.env.IAP_AUDIENCE)`, which made authorization a shadow
+of whether one Google product was configured. That is the wrong shape twice over. Authorization is
+a property of this application and IAP is merely one way to learn who is asking, and `canRead` and
+`canWrite` both return true when `authz` is off, so removing the mechanism would have removed the
+model with it and left every diagram readable and writable by anyone who reached the port (B93).
+
+This function is the seam between those two statements, and the only place in the server that
+decides which mechanism is in play. A second mechanism -- in-app SSO, say -- is one more branch
+here and no change anywhere else, which is the property that makes that decision cheap to defer.
+
+Null means nothing is configured. That is local development, where there is no identity and
+authorization is deliberately off. It is NOT permission to run that way in production: this
+function reports what is configured, and `server.js` rules on whether that is acceptable.
+*/
+export function identitySource(env = process.env) {
+	const audience = env.IAP_AUDIENCE || '';
+	if (audience) return { name: `IAP, audience ${audience}`, principalOf: iapIdentity({ audience }) };
+	return null;
+}

@@ -291,16 +291,51 @@ test('B70: authz with no identity source refuses to start, rather than refusing 
 	fs.rmSync(dataDir, { recursive: true, force: true });
 });
 
-test('B70: the real server.js wiring passes the audience it switches on', async () => {
-	// the defect was a missing property in an object literal, invisible to every test because all
-	// of them call createApp directly. This reads the wiring itself, which is the only artefact
-	// that was actually wrong.
+/*
+B70 was an argument tested but not passed: `authz: Boolean(audience)` with no `audience` alongside
+it. The defect was a missing property in an object literal, invisible to every test because all of
+them call createApp directly, so this reads the wiring itself -- the only artefact that was wrong.
+
+H9.25 changed what has to hold. `audience` is gone, and the durable invariant is that the switch
+and the identity come from ONE value, because B70 was those two disagreeing. scan-wiring (H9.16)
+does not cover this: its rule is that a root binding named P must be passed as P, and the binding
+here is `source` while the parameter is `principalOf`.
+*/
+test('B70/H9.25: the switch and the identity come from one value in the real wiring', async () => {
 	const src = fs.readFileSync(new URL('../server/server.js', import.meta.url), 'utf8');
 	const call = src.slice(src.indexOf('createApp({'));
 	const args = call.slice(0, call.indexOf('})') + 1);
-	assert.match(args, /(^|[,{]\s*)audience\s*[,}]/,
-		'audience must be PASSED, not only tested inside Boolean(audience)');
-	assert.match(args, /authz:/, 'and authz is still derived from it');
+
+	const authz = /authz:\s*([^,}]+)/.exec(args);
+	const principal = /principalOf:\s*([^,}]+)/.exec(args);
+	assert.ok(authz, 'authz is passed');
+	assert.ok(principal, 'principalOf is PASSED, not merely consulted — that was the B70 shape');
+	assert.match(authz[1], /source/, 'the switch derives from the identity source');
+	assert.match(principal[1], /source/, 'and so does the identity, so the two cannot disagree');
+	assert.doesNotMatch(args, /audience/,
+		'and the app is no longer handed an IAP-shaped argument at all (H9.25)');
+});
+
+/*
+H9.25/B93 -- authorization must not be a shadow of one authentication mechanism.
+
+`canRead` and `canWrite` return true when `authz` is off, and `authz` was `Boolean(IAP_AUDIENCE)`.
+So "replace the authentication mechanism" and "open every diagram to everyone" were the same edit.
+The structural claim of the repair is that the application no longer knows what IAP is: asserted
+against the source, because it is a claim about coupling and nothing observable at runtime would
+show it.
+*/
+test('H9.25: the app does not know which authentication mechanism produced the principal', () => {
+	const app = fs.readFileSync(new URL('../server/app.js', import.meta.url), 'utf8');
+	assert.doesNotMatch(app, /iapIdentity/,
+		'app.js must not name the mechanism — server.js resolves a source and hands in principalOf');
+	assert.match(app, /domainGate/, 'it still composes the allowlist, which is policy rather than mechanism');
+
+	const server = fs.readFileSync(new URL('../server/server.js', import.meta.url), 'utf8');
+	assert.doesNotMatch(server, /authz:\s*Boolean\(audience\)/,
+		'the switch is no longer spelled as the presence of an IAP audience');
+	assert.match(server, /bucket && !source/,
+		'and the boot guard demands an identity SOURCE, not that one product is configured');
 });
 
 /*

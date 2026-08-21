@@ -14,7 +14,7 @@ import { WebSocketServer } from 'ws';
 import { Store } from './store.js';
 import { Session } from './protocol.js';
 import { handleRest } from './rest.js';
-import { iapIdentity, domainGate } from './identity.mjs';
+import { domainGate } from './identity.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
 import { svgDocument } from './svg.mjs';
@@ -107,7 +107,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', audience = '', principalOf = null, domains = [] } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', principalOf = null, domains = [] } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -126,30 +126,35 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	/*
 	The one place a request becomes a principal -- ACCESS.md.
 
-	`principalOf` is injectable so a test can supply an identity without minting a signed assertion,
-	and it resolves to nobody when no audience is configured. Nobody is the correct answer there:
-	with authorization off the store ignores the principal entirely, and with it on a request that
-	proves nothing should carry nothing.
+	`principalOf` is the whole of it. H9.25 removed the `audience` parameter, so this function no
+	longer knows that IAP exists: `server.js` resolves a source through `identitySource()` and hands
+	the result in. Absent one, a request resolves to nobody, which is the correct answer -- with
+	authorization off the store ignores the principal entirely, and with it on a request that proves
+	nothing should carry nothing.
 	*/
 	// H9.8: the allowlist wraps whatever produced the principal, including an injected one, so a
 	// test exercises the same composition production uses
 	/*
 	B70: refuse the one combination that is never intended.
 
-	`authz` on with neither an audience nor an injected `principalOf` means the grant filter is
-	active and no request can ever carry an identity -- every list is empty and every write is
-	refused, including the owner's. That is indistinguishable at a glance from a working
-	deployment that simply has no data, which is how it survived a production cutover.
+	`authz` on without a `principalOf` means the grant filter is active and no request can ever carry
+	an identity -- every list is empty and every write is refused, including the owner's. That is
+	indistinguishable at a glance from a working deployment that simply has no data, which is how it
+	survived a production cutover.
 
 	Throwing here rather than defaulting is the point: the previous behaviour silently substituted
 	a stub that returns null, so a missing argument became a running service with no identity.
+
+	H9.25 also made the original mistake unrepresentable rather than merely detected. B70 was an
+	argument that was tested and not passed; with `audience` gone there is one identity argument, so
+	there is no longer a second value that can be consulted while the real one goes missing.
 	*/
-	if (authz && !audience && !principalOf) {
+	if (authz && !principalOf) {
 		throw new Error('createApp: authz is on but there is no way to identify anyone -- pass '
-			+ '`audience` (production) or `principalOf` (tests). Authorization with no identity source '
-			+ 'refuses every caller including the owner.');
+			+ '`principalOf`, which server.js resolves through identitySource(). Authorization with no '
+			+ 'identity source refuses every caller including the owner.');
 	}
-	const identify = domainGate(principalOf || (audience ? iapIdentity({ audience }) : async () => null), domains);
+	const identify = domainGate(principalOf || (async () => null), domains);
 	const store = new Store(data, { examplesDir, files, authz });
 	await store.init();
 	/*

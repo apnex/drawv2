@@ -7,6 +7,7 @@ persistence websocket on one port. State lives in <dataDir>/<diagram-id>.json.
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { gcsFiles } from './files.mjs';
+import { identitySource } from './identity.mjs';
 
 const args = process.argv.slice(2);
 function flag(name, fallback) {
@@ -39,34 +40,40 @@ mutable store moves to GCS (files.mjs).
 const bucket = process.env.BUCKET || flag('bucket', undefined);
 
 /*
-Authorization -- ACCESS.md. IAP_AUDIENCE turns it on; OWNER claims what predates it.
+Authorization -- ACCESS.md. An identity source turns it on; OWNER claims what predates it.
 
 The combination that must never happen quietly is a real deployment with authorization off, so it
 is refused rather than defaulted. BUCKET means this is running against the shared object store,
-and without an audience there is no identity, and without identity `list()` returns every diagram
-to every caller. Booting anyway would look completely healthy while being wide open, which is the
-exact failure mode this milestone exists to remove.
+and with no identity source no request carries an identity, and without identity `list()` returns
+every diagram to every caller. Booting anyway would look completely healthy while being wide open,
+which is the exact failure mode this milestone exists to remove.
+
+H9.25/B93: this used to read `IAP_AUDIENCE`, so authorization was on precisely when one Google
+product was configured. Both the switch and the refusal are now phrased in terms of an identity
+SOURCE, because `canRead` and `canWrite` return true when authorization is off -- which made
+"replace the authentication mechanism" and "open the store to everyone" the same edit.
 */
-const audience = process.env.IAP_AUDIENCE || '';
+const source = identitySource(process.env);
 const owner = process.env.OWNER || '';
 // H9.8: comma-separated, e.g. ALLOW_DOMAINS=apnex.com.au,gmail.com. Unset means no domain
 // restriction -- grants still default-deny, so a stranger signs in and sees an empty list.
 const domains = (process.env.ALLOW_DOMAINS || '').split(',').map((d) => d.trim()).filter(Boolean);
-if (bucket && !audience) {
-	console.error('[ draw ] refusing to boot: BUCKET is set but IAP_AUDIENCE is not, so no request '
-		+ 'carries an identity and every diagram would be listed to every caller. Set IAP_AUDIENCE to '
-		+ 'the backend service audience, or unset BUCKET to run locally.');
+if (bucket && !source) {
+	console.error('[ draw ] refusing to boot: BUCKET is set but no identity source is configured, so '
+		+ 'no request carries an identity and every diagram would be listed to every caller. Set '
+		+ 'IAP_AUDIENCE to the backend service audience, or unset BUCKET to run locally.');
 	process.exit(1);
 }
-if (audience) console.log(`[ draw ] authorization: on${owner ? `, adopting unowned diagrams for ${owner}` : ''}`);
+if (source) console.log(`[ draw ] authorization: on via ${source.name}${owner ? `, adopting unowned diagrams for ${owner}` : ''}`);
 const files = bucket ? gcsFiles(bucket) : null;
 if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 
-// B70: `audience` must be passed, not merely tested. It previously appeared in this call only
-// inside `Boolean(audience)`, which reads as though the audience is being handled and turned the
-// grant filter on while leaving the app with no way to identify anyone.
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(audience), audience, owner, domains });
-if (audience) {
+// B70 was an argument tested but not passed: `audience` appeared in this call only inside
+// `Boolean(audience)`, which reads as though it is being handled and turned the grant filter on
+// while leaving the app with no way to identify anyone. H9.25 makes that shape unrepresentable --
+// the source IS the identity argument, so there is nothing left to test in place of passing it.
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains });
+if (source) {
 	console.log(domains.length
 		? `[ draw ] sign-in restricted to ${domains.join(', ')}`
 		: '[ draw ] sign-in open to any account IAP admits; access is by grant only');

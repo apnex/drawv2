@@ -33,6 +33,7 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
+	'server/identity.mjs:iapIdentity': 'the IAP mechanism itself. H9.25 made `identitySource()` the only production caller, and it lives in this same file, so the export now earns its keep entirely from tests -- deliberately. This function is where twelve distinct refusals live (bad signature, wrong audience, wrong issuer, alg:none, expired, no email claim), each of which is a security boundary, and reaching them through `identitySource` would mean plumbing environment variables through every one. The alternative is not testing them directly, which is worse than an entry in this table.',
 	'server/identity.mjs:jwkSource': 'as above -- injectable so the verifier can be tested against a locally generated key rather than a captured token.',
 	'kernel/fixtures.mjs:FIXTURES': 'canonical reference scenes — consumed by the spec viewer and by eye, not by code',
 	'app/src/commands.js:resizeNodeSpan': 'used internally by the Shift+arrow span builder (commands.js:333); exported so the W1 authoring gesture can be driven directly in a test rather than through a synthesised keystroke.',

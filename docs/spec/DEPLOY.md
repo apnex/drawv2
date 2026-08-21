@@ -317,9 +317,13 @@ OWNER           user:aobersnel@apnex.com.au
 ALLOW_DOMAINS   apnex.com.au            (optional; comma-separated)
 ```
 
-`IAP_AUDIENCE` is the switch.\
-Setting it turns on the grant filter and makes every request carry a verified identity, so it must not be set before `OWNER` is, or the eleven existing diagrams belong to nobody and list to nobody.\
-The service already refuses to boot with `BUCKET` set and `IAP_AUDIENCE` unset, which covers the opposite mistake.
+**Amended 2026-08-21 (H9.25).**\
+`IAP_AUDIENCE` configures an identity SOURCE, and the presence of a source is the switch.\
+That distinction is the whole of the amendment: authorization used to be spelled `Boolean(IAP_AUDIENCE)`, so it was on precisely when one Google product was configured, and since `canRead` and `canWrite` both return true when it is off, removing the mechanism would have removed the model with it.\
+Adding a second mechanism is now one branch in `identitySource()` and no change anywhere else.
+
+Setting a source turns on the grant filter and makes every request carry a verified identity, so it must not be set before `OWNER` is, or the twelve existing diagrams belong to nobody and list to nobody.\
+The service refuses to boot with `BUCKET` set and no identity source configured, which covers the opposite mistake.
 
 `OWNER` claims diagrams that predate ownership, once, at boot.\
 It is a migration rather than a policy: diagrams created after the flag is on take their owner from the session that created them, and adoption never runs against them.
