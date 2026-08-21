@@ -186,6 +186,22 @@ export function validateMutation(model, mutation) {
 }
 
 // full document validation (push / load from disk)
+/*
+`doc`, not `model`, and the difference is the point -- H5.7/B95.
+
+Two things in this system, and one spelling for each. A **Model** is the live object: indices,
+selection, mutation methods, the thing the editor holds. A **doc** is the flat JSON that comes off
+disk and goes over the wire, produced by `model.toJSON()` and consumed by `Model.load()`.
+
+H5 renamed the substrate directory `document/` to `model/` because that one word was covering three
+concepts -- the substrate, the browser global, and a persisted diagram -- and deliberately did NOT
+rename `doc`, `docfile` or this function, because those name the serialized form specifically.
+
+So this is not a leftover. Validation exists ONLY at the serialization boundary: a document arriving
+from disk at boot, or a `create {doc}` arriving from the wire. Nothing validates a live Model, and a
+`validateModel` would therefore name something that does not happen. Every call site takes `parse()`
+output; a Model has never reached this function and should not.
+*/
 export function validateDoc(doc) {
 	if (!doc || typeof doc !== 'object') return 'doc is not an object';
 	if (!doc.meta || typeof doc.meta !== 'object') return 'invalid meta';

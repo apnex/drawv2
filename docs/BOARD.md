@@ -255,6 +255,7 @@ All `S5`. Nothing here changes behaviour; everything here reduces the chance of 
 | H5.3 | ~~Decide `schema.js`'s fate~~ — **resolved by PROMOTION**: the kernel renderer got the consumer it always lacked, `GET /d/<id>.svg` | **B28** | S5 · L | `DONE` |
 | H5.6 | `contentLayout()` owns the arithmetic; both renderers own only emission. `scan-twins` ALLOW list now **empty** | **B40** | S5 · S | `DONE` |
 | H5.7 | `document/` → `model/` — filesystem, 32 imports, the `/model` HTTP mount and the Dockerfile in one commit; `doc` deliberately untouched | **B41** | S5 · M | A3 | `DONE` |
+| H5.8 | The `doc` / `Model` vocabulary is stated where the names are met — `validateDoc`, `toJSON`, and a SCOPE.md vocabulary section — because the ruling lived only in a closed backlog cell and the question recurred five milestones later | **B95** | S1 · S | `DONE` |
 | H5.4 | **span→px consolidated** into `spanExtent` (5 spellings → 1). The `input.js`/`palette.js` remainder — crosshair owners, zone-corner map, drag thresholds — **deferred into H6**, which restructures those files | **B36** | S5 · M | A3 | `DONE` |
 
 **Exit:** duplication ledger closed or each survivor carries a reason. Zero dangling references.

@@ -318,7 +318,17 @@ export class Model {
 		this.state.selection = new Set([...this.expandSelection(ids)].filter((id) => this.selectable(id)));
 	}
 
-	// ---- document (de)serialization — the persisted JSON shape from docs/spec/SCOPE.md ----
+	/*
+	---- doc (de)serialization — the persisted JSON shape from docs/spec/SCOPE.md ----
+
+	This method IS the boundary between the two nouns, which is why the distinction is worth stating
+	here as well as at `validateDoc`. Above this line is a Model: live, indexed, with methods. Below
+	it is a `doc`: flat JSON, no behaviour, the only form that reaches disk or the wire. `load()`
+	crosses back the other way.
+
+	H5.7 renamed the substrate `document/` to `model/` and kept `doc` deliberately (B41), so `doc`
+	here is a chosen term rather than a survival. B95 records why that keeps having to be explained.
+	*/
 	toJSON() {
 		const doc = { meta: { ...this.state.meta, grants: { ...this.state.meta.grants }, slides: { ...this.state.meta.slides } } };
 		KINDS.forEach((kind) => {

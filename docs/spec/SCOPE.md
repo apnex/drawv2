@@ -120,6 +120,17 @@ auto-layout). Coordinates are user-owned. References are mined for narrow mechan
 Explicitly NOT borrowed: L1–L4 compiler, layouts/settlement, routes/pathfinder, tag selectors,
 class/style entities, Merkle/hash auditing, reverse RPC, multi-host, k8s binding, peer mesh.
 
+## Vocabulary
+
+Two nouns, one spelling each, and confusing them is the most common question this repository produces.\
+A **Model** is the live object: indices, selection, mutation methods, the thing an editor or the server holds in memory.\
+A **doc** is the flat JSON that comes off disk and travels the wire, produced by `model.toJSON()` and consumed by `Model.load()`.
+
+`validateDoc` is named for the second and is not a leftover from the `document/` to `model/` rename.\
+Validation exists only at the serialization boundary -- a file read at boot, or a `create {doc}` arriving from a client -- so a `validateModel` would name something that never happens.\
+The substrate directory was renamed because `document` covered three concepts at once: the substrate, the browser global, and a persisted diagram.\
+`doc` was kept because it covers exactly one.
+
 ## Entities (MVP = exactly four)
 
 ```json
