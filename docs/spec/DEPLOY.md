@@ -280,9 +280,11 @@ Two related cases are open rather than decided.
 `/oauth2callback` (`server/app.js:145`) is the Slides OAuth redirect.\
 The user reaching it has already signed in through IAP, so it will probably pass -- and "probably" is doing enough work in that sentence to deserve a test rather than an assumption.
 
-`/d/<id>.svg` is unauthenticated by nature today: a self-contained image at a URL.\
-Behind IAP it becomes private, which is arguably correct and also means no README, document or deck can embed a live diagram.\
-If embedding matters it is the same url-map question, and it is cheaper to decide before the cutover than after.
+`/d/<id>.svg` was unauthenticated by nature: a self-contained image at a URL.\
+Corrected 2026-08-21 (B67, H10.12): it is now gated on `canRead` like every other read.\
+An SVG is a rendering of the whole document, so leaving it open was not a property of images but a hole -- ACCESS.md already said a representation is not a permission, and nothing enforced it until reads were gated.\
+The consequence the paragraph below anticipated is now real and deliberate: no README, document or deck can embed a live diagram, because embedding requires a credential the embedder does not have.\
+If embedding matters it is a separate decision -- a per-diagram public flag, or a signed time-limited URL -- and neither should be reached by leaving the route open.
 
 ---
 

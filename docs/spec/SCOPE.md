@@ -141,7 +141,11 @@ reverse would restore access to a principal just revoked.\
 A principal is `user:<email>` or `code:<id>`, namespaced so a code can never be mistaken for a person, and a
 level is `read` or `write`.\
 Neither key is writable through a meta patch, and neither survives arriving on a document from the wire.\
-Designed in `docs/spec/ACCESS.md`; enforcement is H9.3 and not yet built.
+Designed in `docs/spec/ACCESS.md`.\
+Corrected 2026-08-21 (B89): this read *enforcement is H9.3 and not yet built*, which stopped being true at H9.3a.\
+Writes are gated at all seven mutating store methods, reads at `hello`, `open`, the REST document and log, and `/d/<id>.svg` (B67), and lock acquisition and reclaim at H9.4.\
+Pending and not yet built: ACCESS.md's 2026-08-21 amendment rules that `code:<id>` becomes a CREDENTIAL rather than a principal, replaced by an `agent:<name>` identity it authenticates as, and that a grant may name an OWNER as well as a diagram.\
+This paragraph describes what the code does today; that amendment describes what it is agreed to become.
 
 - node: a `shape` frame (the outer shell — `circle` | `square`) with a `type` glyph
   attached in its middle, snapped to a grid point, with editable label. Frame and glyph

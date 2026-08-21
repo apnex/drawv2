@@ -458,6 +458,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.18 | A `del` entry with no entity threw in the browser and shipped — every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
 | H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one — the asymmetry that turned a correct rejection into a broken fix | **B87** | S2 · S | `TODO` |
 | H10.20 | Scanner: a board claim of the form *blocks Hn.m* must agree with that item's state — prose is outside R6, so a paragraph can assert that finished work is blocked | **B88** | S3 · S | `TODO` |
+| H10.21 | Two specs asserted facts the code contradicted — the SVG route's authentication and H9.3's existence — corrected with dated amendments | **B89** | S2 · S | `DONE` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 · L | `TODO` |
 | H10.17 | Share the constants restated across files — `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 · M | `TODO` |
