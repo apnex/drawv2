@@ -187,3 +187,19 @@ test('B71: a snapshot the user ASKED for is not held — that would feel stuck, 
 	assert.equal(t.sync.diagramId, 'diagram-ddd004', 'a deliberate open lands immediately');
 	assert.equal(t.sync.deferredSnapshot, null, 'nothing was held');
 });
+
+test('B76: the client holds its own principal and hands it to the UI', () => {
+	const t = deferrable();
+	const m = snap('diagram-aaa001', 1);
+	m.body.principal = 'user:someone@apnex.com.au';
+	t.recv(m);
+	assert.equal(t.sync.principal, 'user:someone@apnex.com.au', 'taken from the snapshot');
+
+	const states = [];
+	t.sync.onState = (s) => states.push(s);
+	t.sync.emitState({});
+	assert.equal(states[0].principal, 'user:someone@apnex.com.au', 'and reaches onState for rendering');
+
+	t.recv(snap('diagram-bbb002', 2));   // a snapshot with no principal field
+	assert.equal(t.sync.principal, null, 'absent means absent — never a stale identity from a prior load');
+});

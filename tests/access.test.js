@@ -848,3 +848,36 @@ test('B67: REST document, history and the SVG rendering are all gated', async ()
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
 });
+
+/*
+B76 -- the client is told which principal it is.
+
+The gap was sharp rather than merely missing: `snapshotBody` ships the whole document, so the
+browser already held `meta.owner` and the entire `meta.grants` map. It could enumerate every
+principal with access to a diagram and could not tell which one it was. `mayWrite` answers what
+may I do and was never intended to answer who am I.
+*/
+test('B76: the snapshot names the principal, and it is the principal not an email', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const id = [...store.diagrams.keys()][0];
+	store.setOwner(id, OWNER);
+	assert.equal(store.grant(id, GUEST, 'read', OWNER), null);
+	try {
+		const mine = snapshotBody(store.get(id), store, null, OWNER);
+		assert.equal(mine.principal, OWNER, 'namespaced, so the client never parses an identity');
+		assert.match(mine.principal, /^user:/, 'the prefix rides along — user: and code: must stay distinct');
+
+		// the distinguishing property: the document already carried every principal, so this must
+		// tell them apart rather than merely be present
+		assert.ok(mine.doc.meta.grants[GUEST], 'the doc names the guest to everyone who can read it');
+		assert.equal(snapshotBody(store.get(id), store, null, GUEST).principal, GUEST,
+			'and the guest is told it is the guest, not the owner');
+
+		const off = new Store(tmp(), { flushMs: 3_600_000 });
+		await off.init();
+		const anon = snapshotBody(off.get([...off.diagrams.keys()][0]), off, null, null);
+		assert.equal(anon.principal, null, 'with authz off there is no principal, and none is invented');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

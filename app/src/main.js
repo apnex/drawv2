@@ -73,6 +73,7 @@ const menu = {
 	create: document.getElementById('diagram-new'),
 	del: document.getElementById('diagram-del'),
 	lock: document.getElementById('lockstate'),
+	whoami: document.getElementById('whoami'),
 	banner: document.getElementById('banner'),
 	slidesUrl: document.getElementById('slides-url'),
 	slidesPush: document.getElementById('slides-push')
@@ -85,7 +86,7 @@ const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on 
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
 	model, net, history, selection,
-	onState({ status, meta, diagrams, locked, mayWrite, error, rewound }) {
+	onState({ status, meta, diagrams, locked, mayWrite, principal, error, rewound }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
 		// be offered the one remedy the server is certain to refuse.
@@ -93,6 +94,31 @@ const sync = new Sync({
 		else if (!mayWrite) { menu.lock.className = 'lock-readonly'; menu.lock.textContent = 'read-only'; menu.lock.title = 'you have view access to this diagram'; }
 		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
+		/*
+		B76 -- the signed-in identity, top right, immediately left of the authority pill.
+
+		Placement was a real choice. Top left is where branding conventionally lives, and putting
+		an address there reads as though the application is called `aobersnel@apnex.com.au`. Every
+		mainstream tool puts identity top RIGHT, and `#lockstate` -- which answers what may I do --
+		is already there, so identity beside it pairs the two questions a person actually has on
+		arriving: who am I, and what can I do here.
+
+		The address is shown in full rather than abbreviated. In a tool where one account may see
+		a diagram and another may not, being certain WHICH account you are in is the whole value of
+		the element, and initials or a first name do not deliver it. The `user:` prefix is stripped
+		because it is protocol vocabulary; the untouched principal stays in the tooltip.
+
+		Hidden entirely when there is no principal. "anonymous" would name a state that does not
+		exist in a single-tenant run.
+		*/
+		if (principal) {
+			menu.whoami.hidden = false;
+			menu.whoami.textContent = principal.startsWith('user:') ? principal.slice(5) : principal;
+			menu.whoami.title = principal;
+		} else {
+			menu.whoami.hidden = true;
+			menu.whoami.textContent = '';
+		}
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);
 		menu.name.disabled = readOnly;

@@ -145,7 +145,7 @@ That places repair of the verification layer above every feature, because it is 
 | ~~3~~ | H9.18 `DONE` | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
 | — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
 | ~~4~~ | H10.1 `DONE` | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
-| 5 | H10.2 | adjacency | One field. Unblocks the identity label, any sharing UI, and H9.5 and H9.6, none of which can begin without it. |
+| ~~5~~ | H10.2 `DONE` | adjacency | One field. Unblocks the identity label, any sharing UI, and H9.5 and H9.6, none of which can begin without it. |
 | 6 | H10.3 | adjacency | The client twin of B68. Turns B71 and B72 from malfunctions into visible refusals, which is what makes them self-diagnosing. |
 | 7 | H7.6 | verifier | Converts a per-deploy manual tax into one-time capital. Larger than the three scanners above, so it follows them. |
 | 8 | H9.17 | dead path | `authz` defaults off while the only deployment runs it on, so every test exercises the path production does not. |
@@ -441,7 +441,7 @@ Every item here was found by using the application rather than by running the ga
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
 | H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — it silently deleted work in progress | **B71** | S2 · M | `DONE` |
-| H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `TODO` |
+| H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `DONE` |
 | H10.3 | A durable status surface for the last server event, right-aligned in `#status` — errors currently survive until the next message | **B74** | S2 · M | `TODO` |
 | H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `DONE` |
 | H10.7 | Parallel connections between two containers, count bounded by the column span — designed and walked in `design/walk/FINDINGS.md`, never implemented | **B72** | S4 · L | `TODO` |

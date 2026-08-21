@@ -58,6 +58,9 @@ export class Sync {
 		// Server-Locked is temporary and reclaimable, this is not reclaimable by definition.
 		// Starts true because with authz off the server answers true for everyone.
 		this.mayWrite = true;
+		// B76: which principal this client IS. Null with authorization off -- honest, because there
+		// is no principal then, and inventing one would make a single-tenant run look multi-tenant.
+		this.principal = null;
 		this.lockShownAt = 0;    // when the amber indicator went up (for the min dwell)
 		this.unlockTimer = null; // pending return-to-green after the min dwell
 		this.selectionDirty = false; // a selection (model-state) change pending forward to the server (R2)
@@ -304,6 +307,7 @@ export class Sync {
 			// that forgot to say should present as unwritable rather than silently offer edits
 			// the server will refuse -- and a test will notice the former.
 			this.mayWrite = msg.body.mayWrite === true;
+			this.principal = typeof msg.body.principal === 'string' ? msg.body.principal : null;
 			if (this.locked) this.lockShownAt = Date.now();
 			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
 				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
@@ -435,6 +439,7 @@ export class Sync {
 			meta: this.model.state.meta,
 			locked: this.locked,
 			mayWrite: this.mayWrite,
+			principal: this.principal,
 			...extra
 		});
 	}

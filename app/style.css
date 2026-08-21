@@ -36,6 +36,10 @@ body { display: flex; flex-direction: column; }
 .lock-locked   { background-color: #ffd54f; cursor: pointer; }
 .lock-offline  { background-color: #555; color: #ddd; }
 .lock-readonly { background-color: #90a4ae; color: #fff; }
+/* B76: identity sits immediately left of the authority pill -- who you are, then what you may do.
+   Muted and un-boxed so it reads as context rather than as another control. */
+#whoami { color: #9e9e9e; font-size: 11px; max-width: 200px; overflow: hidden;
+	text-overflow: ellipsis; white-space: nowrap; }
 
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {

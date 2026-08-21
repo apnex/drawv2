@@ -56,6 +56,17 @@ export function snapshotBody(model, store, locks, principal = null) {
 		// rule it is presenting. Deliberately not folded into `locked` -- Server-Locked means
 		// someone else is driving and offers "take it back", which a reader may not do (B64).
 		mayWrite: store.canWrite(id, principal),
+		/*
+		B76: who the client is. The PRINCIPAL, not the email -- the browser must never have to
+		parse an identity, and `user:` vs `code:` is the distinction that matters to anything
+		built on this. Null when authorization is off, which is honest: there is no principal.
+
+		This is the client's own identity and nobody else's. `meta.owner` and `meta.grants` were
+		already on the wire inside `doc`, so the browser could enumerate every principal with
+		access to a diagram and could not tell which one it was. `mayWrite` answers what may I do;
+		this answers who am I, and they are not the same question.
+		*/
+		principal,
 		// the version the document is AT, so a client can `resume` against it later without
 		// having to observe a change first (I11: the client never mints this, it only echoes it)
 		version: log ? log.version : 0,
