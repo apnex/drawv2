@@ -67,6 +67,33 @@ The email header is then a cross-check rather than an input, which is exactly th
 One format detail that would otherwise be found by a failing lookup rather than by reading: the header value carries a namespace prefix, `accounts.google.com:someone@example.com`, so it is not a bare address.\
 A principal is `user:someone@example.com`, so the prefix is stripped rather than passed through.
 
+### One boundary, and everything past it deals in principals
+
+Both authentication methods resolve in a single function, which takes a request and returns a principal string or nothing.\
+A verified IAP assertion becomes `user:<email>`; a bearer connection code becomes `code:<id>`; anything else is nobody.\
+Past that function **nothing knows IAP exists**, and no handler reads a header.
+
+That containment is doing three separate jobs, which is why it is a decision rather than tidiness.
+
+It is what makes the two methods converge rather than run in parallel.\
+Two paths that each derive their own principal are two paths that must be kept agreeing, and the day they disagree is the day one of them is wrong about who is asking.
+
+It contains a vendor coupling.\
+These are Google's headers, not a web standard -- `RFC 6648` deprecated the `X-` prefix convention for new headers in 2012 and Google uses it anyway -- so they are a contract that can change, and changing one place is the difference between a rename and an audit.
+
+And it makes three silent failures testable in one place rather than three.\
+Every trap on this header fails quietly rather than loudly, which is the worst property an authentication input can have:
+
+| Trap | What happens if missed |
+|---|---|
+| Node lowercases every key in `req.headers` | `req.headers['X-Goog-Authenticated-User-Email']` is `undefined`, with no error -- the request reads as anonymous |
+| The value is prefixed `accounts.google.com:` | the principal never matches a grant, so access is denied for a reason nothing reports |
+| The email header is not trustworthy on its own | a forged header is believed, if anything ever reaches the service without passing IAP |
+
+**Header names are written lowercase everywhere in this codebase**, because that is what Node presents and therefore the only spelling that works.\
+Google's documentation writes `X-Goog-Authenticated-User-Email` in prose and `x-goog-iap-jwt-assertion` in the same table, which is a good indication that the casing carries no meaning.\
+Anyone matching the documented mixed case gets `undefined` rather than an error, so the convention is recorded here to stop it being helpfully corrected later.
+
 A **grant** is `(principal, diagram) -> read | write`.
 
 Keeping the level on the grant rather than on the principal is the decision most likely to be revisited, so the reasoning is recorded rather than assumed.\
