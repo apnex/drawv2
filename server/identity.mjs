@@ -63,7 +63,10 @@ function warnOnceRefusal() {
 	return (reason, detail) => {
 		if (seen.has(reason)) return;
 		seen.add(reason);
-		console.warn(`[ identity ] refusing assertions: ${reason}${detail ? ` -- ${detail}` : ''}`);
+		// `resolved` is a success and must not read as a failure -- "refusing assertions: resolved"
+		// is the kind of line that costs someone an hour later
+		const lead = reason === 'resolved' ? 'identity resolved:' : `refusing assertions: ${reason}`;
+		console.warn(`[ identity ] ${lead}${detail ? `${reason === 'resolved' ? ' ' : ' -- '}${detail}` : ''}`);
 	};
 }
 

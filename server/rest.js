@@ -257,6 +257,11 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	}
 	const model = store.get(parts[3]);
 	if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;
+	// B67: gated once here, covering the document AND everything below it -- lock state, history,
+	// and the log all describe a diagram the caller may not be entitled to know about
+	if (!store.canRead(parts[3], principal)) {
+		return json(res, 403, { error: 'forbidden: no access to this diagram', code: 'forbidden' }), true;
+	}
 	if (parts.length === 4) {
 		return json(res, 200, model.toJSON()), true;
 	}

@@ -36,6 +36,17 @@ import crypto from 'node:crypto';
 
 export function snapshotBody(model, store, locks, principal = null) {
 	const id = model.state.meta.id;
+	/*
+	B67, defence in depth. Every caller is expected to have checked already; this exists so that a
+	future one that forgets cannot quietly ship a document to someone with no grant.
+
+	Throwing rather than returning an empty body is deliberate. A doc-less snapshot is a shape no
+	client understands, so it would fail somewhere further away from the cause -- and reaching here
+	unauthorized is a programming error, not a request to refuse politely.
+	*/
+	if (!store.canRead(id, principal)) {
+		throw new Error(`snapshotBody: ${principal || 'an anonymous caller'} may not read ${id}`);
+	}
 	const log = store.log(id);
 	return {
 		doc: model.toJSON(),
@@ -214,13 +225,25 @@ export class Session {
 	async dispatch(cmd, body) {
 		switch (cmd) {
 			case 'hello': {
-				const model = (body.diagram && this.store.get(body.diagram)) || this.store.first();
+				// B67: `first` is principal-scoped, so an unauthorized session gets nothing rather
+				// than whichever diagram the Map yielded first
+				const asked = body.diagram && this.store.get(body.diagram);
+				if (asked && !this.store.canRead(body.diagram, this.principal)) {
+					return this.error('forbidden: no access to this diagram', 'forbidden');
+				}
+				const model = asked || this.store.first(this.principal);
 				if (!model) return this.error('no diagrams available');
 				return this.snapshot(model);
 			}
 			case 'open': {
 				const model = this.store.get(body.id);
 				if (!model) return this.error(`unknown diagram: ${body.id}`);
+				// forbidden rather than "unknown", matching the write path: ids are minted and not
+				// enumerable, so refusing distinctly costs nothing and telling an agent the truth
+				// is worth more than pretending the diagram does not exist
+				if (!this.store.canRead(body.id, this.principal)) {
+					return this.error('forbidden: no access to this diagram', 'forbidden');
+				}
 				return this.snapshot(model);
 			}
 			case 'create': {

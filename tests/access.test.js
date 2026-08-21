@@ -768,3 +768,83 @@ test('H9.8: the allowlist overrides an explicit grant, because it runs first', a
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
 });
+
+/*
+B67 -- reads are gated too.
+
+H9 gated writes, listing, and locks, and left the document open. The asymmetry survived because
+`snapshotBody` filters `diagrams` three lines below where it returns `doc`, so an unauthorized
+payload sat beside an authorized one and looked checked. Live, that produced the exact symptom
+that exposed it: a diagram rendered in the editor while the dropdown listing it was empty.
+
+Five paths, because "the read gate" was five separate omissions and fixing four is not fixing it.
+*/
+async function ownedStore() {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const id = [...store.diagrams.keys()][0];
+	store.setOwner(id, OWNER);
+	return { dir, store, id };
+}
+
+test('B67: ws open and hello refuse a diagram the principal cannot read', async () => {
+	const { dir, store, id } = await ownedStore();
+	try {
+		const ws = fakeWs();
+		new Session(ws, store, null, new Locks(), GUEST);
+
+		ws.recv('open', { id });
+		assert.equal(ws.last('error')?.body.code, 'forbidden', 'open is refused');
+		assert.equal(ws.last('snapshot'), undefined, 'and no document was sent');
+
+		ws.recv('hello', {});
+		assert.equal(ws.last('snapshot'), undefined,
+			'hello with no readable diagram sends nothing — store.first no longer leaks whichever came first');
+		assert.match(ws.last('error').body.message, /no diagrams available/);
+
+		// control: the owner still gets both
+		const ows = fakeWs();
+		new Session(ows, store, null, new Locks(), OWNER);
+		ows.recv('hello', {});
+		assert.equal(ows.last('snapshot')?.body.doc.meta.id, id, 'the owner is unaffected');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B67: snapshotBody refuses outright, so a future caller cannot reintroduce the hole', async () => {
+	const { dir, store, id } = await ownedStore();
+	try {
+		assert.throws(() => snapshotBody(store.get(id), store, null, GUEST), /may not read/,
+			'defence in depth: the payload builder will not build an unauthorized payload');
+		assert.doesNotThrow(() => snapshotBody(store.get(id), store, null, OWNER));
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B67: REST document, history and the SVG rendering are all gated', async () => {
+	let who = OWNER;
+	const dataDir = path.join(os.tmpdir(), `draw-b67-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0,
+		authz: true, owner: OWNER, principalOf: async () => who,
+	});
+	const root = `http://127.0.0.1:${app.port}`;
+	try {
+		const id = [...app.store.diagrams.keys()][0];
+		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}`)).status, 200, 'the owner reads it');
+		assert.equal((await fetch(`${root}/d/${id}.svg`)).status, 200, 'and renders it');
+
+		who = GUEST;
+		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}`)).status, 403, 'the document is refused');
+		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}/log`)).status, 403,
+			'and so is its history — a log describes content the caller may not know about');
+		// ACCESS.md: a representation is not a permission. An SVG is the whole document.
+		assert.equal((await fetch(`${root}/d/${id}.svg`)).status, 403, 'and so is the image');
+
+		// a read grant is enough to read, which is what distinguishes this from the write gate
+		assert.equal(app.store.grant(id, GUEST, 'read', OWNER), null);
+		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}`)).status, 200, 'a read grant reads');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});

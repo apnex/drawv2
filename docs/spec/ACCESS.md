@@ -276,6 +276,12 @@ Running before the grant lookup is what gives it force: a principal on a domain 
 It is per-application rather than org-wide, it can name `gmail.com`, and it composes with grants instead of competing with them.\
 The org policy `iam.allowedPolicyMemberDomains` is the alternative and is the wrong tool: it constrains every IAM policy in the project, not this application, and still cannot name a consumer domain.
 
+Added 2026-08-21 (H9.12, B67): reads are gated by `canRead`, the mirror of `canWrite`, on the websocket `hello` and `open`, on the REST document and its log, and on `/d/<id>.svg`.\
+Until then only writes, listing, and lock acquisition were checked, and the document itself went to anyone who named an id.\
+The gap survived review because `snapshotBody` filters the diagram list three lines below where it returns the document, so an unauthorized payload sat beside an authorized one and read as though it had been checked.\
+It surfaced in production as a diagram rendering in the editor while the dropdown that should have listed it was empty.\
+`snapshotBody` now refuses rather than trusting its callers, because five callers each had to remember and one did not.
+
 The intended end state is `allAuthenticatedUsers` at the IAP layer with the allowlist and default-deny in the application, so a stranger signs in successfully and sees an empty list.\
 An unset allowlist therefore means no domain restriction rather than no access, because the grant model is the primary control and already denies by default.\
 `ALLOW_DOMAINS` names the exception, and the server states the policy it resolved at boot rather than leaving an operator to infer it.

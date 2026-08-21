@@ -395,6 +395,9 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup — IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
 | H9.9 | Examples become templates; first write forks a per-owner copy — reverses the first-boot seed, amended in `SCOPE.md` | — | S3 · L | `TODO` |
 | H9.10 | Decide the fate of the 11 unowned diagrams now in `gs://diagrams.apnex.io` — adopt or delete, explicitly | — | S3 · S | `DONE` |
+| H9.12 | Gate reads: `hello`, `open`, `store.first`, the REST document and log, and the SVG rendering — writes were gated, reads never were | **B67** | S2 · M | `DONE` |
+| H9.13 | Name every identity refusal, once per reason, so a misconfiguration announces itself instead of presenting as a uniform denial | **B68**, **B69** | S2 · S | `DONE` |
+| H9.14 | Pass the audience `server.js` switches authorization on with, and refuse to start when authz has no identity source | **B70** | S2 · S | `DONE` |
 
 ## Held — on the record, not on the board
 

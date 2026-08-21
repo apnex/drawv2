@@ -211,6 +211,13 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 				res.writeHead(404, { 'Content-Type': 'application/json' });
 				return res.end(JSON.stringify({ error: `unknown diagram: ${asSvg[1]}` }) + '\n');
 			}
+			// B67: an SVG is a rendering of the document, so it carries the whole document's
+			// content. ACCESS.md already says the representation is not the permission; until
+			// now nothing enforced it.
+			if (!store.canRead(asSvg[1], principal)) {
+				res.writeHead(403, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify({ error: 'forbidden: no access to this diagram', code: 'forbidden' }) + '\n');
+			}
 			const body = svgDocument(model.toJSON());
 			res.writeHead(200, {
 				'Content-Type': 'image/svg+xml; charset=utf-8',

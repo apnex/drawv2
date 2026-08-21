@@ -259,9 +259,13 @@ export class Store {
 		return entry ? entry.model : null;
 	}
 
-	first() {
-		const entry = this.diagrams.values().next().value;
-		return entry ? entry.model : null;
+	// B67: the first diagram THIS PRINCIPAL may read. It previously returned whichever entry the
+	// Map happened to yield, which is how an unauthenticated `hello` was handed a document.
+	first(principal = null) {
+		for (const entry of this.diagrams.values()) {
+			if (this.canRead(entry.model.state.meta.id, principal)) return entry.model;
+		}
+		return null;
 	}
 
 	/*
@@ -328,6 +332,20 @@ export class Store {
 	With authorization off it always allows, because there is no identity to judge and the store is
 	the single-tenant tool it has always been.
 	*/
+	/*
+	The read predicate (B67). Reads were the half of authorization H9 never gated: writes went
+	through `#mayWrite`, listing went through `list(principal)`, and the document itself went out
+	to anyone who asked for it by id. The asymmetry was invisible because `snapshotBody` filters
+	`diagrams` three lines below where it returns `doc`, so an unauthorized payload sat next to an
+	authorized one and looked like it had been checked.
+
+	Any level reads. `read` and `write` differ on writing, not on seeing.
+	*/
+	canRead(id, principal) {
+		if (!this.authz) return true;
+		return this.access(id, principal) !== null;
+	}
+
 	// the write predicate, public because authorization is not only about mutating the model:
 	// taking the server-side write lock is a write capability held outside this class (B63), and a
 	// second copy of this rule in the caller is a rule that drifts. `#mayWrite` is the same
