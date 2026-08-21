@@ -27,7 +27,7 @@ const FILE = /^diagram-[0-9a-f]{6}\.json$/;
 // The document generation. `meta.grid` was accidentally serving this role — a doc without it was
 // a pre-center-origin file — and dropping grid without a replacement would leave the format with
 // no discriminator at all for the next migration (D8).
-export const SCHEMA = 1;
+const SCHEMA = 1;
 
 // rebuild meta from whitelisted fields only — never persist junk keys
 /*

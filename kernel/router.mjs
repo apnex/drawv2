@@ -49,7 +49,7 @@ export function roundedPath(pts, radius = 20, close = false) {
 }
 
 // ---- grid snapping (hand-routed waypoints land exactly on the grid) ----
-export const snap1 = (v, step) => Math.round(v / step) * step;
+const snap1 = (v, step) => Math.round(v / step) * step;
 export const gridSnap = (pts, step) => pts.map(([x, y]) => [snap1(x, step), snap1(y, step)]);
 
 // segments of a waypoint list, for ortho / crossing checks

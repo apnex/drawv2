@@ -141,7 +141,7 @@ That places repair of the verification layer above every feature, because it is 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
 | ~~1~~ | H9.16 `DONE` | verifier | The composition root is unscanned; B70 was one missing property in one object literal and it took production down. Static, cheap, certain. |
-| 2 | H9.11 | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
+| ~~2~~ | H9.11 `DONE` | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
 | 3 | H9.18 | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
 | — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
 | 4 | H10.1 | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
@@ -412,7 +412,7 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.2a | Authentication boundary: verify `x-goog-iap-jwt-assertion`, emit a principal, cross-check the email header | — | S3 · M | `DONE` |
 | H9.2b | `list()` filters by grant behind an `authz` switch; `OWNER` adopts what predates ownership; boot refuses `BUCKET` without `IAP_AUDIENCE` | — | S3 · M | `DONE` |
 | H9.2c | Plumb the principal from the request into REST and websocket handlers — the boundary exists but no handler calls it yet | — | S3 · M | `DONE` |
-| H9.11 | `scan-dead` treats a self-mention as a consumer, so a comment can exempt an export | **B62** | S2 · S | `TODO` |
+| H9.11 | `scan-dead` counted internal use as consumption, so 18 exports passed on their own references; also strips strings, and reports exemptions that have outlived their cause | **B62** | S2 · M | `DONE` |
 | H9.3a | Enforce write at the store: all seven mutating methods gated, fail-closed on a missing principal | — | S2 · M | `DONE` |
 | H9.3b | Pass the principal from REST and websocket handlers into the seven gated methods, and map `forbidden` to `403` | — | S2 · M | `DONE` |
 | H9.3c | Give the client its own read-only state, distinct from Server-Locked, driven by the server's write predicate | **B65** | S2 · M | `DONE` |
@@ -442,7 +442,9 @@ Every item here was found by using the application rather than by running the ga
 | H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — today it silently deletes work in progress | **B71** | S2 · M | `TODO` |
 | H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `TODO` |
 | H10.3 | A durable status surface for the last server event, right-aligned in `#status` — errors currently survive until the next message | **B74** | S2 · M | `TODO` |
-| H10.4 | A routed link may duplicate an existing pair, so parallel paths can fan out; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `TODO` |
+| H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `TODO` |
+| H10.7 | Parallel connections between two containers, count bounded by the column span — designed and walked in `design/walk/FINDINGS.md`, never implemented | **B72** | S4 · L | `TODO` |
+| H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 · M | `TODO` |
 | H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 · S | `TODO` |
 | H10.6 | Reconcile the help text and the keymap on `7` mid-drag — one of them is lying | **B73** | S4 · S | `TODO` |
 

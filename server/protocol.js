@@ -72,7 +72,7 @@ export function snapshotBody(model, store, locks, principal = null) {
 // The reply to a `resume` that finds the client already in step: no document, just the authority.
 // A full snapshot on every reconnect would be a needless O(doc) round trip for a client that is
 // already correct — and would discard the local selection and viewport with it.
-export function syncBody(model, store, locks) {
+function syncBody(model, store, locks) {
 	const id = model.state.meta.id;
 	const log = store.log(id);
 	return {
@@ -145,7 +145,7 @@ export function reversalBody(store, id, { ops, version }, { by, actor, label, re
 }
 
 // The ack a writer receives for its own request: the change, plus the correlation id it sent.
-export function ackBody(change, store, id, txnId) {
+function ackBody(change, store, id, txnId) {
 	return { ...changeBody(change, store, id), acked: txnId ?? null };
 }
 

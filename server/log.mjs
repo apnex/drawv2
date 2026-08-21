@@ -25,10 +25,10 @@ failure than a lost undo step; when it does, `evictedHuman` counts it and the br
 */
 
 export const LOG_MAX = 100;
-export const LOG_BYTES = 32 * 1024;
+const LOG_BYTES = 32 * 1024;
 // the floor yields to these: past them the ring grows without bound, which no undo step is worth
 export const LOG_HARD_MAX = LOG_MAX * 4;
-export const LOG_HARD_BYTES = LOG_BYTES * 4;
+const LOG_HARD_BYTES = LOG_BYTES * 4;
 
 const sizeOf = (change) => JSON.stringify(change).length;
 

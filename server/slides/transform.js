@@ -41,7 +41,7 @@ export function makeScale(pageSize) {
 	};
 }
 
-export const DEFAULT_SCALE = makeScale(DEFAULT_PAGE);
+const DEFAULT_SCALE = makeScale(DEFAULT_PAGE);
 
 // draw palette (style.css) -> Slides rgbColor
 const COLOR = {

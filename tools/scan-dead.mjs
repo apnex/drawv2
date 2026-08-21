@@ -33,10 +33,18 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
-	'server/identity.mjs:iapIdentity': 'H9.2 -- the authentication boundary is built and proven, but nothing calls it until list() filters by grant in the same milestone. TEST-ONLY is the honest state; wiring it early would mean computing a principal and discarding it.',
 	'server/identity.mjs:jwkSource': 'as above -- injectable so the verifier can be tested against a locally generated key rather than a captured token.',
 	'kernel/fixtures.mjs:FIXTURES': 'canonical reference scenes — consumed by the spec viewer and by eye, not by code',
-	'kernel/adapt.mjs:schemaToDoc': 'the inverse half of the export adapter; kept with docToSchema so the pair is one concept (import is unbuilt — B31-adjacent)',
+	'app/src/commands.js:resizeNodeSpan': 'used internally by the Shift+arrow span builder (commands.js:333); exported so the W1 authoring gesture can be driven directly in a test rather than through a synthesised keystroke.',
+	'app/src/keymap.js:KEYMAP': 'the key table itself. B47/B48 assert over it -- that every entry declares `prevent`, that exactly one overlapping pair exists, that the matched rule names its verb. Those are properties of the table, not of any dispatch, so the table has to be reachable.',
+	'server/files.mjs:metadataToken': 'the GCS metadata-server token fetch. Exported so B6 can prove the cache honours expiry and that an unreachable metadata server yields a sentence rather than an undici stack trace -- neither is observable through the backend surface.',
+	'server/log.mjs:LOG_MAX': 'the ring bound. I14 asserts eviction is oldest-first and that the only record is never evicted; a test that hardcoded the number would pass after someone changed it.',
+	'server/log.mjs:LOG_HARD_MAX': 'the hard ceiling that overrides the human floor. Same reason as LOG_MAX, and the interaction between the two is the property under test.',
+	'server/slides/transform.js:OWNED_ID': 'the id pattern that marks a Slides element as ours. The wipe deletes by this pattern on the bound page, so a test must assert the pattern matches exactly what draw creates and nothing else.',
+	'server/txn.mjs:MAX_OPS': 'the per-transaction op cap. Asserted so the rejection is proven to happen BEFORE any write, which is a claim about ordering that needs the bound.',
+	'server/validate.js:validateEntity': 'the per-entity half of the validator, called by validateDoc. Exported because 27 assertions exercise entity shapes directly -- span, content regions, node frame -- and routing each through a whole document would test the wrapper instead of the rule.',
+	'tools/migrate-version.mjs:migrateDoc': 'the CS5 migration transform. The gate proves a migrated corpus boots and every entity survives deep-equal, which requires calling the transform rather than the CLI around it.',
+	'tools/migrate-version.mjs:invariant': 'the migration`s own equality check. Asserted directly because a count-only comparison passes on a mangled coordinate -- the test exists to prove the checker catches what a weaker one would miss.',
 };
 
 function walk(dir, out = []) {
@@ -52,7 +60,15 @@ function walk(dir, out = []) {
 const prodFiles = PROD.flatMap((r) => walk(r));
 const testFiles = TESTS.flatMap((r) => walk(r));
 const read = (f) => fs.readFileSync(f, 'utf8');
-const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+// B62: comments AND string literals go. A symbol named in its own error message was enough to
+// satisfy the check -- `iapIdentity requires the backend service audience` made `iapIdentity`
+// look consumed. Prose about a symbol is not a dependency on it.
+const strip = (t) => t
+	.replace(/\/\*[\s\S]*?\*\//g, ' ')
+	.replace(/\/\/[^\n]*/g, ' ')
+	.replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+	.replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+	.replace(/`(?:[^`\\]|\\.)*`/g, '``');
 
 // every exported symbol, with the file that defines it
 const exported = [];
@@ -67,13 +83,23 @@ for (const f of prodFiles) {
 	}
 }
 
-// a reference is any mention outside the defining file, plus non-definition mentions inside it
+/*
+A reference is a mention in a file OTHER than the one that defines the symbol (B62).
+
+This used to discount a single occurrence in the origin file and count the rest, which meant any
+internal use of an export satisfied the check -- and internal use is precisely what does NOT earn
+an export. A3 asks for "a real consumer outside its origin"; the header of this file has said so
+since it was written, and the arithmetic said something weaker. Seventeen exports were passing on
+their own internal references.
+
+The origin file is now excluded outright rather than discounted, so the code implements the rule
+the comment always claimed.
+*/
 const countIn = (files, sym, self) => {
 	let n = 0;
 	for (const f of files) {
-		const body = strip(read(f));
-		const hits = [...body.matchAll(new RegExp(`\\b${sym}\\b`, 'g'))].length;
-		n += (f === self) ? Math.max(0, hits - 1) : hits;   // discount the definition itself
+		if (f === self) continue;
+		n += [...strip(read(f)).matchAll(new RegExp(`\\b${sym}\\b`, 'g'))].length;
 	}
 	return n;
 };
@@ -85,6 +111,21 @@ for (const [file, sym] of exported) {
 	if (prod > 0) continue;
 	findings.push({ key: `${file}:${sym}`, file, sym, prod, test, state: test > 0 ? 'TEST-ONLY' : 'DEAD' });
 }
+
+/*
+An ALLOW entry that is no longer a finding is a live exemption for a condition that has ended
+(B62). It is not harmless: it silently covers the symbol if its consumer disappears later, so the
+scanner would answer "allowed" where it should answer DEAD. Two were found the moment this was
+checked -- `server/identity.mjs:iapIdentity`, whose reason literally named its own expiry
+("until list() filters by grant in the same milestone", which then shipped), and
+`kernel/adapt.mjs:schemaToDoc`. Both had been granted, satisfied, and never revoked.
+
+Reported rather than failed: an exemption outliving its cause is a bookkeeping error, and failing
+the gate on it would block a commit that has just legitimately given a symbol its first consumer.
+*/
+const keys = new Set(findings.map((f) => f.key));
+const stale = Object.keys(ALLOW).filter((k) => !keys.has(k));
+for (const k of stale) console.log(`  stale-allow ${k} — now has a consumer; the exemption has outlived its reason`);
 
 const unlisted = findings.filter((f) => !ALLOW[f.key]);
 const verbose = process.argv.includes('--verbose');

@@ -33,7 +33,7 @@ import { groupAfterRemoval } from '../engine/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 
 export const MAX_OPS = 2000;              // per REQUEST
-export const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
+const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
 const LABEL = /^[a-z0-9 -]{0,32}$/;
 
 // The inverse of a `set` restores the previous value of exactly the keys the patch touches. If the
