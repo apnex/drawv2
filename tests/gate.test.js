@@ -33,6 +33,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -51,6 +52,7 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 		['GR15 scan-dead', 'tools/scan-dead.mjs', 'tools/scan-dead.mjs'],
 		['GR15 scan-twins', 'tools/scan-twins.mjs', 'tools/scan-twins.mjs'],
 		['GR15 scan-docrefs', 'tools/scan-docrefs.mjs', 'tools/scan-docrefs.mjs'],
+		['GR16 scan-wiring', 'tools/scan-wiring.mjs', 'tools/scan-wiring.mjs'],
 	]) {
 		assert.ok(gate.includes(needle), `the gate no longer runs ${what} (looked for "${needle}")`);
 		assert.ok(fs.existsSync(path.join(root, file)), `the gate names ${file} and it does not exist`);
@@ -139,4 +141,45 @@ test('GR14/B78: scan-board counts a two-digit milestone and its items', () => {
 	const rows = board.split('\n').filter((l) => /^\|\s*H\d+\.\d+\s*\|/.test(l) && /\*\*B\d+\*\*/.test(l));
 	assert.equal(Number(m[2]), rows.length, 'every citing item row is counted, H10 included');
 	assert.ok(rows.some((l) => /^\|\s*H10\./.test(l)), 'the board actually contains a two-digit item to count');
+});
+
+/*
+GR16/B70 -- the composition root is checked, and the check is proven against the real defect.
+
+Asserting only that the scanner exits 0 would be worthless: it exits 0 on a tree with no wiring at
+all. What has to hold is that it FAILS on the exact call site that shipped, so the test reproduces
+B70 in a temporary copy rather than trusting the scanner's green.
+*/
+test('GR16/B70: scan-wiring fails on a root that computes a value and does not pass it', () => {
+	assert.match(execFileSync('node', ['tools/scan-wiring.mjs'], { encoding: 'utf8' }),
+		/PASS/, 'the tree as it stands is wired correctly');
+
+	// Run the scanner against a fixture reproducing B70 exactly -- `audience` computed, mentioned
+	// only inside Boolean(), never passed. Asserting the scanner's green on a correct tree proves
+	// nothing about its ability to fail; only this does.
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wiring-'));
+	fs.mkdirSync(path.join(dir, 'server'));
+	fs.writeFileSync(path.join(dir, 'server/app.js'),
+		"export async function createApp({ dataDir, authz = false, audience = '', owner = '' } = {}) {}\n");
+	const call = (args) => `const audience = process.env.IAP_AUDIENCE || '';\nconst owner = '';\nconst dataDir = '/d';\nconst app = await createApp({ ${args} });\n`;
+	const run = () => {
+		try {
+			return { out: execFileSync('node', [path.join(root, 'tools/scan-wiring.mjs'), '--root', dir],
+				{ encoding: 'utf8' }), code: 0 };
+		} catch (e) { return { out: e.stdout || '', code: e.status }; }
+	};
+	try {
+		fs.writeFileSync(path.join(dir, 'server/server.js'), call('dataDir, authz: Boolean(audience), owner'));
+		const bad = run();
+		assert.equal(bad.code, 1, 'the dropped audience is a failure, not a note');
+		assert.match(bad.out, /computes `audience` but does not pass it/,
+			'and the message names the parameter, or it is unactionable');
+
+		fs.writeFileSync(path.join(dir, 'server/server.js'), call('dataDir, authz: Boolean(audience), audience, owner'));
+		const good = run();
+		assert.equal(good.code, 0, 'passing it clears the failure — the check is not simply always red');
+		assert.match(good.out, /PASS/);
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
 });

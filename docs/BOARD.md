@@ -140,7 +140,7 @@ That places repair of the verification layer above every feature, because it is 
 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
-| 1 | H9.16 | verifier | The composition root is unscanned; B70 was one missing property in one object literal and it took production down. Static, cheap, certain. |
+| ~~1~~ | H9.16 `DONE` | verifier | The composition root is unscanned; B70 was one missing property in one object literal and it took production down. Static, cheap, certain. |
 | 2 | H9.11 | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
 | 3 | H9.18 | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
 | — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
@@ -427,7 +427,7 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.13 | Name every identity refusal, once per reason, so a misconfiguration announces itself instead of presenting as a uniform denial | **B68**, **B69** | S2 · S | `DONE` |
 | H9.14 | Pass the audience `server.js` switches authorization on with, and refuse to start when authz has no identity source | **B70** | S2 · S | `DONE` |
 | H9.15 | Cutover: enable authorization on the live service — build, deploy image with `IAP_AUDIENCE` and `OWNER` together, adopt the 12, verify the owner reaches them through IAP | **B67**, **B70** | S1 · M | `DONE` |
-| H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures — the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `TODO` |
+| H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures — the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `DONE` |
 | H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch — a flag that is on in the only deployment that exists is a second code path nobody runs | — | S3 · S | `TODO` |
 | H9.18 | Scanner: a milestone header must agree with the states beneath it, and a number written in an item must not contradict one the repo can compute | **B77** | S2 · S | `TODO` |
 | H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 · S | `DONE` |
@@ -442,7 +442,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` — today it silently deletes work in progress | **B71** | S2 · M | `TODO` |
 | H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 · S | `TODO` |
 | H10.3 | A durable status surface for the last server event, right-aligned in `#status` — errors currently survive until the next message | **B74** | S2 · M | `TODO` |
-| H10.4 | A refused duplicate link keeps the waypoints and says why — needs the product ruling first | **B72** | S3 · S | `TODO` |
+| H10.4 | A routed link may duplicate an existing pair, so parallel paths can fan out; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `TODO` |
 | H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 · S | `TODO` |
 | H10.6 | Reconcile the help text and the keymap on `7` mid-drag — one of them is lying | **B73** | S4 · S | `TODO` |
 
