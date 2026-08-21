@@ -79,6 +79,84 @@ const menu = {
 	slidesPush: document.getElementById('slides-push')
 };
 
+/*
+Access administration -- H9.4d/B90.
+
+Authorization shipped enforced everywhere and administrable nowhere: `grant` and `revoke` existed
+on the store with no production caller, so the only reachable state was "one person owns
+everything". This is the consumer that makes the model reachable, and the browser is it because it
+is already through the authentication boundary whatever that boundary turns out to be -- no service
+account, no second OAuth client, nothing that ties administration to one identity provider.
+
+Offered ONLY to the owner. The server refuses anyone else with 403, so showing the affordance to a
+reader would advertise a door that is certain not to open, which is worse than no door.
+
+Rendered from the response rather than the model. A grant does not travel over the websocket, so
+`model.state.meta.grants` stays stale in this tab until the next snapshot; the POST and DELETE both
+answer with the resulting grant map, which is authoritative and immediate. Peers still holding an
+older belief are a UX gap and not a security one -- the server checks the grant on every write, so
+a revoked peer is refused whatever its tab thinks (H10.22).
+*/
+const access = {
+	panel: document.getElementById('access'),
+	card: document.getElementById('access-card'),
+	owner: document.getElementById('access-owner'),
+	list: document.getElementById('access-list'),
+	principal: document.getElementById('access-principal'),
+	level: document.getElementById('access-level'),
+	grant: document.getElementById('access-grant'),
+	error: document.getElementById('access-error'),
+};
+let accessId = null;
+
+const short = (p) => (p.startsWith('user:') ? p.slice(5) : p);
+
+function renderAccess(owner, grants) {
+	access.owner.textContent = `owned by ${short(owner)}`;
+	access.list.replaceChildren();
+	const entries = Object.entries(grants || {});
+	if (!entries.length) {
+		const row = access.list.insertRow();
+		row.insertCell().textContent = 'nobody else';
+		return;
+	}
+	for (const [who, level] of entries) {
+		const row = access.list.insertRow();
+		row.insertCell().textContent = short(who);
+		row.insertCell().textContent = level;
+		const btn = document.createElement('button');
+		btn.textContent = 'revoke';
+		btn.title = `revoke ${who}`;
+		btn.addEventListener('click', () => sendAccess(
+			`grants/${encodeURIComponent(who)}`, { method: 'DELETE' }, owner));
+		row.insertCell().appendChild(btn);
+	}
+}
+
+async function sendAccess(path, init, owner) {
+	access.error.textContent = '';
+	try {
+		const res = await fetch(`/api/v1/diagrams/${accessId}/${path}`, init);
+		const body = await res.json().catch(() => ({}));
+		// the server's sentence is shown verbatim -- it already says which rule refused, and
+		// paraphrasing it here would be a second copy of the reason that drifts from the first
+		if (!res.ok) { access.error.textContent = body.error || `refused (${res.status})`; return; }
+		renderAccess(owner, body.grants);
+		access.principal.value = '';
+	} catch (e) {
+		access.error.textContent = `could not reach the server: ${e.message}`;
+	}
+}
+
+if (access.panel) {
+	access.panel.addEventListener('click', (e) => { if (e.target === access.panel) access.panel.hidden = true; });
+	access.grant.addEventListener('click', () => sendAccess('grants', {
+		method: 'POST',
+		body: JSON.stringify({ principal: access.principal.value.trim(), level: access.level.value }),
+	}, access.panel.dataset.owner));
+	access.principal.addEventListener('keydown', (e) => { if (e.key === 'Enter') access.grant.click(); });
+}
+
 let onStateLastId = null;
 const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on http
 // D4 — the inversion. Sync subscribes to the COMMIT boundary, never to the model. There is then
@@ -119,6 +197,18 @@ const sync = new Sync({
 			menu.whoami.hidden = true;
 			menu.whoami.textContent = '';
 		}
+		// H9.4d: identity and the access it confers are the same question, so the affordance hangs
+		// off the element that already answers "who am I" rather than earning a button of its own.
+		const isOwner = !!principal && !!meta.owner && meta.owner === principal;
+		accessId = meta.id;
+		menu.whoami.classList.toggle('can-admin', isOwner);
+		menu.whoami.title = isOwner ? `${principal} — click to manage who can reach this diagram` : principal || '';
+		menu.whoami.onclick = isOwner ? () => {
+			access.panel.dataset.owner = meta.owner;
+			access.error.textContent = '';
+			renderAccess(meta.owner, meta.grants);
+			access.panel.hidden = false;
+		} : null;
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);
 		menu.name.disabled = readOnly;

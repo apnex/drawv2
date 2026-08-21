@@ -334,3 +334,33 @@ test('GR1: every tool declares a shebang and is executable, so both invocations 
 		assert.ok(fs.statSync(p).mode & 0o111, `tools/${t} is not executable, so its shebang is decorative`);
 	}
 });
+
+/*
+H9.4d/B90 -- the surface has a consumer, asserted structurally.
+
+B90 was an authorization model complete in the store and reachable from nothing, which survived a
+whole milestone because every test drove `store.grant` directly. The REST tests in access.test.js
+now drive it over HTTP, but the BROWSER consumer lives in main.js -- the composition root, which
+runs on import and needs a document, so it cannot be imported here and its behaviour is not under
+test. What is asserted is the weaker, still useful claim that the consumer exists and names the
+same routes the server answers, so the two cannot silently drift apart into an unreachable API
+again. Named as structural rather than dressed up as behavioural: the panel's conduct is not
+covered, and a reader of this test should not believe otherwise.
+*/
+test('H9.4d: the grant surface has a browser consumer, and it calls the routes the server answers', () => {
+	const root = new URL('..', import.meta.url);
+	const html = fs.readFileSync(new URL('app/index.html', root), 'utf8');
+	const main = fs.readFileSync(new URL('app/src/main.js', root), 'utf8');
+	const rest = fs.readFileSync(new URL('server/rest.js', root), 'utf8');
+
+	assert.match(html, /id="access"/, 'the panel exists in the page');
+	assert.match(main, /grants/, 'and main.js reaches for the grant routes');
+	assert.match(main, /method: 'DELETE'/, 'including revoke, not only grant');
+	assert.match(main, /encodeURIComponent/,
+		'the principal is encoded — it carries a colon and an @, so a raw path would be a different resource');
+	assert.match(rest, /parts\[4\] === 'grants'/, 'and the server answers there');
+
+	// the affordance is owner-only: the server refuses everyone else, and offering a door that is
+	// certain not to open is worse than offering none
+	assert.match(main, /meta\.owner === principal/, 'the panel is offered only to the owner');
+});

@@ -339,6 +339,47 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 		return json(res, 405, { error: 'lock: POST to acquire, DELETE to release' });
 	}
 
+	/*
+	Grant administration -- H9.4d/B90.
+
+	Placed ABOVE the lock gate on purpose, alongside the lock lifecycle itself. Granting is not a
+	model write: it records who may reach the diagram, not what the diagram says. Lock-gating it
+	would mean an owner cannot change access while someone else is drawing, which is precisely when
+	revoking is most likely to be the thing you urgently need.
+
+	There is no GET here, and that is deliberate rather than an omission. `model.toJSON()` already
+	carries `meta.owner` and `meta.grants`, so every caller entitled to read the diagram already
+	receives the grant list over both REST and the websocket. A second way to read the same field
+	would be two spellings of one fact.
+
+	Authorization is not re-implemented: `store.grant` and `store.revoke` already refuse anyone but
+	the owner, which is the single home for the rule. This maps their sentences onto status codes.
+	*/
+	if (parts[4] === 'grants') {
+		if (req.method === 'POST' && parts.length === 5) {
+			const body = await readJson(req);
+			if (bodyRejected(req, res, body)) return;
+			if (!body || typeof body.principal !== 'string' || typeof body.level !== 'string') {
+				return json(res, 400, { error: 'expected JSON body { principal, level }', code: 'grant-malformed' });
+			}
+			const err = store.grant(id, body.principal, body.level, principal);
+			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'grant-rejected' });
+			return json(res, 200, { grants: { ...store.get(id).state.meta.grants } });
+		}
+		// the principal is percent-encoded in the path: it carries a colon, and an address carries
+		// an @. Decoded here rather than matched loosely, so `user%3Aa%40b.co` and `user:a@b.co`
+		// are the same resource and neither is guessed at.
+		if (req.method === 'DELETE' && parts.length === 6) {
+			let target;
+			try { target = decodeURIComponent(parts[5]); }
+			catch { return json(res, 400, { error: 'principal is not valid percent-encoding', code: 'grant-malformed' }); }
+			const err = store.revoke(id, target, principal);
+			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'grant-rejected' });
+			return json(res, 200, { grants: { ...store.get(id).state.meta.grants } });
+		}
+		return json(res, 405, { error: 'grants: POST { principal, level } to grant, DELETE .../grants/<principal> to revoke' });
+	}
+
 	// every model write requires holding the lock
 	if (!locks.locked(id)) {
 		return json(res, 423, { error: 'not server-locked — POST /api/v1/diagrams/:id/lock first' });

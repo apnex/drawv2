@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
-import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds } from './validate.js';
+import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds, validPrincipal } from './validate.js';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
@@ -518,6 +518,10 @@ export class Store {
 		const model = this.get(id);
 		if (!model) return 'unknown diagram';
 		if (this.access(id, by) !== 'owner') return 'only the owner may grant';
+		// H9.4d: refuse here exactly what validateDoc refuses on the way in. These writes bypass
+		// commit() on purpose, so they bypass its validation too -- and an unvalidated grant does
+		// not fail now, it fails at the next boot when the document will not load.
+		if (!validPrincipal(principal)) return `invalid principal: ${principal}`;
 		if (level !== 'read' && level !== 'write') return `invalid level: ${level}`;
 		if (principal === model.state.meta.owner) return 'the owner already has full access';
 		model.state.meta.grants = { ...model.state.meta.grants, [principal]: level };

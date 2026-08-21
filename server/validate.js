@@ -104,6 +104,21 @@ const FIELDS = {
 // (node.shape → 'circle'). New writes that include the field are still range-checked.
 const OPTIONAL = { node: new Set(['shape', 'span', 'content']), link: new Set(['via', 'closed']) };
 
+/*
+H9.4d: `grant()` needs this and must not carry its own copy.
+
+Grants bypass `commit()` deliberately -- undo silently restoring access for a principal just
+revoked would be a security failure -- so they also bypass every validator that runs on the commit
+path, and `validateDoc` is the only thing that judged a grant principal. That was harmless while
+nothing could write one. Exposing the administration surface makes it live: a malformed principal
+would persist, and the diagram would then REFUSE TO LOAD at the next boot, because validateDoc
+rejects on the way in. A write that bricks a document at some later restart is the worst shape a
+defect can have, so the grammar is checked before the write, from the same regex.
+*/
+export function validPrincipal(s) {
+	return typeof s === 'string' && PRINCIPAL.test(s);
+}
+
 export function validateEntity(kind, entity, { full = true } = {}) {
 	const fields = Object.hasOwn(FIELDS, kind) ? FIELDS[kind] : null;
 	if (!fields) return `unknown kind: ${kind}`;

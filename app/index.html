@@ -20,6 +20,24 @@
 			<span id="whoami" hidden></span>
 			<span id="lockstate" class="lock-offline" title="connecting…">offline</span>
 		</header>
+		<!--
+		H9.4d: access administration. Same overlay idiom as #help -- backdrop closes, card does not,
+		hidden by default. Reachable only by clicking #whoami, and only rendered for the owner: an
+		affordance offered to someone the server will refuse is a worse experience than no affordance.
+		-->
+		<div id="access" hidden>
+			<div id="access-card">
+				<h2>who can reach this diagram</h2>
+				<p id="access-owner"></p>
+				<table id="access-list"></table>
+				<div id="access-add">
+					<input id="access-principal" spellcheck="false" maxlength="80" placeholder="user:name@example.com or agent:planner">
+					<select id="access-level"><option value="read">read</option><option value="write">write</option></select>
+					<button id="access-grant">grant</button>
+				</div>
+				<p id="access-error"></p>
+			</div>
+		</div>
 		<div id="help" hidden>
 			<div id="help-card">
 				<h2>draw·next — controls (kernel-rendered)</h2>

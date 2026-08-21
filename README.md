@@ -166,6 +166,15 @@ curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" 
 curl -s -X POST localhost:8080/api/v1/diagrams/<id>/redo -H "X-Draw-Lock: $TOK" -d '{"expect":42}'
 ```
 
+Access is administration rather than a model write, so it takes no lock either -- an owner must be able to revoke while somebody else is mid-drag, which is exactly when revoking is urgent.\
+Only the owner may grant or revoke, a level is `read` or `write`, and a principal is `user:<email>` or `agent:<name>`:
+```sh
+curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/grants -d '{"principal":"agent:planner","level":"write"}'
+curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/grants/agent%3Aplanner
+```
+
+There is no `GET .../grants`, deliberately: `GET /api/v1/diagrams/<id>` already carries `meta.owner` and `meta.grants`, so anyone entitled to read the diagram already has the grant list and a second route would be two spellings of one fact.
+
 An idle lock auto-expires so a crashed controller never strands a diagram.\
 Actions act on the outside world rather than the model, so they take no lock:
 ```sh

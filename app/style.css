@@ -170,3 +170,20 @@ body { display: flex; flex-direction: column; }
 #help-card table { border-collapse: collapse; }
 #help-card td { padding: 3px 14px 3px 0; white-space: nowrap; }
 #help-card td:first-child { color: #aed581; }
+
+/* H9.4d — access panel. Shares the #help overlay geometry deliberately: one modal idiom. */
+#access { position: fixed; inset: 0; z-index: 20; background: rgba(6, 6, 6, 0.88); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#access[hidden] { display: none; }
+#access-card { background: #181818; border: 1px solid #aed581; border-radius: 8px; padding: 24px 32px; color: #ddddff; font-size: 13px; cursor: default; min-width: 460px; max-height: 85vh; overflow-y: auto; }
+#access-card h2 { color: #aed581; font-size: 15px; margin: 0 0 12px; }
+#access-owner { color: #9e9e9e; margin: 0 0 12px; }
+#access-list { border-collapse: collapse; width: 100%; }
+#access-list td { padding: 4px 14px 4px 0; white-space: nowrap; }
+#access-list td:first-child { color: #aed581; }
+#access-list button { background: none; border: 1px solid #555; border-radius: 4px; color: #e57373; cursor: pointer; font-size: 11px; padding: 1px 7px; }
+#access-add { display: flex; gap: 6px; margin-top: 14px; }
+#access-principal { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
+#access-level, #access-grant { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
+#access-error { color: #e57373; margin: 10px 0 0; min-height: 1em; }
+/* the owner gets a pointer, because for anyone else the element is only a label */
+#whoami.can-admin { cursor: pointer; text-decoration: underline dotted; }

@@ -953,3 +953,129 @@ test('H9.4b: the agent grammar refuses what would make two identities look like 
 	assert.equal(acceptsPrincipal(`agent:${'a'.repeat(64)}`), false, 'and 64 is past it');
 	assert.equal(acceptsPrincipal('agent:ci-planner-2'), true, 'hyphens and digits inside are fine');
 });
+
+/*
+H9.4d/B90 -- authorization was enforced everywhere and administrable nowhere.
+
+`grant`, `revoke` and `setOwner` had 29 call sites and every one was in this file, so the deployed
+system's only reachable state was "one person owns everything" and no request could change it. The
+model was complete and unreachable. These tests drive the surface that makes it reachable, over
+HTTP, because a store-level test is what let the gap survive an entire milestone.
+*/
+async function grantable() {
+	let who = OWNER;
+	const dataDir = path.join(os.tmpdir(), `draw-grants-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0,
+		authz: true, owner: OWNER, principalOf: async () => who,
+	});
+	const id = [...app.store.diagrams.keys()][0];
+	return {
+		app, dataDir, id,
+		as: (p) => { who = p; },
+		base: `http://127.0.0.1:${app.port}/api/v1/diagrams/${id}`,
+		close: async () => { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); },
+	};
+}
+
+test('H9.4d: an owner can grant and revoke over HTTP, and the grant actually takes effect', async () => {
+	const t = await grantable();
+	try {
+		const grant = await fetch(`${t.base}/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'write' }),
+		});
+		assert.equal(grant.status, 200, 'the owner may grant');
+		assert.deepEqual((await grant.json()).grants, { [GUEST]: 'write' }, 'and is told the resulting state');
+
+		t.as(GUEST);
+		assert.equal(t.app.store.canWrite(t.id, GUEST), true,
+			'the grant is not decoration — the guest may now write');
+		assert.equal((await (await fetch(`${t.base}`)).status), 200, 'and may read the diagram');
+
+		t.as(OWNER);
+		const revoke = await fetch(`${t.base}/grants/${encodeURIComponent(GUEST)}`, { method: 'DELETE' });
+		assert.equal(revoke.status, 200, 'and may revoke');
+		assert.deepEqual((await revoke.json()).grants, {}, 'leaving nothing behind');
+		assert.equal(t.app.store.canRead(t.id, GUEST), false, 'the guest is out again');
+	} finally { await t.close(); }
+});
+
+test('H9.4d: only the owner may administer access, and a reader cannot grant themselves more', async () => {
+	const t = await grantable();
+	try {
+		await fetch(`${t.base}/grants`, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }) });
+		t.as(GUEST);
+		const escalate = await fetch(`${t.base}/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'write' }),
+		});
+		assert.equal(escalate.status, 403, 'a reader cannot promote itself to a writer');
+		assert.equal(t.app.store.canWrite(t.id, GUEST), false, 'and the attempt changed nothing');
+
+		const evict = await fetch(`${t.base}/grants/${encodeURIComponent(OWNER)}`, { method: 'DELETE' });
+		assert.equal(evict.status, 403, 'nor revoke anyone else');
+		assert.equal(t.app.store.canWrite(t.id, OWNER), true, 'the owner still owns it');
+	} finally { await t.close(); }
+});
+
+/*
+The corruption path this surface would have opened.
+
+Grants bypass `commit()` on purpose -- undo restoring access for a principal just revoked would be
+a security failure -- so they bypass its validation too, and `validateDoc` was the only thing that
+judged a grant principal. Harmless while nothing could write one. The moment the route exists, a
+malformed principal persists and the diagram REFUSES TO LOAD at the next boot, which is a write
+that breaks a document at some unrelated restart. Asserted end to end, through a real reload.
+*/
+test('H9.4d: a malformed principal is refused at the write, not discovered at the next boot', async () => {
+	const t = await grantable();
+	try {
+		for (const bad of ['garbage', 'user:', 'agent:UPPER', '', 'user:a@b.co extra']) {
+			const res = await fetch(`${t.base}/grants`, {
+				method: 'POST', body: JSON.stringify({ principal: bad, level: 'read' }),
+			});
+			assert.equal(res.status, 422, `refused at the write: ${JSON.stringify(bad)}`);
+		}
+		assert.equal((await fetch(`${t.base}/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'admin' }),
+		})).status, 422, 'and an invented level is refused too');
+	} finally { await t.close(); }
+});
+
+/*
+And this is what that refusal is worth, proven rather than asserted.
+
+The companion test above cannot demonstrate the stakes: removing the validation makes it fail at
+the write, so an assertion about reloading afterwards never runs against a genuinely bad document
+and is decoration. The consequence needs its own proof, so this bypasses the route entirely and
+writes the malformed grant straight into the model -- which is exactly what the route would have
+done without the check -- then flushes and boots a second Store over the same directory.
+
+The document does not come back. Not "loads with the grant dropped": D17/GR8 turns a data dir whose
+every candidate failed into a boot refusal, so one bad grant on the only diagram is an outage at
+some later restart, arbitrarily far from the request that caused it.
+*/
+test('H9.4d: an UNVALIDATED grant would make the diagram unloadable, which is why it is refused', async () => {
+	const t = await grantable();
+	try {
+		const meta = t.app.store.get(t.id).state.meta;
+		meta.grants = { ...meta.grants, garbage: 'read' };
+		t.app.store.markDirty(t.id);
+		await t.app.store.flush(t.id);
+
+		const reloaded = new Store(t.dataDir, { flushMs: 3_600_000, authz: true });
+		await assert.rejects(() => reloaded.init(), /refusing to boot/,
+			'one malformed grant, and the diagram is gone at the next restart');
+	} finally { await t.close(); }
+});
+
+test('H9.4d: administering access is not lock-gated, because revoking is urgent exactly then', async () => {
+	const t = await grantable();
+	try {
+		const lock = await fetch(`${t.base}/lock`, { method: 'POST' });
+		assert.equal(lock.status, 200, 'somebody is driving');
+		const res = await fetch(`${t.base}/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }),
+		});
+		assert.equal(res.status, 200, 'the owner can still change access mid-session — not 423');
+	} finally { await t.close(); }
+});

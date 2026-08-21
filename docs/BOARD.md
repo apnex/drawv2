@@ -419,8 +419,8 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.3c | Give the client its own read-only state, distinct from Server-Locked, driven by the server's write predicate | **B65** | S2 · M | `DONE` |
 | H9.4 | ACL-gate the two routes that decide who may write but write nothing: lock acquire and reclaim | **B63**, **B64** | S2 · M | `DONE` |
 | H9.4b | Agent identity separate from credential: `agent:<name>` is the principal, a code authenticates as it — revoking or rotating a code must not orphan what the agent owns | — | S2 · M | `DONE` |
-| H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable. BLOCKED on H9.4d: with no grant surface the fallback is unreachable in production | — | S2 · M | `TODO` |
-| H9.4d | Grant administration on the IAP surface — an owner can grant and revoke, which nothing in the deployed system can do today; prerequisite for H9.4c, which would otherwise add a second unreachable API | **B90** | S2 · M | `TODO` |
+| H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable. Unblocked: H9.4d landed the grant surface this extends | — | S2 · M | `TODO` |
+| H9.4d | Grant administration on the IAP surface — an owner can grant and revoke, which nothing in the deployed system can do today; prerequisite for H9.4c, which would otherwise add a second unreachable API | **B90** | S2 · M | `DONE` |
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, rotate, revoke — a credential FOR an agent identity, not a principal | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
@@ -462,6 +462,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.18 | A `del` entry with no entity threw in the browser and shipped — every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
 | H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one — the asymmetry that turned a correct rejection into a broken fix | **B87** | S2 · S | `TODO` |
 | H10.20 | Scanner: a board claim of the form *blocks Hn.m* must agree with that item's state — prose is outside R6, so a paragraph can assert that finished work is blocked | **B88** | S3 · S | `TODO` |
+| H10.22 | A revoked peer's open tab still believes it may write until it reconnects — a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 · M | `TODO` |
 | H10.21 | Two specs asserted facts the code contradicted — the SVG route's authentication and H9.3's existence — corrected with dated amendments | **B89** | S2 · S | `DONE` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 · L | `TODO` |
