@@ -62,7 +62,10 @@ if (audience) console.log(`[ draw ] authorization: on${owner ? `, adopting unown
 const files = bucket ? gcsFiles(bucket) : null;
 if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(audience), owner, domains });
+// B70: `audience` must be passed, not merely tested. It previously appeared in this call only
+// inside `Boolean(audience)`, which reads as though the audience is being handled and turned the
+// grant filter on while leaving the app with no way to identify anyone.
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(audience), audience, owner, domains });
 if (audience) {
 	console.log(domains.length
 		? `[ draw ] sign-in restricted to ${domains.join(', ')}`

@@ -51,9 +51,12 @@ export function jwkSource({ fetch: f = globalThis.fetch, now = Date.now, refetch
 
 /*
 One line per distinct reason, not per request. A misconfigured audience refuses every request, so
-logging each one buries the fact in its own repetition; logging the first announces it. Goes to
-`console.warn` deliberately -- on Cloud Run nothing written to stdout reaches Cloud Logging at all
-(B69), so a diagnostic printed with `console.log` would be written and then lost.
+logging each one buries the fact in its own repetition; logging the first announces it.
+
+`console.warn` for severity, not availability: a refused assertion is a warning and should sort
+with the other warnings, while the boot summary that states configuration is ordinary output.
+An earlier version of this comment claimed stdout is discarded on Cloud Run -- that was false and
+is withdrawn as B69; both streams are captured.
 */
 function warnOnceRefusal() {
 	const seen = new Set();

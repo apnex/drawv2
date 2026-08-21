@@ -260,14 +260,47 @@ test('H9.2b: adopt claims only the unowned, and is idempotent', async () => {
 
 test('H9.2b: createApp turns authorization on and adopts, so the operator is not locked out', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-authz-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER });
+	// B70: this asserted `store.list(OWNER)` directly, which never touches identity -- it passed
+	// against a deployment where every request resolved to nobody, which is the exact state that
+	// then shipped. "Not locked out" has to be observed through a request or it means nothing.
+	let who = OWNER;
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+		principalOf: async () => who,
+	});
+	const base = `http://127.0.0.1:${app.port}/api/v1`;
 	try {
 		assert.ok(app.store.list(OWNER).length > 0, 'the seeded diagram was adopted at boot');
-		assert.equal(app.store.list(GUEST).length, 0, 'and nobody else sees it');
+		assert.ok((await (await fetch(`${base}/diagrams`)).json()).length > 0,
+			'and the operator reaches it over HTTP, not merely in the store');
+		who = GUEST;
+		assert.deepEqual(await (await fetch(`${base}/diagrams`)).json(), [], 'and nobody else sees it');
 	} finally {
 		await app.close();
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
+});
+
+test('B70: authz with no identity source refuses to start, rather than refusing everyone', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-b70-${Math.random().toString(36).slice(2)}`);
+	await assert.rejects(
+		() => createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER }),
+		/no way to identify anyone/,
+		'the combination that shipped is now unconstructable',
+	);
+	fs.rmSync(dataDir, { recursive: true, force: true });
+});
+
+test('B70: the real server.js wiring passes the audience it switches on', async () => {
+	// the defect was a missing property in an object literal, invisible to every test because all
+	// of them call createApp directly. This reads the wiring itself, which is the only artefact
+	// that was actually wrong.
+	const src = fs.readFileSync(new URL('../server/server.js', import.meta.url), 'utf8');
+	const call = src.slice(src.indexOf('createApp({'));
+	const args = call.slice(0, call.indexOf('})') + 1);
+	assert.match(args, /(^|[,{]\s*)audience\s*[,}]/,
+		'audience must be PASSED, not only tested inside Boolean(audience)');
+	assert.match(args, /authz:/, 'and authz is still derived from it');
 });
 
 /*

@@ -133,6 +133,22 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	*/
 	// H9.8: the allowlist wraps whatever produced the principal, including an injected one, so a
 	// test exercises the same composition production uses
+	/*
+	B70: refuse the one combination that is never intended.
+
+	`authz` on with neither an audience nor an injected `principalOf` means the grant filter is
+	active and no request can ever carry an identity -- every list is empty and every write is
+	refused, including the owner's. That is indistinguishable at a glance from a working
+	deployment that simply has no data, which is how it survived a production cutover.
+
+	Throwing here rather than defaulting is the point: the previous behaviour silently substituted
+	a stub that returns null, so a missing argument became a running service with no identity.
+	*/
+	if (authz && !audience && !principalOf) {
+		throw new Error('createApp: authz is on but there is no way to identify anyone -- pass '
+			+ '`audience` (production) or `principalOf` (tests). Authorization with no identity source '
+			+ 'refuses every caller including the owner.');
+	}
 	const identify = domainGate(principalOf || (audience ? iapIdentity({ audience }) : async () => null), domains);
 	const store = new Store(data, { examplesDir, files, authz });
 	await store.init();
