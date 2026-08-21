@@ -49,6 +49,9 @@ exact failure mode this milestone exists to remove.
 */
 const audience = process.env.IAP_AUDIENCE || '';
 const owner = process.env.OWNER || '';
+// H9.8: comma-separated, e.g. ALLOW_DOMAINS=apnex.com.au,gmail.com. Unset means no domain
+// restriction -- grants still default-deny, so a stranger signs in and sees an empty list.
+const domains = (process.env.ALLOW_DOMAINS || '').split(',').map((d) => d.trim()).filter(Boolean);
 if (bucket && !audience) {
 	console.error('[ draw ] refusing to boot: BUCKET is set but IAP_AUDIENCE is not, so no request '
 		+ 'carries an identity and every diagram would be listed to every caller. Set IAP_AUDIENCE to '
@@ -59,7 +62,12 @@ if (audience) console.log(`[ draw ] authorization: on${owner ? `, adopting unown
 const files = bucket ? gcsFiles(bucket) : null;
 if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(audience), owner });
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(audience), owner, domains });
+if (audience) {
+	console.log(domains.length
+		? `[ draw ] sign-in restricted to ${domains.join(', ')}`
+		: '[ draw ] sign-in open to any account IAP admits; access is by grant only');
+}
 console.log(`[ draw ] editor + API on http://localhost:${app.port} (ws on /ws)`);
 
 // a single bad request must never take the whole server (and every other

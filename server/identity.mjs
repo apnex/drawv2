@@ -115,3 +115,37 @@ export function iapIdentity({ audience, keys = jwkSource(), now = Date.now, onMi
 		return `user:${email}`;
 	};
 }
+
+/*
+The sign-in gate (H9.8). Authorization decides what a principal reaches; this decides whether
+they get as far as being one, which is why it wraps `principalOf` rather than sitting beside it:
+a refused domain resolves to `null` and every caller downstream already treats that as anonymous.
+There is no path by which it could read an unsigned header, because it never sees one (B66) --
+it inspects only the principal that verification already proved.
+
+An empty allowlist means no domain restriction, not no access. That is deliberate and is the
+documented end state: grants default-deny, so a stranger with no allowlist configured signs in
+and sees an empty list. The allowlist narrows who may hold a session at all, which is defence in
+depth over the grant model rather than a replacement for it -- if it were the primary control,
+an empty value would have to fail closed.
+*/
+export function domainGate(principalOf, domains = []) {
+	const allow = new Set(
+		(Array.isArray(domains) ? domains : String(domains).split(','))
+			.map((d) => d.trim().toLowerCase()).filter(Boolean),
+	);
+	if (allow.size === 0) return principalOf;
+	return async function principalOfAllowedDomain(headers = {}) {
+		const principal = await principalOf(headers);
+		if (!principal) return null;
+		// only `user:` carries a domain. A `code:` principal authenticates by a different route
+		// with its own gate, and silently refusing it here would be a domain rule deciding
+		// something that is not a domain question.
+		if (!principal.startsWith('user:')) return principal;
+		const at = principal.lastIndexOf('@');
+		if (at < 0) return null;
+		// exact match on the domain label, never a suffix test: `endsWith('apnex.com.au')` is
+		// also true of `notapnex.com.au`, which is an attacker-registrable name
+		return allow.has(principal.slice(at + 1).toLowerCase()) ? principal : null;
+	};
+}

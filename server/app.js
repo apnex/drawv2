@@ -14,7 +14,7 @@ import { WebSocketServer } from 'ws';
 import { Store } from './store.js';
 import { Session } from './protocol.js';
 import { handleRest } from './rest.js';
-import { iapIdentity } from './identity.mjs';
+import { iapIdentity, domainGate } from './identity.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
 import { svgDocument } from './svg.mjs';
@@ -107,7 +107,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', audience = '', principalOf = null } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', audience = '', principalOf = null, domains = [] } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -131,7 +131,9 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	with authorization off the store ignores the principal entirely, and with it on a request that
 	proves nothing should carry nothing.
 	*/
-	const identify = principalOf || (audience ? iapIdentity({ audience }) : async () => null);
+	// H9.8: the allowlist wraps whatever produced the principal, including an injected one, so a
+	// test exercises the same composition production uses
+	const identify = domainGate(principalOf || (audience ? iapIdentity({ audience }) : async () => null), domains);
 	const store = new Store(data, { examplesDir, files, authz });
 	await store.init();
 	/*

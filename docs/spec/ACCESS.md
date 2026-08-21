@@ -269,11 +269,16 @@ IAM can express two of the three shapes wanted, and not the third.
 `domain:gmail.com` is not available, because `domain:` names a customer domain rather than Google's consumer namespace.\
 The only IAM member covering arbitrary Google accounts is `allAuthenticatedUsers`, which carries no restriction whatsoever.
 
-So a domain allowlist belongs in the application, checked against `X-Goog-Authenticated-User-Email` before any grant lookup.\
+So a domain allowlist belongs in the application, checked against the verified principal before any grant lookup.\
+Corrected 2026-08-21 (H9.8, B66): this named `X-Goog-Authenticated-User-Email`, which contradicts the assertion rule three sections above and would have read the one value an attacker can set.\
+The allowlist is composed into `principalOf` rather than checked beside it, so it inspects only what signature verification already proved and has no access to a header at all.\
+Running before the grant lookup is what gives it force: a principal on a domain not on the list is refused even when an explicit grant names it.\
 It is per-application rather than org-wide, it can name `gmail.com`, and it composes with grants instead of competing with them.\
 The org policy `iam.allowedPolicyMemberDomains` is the alternative and is the wrong tool: it constrains every IAM policy in the project, not this application, and still cannot name a consumer domain.
 
-The intended end state is `allAuthenticatedUsers` at the IAP layer with the allowlist and default-deny in the application, so a stranger signs in successfully and sees an empty list.
+The intended end state is `allAuthenticatedUsers` at the IAP layer with the allowlist and default-deny in the application, so a stranger signs in successfully and sees an empty list.\
+An unset allowlist therefore means no domain restriction rather than no access, because the grant model is the primary control and already denies by default.\
+`ALLOW_DOMAINS` names the exception, and the server states the policy it resolved at boot rather than leaving an operator to infer it.
 
 ---
 

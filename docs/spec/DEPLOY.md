@@ -305,6 +305,30 @@ Off to begin with.
 
 ---
 
+## Turning authorization on
+
+Three environment variables, and the service is single-tenant until the first of them is set.
+
+```text
+IAP_AUDIENCE    /projects/531843488473/global/backendServices/3078630696779732675
+OWNER           user:aobersnel@apnex.com.au
+ALLOW_DOMAINS   apnex.com.au            (optional; comma-separated)
+```
+
+`IAP_AUDIENCE` is the switch.\
+Setting it turns on the grant filter and makes every request carry a verified identity, so it must not be set before `OWNER` is, or the eleven existing diagrams belong to nobody and list to nobody.\
+The service already refuses to boot with `BUCKET` set and `IAP_AUDIENCE` unset, which covers the opposite mistake.
+
+`OWNER` claims diagrams that predate ownership, once, at boot.\
+It is a migration rather than a policy: diagrams created after the flag is on take their owner from the session that created them, and adoption never runs against them.
+
+`ALLOW_DOMAINS` restricts who may hold a session at all, and is checked before any grant is looked up, so it overrides a grant rather than composing with one.\
+Unset means no domain restriction, which is not the same as no access -- grants still deny by default, so an unlisted account signs in successfully and sees an empty list.\
+That is the documented end state rather than an oversight, and it is why an empty value does not fail closed.\
+The server prints the policy it resolved at boot, so an operator reads it rather than infers it.
+
+---
+
 ## Open
 
 ### Write cadence

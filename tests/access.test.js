@@ -684,3 +684,54 @@ test('H9.3c/B65: the creator owns what it creates, and can write it immediately'
 		fs.rmSync(dir, { recursive: true, force: true });
 	}
 });
+
+/*
+H9.8 integration. The obvious version of this test does not work: assert that a stranger on a
+disallowed domain sees an empty list, and it passes with the allowlist deleted, because a
+stranger has no grants either way. It measured default-deny and called it a domain check.
+
+The property that distinguishes them is that the allowlist runs BEFORE the grant lookup and so
+overrides one. A principal holding an explicit write grant, on a domain not on the list, must
+still be nobody -- that outcome is impossible under grants alone.
+*/
+test('H9.8: the allowlist overrides an explicit grant, because it runs first', async () => {
+	const INTRUDER = 'user:someone@notapnex.com.au';
+	let who = OWNER;
+	const dataDir = path.join(os.tmpdir(), `draw-dom-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0,
+		authz: true, owner: OWNER, principalOf: async () => who,
+		domains: ['apnex.com.au'],
+	});
+	const base = `http://127.0.0.1:${app.port}/api/v1`;
+	try {
+		const id = [...app.store.diagrams.keys()][0];
+		// deliberately granted, so nothing about the grant model can explain a refusal
+		assert.equal(app.store.grant(id, INTRUDER, 'write', OWNER), null);
+		assert.equal(app.store.canWrite(id, INTRUDER), true, 'the grant is real and would suffice');
+
+		const tok = (await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json()).token;
+
+		who = INTRUDER;
+		assert.deepEqual(await (await fetch(`${base}/diagrams`)).json(), [],
+			'a granted principal on a lookalike domain never becomes that principal');
+		const no = await fetch(`${base}/diagrams/${id}/commit`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': tok },
+			body: JSON.stringify(body),
+		});
+		assert.equal(no.status, 403, 'and the grant it holds does not save it');
+
+		// control: the same grant on an allowed domain does work, so the refusal is the domain
+		const GUEST_OK = 'user:guest@apnex.com.au';
+		assert.equal(app.store.grant(id, GUEST_OK, 'write', OWNER), null);
+		who = GUEST_OK;
+		const yes = await fetch(`${base}/diagrams/${id}/commit`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': tok },
+			body: JSON.stringify(body),
+		});
+		assert.equal(yes.status, 200, 'identical grant, allowed domain, admitted');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});

@@ -392,7 +392,7 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, revoke | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
-| H9.8 | Domain allowlist in the app, checked against the IAP identity before any grant lookup — IAM cannot name a consumer domain | — | S2 · S | `TODO` |
+| H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup — IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
 | H9.9 | Examples become templates; first write forks a per-owner copy — reverses the first-boot seed, amended in `SCOPE.md` | — | S3 · L | `TODO` |
 | H9.10 | Decide the fate of the 11 unowned diagrams now in `gs://diagrams.apnex.io` — adopt or delete, explicitly | — | S3 · S | `DONE` |
 

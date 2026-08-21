@@ -136,3 +136,65 @@ test('H9.2: the header alone, with no assertion, is worth nothing', async () => 
 	assert.equal(await id()({ 'x-goog-authenticated-user-email': 'accounts.google.com:someone@example.com' }), null,
 		'this is exactly the forgery the JWT requirement exists to prevent');
 });
+
+/*
+H9.8 -- the sign-in gate.
+
+The allowlist is the one control whose job is to decide who becomes a principal at all, so it is
+composed into `principalOf` rather than checked alongside it: a refused domain returns null and
+every downstream caller already treats null as anonymous. Nothing here passes a header to the
+gate, because the gate cannot reach one (B66).
+*/
+import { domainGate } from '../server/identity.mjs';
+
+const fixed = (p) => async () => p;
+
+test('H9.8: an allowed domain passes and a stranger becomes nobody', async () => {
+	const gate = domainGate(fixed('user:a@apnex.com.au'), ['apnex.com.au']);
+	assert.equal(await gate({}), 'user:a@apnex.com.au');
+	const out = domainGate(fixed('user:a@example.com'), ['apnex.com.au']);
+	assert.equal(await out({}), null, 'refused resolves to null, not to a principal with less power');
+});
+
+test('H9.8: the match is exact, so a lookalike domain is refused', async () => {
+	// endsWith('apnex.com.au') is TRUE of notapnex.com.au, which anyone can register. This is the
+	// entire reason the check is a Set lookup on the label rather than a suffix test.
+	for (const bad of ['notapnex.com.au', 'apnex.com.au.evil.com', 'x-apnex.com.au']) {
+		const gate = domainGate(fixed(`user:a@${bad}`), ['apnex.com.au']);
+		assert.equal(await gate({}), null, `${bad} must not satisfy apnex.com.au`);
+	}
+	// and a subdomain is a different domain, not a member of the parent
+	const sub = domainGate(fixed('user:a@mail.apnex.com.au'), ['apnex.com.au']);
+	assert.equal(await sub({}), null, 'a subdomain is not the domain');
+});
+
+test('H9.8: the domain compares case-insensitively, the local part is left alone', async () => {
+	const gate = domainGate(fixed('user:A.Person@APNEX.com.AU'), ['apnex.com.au']);
+	assert.equal(await gate({}), 'user:A.Person@APNEX.com.AU',
+		'admitted on a case-folded domain, and returned verbatim — the principal is an identity key');
+});
+
+test('H9.8: an empty allowlist restricts nothing, and never invents a principal', async () => {
+	const gate = domainGate(fixed('user:anyone@gmail.com'), []);
+	assert.equal(await gate({}), 'user:anyone@gmail.com', 'unset means no domain restriction');
+	assert.equal(await domainGate(fixed(null), [])({}), null, 'and anonymous stays anonymous');
+	assert.equal(await domainGate(fixed(null), ['apnex.com.au'])({}), null,
+		'a failed verification is not rescued by an allowlist');
+});
+
+test('H9.8: a code principal carries no domain and is not judged on one', async () => {
+	// refusing `code:` here would be a domain rule deciding something that is not a domain
+	// question; codes authenticate by another route with its own gate (H9.5/9.6)
+	const gate = domainGate(fixed('code:abc123'), ['apnex.com.au']);
+	assert.equal(await gate({}), 'code:abc123');
+	const weird = domainGate(fixed('user:no-at-sign'), ['apnex.com.au']);
+	assert.equal(await weird({}), null, 'but a user principal with no domain at all is refused');
+});
+
+test('H9.8: multiple domains, and a comma-separated string, both work', async () => {
+	const list = domainGate(fixed('user:a@gmail.com'), ['apnex.com.au', 'gmail.com']);
+	assert.equal(await list({}), 'user:a@gmail.com');
+	// server.js splits the env var, but accepting the raw string keeps one behaviour not two
+	const str = domainGate(fixed('user:a@gmail.com'), ' apnex.com.au , gmail.com ');
+	assert.equal(await str({}), 'user:a@gmail.com', 'whitespace and a bare string are tolerated');
+});
