@@ -14,8 +14,11 @@ import path from 'node:path';
 import { Store } from '../server/store.js';
 import { validateDoc, validateMetaPatch } from '../server/validate.js';
 import { createApp } from '../server/app.js';
-import { Session } from '../server/protocol.js';
+import { Session, snapshotBody } from '../server/protocol.js';
 import { Locks } from '../server/locks.js';
+import { Model } from '../model/index.mjs';
+import { Selection } from '../app/src/selection.js';
+import { Sync } from '../app/src/sync.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-acl-'));
 const OWNER = 'user:owner@apnex.com.au';
@@ -584,6 +587,99 @@ test('H9.4: a reader cannot reclaim, so it cannot break a legitimate agent\'s lo
 		new Session(ows, store, null, locks, OWNER);
 		ows.recv('reclaim', { id });
 		assert.equal(locks.verify(id, agent.token), false, 'the owner still takes the wheel back');
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+/*
+H9.3c -- the UI stops offering what the server will refuse.
+
+Two ends, tested separately because they fail separately. The server must put the decision on the
+wire, and the client must act on it. A test that only checked the client against a hand-built
+snapshot would pass with the server sending nothing at all, which is exactly the fixture drift
+that six existing tests turned out to have.
+
+`mayWrite` is deliberately not folded into `locked`. Server-Locked means someone else is driving
+and the indicator offers "click to take back"; reclaim is itself a write capability (B64), so a
+reader offered that button would be offered the one remedy certain to be refused.
+*/
+test('H9.3c: the snapshot carries the same write predicate the server refuses with', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const id = [...store.diagrams.keys()][0];
+	store.setOwner(id, OWNER);
+	assert.equal(store.grant(id, GUEST, 'read', OWNER), null);
+	try {
+		const forOwner = snapshotBody(store.get(id), store, null, OWNER);
+		const forReader = snapshotBody(store.get(id), store, null, GUEST);
+		assert.equal(forOwner.mayWrite, true, 'the owner is told it may write');
+		assert.equal(forReader.mayWrite, false, 'the reader is told it may not');
+		// the point of reusing canWrite rather than re-deriving: one rule, so no drift
+		assert.equal(forReader.mayWrite, store.canWrite(id, GUEST),
+			'the wire value IS the enforcement predicate, not a second opinion');
+		assert.equal(forReader.locked, false, 'and it is not disguised as Server-Locked');
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test('H9.3c: a client told mayWrite:false sends no write, and is not offered reclaim', () => {
+	const sent = [];
+	const net = {
+		status: 'open', subscribe(fn) { this.recv = fn; }, onStatus() {},
+		isOpen: () => true, send: (cmd, body) => { sent.push({ cmd, body }); return true; },
+	};
+	const model = new Model();
+	const selection = new Selection(model);
+	const states = [];
+	const sync = new Sync({ model, net, history: { clear() {}, setCounts() {}, state: { version: 0 } },
+		selection, onState: (s) => states.push(s) });
+
+	const doc = model.toJSON();
+	net.recv({ cmd: 'snapshot', body: { doc, diagrams: [], mayWrite: false, locked: false, version: 1 } });
+	assert.equal(sync.mayWrite, false, 'the client took the server at its word');
+	assert.equal(sync.readOnly, true, 'and treats itself as read-only');
+	assert.equal(sync.locked, false, 'without pretending someone else is driving');
+
+	const before = sent.length;
+	sync.submit({ ops: [{ op: 'put', kind: 'node', entity: node('node-ff0011', 20) }], label: 'x' });
+	sync.flush();
+	assert.equal(sent.length, before, 'no commit reached the wire — nothing for the server to 403');
+
+	sync.rename('renamed');
+	assert.equal(sent.filter((m) => m.cmd === 'rename' || m.cmd === 'meta').length, 0, 'nor a rename');
+
+	// the indicator is its own state, so the reclaim branch in main.js is never reached
+	const last = states[states.length - 1];
+	assert.equal(last.mayWrite, false, 'the UI is given the fact it needs to render read-only');
+});
+
+test('H9.3c/B65: the creator owns what it creates, and can write it immediately', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	try {
+		// through the protocol, because the defect was a caller dropping the principal, not the
+		// store lacking the ability to record one — calling store.create directly would pass
+		// against the broken wiring
+		const ws = fakeWs();
+		new Session(ws, store, null, new Locks(), GUEST);
+		ws.recv('create', { name: 'mine' });
+		const id = ws.last('snapshot')?.body.doc.meta.id;
+		assert.ok(id, 'a diagram was minted');
+		assert.equal(store.get(id).state.meta.owner, GUEST, 'the creator is recorded as owner');
+		assert.equal(store.canWrite(id, GUEST), true, 'and is not locked out of it');
+		assert.equal(ws.last('snapshot').body.mayWrite, true, 'the client is told so in the same breath');
+
+		// the ownership came from the session, so it cannot be claimed by asking for it
+		const ws2 = fakeWs();
+		new Session(ws2, store, null, new Locks(), 'user:thief@example.com');
+		ws2.recv('create', { name: 'theirs', doc: { ...store.get(id).toJSON(), meta: { ...store.get(id).toJSON().meta, owner: GUEST } } });
+		const id2 = ws2.last('snapshot')?.body.doc.meta.id;
+		assert.equal(store.get(id2).state.meta.owner, 'user:thief@example.com',
+			'an owner named in the document is ignored — H9.1 cleanMeta still holds');
 	} finally {
 		fs.rmSync(dir, { recursive: true, force: true });
 	}

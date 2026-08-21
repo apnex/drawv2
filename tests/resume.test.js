@@ -81,7 +81,7 @@ test('B2: content drawn before the server answers lands in a NEW diagram, not ov
 
 	// the server finally answers — with a REAL diagram that has its own content
 	const existing = serverDoc('diagram-bb0002', [node('node-bb0001', 300, 300)]);
-	t.net.recv({ cmd: 'snapshot', body: { doc: existing, diagrams: [], locked: false, version: 7 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: existing, diagrams: [], mayWrite: true, locked: false, version: 7 } });
 
 	assert.equal(only(t.sent, 'push').length, 0, '`push` is gone from the wire entirely');
 	const created = only(t.sent, 'create');
@@ -95,7 +95,7 @@ test('B2: content drawn before the server answers lands in a NEW diagram, not ov
 
 	// the server mints an id and answers with the new diagram
 	const minted = serverDoc('diagram-cc0003', [node('node-aa0001', 60, 60), node('node-aa0002', 120, 60)]);
-	t.net.recv({ cmd: 'snapshot', body: { doc: minted, diagrams: [], locked: false, version: 0 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: minted, diagrams: [], mayWrite: true, locked: false, version: 0 } });
 	assert.equal(t.sync.diagramId, 'diagram-cc0003');
 	assert.equal(t.model.state.meta.id, 'diagram-cc0003', 'the browser is on the diagram its work created');
 });
@@ -105,7 +105,7 @@ test('B2: a Server-LOCKED diagram is loaded read-only, never offered a create', 
 	const t = tab();
 	t.model.put('node', node('node-aa0001', 60, 60));
 	const existing = serverDoc('diagram-bb0002', [node('node-bb0001', 300, 300)]);
-	t.net.recv({ cmd: 'snapshot', body: { doc: existing, diagrams: [], locked: true, version: 4 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: existing, diagrams: [], mayWrite: true, locked: true, version: 4 } });
 
 	assert.equal(only(t.sent, 'create').length, 0, 'you cannot author into a controlled diagram');
 	assert.equal(t.sync.locked, true);
@@ -117,7 +117,7 @@ test('B2: a Server-LOCKED diagram is loaded read-only, never offered a create', 
 test('a reconnect sends `resume` with what it believes, never a document', () => {
 	storage.clear();
 	const t = tab();
-	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 5 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 5 } });
 	t.sent.length = 0;
 
 	t.net.notify('open');                                   // the socket came back
@@ -130,7 +130,7 @@ test('a reconnect sends `resume` with what it believes, never a document', () =>
 test('`sync` (in step) keeps the local document and replays the outbox', () => {
 	storage.clear();
 	const t = tab();
-	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 5 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 5 } });
 
 	// work committed while the socket is down: applied locally, queued, never sent
 	t.net.open = false;
@@ -153,7 +153,7 @@ test('`sync` (in step) keeps the local document and replays the outbox', () => {
 test('D29: a client AHEAD of the server is TOLD, not silently reverted', async () => {
 	storage.clear();
 	const t = tab();
-	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 9 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 9 } });
 	t.states.length = 0;
 
 	// the server restarted before flushing: it answers resume with less than we hold
@@ -169,7 +169,7 @@ test('D29: a client AHEAD of the server is TOLD, not silently reverted', async (
 test('D28/I16: a rejection reaches the readout WITH the state it needs to render', () => {
 	storage.clear();
 	const t = tab();
-	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 1 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 1 } });
 	t.changes.commit({ label: 'create', entries: [{ op: 'put', kind: 'node', entity: node('node-ee0001') }] });
 	const txnId = t.sync.outbox[0].txnId;
 	t.states.length = 0;
@@ -188,14 +188,14 @@ test('D28/I16: a rejection reaches the readout WITH the state it needs to render
 test('D30: unsent work survives a TAB CLOSE and drains on the next session', () => {
 	storage.clear();
 	const first = tab();
-	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 3 } });
+	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 	first.net.open = false;
 	first.changes.commit({ label: 'create', entries: [{ op: 'put', kind: 'node', entity: node('node-ff0001', 60, 60) }] });
 	assert.ok(storage.has('draw.outbox'), 'the outbox is on disk before the tab dies');
 
 	// the tab closes. A NEW one opens against the same storage and hydrates from scratch.
 	const next = tab();
-	next.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 3 } });
+	next.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 
 	const commits = only(next.sent, 'commit');
 	assert.equal(commits.length, 1, 'last session’s unsent work went out');
@@ -206,19 +206,19 @@ test('D30: unsent work survives a TAB CLOSE and drains on the next session', () 
 test('D30: an outbox belonging to ANOTHER diagram is not replayed into this one', () => {
 	storage.clear();
 	const first = tab();
-	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-aa0001'), diagrams: [], locked: false, version: 3 } });
+	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-aa0001'), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 	first.net.open = false;
 	first.changes.commit({ label: 'create', entries: [{ op: 'put', kind: 'node', entity: node('node-ff0002') }] });
 
 	assert.ok(storage.has('draw.outbox'), 'the work WAS persisted — what follows tests the filter, not an empty box');
 
 	const next = tab();
-	next.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-zz0009'), diagrams: [], locked: false, version: 0 } });
+	next.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-zz0009'), diagrams: [], mayWrite: true, locked: false, version: 0 } });
 	assert.equal(only(next.sent, 'commit').length, 0, 'a different diagram gets none of it');
 
 	// control: the SAME record against its own diagram does replay
 	const back = tab();
-	back.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-aa0001'), diagrams: [], locked: false, version: 3 } });
+	back.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-aa0001'), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 	assert.equal(only(back.sent, 'commit').length, 1, 'and its own diagram gets all of it');
 });
 
@@ -226,13 +226,13 @@ test('D30: a corrupt persisted outbox costs the replay, never the document', asy
 	storage.clear();
 	storage.set('draw.outbox', '{not json');
 	const t = tab();
-	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 2 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 2 } });
 	assert.equal(t.sync.hydrated, true, 'the diagram loaded');
 	assert.equal(only(t.sent, 'commit').length, 0);
 
 	storage.set('draw.outbox', JSON.stringify({ diagram: 'diagram-aa0001', msgs: [{ ops: 'not-an-array' }, null] }));
 	const u = tab();
-	u.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 2 } });
+	u.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 2 } });
 	assert.equal(u.sync.hydrated, true, 'a malformed record is dropped, the document is not');
 	assert.equal(only(u.sent, 'commit').length, 0);
 
@@ -241,14 +241,14 @@ test('D30: a corrupt persisted outbox costs the replay, never the document', asy
 		{ ops: [{ op: 'put', kind: 'node', entity: node('node-ff0003') }], label: 'create' },
 	] }));
 	const v = tab();
-	v.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 2 } });
+	v.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 2 } });
 	assert.equal(only(v.sent, 'commit').length, 1);
 });
 
 test('D30: undo/redo are NOT persisted — their `expect` is stale the moment the tab closes', () => {
 	storage.clear();
 	const t = tab();
-	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], locked: false, version: 3 } });
+	t.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 	t.net.open = false;
 	t.changes.setCounts({ canUndo: true, version: 3 });
 	t.changes.undo();

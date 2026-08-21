@@ -35,6 +35,7 @@ body { display: flex; flex-direction: column; }
 .lock-unlocked { background-color: #aed581; }
 .lock-locked   { background-color: #ffd54f; cursor: pointer; }
 .lock-offline  { background-color: #555; color: #ddd; }
+.lock-readonly { background-color: #90a4ae; color: #fff; }
 
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {

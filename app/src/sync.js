@@ -54,6 +54,10 @@ export class Sync {
 		this.loading = false;
 		this.expectLoad = false; // a snapshot we asked for (open/create) always loads
 		this.locked = false;     // Server-Locked: a server-side controller owns writes
+		// H9.3c: whether this principal may write this diagram at all. Distinct from `locked`:
+		// Server-Locked is temporary and reclaimable, this is not reclaimable by definition.
+		// Starts true because with authz off the server answers true for everyone.
+		this.mayWrite = true;
 		this.lockShownAt = 0;    // when the amber indicator went up (for the min dwell)
 		this.unlockTimer = null; // pending return-to-green after the min dwell
 		this.selectionDirty = false; // a selection (model-state) change pending forward to the server (R2)
@@ -77,8 +81,16 @@ export class Sync {
 
 	// The ONE outbound path. `request` is either a commit ({ops, label}) or an undo/redo verb.
 	// Everything the browser writes goes through here because everything goes through Changes.
+	// H9.3c: the one question every write path asks. Two causes, one answer -- a diagram is
+	// unwritable because someone else is driving (locked) or because this principal never had
+	// the grant (mayWrite). Callers that suppress a write want the union; callers that render
+	// the lock indicator want `locked` alone, because only that one offers a way out.
+	get readOnly() {
+		return this.locked || !this.mayWrite;
+	}
+
 	submit(request) {
-		if (this.locked) return;                       // read-only while Server-Locked
+		if (this.readOnly) return;                     // read-only: Server-Locked, or no write grant
 		if (!this.hydrated) return;
 		const txnId = `t${++this.txn}`;
 		const msg = request.verb
@@ -92,7 +104,7 @@ export class Sync {
 	// The outbox holds what has been submitted but not yet acknowledged as DURABLE. Pruning on
 	// `ack` alone would drop a change the server has accepted but not yet flushed.
 	drain() {
-		if (!this.net.isOpen() || this.locked) return;
+		if (!this.net.isOpen() || this.readOnly) return;
 		for (const msg of this.outbox) {
 			if (msg.sent) continue;
 			const ok = msg.verb
@@ -154,13 +166,13 @@ export class Sync {
 	// the entity queue (referenced entities must exist server-side first). Read-only / pre-hydration
 	// changes are dropped — the server is authoritative then. (R2)
 	onSelectionChange() {
-		if (this.loading || !this.hydrated || this.locked) return;
+		if (this.loading || !this.hydrated || this.readOnly) return;
 		this.selectionDirty = true;
 	}
 
 	flush() {
 		// while Server-Locked the browser is read-only — never push edits up
-		if (this.locked) { this.outbox = []; this.persistOutbox(); this.selectionDirty = false; return; }
+		if (this.readOnly) { this.outbox = []; this.persistOutbox(); this.selectionDirty = false; return; }
 		if (!this.net.isOpen() || !this.hydrated) return;
 		this.drain();
 		if (this.selectionDirty) {
@@ -208,6 +220,10 @@ export class Sync {
 			// the loaded diagram's lock state is authoritative — drop any pending dwell
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
 			this.locked = !!msg.body.locked;
+			// H9.3c: fail closed on a missing field, matching the H9.3a convention. A snapshot
+			// that forgot to say should present as unwritable rather than silently offer edits
+			// the server will refuse -- and a test will notice the former.
+			this.mayWrite = msg.body.mayWrite === true;
 			if (this.locked) this.lockShownAt = Date.now();
 			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
 				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
@@ -384,6 +400,7 @@ export class Sync {
 			status: this.net.status,
 			meta: this.model.state.meta,
 			locked: this.locked,
+			mayWrite: this.mayWrite,
 			...extra
 		});
 	}
@@ -431,7 +448,7 @@ export class Sync {
 	vocabulary from the server's own dispatch rather than trusting the document.
 	*/
 	rename(name) {
-		if (this.locked) return this.emitState({}); // read-only: revert the field
+		if (this.readOnly) return this.emitState({}); // read-only: revert the field
 		const trimmed = name.trim().slice(0, 64);
 		if (!trimmed || trimmed === this.model.state.meta.name) return this.emitState({});
 		this.changes.commit(commands.renameDocument(trimmed));
@@ -439,7 +456,7 @@ export class Sync {
 	}
 
 	setSlidesUrl(url) {
-		if (this.locked) return this.emitState({}); // read-only: revert the field
+		if (this.readOnly) return this.emitState({}); // read-only: revert the field
 		const trimmed = url.trim().slice(0, 512);
 		if (!this.hydrated) {
 			this.model.state.meta.slides.url = trimmed;

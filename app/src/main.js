@@ -85,13 +85,18 @@ const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on 
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
 	model, net, history, selection,
-	onState({ status, meta, diagrams, locked, error, rewound }) {
+	onState({ status, meta, diagrams, locked, mayWrite, error, rewound }) {
+		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
+		// take back" and reclaim is itself a write capability (B64). A reader shown that would
+		// be offered the one remedy the server is certain to refuse.
 		if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
+		else if (!mayWrite) { menu.lock.className = 'lock-readonly'; menu.lock.textContent = 'read-only'; menu.lock.title = 'you have view access to this diagram'; }
 		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
-		input.setReadOnly(!!locked);
-		menu.name.disabled = !!locked;
-		menu.slidesUrl.disabled = !!locked;
+		const readOnly = !mayWrite || !!locked;
+		input.setReadOnly(readOnly);
+		menu.name.disabled = readOnly;
+		menu.slidesUrl.disabled = readOnly;
 		if (onStateLastId && onStateLastId !== meta.id) disarmDelete();
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
@@ -139,7 +144,7 @@ bindGestureDefer(input, sync);
 
 menu.name.addEventListener('change', () => { sync.rename(menu.name.value); menu.name.blur(); menu.name.value = model.state.meta.name; });
 menu.list.addEventListener('change', () => { sync.openDiagram(menu.list.value); menu.list.blur(); });
-menu.lock.addEventListener('click', () => { if (sync.locked) sync.reclaim(); menu.lock.blur(); });
+menu.lock.addEventListener('click', () => { if (sync.locked && sync.mayWrite) sync.reclaim(); menu.lock.blur(); });
 menu.create.addEventListener('click', () => { sync.createDiagram(); menu.create.blur(); });
 
 // deleting a diagram is the one destructive, non-undoable action: arm then confirm

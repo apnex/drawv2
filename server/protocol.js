@@ -41,6 +41,10 @@ export function snapshotBody(model, store, locks, principal = null) {
 		doc: model.toJSON(),
 		diagrams: store.list(principal),
 		locked: locks ? locks.locked(id) : false,
+		// H9.3c: the same predicate the server refuses with, so the UI cannot drift from the
+		// rule it is presenting. Deliberately not folded into `locked` -- Server-Locked means
+		// someone else is driving and offers "take it back", which a reader may not do (B64).
+		mayWrite: store.canWrite(id, principal),
 		// the version the document is AT, so a client can `resume` against it later without
 		// having to observe a change first (I11: the client never mints this, it only echoes it)
 		version: log ? log.version : 0,
@@ -225,7 +229,7 @@ export class Session {
 				// lands in a new diagram instead of overwriting whichever one the server answered
 				// with. That overwrite was B2.
 				const name = typeof body.name === 'string' ? body.name.slice(0, 64) : undefined;
-				const res = this.store.create(name, body.doc || null);
+				const res = this.store.create(name, body.doc || null, this.principal);
 				if (!res.ok) return this.error(`create rejected: ${res.error}`, 'create-rejected', body.txnId);
 				return this.snapshot(res.model);
 			}

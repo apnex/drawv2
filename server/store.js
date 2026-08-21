@@ -203,7 +203,12 @@ export class Store {
 	// has drawn something before the server answered: `create {name, doc}`. The id is minted here
 	// and `doc.meta.id` is ignored (I11) — a client cannot name, and therefore cannot target, an
 	// existing diagram. That targeting was B2. Returns { ok, model } | { ok:false, error }.
-	create(name, doc = null) {
+	// B65: the creator is the owner. The principal comes from the authentication boundary and
+	// never from `doc.meta` -- `cleanMeta`'s trusted flag (H9.1) still refuses an owner off the
+	// wire, so this is the only path by which ownership is established, and it cannot be forged.
+	// Trailing and defaulted, matching the H9.3a convention, but here an un-updated caller yields
+	// an UNOWNED diagram rather than a refused one, which is why both return paths set it.
+	create(name, doc = null, principal = null) {
 		const taken = Object.fromEntries([...this.diagrams.keys()].map((k) => [k, true]));
 		const id = newId('diagram', taken);
 		if (!name) {
@@ -235,12 +240,14 @@ export class Store {
 			it, breaking D6's one-source-one-mirror contract.
 			*/
 			const entry = this.install(id, { ...candidate, meta: { ...candidate.meta, version: 0 } });
+			if (principal) entry.model.state.meta.owner = principal;
 			this.markDirty(id);
 			return { ok: true, model: entry.model };
 		}
 		const model = new Model();
 		model.state.meta.id = id;
 		model.state.meta.name = name;
+		if (principal) model.state.meta.owner = principal;
 		const entry = { model, log: new Log(0), dirty: false, timer: null, file: `${id}.json` };
 		this.diagrams.set(id, entry);
 		this.markDirty(id);
