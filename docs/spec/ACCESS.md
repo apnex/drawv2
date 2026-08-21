@@ -16,10 +16,10 @@ Arguing that in one place is cheaper than discovering it twice.
 
 | Axis | Decision |
 |---|---|
-| Granularity | per diagram; collection or project scope deferred |
+| Granularity | per diagram, **and per owner** -- see the 2026-08-21 amendment; the deferral is lifted |
 | Levels | `read` and `write` |
 | Where the ACL lives | `meta`, as server-recorded status, never a commit |
-| Principals | a Google identity from IAP, or a connection code -- the same kind of thing |
+| Principals | a Google identity from IAP, or an **agent identity** -- the same kind of thing. A connection code is a CREDENTIAL for an agent identity, not a principal itself; see the 2026-08-21 amendment |
 | Level lives on | the grant, not the principal |
 | Code shape | 14-16 characters, Crockford base32, from `crypto.randomBytes` |
 | Code at rest | hashed; the plaintext is shown once at mint and never again |
@@ -29,6 +29,90 @@ Arguing that in one place is cheaper than discovering it twice.
 | Route | path prefix `/connect/v1`, outside IAP |
 | Locks | principal-scoped and ACL-gated, enforced server-side |
 | Compatibility | breaking changes are allowed; nothing is aliased for the old shape |
+
+---
+
+## Amended 2026-08-21: the primary goal is agent-first
+
+This document was written human-first and did not say so.\
+The count is the plainest evidence: it mentions IAP twenty-one times and Google thirteen, and the word *agent* four.\
+The director has stated the intent it should have been written against -- **agent-first, and agent-plus-human collaboration** -- and the work that produced this section was opportunistic rather than the milestone's purpose.
+
+Three consequences followed from the original framing, and they are corrected below.\
+A fourth criticism was raised and withdrawn, and is recorded because the withdrawal is the useful part.
+
+### The human at the bootstrap is correct, and was wrongly criticised
+
+The first reading of this design said *an agent cannot start anything*, which is true and is not a defect.\
+Every system that gives an agent an identity has a human provision something once: a service account, a delegated credential, or a self-registration that a person approves.\
+There is no arrangement in which the first credential appears without someone authorising it.
+
+The real cost is narrower and worth stating exactly.\
+A human at the **bootstrap** is unavoidable; a human on the critical path for **every diagram** is a choice, and the original design made both.\
+Only the second is corrected here.
+
+### A connection code is a credential, not a principal
+
+`server/validate.js:11` spells a principal as `code:[0-9a-z]{1,64}`, which makes the credential and the identity the same object.\
+That single conflation causes three separate problems that each looked independent.\
+Revoking a code destroys an owner, so anything it owned is orphaned with nobody able to grant on it.\
+Rotating a code mints a new principal, so every grant made to the old one is lost.\
+And a code cannot be reused across diagrams, because the code *is* the grant.
+
+Separating them dissolves all three.\
+An **agent identity** -- `agent:<name>` -- is durable, owns things, and receives grants.\
+A **code** authenticates as that identity, may be rotated or revoked without touching it, and several may exist at once so a rotation needs no downtime.\
+This is cheap now and a migration later, because no code has been written yet and the grammar is one line.
+
+### A grant's subject may be an OWNER, not only a diagram
+
+The original granularity row deferred collection scope, and agent-created diagrams make that deferral untenable.\
+If an agent may create, the human needs access to what it creates and the agent needs access to what the human creates, and per-diagram grants put a person in the loop for every one of them.
+
+The lifted form needs no new entity.\
+A workspace is *the set of diagrams owned by a principal*, so the change is that a grant names an owner where it previously named a diagram, and `access()` gains one fallback: no direct grant, then does this principal hold a grant on the diagram's owner.
+
+The price is real and is not hidden by the elegance.\
+A leaked per-diagram code costs one diagram; a leaked owner-scoped credential costs everything that owner holds.\
+That is an argument for credentials being rotatable and short-lived, which the identity split already provides, and it is the reason the two decisions belong together rather than separately.
+
+### The agent does not need a live event stream, and SSE was the wrong suggestion
+
+The first reading called REST-only a gap in collaboration.\
+It is less of one than it appeared, because a write is already a synchronisation point.\
+A successful commit returns `changeBody` carrying the new version, and a stale one returns `409` with `recoveryRecords` -- up to twenty records of what actually moved, which `server/rest.js:112` records as the whole reason a bare 409 was insufficient.\
+An agent that writes therefore learns the world from its own write and never has to ask.
+
+That yields three modes, of which only one needs anything new.\
+An agent **driving** holds the lock and has nothing to poll for, because nobody else may write.\
+An agent **writing** without the lock learns at write time through `expect` and the 409 body.\
+Only an agent **watching** -- one that reacts to a person rather than acting on its own -- needs to be told, and that is a different program rather than a missing feature.
+
+**Server-sent events were proposed and are withdrawn.**\
+SSE holds the response body open indefinitely, so consuming it requires a client that reads a stream incrementally.\
+A harness that shells out gets nothing until the process is killed, and `curl --max-time` reduces it to polling with extra machinery.
+
+**Long-poll is the fitting primitive** precisely because its response *completes*: one request returns one batch and the command exits, which any harness that can run a command and read its output already supports.\
+`GET .../history` is the payload and is deliberately lock-free at `server/rest.js:269`, so the addition is a `since` cursor and an optional `wait`.\
+The cursor is what makes it lossless -- a change arriving between one response and the next request is delayed, never missed -- and dropping `wait` degrades it to ordinary polling with identical semantics, so the parameter is a latency optimisation rather than a mechanism.
+
+None of this blocks the agent surface.\
+A code-authenticated agent that locks, writes and releases is complete without any of it, so H9.5 and H9.6 do not depend on long-poll and can land before it.
+
+### What is decided, and what is not
+
+| Question | Position |
+|---|---|
+| Agent identity separate from credential | **decided** -- `agent:<name>` is the principal, a code authenticates as it |
+| A grant may name an owner | **decided** -- lifts the collection-scope deferral |
+| An agent may create a diagram, and owns it | **decided** |
+| `POST /api/v1/diagrams` for an agent | **decided by the above** -- creating requires it |
+| `DELETE` for an agent | **open (B32)** -- X12 refused the analogous case for `draw undo` because a destructive verb keeps its gates, so this does not follow from `POST` |
+| Live events to the agent | **deferred** -- long-poll when wanted, first-class websockets in a later phase, from a separate project |
+
+A budget note for whoever builds the waiting form.\
+The service runs one instance with `containerConcurrency: 80` and a 300 second request timeout, and every open browser tab already holds one of those eighty slots for the life of its websocket.\
+Held requests draw from the same pool as people, not a separate one.
 
 ---
 

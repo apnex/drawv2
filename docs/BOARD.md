@@ -403,8 +403,9 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 
 ## H9 -- access control · `WIP`
 
-Per-diagram authorization, designed in `docs/spec/ACCESS.md`.\
-Two authentication methods -- Google identity via IAP, and connection codes over REST -- resolving to one grant model.
+Authorization for an **agent-first** tool, designed in `docs/spec/ACCESS.md`.\
+Two authentication methods -- Google identity via IAP, and an agent identity holding a connection code -- resolving to one grant model, scoped per diagram or per owner.\
+Amended 2026-08-21: the milestone was written human-first and did not say so; the human work landed to date was opportunistic, and the agent half is what remains.
 
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
@@ -417,9 +418,13 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.3b | Pass the principal from REST and websocket handlers into the seven gated methods, and map `forbidden` to `403` | — | S2 · M | `DONE` |
 | H9.3c | Give the client its own read-only state, distinct from Server-Locked, driven by the server's write predicate | **B65** | S2 · M | `DONE` |
 | H9.4 | ACL-gate the two routes that decide who may write but write nothing: lock acquire and reclaim | **B63**, **B64** | S2 · M | `DONE` |
-| H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, revoke | — | S3 · L | `TODO` |
+| H9.4b | Agent identity separate from credential: `agent:<name>` is the principal, a code authenticates as it — revoking or rotating a code must not orphan what the agent owns | — | S2 · M | `TODO` |
+| H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable | — | S2 · M | `TODO` |
+| H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, rotate, revoke — a credential FOR an agent identity, not a principal | — | S3 · L | `TODO` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
+| H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `TODO` |
+| H9.22 | Long-poll: `history?since=&wait=` — the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | — | S4 · M | `TODO` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup — IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
 | H9.9 | Examples become templates; first write forks a per-owner copy — reverses the first-boot seed, amended in `SCOPE.md` | — | S3 · L | `TODO` |
 | H9.10 | Decide the fate of the 12 unowned diagrams in `gs://diagrams.apnex.io` — adopt or delete, explicitly. Recorded as 11 until the bucket was counted at cutover | — | S3 · S | `DONE` |
