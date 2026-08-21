@@ -157,12 +157,20 @@ round trips, each a window another writer could interleave — the hazard `undo 
 mitigate. The legacy adapter is retired rather than aliased (X1: an alias is a second surface to
 keep true); the high-level verbs now build ops directly, which is all the adapter ever did for them.
 */
-async function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect) {
+async function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect, principal) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	if (Number.isNaN(expect)) return json(res, 400, { error: 'X-Draw-Expect must be an integer version', code: 'expect-malformed' });
-	const result = store.commit(id, { ops, label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`);
+	const result = store.commit(id, { ops, label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`, principal);
 	if (!result.ok) {
-		// a failed precondition is a CONFLICT, not a malformed request: the caller re-reads and retries
+		/*
+		Three different refusals, three different codes, because an agent acts on the code -- H9.3b.
+
+		403 says you may not, and no retry will help until a grant changes. 409 says the world moved
+		under you, so re-read and try again. 422 says the request itself was malformed. Collapsing
+		the first into either of the others makes a caller either retry forever or give up on a
+		conflict it could have resolved.
+		*/
+		if (result.forbidden) return json(res, 403, { error: result.error, code: 'forbidden' });
 		const conflict = /version conflict/i.test(result.error);
 		return json(res, conflict ? 409 : 422, { error: result.error, ...(conflict ? { code: 'version-conflict', version: result.version } : {}) });
 	}
@@ -181,9 +189,11 @@ async function commitWrite(res, store, hub, locks, id, token, ops, label, extra,
 // (the lock gate ran before the awaited body read), set + flush-before-ack (a one-shot agentic caller
 // has no reconnect backstop), then broadcast a snapshot so every viewer reflects the agent's focus via
 // the persisted doc.selection. No version bump — selection is status, not config (matches the ws 'select').
-async function commitSelection(res, store, hub, locks, id, token, ids) {
+async function commitSelection(res, store, hub, locks, id, token, ids, principal) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
-	const err = store.setSelection(id, ids);
+	const err = store.setSelection(id, ids, principal);
+	// a forbidden selection is 403 for the same reason a forbidden commit is: no retry helps
+	if (err && /^forbidden/.test(err)) return json(res, 403, { error: err, code: 'forbidden' });
 	if (err) return json(res, 422, { error: err });
 	await store.flush(id);
 	const model = store.get(id);
@@ -220,7 +230,7 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 
 	// the Slides sync action keeps its dedicated route
 	if (req.method === 'POST' && parts.length === 6 && parts[4] === 'sync' && parts[5] === 'slides') {
-		handleSlidesPush(req, res, store, slides, parts[3]);
+		handleSlidesPush(req, res, store, slides, parts[3], principal);
 		return true;
 	}
 
@@ -230,7 +240,7 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	if (req.method === 'POST' || (req.method === 'PUT' && parts[4] === 'selection') || req.method === 'PATCH' || req.method === 'DELETE') {
 		// handleWrite is async + fire-and-forget: a throw must never become an
 		// unhandled rejection (which would crash the whole server)
-		handleWrite(req, res, store, locks, hub, parts).catch((err) => {
+		handleWrite(req, res, store, locks, hub, parts, principal).catch((err) => {
 			console.warn(`[ rest ] write failed: ${err && err.message}`);
 			try { if (!res.headersSent) json(res, 500, { error: 'internal error' }); } catch { /* response already gone */ }
 		});
@@ -289,7 +299,7 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	return json(res, 404, { error: 'not found' }), true;
 }
 
-async function handleWrite(req, res, store, locks, hub, parts) {
+async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	const id = parts[3];
 	if (!store.get(id)) return json(res, 404, { error: `unknown diagram: ${id}` });
 
@@ -337,7 +347,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		const body = await readJson(req);
 		if (bodyRejected(req, res, body)) return;
 		if (!body || !Array.isArray(body.ids)) return json(res, 400, { error: 'expected JSON body { ids: [...] }' });
-		return commitSelection(res, store, hub, locks, id, token, body.ids);
+		return commitSelection(res, store, hub, locks, id, token, body.ids, principal);
 	}
 
 	// D14/GR11 — undo/redo are the ONE pair of verbs whose target is implicit: the top of a ring
@@ -363,7 +373,8 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		// browser offers it as "undo all N changes by <actor>"; an agent uses it to back out its
 		// own batch without N round trips, each of which another writer could interleave.
 		const reversing = parts[4] === 'undo' ? log.peekUndo() : log.peekRedo();
-		const result = parts[4] === 'undo' ? store.undo(id, body.to ?? null) : store.redo(id);
+		const result = parts[4] === 'undo' ? store.undo(id, body.to ?? null, principal) : store.redo(id, principal);
+		if (result.forbidden) return json(res, 403, { error: result.error, code: 'forbidden' });
 		if (!result.ok) return json(res, 422, { error: result.error, version: result.version });
 		await store.flush(id);
 		const payload = reversalBody(store, id, result,
@@ -382,7 +393,7 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		if (!Array.isArray(body.ops)) {
 			return json(res, 400, { error: 'commit takes { ops: [...], label? } — the transaction vocabulary the websocket uses', code: 'ops-required' });
 		}
-		return commitWrite(res, store, hub, locks, id, token, body.ops, body.label || '', undefined, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, body.ops, body.label || '', undefined, expectOf(req), principal);
 	}
 
 	// high-level verbs on a collection
@@ -395,21 +406,21 @@ async function handleWrite(req, res, store, locks, hub, parts) {
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
 		const entity = buildEntity(model, kind, data);
 		if (!entity) return json(res, 422, { error: `cannot create ${kind}` });
-		return commitWrite(res, store, hub, locks, id, token, [{ op: 'put', kind, entity }], `create ${kind}`, { id: entity.id }, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, [{ op: 'put', kind, entity }], `create ${kind}`, { id: entity.id }, expectOf(req), principal);
 	}
 	if (req.method === 'PATCH' && parts.length === 6) {
 		const data = await readJson(req);
 		if (bodyRejected(req, res, data)) return;
 		if (!data) return json(res, 400, { error: 'invalid JSON body' });
-		return commitWrite(res, store, hub, locks, id, token, [{ op: 'set', kind, id: parts[5], patch: { ...data, id: parts[5] } }], `move ${kind}`, undefined, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, [{ op: 'set', kind, id: parts[5], patch: { ...data, id: parts[5] } }], `move ${kind}`, undefined, expectOf(req), principal);
 	}
 	if (req.method === 'DELETE' && parts.length === 6) {
-		return commitWrite(res, store, hub, locks, id, token, [{ op: 'del', kind, id: parts[5] }], `delete ${kind}`, undefined, expectOf(req));
+		return commitWrite(res, store, hub, locks, id, token, [{ op: 'del', kind, id: parts[5] }], `delete ${kind}`, undefined, expectOf(req), principal);
 	}
 	return json(res, 404, { error: 'not found' });
 }
 
-async function handleSlidesPush(req, res, store, slides, diagramId) {
+async function handleSlidesPush(req, res, store, slides, diagramId, principal) {
 	const model = store.get(diagramId);
 	if (!model) return json(res, 404, { error: `unknown diagram: ${diagramId}` });
 	if (!slides || !slides.auth.configured()) {
@@ -428,7 +439,7 @@ async function handleSlidesPush(req, res, store, slides, diagramId) {
 		// remember where it landed, so a re-push targets the same slide rather than pages[0].
 		// Server-side because the server did the push: the CLI's `draw push` binds too, and the
 		// browser needs no round trip to record something it did not do.
-		store.bindSlides(diagramId, report.presentationId, report.pageId);
+		store.bindSlides(diagramId, report.presentationId, report.pageId, principal);
 		console.log(`[ slides ] pushed ${diagramId}: ${report.objects} objects -> ${report.presentationId}`);
 		return json(res, 200, report);
 	} catch (err) {

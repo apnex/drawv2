@@ -420,3 +420,65 @@ test('H9.3: with authz off none of this applies, and the tool stays single-tenan
 		assert.ok(s.commit(id, put1(), 'client', 'a').ok, 'no principal, no identity, no gate');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+H9.3b -- the refusal reaches the wire as 403.
+
+The store refused from H9.3a, but no handler passed it a principal, so with authorization on the
+app would have refused its own owner. This asserts the whole chain: identity in, grant checked,
+403 out -- and that the owner is not locked out of their own diagram.
+*/
+async function live(who) {
+	const dataDir = path.join(os.tmpdir(), `draw-403-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({
+		dataDir, secretsDir: dataDir, port: 0,
+		authz: true, owner: OWNER, principalOf: async () => who(),
+	});
+	return { app, dataDir, base: `http://127.0.0.1:${app.port}/api/v1` };
+}
+const body = { ops: [{ op: 'put', kind: 'node', entity: node('node-ff0009', 60) }], label: 'x' };
+
+test('H9.3b: a stranger gets 403 on commit, and the owner still writes', async () => {
+	let who = OWNER;
+	const { app, dataDir, base } = await live(() => who);
+	try {
+		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;
+		const tok = (await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json()).token;
+		const hdr = { 'Content-Type': 'application/json', 'X-Draw-Lock': tok };
+
+		const ok = await fetch(`${base}/diagrams/${id}/commit`,
+			{ method: 'POST', headers: hdr, body: JSON.stringify(body) });
+		assert.equal(ok.status, 200, 'the owner is not locked out of their own diagram');
+
+		who = GUEST;
+		const no = await fetch(`${base}/diagrams/${id}/commit`,
+			{ method: 'POST', headers: hdr, body: JSON.stringify(body) });
+		assert.equal(no.status, 403, 'a stranger is refused');
+		assert.equal((await no.json()).code, 'forbidden',
+			'403 and a code, not 409 or 422 — an agent must not retry this');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+test('H9.3b: a read grant is refused a write over REST', async () => {
+	let who = OWNER;
+	const { app, dataDir, base } = await live(() => who);
+	try {
+		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;
+		assert.equal(app.store.grant(id, GUEST, 'read', OWNER), null);
+		const tok = (await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json()).token;
+
+		who = GUEST;
+		assert.equal((await (await fetch(`${base}/diagrams`)).json()).length, 1, 'read sees it');
+		const no = await fetch(`${base}/diagrams/${id}/commit`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': tok },
+			body: JSON.stringify(body),
+		});
+		assert.equal(no.status, 403, 'and cannot change it');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});

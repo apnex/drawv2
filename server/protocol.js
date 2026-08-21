@@ -233,7 +233,7 @@ export class Session {
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;
-				const res = this.store.commit(this.diagramId, body, 'client', this.actor);
+				const res = this.store.commit(this.diagramId, body, 'client', this.actor, this.principal);
 				if (!res.ok) return this.error(`commit rejected: ${res.error}`, 'commit-rejected', body.txnId);
 				if (this.locks) this.locks.releaseHold(this.diagramId);   // the human took the wheel
 				if (!res.change) return this.send('ack', { acked: body.txnId ?? null, noop: true });
@@ -269,8 +269,8 @@ export class Session {
 				// refuses a seq the ring does not currently hold rather than clamping it.
 				const reversing = cmd === 'undo' ? log?.peekUndo() : log?.peekRedo();
 				const res = cmd === 'undo'
-					? this.store.undo(this.diagramId, Number.isInteger(body.to) ? body.to : null)
-					: this.store.redo(this.diagramId);
+					? this.store.undo(this.diagramId, Number.isInteger(body.to) ? body.to : null, this.principal)
+					: this.store.redo(this.diagramId, this.principal);
 				if (!res.ok) return this.error(`${cmd} rejected: ${res.error}`, `${cmd}-rejected`, body.txnId);
 				const payload = reversalBody(this.store, this.diagramId, res,
 					{ by: 'client', actor: this.actor, label: cmd, reversed: reversing });
@@ -303,7 +303,7 @@ export class Session {
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;
-				const err = this.store.setSelection(this.diagramId, body.ids);
+				const err = this.store.setSelection(this.diagramId, body.ids, this.principal);
 				if (err) return this.error(`select rejected: ${err}`);
 				// B34 — the ws used to broadcast NOTHING here while REST shipped a whole snapshot, so
 				// the two transports disagreed on whether selection was even shareable. It is: a
@@ -326,7 +326,7 @@ export class Session {
 				if (!this.store.get(body.id)) return this.error(`unknown diagram: ${body.id}`);
 				// don't let the browser delete a diagram a server-side controller owns
 				if (this.locks && this.locks.locked(body.id)) return this.error('server-locked: read-only');
-				const err = await this.store.remove(body.id);
+				const err = await this.store.remove(body.id, this.principal);
 				if (err) return this.error(err);
 				console.log(`[ session ] deleted diagram ${body.id}`);
 				if (this.diagramId === body.id) this.diagramId = null;
