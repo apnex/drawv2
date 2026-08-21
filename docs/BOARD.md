@@ -373,7 +373,7 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 | H8.8 | The REST/agent surface is behind IAP and the CLI sends no credential — decide how an agent authenticates | **B61** | S2 · M | `TODO` |
 | H8.6 | IAP on the backend service; consent screen is in **Testing**, not published — test users only | **B57** | S2 · S | `DONE` |
 
-## H9 -- access control · `TODO`
+## H9 -- access control · `WIP`
 
 Per-diagram authorization, designed in `docs/spec/ACCESS.md`.\
 Two authentication methods -- Google identity via IAP, and connection codes over REST -- resolving to one grant model.
@@ -394,10 +394,13 @@ Two authentication methods -- Google identity via IAP, and connection codes over
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup — IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
 | H9.9 | Examples become templates; first write forks a per-owner copy — reverses the first-boot seed, amended in `SCOPE.md` | — | S3 · L | `TODO` |
-| H9.10 | Decide the fate of the 11 unowned diagrams now in `gs://diagrams.apnex.io` — adopt or delete, explicitly | — | S3 · S | `DONE` |
+| H9.10 | Decide the fate of the 12 unowned diagrams in `gs://diagrams.apnex.io` — adopt or delete, explicitly. Recorded as 11 until the bucket was counted at cutover | — | S3 · S | `DONE` |
 | H9.12 | Gate reads: `hello`, `open`, `store.first`, the REST document and log, and the SVG rendering — writes were gated, reads never were | **B67** | S2 · M | `DONE` |
 | H9.13 | Name every identity refusal, once per reason, so a misconfiguration announces itself instead of presenting as a uniform denial | **B68**, **B69** | S2 · S | `DONE` |
 | H9.14 | Pass the audience `server.js` switches authorization on with, and refuse to start when authz has no identity source | **B70** | S2 · S | `DONE` |
+| H9.15 | Cutover: enable authorization on the live service — build, deploy image with `IAP_AUDIENCE` and `OWNER` together, adopt the 12, verify the owner reaches them through IAP | **B67**, **B70** | S1 · M | `DONE` |
+| H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures — the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `TODO` |
+| H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch — a flag that is on in the only deployment that exists is a second code path nobody runs | — | S3 · S | `TODO` |
 
 ## Held — on the record, not on the board
 
