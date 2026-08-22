@@ -330,6 +330,27 @@ The websocket refuses an upgrade whose `Origin` is neither absent nor the host t
 Same-origin is recognised without configuration by matching the `Host` header, so this is only needed if a page on another origin must legitimately connect.\
 Every refusal is logged with both the origin and the host, so a wrongly refused client is attributable rather than a silent reconnect loop.
 
+### The agent door -- H9.6, applied 2026-08-22
+
+`/connect/*` is routed to `svc-draw-connect`, a second backend service over the same `neg-draw` serverless NEG, with IAP off.\
+It is a fourth path rule on the `path-draw` matcher, beside the three that already take `/about`, `/privacy` and `/terms` off the application.
+
+Cloud Run's invoker binding had to widen for this, and that is the part worth understanding rather than copying.\
+Only IAP's service agent could invoke the service, so a request arriving through a backend without IAP was refused by Cloud Run before reaching any code.\
+`allUsers` now holds `roles/run.invoker`, which sounds broader than it is: ingress remains `internal-and-cloud-load-balancing`, so the `run.app` URL answers `404` and `allUsers` means *any request that arrives via the load balancer*.
+
+The cost is a lock, and it is recorded because it is invisible in the configuration.\
+Before this, a URL map that wrongly sent `/api/v1` at the non-IAP backend would still have been refused by Cloud Run's IAM.\
+Now the URL map is the only thing deciding what IAP covers.\
+What holds in its place is that the application fails closed -- a request carrying no principal receives an empty list and `403` on everything else -- so a misroute is a denial rather than a disclosure.
+
+Verify after any change to the map, because the failure is silent:
+```sh
+curl -s -o /dev/null -w '%{http_code}\n' https://draw-jpeaylt5eq-ts.a.run.app/health      # 404: ingress shut
+curl -s -o /dev/null -w '%{http_code}\n' https://draw.apnex.io/api/v1/diagrams            # 302: IAP enforcing
+curl -s -o /dev/null -w '%{http_code}\n' https://draw.apnex.io/connect/v1/diagrams        # 200: agent door open
+```
+
 `OWNER` claims diagrams that predate ownership, once, at boot.\
 It is a migration rather than a policy: diagrams created after the flag is on take their owner from the session that created them, and adoption never runs against them.
 
