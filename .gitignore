@@ -9,5 +9,12 @@ diagrams/*.json.tmp
 secrets/
 google-credentials.json
 google-token.json
+# H9.29: a connection code is a bearer credential and the plaintext exists once. A file holding
+# one sat untracked in this directory, which is one `git add -A` away from being published --
+# and this repository's own commit flow is exactly that. Ignored by NAME rather than trusting
+# anyone to remember, and the safer habit is to keep it outside the working tree entirely.
+code.txt
+*.code.txt
+codes.json
 cli/.draw_context
 .claude/
