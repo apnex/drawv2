@@ -248,7 +248,7 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	Not lock-gated and not diagram-scoped, so it sits above the diagram router entirely.
 	*/
 	if (parts[1] === 'v1' && parts[2] === 'workspace') {
-		if (parts[3] !== 'grants') return json(res, 404, { error: 'not found' }), true;
+		if (parts[3] !== 'grants' && parts[3] !== 'codes') return json(res, 404, { error: 'not found' }), true;
 		if (!principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
 		handleWorkspace(req, res, store, parts, principal).catch((err) => {
 			console.warn(`[ rest ] workspace grant failed: ${err && err.message}`);
@@ -381,6 +381,41 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 }
 
 async function handleWorkspace(req, res, store, parts, principal) {
+	/*
+	Connection codes -- H9.5. Minting sits on the workspace, not on a diagram: a code authenticates
+	an agent identity, which is not a property of any one document.
+
+	The caller is the claimant, and never a body field. B99: the first mint takes the agent name for
+	whoever minted it, and afterwards only that principal may mint against it, so a second person
+	cannot obtain a credential authenticating as an identity somebody else granted access to.
+
+	The plaintext appears in the mint response and nowhere else -- not in the list, not in the store,
+	not in a log. That is the whole of "shown once", and it is why the response is worth reading
+	carefully at the call site: there is no second chance to collect it.
+	*/
+	if (parts[3] === 'codes') {
+		if (req.method === 'GET' && parts.length === 4) {
+			return json(res, 200, { codes: store.listCodes(principal) });
+		}
+		if (req.method === 'POST' && parts.length === 4) {
+			const body = await readJson(req);
+			if (bodyRejected(req, res, body)) return;
+			if (!body || typeof body.agent !== 'string') {
+				return json(res, 400, { error: 'expected JSON body { agent, expires? }', code: 'code-malformed' });
+			}
+			const r = await store.mintCode(body.agent, principal, { expires: body.expires ?? null });
+			if (!r.ok) return json(res, r.forbidden ? 403 : 422, { error: r.error, code: r.forbidden ? 'forbidden' : 'code-rejected' });
+			// 201, and the ONE time the plaintext exists outside the caller's hands
+			return json(res, 201, { id: r.id, agent: r.agent, code: r.code });
+		}
+		if (req.method === 'DELETE' && parts.length === 5) {
+			const err = await store.revokeCode(decodeURIComponent(parts[4]), principal);
+			if (err) return json(res, /^only the claimant/.test(err) ? 403 : 404, { error: err, code: 'code-rejected' });
+			return json(res, 200, { codes: store.listCodes(principal) });
+		}
+		return json(res, 405, { error: 'codes: GET to list, POST { agent } to mint, DELETE .../codes/<id> to revoke' });
+	}
+
 	if (req.method === 'GET' && parts.length === 4) {
 		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
 	}

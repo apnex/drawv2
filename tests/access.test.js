@@ -1385,3 +1385,104 @@ test('H9.28: no response advertises a wildcard CORS origin', async () => {
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
 });
+
+/*
+H9.5 -- connection codes: the credential half of the identity split.
+
+A code is not a principal (H9.4b). It authenticates AS an agent, so rotating or revoking one leaves
+everything that agent owns untouched -- which is the whole reason the split was worth making.
+*/
+import { mintCode as freshCode, formatCode, hashCode } from '../server/codes.mjs';
+
+const codesApi = (t) => `http://127.0.0.1:${t.app.port}/api/v1/workspace/codes`;
+
+test('H9.5: a code is shown once, hashed at rest, and never appears again', async () => {
+	const t = await grantable();
+	try {
+		const res = await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: AGENT }) });
+		assert.equal(res.status, 201);
+		const { id, code } = await res.json();
+		assert.match(code, /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/,
+			'Crockford base32, grouped for transcription');
+
+		const listed = await (await fetch(codesApi(t))).json();
+		assert.deepEqual(listed.codes.map((c) => c.id), [id], 'the code is listed by id');
+		assert.equal(JSON.stringify(listed).includes(code.replace(/-/g, '')), false,
+			'and the plaintext is NOT in the listing');
+
+		const stored = JSON.stringify([...t.app.store.codes]);
+		assert.equal(stored.includes(code.replace(/-/g, '')), false, 'nor at rest — only its hash');
+		assert.ok(stored.includes(hashCode(code)), 'which is what the store actually holds');
+	} finally { await t.close(); }
+});
+
+/*
+B99 -- the rule without which the whole scheme is theatre.
+
+An agent name is global. If two principals may mint against it, the second obtains a credential
+that authenticates as the identity the first granted access to. No check is defective; the rule is
+simply absent. Asserted through the surface rather than the store, because the surface is where a
+second principal would arrive.
+*/
+test('B99: the first mint claims the agent, and nobody else may mint against it', async () => {
+	const t = await grantable();
+	try {
+		assert.equal((await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: AGENT }) })).status, 201);
+		assert.equal(t.app.store.claimantOf(AGENT), OWNER, 'the name is claimed by whoever minted first');
+
+		t.as(GUEST);
+		const stolen = await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: AGENT }) });
+		assert.equal(stolen.status, 403,
+			'a second principal cannot mint a credential for an identity somebody else holds');
+		assert.deepEqual((await (await fetch(codesApi(t))).json()).codes, [],
+			'and sees none of the claimant\'s codes');
+
+		// a DIFFERENT name is free — the rule constrains impersonation, not participation
+		assert.equal((await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: 'agent:other' }) })).status, 201);
+	} finally { await t.close(); }
+});
+
+test('H9.5: revoking is per code, so rotation never leaves a window with no valid code', async () => {
+	const t = await grantable();
+	try {
+		const first = await (await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: AGENT }) })).json();
+		const second = await (await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: AGENT }) })).json();
+		assert.equal(t.app.store.codes.size, 2, 'several may coexist — that is what makes rotation seamless');
+
+		const after = await (await fetch(`${codesApi(t)}/${first.id}`, { method: 'DELETE' })).json();
+		assert.deepEqual(after.codes.map((c) => c.id), [second.id], 'the old one is gone, the new one stands');
+
+		// and the claim survives, so nobody can acquire the name by waiting out the last code
+		await fetch(`${codesApi(t)}/${second.id}`, { method: 'DELETE' });
+		assert.equal(t.app.store.codes.size, 0);
+		assert.equal(t.app.store.claimantOf(AGENT), OWNER, 'revoking every code does NOT release the name');
+	} finally { await t.close(); }
+});
+
+test('H9.5: codes survive a restart, and a corrupt file is a boot refusal', async () => {
+	const t = await grantable();
+	try {
+		const { id } = await (await fetch(codesApi(t), { method: 'POST', body: JSON.stringify({ agent: AGENT }) })).json();
+		const again = new Store(t.dataDir, { flushMs: 3_600_000, authz: true });
+		await again.init();
+		assert.deepEqual(again.listCodes(OWNER).map((c) => c.id), [id], 'durable across a restart');
+		assert.equal(again.claimantOf(AGENT), OWNER, 'and so is the claim');
+
+		// a code whose agent nobody claims would authenticate as an unowned identity
+		fs.writeFileSync(path.join(t.dataDir, 'codes.json'),
+			JSON.stringify({ agents: {}, codes: { [hashCode(freshCode())]: { id: 'x', agent: AGENT } } }));
+		await assert.rejects(() => new Store(t.dataDir, { flushMs: 3_600_000, authz: true }).init(),
+			/unclaimed agent/, 'an orphaned code is refused rather than loaded');
+	} finally { await t.close(); }
+});
+
+test('H9.5: the alphabet excludes the characters a human confuses, and folds them on input', () => {
+	for (let i = 0; i < 200; i++) {
+		assert.equal(/[ILOU]/.test(freshCode()), false, 'I, L, O and U never appear — that is the point of Crockford');
+	}
+	const code = freshCode();
+	assert.equal(hashCode(formatCode(code)), hashCode(code), 'the display hyphens are cosmetic');
+	assert.equal(hashCode(code.toLowerCase()), hashCode(code), 'and case is folded');
+	assert.equal(hashCode('OI' + code.slice(2)), hashCode('01' + code.slice(2)),
+		'a code typed with O for 0 and I for 1 still authenticates');
+});

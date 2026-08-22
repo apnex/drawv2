@@ -154,7 +154,8 @@ A principal is `user:someone@example.com`, so the prefix is stripped rather than
 ### One boundary, and everything past it deals in principals
 
 Both authentication methods resolve in a single function, which takes a request and returns a principal string or nothing.\
-A verified IAP assertion becomes `user:<email>`; a bearer connection code becomes `code:<id>`; anything else is nobody.\
+A verified IAP assertion becomes `user:<email>`; a bearer connection code resolves to the `agent:<name>` it was minted for; anything else is nobody.\
+**Amended 2026-08-22 (H9.4b/H9.5):** this line read *a bearer connection code becomes `code:<id>`*, which the identity split reversed -- a code is a credential and never a principal, so it authenticates AS an agent rather than becoming one.\
 Past that function **nothing knows IAP exists**, and no handler reads a header.
 
 That containment is doing three separate jobs, which is why it is a decision rather than tidiness.
@@ -271,7 +272,7 @@ At a few dozen codes the server hashes the presented value and looks it up, whic
 
 Codes live outside the document, and outside the diagram files.\
 `store.js:25` restricts the store to `/^diagram-[0-9a-f]{6}\.json$/`, so a second object can sit beside them in the bucket without the store trying to parse it as a diagram.\
-This is the one genuinely new piece of structure in this design: the store has never persisted a second *kind* of thing, and that is a larger change than adding a field.
+**Amended 2026-08-22 (H9.4c):** this called a second kind of persisted thing the one genuinely new piece of structure here, and H9.4c already paid that cost -- `access.json` sits beside the diagrams under the same rule, so codes are the third kind and follow an established pattern rather than inventing one.
 
 ### Audit is already present
 
@@ -405,6 +406,15 @@ They are the seeded examples from before this change, so under templates they ar
 ## Open
 
 Expiry is optional, and whether a default expiry is offered at mint is undecided.
+
+### Who may mint a code for an agent -- decided 2026-08-22 (B99)
+
+An agent name is global and carries no owner, so absent a rule the second person to mint against `agent:planner` obtains a credential that authenticates as the identity the first granted access to.\
+That is a privilege escalation requiring no defect in any check, only the absence of a rule.
+
+**The first mint claims the name for the minting principal, and only the claimant may mint against it afterwards.**\
+The claim is recorded beside the code rather than in the principal grammar, so `agent:<name>` stays the bare durable identity H9.4b ruled it to be and nothing about grants changes.\
+Revoking every code leaves the claim standing, because releasing a name on revocation would hand an attacker a way to acquire it by waiting.
 
 The persistence format for grants and codes is undecided, beyond living outside the diagram files.
 

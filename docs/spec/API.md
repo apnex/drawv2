@@ -72,6 +72,23 @@ curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/grants -d '{"principal":"a
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/grants/agent%3Aplanner
 ```
 
+A **connection code** is the credential an agent authenticates with, and it is not a principal -- it authenticates AS an `agent:<name>`, so rotating or revoking one leaves everything that agent owns untouched.\
+Codes hang off the workspace rather than a diagram, because an agent identity is not a property of any one document:
+```sh
+curl -s        localhost:8080/api/v1/workspace/codes
+curl -s -X POST   localhost:8080/api/v1/workspace/codes -d '{"agent":"agent:planner"}'
+curl -s -X DELETE localhost:8080/api/v1/workspace/codes/<id>
+```
+
+The `201` from a mint carries the plaintext, and that is the only time it exists outside your hands -- it is hashed at rest, absent from the listing, and absent from the logs.\
+There is no way to recover it, so a lost code is replaced rather than retrieved.
+
+The first mint against an agent name CLAIMS it for the minting principal, and only that principal may mint against it afterwards.\
+Without that rule an agent name is global, and a second person minting against `agent:planner` would obtain a credential authenticating as the identity the first granted access to.\
+Revoking every code leaves the claim standing, because releasing the name on revocation would let somebody acquire it by waiting.
+
+Rotation is mint-then-revoke, in that order, so there is never a window with no valid code.
+
 There is no `GET /api/v1/diagrams/<id>/grants`, deliberately: `GET /api/v1/diagrams/<id>` already carries `meta.owner` and `meta.grants`, so anyone entitled to read the diagram already has the grant list and a second route would be two spellings of one fact.
 
 A grant may also name an OWNER rather than a diagram.\

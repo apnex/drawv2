@@ -10,6 +10,8 @@ import path from 'node:path';
 import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
 import { validateMutation, validateDoc, validateSelectionIds, validPrincipal } from './validate.js';
+import crypto from 'node:crypto';
+import { mintCode, formatCode, hashCode } from './codes.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
@@ -35,6 +37,10 @@ The name deliberately does not match `FILE`, so `init()` will not try to parse i
 it does not collide with the Google credential files that share the data dir (`google-*.json`).
 */
 const ACCESS_FILE = 'access.json';
+// H9.5: the third kind of persisted thing, after diagrams and access.json. ACCESS.md called a
+// second kind "the one genuinely new piece of structure"; H9.4c paid that cost, so this follows an
+// established pattern. Named outside the FILE regex, like access.json, so init() will not parse it.
+const CODES_FILE = 'codes.json';
 /*
 B98/H9.21: a bound on the STORE, which `MAX_COLLECTION` is not -- that one is per kind per diagram
 and says so. No such bound was needed while creating required a person pressing a button or holding
@@ -111,6 +117,12 @@ export class Store {
 		// owner principal -> { grantee principal: 'read' | 'write' }. Empty until access.json says
 		// otherwise; `init()` is the only thing that fills it from disk.
 		this.workspace = new Map();
+		// hash -> { id, agent, by, created, expires }. The plaintext is never here: it exists once, in
+		// the response to the mint that made it, and nowhere afterwards.
+		this.codes = new Map();
+		// agent name -> { by, claimed }. Separate from `codes` because revoking every code must NOT
+		// release the name -- releasing on revocation would let an attacker acquire it by waiting (B99).
+		this.agents = new Map();
 		this.dir = dataDir;
 		this.flushMs = flushMs;
 		this.now = now;
@@ -164,6 +176,7 @@ export class Store {
 		}
 		if (this.diagrams.size === 0) this.seed();
 		await this.#loadAccess();
+		await this.#loadCodes();
 		console.log(`[ store ] ${this.diagrams.size} diagram(s) in ${this.dir}`);
 	}
 
@@ -181,16 +194,29 @@ export class Store {
 	malformed entry means something upstream is broken, and inventing a reading of it would hide
 	that. A level that is not read or write is not narrowed to read; it is refused.
 	*/
-	async #loadAccess() {
+	/*
+	The read half both side files share -- H9.5. Absent is normal and answers null; unreadable is a
+	boot refusal, matching D17/GR8, because a file we cannot parse means we do not know who may
+	reach what or who holds which credential, and serving anyway is the plausible-complete-and-wrong
+	state. The SHAPE validation is not shared: access.json and codes.json disagree about their
+	contents, and a single validator covering both would be looser than either needs.
+	*/
+	async #readBeside(file) {
 		let raw;
-		try { raw = await this.files.read(ACCESS_FILE); }
-		catch { return; }                                  // absent: no workspace grants, which is normal
+		try { raw = await this.files.read(file); }
+		catch { return null; }                             // absent, which is the ordinary first boot
 		let parsed;
 		try { parsed = JSON.parse(raw); }
-		catch (e) { throw new Error(`refusing to boot: ${ACCESS_FILE} is not readable JSON -- ${e.message}`); }
+		catch (e) { throw new Error(`refusing to boot: ${file} is not readable JSON -- ${e.message}`); }
 		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-			throw new Error(`refusing to boot: ${ACCESS_FILE} is not an object`);
+			throw new Error(`refusing to boot: ${file} is not an object`);
 		}
+		return parsed;
+	}
+
+	async #loadAccess() {
+		const parsed = await this.#readBeside(ACCESS_FILE);
+		if (!parsed) return;
 		const loaded = new Map();
 		for (const [owner, grants] of Object.entries(parsed)) {
 			if (!validPrincipal(owner)) throw new Error(`refusing to boot: ${ACCESS_FILE} names an invalid owner: ${owner}`);
@@ -210,6 +236,97 @@ export class Store {
 		this.workspace = loaded;
 		const n = [...loaded.values()].reduce((a, g) => a + Object.keys(g).length, 0);
 		if (n) console.log(`[ store ] ${n} workspace grant(s) across ${loaded.size} owner(s)`);
+	}
+
+	/*
+	Connection codes -- H9.5. Two maps, because they have different lifetimes.
+
+	`codes` is hash -> record; the plaintext exists once, in the response to the mint that made it.
+	`agents` is the CLAIM: which principal owns a given agent name. Kept separate so that revoking
+	every code leaves the name held, since releasing it on revocation would let an attacker acquire
+	somebody else's agent identity by waiting for their last code to lapse (B99).
+	*/
+	async #loadCodes() {
+		const parsed = await this.#readBeside(CODES_FILE);
+		if (!parsed) return;
+		const agents = new Map();
+		for (const [name, rec] of Object.entries(parsed.agents || {})) {
+			if (!validPrincipal(name) || !name.startsWith('agent:')) {
+				throw new Error(`refusing to boot: ${CODES_FILE} claims an invalid agent: ${name}`);
+			}
+			if (!rec || !validPrincipal(rec.by)) {
+				throw new Error(`refusing to boot: ${CODES_FILE} claim for ${name} names no valid principal`);
+			}
+			agents.set(name, { by: rec.by, claimed: String(rec.claimed || '') });
+		}
+		const codes = new Map();
+		for (const [hash, rec] of Object.entries(parsed.codes || {})) {
+			if (!/^[0-9a-f]{64}$/.test(hash)) throw new Error(`refusing to boot: ${CODES_FILE} has a malformed hash`);
+			if (!rec || !agents.has(rec.agent)) {
+				throw new Error(`refusing to boot: ${CODES_FILE} has a code for unclaimed agent ${rec && rec.agent}`);
+			}
+			codes.set(hash, { id: String(rec.id || ''), agent: rec.agent, created: String(rec.created || ''),
+				expires: rec.expires ? String(rec.expires) : null });
+		}
+		this.agents = agents;
+		this.codes = codes;
+		if (codes.size) console.log(`[ store ] ${codes.size} connection code(s) for ${agents.size} agent(s)`);
+	}
+
+	async #writeCodes(agents, codes) {
+		const body = { agents: {}, codes: {} };
+		for (const [name, rec] of agents) body.agents[name] = rec;
+		for (const [hash, rec] of codes) body.codes[hash] = rec;
+		await this.files.write(CODES_FILE, `${JSON.stringify(body, null, '\t')}\n`);
+		this.agents = agents;
+		this.codes = codes;
+	}
+
+	claimantOf(agent) {
+		return this.agents.get(agent)?.by || null;
+	}
+
+	// metadata only, and never the hash: a caller has no use for it and it is the lookup key
+	listCodes(by) {
+		return [...this.codes.values()]
+			.filter((c) => this.claimantOf(c.agent) === by)
+			.map(({ id, agent, created, expires }) => ({ id, agent, created, expires }));
+	}
+
+	/*
+	Mint. The plaintext is returned here and never stored, which is what "shown once" means.
+
+	The claim rule is B99: the first mint takes the name for its minter, and afterwards only that
+	principal may mint against it. Without it, an agent name is global and the second person to mint
+	against `agent:planner` obtains a credential authenticating as the identity the first granted
+	access to -- an escalation needing no defect in any check, only the absence of this rule.
+	*/
+	async mintCode(agent, by, { expires = null } = {}) {
+		if (!validPrincipal(agent) || !agent.startsWith('agent:')) return { ok: false, error: `not an agent identity: ${agent}` };
+		if (!validPrincipal(by)) return { ok: false, error: `invalid principal: ${by}` };
+		const held = this.claimantOf(agent);
+		if (held && held !== by) return { ok: false, error: `${agent} is claimed by another principal`, forbidden: true };
+		if (expires !== null && Number.isNaN(Date.parse(expires))) return { ok: false, error: `invalid expiry: ${expires}` };
+
+		const plaintext = mintCode();
+		const agents = new Map(this.agents);
+		if (!held) agents.set(agent, { by, claimed: new Date(this.now()).toISOString() });
+		const codes = new Map(this.codes);
+		const id = crypto.randomUUID().slice(0, 8);
+		codes.set(hashCode(plaintext), { id, agent, created: new Date(this.now()).toISOString(), expires });
+		await this.#writeCodes(agents, codes);
+		return { ok: true, id, agent, code: formatCode(plaintext) };
+	}
+
+	// revoking is per code, so rotation is mint-then-revoke and needs no window with no valid code
+	async revokeCode(id, by) {
+		const found = [...this.codes].find(([, c]) => c.id === id);
+		if (!found) return 'unknown code';
+		if (this.claimantOf(found[1].agent) !== by) return 'only the claimant may revoke';
+		const codes = new Map(this.codes);
+		codes.delete(found[0]);
+		await this.#writeCodes(new Map(this.agents), codes);
+		return null;
 	}
 
 	// Written whole, and BEFORE the in-memory map is replaced. A revoke that reports success while

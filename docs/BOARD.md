@@ -422,7 +422,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.4b | Agent identity separate from credential: `agent:<name>` is the principal, a code authenticates as it — revoking or rotating a code must not orphan what the agent owns | — | S2 · M | `DONE` |
 | H9.4c | A grant may name an OWNER, not only a diagram — lifts the collection-scope deferral, which agent-created diagrams made untenable. Unblocked: H9.4d landed the grant surface this extends | — | S2 · M | `DONE` |
 | H9.4d | Grant administration on the IAP surface — an owner can grant and revoke, which nothing in the deployed system can do today; prerequisite for H9.4c, which would otherwise add a second unreachable API | **B90** | S2 · M | `DONE` |
-| H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, rotate, revoke — a credential FOR an agent identity, not a principal | — | S3 · L | `TODO` |
+| H9.5 | Connection codes: mint, hash at rest, show once, optional expiry, rotate, revoke — a credential FOR an agent identity, not a principal | **B99** | S3 · L | `DONE` |
 | H9.6 | `/connect/v1` outside IAP, bearer-authenticated, REST only | **B61** | S2 · M | `TODO` |
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
 | H9.24 | `scan-board` misses every lettered item (`H9.2a`, `H9.4b`, …) — 9 rows, 7 of them DONE, all in H9, exempt from R1/R3/R5/R6; and the summary calls a citing-row subset "items" | **B92** | S2 · S | ``DONE` |
