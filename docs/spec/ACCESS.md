@@ -407,6 +407,15 @@ They are the seeded examples from before this change, so under templates they ar
 
 Expiry is optional, and whether a default expiry is offered at mint is undecided.
 
+### What the claim rule does not protect -- recorded 2026-08-22
+
+The claim rule guards the SURFACE, and it cannot guard the STORE.\
+Anyone who can write `codes.json` in the bucket can insert a hash for any agent name and authenticate as that identity, because the store is where the hashes live and a hash is all authentication compares.\
+That is inherent to every credential store rather than a defect here, but it is written down because this document reasons at length about offline cracking and says nothing about it, so a reader could reasonably believe the claim rule is stronger than it is.\
+The control at that layer is IAM on the bucket, not anything in this design.
+
+A practical consequence worth naming: an operator holding project credentials can bootstrap a code out of band, and should do so deliberately and say they did, because the claim record will then assert something no request ever caused.
+
 ### Who may mint a code for an agent -- decided 2026-08-22 (B99)
 
 An agent name is global and carries no owner, so absent a rule the second person to mint against `agent:planner` obtains a credential that authenticates as the identity the first granted access to.\

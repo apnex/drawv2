@@ -373,6 +373,24 @@ test('H9.4d: the grant surface has a browser consumer, and it calls the routes t
 		'and READS them — a workspace grant lives in no diagram, so unlike meta.grants it must be fetched');
 	assert.match(main, /not-owner/, 'the diagram half is hidden rather than the whole panel withheld');
 	assert.match(rest, /parts\[2\] === 'workspace'/, 'and the server answers there');
+
+	/*
+	H9.29: the credential surface has a consumer too, and this is the one that matters most.
+	H9.5 shipped mint/revoke over REST with no UI, so "shown once" had nowhere to be shown and the
+	only way to obtain a code was to craft a request by hand. A credential a person cannot get is a
+	credential nobody uses.
+	*/
+	assert.match(html, /id="access-code-value"/, 'the page has somewhere to display the plaintext');
+	assert.match(html, /id="access-code-copy"/, 'and a way to copy it');
+	assert.match(main, /workspace\/codes/, 'main.js reaches the codes routes');
+	assert.match(main, /body\.code/, 'and reads the plaintext out of the mint response');
+	assert.match(rest, /parts\[3\] === 'codes'/, 'which the server answers');
+
+	// the plaintext must never be rendered from the LIST — the list has no secret in it, and a UI
+	// that expected one would be reading a field the server deliberately does not send
+	const listRender = main.slice(main.indexOf('function renderCodes'), main.indexOf('async function sendCodes'));
+	assert.doesNotMatch(listRender, /\.code\b/,
+		'the code list renders ids and dates, never a secret it does not receive');
 });
 
 /*

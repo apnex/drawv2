@@ -181,7 +181,7 @@ body { display: flex; flex-direction: column; }
 #access-list td { padding: 4px 14px 4px 0; white-space: nowrap; }
 #access-list td:first-child { color: #aed581; }
 #access-list button { background: none; border: 1px solid #555; border-radius: 4px; color: #e57373; cursor: pointer; font-size: 11px; padding: 1px 7px; }
-#access-add, #access-ws-add { display: flex; gap: 6px; margin-top: 14px; }
+#access-add, #access-ws-add, #access-code-add { display: flex; gap: 6px; margin-top: 14px; }
 #access-principal { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
 #access-level, #access-grant { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
 #access-error { color: #e57373; margin: 10px 0 0; min-height: 1em; }
@@ -198,3 +198,18 @@ body { display: flex; flex-direction: column; }
 /* the diagram half is hidden for a non-owner; the workspace half is always theirs to administer */
 #access-card.not-owner #access-owner, #access-card.not-owner #access-list,
 #access-card.not-owner #access-add { display: none; }
+
+/* H9.29 — connection codes. The plaintext box is deliberately loud: it is the only time it exists. */
+#access-codes-head { margin-top: 22px !important; border-top: 1px solid #333; padding-top: 18px; }
+#access-codes-note { color: #9e9e9e; margin: 0 0 10px; max-width: 46em; }
+#access-codes-list { border-collapse: collapse; width: 100%; }
+#access-codes-list td { padding: 4px 14px 4px 0; white-space: nowrap; }
+#access-codes-list td:first-child { color: #aed581; }
+#access-codes-list button { background: none; border: 1px solid #555; border-radius: 4px; color: #e57373; cursor: pointer; font-size: 11px; padding: 1px 7px; }
+#access-code-new { border: 1px solid #aed581; border-radius: 6px; padding: 12px 14px; margin: 0 0 12px; background: #12180c; }
+#access-code-new[hidden] { display: none; }
+#access-code-once { color: #aed581; margin: 0 0 8px; }
+#access-code-value { display: block; font-family: ui-monospace, monospace; font-size: 18px; letter-spacing: 2px; color: #fff; margin-bottom: 10px; user-select: all; cursor: text; }
+#access-code-copy, #access-code-done { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 10px; cursor: pointer; margin-right: 6px; }
+#access-code-agent { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
+#access-code-mint { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }

@@ -43,6 +43,23 @@
 					<select id="access-ws-level"><option value="read">read</option><option value="write">write</option></select>
 					<button id="access-ws-grant">grant</button>
 				</div>
+				<h2 id="access-codes-head">connection codes</h2>
+				<p id="access-codes-note">A grant says what an agent may do; a code is how it proves who it is. Minting the first code for a name claims that name for you, so nobody else can mint one for it.</p>
+				<!--
+				H9.29: the plaintext lives here and nowhere else. Hidden until a mint answers, then
+				held on screen until dismissed rather than fading, because it cannot be recovered.
+				-->
+				<div id="access-code-new" hidden>
+					<p id="access-code-once">Copy this now. It is hashed at rest and will not be shown again.</p>
+					<code id="access-code-value" tabindex="0"></code>
+					<button id="access-code-copy">copy</button>
+					<button id="access-code-done">done</button>
+				</div>
+				<table id="access-codes-list"></table>
+				<div id="access-code-add">
+					<input id="access-code-agent" spellcheck="false" maxlength="80" placeholder="agent:planner">
+					<button id="access-code-mint">mint a code</button>
+				</div>
 				<p id="access-error"></p>
 			</div>
 		</div>

@@ -110,6 +110,13 @@ const access = {
 	wsPrincipal: document.getElementById('access-ws-principal'),
 	wsLevel: document.getElementById('access-ws-level'),
 	wsGrant: document.getElementById('access-ws-grant'),
+	codesList: document.getElementById('access-codes-list'),
+	codeAgent: document.getElementById('access-code-agent'),
+	codeMint: document.getElementById('access-code-mint'),
+	codeNew: document.getElementById('access-code-new'),
+	codeValue: document.getElementById('access-code-value'),
+	codeCopy: document.getElementById('access-code-copy'),
+	codeDone: document.getElementById('access-code-done'),
 };
 let accessId = null;
 
@@ -179,6 +186,47 @@ async function sendWorkspace(suffix, init) {
 	}
 }
 
+/*
+Connection codes -- H9.29. A grant says what an agent may do; a code is how it proves who it is.
+
+The plaintext exists once, in the response to the mint that created it, and this is the only place
+it is ever displayed. It is held on screen until dismissed rather than fading or being cleared by
+the next render, because there is no way to recover it: a code that scrolls away is a code that has
+to be revoked and reminted. The list beneath shows ids, never the secret.
+*/
+function renderCodes(codes) {
+	access.codesList.replaceChildren();
+	if (!codes || !codes.length) {
+		access.codesList.insertRow().insertCell().textContent = 'none';
+		return;
+	}
+	for (const c of codes) {
+		const row = access.codesList.insertRow();
+		row.insertCell().textContent = short(c.agent);
+		row.insertCell().textContent = c.created ? c.created.slice(0, 10) : '';
+		row.insertCell().textContent = c.expires ? `expires ${c.expires.slice(0, 10)}` : 'no expiry';
+		const btn = document.createElement('button');
+		btn.textContent = 'revoke';
+		btn.title = `revoke this code for ${c.agent}`;
+		btn.addEventListener('click', () => sendCodes(`/${encodeURIComponent(c.id)}`, { method: 'DELETE' }));
+		row.insertCell().appendChild(btn);
+	}
+}
+
+async function sendCodes(suffix, init) {
+	access.error.textContent = '';
+	try {
+		const res = await fetch(`/api/v1/workspace/codes${suffix}`, init);
+		const body = await res.json().catch(() => ({}));
+		if (!res.ok) { access.error.textContent = body.error || `refused (${res.status})`; return null; }
+		if (body.codes) renderCodes(body.codes);
+		return body;
+	} catch (e) {
+		access.error.textContent = `could not reach the server: ${e.message}`;
+		return null;
+	}
+}
+
 async function sendAccess(path, init, owner) {
 	access.error.textContent = '';
 	try {
@@ -212,6 +260,39 @@ if (access.panel) {
 		body: JSON.stringify({ principal: access.wsPrincipal.value.trim(), level: access.wsLevel.value }),
 	}));
 	access.wsPrincipal.addEventListener('keydown', (e) => { if (e.key === 'Enter') access.wsGrant.click(); });
+
+	access.codeMint.addEventListener('click', async () => {
+		const body = await sendCodes('', {
+			method: 'POST',
+			body: JSON.stringify({ agent: access.codeAgent.value.trim() }),
+		});
+		if (!body || !body.code) return;
+		// the one appearance. Revealed before the list refreshes, so a failure to re-list cannot
+		// take the plaintext with it.
+		access.codeValue.textContent = body.code;
+		access.codeNew.hidden = false;
+		access.codeAgent.value = '';
+		sendCodes('', { method: 'GET' });
+	});
+	access.codeAgent.addEventListener('keydown', (e) => { if (e.key === 'Enter') access.codeMint.click(); });
+	access.codeDone.addEventListener('click', () => { access.codeNew.hidden = true; access.codeValue.textContent = ''; });
+	access.codeCopy.addEventListener('click', async () => {
+		// clipboard access can be refused (permissions, insecure context). Selecting the text is the
+		// fallback that always works, and saying which happened beats a button that silently does
+		// nothing with a secret the user cannot get back.
+		try {
+			await navigator.clipboard.writeText(access.codeValue.textContent);
+			access.codeCopy.textContent = 'copied';
+			setTimeout(() => { access.codeCopy.textContent = 'copy'; }, 1500);
+		} catch {
+			const r = document.createRange();
+			r.selectNodeContents(access.codeValue);
+			const sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(r);
+			access.error.textContent = 'could not reach the clipboard — the code is selected, copy it by hand';
+		}
+	});
 }
 
 let onStateLastId = null;
@@ -272,9 +353,12 @@ const sync = new Sync({
 			access.card.classList.toggle('not-owner', !isOwner);
 			if (isOwner) renderAccess(meta.owner, meta.grants);
 			renderWorkspace({});
+			renderCodes([]);
+			access.codeNew.hidden = true;
 			access.panel.hidden = false;
-			// the workspace grants live in no diagram, so unlike meta.grants they must be fetched
+			// neither workspace grants nor codes live in a diagram, so unlike meta.grants they are fetched
 			sendWorkspace('', { method: 'GET' });
+			sendCodes('', { method: 'GET' });
 		} : null;
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);
