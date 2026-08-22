@@ -1297,3 +1297,28 @@ test('H9.21: ownership comes from the identity, and a body cannot override it', 
 		assert.equal(t.app.store.canWrite(b.id, OWNER), false);
 	} finally { await t.close(); }
 });
+
+/*
+First boot in production, where access.json does not exist -- H9.4c.
+
+The absent case is handled by catching the read, and every other test proves that on disk, where a
+missing file throws ENOENT. Production is GCS, which throws a different error from a different
+place, and "absent" being a THROW rather than an empty answer is a contract this code depends on
+without owning. If a backend ever answered a missing object with null instead, JSON.parse would
+throw and the catch above it would not be reached: the store would refuse to boot, on first deploy,
+for every deployment that has never used a workspace grant. That is worth a test rather than a read
+of the adapter.
+*/
+test('H9.4c: a backend that reports a missing access.json the way GCS does still boots', async () => {
+	const asked = [];
+	const files = {
+		async list() { return []; },
+		async read(name) { asked.push(name); throw new Error(`no such object: ${name}`); },
+		async write() {}, async remove() {},
+	};
+	const s = new Store('/nonexistent/gcs-like', { flushMs: 3_600_000, files, authz: true });
+	await s.init();
+	assert.ok(asked.includes('access.json'), 'it did look for the file — otherwise this proves nothing');
+	assert.equal(s.workspace.size, 0, 'and absent means no workspace grants, not a refusal');
+	assert.equal(s.total(), 1, 'the store is usable');
+});
