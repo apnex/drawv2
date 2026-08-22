@@ -431,6 +431,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.26 | GR10 derives REST routes from one path position, so a whole top-level family landed undocumented with the gate green — widened to any position | **B96** | S1 · S | `DONE` |
 | H9.28 | Origin policy: the websocket upgrade is refused from an origin we do not know, and CORS stops answering `*` — a cross-site upgrade carries the victim's cookie and CORS does not gate one | **B33** | S2 · M | `DONE` |
 | H9.29 | Mint and copy a connection code from the access panel — H9.5 shipped the surface with no UI, so "shown once" had nowhere to be shown and the only way to get a code was to craft a request | — | S2 · S | `DONE` |
+| H9.35 | An agent cannot direct or invite a human's view, so its work is unobservable — the other half of H9.30, and what agent-PLUS-human actually requires. Needs a ruling: push, invite, or follow-mode | **B105** | S3 · M | `TODO` |
 | H9.30 | An agent-created diagram is invisible to the human who authorised the agent — ACCESS.md's reciprocity requirement, of which only the human-to-agent half was built. Needs a ruling on shape | **B100** | S3 · M | `TODO` |
 | H9.31 | An agent cannot fetch the render of what it drew — `/d/<id>.svg` sits outside `/connect` | **B101** | S2 · S | `TODO` |
 | H9.32 | The lock read never reports the lock's own expiry, so an agent that loses its token waits blind | **B102** | S2 · S | `TODO` |
