@@ -51,6 +51,18 @@ export class Sync {
 		this.selection = selection;
 		this.onState = onState || (() => {});
 		this.hydrated = false;
+		/*
+		B106 -- the version the MODEL is actually at, which is not the version the UI displays.
+
+		`changes.state.version` is the server's version, set for the undo/redo counter the moment a
+		message arrives. applyChange used to read it to answer "have I already applied this?", but
+		the change branch advances it to the POST-change value before applying, so `from < version`
+		was true for every inbound change and every one was discarded. Live collaboration had never
+		once worked in a browser; only a snapshot got through, because it bypasses the check.
+
+		This field moves only when the model's content moves, so it can answer that question.
+		*/
+		this.appliedVersion = 0;
 		this.loading = false;
 		this.expectLoad = false; // a snapshot we asked for (open/create) always loads
 		this.locked = false;     // Server-Locked: a server-side controller owns writes
@@ -218,6 +230,7 @@ export class Sync {
 			this.locked = !!b.locked;
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
 				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman });
+			this.appliedVersion = b.version || 0;          // `resume` found us in step
 			this.replayOutbox({ reapply: false });
 			this.emitState({});
 			return;
@@ -231,6 +244,7 @@ export class Sync {
 			const b = msg.body || {};
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version, undoLabel: b.label,
 				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
+			this.appliedVersion = b.version || 0;          // our own ops are already in the model
 			const sent = this.outbox.find((m) => m.txnId === b.acked);
 			if (sent) sent.version = b.version;
 			this.pruneOutbox(b.durableVersion);
@@ -311,6 +325,7 @@ export class Sync {
 			if (this.locked) this.lockShownAt = Date.now();
 			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
 				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
+			this.appliedVersion = msg.body.version || 0;   // the model IS this document
 			if (this.pendingSlidesUrl) {
 				// a slides URL typed before hydration must survive the snapshot
 				const url = this.pendingSlidesUrl;
@@ -341,12 +356,13 @@ export class Sync {
 	// in step; BELOW ours is a duplicate and is ignored (re-applying would fight the local state);
 	// ABOVE ours means we missed one, so ask for the authoritative document.
 	applyChange(body) {
-		const v = this.changes.state.version;
+		const v = this.appliedVersion;                       // B106: what the MODEL is at, not the counter
 		if (typeof body.from === 'number') {
 			if (body.from < v) return;                       // already applied: ignore, never re-apply
 			if (body.from > v) return this.requestResync();  // we missed one: repair, do not guess
 		}
 		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
+		if (typeof body.version === 'number') this.appliedVersion = body.version;
 	}
 
 	// replay whatever landed while a gesture was in flight

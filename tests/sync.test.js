@@ -203,3 +203,49 @@ test('B76: the client holds its own principal and hands it to the UI', () => {
 	t.recv(snap('diagram-bbb002', 2));   // a snapshot with no principal field
 	assert.equal(t.sync.principal, null, 'absent means absent — never a stale identity from a prior load');
 });
+
+/*
+B106 -- the two paths that set `appliedVersion` and that the convergence harness cannot reach.
+
+Removing either line leaves every GR6 test green, because that harness never sends a snapshot or a
+resume. Unasserted is how B106 survived in the first place, so they are held here: after the model
+is set wholesale from the server, an inbound change AT that version must APPLY, not be discarded as
+a duplicate and not trigger a resync.
+*/
+function inbound() {
+	let onMsg = () => {};
+	const sent = [];
+	const net = {
+		subscribe(fn) { onMsg = fn; },
+		onStatus() {},
+		isOpen: () => true,
+		send: (cmd, body) => sent.push({ cmd, body }),
+	};
+	const model = new Model();
+	const selection = new Selection(model);
+	const history = { clear() {}, setCounts() {}, state: { version: 0 } };
+	const sync = new Sync({ model, net, history, selection });
+	return { sync, model, sent, send: (m) => onMsg(m) };
+}
+
+const NODE = { id: 'node-aa0001', name: 'n', type: 'host', x: 0, y: 0 };
+
+test('B106: a change landing on a freshly snapshotted model is applied, not dropped', () => {
+	const h = inbound();
+	h.sync.expectLoad = true;
+	h.send({ cmd: 'snapshot', body: { doc: new Model().toJSON(), version: 7, mayWrite: true } });
+	assert.equal(h.sync.appliedVersion, 7, 'the model IS version 7 after the snapshot');
+	h.send({ cmd: 'change', body: { from: 7, version: 8, ops: [{ op: 'put', kind: 'node', entity: NODE }] } });
+	assert.equal(h.model.all('node').length, 1, 'the change applied');
+	assert.equal(h.sync.appliedVersion, 8);
+	assert.ok(!h.sent.some((m) => m.cmd === 'open'), 'and it did not mistake being in step for a gap');
+});
+
+test('B106: a change landing after a resume in step is applied, not dropped', () => {
+	const h = inbound();
+	h.send({ cmd: 'sync', body: { version: 4 } });
+	assert.equal(h.sync.appliedVersion, 4, 'resume found us in step at 4');
+	h.send({ cmd: 'change', body: { from: 4, version: 5, ops: [{ op: 'put', kind: 'node', entity: NODE }] } });
+	assert.equal(h.model.all('node').length, 1, 'the change applied');
+	assert.ok(!h.sent.some((m) => m.cmd === 'open'), 'and no resync was requested');
+});

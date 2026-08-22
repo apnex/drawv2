@@ -17,6 +17,7 @@ import { Model } from '../model/index.mjs';
 import { Store } from '../server/store.js';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
+import { Sync } from '../app/src/sync.js';
 import { createEntity, moveEntities, deleteSelection, createGroup } from '../app/src/commands.js';
 
 function rng(seed) {
@@ -44,6 +45,29 @@ function participant(store, id, name, world) {
 	model.load(store.get(id).toJSON());
 	const changes = new Changes(model);
 	const p = { name, model, changes, version: 0, gesture: false, deferred: [], dropped: 0 };
+	/*
+	B107 -- the peer runs the REAL Sync, and inbound messages go through its onMessage.
+
+	This harness used to carry its own copy of the client's inbound rule, in `world.applyTo`, and
+	the copy was subtly different: it compensated for the version having already advanced and the
+	shipped client did not. So GR6 asserted that an agent write reaches both browsers, passed, and
+	exercised none of the code that sentence depends on. It was green while the editor had never
+	once propagated an edit in a browser (B106).
+
+	Only the transport is faked. `net` records sends and exposes the subscriber so the world can
+	push a message in exactly as a socket would; `selection` is the minimum Sync subscribes to. The
+	rule under test is now the rule that ships.
+	*/
+	let onMsg = () => {};
+	const net = {
+		subscribe(fn) { onMsg = fn; },
+		onStatus() {},
+		isOpen: () => true,
+		send() {},
+	};
+	const selection = { subscribe() {}, list: () => [], set() {} };
+	p.sync = new Sync({ model, net, history: changes, selection, onState() {} });
+	p.receive = (msg) => onMsg(msg);
 	changes.onCommit((req) => {
 		if (req.verb) return;                              // undo/redo drive the store directly here
 		const res = store.commit(id, { ops: req.ops, label: req.label }, 'client', name);
@@ -51,6 +75,9 @@ function participant(store, id, name, world) {
 		if (!res.ok) { p.rejected = (p.rejected || 0) + 1; world.repair(p); return; }
 		if (!res.change) return;
 		p.version = res.version;
+		// the server acks the writer before it broadcasts to everyone else -- and the ack is what
+		// tells this client its own model now stands at res.version (B106)
+		p.receive({ cmd: 'ack', body: { from: res.change.from, ops: res.change.ops, version: res.version, acked: null } });
 		world.deliver(p, { from: res.change.from, ops: res.change.ops, version: res.version });
 	});
 	return p;
@@ -68,9 +95,9 @@ function world(store, id) {
 				w.applyTo(q, body);
 			}
 		},
+		// straight into the real client: cmd 'change' is what the server actually broadcasts
 		applyTo(q, body) {
-			if (typeof body.from === 'number' && body.from < q.version - 1) return;   // stale duplicate
-			applyOps(q.model, body.ops);
+			q.receive({ cmd: 'change', body });
 			q.version = body.version;
 		},
 		// what a client does when it notices it missed one: refetch authoritative state
