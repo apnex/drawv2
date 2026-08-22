@@ -415,3 +415,46 @@ test('GR15/B91: a method nothing calls is caught; one called via this. is not', 
 		assert.match(bad.out, /Thing#orphan/, 'and it is named as Class#method, not just a bare name');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+H9.7 -- the prefix is rewritten once and never consulted again.
+
+The board asked for a scanner proving every handler under /connect performs the grant check. That
+premise dissolved when /connect became a rewrite rather than a second surface: there are no
+handlers under /connect, so such a scanner would scan an empty set while its name claimed broad
+coverage -- the defect this session has filed four times (B78, B91, B92, B96), not a fix for it.
+
+What is worth holding is the property that makes routing a path around IAP safe: the prefix is a
+DOOR, never a privilege. Any branch on it downstream would be a route that behaves differently
+depending on which door it came through, and that is exactly how a load-balancer mistake turns into
+a breach. One rewrite, no readers, asserted over the source because it is a claim about shape.
+*/
+test('H9.7: /connect is rewritten once and no code downstream branches on it', () => {
+	const rest = fs.readFileSync(path.join(root, 'server/rest.js'), 'utf8');
+	const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+	const code = strip(rest);
+
+	/*
+	Matched as a WORD, not as the exact literal 'connect'. The first version of this test counted
+	occurrences of `'connect'` and a mutant reading `url.pathname.startsWith('/connect')` sailed
+	through it -- a check about narrow checks, that was narrow. `Connection` and `connection` are
+	unrelated words that legitimately occur, so they are excluded by name rather than by luck.
+	*/
+	const mentions = [...code.matchAll(/\w*connect\w*/gi)].map((m) => m[0])
+		.filter((w) => !/^connections?$/i.test(w));
+	assert.deepEqual(mentions, ['connect'],
+		`the router mentions connect ${mentions.length} times (${mentions}); exactly one rewrite, and nothing may read it after`);
+	assert.match(code, /parts\[0\] === 'connect' && parts\[1\] === 'v1'\) parts\.splice\(0, 2, 'api', 'v1'\)/,
+		'and that one occurrence is the rewrite itself');
+
+	// the rewrite must precede every routing decision, or something below could see the raw prefix
+	assert.ok(code.indexOf("'connect'") < code.indexOf("parts[0] !== 'api'"),
+		'the rewrite happens before the router rejects a non-api prefix');
+
+	for (const f of ['server/app.js', 'server/store.js', 'server/protocol.js', 'server/identity.mjs']) {
+		const other = [...strip(fs.readFileSync(path.join(root, f), 'utf8')).matchAll(/\w*connect\w*/gi)]
+			.map((m) => m[0]).filter((w) => !/^connections?$/i.test(w));
+		assert.deepEqual(other, [],
+			`${f} must not know which door a request used — authorization is on the principal alone`);
+	}
+});

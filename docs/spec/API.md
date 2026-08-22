@@ -25,6 +25,24 @@ Creating and destroying are not symmetric, and a destructive verb keeps its gate
 `MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
 It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.
 
+## Two doors, one surface
+
+An agent reaches the same API at `/connect/v1/...` that the editor reaches at `/api/v1/...`, and the prefix is the only difference.\
+The routes, bodies and refusals are identical, because the prefix is rewritten at the router and everything below it is one implementation.
+
+The two exist because of where authentication sits, not because the surfaces differ.\
+IAP is configured per backend service and has no path exclusion, so a path an agent can reach without a Google sign-in must be routed to a different backend -- which the load balancer already does for `/about`, `/privacy` and `/terms`.
+
+An agent authenticates with a connection code as a bearer token, and never a query parameter:
+```sh
+curl -s -H "Authorization: Bearer XXXX-XXXX-XXXX-XXXX" https://draw.apnex.io/connect/v1/diagrams
+```
+
+The prefix authorizes nothing.\
+Authentication resolves a principal before the router runs and authorization happens after it, on that principal alone, so a request with no valid code is refused exactly as one that slipped past IAP would be -- an empty list, and `403` on everything else.
+
+---
+
 Reads are always open:
 ```sh
 curl -s localhost:8080/api/v1/diagrams | jq

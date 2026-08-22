@@ -1486,3 +1486,137 @@ test('H9.5: the alphabet excludes the characters a human confuses, and folds the
 	assert.equal(hashCode('OI' + code.slice(2)), hashCode('01' + code.slice(2)),
 		'a code typed with O for 0 and I for 1 still authenticates');
 });
+
+/*
+H9.6 -- /connect/v1: the door an agent can reach, and the code that opens it.
+
+End to end over HTTP, because every piece of this was individually correct before and the agent
+still could not do anything: the grant (H9.4c), the credential (H9.5) and the identity (H9.4b) only
+become a capability when a request carrying a code resolves to the agent the grant names.
+*/
+async function connected() {
+	let who = OWNER;
+	const dataDir = path.join(os.tmpdir(), `draw-connect-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+		// IAP resolves the human; the bearer source is composed in by createApp itself
+		principalOf: async (h) => (h.authorization ? null : who) });
+	const id = [...app.store.diagrams.keys()][0];
+	const mint = await app.store.mintCode(AGENT, OWNER);
+	return { app, dataDir, id, code: mint.code,
+		base: `http://127.0.0.1:${app.port}`,
+		as: (p) => { who = p; },
+		close: async () => { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); } };
+}
+const bearer = (code) => ({ headers: { authorization: `Bearer ${code}` } });
+
+test('H9.6: a code opens /connect/v1 as the agent it was minted for, and the grant decides', async () => {
+	const t = await connected();
+	try {
+		// no grant yet: the agent authenticates fine and is entitled to nothing
+		const before = await (await fetch(`${t.base}/connect/v1/diagrams`, bearer(t.code))).json();
+		assert.deepEqual(before, [], 'authenticated, and default-deny still applies');
+
+		await fetch(`${t.base}/api/v1/workspace/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: AGENT, level: 'write' }),
+		});
+		const after = await (await fetch(`${t.base}/connect/v1/diagrams`, bearer(t.code))).json();
+		assert.equal(after.length, 1, 'the workspace grant reaches the agent through the code');
+
+		const doc = await fetch(`${t.base}/connect/v1/diagrams/${t.id}`, bearer(t.code));
+		assert.equal(doc.status, 200, 'and it can read the diagram');
+		assert.equal(t.app.store.canWrite(t.id, AGENT), true, 'with the write the grant gave it');
+	} finally { await t.close(); }
+});
+
+test('H9.6: a wrong, absent or revoked code is nobody — never an error', async () => {
+	const t = await connected();
+	try {
+		await fetch(`${t.base}/api/v1/workspace/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: AGENT, level: 'write' }),
+		});
+		t.as(null);   // no IAP identity either, so the code is the only thing that can speak
+
+		assert.deepEqual(await (await fetch(`${t.base}/connect/v1/diagrams`, bearer('WRONGWRONGWRONG1'))).json(), [],
+			'a wrong code is nobody, not a 500');
+		assert.deepEqual(await (await fetch(`${t.base}/connect/v1/diagrams`)).json(), [],
+			'and no header at all is nobody');
+		assert.equal((await fetch(`${t.base}/connect/v1/diagrams/${t.id}`, bearer('WRONGWRONGWRONG1'))).status, 403);
+
+		assert.equal((await (await fetch(`${t.base}/connect/v1/diagrams`, bearer(t.code))).json()).length, 1, 'the real one works');
+		const [live] = t.app.store.listCodes(OWNER);
+		await t.app.store.revokeCode(live.id, OWNER);
+		assert.deepEqual(await (await fetch(`${t.base}/connect/v1/diagrams`, bearer(t.code))).json(), [],
+			'and stops the moment it is revoked — no restart, no sweep');
+	} finally { await t.close(); }
+});
+
+test('H9.6: an expired code stops working at the instant it lapses', async () => {
+	const t = await connected();
+	try {
+		const past = new Date(Date.now() - 1000).toISOString();
+		const r = await t.app.store.mintCode('agent:temp', OWNER, { expires: past });
+		assert.equal(r.ok, true);
+		assert.equal(t.app.store.agentForCode(r.code), null, 'checked on presentation, not by a sweep');
+		assert.equal(t.app.store.agentForCode(t.code), AGENT, 'and an unexpired one is unaffected');
+	} finally { await t.close(); }
+});
+
+/*
+The prefix authorizes nothing, which is what makes routing a path around IAP safe.
+
+If `/connect` were a privilege rather than a door, a load-balancer mistake would be a breach. It is
+not: authentication happens before the router and authorization after it, on the principal alone.
+*/
+test('H9.6: /connect/v1 grants nothing by itself, and is the same surface as /api/v1', async () => {
+	const t = await connected();
+	try {
+		t.as(null);
+		for (const p of ['/connect/v1/diagrams/' + t.id, '/api/v1/diagrams/' + t.id]) {
+			assert.equal((await fetch(t.base + p)).status, 403, `${p} refuses an unauthenticated caller`);
+		}
+		// and the same request, through either door, gets the same answer
+		t.as(OWNER);
+		const viaApi = await (await fetch(`${t.base}/api/v1/diagrams/${t.id}`)).json();
+		t.as(null);
+		await fetch(`${t.base}/api/v1/workspace/grants`, { method: 'POST', body: JSON.stringify({ principal: AGENT, level: 'read' }) })
+			.catch(() => {});
+		t.as(OWNER);
+		await fetch(`${t.base}/api/v1/workspace/grants`, { method: 'POST', body: JSON.stringify({ principal: AGENT, level: 'read' }) });
+		t.as(null);
+		const viaConnect = await (await fetch(`${t.base}/connect/v1/diagrams/${t.id}`, bearer(t.code))).json();
+		assert.deepEqual(viaConnect, viaApi, 'one implementation behind both prefixes');
+	} finally { await t.close(); }
+});
+
+/*
+Bearer only, asserted because a mutant proved it was only claimed.
+
+ACCESS.md rules out a query parameter and the reason is specific: query strings are logged by
+proxies, kept in browser history and pasted into bug reports, so a credential in one has already
+leaked. Accepting a second channel "for convenience" is how that happens, and a comment saying so
+stops nobody. Widening `bearerIdentity` to read a custom header failed no test until this one.
+*/
+test('H9.6: a code is honoured ONLY as a Bearer token, never a query or a stray header', async () => {
+	const t = await connected();
+	try {
+		await fetch(`${t.base}/api/v1/workspace/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: AGENT, level: 'write' }),
+		});
+		t.as(null);
+		const plain = t.code.replace(/-/g, '');
+		const denied = [
+			[`/connect/v1/diagrams?code=${plain}`, {}],
+			[`/connect/v1/diagrams?access_token=${plain}`, {}],
+			['/connect/v1/diagrams', { headers: { 'x-code': plain } }],
+			['/connect/v1/diagrams', { headers: { 'x-api-key': plain } }],
+			['/connect/v1/diagrams', { headers: { authorization: plain } }],
+			['/connect/v1/diagrams', { headers: { authorization: `Token ${plain}` } }],
+		];
+		for (const [p, init] of denied) {
+			assert.deepEqual(await (await fetch(t.base + p, init)).json(), [],
+				`${p} ${JSON.stringify(init.headers || {})} must not authenticate`);
+		}
+		assert.equal((await (await fetch(`${t.base}/connect/v1/diagrams`, bearer(t.code))).json()).length, 1,
+			'and the one supported channel still works — otherwise this passes for the wrong reason');
+	} finally { await t.close(); }
+});

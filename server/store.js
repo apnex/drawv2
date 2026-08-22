@@ -282,6 +282,26 @@ export class Store {
 		this.codes = codes;
 	}
 
+	/*
+	Verify a presented code -- H9.6. Deferred from H9.5 deliberately: scan-dead refuses a method
+	nothing calls, so it lands with the identity source that consumes it rather than before.
+
+	Constant work regardless of how many codes exist, and no prefix or public identifier: the
+	presented value is hashed and looked up. ACCESS.md considered a lookup id and rejected it as
+	solving a problem this deployment does not have, and a prefix would eat the entropy budget.
+
+	Expiry is checked here rather than swept, so a lapsed code stops working at the instant it
+	lapses even if nothing has pruned it. A code whose agent lost its claim cannot occur -- the
+	loader refuses that file -- but the claim is re-checked anyway, because authentication handing
+	back an identity nobody owns is the failure this whole area exists to prevent.
+	*/
+	agentForCode(presented) {
+		const rec = this.codes.get(hashCode(presented));
+		if (!rec) return null;
+		if (rec.expires && Date.parse(rec.expires) <= this.now()) return null;
+		return this.claimantOf(rec.agent) ? rec.agent : null;
+	}
+
 	claimantOf(agent) {
 		return this.agents.get(agent)?.by || null;
 	}

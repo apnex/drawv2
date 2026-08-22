@@ -207,3 +207,45 @@ export function identitySource(env = process.env) {
 	if (audience) return { name: `IAP, audience ${audience}`, principalOf: iapIdentity({ audience }) };
 	return null;
 }
+
+/*
+A connection code presented as a bearer token -- H9.6.
+
+`lookup` is injected rather than the store being imported, for the same reason `jwkSource` is: this
+module answers who is asking and should not know what a diagram is. It also keeps the verifier
+testable without a store.
+
+Only `Bearer`. ACCESS.md rules out a query parameter, and the reason is that query strings are
+logged by proxies, kept in browser history and pasted into bug reports, so a credential in one is a
+credential you have already leaked.
+
+A failure is silence, not an error. This runs as one of two sources, and an absent or wrong code
+must fall through to "nobody" exactly as an absent assertion does -- a throw here would turn an
+unauthenticated request into a 500.
+*/
+export function bearerIdentity(lookup) {
+	return async function bearerPrincipal(headers = {}) {
+		const raw = headers.authorization || headers.Authorization || '';
+		const m = /^Bearer\s+(.+)$/i.exec(String(raw).trim());
+		if (!m) return null;
+		try { return lookup(m[1].trim()) || null; } catch { return null; }
+	};
+}
+
+/*
+Two sources, tried in order, first answer wins -- H9.6.
+
+Composed rather than nested so that adding a third (in-app SSO, say) is another entry in this array
+and no change to anything that consumes a principal. Past this point nothing knows which door a
+request came through, which is what lets the store gate on the grant alone.
+*/
+export function anyOf(...sources) {
+	const live = sources.filter(Boolean);
+	return async function firstPrincipal(headers = {}) {
+		for (const source of live) {
+			const who = await source(headers).catch(() => null);
+			if (who) return who;
+		}
+		return null;
+	};
+}

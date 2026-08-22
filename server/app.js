@@ -14,7 +14,7 @@ import { WebSocketServer } from 'ws';
 import { Store } from './store.js';
 import { Session } from './protocol.js';
 import { handleRest } from './rest.js';
-import { domainGate } from './identity.mjs';
+import { domainGate, bearerIdentity, anyOf } from './identity.mjs';
 import { originPolicy } from './origin.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
@@ -155,9 +155,18 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 			+ '`principalOf`, which server.js resolves through identitySource(). Authorization with no '
 			+ 'identity source refuses every caller including the owner.');
 	}
-	const identify = domainGate(principalOf || (async () => null), domains);
 	const store = new Store(data, { examplesDir, files, authz });
 	await store.init();
+	/*
+	H9.6: two doors, one boundary. A Google identity via `principalOf`, or a connection code as a
+	bearer token. The allowlist wraps both, which costs nothing -- `domainGate` judges a domain and
+	an agent has none, so it passes an `agent:` principal through untouched (H9.8).
+
+	Order matters only for a request carrying both, which no real caller does: an IAP assertion is
+	the stronger claim, so it wins. Past this line nothing knows which door was used, and that is
+	exactly what lets the store gate on the grant alone.
+	*/
+	const identify = domainGate(anyOf(principalOf, bearerIdentity((code) => store.agentForCode(code))), domains);
 	/*
 	Adoption runs after init and before anything can ask what exists -- H9.10.
 
