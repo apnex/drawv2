@@ -374,3 +374,44 @@ test('H9.4d: the grant surface has a browser consumer, and it calls the routes t
 	assert.match(main, /not-owner/, 'the diagram half is hidden rather than the whole panel withheld');
 	assert.match(rest, /parts\[2\] === 'workspace'/, 'and the server answers there');
 });
+
+/*
+GR15/B91 -- the method half, driven over a fixture so it must tell the two cases apart.
+
+B90 was an authorization model complete in the store and reachable from nothing, and this scanner
+was green throughout, because `Store` is exported and has consumers so every method it carries
+counted as reached. The repair is a SECOND rule, not the export rule applied more widely: a method
+is judged on whether anything calls it at all.
+
+That distinction is what this asserts. A class with a helper called only via `this.` must PASS --
+that is an ordinary private helper, and reporting it is the 118-of-293 result that made the naive
+version worthless. A method nothing calls must FAIL. Both directions, because a check that only
+ever fails is as useless as one that only ever passes.
+*/
+test('GR15/B91: a method nothing calls is caught; one called via this. is not', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b91-'));
+	const run = () => {
+		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-dead.mjs')], { cwd: dir, encoding: 'utf8' }), code: 0 }; }
+		catch (e) { return { out: (e.stdout || '') + (e.stderr || ''), code: e.status }; }
+	};
+	const write = (body) => {
+		fs.mkdirSync(path.join(dir, 'server'), { recursive: true });
+		fs.writeFileSync(path.join(dir, 'server/thing.mjs'), body);
+		// a consumer, so the CLASS itself is not the finding — otherwise this would prove nothing.
+		// It exports NOTHING: an unconsumed export here would trip the export rule and the test
+		// would pass or fail for a reason that has nothing to do with methods. That happened.
+		fs.writeFileSync(path.join(dir, 'server/use.mjs'),
+			"import { Thing } from './thing.mjs';\nnew Thing().used();\n");
+	};
+	try {
+		write('export class Thing {\n\tused() { return this.helper(); }\n\thelper() { return 1; }\n}\n');
+		const ok = run();
+		assert.equal(ok.code, 0,
+			'a helper reached only through this. is a normal private helper, not a finding');
+
+		write('export class Thing {\n\tused() { return 1; }\n\torphan() { return 2; }\n}\n');
+		const bad = run();
+		assert.equal(bad.code, 1, 'a method nothing calls anywhere IS a finding — this is B90"s shape');
+		assert.match(bad.out, /Thing#orphan/, 'and it is named as Class#method, not just a bare name');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

@@ -2,6 +2,14 @@
 /*
 scan-dead — H5/C1. Every exported symbol earns its existence from a real consumer.
 
+Two populations, two rules, and they are NOT the same rule (H9.23/B91). An EXPORT is judged on
+consumers outside its origin file, because the module is its boundary. A public METHOD of an
+exported class is judged on whether anything calls it at all, origin included, because the class
+is its boundary and `this.helper()` is inside it. Applying the export rule to methods reports 118
+of 293 and means nothing. The method half is scoped to the server and the sovereign substrates,
+because the client dispatches handlers by name from a table and no text-derived call graph can
+see that.
+
 A3 *Earned Exposure*: a concern earns an internal boundary by being one concern; it earns promotion
 to a stable, depended-upon surface only when a real consumer outside its origin needs it. An export
 with no consumer is a *Speculative Surface* — versioning and comprehension cost the system does not
@@ -105,7 +113,59 @@ const countIn = (files, sym, self) => {
 	return n;
 };
 
+/*
+Public methods of exported classes -- H9.23/B91.
+
+B90 was an authorization model complete in the store and reachable from nothing: `grant`, `revoke`
+and `setOwner` had 29 call sites and every one was in a test. It survived a whole milestone with
+this scanner green, because `Store` is exported and has consumers, so every method it carries
+counted as reached.
+
+The rule here is NOT the export rule, and the difference was measured rather than assumed. Applying
+"a consumer outside its origin" to methods reports 118 of 293, because `this.onKeyDown()` inside its
+own class is the normal way a method is used -- for an export the module is the boundary, for a
+method the class is, and `this.x()` is inside it. The rule that means something is simply: NOTHING
+CALLS IT. Origin included.
+
+Scoped to the sovereign substrates and the server, and that is a real limit rather than laziness.
+`app/src/input.js` dispatches key handlers by NAME from the KEYMAP table (B47/B48), so the only
+reference to `onDeleteKey` is a string -- which `strip` removes on purpose, since B62 established
+that prose naming a symbol is not a dependency on it. A call-graph built from text cannot see
+dispatch-by-name, so a check that included the client would report thirty-two live handlers as
+dead. Better to hold a smaller surface truthfully.
+*/
+const METHOD_SCOPE = ['server', 'model', 'engine', 'kernel'];
+const methods = [];
+for (const f of METHOD_SCOPE.flatMap((r) => walk(r))) {
+	const t = strip(read(f));
+	for (const m of t.matchAll(/^export\s+class\s+(\w+)/gm)) {
+		const start = t.indexOf('{', m.index);
+		let depth = 0, end = start;
+		for (let i = start; i < t.length; i++) {
+			if (t[i] === '{') depth++;
+			else if (t[i] === '}' && --depth === 0) { end = i; break; }
+		}
+		const seen = new Set();
+		// one tab of indent is a member of THIS class; `#private` cannot match, which is correct --
+		// a private method is internal by declaration and owes nobody an outside caller
+		for (const mm of t.slice(start + 1, end).matchAll(/^\t(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?([a-zA-Z_$][\w$]*)\s*\(/gm)) {
+			const name = mm[1];
+			if (name === 'constructor' || seen.has(name)) continue;
+			seen.add(name);
+			methods.push([f, m[1], name]);
+		}
+	}
+}
+const callsTo = (files, name) => files.reduce(
+	(a, f) => a + [...strip(read(f)).matchAll(new RegExp(`\\.${name}\\b`, 'g'))].length, 0);
+
 const findings = [];
+for (const [file, cls, name] of methods) {
+	if (callsTo(prodFiles, name) > 0) continue;
+	const test = callsTo(testFiles, name);
+	findings.push({ key: `${file}:${cls}#${name}`, file, sym: `${cls}#${name}`, prod: 0, test,
+		state: test > 0 ? 'TEST-ONLY' : 'DEAD' });
+}
 for (const [file, sym] of exported) {
 	const prod = countIn(prodFiles, sym, file);
 	const test = countIn(testFiles, sym, null);
@@ -145,10 +205,13 @@ if (exported.length === 0) {
 	process.exit(1);
 }
 
-console.log(`  scan-dead: ${exported.length} export(s); ${findings.length} without a production consumer, ${Object.keys(ALLOW).length} allowed`);
+// exports and methods are two populations under one rule; reporting them as one number was how
+// B92 hid the size of the board, so both are named for what they count.
+console.log(`  scan-dead: ${exported.length} export(s) + ${methods.length} method(s) of ${new Set(methods.map((m) => m[1])).size} exported class(es); ${findings.length} without a production consumer, ${Object.keys(ALLOW).length} allowed`);
 if (unlisted.length) {
-	console.log(`\n  FAIL — ${unlisted.length} export(s) with no production consumer and no recorded reason.`);
+	console.log(`\n  FAIL — ${unlisted.length} symbol(s) with no production consumer and no recorded reason.`);
 	console.log('  Each is DELETE (via COMMIT.md §7.4), KEEP (add to ALLOW with the reason), or PROMOTE (it needs a caller).\n');
 	process.exit(1);
 }
-console.log('  PASS — every export has a production consumer or a recorded reason\n');
+console.log(`  PASS — every export, and every public method of an exported class under `
+	+ `${METHOD_SCOPE.join('/')}, has a production consumer or a recorded reason\n`);

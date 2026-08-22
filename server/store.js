@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
-import { validateMutation, validateDoc, validateMetaPatch, validateSelectionIds, validPrincipal } from './validate.js';
+import { validateMutation, validateDoc, validateSelectionIds, validPrincipal } from './validate.js';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
@@ -530,19 +530,6 @@ export class Store {
 		const res = txnRedo(entry.model, entry.log);
 		if (res.ok) this.markDirty(id);
 		return res;
-	}
-
-	patchMeta(id, patch, principal) {
-		const model = this.get(id);
-		if (!model) return 'unknown diagram';
-		const denied = this.#mayWrite(id, principal);
-		if (denied) return denied;
-		const err = validateMetaPatch(patch);
-		if (err) return err;
-		if (patch.name) model.state.meta.name = patch.name.trim();
-		if (patch.slides) Object.assign(model.state.meta.slides, patch.slides);
-		this.markDirty(id);
-		return null;
 	}
 
 	// model-state (status): set the authoritative selection (shape-validated; the Model expands-to-group,
