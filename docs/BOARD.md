@@ -430,7 +430,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.27 | The REST surface becomes `docs/spec/API.md` — it answers a different reader than the README, and GR10 now reads it there | **B97** | S1 · S | `DONE` |
 | H9.26 | GR10 derives REST routes from one path position, so a whole top-level family landed undocumented with the gate green — widened to any position | **B96** | S1 · S | `DONE` |
 | H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes — either widen the check to public methods or narrow the sentence | **B91** | S2 · S | `TODO` |
-| H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `TODO` |
+| H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `DONE` |
 | H9.22 | Long-poll: `history?since=&wait=` — the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | — | S4 · M | `TODO` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup — IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
 | H9.9 | Examples become templates; first write forks a per-owner copy — reverses the first-boot seed, amended in `SCOPE.md` | — | S3 · L | `TODO` |

@@ -23,6 +23,7 @@ import { Sync } from '../app/src/sync.js';
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-acl-'));
 const OWNER = 'user:owner@apnex.com.au';
 const GUEST = 'user:guest@example.com';
+const AGENT = 'agent:planner';
 const CODE = 'agent:k7f3q2';
 
 async function owned() {
@@ -1183,5 +1184,116 @@ test('H9.4c: workspace grants survive a restart, and a corrupt file is a boot re
 		fs.writeFileSync(path.join(t.dataDir, 'access.json'), JSON.stringify({ [OWNER]: { [GUEST]: 'admin' } }));
 		await assert.rejects(() => new Store(t.dataDir, { flushMs: 3_600_000, authz: true }).init(),
 			/invalid level/, 'and an invented level is refused, never narrowed to read');
+	} finally { await t.close(); }
+});
+
+/*
+H9.21 -- an agent may create a diagram, and owns it.
+
+The last piece of the agent-first ruling that does not need a decision from the director. Creating
+is what makes an agent a participant rather than a guest: until now every diagram had to be made by
+a person in a browser, so a human was on the critical path for each one.
+*/
+test('H9.21: a create over REST is owned by the caller, and the caller can write it at once', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1/diagrams`;
+	try {
+		t.as(AGENT);
+		const res = await fetch(api, { method: 'POST', body: JSON.stringify({ name: 'by an agent' }) });
+		assert.equal(res.status, 201, 'created');
+		const { id, doc } = await res.json();
+		assert.equal(doc.meta.owner, AGENT, 'the creator owns it');
+		assert.equal(doc.meta.name, 'by an agent');
+		assert.equal(t.app.store.canWrite(id, AGENT), true,
+			'and can write immediately — B65 was exactly this failing');
+
+		// the response saves a round trip: an agent needs the minted id to do anything next
+		assert.match(id, /^diagram-[0-9a-f]{6}$/, 'the id is minted and returned');
+		assert.equal(t.app.store.canRead(id, OWNER), false,
+			'and the human does NOT get it for free — a grant is still how access happens');
+	} finally { await t.close(); }
+});
+
+test('H9.21: the id is minted by the server, never taken from the body', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1/diagrams`;
+	try {
+		// B2: a caller-chosen id would let offline work land on top of an existing diagram. I11 makes
+		// `create` the one whole-document path, and it can only ever create.
+		const before = t.app.store.get(t.id).state.meta.name;
+		const res = await fetch(api, {
+			method: 'POST',
+			body: JSON.stringify({ doc: { meta: { id: t.id, name: 'impostor' }, nodes: [], links: [], zones: [], groups: [], waypoints: [] } }),
+		});
+		assert.equal(res.status, 201);
+		const { id } = await res.json();
+		assert.notEqual(id, t.id, 'a body id is ignored — this is how B2 stays fixed');
+		assert.equal(t.app.store.get(t.id).state.meta.name, before,
+			'and the existing diagram is untouched — read before, rather than a name assumed here');
+	} finally { await t.close(); }
+});
+
+test('H9.21: an unidentified caller cannot create when authorization is on', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1/diagrams`;
+	try {
+		t.as(null);
+		const res = await fetch(api, { method: 'POST', body: JSON.stringify({ name: 'anonymous' }) });
+		assert.equal(res.status, 403, 'no identity, no diagram — it would be owned by nobody');
+		assert.equal(t.app.store.total(), 1, 'and nothing was created');
+	} finally { await t.close(); }
+});
+
+/*
+B98 -- the store gets a bound, because this route is the first on which a PROGRAM creates.
+
+MAX_COLLECTION is per kind per diagram and says so. Nothing capped the store, which was tolerable
+while creating meant a person pressing a button. A retry loop around a call that looked like it
+failed does not pace itself, and the cost lands on boot: init() reads and validates every diagram,
+on a service at minScale=1 where a boot failure is an outage rather than a slow page.
+*/
+test('B98: the store refuses past MAX_DIAGRAMS, and refuses before writing anything', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1/diagrams`;
+	try {
+		const cap = Number(process.env.MAX_DIAGRAMS) || 500;
+		while (t.app.store.total() < cap) {
+			assert.equal(t.app.store.create(`filler-${t.app.store.total()}`, null, OWNER).ok, true);
+		}
+		const res = await fetch(api, { method: 'POST', body: JSON.stringify({ name: 'one too many' }) });
+		assert.equal(res.status, 507, 'a full store is not a malformed request — it says so with its own code');
+		assert.equal((await res.json()).code, 'diagram-cap');
+		assert.equal(t.app.store.total(), cap, 'and the refusal cost nothing: no id minted, no entry added');
+	} finally { await t.close(); }
+});
+
+/*
+Ownership cannot be forged, asserted because a mutant proved it was only claimed.
+
+The route comment said ownership comes from the authenticated principal and never from the body.
+Changing it to `body?.owner || principal` failed nothing, so the sentence was doing the work a test
+should. Both spellings are covered: a top-level `owner`, and one smuggled inside `doc.meta`, which
+is the path `cleanMeta`'s trusted flag exists to close (H9.1) and the one an attacker would reach
+for second.
+*/
+test('H9.21: ownership comes from the identity, and a body cannot override it', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1/diagrams`;
+	try {
+		t.as(AGENT);
+		const top = await fetch(api, { method: 'POST', body: JSON.stringify({ name: 'a', owner: OWNER }) });
+		const a = await top.json();
+		assert.equal(a.doc.meta.owner, AGENT, 'a top-level owner in the body is ignored');
+
+		const nested = await fetch(api, {
+			method: 'POST',
+			body: JSON.stringify({ doc: { meta: { name: 'b', owner: OWNER }, nodes: [], links: [], zones: [], groups: [], waypoints: [] } }),
+		});
+		const b = await nested.json();
+		assert.equal(b.doc.meta.owner, AGENT,
+			'and so is one inside doc.meta — cleanMeta refuses an owner off the wire');
+
+		assert.equal(t.app.store.canWrite(a.id, OWNER), false, 'the named victim gained nothing');
+		assert.equal(t.app.store.canWrite(b.id, OWNER), false);
 	} finally { await t.close(); }
 });

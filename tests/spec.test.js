@@ -105,7 +105,17 @@ Worth recording that this guard did its job during the move: both of these faile
 content left README, rather than passing against a file that no longer described the API. A check
 naming the file it reads is what makes a relocation loud.
 */
-test('GR10: every REST route the server answers is documented in API.md', () => {
+/*
+What this covers, stated because the title used to overclaim it (B96 was the same disease).
+
+It derives PATH SEGMENTS. It does not derive method-and-path pairs, so an undocumented method on a
+path that is already documented -- a new POST beside an existing GET -- is outside it. That was not
+worth fixing at the available price: the router branches on method in sixteen places, several nested
+inside a `parts[4]` block and meaningful only in that context, so a mechanical derivation would be a
+fragile check that reads as authoritative, which is worse than a narrow one that says it is narrow.
+B91 named narrowing the sentence as the legitimate alternative to widening the check; this is that.
+*/
+test('GR10: every REST path the server answers is documented in API.md', () => {
 	const readme = fs.readFileSync('docs/spec/API.md', 'utf8');
 	// the collection verbs the router dispatches on
 	const collections = rest.match(/const COLLECTIONS = \{([^}]*)\}/)[1].match(/(\w+):/g).map((k) => k.slice(0, -1));

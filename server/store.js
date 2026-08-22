@@ -35,6 +35,21 @@ The name deliberately does not match `FILE`, so `init()` will not try to parse i
 it does not collide with the Google credential files that share the data dir (`google-*.json`).
 */
 const ACCESS_FILE = 'access.json';
+/*
+B98/H9.21: a bound on the STORE, which `MAX_COLLECTION` is not -- that one is per kind per diagram
+and says so. No such bound was needed while creating required a person pressing a button or holding
+a websocket open, because both are paced by a human. `POST /api/v1/diagrams` is not: a retry loop
+around a call that looked like it failed creates diagrams as fast as the backend accepts writes.
+
+The cost is not mainly storage. `init()` reads and validates every diagram at boot, so an unbounded
+store becomes a slow boot and then a failed one, on a service running at minScale=1 where that is
+an outage rather than a degradation.
+
+Generous by intent. This is a runaway guard, not a quota: it should be invisible to any real use and
+present for the case where something is looping. Configurable because the right number depends on a
+deployment nobody here can see.
+*/
+const MAX_DIAGRAMS = Number(process.env.MAX_DIAGRAMS) || 500;
 
 // The document generation. `meta.grid` was accidentally serving this role — a doc without it was
 // a pre-center-origin file — and dropping grid without a replacement would leave the format with
@@ -329,6 +344,10 @@ export class Store {
 	// Trailing and defaulted, matching the H9.3a convention, but here an un-updated caller yields
 	// an UNOWNED diagram rather than a refused one, which is why both return paths set it.
 	create(name, doc = null, principal = null) {
+		// checked first, so a store at the cap writes nothing and mints no id
+		if (this.diagrams.size >= MAX_DIAGRAMS) {
+			return { ok: false, error: `diagram limit reached (${MAX_DIAGRAMS}) -- delete something, or raise MAX_DIAGRAMS` };
+		}
 		const taken = Object.fromEntries([...this.diagrams.keys()].map((k) => [k, true]));
 		const id = newId('diagram', taken);
 		if (!name) {

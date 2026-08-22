@@ -260,6 +260,49 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 		return true;
 	}
 
+	/*
+	Create a diagram -- H9.21. ACCESS.md: an agent may create, and owns what it creates.
+
+	Above the lock gate and above handleWrite, because there is no diagram yet to lock and
+	handleWrite's first act is to resolve `parts[3]`, which here does not exist.
+
+	The body mirrors the websocket `create` exactly -- an optional `name`, an optional whole `doc` --
+	rather than inventing a second spelling for one operation. `store.create` mints the id and
+	ignores `doc.meta.id` (I11), which is what stops offline work from landing on top of whichever
+	diagram the server last answered with; that overwrite was B2, and it would return the moment
+	this route accepted a caller-chosen id.
+
+	Ownership comes from the authenticated principal and never from the body. `cleanMeta`'s trusted
+	flag refuses an owner off the wire (H9.1), so this is the only way ownership is established and
+	it cannot be forged (B65).
+
+	DELETE is deliberately absent and stays open as B32. X12 refused the analogous case for
+	`draw undo` on the grounds that a destructive verb keeps its gates, and extending create to
+	destroy is a ruling the director has not made.
+	*/
+	if (req.method === 'POST' && parts.length === 3) {
+		if (store.authz && !principal) {
+			return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
+		}
+		(async () => {
+			const body = await readJson(req);
+			if (bodyRejected(req, res, body)) return;
+			const name = typeof body?.name === 'string' ? body.name.slice(0, 64) : undefined;
+			const result = store.create(name, body?.doc || null, principal);
+			if (!result.ok) {
+				const capped = /limit reached/.test(result.error);
+				return json(res, capped ? 507 : 422, { error: result.error, code: capped ? 'diagram-cap' : 'create-rejected' });
+			}
+			// 201 with the whole doc: an agent needs the minted id, and handing back the document it
+			// now owns saves it a round trip to discover what it just made
+			return json(res, 201, { id: result.model.state.meta.id, doc: result.model.toJSON() });
+		})().catch((err) => {
+			console.warn(`[ rest ] create failed: ${err && err.message}`);
+			try { if (!res.headersSent) json(res, 500, { error: 'internal error' }); } catch { /* response already gone */ }
+		});
+		return true;
+	}
+
 	// ---- writes: lock lifecycle + model mutations (Server-Locked) ----
 	// PUT is a write method ONLY for .../selection; every other PUT keeps the clean 405 below
 	// (it falls to the req.method !== 'GET' branch) rather than being misrouted through the lock gate.

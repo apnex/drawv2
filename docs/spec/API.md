@@ -9,6 +9,22 @@ Two nouns appear throughout and are defined in [SCOPE.md](SCOPE.md#vocabulary): 
 
 ---
 
+Creating takes no lock, because there is no diagram yet to lock.\
+The caller owns what it creates, and ownership comes from the authenticated identity rather than from the body -- an owner presented on the wire is refused, so it cannot be forged:
+```sh
+curl -s -X POST localhost:8080/api/v1/diagrams -d '{"name":"topology"}'
+curl -s -X POST localhost:8080/api/v1/diagrams -d '{"doc":{"meta":{"name":"from a file"},"nodes":[]}}'
+```
+
+The response is `201` carrying the minted id and the whole document, so an agent does not need a second call to discover what it just made.\
+An id in the body is ignored: the server mints it, which is what stops offline work from landing on top of whichever diagram the server last answered with.
+
+There is no `DELETE /api/v1/diagrams/<id>`, and its absence is a decision rather than an omission.\
+Creating and destroying are not symmetric, and a destructive verb keeps its gates until someone rules otherwise.
+
+`MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
+It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.
+
 Reads are always open:
 ```sh
 curl -s localhost:8080/api/v1/diagrams | jq
