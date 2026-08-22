@@ -441,7 +441,34 @@ export class Input {
 		this.host = host;
 		host.addEventListener('keydown', (e) => this.onKeyDown(e));
 		host.addEventListener('keyup', (e) => this.onKeyUp(e));
-		svg.addEventListener('contextmenu', (e) => e.preventDefault());
+		// B75: on the HOST, not the svg. The right button is a first-class gesture button here --
+		// right-drag moves, Ctrl+right-drag clones -- so a hand is already on it when the pointer
+		// crosses onto the palette or the header, which sit immediately against the canvas. Bound to
+		// the canvas alone, the native menu opened everywhere else. `host` is the surface that owns
+		// global events (B45), which is exactly the scope this rule needs.
+		host.addEventListener('contextmenu', (e) => this.onContextMenu(e));
+	}
+
+	/*
+	B75 -- suppress the browser menu everywhere EXCEPT where it is a real affordance.
+
+	A blanket handler would be smaller and wrong. Right-click carries cut, copy, paste and the
+	spell-checker inside a text field, and this application has several: the diagram name and the
+	Slides URL in the header, the label editor that F2 opens, and the two principal fields in the
+	access panel. Taking that away to fix a gesture collision trades one defect for another.
+
+	The test is the target's nearest form field rather than a list of ids, so a field added later is
+	covered without anybody remembering this rule -- which is what went wrong the first time, when
+	the handler named one element and the application grew four more.
+
+	`contenteditable` is matched explicitly rather than by bare attribute presence, because
+	`[contenteditable]` also matches `contenteditable="false"`, which means NOT editable.
+	*/
+	onContextMenu(e) {
+		const t = e && e.target;
+		const editable = t && typeof t.closest === 'function'
+			&& t.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+		if (!editable) e.preventDefault();
 	}
 
 	// ---- hit helpers ----

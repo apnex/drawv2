@@ -721,7 +721,11 @@ test('B45: keyboard listeners bind to the injected host, not a global', () => {
 	const host = { addEventListener: (t) => bound.push(t), removeEventListener() {}, dispatchEvent() { return true; } };
 	const h = makeInput({ host });
 	try {
-		assert.deepEqual(bound.sort(), ['keydown', 'keyup'], 'both key listeners went to the host it was given');
+		// exhaustive on purpose: a stray binding to a global, or one moved down to the svg, both show
+		// up here as a changed set. contextmenu joined at B75 -- the browser menu has to be suppressed
+		// across the panels beside the canvas, which is host scope, not canvas scope.
+		assert.deepEqual(bound.sort(), ['contextmenu', 'keydown', 'keyup'],
+			'every global listener went to the host it was given');
 	} finally { h.restore(); }
 });
 
@@ -1255,5 +1259,36 @@ test('B80: linksBetween reports every link joining a pair, where linkBetween rep
 		assert.ok(h.model.linkBetween(a.id, b.id), 'the singular still answers "are they connected"');
 		assert.equal(h.model.linksBetween(a.id, b.id).filter((l) => !l.via || !l.via.length).length, 1,
 			'which is the question the link gate actually needs to ask');
+	} finally { h.restore(); }
+});
+
+/*
+B75 -- the browser menu is suppressed off the canvas too, but never inside a text field.
+
+Right-drag is a first-class gesture here, so a hand is already on the right button when the pointer
+crosses onto the palette or the header. The handler was bound to the canvas alone, so the native
+menu opened over every panel beside it.
+
+The fix must not be a blanket handler: right-click carries paste and the spell-checker inside a
+text field, and this application has several -- the diagram name, the Slides URL, the F2 label
+editor, and the two principal fields in the access panel. Both directions are asserted, because
+suppressing everywhere would pass a test that only checked the palette.
+*/
+test('B75: right-click is suppressed on panels, and left alone in a text field', () => {
+	const h = makeInput();
+	// a stand-in for the DOM's closest(): returns a truthy match only for the field kinds named
+	const target = (kind) => ({ closest: (sel) => (kind && sel.includes(kind) ? { kind } : null) });
+	const fire = (t) => {
+		let prevented = false;
+		h.input.onContextMenu({ target: t, preventDefault: () => { prevented = true; } });
+		return prevented;
+	};
+	try {
+
+		assert.equal(fire(target(null)), true, 'a panel or the canvas: the native menu is suppressed');
+		assert.equal(fire(target('input')), false, 'a text input keeps its menu — paste is a real affordance');
+		assert.equal(fire(target('textarea')), false, 'so does a textarea');
+		assert.equal(fire(target('select')), false, 'and a select');
+		assert.equal(fire(target('[contenteditable="true"]')), false, 'and an editable region');
 	} finally { h.restore(); }
 });
