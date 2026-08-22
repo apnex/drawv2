@@ -1,0 +1,89 @@
+# draw -- REST API
+
+The HTTP surface an agent drives.\
+Split out of the README at H9.27 because it answers a different reader: the README is for an operator installing and running `draw`, and this is for whoever is writing something that drives it.\
+It was also the largest section by some way, and the one that grows every time the surface does.
+
+The websocket protocol is specified separately in [SCOPE.md](SCOPE.md#wire-protocol-one-websocket--as-shipped), and the authorization model these routes enforce is in [ACCESS.md](ACCESS.md).\
+Two nouns appear throughout and are defined in [SCOPE.md](SCOPE.md#vocabulary): a **Model** is the live object, a **doc** is the flat JSON these routes carry.
+
+---
+
+Reads are always open:
+```sh
+curl -s localhost:8080/api/v1/diagrams | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/nodes | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/links | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/zones | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/groups | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/selection | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/history | jq
+```
+
+Writes are normally the browser's alone.\
+A server-side controller takes exclusive control by acquiring the diagram's lock, and the browser goes read-only while it holds it.\
+One side writes at a time: a control handoff, never concurrent editing.
+
+Acquire the lock, then write:
+```sh
+TOK=$(curl -s -X POST localhost:8080/api/v1/diagrams/<id>/lock | jq -r .token)
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/commit -H "X-Draw-Lock: $TOK" \
+     -d '{"ops":[{"op":"put","kind":"node","entity":{}}],"label":"create node"}'
+curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/lock -H "X-Draw-Lock: $TOK"
+```
+
+Ops travel as a batch, and a batch is one change: one version bump, one undo step, and no window for another writer to interleave.\
+High-level verbs let the server mint ids and names instead:
+```sh
+curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/nodes      -H "X-Draw-Lock: $TOK" -d '{"type":"server","x":120,"y":-60}'
+curl -s -X PATCH  localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock: $TOK" -d '{"x":240}'
+curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock: $TOK"
+```
+
+`expect` is an optional compare-and-swap on any forward write and travels as the `X-Draw-Expect` header, because a forward write's body is an entity payload where a reserved key would collide with field validation.\
+A stale one answers `409` and writes nothing.
+
+Undo and redo are the one pair of verbs whose target is implicit, so `expect` is mandatory on them and rides the body, because there the body is control:
+```sh
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/undo -H "X-Draw-Lock: $TOK" -d '{"expect":42}'
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/redo -H "X-Draw-Lock: $TOK" -d '{"expect":42}'
+```
+
+Access is administration rather than a model write, so it takes no lock either -- an owner must be able to revoke while somebody else is mid-drag, which is exactly when revoking is urgent.\
+Only the owner may grant or revoke, a level is `read` or `write`, and a principal is `user:<email>` or `agent:<name>`:
+```sh
+curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/grants -d '{"principal":"agent:planner","level":"write"}'
+curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/grants/agent%3Aplanner
+```
+
+There is no `GET /api/v1/diagrams/<id>/grants`, deliberately: `GET /api/v1/diagrams/<id>` already carries `meta.owner` and `meta.grants`, so anyone entitled to read the diagram already has the grant list and a second route would be two spellings of one fact.
+
+A grant may also name an OWNER rather than a diagram.\
+A **workspace** is the set of diagrams owned by a principal, including ones not created yet, which is the point -- otherwise a person is in the loop for every diagram an agent makes:
+```sh
+curl -s        localhost:8080/api/v1/workspace/grants
+curl -s -X POST   localhost:8080/api/v1/workspace/grants -d '{"principal":"agent:planner","level":"write"}'
+curl -s -X DELETE localhost:8080/api/v1/workspace/grants/agent%3Aplanner
+```
+
+No owner appears in that path: you administer your own workspace and no other, so granting on someone else's is unrepresentable rather than merely refused.\
+This family does have a `GET`, unlike the diagram one, because a workspace grant lives in no diagram and there would otherwise be no way to read it.
+
+A grant naming a diagram wins over a grant naming its owner, so a workspace grant can be narrowed on one diagram.\
+The consequence is worth stating plainly: revoking a diagram grant from someone who also holds a workspace grant does not remove their access, it returns them to the workspace level, and the revoke response carries an `effective` field saying what remains.\
+A leaked workspace credential costs everything that owner holds, which is the price of not having a person in the loop.
+
+An idle lock auto-expires so a crashed controller never strands a diagram.\
+Actions act on the outside world rather than the model, so they take no lock:
+```sh
+curl -s -X POST localhost:8080/api/v1/diagrams/<id>/sync/slides
+```
+
+Any diagram also renders to a self-contained SVG by adding `.svg` to its deep link:
+```sh
+curl -O localhost:8080/d/<diagram-id>.svg
+```
+
+The glyph artwork and styles travel inside that file, so it opens anywhere with nothing else to fetch, and each shape carries its entity id so an export traces back to the model.
+
+---

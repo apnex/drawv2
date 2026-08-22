@@ -427,6 +427,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.7 | Scanner: every handler under `/connect` performs the grant check | — | S2 · S | `TODO` |
 | H9.24 | `scan-board` misses every lettered item (`H9.2a`, `H9.4b`, …) — 9 rows, 7 of them DONE, all in H9, exempt from R1/R3/R5/R6; and the summary calls a citing-row subset "items" | **B92** | S2 · S | ``DONE` |
 | H9.25 | Authorization becomes its own switch, not a shadow of `IAP_AUDIENCE` — the boot guard demands an identity source rather than an IAP audience, and `identity.mjs` stays the only module that has heard of Google | **B93** | S2 · M | `DONE` |
+| H9.27 | The REST surface becomes `docs/spec/API.md` — it answers a different reader than the README, and GR10 now reads it there | **B97** | S1 · S | `DONE` |
 | H9.26 | GR10 derives REST routes from one path position, so a whole top-level family landed undocumented with the gate green — widened to any position | **B96** | S1 · S | `DONE` |
 | H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes — either widen the check to public methods or narrow the sentence | **B91** | S2 · S | `TODO` |
 | H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `TODO` |

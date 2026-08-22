@@ -97,8 +97,16 @@ that; derivation does, which is the whole lesson of X9 (it caught B11 and B12 on
 */
 const rest = fs.readFileSync('server/rest.js', 'utf8');
 
-test('GR10: every REST route the server answers is documented in README', () => {
-	const readme = fs.readFileSync('README.md', 'utf8');
+/*
+H9.27: the target is API.md, not README. The REST surface moved because it answers a different
+reader -- the README is for an operator, this is for whoever writes something that drives the API.
+
+Worth recording that this guard did its job during the move: both of these failed the moment the
+content left README, rather than passing against a file that no longer described the API. A check
+naming the file it reads is what makes a relocation loud.
+*/
+test('GR10: every REST route the server answers is documented in API.md', () => {
+	const readme = fs.readFileSync('docs/spec/API.md', 'utf8');
 	// the collection verbs the router dispatches on
 	const collections = rest.match(/const COLLECTIONS = \{([^}]*)\}/)[1].match(/(\w+):/g).map((k) => k.slice(0, -1));
 	for (const c of collections) {
@@ -114,8 +122,8 @@ test('GR10: every REST route the server answers is documented in README', () => 
 	}
 });
 
-test('GR10: README prints no REST body shape the server refuses', () => {
-	const readme = fs.readFileSync('README.md', 'utf8');
+test('GR10: API.md prints no REST body shape the server refuses', () => {
+	const readme = fs.readFileSync('docs/spec/API.md', 'utf8');
 	// /commit takes { ops: [...] }. The legacy single-mutation form is retired, so README must not
 	// print it — a wire reference is what a reader copies, and a superseded line gets sent.
 	assert.equal(/-d '\{"action":/.test(readme), false, 'README still prints the retired /commit shape');
