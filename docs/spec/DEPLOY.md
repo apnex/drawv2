@@ -159,6 +159,27 @@ Detaching the certificate map restores the classic certificates, so step 5 rever
 DNS no longer reverses, however: the v1 bucket has been deleted, so pointing the CNAME back yields `404` rather than the old generation.\
 The 2021 deployment is recoverable only from `github.com/apnex/draw`, and nothing about the cutover depends on it.
 
+### Shipping a change
+
+The image is tagged with the git short SHA of the commit it was built from, so the running revision names its own source.\
+Read the tag off the service to find out what is live.
+
+The `gcloud` user credential expires and cannot be renewed non-interactively, so every command below needs the application-default token in the environment first.
+
+```bash
+export CLOUDSDK_AUTH_ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+SHA=$(git rev-parse --short HEAD)
+gcloud builds submit --tag "australia-southeast1-docker.pkg.dev/labops/apnex/draw:$SHA" \
+  --project=labops --region=australia-southeast1
+gcloud run deploy draw --image="australia-southeast1-docker.pkg.dev/labops/apnex/draw:$SHA" \
+  --region=australia-southeast1 --project=labops
+```
+
+Deploy from a committed tree.\
+A tag naming a SHA whose working tree had uncommitted changes describes an image nobody can rebuild.
+
+Then run the three-command verification below, which is what distinguishes a deploy that landed from one that merely reported success.
+
 ### What is deployed
 
 Live as a private Cloud Run service, not yet reachable at `draw.apnex.io`:
