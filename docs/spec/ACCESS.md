@@ -104,7 +104,7 @@ A code-authenticated agent that locks, writes and releases is complete without a
 | Question | Position |
 |---|---|
 | Agent identity separate from credential | **decided** -- `agent:<name>` is the principal, a code authenticates as it |
-| A grant may name an owner | **decided** -- lifts the collection-scope deferral |
+| A grant may name an owner | **built** 2026-08-21, H9.4c -- `access()` gains one fallback; a diagram grant outranks it |
 | An agent may create a diagram, and owns it | **decided** |
 | `POST /api/v1/diagrams` for an agent | **decided by the above** -- creating requires it |
 | `DELETE` for an agent | **open (B32)** -- X12 refused the analogous case for `draw undo` because a destructive verb keeps its gates, so this does not follow from `POST` |

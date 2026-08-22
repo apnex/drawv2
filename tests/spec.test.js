@@ -104,8 +104,11 @@ test('GR10: every REST route the server answers is documented in README', () => 
 	for (const c of collections) {
 		assert.ok(readme.includes(`/${c}`), `REST serves /${c} and README never mentions it`);
 	}
-	// the named sub-routes: parts[4] === 'x' branches
-	const routes = [...rest.matchAll(/parts\[4\] === '([a-z]+)'/g)].map((m) => m[1]);
+	// The named routes, at ANY path position. B96: this read `parts[4]` only, so it covered
+	// sub-routes hanging off a diagram and nothing else -- the workspace family branches on
+	// `parts[2]` and landed undocumented with the gate green. A derived check that quietly covers a
+	// subset is worse than a grep, because the header convinces a reader the whole surface is held.
+	const routes = [...rest.matchAll(/parts\[\d+\] === '([a-z0-9]+)'/g)].map((m) => m[1]);
 	for (const r of new Set(routes)) {
 		assert.ok(readme.includes(`/${r}`), `REST serves /${r} and README never mentions it`);
 	}

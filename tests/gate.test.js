@@ -360,7 +360,17 @@ test('H9.4d: the grant surface has a browser consumer, and it calls the routes t
 		'the principal is encoded — it carries a colon and an @, so a raw path would be a different resource');
 	assert.match(rest, /parts\[4\] === 'grants'/, 'and the server answers there');
 
-	// the affordance is owner-only: the server refuses everyone else, and offering a door that is
+	// the diagram half is owner-only: the server refuses everyone else, and offering a door that is
 	// certain not to open is worse than offering none
-	assert.match(main, /meta\.owner === principal/, 'the panel is offered only to the owner');
+	assert.match(main, /meta\.owner === principal/, 'ownership decides whether the diagram half renders');
+
+	// H9.4c: the workspace half is NOT owner-gated, and that is load-bearing rather than a detail.
+	// An agent-created diagram is owned by the agent, so gating the panel on owning what is on
+	// screen would lock a person out of their own workspace at exactly the diagrams the feature
+	// exists to enable.
+	assert.match(main, /workspace\/grants/, 'the client reaches the workspace routes');
+	assert.match(main, /method: 'GET'/,
+		'and READS them — a workspace grant lives in no diagram, so unlike meta.grants it must be fetched');
+	assert.match(main, /not-owner/, 'the diagram half is hidden rather than the whole panel withheld');
+	assert.match(rest, /parts\[2\] === 'workspace'/, 'and the server answers there');
 });

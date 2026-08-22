@@ -24,6 +24,17 @@ const FLUSH_MS = 200;
 // exists but is never loaded. tools/migrate-version.mjs deliberately re-states it rather than
 // importing it — a migration must select by the rule as it was, not as it may later become.
 const FILE = /^diagram-[0-9a-f]{6}\.json$/;
+/*
+H9.4c: workspace grants live in their own object, not in any diagram.
+
+A workspace is the SET OF DIAGRAMS OWNED BY A PRINCIPAL, so a grant naming an owner cannot live in
+a diagram -- it is about all of them, including ones not created yet, which is the whole point:
+per-diagram grants put a person in the loop for every diagram an agent makes.
+
+The name deliberately does not match `FILE`, so `init()` will not try to parse it as a diagram, and
+it does not collide with the Google credential files that share the data dir (`google-*.json`).
+*/
+const ACCESS_FILE = 'access.json';
 
 // The document generation. `meta.grid` was accidentally serving this role — a doc without it was
 // a pre-center-origin file — and dropping grid without a replacement would leave the format with
@@ -82,6 +93,9 @@ export class Store {
 		failure this whole milestone exists to prevent.
 		*/
 		this.authz = authz;
+		// owner principal -> { grantee principal: 'read' | 'write' }. Empty until access.json says
+		// otherwise; `init()` is the only thing that fills it from disk.
+		this.workspace = new Map();
 		this.dir = dataDir;
 		this.flushMs = flushMs;
 		this.now = now;
@@ -134,7 +148,93 @@ export class Store {
 			throw new Error(`refusing to boot: ${candidates} diagram file(s) present, none loaded`);
 		}
 		if (this.diagrams.size === 0) this.seed();
+		await this.#loadAccess();
 		console.log(`[ store ] ${this.diagrams.size} diagram(s) in ${this.dir}`);
+	}
+
+	/*
+	Workspace grants, off the same backend as everything else -- H9.4c.
+
+	ABSENT is normal and means nobody has been granted a workspace: first boot, and every
+	deployment that has not used the feature. CORRUPT is a boot refusal, matching D17/GR8. The
+	reasoning is the same as it is for a diagram: a file we cannot read means we do not know who may
+	reach what, and serving anyway produces a plausible, complete and WRONG answer to the only
+	question authorization asks. Dropping the grants instead would be quieter and worse -- agents
+	would lose access with no event to point at.
+
+	Validated on the way in for the same reason `validateDoc` is: this file is written by us, so a
+	malformed entry means something upstream is broken, and inventing a reading of it would hide
+	that. A level that is not read or write is not narrowed to read; it is refused.
+	*/
+	async #loadAccess() {
+		let raw;
+		try { raw = await this.files.read(ACCESS_FILE); }
+		catch { return; }                                  // absent: no workspace grants, which is normal
+		let parsed;
+		try { parsed = JSON.parse(raw); }
+		catch (e) { throw new Error(`refusing to boot: ${ACCESS_FILE} is not readable JSON -- ${e.message}`); }
+		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+			throw new Error(`refusing to boot: ${ACCESS_FILE} is not an object`);
+		}
+		const loaded = new Map();
+		for (const [owner, grants] of Object.entries(parsed)) {
+			if (!validPrincipal(owner)) throw new Error(`refusing to boot: ${ACCESS_FILE} names an invalid owner: ${owner}`);
+			if (!grants || typeof grants !== 'object' || Array.isArray(grants)) {
+				throw new Error(`refusing to boot: ${ACCESS_FILE} entry for ${owner} is not an object`);
+			}
+			const clean = {};
+			for (const [who, level] of Object.entries(grants)) {
+				if (!validPrincipal(who)) throw new Error(`refusing to boot: ${ACCESS_FILE} names an invalid principal: ${who}`);
+				if (level !== 'read' && level !== 'write') {
+					throw new Error(`refusing to boot: ${ACCESS_FILE} gives ${who} an invalid level: ${level}`);
+				}
+				clean[who] = level;
+			}
+			loaded.set(owner, clean);
+		}
+		this.workspace = loaded;
+		const n = [...loaded.values()].reduce((a, g) => a + Object.keys(g).length, 0);
+		if (n) console.log(`[ store ] ${n} workspace grant(s) across ${loaded.size} owner(s)`);
+	}
+
+	// Written whole, and BEFORE the in-memory map is replaced. A revoke that reports success while
+	// the file still says otherwise would come back at the next restart, so the durable copy is the
+	// one that decides: if the write fails, nothing changed and the caller is told the truth.
+	async #writeAccess(next) {
+		const body = {};
+		for (const [owner, grants] of next) if (Object.keys(grants).length) body[owner] = grants;
+		await this.files.write(ACCESS_FILE, `${JSON.stringify(body, null, '\t')}\n`);
+		this.workspace = next;
+	}
+
+	workspaceGrants(owner) {
+		return { ...(this.workspace.get(owner) || {}) };
+	}
+
+	/*
+	A workspace is administered by the principal who owns it and by nobody else, which is why there
+	is no `by` argument: the caller IS the owner. That removes the question of who may grant on
+	someone else's workspace by making it unrepresentable rather than by checking for it.
+	*/
+	async grantOwner(owner, principal, level) {
+		if (!validPrincipal(owner)) return `invalid owner: ${owner}`;
+		if (!validPrincipal(principal)) return `invalid principal: ${principal}`;
+		if (level !== 'read' && level !== 'write') return `invalid level: ${level}`;
+		if (principal === owner) return 'the owner already has full access';
+		const next = new Map(this.workspace);
+		next.set(owner, { ...(next.get(owner) || {}), [principal]: level });
+		await this.#writeAccess(next);
+		return null;
+	}
+
+	async revokeOwner(owner, principal) {
+		if (!validPrincipal(owner)) return `invalid owner: ${owner}`;
+		const next = new Map(this.workspace);
+		const grants = { ...(next.get(owner) || {}) };
+		delete grants[principal];                          // absent is success, as with diagram revoke
+		next.set(owner, grants);
+		await this.#writeAccess(next);
+		return null;
 	}
 
 	// first boot (or last diagram deleted): the example topology, never an empty store
@@ -485,7 +585,20 @@ export class Store {
 		const meta = model.state.meta;
 		if (meta.owner && meta.owner === principal) return 'owner';
 		const level = meta.grants?.[principal];
-		return level === 'read' || level === 'write' ? level : null;
+		if (level === 'read' || level === 'write') return level;
+		/*
+		H9.4c -- one fallback, and it is a FALLBACK rather than a union, exactly as ACCESS.md rules.
+		A grant naming this diagram wins over a grant naming its owner, so a workspace grant can be
+		narrowed on a single diagram by granting a lower level there.
+
+		That precedence has a consequence sharp enough to name here: revoking a diagram grant from
+		somebody who also holds a workspace grant does NOT remove their access, it returns them to
+		the workspace level. `revoke` therefore reports the level that remains, so the caller learns
+		it from the response rather than from a surprise. Encoding "revoked" as "the diagram entry
+		is gone" would be B80 again -- describing the mechanism instead of the permission.
+		*/
+		const workspace = meta.owner ? this.workspace.get(meta.owner)?.[principal] : null;
+		return workspace === 'read' || workspace === 'write' ? workspace : null;
 	}
 
 	/*

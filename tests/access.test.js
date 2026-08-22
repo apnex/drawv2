@@ -1079,3 +1079,109 @@ test('H9.4d: administering access is not lock-gated, because revoking is urgent 
 		assert.equal(res.status, 200, 'the owner can still change access mid-session — not 423');
 	} finally { await t.close(); }
 });
+
+/*
+H9.4c -- a grant may name an OWNER, not only a diagram.
+
+ACCESS.md lifted the collection-scope deferral because agent-created diagrams made it untenable: if
+an agent may create, the human needs access to what it creates and the agent to what the human
+creates, and per-diagram grants put a person in the loop for every one of them. A workspace is the
+set of diagrams owned by a principal -- no new entity, one fallback in access().
+*/
+test('H9.4c: a workspace grant reaches every diagram that owner holds, including new ones', async () => {
+	const t = await grantable();
+	try {
+		const res = await fetch(`http://127.0.0.1:${t.app.port}/api/v1/workspace/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'write' }),
+		});
+		assert.equal(res.status, 200, 'the caller grants on their own workspace');
+		assert.deepEqual((await res.json()).grants, { [GUEST]: 'write' });
+
+		assert.equal(t.app.store.canWrite(t.id, GUEST), true,
+			'and it reaches a diagram with no grant of its own');
+
+		// the reason the deferral was lifted: a diagram that did not exist when the grant was made
+		const created = t.app.store.create('later', null, OWNER);
+		assert.equal(created.ok, true, 'created');
+		const freshId = created.model.state.meta.id;
+		assert.equal(t.app.store.canWrite(freshId, GUEST), true,
+			'a diagram created AFTER the grant is reached too — that is what makes it a workspace');
+
+		// and it is scoped to that owner, not global
+		t.app.store.get(freshId).state.meta.owner = 'user:someone@else.co';
+		assert.equal(t.app.store.canRead(freshId, GUEST), false,
+			'a diagram owned by somebody else is untouched by this grant');
+	} finally { await t.close(); }
+});
+
+/*
+The precedence trap, which is the part most likely to be believed wrong.
+
+ACCESS.md says FALLBACK, not union: a grant naming the diagram wins. That is what allows narrowing
+a workspace grant on one diagram -- and it means removing the diagram entry does not remove access,
+it returns the principal to the workspace level. Encoding "revoked" as "the row is gone" would be
+B80 again, describing the mechanism rather than the permission, so the response says what remains.
+*/
+test('H9.4c: a diagram grant overrides a workspace grant, and revoking it does NOT remove access', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1`;
+	try {
+		await fetch(`${api}/workspace/grants`, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'write' }) });
+		await fetch(`${t.base}/grants`, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }) });
+		assert.equal(t.app.store.access(t.id, GUEST), 'read',
+			'the narrower diagram grant wins — fallback, not union');
+
+		const revoked = await fetch(`${t.base}/grants/${encodeURIComponent(GUEST)}`, { method: 'DELETE' });
+		const body = await revoked.json();
+		assert.deepEqual(body.grants, {}, 'the diagram entry is gone');
+		assert.equal(body.effective, 'write',
+			'but access is NOT — the response says so rather than leaving it to be discovered');
+		assert.equal(t.app.store.canWrite(t.id, GUEST), true, 'and it is genuinely still there');
+
+		const gone = await fetch(`${api}/workspace/grants/${encodeURIComponent(GUEST)}`, { method: 'DELETE' });
+		assert.equal(gone.status, 200);
+		assert.equal(t.app.store.canRead(t.id, GUEST), false, 'revoking the workspace grant does remove it');
+	} finally { await t.close(); }
+});
+
+test('H9.4c: you administer your own workspace and no other', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1`;
+	try {
+		await fetch(`${api}/workspace/grants`, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'write' }) });
+		t.as(GUEST);
+		// there is no owner in the path, so the guest's POST can only touch the guest's own
+		// workspace -- granting on the owner's is unrepresentable, not merely refused
+		const OTHER = 'user:someone@notapnex.com.au';
+		await fetch(`${api}/workspace/grants`, { method: 'POST', body: JSON.stringify({ principal: OTHER, level: 'write' }) });
+		assert.deepEqual(t.app.store.workspaceGrants(OWNER), { [GUEST]: 'write' },
+			"the owner's workspace is untouched by anything the guest can say");
+		assert.deepEqual(t.app.store.workspaceGrants(GUEST), { [OTHER]: 'write' },
+			'the guest changed only their own');
+		assert.deepEqual((await (await fetch(`${api}/workspace/grants`)).json()).grants, { [OTHER]: 'write' },
+			'and GET answers for the caller, never for everyone');
+	} finally { await t.close(); }
+});
+
+test('H9.4c: workspace grants survive a restart, and a corrupt file is a boot refusal', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1`;
+	try {
+		await fetch(`${api}/workspace/grants`, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }) });
+
+		const again = new Store(t.dataDir, { flushMs: 3_600_000, authz: true });
+		await again.init();
+		assert.deepEqual(again.workspaceGrants(OWNER), { [GUEST]: 'read' }, 'durable across a restart');
+
+		// D17/GR8: a file we cannot read means we do not know who may reach what, and serving
+		// anyway is the plausible-complete-and-wrong state. Dropping the grants would be quieter
+		// and worse — agents would lose access with no event to point at.
+		fs.writeFileSync(path.join(t.dataDir, 'access.json'), '{ not json');
+		await assert.rejects(() => new Store(t.dataDir, { flushMs: 3_600_000, authz: true }).init(),
+			/refusing to boot/, 'unreadable is a refusal, not a silent empty map');
+
+		fs.writeFileSync(path.join(t.dataDir, 'access.json'), JSON.stringify({ [OWNER]: { [GUEST]: 'admin' } }));
+		await assert.rejects(() => new Store(t.dataDir, { flushMs: 3_600_000, authz: true }).init(),
+			/invalid level/, 'and an invented level is refused, never narrowed to read');
+	} finally { await t.close(); }
+});

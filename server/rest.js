@@ -224,6 +224,32 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 		return json(res, 200, { status, diagrams: store.total(), flushFailures, invariantFailures }), true;
 	}
 	if (parts[0] !== 'api') return false;
+
+	/*
+	Workspace grants -- H9.4c. A workspace is the set of diagrams owned by a principal.
+
+	No owner appears in the path, deliberately: the caller IS the owner, so `POST` grants on your own
+	workspace and nothing else. That makes "who may administer another principal's workspace" an
+	unrepresentable question rather than a check somebody has to remember to write.
+
+	There IS a GET here, where the diagram grants deliberately have none, and the asymmetry is not an
+	inconsistency. A diagram carries its own grants in `meta`, so `GET /diagrams/:id` already answers
+	that question and a second route would be two spellings of one fact. A workspace grant lives in
+	no diagram -- it is about all of them, including ones that do not exist yet -- so without this
+	route there is no way to read it at all.
+
+	Not lock-gated and not diagram-scoped, so it sits above the diagram router entirely.
+	*/
+	if (parts[1] === 'v1' && parts[2] === 'workspace') {
+		if (parts[3] !== 'grants') return json(res, 404, { error: 'not found' }), true;
+		if (!principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
+		handleWorkspace(req, res, store, parts, principal).catch((err) => {
+			console.warn(`[ rest ] workspace grant failed: ${err && err.message}`);
+			try { if (!res.headersSent) json(res, 500, { error: 'internal error' }); } catch { /* response already gone */ }
+		});
+		return true;
+	}
+
 	if (parts[1] !== 'v1' || parts[2] !== 'diagrams') {
 		return json(res, 404, { error: 'not found' }), true;
 	}
@@ -304,6 +330,33 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	return json(res, 404, { error: 'not found' }), true;
 }
 
+async function handleWorkspace(req, res, store, parts, principal) {
+	if (req.method === 'GET' && parts.length === 4) {
+		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
+	}
+	if (req.method === 'POST' && parts.length === 4) {
+		const body = await readJson(req);
+		if (bodyRejected(req, res, body)) return;
+		if (!body || typeof body.principal !== 'string' || typeof body.level !== 'string') {
+			return json(res, 400, { error: 'expected JSON body { principal, level }', code: 'grant-malformed' });
+		}
+		// the owner is the caller, never the body: a body-supplied owner would be a request to
+		// grant on somebody else's workspace, which is the one thing this route must not allow
+		const err = await store.grantOwner(principal, body.principal, body.level);
+		if (err) return json(res, 422, { error: err, code: 'grant-rejected' });
+		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
+	}
+	if (req.method === 'DELETE' && parts.length === 5) {
+		let target;
+		try { target = decodeURIComponent(parts[4]); }
+		catch { return json(res, 400, { error: 'principal is not valid percent-encoding', code: 'grant-malformed' }); }
+		const err = await store.revokeOwner(principal, target);
+		if (err) return json(res, 422, { error: err, code: 'grant-rejected' });
+		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
+	}
+	return json(res, 405, { error: 'workspace grants: GET to read, POST { principal, level } to grant, DELETE .../grants/<principal> to revoke' });
+}
+
 async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	const id = parts[3];
 	if (!store.get(id)) return json(res, 404, { error: `unknown diagram: ${id}` });
@@ -375,7 +428,10 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			catch { return json(res, 400, { error: 'principal is not valid percent-encoding', code: 'grant-malformed' }); }
 			const err = store.revoke(id, target, principal);
 			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'grant-rejected' });
-			return json(res, 200, { grants: { ...store.get(id).state.meta.grants } });
+			// H9.4c: removing the diagram entry is not the same as removing access -- a workspace
+			// grant on this diagram's owner survives it. Report what the principal can still do, so
+			// "revoked" is never inferred from the absence of a row.
+			return json(res, 200, { grants: { ...store.get(id).state.meta.grants }, effective: store.access(id, target) });
 		}
 		return json(res, 405, { error: 'grants: POST { principal, level } to grant, DELETE .../grants/<principal> to revoke' });
 	}

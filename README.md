@@ -173,7 +173,22 @@ curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/grants -d '{"principal":"a
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/grants/agent%3Aplanner
 ```
 
-There is no `GET .../grants`, deliberately: `GET /api/v1/diagrams/<id>` already carries `meta.owner` and `meta.grants`, so anyone entitled to read the diagram already has the grant list and a second route would be two spellings of one fact.
+There is no `GET /api/v1/diagrams/<id>/grants`, deliberately: `GET /api/v1/diagrams/<id>` already carries `meta.owner` and `meta.grants`, so anyone entitled to read the diagram already has the grant list and a second route would be two spellings of one fact.
+
+A grant may also name an OWNER rather than a diagram.\
+A **workspace** is the set of diagrams owned by a principal, including ones not created yet, which is the point -- otherwise a person is in the loop for every diagram an agent makes:
+```sh
+curl -s        localhost:8080/api/v1/workspace/grants
+curl -s -X POST   localhost:8080/api/v1/workspace/grants -d '{"principal":"agent:planner","level":"write"}'
+curl -s -X DELETE localhost:8080/api/v1/workspace/grants/agent%3Aplanner
+```
+
+No owner appears in that path: you administer your own workspace and no other, so granting on someone else's is unrepresentable rather than merely refused.\
+This family does have a `GET`, unlike the diagram one, because a workspace grant lives in no diagram and there would otherwise be no way to read it.
+
+A grant naming a diagram wins over a grant naming its owner, so a workspace grant can be narrowed on one diagram.\
+The consequence is worth stating plainly: revoking a diagram grant from someone who also holds a workspace grant does not remove their access, it returns them to the workspace level, and the revoke response carries an `effective` field saying what remains.\
+A leaked workspace credential costs everything that owner holds, which is the price of not having a person in the loop.
 
 An idle lock auto-expires so a crashed controller never strands a diagram.\
 Actions act on the outside world rather than the model, so they take no lock:

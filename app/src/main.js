@@ -106,6 +106,10 @@ const access = {
 	level: document.getElementById('access-level'),
 	grant: document.getElementById('access-grant'),
 	error: document.getElementById('access-error'),
+	wsList: document.getElementById('access-ws-list'),
+	wsPrincipal: document.getElementById('access-ws-principal'),
+	wsLevel: document.getElementById('access-ws-level'),
+	wsGrant: document.getElementById('access-ws-grant'),
 };
 let accessId = null;
 
@@ -133,6 +137,48 @@ function renderAccess(owner, grants) {
 	}
 }
 
+/*
+The workspace half -- H9.4c. A workspace is the set of diagrams you own, including ones you have not
+made yet, which is the point: otherwise a person is in the loop for every diagram an agent creates.
+
+Always available to whoever is signed in, unlike the diagram half above. Your workspace is yours
+regardless of who owns the diagram currently on screen -- and gating it on that would have been a
+real limitation rather than a cosmetic one, because an agent-created diagram is owned by the agent,
+so you could not have administered your own workspace from the very diagrams this feature exists to
+make possible.
+*/
+function renderWorkspace(grants) {
+	access.wsList.replaceChildren();
+	const entries = Object.entries(grants || {});
+	if (!entries.length) {
+		access.wsList.insertRow().insertCell().textContent = 'nobody';
+		return;
+	}
+	for (const [who, level] of entries) {
+		const row = access.wsList.insertRow();
+		row.insertCell().textContent = short(who);
+		row.insertCell().textContent = level;
+		const btn = document.createElement('button');
+		btn.textContent = 'revoke';
+		btn.title = `revoke ${who} from everything you own`;
+		btn.addEventListener('click', () => sendWorkspace(`/${encodeURIComponent(who)}`, { method: 'DELETE' }));
+		row.insertCell().appendChild(btn);
+	}
+}
+
+async function sendWorkspace(suffix, init) {
+	access.error.textContent = '';
+	try {
+		const res = await fetch(`/api/v1/workspace/grants${suffix}`, init);
+		const body = await res.json().catch(() => ({}));
+		if (!res.ok) { access.error.textContent = body.error || `refused (${res.status})`; return; }
+		renderWorkspace(body.grants);
+		access.wsPrincipal.value = '';
+	} catch (e) {
+		access.error.textContent = `could not reach the server: ${e.message}`;
+	}
+}
+
 async function sendAccess(path, init, owner) {
 	access.error.textContent = '';
 	try {
@@ -143,6 +189,12 @@ async function sendAccess(path, init, owner) {
 		if (!res.ok) { access.error.textContent = body.error || `refused (${res.status})`; return; }
 		renderAccess(owner, body.grants);
 		access.principal.value = '';
+		// H9.4c: removing a diagram grant does not necessarily remove access — a workspace grant on
+		// this diagram's owner outranks its absence. The server reports what remains; saying nothing
+		// would let "the row is gone" be read as "they are out", which is the thing that is not true.
+		if (body.effective) {
+			access.error.textContent = `note: still has ${body.effective} access through a workspace grant`;
+		}
 	} catch (e) {
 		access.error.textContent = `could not reach the server: ${e.message}`;
 	}
@@ -155,6 +207,11 @@ if (access.panel) {
 		body: JSON.stringify({ principal: access.principal.value.trim(), level: access.level.value }),
 	}, access.panel.dataset.owner));
 	access.principal.addEventListener('keydown', (e) => { if (e.key === 'Enter') access.grant.click(); });
+	access.wsGrant.addEventListener('click', () => sendWorkspace('', {
+		method: 'POST',
+		body: JSON.stringify({ principal: access.wsPrincipal.value.trim(), level: access.wsLevel.value }),
+	}));
+	access.wsPrincipal.addEventListener('keydown', (e) => { if (e.key === 'Enter') access.wsGrant.click(); });
 }
 
 let onStateLastId = null;
@@ -201,13 +258,23 @@ const sync = new Sync({
 		// off the element that already answers "who am I" rather than earning a button of its own.
 		const isOwner = !!principal && !!meta.owner && meta.owner === principal;
 		accessId = meta.id;
-		menu.whoami.classList.toggle('can-admin', isOwner);
-		menu.whoami.title = isOwner ? `${principal} — click to manage who can reach this diagram` : principal || '';
-		menu.whoami.onclick = isOwner ? () => {
+		// H9.4c: the panel opens for anyone signed in, not only the diagram's owner, because the
+		// workspace half is always theirs. The diagram half is hidden by CSS when they do not own
+		// what is on screen — the server would refuse those calls, and offering a door certain not
+		// to open is worse than offering none.
+		menu.whoami.classList.toggle('can-admin', !!principal);
+		menu.whoami.title = principal
+			? `${principal} — click to manage who can reach ${isOwner ? 'this diagram, and everything you own' : 'everything you own'}`
+			: '';
+		menu.whoami.onclick = principal ? () => {
 			access.panel.dataset.owner = meta.owner;
 			access.error.textContent = '';
-			renderAccess(meta.owner, meta.grants);
+			access.card.classList.toggle('not-owner', !isOwner);
+			if (isOwner) renderAccess(meta.owner, meta.grants);
+			renderWorkspace({});
 			access.panel.hidden = false;
+			// the workspace grants live in no diagram, so unlike meta.grants they must be fetched
+			sendWorkspace('', { method: 'GET' });
 		} : null;
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);

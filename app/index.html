@@ -35,6 +35,14 @@
 					<select id="access-level"><option value="read">read</option><option value="write">write</option></select>
 					<button id="access-grant">grant</button>
 				</div>
+				<h2 id="access-ws-head">everyone who can reach everything you own</h2>
+				<p id="access-ws-note">A workspace grant covers every diagram you own, including ones you have not made yet. A leaked workspace credential costs all of them.</p>
+				<table id="access-ws-list"></table>
+				<div id="access-ws-add">
+					<input id="access-ws-principal" spellcheck="false" maxlength="80" placeholder="agent:planner">
+					<select id="access-ws-level"><option value="read">read</option><option value="write">write</option></select>
+					<button id="access-ws-grant">grant</button>
+				</div>
 				<p id="access-error"></p>
 			</div>
 		</div>
