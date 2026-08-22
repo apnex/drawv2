@@ -325,6 +325,11 @@ Adding a second mechanism is now one branch in `identitySource()` and no change 
 Setting a source turns on the grant filter and makes every request carry a verified identity, so it must not be set before `OWNER` is, or the twelve existing diagrams belong to nobody and list to nobody.\
 The service refuses to boot with `BUCKET` set and no identity source configured, which covers the opposite mistake.
 
+`ALLOW_ORIGINS` is optional and usually unset.\
+The websocket refuses an upgrade whose `Origin` is neither absent nor the host that served the page, because a cross-site handshake carries the victim's cookie and CORS does not gate one -- there is no preflight on a websocket.\
+Same-origin is recognised without configuration by matching the `Host` header, so this is only needed if a page on another origin must legitimately connect.\
+Every refusal is logged with both the origin and the host, so a wrongly refused client is attributable rather than a silent reconnect loop.
+
 `OWNER` claims diagrams that predate ownership, once, at boot.\
 It is a migration rather than a policy: diagrams created after the flag is on take their owner from the session that created them, and adoption never runs against them.
 

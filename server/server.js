@@ -72,7 +72,9 @@ if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 // `Boolean(audience)`, which reads as though it is being handled and turned the grant filter on
 // while leaving the app with no way to identify anyone. H9.25 makes that shape unrepresentable --
 // the source IS the identity argument, so there is nothing left to test in place of passing it.
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains });
+// H9.28: ALLOW_ORIGINS is an escape hatch, not the main path. Same-origin is recognised without
+// configuration by matching the Host header, which is what the editor always produces.
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains, origins: process.env.ALLOW_ORIGINS || '' });
 if (source) {
 	console.log(domains.length
 		? `[ draw ] sign-in restricted to ${domains.join(', ')}`

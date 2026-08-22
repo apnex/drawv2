@@ -429,6 +429,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.25 | Authorization becomes its own switch, not a shadow of `IAP_AUDIENCE` — the boot guard demands an identity source rather than an IAP audience, and `identity.mjs` stays the only module that has heard of Google | **B93** | S2 · M | `DONE` |
 | H9.27 | The REST surface becomes `docs/spec/API.md` — it answers a different reader than the README, and GR10 now reads it there | **B97** | S1 · S | `DONE` |
 | H9.26 | GR10 derives REST routes from one path position, so a whole top-level family landed undocumented with the gate green — widened to any position | **B96** | S1 · S | `DONE` |
+| H9.28 | Origin policy: the websocket upgrade is refused from an origin we do not know, and CORS stops answering `*` — a cross-site upgrade carries the victim's cookie and CORS does not gate one | **B33** | S2 · M | `DONE` |
 | H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes — widened to public methods of exported classes, under a DIFFERENT rule from exports, with the scope stated | **B91** | S2 · S | `DONE` |
 | H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `DONE` |
 | H9.22 | Long-poll: `history?since=&wait=` — the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | — | S4 · M | `TODO` |

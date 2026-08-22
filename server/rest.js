@@ -11,11 +11,18 @@ import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
+/*
+No `Access-Control-Allow-Origin` -- H9.28/B33. It used to answer `*` on every response.
+
+Removed rather than narrowed to a reflected allow-list, because no cross-origin browser client
+exists: the editor is served from this same origin, and a CLI or an agent is not a browser and does
+not consult CORS at all. A reflection mechanism with no consumer is the speculative surface A3
+refuses. Absent the header, a browser blocks a cross-origin read, which is the whole of the fix.
+*/
 function json(res, code, body) {
 	res.writeHead(code, {
 		'Content-Type': 'application/json',
 		'Cache-Control': 'no-store',
-		'Access-Control-Allow-Origin': '*'
 	});
 	res.end(JSON.stringify(body, null, '\t') + '\n');
 }

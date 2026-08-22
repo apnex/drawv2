@@ -1321,3 +1321,67 @@ test('H9.4c: a backend that reports a missing access.json the way GCS does still
 	assert.equal(s.workspace.size, 0, 'and absent means no workspace grants, not a refusal');
 	assert.equal(s.total(), 1, 'the store is usable');
 });
+
+/*
+H9.28/B33 -- a cross-site websocket upgrade is refused.
+
+The gate CORS cannot provide. A handshake has no preflight, so any page may attempt one, and the
+browser attaches our cookies to it: the identity boundary would then resolve a real principal for a
+request its owner never made. Driven over a live server, because the defect was in the upgrade path
+and a unit test of the policy function would not have proven the server consults it.
+*/
+import { originPolicy } from '../server/origin.mjs';
+import { WebSocket } from 'ws';
+
+const dialWs = (port, origin) => new Promise((resolve) => {
+	const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, origin ? { origin } : {});
+	ws.on('open', () => { ws.close(); resolve('open'); });
+	ws.on('error', () => resolve('refused'));
+});
+
+test('H9.28: the websocket refuses an origin it does not know, and admits the one that served it', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-origin-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+		principalOf: async () => OWNER });
+	try {
+		const host = `127.0.0.1:${app.port}`;
+		assert.equal(await dialWs(app.port, `http://${host}`), 'open',
+			'the editor connects to the host that served it — this must keep working');
+		assert.equal(await dialWs(app.port, null), 'open',
+			'no Origin is not a browser, and a non-browser carries no victim cookie');
+		assert.equal(await dialWs(app.port, 'https://evil.example'), 'refused',
+			'a stranger page cannot open a socket that would carry the victim\'s session');
+		assert.equal(await dialWs(app.port, 'not a url'), 'refused', 'and an unparseable origin is not trusted');
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
+
+test('H9.28: ALLOW_ORIGINS admits a named origin, and nothing else', async () => {
+	const allowed = originPolicy('https://studio.example, https://Other.Example/');
+	assert.equal(allowed('https://studio.example', 'draw.apnex.io'), true, 'a listed origin passes');
+	assert.equal(allowed('https://other.example', 'draw.apnex.io'), true,
+		'case and a trailing slash are normalised, so a configuration typo is not a silent denial');
+	assert.equal(allowed('https://evil.example', 'draw.apnex.io'), false, 'an unlisted one does not');
+	assert.equal(allowed('https://draw.apnex.io', 'draw.apnex.io'), true, 'same-origin needs no configuration');
+	assert.equal(allowed('https://draw.apnex.io.evil.example', 'draw.apnex.io'), false,
+		'and a lookalike host is refused — the match is on the parsed host, never a prefix');
+});
+
+test('H9.28: no response advertises a wildcard CORS origin', async () => {
+	const dataDir = path.join(os.tmpdir(), `draw-cors-${Math.random().toString(36).slice(2)}`);
+	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+		principalOf: async () => OWNER });
+	try {
+		const id = [...app.store.diagrams.keys()][0];
+		for (const p of [`/api/v1/diagrams`, `/api/v1/diagrams/${id}`, `/d/${id}.svg`, '/health']) {
+			const res = await fetch(`http://127.0.0.1:${app.port}${p}`);
+			assert.equal(res.headers.get('access-control-allow-origin'), null,
+				`${p} must not answer a wildcard origin`);
+		}
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});

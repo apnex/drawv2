@@ -15,6 +15,7 @@ import { Store } from './store.js';
 import { Session } from './protocol.js';
 import { handleRest } from './rest.js';
 import { domainGate } from './identity.mjs';
+import { originPolicy } from './origin.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
 import { svgDocument } from './svg.mjs';
@@ -107,7 +108,7 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', principalOf = null, domains = [] } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', principalOf = null, domains = [], origins = '' } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -227,7 +228,8 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 			res.writeHead(200, {
 				'Content-Type': 'image/svg+xml; charset=utf-8',
 				'Cache-Control': 'no-store',
-				'Access-Control-Allow-Origin': '*',
+				// H9.28: the wildcard is gone here too. An <img> embed never needed it -- CORS governs
+				// reading a response with script, and this route is now grant-gated (B67) besides.
 				// a browser navigating here RENDERS it; `curl -O` and a download both name the file
 				'Content-Disposition': `inline; filename="${asSvg[1]}.svg"`
 			});
@@ -245,7 +247,28 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		serveStatic(req, res, client);
 	});
 
-	const wss = new WebSocketServer({ server, path: '/ws' });
+	/*
+	H9.28/B33 -- refuse an upgrade from an origin we do not know.
+
+	This is the gate CORS cannot provide. A websocket handshake has no preflight, so any page may
+	attempt one against us, and the browser attaches our cookies to it; the identity boundary below
+	would then resolve a perfectly valid principal for a request its owner never intended.
+
+	Refused at `verifyClient` rather than inside `connection`, so the socket is never established
+	and no Session is constructed for a caller we are about to reject. Every refusal is logged with
+	both sides -- a same-origin client that this wrongly refuses would otherwise fail as a silent
+	reconnect loop, which is the hardest kind of outage to attribute.
+	*/
+	const originAllowed = originPolicy(origins);
+	const wss = new WebSocketServer({
+		server,
+		path: '/ws',
+		verifyClient: ({ origin, req }) => {
+			if (originAllowed(origin, req.headers.host)) return true;
+			console.warn(`[ ws ] refusing upgrade from origin ${origin || '(none)'} -- host is ${req.headers.host}`);
+			return false;
+		},
+	});
 	wss.on('connection', (ws, request) => {
 		// B54 - liveness. `close` evicts a session for every disconnect that produces a TCP FIN, but
 		// a peer that vanishes without one (lid closed, partition, NAT idle-timeout) never sends it,
