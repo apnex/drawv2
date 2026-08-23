@@ -258,10 +258,7 @@ export function validateDoc(doc) {
 	}
 	if (!str(doc.meta.name || '', 64)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
-		// `slides` is TOLERATED, not supported: the feature is deleted and `cleanMeta` strips the key
-		// on load, but validation runs on the raw file first, so refusing it here would refuse every
-		// diagram written before the purge. Removed in Phase 2, once nothing carries it.
-		if (!['id', 'name', 'version', 'schema', 'owner', 'grants', 'slides'].includes(key)) return `unknown meta key: ${key}`;
+		if (!['id', 'name', 'version', 'schema', 'owner', 'grants'].includes(key)) return `unknown meta key: ${key}`;
 	}
 	if ('schema' in doc.meta && doc.meta.schema !== 1) return `unsupported meta.schema: ${doc.meta.schema}`;
 	if ('version' in doc.meta && !(Number.isInteger(doc.meta.version) && doc.meta.version >= 0)) return 'invalid meta.version';
@@ -286,14 +283,6 @@ export function validateDoc(doc) {
 		}
 	}
 
-	if ('slides' in doc.meta) {
-		const slides = doc.meta.slides;
-		if (!slides || typeof slides !== 'object' || Array.isArray(slides)) return 'invalid meta.slides';
-		for (const key of Object.keys(slides)) {
-			if (!['url', 'presentationId', 'pageId'].includes(key)) return `unknown slides key: ${key}`;
-			if (!str(slides[key] || '', 512)) return `invalid slides.${key}`;
-		}
-	}
 
 	const seen = new Set();
 	const collections = { node: 'nodes', waypoint: 'waypoints', link: 'links', zone: 'zones', group: 'groups' };
@@ -355,18 +344,12 @@ export function validateSelectionIds(ids) {
 	return null;
 }
 
-// meta patch from the client: only name and slides binding are writable
+// meta patch from the client: only `name` is writable
 export function validateMetaPatch(patch) {
 	if (!patch || typeof patch !== 'object') return 'patch is not an object';
 	for (const key of Object.keys(patch)) {
 		if (key === 'name') {
 			if (!str(patch.name, 64) || patch.name.trim() === '') return 'invalid name';
-		} else if (key === 'slides') {
-			if (!patch.slides || typeof patch.slides !== 'object') return 'invalid slides';
-			for (const k of Object.keys(patch.slides)) {
-				if (!['url', 'presentationId', 'pageId'].includes(k)) return `unknown slides field: ${k}`;
-				if (!str(patch.slides[k], 512)) return `invalid slides.${k}`;
-			}
 		} else {
 			return `meta.${key} is not writable`;
 		}

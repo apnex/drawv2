@@ -564,3 +564,33 @@ test('a stored doc carrying meta.slides is rewritten without it, and only once',
 		assert.equal(b.diagrams.get(id).dirty, false, 'nothing to shed, so nothing to write');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+Slides Phase 2 -- the schema refuses the retired key, and an old file still opens.
+
+These two must both hold, and they pull against each other. A validator that still knows the name
+of a deleted feature is carrying it, so `validateDoc` refuses `meta.slides` outright. But validation
+runs on the raw file, so refusing there alone would make every document written before the purge
+unloadable -- including a backup taken last week. The loader strips first, which is the only reason
+both can be true.
+*/
+test('Phase 2: the schema refuses meta.slides, and a pre-purge file still loads', async () => {
+	const { validateDoc } = await import('../server/validate.js');
+	const legacy = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 1, owner: '', grants: {},
+		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
+		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
+
+	assert.match(validateDoc(JSON.parse(JSON.stringify(legacy))), /unknown meta key: slides/,
+		'the validator no longer knows the name of the deleted feature');
+
+	const dir = tmp();
+	try {
+		fs.writeFileSync(path.join(dir, 'diagram-51de52.json'), JSON.stringify(legacy));
+		const s = new Store(dir, { flushMs: 5 });
+		await s.init();
+		assert.ok(s.get('diagram-51de52'), 'and yet the pre-purge file opened -- stripped before validation');
+		await s.flushAll();
+		const onDisk = JSON.parse(fs.readFileSync(path.join(dir, 'diagram-51de52.json'), 'utf8'));
+		assert.equal('slides' in onDisk.meta, false, 'rewritten clean, so it validates on its own next time');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

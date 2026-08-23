@@ -73,6 +73,29 @@ it. Owner and grants are established by `setOwner` and `grant`, never by present
 that claims them (ACCESS.md).
 */
 /*
+Slides Phase 2 -- retired keys are removed BEFORE validation, not tolerated by it.
+
+The schema is now pure: `validateDoc` refuses `meta.slides`, because the feature is gone and a
+validator that still knows the name of a deleted thing is carrying it. But validation runs on the
+raw file, so refusing there alone would make every document written before the purge unloadable --
+including a backup taken last week. Stripping first gives both: a strict schema, and old data that
+still opens once and is written back clean.
+
+One key today. If a second is ever retired it joins this list, and the list is the whole record of
+what the loader forgives.
+*/
+const RETIRED_META = ['slides'];
+
+function shedRetired(doc) {
+	if (!doc || typeof doc !== 'object' || !doc.meta) return false;
+	let shed = false;
+	for (const key of RETIRED_META) {
+		if (key in doc.meta) { delete doc.meta[key]; shed = true; }
+	}
+	return shed;
+}
+
+/*
 Slides Phase 1: `meta.slides` is DROPPED here, which is how the estate sheds it.
 
 This function rebuilds meta from a stored document on every load, so omitting the key means a
@@ -154,6 +177,7 @@ export class Store {
 			candidates++;
 			try {
 				const { doc, log } = parse(await this.files.read(file));
+				const shed = shedRetired(doc);
 				const err = validateDoc(doc);
 				if (err) {
 					failures.push(`${file}: ${err}`);
@@ -172,7 +196,9 @@ export class Store {
 				// unreadable still knows which version it is (CS5 stamps it into meta).
 				this.install(doc.meta.id, doc, Log.from(log, doc.meta.version), file);
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
-				if (file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
+				// a filename that does not match, or a retired key removed above: either way the file
+				// on disk is not what we now hold, so write it back once (Slides Phase 2)
+				if (shed || file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
 			} catch (e) {
 				failures.push(`${file}: ${e.message}`);
 				console.warn(`[ store ] skipping ${file}: ${e.message}`);
@@ -452,6 +478,7 @@ export class Store {
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
 			try {
 				const { doc } = parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8'));
+				shedRetired(doc);
 				const err = validateDoc(doc);
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
@@ -472,20 +499,6 @@ export class Store {
 	install(id, doc, log = new Log(0), file = null) {
 		const model = new Model();
 		model.load(doc);
-		/*
-		Slides Phase 1: a document carrying the retired key is REWRITTEN, not merely read clean.
-
-		Stripping on load made the API correct and left the bucket untouched, because loading does
-		not mark a document dirty and a diagram nobody edits is never written back. Phase 2 -- which
-		refuses the key at the boundary -- would then have waited on an estate that could not turn
-		over on its own.
-
-		So the strip announces itself. `shedRetiredKeys` is true only for a document that actually
-		carried one, so this is a one-time rewrite per diagram rather than a write on every boot,
-		and it costs nothing once the estate is clean. Not a commit: no version bump, no log record,
-		because removing a field the product no longer has is not a change anybody made.
-		*/
-		const shedRetiredKeys = doc?.meta && 'slides' in doc.meta;
 		// `file` means this document came off our own storage, which is the only source allowed to
 		// carry authorization -- init() passes it, create() does not (ACCESS.md).
 		model.state.meta = cleanMeta(id, doc.meta, Boolean(file));
@@ -514,7 +527,6 @@ export class Store {
 			console.error(`[ store ] ${id} loaded with ${broken.length} invariant violation(s): ${broken.join('; ')}`);
 		}
 		this.diagrams.set(id, entry);
-		if (shedRetiredKeys) this.markDirty(id);   // one-time: the file still has `meta.slides`
 		return entry;
 	}
 
