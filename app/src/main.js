@@ -76,8 +76,6 @@ const menu = {
 	agents: document.getElementById('agents'),
 	whoami: document.getElementById('whoami'),
 	banner: document.getElementById('banner'),
-	slidesUrl: document.getElementById('slides-url'),
-	slidesPush: document.getElementById('slides-push')
 };
 
 /*
@@ -401,11 +399,9 @@ const sync = new Sync({
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);
 		menu.name.disabled = readOnly;
-		menu.slidesUrl.disabled = readOnly;
 		if (onStateLastId && onStateLastId !== meta.id) disarmDelete();
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
-		if (document.activeElement !== menu.slidesUrl) menu.slidesUrl.value = meta.slides.url || '';
 		document.title = `draw·next — ${meta.name}`;
 		menu.banner.textContent = `${model.all('node').length} nodes · ${model.all('link').length} links · ${model.all('zone').length} zones`;
 		// D29 — the server came back holding LESS than we do: it restarted before flushing changes
@@ -446,7 +442,6 @@ history.onCommit((request) => sync.submit(request));
 // D12 — a remote change must not land under a live drag preview (B19)
 bindGestureDefer(input, sync);
 
-
 menu.name.addEventListener('change', () => { sync.rename(menu.name.value); menu.name.blur(); menu.name.value = model.state.meta.name; });
 menu.list.addEventListener('change', () => { sync.openDiagram(menu.list.value); menu.list.blur(); });
 menu.lock.addEventListener('click', () => { if (sync.locked && sync.mayWrite) sync.reclaim(); menu.lock.blur(); });
@@ -471,45 +466,6 @@ menu.del.addEventListener('click', () => {
 	disarmDelete();
 	if (target !== model.state.meta.id) return;
 	sync.deleteDiagram();
-});
-
-// ---- Slides binding + push ----
-menu.slidesUrl.addEventListener('change', () => { sync.setSlidesUrl(menu.slidesUrl.value); menu.slidesUrl.blur(); menu.slidesUrl.value = model.state.meta.slides.url; });
-
-function flashPush(cls, label, ms = 2500) {
-	menu.slidesPush.className = cls;
-	menu.slidesPush.textContent = label;
-	clearTimeout(flashPush.timer);
-	if (ms > 0) flashPush.timer = setTimeout(() => { menu.slidesPush.className = ''; menu.slidesPush.textContent = '⇑ slides'; }, ms);
-}
-menu.slidesPush.addEventListener('click', async () => {
-	if (menu.slidesPush.disabled) return;
-	menu.slidesPush.blur();
-	menu.slidesPush.disabled = true;
-	flashPush('busy', '⇑ pushing…', 0);
-	const pushedId = model.state.meta.id;
-	try {
-		const res = await fetch(`/api/v1/diagrams/${pushedId}/sync/slides`, { method: 'POST' });
-		const body = await res.json();
-		if (res.status === 401 && body.authUrl) {
-			const tab = window.open(body.authUrl, '_blank');
-			flashPush(tab ? 'busy' : 'err', tab ? '⇑ authorize, then push again' : '✗ popup blocked — see console', tab ? 8000 : 6000);
-			if (!tab) console.warn('[ slides ] popup blocked — authorize at:', body.authUrl);
-		} else if (res.ok) {
-			menu.slidesPush.title = `pushed to ${body.url}`;
-			flashPush('ok', `✓ ${body.entities} entities`);
-		} else {
-			console.warn('[ slides ]', body.error, body.help || '');
-			const reason = res.status === 503 ? 'no credentials (see README)' : body.code === 'no-url' ? 'no URL bound' : (body.code === 'bad-url' || body.code === 'no-page') ? 'bad URL' : body.partial ? 'failed — push again' : 'failed';
-			menu.slidesPush.title = body.error;
-			flashPush('err', `✗ ${reason}`, 5000);
-		}
-	} catch (err) {
-		console.warn('[ slides ]', err);
-		flashPush('err', '✗ failed', 4000);
-	} finally {
-		menu.slidesPush.disabled = false;
-	}
 });
 
 net.init();

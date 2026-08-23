@@ -35,7 +35,7 @@ test('every shipped example validates against the CURRENT schema', () => {
 	}
 });
 
-test('no example carries a Slides binding — shipped content must not point at a private deck', () => {
+test('no example carries a Slides binding — the feature is purged, so the key must be absent', () => {
 	for (const f of fs.readdirSync(EXAMPLES).filter((f) => f.endsWith('.json'))) {
 		const { meta } = JSON.parse(fs.readFileSync(path.join(EXAMPLES, f), 'utf8'));
 		assert.deepEqual(meta.slides, { url: '', presentationId: '', pageId: '' }, `${f} leaks a deck binding`);

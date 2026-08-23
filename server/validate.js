@@ -258,6 +258,9 @@ export function validateDoc(doc) {
 	}
 	if (!str(doc.meta.name || '', 64)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
+		// `slides` is TOLERATED, not supported: the feature is deleted and `cleanMeta` strips the key
+		// on load, but validation runs on the raw file first, so refusing it here would refuse every
+		// diagram written before the purge. Removed in Phase 2, once nothing carries it.
 		if (!['id', 'name', 'version', 'schema', 'owner', 'grants', 'slides'].includes(key)) return `unknown meta key: ${key}`;
 	}
 	if ('schema' in doc.meta && doc.meta.schema !== 1) return `unsupported meta.schema: ${doc.meta.schema}`;

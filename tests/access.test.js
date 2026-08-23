@@ -436,7 +436,6 @@ test('H9.3: a stranger cannot mutate by any route', async () => {
 		assert.match(s.undo(id, null, GUEST).error, /forbidden/);
 		assert.match(s.redo(id, GUEST).error, /forbidden/);
 		assert.match(s.setSelection(id, [], GUEST), /forbidden/);
-		assert.match(s.bindSlides(id, 'p', 'g', GUEST), /forbidden/);
 		assert.match(await s.remove(id, GUEST), /forbidden/);
 
 		assert.equal(s.log(id).version, before, 'and nothing moved');

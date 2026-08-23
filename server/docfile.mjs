@@ -10,7 +10,7 @@ backend we may run on. One writeDoc publishes the config and the log describing 
 there is no ordering rule because there is nothing to order.
 
 The log is STORE-owned, not Model-owned. It must not appear in Model.toJSON(), because that value
-is what GET /api/v1/diagrams/:id returns, what the Slides push receives, and what a snapshot
+is what GET /api/v1/diagrams/:id returns and what a snapshot
 carries — none of which should ship up to 32 KiB of inverses. So the composition happens here,
 at the store boundary, rather than inside the Model.
 

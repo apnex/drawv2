@@ -1,7 +1,7 @@
 # draw — Scope
 
 A strictly minimally scoped, grid-aligned diagramming tool. Browser editor, server persistence,
-one-way push to Google Slides as native shapes. Complete MVP product — narrow, finished, tested.
+a self-contained editor and agent surface. Complete MVP product — narrow, finished, tested.
 
 ## Lineage position
 
@@ -75,8 +75,6 @@ auto-layout). Coordinates are user-owned. References are mined for narrow mechan
    icon; arming states keep their recolor (transient warnings may shout).
 3. **Group**: logical member set `{id, name, members[]}` — select/move as one. No visual of its
    own (zones cover visual regions).
-4. **Slides sync**: native Slides shapes ONLY — literal rectangles/lines/ellipses/text, editable
-   after sync. Never an image. The target presentation URL is a field on the canvas menu,
    persisted in diagram meta. Push is an explicit button (commit/push), one-way.
 5. **Ownership**: unidirectional. The client owns all model mutations during a session; the
    server is persistence-of-record and read-only to everyone else (REST). Single writer —

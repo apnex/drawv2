@@ -25,7 +25,7 @@ Flags are `--port N` and `--data DIR`, or set `PORT` and `DATA_DIR`.
 
 ### Container
 
-The whole product ships as one image: editor, websocket, REST API, Slides push, and the `draw` CLI.
+The whole product ships as one image: editor, websocket, REST API, and the `draw` CLI.
 ```sh
 docker build -t draw .
 docker run -d -p 8080:8080 -v "$(pwd)/diagrams:/data" draw
@@ -74,7 +74,7 @@ docker exec <container> draw show
 
 ## Test
 
-The suite is `node:test`, covering the model, server, Slides transform, and CLI:
+The suite is `node:test`, covering the model, the server, and the CLI:
 ```sh
 npm test
 ```
@@ -131,18 +131,6 @@ Reads are open, writes take a server lock, and access is by grant.
 
 See [docs/spec/API.md](docs/spec/API.md) for the routes, the lock protocol and the grant surface.
 
-## Google Slides sync
-
-Paste a presentation URL into the header field and press the `slides` button.\
-The diagram lands as native, individually editable shapes rather than an image: circles for nodes, connector-bound lines for links, translucent rectangles for zones, and text labels.
-
-Re-pushing replaces exactly the objects `draw` created and leaves anything you added in Slides untouched.\
-A `#slide=id.<x>` fragment targets that slide, otherwise the first one is used.
-
-Credentials need a one-time setup, described in [docs/slides-setup.md](docs/slides-setup.md).
-
----
-
 ## Layout
 
 ```text
@@ -150,7 +138,7 @@ app/         browser editor - kernel-rendered thin UI, vanilla ES modules
 model/       sovereign Model - entity store, id helpers, surface constants
 kernel/      sovereign geometry - resolve(schema) to scene, routing, locked spec
 engine/      sovereign relational substrate - incidence, membership, occupancy
-server/      persistence server, REST, validation, and slides/ for the push
+server/      persistence server, REST, and validation
 cli/         draw.sh - read-only CLI over the REST API
 tests/       node:test suites and fixtures
 tools/       the gate's source scanners

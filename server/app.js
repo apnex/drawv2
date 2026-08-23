@@ -19,8 +19,6 @@ import { originPolicy } from './origin.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
 import { svgDocument } from './svg.mjs';
-import { GoogleAuth } from './slides/auth.js';
-import { SlidesSync } from './slides/sync.js';
 
 const MIME = {
 	'.html': 'text/html; charset=utf-8',
@@ -79,30 +77,6 @@ function serveStatic(req, res, clientDir) {
 	});
 }
 
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
-	({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-async function handleOAuthCallback(req, res, url, slides) {
-	const page = (title, body) => {
-		res.writeHead(200, {
-			'Content-Type': 'text/html; charset=utf-8',
-			'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'"
-		});
-		res.end(`<!DOCTYPE html><html><body style="background:#101010;color:#aed581;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh"><div><h2>${esc(title)}</h2><p style="color:#ddddff">${esc(body)}</p></div></body></html>`);
-	};
-	const code = url.searchParams.get('code');
-	if (!code) return page('draw — authorization failed', url.searchParams.get('error') || 'no code returned');
-	if (!slides.auth.checkState(url.searchParams.get('state'))) {
-		return page('draw — authorization rejected', 'state mismatch: this callback does not belong to a flow this server started');
-	}
-	try {
-		await slides.auth.exchangeCode(code, slides.redirectUri);
-		console.log('[ slides ] Google authorization stored');
-		page('draw — authorized ✓', 'You can close this tab and push to Slides.');
-	} catch (err) {
-		page('draw — authorization failed', err.message);
-	}
-}
 
 // B54 - how long a client may stay silent before it is presumed gone. Two rounds of this is the
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
@@ -236,9 +210,6 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (claimed) console.log(`[ store ] adopted ${claimed} unowned diagram(s) for ${owner}`);
 	}
 
-	const auth = new GoogleAuth(data, secrets);
-	const slides = { auth, sync: new SlidesSync(auth) };
-
 	// Server-Locked control plane: lock arbiter + websocket broadcast hub
 	const locks = new Locks();
 	const hub = new Hub();
@@ -256,13 +227,10 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const server = http.createServer(async (req, res) => {
 		req.url = throughTheAgentDoor(req.url);
 		const url = new URL(req.url, 'http://localhost');
-		if (url.pathname === '/oauth2callback' && req.method === 'GET') {
-			return handleOAuthCallback(req, res, url, slides);
-		}
 		// resolved here rather than inside the router, so every REST handler receives a principal
 		// and none of them reads a header (ACCESS.md -- one boundary)
 		const principal = await identify(req.headers).catch(() => null);
-		if (handleRest(req, res, store, slides, locks, hub, principal)) return;
+		if (handleRest(req, res, store, locks, hub, principal)) return;
 		if (req.method !== 'GET') {
 			res.writeHead(405);
 			return res.end();
@@ -368,9 +336,6 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const bindHost = host || process.env.HOST || '127.0.0.1';
 	return new Promise((resolve) => {
 		server.listen(port, bindHost, () => {
-			// one configured redirect URI: never derived from request headers
-			slides.redirectUri = process.env.OAUTH_REDIRECT_URI
-				|| `http://localhost:${server.address().port}/oauth2callback`;
 			resolve({
 				server,
 				store,

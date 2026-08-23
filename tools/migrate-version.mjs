@@ -61,11 +61,6 @@ export function migrateDoc(doc, log) {
 			name: meta.name,
 			version: Math.max(persisted, Number.isInteger(top) ? top : 0),
 			schema: 1,
-			slides: {
-				url: meta.slides?.url ?? '',
-				presentationId: meta.slides?.presentationId ?? '',
-				pageId: meta.slides?.pageId ?? '',
-			},
 		},
 	};
 }
@@ -90,7 +85,6 @@ export function invariant(doc) {
 	return JSON.stringify(canon({
 		id: doc.meta?.id,
 		name: doc.meta?.name,
-		slides: doc.meta?.slides ?? {},
 		nodes: byId(doc.nodes), waypoints: byId(doc.waypoints), links: byId(doc.links),
 		zones: byId(doc.zones), groups: byId(doc.groups),
 		selection: [...(doc.selection || [])].sort(),

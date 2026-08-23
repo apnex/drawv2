@@ -83,7 +83,6 @@ test('toJSON/load roundtrip preserves the document', () => {
 	model.put('zone', model.makeZone({ x: -90, y: -90, w: 240, h: 180 }));
 	model.put('group', model.makeGroup([a.id, b.id]));
 	model.state.meta.name = 'demo';
-	model.state.meta.slides.url = 'https://docs.google.com/presentation/d/xyz';
 
 	const doc = model.toJSON();
 	const restored = new Model();

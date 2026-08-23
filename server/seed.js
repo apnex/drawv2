@@ -1,7 +1,7 @@
 /*
 Seed — the example topology created on first boot (SCOPE: "seeded example
 diagram"). Entity ids are generated fresh each time so two seeded diagrams
-can never collide as Slides objectIds in the same presentation.
+are stable across reseeds.
 */
 
 import { newId } from '../model/index.mjs';
@@ -35,8 +35,7 @@ export function seedDoc() {
 			id: make('diagram'),
 			name: 'example',
 			version: 0,
-			schema: 1,
-			slides: { url: '', presentationId: '', pageId: '' }
+			schema: 1
 		},
 		nodes,
 		links,

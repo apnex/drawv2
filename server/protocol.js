@@ -13,7 +13,7 @@ client -> server                          server -> client
   undo   { expect, txnId? }                 diagrams { list }
   redo   { expect, txnId? }                 error    { message, code, txnId }
   resume { diagram, version }               lock     { owner }
-  meta   { name?, slides? }
+  meta   { name? }
   select { ids }            (model-state: the authoritative selection)
   reclaim { id? }           (human takes control back from the server side)
   delete { id }             (answers with a snapshot of a surviving diagram)

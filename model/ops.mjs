@@ -8,7 +8,7 @@ cannot disagree:
   { op:'put',  kind, entity }     whole entity value
   { op:'set',  kind, id, patch }  ONLY the keys that actually change
   { op:'del',  kind, id }         by id; the entity lives in the inverse
-  { op:'meta', patch }            { name?, slides:{url?} } — config meta, no id
+  { op:'meta', patch }            { name? } — config meta, no id
 
 Sovereign: this module knows the Model and the shape table, nothing else. No server, no wire, no
 store. Both peers load it — model/ is mounted at /model (server/app.js:150).
@@ -49,11 +49,10 @@ export function applyOps(model, ops) {
 	}
 }
 
-// meta is config, not an entity: no id, and only the two keys a user can author. `slides.url` is
+// meta is config, not an entity: no id, and only the keys a user can author. The Slides binding was
 // the user-pasted deck; presentationId/pageId are STATUS, written by the server after a push
-// (Store.bindSlides) and never carried in a Change.
+// removed with the feature; `name` is what remains.
 function applyMeta(model, patch) {
 	const meta = model.state.meta;
 	if (patch.name !== undefined) meta.name = patch.name;
-	if (patch.slides && patch.slides.url !== undefined) meta.slides.url = patch.slides.url;
 }

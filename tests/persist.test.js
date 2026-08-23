@@ -29,7 +29,7 @@ async function storeWith(dir) {
 // ---- I10: the file round-trips ----
 
 test('I10: parse(serialize(doc, log)) deep-equals the input, including a large record', () => {
-	const doc = { meta: { id: 'diagram-aaaaaa', name: 'x', slides: { url: '', presentationId: '', pageId: '' } },
+	const doc = { meta: { id: 'diagram-aaaaaa', name: 'x' },
 		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
 	const log = new Log(0);
 	// a delete-all of a 65-entity diagram is the largest record the design admits
@@ -63,7 +63,7 @@ const ADVERSARIAL = ['a$&b', "a$'b", 'a$`b', 'a$1b', 'a$$b', '$&', '$`'];
 
 test('B13: a replacement-pattern entity name round-trips through the file', () => {
 	for (const name of ADVERSARIAL) {
-		const doc = { meta: { id: 'diagram-aaaaaa', name: 'x', slides: { url: '', presentationId: '', pageId: '' } },
+		const doc = { meta: { id: 'diagram-aaaaaa', name: 'x' },
 			nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
 		const log = new Log(0);
 		log.version++;

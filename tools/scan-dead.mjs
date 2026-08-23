@@ -51,7 +51,6 @@ const ALLOW = {
 	'server/files.mjs:metadataToken': 'the GCS metadata-server token fetch. Exported so B6 can prove the cache honours expiry and that an unreachable metadata server yields a sentence rather than an undici stack trace -- neither is observable through the backend surface.',
 	'server/log.mjs:LOG_MAX': 'the ring bound. I14 asserts eviction is oldest-first and that the only record is never evicted; a test that hardcoded the number would pass after someone changed it.',
 	'server/log.mjs:LOG_HARD_MAX': 'the hard ceiling that overrides the human floor. Same reason as LOG_MAX, and the interaction between the two is the property under test.',
-	'server/slides/transform.js:OWNED_ID': 'the id pattern that marks a Slides element as ours. The wipe deletes by this pattern on the bound page, so a test must assert the pattern matches exactly what draw creates and nothing else.',
 	'server/txn.mjs:MAX_OPS': 'the per-transaction op cap. Asserted so the rejection is proven to happen BEFORE any write, which is a claim about ordering that needs the bound.',
 	'server/validate.js:validateEntity': 'the per-entity half of the validator, called by validateDoc. Exported because 27 assertions exercise entity shapes directly -- span, content regions, node frame -- and routing each through a whole document would test the wrapper instead of the rule.',
 	'tools/migrate-version.mjs:migrateDoc': 'the CS5 migration transform. The gate proves a migrated corpus boots and every entity survives deep-equal, which requires calling the transform rather than the CLI around it.',

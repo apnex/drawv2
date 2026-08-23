@@ -48,10 +48,10 @@ export const kindOf = (id) => id.split('-')[0];
 export class Model {
 	constructor() {
 		this.state = {
-			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status like `slides`:
+			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
 			// An empty owner means unowned, which is what every diagram predating H9 is.
-			meta: { id: '', name: 'untitled', version: 0, schema: 1, owner: '', grants: {}, slides: { url: '', presentationId: '', pageId: '' } },
+			meta: { id: '', name: 'untitled', version: 0, schema: 1, owner: '', grants: {} },
 			nodes: {},
 			waypoints: {},
 			links: {},
@@ -330,7 +330,7 @@ export class Model {
 	here is a chosen term rather than a survival. B95 records why that keeps having to be explained.
 	*/
 	toJSON() {
-		const doc = { meta: { ...this.state.meta, grants: { ...this.state.meta.grants }, slides: { ...this.state.meta.slides } } };
+		const doc = { meta: { ...this.state.meta, grants: { ...this.state.meta.grants } } };
 		KINDS.forEach((kind) => {
 			doc[KEY[kind]] = this.all(kind).map((e) => ({ ...e }));
 		});
@@ -348,7 +348,11 @@ export class Model {
 		if (doc.meta) {
 			// grants REPLACE rather than merge: a revoked principal must not survive a reload by
 			// hiding in the previous state, which a spread of the old over the new would allow.
-			this.state.meta = { ...this.state.meta, ...doc.meta, grants: { ...(doc.meta.grants || {}) }, slides: { ...this.state.meta.slides, ...(doc.meta.slides || {}) } };
+			// Slides Phase 1: `slides` is dropped rather than merged. A document written before the
+			// purge still carries the key, and spreading `doc.meta` would carry it back into a model
+			// the field no longer belongs to -- which is how it survived the first pass of this purge.
+			const { slides: _retired, ...incoming } = doc.meta;
+			this.state.meta = { ...this.state.meta, ...incoming, grants: { ...(doc.meta.grants || {}) } };
 		}
 		// model-state (status): restore the authoritative selection, reconciled to the config loaded
 		// above (tolerate-stale: drop ids that aren't a live selectable entity). Before emit. (MS1)

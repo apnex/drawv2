@@ -664,7 +664,6 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 			commands.retypeNode(a.id, 'host'),
 			commands.toggleClosed(link),
 			commands.renameDocument('x'),
-			commands.bindSlides('u'),
 			commands.linkNodes(h.model, [a.id, b.id], false),
 			commands.routeLink([], link),
 		];

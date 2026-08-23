@@ -144,10 +144,6 @@ function planMeta(model, op) {
 	const next = {};
 	const prev = {};
 	if (patch.name !== undefined && patch.name !== meta.name) { next.name = patch.name; prev.name = meta.name; }
-	if (patch.slides?.url !== undefined && patch.slides.url !== meta.slides.url) {
-		next.slides = { url: patch.slides.url };
-		prev.slides = { url: meta.slides.url };
-	}
 	if (Object.keys(next).length) { ops.push({ op: 'meta', patch: next }); inverse.push({ op: 'meta', patch: prev }); }
 	return { ok: true, ops, inverse };
 }
@@ -327,7 +323,7 @@ stamped on undo and redo too, because those bump the version without appending a
 mirror that only tracked commits would drift the first time anyone pressed Ctrl+Z.
 
 The mirror exists so a document is self-describing off-line: a file on disk, a GET response and a
-Slides push all say which version they are, without the reader having to hold the log.
+every write says which version it is, without the reader having to hold the log.
 */
 function stamp(model, log) {
 	model.state.meta.version = log.version;

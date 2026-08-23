@@ -262,16 +262,13 @@ export function routeLink(placed, link) {
 }
 
 // ---- document metadata. `meta` is a single record, so these patch it rather than an entity. ----
-// Both were written out by hand in sync.js, and `bind slides` twice — the second copy is why this
+// Both were written out by hand in sync.js — the second copy is why this
 // exists as a builder rather than a third literal.
 
 export function renameDocument(name) {
 	return { label: 'rename', entries: [{ op: 'meta', patch: { name } }] };
 }
 
-export function bindSlides(url) {
-	return { label: 'bind slides', entries: [{ op: 'meta', patch: { slides: { url } } }] };
-}
 
 /*
 ---- H6.9 / B46: builders that COMPUTE, not just shape ----

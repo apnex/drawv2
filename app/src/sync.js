@@ -314,10 +314,6 @@ export class Sync {
 				through to a read-only load of the controller's state.
 				*/
 				const local = this.model.toJSON();
-				if (this.pendingSlidesUrl) {
-					local.meta.slides = { ...local.meta.slides, url: this.pendingSlidesUrl };
-					this.pendingSlidesUrl = null;
-				}
 				this.expectLoad = true;
 				this.net.send('create', { name: local.meta.name, doc: local });
 				return;
@@ -342,12 +338,6 @@ export class Sync {
 				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
 			this.appliedVersion = msg.body.version || 0;   // the model IS this document
 			if (Array.isArray(msg.body.agents)) this.agents = msg.body.agents;
-			if (this.pendingSlidesUrl) {
-				// a slides URL typed before hydration must survive the snapshot
-				const url = this.pendingSlidesUrl;
-				this.pendingSlidesUrl = null;
-				this.changes.commit(commands.bindSlides(url));
-			}
 			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }
 			this.setUrl(doc.meta.id);
 			// An outbox belongs to ONE diagram: a deliberate switch abandons it, a reload adopts
@@ -527,15 +517,4 @@ export class Sync {
 		this.emitState({});
 	}
 
-	setSlidesUrl(url) {
-		if (this.readOnly) return this.emitState({}); // read-only: revert the field
-		const trimmed = url.trim().slice(0, 512);
-		if (!this.hydrated) {
-			this.model.state.meta.slides.url = trimmed;
-			this.pendingSlidesUrl = trimmed;        // replay through the boundary after hydration
-			return;
-		}
-		if (trimmed === this.model.state.meta.slides.url) return;
-		this.changes.commit(commands.bindSlides(trimmed));
-	}
 }

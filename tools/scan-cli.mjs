@@ -31,7 +31,7 @@ the work is recorded as finished -- so this list only ever shrinks, and the gate
 const PENDING = {
 	sync: 'the Slides sync route behind `draw push`',
 	slides: 'the Slides projection target -- CLI.md Projection',
-	nodes: 'high-level node verbs -- CLI.md Writing',
+	nodes: 'reachable by commit --ops, and by `draw add` / `draw place`; no pixel-taking wrapper, see above',
 	/*
 	The entity-write routes stay unwrapped, deliberately (ruled 2026-08-23).
 

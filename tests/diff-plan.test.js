@@ -42,7 +42,7 @@ function makeDoc(r, i) {
 		const members = nodes.slice(0, 2 + Math.floor(r() * (nodes.length - 2))).map((n) => n.id);
 		groups.push({ id: `group-${hex(i * 100 + 90)}`, name: 'g', members });
 	}
-	return { meta: { id: `diagram-${hex(i)}`, name: 'd', slides: { url: '', presentationId: '', pageId: '' } },
+	return { meta: { id: `diagram-${hex(i)}`, name: 'd' },
 		nodes, waypoints, links, zones: [], groups };
 }
 
@@ -251,7 +251,7 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 // door, so the claim is asserted rather than trusted.
 test('GR5/X8: an identical put that ALSO steals group members is NOT narrowed away', () => {
 	const model = new Model();
-	model.load({ meta: { id: 'diagram-aa0001', name: 'd', slides: { url: '', presentationId: '', pageId: '' } },
+	model.load({ meta: { id: 'diagram-aa0001', name: 'd' },
 		nodes: [1, 2, 3].map((n) => ({ id: `node-aa000${n}`, name: `n${n}`, type: 'host', shape: 'circle', x: n * 60, y: 0 })),
 		waypoints: [], links: [], zones: [],
 		groups: [

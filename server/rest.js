@@ -290,7 +290,7 @@ async function commitSelection(res, store, hub, locks, id, token, ids, principal
 }
 
 // returns true if the request was handled (may complete asynchronously)
-export function handleRest(req, res, store, slides, locks, hub, principal = null) {
+export function handleRest(req, res, store, locks, hub, principal = null) {
 	const url = new URL(req.url, 'http://localhost');
 	const parts = url.pathname.split('/').filter(Boolean);
 
@@ -359,11 +359,6 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 		return json(res, 404, { error: 'not found' }), true;
 	}
 
-	// the Slides sync action keeps its dedicated route
-	if (req.method === 'POST' && parts.length === 6 && parts[4] === 'sync' && parts[5] === 'slides') {
-		handleSlidesPush(req, res, store, slides, parts[3], principal);
-		return true;
-	}
 
 	/*
 	Create a diagram -- H9.21. ACCESS.md: an agent may create, and owns what it creates.
@@ -859,41 +854,3 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	return json(res, 404, { error: 'not found' });
 }
 
-async function handleSlidesPush(req, res, store, slides, diagramId, principal) {
-	const model = store.get(diagramId);
-	if (!model) return json(res, 404, { error: `unknown diagram: ${diagramId}` });
-	if (!slides || !slides.auth.configured()) {
-		return json(res, 503, {
-			error: 'Google credentials not configured',
-			help: 'place an OAuth client JSON at <secretsDir>/google-credentials.json (see README, "Google Slides sync")'
-		});
-	}
-	if (!slides.auth.authorized()) {
-		const authUrl = slides.auth.authUrl(slides.redirectUri);
-		console.log(`[ slides ] authorize at: ${authUrl}`);
-		return json(res, 401, { error: 'authorization required', authUrl });
-	}
-	try {
-		const report = await slides.sync.push(model.toJSON());
-		// remember where it landed, so a re-push targets the same slide rather than pages[0].
-		// Server-side because the server did the push: the CLI's `draw push` binds too, and the
-		// browser needs no round trip to record something it did not do.
-		store.bindSlides(diagramId, report.presentationId, report.pageId, principal);
-		console.log(`[ slides ] pushed ${diagramId}: ${report.objects} objects -> ${report.presentationId}`);
-		return json(res, 200, report);
-	} catch (err) {
-		if (err.code === 'no-url' || err.code === 'bad-url' || err.code === 'no-page') {
-			return json(res, 400, { error: err.message, code: err.code });
-		}
-		if (err.status === 401 || err.message === 'not authorized') {
-			const authUrl = slides.auth.authUrl(slides.redirectUri);
-			console.log(`[ slides ] authorize at: ${authUrl}`);
-			return json(res, 401, { error: 'authorization expired', authUrl });
-		}
-		console.warn(`[ slides ] push failed: ${err.message}`);
-		return json(res, 502, {
-			error: `Slides API: ${err.message}`,
-			...(err.partial ? { partial: err.partial } : {})
-		});
-	}
-}

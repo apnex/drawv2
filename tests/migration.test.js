@@ -24,7 +24,7 @@ const node = (id, x = null, y = 0) => ({ id, name: id, type: 'host', shape: 'cir
 // a document in the PRE-CS5 shape: rev, grid, no version, no schema
 const oldDoc = (over = {}) => ({
 	meta: { id: 'diagram-aa0001', name: 'legacy', rev: 11052, grid: 'center',
-		slides: { url: 'https://docs.google.com/x', presentationId: 'p1', pageId: 'g1' } },
+	},
 	nodes: [node('node-aa0001', 60, 60), node('node-aa0002', -120, 300)],
 	waypoints: [],
 	links: [{ id: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' }],
@@ -40,7 +40,7 @@ test('the render counter is dropped, not renamed — version comes from the LOG'
 	assert.equal('grid' in m.meta, false, 'grid is gone');
 	assert.equal(m.meta.version, 0, 'a file predating the log starts at 0, NOT at rev 11052');
 	assert.equal(m.meta.schema, 1, 'the generation discriminator grid was serving');
-	assert.deepEqual(Object.keys(m.meta).sort(), ['id', 'name', 'schema', 'slides', 'version']);
+	assert.deepEqual(Object.keys(m.meta).sort(), ['id', 'name', 'schema', 'version']);
 });
 
 test('version is seeded from the file’s own persisted log', () => {
@@ -66,7 +66,6 @@ test('the migration touches NO entity — every collection survives byte-for-byt
 	assert.deepEqual(m.zones, before.zones);
 	assert.deepEqual(m.groups, before.groups);
 	assert.deepEqual(m.selection, before.selection);
-	assert.deepEqual(m.meta.slides, before.meta.slides, 'the Slides binding survives');
 });
 
 test('the transform does not mutate its input', () => {
@@ -76,11 +75,6 @@ test('the transform does not mutate its input', () => {
 	assert.deepEqual(before, copy, 'a dry run and a real run cannot diverge by mutation');
 });
 
-test('a doc missing slides entirely migrates to the empty binding, not to undefined', () => {
-	const bare = { meta: { id: 'diagram-bb0001', name: 'bare', rev: 7 }, nodes: [], waypoints: [], links: [], zones: [], groups: [] };
-	const m = migrateDoc(bare, null);
-	assert.deepEqual(m.meta.slides, { url: '', presentationId: '', pageId: '' });
-});
 
 test('invariant() CATCHES a mangled coordinate — the failure a count-only check passes', () => {
 	const before = oldDoc();

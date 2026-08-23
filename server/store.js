@@ -72,8 +72,19 @@ itself as owner of the diagram it is creating -- the keys validate, so nothing e
 it. Owner and grants are established by `setOwner` and `grant`, never by presenting a document
 that claims them (ACCESS.md).
 */
+/*
+Slides Phase 1: `meta.slides` is DROPPED here, which is how the estate sheds it.
+
+This function rebuilds meta from a stored document on every load, so omitting the key means a
+document loses it the first time it is read and is written back without it at the next flush. No
+migration tool, no separate pass.
+
+It must stay TOLERATED by `validateDoc` until that has happened everywhere. Validation runs on the
+raw file (`:147`, `:445`) BEFORE this function sees it, so removing the key from the allow-list now
+would refuse every stored diagram at boot -- which is B110's trap, avoided there by migrating first
+and avoided here by stripping on read. Phase 2 removes it from the validator once nothing carries it.
+*/
 function cleanMeta(id, meta = {}, trusted = false) {
-	const slides = (meta.slides && typeof meta.slides === 'object') ? meta.slides : {};
 	const str = (v) => typeof v === 'string' ? v.slice(0, 512) : '';
 	const grants = {};
 	if (trusted && meta.grants && typeof meta.grants === 'object' && !Array.isArray(meta.grants)) {
@@ -88,7 +99,6 @@ function cleanMeta(id, meta = {}, trusted = false) {
 		schema: SCHEMA,
 		owner: trusted ? str(meta.owner) : '',
 		grants,
-		slides: { url: str(slides.url), presentationId: str(slides.presentationId), pageId: str(slides.pageId) }
 	};
 }
 
@@ -723,38 +733,15 @@ export class Store {
 		return null;
 	}
 
-	/*
-	The Slides binding: which deck and which slide this diagram's last successful push landed on.
-
-	STATUS, not config — the server performed the push, so the server records where it went, and
-	it is not a Change: it carries no user intent, must not be undoable, and must not bump the
-	version. `slides.url` (what the user pasted) IS config and travels as a `meta` op; these two
-	do not.
-
-	It had no writer at all between CS3a and CS5 — `case 'meta'` was deleted when meta became an
-	op, and the browser's `meta {slides:{presentationId,pageId}}` message was silently refused as
-	an unknown cmd. A binding that never persists re-targets `pages[0]` on the next push after a
-	restart, which is a wrong-slide overwrite, not a missing feature.
-	*/
-	bindSlides(id, presentationId, pageId, principal) {
-		const model = this.get(id);
-		if (!model) return 'unknown diagram';
-		const denied = this.#mayWrite(id, principal);
-		if (denied) return denied;
-		const str = (v) => (typeof v === 'string' ? v.slice(0, 512) : '');
-		Object.assign(model.state.meta.slides, { presentationId: str(presentationId), pageId: str(pageId) });
-		this.markDirty(id);
-		return null;
-	}
 
 	// ---- persistence ----
 	// total flush failures across all diagrams — surfaced by GET /health and `draw status` so a
 	// backend that is silently failing to persist is visible before the next restart loses work.
 	/*
-	Authorization -- ACCESS.md. Owner and grants, written the way `bindSlides` writes.
+	Authorization -- ACCESS.md. Owner and grants, written outside the transaction.
 
 	These deliberately bypass `commit()`, and the reason is sharper than consistency with the
-	Slides binding. `flush()` serializes the document AND the log, so a grant routed through a
+	`flush()` serializes the document AND the log, so a grant routed through a
 	commit would be undoable -- and undo silently restoring access for a principal just revoked is
 	a security failure rather than a usability quirk. Bypassing the transaction avoids it by
 	construction instead of by a rule someone has to keep remembering.

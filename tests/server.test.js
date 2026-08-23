@@ -281,30 +281,6 @@ test('a rename is an undoable, broadcast change — not a side-channel command',
 	a.close(); b.close();
 });
 
-test('the Slides binding is STATUS the server records — not a change, and not the client’s to send', async () => {
-	const { Store } = await import('../server/store.js');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-bind-'));
-	try {
-		const store = new Store(dir, { flushMs: 3_600_000 });
-		await store.init();
-		const id = store.list()[0].id;
-		const before = store.diagrams.get(id).log.version;
-
-		assert.equal(store.bindSlides(id, 'PRES_ID-123', 'g7'), null);
-		const meta = store.get(id).toJSON().meta;
-		assert.equal(meta.slides.presentationId, 'PRES_ID-123');
-		assert.equal(meta.slides.pageId, 'g7');
-		assert.equal(store.diagrams.get(id).log.version, before, 'status does not bump the version');
-		assert.equal(store.diagrams.get(id).log.canUndo(), false, 'and is not undoable');
-		assert.equal(store.bindSlides('diagram-ffffff', 'p', 'g'), 'unknown diagram');
-
-		// it survives a restart — a binding that does not persist re-targets pages[0] on re-push
-		await store.flushAll();
-		const again = new Store(dir, { flushMs: 3_600_000 });
-		await again.init();
-		assert.equal(again.get(id).toJSON().meta.slides.pageId, 'g7');
-	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
-});
 
 test('create and open switch diagrams; meta rename persists', async () => {
 	const c = await connect();
@@ -351,30 +327,6 @@ test('REST surface: 404s, read-only enforcement, slides placeholder', async () =
 	assert.equal(del.status, 423);
 });
 
-test('slides push endpoint walks the auth states', async () => {
-	const id = (await get('/api/v1/diagrams')).body[0].id;
-
-	// no credentials file -> 503 with setup help
-	let res = await fetch(`${base}/api/v1/diagrams/${id}/sync/slides`, { method: 'POST' });
-	assert.equal(res.status, 503);
-	assert.match((await res.json()).help, /google-credentials/);
-
-	// credentials present but never authorized -> 401 with an auth URL
-	fs.writeFileSync(path.join(dataDir, 'google-credentials.json'), JSON.stringify({
-		installed: { client_id: 'cid.apps.googleusercontent.com', client_secret: 'shh' }
-	}));
-	res = await fetch(`${base}/api/v1/diagrams/${id}/sync/slides`, { method: 'POST' });
-	assert.equal(res.status, 401);
-	const body = await res.json();
-	assert.match(body.authUrl, /accounts\.google\.com.*client_id=cid/);
-	assert.match(body.authUrl, /oauth2callback/);
-
-	// unknown diagram -> 404 regardless
-	res = await fetch(`${base}/api/v1/diagrams/diagram-nope99/sync/slides`, { method: 'POST' });
-	assert.equal(res.status, 404);
-
-	fs.rmSync(path.join(dataDir, 'google-credentials.json'));
-});
 
 test('static client is served with traversal protection', async () => {
 	const index = await fetch(base + '/');
@@ -977,21 +929,6 @@ test('R3: a stray write method on a non-selection route keeps the clean 405 (PUT
 	}
 });
 
-test('meta slides patch is accepted; unknown slides fields are rejected', async () => {
-	const c = await connect();
-	c.send('hello', {});
-	const diagramId = (await c.expect('snapshot')).body.doc.meta.id;
-
-	c.send('commit', { ops: [{ op: 'meta', patch: { slides: { url: 'https://docs.google.com/presentation/d/abc123' } } }] });
-	await c.expect('ack');
-	const doc = (await get(`/api/v1/diagrams/${diagramId}`)).body;
-	assert.match(doc.meta.slides.url, /abc123/);
-
-	c.send('commit', { ops: [{ op: 'meta', patch: { slides: { evil: 'x' } } }] });
-	const err = await c.expect('error');
-	assert.match(err.body.message, /unknown slides field/);
-	c.close();
-});
 
 test('targeted hello, unknown open, set-on-missing, create-doc meta sanitization', async () => {
 	const c = await connect();

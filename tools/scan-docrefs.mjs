@@ -52,6 +52,10 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	'*:server/slides/auth.js': 'the Slides feature, PURGED at Phase 1 and recorded in COMMIT-DELETIONS.md. Every remaining reference is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing lines as evidence for rulings made while it existed, and BACKLOG rows describing defects in it. M4 forbids rewriting an artifact recorded before the change.',
+	'*:server/slides/sync.js': 'as above -- cited as evidence in records written while the feature existed.',
+	'*:tests/slides.test.js': 'as above.',
+	'*:docs/slides-setup.md': 'the operator guide for a feature that no longer exists; cited from records written while it did.',
 	'*:cli/draw.sh': 'the shell CLI, RETIRED at GR18 and recorded in COMMIT-DELETIONS.md. Every reference left is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing line numbers as evidence for rulings made while it existed, and B61/B117 describing the defects that ended it. M4 forbids rewriting an artifact recorded before the change; repointing these at draw.mjs would falsify the record, because the line numbers were never true of that file.',
 	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
 	'docs/spec/DEPLOY.md:/src/main.js': 'a URL path, not a repository path -- app/ is served at the web root, so the client bundle is fetched from /src/main.js. Named because it is the request used to prove the app itself is still behind IAP.',
