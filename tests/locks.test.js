@@ -621,20 +621,22 @@ test('B115: a lapsed lock announces the agent list, not only the per-diagram loc
 	const sent = { broadcast: [], announce: [] };
 	const hub = {
 		broadcast: (id, cmd, body) => sent.broadcast.push({ id, cmd, body }),
-		announce: (cmd, body) => sent.announce.push({ cmd, body }),
+		announceEach: (cmd, build) => sent.announce.push({ cmd, body: build({ principal: null }) }),
+		viewers: () => [],
 	};
+	const store = { canRead: () => true };
 
 	locks.acquire('diagram-aa0001', 'agent:planner');
-	assert.deepEqual(sweepLocks(locks, hub), [], 'nothing lapsed yet');
+	assert.deepEqual(sweepLocks(locks, hub, store), [], 'nothing lapsed yet');
 	assert.equal(sent.announce.length, 0, 'and a sweep that frees nothing says nothing');
 
 	now = 1101;
-	assert.deepEqual(sweepLocks(locks, hub), ['diagram-aa0001']);
+	assert.deepEqual(sweepLocks(locks, hub, store), ['diagram-aa0001']);
 	assert.equal(sent.broadcast.length, 1, 'viewers of that diagram learn it is editable');
 	assert.equal(sent.broadcast[0].cmd, 'lock');
-	assert.equal(sent.announce.length, 1, 'and EVERY session learns the agent stopped -- this was the defect');
-	assert.equal(sent.announce[0].cmd, 'agents');
-	assert.deepEqual(sent.announce[0].body.agents, [], 'the whole live set, which is now empty');
+	const agents = sent.announce.filter((m) => m.cmd === 'agents');
+	assert.equal(agents.length, 1, 'and EVERY session learns the agent stopped -- this was the defect');
+	assert.deepEqual(agents[0].body.agents, [], 'the whole live set, which is now empty');
 });
 
 test('B115: one announcement per sweep, not one per freed diagram', () => {
@@ -642,12 +644,14 @@ test('B115: one announcement per sweep, not one per freed diagram', () => {
 	let now = 1000;
 	const locks = new Locks({ ttlMs: 100, now: () => now });
 	const sent = [];
-	const hub = { broadcast: () => {}, announce: (cmd, body) => sent.push(body) };
+	const hub = { broadcast: () => {}, viewers: () => [],
+		announceEach: (cmd, build) => { if (cmd === 'agents') sent.push(build({ principal: null })); } };
+	const store = { canRead: () => true };
 	locks.acquire('diagram-aa0001', 'agent:a');
 	locks.acquire('diagram-aa0002', 'agent:b');
 	now = 1101;
 	return import('../server/app.js').then(({ sweepLocks }) => {
-		assert.equal(sweepLocks(locks, hub).length, 2, 'both lapsed');
+		assert.equal(sweepLocks(locks, hub, store).length, 2, 'both lapsed');
 		assert.equal(sent.length, 1, 'and were announced once');
 	});
 });

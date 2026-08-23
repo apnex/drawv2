@@ -752,16 +752,23 @@ test('B105: the agent indicator reports the whole workspace, not just this diagr
 		assert.ok(typeof added[0].since === 'number' && typeof added[0].expiresAt === 'number');
 
 		// the viewer on `here` was told, though nothing about `here` changed
-		const note = await c.expect('agents');
-		assert.ok(note.body.agents.some((a) => a.diagram === elsewhere),
-			'a per-diagram broadcast could never have delivered this');
+		// presence now announces too, so wait for the agents message that actually reports it
+		let note = null;
+		for (let i = 0; i < 6 && !note; i++) {
+			const m = await c.expect('agents');
+			if (m.body.agents.some((a) => a.diagram === elsewhere)) note = m;
+		}
+		assert.ok(note, 'a per-diagram broadcast could never have delivered this');
 	} finally {
 		await fetch(`${base}/api/v1/diagrams/${elsewhere}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': lock.token } });
 	}
 
-	const after = await c.expect('agents');
-	assert.ok(!after.body.agents.some((a) => a.diagram === elsewhere),
-		'and the release is reported the same way');
+	let cleared = null;
+	for (let i = 0; i < 6 && !cleared; i++) {
+		const m = await c.expect('agents');
+		if (!m.body.agents.some((a) => a.diagram === elsewhere)) cleared = m;
+	}
+	assert.ok(cleared, 'and the release is reported the same way');
 	assert.ok(!(await get('/api/v1/workspace/agents')).body.agents.some((a) => a.diagram === elsewhere));
 });
 

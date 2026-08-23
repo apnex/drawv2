@@ -51,6 +51,49 @@ export class Hub {
 	}
 
 	/*
+	B116 -- fan out to every session, with a body built for EACH.
+
+	`announce` sends one body to many sessions, which is right only for a payload carrying no
+	identity. The agent list carries diagram ids, so with authorization on it told a session about
+	diagrams it may not read -- the pull filtered by `canRead` and the push did not.
+
+	Same builder shape as `retarget`, for the same reason: what a session may be shown depends on
+	who it is, so the Hub supplies the sessions and the caller supplies the policy. A builder
+	returning null sends nothing to that session.
+	*/
+	announceEach(cmd, build) {
+		this.sessions.forEach((s) => {
+			try {
+				const body = build(s);
+				if (body) s.send(cmd, body);
+			} catch (err) {
+				console.warn(`[ hub ] session announceEach failed: ${err.message}`);
+			}
+		});
+	}
+
+	/*
+	B114 -- who is looking at what, derived from the live sessions.
+
+	The mirror of `locks.activity()`. That answers what agents are DOING; this answers what anyone
+	is WATCHING, which is what lets an agent avoid taking the wheel out from under a human, or work
+	somewhere they are not.
+
+	Derived rather than tracked, so it cannot disagree with the registry, and a session that drops
+	stops being reported without anything having to notice it dropped.
+
+	A human cannot decline to be observed (ruled 2026-08-23): the control surface is the grant and
+	the code, not the visibility. Declining to mint is how you decline to be watched.
+	*/
+	viewers() {
+		const out = [];
+		this.sessions.forEach((s) => {
+			if (s.diagramId) out.push({ principal: s.principal ?? null, diagram: s.diagramId });
+		});
+		return out;
+	}
+
+	/*
 	B105 -- fan out to EVERY session, whatever it is viewing.
 
 	`broadcast` is scoped to one diagram because a change to it means nothing to anyone elsewhere.

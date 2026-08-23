@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Store } from './store.js';
 import { Session } from './protocol.js';
-import { handleRest } from './rest.js';
+import { handleRest, announceActivity } from './rest.js';
 import { domainGate, bearerIdentity, anyOf } from './identity.mjs';
 import { originPolicy } from './origin.mjs';
 import { Locks } from './locks.js';
@@ -157,10 +157,10 @@ tested: every existing test releases a lock explicitly, so expiry -- the one pat
 The `agents` announcement is sent ONCE for the sweep rather than per freed diagram, because its body
 is the entire live set and sending it twice would say the same thing twice.
 */
-export function sweepLocks(locks, hub) {
+export function sweepLocks(locks, hub, store) {
 	const freed = locks.sweep();
 	freed.forEach((id) => hub.broadcast(id, 'lock', { owner: 'client' }));
-	if (freed.length) hub.announce('agents', { agents: locks.activity() });
+	if (freed.length) announceActivity(hub, store, locks);
 	return freed;
 }
 
@@ -361,7 +361,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 
 	// liveness: a crashed controller's lock frees itself by TTL; sweep so the
 	// freed diagram's viewers are told it's editable again (lazy TTL alone is silent)
-	const sweepTimer = setInterval(() => sweepLocks(locks, hub), 5000);
+	const sweepTimer = setInterval(() => sweepLocks(locks, hub, store), 5000);
 	sweepTimer.unref();
 
 	// localhost tool: loopback by default; containers/LAN opt in via HOST=0.0.0.0

@@ -33,8 +33,9 @@ refused and the client is resynced read-only — it can never clobber the contro
 // the wire shape has one definition. `locked` tells a client, on any snapshot,
 // whether the diagram is currently Server-Locked (read-only for it).
 import crypto from 'node:crypto';
+import { announceActivity } from './rest.js';
 
-export function snapshotBody(model, store, locks, principal = null) {
+export function snapshotBody(model, store, locks, principal = null, hub = null) {
 	const id = model.state.meta.id;
 	/*
 	B67, defence in depth. Every caller is expected to have checked already; this exists so that a
@@ -84,7 +85,9 @@ export function snapshotBody(model, store, locks, principal = null) {
 		nothing, and the ruling is explicit that a state is still there when the operator next
 		looks. That is the whole reason it is not a toast.
 		*/
-		agents: locks ? locks.activity() : []
+		agents: locks ? locks.activity() : [],
+		// B114: and who else is here. State, not events, for the same reason as `agents`.
+		viewers: hub ? hub.viewers().filter((v) => store.canRead(v.diagram, principal)) : []
 	};
 }
 
@@ -183,7 +186,11 @@ export class Session {
 		if (hub) hub.add(this);
 		// onMessage is async; nothing can await a socket event, so the rejection is caught here.
 		ws.on('message', (data) => this.onMessage(data).catch((err) => console.error(`[ session ] unhandled: ${err && err.message}`)));
-		ws.on('close', () => { if (hub) hub.remove(this); });
+		ws.on('close', () => {
+			if (!hub) return;
+			hub.remove(this);
+			announceActivity(hub, store, locks);              // B114: a viewer left
+		});
 		ws.on('error', () => {});
 	}
 
@@ -202,7 +209,8 @@ export class Session {
 
 	snapshot(model) {
 		this.diagramId = model.state.meta.id;
-		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal));
+		announceActivity(this.hub, this.store, this.locks);   // B114: presence moved
+		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal, this.hub));
 	}
 
 	current() {

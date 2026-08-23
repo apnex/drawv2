@@ -102,7 +102,18 @@ An agent that died holding a lock stops being reported when the lock lapses, wit
 `principal` is `null` with authorization off, which is honest rather than empty: something is driving that diagram and there is no identity to name.\
 The list is filtered by read access, so it shows the diagrams the caller could open anyway.
 
-The same list rides the websocket, in every `snapshot` and in an `agents` message whenever it changes.\
+Its mirror answers who is WATCHING what, which is how an agent avoids taking the wheel out from under someone:
+```sh
+curl -s localhost:8080/api/v1/workspace/viewers
+```
+
+A person cannot decline to be observed, and that is deliberate.\
+The control surface is the grant and the connection code: declining to mint one is how you decline to be watched, and an agent you have already authorised can see where you are working.
+
+Both lists are filtered by read access, on the push as well as the pull.\
+A caller learns about a diagram it could open anyway, and nothing about one it could not -- the document staying private and its existence leaking are different failures, and only the first was ever guarded.
+
+The same lists ride the websocket, in every `snapshot` and in an `agents` or `viewers` message whenever they change.\
 It is state rather than an event, so a client that connects after a lock was taken still sees it.
 
 ### How much fits

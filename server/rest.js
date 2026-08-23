@@ -28,6 +28,22 @@ Resolved coordinates rather than cell indices, matching `violations()` exactly: 
 while every entity is on-grid, and this must report the same occupancy the rule enforces rather
 than a rounding of it.
 */
+/*
+B116/B114 -- the one place agent activity and viewer presence are pushed, filtered per session.
+
+Both lists name diagrams, so both must be filtered by what the RECEIVING session may read. B105
+filtered the pull and not the push, which told a session the ids of diagrams it had no grant for.
+Exported so the websocket and the sweep timer push exactly what REST pushes -- three call sites, one
+sentence, which is the thing that went wrong when there were three sentences.
+*/
+export function announceActivity(hub, store, locks) {
+	if (!hub) return;
+	const agents = locks ? locks.activity() : [];
+	hub.announceEach('agents', (s) => ({ agents: agents.filter((a) => store.canRead(a.diagram, s.principal)) }));
+	const viewers = hub.viewers();
+	hub.announceEach('viewers', (s) => ({ viewers: viewers.filter((v) => store.canRead(v.diagram, s.principal)) }));
+}
+
 function occupantAt(model, anchor) {
 	for (const kind of ['node', 'waypoint']) {
 		const hit = model.all(kind).find((e) => e.x === anchor.x && e.y === anchor.y);
@@ -281,6 +297,11 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 		to inform. `canRead` answers true for everyone in that configuration and answers honestly in
 		the other, so one line covers both instead of a branch on which mode is running.
 		*/
+		// B114: the mirror of `agents` -- who is WATCHING what, filtered the same way
+		if (parts[3] === 'viewers' && req.method === 'GET') {
+			const live = hub ? hub.viewers() : [];
+			return json(res, 200, { viewers: live.filter((v) => store.canRead(v.diagram, principal)) }), true;
+		}
 		if (parts[3] === 'agents' && req.method === 'GET') {
 			const live = locks ? locks.activity() : [];
 			return json(res, 200, { agents: live.filter((a) => store.canRead(a.diagram, principal)) }), true;
@@ -577,7 +598,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			const survivor = store.first();
 			hub.retarget(id, (s) => (survivor && store.canRead(survivor.state.meta.id, s.principal)
 				? snapshotBody(survivor, store, locks, s.principal) : null));
-			hub.announce('agents', { agents: locks ? locks.activity() : [] });
+			announceActivity(hub, store, locks);
 		}
 		console.log(`[ rest ] deleted diagram ${id}`);
 		return json(res, 200, { deleted: id });
@@ -597,7 +618,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			// D22: the human reclaimed recently — refuse, and say for how long, so a retry loop backs
 			// off instead of racing the remedy
 			if (lock.held) return json(res, 409, { error: 'reclaimed by the human', code: 'reclaimed', retryAfter: lock.retryAfter });
-			if (hub) { hub.broadcast(id, 'lock', { owner: 'server' }); hub.announce('agents', { agents: locks.activity() }); }
+			if (hub) { hub.broadcast(id, 'lock', { owner: 'server' }); announceActivity(hub, store, locks); }
 			// hydrate the agent at its entry point: it should never have to ASK what the state is
 			const log = store.log(id);
 			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt,
@@ -608,7 +629,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			if (!locks.release(id, req.headers['x-draw-lock'] || '')) {
 				return json(res, 403, { error: 'invalid or missing lock token' });
 			}
-			if (hub) { hub.broadcast(id, 'lock', { owner: 'client' }); hub.announce('agents', { agents: locks.activity() }); }
+			if (hub) { hub.broadcast(id, 'lock', { owner: 'client' }); announceActivity(hub, store, locks); }
 			return json(res, 200, { released: true });
 		}
 		return json(res, 405, { error: 'lock: POST to acquire, DELETE to release' });

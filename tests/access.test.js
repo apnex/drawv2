@@ -1763,3 +1763,71 @@ test('B32: a viewer that CAN read the survivor is moved onto it', () => {
 	assert.equal(s.diagramId, 'diagram-bb0002', 'the session now points at the survivor');
 	assert.equal(ws.last('snapshot').body.doc.meta.id, 'diagram-bb0002');
 });
+
+/*
+B116/B114 -- what is PUSHED is filtered by what the receiving session may read.
+
+B105 filtered `GET /workspace/agents` by canRead and pushed the whole list to everyone, so a
+principal holding one grant learned the ids of every diagram any agent was driving, and who was
+driving each. The document stayed private; its existence did not. ACCESS.md draws exactly that
+distinction about `list`.
+
+Invisible to every other test because they all run with authorization OFF, where canRead is true
+for everyone and the filtered and unfiltered paths agree.
+*/
+test('B116: the pushed agent list never names a diagram the receiver may not read', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const mine = [...store.diagrams.keys()][0];
+	store.setOwner(mine, OWNER);
+	const secret = store.create('not-yours', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(mine, GUEST, 'read', OWNER), null);   // GUEST sees `mine` only
+
+	const hub = new Hub();
+	const gws = fakeWs();
+	new Session(gws, store, hub, null, GUEST);
+	const ows = fakeWs();
+	new Session(ows, store, hub, null, OWNER);
+
+	const locks = new Locks();
+	locks.acquire(secret, 'agent:planner');
+	const { announceActivity } = await import('../server/rest.js');
+	announceActivity(hub, store, locks);
+
+	const toGuest = gws.last('agents').body.agents;
+	assert.deepEqual(toGuest, [], 'the guest is told nothing about a diagram it cannot read');
+	const toOwner = ows.last('agents').body.agents;
+	assert.deepEqual(toOwner.map((a) => a.diagram), [secret], 'the owner is told, because the owner may read it');
+});
+
+test('B114: presence is pushed on the same terms, and derived from the live sessions', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const mine = [...store.diagrams.keys()][0];
+	store.setOwner(mine, OWNER);
+	const secret = store.create('not-yours', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(mine, GUEST, 'read', OWNER), null);
+
+	const hub = new Hub();
+	const gws = fakeWs();
+	const guest = new Session(gws, store, hub, null, GUEST);
+	const ows = fakeWs();
+	const owner = new Session(ows, store, hub, null, OWNER);
+	guest.diagramId = mine;
+	owner.diagramId = secret;
+
+	assert.deepEqual(hub.viewers().map((v) => [v.principal, v.diagram]).sort(),
+		[[GUEST, mine], [OWNER, secret]].sort(), 'derived from the registry, not tracked');
+
+	const { announceActivity } = await import('../server/rest.js');
+	announceActivity(hub, store, null);
+	assert.deepEqual(gws.last('viewers').body.viewers.map((v) => v.diagram), [mine],
+		'the guest learns only about the diagram it may read -- not that the owner is on another');
+	assert.equal(ows.last('viewers').body.viewers.length, 2, 'the owner may read both, so sees both');
+
+	// a session that drops stops being reported, without anything noticing it dropped
+	hub.remove(guest);
+	assert.deepEqual(hub.viewers().map((v) => v.diagram), [secret]);
+});
