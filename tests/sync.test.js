@@ -249,3 +249,56 @@ test('B106: a change landing after a resume in step is applied, not dropped', ()
 	assert.equal(h.model.all('node').length, 1, 'the change applied');
 	assert.ok(!h.sent.some((m) => m.cmd === 'open'), 'and no resync was requested');
 });
+
+/*
+B105 -- the client holds agent activity as STATE.
+
+The ruling turns on this. A toast is lost when nobody is watching; a state is still there when the
+operator next looks, which is what lets "come and see this" and "may I drive" be two values of one
+field instead of two mechanisms. So the client must take it from a snapshot as readily as from an
+announcement, and must never merge -- the server sends the whole live set, and merging could only
+invent an entry the server did not report.
+*/
+test('B105: agent activity arrives with a snapshot, so connecting late still shows it', () => {
+	const h = inbound();
+	assert.deepEqual(h.sync.agents, [], 'nothing until told');
+	h.sync.expectLoad = true;
+	h.send({ cmd: 'snapshot', body: { doc: new Model().toJSON(), version: 1, mayWrite: true,
+		agents: [{ principal: 'agent:planner', diagram: 'diagram-aa0001', since: 1, expiresAt: 2 }] } });
+	assert.equal(h.sync.agents.length, 1);
+	assert.equal(h.sync.agents[0].diagram, 'diagram-aa0001');
+});
+
+test('B105: an announcement REPLACES the list rather than merging into it', () => {
+	const h = inbound();
+	h.send({ cmd: 'agents', body: { agents: [
+		{ principal: 'agent:a', diagram: 'diagram-aa0001' }, { principal: 'agent:b', diagram: 'diagram-aa0002' }] } });
+	assert.equal(h.sync.agents.length, 2);
+
+	h.send({ cmd: 'agents', body: { agents: [{ principal: 'agent:a', diagram: 'diagram-aa0001' }] } });
+	assert.deepEqual(h.sync.agents.map((a) => a.principal), ['agent:a'],
+		'agent:b released its lock -- a merge would keep reporting it forever');
+
+	h.send({ cmd: 'agents', body: { agents: [] } });
+	assert.deepEqual(h.sync.agents, [], 'and the workspace can go quiet');
+});
+
+test('B105: a malformed agents body leaves the client empty rather than broken', () => {
+	const h = inbound();
+	h.send({ cmd: 'agents', body: {} });
+	assert.deepEqual(h.sync.agents, []);
+	h.send({ cmd: 'agents', body: { agents: 'not-a-list' } });
+	assert.deepEqual(h.sync.agents, []);
+});
+
+test('B105: agent activity reaches the UI through the same state callback as everything else', () => {
+	let last = null;
+	const net = { subscribe(fn) { net._fn = fn; }, onStatus() {}, isOpen: () => true, send() {} };
+	const model = new Model();
+	const sync = new Sync({ model, net, history: { clear() {}, setCounts() {}, state: { version: 0 } },
+		selection: new Selection(model), onState: (s) => { last = s; } });
+	net._fn({ cmd: 'agents', body: { agents: [{ principal: 'agent:planner', diagram: 'diagram-aa0001' }] } });
+	assert.ok(last, 'onState fired');
+	assert.equal(last.agents.length, 1, 'and carried the agents, beside locked/mayWrite/principal');
+	assert.equal(sync.agents, last.agents);
+});

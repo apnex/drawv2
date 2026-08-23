@@ -63,6 +63,16 @@ export class Sync {
 		This field moves only when the model's content moves, so it can answer that question.
 		*/
 		this.appliedVersion = 0;
+		/*
+		B105 -- what every agent is doing, workspace-wide. State, not events.
+
+		Held here rather than reacted to, because the ruling turns on it: an invitation delivered as
+		a toast is lost when nobody is watching, and this must still be there when the operator next
+		looks. Arrives with every snapshot and is replaced whole by an `agents` announcement -- never
+		merged, because the server sends the entire live set and a merge could only invent an entry
+		the server did not report.
+		*/
+		this.agents = [];
 		this.loading = false;
 		this.expectLoad = false; // a snapshot we asked for (open/create) always loads
 		this.locked = false;     // Server-Locked: a server-side controller owns writes
@@ -254,6 +264,11 @@ export class Sync {
 		}
 		// someone else's change. Apply it, unless a gesture is mid-flight — a model.load or a
 		// competing write landing under a live drag fights the preview (D12).
+		if (msg.cmd === 'agents') {
+			this.agents = Array.isArray(msg.body?.agents) ? msg.body.agents : [];
+			this.emitState({});
+			return;
+		}
 		if (msg.cmd === 'change') {
 			const b = msg.body || {};
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
@@ -326,6 +341,7 @@ export class Sync {
 			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
 				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
 			this.appliedVersion = msg.body.version || 0;   // the model IS this document
+			if (Array.isArray(msg.body.agents)) this.agents = msg.body.agents;
 			if (this.pendingSlidesUrl) {
 				// a slides URL typed before hydration must survive the snapshot
 				const url = this.pendingSlidesUrl;
@@ -456,6 +472,7 @@ export class Sync {
 			locked: this.locked,
 			mayWrite: this.mayWrite,
 			principal: this.principal,
+			agents: this.agents,
 			...extra
 		});
 	}

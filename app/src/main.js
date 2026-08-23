@@ -73,6 +73,7 @@ const menu = {
 	create: document.getElementById('diagram-new'),
 	del: document.getElementById('diagram-del'),
 	lock: document.getElementById('lockstate'),
+	agents: document.getElementById('agents'),
 	whoami: document.getElementById('whoami'),
 	banner: document.getElementById('banner'),
 	slidesUrl: document.getElementById('slides-url'),
@@ -295,6 +296,42 @@ if (access.panel) {
 	});
 }
 
+/*
+B105 -- the agent indicator. A second axis, and the only clickable one.
+
+The pill says what may I do HERE; this says what is happening ANYWHERE, and the two co-occur, which
+is the test that says they cannot share an element. Hidden when nothing is running, so a still
+workspace has a still header rather than a box announcing that nothing is happening.
+
+It reports the diagram by NAME, not by id. An id names something the operator cannot picture, and
+the entire value of the element is telling them where work they are not watching is going on. The
+name comes from the diagram list the same state carries, so no extra fetch and no second source.
+
+Clicking opens that diagram, which is the whole affordance: the element names somewhere else to be,
+so it should take you there. Clicking is suppressed when the work is on the diagram already in view,
+because there is nowhere to go and a control that does nothing is worse than none.
+*/
+let agentTarget = null;
+function renderAgents(agents, currentId, diagrams) {
+	const list = Array.isArray(agents) ? agents : [];
+	if (!list.length) { menu.agents.hidden = true; agentTarget = null; return; }
+
+	const nameOf = (id) => (diagrams || []).find((d) => d.id === id)?.name || id;
+	const here = list.find((a) => a.diagram === currentId);
+	const a = here || list[0];
+	const who = a.principal ? a.principal.replace(/^agent:/, '') : 'an agent';
+	const extra = list.length > 1 ? ` +${list.length - 1}` : '';
+
+	menu.agents.hidden = false;
+	menu.agents.className = here ? 'agents-here' : 'agents-idle';
+	menu.agents.textContent = here ? `${who} is driving${extra}` : `${who}: ${nameOf(a.diagram)}${extra}`;
+	menu.agents.title = here
+		? `${who} holds the write lock on this diagram`
+		: `${who} is working on ${nameOf(a.diagram)} — click to open it`;
+	agentTarget = here ? null : a.diagram;
+}
+menu.agents.addEventListener('click', () => { if (agentTarget) sync.openDiagram(agentTarget); });
+
 let onStateLastId = null;
 const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on http
 // D4 — the inversion. Sync subscribes to the COMMIT boundary, never to the model. There is then
@@ -302,7 +339,7 @@ const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on 
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
 	model, net, history, selection,
-	onState({ status, meta, diagrams, locked, mayWrite, principal, error, rewound }) {
+	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
 		// be offered the one remedy the server is certain to refuse.
@@ -310,6 +347,7 @@ const sync = new Sync({
 		else if (!mayWrite) { menu.lock.className = 'lock-readonly'; menu.lock.textContent = 'read-only'; menu.lock.title = 'you have view access to this diagram'; }
 		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
+		renderAgents(agents, meta && meta.id, diagrams);
 		/*
 		B76 -- the signed-in identity, top right, immediately left of the authority pill.
 
