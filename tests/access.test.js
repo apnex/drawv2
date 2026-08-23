@@ -456,7 +456,7 @@ test('H9.3: a write grant writes, and the owner always can', async () => {
 	try {
 		s.grant(id, GUEST, 'write', OWNER);
 		assert.ok(s.commit(id, put1(), 'client', 'a', GUEST).ok, 'a write grantee may write');
-		assert.ok(s.commit(id, { label: 'y', ops: [put('node', node('node-ee0002', 100))] },
+		assert.ok(s.commit(id, { label: 'y', ops: [put('node', node('node-ee0002', 120))] },
 			'client', 'b', OWNER).ok, 'and so may the owner');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -712,7 +712,7 @@ test('H9.3c: a client told mayWrite:false sends no write, and is not offered rec
 	assert.equal(sync.locked, false, 'without pretending someone else is driving');
 
 	const before = sent.length;
-	sync.submit({ ops: [{ op: 'put', kind: 'node', entity: node('node-ff0011', 20) }], label: 'x' });
+	sync.submit({ ops: [{ op: 'put', kind: 'node', entity: node('node-ff0011', 60) }], label: 'x' });
 	sync.flush();
 	assert.equal(sent.length, before, 'no commit reached the wire — nothing for the server to 403');
 

@@ -43,7 +43,7 @@ test('plan: a rejected op leaves the model untouched and reports its index', () 
 	const snapshot = JSON.stringify(m.toJSON());
 	const r = plan(m, [
 		put('node', node('node-aa0004', 240)),
-		{ op: 'set', kind: 'node', id: 'node-aa0099', patch: { x: 1 } },   // missing
+		{ op: 'set', kind: 'node', id: 'node-aa0099', patch: { x: 0 } },   // missing
 	]);
 	assert.equal(r.ok, false);
 	assert.equal(r.opIndex, 1, 'the failing op index is reported');
@@ -246,7 +246,7 @@ already deletes the link rather than stripping it to a degenerate form.
 function pairWithBoth() {
 	const { m, log } = seeded();                                    // node-aa0001 -- node-aa0002, straight
 	commit(m, log, { ops: [
-		put('waypoint', { id: 'waypoint-bb0001', x: 0, y: -80 }),
+		put('waypoint', { id: 'waypoint-bb0001', x: 0, y: -60 }),
 		put('link', { id: 'link-bb0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-bb0001'] }),
 	] }, 'server', 't');
 	return { m, log };
@@ -384,7 +384,7 @@ test('B85: the threshold comes from policy, not from a number the invariant inve
 	// a node in NO group, so the only thing wrong with the document is the size of this group.
 	// My first version used a node that was already grouped, which tripped the exclusivity check
 	// and made the assertion below pass for the wrong reason.
-	commit(m, log, { ops: [put('node', node('node-cc0009', 400))] }, 'server', 't');
+	commit(m, log, { ops: [put('node', node('node-cc0009', 420))] }, 'server', 't');
 	const doc = m.toJSON();
 	doc.groups.push({ id: 'group-dd0006', name: 'g6', members: ['node-cc0009'] });
 	m.load(doc);

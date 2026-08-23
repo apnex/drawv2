@@ -5,6 +5,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 */
 
 import { SURFACE } from '../model/index.mjs';
+import { STD } from '../kernel/index.mjs';
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -28,6 +29,31 @@ const ACTIONS = ['put', 'set', 'del'];
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
 // center-origin coordinates: [0,0] is the canvas/slide center
 const EXT = { x: SURFACE.hw, y: SURFACE.hh };   // magnitude sourced from the document substrate; the num() bound CHECKS below stay LOCAL (trust boundary, never delegated)
+
+/*
+B110 -- geometry is a RULE, enforced here, not a courtesy the browser performs.
+
+Snapping lived only in `app/src/snap.js`, so it ran before a human's commit and never before an
+agent's. Every write through the agent door landed wherever it liked and nothing reported it: 8 of
+9 nodes in the first agent-drawn diagram were off-pitch, and one zone was off the half-pitch offset
+that zones use -- a rule its author did not know existed.
+
+Not cosmetic, which is why it is at the trust boundary rather than in a linter. `engine/relations.mjs`
+guarantees cell-equality is px-equality ONLY ON GRID OPERANDS, and `cellOf` is Math.round(v/pitch),
+so `cellOf(-270)` and `cellOf(-240)` are both cell -4. Off-pitch entities collide in the R13
+occupancy index while looking distinct on screen, and `atCell` then answers with the wrong one.
+
+REFUSING rather than snapping, ruled 2026-08-23. Snapping would silently move an agent's work and
+leave it believing it drew something it did not; a refusal says which op was wrong (B103) and
+teaches the rule once. This is an engineer's tool, so the geometry is a constraint rather than an
+aesthetic preference.
+
+The PITCH is sourced, the CHECK is local -- the same split the surface extents already use. The
+trust boundary is never delegated to the module that supplies the magnitude.
+*/
+const PITCH = STD.pitch;              // 60
+const HALF_PITCH = PITCH / 2;         // zones anchor on cell boundaries, hence the offset
+const onGrid = (v, offset) => Number.isFinite(v) && ((v - offset) % PITCH === 0);
 
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -67,15 +93,15 @@ const FIELDS = {
 		name: (v) => str(v, 64),
 		type: (v) => str(v, 32) && /^[a-z0-9-]+$/.test(v),
 		shape: (v) => SHAPES.includes(v),
-		x: (v) => num(v, -EXT.x, EXT.x),
-		y: (v) => num(v, -EXT.y, EXT.y),
+		x: (v) => num(v, -EXT.x, EXT.x) && onGrid(v, 0),
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid(v, 0),
 		span: (v) => dims(v),    // optional multi-cell footprint (W1); absent ⇒ 1×1
 		content: (v) => content(v)   // optional content regions (W2); absent ⇒ the type glyph
 	},
 	waypoint: {
 		id: (v) => id(v, 'waypoint'),
-		x: (v) => num(v, -EXT.x, EXT.x),
-		y: (v) => num(v, -EXT.y, EXT.y)
+		x: (v) => num(v, -EXT.x, EXT.x) && onGrid(v, 0),   // waypoints share the NODE grid
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid(v, 0)
 	},
 	link: {
 		id: (v) => id(v, 'link'),
@@ -87,10 +113,11 @@ const FIELDS = {
 	zone: {
 		id: (v) => id(v, 'zone'),
 		name: (v) => str(v, 64),
-		x: (v) => num(v, -EXT.x, EXT.x),
-		y: (v) => num(v, -EXT.y, EXT.y),
-		w: (v) => num(v, 60, 2 * EXT.x), // minimum one grid cell — no degenerate zones
-		h: (v) => num(v, 60, 2 * EXT.y)
+		// the zone grid is offset by half a pitch: a zone bounds CELLS, so its edges fall between them
+		x: (v) => num(v, -EXT.x, EXT.x) && onGrid(v, HALF_PITCH),
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid(v, HALF_PITCH),
+		w: (v) => num(v, 60, 2 * EXT.x) && onGrid(v, 0), // minimum one grid cell — no degenerate zones
+		h: (v) => num(v, 60, 2 * EXT.y) && onGrid(v, 0)
 	},
 	group: {
 		id: (v) => id(v, 'group'),

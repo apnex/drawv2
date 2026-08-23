@@ -1,6 +1,7 @@
 import { test } from 'node:test';
+import { STD } from '../kernel/index.mjs';
 import assert from 'node:assert/strict';
-import { validateSelectionIds, validateDoc } from '../server/validate.js';
+import { validateSelectionIds, validateDoc, validateMutation } from '../server/validate.js';
 import { Model } from '../model/index.mjs';
 
 // MS1: the persisted selection (model-state / status) is SHAPE-validated only — never
@@ -62,4 +63,56 @@ test('B95: a Model is not a doc, and toJSON is the boundary between them', () =>
 	// the asymmetry that makes the vocabulary worth keeping: behaviour lives on one side only
 	assert.equal(typeof model.put, 'function', 'a Model has methods');
 	assert.equal(typeof model.toJSON().put, 'undefined', 'a doc has none — it is data on the wire');
+});
+
+const M = new Model();
+
+/*
+B110 -- geometry is enforced at the trust boundary, not by the browser's good manners.
+
+Snapping lived only in app/src/snap.js, so it ran before a human's commit and never before an
+agent's: 8 of 9 nodes in the first agent-drawn diagram were off-pitch, and a zone was off the
+half-pitch offset that zones use. Nothing reported any of it.
+
+The consequence is an index one, not an aesthetic one. cellOf is Math.round(v/pitch), so
+cellOf(-270) and cellOf(-240) are both cell -4 -- two entities at different pixels sharing one cell
+in the R13 occupancy index while looking distinct on screen.
+*/
+const put = (kind, entity) => validateMutation(M, { action: 'put', kind, entity });
+const set = (kind, entity) => validateMutation(M, { action: 'set', kind, entity });
+
+test('B110: a node off the pitch is refused, on the pitch is accepted', () => {
+	const ok = { id: 'node-aa0001', name: 'n', type: 'host', x: 240, y: -120 };
+	assert.equal(put('node', ok), null);
+	for (const [x, y] of [[270, -120], [240, -150], [1, 0], [-30, 0]]) {
+		assert.match(String(put('node', { ...ok, x, y })), /invalid value for node\.[xy]/,
+			`(${x},${y}) must be refused`);
+	}
+});
+
+test('B110: the refusal covers `set`, which is how a node MOVES', () => {
+	// a put landing on-grid and a set walking it off would leave the rule half-enforced
+	assert.equal(set('node', { id: 'node-aa0001', x: 300 }), null);
+	assert.match(String(set('node', { id: 'node-aa0001', x: 301 })), /invalid value for node\.x/);
+});
+
+test('B110: a waypoint shares the NODE grid', () => {
+	assert.equal(put('waypoint', { id: 'waypoint-aa0001', x: -120, y: 60 }), null);
+	assert.match(String(put('waypoint', { id: 'waypoint-aa0001', x: -90, y: 60 })),
+		/invalid value for waypoint\.x/,
+		'the exact value the agent wrote live, and that the browser then snapped to -120');
+});
+
+test('B110: a zone sits on the HALF-pitch grid, because it bounds cells rather than sitting on one', () => {
+	const ok = { id: 'zone-aa0001', name: 'z', x: -750, y: -390, w: 600, h: 420 };
+	assert.equal(put('zone', ok), null);
+	// -780 is ON the node grid and OFF the zone grid: the rule its author did not know existed
+	assert.match(String(put('zone', { ...ok, x: -780 })), /invalid value for zone\.x/);
+	assert.match(String(put('zone', { ...ok, w: 630 })), /invalid value for zone\.w/);
+});
+
+test('B110: the pitch is SOURCED from the kernel, so the grid cannot fork', () => {
+	const off = STD.pitch / 2;
+	assert.match(String(put('node', { id: 'node-aa0001', name: 'n', type: 'host', x: off, y: 0 })),
+		/invalid value for node\.x/, `half a pitch (${off}) must never be a legal node position`);
 });

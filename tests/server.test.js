@@ -84,7 +84,7 @@ test('apply put/set/del roundtrip, REST reflects it, disk persists it', async ()
 	const snap = await c.expect('snapshot');
 	const diagramId = snap.body.doc.meta.id;
 
-	const node = { id: 'node-aaaa01', name: 'web-1', type: 'host', x: 210, y: 210 };
+	const node = { id: 'node-aaaa01', name: 'web-1', type: 'host', x: 240, y: 240 };
 	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: node }] });
 	await c.expect('ack');
 
@@ -92,15 +92,15 @@ test('apply put/set/del roundtrip, REST reflects it, disk persists it', async ()
 	assert.equal(rest.status, 200);
 	assert.equal(rest.body.name, 'web-1');
 
-	c.send('commit', { ops: [{ op: 'set', kind: 'node', id: ({ id: 'node-aaaa01', x: 270 }).id, patch: { id: 'node-aaaa01', x: 270 } }] });
+	c.send('commit', { ops: [{ op: 'set', kind: 'node', id: ({ id: 'node-aaaa01', x: 300 }).id, patch: { id: 'node-aaaa01', x: 300 } }] });
 	await c.expect('ack');
 	rest = await get(`/api/v1/diagrams/${diagramId}/nodes/node-aaaa01`);
-	assert.equal(rest.body.x, 270);
-	assert.equal(rest.body.y, 210, 'set merges, not replaces');
+	assert.equal(rest.body.x, 300);
+	assert.equal(rest.body.y, 240, 'set merges, not replaces');
 
 	await sleep(350); // debounce flush
 	const onDisk = JSON.parse(fs.readFileSync(path.join(dataDir, `${diagramId}.json`), 'utf8'));
-	assert.equal(onDisk.nodes.find((n) => n.id === 'node-aaaa01').x, 270);
+	assert.equal(onDisk.nodes.find((n) => n.id === 'node-aaaa01').x, 300);
 
 	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-aaaa01' }).id }] });
 	await c.expect('ack');
@@ -116,17 +116,17 @@ test('invalid mutations are rejected and not applied', async () => {
 	const diagramId = snap.body.doc.meta.id;
 
 	// bad id format
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-XYZ', name: 'x', type: 'host', x: 30, y: 30 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-XYZ', name: 'x', type: 'host', x: 60, y: 60 } }] });
 	let err = await c.expect('error');
 	assert.match(err.body.message, /invalid id/);
 
 	// off-canvas coordinates
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb01', name: 'x', type: 'host', x: -2000, y: 30 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb01', name: 'x', type: 'host', x: -2000, y: 60 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /invalid value/);
 
 	// unknown field
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb02', name: 'x', type: 'host', x: 30, y: 30, evil: 1 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb02', name: 'x', type: 'host', x: 60, y: 60, evil: 1 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 
@@ -220,7 +220,7 @@ test('I11: `create {doc}` mints the id, and a body `version` is ignored', async 
 
 	const doc = {
 		meta: { id: 'diagram-ffffff', name: 'claimed' },
-		nodes: [{ id: 'node-cccc01', name: 'a', type: 'host', x: 30, y: 30 }],
+		nodes: [{ id: 'node-cccc01', name: 'a', type: 'host', x: 60, y: 60 }],
 		waypoints: [], links: [], zones: [], groups: []
 	};
 	c.send('create', { name: 'adopted', doc });
@@ -231,7 +231,7 @@ test('I11: `create {doc}` mints the id, and a body `version` is ignored', async 
 	assert.equal(made.body.version, 0, 'a new diagram starts at 0 whatever the client believed');
 
 	// a client-supplied `version` in a commit body is ignored — only `expect` is a precondition
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cccc02', name: 'b', type: 'host', x: 90, y: 30 } }], version: 9999 });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cccc02', name: 'b', type: 'host', x: 120, y: 60 } }], version: 9999 });
 	const ack = await c.expect('ack');
 	assert.equal(ack.body.version, 1, 'the server minted the version, not the client');
 
@@ -329,7 +329,7 @@ test('create and open switch diagrams; meta rename persists', async () => {
 	assert.equal(reopened.body.doc.meta.id, first);
 
 	// mutations after open land in the reopened diagram
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'n', type: 'host', x: 30, y: 30 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'n', type: 'host', x: 60, y: 60 } }] });
 	await c.expect('ack');
 	const nodes = await get(`/api/v1/diagrams/${first}/nodes`);
 	assert.ok(nodes.body.some((n) => n.id === 'node-dddd01'));
@@ -414,7 +414,7 @@ test('malformed websocket input gets error replies, session survives', async () 
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown cmd/);
 
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-eeee01', name: 'x', type: 'host', x: 30, y: 30 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-eeee01', name: 'x', type: 'host', x: 60, y: 60 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /no diagram open/);
 
@@ -442,14 +442,14 @@ test('REGRESSION: resume as the FIRST message on a fresh socket adopts the diagr
 	assert.equal(reply.cmd, 'sync');
 
 	// and the session is now bound: a commit lands without a hello ever being sent on this socket
-	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 150, y: 90 } }] });
+	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 120, y: 120 } }] });
 	await c2.expect('ack');
 	const rest = await get(`/api/v1/diagrams/${id}/nodes/node-abab02`);
 	assert.equal(rest.status, 200);
 
 	// the outbox's replay contract: re-sending an accepted change is a NO-OP, never a double-apply
 	const versionAfter = (await get(`/api/v1/diagrams/${id}/history`)).body.version;
-	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 150, y: 90 } }] });
+	c2.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-abab02', name: 'recon2', type: 'host', x: 120, y: 120 } }] });
 	const replay = await c2.expect('ack');
 	assert.equal(replay.body.noop, true, 'the replayed change planned zero ops');
 	assert.equal((await get(`/api/v1/diagrams/${id}/history`)).body.version, versionAfter, 'and did not bump the version');
@@ -461,12 +461,12 @@ test('REGRESSION: prototype-pollution shaped payloads are rejected, session surv
 	c.send('hello', {});
 	await c.expect('snapshot');
 
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: JSON.parse('{"id":"node-cdcd01","name":"x","type":"host","x":30,"y":30,"__proto__":{"polluted":1}}') }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: JSON.parse('{"id":"node-cdcd01","name":"x","type":"host","x":60,"y":60,"__proto__":{"polluted":1}}') }] });
 	let err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 	assert.equal({}.polluted, undefined);
 
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd02', name: 'x', type: 'host', x: 30, y: 30, constructor: 'evil' } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd02', name: 'x', type: 'host', x: 60, y: 60, constructor: 'evil' } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 
@@ -474,7 +474,7 @@ test('REGRESSION: prototype-pollution shaped payloads are rejected, session surv
 	err = await c.expect('error');
 
 	// session still alive and functional
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd04', name: 'ok', type: 'host', x: 30, y: 30 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd04', name: 'ok', type: 'host', x: 60, y: 60 } }] });
 	await c.expect('ack');
 	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-cdcd04' }).id }] });
 	await c.expect('ack');
@@ -486,8 +486,8 @@ test('REGRESSION: bare del-node cascades links and groups server-side (doc alway
 	c.send('hello', {});
 	const diagramId = (await c.expect('snapshot')).body.doc.meta.id;
 
-	const mk = (id, x) => ({ id, name: id, type: 'host', x, y: 270 });
-	for (const [id, x] of [['node-efef01', 270], ['node-efef02', 390], ['node-efef03', 510]]) {
+	const mk = (id, x) => ({ id, name: id, type: 'host', x, y: 240 });
+	for (const [id, x] of [['node-efef01', 300], ['node-efef02', 420], ['node-efef03', 540]]) {
 		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: mk(id, x) }] });
 		await c.expect('ack');
 	}
@@ -517,8 +517,8 @@ test('R2: ws select persists the selection (model-state) and survives a restart'
 	const c = await connect();
 	c.send('hello', {});
 	const diagramId = (await c.expect('snapshot')).body.doc.meta.id;
-	for (const [id, x] of [['node-5e1e01', 270], ['node-5e1e02', 390]]) {
-		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id, name: id, type: 'host', x, y: 270 } }] });
+	for (const [id, x] of [['node-5e1e01', 300], ['node-5e1e02', 420]]) {
+		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id, name: id, type: 'host', x, y: 240 } }] });
 		await c.expect('ack');
 	}
 	c.send('select', { ids: ['node-5e1e01', 'node-5e1e02'] });   // forward the selection (model-state)
@@ -559,10 +559,10 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 	});
 	try {
 		// create two nodes via REST (agentic write path)
-		for (const [nid, x] of [['node-3a3a01', 270], ['node-3a3a02', 390]]) {
+		for (const [nid, x] of [['node-3a3a01', 300], ['node-3a3a02', 420]]) {
 			const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 				method: 'POST', headers: H(lock.token),
-				body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: 270 } }] })
+				body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: 240 } }] })
 			});
 			assert.equal(r.status, 200);
 		}
@@ -770,7 +770,7 @@ test('targeted hello, unknown open, set-on-missing, create-doc meta sanitization
 	let err = await c.expect('error');
 	assert.match(err.body.message, /unknown diagram/);
 
-	c.send('commit', { ops: [{ op: 'set', kind: 'node', id: ({ id: 'node-abcd99', x: 90 }).id, patch: { id: 'node-abcd99', x: 90 } }] });
+	c.send('commit', { ops: [{ op: 'set', kind: 'node', id: ({ id: 'node-abcd99', x: 120 }).id, patch: { id: 'node-abcd99', x: 120 } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /missing entity/);
 
@@ -803,7 +803,7 @@ test('create {doc} validateDoc rejections: duplicate ids and self-links', async 
 	const doc = (await c.expect('snapshot')).body.doc;
 	const countBefore = (await get('/api/v1/diagrams')).body.length;
 
-	const node = { id: 'node-dada01', name: 'a', type: 'host', x: 30, y: 30 };
+	const node = { id: 'node-dada01', name: 'a', type: 'host', x: 60, y: 60 };
 	c.send('create', { name: 'dup', doc: { ...doc, nodes: [node, { ...node }], links: [], zones: [], groups: [] } });
 	let err = await c.expect('error');
 	assert.match(err.body.message, /duplicate id/);
@@ -848,10 +848,10 @@ test('collection caps are enforced on apply', async () => {
 	const seeded = store.get(id).all('node').length;
 	for (let i = 0; i < 2000 - seeded; i++) {
 		const hex = i.toString(16).padStart(6, '0');
-		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${i}`, type: 'host', x: 30, y: 30 } }] }, 'server');
+		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${i}`, type: 'host', x: 60, y: 60 } }] }, 'server');
 		assert.equal(res.ok, true);
 	}
-	const over = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffffff', name: 'over', type: 'host', x: 30, y: 30 } }] }, 'server');
+	const over = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffffff', name: 'over', type: 'host', x: 60, y: 60 } }] }, 'server');
 	assert.equal(over.ok, false);
 	assert.match(over.error, /limit/);
 	await store.flushAll();
@@ -878,7 +878,7 @@ test('delete removes a diagram, its file, and hands the session a survivor', asy
 	assert.equal((await get(`/api/v1/diagrams/${doomedId}`)).status, 404);
 
 	// the session continues working on the survivor
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-de1e01', name: 'alive', type: 'host', x: 30, y: 30 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-de1e01', name: 'alive', type: 'host', x: 60, y: 60 } }] });
 	await c.expect('ack');
 	assert.ok(after.body.doc.meta.id === homeId || true);
 	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-de1e01' }).id }] });
@@ -928,7 +928,7 @@ test('server restart reloads persisted state from disk', async () => {
 	c.send('hello', {});
 	const snap = await c.expect('snapshot');
 	const diagramId = snap.body.doc.meta.id;
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffff01', name: 'persisted', type: 'server', x: 510, y: 510 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffff01', name: 'persisted', type: 'server', x: 480, y: 480 } }] });
 	await c.expect('ack');
 	c.close();
 

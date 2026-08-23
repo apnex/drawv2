@@ -156,7 +156,7 @@ test('kindOf derives the kind from the id of each kind', () => {
 	const node = model.makeNode('host', { x: 0, y: 0 });
 	const wp = model.makeWaypoint({ x: 0, y: 0 });
 	const link = model.makeLink(node.id, wp.id);
-	const zone = model.makeZone({ x: 0, y: 0, w: 60, h: 60 });
+	const zone = model.makeZone({ x: 30, y: 30, w: 60, h: 60 });
 	const group = model.makeGroup([node.id]);
 	assert.equal(kindOf(node.id), 'node');
 	assert.equal(kindOf(wp.id), 'waypoint');

@@ -53,6 +53,24 @@ Ids for a whole diagram are minted by the server, never accepted from a caller.\
 Selection is narrower than the id grammar.\
 Only `node`, `waypoint`, `link` and `zone` are selectable; a `group` or `diagram` id in a selection is refused rather than ignored, because tolerating it would hide a caller bug behind a silent prune.
 
+## Geometry is a rule, not a courtesy
+
+Positions are refused unless they sit on the grid, and the pitch is 60.
+
+```text
+node, waypoint    x and y are multiples of 60
+zone              x and y are 30 + 60k; w and h are multiples of 60
+```
+
+A zone uses the half-offset because it BOUNDS cells rather than sitting on one, so its edges fall between them.\
+That is the rule most easily got wrong, and the server now refuses rather than letting it through.
+
+An off-grid coordinate answers `422` naming the field, and the batch writes nothing.\
+It is not snapped for you: snapping would silently move your work and leave you believing you drew something you did not.
+
+This is enforced at the server rather than in the editor, which is where it used to live.\
+The cost of it living in the browser was that an agent could place entities anywhere, and the engine's occupancy index assumes the opposite -- `cellOf` is `Math.round(v / 60)`, so two entities 30px apart occupy one cell while looking distinct.
+
 ## Two doors, one surface
 
 An agent reaches the same API at `/connect/v1/...` that the editor reaches at `/api/v1/...`, and the prefix is the only difference.\
