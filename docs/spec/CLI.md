@@ -126,6 +126,30 @@ Projection
 
 ---
 
+## The tool exists to reduce agent error, not to mirror the API
+
+Ruled 2026-08-23.\
+Parity with the REST surface is the floor, not the purpose.\
+A verb earns its place by making an agent faster, more correct, or less likely to be wrong -- and a verb that is a thin wrapper over one route adds a name without adding any of those.
+
+The highest-value gap is CONTEXT.\
+An agent asking about a node wants what is attached to it, what contains it, what it connects to and where it may legally sit; today it fetches the whole document and derives all of that itself, which is arithmetic it can get wrong and repeats on every call.
+
+The logic for it already exists and is sovereign.\
+`model/model.mjs` carries `linksOf`, `linksAt`, `linkBetween`, `groupOf` and `pathOf`, so a contextual route composes methods the model already owns rather than restating relationships in a second place -- the engine's indexed versions are a browser-side optimisation over the same semantics, not a rival definition.
+
+The shape this points at:
+
+```text
+node <id> context     position and anchor, links in and out, group, containing zone, free neighbours
+zone <id> contents    what falls inside its bounds
+link <id> path        the resolved route, bends included -- what the renderer would draw
+near <x> <y>          what is around a point, which is how an agent places without colliding
+```
+
+Each needs a route that does not exist yet, and each composes existing model methods behind it.\
+That is the test for a contextual verb: it assembles what the model already knows, and it never computes a relationship the model could have been asked for.
+
 ## Help is a first-class output
 
 `draw help` prints the groups above.\
