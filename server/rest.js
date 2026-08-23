@@ -233,27 +233,6 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 		const status = invariantFailures ? 'corrupt' : flushFailures ? 'degraded' : 'ok';
 		return json(res, 200, { status, diagrams: store.total(), flushFailures, invariantFailures }), true;
 	}
-	/*
-	`/connect/v1` -- H9.6. The agent's door, and the SAME surface behind it.
-
-	Not a second API. The prefix is rewritten to `api` here and everything downstream is unchanged,
-	so an agent and the editor drive one implementation: a route added for one is available to the
-	other, and neither can drift from the other because there is nothing to drift from.
-
-	The two prefixes exist because of where IAP sits, not because the surfaces differ. IAP is
-	configured per backend service and has no path exclusion, so a path that must be reachable
-	without a Google sign-in has to be routed to a different backend -- which the load balancer
-	already does for /about, /privacy and /terms. `/connect` is the same trick for a door an agent
-	can knock on with a bearer code.
-
-	This rewrite is NOT what authorizes anything, and that distinction is the safety of the whole
-	arrangement. Authentication happened before this line and authorization happens after it, on
-	the principal alone. A request arriving here with no valid code carries no principal, and the
-	store then refuses it exactly as it refuses a request that slipped past IAP -- empty list, 403
-	on everything else. The path never grants.
-	*/
-	if (parts[0] === 'connect' && parts[1] === 'v1') parts.splice(0, 2, 'api', 'v1');
-
 	if (parts[0] !== 'api') return false;
 
 	/*

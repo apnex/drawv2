@@ -447,32 +447,52 @@ DOOR, never a privilege. Any branch on it downstream would be a route that behav
 depending on which door it came through, and that is exactly how a load-balancer mistake turns into
 a breach. One rewrite, no readers, asserted over the source because it is a claim about shape.
 */
-test('H9.7: /connect is rewritten once and no code downstream branches on it', () => {
-	const rest = fs.readFileSync(path.join(root, 'server/rest.js'), 'utf8');
+test('H9.7/B101: the agent door is stripped at ingress and nothing below can see it', () => {
 	const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
-	const code = strip(rest);
+	const words = (t) => [...strip(t).matchAll(/\w*connect\w*/gi)].map((m) => m[0])
+		.filter((w) => !/^(re)?connections?$/i.test(w) && !/^reconnect$/i.test(w));
+	const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
 	/*
-	Matched as a WORD, not as the exact literal 'connect'. The first version of this test counted
-	occurrences of `'connect'` and a mutant reading `url.pathname.startsWith('/connect')` sailed
-	through it -- a check about narrow checks, that was narrow. `Connection` and `connection` are
-	unrelated words that legitimately occur, so they are excluded by name rather than by luck.
+	B101 moved the door from the REST router to ingress, and that made this invariant STRONGER
+	rather than merely different. The old rewrite sat inside rest.js, so the router itself -- and
+	everything app.js routes outside it, including `/d/<id>.svg` -- could see the prefix. That is
+	precisely why the picture was unreachable through the door. Stripping at ingress means the set
+	of door-blind code is now everything except the four lines that do the stripping.
 	*/
-	const mentions = [...code.matchAll(/\w*connect\w*/gi)].map((m) => m[0])
-		.filter((w) => !/^connections?$/i.test(w));
-	assert.deepEqual(mentions, ['connect'],
-		`the router mentions connect ${mentions.length} times (${mentions}); exactly one rewrite, and nothing may read it after`);
-	assert.match(code, /parts\[0\] === 'connect' && parts\[1\] === 'v1'\) parts\.splice\(0, 2, 'api', 'v1'\)/,
-		'and that one occurrence is the rewrite itself');
+	const app = read('server/app.js');
+	assert.deepEqual(words(app), ['connect', 'connect'],
+		'the ONLY two mentions in app.js are the two path literals in AGENT_DOOR -- even the names '
+		+ 'that apply it (AGENT_DOOR, throughTheAgentDoor) do not carry the word, so a third hit is '
+		+ 'either a new door entry or code branching on the prefix, and both must be looked at');
+	assert.match(strip(app), /const AGENT_DOOR = \[/, 'the door is a table, so its entries can be counted');
+	assert.match(strip(app), /req\.url = throughTheAgentDoor\(req\.url\);/, 'and it is applied to the URL itself');
 
-	// the rewrite must precede every routing decision, or something below could see the raw prefix
-	assert.ok(code.indexOf("'connect'") < code.indexOf("parts[0] !== 'api'"),
-		'the rewrite happens before the router rejects a non-api prefix');
+	// every other file must be unable to tell -- authorization is on the principal alone
+	for (const f of ['server/rest.js', 'server/store.js', 'server/protocol.js', 'server/identity.mjs']) {
+		assert.deepEqual(words(read(f)), [],
+			`${f} must not know which door a request used`);
+	}
 
-	for (const f of ['server/app.js', 'server/store.js', 'server/protocol.js', 'server/identity.mjs']) {
-		const other = [...strip(fs.readFileSync(path.join(root, f), 'utf8')).matchAll(/\w*connect\w*/gi)]
-			.map((m) => m[0]).filter((w) => !/^connections?$/i.test(w));
-		assert.deepEqual(other, [],
-			`${f} must not know which door a request used — authorization is on the principal alone`);
+	// the strip must precede BOTH identity and routing, or something above could branch on the raw prefix
+	const code = strip(app);
+	const door = code.indexOf('req.url = throughTheAgentDoor');
+	assert.ok(door > -1);
+	assert.ok(door < code.indexOf('identify(req.headers)'), 'stripped before the principal is resolved');
+	assert.ok(door < code.indexOf('handleRest('), 'stripped before anything routes');
+
+	/*
+	Not a blanket strip, and this is the assertion that matters most.
+
+	`/connect` reaching everything by prefix removal would put each route app.js later grows behind
+	the IAP-free backend the instant it was added, with nobody deciding to. Each entry is a specific
+	path, so widening the door stays a deliberate act that shows up in a diff.
+	*/
+	const entries = [...code.matchAll(/\['(\/connect\/[^']+)',\s*'([^']+)'\]/g)].map((m) => [m[1], m[2]]);
+	assert.deepEqual(entries, [['/connect/v1/', '/api/v1/'], ['/connect/d/', '/d/']],
+		'the door opens onto exactly the REST surface and the picture');
+	for (const [from] of entries) {
+		assert.ok(from.length > '/connect/'.length,
+			`${from} strips to a bare prefix, which opens the door onto everything`);
 	}
 });

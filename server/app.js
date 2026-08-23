@@ -108,6 +108,40 @@ async function handleOAuthCallback(req, res, url, slides) {
 // worst-case eviction delay, which is why it is well under any sensible proxy idle timeout.
 const PING_MS = 30000;
 
+/*
+`/connect` -- the agent's door, and B101 made it a door to the surface rather than to one room.
+
+The load balancer routes `/connect/*` to a backend with IAP switched off, so the prefix's whole job
+is to name a route the editor already has, without it. IAP is configured per backend service and
+has no path exclusion, which is why a path reachable without a Google sign-in must be routed
+elsewhere at all.
+
+It is stripped at INGRESS, before identity is resolved and before anything routes, so no code below
+can tell which door a request came through. That is what keeps the prefix a door and never a
+privilege (H9.7), and doing it here makes that true of strictly more code than the old rewrite did:
+that one sat inside the REST router, so the router itself -- and everything app.js does outside it,
+including the picture -- were door-aware.
+
+The map is explicit rather than a blanket strip of `/connect`. A blanket strip would put every
+route this file grows behind the IAP-free backend the moment somebody added one, silently, which is
+a footgun wearing a door's clothes. Two entries today; a third is a deliberate act.
+
+None of this authorizes anything. Authentication happens after this point and authorization after
+that, on the principal alone -- a request through the door with no valid code carries no principal,
+and the store refuses it exactly as it refuses one that slipped past IAP.
+*/
+const AGENT_DOOR = [
+	['/connect/v1/', '/api/v1/'],   // the REST surface (H9.6)
+	['/connect/d/', '/d/'],         // the rendered picture (B101)
+];
+
+function throughTheAgentDoor(rawUrl) {
+	for (const [door, real] of AGENT_DOOR) {
+		if (rawUrl.startsWith(door)) return real + rawUrl.slice(door.length);
+	}
+	return rawUrl;
+}
+
 export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', principalOf = null, domains = [], origins = '' } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
@@ -198,6 +232,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const hasModel = fs.existsSync(path.join(modelDir, 'index.mjs'));
 
 	const server = http.createServer(async (req, res) => {
+		req.url = throughTheAgentDoor(req.url);
 		const url = new URL(req.url, 'http://localhost');
 		if (url.pathname === '/oauth2callback' && req.method === 'GET') {
 			return handleOAuthCallback(req, res, url, slides);

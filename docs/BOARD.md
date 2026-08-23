@@ -435,7 +435,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.37 | The convergence harness reimplements the client's change rule rather than calling it, and its copy is the correct one — GR6 passes over code that does not run | **B107** | S3 · M | `DONE` |
 | H9.35 | An agent cannot direct or invite a human's view, so its work is unobservable — the other half of H9.30, and what agent-PLUS-human actually requires. Needs a ruling: push, invite, or follow-mode | **B105** | S3 · M | `TODO` |
 | H9.30 | An agent-created diagram is invisible to the human who authorised the agent — ACCESS.md's reciprocity requirement, of which only the human-to-agent half was built. Needs a ruling on shape | **B100** | S3 · M | `TODO` |
-| H9.31 | An agent cannot fetch the render of what it drew — `/d/<id>.svg` sits outside `/connect` | **B101** | S2 · S | `TODO` |
+| H9.31 | An agent cannot fetch the render of what it drew — `/d/<id>.svg` sits outside `/connect` | **B101** | S2 · S | `DONE` |
 | H9.32 | The lock read never reports the lock's own expiry, so an agent that loses its token waits blind | **B102** | S2 · S | `DONE` |
 | H9.33 | A rejected commit drops the failing op index the server already computed | **B103** | S1 · S | `DONE` |
 | H9.34 | API.md never states the entity id grammar it enforces | **B104** | S1 · S | `DONE` |

@@ -613,6 +613,40 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
 });
 
+test('B101: an agent can fetch the picture of what it drew, through its own door', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+
+	const front = await fetch(`${base}/d/${id}.svg`);
+	assert.equal(front.status, 200, 'the editor route still works');
+	const svg = await front.text();
+	assert.match(svg, /^<svg/, 'and it is an SVG');
+
+	// the same picture, named without the prefix the load balancer routes past IAP
+	const door = await fetch(`${base}/connect/d/${id}.svg`);
+	assert.equal(door.status, 200, 'reachable through the agent door -- B101 was that it was not');
+	assert.equal(door.headers.get('content-type'), 'image/svg+xml; charset=utf-8');
+	assert.equal(await door.text(), svg, 'byte for byte the same render, because it is one route');
+
+	// the REST surface still comes through its own entry
+	assert.equal((await fetch(`${base}/connect/v1/diagrams`)).status, 200);
+	// an unknown diagram is a 404 from the route, not a static-file miss
+	assert.equal((await fetch(`${base}/connect/d/diagram-ffffff.svg`)).status, 404);
+});
+
+test('B101: the agent door is not a blanket strip -- it opens onto two paths, not the app', async () => {
+	/*
+	The failure this guards is silent and arrives later: someone adds a route to app.js, and it is
+	served through the IAP-free backend from the moment it exists because /connect strips to
+	anything. Asserted behaviourally as well as statically, because the static check reads the
+	table and this reads what the server actually answers.
+	*/
+	for (const p of ['/connect/index.html', '/connect/', '/connect/health', '/connect/next/index.html']) {
+		const r = await fetch(`${base}${p}`);
+		assert.ok(r.status === 404 || r.status === 405,
+			`${p} answered ${r.status}: the door opened onto something it was not pointed at`);
+	}
+});
+
 test('B102: an agent that lost its token can see when the lock frees', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 

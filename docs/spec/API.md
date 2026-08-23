@@ -49,7 +49,21 @@ Only `node`, `waypoint`, `link` and `zone` are selectable; a `group` or `diagram
 ## Two doors, one surface
 
 An agent reaches the same API at `/connect/v1/...` that the editor reaches at `/api/v1/...`, and the prefix is the only difference.\
-The routes, bodies and refusals are identical, because the prefix is rewritten at the router and everything below it is one implementation.
+The routes, bodies and refusals are identical, because the prefix is stripped at ingress and everything below it is one implementation.
+
+`/connect` is a door onto the surface rather than onto the API alone.\
+It opens on exactly two paths, and widening it is a deliberate act rather than a consequence of adding a route:
+```text
+/connect/v1/...      ->  /api/v1/...      the REST surface
+/connect/d/<id>.svg  ->  /d/<id>.svg      the rendered picture
+```
+
+The picture is the same route the editor links to, so an agent can fetch a render of what it just drew:
+```sh
+curl -s -H "Authorization: Bearer XXXX-XXXX-XXXX-XXXX" -O https://draw.apnex.io/connect/d/<id>.svg
+```
+
+It is grant-gated like everything else, because an SVG carries the whole document's content and a representation is not a permission.
 
 The two exist because of where authentication sits, not because the surfaces differ.\
 IAP is configured per backend service and has no path exclusion, so a path an agent can reach without a Google sign-in must be routed to a different backend -- which the load balancer already does for `/about`, `/privacy` and `/terms`.
