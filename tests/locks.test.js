@@ -561,3 +561,48 @@ test('B102: expiresAt is null for a diagram that was never locked', () => {
 	const locks = new Locks();
 	assert.equal(locks.expiresAt('diagram-bbbbbb'), null);
 });
+
+/*
+B105 -- `activity()` is what the agent indicator reads, so it must report WHO and must forget.
+
+Both halves survived a mutant against the REST tests: authorization is off there, so `principal` is
+null either way and dropping it changed nothing observable, and nothing exercised a lapsed lock.
+*/
+test('B105: activity names the principal holding each lock', () => {
+	const locks = new Locks();
+	locks.acquire('diagram-aa0001', 'agent:planner');
+	locks.acquire('diagram-aa0002', 'agent:scribe');
+	const seen = locks.activity();
+	assert.deepEqual(seen.map((a) => [a.principal, a.diagram]).sort(),
+		[['agent:planner', 'diagram-aa0001'], ['agent:scribe', 'diagram-aa0002']]);
+	assert.ok(seen.every((a) => typeof a.since === 'number' && typeof a.expiresAt === 'number'));
+});
+
+test('B105: an unnamed holder is reported as null, not omitted', () => {
+	// authorization off: there IS no principal, and a blank indicator in the configuration a single
+	// operator runs would be the whole feature missing
+	const locks = new Locks();
+	locks.acquire('diagram-aa0001');
+	assert.deepEqual(locks.activity().map((a) => a.principal), [null]);
+});
+
+test('B105: a lapsed lock leaves activity without anything noticing the agent died', () => {
+	let now = 1000;
+	const locks = new Locks({ ttlMs: 100, now: () => now });
+	locks.acquire('diagram-aa0001', 'agent:planner');
+	assert.equal(locks.activity().length, 1);
+
+	now = 1101;                                   // lapsed, and no sweep has run
+	assert.deepEqual(locks.activity(), [],
+		'derived from the live locks, so an abandoned one stops being reported by itself');
+});
+
+test('B105: activity is ordered by when each lock was taken', () => {
+	let now = 1000;
+	const locks = new Locks({ now: () => now });
+	locks.acquire('diagram-aa0002', 'agent:second');
+	now = 2000;
+	locks.acquire('diagram-aa0001', 'agent:first');
+	assert.deepEqual(locks.activity().map((a) => a.diagram), ['diagram-aa0002', 'diagram-aa0001'],
+		'oldest first: a stable order beats whichever the Map happens to hold');
+});

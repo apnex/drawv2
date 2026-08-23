@@ -51,7 +51,7 @@ export class Locks {
 
 	// claim the server-side write lock; null if another live controller holds it, or if the human
 	// has just reclaimed and the hold has not lapsed
-	acquire(id) {
+	acquire(id, principal = null) {
 		if (this._live(id)) return null;
 		const hold = this.holds.get(id);
 		if (hold !== undefined) {
@@ -60,8 +60,40 @@ export class Locks {
 		}
 		const token = crypto.randomBytes(16).toString('hex');
 		const expiresAt = this.now() + this.ttlMs;
-		this.map.set(id, { token, expiresAt });
+		// B105: WHO holds it, not just that it is held. Without this the estate could say a diagram
+		// was locked and never say by whom, so an operator could see that something was happening
+		// and not what -- which is the whole of what the agent indicator has to answer.
+		this.map.set(id, { token, expiresAt, principal, since: this.now() });
 		return { token, expiresAt };
+	}
+
+	/*
+	B105 -- what every agent is doing, across the whole workspace.
+
+	The pill answers what may I do HERE. This answers what is happening ANYWHERE, which is the
+	thing no per-diagram element can report and the reason the indicator is worth having: an
+	operator learns about work they are not currently looking at.
+
+	Derived from the live locks rather than tracked separately, so it cannot disagree with them.
+	A lapsed lock is already invisible to `_live`, so an agent that died holding one stops being
+	reported without anything having to notice it died.
+	*/
+	activity() {
+		const out = [];
+		for (const id of this.map.keys()) {
+			const lock = this._live(id);
+			if (!lock) continue;
+			/*
+			A lock with no principal is still reported, as `null`.
+
+			With authorization off there IS no principal, and skipping those would make the whole
+			indicator blank in exactly the configuration a single operator runs -- reporting that
+			something is driving a diagram without being able to name it is the honest answer, and
+			it is already what the pill does when it says `locked`.
+			*/
+			out.push({ principal: lock.principal ?? null, diagram: id, since: lock.since, expiresAt: lock.expiresAt });
+		}
+		return out.sort((a, b) => a.since - b.since);
 	}
 
 	verify(id, token) {

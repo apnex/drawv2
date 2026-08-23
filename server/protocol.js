@@ -76,7 +76,15 @@ export function snapshotBody(model, store, locks, principal = null) {
 		// hydration too, not only on the change that caused it
 		truncated: !!log?.truncated,
 		truncatedHuman: !!log?.truncatedHuman,
-		undoTop: topRun(log)
+		undoTop: topRun(log),
+		/*
+		B105 -- the agent indicator carries STATE, so it must arrive with the snapshot.
+
+		An announcement alone would leave a session that connected after the lock was taken showing
+		nothing, and the ruling is explicit that a state is still there when the operator next
+		looks. That is the whole reason it is not a toast.
+		*/
+		agents: locks ? locks.activity() : []
 	};
 }
 
@@ -365,7 +373,10 @@ export class Session {
 					return this.error('forbidden: no write access to this diagram', 'forbidden');
 				}
 				if (this.locks) this.locks.reclaim(id);
-				if (this.hub) this.hub.broadcast(id, 'lock', { owner: 'client' });
+				if (this.hub) {
+					this.hub.broadcast(id, 'lock', { owner: 'client' });
+					if (this.locks) this.hub.announce('agents', { agents: this.locks.activity() });
+				}
 				return this.snapshot(model);
 			}
 			case 'delete': {

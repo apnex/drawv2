@@ -663,6 +663,61 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 	fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('B105: the agent indicator reports the whole workspace, not just this diagram', async () => {
+	/*
+	The reason the indicator exists: it tells an operator about work they are NOT looking at. So the
+	assertion that matters is not that a locked diagram reports itself, it is that a viewer somewhere
+	else hears about it -- which is exactly what `hub.broadcast` cannot do, being per-diagram.
+	*/
+	const ids = (await get('/api/v1/diagrams')).body.map((d) => d.id);
+	const [here, elsewhere] = ids;
+	assert.ok(elsewhere && here !== elsewhere, 'this test needs two diagrams');
+
+	// tests in this file share a server, so measure the DELTA rather than assuming quiet
+	const before = (await get('/api/v1/workspace/agents')).body.agents.map((a) => a.diagram);
+
+	// a viewer sitting on a DIFFERENT diagram
+	const c = await connect();
+	c.send('hello', { diagram: here });
+	await c.expect('snapshot');
+
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${elsewhere}/lock`, { method: 'POST' })).json();
+	try {
+		const seen = (await get('/api/v1/workspace/agents')).body.agents;
+		const added = seen.filter((a) => !before.includes(a.diagram));
+		assert.equal(added.length, 1);
+		assert.equal(added[0].diagram, elsewhere);
+		assert.ok(typeof added[0].since === 'number' && typeof added[0].expiresAt === 'number');
+
+		// the viewer on `here` was told, though nothing about `here` changed
+		const note = await c.expect('agents');
+		assert.ok(note.body.agents.some((a) => a.diagram === elsewhere),
+			'a per-diagram broadcast could never have delivered this');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${elsewhere}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': lock.token } });
+	}
+
+	const after = await c.expect('agents');
+	assert.ok(!after.body.agents.some((a) => a.diagram === elsewhere),
+		'and the release is reported the same way');
+	assert.ok(!(await get('/api/v1/workspace/agents')).body.agents.some((a) => a.diagram === elsewhere));
+});
+
+test('B105: it is STATE, so a session that connects late still sees it', async () => {
+	// the ruling turns on this: a toast is lost when nobody is watching, a state is not
+	const ids = (await get('/api/v1/diagrams')).body.map((d) => d.id);
+	const [here, elsewhere] = ids;
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${elsewhere}/lock`, { method: 'POST' })).json();
+	try {
+		const late = await connect();          // connects AFTER the lock was taken
+		late.send('hello', { diagram: here });
+		const snap = await late.expect('snapshot');
+		assert.ok(snap.body.agents.some((a) => a.diagram === elsewhere), 'the snapshot carries it');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${elsewhere}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': lock.token } });
+	}
+});
+
 test('B111/B112: an agent asks for an anchor instead of computing one', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 

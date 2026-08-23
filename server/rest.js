@@ -268,6 +268,23 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	Not lock-gated and not diagram-scoped, so it sits above the diagram router entirely.
 	*/
 	if (parts[1] === 'v1' && parts[2] === 'workspace') {
+		/*
+		B105 -- what every agent is doing, across the workspace rather than on one diagram.
+
+		A read, and a poll-able one, so a client without a live socket is not blind. The websocket
+		carries the same list in the snapshot and in the `agents` announcement, and all three come
+		from `locks.activity()` so they cannot disagree.
+
+		Filtered by `canRead`, which is the same predicate every other read uses, rather than by
+		requiring a principal. Demanding one would make the indicator blank with authorization OFF,
+		where there is no principal by definition and the single operator is exactly who it exists
+		to inform. `canRead` answers true for everyone in that configuration and answers honestly in
+		the other, so one line covers both instead of a branch on which mode is running.
+		*/
+		if (parts[3] === 'agents' && req.method === 'GET') {
+			const live = locks ? locks.activity() : [];
+			return json(res, 200, { agents: live.filter((a) => store.canRead(a.diagram, principal)) }), true;
+		}
 		if (parts[3] !== 'grants' && parts[3] !== 'codes') return json(res, 404, { error: 'not found' }), true;
 		if (!principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
 		handleWorkspace(req, res, store, parts, principal).catch((err) => {
@@ -523,12 +540,12 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			if (!store.canWrite(id, principal)) {
 				return json(res, 403, { error: 'forbidden: no write access to this diagram', code: 'forbidden' });
 			}
-			const lock = locks.acquire(id);
+			const lock = locks.acquire(id, principal);
 			if (!lock) return json(res, 409, { error: 'already server-locked by another controller' });
 			// D22: the human reclaimed recently — refuse, and say for how long, so a retry loop backs
 			// off instead of racing the remedy
 			if (lock.held) return json(res, 409, { error: 'reclaimed by the human', code: 'reclaimed', retryAfter: lock.retryAfter });
-			if (hub) hub.broadcast(id, 'lock', { owner: 'server' });
+			if (hub) { hub.broadcast(id, 'lock', { owner: 'server' }); hub.announce('agents', { agents: locks.activity() }); }
 			// hydrate the agent at its entry point: it should never have to ASK what the state is
 			const log = store.log(id);
 			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt,
@@ -539,7 +556,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			if (!locks.release(id, req.headers['x-draw-lock'] || '')) {
 				return json(res, 403, { error: 'invalid or missing lock token' });
 			}
-			if (hub) hub.broadcast(id, 'lock', { owner: 'client' });
+			if (hub) { hub.broadcast(id, 'lock', { owner: 'client' }); hub.announce('agents', { agents: locks.activity() }); }
 			return json(res, 200, { released: true });
 		}
 		return json(res, 405, { error: 'lock: POST to acquire, DELETE to release' });

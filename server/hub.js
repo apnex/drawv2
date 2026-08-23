@@ -21,6 +21,26 @@ export class Hub {
 		this.sessions.delete(session);
 	}
 
+	/*
+	B105 -- fan out to EVERY session, whatever it is viewing.
+
+	`broadcast` is scoped to one diagram because a change to it means nothing to anyone elsewhere.
+	Agent activity is the opposite: it is worth reporting precisely to the operator who is NOT
+	looking at the diagram in question, so the scoping that makes broadcast correct makes it the
+	wrong instrument here.
+
+	Same per-session isolation, for the same reason: a dead socket must not silence the others.
+	*/
+	announce(cmd, body) {
+		this.sessions.forEach((s) => {
+			try {
+				s.send(cmd, body);
+			} catch (err) {
+				console.warn(`[ hub ] session announce failed: ${err.message}`);
+			}
+		});
+	}
+
 	// Fan a message out to every session currently viewing this diagram, optionally excluding the
 	// one that originated it (which already applied the change locally).
 	//

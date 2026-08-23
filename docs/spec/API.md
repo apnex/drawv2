@@ -86,6 +86,22 @@ A waypoint counts, because a waypoint is a node for placement.
 Reads, so neither takes the lock.\
 The layout name travels with an anchor because the same cell resolves to different pixels on the two grids.
 
+### What every agent is doing
+
+One read, covering the whole workspace rather than one diagram:
+```sh
+curl -s localhost:8080/api/v1/workspace/agents
+```
+
+It answers `{agents: [{principal, diagram, since, expiresAt}]}`, derived from the live locks so it cannot disagree with them.\
+An agent that died holding a lock stops being reported when the lock lapses, without anything having to notice it died.
+
+`principal` is `null` with authorization off, which is honest rather than empty: something is driving that diagram and there is no identity to name.\
+The list is filtered by read access, so it shows the diagrams the caller could open anyway.
+
+The same list rides the websocket, in every `snapshot` and in an `agents` message whenever it changes.\
+It is state rather than an event, so a client that connects after a lock was taken still sees it.
+
 ### How much fits
 
 A diagram holds at most one node or waypoint per anchor, so the canvas caps at 527 of them together.\
