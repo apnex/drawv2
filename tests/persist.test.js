@@ -531,3 +531,36 @@ test('B83: a clean document counts nothing — the check is not always red', asy
 		assert.equal(s.invariantFailures(), 0);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+Slides Phase 1 -- a document carrying the retired key is rewritten, once.
+
+Stripping on load made the API correct and left the bucket untouched: loading does not mark a
+document dirty, so a diagram nobody edits would keep `meta.slides` on disk forever and Phase 2
+would wait on an estate that could not turn over. Verified live before this existed -- the API
+served six meta keys while the object still had seven.
+*/
+test('a stored doc carrying meta.slides is rewritten without it, and only once', async () => {
+	const dir = tmp();
+	try {
+		const id = 'diagram-51de51';
+		const doc = { meta: { id, name: 'legacy', version: 0, schema: 1, owner: '', grants: {},
+			slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
+			nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
+		fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(doc));
+
+		const a = new Store(dir, { flushMs: 5 });
+		await a.init();
+		assert.equal('slides' in a.get(id).toJSON().meta, false, 'stripped in memory');
+		await a.flushAll();
+
+		const onDisk = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
+		assert.equal('slides' in onDisk.meta, false, 'and the FILE lost it -- this is the half that was missing');
+		assert.equal(onDisk.meta.version, 0, 'without a version bump: removing a retired field is nobody\'s change');
+
+		// a clean document must not be rewritten on every boot
+		const b = new Store(dir, { flushMs: 5 });
+		await b.init();
+		assert.equal(b.diagrams.get(id).dirty, false, 'nothing to shed, so nothing to write');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

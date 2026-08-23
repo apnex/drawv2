@@ -472,6 +472,20 @@ export class Store {
 	install(id, doc, log = new Log(0), file = null) {
 		const model = new Model();
 		model.load(doc);
+		/*
+		Slides Phase 1: a document carrying the retired key is REWRITTEN, not merely read clean.
+
+		Stripping on load made the API correct and left the bucket untouched, because loading does
+		not mark a document dirty and a diagram nobody edits is never written back. Phase 2 -- which
+		refuses the key at the boundary -- would then have waited on an estate that could not turn
+		over on its own.
+
+		So the strip announces itself. `shedRetiredKeys` is true only for a document that actually
+		carried one, so this is a one-time rewrite per diagram rather than a write on every boot,
+		and it costs nothing once the estate is clean. Not a commit: no version bump, no log record,
+		because removing a field the product no longer has is not a change anybody made.
+		*/
+		const shedRetiredKeys = doc?.meta && 'slides' in doc.meta;
 		// `file` means this document came off our own storage, which is the only source allowed to
 		// carry authorization -- init() passes it, create() does not (ACCESS.md).
 		model.state.meta = cleanMeta(id, doc.meta, Boolean(file));
@@ -500,6 +514,7 @@ export class Store {
 			console.error(`[ store ] ${id} loaded with ${broken.length} invariant violation(s): ${broken.join('; ')}`);
 		}
 		this.diagrams.set(id, entry);
+		if (shedRetiredKeys) this.markDirty(id);   // one-time: the file still has `meta.slides`
 		return entry;
 	}
 
