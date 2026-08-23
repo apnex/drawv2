@@ -68,6 +68,26 @@ That is the rule most easily got wrong, and the server now refuses rather than l
 An off-grid coordinate answers `422` naming the field, and the batch writes nothing.\
 It is not snapped for you: snapping would silently move your work and leave you believing you drew something you did not.
 
+### Ask for an anchor instead of computing one
+
+An anchor is a grid position, and it is on-grid by construction:
+```sh
+curl -s localhost:8080/api/v1/diagrams/<id>/layouts
+curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/nearest?x=270&y=-150"
+curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/anchors?free=1"
+```
+
+`nearest` answers *somewhere legal near here* and returns `{layout, cx, cy, x, y, occupant}`.\
+The pixels are there so you never multiply and the cell is there so you never divide, which are the two steps that produce an off-grid entity.
+
+`anchors?free=1` answers *where may I put something*, and omits every anchor a node or waypoint already holds.\
+A waypoint counts, because a waypoint is a node for placement.
+
+Reads, so neither takes the lock.\
+The layout name travels with an anchor because the same cell resolves to different pixels on the two grids.
+
+### Where the rule lives
+
 This is enforced at the server rather than in the editor, which is where it used to live.\
 The cost of it living in the browser was that an agent could place entities anywhere, and the engine's occupancy index assumes the opposite -- `cellOf` is `Math.round(v / 60)`, so two entities 30px apart occupy one cell while looking distinct.
 

@@ -614,6 +614,72 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
 });
 
+test('B111/B112: an agent asks for an anchor instead of computing one', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+
+	assert.deepEqual((await get(`/api/v1/diagrams/${id}/layouts`)).body.layouts, ['node', 'zone']);
+
+	// the exact off-grid coordinate the agent wrote live, answered with a legal one
+	const n = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=270&y=-150`)).body;
+	assert.deepEqual({ layout: n.layout, cx: n.cx, cy: n.cy, x: n.x, y: n.y },
+		{ layout: 'node', cx: 5, cy: -2, x: 300, y: -120 });
+
+	// the same query on the zone grid answers differently, which is why the layout travels with it
+	const z = (await get(`/api/v1/diagrams/${id}/layouts/zone/nearest?x=-780&y=-390`)).body;
+	assert.equal(z.x, -750, 'the half-pitch offset, without the caller knowing it exists');
+	assert.equal(z.layout, 'zone');
+
+	const bad = await get(`/api/v1/diagrams/${id}/layouts/hexagon/nearest?x=0&y=0`);
+	assert.equal(bad.status, 404);
+	assert.equal((await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=abc&y=0`)).status, 422);
+});
+
+test('B112: free anchors exclude what is occupied, and an anchor round-trips into a legal write', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+	const seeded = (await get(`/api/v1/diagrams/${id}`)).body.nodes;
+	const all = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors`)).body;
+	const free = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).body;
+
+	assert.equal(all.count - free.count, seeded.length,
+		'exactly the seeded nodes are missing from the free list');
+	const taken = new Set(seeded.map((s) => `${s.x},${s.y}`));
+	assert.ok(!free.anchors.some((a) => taken.has(`${a.x},${a.y}`)), 'no free anchor is occupied');
+
+	// an anchor handed back must be writable without the caller touching a number
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		const a = free.anchors[0];
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
+			body: JSON.stringify({ ops: [{ op: 'put', kind: 'node',
+				entity: { id: 'node-a11c01', name: 'from-anchor', type: 'host', x: a.x, y: a.y } }] }),
+		});
+		assert.equal(r.status, 200, 'an anchor is a legal position by construction');
+
+		// and it now reports itself occupied
+		const again = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=${a.x}&y=${a.y}`)).body;
+		assert.equal(again.occupant, 'node-a11c01');
+
+		/*
+		A WAYPOINT occupies too, and the API must say so or an agent will be handed an anchor the
+		planner then refuses. The rule and its projection have to agree; reporting only nodes here
+		would make `free=1` a list of places some of which are not free.
+		*/
+		const w = free.anchors[1];
+		await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
+			body: JSON.stringify({ ops: [{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-a11c01', x: w.x, y: w.y } }] }),
+		});
+		const wq = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=${w.x}&y=${w.y}`)).body;
+		assert.equal(wq.occupant, 'waypoint-a11c01', 'a waypoint IS a node for placement');
+		const after = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).body;
+		assert.ok(!after.anchors.some((q) => q.x === w.x && q.y === w.y),
+			'and the anchor it holds has left the free list');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': lock.token } });
+	}
+});
+
 test('B101: an agent can fetch the picture of what it drew, through its own door', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 

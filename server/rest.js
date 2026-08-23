@@ -8,6 +8,8 @@ exactly one side writes at a time.
 */
 
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
+import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/index.mjs';
+import { NODE_EXT } from '../model/index.mjs';
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -19,6 +21,21 @@ exists: the editor is served from this same origin, and a CLI or an agent is not
 not consult CORS at all. A reflection mechanism with no consumer is the speculative surface A3
 refuses. Absent the header, a browser blocks a cross-origin read, which is the whole of the fix.
 */
+/*
+B112 -- who holds an anchor. A waypoint counts, because a waypoint IS a node for placement.
+
+Resolved coordinates rather than cell indices, matching `violations()` exactly: the two agree only
+while every entity is on-grid, and this must report the same occupancy the rule enforces rather
+than a rounding of it.
+*/
+function occupantAt(model, anchor) {
+	for (const kind of ['node', 'waypoint']) {
+		const hit = model.all(kind).find((e) => e.x === anchor.x && e.y === anchor.y);
+		if (hit) return hit.id;
+	}
+	return null;
+}
+
 function json(res, code, body) {
 	res.writeHead(code, {
 		'Content-Type': 'application/json',
@@ -347,6 +364,51 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 
 	// reads are always open (no lock): an agent must be able to see lock state and history without
 	// attempting a write and reading a 423.
+	/*
+	B111/B112 -- anchors, so an agent never computes a coordinate.
+
+	Two arithmetic steps produced every off-grid entity this surface exists to prevent: multiplying
+	a cell by the pitch, and knowing that zones use a different origin from nodes. A caller that
+	asks for an anchor does neither, and an anchor is on-grid by construction rather than by care.
+
+	Reads, so no lock -- the same rule the rest of GET follows. `free` is the occupancy index
+	projected rather than a computation: an anchor is taken when a node or waypoint resolves to it,
+	which is exactly the rule `violations()` enforces.
+	*/
+	if (parts[4] === 'layouts' && parts.length === 5) {
+		return json(res, 200, { layouts: Object.keys(LAYOUTS) }), true;
+	}
+	if (parts[4] === 'layouts' && parts.length >= 6) {
+		const L = LAYOUTS[parts[5]];
+		if (!L) return json(res, 404, { error: `unknown layout: ${parts[5]}`, code: 'unknown-layout' }), true;
+		const model = store.get(parts[3]);
+		if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;
+
+		if (parts[6] === 'nearest' && parts.length === 7) {
+			const x = Number(url.searchParams.get('x')), y = Number(url.searchParams.get('y'));
+			if (!Number.isFinite(x) || !Number.isFinite(y)) {
+				return json(res, 422, { error: 'nearest requires numeric x and y', code: 'bad-query' }), true;
+			}
+			const a = nearestAnchor(L, x, y);
+			return json(res, 200, { ...a, occupant: occupantAt(model, a) }), true;
+		}
+		if (parts[6] === 'anchors' && parts.length === 7) {
+			const wantFree = url.searchParams.get('free') === '1';
+			const out = [];
+			// the node extent bounds BOTH grids here: a zone anchor outside it cannot hold a node
+			// anyway, and one list with one rule beats two that drift
+			for (let cy = -Math.floor(NODE_EXT.y / 60); cy <= Math.floor(NODE_EXT.y / 60); cy++) {
+				for (let cx = -Math.floor(NODE_EXT.x / 60); cx <= Math.floor(NODE_EXT.x / 60); cx++) {
+					const a = anchorAt(L, cx, cy);
+					const occupant = occupantAt(model, a);
+					if (wantFree && occupant) continue;
+					out.push(occupant ? { ...a, occupant } : a);
+				}
+			}
+			return json(res, 200, { layout: L.name, count: out.length, anchors: out }), true;
+		}
+		return json(res, 404, { error: `unknown layout route: ${parts.slice(6).join('/')}` }), true;
+	}
 	if (parts[4] === 'lock' && parts.length === 5) {
 		return json(res, 200, {
 			owner: locks && locks.locked(parts[3]) ? 'server' : 'client',
