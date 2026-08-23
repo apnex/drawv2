@@ -17,6 +17,10 @@ Across the session that built B100 to B117 the agent drove the live estate entir
 
 A tool nobody can use is indistinguishable from one that does not exist.
 
+There is no fallback, ruled 2026-08-23.\
+An agent that cannot do a thing through `draw` extends `draw`, or halts and raises it; reaching for `curl` is not the third option.\
+Every time that option is taken the tool stays exactly as incapable as it was, and the gap stops being visible -- which is how B117 accumulated, because the work kept getting done and so nothing ever reported the tool could not do it.
+
 ---
 
 ## One manifest, four consumers
