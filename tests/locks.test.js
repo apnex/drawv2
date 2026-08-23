@@ -606,3 +606,48 @@ test('B105: activity is ordered by when each lock was taken', () => {
 	assert.deepEqual(locks.activity().map((a) => a.diagram), ['diagram-aa0002', 'diagram-aa0001'],
 		'oldest first: a stable order beats whichever the Map happens to hold');
 });
+
+/*
+B115 -- a lock that LAPSES must tell the same people an explicit release tells.
+
+Every other test in this suite releases its lock, so expiry was untested, and B105's announcement
+was wired to acquire and release only. The result was live: the pushed agent list went stale while
+the REST read stayed correct, and the indicator kept reporting an agent that had timed out.
+*/
+test('B115: a lapsed lock announces the agent list, not only the per-diagram lock', async () => {
+	const { sweepLocks } = await import('../server/app.js');
+	let now = 1000;
+	const locks = new Locks({ ttlMs: 100, now: () => now });
+	const sent = { broadcast: [], announce: [] };
+	const hub = {
+		broadcast: (id, cmd, body) => sent.broadcast.push({ id, cmd, body }),
+		announce: (cmd, body) => sent.announce.push({ cmd, body }),
+	};
+
+	locks.acquire('diagram-aa0001', 'agent:planner');
+	assert.deepEqual(sweepLocks(locks, hub), [], 'nothing lapsed yet');
+	assert.equal(sent.announce.length, 0, 'and a sweep that frees nothing says nothing');
+
+	now = 1101;
+	assert.deepEqual(sweepLocks(locks, hub), ['diagram-aa0001']);
+	assert.equal(sent.broadcast.length, 1, 'viewers of that diagram learn it is editable');
+	assert.equal(sent.broadcast[0].cmd, 'lock');
+	assert.equal(sent.announce.length, 1, 'and EVERY session learns the agent stopped -- this was the defect');
+	assert.equal(sent.announce[0].cmd, 'agents');
+	assert.deepEqual(sent.announce[0].body.agents, [], 'the whole live set, which is now empty');
+});
+
+test('B115: one announcement per sweep, not one per freed diagram', () => {
+	// the body is the entire live set, so a second send would repeat the first exactly
+	let now = 1000;
+	const locks = new Locks({ ttlMs: 100, now: () => now });
+	const sent = [];
+	const hub = { broadcast: () => {}, announce: (cmd, body) => sent.push(body) };
+	locks.acquire('diagram-aa0001', 'agent:a');
+	locks.acquire('diagram-aa0002', 'agent:b');
+	now = 1101;
+	return import('../server/app.js').then(({ sweepLocks }) => {
+		assert.equal(sweepLocks(locks, hub).length, 2, 'both lapsed');
+		assert.equal(sent.length, 1, 'and were announced once');
+	});
+});

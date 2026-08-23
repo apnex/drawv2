@@ -142,6 +142,28 @@ function throughTheAgentDoor(rawUrl) {
 	return rawUrl;
 }
 
+/*
+B115 -- everything a lapsed lock has to tell somebody, in one place with a name.
+
+A lock that times out is announced by nobody unless this runs. `agents` fires on explicit acquire
+and release, so the PUSHED list went stale while GET /workspace/agents stayed correct -- the pull
+right and the push wrong, which is worse than both being wrong because it looks like it works. The
+director watched an indicator keep reporting an agent that had timed out.
+
+It is a named export rather than an arrow inside setInterval because that arrow could not be
+tested: every existing test releases a lock explicitly, so expiry -- the one path that reaches here
+-- was the case the whole suite missed. Now it takes a fake clock and two counters.
+
+The `agents` announcement is sent ONCE for the sweep rather than per freed diagram, because its body
+is the entire live set and sending it twice would say the same thing twice.
+*/
+export function sweepLocks(locks, hub) {
+	const freed = locks.sweep();
+	freed.forEach((id) => hub.broadcast(id, 'lock', { owner: 'client' }));
+	if (freed.length) hub.announce('agents', { agents: locks.activity() });
+	return freed;
+}
+
 export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', principalOf = null, domains = [], origins = '' } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
@@ -339,9 +361,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 
 	// liveness: a crashed controller's lock frees itself by TTL; sweep so the
 	// freed diagram's viewers are told it's editable again (lazy TTL alone is silent)
-	const sweepTimer = setInterval(() => {
-		locks.sweep().forEach((id) => hub.broadcast(id, 'lock', { owner: 'client' }));
-	}, 5000);
+	const sweepTimer = setInterval(() => sweepLocks(locks, hub), 5000);
 	sweepTimer.unref();
 
 	// localhost tool: loopback by default; containers/LAN opt in via HOST=0.0.0.0
