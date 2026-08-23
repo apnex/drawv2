@@ -111,22 +111,31 @@ function helpVerb(v) {
 	return out.join('\n');
 }
 
-export async function main(argv, env = process.env) {
+/*
+`out` and `fail` are injected rather than reaching for process.stdout directly.
+
+A test that patches `process.stdout.write` also captures the test runner's own protocol, which
+arrives as binary noise in the failure message -- the first version of the CLI tests did exactly
+that. Injecting the sink means a verb's OUTPUT can be asserted without the harness fighting the
+runner for the same stream.
+*/
+export async function main(argv, env = process.env, out = (s) => process.stdout.write(s)) {
 	const { flags, rest } = parseArgs(argv);
 	if (!rest.length || rest[0] === 'help') {
 		const target = rest[1] && byName(rest[1], rest[2]);
-		process.stdout.write(`${target ? helpVerb(target) : helpAll()}\n`);
+		out(`${target ? helpVerb(target) : helpAll()}\n`);
 		return 0;
 	}
 	const verb = byName(rest[0], rest[1]);
 	if (!verb) die(`unknown verb: ${rest.join(' ')}\nrun \`draw help\` for the verb list`);
-	if (flags.help) { process.stdout.write(`${helpVerb(verb)}\n`); return 0; }
+	if (flags.help) { out(`${helpVerb(verb)}\n`); return 0; }
 
 	const ctx = { ...base(flags, env), flags, json: !!flags.json, env };
 	const args = rest.slice(verb.sub ? 2 : 1);
-	const out = await verb.run(ctx, args);
-	if (out === undefined || out === null) return 0;
-	process.stdout.write(`${ctx.json ? JSON.stringify(out.json ?? out, null, 2) : (out.text ?? out)}\n`);
+	const res = await verb.run(ctx, args);
+	if (res === undefined || res === null) return 0;
+	const rendered = ctx.json ? JSON.stringify(res.json ?? res, null, 2) : (res.text ?? res);
+	out(`${rendered}\n`);
 	return 0;
 }
 

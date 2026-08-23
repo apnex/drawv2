@@ -29,10 +29,6 @@ Routes the tool is expected to gain. Every line is work not yet done, and deleti
 the work is recorded as finished -- so this list only ever shrinks, and the gate says by how much.
 */
 const PENDING = {
-	commit: 'batch transactions -- CLI.md Writing',
-	lock: 'the write slot -- CLI.md Writing',
-	undo: 'CLI.md Writing', redo: 'CLI.md Writing',
-	selection: 'authoritative selection -- CLI.md Writing',
 	layouts: 'the named grids -- CLI.md Placement',
 	nearest: 'anchor nearest <x> <y> -- CLI.md Placement',
 	anchors: 'anchor free -- CLI.md Placement',
