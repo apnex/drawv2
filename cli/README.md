@@ -1,66 +1,55 @@
 # draw CLI
 
-Sovereign terminal consumer of the draw server's read-only REST API — the first
-external program to live entirely on the API contract. Prism CLI lineage: context
-file, address-style queries, jq table templates, `--json` escape hatch.
+The tool an agent drives draw through (**GR18**).\
+Not a convenience over the API: an agent that cannot do a thing through `draw` extends `draw`, or halts and raises it -- reaching for `curl` is not the third option.
 
-Speaks only HTTP. No imports from `client/` or `server/`; works against any draw
-server (local, container, remote) via `--host` or `DRAW_HOST`. Read-only by
-design: model mutations stay with the browser (single-writer rule); the one
-action, `push`, projects to Slides and never mutates the model.
+Speaks only HTTP.\
+Imports nothing from `server/`, `app/` or `model/`, so it works against any draw server and can never accidentally test itself against in-process state.
 
-Requires: `bash`, `curl`, `jq`, `column`.
+Requires Node.\
+The shell version required `jq` and `column` and is retired; see `docs/spec/COMMIT-DELETIONS.md`.
 
-Built for agentic interrogation as much as for humans: colors appear only on a
-TTY (pipes and `NO_COLOR` get clean text), every error exits 1, and `show`
-delivers full situational awareness in a single call.
+---
 
 ## Install
 
 ```bash
-alias draw="$(pwd)/cli/draw.sh"        # or symlink into your PATH:
-ln -s "$(pwd)/cli/draw.sh" ~/.local/bin/draw
+ln -s "$(pwd)/cli/draw.mjs" ~/.local/bin/draw
 ```
 
-## Commands
+---
 
-```
-draw <command> [args] [--diagram <id|name>] [--json] [--host <url>]
-
-Discovery & Context:
-  diagrams        List all diagrams on the server
-  context [id]    View or set the default target diagram (persisted)
-
-The Query Engine:
-  get <entity> [id|name]   Interrogate entities (nodes, links, zones, groups)
-  show                     Full diagram view: status + every entity table
-  status                   Summary of the active diagram
-
-Projection:
-  push            Push the active diagram to its bound Google Slides deck
-
-Verification:
-  health          Server heartbeat
-```
-
-## Examples
+## Reaching a server
 
 ```bash
-draw diagrams                      # ID  NAME  REV
-draw context prod-topology         # resolve by name or id prefix, persist
-draw get nodes                     # ID  NAME  TYPE  X  Y   (center-origin px)
-draw get nodes web-1               # one entity, by exact name or id prefix
-draw get links web-1               # every link touching web-1, endpoint NAMES
-draw get zones --json | jq .       # raw JSON for piping
-draw status                        # meta + entity counts
-draw show                          # the whole diagram in one call (--json: full doc)
-draw push --diagram dmz            # wipe-and-recreate the bound slide
-DRAW_HOST=http://box:8080 draw health
+export DRAW_HOST=https://draw.apnex.io      # default http://localhost:8080
+export DRAW_CODE=XXXX-XXXX-XXXX-XXXX        # a connection code, if the server has authorization on
 ```
 
-Tables are jq-projected via `tpl/*.jq` — edit those to reshape columns without
-touching the script. Context persists in `cli/.draw_context` (gitignored);
-`DRAW_CONTEXT` overrides the location (the test suite uses this).
+The door is chosen, never configured.\
+A code present means `/connect/v1`, its absence means `/api/v1` -- which is the server's own rule that the prefix is a door and never a privilege.
 
-Integrity audit: `tests/cli.test.js` in the repo suite drives this executable
-against a throwaway server — `npm test` covers it.
+---
+
+## Verbs
+
+`draw help` prints them grouped, and `draw help <verb>` gives arguments, flags, a worked example, and the route that verb reaches.\
+Naming the route is deliberate: an agent meeting a refusal the tool does not explain can go to [API.md](../docs/spec/API.md) rather than guess whether the tool or the server said no.
+
+Every verb answers `--json`, because an agent parses output and a verb that cannot is one it cannot compose with.
+
+---
+
+## The two ideas worth knowing
+
+Positions are **anchors**, never pixels.\
+`draw add server at 5,-2` takes a cell, and a cell cannot be off the grid; `draw anchor nearest 130 60` converts a pixel if you have one.
+
+Ask for **context** rather than assembling it.\
+`draw about <entity>` answers what connects to a thing, what contains it and where it sits, in one call -- so a caller never derives a relationship the model could have been asked for.
+
+---
+
+## Design
+
+[CLI.md](../docs/spec/CLI.md) is the design of record: why one manifest drives dispatch, help, coverage and this file, and what the verb surface is for.

@@ -2,7 +2,7 @@
 /*
 GR18 -- the tool can do everything the API can.
 
-Agentic interaction with draw is through `cli/draw.sh`, not raw HTTP, and that only means something
+Agentic interaction with draw is through `cli/draw.mjs`, not raw HTTP, and that only means something
 if the tool is complete. This derives the route inventory from `server/rest.js` -- the same
 derivation GR10 uses to hold API.md -- and asserts a CLI verb reaches each one, or that its absence
 is recorded with a reason.

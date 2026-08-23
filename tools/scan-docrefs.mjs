@@ -52,6 +52,8 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	'*:cli/draw.sh': 'the shell CLI, RETIRED at GR18 and recorded in COMMIT-DELETIONS.md. Every reference left is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing line numbers as evidence for rulings made while it existed, and B61/B117 describing the defects that ended it. M4 forbids rewriting an artifact recorded before the change; repointing these at draw.mjs would falsify the record, because the line numbers were never true of that file.',
+	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
 	'docs/spec/DEPLOY.md:/src/main.js': 'a URL path, not a repository path -- app/ is served at the web root, so the client bundle is fetched from /src/main.js. Named because it is the request used to prove the app itself is still behind IAP.',
 	'docs/spec/DEPLOY.md:core/engineer.js': 'a file of the 2021 generation (github.com/apnex/draw), named as evidence that the v1 bucket was a stale deploy rather than divergent work',
 	'docs/spec/DEPLOY.md:core/loader.js': 'as above - v1 provenance, not a path in this repository',
@@ -135,7 +137,7 @@ for (const doc of docs) {
 		const candidates = [ref, path.join(path.dirname(doc), ref)];
 		if (candidates.some((c) => inRepo(c))) continue;
 		const key = `${doc}:${ref}`;
-		broken.push({ key, doc, ref, allowed: !!ALLOW[key] });
+		broken.push({ key, doc, ref, allowed: !!ALLOW[key] || !!ALLOW[`*:${ref}`] });
 	}
 }
 
@@ -147,7 +149,7 @@ for (const src of CODE_ROOTS.flatMap((r) => codeFiles(r))) {
 		if (ref.startsWith('http') || !ref.includes('/')) continue;   // a bare filename may be a forward reference
 		if (inRepo(ref)) continue;
 		const key = `${src}:${ref}`;
-		broken.push({ key, doc: src, ref, allowed: !!ALLOW[key] });
+		broken.push({ key, doc: src, ref, allowed: !!ALLOW[key] || !!ALLOW[`*:${ref}`] });
 	}
 }
 

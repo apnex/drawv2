@@ -708,3 +708,32 @@ VERBS.push(
 		},
 	},
 );
+
+/*
+`show` -- the one verb worth carrying over from the shell tool it replaces.
+
+Everything it prints is available from `status` and `get`, so it earns its place by being ONE call
+when an agent is orienting rather than four. That is the same argument as the contextual verbs:
+fewer round trips, fewer chances to assemble a picture wrongly.
+*/
+VERBS.push({
+	name: 'show', group: 'Context', usage: 'draw show', route: '/diagrams/<id>',
+	summary: 'the whole diagram: summary and every entity', example: 'draw show --diagram a1-demo',
+	flags: [{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx) {
+		const id = await activeId(ctx, ctx.flags);
+		const d = ok(await request(ctx, `/diagrams/${id}`), 'show');
+		const out = [`${d.meta.name}  ${d.meta.id}  v${d.meta.version}`];
+		const cols = {
+			nodes: ['id', 'name', 'type', 'x', 'y'], waypoints: ['id', 'x', 'y'],
+			links: ['id', 'src', 'dst', 'via'], zones: ['id', 'name', 'x', 'y', 'w', 'h'],
+			groups: ['id', 'name', 'members'],
+		};
+		for (const [k, c] of Object.entries(cols)) {
+			const list = d[k] || [];
+			if (!list.length) continue;
+			out.push('', k.toUpperCase(), table(list.map((e) => c.map((f) => (Array.isArray(e[f]) ? e[f].join(',') : e[f] ?? ''))), c.map((f) => f.toUpperCase())));
+		}
+		return { json: d, text: out.join('\n') };
+	},
+});
