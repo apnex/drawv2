@@ -179,7 +179,10 @@ async function commitWrite(res, store, hub, locks, id, token, ops, label, extra,
 		*/
 		if (result.forbidden) return json(res, 403, { error: result.error, code: 'forbidden' });
 		const conflict = /version conflict/i.test(result.error);
-		return json(res, conflict ? 409 : 422, { error: result.error, ...(conflict ? { code: 'version-conflict', version: result.version } : {}) });
+		// B103: the planner knows WHICH op failed; passing only the message made the agent re-derive it
+		return json(res, conflict ? 409 : 422, { error: result.error,
+			...(typeof result.opIndex === 'number' && result.opIndex >= 0 ? { opIndex: result.opIndex } : {}),
+			...(conflict ? { code: 'version-conflict', version: result.version } : {}) });
 	}
 	// durability: a REST/agentic caller is one-shot — it has no reconnect backstop, so an acked
 	// write must be on disk, not merely in the ~200ms debounce window. Flush before acking. (The ws

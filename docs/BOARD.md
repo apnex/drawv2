@@ -437,8 +437,8 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.30 | An agent-created diagram is invisible to the human who authorised the agent — ACCESS.md's reciprocity requirement, of which only the human-to-agent half was built. Needs a ruling on shape | **B100** | S3 · M | `TODO` |
 | H9.31 | An agent cannot fetch the render of what it drew — `/d/<id>.svg` sits outside `/connect` | **B101** | S2 · S | `TODO` |
 | H9.32 | The lock read never reports the lock's own expiry, so an agent that loses its token waits blind | **B102** | S2 · S | `TODO` |
-| H9.33 | A rejected commit drops the failing op index the server already computed | **B103** | S1 · S | `TODO` |
-| H9.34 | API.md never states the entity id grammar it enforces | **B104** | S1 · S | `TODO` |
+| H9.33 | A rejected commit drops the failing op index the server already computed | **B103** | S1 · S | `DONE` |
+| H9.34 | API.md never states the entity id grammar it enforces | **B104** | S1 · S | `DONE` |
 | H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes — widened to public methods of exported classes, under a DIFFERENT rule from exports, with the scope stated | **B91** | S2 · S | `DONE` |
 | H9.21 | An agent may create a diagram and owns it — `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `DONE` |
 | H9.22 | Long-poll: `history?since=&wait=` — the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | — | S4 · M | `TODO` |

@@ -66,15 +66,22 @@ function narrow(kind, before, patch) {
 
 export function plan(model, ops) {
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
-		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, at: -1 };
+		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
 	const proj = projection(model);
 	const out = [];
 	const inv = [];
 
+	/*
+	B103 -- `opIndex`, not `at`. This file already used `at` for a Change's wall-clock timestamp
+	twelve lines below, and `at` is a region offset array over in commands.js. Three meanings for
+	one name in one codebase is a search that cannot be resolved by reading the hit. The rejection
+	index is the only one of the three no client had seen, so it is the one that could still move.
+	-1 means the request was refused as a whole rather than at a particular op.
+	*/
 	for (let i = 0; i < ops.length; i++) {
 		const step = planOne(proj, ops[i]);
-		if (!step.ok) return { ok: false, error: step.error, at: i };
+		if (!step.ok) return { ok: false, error: step.error, opIndex: i };
 		applyOps(proj, step.ops);              // advance the projection for op i+1
 		out.push(...step.ops);
 		inv.unshift(...step.inverse);          // pre-reversed: undo replays inv in order
@@ -102,7 +109,7 @@ export function plan(model, ops) {
 		*/
 		const before = new Set(violations(model, { groupAfterRemoval }));
 		const introduced = after.filter((v) => !before.has(v));
-		if (introduced.length) return { ok: false, error: introduced[0], at: -1 };
+		if (introduced.length) return { ok: false, error: introduced[0], opIndex: -1 };
 	}
 	return { ok: true, ops: out, inverse: inv };
 }
@@ -290,7 +297,7 @@ export function commit(model, log, request, by = 'client', actor = null) {
 	}
 
 	const planned = plan(model, request.ops);
-	if (!planned.ok) return { ok: false, error: planned.error, at: planned.at, version: log.version };
+	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 
 	applyOps(model, planned.ops);                                    // the sole mutation point

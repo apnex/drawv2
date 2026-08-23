@@ -152,3 +152,28 @@ test('GR10: every locked decision this arc reversed carries a dated amendment', 
 	assert.match(section('Wire protocol (one websocket) — as shipped'), /\*\(Amended 2026-08/);
 	assert.match(scope, /\*\(Amended 2026-08[^)]*\)\* — the REST verb is `\/commit`/);
 });
+
+/*
+B104 -- API.md states the id grammar, so API.md must state the grammar the server enforces.
+
+A regex copied into prose is a twin, and the failure mode is silent: validate.js gains a kind, the
+doc keeps the old list, and an agent written from the doc is refused for a reason the doc denies.
+The check is byte-for-byte against the source of truth rather than a re-derivation, so it cannot
+drift the way the sentence it guards could.
+*/
+test('B104: the id grammar in API.md is the one validate.js enforces', () => {
+	const api = fs.readFileSync('docs/spec/API.md', 'utf8');
+	const src = fs.readFileSync('server/validate.js', 'utf8');
+	const live = src.match(/^const ID = \/(.+?)\/;$/m);
+	assert.ok(live, 'validate.js no longer declares `const ID` -- this check has lost its subject');
+	assert.ok(api.includes(live[1]),
+		`API.md does not carry the enforced id grammar. validate.js has ${live[1]}`);
+
+	// and the documented examples must actually pass it, which a hand-written sample need not
+	const re = new RegExp(live[1]);
+	const block = api.slice(api.indexOf('## What an id looks like'));
+	const samples = (block.slice(0, block.indexOf('```', block.indexOf('```text') + 7))
+		.match(/\b[a-z]+-[0-9a-f]{6}\b/g) || []);
+	assert.ok(samples.length >= 6, `expected the example ids to be found, got ${samples.length}`);
+	for (const s of samples) assert.ok(re.test(s), `API.md shows ${s}, which the server would refuse`);
+});

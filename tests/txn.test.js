@@ -46,7 +46,7 @@ test('plan: a rejected op leaves the model untouched and reports its index', () 
 		{ op: 'set', kind: 'node', id: 'node-aa0099', patch: { x: 1 } },   // missing
 	]);
 	assert.equal(r.ok, false);
-	assert.equal(r.at, 1, 'the failing op index is reported');
+	assert.equal(r.opIndex, 1, 'the failing op index is reported');
 	assert.equal(JSON.stringify(m.toJSON()), snapshot);
 });
 

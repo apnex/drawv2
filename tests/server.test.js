@@ -613,6 +613,32 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
 });
 
+test('B103: a rejected commit names WHICH op failed, not just what was wrong', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		// op 0 is valid, op 1 is not: a link to a node that does not exist. The planner walks the
+		// batch in order and knows it stopped at 1 -- before B103 the REST layer discarded that.
+		const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
+			body: JSON.stringify({ ops: [
+				{ op: 'put', kind: 'node', entity: { id: 'node-c10001', name: 'ok', type: 'host', x: 0, y: 0 } },
+				{ op: 'put', kind: 'link', entity: { id: 'link-c10001', src: 'node-c10001', dst: 'node-ffffff' } },
+			], label: 'one good op then one bad' }),
+		});
+		const body = await r.json();
+		assert.equal(r.status, 422);
+		assert.equal(body.opIndex, 1, 'the failing op index reaches the agent');
+		assert.ok(body.error, 'and the message is still there');
+		// the whole batch is refused, so the valid op must not have landed either (atomicity)
+		const doc = (await get(`/api/v1/diagrams/${id}`)).body;
+		assert.ok(!doc.nodes.some((n) => n.id === 'node-c10001'), 'the good op in the failed batch wrote nothing');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': lock.token } });
+	}
+});
+
 test('R3: PUT /selection is lock-gated (423) and rejects a malformed body (422)', async () => {
 	const H = (token) => ({ 'Content-Type': 'application/json', ...(token ? { 'X-Draw-Lock': token } : {}) });
 	const id = (await get('/api/v1/diagrams')).body[0].id;

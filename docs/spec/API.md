@@ -25,6 +25,27 @@ Creating and destroying are not symmetric, and a destructive verb keeps its gate
 `MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
 It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.
 
+## What an id looks like
+
+Every entity id is its kind, a hyphen, and exactly six lowercase hex digits.
+
+```text
+node-0003fc      waypoint-aa0001      link-b09674
+zone-285c5e      group-8582bf         diagram-7bc886
+```
+
+The server enforces `^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
+A refusal here is a `422` naming the op that carried the bad id.
+
+An agent supplying its own ids must match the grammar, and the six digits are the only free part.\
+Nothing checks that ids are random, so a batch may use `node-000001` upward, but two entities of the same kind cannot share one.
+
+Ids for a whole diagram are minted by the server, never accepted from a caller.\
+`POST /api/v1/diagrams` ignores an id in the body and answers `201` with the one it chose, which is what stops offline work from landing on top of whichever diagram the server last answered with.
+
+Selection is narrower than the id grammar.\
+Only `node`, `waypoint`, `link` and `zone` are selectable; a `group` or `diagram` id in a selection is refused rather than ignored, because tolerating it would hide a caller bug behind a silent prune.
+
 ## Two doors, one surface
 
 An agent reaches the same API at `/connect/v1/...` that the editor reaches at `/api/v1/...`, and the prefix is the only difference.\
