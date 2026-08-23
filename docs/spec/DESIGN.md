@@ -79,3 +79,30 @@ Shift mid-drag = ortho · Shift at release (link mode) = chain · Shift+arrows =
 Tab = contested (rename-run inside editor is free; canvas Tab held for data view) ·
 Enter = contested (coordinate entry vs stamp-at-ghost) · L/Shift+L = link selected ·
 Alt+left-drag = delete marquee · M = unbound (measure mode cut)
+
+---
+
+## Status indicators: two axes, not one pill (RULED 2026-08-23)
+
+`#lockstate` answers **what may I do on this diagram**, and its four states are `offline`, `read`, `write` and `locked`.\
+They stay on one pill because exactly one is ever true.\
+`offline` absorbs the others: with no connection, "may I write" has no answer rather than a false one.
+
+Agent activity is a second axis and gets its own indicator.\
+The test that separates them is co-occurrence: an agent can be working on `a1-demo` while this diagram is `write`, or `read`, or `locked`, so the two cannot share one element without one of them being lost.
+
+The pill is about **here**, and the agent indicator is about **the workspace**.\
+That is what makes the second one worth having: it reports work the operator is not currently looking at, which no per-diagram element can do.
+
+The agent indicator carries state rather than events, and that is the point.\
+An invitation delivered as a toast is lost when nobody is watching, and the first shape considered here was exactly that.\
+A state is still there when the operator next looks, so "come and see this" and "may I drive" stop being two mechanisms and become two values of one field.
+
+Only the agent indicator is clickable, because only it names somewhere else to be.
+
+One redundancy is accepted deliberately.\
+`locked` on the pill and `driving` on the agent indicator both follow from the same fact, since a lock is only ever taken by a server-side controller.\
+Each element stays independently readable, which is worth more than removing the overlap.
+
+This ruling makes the work additive.\
+The pill does not change, so nothing that works today is put at risk by building the second indicator.
