@@ -127,5 +127,37 @@ export function violations(model, { groupAfterRemoval = null } = {}) {
 			out.push(`${links.length} straight links between ${a} and ${b}, which may carry ${cap}`);
 		}
 	}
+	/*
+	B112 -- one anchor holds one occupant.
+
+	An anchor is a grid position, and `engine/relations.mjs` already keys occupancy by cell as an
+	eager index -- so the index has always ASSUMED this while nothing enforced it. `Model#put` takes
+	two nodes at identical coordinates without complaint.
+
+	A waypoint counts, because a waypoint IS a node for placement (ruled 2026-08-23): it sits on the
+	same grid, the same index keys it, and a bend hidden underneath a node is not a diagram anyone
+	can read.
+
+	The live estate held zero collisions across 146 entities when this was written, and only because
+	the one path able to break it -- a human dragging -- has eyes on the result. The agent door has
+	no such check, and B110 stopped it writing OFF the grid without stopping it writing ON TOP of
+	something.
+
+	Compared as resolved coordinates rather than cell indices, deliberately. The two are the same
+	question only while every entity is on-grid, which `server/validate.js` now enforces at the
+	boundary; comparing px states the property itself rather than depending on that one holding, and
+	two entities somehow 30px apart are reported rather than collapsed into one cell the way
+	`cellOf` would collapse them.
+	*/
+	const at = new Map();
+	for (const kind of ['node', 'waypoint']) {
+		for (const e of model.all(kind)) {
+			const key = `${e.x},${e.y}`;
+			const held = at.get(key);
+			if (held) out.push(`${e.id} and ${held} occupy the same anchor (${e.x},${e.y})`);
+			else at.set(key, e.id);
+		}
+	}
+
 	return out;
 }

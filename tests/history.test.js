@@ -19,8 +19,18 @@ import { Session } from '../server/protocol.js';
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
-const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
-const node = (id, x = null, y = 0) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y });
+/*
+B112 -- one anchor holds one occupant, so a fixture may not stack nodes at the origin.
+
+`spread` maps an ordinal to a distinct on-grid anchor inside the canvas: 16 columns of 60px, then
+down a row. The ring-buffer tests below create hundreds of nodes in a loop and every one of them
+used to be put at (0,0), which is a document nothing would now accept -- and which was only ever
+harmless because nothing checked.
+*/
+// 31 columns x 17 rows = 527 anchors, the whole canvas. The ring tests commit LOG_HARD_MAX + 20
+// = 420 times, so this must not wrap before then -- an earlier 16x16 version did, at 256.
+const spread = (i) => ({ x: (i % 31) * 60 - 900, y: (Math.floor(i / 31) % 17) * 60 - 480 });
+const node = (id, x = null, y = 0) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? 0, y });
 const hex = (n) => n.toString(16).padStart(6, '0').slice(-6);
 
 function seeded() {
@@ -29,7 +39,8 @@ function seeded() {
 	return { m, log };
 }
 const put = (m, log, i, by = 'client', actor = 'tab-a') =>
-	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: node(`node-${hex(i)}`, 0, 0) }], label: 'create' }, by, actor);
+	commit(m, log, { ops: [{ op: 'put', kind: 'node',
+		entity: { ...node(`node-${hex(i)}`), ...spread(i) } }], label: 'create' }, by, actor);
 
 // ---- D21: undo a RUN ----
 
@@ -145,7 +156,8 @@ test('D21: the server computes the top RUN, so the browser can offer "undo all N
 	const env = await live();
 	try {
 		for (let i = 1; i <= 4; i++) {
-			env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node(`node-${hex(i)}`, 60 * i, 300) }], label: 'create' }, 'server', 'agent-7');
+			env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node',
+				entity: { ...node(`node-${hex(i)}`), ...spread(i) } }], label: 'create' }, 'server', 'agent-7');
 		}
 		const ws = fakeWs();
 		new Session(ws, env.store);
@@ -167,9 +179,9 @@ test('D21: the server computes the top RUN, so the browser can offer "undo all N
 test('D21: a run STOPS at a different actor — you cannot sweep away someone else’s work with your own', async () => {
 	const env = await live();
 	try {
-		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0001', 60, 300) }] }, 'client', 'tab-a');
-		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0002', 120, 300) }] }, 'server', 'agent-7');
-		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0003', 180, 300) }] }, 'server', 'agent-7');
+		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0001', 660, 480) }] }, 'client', 'tab-a');
+		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0002', 720, 480) }] }, 'server', 'agent-7');
+		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0003', 780, 480) }] }, 'server', 'agent-7');
 
 		const ws = fakeWs();
 		new Session(ws, env.store);

@@ -1,4 +1,7 @@
 import { test } from 'node:test';
+import { violations } from '../model/invariants.mjs';
+import { commit } from '../server/txn.mjs';
+import { Log } from '../server/log.mjs';
 import { STD } from '../kernel/index.mjs';
 import assert from 'node:assert/strict';
 import { validateSelectionIds, validateDoc, validateMutation } from '../server/validate.js';
@@ -115,4 +118,71 @@ test('B110: the pitch is SOURCED from the kernel, so the grid cannot fork', () =
 	const off = STD.pitch / 2;
 	assert.match(String(put('node', { id: 'node-aa0001', name: 'n', type: 'host', x: off, y: 0 })),
 		/invalid value for node\.x/, `half a pitch (${off}) must never be a legal node position`);
+});
+
+/*
+B112 -- one anchor holds one occupant, enforced by the rules engine rather than at a call site.
+
+`engine/relations.mjs` keys cell occupancy as an eager index, so the index has always ASSUMED this
+while nothing enforced it. The live estate held zero collisions across 146 entities and only
+because the one path able to break it -- a human dragging -- has eyes on the result.
+
+In `violations()` and not `validate.js`, because it is a property of the DOCUMENT that no single
+entity can be asked about. That placement buys two things the planner relies on: the check runs
+against the state a transaction would produce, so a batch may transiently collide and end valid,
+and only what a transaction INTRODUCES is refused, so a document already holding a collision can
+still be repaired.
+*/
+test('B112: two nodes on one anchor is a violation', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 60, y: 60 });
+	assert.deepEqual(violations(m), []);
+	m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', shape: 'circle', x: 60, y: 60 });
+	assert.match(String(violations(m)), /occupy the same anchor \(60,60\)/);
+});
+
+test('B112: a waypoint occupies an anchor, because a waypoint IS a node for placement', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 120, y: 0 });
+	m.put('waypoint', { id: 'waypoint-aa0001', x: 180, y: 0 });
+	assert.deepEqual(violations(m), [], 'distinct anchors are fine');
+	m.set('waypoint', 'waypoint-aa0001', { x: 120 });
+	assert.match(String(violations(m)), /occupy the same anchor \(120,0\)/,
+		'a bend hidden under a node is not a diagram anyone can read');
+});
+
+test('B112: the planner refuses a commit that would land a node on a taken anchor', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 300, y: 0 });
+	const log = new Log(0);
+	const r = commit(m, log, { ops: [{ op: 'put', kind: 'node',
+		entity: { id: 'node-aa0002', name: 'b', type: 'host', shape: 'circle', x: 300, y: 0 } }] }, 'server', 't');
+	assert.equal(r.ok, false);
+	assert.match(r.error, /occupy the same anchor/);
+	assert.equal(m.all('node').length, 1, 'and it wrote nothing');
+});
+
+test('B112: a MOVE onto a free anchor still passes -- the rule is not "never touch a node"', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 300, y: 0 });
+	m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', shape: 'circle', x: 360, y: 0 });
+	const log = new Log(0);
+	const r = commit(m, log, { ops: [{ op: 'set', kind: 'node', id: 'node-aa0002', patch: { x: 420 } }] }, 'server', 't');
+	assert.equal(r.ok, true);
+});
+
+test('B112: a document already holding a collision can still be REPAIRED', () => {
+	/*
+	The planner reports only what a transaction INTRODUCES. Refusing on the post-state alone would
+	mean a document that somehow reached a bad state could never be fixed, because the fix is itself
+	a transaction and would be refused for the condition it exists to remove.
+	*/
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 600, y: 0 });
+	m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', shape: 'circle', x: 600, y: 0 });
+	assert.equal(violations(m).length, 1, 'the document starts broken');
+	const log = new Log(0);
+	const r = commit(m, log, { ops: [{ op: 'set', kind: 'node', id: 'node-aa0002', patch: { x: 660 } }] }, 'server', 't');
+	assert.equal(r.ok, true, 'the repair is not refused for the condition it removes');
+	assert.deepEqual(violations(m), []);
 });

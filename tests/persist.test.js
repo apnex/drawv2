@@ -15,7 +15,9 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cs2-'));
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
 const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
-const node = (id, x = null) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: 0 });
+// B112: the seeded example occupies row y=0, so fixtures live on a free row instead. One anchor
+// holds one occupant, and `node('node-bb0001', 300)` used to land exactly on a seeded node.
+const node = (id, x = null) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: -480 });
 const put = (kind, entity) => ({ op: 'put', kind, entity });
 
 async function storeWith(dir) {
@@ -252,8 +254,9 @@ test('I12: version is monotonic ACROSS restarts and no seq is re-minted', async 
 	const dir = tmp();
 	try {
 		const a = await storeWith(dir);
-		for (const n of ['node-ca0001', 'node-ca0002', 'node-ca0003']) {
-			a.s.commit(a.id, { ops: [put('node', node(n, 60))] }, 'server', 't');
+		// distinct anchors: one anchor holds one occupant (B112)
+		for (const [k, n] of ['node-ca0001', 'node-ca0002', 'node-ca0003'].entries()) {
+			a.s.commit(a.id, { ops: [put('node', node(n, 60 + k * 60))] }, 'server', 't');
 		}
 		a.s.flush(a.id);
 		const pre = a.s.diagrams.get(a.id).log.version;
@@ -261,7 +264,7 @@ test('I12: version is monotonic ACROSS restarts and no seq is re-minted', async 
 
 		const b = new Store(dir); await b.init();
 		assert.equal(b.diagrams.get(a.id).log.version, pre, 'the watermark came back');
-		const r = b.commit(a.id, { ops: [put('node', node('node-ca0004', 120))] }, 'server', 't');
+		const r = b.commit(a.id, { ops: [put('node', node('node-ca0004', 240))] }, 'server', 't');   // 120 is taken by ca0002 (B112)
 		assert.equal(r.version, pre + 1, 'the next change continues the sequence');
 
 		const seqs = b.diagrams.get(a.id).log.records.map((x) => x.seq);

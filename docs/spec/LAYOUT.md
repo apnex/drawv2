@@ -117,6 +117,7 @@ It sits on the same grid, the same index keys it, and a bend hidden underneath a
 
 The layouts, and `nearestAnchor`, are in `kernel/geometry.mjs`, and `app/src/snap.js` and `server/validate.js` both source them (**B111**).
 
-Occupancy is not.\
-The rule is four lines in `violations()` and was written and backed out: eighteen tests broke, because fixture helpers default to the origin and any test making two nodes now stacks them.\
-That is a corpus pass rather than a rule problem, and it is tracked as **B112**.
+Occupancy is too, in `violations()` (**B112**), and the corpus pass it needed turned out to be the work exactly as expected.
+
+One consequence deserves stating, because it changes a number the code still names.\
+The canvas holds 527 node anchors, and the entity-collection cap is 2000, so for nodes and waypoints the cap can no longer fire at all -- occupancy binds first (**B113**).

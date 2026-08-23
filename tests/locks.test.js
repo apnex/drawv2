@@ -201,7 +201,7 @@ test('REST: an acked write is already on disk (flush-before-ack — no debounce 
 	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
 	try {
 		const c = await fetch(`${base}/api/v1/diagrams/${id}/nodes`, {
-			method: 'POST', headers: H(lock.token), body: JSON.stringify({ type: 'host', x: 300, y: 180 })
+			method: 'POST', headers: H(lock.token), body: JSON.stringify({ type: 'host', x: 300, y: -480 })
 		});
 		assert.equal(c.status, 200);
 		const newId = (await c.json()).id;
@@ -429,7 +429,7 @@ test('B16: no X-Draw-Expect still writes — it is OPTIONAL on forward writes (D
 	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
 	try {
 		const r = await fetch(`${base}/api/v1/diagrams/${id}/nodes`, {
-			method: 'POST', headers: H(lock.token), body: JSON.stringify({ type: 'host', x: 180, y: 180 }) });
+			method: 'POST', headers: H(lock.token), body: JSON.stringify({ type: 'host', x: 360, y: -480 }) });
 		assert.equal(r.status, 200, 'a curl one-liner must still work');
 	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
 });

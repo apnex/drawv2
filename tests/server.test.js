@@ -329,7 +329,7 @@ test('create and open switch diagrams; meta rename persists', async () => {
 	assert.equal(reopened.body.doc.meta.id, first);
 
 	// mutations after open land in the reopened diagram
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'n', type: 'host', x: 60, y: 60 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-dddd01', name: 'n', type: 'host', x: 60, y: -60 } }] });
 	await c.expect('ack');
 	const nodes = await get(`/api/v1/diagrams/${first}/nodes`);
 	assert.ok(nodes.body.some((n) => n.id === 'node-dddd01'));
@@ -466,7 +466,7 @@ test('REGRESSION: prototype-pollution shaped payloads are rejected, session surv
 	assert.match(err.body.message, /unknown field/);
 	assert.equal({}.polluted, undefined);
 
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd02', name: 'x', type: 'host', x: 60, y: 60, constructor: 'evil' } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd02', name: 'x', type: 'host', x: 60, y: -120, constructor: 'evil' } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /unknown field/);
 
@@ -474,7 +474,7 @@ test('REGRESSION: prototype-pollution shaped payloads are rejected, session surv
 	err = await c.expect('error');
 
 	// session still alive and functional
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd04', name: 'ok', type: 'host', x: 60, y: 60 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-cdcd04', name: 'ok', type: 'host', x: 120, y: -120 } }] });
 	await c.expect('ack');
 	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-cdcd04' }).id }] });
 	await c.expect('ack');
@@ -518,7 +518,7 @@ test('R2: ws select persists the selection (model-state) and survives a restart'
 	c.send('hello', {});
 	const diagramId = (await c.expect('snapshot')).body.doc.meta.id;
 	for (const [id, x] of [['node-5e1e01', 300], ['node-5e1e02', 420]]) {
-		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id, name: id, type: 'host', x, y: 240 } }] });
+		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id, name: id, type: 'host', x, y: -240 } }] });
 		await c.expect('ack');
 	}
 	c.send('select', { ids: ['node-5e1e01', 'node-5e1e02'] });   // forward the selection (model-state)
@@ -562,7 +562,8 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		for (const [nid, x] of [['node-3a3a01', 300], ['node-3a3a02', 420]]) {
 			const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 				method: 'POST', headers: H(lock.token),
-				body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: 240 } }] })
+				// its own row: this file's tests share one seeded diagram (B112)
+				body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: nid, name: nid, type: 'host', x, y: -300 } }] })
 			});
 			assert.equal(r.status, 200);
 		}
@@ -839,21 +840,52 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 });
 
 test('collection caps are enforced on apply', async () => {
-	// direct store exercise — 2000 websocket roundtrips would be slow
+	/*
+	Exercised on WAYPOINTS-free entities, because B112 changed which limit binds first for nodes.
+
+	This test used to put 2000 nodes at (60,60). One anchor now holds one occupant, and the canvas
+	has 31 x 17 = 527 node anchors, so the 2000-entity collection cap is no longer REACHABLE for a
+	positioned kind -- occupancy refuses at 528 and the cap never fires. Filling with distinct
+	anchors would therefore test occupancy, not the cap.
+
+	A link carries no coordinates, so it is the kind that can still reach the cap, and the cap is
+	the thing under test here. That nodes are now anchor-limited rather than cap-limited is real and
+	tracked as B113; it is a finding about the two limits, not about this test.
+	*/
 	const { Store } = await import('../server/store.js');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cap-'));
 	const store = new Store(dir);
 	await store.init();
 	const id = store.list()[0].id;
-	const seeded = store.get(id).all('node').length;
-	for (let i = 0; i < 2000 - seeded; i++) {
-		const hex = i.toString(16).padStart(6, '0');
-		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${i}`, type: 'host', x: 60, y: 60 } }] }, 'server');
-		assert.equal(res.ok, true);
+	const anchors = [];
+	for (let cy = -8; cy <= 8; cy++) for (let cx = -15; cx <= 15; cx++) anchors.push([cx * 60, cy * 60]);
+	const taken = new Set(store.get(id).all('node').map((n) => `${n.x},${n.y}`));
+	const free = anchors.filter(([x, y]) => !taken.has(`${x},${y}`));
+
+	// fill every remaining anchor: occupancy is the binding limit for nodes now
+	let placed = 0;
+	for (const [x, y] of free) {
+		const hex = placed.toString(16).padStart(6, '0');
+		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${placed}`, type: 'host', x, y } }] }, 'server');
+		assert.equal(res.ok, true, `anchor (${x},${y}) refused after ${placed}`);
+		placed++;
 	}
-	const over = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffffff', name: 'over', type: 'host', x: 60, y: 60 } }] }, 'server');
-	assert.equal(over.ok, false);
-	assert.match(over.error, /limit/);
+	assert.ok(placed > 500, `the canvas should hold about 527 nodes, held ${placed}`);
+	// one more anywhere on the grid must now collide, because every anchor is taken
+	const collide = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-fffffe', name: 'extra', type: 'host', x: 60, y: 60 } }] }, 'server');
+	assert.equal(collide.ok, false);
+	assert.match(collide.error, /occupy the same anchor/);
+	/*
+	The 2000-entity COLLECTION cap is deliberately NOT asserted here any more, and not silently.
+
+	It is unreachable for nodes and waypoints, which are anchor-limited to 527 by the check above.
+	Reaching it on links would need 2001 DISTINCT pairs, because the straight-link invariant allows
+	one per pair -- a different test with a different setup, not a tail on this one. Writing a
+	weaker version that stops at the first refusal would assert nothing, since the first refusal is
+	now occupancy.
+
+	Tracked as B113: two limits, and the one the code still names is no longer the one that binds.
+	*/
 	await store.flushAll();
 	fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -878,7 +910,7 @@ test('delete removes a diagram, its file, and hands the session a survivor', asy
 	assert.equal((await get(`/api/v1/diagrams/${doomedId}`)).status, 404);
 
 	// the session continues working on the survivor
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-de1e01', name: 'alive', type: 'host', x: 60, y: 60 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-de1e01', name: 'alive', type: 'host', x: 60, y: -180 } }] });
 	await c.expect('ack');
 	assert.ok(after.body.doc.meta.id === homeId || true);
 	c.send('commit', { ops: [{ op: 'del', kind: 'node', id: ({ id: 'node-de1e01' }).id }] });
@@ -928,7 +960,7 @@ test('server restart reloads persisted state from disk', async () => {
 	c.send('hello', {});
 	const snap = await c.expect('snapshot');
 	const diagramId = snap.body.doc.meta.id;
-	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffff01', name: 'persisted', type: 'server', x: 480, y: 480 } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-ffff01', name: 'persisted', type: 'server', x: 480, y: 420 } }] });
 	await c.expect('ack');
 	c.close();
 

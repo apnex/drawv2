@@ -149,6 +149,27 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 			invariantRefusals++;
 			continue;
 		}
+		/*
+		The FIFTH deliberate divergence (B112): plan() enforces one occupant per anchor and the
+		frozen oracle never had it, so it REFUSES a put or set the oracle accepted. The corpus
+		reaches this freely -- its generator places nodes without consulting occupancy, which is a
+		fair description of how the defect reached production in the first place.
+
+		Bounded structurally rather than by trusting the message, exactly as the fourth is: the
+		refused op must actually land a node or waypoint where another already sits. A refusal for
+		any other reason, or on any other shape, is still a real disagreement.
+		*/
+		if (a.ok && !b.ok && /occupy the same anchor/.test(b.error || '')) {
+			const ent = modern.entity || model.get(modern.kind, modern.id);
+			const patched = modern.op === 'set' ? { ...ent, ...modern.patch } : ent;
+			assert.ok(['node', 'waypoint'].includes(modern.kind),
+				`iteration ${i}: the occupancy invariant fired on a ${modern.kind} op`);
+			const others = [...model.all('node'), ...model.all('waypoint')];
+			assert.ok(others.some((o2) => o2.id !== patched.id && o2.x === patched.x && o2.y === patched.y),
+				`iteration ${i}: nothing already occupies (${patched.x},${patched.y})`);
+			invariantRefusals++;
+			continue;
+		}
 		if (!a.ok || !b.ok) {
 			assert.equal(a.ok, b.ok, `iteration ${i}: acceptance disagrees — legacy ${a.error}, modern ${b.error}`);
 			rejectedBoth++;
