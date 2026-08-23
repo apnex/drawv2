@@ -18,12 +18,10 @@ that is deliberately never a verb, and each needs a sentence saying why.
 import fs from 'node:fs';
 
 const REST = 'server/rest.js';
-const CLI = 'cli/draw.sh';
 
 // routes the tool will never carry, with the reason it would be wrong to
 const ALLOW = {
 	oauth2callback: 'a browser redirect target in the OAuth dance, not an operation anyone invokes',
-	health: 'covered: `draw health` already reaches it',
 };
 
 /*
@@ -39,33 +37,51 @@ const PENDING = {
 	nearest: 'anchor nearest <x> <y> -- CLI.md Placement',
 	anchors: 'anchor free -- CLI.md Placement',
 	grants: 'per-diagram access -- CLI.md Access',
-	workspace: 'workspace grants, codes, agents, viewers -- CLI.md Access and Awareness',
+	workspace: 'workspace grants and codes -- CLI.md Access',
 	agents: 'CLI.md Awareness', viewers: 'CLI.md Awareness',
 	codes: 'connection codes -- CLI.md Access',
+	sync: 'the Slides sync route behind `draw push`',
+	slides: 'the Slides projection target -- CLI.md Projection',
 	nodes: 'high-level node verbs -- CLI.md Writing',
 	links: 'CLI.md Writing', zones: 'CLI.md Writing', groups: 'CLI.md Writing', waypoints: 'CLI.md Writing',
-	diagrams: 'covered for reads; create and delete are CLI.md Lifecycle',
 };
 
 const rest = fs.readFileSync(REST, 'utf8');
-const cli = fs.readFileSync(CLI, 'utf8');
-
-const collections = (rest.match(/const COLLECTIONS = \{([^}]*)\}/)?.[1].match(/(\w+):/g) || [])
-	.map((k) => k.slice(0, -1));
-const named = [...rest.matchAll(/parts\[\d+\] === '([a-z0-9]+)'/g)].map((m) => m[1]);
-const routes = [...new Set([...collections, ...named])].sort();
 
 /*
-A verb "reaches" a route when the CLI issues a REQUEST naming that segment -- not merely when the
-string appears in the file. The first version of this matched anywhere, and counted `/undo` in a
-comment explaining that the CLI does NOT undo. A check that reads prose as coverage reports the
-opposite of the truth.
+The inventory, and it must be WIDER than GR10's.
+
+GR10 matches `parts[n] === 'x'` only, which misses two shapes the router actually uses: a literal
+`url.pathname === '/health'`, and the NEGATIVE form `parts[2] !== 'diagrams'` that guards the whole
+diagram family. Inheriting that derivation reported the CLI reaching 1 route of 21 while it plainly
+reached three, because the two it covered best were the two the pattern could not see.
+
+`v1` is dropped: it is the version prefix every path carries, not a route anyone drives.
 */
-const requests = cli.split('\n')
-	.filter((l) => !/^\s*#/.test(l))
-	.filter((l) => /\$\{APIHOST\}/.test(l))
-	.join('\n');
-const reached = new Set(routes.filter((r) => new RegExp(`/${r}\\b`).test(requests)));
+const collections = (rest.match(/const COLLECTIONS = \{([^}]*)\}/)?.[1].match(/(\w+):/g) || [])
+	.map((k) => k.slice(0, -1));
+const named = [...rest.matchAll(/parts\[\d+\] [!=]== '([a-z0-9]+)'/g)].map((m) => m[1]);
+const literal = [...rest.matchAll(/url\.pathname === '\/([a-z0-9]+)'/g)].map((m) => m[1]);
+const routes = [...new Set([...collections, ...named, ...literal])].filter((r) => !['v1', 'api'].includes(r)).sort();
+
+/*
+Coverage is read from the MANIFEST, not grepped out of the tool's source.
+
+The shell version could only be checked by pattern-matching its text, and the first attempt counted
+`/undo` inside a comment explaining that the CLI does NOT undo -- a coverage check reading prose and
+reporting the exact opposite of the truth. Each verb now DECLARES the route it reaches, so this
+compares two lists instead of guessing at one.
+*/
+const { VERBS } = await import('../cli/verbs.mjs');
+const declared = new Set();
+for (const v of VERBS) {
+	if (!v.summary || !v.example) {
+		console.error(`\n  FAIL — verb \`${v.name}\` has no ${v.summary ? 'example' : 'summary'}. CLI.md: both are mandatory.`);
+		process.exit(1);
+	}
+	for (const seg of String(v.route).split('/')) if (seg && !seg.startsWith('<')) declared.add(seg);
+}
+const reached = new Set(routes.filter((r) => declared.has(r)));
 
 const missing = routes.filter((r) => !reached.has(r) && !ALLOW[r] && !PENDING[r]);
 const pending = routes.filter((r) => !reached.has(r) && PENDING[r]);
