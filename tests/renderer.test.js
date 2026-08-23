@@ -103,3 +103,42 @@ test('B121: client and kernel agree on a content panel too', () => {
 		assert.deepEqual(clientSet, kernelSet, `panel, mode=${editing ? 'edit' : 'view'}: the two renderers disagree`);
 	}
 });
+
+/*
+Tab shows or hides names, and they start visible.
+
+It used to toggle a numeric overlay of every coordinate. That was deleted rather than rebound --
+never properly useful, and keeping it to avoid saying so is how a tool accumulates.
+
+Hidden by CSS class rather than by re-rendering: the toggle stays instant on a large diagram, and
+an exported SVG is unaffected, because a diagram nobody can read is not a diagram.
+*/
+test('Tab: labels are visible by default, and toggle off and on', () => {
+	withRenderer(({ svg, model, make }) => {
+		const r = make(model);
+		model.put('node', { id: 'node-aa0001', name: 'web-1', type: 'host', shape: 'circle', x: 0, y: 0 });
+
+		assert.equal(r.labels, true, 'a fresh session shows names');
+		assert.equal(svg.classList.contains('labels-off'), false);
+		assert.ok(classesIn(svg).includes('label'), 'and the label element is there to begin with');
+
+		assert.equal(r.toggleLabels(), false);
+		assert.equal(svg.classList.contains('labels-off'), true, 'hidden by class');
+		assert.ok(classesIn(svg).includes('label'),
+			'the element STAYS -- hiding is a class, so the toggle costs no re-render and the export is unaffected');
+
+		assert.equal(r.toggleLabels(), true);
+		assert.equal(svg.classList.contains('labels-off'), false);
+	});
+});
+
+test('Tab: hiding names does not disturb the shared element set', () => {
+	// the parity gate compares frame and socket; a label toggle must not move either
+	withRenderer(({ svg, model, make }) => {
+		const r = make(model);
+		model.put('node', { id: 'node-aa0001', name: 'web-1', type: 'host', shape: 'circle', x: 0, y: 0 });
+		const before = classesIn(svg).filter((c) => c === 'frame' || c === 'socket').sort();
+		r.toggleLabels();
+		assert.deepEqual(classesIn(svg).filter((c) => c === 'frame' || c === 'socket').sort(), before);
+	});
+});

@@ -363,7 +363,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap }) {
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
@@ -379,7 +379,6 @@ export class Input {
 		// palette's surface at H6.13 and belong here too, or `bare` construction throws on the first `t`.
 		this.palette = palette || { hand: null, textTool: false, setHand() {}, toggleHand() {}, trackHand() {},
 			hideHand() {}, setTextTool() {}, holding() { return false; }, releaseTools() {} };
-		this.dataview = dataview || { toggle() {} };
 		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)
 		this.overlay = svg.querySelector('#overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
@@ -1085,12 +1084,17 @@ export class Input {
 	onEditMode() { this.renderer.setMode(this.renderer.mode === 'edit' ? 'view' : 'edit'); }
 	onRunMode() { this.renderer.setMode(this.renderer.mode === 'run' ? 'view' : 'run'); }
 
-	onDataView(evt) {
-		// claim Tab only when the canvas holds focus, so it can still traverse the toolbar
+	// Tab shows or hides names. It used to toggle a numeric overlay of every coordinate, which was
+	// deleted rather than rebound: it was never properly useful, and carrying it forward would have
+	// meant keeping an X-ray nobody read to avoid admitting that.
+	onLabels(evt) {
+		// claim Tab only when the canvas holds focus, so it can still traverse the toolbar. B47
+		// records this as a deliberate opt-out from the dispatcher's default claim, and changing
+		// the verb behind the key is no reason to change what the key does to focus.
 		const t = evt.target;
 		if (t && typeof t.closest === 'function' && t.closest('button, a[href], select, input, textarea, [tabindex]')) return;
 		evt.preventDefault();
-		this.dataview.toggle();
+		this.renderer.toggleLabels();
 	}
 
 	onEscape(evt) {

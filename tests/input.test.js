@@ -211,7 +211,7 @@ happens to sit in the ladder, not on whether it mutates. That produces both erro
        dropped by Sync (sync.js:62): permanent silent divergence, no resync, no notice.
   B37  two INSPECTION verbs sit BELOW their guard and are wrongly blocked — Ctrl+A and Space/datum
        — though SCOPE decision 5 promises "selection, the data view, and the readout still work".
-       Tab/dataview sits in front of the guard and does work, which is the proof that position, and
+       Tab/labels sits in front of the guard and does work, which is the proof that position, and
        nothing else, is deciding.
 
 Fixed together in H3.1 because they are one edit in two directions. The durable fix is H6's keymap
@@ -250,7 +250,7 @@ test('B37: while Server-Locked, Space still sets a datum — the readout is not 
 	} finally { h.restore(); }
 });
 
-test('Input constructs with no readout/palette/dataview — the null objects are TOTAL', () => {
+test('Input constructs with no readout/palette — the null objects are TOTAL', () => {
 	// Pins the defect the harness found on its first run: the defaults advertised these as optional
 	// and then threw on readout.signed/dims/flash, so Ctrl+D was unreachable without a real readout.
 	const h = makeInput({ bare: true });
@@ -966,7 +966,7 @@ test('B47: a conditional claimer prevents only on the path that acts', () => {
 
 test('B47: every entry declares prevent, or inherits the safe default', () => {
 	const optOut = KEYMAP.filter((r) => r.prevent === false).map((r) => r.id).sort();
-	assert.deepEqual(optOut, ['alt', 'control', 'dataview', 'delete', 'escape', 'stamp', 'waypoint'],
+	assert.deepEqual(optOut, ['alt', 'control', 'delete', 'escape', 'labels', 'stamp', 'waypoint'],
 		'the opt-outs are a closed, reviewed set — a new one has to be argued for here');
 	for (const r of KEYMAP) {
 		assert.ok(r.prevent === undefined || r.prevent === false,

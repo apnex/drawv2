@@ -41,7 +41,7 @@ reasons appear below and both are legitimate:
                                    are the browser's to handle, and swallowing them is user-hostile.
 
   THE HANDLER CLAIMS IT ONLY WHEN  `alt`/`control` (Alt only, to keep Firefox's menu bar out of the
-  IT ACTS                          delete chord), `dataview` (Tab only when the canvas holds focus,
+  IT ACTS                          delete chord), `labels` (Tab only when the canvas holds focus,
                                    so it can still traverse the toolbar), and `waypoint` / `stamp` /
                                    `delete`, which prevent only on the path that does something.
 
@@ -75,7 +75,7 @@ export const KEYMAP = [
 	// ---- view state: no model change, so live while Server-Locked ----
 	{ id: 'edit-mode', mutates: false, when: (e) => is(e, 'e') && plain(e), run: 'onEditMode' },
 	{ id: 'run-mode',  mutates: false, when: (e) => is(e, 'r') && plain(e), run: 'onRunMode' },
-	{ id: 'dataview',  prevent: false, mutates: false, when: (e) => e.key === 'Tab',        run: 'onDataView' },
+	{ id: 'labels',    prevent: false, mutates: false, when: (e) => e.key === 'Tab',        run: 'onLabels' },
 
 	// ---- inspection: SCOPE decision 5 promises these keep working while locked ----
 	{ id: 'select-all', mutates: false, when: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll' },

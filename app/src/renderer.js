@@ -72,6 +72,7 @@ export class Renderer {
 			nodes: svg.querySelector('#nodes')
 		};
 		this.selectedSet = new Set();   // the renderer OWNS the 'selected' visual state (Selection is renderer-free)
+		this.labels = true;             // node and zone names, Tab-toggled; visible by default
 		this.mode = 'view';             // W4/W5 — view | edit | run (client/session, ephemeral). edit shows the
 		model.onChange((action, kind, entity) => this.handle(action, kind, entity));   // socket grid; run makes clickable regions act
 	}
@@ -79,6 +80,22 @@ export class Renderer {
 	// W4/W5 — set the interaction mode. edit shows editing aids (the per-cell socket grid on content panels);
 	// run makes clickable content regions act (CSS-gated via the 'run-mode' class); view is clean + normal
 	// editing gestures. Session/view state (ephemeral — not persisted). Re-renders content panels.
+	/*
+	Labels on or off, Tab-toggled. Visible by default, so a fresh session shows names.
+
+	A class rather than a re-render: the elements stay and CSS hides them, which makes the toggle
+	instant on a large diagram and keeps the export unaffected -- a rendered SVG always carries its
+	labels, because a diagram nobody can read is not a diagram.
+
+	Not persisted, deliberately. The mode toggles are session state and this is one; a diagram that
+	opens with its names missing because of a keystroke from last week is a puzzle, not a setting.
+	*/
+	toggleLabels() {
+		this.labels = !this.labels;
+		this.svg.classList.toggle('labels-off', !this.labels);
+		return this.labels;
+	}
+
 	// what this renderer would pass a headless renderer, so both answer the same predicates
 	renderOpts() {
 		return { sockets: this.mode === 'edit' };

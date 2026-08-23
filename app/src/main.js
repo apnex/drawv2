@@ -18,7 +18,6 @@ import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
-import { DataView } from './dataview.js';
 
 const svg = document.getElementById('container');
 
@@ -39,8 +38,6 @@ const selection = new Selection(model);
 selection.subscribe(() => renderer.reflectSelection(selection.list())); // renderer owns the 'selected' visual reflection
 const labels = new LabelEditor({ svg, model, history });
 const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
-const dataview = new DataView({ model, svg });
-readout.onUnitsChanged = (units) => dataview.setUnits(units);
 // B36 — one crosshair on #snaplayer, owned here and shared. Overlay and Palette each built their
 // own, which is two owners of one layer; the composition root is where that gets decided.
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
@@ -50,7 +47,7 @@ const palette = new Palette({ container: document.getElementById('palette'), svg
 // look the same element up for itself, so the id had two owners (B45).
 const helpBtn = document.getElementById('help-btn');
 const help = document.getElementById('help');
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host: window, help, snap });
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, snap });
 if (helpBtn && help) {
 	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });
 	help.addEventListener('click', (e) => { if (e.target === help) help.hidden = true; });
@@ -470,4 +467,4 @@ menu.del.addEventListener('click', () => {
 
 net.init();
 
-window.draw = { model, history, renderer, selection, input, palette, labels, readout, dataview, net, sync };
+window.draw = { model, history, renderer, selection, input, palette, labels, readout, net, sync };

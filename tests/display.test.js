@@ -1,14 +1,14 @@
 /*
-The read-only display surfaces — the readout and the data view — over routed links. B29 / H3.5.
+The read-only display surface -- the readout -- over routed links. B29 / H3.5.
 
-Both resolve a link's endpoints with `get('node')` and both therefore go blind the moment an anchor
-is a waypoint: the readout prints `? ↔ ?`, the data view skips the link entirely. The data view is
-wrong twice over — for the links it does show, it reports `dist(src, dst)`, the straight-line
-distance, ignoring every bend in the route.
+The readout resolved a link's endpoints with `get('node')` and went blind the moment an anchor was
+a waypoint, printing `? <-> ?`.
 
-That last one is the sharpest defect in the milestone. This is a tool whose stated bar is "zero
-ambiguity between intent and result — the machine states what will happen, in numbers"
-(docs/spec/DESIGN.md). A confidently wrong number is worse than a missing one.
+The data view had the same defect and a sharper one -- it reported `dist(src, dst)`, the
+straight-line distance, ignoring every bend. Those two tests left with the feature: the X-ray was
+deleted rather than fixed again, because it was never properly useful. The threaded-length rule it
+was measured against lives on in `Model#pathOf`, which `tests/model.test.js` holds and which the
+`draw link path` route now exposes.
 */
 
 import { test } from 'node:test';
@@ -16,7 +16,6 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Readout } from '../app/src/readout.js';
-import { DataView } from '../app/src/dataview.js';
 import { installDom } from './fixtures/client-harness.mjs';
 
 // a right-angle route: (0,0) → bend (60,60) → (120,0). Straight-line 120; threaded 2·√7200 ≈ 169.7.
@@ -53,43 +52,7 @@ test('B29: readout names a WAYPOINT endpoint instead of printing `?`', () => {
 	assert.ok(!text.includes('?'), `a waypoint is a live anchor, not an unknown: got "${text}"`);
 });
 
-test('B29: the data view reports the THREADED length of a routed link, not the straight line', () => {
-	const restore = installDom();
-	try {
-		const { m } = routed();
-		const svg = { querySelector: () => ({ appendChild: () => {}, replaceChildren: () => {} }) };
-		const dv = new DataView({ model: m, svg });
-		dv.active = true;                       // the overlay is Tab-toggled; off by default
-		const tags = [];
-		dv.tag = (x, y, text) => tags.push(text);
-		dv.render();
 
-		const threaded = Math.round(2 * Math.hypot(60, 60));   // ≈ 170
-		assert.ok(tags.some((t) => t.includes(String(threaded))),
-			`expected the routed length ${threaded}, got ${JSON.stringify(tags)} — 120 is the straight line, which is the bug`);
-		assert.ok(!tags.some((t) => t.includes('120px') || t === '120'), 'the straight-line distance must not be reported');
-	} finally { restore(); }
-});
-
-test('B29: the data view does not skip a link whose endpoint is a waypoint', () => {
-	const restore = installDom();
-	try {
-		const { m, a, w } = routed();
-		m.all('link').forEach((l) => m.del('link', l.id));
-		const l = m.makeLink(a.id, w.id);
-		m.put('link', l);
-
-		const svg = { querySelector: () => ({ appendChild: () => {}, replaceChildren: () => {} }) };
-		const dv = new DataView({ model: m, svg });
-		dv.active = true;
-		const tags = [];
-		dv.tag = (x, y, text) => tags.push(text);
-		dv.render();
-
-		const len = Math.round(Math.hypot(60, 60));
-		assert.ok(tags.some((t) => t.includes(String(len))), `a waypoint-ended link has a length too: ${JSON.stringify(tags)}`);
-	} finally { restore(); }
-});
 
 /*
 B40 — one owner for the content-region arithmetic.

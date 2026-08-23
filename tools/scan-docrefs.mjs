@@ -56,6 +56,7 @@ const ALLOW = {
 	'*:server/slides/sync.js': 'as above -- cited as evidence in records written while the feature existed.',
 	'*:tests/slides.test.js': 'as above.',
 	'*:docs/slides-setup.md': 'the operator guide for a feature that no longer exists; cited from records written while it did.',
+	'*:app/src/dataview.js': 'the numeric X-ray, DELETED 2026-08-23 and recorded in COMMIT-DELETIONS.md. The remaining references are frozen history -- rows describing defects in it, and the deletion record citing its own header as evidence. M4 forbids rewriting an artifact recorded before the change.',
 	'*:cli/draw.sh': 'the shell CLI, RETIRED at GR18 and recorded in COMMIT-DELETIONS.md. Every reference left is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing line numbers as evidence for rulings made while it existed, and B61/B117 describing the defects that ended it. M4 forbids rewriting an artifact recorded before the change; repointing these at draw.mjs would falsify the record, because the line numbers were never true of that file.',
 	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
 	'docs/spec/DEPLOY.md:/src/main.js': 'a URL path, not a repository path -- app/ is served at the web root, so the client bundle is fetched from /src/main.js. Named because it is the request used to prove the app itself is still behind IAP.',
