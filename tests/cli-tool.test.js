@@ -306,3 +306,34 @@ test('anchor nearest converts a pixel to the cell add will accept', async () => 
 		assert.notDeepEqual([z.x, z.y], [a.x, a.y], 'zones sit on the half-offset grid');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+/*
+B119 -- a verb's declared method is the method it issues.
+
+The manifest now carries `method`, and the coverage gate compares route AND method against
+server/routes.mjs. A declaration that drifts from the handler would make that gate confidently
+wrong -- it would report a pair covered by a verb that actually issues something else.
+*/
+test('B119: every request a verb issues is declared, in route or also', () => {
+	/*
+	A composite verb reads before it writes -- `place` fetches the document, asks which anchors are
+	free, then commits -- so one route per verb was the wrong model. Declaring only the commit made
+	the gate believe those reads were unreached; declaring only the first read made it believe
+	nothing was written.
+	*/
+	const shape = (p) => String(p).replace(/^\//, '').split('?')[0]
+		.replace(/\$\{[^}]+\}/g, '*').replace(/<[^>]+>|:[a-z]+/gi, '*');
+	for (const v of VERBS) {
+		const body = v.run.toString();
+		const declared = new Set([`${v.method} ${shape(v.route)}`,
+			...(v.also || []).map((a) => { const [m, p] = a.split(' '); return `${m} ${shape(p)}`; })]);
+		// find the call, then read the method OUT of it -- an optional group after a lazy
+		// quantifier is simply skipped, which reported every write as a GET
+		for (const m of body.matchAll(/request\(ctx, [`']([^`']+)[`']([^;]{0,200})/g)) {
+			const verb = m[2].match(/method: '(POST|PUT|DELETE|PATCH)'/)?.[1] || 'GET';
+			const key = `${verb} ${shape(m[1])}`;
+			assert.ok(declared.has(key), `${v.name} issues ${key} and declares only ${[...declared].join(', ')}`);
+		}
+	}
+});
+

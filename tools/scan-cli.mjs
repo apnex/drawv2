@@ -20,73 +20,78 @@ import { inventory } from './routes.mjs';
 
 
 // routes the tool will never carry, with the reason it would be wrong to
-const ALLOW = {
-	oauth2callback: 'a browser redirect target in the OAuth dance, not an operation anyone invokes',
-};
+const ALLOW = {};
 
 /*
-Routes the tool is expected to gain. Every line is work not yet done, and deleting a line is how
-the work is recorded as finished -- so this list only ever shrinks, and the gate says by how much.
+Routes the tool deliberately does NOT wrap, with the reason, keyed by path so an entry names one
+operation rather than a whole family.
+
+The high-level entity verbs take pixels. `draw add <type> at <cx>,<cy>` and `draw place <type>
+near|inside|between` cover the same ground and cover it better, because a cell cannot be off the
+grid where a pixel can -- a thin wrapper would re-open the class of mistake B110 closed. `commit
+--ops` stays the exact escape hatch for anything the two verbs cannot say.
 */
 const PENDING = {
-	sync: 'the Slides sync route behind `draw push`',
-	slides: 'the Slides projection target -- CLI.md Projection',
-	nodes: 'reachable by commit --ops, and by `draw add` / `draw place`; no pixel-taking wrapper, see above',
-	/*
-	The entity-write routes stay unwrapped, deliberately (ruled 2026-08-23).
-
-	`draw add <type> at <cx>,<cy>` and `draw place <type> near|inside|between` cover the same
-	ground and cover it better: an anchor cannot be off the grid where a pixel can, so a thin
-	`POST /nodes --x 130` wrapper would re-open the exact class of mistake B110 closed. `commit
-	--ops` remains the exact escape hatch for anything the two verbs cannot say.
-
-	Listed here rather than deleted because a route the tool declines to wrap should say so.
-	*/
-	groups: 'reachable by commit --ops; no wrapper, see above',
-	waypoints: 'reachable by commit --ops; no wrapper, see above',
+	'diagrams/:id/nodes': 'superseded by draw add / draw place; a pixel-taking wrapper would re-open B110',
+	'diagrams/:id/nodes/:entity': 'as above; a move is a commit --ops, or draw place on a free anchor',
+	'diagrams/:id/links': 'as above; draw place --link creates the common case',
+	'diagrams/:id/links/:entity': 'as above',
+	'diagrams/:id/zones': 'as above; zones sit on the half-offset grid, which an anchor verb should own',
+	'diagrams/:id/zones/:entity': 'as above',
+	'diagrams/:id/groups': 'as above',
+	'diagrams/:id/groups/:entity': 'as above',
 };
 
 
 
 /*
-KNOWN COARSENESS, stated rather than implied (B119).
+Coverage is now per ROUTE AND METHOD (B119).
 
-Coverage is per route FAMILY, so a verb reaching `GET /links/<id>/path` marks `links` covered while
-`POST /links` does not exist. The check is a floor: it proves no family is entirely unreachable, not
-that every method on one is driven. Method-aware extraction was attempted and abandoned -- see
-tools/routes.mjs for why, and B119 for the fix, which belongs in the router.
+It used to be per family, so `draw link path` reaching `GET /links/<id>/path` marked `links` covered
+while `POST /links` did not exist -- a floor dressed as a guarantee. `server/routes.mjs` declares
+the pairs and `tests/routes.test.js` proves each one against a running server, so the target is a
+fact rather than an inference. Two attempts at inferring methods from the router are recorded in
+tools/routes.mjs; the second reported `diagrams` as write-only.
+
+Paths are normalised because the two sides name placeholders differently -- the router declares
+`:id`, a verb declares `<id>` -- and neither spelling is more correct than the other.
 */
-const routes = inventory();
-
+const { ROUTES } = await import('../server/routes.mjs');
 const { VERBS } = await import('../cli/verbs.mjs');
+const norm = (p) => String(p).replace(/^\//, '').replace(/<[^>]+>|:[a-z]+/gi, '*');
+
 const declared = new Set();
 for (const v of VERBS) {
 	if (!v.summary || !v.example) {
 		console.error(`\n  FAIL — verb \`${v.name}\` has no ${v.summary ? 'example' : 'summary'}. CLI.md: both are mandatory.`);
 		process.exit(1);
 	}
-	for (const seg of String(v.route).split('/')) if (seg && !seg.startsWith('<')) declared.add(seg);
+	declared.add(`${v.method || 'GET'} ${norm(v.route)}`);
+	// a composite verb reaches more than one pair, and all of them count as covered
+	for (const a of v.also || []) { const [m, pth] = a.split(' '); declared.add(`${m} ${norm(pth)}`); }
 }
-const reached = new Set(routes.filter((r) => declared.has(r)));
 
-const missing = routes.filter((r) => !reached.has(r) && !ALLOW[r] && !PENDING[r]);
-const pending = routes.filter((r) => !reached.has(r) && PENDING[r]);
-const stale = Object.keys(PENDING).filter((r) => reached.has(r));
+const pairs = ROUTES.flatMap((r) => r.methods.map((m) => ({ key: `${m} ${norm(r.path)}`, path: r.path, method: m })));
+const unreached = pairs.filter((p) => !declared.has(p.key));
+const routes = inventory();
+const reached = new Set(routes.filter((r) => [...declared].some((d) => d.includes(`/${r}`) || d.endsWith(` ${r}`))));
 
-for (const r of pending) console.log(`  PENDING    /${r}\n             └ ${PENDING[r]}`);
-for (const r of Object.keys(ALLOW).filter((k) => routes.includes(k))) {
-	console.log(`  allowed    /${r}\n             └ ${ALLOW[r]}`);
-}
-console.log(`  scan-cli: ${routes.length} route(s); ${reached.size} reached, ${pending.length} pending, ${missing.length} unaccounted`);
+const missing = unreached.filter((p) => !ALLOW[p.path] && !PENDING[p.path]);
+const pending = unreached.filter((p) => PENDING[p.path]);
+const stale = Object.keys(PENDING).filter((p) => !unreached.some((u) => u.path === p));
+
+for (const p of pending) console.log(`  PENDING    ${p.method} /${p.path}\n             \u2514 ${PENDING[p.path]}`);
+console.log(`  scan-cli: ${pairs.length} route+method pair(s); ${pairs.length - unreached.length} reached, ${pending.length} pending, ${missing.length} unaccounted`);
 
 if (stale.length) {
-	console.error(`\n  FAIL — ${stale.length} route(s) are listed PENDING but the CLI already reaches them: ${stale.join(', ')}.`);
+	console.error(`\n  FAIL — ${stale.length} entr(y/ies) listed PENDING that the CLI already reaches: ${stale.join(', ')}.`);
 	console.error('  Delete the line: PENDING is a countdown, and a stale entry hides the progress it was meant to show.');
 	process.exit(1);
 }
 if (missing.length) {
-	console.error(`\n  FAIL — ${missing.length} route(s) no CLI verb reaches and nothing accounts for: ${missing.join(', ')}.`);
+	console.error(`\n  FAIL — ${missing.length} pair(s) no CLI verb reaches and nothing accounts for:`);
+	for (const p of missing) console.error(`    ${p.method} /${p.path}`);
 	console.error('  GR18: add a verb, or record it in PENDING with the work, or in ALLOW with the reason.');
 	process.exit(1);
 }
-console.log('  PASS — every route is reached, pending with recorded work, or allowed with a reason');
+console.log('  PASS — every route+method pair is reached, pending with recorded work, or allowed with a reason');

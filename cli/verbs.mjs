@@ -61,9 +61,20 @@ const ok = (res, what) => {
 	return res.body;
 };
 
+/*
+`route` is the verb's PRIMARY reach -- the one printed in help, because it is the request that does
+the thing. `also` lists the others a composite verb makes on the way.
+
+Contextual and placement verbs read before they write: `place` fetches the document, asks which
+anchors are free, then commits. Declaring only the commit made the coverage gate believe those
+reads were unreached, and declaring only the first read made it believe nothing was written. Both
+are wrong in a way that matters, because the gate is what says whether the tool covers the API.
+
+Held by a test: every `request()` a handler issues must appear in `route` or `also`.
+*/
 export const VERBS = [
 	{
-		name: 'health', group: 'Context', usage: 'draw health', route: '/health',
+		name: 'health', group: 'Context', usage: 'draw health', route: '/health', method: 'GET',
 		summary: "the server's own report", example: 'draw health',
 		async run(ctx) {
 			const b = ok(await request(ctx, '/health'), 'health');
@@ -72,7 +83,7 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'diagrams', group: 'Context', usage: 'draw diagrams', route: '/diagrams',
+		name: 'diagrams', group: 'Context', usage: 'draw diagrams', route: '/diagrams', method: 'GET',
 		summary: 'what exists', example: 'draw diagrams',
 		async run(ctx) {
 			const b = ok(await request(ctx, '/diagrams'), 'diagrams');
@@ -80,7 +91,7 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'context', group: 'Context', usage: 'draw context [id|name]', route: '/diagrams',
+		name: 'context', group: 'Context', usage: 'draw context [id|name]', route: '/diagrams', method: 'GET',
 		summary: 'the default target, persisted', example: 'draw context a1-demo',
 		args: [{ name: 'id|name', about: 'the diagram to target by default; omit to read the current one' }],
 		flags: [{ name: '--diagram', about: 'read the id of this diagram instead of the saved one' }],
@@ -94,7 +105,7 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'status', group: 'Context', usage: 'draw status', route: '/diagrams/<id>',
+		name: 'status', group: 'Context', usage: 'draw status', route: '/diagrams/<id>', method: 'GET',
 		summary: 'the active diagram in summary', example: 'draw status --diagram a1-demo',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -106,7 +117,7 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'get', group: 'Context', usage: 'draw get <kind> [id|name]', route: '/diagrams/<id>',
+		name: 'get', group: 'Context', usage: 'draw get <kind> [id|name]', route: '/diagrams/<id>', method: 'GET',
 		summary: 'interrogate nodes, links, zones, groups, waypoints', example: 'draw get nodes',
 		args: [{ name: 'kind', about: 'nodes | links | zones | groups | waypoints (singular accepted)' },
 			{ name: 'id|name', about: 'one entity; omit for all of that kind' }],
@@ -125,7 +136,7 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'history', group: 'Context', usage: 'draw history [--limit n]', route: '/diagrams/<id>/history',
+		name: 'history', group: 'Context', usage: 'draw history [--limit n]', route: '/diagrams/<id>/history', method: 'GET',
 		summary: 'the change log', example: 'draw history --limit 10',
 		flags: [{ name: '--limit', about: 'how many records (default 50)' }, { name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -171,7 +182,7 @@ const held = async (ctx, id, what) => {
 
 VERBS.push(
 	{
-		name: 'create', group: 'Lifecycle', usage: 'draw create [name]', route: '/diagrams',
+		name: 'create', group: 'Lifecycle', usage: 'draw create [name]', route: '/diagrams', method: 'POST',
 		summary: 'mint a diagram; answers its id', example: 'draw create topology',
 		args: [{ name: 'name', about: 'what to call it; the server names it if omitted' }],
 		flags: [{ name: '--doc', about: 'a JSON document to install instead of an empty one' }],
@@ -186,7 +197,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'delete', group: 'Lifecycle', usage: 'draw delete <id|name>', route: '/diagrams/<id>',
+		name: 'delete', group: 'Lifecycle', usage: 'draw delete <id|name>', route: '/diagrams/<id>', method: 'DELETE',
 		summary: 'remove one; refuses unless you hold the lock', example: 'draw delete scratch',
 		args: [{ name: 'id|name', about: 'the diagram to remove' }],
 		async run(ctx, args) {
@@ -199,7 +210,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'render', group: 'Lifecycle', usage: 'draw render [--out file.svg]', route: '/d/<id>.svg',
+		name: 'render', group: 'Lifecycle', usage: 'draw render [--out file.svg]', route: '/d/<id>.svg', method: 'GET',
 		summary: 'the picture, as SVG', example: 'draw render --out topology.svg',
 		flags: [{ name: '--out', about: 'write to a file instead of stdout' }, { name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -215,7 +226,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'lock', group: 'Writing', usage: 'draw lock', route: '/diagrams/<id>/lock',
+		name: 'lock', group: 'Writing', usage: 'draw lock', route: '/diagrams/<id>/lock', method: 'POST',
 		summary: 'take the write slot, and remember the token', example: 'draw lock --diagram a1-demo',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -226,7 +237,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'unlock', group: 'Writing', usage: 'draw unlock', route: '/diagrams/<id>/lock',
+		name: 'unlock', group: 'Writing', usage: 'draw unlock', route: '/diagrams/<id>/lock', method: 'DELETE',
 		summary: 'release the write slot', example: 'draw unlock',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -237,7 +248,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'lock status', sub: true, group: 'Writing', usage: 'draw lock status', route: '/diagrams/<id>/lock',
+		name: 'lock status', sub: true, group: 'Writing', usage: 'draw lock status', route: '/diagrams/<id>/lock', method: 'GET',
 		summary: 'who holds it, when it frees, and the human hold', example: 'draw lock status',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -248,7 +259,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'commit', group: 'Writing', usage: 'draw commit --ops <file|->', route: '/diagrams/<id>/commit',
+		name: 'commit', group: 'Writing', usage: 'draw commit --ops <file|->', route: '/diagrams/<id>/commit', method: 'POST',
 		summary: 'a batch of ops as one transaction', example: "draw commit --ops ops.json --label 'add spine'",
 		flags: [{ name: '--ops', about: 'JSON file of ops, or - for stdin' }, { name: '--label', about: 'undo label' },
 			{ name: '--diagram', about: 'target by id or name' }],
@@ -265,7 +276,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'undo', group: 'Writing', usage: 'draw undo [--to seq]', route: '/diagrams/<id>/undo',
+		name: 'undo', group: 'Writing', usage: 'draw undo [--to seq]', route: '/diagrams/<id>/undo', method: 'POST',
 		summary: 'reverse the last change, or a run', example: 'draw undo --expect 42',
 		flags: [{ name: '--expect', about: 'the version you believe is current (required by the server)' },
 			{ name: '--to', about: 'reverse a run back to this seq' }, { name: '--diagram', about: 'target by id or name' }],
@@ -279,7 +290,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'redo', group: 'Writing', usage: 'draw redo', route: '/diagrams/<id>/redo',
+		name: 'redo', group: 'Writing', usage: 'draw redo', route: '/diagrams/<id>/redo', method: 'POST',
 		summary: 'reapply what undo reversed', example: 'draw redo --expect 43',
 		flags: [{ name: '--expect', about: 'the version you believe is current' }, { name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -291,7 +302,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'select', group: 'Writing', usage: 'draw select <id...>', route: '/diagrams/<id>/selection',
+		name: 'select', group: 'Writing', usage: 'draw select <id...>', route: '/diagrams/<id>/selection', method: 'PUT',
 		summary: 'set the authoritative selection', example: 'draw select node-aa0001 node-aa0002',
 		args: [{ name: 'id...', about: 'entity ids; none clears the selection' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -313,7 +324,7 @@ asked for, which is the twin problem this codebase keeps finding.
 */
 VERBS.push(
 	{
-		name: 'about', group: 'Context', usage: 'draw about <entity-id>', route: '/diagrams/<id>/context/<entity>',
+		name: 'about', group: 'Context', usage: 'draw about <entity-id>', route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
 		summary: 'what surrounds an entity: links, neighbours, group, enclosing zones',
 		example: 'draw about node-aa0001',
 		args: [{ name: 'entity-id', about: 'any node, waypoint, link, zone or group id -- the kind is worked out for you' }],
@@ -343,7 +354,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'near', group: 'Placement', usage: 'draw near <x> <y> [--within px]', route: '/diagrams/<id>/near',
+		name: 'near', group: 'Placement', usage: 'draw near <x> <y> [--within px]', route: '/diagrams/<id>/near', method: 'GET',
 		summary: 'what is already around a point, so you do not draw on top of it',
 		example: 'draw near 120 60 --within 180',
 		args: [{ name: 'x', about: 'canvas x' }, { name: 'y', about: 'canvas y' }],
@@ -359,7 +370,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone-id>', route: '/diagrams/<id>/zones/<zone>/contents',
+		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone-id>', route: '/diagrams/<id>/zones/<zone>/contents', method: 'GET',
 		summary: 'what falls inside a zone', example: 'draw zone contents zone-aa0001',
 		args: [{ name: 'zone-id', about: 'the zone to look inside' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -371,7 +382,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link-id>', route: '/diagrams/<id>/links/<link>/path',
+		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link-id>', route: '/diagrams/<id>/links/<link>/path', method: 'GET',
 		summary: 'the resolved route -- what the renderer would draw', example: 'draw link path link-aa00ff',
 		args: [{ name: 'link-id', about: 'the link to resolve' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -406,7 +417,7 @@ const DIRS = {
 
 VERBS.push({
 	name: 'place', group: 'Placement', usage: 'draw place <type> near|inside|between <ref> [--link]',
-	route: '/diagrams/<id>/commit',
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
 	summary: 'put a node beside, inside or between things -- on a free anchor, no coordinates',
 	example: 'draw place server near lb-1 --dir right --link',
 	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
@@ -501,7 +512,7 @@ reachable through --json for anything that wants them raw.
 */
 VERBS.push(
 	{
-		name: 'who', group: 'Awareness', usage: 'draw who', route: '/workspace/agents',
+		name: 'who', group: 'Awareness', usage: 'draw who', route: '/workspace/agents', method: 'GET', also: ['GET /workspace/viewers', 'GET /diagrams'],
 		summary: 'who else is here: agents driving, people watching',
 		example: 'draw who',
 		async run(ctx) {
@@ -516,7 +527,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'viewers', group: 'Awareness', usage: 'draw viewers', route: '/workspace/viewers',
+		name: 'viewers', group: 'Awareness', usage: 'draw viewers', route: '/workspace/viewers', method: 'GET',
 		summary: 'who is looking at what', example: 'draw viewers',
 		async run(ctx) {
 			const b = ok(await request(ctx, '/workspace/viewers'), 'viewers');
@@ -524,7 +535,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'access', group: 'Access', usage: 'draw access', route: '/diagrams/<id>',
+		name: 'access', group: 'Access', usage: 'draw access', route: '/diagrams/<id>', method: 'GET',
 		summary: 'who can reach this diagram, and at what level',
 		example: 'draw access --diagram a1-demo',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -538,7 +549,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'grant', group: 'Access', usage: 'draw grant <principal> <read|write>', route: '/diagrams/<id>/grants',
+		name: 'grant', group: 'Access', usage: 'draw grant <principal> <read|write>', route: '/diagrams/<id>/grants', method: 'POST',
 		summary: 'let a principal reach this diagram', example: 'draw grant agent:planner write',
 		args: [{ name: 'principal', about: 'user:<email> or agent:<name>' }, { name: 'level', about: 'read or write' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -551,7 +562,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'revoke', group: 'Access', usage: 'draw revoke <principal>', route: '/diagrams/<id>/grants',
+		name: 'revoke', group: 'Access', usage: 'draw revoke <principal>', route: '/diagrams/<id>/grants/<principal>', method: 'DELETE',
 		summary: 'withdraw a grant; says what access remains', example: 'draw revoke agent:planner',
 		args: [{ name: 'principal', about: 'the principal to cut' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -565,7 +576,7 @@ VERBS.push(
 	},
 	{
 		name: 'workspace grant', sub: true, group: 'Access', usage: 'draw workspace grant <principal> <read|write>',
-		route: '/workspace/grants', summary: 'grant across everything you own',
+		route: '/workspace/grants', method: 'POST', summary: 'grant across everything you own',
 		example: 'draw workspace grant agent:planner write',
 		args: [{ name: 'principal', about: 'user:<email> or agent:<name>' }, { name: 'level', about: 'read or write' }],
 		async run(ctx, args) {
@@ -576,7 +587,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'code mint', sub: true, group: 'Access', usage: 'draw code mint <agent>', route: '/workspace/codes',
+		name: 'code mint', sub: true, group: 'Access', usage: 'draw code mint <agent>', route: '/workspace/codes', method: 'POST',
 		summary: 'mint a connection code; shown once, never again',
 		example: 'draw code mint agent:planner',
 		args: [{ name: 'agent', about: 'agent:<name> -- lowercase, DNS-label shaped' }],
@@ -588,7 +599,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'code list', sub: true, group: 'Access', usage: 'draw code list', route: '/workspace/codes',
+		name: 'code list', sub: true, group: 'Access', usage: 'draw code list', route: '/workspace/codes', method: 'GET',
 		summary: 'the codes you have minted, never their secrets', example: 'draw code list',
 		async run(ctx) {
 			const b = ok(await request(ctx, '/workspace/codes'), 'code list');
@@ -597,7 +608,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'code revoke', sub: true, group: 'Access', usage: 'draw code revoke <id>', route: '/workspace/codes',
+		name: 'code revoke', sub: true, group: 'Access', usage: 'draw code revoke <id>', route: '/workspace/codes/<code>', method: 'DELETE',
 		summary: 'retire a code; the agent claim survives it', example: 'draw code revoke c-1a2b',
 		args: [{ name: 'id', about: 'the code id from `draw code list`' }],
 		async run(ctx, args) {
@@ -621,7 +632,7 @@ merely validated.
 */
 VERBS.push({
 	name: 'add', group: 'Placement', usage: 'draw add <type> at <cx>,<cy> [--name n] [--link ref]',
-	route: '/diagrams/<id>/commit',
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
 	summary: 'put a node on a named anchor -- a cell, never a pixel',
 	example: 'draw add server at 5,-2 --name web-1',
 	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
@@ -679,7 +690,7 @@ agent needs when it is choosing rather than checking.
 VERBS.push(
 	{
 		name: 'anchor nearest', sub: true, group: 'Placement', usage: 'draw anchor nearest <x> <y> [--layout node|zone]',
-		route: '/diagrams/<id>/layouts/<name>/nearest',
+		route: '/diagrams/<id>/layouts/<name>/nearest', method: 'GET',
 		summary: 'the legal anchor closest to a pixel coordinate',
 		example: 'draw anchor nearest 130 60',
 		args: [{ name: 'x', about: 'pixel x' }, { name: 'y', about: 'pixel y' }],
@@ -696,7 +707,7 @@ VERBS.push(
 	},
 	{
 		name: 'anchor free', sub: true, group: 'Placement', usage: 'draw anchor free [--layout node|zone]',
-		route: '/diagrams/<id>/layouts/<name>/anchors',
+		route: '/diagrams/<id>/layouts/<name>/anchors', method: 'GET',
 		summary: 'every anchor nothing occupies', example: 'draw anchor free --json',
 		flags: [{ name: '--layout', about: 'node (default) or zone' }, { name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
@@ -717,7 +728,7 @@ when an agent is orienting rather than four. That is the same argument as the co
 fewer round trips, fewer chances to assemble a picture wrongly.
 */
 VERBS.push({
-	name: 'show', group: 'Context', usage: 'draw show', route: '/diagrams/<id>',
+	name: 'show', group: 'Context', usage: 'draw show', route: '/diagrams/<id>', method: 'GET',
 	summary: 'the whole diagram: summary and every entity', example: 'draw show --diagram a1-demo',
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
@@ -737,3 +748,44 @@ VERBS.push({
 		return { json: d, text: out.join('\n') };
 	},
 });
+
+/*
+Three verbs CLI.md specified and I had not built, found by the coverage check once it compared
+route AND method rather than route family (B119). The family-level check counted `layouts` covered
+because `anchor nearest` reaches a path under it, and counted `workspace` covered because
+`workspace grant` writes to it -- so a missing list and a missing revoke were both invisible.
+*/
+VERBS.push(
+	{
+		name: 'layouts', group: 'Placement', usage: 'draw layouts', route: '/diagrams/<id>/layouts', method: 'GET',
+		summary: 'the named grids and their offsets', example: 'draw layouts',
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx) {
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/layouts`), 'layouts');
+			return { json: b, text: table(b.layouts.map((l) => [l]), ['LAYOUT']) };
+		},
+	},
+	{
+		name: 'workspace grants', sub: true, group: 'Access', usage: 'draw workspace grants',
+		route: '/workspace/grants', method: 'GET',
+		summary: 'who may reach everything you own', example: 'draw workspace grants',
+		async run(ctx) {
+			const b = ok(await request(ctx, '/workspace/grants'), 'workspace grants');
+			const rows = Object.entries(b.grants || {}).map(([who, level]) => [who, level]);
+			return { json: b, text: rows.length ? table(rows, ['PRINCIPAL', 'LEVEL']) : 'no workspace grants' };
+		},
+	},
+	{
+		name: 'workspace revoke', sub: true, group: 'Access', usage: 'draw workspace revoke <principal>',
+		route: '/workspace/grants/<principal>', method: 'DELETE',
+		summary: 'withdraw a workspace grant', example: 'draw workspace revoke agent:planner',
+		args: [{ name: 'principal', about: 'the principal to cut from your whole workspace' }],
+		async run(ctx, args) {
+			if (!args[0]) die('workspace revoke needs a principal -- `draw workspace grants` lists them');
+			const b = ok(await request(ctx, `/workspace/grants/${encodeURIComponent(args[0])}`, { method: 'DELETE' }), 'workspace revoke');
+			// a per-diagram grant may still apply, so the server says what is left rather than just "done"
+            return { json: b, text: `${args[0]} now: ${b.effective || 'no workspace access'}` };
+		},
+	},
+);
