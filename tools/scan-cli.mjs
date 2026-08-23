@@ -35,7 +35,18 @@ const PENDING = {
 	sync: 'the Slides sync route behind `draw push`',
 	slides: 'the Slides projection target -- CLI.md Projection',
 	nodes: 'high-level node verbs -- CLI.md Writing',
-	groups: 'CLI.md Writing', waypoints: 'CLI.md Writing',
+	/*
+	The entity-write routes stay unwrapped, deliberately (ruled 2026-08-23).
+
+	`draw add <type> at <cx>,<cy>` and `draw place <type> near|inside|between` cover the same
+	ground and cover it better: an anchor cannot be off the grid where a pixel can, so a thin
+	`POST /nodes --x 130` wrapper would re-open the exact class of mistake B110 closed. `commit
+	--ops` remains the exact escape hatch for anything the two verbs cannot say.
+
+	Listed here rather than deleted because a route the tool declines to wrap should say so.
+	*/
+	groups: 'reachable by commit --ops; no wrapper, see above',
+	waypoints: 'reachable by commit --ops; no wrapper, see above',
 };
 
 const rest = fs.readFileSync(REST, 'utf8');

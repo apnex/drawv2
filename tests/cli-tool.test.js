@@ -204,3 +204,60 @@ test('GR18: --help renders the same five parts for every verb, leaf or sub', () 
 		if ((v.args || []).length) assert.ok(/\bArguments\b/.test(text), `${v.name}: has args but no Arguments section`);
 	}
 });
+
+/*
+`add` takes an ANCHOR, and refuses to take a pixel.
+
+The director's distinction, and the reason `add` is safe where a coordinate wrapper would not be:
+a cell index cannot be off the grid, so the class of mistake that produced every off-grid node an
+agent ever drew (B110) is unrepresentable rather than merely validated.
+*/
+test('add places on a cell, and an occupied one names its occupant', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'add-test')).trim();
+		await run('lock', '--diagram', id);
+		const first = JSON.parse(await run('add', 'server', 'at', '0,0', '--name', 'web-1', '--diagram', id, '--json'));
+		assert.deepEqual(first.cell, { cx: 0, cy: 0 });
+		assert.deepEqual(first.at, { x: 0, y: 0 }, 'the cell resolved to px by the kernel, not by the caller');
+
+		const taken = await captureExit(() => run('add', 'server', 'at', '0,0', '--diagram', id));
+		assert.match(taken, /is taken by node-/, 'and it says WHICH entity, so the next question is answerable');
+		assert.match(taken, /draw about/, 'naming the verb that answers it');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('add refuses pixels, and says they look like pixels', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'px-test')).trim();
+		await run('lock', '--diagram', id);
+		const err = await captureExit(() => run('add', 'server', 'at', '130,60', '--diagram', id));
+		assert.match(err, /look like pixels/, 'the likely mistake is named rather than left as "outside the canvas"');
+		assert.match(err, /anchor nearest/, 'and the verb that converts them is offered');
+
+		const frac = await captureExit(() => run('add', 'server', 'at', '1.5,0', '--diagram', id));
+		assert.match(frac, /whole numbers/, 'a fractional cell is refused before any request');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('place reads inside a zone and between two nodes, linking both ends', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'place-modes')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'zone', entity: { id: 'zone-a00001', name: 'core', x: -330, y: -210, w: 600, h: 420 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00001', name: 'lb-1', type: 'loadbalancer', x: -240, y: -120 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00002', name: 'db-1', type: 'host', x: 180, y: 180 } }] }));
+
+		const inZone = JSON.parse(await run('place', 'server', 'inside', 'core', '--diagram', id, '--json'));
+		assert.ok(inZone.at.x >= -330 && inZone.at.x <= 270, 'landed within the zone bounds');
+		assert.ok(inZone.at.y >= -210 && inZone.at.y <= 210);
+
+		await run('place', 'router', 'between', 'lb-1', 'db-1', '--link', '--name', 'spine', '--diagram', id);
+		const spine = JSON.parse(await run('about', 'spine', '--diagram', id, '--json'));
+		assert.equal(spine.neighbours.length, 2, 'standing between two things means linked to both');
+		assert.deepEqual(spine.neighbours.sort(), ['node-a00001', 'node-a00002']);
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});

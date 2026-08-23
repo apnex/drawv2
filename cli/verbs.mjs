@@ -405,34 +405,63 @@ const DIRS = {
 };
 
 VERBS.push({
-	name: 'place', group: 'Placement', usage: 'draw place <type> near <ref> [--dir d] [--link]',
+	name: 'place', group: 'Placement', usage: 'draw place <type> near|inside|between <ref> [--link]',
 	route: '/diagrams/<id>/commit',
-	summary: 'put a node beside another, on a free anchor, without computing coordinates',
+	summary: 'put a node beside, inside or between things -- on a free anchor, no coordinates',
 	example: 'draw place server near lb-1 --dir right --link',
 	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
-		{ name: 'near', about: "the literal word 'near', so the sentence reads" },
-		{ name: 'ref', about: 'the id or name to place beside' }],
+		{ name: 'where', about: 'near | inside | between -- how the position is described' },
+		{ name: 'ref', about: 'a node for near/between, a zone for inside' },
+		{ name: 'ref2', about: 'the second node, for between' }],
 	flags: [{ name: '--dir', about: 'right | left | up | down (default: nearest free anchor)' },
 		{ name: '--name', about: 'what to call it (default: the server-minted id)' },
 		{ name: '--link', about: 'also link it to the reference' },
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
 		const [type, near, ref] = args;
-		if (!type || near !== 'near' || !ref) die('usage: draw place <type> near <ref>');
+		if (!type || !['near', 'inside', 'between'].includes(near) || !ref) {
+			die('usage: draw place <type> near <ref> | inside <zone> | between <a> <b>');
+		}
 		if (ctx.flags.dir && !DIRS[ctx.flags.dir]) die(`--dir must be one of ${Object.keys(DIRS).join(', ')}`);
 		const id = await activeId(ctx, ctx.flags);
 
-		// the reference, by id or by name -- an agent thinks in names
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'place');
-		const anchorNode = doc.nodes.find((n) => n.id === ref || n.name === ref);
-		if (!anchorNode) die(`no node called ${ref} -- \`draw get nodes\` lists them`);
-
 		const free = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors?free=1`), 'place');
-		const options = free.anchors;
+		let options = free.anchors;
 		if (!options.length) die('the canvas is full: every anchor is occupied');
 
+		/*
+		Three ways to say WHERE, all resolving to a free anchor.
+
+		`inside` and `between` are the same idea as `near` and most of the same code: the agent
+		names a relationship it can see in the diagram, and the tool turns that into a legal
+		position. Only the candidate set differs.
+		*/
+		let anchorNode = null;
+		// who a --link should attach to; internal, so NOT smuggled through ctx.flags -- the help
+		// audit rightly reads anything there as a flag the user can pass, and it is not one
+		let linkEnds = null;
+		if (near === 'inside') {
+			const zone = doc.zones.find((z) => z.id === ref || z.name === ref);
+			if (!zone) die(`no zone called ${ref} -- \`draw get zones\` lists them`);
+			options = options.filter((a) => a.x >= zone.x && a.x <= zone.x + zone.w && a.y >= zone.y && a.y <= zone.y + zone.h);
+			if (!options.length) die(`zone ${ref} has no free anchor -- \`draw zone contents ${zone.id}\` shows what fills it`);
+			anchorNode = { id: zone.id, name: zone.name, x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 };
+		} else if (near === 'between') {
+			const other = args[3];
+			if (!other) die('usage: draw place <type> between <a> <b>');
+			const a = doc.nodes.find((n) => n.id === ref || n.name === ref);
+			const b2 = doc.nodes.find((n) => n.id === other || n.name === other);
+			if (!a || !b2) die(`between needs two nodes that exist: ${!a ? ref : other} is not one`);
+			anchorNode = { id: a.id, name: `${a.name || a.id} and ${b2.name || b2.id}`, x: (a.x + b2.x) / 2, y: (a.y + b2.y) / 2 };
+			linkEnds = [a.id, b2.id];
+		} else {
+			anchorNode = doc.nodes.find((n) => n.id === ref || n.name === ref);
+			if (!anchorNode) die(`no node called ${ref} -- \`draw get nodes\` lists them`);
+		}
+
 		let target;
-		if (ctx.flags.dir) {
+		if (ctx.flags.dir && near === 'near') {
 			const [dx, dy] = DIRS[ctx.flags.dir];
 			// step outward in that direction until an anchor is free, so "right" means right
 			for (let step = 1; step <= 16 && !target; step++) {
@@ -450,8 +479,10 @@ VERBS.push({
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
 		const ops = [{ op: 'put', kind: 'node',
 			entity: { id: nid, name: ctx.flags.name || nid, type, x: target.x, y: target.y } }];
-		if (ctx.flags.link) {
-			ops.push({ op: 'put', kind: 'link', entity: { id: `link-${Math.random().toString(16).slice(2, 8)}`, src: anchorNode.id, dst: nid } });
+		// `between` links BOTH ends, because that is what standing between two things means
+		const linkTo = ctx.flags.link ? (linkEnds || [anchorNode.id]) : [];
+		for (const src of linkTo) {
+			ops.push({ op: 'put', kind: 'link', entity: { id: `link-${Math.random().toString(16).slice(2, 8)}`, src, dst: nid } });
 		}
 		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
 			{ method: 'POST', headers: await held(ctx, id, 'place'),
@@ -576,3 +607,60 @@ VERBS.push(
 		},
 	},
 );
+
+/*
+`add` -- explicit placement, by ANCHOR rather than by pixel.
+
+The director's distinction, and it is the one that matters: `--at 5,-2` is a cell index and cannot
+be off the grid, where `--x 130` can and silently was for every node an agent drew before B110. The
+tool refuses to accept a coordinate at all, so the class of mistake is unrepresentable rather than
+merely validated.
+
+`place` says where by relationship, `add` says where exactly. Same sentence shape on purpose --
+`draw add server at 5,-2` beside `draw place server near lb-1` -- so the pair reads as one idea.
+*/
+VERBS.push({
+	name: 'add', group: 'Placement', usage: 'draw add <type> at <cx>,<cy> [--name n] [--link ref]',
+	route: '/diagrams/<id>/commit',
+	summary: 'put a node on a named anchor -- a cell, never a pixel',
+	example: 'draw add server at 5,-2 --name web-1',
+	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
+		{ name: 'at', about: "the literal word 'at'" },
+		{ name: 'cx,cy', about: 'the CELL, not pixels -- `draw anchor nearest` converts if you have pixels' }],
+	flags: [{ name: '--name', about: 'what to call it' },
+		{ name: '--link', about: 'a node id or name to link it to' },
+		{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx, args) {
+		const [type, at, cell] = args;
+		if (!type || at !== 'at' || !cell) die('usage: draw add <type> at <cx>,<cy>');
+		const [cx, cy] = String(cell).split(',').map(Number);
+		if (!Number.isInteger(cx) || !Number.isInteger(cy)) {
+			die(`at takes a CELL like 5,-2 -- whole numbers. Pixels would let you land off the grid, which the server refuses (B110)`);
+		}
+		const id = await activeId(ctx, ctx.flags);
+		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'add').anchors;
+		const spot = anchors.find((a) => a.cx === cx && a.cy === cy);
+		if (!spot) {
+			// the likely mistake is pixels, and cells are small numbers -- say so rather than
+			// leaving the caller to wonder why a coordinate they can see on screen is "outside"
+			const looksLikePixels = Math.abs(cx) > 40 || Math.abs(cy) > 40;
+			const range = `cx ${anchors[0].cx}..${anchors[anchors.length - 1].cx}`;
+			die(`no anchor at cell ${cx},${cy} (${range})`
+				+ (looksLikePixels ? ` -- those look like pixels; \`draw anchor nearest ${cx} ${cy}\` converts them` : ''));
+		}
+		if (spot.occupant) die(`cell ${cx},${cy} is taken by ${spot.occupant} -- \`draw about ${spot.occupant}\` says what it is`);
+
+		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
+		const ops = [{ op: 'put', kind: 'node', entity: { id: nid, name: ctx.flags.name || nid, type, x: spot.x, y: spot.y } }];
+		if (ctx.flags.link && ctx.flags.link !== true) {
+			const doc = ok(await request(ctx, `/diagrams/${id}`), 'add');
+			const peer = doc.nodes.find((n) => n.id === ctx.flags.link || n.name === ctx.flags.link);
+			if (!peer) die(`--link names ${ctx.flags.link}, which is not a node here`);
+			ops.push({ op: 'put', kind: 'link', entity: { id: `link-${Math.random().toString(16).slice(2, 8)}`, src: peer.id, dst: nid } });
+		}
+		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
+			{ method: 'POST', headers: await held(ctx, id, 'add'), body: { ops, label: `add ${type}` } }), 'add');
+		return { json: { id: nid, cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: b.version },
+			text: `${ctx.flags.name || nid} (${nid}) at cell ${cx},${cy} = ${spot.x},${spot.y}  v${b.version}` };
+	},
+});
