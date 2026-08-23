@@ -55,15 +55,27 @@ export function fakeEl(tag = 'div', id = '') {
 		tagName: tag.toUpperCase(), id, hidden: true, children: [], dataset: {}, style: {},
 		classList: fakeClassList(),
 		attrs: {},
-		setAttribute(k, v) { this.attrs[k] = String(v); },
-		setAttributeNS(_ns, k, v) { this.attrs[k] = String(v); },
+		setAttribute(k, v) {
+			this.attrs[k] = String(v);
+			// B121: an id makes an element findable. The renderer reconciles by
+			// `document.getElementById(id)` and REPLACES what it finds, so a document that cannot
+			// find anything makes every re-render append a duplicate -- which looked like a
+			// renderer leak until the stub was the thing at fault.
+			if (k === 'id' && globalThis.__domIds) globalThis.__domIds.set(String(v), this);
+		},
+		// the painter sets every attribute through setAttributeNS, so the id registry has to be
+		// here too -- registering only in setAttribute meant nothing was ever findable
+		setAttributeNS(_ns, k, v) { this.setAttribute(k, v); },
 		getAttribute(k) { return this.attrs[k] ?? null; },
 		removeAttribute(k) { delete this.attrs[k]; },
 		appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
 		removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
 		// a real detach: setDatumMarker removes its marker and re-adds, so a no-op remove() would
 		// leave every datum ever placed in the layer and the count assertions would be meaningless
-		remove() { if (this.parentNode) this.parentNode.removeChild(this); },
+		remove() {
+			if (this.parentNode) this.parentNode.removeChild(this);
+			if (globalThis.__domIds && this.attrs.id) globalThis.__domIds.delete(this.attrs.id);
+		},
 		addEventListener() {},
 		removeEventListener() {},
 		closest() { return null; },
@@ -89,8 +101,11 @@ export function fakeEl(tag = 'div', id = '') {
 export function installDom() {
 	const prevDoc = globalThis.document, prevWin = globalThis.window;
 	const help = fakeEl('div', 'help');
+	const ids = new Map();
+	globalThis.__domIds = ids;
 	globalThis.document = {
-		getElementById: (id) => (id === 'help' ? help : fakeEl('div', id)),
+		// a real registry, not a fresh stub per call: see setAttribute above
+		getElementById: (id) => (id === 'help' ? help : (ids.get(id) || null)),
 		createElement: (t) => fakeEl(t),
 		createElementNS: (_ns, t) => fakeEl(t),
 		body: fakeEl('body'),
@@ -241,4 +256,46 @@ export function seedNodes(model, specs) {
 		model.put('node', n);
 		return n;
 	});
+}
+
+/*
+B121 -- a Renderer, in a harness.
+
+Nothing in the suite could construct one, so every rule `app/src/renderer.js` owns was verified by
+eye or not at all. That is also why the W4 socket rule diverged: the kernel expresses the same
+visual rules and IS tested, so only one of the two was ever held to it -- B107's shape in a
+different substrate.
+
+The layers are real elements rather than the `querySelector` fallback, because the renderer looks
+them up by id at construction and then appends into them; a fresh stub per lookup would silently
+throw every node away.
+*/
+export function makeRenderer() {
+	const restore = installDom();
+	const svg = fakeEl('svg', 'canvas');
+	svg.byId = {};
+	for (const id of ['zones', 'groups', 'links', 'waypoints', 'nodes', 'dataview', 'overlay']) {
+		const layer = fakeEl('g', id);
+		svg.byId[`#${id}`] = layer;
+		svg.appendChild(layer);
+	}
+	return { svg, restore };
+}
+
+/*
+Every class in a subtree, which the stub's own querySelectorAll cannot give.
+
+That one matches direct children only, and several existing tests count on exactly that -- widening
+it would change what they measure. This walks instead, so a parity check can ask what the renderer
+actually emitted without disturbing anything that already relies on the narrow behaviour.
+*/
+export function classesIn(node) {
+	const out = [];
+	const walk = (n) => {
+		const cls = (n.attrs?.class || '').split(' ').filter(Boolean);
+		out.push(...cls);
+		(n.children || []).forEach(walk);
+	};
+	walk(node);
+	return out;
 }
