@@ -135,13 +135,25 @@ test('a content node renders text/glyph/outline/pill; plain node byte-identical'
 	assert.match(svg, /rx="13"/);                          // the pill radius
 	assert.ok(svg.includes('#glyph-router'));              // the glyph region
 	const plain = renderElement(resolve({ entities: [{ id: 'node-000021', kind: 'node', cell: [0, 0], glyph: 'router' }] }).scene[0]);
-	assert.ok(plain.includes('stroke-dasharray="2 2"') && plain.includes('<use href="#m-circle"/>') && plain.includes('#glyph-router'), 'no content ⇒ today\'s node');
+	// the socket left this shape when W4's rule was finally applied to plain nodes too: a clean
+	// export carries no edit-mode aid, and the dashed square was one
+	assert.ok(plain.includes('<use href="#m-circle"/>') && plain.includes('#glyph-router'), 'no content ⇒ frame and glyph');
+	assert.ok(!plain.includes('class="socket"'), 'and no socket, which is an editing aid');
 });
 
 test('W4: the socket grid is gated behind the sockets render opt (off by default — clean export)', () => {
 	const el = resolve({ entities: [{ id: 'node-000030', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 0] }, content: [{ content: 'text', value: 'x' }] }] }).scene[0];
 	assert.equal((renderElement(el).match(/class="socket"/g) || []).length, 0, 'default: no grid (a clean export carries no edit-mode aid)');
 	assert.equal((renderElement(el, STD, L_STD, { sockets: true }).match(/class="socket"/g) || []).length, 3, 'opts.sockets: a 3-cell socket grid');
+
+	/*
+	The same rule on a PLAIN node, which is the case this test did not cover and so did not hold.
+	A panel's grid obeyed `sockets` while every plain node drew its dashed square unconditionally --
+	the rule was stated once and enforced on one of the two shapes it named.
+	*/
+	const bare = resolve({ entities: [{ id: 'node-000031', kind: 'node', cell: [0, 0], glyph: 'router' }] }).scene[0];
+	assert.equal((renderElement(bare).match(/class="socket"/g) || []).length, 0, 'default: a plain node carries no socket either');
+	assert.equal((renderElement(bare, STD, L_STD, { sockets: true }).match(/class="socket"/g) || []).length, 1, 'opts.sockets: its one socket');
 });
 
 // =====================================================================================================

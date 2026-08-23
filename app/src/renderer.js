@@ -83,7 +83,9 @@ export class Renderer {
 		this.mode = mode;
 		this.svg.classList.toggle('edit-mode', mode === 'edit');
 		this.svg.classList.toggle('run-mode', mode === 'run');
-		this.model.all('node').forEach((n) => { if (n.content && n.content.length) this.render('node', n); });
+		// every node, not only the panels. Gating a plain node's socket on the mode is pointless if
+		// switching mode never re-renders it -- the change would appear on the next unrelated edit.
+		this.model.all('node').forEach((n) => this.render('node', n));
 		return this.mode;
 	}
 
@@ -160,7 +162,13 @@ export class Renderer {
 				}
 				entity.content.forEach((r, i) => contentDom(r, g, i));
 			} else {
-				el('rect', { class: 'socket', x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET }, g);
+				// W4: a plain node's socket is an editing aid too, and was the one that never obeyed the
+				// mode. A panel's grid appeared on `e` while every node kept its dashed square on in
+				// view and run -- the same cue meaning "you may align to this" was permanent on one
+				// kind and toggled on the other.
+				if (this.mode === 'edit') {
+					el('rect', { class: 'socket', x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET }, g);
+				}
 				const [bx, by, bw, bh] = FIT(entity.type);
 				const fit = el('svg', { x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET, viewBox: `${bx} ${by} ${bw} ${bh}`, preserveAspectRatio: 'xMidYMid meet' }, g);
 				el('use', { 'data-layer': 'glyph', href: `#glyph-${entity.type}` }, fit);

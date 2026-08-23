@@ -138,7 +138,7 @@ function renderEl(el, V, L, opts = {}) {
 		}
 		return `<g class="node ${el.sel ? 'selected' : ''}" transform="translate(${el.cx},${el.cy})">
 		  ${frame}
-		  <rect class="socket" x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" fill="none" stroke="${TOKENS.socket}" stroke-width="0.6" stroke-dasharray="2 2"/>
+		  ${opts.sockets ? `<rect class="socket" x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" fill="none" stroke="${TOKENS.socket}" stroke-width="0.6" stroke-dasharray="2 2"/>` : ''}
 		  <svg x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-${el.glyph}"/></svg>
 		  ${el.sel ? `<path class="select-box" style="display:block" d="${selBox(L, sw, sh)}"/>` : ''}
 		</g>`;
