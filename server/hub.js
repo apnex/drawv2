@@ -22,6 +22,35 @@ export class Hub {
 	}
 
 	/*
+	B32 -- move every session viewing a diagram somewhere else, because that diagram is gone.
+
+	`broadcast` cannot do this: it sends ONE body to many sessions, and a snapshot is per-principal
+	-- what a session may be shown depends on who it is. So the caller supplies a builder and this
+	supplies the sessions, which keeps the authorization decision at the caller and leaves the Hub
+	a registry.
+
+	A builder returning null means this session may not read the survivor, and it is left alone
+	rather than being handed something it is not entitled to. It will discover the deletion the next
+	time it asks; being stranded is better than being shown someone else's document.
+	*/
+	retarget(diagramId, build) {
+		let moved = 0;
+		this.sessions.forEach((s) => {
+			if (s.diagramId !== diagramId) return;
+			try {
+				const body = build(s);
+				if (!body) return;
+				s.diagramId = body.doc.meta.id;
+				s.send('snapshot', body);
+				moved++;
+			} catch (err) {
+				console.warn(`[ hub ] session retarget failed: ${err.message}`);
+			}
+		});
+		return moved;
+	}
+
+	/*
 	B105 -- fan out to EVERY session, whatever it is viewing.
 
 	`broadcast` is scoped to one diagram because a change to it means nothing to anyone elsewhere.

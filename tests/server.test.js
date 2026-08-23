@@ -663,6 +663,68 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 	fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('B32: DELETE removes a diagram, and moves anyone watching it to a survivor', async () => {
+	/*
+	The verb was refused for a long time and is now ruled. The half worth testing is not that the
+	document goes -- store.remove already did that for the websocket -- but that a browser sitting
+	on the deleted diagram is not left holding a document that no longer exists.
+	*/
+	const made = await fetch(`${base}/api/v1/diagrams`, {
+		method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'doomed-by-rest' }),
+	});
+	const { id } = await made.json();
+
+	const watcher = await connect();
+	watcher.send('hello', { diagram: id });
+	assert.equal((await watcher.expect('snapshot')).body.doc.meta.id, id, 'watching the doomed one');
+
+	const r = await fetch(`${base}/api/v1/diagrams/${id}`, { method: 'DELETE' });
+	assert.equal(r.status, 200);
+	assert.equal((await r.json()).deleted, id);
+
+	const moved = await watcher.expect('snapshot');
+	assert.notEqual(moved.body.doc.meta.id, id, 'the watcher was moved off it');
+	assert.ok(moved.body.doc.meta.id, 'and onto a real diagram, not nothing');
+
+	assert.equal((await get(`/api/v1/diagrams/${id}`)).status, 404, 'and it is gone');
+	assert.ok(!(await get('/api/v1/diagrams')).body.some((d) => d.id === id), 'gone from the list too');
+});
+
+test('B32: a diagram another controller is driving cannot be deleted, but its holder may', async () => {
+	const made = await fetch(`${base}/api/v1/diagrams`, {
+		method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'locked-delete' }),
+	});
+	const { id } = await made.json();
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+
+	// no token: this is the websocket's rule, kept so the two transports agree
+	const blocked = await fetch(`${base}/api/v1/diagrams/${id}`, { method: 'DELETE' });
+	assert.equal(blocked.status, 423);
+	assert.equal((await get(`/api/v1/diagrams/${id}`)).status, 200, 'and it refused without deleting');
+
+	// the holder itself may: an agent removing a diagram it is driving is the ordinary case, and
+	// making it release first would be ceremony rather than safety
+	const ok = await fetch(`${base}/api/v1/diagrams/${id}`, {
+		method: 'DELETE', headers: { 'X-Draw-Lock': lock.token },
+	});
+	assert.equal(ok.status, 200);
+	assert.equal((await get(`/api/v1/diagrams/${id}`)).status, 404);
+
+	// and the lock went with it, rather than pinning a diagram that no longer exists
+	assert.ok(!(await get('/api/v1/workspace/agents')).body.agents.some((a) => a.diagram === id));
+});
+
+test('B32: deleting the last diagram leaves a usable store rather than an empty one', async () => {
+	const { Store } = await import('../server/store.js');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lastdel-'));
+	const store = new Store(dir);
+	await store.init();
+	for (const d of store.list()) assert.equal(await store.remove(d.id, null), null);
+	assert.ok(store.total() > 0, 'the store reseeded rather than going empty');
+	assert.ok(store.first(), 'and first() still answers, which the delete path depends on');
+	fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('B105: the agent indicator reports the whole workspace, not just this diagram', async () => {
 	/*
 	The reason the indicator exists: it tells an operator about work they are NOT looking at. So the

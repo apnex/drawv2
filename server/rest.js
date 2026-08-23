@@ -531,6 +531,58 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	const id = parts[3];
 	if (!store.get(id)) return json(res, 404, { error: `unknown diagram: ${id}` });
 
+	/*
+	B32 -- DELETE a diagram. Ruled 2026-08-23 after being refused for a long time.
+
+	The director's argument: an agent can already delete every entity inside a diagram, so the
+	container adds no new capability. That reasoning does not survive on its own -- emptying a
+	diagram is undoable in-app and instant, while deleting it destroys the undo log with it -- and
+	what actually makes the verb acceptable is a GCS soft-delete policy with seven days of
+	retention. That backstop is invisible in the product today, which is B109.
+
+	WRITE, not owner, and deliberately the same gate `store.remove` already applies to the
+	websocket's `delete`. The ruling's own logic sets the threshold: whoever may empty it may remove
+	it, and emptying needs write. Two transports disagreeing about who may delete would be the
+	divergence this codebase keeps finding.
+
+	Refused while another controller holds the lock, mirroring the websocket rule, EXCEPT for the
+	holder itself -- an agent deleting a diagram it is driving is the ordinary case, and making it
+	release first would be ceremony rather than safety.
+
+	The store never goes empty: `remove` reseeds if it would, so `first()` always answers.
+	*/
+	if (req.method === 'DELETE' && parts.length === 4) {
+		const token = req.headers['x-draw-lock'] || '';
+		if (locks && locks.locked(id) && !locks.verify(id, token)) {
+			return json(res, 423, { error: 'server-locked by another controller', code: 'locked' });
+		}
+		const err = await store.remove(id, principal);
+		if (err) {
+			const denied = /forbidden|access/i.test(err);
+			return json(res, denied ? 403 : 404, { error: err, code: denied ? 'forbidden' : 'unknown-diagram' });
+		}
+		if (locks) locks.release(id, token);
+		if (hub) {
+			/*
+			Viewers land on a survivor built for THEIR principal, never a shared one -- which is why
+			this needs a builder rather than a broadcast: a snapshot is per-principal.
+
+			The `canRead` below is deliberately redundant. `snapshotBody` already throws for a
+			principal with no grant (B67, defence in depth), and `retarget` catches, so a viewer who
+			may not read the survivor is skipped either way. Removing this line changes no behaviour
+			and a mutant against it correctly survives. It is kept because the alternative is a call
+			site that looks like it hands every viewer the same document and relies on a throw two
+			files away to not do so.
+			*/
+			const survivor = store.first();
+			hub.retarget(id, (s) => (survivor && store.canRead(survivor.state.meta.id, s.principal)
+				? snapshotBody(survivor, store, locks, s.principal) : null));
+			hub.announce('agents', { agents: locks ? locks.activity() : [] });
+		}
+		console.log(`[ rest ] deleted diagram ${id}`);
+		return json(res, 200, { deleted: id });
+	}
+
 	// lock lifecycle: POST .../lock to acquire, DELETE .../lock to release
 	if (parts[4] === 'lock' && parts.length === 5) {
 		if (req.method === 'POST') {

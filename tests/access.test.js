@@ -7,6 +7,7 @@ dangerous kind of green test. What is asserted is that the model can express the
 the decision survives a restart, and that it can never be made through the document.
 */
 import { test } from 'node:test';
+import { Hub } from '../server/hub.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -1700,4 +1701,65 @@ test('B100: a human creating a diagram still owns it outright, with no grant to 
 		assert.equal(doc.meta.owner, OWNER);
 		assert.deepEqual(doc.meta.grants, {}, 'no self-grant, and nobody else added');
 	} finally { await t.close(); }
+});
+
+/*
+B32 -- a viewer who may not read the SURVIVOR is left alone, not handed it.
+
+`retarget` moves everyone watching a deleted diagram onto a live one, and a snapshot is
+per-principal: what a session may be shown depends on who it is. The builder returning null must
+mean "leave this session alone", because the alternative is shipping someone a document they have
+no grant for -- B67's rule that a representation is not a permission, arriving by a new route.
+
+A mutant that invented a body when told null passed every other test, because with authorization
+off every session may read everything.
+*/
+test('B32: deleting a diagram never hands a viewer a document it has no grant for', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const doomed = [...store.diagrams.keys()][0];
+	store.setOwner(doomed, OWNER);
+	const made = store.create('survivor', null, OWNER);
+	assert.equal(made.ok, true);
+	const survivor = made.model.state.meta.id;
+	assert.equal(store.grant(doomed, GUEST, 'read', OWNER), null);   // GUEST may read ONLY the doomed one
+
+	const hub = new Hub();
+	const gws = fakeWs();
+	const guest = new Session(gws, store, hub, null, GUEST);
+	gws.recv('hello', { diagram: doomed });
+	assert.equal(gws.last('snapshot').body.doc.meta.id, doomed, 'the guest is watching it');
+	const before = gws.out.length;
+
+	// the owner removes it, and the guest cannot read what is left
+	assert.equal(await store.remove(doomed, OWNER), null);
+	/*
+	The builder is the caller's, and the canRead in it is the whole protection -- `retarget`'s own
+	null check is belt-and-braces, since a null body throws inside its try and the session is
+	skipped anyway. So this asserts the RULE, at the place the rule lives.
+	*/
+	const asked = [];
+	const moved = hub.retarget(doomed, (s) => {
+		asked.push(s.principal);
+		return store.canRead(survivor, s.principal) ? { doc: store.get(survivor).toJSON() } : null;
+	});
+	assert.deepEqual(asked, [GUEST], 'the builder was consulted about the guest');
+	assert.equal(store.canRead(survivor, GUEST), false, 'and the answer was no');
+
+	assert.equal(moved, 0, 'nobody was moved, because nobody was entitled to be');
+	assert.equal(gws.out.length, before, 'and the guest was sent nothing at all');
+	assert.equal(guest.diagramId, doomed, 'it still points at the diagram it lost, and will find out when it asks');
+});
+
+test('B32: a viewer that CAN read the survivor is moved onto it', () => {
+	// the other half of the same rule, so the null branch is not just always-null
+	const hub = new Hub();
+	const ws = fakeWs();
+	const s = new Session(ws, { get: () => null, list: () => [] }, hub, null, OWNER);
+	s.diagramId = 'diagram-aa0001';
+	const moved = hub.retarget('diagram-aa0001', () => ({ doc: { meta: { id: 'diagram-bb0002' } } }));
+	assert.equal(moved, 1);
+	assert.equal(s.diagramId, 'diagram-bb0002', 'the session now points at the survivor');
+	assert.equal(ws.last('snapshot').body.doc.meta.id, 'diagram-bb0002');
 });

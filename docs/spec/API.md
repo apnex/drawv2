@@ -26,8 +26,11 @@ Ownership rather than a grant to the human, because a grant would have left the 
 The response is `201` carrying the minted id and the whole document, so an agent does not need a second call to discover what it just made.\
 An id in the body is ignored: the server mints it, which is what stops offline work from landing on top of whichever diagram the server last answered with.
 
-There is no `DELETE /api/v1/diagrams/<id>`, and its absence is a decision rather than an omission.\
-Creating and destroying are not symmetric, and a destructive verb keeps its gates until someone rules otherwise.
+`DELETE /api/v1/diagrams/<id>` removes one, and needs write access rather than ownership -- whoever may empty a diagram may remove it.\
+It answers `423` while another controller holds the lock, unless you are that controller, and anyone watching the diagram is moved onto a surviving one.\
+The store never goes empty: removing the last diagram reseeds the examples.
+
+A removed diagram is recoverable from object-store soft delete for seven days, and nothing in the product surfaces that yet.
 
 `MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
 It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.
