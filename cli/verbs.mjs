@@ -37,6 +37,25 @@ async function activeId(ctx, flags) {
 	return list[0].id;
 }
 
+/*
+An id, from an id or a name. Names are what a person and an agent both actually use.
+
+Deliberately checks entities in the order a caller is most likely to mean, and refuses ambiguity
+rather than guessing: two things sharing a name is a diagram problem, and silently picking one
+would turn it into a mystery about which one moved.
+*/
+async function resolveId(ctx, diagramId, ref) {
+	if (/^(node|waypoint|link|zone|group)-[0-9a-f]{6}$/.test(ref)) return ref;
+	const doc = ok(await request(ctx, `/diagrams/${diagramId}`), 'resolve');
+	const hits = [];
+	for (const k of ['nodes', 'zones', 'groups', 'links', 'waypoints']) {
+		for (const e of doc[k] || []) if (e.name === ref) hits.push(e.id);
+	}
+	if (!hits.length) die(`nothing called ${ref} in this diagram`);
+	if (hits.length > 1) die(`${ref} is ambiguous: ${hits.join(', ')} -- name it by id`);
+	return hits[0];
+}
+
 const ok = (res, what) => {
 	if (!res.ok) die(`${what}: ${res.body?.error || `HTTP ${res.status}`}${res.body?.opIndex !== undefined ? ` (op ${res.body.opIndex})` : ''}`);
 	return res.body;
@@ -299,9 +318,17 @@ VERBS.push(
 		args: [{ name: 'entity-id', about: 'any node, waypoint, link, zone or group id -- the kind is worked out for you' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
-			if (!args[0]) die('about needs an entity id');
+			if (!args[0]) die('about needs an entity id or name');
 			const id = await activeId(ctx, ctx.flags);
-			const b = ok(await request(ctx, `/diagrams/${id}/context/${args[0]}`), 'context');
+			/*
+			A name is resolved to an id before asking.
+
+			An agent thinks in names -- `lb-1`, not `node-a00001` -- and the first version passed the
+			argument straight through, so `draw about lb-1` answered "unknown entity" about a node
+			that was plainly there. The route takes an id because ids are what the model keys on; the
+			TOOL is where that gap gets closed, which is the whole reason it exists.
+			*/
+			const b = ok(await request(ctx, `/diagrams/${id}/context/${await resolveId(ctx, id, args[0])}`), 'context');
 			const rows = [];
 			if (b.at) rows.push(['at', `${b.at.x},${b.at.y}`]);
 			if (b.group) rows.push(['group', b.group]);
@@ -356,3 +383,79 @@ VERBS.push(
 		},
 	},
 );
+
+/*
+`place` -- the verb the whole exercise was for.
+
+Everything else in this file names an operation the API already has. This one names an INTENT: put
+a server next to lb-1. The agent supplies meaning, the tool supplies geometry, and the two mistakes
+it removes are the two an agent actually makes -- computing an off-grid coordinate, and landing on
+something already there.
+
+Composition, not a layout engine. It reads the reference's context, asks which anchors are free,
+picks one, and commits an ordinary transaction; every step is a route that exists, and nothing here
+decides anything the server would not have accepted from a caller that did the arithmetic itself.
+`--link` is included because "next to" almost always means "and connected to", and making that a
+second invocation invites the agent to forget it.
+*/
+const DIRS = {
+	right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1],
+	above: [0, -1], below: [0, 1],
+};
+
+VERBS.push({
+	name: 'place', group: 'Placement', usage: 'draw place <type> near <ref> [--dir d] [--link]',
+	route: '/diagrams/<id>/commit',
+	summary: 'put a node beside another, on a free anchor, without computing coordinates',
+	example: 'draw place server near lb-1 --dir right --link',
+	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
+		{ name: 'near', about: "the literal word 'near', so the sentence reads" },
+		{ name: 'ref', about: 'the id or name to place beside' }],
+	flags: [{ name: '--dir', about: 'right | left | up | down (default: nearest free anchor)' },
+		{ name: '--name', about: 'what to call it (default: the server-minted id)' },
+		{ name: '--link', about: 'also link it to the reference' },
+		{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx, args) {
+		const [type, near, ref] = args;
+		if (!type || near !== 'near' || !ref) die('usage: draw place <type> near <ref>');
+		if (ctx.flags.dir && !DIRS[ctx.flags.dir]) die(`--dir must be one of ${Object.keys(DIRS).join(', ')}`);
+		const id = await activeId(ctx, ctx.flags);
+
+		// the reference, by id or by name -- an agent thinks in names
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'place');
+		const anchorNode = doc.nodes.find((n) => n.id === ref || n.name === ref);
+		if (!anchorNode) die(`no node called ${ref} -- \`draw get nodes\` lists them`);
+
+		const free = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors?free=1`), 'place');
+		const options = free.anchors;
+		if (!options.length) die('the canvas is full: every anchor is occupied');
+
+		let target;
+		if (ctx.flags.dir) {
+			const [dx, dy] = DIRS[ctx.flags.dir];
+			// step outward in that direction until an anchor is free, so "right" means right
+			for (let step = 1; step <= 16 && !target; step++) {
+				const x = anchorNode.x + dx * 60 * step, y = anchorNode.y + dy * 60 * step;
+				target = options.find((a) => a.x === x && a.y === y);
+			}
+			if (!target) die(`nothing free to the ${ctx.flags.dir} of ${ref} -- try another direction, or \`draw near\` to see why`);
+		} else {
+			target = options.reduce((best, a) => {
+				const d = Math.hypot(a.x - anchorNode.x, a.y - anchorNode.y);
+				return !best || d < best.d ? { ...a, d } : best;
+			}, null);
+		}
+
+		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
+		const ops = [{ op: 'put', kind: 'node',
+			entity: { id: nid, name: ctx.flags.name || nid, type, x: target.x, y: target.y } }];
+		if (ctx.flags.link) {
+			ops.push({ op: 'put', kind: 'link', entity: { id: `link-${Math.random().toString(16).slice(2, 8)}`, src: anchorNode.id, dst: nid } });
+		}
+		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
+			{ method: 'POST', headers: await held(ctx, id, 'place'),
+				body: { ops, label: `place ${type} near ${anchorNode.name || anchorNode.id}` } }), 'place');
+		return { json: { id: nid, at: { x: target.x, y: target.y }, cell: { cx: target.cx, cy: target.cy }, linked: !!ctx.flags.link, version: b.version },
+			text: `${ctx.flags.name || nid} (${nid}) at ${target.x},${target.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}` };
+	},
+});

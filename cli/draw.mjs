@@ -24,7 +24,16 @@ function parseArgs(argv) {
 		const a = argv[i];
 		if (!a.startsWith('--')) { rest.push(a); continue; }
 		const key = a.slice(2);
-		if (key === 'json' || key === 'help') { flags[key] = true; continue; }
+		/*
+		A flag whose next token is another flag, or nothing, is a BOOLEAN.
+
+		The first version assumed every flag took a value and special-cased two by name, so
+		`--link --name web-1` set link to "--name" and left web-1 as a positional argument. The
+		node was created, silently, with the wrong name -- the worst shape of bug, because the
+		command appeared to succeed.
+		*/
+		const next = argv[i + 1];
+		if (next === undefined || next.startsWith('--')) { flags[key] = true; continue; }
 		flags[key] = argv[++i];
 	}
 	return { flags, rest };

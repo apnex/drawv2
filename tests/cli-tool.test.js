@@ -111,3 +111,46 @@ async function captureExit(fn) {
 	finally { process.stderr.write = ew; process.exit = exit; }
 	return errs.join('');
 }
+
+/*
+`place` -- intent in, geometry handled. The verb the tool exists for.
+
+Two mistakes an agent actually makes: computing an off-grid coordinate, and landing on something
+already there. These assert that both are removed, and that a name works where an id is expected,
+because an agent thinks in names.
+*/
+test('place puts a node on a free anchor beside a reference, named by name', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'place-test')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [{ op: 'put', kind: 'node',
+			entity: { id: 'node-a00001', name: 'lb-1', type: 'loadbalancer', x: 0, y: 0 } }] }));
+
+		const first = JSON.parse(await run('place', 'server', 'near', 'lb-1', '--dir', 'right', '--link', '--name', 'web-1', '--diagram', id, '--json'));
+		assert.deepEqual(first.at, { x: 60, y: 0 }, 'one cell to the right, on the grid');
+		assert.equal(first.linked, true);
+
+		// the second must step PAST the first: an occupied anchor is not a free one
+		const second = JSON.parse(await run('place', 'server', 'near', 'lb-1', '--dir', 'right', '--name', 'web-2', '--diagram', id, '--json'));
+		assert.deepEqual(second.at, { x: 120, y: 0 }, 'stepped over the node it just placed');
+
+		const nodes = JSON.parse(await run('get', 'nodes', '--diagram', id, '--json'));
+		assert.deepEqual(nodes.map((n) => n.name).sort(), ['lb-1', 'web-1', 'web-2'], '--name survived flag parsing');
+
+		// a name resolves where the route wants an id
+		const about = JSON.parse(await run('about', 'lb-1', '--diagram', id, '--json'));
+		assert.equal(about.id, 'node-a00001');
+		assert.equal(about.neighbours.length, 1, 'only web-1 was linked');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('place refuses a direction with nothing free, rather than placing elsewhere', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'boxed-in')).trim();
+		await run('lock', '--diagram', id);
+		const err = await captureExit(() => run('place', 'server', 'near', 'nonexistent', '--diagram', id));
+		assert.match(err, /no node called nonexistent/, 'and it says how to find the real ones');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
