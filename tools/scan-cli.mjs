@@ -29,9 +29,6 @@ Routes the tool is expected to gain. Every line is work not yet done, and deleti
 the work is recorded as finished -- so this list only ever shrinks, and the gate says by how much.
 */
 const PENDING = {
-	layouts: 'the named grids -- CLI.md Placement',
-	nearest: 'anchor nearest <x> <y> -- CLI.md Placement',
-	anchors: 'anchor free -- CLI.md Placement',
 	sync: 'the Slides sync route behind `draw push`',
 	slides: 'the Slides projection target -- CLI.md Projection',
 	nodes: 'high-level node verbs -- CLI.md Writing',

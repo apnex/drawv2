@@ -664,3 +664,47 @@ VERBS.push({
 			text: `${ctx.flags.name || nid} (${nid}) at cell ${cx},${cy} = ${spot.x},${spot.y}  v${b.version}` };
 	},
 });
+
+/*
+`anchor` -- the bridge from a coordinate to a legal position.
+
+Needed because a caller may HAVE pixels: read off a screen, carried from another tool, or printed
+by an older document. `add` refuses them on purpose, so something has to convert, and that
+something should be the tool rather than the caller's arithmetic -- which is the arithmetic that
+produced every off-grid node before B110.
+
+`free` is the placement counterpart: not "is this legal" but "what is available", which is what an
+agent needs when it is choosing rather than checking.
+*/
+VERBS.push(
+	{
+		name: 'anchor nearest', sub: true, group: 'Placement', usage: 'draw anchor nearest <x> <y> [--layout node|zone]',
+		route: '/diagrams/<id>/layouts/<name>/nearest',
+		summary: 'the legal anchor closest to a pixel coordinate',
+		example: 'draw anchor nearest 130 60',
+		args: [{ name: 'x', about: 'pixel x' }, { name: 'y', about: 'pixel y' }],
+		flags: [{ name: '--layout', about: 'node (default) or zone -- zones sit on a half-offset grid' },
+			{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [x, y] = args.map(Number);
+			if (!Number.isFinite(x) || !Number.isFinite(y)) die('usage: draw anchor nearest <x> <y>');
+			const layout = ctx.flags.layout || 'node';
+			const id = await activeId(ctx, ctx.flags);
+			const a = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/nearest?x=${x}&y=${y}`), 'anchor nearest');
+			return { json: a, text: `cell ${a.cx},${a.cy} = ${a.x},${a.y}${a.occupant ? `  (taken by ${a.occupant})` : '  free'}` };
+		},
+	},
+	{
+		name: 'anchor free', sub: true, group: 'Placement', usage: 'draw anchor free [--layout node|zone]',
+		route: '/diagrams/<id>/layouts/<name>/anchors',
+		summary: 'every anchor nothing occupies', example: 'draw anchor free --json',
+		flags: [{ name: '--layout', about: 'node (default) or zone' }, { name: '--diagram', about: 'target by id or name' }],
+		async run(ctx) {
+			const layout = ctx.flags.layout || 'node';
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors?free=1`), 'anchor free');
+			// a list of 500 cells is not a table anyone reads; the count and the corners are
+			return { json: b, text: `${b.count} free on the ${b.layout} grid` };
+		},
+	},
+);

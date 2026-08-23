@@ -261,3 +261,48 @@ test('place reads inside a zone and between two nodes, linking both ends', async
 		assert.deepEqual(spine.neighbours.sort(), ['node-a00001', 'node-a00002']);
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+/*
+B120 -- every verb a message names is a verb that exists.
+
+`add` told the caller to run `draw anchor nearest`, which did not exist. Worse than a vague
+message: a reader who trusts it spends time discovering the tool lied, and then has reason to doubt
+every other message it prints, including the ones that are right.
+
+The instance is trivial to fix and the class is not. Nothing stops a rename leaving working code
+pointing at a ghost, and only a human running the failing path would ever find out -- which is how
+this one was found.
+*/
+test('B120: no message recommends a verb the tool does not have', () => {
+	const src = fs.readFileSync('cli/verbs.mjs', 'utf8');
+	// `help` is real but lives in the runtime rather than the manifest, so the guard must know the
+	// same set of verbs a user does -- not only the ones this file happens to declare
+	const names = new Set([...VERBS.map((v) => v.name), 'help']);
+	const bad = [];
+	// a recommendation has the shape `draw <word> <word>` inside a string literal
+	for (const m of src.matchAll(/`draw ([a-z-]+)(?: ([a-z-]+))?/g)) {
+		const [, one, two] = m;
+		if (names.has(`${one} ${two}`) || names.has(one)) continue;
+		bad.push(`draw ${one}${two ? ` ${two}` : ''}`);
+	}
+	assert.deepEqual([...new Set(bad)], [], 'these are named in messages and do not exist');
+});
+
+test('anchor nearest converts a pixel to the cell add will accept', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'anchor-test')).trim();
+		const a = JSON.parse(await run('anchor', 'nearest', '130', '60', '--diagram', id, '--json'));
+		assert.deepEqual([a.cx, a.cy], [2, 1], '130,60 rounds to cell 2,1');
+		assert.deepEqual([a.x, a.y], [120, 60], 'and back to a legal pixel');
+
+		// the round trip the error message promises: pixels in, a cell add accepts out
+		await run('lock', '--diagram', id);
+		const placed = JSON.parse(await run('add', 'server', 'at', `${a.cx},${a.cy}`, '--diagram', id, '--json'));
+		assert.deepEqual(placed.at, { x: a.x, y: a.y });
+
+		// and the zone grid is a different answer for the same point, which is why --layout exists
+		const z = JSON.parse(await run('anchor', 'nearest', '130', '60', '--layout', 'zone', '--diagram', id, '--json'));
+		assert.notDeepEqual([z.x, z.y], [a.x, a.y], 'zones sit on the half-offset grid');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
