@@ -10,11 +10,18 @@ Two nouns appear throughout and are defined in [SCOPE.md](SCOPE.md#vocabulary): 
 ---
 
 Creating takes no lock, because there is no diagram yet to lock.\
-The caller owns what it creates, and ownership comes from the authenticated identity rather than from the body -- an owner presented on the wire is refused, so it cannot be forged:
+Ownership comes from the authenticated identity rather than from the body -- an owner presented on the wire is refused, so it cannot be forged:
 ```sh
 curl -s -X POST localhost:8080/api/v1/diagrams -d '{"name":"topology"}'
 curl -s -X POST localhost:8080/api/v1/diagrams -d '{"doc":{"meta":{"name":"from a file"},"nodes":[]}}'
 ```
+
+An agent's work belongs to whoever authorised the agent (ruled 2026-08-23, **B100**).\
+A diagram created by `agent:planner` is owned by the principal that claimed that agent name, and the agent is left an ordinary `write` grant on it.\
+This document previously said the caller owns what it creates, which was true of a human and produced work nobody could reach when an agent did it: owned by `agent:<name>` with no grants, invisible to the person who authorised the agent, on their own deployment.
+
+The agent is not a party here, it is a credential held on behalf of a claimant.\
+Ownership rather than a grant to the human, because a grant would have left the agent owning the diagram and therefore holding its access list -- the human could not have granted anyone else, and could not have revoked the agent from work done on their behalf.
 
 The response is `201` carrying the minted id and the whole document, so an agent does not need a second call to discover what it just made.\
 An id in the body is ignored: the server mints it, which is what stops offline work from landing on top of whichever diagram the server last answered with.

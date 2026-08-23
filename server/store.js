@@ -306,6 +306,28 @@ export class Store {
 		return this.agents.get(agent)?.by || null;
 	}
 
+	/*
+	B100 -- who OWNS what a principal creates. An agent's work belongs to whoever authorised it.
+
+	An agent is not a party, it is a credential held on behalf of a claimant, so what it makes is
+	the claimant's. Without this, an agent-created diagram is owned by `agent:<name>` with no
+	grants: the human who authorised the agent cannot list it, read it or render it, and the work
+	is unreachable in a bucket they own. ACCESS.md required access in both directions and only the
+	human-to-agent half was ever built.
+
+	Ownership rather than a reciprocal grant, ruled 2026-08-23. A grant would have left the AGENT
+	as owner and so in control of the diagram's access list -- the human could not have granted
+	anyone else, and could not have revoked the agent from it. That is the instrument outranking
+	the person who authorised it.
+
+	Never null for an authenticated agent: `agentForCode` refuses a code whose agent has no live
+	claim, so an `agent:` principal cannot reach this without one.
+	*/
+	ownerFor(principal) {
+		if (!principal) return null;
+		return this.claimantOf(principal) || principal;
+	}
+
 	// metadata only, and never the hash: a caller has no use for it and it is the lookup key
 	listCodes(by) {
 		return [...this.codes.values()]
@@ -516,18 +538,36 @@ export class Store {
 			it, breaking D6's one-source-one-mirror contract.
 			*/
 			const entry = this.install(id, { ...candidate, meta: { ...candidate.meta, version: 0 } });
-			if (principal) entry.model.state.meta.owner = principal;
+			this.#attribute(entry.model, principal);
 			this.markDirty(id);
 			return { ok: true, model: entry.model };
 		}
 		const model = new Model();
 		model.state.meta.id = id;
 		model.state.meta.name = name;
-		if (principal) model.state.meta.owner = principal;
+		this.#attribute(model, principal);
 		const entry = { model, log: new Log(0), dirty: false, timer: null, file: `${id}.json` };
 		this.diagrams.set(id, entry);
 		this.markDirty(id);
 		return { ok: true, model };
+	}
+
+	/*
+	B100 -- set the owner, and keep the creator able to reach what it just made.
+
+	Both create paths go through here so they cannot disagree; the doc-carrying one used to set
+	the owner on its own line and would have been the one to miss a change.
+
+	The agent keeps an explicit write grant on its own work. Relying on the human's workspace grant
+	instead would mean an agent holding a code but no workspace grant creates a diagram and loses
+	it in the same call. The grant is ordinary, so the owner can revoke it like any other -- which
+	is the whole point of the human holding ownership.
+	*/
+	#attribute(model, principal) {
+		const owner = this.ownerFor(principal);
+		if (!owner) return;
+		model.state.meta.owner = owner;
+		if (principal !== owner) model.state.meta.grants = { ...model.state.meta.grants, [principal]: 'write' };
 	}
 
 	get(id) {

@@ -69,6 +69,10 @@ This is cheap now and a migration later, because no code has been written yet an
 The original granularity row deferred collection scope, and agent-created diagrams make that deferral untenable.\
 If an agent may create, the human needs access to what it creates and the agent needs access to what the human creates, and per-diagram grants put a person in the loop for every one of them.
 
+Both halves are built as of 2026-08-23.\
+The human-to-agent half is the workspace grant (H9.4c), and the agent-to-human half is ownership: what an agent creates is owned by the principal that claimed the agent name, with the agent left an ordinary `write` grant (**B100**).\
+Only the first half existed for a while, and the gap was not theoretical -- a diagram drawn by an agent on the live deployment could not be seen by the person who had authorised that agent.
+
 The lifted form needs no new entity.\
 A workspace is *the set of diagrams owned by a principal*, so the change is that a grant names an owner where it previously named a diagram, and `access()` gains one fallback: no direct grant, then does this principal hold a grant on the diagram's owner.
 

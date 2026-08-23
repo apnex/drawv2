@@ -1620,3 +1620,81 @@ test('H9.6: a code is honoured ONLY as a Bearer token, never a query or a stray 
 			'and the one supported channel still works — otherwise this passes for the wrong reason');
 	} finally { await t.close(); }
 });
+
+/*
+B100 -- what an agent creates belongs to whoever authorised the agent.
+
+The director drew a diagram through /connect/v1 on the live deployment and then could not see it:
+owned by `agent:planner` with no grants, so it was filtered out of their listing, refused as a
+document, and refused as an SVG. Work nobody could reach, in a bucket they owned. ACCESS.md
+required access in BOTH directions and only the human-to-agent half was built.
+
+Ruled as ownership rather than a reciprocal grant, and the tests below are written against the
+reason for that rather than the mechanism: a grant would have left the agent owning the diagram
+and therefore holding its access list.
+*/
+test('B100: a diagram an agent creates is owned by the human who claimed the agent', async () => {
+	const t = await connected();
+	try {
+		await t.app.store.grantOwner(OWNER, AGENT, 'write');
+		const made = await fetch(`${t.base}/connect/v1/diagrams`, {
+			method: 'POST', ...bearer(t.code),
+			headers: { ...bearer(t.code).headers, 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: 'agent-made' }),
+		});
+		assert.equal(made.status, 201);
+		const { id, doc } = await made.json();
+
+		assert.equal(doc.meta.owner, OWNER, 'the claimant owns it, not the agent that made it');
+		assert.equal(doc.meta.grants[AGENT], 'write', 'and the agent keeps write on its own work');
+
+		// the symptom, stated as the director met it: can the human SEE it
+		const listed = (await (await fetch(`${t.base}/api/v1/diagrams`)).json()).map((d) => d.id);
+		assert.ok(listed.includes(id), 'it appears in the human listing -- this is the whole defect');
+		assert.equal((await fetch(`${t.base}/api/v1/diagrams/${id}`)).status, 200, 'and reads');
+		assert.equal((await fetch(`${t.base}/d/${id}.svg`)).status, 200, 'and renders');
+
+		// and the agent has not been locked out of what it just made
+		assert.equal((await fetch(`${t.base}/connect/v1/diagrams/${id}`, bearer(t.code))).status, 200);
+	} finally { await t.close(); }
+});
+
+test('B100: the human OWNS it, so the human can revoke the agent from it', async () => {
+	/*
+	This is why the ruling was ownership and not a reciprocal grant. Under a grant the agent would
+	still have owned the diagram, so this revoke would have been the instrument overruling the
+	person who authorised it -- and the human could not have cut access to work done on their
+	behalf, on their own deployment.
+	*/
+	const t = await connected();
+	try {
+		const made = await fetch(`${t.base}/connect/v1/diagrams`, {
+			method: 'POST', ...bearer(t.code),
+			headers: { ...bearer(t.code).headers, 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: 'agent-made' }),
+		});
+		const { id } = await made.json();
+		assert.equal((await fetch(`${t.base}/connect/v1/diagrams/${id}`, bearer(t.code))).status, 200);
+
+		const cut = await fetch(`${t.base}/api/v1/diagrams/${id}/grants/${encodeURIComponent(AGENT)}`,
+			{ method: 'DELETE' });
+		assert.equal(cut.status, 200, 'the owner may revoke -- and the owner is the human');
+
+		const after = await fetch(`${t.base}/connect/v1/diagrams/${id}`, bearer(t.code));
+		assert.equal(after.status, 403, 'the agent is out of the diagram it created');
+	} finally { await t.close(); }
+});
+
+test('B100: a human creating a diagram still owns it outright, with no grant to anyone', async () => {
+	// ownerFor must be identity for a non-agent principal: no claim exists, so nothing resolves
+	const t = await connected();
+	try {
+		const made = await fetch(`${t.base}/api/v1/diagrams`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: 'human-made' }),
+		});
+		const { doc } = await made.json();
+		assert.equal(doc.meta.owner, OWNER);
+		assert.deepEqual(doc.meta.grants, {}, 'no self-grant, and nobody else added');
+	} finally { await t.close(); }
+});
