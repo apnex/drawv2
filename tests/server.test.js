@@ -614,6 +614,55 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
 });
 
+test('B113: the collection cap is reachable on a kind that has no anchors', async () => {
+	/*
+	The cap used to be asserted by filling 2000 nodes at one point, which is exactly the document
+	B112 forbids -- and for a positioned kind the cap can no longer fire at all, because occupancy
+	refuses at 528. It survives only for kinds carrying no coordinates.
+
+	Links need DISTINCT pairs: the straight-link invariant allows one per pair, so 2001 links means
+	2001 pairs, which is why this needs its own setup rather than a tail on the anchor test.
+	*/
+	const { Store } = await import('../server/store.js');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-linkcap-'));
+	const store = new Store(dir);
+	await store.init();
+	const id = store.list()[0].id;
+
+	// 64 nodes gives 64*63/2 = 2016 distinct pairs, just over the 2000 cap
+	const ids = [];
+	let k = 0;
+	for (let cy = -4; cy <= 4 && ids.length < 64; cy++) {
+		for (let cx = -3; cx <= 4 && ids.length < 64; cx++) {
+			const nid = `node-${(0xc00000 + k++).toString(16)}`;
+			const r = store.commit(id, { ops: [{ op: 'put', kind: 'node',
+				entity: { id: nid, name: nid, type: 'host', x: cx * 60, y: cy * 60 } }] }, 'server');
+			if (r.ok) ids.push(nid);
+		}
+	}
+	assert.ok(ids.length >= 64, `needed 64 nodes, placed ${ids.length}`);
+
+	const seededLinks = store.get(id).all('link').length;
+	let made = 0, refusal = null;
+	outer:
+	for (let a = 0; a < ids.length; a++) {
+		for (let b = a + 1; b < ids.length; b++) {
+			const lid = `link-${(0xd00000 + made).toString(16)}`;
+			const r = store.commit(id, { ops: [{ op: 'put', kind: 'link',
+				entity: { id: lid, src: ids[a], dst: ids[b] } }] }, 'server');
+			if (!r.ok) { refusal = r.error; break outer; }
+			made++;
+		}
+	}
+	assert.ok(refusal, `never reached the cap; made ${made} links`);
+	// the PLANNER speaks first on a commit; validateDoc's wording guards what loads, not what writes
+	assert.match(refusal, /collection limit reached/, `refused for the wrong reason: ${refusal}`);
+	assert.equal(made + seededLinks, 2000,
+		`refused at exactly the cap: ${seededLinks} seeded + ${made} added`);
+	await store.flushAll();
+	fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('B111/B112: an agent asks for an anchor instead of computing one', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 
@@ -937,21 +986,18 @@ test('collection caps are enforced on apply', async () => {
 		placed++;
 	}
 	assert.ok(placed > 500, `the canvas should hold about 527 nodes, held ${placed}`);
-	// one more anywhere on the grid must now collide, because every anchor is taken
+	/*
+	One more must be refused, and BOTH rules now say so at the same moment: every anchor is taken
+	and the derived cap is the anchor count (B113). Either message is a correct refusal, and
+	asserting one of them specifically would be asserting which rule happens to run first.
+	*/
 	const collide = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-fffffe', name: 'extra', type: 'host', x: 60, y: 60 } }] }, 'server');
 	assert.equal(collide.ok, false);
-	assert.match(collide.error, /occupy the same anchor/);
-	/*
-	The 2000-entity COLLECTION cap is deliberately NOT asserted here any more, and not silently.
-
-	It is unreachable for nodes and waypoints, which are anchor-limited to 527 by the check above.
-	Reaching it on links would need 2001 DISTINCT pairs, because the straight-link invariant allows
-	one per pair -- a different test with a different setup, not a tail on this one. Writing a
-	weaker version that stops at the first refusal would assert nothing, since the first refusal is
-	now occupancy.
-
-	Tracked as B113: two limits, and the one the code still names is no longer the one that binds.
-	*/
+	assert.match(collide.error, /occupy the same anchor|collection limit reached/);
+	// the positioned cap is DERIVED from the grid, so the constant is the limit that binds (B113)
+	const capped = store.commit(id, { ops: [{ op: 'put', kind: 'node',
+		entity: { id: 'node-fffffd', name: 'x', type: 'host', x: 900, y: 480 } }] }, 'server');
+	assert.equal(capped.ok, false, 'the canvas is full by either rule');
 	await store.flushAll();
 	fs.rmSync(dir, { recursive: true, force: true });
 });

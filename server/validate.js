@@ -4,8 +4,9 @@ radically narrowed). The server never trusts the wire: every mutation and every
 pushed document is validated for shape, ranges, and referential integrity.
 */
 
-import { SURFACE } from '../model/index.mjs';
-import { LAYOUTS, onLayout } from '../kernel/index.mjs';
+import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
+import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
+import { collectionCap } from '../engine/policy.mjs';
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -28,7 +29,20 @@ const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 const ACTIONS = ['put', 'set', 'del'];
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
 // center-origin coordinates: [0,0] is the canvas/slide center
-const EXT = { x: SURFACE.hw, y: SURFACE.hh };   // magnitude sourced from the document substrate; the num() bound CHECKS below stay LOCAL (trust boundary, never delegated)
+/*
+B113 -- the server bounds what the client clamps to, and until now it did not.
+
+`validate` allowed a node anywhere inside the SURFACE half-extent (960 x 540) while `app/src/snap.js`
+clamped one to NODE_EXT (900 x 480), so a hundred positions were legal to the server and unreachable
+in the editor. Same family as B110: a limit the browser applied and the trust boundary did not, with
+the agent door as the caller nobody bound. Nothing live sat outside the client clamp -- max |x| 840,
+max |y| 480 across the estate -- so tightening costs nothing and removes the divergence.
+
+Magnitudes sourced from the document substrate; the num() bound CHECKS below stay LOCAL (the trust
+boundary is never delegated).
+*/
+const EXT = NODE_EXT;                          // nodes and waypoints keep a full margin cell
+const ZEXT = ZONE_EXT;                         // zones reach within half a cell
 
 /*
 B110 -- geometry is a RULE, enforced here, not a courtesy the browser performs.
@@ -54,7 +68,13 @@ trust boundary is never delegated to the module that supplies the magnitude.
 // B111: the LAYOUT is sourced, the CHECK stays local -- the same split the surface extents use.
 // This file restated the half-pitch offset when B110 landed, which made the kernel's silence about
 // the zone grid into a second implementation of it rather than a gap.
+const PITCH = STD.pitch;
 const onGrid = (name, v) => onLayout(LAYOUTS[name], v);
+
+// B113: the cap has ONE owner. engine/policy.mjs already declares itself the authority for a
+// threshold (B85), and this was stated twice at 2000 -- here and in txn.mjs -- which is one number
+// too many the moment either becomes derived.
+const CAP = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: PITCH });
 
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -115,10 +135,10 @@ const FIELDS = {
 		id: (v) => id(v, 'zone'),
 		name: (v) => str(v, 64),
 		// the zone grid is offset by half a pitch: a zone bounds CELLS, so its edges fall between them
-		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('zone', v),
-		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('zone', v),
-		w: (v) => num(v, 60, 2 * EXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
-		h: (v) => num(v, 60, 2 * EXT.y) && onGrid('node', v)
+		x: (v) => num(v, -ZEXT.x, ZEXT.x) && onGrid('zone', v),
+		y: (v) => num(v, -ZEXT.y, ZEXT.y) && onGrid('zone', v),
+		w: (v) => num(v, 60, 2 * ZEXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
+		h: (v) => num(v, 60, 2 * ZEXT.y) && onGrid('node', v)
 	},
 	group: {
 		id: (v) => id(v, 'group'),
@@ -277,7 +297,7 @@ export function validateDoc(doc) {
 	for (const [kind, key] of Object.entries(collections)) {
 		const list = doc[key] || [];
 		if (!Array.isArray(list)) return `${key} is not an array`;
-		if (list.length > 2000) return `${key} exceeds entity limit`;
+		if (list.length > CAP[kind]) return `${key} exceeds entity limit`;
 		for (const entity of list) {
 			const err = validateEntity(kind, entity, { full: true });
 			if (err) return err;

@@ -86,6 +86,14 @@ A waypoint counts, because a waypoint is a node for placement.
 Reads, so neither takes the lock.\
 The layout name travels with an anchor because the same cell resolves to different pixels on the two grids.
 
+### How much fits
+
+A diagram holds at most one node or waypoint per anchor, so the canvas caps at 527 of them together.\
+The per-collection limit is the anchor count for a positioned kind and 2000 for a kind with no coordinates, so the number the code names is the number that binds.
+
+A node reaches to 900 by 480 and a zone half a cell further, to 930 by 510.\
+These are what the editor has always clamped to; the server now refuses the same set rather than a wider one.
+
 ### Where the rule lives
 
 This is enforced at the server rather than in the editor, which is where it used to live.\

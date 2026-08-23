@@ -14,3 +14,30 @@ export function groupAfterRemoval(members, isRemoved) {
 	const remaining = members.filter((m) => !isRemoved(m));
 	return { remaining, dissolve: remaining.length < 2 };
 }
+
+/*
+B113 -- how many of a kind one diagram may hold. The single authority for the number.
+
+It was stated twice at 2000: `server/txn.mjs` refuses a mutation past it, `server/validate.js`
+refuses a document carrying more. Two enforcement points is correct and deliberate -- one guards the
+wire, one guards what loads -- but two NUMBERS is not, and they had begun to diverge the moment one
+of them became derived.
+
+DERIVED for a positioned kind, because B112 caps those at one entity per anchor and a flat 2000
+became unreachable: the node grid holds 527 anchors, so occupancy refused at 528 and the constant
+could never fire. A limit that cannot be reached is a claim the code makes and cannot keep.
+
+Occupancy remains the tighter rule and still speaks first: nodes and waypoints share one anchor
+pool, so their combined total is 527 while each cap here is 527 alone. This is a cheap per-collection
+backstop against a pathological document, not the real constraint.
+
+2000 stands for the unpositioned kinds, which have no anchors and for which it is still reachable.
+*/
+const anchors = (ext, pitch) => (Math.floor(ext.x / pitch) * 2 + 1) * (Math.floor(ext.y / pitch) * 2 + 1);
+
+export function collectionCap({ nodeExt, zoneExt, pitch }) {
+	return {
+		node: anchors(nodeExt, pitch), waypoint: anchors(nodeExt, pitch), zone: anchors(zoneExt, pitch),
+		link: 2000, group: 2000,
+	};
+}

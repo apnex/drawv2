@@ -29,12 +29,16 @@ out, as the Store's injected {flushMs, writeDoc, now}.
 import { projection } from '../model/index.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE, OPTIONAL } from '../model/shape.mjs';
-import { groupAfterRemoval } from '../engine/index.mjs';
+import { groupAfterRemoval, collectionCap } from '../engine/index.mjs';
+import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
+import { STD } from '../kernel/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { violations, isStraight, pairKey } from '../model/invariants.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
-const MAX_COLLECTION = 2000;       // per KIND, per diagram — a different cap
+// B113: per KIND, per diagram -- a different enforcement POINT from validateDoc, deliberately, but
+// no longer a different NUMBER. Both source engine/policy.mjs, which is the authority for it.
+const MAX_COLLECTION = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: STD.pitch });
 const LABEL = /^[a-z0-9 -]{0,32}$/;
 
 // The inverse of a `set` restores the previous value of exactly the keys the patch touches. If the
@@ -161,7 +165,7 @@ function same(a, b) {
 
 function planPut(model, { kind, entity }) {
 	const before = model.get(kind, entity.id);
-	if (!before && model.all(kind).length >= MAX_COLLECTION) {
+	if (!before && model.all(kind).length >= MAX_COLLECTION[kind]) {
 		return { ok: false, error: `${kind} collection limit reached` };
 	}
 	const ops = [{ op: 'put', kind, entity: clone(kind, entity) }];

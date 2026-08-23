@@ -1,4 +1,6 @@
 import { test } from 'node:test';
+import { collectionCap } from '../engine/index.mjs';
+import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit } from '../server/txn.mjs';
 import { Log } from '../server/log.mjs';
@@ -185,4 +187,39 @@ test('B112: a document already holding a collision can still be REPAIRED', () =>
 	const r = commit(m, log, { ops: [{ op: 'set', kind: 'node', id: 'node-aa0002', patch: { x: 660 } }] }, 'server', 't');
 	assert.equal(r.ok, true, 'the repair is not refused for the condition it removes');
 	assert.deepEqual(violations(m), []);
+});
+
+/*
+B113 -- the number in the code is the number that binds, and the server bounds what the client clamps.
+
+Two separate claims, both previously unasserted, and a mutant walked through each.
+*/
+test('B113: the positioned cap is DERIVED from the grid, not a flat constant', () => {
+	const cap = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: STD.pitch });
+	const anchors = (Math.floor(NODE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(NODE_EXT.y / STD.pitch) * 2 + 1);
+	assert.equal(cap.node, anchors, 'the node cap IS the number of node anchors');
+	assert.equal(cap.node, 527);
+	assert.equal(cap.waypoint, cap.node, 'a waypoint is a node for placement, so it shares the ceiling');
+	assert.notEqual(cap.node, 2000, 'a flat 2000 is unreachable for a positioned kind and so is not a limit');
+	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
+	assert.equal(cap.link, 2000);
+	assert.equal(cap.group, 2000);
+});
+
+test('B113: the server refuses what the editor could never have produced', () => {
+	/*
+	validate allowed the SURFACE half-extent (960 x 540) while snap.js clamped a node to NODE_EXT
+	(900 x 480), so a hundred positions were legal to the server and unreachable in the editor --
+	the same shape as B110, with the agent door as the caller nobody bound.
+	*/
+	const ok = { id: 'node-aa0001', name: 'n', type: 'host', x: 900, y: 480 };
+	assert.equal(put('node', ok), null, 'the client clamp itself is legal');
+	assert.match(String(put('node', { ...ok, x: 960 })), /invalid value for node\.x/,
+		'960 is on-grid and inside the surface, and the editor can never reach it');
+	assert.match(String(put('node', { ...ok, y: 540 })), /invalid value for node\.y/);
+
+	// a zone reaches further than a node, by half a cell, and that difference is preserved
+	const z = { id: 'zone-aa0001', name: 'z', x: -930, y: -510, w: 600, h: 420 };
+	assert.equal(put('zone', z), null, 'a zone may sit where a node may not');
+	assert.match(String(put('zone', { ...z, x: -990 })), /invalid value for zone\.x/);
 });
