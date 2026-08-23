@@ -154,3 +154,53 @@ test('place refuses a direction with nothing free, rather than placing elsewhere
 		assert.match(err, /no node called nonexistent/, 'and it says how to find the real ones');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+/*
+GR18 -- help is enforced, not remembered.
+
+"Does every verb have a well-structured --help" should not be a question anyone has to answer by
+reading. A verb that accepts a flag it does not declare is invisible in help, so an agent cannot
+discover it and will never use it -- the capability exists and does not, which is the same shape as
+the CLI that could not authenticate.
+
+`--diagram` is the one most easily missed, because most verbs accept it INDIRECTLY through
+`activeId(ctx, ctx.flags)` rather than by naming it. `context` did exactly that.
+*/
+test('GR18: every verb declares every flag it reads and every argument it takes', () => {
+	const gaps = [];
+	for (const v of VERBS) {
+		const body = v.run.toString();
+		const declared = (v.flags || []).map((f) => f.name);
+
+		if (/activeId\(ctx, ctx\.flags\)/.test(body) && !declared.includes('--diagram')) {
+			gaps.push(`${v.name}: accepts --diagram through activeId and does not declare it`);
+		}
+		for (const f of new Set([...body.matchAll(/ctx\.flags\.(\w+)/g)].map((m) => m[1]))) {
+			if (!declared.includes(`--${f}`)) gaps.push(`${v.name}: reads --${f}, undeclared`);
+		}
+		const positional = /const \[[^\]]+\] = args/.test(body) || /args\[\d\]/.test(body);
+		if (positional && !(v.args || []).length) gaps.push(`${v.name}: takes positional args, declares none`);
+		if (!positional && (v.args || []).length && v.name !== 'select') {
+			gaps.push(`${v.name}: declares arguments it never reads`);
+		}
+	}
+	assert.deepEqual(gaps, [], `help would omit these:\n  ${gaps.join('\n  ')}`);
+});
+
+test('GR18: --help renders the same five parts for every verb, leaf or sub', () => {
+	// structure, not prose: usage, summary, flags, example, route. A verb missing a section is a
+	// verb an agent has to guess at, and guessing is what the tool exists to remove.
+	for (const v of VERBS) {
+		const out = [];
+		const argv = v.sub ? v.name.split(' ') : [v.name];
+		main([...argv, '--help'], {}, (s) => out.push(s));
+		const text = out.join('');
+		assert.ok(text.includes(v.usage), `${v.name}: help omits its usage line`);
+		assert.ok(text.includes(v.summary), `${v.name}: help omits its summary`);
+		assert.ok(/\bFlags\b/.test(text), `${v.name}: help omits the Flags section`);
+		assert.ok(text.includes('--json') && text.includes('--help'), `${v.name}: the universal flags are missing`);
+		assert.ok(text.includes(v.example), `${v.name}: help omits its example`);
+		assert.ok(text.includes(`reaches ${v.route}`), `${v.name}: help does not name the route it reaches`);
+		if ((v.args || []).length) assert.ok(/\bArguments\b/.test(text), `${v.name}: has args but no Arguments section`);
+	}
+});

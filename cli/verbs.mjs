@@ -83,6 +83,7 @@ export const VERBS = [
 		name: 'context', group: 'Context', usage: 'draw context [id|name]', route: '/diagrams',
 		summary: 'the default target, persisted', example: 'draw context a1-demo',
 		args: [{ name: 'id|name', about: 'the diagram to target by default; omit to read the current one' }],
+		flags: [{ name: '--diagram', about: 'read the id of this diagram instead of the saved one' }],
 		async run(ctx, args) {
 			const fs = await import('node:fs'), path = await import('node:path');
 			if (!args[0]) { const id = await activeId(ctx, ctx.flags); return { json: { context: id }, text: id }; }
