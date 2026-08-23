@@ -10,7 +10,10 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
 import { Changes } from '../app/src/changes.js';
 
-const node = (id, x = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0 });
+// B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
+// anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
+const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
+const node = (id, x = null) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: 0 });
 const seed = (m, ids) => ids.forEach((id, i) => m.put('node', node(id, i * 60)));
 
 // what main.js does: history.onCommit((request) => sync.submit(request))

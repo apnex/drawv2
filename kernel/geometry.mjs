@@ -17,6 +17,63 @@ export const cellCenter = (cell, V = STD) => cellPx(cell, V);              // th
 // by the engine to derive its staged `atCell` cell projection (R5).
 export const cellOf = (v, V = STD) => Math.round(v / V.pitch) + 0;
 
+/*
+LAYOUTS -- the named grids, and the one place either of them is defined.
+
+There are two, and until now the kernel knew only the first. `cellOf` and `cellPx` are both offset
+zero, which is the NODE grid; the half-pitch offset that ZONES use lived in `app/src/snap.js` and,
+after B110, in `server/validate.js` as well (B111). Two restatements of a rule the kernel did not
+hold, and a mistake the author of B110 duly made by hand while migrating a document.
+
+A zone is offset because it BOUNDS cells rather than sitting on one, so its edges fall between them.
+That is the whole of the difference, and naming it here is what lets a caller ask a layout instead
+of remembering an offset.
+
+An ANCHOR is a grid position. The term is deliberate and already this file's: the header calls the
+cell centre the single per-cell anchor, and `model/model.mjs` already resolves a link route over
+anchors while admitting a bare cell coord as a free one. A grid position and a route endpoint are
+the same concept reached from two directions, so they keep one word.
+
+Kernel-owned for now. Programmable or per-document layouts are wanted later; storing them in a
+document today would duplicate a truth this module holds and let the two drift.
+*/
+export const LAYOUTS = {
+	node: { name: 'node', offset: 0 },                  // nodes and waypoints sit ON cells
+	zone: { name: 'zone', offset: STD.pitch / 2 },      // zones bound cells, so their edges fall between
+};
+
+export const layoutOf = (name) => LAYOUTS[name] || null;
+
+// is a resolved coordinate ON this layout's grid
+export const onLayout = (L, v, V = STD) => Number.isFinite(v) && (v - L.offset) % V.pitch === 0;
+
+// the nearest legal coordinate on this layout (one axis)
+export const snapLayout = (L, v, V = STD) => Math.round((v - L.offset) / V.pitch) * V.pitch + L.offset;
+
+// px -> cell index on this layout (one axis); `+ 0` normalizes -0 so a cell never splits into two keys
+export const cellOn = (L, v, V = STD) => Math.round((v - L.offset) / V.pitch) + 0;
+
+// cell index -> px on this layout (one axis)
+export const pxOn = (L, c, V = STD) => c * V.pitch + L.offset;
+
+/*
+The anchor nearest a resolved point, carrying BOTH representations.
+
+The pixels are present so no consumer multiplies and the cell is present so no consumer divides --
+the two arithmetic steps that produced every off-grid entity this vocabulary exists to prevent.
+`layout` travels with it because the same cell index resolves to different pixels on the two grids,
+so an anchor without its layout is ambiguous.
+*/
+export const nearestAnchor = (L, x, y, V = STD) => ({
+	layout: L.name,
+	cx: cellOn(L, x, V), cy: cellOn(L, y, V),
+	x: snapLayout(L, x, V), y: snapLayout(L, y, V),
+});
+
+export const anchorAt = (L, cx, cy, V = STD) => ({
+	layout: L.name, cx, cy, x: pxOn(L, cx, V), y: pxOn(L, cy, V),
+});
+
 // ---- element constructors (px coords, center-origin) ----
 // The RESOLVED primitives — a flat scene is a list of these.
 // A node anchors at (cx,cy) = its origin-cell centre. spanW/spanH are the px EXTENT BEYOND a 1×1

@@ -17,7 +17,10 @@ import { commit, undo } from '../server/txn.mjs';
 import { Store } from '../server/store.js';
 import { Session } from '../server/protocol.js';
 
-const node = (id, x = 0, y = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y });
+// B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
+// anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
+const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
+const node = (id, x = null, y = 0) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y });
 const hex = (n) => n.toString(16).padStart(6, '0').slice(-6);
 
 function seeded() {

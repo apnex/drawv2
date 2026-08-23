@@ -5,7 +5,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 */
 
 import { SURFACE } from '../model/index.mjs';
-import { STD } from '../kernel/index.mjs';
+import { LAYOUTS, onLayout } from '../kernel/index.mjs';
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -51,9 +51,10 @@ aesthetic preference.
 The PITCH is sourced, the CHECK is local -- the same split the surface extents already use. The
 trust boundary is never delegated to the module that supplies the magnitude.
 */
-const PITCH = STD.pitch;              // 60
-const HALF_PITCH = PITCH / 2;         // zones anchor on cell boundaries, hence the offset
-const onGrid = (v, offset) => Number.isFinite(v) && ((v - offset) % PITCH === 0);
+// B111: the LAYOUT is sourced, the CHECK stays local -- the same split the surface extents use.
+// This file restated the half-pitch offset when B110 landed, which made the kernel's silence about
+// the zone grid into a second implementation of it rather than a gap.
+const onGrid = (name, v) => onLayout(LAYOUTS[name], v);
 
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -93,15 +94,15 @@ const FIELDS = {
 		name: (v) => str(v, 64),
 		type: (v) => str(v, 32) && /^[a-z0-9-]+$/.test(v),
 		shape: (v) => SHAPES.includes(v),
-		x: (v) => num(v, -EXT.x, EXT.x) && onGrid(v, 0),
-		y: (v) => num(v, -EXT.y, EXT.y) && onGrid(v, 0),
+		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
 		span: (v) => dims(v),    // optional multi-cell footprint (W1); absent ⇒ 1×1
 		content: (v) => content(v)   // optional content regions (W2); absent ⇒ the type glyph
 	},
 	waypoint: {
 		id: (v) => id(v, 'waypoint'),
-		x: (v) => num(v, -EXT.x, EXT.x) && onGrid(v, 0),   // waypoints share the NODE grid
-		y: (v) => num(v, -EXT.y, EXT.y) && onGrid(v, 0)
+		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),   // a waypoint IS a node for placement
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v)
 	},
 	link: {
 		id: (v) => id(v, 'link'),
@@ -114,10 +115,10 @@ const FIELDS = {
 		id: (v) => id(v, 'zone'),
 		name: (v) => str(v, 64),
 		// the zone grid is offset by half a pitch: a zone bounds CELLS, so its edges fall between them
-		x: (v) => num(v, -EXT.x, EXT.x) && onGrid(v, HALF_PITCH),
-		y: (v) => num(v, -EXT.y, EXT.y) && onGrid(v, HALF_PITCH),
-		w: (v) => num(v, 60, 2 * EXT.x) && onGrid(v, 0), // minimum one grid cell — no degenerate zones
-		h: (v) => num(v, 60, 2 * EXT.y) && onGrid(v, 0)
+		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('zone', v),
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('zone', v),
+		w: (v) => num(v, 60, 2 * EXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
+		h: (v) => num(v, 60, 2 * EXT.y) && onGrid('node', v)
 	},
 	group: {
 		id: (v) => id(v, 'group'),

@@ -16,7 +16,10 @@ import { createEntity, moveEntities, deleteSelection, createGroup, ungroupAll,
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 
-const node = (id, x = 0, extra = {}) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0, ...extra });
+// B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
+// anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
+const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
+const node = (id, x = null, extra = {}) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: 0, ...extra });
 
 function seeded() {
 	const m = new Model();

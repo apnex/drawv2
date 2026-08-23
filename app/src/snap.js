@@ -4,7 +4,7 @@ THE KERNEL SPEC (STD.pitch) so the UI and the geometry kernel can never disagree
 Node grid: multiples of pitch from origin. Zone grid: half-cell offset (±pitch/2 + k·pitch).
 Extent clamps stay a UI concern (canvas margins).
 */
-import { STD, L_STD, spanExtent } from '../../kernel/index.mjs';
+import { STD, L_STD, spanExtent, LAYOUTS, snapLayout } from '../../kernel/index.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode/snapZone/grid-points reference NODE_EXT/ZONE_EXT locally.
 import { SURFACE, NODE_EXT, ZONE_EXT } from '../../model/index.mjs';
@@ -16,22 +16,24 @@ export { spanExtent };                            // a multi-cell node's px foot
 // re-export the document-space magnitudes under the names snap.js consumers already use (CANVAS alias)
 export { SURFACE as CANVAS, NODE_EXT, ZONE_EXT };
 
-function snapTo(v, gap, off, min, max) {
-	const snapped = (Math.round((v - off) / gap) * gap) + off;
-	return Math.min(Math.max(snapped, min), max);
+// B111: the GRID comes from the kernel layout, the CLAMP stays here -- canvas margins are a UI
+// concern and the pitch is not. This function used to carry the offset itself, which made it one of
+// two places the zone grid was defined and the only place it was defined correctly.
+function clamped(L, v, min, max) {
+	return Math.min(Math.max(snapLayout(L, v), min), max);
 }
 
 export function snapNode(pos) {
 	return {
-		x: snapTo(pos.x, GAP, 0, -NODE_EXT.x, NODE_EXT.x),
-		y: snapTo(pos.y, GAP, 0, -NODE_EXT.y, NODE_EXT.y)
+		x: clamped(LAYOUTS.node, pos.x, -NODE_EXT.x, NODE_EXT.x),
+		y: clamped(LAYOUTS.node, pos.y, -NODE_EXT.y, NODE_EXT.y)
 	};
 }
 
 export function snapZone(pos) {
 	return {
-		x: snapTo(pos.x, GAP, HALF, -ZONE_EXT.x, ZONE_EXT.x),
-		y: snapTo(pos.y, GAP, HALF, -ZONE_EXT.y, ZONE_EXT.y)
+		x: clamped(LAYOUTS.zone, pos.x, -ZONE_EXT.x, ZONE_EXT.x),
+		y: clamped(LAYOUTS.zone, pos.y, -ZONE_EXT.y, ZONE_EXT.y)
 	};
 }
 

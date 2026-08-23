@@ -411,7 +411,10 @@ the seven methods that can alter a diagram, because a gate on six of seven is no
 */
 // the same two shapes persist.test.js uses; local rather than shared, since a test helper
 // imported across files is a dependency between tests that nothing declares
-const node = (id, x = 0) => ({ id, name: id, type: 'host', shape: 'circle', x, y: 0 });
+// B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
+// anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
+const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
+const node = (id, x = null) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: 0 });
 const put = (kind, entity) => ({ op: 'put', kind, entity });
 const put1 = () => ({ label: 'x', ops: [put('node', node('node-ee0001', 60))] });
 

@@ -108,8 +108,15 @@ That is the level at which an agent stops expressing geometry at all, and it is 
 
 ---
 
-## Open
+## Ruled
 
-Whether a waypoint occupies an anchor, or only a node does.\
-The R13 index already keys both by cell, so the index says yes and the sentence above says node.\
-A waypoint sharing a node's anchor is meaningless rather than harmful, which argues for one occupant of either kind, but it should be ruled rather than assumed.
+A waypoint occupies an anchor, because a waypoint IS a node for placement (2026-08-23).\
+It sits on the same grid, the same index keys it, and a bend hidden underneath a node is not a diagram anyone can read.
+
+## Built
+
+The layouts, and `nearestAnchor`, are in `kernel/geometry.mjs`, and `app/src/snap.js` and `server/validate.js` both source them (**B111**).
+
+Occupancy is not.\
+The rule is four lines in `violations()` and was written and backed out: eighteen tests broke, because fixture helpers default to the origin and any test making two nodes now stacks them.\
+That is a corpus pass rather than a rule problem, and it is tracked as **B112**.
