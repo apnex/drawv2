@@ -13,6 +13,7 @@ would have caught `apply` and `push`.
 */
 
 import { test } from 'node:test';
+import { inventory } from '../tools/routes.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -116,19 +117,31 @@ fragile check that reads as authoritative, which is worse than a narrow one that
 B91 named narrowing the sentence as the legitimate alternative to widening the check; this is that.
 */
 test('GR10: every REST path the server answers is documented in API.md', () => {
+	/*
+	B118 -- the inventory comes from tools/routes.mjs, which is the ONE derivation.
+
+	This test used to work it out for itself, matching `parts[n] === 'x'` only, and so could not see
+	`url.pathname === '/health'` or the negative `parts[2] !== 'diagrams'` that guards the whole
+	diagram family. The two most-used surfaces in the product were the two it could not check, while
+	its name claimed it held every REST path. scan-cli inherited the same derivation and the two
+	disagreed -- two scanners deriving one truth differently, which is the twin problem.
+	*/
 	const readme = fs.readFileSync('docs/spec/API.md', 'utf8');
-	// the collection verbs the router dispatches on
-	const collections = rest.match(/const COLLECTIONS = \{([^}]*)\}/)[1].match(/(\w+):/g).map((k) => k.slice(0, -1));
-	for (const c of collections) {
-		assert.ok(readme.includes(`/${c}`), `REST serves /${c} and README never mentions it`);
-	}
-	// The named routes, at ANY path position. B96: this read `parts[4]` only, so it covered
-	// sub-routes hanging off a diagram and nothing else -- the workspace family branches on
-	// `parts[2]` and landed undocumented with the gate green. A derived check that quietly covers a
-	// subset is worse than a grep, because the header convinces a reader the whole surface is held.
-	const routes = [...rest.matchAll(/parts\[\d+\] === '([a-z0-9]+)'/g)].map((m) => m[1]);
-	for (const r of new Set(routes)) {
-		assert.ok(readme.includes(`/${r}`), `REST serves /${r} and README never mentions it`);
+	const undocumented = inventory(rest).filter((r) => !readme.includes(`/${r}`));
+	assert.deepEqual(undocumented, [],
+		`REST serves these and API.md never mentions them: ${undocumented.join(', ')}`);
+});
+
+test('GR10/B118: the inventory sees all three shapes the router routes on', () => {
+	// the guard for the guard: if this derivation narrows again, the coverage it feeds narrows
+	// silently, and both GR10 and scan-cli would pass over whatever it stopped seeing
+	const names = inventory(rest);
+	assert.ok(names.includes('health'), 'a literal url.pathname route');
+	assert.ok(names.includes('diagrams'), 'a NEGATIVE parts[n] !== guard');
+	assert.ok(names.includes('lock'), 'a positive parts[n] === guard');
+	assert.ok(names.includes('nodes'), 'a COLLECTIONS entry');
+	for (const prefix of ['v1', 'api', 'connect']) {
+		assert.ok(!names.includes(prefix), `${prefix} is a path prefix, not a route anyone drives`);
 	}
 });
 

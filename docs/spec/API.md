@@ -150,6 +150,17 @@ These are what the editor has always clamped to; the server now refuses the same
 This is enforced at the server rather than in the editor, which is where it used to live.\
 The cost of it living in the browser was that an agent could place entities anywhere, and the engine's occupancy index assumes the opposite -- `cellOf` is `Math.round(v / 60)`, so two entities 30px apart occupy one cell while looking distinct.
 
+## Is the server well
+
+```sh
+curl -s localhost:8080/health
+```
+
+It answers `{status, diagrams, flushFailures, invariantFailures}` and takes no credential, because a health check that needs to authenticate cannot report the failure of authentication.\
+`status` is `ok`, `degraded` when a flush has failed, or `corrupt` when a document failed its invariants -- the three are distinct because they need different responses.
+
+This route went undocumented from the day it was written until 2026-08-23, when the coverage check was widened to see the shape it is written in (**B118**).
+
 ## Two doors, one surface
 
 An agent reaches the same API at `/connect/v1/...` that the editor reaches at `/api/v1/...`, and the prefix is the only difference.\

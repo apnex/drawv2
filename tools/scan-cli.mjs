@@ -16,8 +16,8 @@ list is a countdown, printed with its own count, and shrinks as verbs land. ALLO
 that is deliberately never a verb, and each needs a sentence saying why.
 */
 import fs from 'node:fs';
+import { inventory } from './routes.mjs';
 
-const REST = 'server/rest.js';
 
 // routes the tool will never carry, with the reason it would be wrong to
 const ALLOW = {
@@ -46,41 +46,18 @@ const PENDING = {
 	waypoints: 'reachable by commit --ops; no wrapper, see above',
 };
 
-const rest = fs.readFileSync(REST, 'utf8');
 
-/*
-The inventory, and it must be WIDER than GR10's.
-
-GR10 matches `parts[n] === 'x'` only, which misses two shapes the router actually uses: a literal
-`url.pathname === '/health'`, and the NEGATIVE form `parts[2] !== 'diagrams'` that guards the whole
-diagram family. Inheriting that derivation reported the CLI reaching 1 route of 21 while it plainly
-reached three, because the two it covered best were the two the pattern could not see.
-
-`v1` is dropped: it is the version prefix every path carries, not a route anyone drives.
-*/
-const collections = (rest.match(/const COLLECTIONS = \{([^}]*)\}/)?.[1].match(/(\w+):/g) || [])
-	.map((k) => k.slice(0, -1));
-const named = [...rest.matchAll(/parts\[\d+\] [!=]== '([a-z0-9]+)'/g)].map((m) => m[1]);
-const literal = [...rest.matchAll(/url\.pathname === '\/([a-z0-9]+)'/g)].map((m) => m[1]);
-const routes = [...new Set([...collections, ...named, ...literal])].filter((r) => !['v1', 'api'].includes(r)).sort();
 
 /*
 KNOWN COARSENESS, stated rather than implied (B119).
 
-Coverage is per path SEGMENT, so a verb reaching `GET /links/<id>/path` marks `links` covered while
-`POST /links` -- the high-level create verb -- still does not exist. The check is therefore a floor:
-it proves no route family is entirely unreachable, and does not prove every method on one is driven.
-Saying so here because a scanner whose header over-claims is the defect this codebase keeps finding,
-and the honest fix needs method-aware route extraction from a router that branches on `req.method`
-in several shapes.
-
-Coverage is read from the MANIFEST, not grepped out of the tool's source.
-
-The shell version could only be checked by pattern-matching its text, and the first attempt counted
-`/undo` inside a comment explaining that the CLI does NOT undo -- a coverage check reading prose and
-reporting the exact opposite of the truth. Each verb now DECLARES the route it reaches, so this
-compares two lists instead of guessing at one.
+Coverage is per route FAMILY, so a verb reaching `GET /links/<id>/path` marks `links` covered while
+`POST /links` does not exist. The check is a floor: it proves no family is entirely unreachable, not
+that every method on one is driven. Method-aware extraction was attempted and abandoned -- see
+tools/routes.mjs for why, and B119 for the fix, which belongs in the router.
 */
+const routes = inventory();
+
 const { VERBS } = await import('../cli/verbs.mjs');
 const declared = new Set();
 for (const v of VERBS) {
