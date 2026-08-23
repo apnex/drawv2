@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent } from '../../kernel/index.mjs';
+import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -22,7 +22,7 @@ const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // unknown glyph → 
 const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.span.cols}x${e.span.rows}` : null;
 // W2 content regions: a node carries content (text/glyph in its socket grid). contentSig drives re-render
 // on a content change; absent ⇒ no attr (plain node stays byte-identical). hexColor keeps SVG attrs safe.
-const contentSig = (e) => (e.content && e.content.length) ? JSON.stringify(e.content) : null;
+const contentSig = (e) => (isPanel(e) ? JSON.stringify(e.content) : null);   // one owner for 'is a panel'
 
 // render ONE content region into a node's <g> (node-local px) — mirrors kernel/renderer.mjs
 // renderContentRegion. Text via textContent (XSS-safe); multi-row wraps as a paragraph.
@@ -79,6 +79,11 @@ export class Renderer {
 	// W4/W5 — set the interaction mode. edit shows editing aids (the per-cell socket grid on content panels);
 	// run makes clickable content regions act (CSS-gated via the 'run-mode' class); view is clean + normal
 	// editing gestures. Session/view state (ephemeral — not persisted). Re-renders content panels.
+	// what this renderer would pass a headless renderer, so both answer the same predicates
+	renderOpts() {
+		return { sockets: this.mode === 'edit' };
+	}
+
 	setMode(mode) {
 		this.mode = mode;
 		this.svg.classList.toggle('edit-mode', mode === 'edit');
@@ -149,13 +154,13 @@ export class Renderer {
 				if (sig) g.setAttribute('data-span', sig);
 				// a panel's corner FOLLOWS its shape (like a 1×1 node, toggled by 's'): circle → the circle radius
 				// (frame.ext=20; a 1×1 panel == the circle, a row → a pill), square → the sharp frame radius (5)
-				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh, rx: (csig && entity.shape !== 'square') ? L_STD.frame.ext : L_STD.frame.r }, g);
+				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh, rx: frameRadius(entity, L_STD) }, g);
 			} else {
 				el('use', { 'data-layer': 'frame', href: `#m-${entity.shape || 'circle'}` }, g);
 			}
 			if (csig) {   // content node (W2): the content regions, + (W4) the per-cell socket grid only in edit mode
 				g.setAttribute('data-content', csig);
-				if (this.mode === 'edit') {   // edit mode shows the socket grid as an alignment aid; clean view/run hide it
+				if (showsSockets(this.renderOpts())) {   // one rule; the client says yes by being in edit mode
 					const gc = entity.span ? entity.span.cols : 1, gr = entity.span ? entity.span.rows : 1;
 					for (let j = 0; j < gr; j++) for (let i = 0; i < gc; i++)
 						el('rect', { class: 'socket', x: i * STD.pitch - SOCKET / 2, y: j * STD.pitch - SOCKET / 2, width: SOCKET, height: SOCKET }, g);
@@ -166,7 +171,7 @@ export class Renderer {
 				// mode. A panel's grid appeared on `e` while every node kept its dashed square on in
 				// view and run -- the same cue meaning "you may align to this" was permanent on one
 				// kind and toggled on the other.
-				if (this.mode === 'edit') {
+				if (showsSockets(this.renderOpts())) {
 					el('rect', { class: 'socket', x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET }, g);
 				}
 				const [bx, by, bw, bh] = FIT(entity.type);

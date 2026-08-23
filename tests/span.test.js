@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model } from '../model/index.mjs';
 import { attachRelations } from '../engine/index.mjs';
-import { resolve, renderElement, renderContentRegion, bboxOf, selBox, cellOf, STD, L_STD } from '../kernel/index.mjs';
+import { resolve, renderElement, renderContentRegion, bboxOf, selBox, cellOf, STD, L_STD , isPanel, frameRadius, showsSockets } from '../kernel/index.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
 import { validateEntity, validateDoc } from '../server/validate.js';
 import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
@@ -391,4 +391,42 @@ test('B38: a straight connection is a two-point path — no separate element kin
 	assert.equal(wires.length, 1);
 	assert.equal(wires[0].pts.length, 2, 'straight: two anchors, no bends');
 	assert.equal(scene.some((e) => e.kind === 'link'), false, 'and no `link` element is produced');
+});
+
+/*
+The visual decisions have one home, so the two renderers cannot disagree about them.
+
+There are two renderers deliberately -- the kernel emits strings for headless export, the client
+reconciles DOM incrementally so a drag does not rebuild the scene -- and their EMISSION cannot
+reasonably be shared. Their RULES can be, and were not: the same three judgements were written
+twice, and the socket one drifted far enough that every exported SVG carried an editing aid.
+
+scan-twins could not have caught it. It looks for shared ARITHMETIC, and the arithmetic was already
+shared; what was duplicated is which element exists and when.
+*/
+test('W4: isPanel, frameRadius and showsSockets are the single home of each decision', () => {
+	const panel = { content: [{ content: 'text', value: 'x' }], frame: 'circle' };
+	const square = { content: [{ content: 'text', value: 'x' }], frame: 'square' };
+	const plain = { glyph: 'router' };
+
+	assert.equal(isPanel(panel), true);
+	assert.equal(isPanel(plain), false);
+	assert.equal(isPanel(undefined), false, 'a missing entity is not a panel, rather than a crash');
+
+	// a panel's corner follows its shape; a plain node always takes the sharp radius
+	assert.equal(frameRadius(panel, L_STD), L_STD.frame.ext);
+	assert.equal(frameRadius(square, L_STD), L_STD.frame.r);
+	assert.equal(frameRadius(plain, L_STD), L_STD.frame.r);
+
+	// the client says yes by being in edit mode, the exporter by passing the opt -- one rule
+	assert.equal(showsSockets({}), false, 'a clean export carries no editing aid');
+	assert.equal(showsSockets({ sockets: true }), true);
+});
+
+test('W4: both node shapes obey showsSockets, which is what drifted', () => {
+	const mk = (extra) => resolve({ entities: [{ id: 'node-000032', kind: 'node', cell: [0, 0], glyph: 'router', ...extra }] }).scene[0];
+	for (const [what, el] of [['plain', mk({})], ['panel', mk({ content: [{ content: 'text', value: 'x' }] })]]) {
+		assert.equal(/class="socket"/.test(renderElement(el)), false, `${what}: none by default`);
+		assert.equal(/class="socket"/.test(renderElement(el, STD, L_STD, { sockets: true })), true, `${what}: shown when asked`);
+	}
 });

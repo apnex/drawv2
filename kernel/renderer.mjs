@@ -10,6 +10,30 @@ import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 // Exported so an interactive host can draw the SAME brackets (CSS-gated) without re-render.
 // spanW/spanH extend the bracketed rect +x/+y (a multi-cell node); both 0 ⇒ the symmetric ±ext
 // box — byte-identical to the pre-span path. The box spans the node's footprint, anchored top-left.
+/*
+The visual DECISIONS both renderers make, so neither restates them.
+
+There are two renderers on purpose: this one emits strings for headless export, and
+`app/src/renderer.js` reconciles DOM incrementally so a drag does not rebuild the scene. Their
+EMISSION cannot reasonably be shared. Their RULES can, and until now were not -- the same three
+judgements were written twice, and the socket one drifted: a panel obeyed the mode while a plain
+node showed its socket always, in the editor and in every exported SVG.
+
+`scan-twins` did not see it, and could not: it looks for shared ARITHMETIC, and the arithmetic here
+was already shared -- `selBox`, `contentLayout`, `spanExtent` are all imported by the client. What
+was duplicated is which element exists and when, which is structure rather than a formula.
+*/
+export const isPanel = (e) => !!(e && e.content && e.content.length);
+
+// a panel's corner follows its shape ('s' swaps it): circle -> the frame extent reads as a pill,
+// square -> the sharp frame radius. A plain node always takes the sharp radius.
+export const frameRadius = (e, L = L_STD) =>
+	(isPanel(e) && (e.frame || e.shape) !== 'square') ? L.frame.ext : L.frame.r;
+
+// sockets are an EDITING AID: absent from a clean export, present when the caller asks. The client
+// asks by being in edit mode, the exporter by passing `sockets` -- one rule, two ways of saying yes.
+export const showsSockets = (opts = {}) => !!opts.sockets;
+
 export function selBox(L, spanW = 0, spanH = 0) {
 	const r = L.selection.ext, arm = L.selection.arm, cr = L.selection.r;
 	const lx = -r, ty = -r, rx = r + spanW, by = r + spanH;
@@ -119,26 +143,26 @@ function renderEl(el, V, L, opts = {}) {
 	if (el.kind === 'node') {
 		const [bx, by, bw, bh] = GLYPH_BB[el.glyph] || GLYPH_BB.host, S = V.socket;  // unknown glyph → fit box of `host`; the (missing) <use> renders empty, no crash
 		const sw = el.spanW || 0, sh = el.spanH || 0, fe = L.frame.ext;
-		const panel = !!(el.content && el.content.length);   // a content panel's corner follows its shape ('s' swaps it)
+		const panel = isPanel(el);
 		// 1×1 plain → the fixed frame def (<use>); a panel or multi-cell footprint → a sized rect (same .frame class).
 		// A panel's rx FOLLOWS shape, like a 1×1 node: 'circle' → fe (round; 1×1 == the circle, row → pill), 'square' → fr.
 		const frame = (sw || sh || panel)
-			? `<rect class="frame" x="${-fe}" y="${-fe}" width="${2 * fe + sw}" height="${2 * fe + sh}" rx="${(panel && el.frame !== 'square') ? fe : L.frame.r}"/>`
+			? `<rect class="frame" x="${-fe}" y="${-fe}" width="${2 * fe + sw}" height="${2 * fe + sh}" rx="${frameRadius(el, L)}"/>`
 			: `<use href="#m-${el.frame}"/>`;
-		if (el.content && el.content.length) {
+		if (panel) {
 			// a content node (W2): frame + content regions (text/glyph in the socket grid); the regions ARE
 			// the content, so no default socket/glyph. content absent ⇒ the path below (byte-identical to W1).
 			const gc = sw / V.pitch + 1, gr = sh / V.pitch + 1;
 			return `<g class="node ${el.sel ? 'selected' : ''}" transform="translate(${el.cx},${el.cy})">
 		  ${frame}
-		  ${opts.sockets ? socketGridSvg(gc, gr, V) : ''}
+		  ${showsSockets(opts) ? socketGridSvg(gc, gr, V) : ''}
 		  ${el.content.map((r, i) => renderContentRegion(r, V, L, i)).join('')}
 		  ${el.sel ? `<path class="select-box" style="display:block" d="${selBox(L, sw, sh)}"/>` : ''}
 		</g>`;
 		}
 		return `<g class="node ${el.sel ? 'selected' : ''}" transform="translate(${el.cx},${el.cy})">
 		  ${frame}
-		  ${opts.sockets ? `<rect class="socket" x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" fill="none" stroke="${TOKENS.socket}" stroke-width="0.6" stroke-dasharray="2 2"/>` : ''}
+		  ${showsSockets(opts) ? `<rect class="socket" x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" fill="none" stroke="${TOKENS.socket}" stroke-width="0.6" stroke-dasharray="2 2"/>` : ''}
 		  <svg x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-${el.glyph}"/></svg>
 		  ${el.sel ? `<path class="select-box" style="display:block" d="${selBox(L, sw, sh)}"/>` : ''}
 		</g>`;
