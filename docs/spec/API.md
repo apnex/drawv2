@@ -87,6 +87,19 @@ curl -s -X POST localhost:8080/api/v1/diagrams/<id>/commit -H "X-Draw-Lock: $TOK
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/lock -H "X-Draw-Lock: $TOK"
 ```
 
+Reads never take the lock, so `GET .../lock` answers even while somebody else holds it.\
+That is the call for an agent that has lost its token, or that wants to know whether writing is worth attempting:
+```sh
+curl -s localhost:8080/api/v1/diagrams/<id>/lock
+```
+
+It reports two independent waits, and they are not the same question.\
+`expiresAt` is when the current holder's lock lapses on its own, and is `null` when nothing holds it.\
+`heldUntil` is the post-reclaim human hold, which is why an agent may not take the lock even when no one has it, and is `null` when no reclaim has happened.
+
+A rejected commit answers `422` carrying `opIndex`, the position in the batch that failed.\
+`-1` means the request was refused as a whole rather than at one op, and the batch writes nothing either way.
+
 Ops travel as a batch, and a batch is one change: one version bump, one undo step, and no window for another writer to interleave.\
 High-level verbs let the server mint ids and names instead:
 ```sh

@@ -535,3 +535,29 @@ test('B34: setting the selection over REST broadcasts a selection EVENT, not the
 		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) });
 	}
 });
+
+/*
+B102: `expiresAt` must read a LIVE lock, not the map.
+
+A lapsed lock stays in the map until the sweep runs, and the sweep's cadence is deliberately not
+load-bearing anywhere else -- `_live` is what makes that true. Reading the map directly would work
+in every test that releases cleanly and report a stale instant exactly when an agent is waiting on
+it, which is the only situation this field exists for.
+*/
+test('B102: expiresAt reports null for a lapsed lock the sweep has not collected', () => {
+	let now = 1000;
+	const locks = new Locks({ ttlMs: 100, now: () => now });
+	const got = locks.acquire('diagram-aaaaaa');
+	assert.equal(locks.expiresAt('diagram-aaaaaa'), got.expiresAt, 'held: the instant it lapses');
+	assert.equal(locks.expiresAt('diagram-aaaaaa'), 1100);
+
+	now = 1101;                                   // lapsed, and nothing has swept it
+	assert.equal(locks.locked('diagram-aaaaaa'), false, 'no longer held');
+	assert.equal(locks.expiresAt('diagram-aaaaaa'), null,
+		'a lapsed lock has no expiry to wait for -- reporting one would strand the waiter');
+});
+
+test('B102: expiresAt is null for a diagram that was never locked', () => {
+	const locks = new Locks();
+	assert.equal(locks.expiresAt('diagram-bbbbbb'), null);
+});

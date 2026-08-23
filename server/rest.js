@@ -371,6 +371,9 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 	if (parts[4] === 'lock' && parts.length === 5) {
 		return json(res, 200, {
 			owner: locks && locks.locked(parts[3]) ? 'server' : 'client',
+			// two different waits, and B102 was that only one of them was visible:
+			// `expiresAt` is when the holder's lock lapses, `heldUntil` is the D22 human hold
+			expiresAt: locks && locks.expiresAt ? locks.expiresAt(parts[3]) : null,
 			heldUntil: locks && locks.heldUntil ? locks.heldUntil(parts[3]) : null,
 		}), true;
 	}

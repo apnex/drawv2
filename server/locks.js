@@ -36,6 +36,19 @@ export class Locks {
 		return !!this._live(id);
 	}
 
+	/*
+	B102 -- when the CURRENT lock lapses, or null if nothing holds it.
+
+	Distinct from `heldUntil`, which is the D22 post-reclaim human hold and answers a different
+	question: that one is why an agent MAY NOT take the lock, this one is when the holder's grip
+	lets go on its own. An agent that lost its token could see neither, so it had nothing to wait
+	for and no way to tell waiting from hanging.
+	*/
+	expiresAt(id) {
+		const lock = this._live(id);
+		return lock ? lock.expiresAt : null;
+	}
+
 	// claim the server-side write lock; null if another live controller holds it, or if the human
 	// has just reclaimed and the hold has not lapsed
 	acquire(id) {

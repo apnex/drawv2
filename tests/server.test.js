@@ -613,6 +613,31 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
 });
 
+test('B102: an agent that lost its token can see when the lock frees', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+
+	const free = (await get(`/api/v1/diagrams/${id}/lock`)).body;
+	assert.equal(free.owner, 'client', 'unheld to begin with');
+	assert.equal(free.expiresAt, null, 'nothing holds it, so there is nothing to wait for');
+
+	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
+	try {
+		// the agent has thrown its token away -- this read is all it has left
+		const held = (await get(`/api/v1/diagrams/${id}/lock`)).body;
+		assert.equal(held.owner, 'server');
+		assert.equal(typeof held.expiresAt, 'number', 'the expiry is readable without the token');
+		assert.equal(held.expiresAt, lock.expiresAt, 'and it is the same instant POST reported');
+		assert.ok(held.expiresAt > Date.now(), 'in the future, so it can actually be waited on');
+		// the D22 hold is a DIFFERENT wait and must not be conflated with the lock lapsing
+		assert.equal(held.heldUntil, null, 'no human reclaim has happened, so no hold');
+	} finally {
+		await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': lock.token } });
+	}
+
+	const after = (await get(`/api/v1/diagrams/${id}/lock`)).body;
+	assert.equal(after.expiresAt, null, 'released, so there is nothing to wait for again');
+});
+
 test('B103: a rejected commit names WHICH op failed, not just what was wrong', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
