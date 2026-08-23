@@ -39,7 +39,7 @@ const PENDING = {
 	sync: 'the Slides sync route behind `draw push`',
 	slides: 'the Slides projection target -- CLI.md Projection',
 	nodes: 'high-level node verbs -- CLI.md Writing',
-	links: 'CLI.md Writing', zones: 'CLI.md Writing', groups: 'CLI.md Writing', waypoints: 'CLI.md Writing',
+	groups: 'CLI.md Writing', waypoints: 'CLI.md Writing',
 };
 
 const rest = fs.readFileSync(REST, 'utf8');
@@ -61,6 +61,15 @@ const literal = [...rest.matchAll(/url\.pathname === '\/([a-z0-9]+)'/g)].map((m)
 const routes = [...new Set([...collections, ...named, ...literal])].filter((r) => !['v1', 'api'].includes(r)).sort();
 
 /*
+KNOWN COARSENESS, stated rather than implied (B119).
+
+Coverage is per path SEGMENT, so a verb reaching `GET /links/<id>/path` marks `links` covered while
+`POST /links` -- the high-level create verb -- still does not exist. The check is therefore a floor:
+it proves no route family is entirely unreachable, and does not prove every method on one is driven.
+Saying so here because a scanner whose header over-claims is the defect this codebase keeps finding,
+and the honest fix needs method-aware route extraction from a router that branches on `req.method`
+in several shapes.
+
 Coverage is read from the MANIFEST, not grepped out of the tool's source.
 
 The shell version could only be checked by pattern-matching its text, and the first attempt counted

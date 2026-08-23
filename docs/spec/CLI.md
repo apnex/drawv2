@@ -139,7 +139,6 @@ The logic for it already exists and is sovereign.\
 `model/model.mjs` carries `linksOf`, `linksAt`, `linkBetween`, `groupOf` and `pathOf`, so a contextual route composes methods the model already owns rather than restating relationships in a second place -- the engine's indexed versions are a browser-side optimisation over the same semantics, not a rival definition.
 
 The shape this points at:
-
 ```text
 node <id> context     position and anchor, links in and out, group, containing zone, free neighbours
 zone <id> contents    what falls inside its bounds

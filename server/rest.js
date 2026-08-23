@@ -44,6 +44,46 @@ export function announceActivity(hub, store, locks) {
 	hub.announceEach('viewers', (s) => ({ viewers: viewers.filter((v) => store.canRead(v.diagram, s.principal)) }));
 }
 
+// which collection an id belongs to, without the caller having to say
+function entityIn(model, id) {
+	for (const kind of ['node', 'waypoint', 'link', 'zone', 'group']) {
+		const entity = model.get(kind, id);
+		if (entity) return { kind, entity };
+	}
+	return null;
+}
+
+const inside = (model, z) => ['node', 'waypoint'].flatMap((kind) => model.all(kind)
+	.filter((e) => e.x >= z.x && e.x <= z.x + z.w && e.y >= z.y && e.y <= z.y + z.h)
+	.map((e) => ({ kind, id: e.id, name: e.name, x: e.x, y: e.y })));
+
+/*
+Everything about one entity that a caller would otherwise derive.
+
+Assembled from Model methods only. Each field answers a question an agent asks before it acts:
+what connects here, what owns this, what encloses it, and what is close enough to collide with.
+*/
+function contextOf(model, kind, e) {
+	const out = { id: e.id, kind, name: e.name ?? null };
+	if (kind === 'node' || kind === 'waypoint') {
+		out.at = { x: e.x, y: e.y };
+		const links = kind === 'node' ? model.linksOf(e.id) : model.linksAt(e.id);
+		out.links = links.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
+		out.neighbours = [...new Set(links.flatMap((l) => [l.src, l.dst]).filter((n) => n !== e.id))];
+		out.group = kind === 'node' ? (model.groupOf(e.id)?.id ?? null) : null;
+		out.zones = model.all('zone')
+			.filter((z) => e.x >= z.x && e.x <= z.x + z.w && e.y >= z.y && e.y <= z.y + z.h)
+			.map((z) => z.id);
+	}
+	if (kind === 'link') { out.endpoints = { src: e.src, dst: e.dst }; out.via = e.via || []; out.path = model.pathOf(e); }
+	if (kind === 'zone') { out.bounds = { x: e.x, y: e.y, w: e.w, h: e.h }; out.contents = inside(model, e); }
+	if (kind === 'group') {
+		out.members = e.members || [];
+		out.links = [...new Set((e.members || []).flatMap((m) => model.linksOf(m).map((l) => l.id)))];
+	}
+	return out;
+}
+
 function occupantAt(model, anchor) {
 	for (const kind of ['node', 'waypoint']) {
 		const hit = model.all(kind).find((e) => e.x === anchor.x && e.y === anchor.y);
@@ -455,6 +495,54 @@ export function handleRest(req, res, store, slides, locks, hub, principal = null
 			expiresAt: locks && locks.expiresAt ? locks.expiresAt(parts[3]) : null,
 			heldUntil: locks && locks.heldUntil ? locks.heldUntil(parts[3]) : null,
 		}), true;
+	}
+	/*
+	CONTEXT -- what surrounds a thing, assembled once.
+
+	CLI.md's ruling: the tool exists to reduce agent error, not to mirror the API. Deriving this
+	client-side means fetching the whole document and computing four relationships -- which links
+	touch a node, which group holds it, which zone contains it, what sits nearby -- on every call,
+	and each derivation is one an agent can get subtly wrong.
+
+	Composition, never new semantics. `linksOf`, `linksAt`, `groupOf` and `pathOf` are sovereign
+	methods on the Model, so this assembles what the model already knows and never restates a
+	relationship in a second place. The engine's indexed versions are a browser-side optimisation
+	over the same definitions, not a rival to them.
+	*/
+	if (parts[4] === 'context' && parts.length === 6) {
+		const found = entityIn(model, parts[5]);
+		if (!found) return json(res, 404, { error: `unknown entity: ${parts[5]}` }), true;
+		return json(res, 200, contextOf(model, found.kind, found.entity)), true;
+	}
+	if (parts[4] === 'near' && parts.length === 5) {
+		const x = Number(url.searchParams.get('x')), y = Number(url.searchParams.get('y'));
+		if (!Number.isFinite(x) || !Number.isFinite(y)) {
+			return json(res, 422, { error: 'near requires numeric x and y', code: 'bad-query' }), true;
+		}
+		const within = Number(url.searchParams.get('within')) || 120;
+		const doc = model.toJSON();
+		const hits = [];
+		for (const kind of ['node', 'waypoint']) {
+			for (const e of model.all(kind)) {
+				const d = Math.hypot(e.x - x, e.y - y);
+				if (d <= within) hits.push({ kind, id: e.id, name: e.name, x: e.x, y: e.y, distance: Math.round(d) });
+			}
+		}
+		const zones = doc.zones.filter((z) => x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h)
+			.map((z) => ({ kind: 'zone', id: z.id, name: z.name }));
+		return json(res, 200, { x, y, within, occupants: hits.sort((a, b) => a.distance - b.distance), zones }), true;
+	}
+	if (parts[4] === 'zones' && parts[5] && parts[6] === 'contents' && parts.length === 7) {
+		const z = model.get('zone', parts[5]);
+		if (!z) return json(res, 404, { error: `unknown zone: ${parts[5]}` }), true;
+		return json(res, 200, { zone: z.id, name: z.name, contents: inside(model, z) }), true;
+	}
+	if (parts[4] === 'links' && parts[5] && parts[6] === 'path' && parts.length === 7) {
+		const l = model.get('link', parts[5]);
+		if (!l) return json(res, 404, { error: `unknown link: ${parts[5]}` }), true;
+		// pathOf resolves a ROUTE (identities) into a PATH (coordinates) -- the semantic routing
+		// question an agent cannot otherwise ask: what would the renderer actually draw
+		return json(res, 200, { link: l.id, src: l.src, dst: l.dst, via: l.via || [], path: model.pathOf(l) }), true;
 	}
 	if (parts[4] === 'history' && parts.length === 5) {
 		const log = store.log(parts[3]);

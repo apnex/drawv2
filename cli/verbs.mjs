@@ -283,3 +283,76 @@ VERBS.push(
 		},
 	},
 );
+
+/*
+Context verbs -- the reason the tool exists rather than a wrapper round curl (CLI.md).
+
+Each answers a question an agent asks BEFORE it acts, in one call, from facts the model already
+owns. Deriving any of them locally would mean re-implementing a relationship the server can be
+asked for, which is the twin problem this codebase keeps finding.
+*/
+VERBS.push(
+	{
+		name: 'about', group: 'Context', usage: 'draw about <entity-id>', route: '/diagrams/<id>/context/<entity>',
+		summary: 'what surrounds an entity: links, neighbours, group, enclosing zones',
+		example: 'draw about node-aa0001',
+		args: [{ name: 'entity-id', about: 'any node, waypoint, link, zone or group id -- the kind is worked out for you' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			if (!args[0]) die('about needs an entity id');
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/context/${args[0]}`), 'context');
+			const rows = [];
+			if (b.at) rows.push(['at', `${b.at.x},${b.at.y}`]);
+			if (b.group) rows.push(['group', b.group]);
+			if (b.zones?.length) rows.push(['zones', b.zones.join(' ')]);
+			if (b.neighbours?.length) rows.push(['neighbours', b.neighbours.join(' ')]);
+			if (b.links?.length) rows.push(['links', b.links.map((l) => l.id + (l.routed ? '*' : '')).join(' ')]);
+			if (b.members?.length) rows.push(['members', b.members.join(' ')]);
+			if (b.contents?.length) rows.push(['contents', b.contents.map((c) => c.id).join(' ')]);
+			if (b.path) rows.push(['path', JSON.stringify(b.path)]);
+			return { json: b, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
+		},
+	},
+	{
+		name: 'near', group: 'Placement', usage: 'draw near <x> <y> [--within px]', route: '/diagrams/<id>/near',
+		summary: 'what is already around a point, so you do not draw on top of it',
+		example: 'draw near 120 60 --within 180',
+		args: [{ name: 'x', about: 'canvas x' }, { name: 'y', about: 'canvas y' }],
+		flags: [{ name: '--within', about: 'radius in px (default 120)' }, { name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [x, y] = args.map(Number);
+			if (!Number.isFinite(x) || !Number.isFinite(y)) die('near needs numeric x and y');
+			const id = await activeId(ctx, ctx.flags);
+			const q = `x=${x}&y=${y}${ctx.flags.within ? `&within=${ctx.flags.within}` : ''}`;
+			const b = ok(await request(ctx, `/diagrams/${id}/near?${q}`), 'near');
+			const rows = b.occupants.map((o) => [o.kind, o.id, o.name ?? '', `${o.x},${o.y}`, o.distance]);
+			return { json: b, text: `${table(rows, ['KIND', 'ID', 'NAME', 'AT', 'DIST'])}${b.zones.length ? `\nwithin zones: ${b.zones.map((z) => z.id).join(' ')}` : ''}` };
+		},
+	},
+	{
+		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone-id>', route: '/diagrams/<id>/zones/<zone>/contents',
+		summary: 'what falls inside a zone', example: 'draw zone contents zone-aa0001',
+		args: [{ name: 'zone-id', about: 'the zone to look inside' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			if (!args[0]) die('zone contents needs a zone id');
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/zones/${args[0]}/contents`), 'zone contents');
+			return { json: b, text: table(b.contents.map((c) => [c.kind, c.id, c.name ?? '', `${c.x},${c.y}`]), ['KIND', 'ID', 'NAME', 'AT']) };
+		},
+	},
+	{
+		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link-id>', route: '/diagrams/<id>/links/<link>/path',
+		summary: 'the resolved route -- what the renderer would draw', example: 'draw link path link-aa00ff',
+		args: [{ name: 'link-id', about: 'the link to resolve' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			if (!args[0]) die('link path needs a link id');
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/links/${args[0]}/path`), 'link path');
+			if (!b.path) die(`link ${b.link} does not resolve -- a dangling endpoint or a missing bend`);
+			return { json: b, text: `${b.src} -> ${b.dst}${b.via.length ? ` via ${b.via.join(' ')}` : ''}\n${b.path.map((p) => p.join(',')).join('  ')}` };
+		},
+	},
+);

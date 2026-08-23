@@ -89,6 +89,27 @@ A waypoint counts, because a waypoint is a node for placement.
 Reads, so neither takes the lock.\
 The layout name travels with an anchor because the same cell resolves to different pixels on the two grids.
 
+### Context: what surrounds a thing
+
+These exist so a caller does not fetch a whole document and derive relationships itself, which is arithmetic it can get wrong and would repeat on every call:
+```sh
+curl -s localhost:8080/api/v1/diagrams/<id>/context/<entity-id>
+curl -s "localhost:8080/api/v1/diagrams/<id>/near?x=120&y=60&within=120"
+curl -s localhost:8080/api/v1/diagrams/<id>/zones/<zone-id>/contents
+curl -s localhost:8080/api/v1/diagrams/<id>/links/<link-id>/path
+```
+
+`context` takes any entity id and works out its kind for you.\
+For a node or waypoint it answers where it sits, the links touching it, its neighbours, its group, and the zones enclosing it; for a link, its endpoints, bends and resolved path; for a zone, its bounds and everything inside; for a group, its members and the links they carry.
+
+`near` answers what is already around a point, which is the counterpart to a free anchor.\
+One says where placement is legal and the other says what is close enough to matter, and an agent that only asks the first can still draw on top of something meaningful.
+
+`path` resolves a route into coordinates -- the identities of `src`, `via` and `dst` become the line the renderer would draw.\
+It is the only way to ask whether a link visually crosses something.
+
+All four are composed from methods the model already owns, so they cannot disagree with the document they describe.
+
 ### What every agent is doing
 
 One read, covering the whole workspace rather than one diagram:
