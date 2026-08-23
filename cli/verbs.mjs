@@ -460,3 +460,119 @@ VERBS.push({
 			text: `${ctx.flags.name || nid} (${nid}) at ${target.x},${target.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}` };
 	},
 });
+
+/*
+Awareness and Access, shaped as questions rather than as routes.
+
+`who` and `access` each fold several endpoints into the thing an agent actually needs to know
+before it acts: is anyone else touching this, and who can reach it. The underlying lists stay
+reachable through --json for anything that wants them raw.
+*/
+VERBS.push(
+	{
+		name: 'who', group: 'Awareness', usage: 'draw who', route: '/workspace/agents',
+		summary: 'who else is here: agents driving, people watching',
+		example: 'draw who',
+		async run(ctx) {
+			const agents = ok(await request(ctx, '/workspace/agents'), 'who').agents;
+			const viewers = ok(await request(ctx, '/workspace/viewers'), 'who').viewers;
+			const names = Object.fromEntries(ok(await request(ctx, '/diagrams'), 'who').map((d) => [d.id, d.name]));
+			const rows = [
+				...agents.map((a) => ['driving', a.principal || '(unnamed)', names[a.diagram] || a.diagram]),
+				...viewers.map((v) => ['watching', v.principal || '(unnamed)', names[v.diagram] || v.diagram]),
+			];
+			return { json: { agents, viewers }, text: rows.length ? table(rows, ['DOING', 'WHO', 'WHERE']) : 'nobody else is here' };
+		},
+	},
+	{
+		name: 'viewers', group: 'Awareness', usage: 'draw viewers', route: '/workspace/viewers',
+		summary: 'who is looking at what', example: 'draw viewers',
+		async run(ctx) {
+			const b = ok(await request(ctx, '/workspace/viewers'), 'viewers');
+			return { json: b, text: table(b.viewers.map((v) => [v.principal || '(unnamed)', v.diagram]), ['WHO', 'DIAGRAM']) };
+		},
+	},
+	{
+		name: 'access', group: 'Access', usage: 'draw access', route: '/diagrams/<id>',
+		summary: 'who can reach this diagram, and at what level',
+		example: 'draw access --diagram a1-demo',
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx) {
+			const id = await activeId(ctx, ctx.flags);
+			// owner and grants ride the document already, so this needs no second read (API.md)
+			const d = ok(await request(ctx, `/diagrams/${id}`), 'access');
+			const rows = [['owner', d.meta.owner || '(none)', 'owner']];
+			for (const [who, level] of Object.entries(d.meta.grants || {})) rows.push(['grant', who, level]);
+			return { json: { owner: d.meta.owner, grants: d.meta.grants || {} }, text: table(rows, ['VIA', 'PRINCIPAL', 'LEVEL']) };
+		},
+	},
+	{
+		name: 'grant', group: 'Access', usage: 'draw grant <principal> <read|write>', route: '/diagrams/<id>/grants',
+		summary: 'let a principal reach this diagram', example: 'draw grant agent:planner write',
+		args: [{ name: 'principal', about: 'user:<email> or agent:<name>' }, { name: 'level', about: 'read or write' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [principal, level] = args;
+			if (!principal || !['read', 'write'].includes(level)) die('usage: draw grant <principal> <read|write>');
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/grants`, { method: 'POST', body: { principal, level } }), 'grant');
+			return { json: b, text: `${principal} ${level}` };
+		},
+	},
+	{
+		name: 'revoke', group: 'Access', usage: 'draw revoke <principal>', route: '/diagrams/<id>/grants',
+		summary: 'withdraw a grant; says what access remains', example: 'draw revoke agent:planner',
+		args: [{ name: 'principal', about: 'the principal to cut' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			if (!args[0]) die('revoke needs a principal');
+			const id = await activeId(ctx, ctx.flags);
+			const b = ok(await request(ctx, `/diagrams/${id}/grants/${encodeURIComponent(args[0])}`, { method: 'DELETE' }), 'revoke');
+			// the server reports what REMAINS, because a workspace grant may still apply (H9.4c)
+			return { json: b, text: `${args[0]} now: ${b.effective || 'no access'}` };
+		},
+	},
+	{
+		name: 'workspace grant', sub: true, group: 'Access', usage: 'draw workspace grant <principal> <read|write>',
+		route: '/workspace/grants', summary: 'grant across everything you own',
+		example: 'draw workspace grant agent:planner write',
+		args: [{ name: 'principal', about: 'user:<email> or agent:<name>' }, { name: 'level', about: 'read or write' }],
+		async run(ctx, args) {
+			const [principal, level] = args;
+			if (!principal || !['read', 'write'].includes(level)) die('usage: draw workspace grant <principal> <read|write>');
+			const b = ok(await request(ctx, '/workspace/grants', { method: 'POST', body: { principal, level } }), 'workspace grant');
+			return { json: b, text: `${principal} ${level} across your workspace` };
+		},
+	},
+	{
+		name: 'code mint', sub: true, group: 'Access', usage: 'draw code mint <agent>', route: '/workspace/codes',
+		summary: 'mint a connection code; shown once, never again',
+		example: 'draw code mint agent:planner',
+		args: [{ name: 'agent', about: 'agent:<name> -- lowercase, DNS-label shaped' }],
+		async run(ctx, args) {
+			if (!args[0]) die('code mint needs an agent name, like agent:planner');
+			const b = ok(await request(ctx, '/workspace/codes', { method: 'POST', body: { agent: args[0] } }), 'code mint');
+			// the plaintext exists here and nowhere else, which is what "shown once" means
+			return { json: b, text: `${b.code}\n(shown once -- it is hashed on the server and cannot be recovered)` };
+		},
+	},
+	{
+		name: 'code list', sub: true, group: 'Access', usage: 'draw code list', route: '/workspace/codes',
+		summary: 'the codes you have minted, never their secrets', example: 'draw code list',
+		async run(ctx) {
+			const b = ok(await request(ctx, '/workspace/codes'), 'code list');
+			const list = b.codes || b;
+			return { json: b, text: table(list.map((c) => [c.id, c.agent, c.created || '', c.expires || '']), ['ID', 'AGENT', 'CREATED', 'EXPIRES']) };
+		},
+	},
+	{
+		name: 'code revoke', sub: true, group: 'Access', usage: 'draw code revoke <id>', route: '/workspace/codes',
+		summary: 'retire a code; the agent claim survives it', example: 'draw code revoke c-1a2b',
+		args: [{ name: 'id', about: 'the code id from `draw code list`' }],
+		async run(ctx, args) {
+			if (!args[0]) die('code revoke needs a code id -- `draw code list` shows them');
+			const b = ok(await request(ctx, `/workspace/codes/${encodeURIComponent(args[0])}`, { method: 'DELETE' }), 'code revoke');
+			return { json: b, text: `revoked ${args[0]}` };
+		},
+	},
+);
