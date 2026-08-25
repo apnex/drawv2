@@ -583,3 +583,54 @@ test('H9.7/B101: the agent door is stripped at ingress and nothing below can see
 			`${from} strips to a bare prefix, which opens the door onto everything`);
 	}
 });
+
+/*
+The board is written in plain hyphens.
+
+Ruled 2026-08-26 by the director. Small, and gated for the reason the same day
+produced three times over: a convention that is stated and not checked is a
+convention that has already started drifting. B122 is the case in point -- the
+register's disposition vocabulary changed at B61 and nothing noticed for sixty
+rows, because the only thing holding it was that everyone had been writing it
+the same way so far.
+
+Scoped to BOARD.md deliberately. BACKLOG.md carries em dashes in rows written
+before the ruling and M4 says a record made before a change is not rewritten to
+match it, so widening this check would force exactly the retroactive edit that
+rule exists to prevent.
+*/
+test('BOARD: no em dashes -- write `--`', () => {
+	const board = fs.readFileSync(path.join(root, 'docs/BOARD.md'), 'utf8');
+	const lines = board.split('\n');
+	const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => l.includes('\u2014'));
+	assert.equal(hits.length, 0,
+		`docs/BOARD.md uses an em dash on ${hits.length} line(s), first at :${hits[0]?.[0]} -- write "--" instead`);
+
+	// The check must be able to fail, and the message must name a line. Asserting only that
+	// today's file is clean would pass identically if `hits` were computed from the wrong string.
+	const salted = ['fine --', 'not \u2014 fine'];
+	assert.equal(salted.filter((l) => l.includes('\u2014')).length, 1, 'the predicate distinguishes -- from an em dash');
+});
+
+/*
+And the anchors the board links to itself by must resolve.
+
+Replacing 188 em dashes moved two heading slugs -- `#held--on-the-record...`
+became `#held----on-the-record...`, because github-slugger DROPS an em dash and
+KEEPS a hyphen, so one space-dash-space became four hyphens where it had been
+two. Three links needed updating and nothing in the tree would have said so:
+scan-docrefs resolves file paths, not fragments.
+*/
+test('BOARD: every in-file anchor resolves to a heading', () => {
+	const board = fs.readFileSync(path.join(root, 'docs/BOARD.md'), 'utf8');
+	// github-slugger: lowercase, drop everything that is not alphanumeric, space, hyphen or
+	// underscore, then spaces become hyphens.
+	const slug = (h) => h.trim().toLowerCase().replace(/[^0-9a-z \-_]/g, '').replace(/ /g, '-');
+	const headings = new Set([...board.matchAll(/^#{2,3}\s+(.*)$/gm)].map((m) => slug(m[1])));
+	assert.ok(headings.size > 5, 'headings were found at all — otherwise this passes vacuously');
+
+	const links = [...board.matchAll(/\]\(#([a-z0-9\-_]+)\)/g)].map((m) => m[1]);
+	assert.ok(links.length > 0, 'the board links to itself at all');
+	const dangling = links.filter((a) => !headings.has(a));
+	assert.deepEqual(dangling, [], `docs/BOARD.md links to ${dangling.length} anchor(s) with no heading`);
+});
