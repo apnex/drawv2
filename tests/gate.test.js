@@ -315,6 +315,93 @@ test('GR14/B77: a heading must agree with the states beneath it, and every item 
 });
 
 /*
+GR14/B122+B123 -- the two directions the contract claimed and the scanner did not check.
+
+B122 is the worst instance yet of this project's recurring shape: a check whose scope is narrower
+than its stated claim. The verdict parser anchored on a BOLD keyword -- `**CLOSED H1.1**` -- and the
+register drifted to plain `CLOSED -- H9.6` at B61 and plain `FIXED -- H9.30` at B100. Measured when
+this was written: 51 of 121 dispositions read as closed to a human and as open to the scanner, so R2
+and R3 skipped every row of H9 and H10, the two largest arcs in the project. Nothing went red. The
+summary kept printing `121 row(s)`, which is a correct count of a quantity the rules did not consume.
+
+B123 is the missing direction. R1 asked whether a board item points at a real row; nothing asked
+whether a real row reached the plan, although contract rule 3 states that obligation in words. Three
+rows were open and on neither list, and one of them (B117) had already shipped.
+
+Driven over fixtures, for the reason the test above gives: asserting today's clean tree proves the
+rules agree with today's file, not that they can tell a violation from a compliance.
+*/
+test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent from the plan', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b122-'));
+	fs.mkdirSync(path.join(dir, 'docs'));
+	const run = () => {
+		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
+		catch (e) { return { out: e.stdout || '', code: e.status }; }
+	};
+	const backlog = (...rows) => fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), `${rows.join('\n')}\n`);
+	const board = (items, held = '') => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+		`## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${items}\n\n## Held\n\n| Row | Sev | Held item | Revival trigger |\n|---|---|---|---|\n${held}\n\n## Not in this arc\n`);
+	const both = '| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | **B2** | S1 | `TODO` |';
+
+	try {
+		// R7 -- the exact drift that disabled R2 and R3: a spelling of "closed" nobody predicted.
+		// The old parser answered "not closed" and said nothing; this must ERROR.
+		backlog('| **B1** | a row | `[V]` | Resolved -- H1. |', '| **B2** | b row | `[V]` | OPEN |');
+		board(both);
+		let r = run();
+		assert.equal(r.code, 1, 'an unrecognised verdict is an error, not a silent reclassification');
+		assert.match(r.out, /B1 opens its disposition with a verdict this scanner does not know/);
+
+		// and the vocabulary must not be matched at a word boundary -- `PART-CLOSED` and `WON'T DO`
+		// both read as a different, shorter word if it is. This is why longest-prefix, not \b.
+		backlog("| **B1** | a row | `[V]` | WON'T DO -- ruled. |", '| **B2** | b row | `[V]` | OPEN |');
+		board(both);
+		assert.equal(run().code, 0, "WON'T DO is one verdict, not the word WON");
+
+		// R10 -- an unescaped pipe splits the row and hands every later rule a fragment of prose.
+		// B113 lost its verdict to `|x| 840, |y| 480` and read as *480, so it cost nothing*.
+		backlog('| **B1** | a row | `[V]` | CLOSED -- H1, worst case \\|x\\| 840. |', '| **B2** | b | `[V]` | OPEN |');
+		board(both);
+		assert.equal(run().code, 0, 'an ESCAPED pipe is fine');
+		backlog('| **B1** | a row | `[V]` | CLOSED -- H1, worst case |x| 840. |', '| **B2** | b | `[V]` | OPEN |');
+		board(both);
+		r = run();
+		assert.equal(r.code, 1);
+		assert.match(r.out, /B1 splits into \d+ fields where the table declares 6/);
+
+		// R8 -- the missing direction. B2 is open and named nowhere in the plan.
+		backlog('| **B1** | a row | `[V]` | CLOSED -- H1. |', '| **B2** | b row | `[V]` | OPEN |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | — | S1 | `TODO` |');
+		r = run();
+		assert.equal(r.code, 1, 'a live row absent from the board is the defect R8 exists for');
+		assert.match(r.out, /B2 is OPEN and appears nowhere/);
+
+		// declaring it Held discharges the obligation -- that is what Held is FOR
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | — | S1 | `TODO` |', '| **B2** | S4 | b | a trigger |');
+		assert.equal(run().code, 0, 'a held row is declared, not absent');
+
+		// R9 -- the converse. A row that closes while listed as held leaves the plan advertising a
+		// deferral that no longer exists, which was true of B6, B9 and B32 when this was written.
+		backlog('| **B1** | a row | `[V]` | CLOSED -- H1. |', '| **B2** | b row | `[V]` | CLOSED -- H1. |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | — | S1 | `TODO` |', '| **B2** | S4 | b | a trigger |');
+		r = run();
+		assert.equal(r.code, 1);
+		assert.match(r.out, /lists B2 under Held, but .* records it as CLOSED/);
+
+		// A remainder answers a stricter form: cited is not enough, it needs an OPEN item. A
+		// PART-CLOSED row cited only by the DONE item that closed the other half reads as finished.
+		backlog('| **B1** | a row | `[V]` | PART-CLOSED -- H1, the cheap half. |', '| **B2** | b | `[V]` | OPEN |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | **B2** | S1 | `TODO` |');
+		r = run();
+		assert.equal(r.code, 1, 'a remainder needs a plan, not merely a mention');
+		assert.match(r.out, /B1 is PART-CLOSED but every .* item citing it is DONE/);
+
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | the remainder | **B1** | S1 | `TODO` |\n| H1.3 | b | **B2** | S1 | `TODO` |');
+		assert.equal(run().code, 0, 'a remainder with an open item is compliant');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
 GR1 -- every tool is invocable the way it declares.
 
 Eight of nine carried `#!/usr/bin/env node` and not one was executable, so the shebang was

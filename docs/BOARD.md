@@ -69,9 +69,14 @@ satisfies `any-system`, `stateful`, `declarative`, `multi-agent`, `llm-in-the-lo
 
 ---
 
-## Triage ledger
+## Triage ledger — historical, from the 2026-08-19 cut
 
-All 18 active rows, scored. Held rows are [below](#held--on-the-record-not-on-the-board).
+**Every row in this table is closed.** Kept because the scoring is the record of how the H1-H5 arc was
+ordered and why, including the two places where impact and axiom disagreed and the axiom won. It is not
+the current queue -- that is [Next slice](#next-slice--ordered-by-a14-capital-forward-value), and the
+live rows are reconciled mechanically by `scan-board` R8.
+
+All 18 rows active at the time, scored. Held rows are [below](#held--on-the-record-not-on-the-board).
 
 | Row | Sev | Axiom | Visible | Size | Milestone | One line |
 |---|---|---|---|---|---|---|
@@ -132,33 +137,35 @@ So the arc is: **server data-loss now → build the client net → then the clie
 
 ## Next slice — ordered by A14 capital-forward value
 
-Ranked by deleted future friction rather than by size or by how recently something was noticed.\
+Re-cut 2026-08-26. Ranked by deleted future friction rather than by size or by how recently something was noticed.\
 A14 weighs adjacency to load-bearing infrastructure, mechanization of toil, and lessons becoming invariants before build, and it names recurrence of an already-mined lesson as a fault in its own right.
 
-The organizing finding is that four production defects shipped in one cutover -- B67, B68, B70, and the withdrawn B69 -- and every one passed through a green gate of 483 tests and six scanners.\
-That places repair of the verification layer above every feature, because it is the multiplier on all work that follows.
+The previous cut was organized around four production defects passing a green gate. That argument held and the verifier work it ranked first is done.\
+**The organizing finding of this cut is different, and it is a pattern rather than an incident.** Across roughly thirty defects the dominant shape is a check whose scope is narrower than its stated claim -- GR10 blind to two of three route forms, `scan-cli` counting segments where it claimed methods, `scan-board` parsing a convention the register abandoned sixty rows earlier, the socket test that only ever built a panel, the whole suite running with authorization off. In every case the mechanism existed and the claim above it was wider than the predicate underneath.
+
+That places two things above features. First, the remaining checks whose subject is narrower than their name. Second, and ranked highest, the one gap where **no** check exists at all -- because the suite still cannot answer whether a test exercises the shipped path, and it is the tests that everything else is trusted through.
 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
-| ~~1~~ | H9.16 `DONE` | verifier | The composition root is unscanned; B70 was one missing property in one object literal and it took production down. Static, cheap, certain. |
-| ~~2~~ | H9.11 `DONE` | verifier | A scanner that passes on a self-mention manufactures confidence rather than reporting it, which is worse than having no scanner. |
-| ~~3~~ | H9.18 `DONE` | verifier | The board's own checks are structural; all four content defects found in it were invisible to the gate. |
-| — | H9.19 | verifier | Done in the act of writing this slice: creating H10 revealed the scanner could not see it. |
-| ~~4~~ | H10.1 `DONE` | recurrence | D12 mined this hazard and fixed one branch of two. Recurrence of a captured lesson is an A14 fault, and this one destroys user work silently. |
-| ~~5~~ | H10.2 `DONE` | adjacency | One field. Unblocks the identity label, any sharing UI, and H9.5 and H9.6, none of which can begin without it. |
-| 6 | H10.3 | adjacency | The client twin of B68. Turns B71 and B72 from malfunctions into visible refusals, which is what makes them self-diagnosing. |
-| 7 | H7.6 | verifier | Converts a per-deploy manual tax into one-time capital. Larger than the three scanners above, so it follows them. |
-| 8 | H9.17 | dead path | `authz` defaults off while the only deployment runs it on, so every test exercises the path production does not. |
-| 9 | H9.9 | feature | Cheapest to build while there is still exactly one user. |
-| 10 | H9.5, H9.6, H9.7, H8.8 | feature | The agent surface, and B61. Largest remaining block; blocked on nothing except H10.2. |
-| 11 | H8.3 | feature | The Slides token outlives a restart. Independent of everything above. |
-| 12 | H10.4, H10.5, H10.6, H7.4 | local | Real, small, and compounding into nothing. Take them opportunistically rather than scheduling them. |
+| 1 | H9.17 | dead path | `authz` is off in every test and on in the only deployment. **B115 and B116 both shipped through this gap** -- a recurrence of an already-mined lesson, which A14 counts as a fault by itself. It is also the cheapest way to stop the suite lying about which path it runs. |
+| 2 | H11.4 | verifier | The general form of every defect above it. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. |
+| 3 | H10.19 | verifier | `scan-writers` asks whether an entry carries a forbidden key and never whether it carries a required one. Same shape as B122, one file, small. |
+| 4 | H11.7 | verifier | The rule that keeps findings out of a mutable file is currently decorative, which is what let three items sit on the board with no register entry. |
+| 5 | H11.5 | user | The trigger has fired: `DELETE` shipped, the bucket really does hold a seven-day window, and nothing in the product says so. The only item here a person would notice. |
+| 6 | H10.3 | user | The durable status surface. Errors survive until the next message overwrites them, so the one channel the client has for server trouble is the one that forgets. |
+| 7 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. |
+| 8 | H10.20, H9.20 | verifier | The two board rules deferred as needing a convention decided first. Cheap once the convention is chosen; both are still real. |
+| 9 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and the reason the anchor vocabulary exists. |
+| 10 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user, and getting less so. |
+| 11 | H7.4, H7.6 | verifier | Doc style and the Docker image, both CI-shaped and both a per-deploy manual tax today. Larger than the scanners above, so they follow. |
+| 12 | H10.16, H10.17, H10.6, H10.8, H9.22 | local | Real, small, and compounding into nothing on their own. Take them opportunistically rather than scheduling them. |
+| — | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. Say so rather than ranking it. |
 
-The ranking's one concession to convenience is that H10.2 and H10.3 together cost well under a day and clear two reported issues, so they are worth carrying alongside the scanners rather than after them.
+**What is deliberately not here.** H11.1, H11.2, H11.3 and H11.6 land with this cut rather than after it -- a reconciliation that reports drift and does not fix it is a longer version of no reconciliation.
 
 ---
 
-## H0 — seed the registers · `WIP`
+## H0 — seed the registers · `DONE`
 
 No code. The house rule is that the register is written before the implementation.
 
@@ -167,7 +174,7 @@ No code. The house rule is that the register is written before the implementatio
 | H0.1 | Land `B13`–`B33` on `docs/BACKLOG.md` with evidence citations | — | `DONE` |
 | H0.2 | Correct **B7**: its stated D12 mitigation does not exist (see B19) | B7 | `DONE` |
 | H0.3 | This board, triaged and scored | — | `DONE` |
-| H0.4 | Resolve the ONE remaining [decision required](#decisions-required) — B32, the REST diagram lifecycle. Three of the original four were answered by later work and the section said otherwise | **B32** | `TODO` |
+| H0.4 | Resolve the ONE remaining [decision required](#decisions-required) — B32, the REST diagram lifecycle. Three of the original four were answered by later work and the section said otherwise. **Ruled 2026-08-23**: `POST` and `DELETE` both exist, `DELETE` gated on write access rather than ownership | **B32** | `DONE` |
 
 **Exit:** registers current, decisions taken, H1 sequenced.
 
@@ -387,7 +394,7 @@ running it than by writing it down.
 
 ---
 
-## H8 -- cloud deployment · `WIP`
+## H8 -- cloud deployment · `DONE`
 
 The plan is `docs/spec/DEPLOY.md`, written before any of this.
 
@@ -395,11 +402,11 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 |---|---|---|---|---|
 | H8.1 | Widen the persistence seam to `{list, read, write, remove}`, filesystem default, pure refactor | **B55** | S3 · M | `DONE` |
 | H8.2 | Make the seam async, then the GCS adapter on raw `fetch` with `ifGenerationMatch` for compare-and-swap | **B6**, **B59** | S2 · L | `DONE` |
-| H8.3 | Slides refresh token moves off the ephemeral filesystem | **B56** | S3 · S | `TODO` |
+| H8.3 | Slides refresh token moves off the ephemeral filesystem — **dropped with the feature**; Slides is purged in both phases, so there is no token. B56 and B57 carry the revival trigger | **B56**, **B57** | S3 · S | `DROPPED` |
 | H8.4 | Manual image build to Artifact Registry, deploy to Cloud Run `australia-southeast1` | — | S3 · M | `DONE` |
 | H8.5 | Serverless NEG, backend service, host rule, certificate MAP attach (atomic — ignores classic certs), DNS cutover | **B58** | S3 · M | `DONE` |
 | H8.7 | Public `/about`, `/privacy`, `/terms` on a separate backend bucket — IAP has no path exclusion, so verification cannot reach an app route | — | S2 · S | `DONE` |
-| H8.8 | The REST/agent surface is behind IAP and the CLI sends no credential — decide how an agent authenticates | **B61** | S2 · M | `TODO` |
+| H8.8 | The REST/agent surface is behind IAP and the CLI sends no credential — decide how an agent authenticates | **B61** | S2 · M | `DONE` |
 | H8.6 | IAP on the backend service; consent screen is in **Testing**, not published — test users only | **B57** | S2 · S | `DONE` |
 
 ## H9 -- access control · `WIP`
@@ -450,7 +457,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.14 | Pass the audience `server.js` switches authorization on with, and refuse to start when authz has no identity source | **B70** | S2 · S | `DONE` |
 | H9.15 | Cutover: enable authorization on the live service — build, deploy image with `IAP_AUDIENCE` and `OWNER` together, adopt the 12, verify the owner reaches them through IAP | **B67**, **B70** | S1 · M | `DONE` |
 | H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures — the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `DONE` |
-| H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch — a flag that is on in the only deployment that exists is a second code path nobody runs | — | S3 · S | `TODO` |
+| H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch — a flag that is on in the only deployment that exists is a second code path nobody runs. **B116 and B115 both shipped through this gap**, so it is no longer theoretical | **B129** | S3 · S | `TODO` |
 | H9.18 | Scanner: every item declares a state, and a heading agrees with the states beneath it in both directions | **B77** | S2 · S | `DONE` |
 | H9.20 | Scanner: a stated count must not contradict one the repo can compute — deferred from H9.18, needs the convention decided before it is enforceable | **B77** | S3 · M | `TODO` |
 | H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 · S | `DONE` |
@@ -468,78 +475,107 @@ Every item here was found by using the application rather than by running the ga
 | H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 · S | `DONE` |
 | H10.9 | One straight link per pair, permitted alongside any number of routed ones — H10.4 keyed the refusal on any link, so drawing order decided what was reachable | **B80** | S2 · S | `DONE` |
 | H10.10 | The rule becomes a document invariant in a sovereign validator, and the waypoint cascade deletes a link it would leave colliding | **B81** | S2 · M | `DONE` |
-| H10.11 | Resolve straight-link capacity from a node-kind config property, settable at runtime by operator or API — the seam exists, the configuration does not | **B81** | S4 · L | `TODO` |
+| H10.11 | Resolve straight-link capacity from a node-kind config property, settable at runtime by operator or API — the seam exists, the configuration does not | **B126** | S4 · L | `TODO` |
 | H10.12 | "No entity is in two groups" becomes an invariant — it was enforced on `put` only, so a `set` produced a document the client and server read differently | **B82** | S1 · M | `DONE` |
 | H10.13 | Document invariants get the surface the log invariant already has: checked at load and creation, counted, reported through `/health` — never a refusal | **B83** | S2 · S | `DONE` |
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 · S | `DONE` |
 | H10.18 | A `del` entry with no entity threw in the browser and shipped — every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
-| H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one — the asymmetry that turned a correct rejection into a broken fix | **B87** | S2 · S | `TODO` |
+| H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one — the asymmetry that turned a correct rejection into a broken fix | **B125** | S2 · S | `TODO` |
 | H10.20 | Scanner: a board claim of the form *blocks Hn.m* must agree with that item's state — prose is outside R6, so a paragraph can assert that finished work is blocked | **B88** | S3 · S | `TODO` |
 | H10.22 | A revoked peer's open tab still believes it may write until it reconnects — a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 · M | `TODO` |
 | H10.21 | Two specs asserted facts the code contradicted — the SVG route's authentication and H9.3's existence — corrected with dated amendments | **B89** | S2 · S | `DONE` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 · L | `TODO` |
 | H10.17 | Share the constants restated across files — `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 · M | `TODO` |
-| H10.7 | Parallel connections between two containers, count bounded by the column span — designed and walked in `design/walk/FINDINGS.md`, never implemented | **B72** | S4 · L | `TODO` |
+| H10.7 | Parallel connections between two containers, count bounded by the column span — designed and walked in `design/walk/FINDINGS.md`, never implemented | **B127** | S4 · L | `TODO` |
 | H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 · M | `TODO` |
 | H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 · S | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` mid-drag — one of them is lying | **B73** | S4 · S | `TODO` |
 
 ---
 
+## H11 -- the register, and the shipped path · `WIP`
+
+Opened 2026-08-26 by a full reconciliation of this file against the register, requested after H9 and H10
+landed and the plan stopped describing them.\
+The reconciliation itself is the finding: the two files had drifted in eleven places, and every check that
+should have caught it was scoped narrower than its own claim.
+
+| # | Item | Cites | Size | State |
+|---|---|---|---|---|
+| H11.1 | `scan-board` classified a disposition by a bold-keyword convention the register abandoned at B61, so R2 and R3 were vacuous over 51 of 121 rows -- the whole of H9 and H10 -- while the summary printed a correct row count. Verdicts become a closed set and an unrecognised opener is an ERROR, so the next drift costs one commit instead of an arc | **B122** | S2 · M | `DONE` |
+| H11.2 | Reconciliation ran one way: R1 checked that a board item cites a live row and nothing checked that a live row reached the plan. R8 adds the direction, R9 its converse for Held, and Held becomes a list the scanner reads rather than a section a reader recognises | **B123** | S2 · M | `DONE` |
+| H11.3 | Three items were follow-on work whose cited row had closed without them, so the register read as settled while the work was unstarted. Each remainder gets its own row rather than reopening a row that correctly closed | **B124** | S3 · S | `DONE` |
+| H11.6 | Five rows were malformed markdown tables -- unescaped `\|` in prose and in code spans, a stray backtick for an apostrophe, a trailing empty cell -- so they mis-rendered on GitHub and handed every downstream rule the wrong text. Repaired at the source; R10 counts fields | **B122** | S3 · S | `DONE` |
+| H11.7 | Contract rule 1 says every board item cites a row and nothing checks that one exists, so the rule that keeps findings out of a mutable file is decorative. It is also wrong as written -- a feature was never a finding -- so narrow it to defects and enforce that | **B128** | S3 · S | `TODO` |
+| H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 · L | `TODO` |
+| H11.5 | A deleted diagram is recoverable for seven days and nothing in the product says so. Trigger has fired -- `DELETE` shipped at H9.21 and the bucket carries a real 604800s soft-delete window -- so the window exists and is unreachable from the UI | **B109** | S2 · M | `TODO` |
+
+**Exit:** the plan and the record agree mechanically, in both directions, and a live row cannot be
+invisible in either file.
+
+---
+
 ## Held — on the record, not on the board
 
-Open `BACKLOG` rows whose trigger has not fired. Scored so the comparison is a judgement, not an omission.
+Open `BACKLOG` rows whose trigger has not fired. Scored so the comparison is a judgement, not an omission.\
+**This list is now read by `scan-board`** (R8/R9), so an entry is a declaration rather than a paragraph a
+reader recognises: a live row must be here or be an item, and a settled row must not be here at all.
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
-| **B6** | **S1** | No `fsync` anywhere | any multi-instance or GCS-backed deployment |
-| **B33** | S3 | No auth; CORS `*` on writes; ws has no origin check | any deployment reachable beyond loopback |
 | **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
 | **B10** | **S2** | Put-based inverse loses intra-kind ordering → stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
-| **B32** | S4 | REST cannot create or delete a diagram | an agentic workflow needing to provision or retire one — **ruling first**, X12 applies |
-| **B9** | S5 | No durable accountability record beyond the 100-record ring | compliance, multi-tenant, or an incident review needing history older than the ring (N12) |
+| **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 
-**B6 is the uncomfortable one.** It is `S1` and it is held. That is defensible only because X2 records the
-deviation and N5 states the guarantee at exactly the strength the code makes — but note that **B15 is the
-same failure mode inside the window B6 declares safe**, which is why B15 is H1 and B6 is not.
+**Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:
+
+| Row | Was held on | What settled it |
+|---|---|---|
+| **B6** | no `fsync` anywhere | **CLOSED H8.2.** The trigger was *any GCS-backed deployment*, and that is now the only deployment. Compare-and-swap on `ifGenerationMatch` replaces the guarantee `fsync` was standing in for |
+| **B9** | no durable accountability record beyond the ring | **RULED CS2/CS3.** The ring stays bounded, attribution is scoped to it by `actor`, and the absence beyond it is a declared non-goal rather than a deferral |
+| **B32** | REST cannot create or delete a diagram | **RULED 2026-08-23**, and both verbs shipped. `DELETE` is gated on write access, not ownership — the same gate `store.remove` already applied to the websocket — and answers 423 while another controller holds the lock, except to the holder |
+
+**B6 was the uncomfortable one** and it is worth recording how it resolved, because the reasoning was not
+that the risk went away. It was `S1` and held, defensible only while X2 recorded the deviation and N5
+stated the guarantee at exactly the strength the code made. The deployment that fired its trigger is also
+the one that answered it: object storage with a generation precondition is a stronger primitive than the
+local `write`+`rename` the row was written against, so the arc closed the row by moving underneath it.
 
 ---
 
 ## Decisions required
 
-**One, not four.** Corrected 2026-08-21: three of the four were answered by later work that never
-came back to amend this section, and every "blocks" claim below was false — H5.3, H2.5 and H2.3
-are all `DONE`. A section asserting that finished work is blocked is worse than no section, because
-a reader takes it as the current state of the plan.
+**None.** Corrected 2026-08-26: this section has now been wrong twice in the same way, and the second
+time is the more interesting one.
 
-Worth naming how it survived: `H9.18` was written this morning to catch a milestone HEADING that
-disagrees with the items beneath it, and it does not look at prose. A paragraph claiming to block a
-DONE item passes the gate cleanly. Registered as **B88**.
+The first correction (2026-08-21) found three of four entries answered by later work that never came
+back to amend the section, and every *"blocks Hn.m"* claim false. It left one live entry -- **B32**, the
+REST diagram lifecycle -- and that was ruled on 2026-08-23. `POST` and `DELETE` both exist; `DELETE` is
+gated on write access rather than ownership, because the ruling's own logic sets the threshold at the
+gate `store.remove` already applied to the websocket, and it answers 423 while another controller holds
+the lock, except to the holder. The section then sat for three days asserting that a decision was
+required, which it was not.
 
-### Live
+**Registered as B88, and still open**, because the mechanism is the point rather than the instance.
+`H9.18` checks that a milestone HEADING agrees with the items beneath it. Prose is outside every rule
+this file has, so a paragraph may assert that finished work is blocked, or that a ruling is owed, and
+the gate passes cleanly. H10.20 proposes the tractable narrow form -- *blocks Hn.m* is a fixed phrase
+and can be checked against that item's state. It does not reach *"a decision is required"*, which has
+no fixed phrase, and pretending otherwise would be a fourth check narrower than its own claim.
 
-1. **REST diagram lifecycle (B32).** An agent cannot create or delete a diagram: `POST
-   /api/v1/diagrams` and `DELETE` do not exist, so the CLI can drive a document it cannot provision
-   or retire. Ruling required before building. X12 answered the analogous question `no` for `draw
-   undo` on the grounds that the destructive verb must keep its gates, so `DELETE` plausibly
-   inherits that reasoning and `POST` plausibly does not — but they are two rulings, not one.
-   **Relevant now:** H9.5 and H9.6 build the authentication for an agent surface whose lifecycle
-   verbs this decision governs.
+Until then this section is maintained by hand and is worth reading with suspicion, which is the honest
+disposition rather than a comfortable one.
 
 ### Resolved, and by what
 
-2. **`schema.js` (B28)** — answered by fact rather than by ruling. `docToSchema` → `kernel.resolve()`
-   IS a production path: `server/svg.mjs:17` renders every `/d/<id>.svg` through it. It is the
-   *export* authority, not the client's, and `app/src/renderer.js:6` now says so. The clone the
-   decision was really about is gone: `renderer.js:10` imports `contentLayout` from the kernel and
-   `:30` records the split — layout is the kernel's, emission is the client's, deliberately.
-3. **GR5's second half (B22)** — retired, not built. `H2.5`: *a differential needs two
-   implementations and client-side inverse building has zero*, recorded as **X15**.
-4. **CI (B21)** — it exists. `.github/workflows/gate.yml` runs `npm run gate` on push and PR, and
-   `H2.3` carries the re-ruling. The claim below it that *a fresh clone has neither* was true when
-   written and false since H7.
+| Was | Answered by |
+|---|---|
+| **REST diagram lifecycle (B32)** | Ruled 2026-08-23. Two rulings, not one: `POST` follows from agent-first authoring; `DELETE` inherits X12's reasoning that a destructive verb keeps its gates, and is acceptable because `gs://diagrams.apnex.io` carries a 604800s soft-delete window -- which is itself unreachable from the product, and is B109 |
+| **`schema.js` (B28)** | Answered by fact rather than by ruling. `docToSchema` -> `kernel.resolve()` IS a production path: `server/svg.mjs:17` renders every `/d/<id>.svg` through it. It is the EXPORT authority, not the client's, and the clone the decision was really about is gone |
+| **GR5's second half (B22)** | Retired, not built (**X15**). A differential needs two implementations and client-side inverse building has zero |
+| **CI (B21)** | It exists. `.github/workflows/gate.yml` runs `npm run gate` on push and PR. The claim that a fresh clone had neither was true when written and false since H7 |
 
 ---
 
