@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
+import { openStore, OWNER } from './fixtures/app.mjs';
 import { fsFiles } from '../server/files.mjs';
 import { Log } from '../server/log.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
@@ -21,9 +22,10 @@ const node = (id, x = null) => ({ id, name: id, type: 'host', shape: 'circle', x
 const put = (kind, entity) => ({ op: 'put', kind, entity });
 
 async function storeWith(dir) {
-	const s = new Store(dir);
-	await s.init();
-	return { s, id: s.list()[0].id };
+	// H9.17: authorization is on by default now, so a store whose diagrams nobody owns lists
+	// nothing. `openStore` adopts, exactly as the composition root does after `init()`.
+	const s = await openStore(dir);
+	return { s, id: s.list(OWNER)[0].id };
 }
 
 // ---- I10: the file round-trips ----
@@ -92,11 +94,12 @@ test('B13: a $-named node survives a restart — the corruption escalated to a b
 	const dir = tmp();
 	try {
 		const a = await storeWith(dir);
-		a.s.commit(a.id, { label: 'create', ops: [put('node', { ...node('node-bd0001', 300), name: 'a$&b' })] }, 'server', 't');
+		a.s.commit(a.id, { label: 'create', ops: [put('node', { ...node('node-bd0001', 300), name: 'a$&b' })] }, 'server', 't', OWNER);
 		a.s.flush(a.id);
 
 		const b = new Store(dir);            // a different process would see exactly this
 		await assert.doesNotReject(() => b.init(), 'the store refused to boot on a file it corrupted itself');
+		b.adopt(OWNER);
 		const named = b.get(a.id).all('node').find((n) => n.id === 'node-bd0001');
 		assert.equal(named.name, 'a$&b', 'the name came back intact');
 		assert.ok(b.diagrams.get(a.id).log.records.length >= 1, 'and the log came back with it');
@@ -107,7 +110,7 @@ test('I10: the document half stays pretty-printed and carries no log key', async
 	const dir = tmp();
 	try {
 		const { s, id } = await storeWith(dir);
-		s.commit(id, { ops: [put('node', node('node-ba0001', 300))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-ba0001', 300))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		const text = fs.readFileSync(path.join(dir, `${id}.json`), 'utf8');
 		assert.match(text, /\n\t"nodes": \[/, 'the document is still diffable');
@@ -134,12 +137,12 @@ test('B20: a GR9 breach is counted and named as an invariant failure, not a flus
 	const dir = tmp();
 	try {
 		const { s, id } = await storeWith(dir);
-		s.commit(id, { ops: [put('node', node('node-be0001', 60))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-be0001', 60))] }, 'server', 't', OWNER);
 		await s.flush(id);
 
 		const log = s.diagrams.get(id).log;
 		log.records[log.records.length - 1].seq = log.version + 5;   // a record above its own watermark
-		s.commit(id, { ops: [put('node', node('node-be0002', 120))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-be0002', 120))] }, 'server', 't', OWNER);
 		await s.flush(id);
 
 		assert.equal(s.flushFailures(), 0, 'a structural breach is NOT an I/O failure and must not be counted as one');
@@ -152,14 +155,14 @@ test('B20: a breach is re-checked on the next write, not reported once and forgo
 	const dir = tmp();
 	try {
 		const { s, id } = await storeWith(dir);
-		s.commit(id, { ops: [put('node', node('node-bf0001', 60))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-bf0001', 60))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		const log = s.diagrams.get(id).log;
 		log.records[log.records.length - 1].seq = log.version + 5;
 
-		s.commit(id, { ops: [put('node', node('node-bf0002', 120))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-bf0002', 120))] }, 'server', 't', OWNER);
 		await s.flush(id);
-		s.commit(id, { ops: [put('node', node('node-bf0003', 180))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-bf0003', 180))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		assert.equal(s.invariantFailures(), 2, 'the breach is still there, so it is still reported');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -181,16 +184,15 @@ material, is already gone. A1 `Ephemeral Truth Loss`, inside the window B6 decla
 test('B15: durableVersion names the flushed watermark, not the absence of dirt', async () => {
 	const dir = tmp();
 	try {
-		const s = new Store(dir, { flushMs: 100000 });   // nothing auto-flushes during the test
-		await s.init();
-		const id = s.list()[0].id;
+		const s = await openStore(dir, { flushMs: 100000 });  // nothing auto-flushes during the test
+		const id = s.list(OWNER)[0].id;
 
 		assert.equal(s.durableVersion(id), s.diagrams.get(id).log.version, 'a freshly-loaded diagram is fully durable');
 		const atLoad = s.durableVersion(id);
 
-		s.commit(id, { ops: [put('node', node('node-c00001', 60))] }, 'server', 't');
-		s.commit(id, { ops: [put('node', node('node-c00002', 120))] }, 'server', 't');
-		const third = s.commit(id, { ops: [put('node', node('node-c00003', 180))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-c00001', 60))] }, 'server', 't', OWNER);
+		s.commit(id, { ops: [put('node', node('node-c00002', 120))] }, 'server', 't', OWNER);
+		const third = s.commit(id, { ops: [put('node', node('node-c00003', 180))] }, 'server', 't', OWNER);
 
 		assert.equal(s.durableVersion(id), atLoad, 'three commits in one window flushed NOTHING, so nothing new is durable');
 		assert.ok(s.durableVersion(id) < third.version - 1, 'the old `version - 1` guess over-reported by two');
@@ -212,12 +214,13 @@ test('B15: a failed write leaves durableVersion behind, and a later success adva
 			real.write(name, text);
 		} } });
 		await s.init();
-		const id = s.list()[0].id;
+		s.adopt(OWNER);
+		const id = s.list(OWNER)[0].id;
 		await s.flush(id);
 		const durable = s.durableVersion(id);
 
 		fail = true;
-		const r = s.commit(id, { ops: [put('node', node('node-c10001', 60))] }, 'server', 't');
+		const r = s.commit(id, { ops: [put('node', node('node-c10001', 60))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		assert.equal(s.durableVersion(id), durable, 'a write that threw did not make anything durable');
 		assert.ok(s.flushFailures() > 0, 'and it is counted as the I/O failure it is');
@@ -235,14 +238,13 @@ test('I5: undo survives a process restart', async () => {
 	try {
 		const a = await storeWith(dir);
 		const before = a.s.get(a.id).all('node').length;
-		a.s.commit(a.id, { label: 'create', ops: [put('node', node('node-bb0001', 300))] }, 'server', 't');
+		a.s.commit(a.id, { label: 'create', ops: [put('node', node('node-bb0001', 300))] }, 'server', 't', OWNER);
 		a.s.flush(a.id);
 		assert.equal(a.s.get(a.id).all('node').length, before + 1);
 
-		const b = new Store(dir);            // a different process would see exactly this
-		await b.init();
+		const b = await openStore(dir);      // a different process would see exactly this
 		assert.equal(b.get(a.id).all('node').length, before + 1, 'the change persisted');
-		const r = b.undo(a.id);
+		const r = b.undo(a.id, null, OWNER);
 		assert.equal(r.ok, true, 'undo is available after a restart');
 		assert.equal(b.get(a.id).all('node').length, before, 'and it reverses the change');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -256,15 +258,15 @@ test('I12: version is monotonic ACROSS restarts and no seq is re-minted', async 
 		const a = await storeWith(dir);
 		// distinct anchors: one anchor holds one occupant (B112)
 		for (const [k, n] of ['node-ca0001', 'node-ca0002', 'node-ca0003'].entries()) {
-			a.s.commit(a.id, { ops: [put('node', node(n, 60 + k * 60))] }, 'server', 't');
+			a.s.commit(a.id, { ops: [put('node', node(n, 60 + k * 60))] }, 'server', 't', OWNER);
 		}
 		a.s.flush(a.id);
 		const pre = a.s.diagrams.get(a.id).log.version;
 		assert.ok(pre >= 3);
 
-		const b = new Store(dir); await b.init();
+		const b = await openStore(dir);
 		assert.equal(b.diagrams.get(a.id).log.version, pre, 'the watermark came back');
-		const r = b.commit(a.id, { ops: [put('node', node('node-ca0004', 240))] }, 'server', 't');   // 120 is taken by ca0002 (B112)
+		const r = b.commit(a.id, { ops: [put('node', node('node-ca0004', 240))] }, 'server', 't', OWNER);   // 120 is taken by ca0002 (B112)
 		assert.equal(r.version, pre + 1, 'the next change continues the sequence');
 
 		const seqs = b.diagrams.get(a.id).log.records.map((x) => x.seq);
@@ -309,7 +311,7 @@ test('I14: evicted survives a restart', async () => {
 		assert.ok(dropped > 0);
 		a.s.markDirty(a.id); a.s.flush(a.id);
 
-		const b = new Store(dir); await b.init();
+		const b = await openStore(dir);
 		assert.equal(b.diagrams.get(a.id).log.evicted, dropped, 'the count of what was lost is itself durable');
 		assert.equal(b.diagrams.get(a.id).log.truncated, true);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -322,15 +324,15 @@ test('I13: a malformed log costs history, never the diagram', async () => {
 		const dir = tmp();
 		try {
 			const { s, id } = await storeWith(dir);
-			s.commit(id, { ops: [put('node', node('node-da0001', 60))] }, 'server', 't');
+			s.commit(id, { ops: [put('node', node('node-da0001', 60))] }, 'server', 't', OWNER);
 			await s.flush(id);
 			const file = path.join(dir, `${id}.json`);
 			const { doc } = parse(fs.readFileSync(file, 'utf8'));
 			// re-write with a corrupt log block
 			fs.writeFileSync(file, JSON.stringify({ ...doc, log: JSON.parse(broken) }, null, '\t') + '\n');
 
-			const b = new Store(dir); await b.init();
-			assert.equal(b.list().length, 1, `the diagram survived a log of ${broken}`);
+			const b = await openStore(dir);
+			assert.equal(b.list(OWNER).length, 1, `the diagram survived a log of ${broken}`);
 			assert.equal(b.get(id).all('node').length, doc.nodes.length, 'and its content is intact');
 			assert.equal(b.diagrams.get(id).log.records.length, 0, 'history is empty, not corrupt');
 		} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -344,10 +346,9 @@ test('I9: an observer of every write never sees ops without their record', async
 	try {
 		const seen = [];
 		const real = fsFiles(dir);
-		const s = new Store(dir, { files: { ...real, write(name, text) { seen.push(parse(text)); real.write(name, text); } } });
-		await s.init();
-		const id = s.list()[0].id;
-		s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
+		const s = await openStore(dir, { files: { ...real, write(name, text) { seen.push(parse(text)); real.write(name, text); } } });
+		const id = s.list(OWNER)[0].id;
+		s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		const last = seen[seen.length - 1];
 		const hasNode = last.doc.nodes.some((n) => n.id === 'node-ea0001');
@@ -369,8 +370,9 @@ test('B4: a failed write retries without a further edit, and is counted', async 
 			real.write(name, text);
 		} } });
 		await s.init();
-		const id = s.list()[0].id;
-		s.commit(id, { ops: [put('node', node('node-fa0001', 60))] }, 'server', 't');
+		s.adopt(OWNER);
+		const id = s.list(OWNER)[0].id;
+		s.commit(id, { ops: [put('node', node('node-fa0001', 60))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		assert.ok(s.flushFailures() > 0, 'the failure is counted, not swallowed');
 		assert.equal(s.diagrams.get(id).dirty, true, 'and the entry is still dirty');
@@ -388,7 +390,7 @@ test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-
 	const dir = tmp();
 	try {
 		const { s, id } = await storeWith(dir);
-		s.commit(id, { ops: [put('node', node('node-ga0001', 60))] }, 'server', 't');
+		s.commit(id, { ops: [put('node', node('node-ga0001', 60))] }, 'server', 't', OWNER);
 		await s.flush(id);
 		const raw = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
 		assert.ok(raw.log, 'the file carries a log');
@@ -420,23 +422,21 @@ test('B55: the store runs on a backend with no filesystem at all', async () => {
 		remove: (name) => { mem.delete(name); },
 	};
 
-	const s = new Store('/nonexistent/never-created', { flushMs: 10000, files });
-	await s.init();                                     // seeds, because the backend is empty
-	const id = s.list()[0].id;
+	const s = await openStore('/nonexistent/never-created', { flushMs: 10000, files });                                     // seeds, because the backend is empty
+	const id = s.list(OWNER)[0].id;
 	assert.ok(id, 'a diagram exists after boot');
 
-	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
+	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't', OWNER);
 	await s.flush(id);
 	assert.equal(mem.size, 1, 'the flush landed in the Map, not on disk');
 	assert.ok(mem.get(`${id}.json`).includes('node-ea0001'), 'and it carries the change');
 
 	// a second store over the SAME backend reads it back - the round trip is the real proof
-	const s2 = new Store('/nonexistent/never-created', { flushMs: 10000, files });
-	await s2.init();
-	assert.equal(s2.list().length, 1, 'the second store found the document');
+	const s2 = await openStore('/nonexistent/never-created', { flushMs: 10000, files });
+	assert.equal(s2.list(OWNER).length, 1, 'the second store found the document');
 	assert.ok(s2.get(id).get('node', 'node-ea0001'), 'and parsed the node out of it');   // get(id) is the model
 
-	await s2.remove(id);
+	await s2.remove(id, OWNER);
 	assert.equal(mem.size, 0, 'remove reached the backend too');
 	assert.equal(fs.existsSync('/nonexistent/never-created'), false, 'no directory was ever created');
 });
@@ -468,11 +468,10 @@ test('B59: the store runs on a backend that answers only asynchronously', async 
 		async remove(name) { await defer(null); mem.delete(name); },
 	};
 
-	const s = new Store('/nonexistent/async-only', { flushMs: 10000, files });
-	await s.init();
-	const id = s.list()[0].id;
+	const s = await openStore('/nonexistent/async-only', { flushMs: 10000, files });
+	const id = s.list(OWNER)[0].id;
 
-	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't');
+	s.commit(id, { label: 'create', ops: [put('node', node('node-ea0001', 60))] }, 'server', 't', OWNER);
 	await s.flush(id);
 	assert.equal(mem.size, 1, 'the flush completed against an async backend');
 	assert.ok(mem.get(`${id}.json`).includes('node-ea0001'));
@@ -482,11 +481,10 @@ test('B59: the store runs on a backend that answers only asynchronously', async 
 	assert.equal(s.durableVersion(id), s.log(id).version, 'durable only after the write settled');
 
 	// the round trip is the part a synchronous Map could never have exercised
-	const s2 = new Store('/nonexistent/async-only', { flushMs: 10000, files });
-	await s2.init();
+	const s2 = await openStore('/nonexistent/async-only', { flushMs: 10000, files });
 	assert.ok(s2.get(id).get('node', 'node-ea0001'), 'a second store read it back over the async seam');
 
-	await s2.remove(id);
+	await s2.remove(id, OWNER);
 	assert.equal(mem.size, 0, 'remove settled too');
 });
 
@@ -515,8 +513,7 @@ test('B83: a document with a cross-entity violation LOADS, and is counted', asyn
 	};
 	fs.writeFileSync(path.join(dir, 'diagram-ee0001.json'), JSON.stringify(doc, null, '\t'));
 
-	const s = new Store(dir, { flushMs: 3_600_000 });
-	await s.init();
+	const s = await openStore(dir, { flushMs: 3_600_000 });
 	try {
 		assert.ok(s.get('diagram-ee0001'), 'the document OPENED — reporting is not refusing');
 		assert.equal(s.invariantFailures(), 1, 'and the violation was counted, like a GR9 breach');
@@ -525,8 +522,7 @@ test('B83: a document with a cross-entity violation LOADS, and is counted', asyn
 
 test('B83: a clean document counts nothing — the check is not always red', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-ok-'));
-	const s = new Store(dir, { flushMs: 3_600_000 });
-	await s.init();
+	const s = await openStore(dir, { flushMs: 3_600_000 });
 	try {
 		assert.equal(s.invariantFailures(), 0);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -549,8 +545,7 @@ test('a stored doc carrying meta.slides is rewritten without it, and only once',
 			nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
 		fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(doc));
 
-		const a = new Store(dir, { flushMs: 5 });
-		await a.init();
+		const a = await openStore(dir, { flushMs: 5 });
 		assert.equal('slides' in a.get(id).toJSON().meta, false, 'stripped in memory');
 		await a.flushAll();
 
@@ -559,8 +554,7 @@ test('a stored doc carrying meta.slides is rewritten without it, and only once',
 		assert.equal(onDisk.meta.version, 0, 'without a version bump: removing a retired field is nobody\'s change');
 
 		// a clean document must not be rewritten on every boot
-		const b = new Store(dir, { flushMs: 5 });
-		await b.init();
+		const b = await openStore(dir, { flushMs: 5 });
 		assert.equal(b.diagrams.get(id).dirty, false, 'nothing to shed, so nothing to write');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -586,8 +580,7 @@ test('Phase 2: the schema refuses meta.slides, and a pre-purge file still loads'
 	const dir = tmp();
 	try {
 		fs.writeFileSync(path.join(dir, 'diagram-51de52.json'), JSON.stringify(legacy));
-		const s = new Store(dir, { flushMs: 5 });
-		await s.init();
+		const s = await openStore(dir, { flushMs: 5 });
 		assert.ok(s.get('diagram-51de52'), 'and yet the pre-purge file opened -- stripped before validation');
 		await s.flushAll();
 		const onDisk = JSON.parse(fs.readFileSync(path.join(dir, 'diagram-51de52.json'), 'utf8'));

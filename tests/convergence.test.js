@@ -14,11 +14,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Model } from '../model/index.mjs';
-import { Store } from '../server/store.js';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
 import { createEntity, moveEntities, deleteSelection, createGroup } from '../app/src/commands.js';
+import { OWNER, openStore } from './fixtures/app.mjs';
 
 function rng(seed) {
 	let x = seed || 1;
@@ -70,7 +70,7 @@ function participant(store, id, name, world) {
 	p.receive = (msg) => onMsg(msg);
 	changes.onCommit((req) => {
 		if (req.verb) return;                              // undo/redo drive the store directly here
-		const res = store.commit(id, { ops: req.ops, label: req.label }, 'client', name);
+		const res = store.commit(id, { ops: req.ops, label: req.label }, 'client', name, OWNER);
 		// a rejection must not leave the client's optimistic apply standing — it repairs (B3/I16)
 		if (!res.ok) { p.rejected = (p.rejected || 0) + 1; world.repair(p); return; }
 		if (!res.change) return;
@@ -112,9 +112,8 @@ function world(store, id) {
 
 async function setup(seed) {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-conv-'));
-	const store = new Store(dir);
-	await store.init();
-	const id = store.list()[0].id;
+	const store = await openStore(dir);
+	const id = store.list(OWNER)[0].id;
 	const w = world(store, id);
 	const a = participant(store, id, 'tab-a', w);
 	const b = participant(store, id, 'tab-b', w);
@@ -250,7 +249,7 @@ test('GR6: an agent write reaches both browsers', async () => {
 		// the agent writes through the store directly, as REST does, and the hub fans it out
 		const res = env.store.commit(env.id, { label: 'create', ops: [
 			{ op: 'put', kind: 'node', entity: node('node-ac0001', 660, -420) },
-		] }, 'server', 'agent-1');
+		] }, 'server', 'agent-1', OWNER);
 		assert.equal(res.ok, true);
 		env.w.deliver(null, { from: res.change.from, ops: res.change.ops, version: res.version });
 

@@ -23,11 +23,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Model } from '../model/index.mjs';
-import { Store } from '../server/store.js';
 import { Session } from '../server/protocol.js';
 import { Selection } from '../app/src/selection.js';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
+import { OWNER, openStore } from './fixtures/app.mjs';
 
 // the browser API Sync persists its outbox through (D30)
 const storage = new Map();
@@ -283,27 +283,25 @@ test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked chan
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rewind-'));
 	try {
 		// a long debounce stands in for a process that dies before its flush fires
-		const s1 = new Store(dir, { flushMs: 3_600_000 });
-		await s1.init();
-		const id = s1.list()[0].id;
+		const s1 = await openStore(dir, { flushMs: 3_600_000 });
+		const id = s1.list(OWNER)[0].id;
 		await s1.flushAll();                                       // the seed reaches disk...
 
 		const res = s1.commit(id, { label: 'create', ops: [
 			{ op: 'put', kind: 'node', entity: node('node-0a0001', 60, 60) },
-		] }, 'client', 'tab-a');
+		] }, 'client', 'tab-a', OWNER);
 		assert.equal(res.ok, true);
 		const acked = res.version;                           // ...and THIS is acked but never flushed
 
 		// the process dies. A new one boots on the same directory.
-		const s2 = new Store(dir, { flushMs: 3_600_000 });
-		await s2.init();
+		const s2 = await openStore(dir, { flushMs: 3_600_000 });
 		const reloaded = s2.diagrams.get(id).log.version;
 		assert.ok(reloaded < acked, 'the restart really did lose an acked change');
 		assert.equal(s2.get(id).get('node', 'node-0a0001'), undefined);
 
 		// the browser reconnects believing `acked` — and is told
 		const ws = fakeWs();
-		new Session(ws, s2);
+		new Session(ws, s2, null, null, OWNER);
 		ws.recv('resume', { diagram: id, version: acked });
 		const reply = ws.last('snapshot');
 		assert.ok(reply, 'a client that is ahead gets the authoritative document');
@@ -315,10 +313,9 @@ test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked chan
 test('resume: unknown diagram is a typed refusal, and never binds the session', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
 	try {
-		const store = new Store(dir, { flushMs: 3_600_000 });
-		await store.init();
+		const store = await openStore(dir, { flushMs: 3_600_000 });
 		const ws = fakeWs();
-		const session = new Session(ws, store);
+		const session = new Session(ws, store, null, null, OWNER);
 		ws.recv('resume', { diagram: 'diagram-ffffff', version: 0 });
 		assert.equal(ws.last('error').body.code, 'unknown-diagram');
 		assert.equal(session.diagramId, null, 'a refused resume leaves the session unbound');

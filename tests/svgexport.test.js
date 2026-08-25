@@ -18,12 +18,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 
 let app, base, dataDir;
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-svg-'));
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 });
 after(async () => {

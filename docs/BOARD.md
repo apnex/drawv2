@@ -151,7 +151,7 @@ That places two things above features. First, the remaining checks whose subject
 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
-| 1 | H9.17 | dead path | `authz` is off in every test and on in the only deployment. **B115 and B116 both shipped through this gap** -- a recurrence of an already-mined lesson, which A14 counts as a fault by itself. It is also the cheapest way to stop the suite lying about which path it runs. |
+| ~~1~~ | H9.17 `DONE` | dead path | Landed 2026-08-26 and paid for itself on the first run: 152 tests red, and **B130** and **B131** found -- two live defects in `DELETE`, a verb three days old that had never once worked in the deployment. |
 | 2 | H11.4 | verifier | The general form of every defect above it. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. |
 | 3 | H10.19 | verifier | `scan-writers` asks whether an entry carries a forbidden key and never whether it carries a required one. Same shape as B122, one file, small. |
 | 4 | H11.7 | verifier | The rule that keeps findings out of a mutable file is currently decorative, which is what let three items sit on the board with no register entry. |
@@ -461,7 +461,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.14 | Pass the audience `server.js` switches authorization on with, and refuse to start when authz has no identity source | **B70** | S2 · S | `DONE` |
 | H9.15 | Cutover: enable authorization on the live service -- build, deploy image with `IAP_AUDIENCE` and `OWNER` together, adopt the 12, verify the owner reaches them through IAP | **B67**, **B70** | S1 · M | `DONE` |
 | H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures -- the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 · S | `DONE` |
-| H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch -- a flag that is on in the only deployment that exists is a second code path nobody runs. **B116 and B115 both shipped through this gap**, so it is no longer theoretical | **B129** | S3 · S | `TODO` |
+| H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch -- a flag that is on in the only deployment that exists is a second code path nobody runs. **B116 and B115 both shipped through this gap.** Ruled 2026-08-26: default on, switch retained; the work and its findings are H11.8 | **B129** | S3 · S | `DONE` |
 | H9.18 | Scanner: every item declares a state, and a heading agrees with the states beneath it in both directions | **B77** | S2 · S | `DONE` |
 | H9.20 | Scanner: a stated count must not contradict one the repo can compute -- deferred from H9.18, needs the convention decided before it is enforceable | **B77** | S3 · M | `TODO` |
 | H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 · S | `DONE` |
@@ -512,6 +512,9 @@ should have caught it was scoped narrower than its own claim.
 | H11.3 | Three items were follow-on work whose cited row had closed without them, so the register read as settled while the work was unstarted. Each remainder gets its own row rather than reopening a row that correctly closed | **B124** | S3 · S | `DONE` |
 | H11.6 | Five rows were malformed markdown tables -- unescaped `\|` in prose and in code spans, a stray backtick for an apostrophe, a trailing empty cell -- so they mis-rendered on GitHub and handed every downstream rule the wrong text. Repaired at the source; R10 counts fields | **B122** | S3 · S | `DONE` |
 | H11.7 | Contract rule 1 says every board item cites a row and nothing checks that one exists, so the rule that keeps findings out of a mutable file is decorative. It is also wrong as written -- a feature was never a finding -- so narrow it to defects and enforce that | **B128** | S3 · S | `TODO` |
+| H11.8 | `authz` defaults on, so the suite runs the configuration the deployment runs. 152 tests failed on the flip, and the fixture supplies a principal once instead of seventeen times. Found B130 and B131 on the first run | **B129** | S3 · L | `DONE` |
+| H11.9 | Deleting a diagram strands every viewer: the survivor is resolved with no principal, so under authorization it is null. Resolve it PER VIEWER, which is what the REST comment already claims happens | **B130** | S2 · S | `DONE` |
+| H11.10 | Deleting your last diagram reseeds one nobody can read: the store refuses to be empty and the reseed is unowned, so the invariant is satisfied and its purpose is not. The reseed belongs to the principal who caused it | **B131** | S2 · S | `DONE` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 · L | `TODO` |
 | H11.5 | A deleted diagram is recoverable for seven days and nothing in the product says so. Trigger has fired -- `DELETE` shipped at H9.21 and the bucket carries a real 604800s soft-delete window -- so the window exists and is unreachable from the UI | **B109** | S2 · M | `TODO` |
 

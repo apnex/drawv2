@@ -136,7 +136,7 @@ export class Store {
 	(server/server.js) decides; every other caller — including every test that is not about seeding
 	— gets the single programmatic example and is unaffected by whatever ships in examples/.
 	*/
-	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null, authz = false } = {}) {
+	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null, authz = true } = {}) {
 		/*
 		Authorization is OFF unless asked for -- ACCESS.md.
 
@@ -448,11 +448,28 @@ export class Store {
 	}
 
 	// first boot (or last diagram deleted): the example topology, never an empty store
-	seed() {
-		const fromExamples = this.#seedFromExamples();
+	/*
+	`owner` is who caused the seed -- B131.
+
+	A seed at BOOT has no principal and stays unowned, which is correct: the composition root
+	adopts it for the deployment's OWNER two lines after `init()`. A seed caused by a REMOVE does
+	have one, and leaving that unowned meant deleting your last diagram reseeded a document nobody
+	could read -- the store dutifully refused to be empty and the refusal was invisible to the only
+	person present. The invariant was satisfied and its purpose was not.
+
+	Ownership stays a property of creation, which is where H9.30 put it, rather than becoming a
+	second adoption path that would have to be remembered at every future creation site.
+	*/
+	seed(owner = null) {
+		const fromExamples = this.#seedFromExamples(owner);
 		if (fromExamples) return fromExamples;
 		const doc = seedDoc();
 		const entry = this.install(doc.meta.id, doc);
+		// AFTER install, never before. `install` passes no `file` for a seed, so `cleanMeta` treats
+		// the document as untrusted and drops `meta.owner` -- which is H9.1 doing its job: an owner
+		// may not be smuggled in through a document. The first attempt at B131 wrote `doc.meta.owner`
+		// and was silently discarded, which is exactly the outcome that guard exists to produce.
+		if (owner) this.setOwner(doc.meta.id, owner);
 		this.markDirty(doc.meta.id);   // a seeded doc has no file yet — this is a creation, not a reload
 		return entry.model;
 	}
@@ -472,7 +489,7 @@ export class Store {
 	If NONE load, this returns null and the programmatic seed takes over — the store still never
 	comes up empty.
 	*/
-	#seedFromExamples() {
+	#seedFromExamples(owner = null) {
 		if (!this.examplesDir || !fs.existsSync(this.examplesDir)) return null;
 		let first = null;
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
@@ -483,6 +500,7 @@ export class Store {
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
 				const entry = this.install(doc.meta.id, doc);
+				if (owner) this.setOwner(doc.meta.id, owner);   // B131, and after install -- see seed()
 				this.markDirty(doc.meta.id);          // no file in the DATA dir yet — this is a creation
 				first = first || entry.model;
 			} catch (e) {
@@ -669,7 +687,7 @@ export class Store {
 		} catch (err) {
 			console.warn(`[ store ] could not remove ${id}.json: ${err.message}`);
 		}
-		if (this.diagrams.size === 0) this.seed(); // the store never goes empty
+		if (this.diagrams.size === 0) this.seed(principal); // never empty, and the reseed is YOURS (B131)
 		return null;
 	}
 

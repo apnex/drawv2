@@ -21,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Store } from '../server/store.js';
 import { validateDoc } from '../server/validate.js';
+import { OWNER, openStore } from './fixtures/app.mjs';
 
 const EXAMPLES = fileURLToPath(new URL('../examples', import.meta.url));
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-ex-'));
@@ -53,10 +54,9 @@ test('an example starts clean: version 0, no log, nothing to undo', () => {
 test('first boot copies the corpus into an empty data dir, and it PERSISTS', async () => {
 	const dir = tmp();
 	try {
-		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		await store.init();
+		const store = await openStore(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
 		const shipped = fs.readdirSync(EXAMPLES).filter((f) => f.endsWith('.json')).length;
-		assert.equal(store.list().length, shipped, 'every example loaded');
+		assert.equal(store.list(OWNER).length, shipped, 'every example loaded');
 		assert.equal(fs.readdirSync(dir).length, 0, 'nothing written yet — the flush is debounced');
 
 		await store.flushAll();
@@ -64,25 +64,22 @@ test('first boot copies the corpus into an empty data dir, and it PERSISTS', asy
 			'seeding is a CREATION: the examples are now the data dir, not a live reference to the repo');
 
 		// second boot loads from the data dir; the examples are not consulted again
-		const again = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		await again.init();
-		assert.equal(again.list().length, shipped);
+		const again = await openStore(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
+		assert.equal(again.list(OWNER).length, shipped);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('a user who deletes an example does NOT get it back on the next boot', async () => {
 	const dir = tmp();
 	try {
-		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		await store.init();
+		const store = await openStore(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
 		await store.flushAll();
-		const victim = store.list()[0].id;
-		assert.equal(await store.remove(victim), null);
+		const victim = store.list(OWNER)[0].id;
+		assert.equal(await store.remove(victim, OWNER), null);
 		await store.flushAll();
 
-		const again = new Store(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
-		await again.init();
-		assert.equal(again.list().some((d) => d.id === victim), false,
+		const again = await openStore(dir, { flushMs: 3_600_000, examplesDir: EXAMPLES });
+		assert.equal(again.list(OWNER).some((d) => d.id === victim), false,
 			'seeding is FIRST BOOT only — a re-seeding store would resurrect deleted work forever');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -90,9 +87,8 @@ test('a user who deletes an example does NOT get it back on the next boot', asyn
 test('without examplesDir the store seeds the single programmatic example — every other test is unaffected', async () => {
 	const dir = tmp();
 	try {
-		const store = new Store(dir, { flushMs: 3_600_000 });
-		await store.init();
-		assert.equal(store.list().length, 1, 'the injected dependency really is opt-in');
+		const store = await openStore(dir, { flushMs: 3_600_000 });
+		assert.equal(store.list(OWNER).length, 1, 'the injected dependency really is opt-in');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -107,15 +103,15 @@ test('a malformed example is skipped, not fatal — a packaging bug must not blo
 
 		const store = new Store(dir, { flushMs: 3_600_000, examplesDir: badExamples });
 		await assert.doesNotReject(() => store.init());
-		assert.equal(store.list().length, 3, 'the good ones loaded');
+		store.adopt(OWNER);
+		assert.equal(store.list(OWNER).length, 3, 'the good ones loaded');
 
 		// and if NONE load, the programmatic seed still guarantees a non-empty store
 		const allBad = tmp();
 		fs.writeFileSync(path.join(allBad, 'diagram-bad002.json'), '{ not json');
 		const dir2 = tmp();
-		const s2 = new Store(dir2, { flushMs: 3_600_000, examplesDir: allBad });
-		await s2.init();
-		assert.equal(s2.list().length, 1, 'fell back to the programmatic seed — never an empty store');
+		const s2 = await openStore(dir2, { flushMs: 3_600_000, examplesDir: allBad });
+		assert.equal(s2.list(OWNER).length, 1, 'fell back to the programmatic seed — never an empty store');
 		fs.rmSync(allBad, { recursive: true, force: true });
 		fs.rmSync(dir2, { recursive: true, force: true });
 	} finally {

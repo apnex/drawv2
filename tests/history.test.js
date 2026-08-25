@@ -14,8 +14,8 @@ import path from 'node:path';
 import { Model } from '../model/index.mjs';
 import { Log, LOG_MAX, LOG_HARD_MAX } from '../server/log.mjs';
 import { commit, undo } from '../server/txn.mjs';
-import { Store } from '../server/store.js';
 import { Session } from '../server/protocol.js';
+import { OWNER, openStore } from './fixtures/app.mjs';
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -147,9 +147,8 @@ function fakeWs() {
 
 async function live() {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-hist-'));
-	const store = new Store(dir, { flushMs: 3_600_000 });
-	await store.init();
-	return { dir, store, id: store.list()[0].id };
+	const store = await openStore(dir, { flushMs: 3_600_000 });
+	return { dir, store, id: store.list(OWNER)[0].id };
 }
 
 test('D21: the server computes the top RUN, so the browser can offer "undo all N by <actor>"', async () => {
@@ -157,10 +156,10 @@ test('D21: the server computes the top RUN, so the browser can offer "undo all N
 	try {
 		for (let i = 1; i <= 4; i++) {
 			env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node',
-				entity: { ...node(`node-${hex(i)}`), ...spread(i) } }], label: 'create' }, 'server', 'agent-7');
+				entity: { ...node(`node-${hex(i)}`), ...spread(i) } }], label: 'create' }, 'server', 'agent-7', OWNER);
 		}
 		const ws = fakeWs();
-		new Session(ws, env.store);
+		new Session(ws, env.store, null, null, OWNER);
 		ws.recv('hello', { diagram: env.id });
 		const top = ws.last('snapshot').body.undoTop;
 		assert.equal(top.run, 4, 'four consecutive records by one actor');
@@ -179,12 +178,12 @@ test('D21: the server computes the top RUN, so the browser can offer "undo all N
 test('D21: a run STOPS at a different actor — you cannot sweep away someone else’s work with your own', async () => {
 	const env = await live();
 	try {
-		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0001', 660, 480) }] }, 'client', 'tab-a');
-		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0002', 720, 480) }] }, 'server', 'agent-7');
-		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0003', 780, 480) }] }, 'server', 'agent-7');
+		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0001', 660, 480) }] }, 'client', 'tab-a', OWNER);
+		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0002', 720, 480) }] }, 'server', 'agent-7', OWNER);
+		env.store.commit(env.id, { ops: [{ op: 'put', kind: 'node', entity: node('node-aa0003', 780, 480) }] }, 'server', 'agent-7', OWNER);
 
 		const ws = fakeWs();
-		new Session(ws, env.store);
+		new Session(ws, env.store, null, null, OWNER);
 		ws.recv('hello', { diagram: env.id });
 		const top = ws.last('snapshot').body.undoTop;
 		assert.equal(top.run, 2, "the run is the agent's two, not all three");
@@ -199,9 +198,9 @@ test('D21: a run STOPS at a different actor — you cannot sweep away someone el
 // ---- the 409 recovery body ----
 
 test('a stale `expect` answers with WHAT MOVED, so the caller can reconcile instead of refetching', async () => {
-	const { createApp } = await import('../server/app.js');
+	const { makeApp } = await import('./fixtures/app.mjs');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-409-'));
-	const app = await createApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
 	const base = `http://localhost:${app.port}`;
 	try {
 		const id = (await (await fetch(`${base}/api/v1/diagrams`)).json())[0].id;

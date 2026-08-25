@@ -14,7 +14,7 @@ a 500 for the writer who already has their change on disk.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Hub } from '../server/hub.js';
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 import { WebSocket } from 'ws';
 import net from 'node:net';
 import crypto from 'node:crypto';
@@ -97,7 +97,7 @@ readable and can observe the server hanging up on it.
 */
 test('B54: a peer that stops answering is evicted; one that answers is not', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-ka-'));
-	const app = await createApp({ dataDir: dir, port: 0, host: '127.0.0.1', pingMs: 40 });
+	const app = await makeApp({ dataDir: dir, port: 0, host: '127.0.0.1', pingMs: 40 });
 	try {
 		const silent = net.connect(app.port, '127.0.0.1');
 		let hungUp = false;

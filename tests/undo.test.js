@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 import { Locks } from '../server/locks.js';
 
 let app, base, dataDir;
@@ -22,7 +22,7 @@ const j = async (u, o) => {
 
 test.before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-undo-'));
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });
 test.after(() => { app?.close?.(); fs.rmSync(dataDir, { recursive: true, force: true }); });

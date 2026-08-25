@@ -16,19 +16,31 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 import { ROUTES, families } from '../server/routes.mjs';
 import { inventory } from '../tools/routes.mjs';
 
 test('B119: every declared route and method is answered by the running server', async () => {
 	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-routes-'));
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	const base = `http://127.0.0.1:${app.port}/api/v1`;
 	try {
 		const list = await (await fetch(`${base}/diagrams`)).json();
 		const id = list[0].id;
 		const doc = await (await fetch(`${base}/diagrams/${id}`)).json();
 		const lock = await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json();
+		/*
+		A real code, because `:code` has to name one.
+
+		Under authorization this probe reaches the handler, and revoking a code that does not exist
+		is an honest 404. It used to stop one line earlier -- with authz off the principal was null
+		and the workspace family answered 403 to everything, which is not 404 and so counted as
+		"answered". The route was never actually exercised. H9.17.
+		*/
+		const minted = await (await fetch(`${base}/workspace/codes`, {
+			method: 'POST', headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ agent: 'agent:probe' }),
+		})).json();
 
 		const fill = (p) => p
 			.replace(':id', id)
@@ -37,7 +49,7 @@ test('B119: every declared route and method is answered by the running server', 
 			.replace(':link', doc.links[0]?.id || 'link-aaaaaa')
 			.replace(':name', 'node')
 			.replace(':principal', encodeURIComponent('agent:probe'))
-			.replace(':code', 'c-probe');
+			.replace(':code', encodeURIComponent(minted.id || 'c-probe'));
 
 		const missing = [];
 		for (const route of ROUTES) {

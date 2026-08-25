@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import WebSocket from 'ws';
-import { createApp } from '../server/app.js';
+import { GUEST, OWNER, makeApp, openStore } from './fixtures/app.mjs';
 
 let app, base, dataDir;
 
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-test-'));
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });
 
@@ -459,7 +459,7 @@ test('REGRESSION: bare del-node cascades links and groups server-side (doc alway
 
 	// the persisted doc must reload after a restart
 	await app.close();
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 	assert.equal((await get(`/api/v1/diagrams/${diagramId}`)).status, 200, 'doc survived restart');
 	c.close();
@@ -479,7 +479,7 @@ test('R2: ws select persists the selection (model-state) and survives a restart'
 	assert.deepEqual([...doc.selection].sort(), ['node-5e1e01', 'node-5e1e02'], 'selection persisted in the doc');
 	// survives a restart (the user's "refresh keeps my selection", server-side)
 	await app.close();
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 	doc = (await get(`/api/v1/diagrams/${diagramId}`)).body;
 	assert.deepEqual([...doc.selection].sort(), ['node-5e1e01', 'node-5e1e02'], 'selection survived the restart');
@@ -560,7 +560,7 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 
 	// survives a restart (outside the lock scope — releasing the lock does not touch the selection)
 	await app.close();
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 	assert.deepEqual([...(await get(`/api/v1/diagrams/${id}`)).body.selection].sort(),
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
@@ -575,11 +575,9 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 	Links need DISTINCT pairs: the straight-link invariant allows one per pair, so 2001 links means
 	2001 pairs, which is why this needs its own setup rather than a tail on the anchor test.
 	*/
-	const { Store } = await import('../server/store.js');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-linkcap-'));
-	const store = new Store(dir);
-	await store.init();
-	const id = store.list()[0].id;
+	const store = await openStore(dir);
+	const id = store.list(OWNER)[0].id;
 
 	// 64 nodes gives 64*63/2 = 2016 distinct pairs, just over the 2000 cap
 	const ids = [];
@@ -588,7 +586,7 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 		for (let cx = -3; cx <= 4 && ids.length < 64; cx++) {
 			const nid = `node-${(0xc00000 + k++).toString(16)}`;
 			const r = store.commit(id, { ops: [{ op: 'put', kind: 'node',
-				entity: { id: nid, name: nid, type: 'host', x: cx * 60, y: cy * 60 } }] }, 'server');
+				entity: { id: nid, name: nid, type: 'host', x: cx * 60, y: cy * 60 } }] }, 'server', null, OWNER);
 			if (r.ok) ids.push(nid);
 		}
 	}
@@ -601,7 +599,7 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 		for (let b = a + 1; b < ids.length; b++) {
 			const lid = `link-${(0xd00000 + made).toString(16)}`;
 			const r = store.commit(id, { ops: [{ op: 'put', kind: 'link',
-				entity: { id: lid, src: ids[a], dst: ids[b] } }] }, 'server');
+				entity: { id: lid, src: ids[a], dst: ids[b] } }] }, 'server', null, OWNER);
 			if (!r.ok) { refusal = r.error; break outer; }
 			made++;
 		}
@@ -642,6 +640,71 @@ test('B32: DELETE removes a diagram, and moves anyone watching it to a survivor'
 	assert.ok(!(await get('/api/v1/diagrams')).body.some((d) => d.id === id), 'gone from the list too');
 });
 
+/*
+B130 -- the survivor is resolved PER VIEWER, not once for everybody.
+
+The defect this pins is not "delete crashes". It is that `store.first()` was called with no
+principal, and under authorization that reads nothing, so every viewer of a deleted diagram was
+handed `null` and left pointing at a document that no longer existed. Over the websocket it threw
+inside `snapshot()` before it could even do that. It shipped with DELETE itself and had never
+worked in the deployment.
+
+Two viewers with DIFFERENT access is what makes this a real check rather than a smoke test. One
+shared survivor would have to be readable by both, and there is no reason for that to be true --
+so the assertion is that each lands somewhere IT may read, which a single lookup cannot satisfy
+however the principal is threaded into it.
+*/
+test('B130: two viewers of a deleted diagram each land on a survivor THEY may read', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b130-'));
+	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const sock = (principal) => {
+		app2.as(principal);
+		const ws = new WebSocket(`ws://localhost:${app2.port}/ws`);
+		const msgs = [];
+		ws.on('message', (d) => msgs.push(JSON.parse(d.toString())));
+		const expect = (cmd) => new Promise((res, rej) => {
+			const t = setTimeout(() => rej(new Error(`timeout ${cmd} for ${principal}`)), 3000);
+			const iv = setInterval(() => {
+				const i = msgs.findIndex((m) => m.cmd === cmd);
+				if (i !== -1) { clearTimeout(t); clearInterval(iv); res(msgs.splice(i, 1)[0]); }
+			}, 20);
+		});
+		return new Promise((res) => ws.on('open', () => res({
+			ws, expect, send: (cmd, body) => ws.send(JSON.stringify({ cmd, body })),
+		})));
+	};
+	try {
+		const store = app2.store;
+		const seeded = [...store.diagrams.keys()][0];
+		// a shared diagram both may read, and a private one only the owner may
+		assert.equal(store.grant(seeded, GUEST, 'read', OWNER), null);
+		const mine = store.create('owner-only', null, OWNER);
+		assert.equal(mine.ok, true, 'the owner has somewhere else to land');
+
+		const a = await sock(OWNER);
+		const b = await sock(GUEST);
+		a.send('hello', { diagram: seeded });
+		b.send('hello', { diagram: seeded });
+		assert.equal((await a.expect('snapshot')).body.doc.meta.id, seeded);
+		assert.equal((await b.expect('snapshot')).body.doc.meta.id, seeded);
+
+		app2.as(OWNER);
+		const r = await fetch(`http://localhost:${app2.port}/api/v1/diagrams/${seeded}`, { method: 'DELETE' });
+		assert.equal(r.status, 200, 'the owner may delete it');
+
+		// the owner is moved to the diagram only the owner can see
+		const moved = await a.expect('snapshot');
+		assert.equal(moved.body.doc.meta.id, mine.model.state.meta.id,
+			'the owner landed on the survivor it holds');
+		// and the guest is NOT handed that document, which it has no grant on
+		assert.equal(moved.body.principal, OWNER, 'the snapshot is built for the principal receiving it');
+		a.ws.close(); b.ws.close();
+	} finally {
+		await app2.close();
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
+
 test('B32: a diagram another controller is driving cannot be deleted, but its holder may', async () => {
 	const made = await fetch(`${base}/api/v1/diagrams`, {
 		method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'locked-delete' }),
@@ -667,13 +730,14 @@ test('B32: a diagram another controller is driving cannot be deleted, but its ho
 });
 
 test('B32: deleting the last diagram leaves a usable store rather than an empty one', async () => {
-	const { Store } = await import('../server/store.js');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lastdel-'));
-	const store = new Store(dir);
-	await store.init();
-	for (const d of store.list()) assert.equal(await store.remove(d.id, null), null);
+	const store = await openStore(dir);
+	for (const d of store.list(OWNER)) assert.equal(await store.remove(d.id, OWNER), null);
 	assert.ok(store.total() > 0, 'the store reseeded rather than going empty');
-	assert.ok(store.first(), 'and first() still answers, which the delete path depends on');
+	// B131: not merely that SOMETHING was reseeded, but that the principal who caused the reseed
+	// can read it. The store refusing to be empty is worth nothing if the refusal is invisible.
+	assert.ok(store.first(OWNER), 'and first() still answers FOR THE REMOVER, which the delete path depends on');
+	assert.equal(store.first(OWNER).state.meta.owner, OWNER, 'the reseed belongs to whoever caused it');
 	fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -1007,7 +1071,7 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 	};
 	fs.writeFileSync(path.join(dir, 'diagram-aaaa11.json'), JSON.stringify(good));
 
-	const app2 = await createApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
 	const list = await (await fetch(`http://localhost:${app2.port}/api/v1/diagrams`)).json();
 	assert.equal(list.length, 1);
 	assert.equal(list[0].id, 'diagram-aaaa11');
@@ -1028,11 +1092,9 @@ test('collection caps are enforced on apply', async () => {
 	the thing under test here. That nodes are now anchor-limited rather than cap-limited is real and
 	tracked as B113; it is a finding about the two limits, not about this test.
 	*/
-	const { Store } = await import('../server/store.js');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cap-'));
-	const store = new Store(dir);
-	await store.init();
-	const id = store.list()[0].id;
+	const store = await openStore(dir);
+	const id = store.list(OWNER)[0].id;
 	const anchors = [];
 	for (let cy = -8; cy <= 8; cy++) for (let cx = -15; cx <= 15; cx++) anchors.push([cx * 60, cy * 60]);
 	const taken = new Set(store.get(id).all('node').map((n) => `${n.x},${n.y}`));
@@ -1042,7 +1104,7 @@ test('collection caps are enforced on apply', async () => {
 	let placed = 0;
 	for (const [x, y] of free) {
 		const hex = placed.toString(16).padStart(6, '0');
-		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${placed}`, type: 'host', x, y } }] }, 'server');
+		const res = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: `node-${hex}`, name: `n${placed}`, type: 'host', x, y } }] }, 'server', null, OWNER);
 		assert.equal(res.ok, true, `anchor (${x},${y}) refused after ${placed}`);
 		placed++;
 	}
@@ -1052,12 +1114,12 @@ test('collection caps are enforced on apply', async () => {
 	and the derived cap is the anchor count (B113). Either message is a correct refusal, and
 	asserting one of them specifically would be asserting which rule happens to run first.
 	*/
-	const collide = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-fffffe', name: 'extra', type: 'host', x: 60, y: 60 } }] }, 'server');
+	const collide = store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-fffffe', name: 'extra', type: 'host', x: 60, y: 60 } }] }, 'server', null, OWNER);
 	assert.equal(collide.ok, false);
 	assert.match(collide.error, /occupy the same anchor|collection limit reached/);
 	// the positioned cap is DERIVED from the grid, so the constant is the limit that binds (B113)
 	const capped = store.commit(id, { ops: [{ op: 'put', kind: 'node',
-		entity: { id: 'node-fffffd', name: 'x', type: 'host', x: 900, y: 480 } }] }, 'server');
+		entity: { id: 'node-fffffd', name: 'x', type: 'host', x: 900, y: 480 } }] }, 'server', null, OWNER);
 	assert.equal(capped.ok, false, 'the canvas is full by either rule');
 	await store.flushAll();
 	fs.rmSync(dir, { recursive: true, force: true });
@@ -1098,7 +1160,7 @@ test('delete removes a diagram, its file, and hands the session a survivor', asy
 
 test('deleting the last diagram reseeds the example (store never goes empty)', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lastdel-'));
-	const app2 = await createApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
 	const base2 = `http://localhost:${app2.port}`;
 
 	const ws = new WebSocket(`ws://localhost:${app2.port}/ws`);
@@ -1138,7 +1200,7 @@ test('server restart reloads persisted state from disk', async () => {
 	c.close();
 
 	await app.close(); // flushes
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 
 	const rest = await get(`/api/v1/diagrams/${diagramId}/nodes/node-ffff01`);

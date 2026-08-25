@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { migrateDoc, invariant } from '../tools/migrate-version.mjs';
+import { OWNER, openStore } from './fixtures/app.mjs';
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -104,11 +105,10 @@ test('CS5 gate: a migrated corpus boots, and every entity is deep-equal through 
 		}
 
 		const { Store } = await import('../server/store.js');
-		const store = new Store(dir, { flushMs: 3_600_000 });
-		await store.init();                                  // throws if any file fails the new whitelist
-		assert.equal(store.list().length, 2);
+		const store = await openStore(dir, { flushMs: 3_600_000 });                                  // throws if any file fails the new whitelist
+		assert.equal(store.list(OWNER).length, 2);
 
-		for (const { id } of store.list()) {
+		for (const { id } of store.list(OWNER)) {
 			const loaded = store.get(id).toJSON();
 			assert.equal(invariant(loaded), before.get(id), `${id}: every entity survived`);
 			assert.equal(loaded.meta.version, store.diagrams.get(id).log.version, 'GR9: meta.version === log.version');

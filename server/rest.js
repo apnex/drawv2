@@ -671,16 +671,19 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			Viewers land on a survivor built for THEIR principal, never a shared one -- which is why
 			this needs a builder rather than a broadcast: a snapshot is per-principal.
 
-			The `canRead` below is deliberately redundant. `snapshotBody` already throws for a
-			principal with no grant (B67, defence in depth), and `retarget` catches, so a viewer who
-			may not read the survivor is skipped either way. Removing this line changes no behaviour
-			and a mutant against it correctly survives. It is kept because the alternative is a call
-			site that looks like it hands every viewer the same document and relies on a throw two
-			files away to not do so.
+			B130: the survivor is resolved INSIDE the builder, once per viewer. It used to be
+			resolved once outside it, with no principal, which under authorization reads nothing --
+			so `survivor` was null and every viewer was handed null, stranded on a diagram that no
+			longer existed. The paragraph above was already true as a description and false as a
+			fact, which is the most expensive kind of comment.
+
+			`first(principal)` applies `canRead` itself, so the redundant check that used to guard
+			this line is gone with the bug it was documenting.
 			*/
-			const survivor = store.first();
-			hub.retarget(id, (s) => (survivor && store.canRead(survivor.state.meta.id, s.principal)
-				? snapshotBody(survivor, store, locks, s.principal) : null));
+			hub.retarget(id, (s) => {
+				const survivor = store.first(s.principal);
+				return survivor ? snapshotBody(survivor, store, locks, s.principal) : null;
+			});
 			announceActivity(hub, store, locks);
 		}
 		console.log(`[ rest ] deleted diagram ${id}`);

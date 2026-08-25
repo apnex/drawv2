@@ -11,7 +11,7 @@ import path from 'node:path';
 import { Locks } from '../server/locks.js';
 import http from 'node:http';
 import WebSocket from 'ws';
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 
 // ---- Locks unit (injected clock, no timers) ----
 
@@ -102,7 +102,7 @@ const H = (token) => ({ 'Content-Type': 'application/json', ...(token ? { 'X-Dra
 
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lock-'));
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 });
 after(async () => {

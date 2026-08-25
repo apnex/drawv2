@@ -395,8 +395,21 @@ export class Session {
 				if (err) return this.error(err);
 				console.log(`[ session ] deleted diagram ${body.id}`);
 				if (this.diagramId === body.id) this.diagramId = null;
-				// always leave the client on a live diagram (the store never goes empty)
-				return this.snapshot(this.store.first());
+				/*
+				The survivor is resolved FOR THIS PRINCIPAL -- B130.
+
+				`first()` with no argument reads nothing under authorization, so this answered
+				`null` and `snapshot()` threw on `model.state.meta.id`, leaving the client waiting
+				for a message that never came. Two lines up, `hello` passes the principal to the
+				same method; three lines down, `list` passes it too. It shipped with DELETE itself.
+
+				The store never goes empty, but the diagram it reseeds is not necessarily one this
+				principal may read, so "nothing left for you" is a real answer and gets named
+				rather than thrown.
+				*/
+				const survivor = this.store.first(this.principal);
+				if (!survivor) return this.error('deleted, and no remaining diagram is readable by you', 'no-survivor');
+				return this.snapshot(survivor);
 			}
 			case 'list':
 				return this.send('diagrams', { list: this.store.list(this.principal) });

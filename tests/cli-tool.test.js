@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 import { VERBS, byName } from '../cli/verbs.mjs';
 
@@ -22,7 +22,7 @@ let app, host, dataDir, home;
 async function boot() {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cli-'));
 	home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-home-'));
-	app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 }
 const run = async (...argv) => {

@@ -138,7 +138,7 @@ export function sweepLocks(locks, hub, store) {
 	return freed;
 }
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = false, owner = '', principalOf = null, domains = [], origins = '' } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '' } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.

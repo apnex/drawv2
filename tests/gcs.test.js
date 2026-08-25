@@ -134,7 +134,7 @@ The selection itself, not just the adapter.
 is the most consequential one it makes. An adapter nothing can select is not wired, so this asserts
 the branch both ways rather than trusting that reading the code was enough.
 */
-import { createApp } from '../server/app.js';
+import { makeApp } from './fixtures/app.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -148,7 +148,7 @@ test('B6: createApp accepts an injected backend, and uses it instead of the disk
 		async remove(n) { mem.delete(n); },
 	};
 	const dataDir = path.join(os.tmpdir(), `draw-nodisk-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, files });
+	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0, files });
 	try {
 		await app.store.flushAll();
 		assert.ok(mem.size > 0, 'the seed went to the injected backend');
@@ -163,7 +163,7 @@ test('B6: createApp accepts an injected backend, and uses it instead of the disk
 
 test('B6: with no backend injected the app still uses the disk — the default is unchanged', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-disk-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0 });
+	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
 	try {
 		await app.store.flushAll();
 		const onDisk = fs.readdirSync(dataDir).filter((f) => f.endsWith('.json'));

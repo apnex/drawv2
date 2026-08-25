@@ -31,7 +31,9 @@ async function owned() {
 	const dir = tmp();
 	const s = new Store(dir, { flushMs: 3_600_000 });
 	await s.init();
-	const id = s.list()[0].id;
+	// the inventory, not `list`: this diagram has no owner yet, which is the point of the fixture,
+	// and an unowned diagram is invisible to every principal under authorization
+	const id = [...s.diagrams.keys()][0];
 	assert.equal(s.setOwner(id, OWNER), null);
 	return { s, dir, id };
 }
@@ -41,7 +43,7 @@ test('H9.1: an unowned diagram grants nobody anything', async () => {
 	try {
 		const s = new Store(dir, { flushMs: 3_600_000 });
 		await s.init();
-		const id = s.list()[0].id;
+		const id = [...s.diagrams.keys()][0];   // deliberately unowned, so `list` cannot name it
 		assert.equal(s.access(id, OWNER), null, 'every diagram predating H9 is unowned');
 		assert.equal(s.access(id, ''), null, 'and an empty principal is not a principal');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -195,7 +197,9 @@ const OTHER = 'user:other@example.com';
 test('H9.2b: with authz off, list() is unchanged and ignores the principal', async () => {
 	const dir = tmp();
 	try {
-		const s = new Store(dir, { flushMs: 3_600_000 });
+		// H9.17: authorization is the default now, so a test whose SUBJECT is the ungated path
+		// opts out in one word. Before, this read identically to every other test in the suite.
+		const s = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await s.init();
 		assert.equal(s.list().length, 1, 'single-tenant behaviour survives untouched');
 		assert.equal(s.list(GUEST).length, 1, 'a principal changes nothing while authz is off');
@@ -392,7 +396,7 @@ test('H9.2c: /health reports the true total, deliberately unfiltered', async () 
 test('H9.2c: with authz off the principal is ignored, so nothing changes', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-off-${Math.random().toString(36).slice(2)}`);
 	const app = await createApp({
-		dataDir, secretsDir: dataDir, port: 0, principalOf: async () => null,
+		dataDir, secretsDir: dataDir, port: 0, authz: false, principalOf: async () => null,
 	});
 	try {
 		const list = await (await fetch(`http://127.0.0.1:${app.port}/api/v1/diagrams`)).json();
@@ -490,7 +494,7 @@ test('H9.3: a caller that forgets the principal is refused, not allowed', async 
 test('H9.3: with authz off none of this applies, and the tool stays single-tenant', async () => {
 	const dir = tmp();
 	try {
-		const s = new Store(dir, { flushMs: 3_600_000 });
+		const s = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await s.init();
 		const id = [...s.diagrams.keys()][0];
 		assert.ok(s.commit(id, put1(), 'client', 'a').ok, 'no principal, no identity, no gate');
@@ -913,7 +917,7 @@ test('B76: the snapshot names the principal, and it is the principal not an emai
 		assert.equal(snapshotBody(store.get(id), store, null, GUEST).principal, GUEST,
 			'and the guest is told it is the guest, not the owner');
 
-		const off = new Store(tmp(), { flushMs: 3_600_000 });
+		const off = new Store(tmp(), { flushMs: 3_600_000, authz: false });
 		await off.init();
 		const anon = snapshotBody(off.get([...off.diagrams.keys()][0]), off, null, null);
 		assert.equal(anon.principal, null, 'with authz off there is no principal, and none is invented');
