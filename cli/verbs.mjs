@@ -25,7 +25,17 @@ token files had collected in a directory no test cleaned, because no test knew i
 An injected dependency that two functions quietly bypass is worse than no injection, because the
 harness advertises isolation it does not have.
 */
-const homeOf = (ctx) => (ctx?.env?.HOME) || process.env.HOME;
+/*
+STRICT: the home comes from the injected env, with no fallback.
+
+`main(argv, env = process.env, out)` already defaults the env, so real use is unaffected and the
+fallback bought nothing. What it cost was B135 all over again: a caller passing a partial env -- a
+test passing `{}` -- silently resolved to the developer's real home and swept it. A fallback that
+reaches around an injected dependency is the injection failing quietly, which is the whole defect.
+
+No HOME means no store. Every reader below treats that as "nothing held", which is true.
+*/
+const homeOf = (ctx) => ctx?.env?.HOME || null;
 const ctxFile = (ctx) => `${homeOf(ctx)}/.config/draw/context`;
 
 async function activeId(ctx, flags) {
@@ -219,6 +229,7 @@ A file that does not parse is treated as lapsed and removed rather than tolerate
 to avoid one `draw lock` is the back-compat X1 rules out.
 */
 async function readToken(ctx, id) {
+	if (!homeOf(ctx)) return null;
 	const fs = await import('node:fs');
 	let raw;
 	try { raw = fs.readFileSync(tokenFile(ctx, id), 'utf8').trim(); } catch { return null; }
@@ -237,10 +248,46 @@ async function readToken(ctx, id) {
 	return held.token;
 }
 async function writeToken(ctx, id, token, expiresAt = null) {
+	if (!homeOf(ctx)) return;
 	const fs = await import('node:fs'), path = await import('node:path');
 	fs.mkdirSync(path.dirname(tokenFile(ctx, id)), { recursive: true });
 	if (token) fs.writeFileSync(tokenFile(ctx, id), JSON.stringify({ token, expiresAt }), { mode: 0o600 });
 	else try { fs.unlinkSync(tokenFile(ctx, id)); } catch { /* already gone */ }
+}
+
+/*
+A lock file exists for the duration of its lock, and at most until the next `draw` command.
+
+That is the strongest invariant a STATELESS tool can offer, and it is worth stating exactly because
+the weaker version reads the same at a glance. Nothing here runs while the agent is idle, so a lock
+that lapses at 12:00:30 cannot delete its own file at 12:00:30; what it can do is guarantee that no
+`draw` invocation ever steps over a dead one.
+
+`readToken` alone was not enough, and measuring is what showed it. It only ever looks at the token
+for the diagram in hand, so a lock taken on A and left to lapse survives every future command about
+B. The normal path is the lapse -- a whole session went by without `draw unlock` being called once
+-- so the normal path was the one that left files behind.
+
+Unparseable counts as dead. A file that is not `{token, expiresAt}` predates this rule and can never
+be valid again.
+*/
+export async function sweepTokens(ctx) {
+	const fs = await import('node:fs'), path = await import('node:path');
+	if (!homeOf(ctx)) return 0;
+	const dir = path.dirname(tokenFile(ctx, 'x'));
+	let names;
+	try { names = fs.readdirSync(dir); } catch { return 0; }
+	let gone = 0;
+	for (const name of names) {
+		const file = path.join(dir, name);
+		let held = null;
+		try { held = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* dead by definition */ }
+		const deadline = typeof held?.expiresAt === 'number' ? held.expiresAt : Date.parse(held?.expiresAt);
+		const alive = held && typeof held.token === 'string' && Number.isFinite(deadline) && deadline > Date.now();
+		if (alive) continue;
+		try { fs.unlinkSync(file); gone++; } catch { /* not ours to remove */ }
+	}
+	return gone;
 }
 
 /*
@@ -256,6 +303,7 @@ be noise, and a permissions error on someone else's file must not fail their act
 */
 async function pruneTokens(ctx, live) {
 	const fs = await import('node:fs'), path = await import('node:path');
+	if (!homeOf(ctx)) return 0;
 	const dir = path.dirname(tokenFile(ctx, 'x'));
 	let names;
 	try { names = fs.readdirSync(dir); } catch { return 0; }

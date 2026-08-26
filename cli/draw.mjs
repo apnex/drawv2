@@ -12,7 +12,7 @@ H9 built an entire write surface it never learned (B117).
 Speaks only HTTP. Imports nothing from `server/`, `app/` or `model/`, so it works against any draw
 server and can never accidentally test itself against in-process state.
 */
-import { VERBS, byName } from './verbs.mjs';
+import { VERBS, byName, sweepTokens } from './verbs.mjs';
 
 const RESET = '\x1b[0m', RED = '\x1b[31m', DIM = '\x1b[2m', BOLD = '\x1b[1m';
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -143,6 +143,21 @@ runner for the same stream.
 */
 export async function main(argv, env = process.env, out = (s) => process.stdout.write(s)) {
 	const { flags, rest } = parseArgs(argv);
+	/*
+	Every invocation steps over the lock store first -- B136.
+
+	A stateless tool cannot delete a token at the instant its lock lapses, because nothing of ours is
+	running then. What it can promise is that no `draw` command ever runs alongside a dead one, which
+	makes the file ephemeral in the only sense available: it exists for its lock, and at most until
+	the next command.
+
+	BEFORE the help branch, and that placement is the rule rather than a detail. Sitting after it
+	made the guarantee "every command except the ones that return early", which is the kind of
+	almost-true statement this codebase keeps finding at the bottom of a defect. It needs no server
+	and no credential, so there is nothing for it to be early for. Best-effort and silent: a caller
+	ran a verb, and housekeeping is not their business.
+	*/
+	await sweepTokens({ env }).catch(() => 0);
 	if (!rest.length || rest[0] === 'help') {
 		const target = rest[1] && byName(rest[1], rest[2]);
 		out(`${target ? helpVerb(target) : helpAll()}\n`);

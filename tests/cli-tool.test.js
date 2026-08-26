@@ -187,13 +187,17 @@ test('GR18: every verb declares every flag it reads and every argument it takes'
 	assert.deepEqual(gaps, [], `help would omit these:\n  ${gaps.join('\n  ')}`);
 });
 
-test('GR18: --help renders the same five parts for every verb, leaf or sub', () => {
+test('GR18: --help renders the same five parts for every verb, leaf or sub', async () => {
 	// structure, not prose: usage, summary, flags, example, route. A verb missing a section is a
 	// verb an agent has to guess at, and guessing is what the tool exists to remove.
 	for (const v of VERBS) {
 		const out = [];
 		const argv = v.sub ? v.name.split(' ') : [v.name];
-		main([...argv, '--help'], {}, (s) => out.push(s));
+		// awaited, because `main` is async and the token sweep now runs before the help branch.
+		// It used to complete synchronously by accident, and this collected an empty buffer the
+		// moment that stopped being true. `{}` as the env is deliberate: no HOME means no store,
+		// and this must not reach the developer's real one.
+		await main([...argv, '--help'], {}, (s) => out.push(s));
 		const text = out.join('');
 		assert.ok(text.includes(v.usage), `${v.name}: help omits its usage line`);
 		assert.ok(text.includes(v.summary), `${v.name}: help omits its summary`);
@@ -595,4 +599,78 @@ test('B136: a token for a deleted diagram is pruned, unexpired or not', async ()
 		assert.equal(fs.existsSync(ghost), false, 'the orphan went');
 		assert.equal(fs.existsSync(path.join(dir, keep)), true, 'and the live one stayed');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+B136 -- the invariant, stated exactly: a lock file exists for the duration of its lock, and at most
+until the next `draw` command.
+
+The weaker version reads identically at a glance and is what shipped. `readToken` only inspects the
+token for the diagram in hand, so a lock taken on A and left to lapse survived every later command
+about B -- and the lapse is the NORMAL path, because a whole session went by without `draw unlock`
+being called once.
+
+A stateless tool cannot do better than this. Nothing of ours runs while the agent is idle, so a lock
+that lapses at 12:00:30 cannot delete its own file then. What it can guarantee is that no command
+ever runs alongside a dead one.
+*/
+test('B136: a lapsed token does not survive the next command, whatever that command is', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'sweep', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		const dir = path.join(home, '.config/draw/locks');
+		const f = path.join(dir, id);
+
+		// a lock on a DIFFERENT diagram, lapsed. readToken would never look at this one.
+		const other = path.join(dir, 'diagram-other1');
+		fs.writeFileSync(other, JSON.stringify({ token: 'lapsed', expiresAt: Date.now() - 1 }));
+		// and a file predating the format, which can never be valid again
+		fs.writeFileSync(path.join(dir, 'diagram-legacy'), 'bare-token-from-before-the-rule');
+
+		// `help` is the strongest case: no server, no credential, nothing to be early for. The sweep
+		// sat AFTER the help branch at first, which made the guarantee "every command except the
+		// ones that return early" -- the almost-true kind this codebase keeps finding under defects.
+		await run('help');
+
+		assert.equal(fs.existsSync(other), false, 'a lapsed token for another diagram went');
+		assert.equal(fs.existsSync(path.join(dir, 'diagram-legacy')), false, 'and so did an unparseable one');
+		assert.ok(fs.existsSync(f), 'while the LIVE lock is untouched -- the sweep judges dead, not present');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+B135/B136 -- no HOME means no store, and no reaching around for one.
+
+`homeOf` was written as `ctx?.env?.HOME || process.env.HOME`, and the fallback looks harmless: real
+use always supplies an env, because `main` defaults it to `process.env`. What it actually did was
+reinstate B135 for any caller passing a PARTIAL env -- a test passing `{}` resolved straight back to
+the developer's real home and swept it.
+
+Every other test here sets HOME, so none of them could see it: reintroducing the fallback left the
+whole suite green. The only observable that distinguishes the two is what happens when HOME is
+ABSENT, so that is what this drives.
+*/
+test('B135: with no HOME in the injected env, the real home is never touched', async () => {
+	const canary = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-canary-'));
+	const realHome = process.env.HOME;
+	try {
+		// point the process at a canary and plant a token the sweep WOULD delete if it looked here
+		process.env.HOME = canary;
+		const locks = path.join(canary, '.config/draw/locks');
+		fs.mkdirSync(locks, { recursive: true });
+		const dead = path.join(locks, 'diagram-canary');
+		fs.writeFileSync(dead, JSON.stringify({ token: 'x', expiresAt: Date.now() - 1 }));
+
+		const out = [];
+		await main(['help'], {}, (s) => out.push(s));   // an env with no HOME at all
+
+		assert.ok(fs.existsSync(dead),
+			'a command given no HOME must not fall back to process.env.HOME and sweep it');
+		assert.ok(out.join('').length > 0, 'and the command still did its job');
+	} finally {
+		process.env.HOME = realHome;
+		fs.rmSync(canary, { recursive: true, force: true });
+	}
 });
