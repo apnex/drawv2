@@ -139,7 +139,7 @@ model/       sovereign Model - entity store, id helpers, surface constants
 kernel/      sovereign geometry - resolve(schema) to scene, routing, locked spec
 engine/      sovereign relational substrate - incidence, membership, occupancy
 server/      persistence server, REST, and validation
-cli/         draw.sh - read-only CLI over the REST API
+cli/         draw.mjs - the agent's verb surface, and the manifest that declares it
 tests/       node:test suites and fixtures
 tools/       the gate's source scanners
 docs/spec/   the locked product specification

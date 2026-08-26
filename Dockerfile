@@ -29,8 +29,11 @@ COPY model/ model/
 # the shipped example corpus — copied into $DATA_DIR on FIRST boot only (see server/store.js).
 # NOT the data dir: /data is a volume, and a fresh container must come up with content.
 COPY examples/ examples/
-# CLI on PATH; node must own cli/ so `draw context` can write .draw_context at runtime
-RUN ln -s /app/cli/draw.sh /usr/local/bin/draw && chown -R node:node /app/cli
+# CLI on PATH; node must own cli/ so `draw context` can write its context file at runtime.
+# draw.mjs, not draw.sh: the shell version was retired when the CLI was rewritten Node-first (B117)
+# and the link went on pointing at it for two milestones. `ln -s` does not check its target, so the
+# image built clean and shipped a `draw` that failed the moment anyone ran it (B137).
+RUN ln -s /app/cli/draw.mjs /usr/local/bin/draw && chown -R node:node /app/cli
 
 # diagrams persist here — create+own BEFORE declaring the volume (filesystem changes
 # made AFTER a VOLUME are discarded), so the node user can write on ANY volume, not

@@ -2,8 +2,8 @@
 
 The verbs an agent drives draw through, and the rule that keeps them complete.
 
-A design of record for a surface that is not built yet.\
-It exists because the alternative is accreting flags onto `cli/draw.sh` until the shape is whatever the last change left behind.
+A design of record, written before the surface existed and kept current as it was built.\
+It exists because the alternative was accreting flags onto a shell script until the shape was whatever the last change left behind -- which is what the retired `draw.sh` had become, and what B117 ended.
 
 ---
 

@@ -21,11 +21,21 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
-// files whose purpose is to name things that no longer exist
+/*
+Files skipped WHOLE, and the bar for being one is now proportionality.
+
+A blanket skip is the widest exemption this scanner has: it does not permit the dead references in a
+file, it stops reading the file. Measured before narrowing this list, `COMMIT-DELETIONS.md` carried
+599 path references of which **551 resolved** -- so the skip was leaving 551 live citations unchecked
+in order to permit 48 dead ones, and any one of those 551 could rot without a word. Same shape for
+`COMMIT-AUDIT.md`: 54 refs, 43 resolving.
+
+Both are read now, with their genuinely dead paths named individually below. `design/README.md`
+stays because there the ratio is the other way -- 8 refs, 2 resolving -- and it describes itself as
+defunct, so per-path entries would be ceremony over a file nobody is maintaining.
+*/
 const HISTORICAL = new Set([
-	'docs/spec/COMMIT-DELETIONS.md',   // one row per deleted symbol — naming the dead is the point
-	'docs/spec/COMMIT-AUDIT.md',       // an external audit report, frozen as received
-	'design/README.md',                // explicitly "mostly DEFUNCT / historical", superseded by kernel/
+	'design/README.md',                // 8 refs, 2 resolve, and the file says it is defunct
 ]);
 
 /*
@@ -57,7 +67,54 @@ const ALLOW = {
 	'*:tests/slides.test.js': 'as above.',
 	'*:docs/slides-setup.md': 'the operator guide for a feature that no longer exists; cited from records written while it did.',
 	'*:app/src/dataview.js': 'the numeric X-ray, DELETED 2026-08-23 and recorded in COMMIT-DELETIONS.md. The remaining references are frozen history -- rows describing defects in it, and the deletion record citing its own header as evidence. M4 forbids rewriting an artifact recorded before the change.',
-	'*:cli/draw.sh': 'the shell CLI, RETIRED at GR18 and recorded in COMMIT-DELETIONS.md. Every reference left is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing line numbers as evidence for rulings made while it existed, and B61/B117 describing the defects that ended it. M4 forbids rewriting an artifact recorded before the change; repointing these at draw.mjs would falsify the record, because the line numbers were never true of that file.',
+	/*
+	NAMED FILES, not a wildcard -- and the narrowing is the point.
+
+	`*:cli/draw.sh` claimed "every reference left is frozen history", and the claim quietly stopped
+	being true twice: the Dockerfile went on symlinking `draw` to it (B137), and README's layout
+	table went on describing it as the CLI, read-only, in a tree where it does not exist. A wildcard
+	cannot tell a citation from a description, so it exempted both, and a scanner exempting the
+	thing it was written to catch is worse than no scanner.
+
+	Listing the files that legitimately cite it forces a new reference to be argued rather than
+	inherited. COMMIT-DELETIONS.md and COMMIT-AUDIT.md are not here because they are HISTORICAL and
+	skipped whole.
+	*/
+	/*
+	The two files that used to be skipped WHOLE, now enumerated -- and the test each entry had to
+	pass is the director's: is this a true statement about the past, or is it an error?
+
+	Answered mechanically rather than by assertion. Every path below was put to `git log --all` to
+	see whether it ever existed, which separates a record of something deleted from a citation of
+	something that never was. Four existed and were removed. Three are mission-kit paths outside
+	this repository. One is gitignored runtime data. And one is simply WRONG, and is marked as such
+	rather than excused.
+	*/
+	'docs/spec/COMMIT-DELETIONS.md:cli/draw.sh': 'the shell CLI, 6 commits, retired at B117. This file names the dead; that is its job.',
+	'docs/spec/COMMIT-DELETIONS.md:app/src/schema.js': 'the client schema module, 3 commits, deleted. Cited as the thing deleted.',
+	'docs/spec/COMMIT-DELETIONS.md:server/slides/transform.js': 'purged with Slides, 5 commits. Cited as the thing purged.',
+	'docs/spec/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `server/txn.mjs` replaced it at CS1. A real file, really removed.',
+	'docs/spec/COMMIT-DELETIONS.md:diagrams/diagram-000001.json': 'runtime data, gitignored by design (B49). Present on a working machine, absent from a clone -- which is what `git ls-files` correctly reports.',
+	'docs/spec/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
+	'docs/spec/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
+	'docs/spec/COMMIT-AUDIT.md:server/commit.mjs': 'as above -- real, and really replaced.',
+	'docs/spec/COMMIT-AUDIT.md:methodology/M7-axiom-alignment-audit.md': 'a mission-kit path, outside this repository. Not ours to resolve.',
+	'docs/spec/COMMIT-AUDIT.md:mission-kit/methodology/M7-axiom-alignment-audit.md': 'as above.',
+	'docs/spec/COMMIT-AUDIT.md:work-types/W22-axiom-alignment-gate.md': 'as above.',
+	/*
+	WRONG, and recorded as wrong rather than excused.
+
+	`git log --all` finds no such path, ever: the auditor meant `server/slides/sync.js`, and dropped
+	the `server/`. It is not history, it is a mistake in a received document -- and the only reason
+	it is not simply corrected is that COMMIT-AUDIT.md is an external artefact reproduced verbatim,
+	so editing it would misrepresent what was received. Correcting it would also gain nothing: the
+	file it points at was itself purged with Slides, so the fixed path would not resolve either.
+	The error is named here so a reader meets it as an error, which is the part that was missing.
+	*/
+	'docs/spec/COMMIT-AUDIT.md:slides/sync.js': 'WRONG PATH, never existed at any commit -- the auditor meant `server/slides/sync.js` (itself since purged). Kept because the file is a verbatim external artefact; recorded as an error, not as history.',
+	'docs/spec/COMMIT.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
+	'docs/BACKLOG.md:cli/draw.sh': 'rows describing the defects that ended it, B61 and B117, written while it was the CLI.',
+	'docs/BOARD.md:cli/draw.sh': 'H11.16, which records the Dockerfile still symlinking a retired path. Naming the dead path is the item.',
 	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
 	'docs/spec/DEPLOY.md:/src/main.js': 'a URL path, not a repository path -- app/ is served at the web root, so the client bundle is fetched from /src/main.js. Named because it is the request used to prove the app itself is still behind IAP.',
 	'docs/spec/DEPLOY.md:core/engineer.js': 'a file of the 2021 generation (github.com/apnex/draw), named as evidence that the v1 bucket was a stale deploy rather than divergent work',
@@ -158,13 +215,61 @@ for (const src of CODE_ROOTS.flatMap((r) => codeFiles(r))) {
 	}
 }
 
+/*
+The Dockerfile names paths from this repo, and the build cannot tell you when one is wrong.
+
+B137: `RUN ln -s /app/cli/draw.sh /usr/local/bin/draw` outlived `draw.sh` by two milestones. The
+image built clean every time, because `ln -s` does not check its target -- it will happily create a
+link to nothing -- so the defect was invisible until somebody ran `draw` inside a container, which
+nobody does. A `COPY` of a missing path DOES fail the build, but only when the build runs, and B53
+records that nothing in the gate builds the image.
+
+So this is checked the same way documentation is: every path the Dockerfile names must resolve in
+the tracked tree. It costs one file read and catches the class, not the instance.
+*/
+const DOCKERFILE = 'Dockerfile';
+if (fs.existsSync(DOCKERFILE)) {
+	const text = fs.readFileSync(DOCKERFILE, 'utf8');
+	const named = [];
+	// COPY <src>... <dest> -- every source but the last token, skipping --from= and friends
+	for (const m of text.matchAll(/^COPY\s+(?!--)(.+)$/gm)) {
+		const parts = m[1].trim().split(/\s+/);
+		named.push(...parts.slice(0, -1));
+	}
+	// and any in-image path that points back at something we shipped
+	for (const m of text.matchAll(/ln -s\s+\/app\/(\S+)/g)) named.push(m[1]);
+	for (const ref of named) {
+		const clean = ref.replace(/^\/app\//, '').replace(/\/$/, '');
+		if (!clean || clean === '.' || clean.startsWith('$')) continue;
+		total++;
+		if (inRepo(clean)) continue;
+		/*
+		The `*:` wildcard does NOT apply here, and that exemption is the whole subtlety.
+
+		A wildcard entry means "this path is dead, and records written while it lived may cite it" --
+		M4, and correct for prose. The Dockerfile is not citing anything: `ln -s` and `COPY` are
+		instructions the build follows. `cli/draw.sh` is allow-listed for exactly the historical
+		reason, and on this check's first run that wildcard exempted the live `ln -s` too, so B137
+		stayed invisible in the very scanner written to catch it.
+
+		Only an explicit `Dockerfile:<path>` entry exempts a build instruction, which forces the
+		reason to be about the BUILD rather than inherited from a note about documentation.
+		*/
+		broken.push({ key: `${DOCKERFILE}:${clean}`, doc: DOCKERFILE, ref: clean,
+			allowed: !!ALLOW[`${DOCKERFILE}:${clean}`] });
+	}
+}
+
 const unlisted = broken.filter((b) => !b.allowed);
 if (process.argv.includes('--verbose') || unlisted.length) {
 	let last = '';
 	for (const b of broken.sort((a, c) => a.key.localeCompare(c.key))) {
 		if (b.doc !== last) { console.log(`  ${b.doc}`); last = b.doc; }
 		console.log(`    ${b.allowed ? 'allowed' : 'BROKEN '}  ${b.ref}`);
-		if (b.allowed) console.log(`               \u2514 ${ALLOW[b.key]}`);
+		// the reason must come from whichever entry MATCHED. Reading only the exact key printed
+		// `undefined` for every wildcard exemption, which is an allow-list entry a reader cannot
+		// check -- and the point of the list is that each one carries an argument.
+		if (b.allowed) console.log(`               \u2514 ${ALLOW[b.key] || ALLOW[`*:${b.ref}`]}`);
 	}
 }
 
