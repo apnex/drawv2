@@ -14,9 +14,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { main } from '../cli/draw.mjs';
 import { VERBS, byName } from '../cli/verbs.mjs';
 
+const root = fileURLToPath(new URL('..', import.meta.url));
 let app, host, dataDir, home;
 
 async function boot() {
@@ -710,4 +713,59 @@ test('GR18: CLI.md lists exactly the verbs the manifest declares', () => {
 	const missing = [...names].filter((n) => !listed.has(n)).sort();
 	assert.deepEqual(missing, [], `CLI.md omits ${missing.length} verb(s) the tool has`);
 	assert.equal(listed.size, VERBS.length, 'and lists no more than it has');
+});
+
+/*
+B138 -- the tool is executed as a PROGRAM, through a SYMLINK, which is how it is installed.
+
+Every other test in this file imports `main` and calls it. That is deliberate and stated at the top
+-- it asserts behaviour rather than formatting -- but it means not one of them runs the file the way
+a user does, and this is what that cost.
+
+`import.meta.url === \`file://${process.argv[1]}\`` fails through a link, because argv[1] is the LINK
+and import.meta.url is the TARGET. `main` was never called. The process printed nothing and exited
+0, so it looked like a tool with no output rather than a tool that never ran, and `draw` had been
+uninvokable by both documented installations -- README's `ln -s` and the Dockerfile's -- since the
+CLI was rewritten. 594 tests were green throughout.
+
+So this one shells out on purpose. It is the only test here that does, and the reason is that a
+subprocess through a link is the only arrangement in which the defect exists.
+*/
+test('B138: `draw` runs when invoked through a symlink, as both installers create it', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-link-'));
+	try {
+		const target = path.join(root, 'cli/draw.mjs');
+		const link = path.join(dir, 'draw');
+		fs.symlinkSync(target, link);
+
+		// no --host: `help` is offline, which keeps this about invocation and nothing else
+		const viaLink = execFileSync(link, ['help'], { encoding: 'utf8', env: { ...process.env } });
+		assert.match(viaLink, /draw <verb>/, 'the help came out -- main actually ran');
+		assert.match(viaLink, /Writing/, 'and it is the real help, not a stub');
+
+		// the direct invocation must keep working too, since that is what the tests use
+		const direct = execFileSync(process.execPath, [target, 'help'], { encoding: 'utf8' });
+		assert.equal(viaLink, direct, 'a link and the real path produce identical output');
+
+		/*
+		A space in the TARGET's path, not the link's -- and the distinction is the point.
+
+		`realpathSync` resolves a link to its target, so a space in the link is irrelevant: the
+		first version of this put the link under `my tools/` and passed against the naive
+		`file://${path}` form, testing nothing. What breaks that form is the RESOLVED path
+		containing a character a URL must encode, so the CLI has to be copied somewhere spaced.
+		*/
+		const spaced = path.join(dir, 'my tools', 'cli');
+		fs.mkdirSync(spaced, { recursive: true });
+		for (const f of ['draw.mjs', 'verbs.mjs']) fs.copyFileSync(path.join(root, 'cli', f), path.join(spaced, f));
+		const spacedTarget = path.join(spaced, 'draw.mjs');
+		fs.chmodSync(spacedTarget, 0o755);
+		assert.match(execFileSync(spacedTarget, ['help'], { encoding: 'utf8' }), /draw <verb>/,
+			'a space in the resolved path does not silence it');
+
+		const spacedLink = path.join(dir, 'draw-spaced');
+		fs.symlinkSync(spacedTarget, spacedLink);
+		assert.match(execFileSync(spacedLink, ['help'], { encoding: 'utf8' }), /draw <verb>/,
+			'nor does a link to a spaced path');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

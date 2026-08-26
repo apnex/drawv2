@@ -12,6 +12,8 @@ H9 built an entire write surface it never learned (B117).
 Speaks only HTTP. Imports nothing from `server/`, `app/` or `model/`, so it works against any draw
 server and can never accidentally test itself against in-process state.
 */
+import { realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { VERBS, byName, sweepTokens } from './verbs.mjs';
 
 const RESET = '\x1b[0m', RED = '\x1b[31m', DIM = '\x1b[2m', BOLD = '\x1b[1m';
@@ -176,6 +178,24 @@ export async function main(argv, env = process.env, out = (s) => process.stdout.
 	return 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+/*
+Run as a program, or import as a library -- and the test must survive a SYMLINK.
+
+`import.meta.url === \`file://${process.argv[1]}\`` was wrong twice over, and it failed in the worst
+possible way: exit 0, no output, no error. Through a link `argv[1]` is the LINK and `import.meta.url`
+is the TARGET, so the comparison failed and `main` was simply never called. A symlink is not an edge
+case here, it is the only documented installation -- `cli/README.md` tells a user to make one and
+`Dockerfile` makes one -- so `draw` had been uninvokable by every real installation since the CLI
+was rewritten Node-first, and 594 tests could not see it because every one of them imports `main`
+rather than executing the file.
+
+`realpathSync` resolves the link. `pathToFileURL` is the second fix: string-concatenating `file://`
+onto a path is not how a path becomes a URL, and a space or a non-ASCII character in the install
+directory broke it independently of any link.
+*/
+const invokedAs = process.argv[1]
+	? pathToFileURL(realpathSync(process.argv[1])).href
+	: null;
+if (invokedAs && import.meta.url === invokedAs) {
 	main(process.argv.slice(2)).then((c) => process.exit(c)).catch((e) => die(e.message));
 }
