@@ -127,15 +127,32 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'diagrams', group: 'Context', usage: 'draw diagrams', route: '/diagrams', method: 'GET',
+		name: 'diagrams', group: 'Context', usage: 'draw diagrams [--counts]', route: '/diagrams', method: 'GET',
+		also: ['GET /diagrams/<id>'],
 		summary: 'what exists', example: 'draw diagrams',
+		flags: [{ name: '--counts', about: 'entity counts per diagram -- one call each, so slower' }],
 		async run(ctx) {
 			const b = ok(await request(ctx, '/diagrams'), 'diagrams');
 			// B136: the rule is "whenever we learn the live set, prune", and this verb learns it
 			// without going through activeId. Putting the call in one of the two places and calling
 			// the rule general is how the store grew to 837 files in the first place.
 			await pruneTokens(ctx, new Set(b.map((d) => d.id)));
-			return { json: b, text: table(b.map((d) => [d.id, d.name, d.version]), ['ID', 'NAME', 'VERSION']) };
+			if (!ctx.flags.counts) {
+				return { json: b, text: table(b.map((d) => [d.id, d.name, d.version]), ['ID', 'NAME', 'VERSION']) };
+			}
+			/*
+			B139: comparing the composition of two diagrams took a shell `for` loop over `status`,
+			because the list carried no counts and `status` answers about one target. Opt-in, since
+			it costs a fetch per diagram and the plain list is what most calls want.
+			*/
+			const KINDS = ['nodes', 'waypoints', 'links', 'zones', 'groups'];
+			const rows = [];
+			for (const d of b) {
+				const doc = ok(await request(ctx, `/diagrams/${d.id}`), 'diagrams');
+				rows.push([d.id, d.name, d.version, ...KINDS.map((k) => (doc[k] || []).length)]);
+				d.counts = Object.fromEntries(KINDS.map((k) => [k, (doc[k] || []).length]));
+			}
+			return { json: b, text: table(rows, ['ID', 'NAME', 'VER', 'NODES', 'WAYPT', 'LINKS', 'ZONES', 'GROUPS']) };
 		},
 	},
 	{
@@ -178,9 +195,23 @@ export const VERBS = [
 			const doc = ok(await request(ctx, `/diagrams/${id}`), 'get');
 			let list = doc[k] || [];
 			if (args[1]) list = list.filter((e) => e.id === args[1] || e.name === args[1]);
-			const cols = k === 'links' ? ['id', 'src', 'dst'] : k === 'groups' ? ['id', 'name', 'members']
+			/*
+			References print as NAMES -- B139.
+
+			A link listed as `link-41b65f  node-a0ba87  node-019130` makes a reader cross-reference
+			two ids against the node table before it means anything, and cross-referencing by hand is
+			the shell reach this verb should remove. The id is still what `--json` carries and what
+			every other verb accepts, so nothing that composes is lost.
+			*/
+			const named = new Map();
+			for (const kk of ['nodes', 'waypoints', 'zones', 'groups', 'links']) {
+				for (const e of doc[kk] || []) named.set(e.id, e.name || e.id);
+			}
+			const show = (v) => (Array.isArray(v) ? v.map((x) => named.get(x) || x).join(',') : (named.get(v) || v));
+			const cols = k === 'links' ? ['id', 'src', 'dst', 'via'] : k === 'groups' ? ['id', 'name', 'members']
 				: k === 'zones' ? ['id', 'name', 'x', 'y', 'w', 'h'] : ['id', 'name', 'type', 'x', 'y'];
-			return { json: list, text: table(list.map((e) => cols.map((c) => (Array.isArray(e[c]) ? e[c].join(',') : e[c]))), cols.map((c) => c.toUpperCase())) };
+			const rows = list.map((e) => cols.map((c) => (e[c] === undefined ? '' : show(e[c]))));
+			return { json: list, text: table(rows, cols.map((c) => c.toUpperCase())) };
 		},
 	},
 	{
@@ -352,7 +383,9 @@ VERBS.push(
 	{
 		name: 'render', group: 'Lifecycle', usage: 'draw render [--out file.svg]', route: '/d/<id>.svg', method: 'GET',
 		summary: 'the picture, as SVG', example: 'draw render --out topology.svg',
-		flags: [{ name: '--out', about: 'write to a file instead of stdout' }, { name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--out', about: 'write to a file instead of stdout' },
+			{ name: '--summary', about: 'what the renderer emitted, by element -- verification without a browser' },
+			{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			// the one route that is not JSON, so it bypasses the shared parser
@@ -360,6 +393,35 @@ VERBS.push(
 			const res = await fetch(url, { headers: ctx.code ? { authorization: `Bearer ${ctx.code}` } : {} });
 			if (!res.ok) die(`render: HTTP ${res.status}`);
 			const svg = await res.text();
+			/*
+			B139: `--summary` reports what the renderer EMITTED, by element.
+
+			Confirming a render used to mean a headless browser and a regular expression over the
+			SVG, which is two tools and a guess. The renderer's own output is the authority on what
+			it drew, and the counts are what a caller actually checks: did every node, link and zone
+			reach the picture. Deliberately counts EMITTED elements rather than re-reading the
+			document -- comparing the drawing to the model is the whole point, and reading the model
+			twice would compare it to itself.
+			*/
+			if (ctx.flags.summary) {
+				const body = svg.split('</defs>').pop();
+				const count = (re) => (body.match(re) || []).length;
+				const emitted = {
+					nodes: count(/<g id="node-[0-9a-f]{6}"/g),
+					// waypoints are drawn, and were missing from the first version of this summary --
+					// the map reported 27 occupied anchors and the summary 20 elements, which is the
+					// kind of quiet disagreement a verification verb exists to prevent
+					waypoints: count(/<g id="waypoint-[0-9a-f]{6}"/g),
+					links: count(/<g id="link-[0-9a-f]{6}"/g),
+					zones: count(/<g id="zone-[0-9a-f]{6}"/g),
+					glyphs: count(/href="#glyph-/g),
+					texts: count(/<text/g),
+				};
+				const box = (/viewBox="([^"]+)"/.exec(svg) || [])[1] || '?';
+				const rows = Object.entries(emitted).map(([k, v]) => [k, v]);
+				return { json: { ...emitted, viewBox: box, bytes: svg.length },
+					text: `${table(rows, ['ELEMENT', 'EMITTED'])}\nviewBox ${box}   ${svg.length} bytes` };
+			}
 			if (!ctx.flags.out) return { json: { svg }, text: svg };
 			(await import('node:fs')).writeFileSync(ctx.flags.out, svg);
 			return { json: { out: ctx.flags.out, bytes: svg.length }, text: `${ctx.flags.out}  ${svg.length} bytes` };
@@ -1220,6 +1282,307 @@ VERBS.push(
 				{ method: 'POST', headers: await held(ctx, id, 'rename'),
 					body: { ops: [{ op: 'set', kind, id: eid, patch: { name } }], label: 'rename' } }), 'rename');
 			return { json: { id: eid, name, version: r.version }, text: `${eid} is now ${name}  v${r.version}` };
+		},
+	},
+);
+
+/*
+Sensemaking verbs -- B139 / H11.18.
+
+Authoring the reference topology took eleven departures from this tool, and the deepest was not a
+missing write verb. Every verb answered with a TABLE, so an agent extending a diagram had to rebuild
+its geometry from coordinates before it could choose where the next entity went. `near`, `about` and
+`anchor free` each answer one local question well, and none of them lets a caller LOOK at the thing
+being edited.
+
+`map` is that. It is written for an agent reading a terminal, which changes several defaults away
+from what a person would want:
+
+  - Absolute labels on both axes. Counting characters to recover a coordinate is the single easiest
+    mistake to make here, so the map never requires it.
+  - Two terminal columns per cell. The canvas is 31 cells wide and fixed, so the widest possible map
+    is 62 columns plus a 5-column gutter -- inside 80, always, whatever the diagram holds. One
+    column per cell would fit more and be unreadable; three would wrap, and a wrapped grid is worse
+    than no grid because it still looks correct.
+  - Cropped to content by default. Most diagrams use a fraction of 527 cells and empty rows cost
+    attention. Labels are absolute, so cropping changes nothing about how a coordinate reads.
+  - The legend prints WITH the map, every time. There is no hovering and no remembered glyph table.
+  - The key is one entity per line. Columns are shorter and harder to parse than lines.
+*/
+
+const GLYPH = { router: 'r', firewall: 'f', loadbalancer: 'l', server: 's', host: 'h', vxlan: 'v' };
+const LEGEND = {
+	r: 'router', f: 'firewall', l: 'loadbalancer', s: 'server', h: 'host', v: 'vxlan',
+	'+': 'waypoint', '#': 'panel (spans cells)', '?': 'node of an unknown type',
+};
+
+// a zone's bounds in CELLS. The zone grid sits half a pitch off, so its edges fall between cells --
+// which is exactly why this is derivable rather than approximate.
+const zoneCells = (z) => ({
+	x0: Math.round((z.x + 30) / 60), y0: Math.round((z.y + 30) / 60),
+	x1: Math.round((z.x + z.w - 30) / 60), y1: Math.round((z.y + z.h - 30) / 60),
+});
+
+VERBS.push({
+	name: 'map', group: 'Context', usage: 'draw map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]',
+	// <layout> is a placeholder, not a literal: --layout picks the grid at call time, so declaring
+	// `node` would name one of the two routes this verb actually reaches
+	route: '/diagrams/<id>/layouts/<layout>/anchors', method: 'GET',
+	also: ['GET /diagrams', 'GET /diagrams/<id>'],
+	summary: 'look at the canvas -- occupancy as a grid, so placement is seen rather than derived',
+	example: 'draw map --zone site-a',
+	flags: [{ name: '--full', about: 'the whole canvas, not just the part in use' },
+		{ name: '--zone', about: 'only what falls inside this zone, by id or name' },
+		{ name: '--around', about: 'centre on an entity, by id or name' },
+		{ name: '--radius', about: 'cells either side of --around; default 4' },
+		{ name: '--layout', about: 'node (default) or zone -- the zone grid shows legal zone corners' },
+		{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx) {
+		const id = await activeId(ctx, ctx.flags);
+		const layout = ctx.flags.layout && ctx.flags.layout !== true ? ctx.flags.layout : 'node';
+		if (!['node', 'zone'].includes(layout)) die(`--layout takes node or zone, not ${layout}`);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'map');
+		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors`), 'map').anchors;
+
+		const byId = new Map();
+		for (const k of ['nodes', 'waypoints', 'zones', 'groups', 'links']) for (const e of doc[k] || []) byId.set(e.id, e);
+		const glyphFor = (occ) => {
+			const e = byId.get(occ);
+			if (!e) return '?';
+			if (occ.startsWith('waypoint-')) return '+';
+			if (e.span) return '#';
+			return GLYPH[e.type] || '?';
+		};
+
+		// ---- the window, from whichever scope the caller named
+		const all = { x0: Math.min(...anchors.map((a) => a.cx)), x1: Math.max(...anchors.map((a) => a.cx)),
+			y0: Math.min(...anchors.map((a) => a.cy)), y1: Math.max(...anchors.map((a) => a.cy)) };
+		let win = all, scope = 'canvas';
+		const used = anchors.filter((a) => a.occupant);
+		if (ctx.flags.zone && ctx.flags.zone !== true) {
+			const zid = await resolveId(ctx, id, ctx.flags.zone);
+			const z = byId.get(zid);
+			if (!z || !zid.startsWith('zone-')) die(`--zone names ${ctx.flags.zone}, which is not a zone here`);
+			win = zoneCells(z); scope = `zone ${z.name}`;
+		} else if (ctx.flags.around && ctx.flags.around !== true) {
+			const rid = await resolveId(ctx, id, ctx.flags.around);
+			const hit = anchors.find((a) => a.occupant === rid);
+			if (!hit) die(`--around names ${ctx.flags.around}, which does not sit on an anchor`);
+			const r = Number(ctx.flags.radius ?? 4);
+			if (!Number.isInteger(r) || r < 1) die('--radius is a whole number of cells, at least 1');
+			win = { x0: hit.cx - r, x1: hit.cx + r, y0: hit.cy - r, y1: hit.cy + r };
+			scope = `${r} cells around ${byId.get(rid)?.name || rid}`;
+		} else if (!ctx.flags.full && used.length) {
+			// content plus one cell of margin: enough to see that an edge IS an edge
+			win = { x0: Math.min(...used.map((a) => a.cx)) - 1, x1: Math.max(...used.map((a) => a.cx)) + 1,
+				y0: Math.min(...used.map((a) => a.cy)) - 1, y1: Math.max(...used.map((a) => a.cy)) + 1 };
+			scope = 'in use';
+		}
+		win = { x0: Math.max(win.x0, all.x0), x1: Math.min(win.x1, all.x1),
+			y0: Math.max(win.y0, all.y0), y1: Math.min(win.y1, all.y1) };
+
+		const cell = new Map();
+		for (const a of anchors) if (a.occupant) cell.set(`${a.cx},${a.cy}`, a.occupant);
+
+		// ---- the grid. Two columns per cell, ticks every five, labels on both axes.
+		const lines = [];
+		const pad = 5;
+		let ruler = ' '.repeat(pad), ticks = ' '.repeat(pad);
+		for (let cx = win.x0; cx <= win.x1; cx++) {
+			const on = cx % 5 === 0;
+			ticks += on ? '| ' : '  ';
+			if (on) { const s = String(cx); ruler = ruler.padEnd(pad + (cx - win.x0) * 2) + s; }
+		}
+		lines.push(ruler.trimEnd(), ticks.trimEnd());
+		const seen = new Set();
+		for (let cy = win.y0; cy <= win.y1; cy++) {
+			let row = String(cy).padStart(pad - 2) + '  ';
+			for (let cx = win.x0; cx <= win.x1; cx++) {
+				const occ = cell.get(`${cx},${cy}`);
+				const g = occ ? glyphFor(occ) : '.';
+				if (occ) seen.add(g);
+				row += `${g} `;
+			}
+			lines.push(row.trimEnd());
+		}
+
+		const legend = [...seen].sort().map((g) => `${g} ${LEGEND[g]}`).join('   ');
+		const inWin = (a) => a.cx >= win.x0 && a.cx <= win.x1 && a.cy >= win.y0 && a.cy <= win.y1;
+		const key = used.filter(inWin)
+			.sort((a, b) => a.cy - b.cy || a.cx - b.cx)
+			.map((a) => `  ${`${a.cx},${a.cy}`.padEnd(8)}${glyphFor(a.occupant)}  ${byId.get(a.occupant)?.name || a.occupant}`);
+		const zones = (doc.zones || []).map((z) => {
+			const c = zoneCells(z);
+			return `  ${z.name.padEnd(12)}cells ${c.x0},${c.y0} .. ${c.x1},${c.y1}`;
+		});
+
+		const text = [
+			`${doc.meta.name}  ${scope}  (${layout} grid, ${used.length} occupied of ${anchors.length})`,
+			'',
+			...lines,
+			'',
+			`  ${legend || '(nothing placed)'}   . free`,
+			...(key.length ? ['', ...key] : []),
+			...(zones.length && layout === 'node' ? ['', 'zones:', ...zones] : []),
+		].join('\n');
+		return { json: { diagram: id, layout, window: win, scope,
+			occupied: used.filter(inWin).map((a) => ({ cx: a.cx, cy: a.cy, id: a.occupant, name: byId.get(a.occupant)?.name })),
+			zones: (doc.zones || []).map((z) => ({ id: z.id, name: z.name, cells: zoneCells(z) })) }, text };
+	},
+});
+
+/*
+`rm` -- the other half of every create verb (B134).
+
+The tool could add a node, a link, a zone, a group and a waypoint, and remove none of them, so
+tidying up a probe meant `commit --ops` with a hand-written `{op:'del'}` and an id looked up by
+hand. That is the escape hatch B133 exists to stop being mandatory.
+
+The CASCADE is the interesting half, not the op. Deleting a node takes the links that touched it and
+a waypoint's removal reroutes or drops its link, and a caller who discovers that in the next render
+has been surprised by their own edit. So this reports what ELSE went.
+
+Read the document before and after rather than predicting. Predicting means restating the cascade
+rule in a second place and being wrong about it later, which is the twin this codebase keeps
+finding; two extra reads buy a report that is true by construction.
+*/
+const census = (doc) => {
+	const m = new Map();
+	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+		for (const e of doc[k] || []) m.set(e.id, e.name || e.id);
+	}
+	return m;
+};
+
+VERBS.push(
+	{
+		name: 'rm', group: 'Writing', usage: 'draw rm <ref> [ref...]',
+		route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'remove entities, and say what the cascade took with them',
+		example: 'draw rm probe-node',
+		args: [{ name: 'ref...', about: 'entities by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			if (!args.length) die('usage: draw rm <ref> [ref...]');
+			const id = await activeId(ctx, ctx.flags);
+			const before = ok(await request(ctx, `/diagrams/${id}`), 'rm');
+			const was = census(before);
+			const ops = [];
+			for (const ref of args) {
+				const eid = await resolveId(ctx, id, ref);
+				const kind = eid.split('-')[0];
+				ops.push({ op: 'del', kind, id: eid });
+			}
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'rm'), body: { ops, label: 'rm' } }), 'rm');
+			const after = census(ok(await request(ctx, `/diagrams/${id}`), 'rm'));
+			const asked = new Set(ops.map((o) => o.id));
+			const gone = [...was.keys()].filter((k) => !after.has(k));
+			const extra = gone.filter((g) => !asked.has(g));
+			return { json: { removed: gone, asked: [...asked], cascade: extra, version: r.version },
+				text: [`removed ${asked.size}: ${[...asked].map((a) => was.get(a) || a).join(' ')}`,
+					...(extra.length ? [`cascade also took ${extra.length}: ${extra.map((e) => was.get(e) || e).join(' ')}`] : []),
+					`${gone.length} gone in total  v${r.version}`].join('\n') };
+		},
+	},
+	/*
+	`set` -- change a property without dropping to `commit --ops`.
+
+	`rename` covers the common case and nothing covered the rest, so changing a shape after placing
+	a node meant hand-writing a `set` op. The field list is CLOSED and checked here: the server
+	would refuse an unknown one, but a round trip to learn a name the tool already knows teaches
+	nobody anything, and the refusal can name the alternatives.
+	*/
+	{
+		name: 'set', group: 'Writing', usage: 'draw set <ref> <field> <value>',
+		route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'change one property of one entity',
+		example: 'draw set a-fw shape square',
+		args: [{ name: 'ref', about: 'the entity, by id or name' },
+			{ name: 'field', about: 'name, type, shape, cols or rows' },
+			{ name: 'value', about: 'the new value' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [ref, field, value] = args;
+			if (!ref || !field || value === undefined) die('usage: draw set <ref> <field> <value>');
+			const FIELDS = ['name', 'type', 'shape', 'cols', 'rows'];
+			if (!FIELDS.includes(field)) die(`set takes ${FIELDS.join(', ')} -- not ${field}. Position is \`draw move\`.`);
+			if (field === 'shape' && !['circle', 'square'].includes(value)) die(`shape is circle or square, not ${value}`);
+			const id = await activeId(ctx, ctx.flags);
+			const eid = await resolveId(ctx, id, ref);
+			const kind = eid.split('-')[0];
+			let patch;
+			if (field === 'cols' || field === 'rows') {
+				// span is one field, so changing half of it needs the other half read first
+				const doc = ok(await request(ctx, `/diagrams/${id}`), 'set');
+				const node = (doc.nodes || []).find((n) => n.id === eid);
+				if (!node) die(`${ref} is not a node, and only a node spans cells`);
+				const span = { cols: 1, rows: 1, ...(node.span || {}) };
+				const n = Number(value);
+				if (!Number.isInteger(n) || n < 1) die(`${field} is a whole number of cells, at least 1`);
+				patch = { span: { ...span, [field]: n } };
+			} else patch = { [field]: value };
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'set'),
+					body: { ops: [{ op: 'set', kind, id: eid, patch }], label: `set ${field}` } }), 'set');
+			return { json: { id: eid, field, value, version: r.version }, text: `${eid} ${field} = ${value}  v${r.version}` };
+		},
+	},
+	/*
+	`region` -- panel content, one region at a time.
+
+	`panel --content f.json` takes a file, which is right for a whole layout and wrong for the way a
+	diagram actually gets built: a region at a time, looking at the result. Writing a JSON file per
+	edit is the shell reach B139 counted twice.
+
+	Appends. A region's `at` is its own coordinate inside the panel, so the server rejects an
+	overlap and the order of the array is not a layout decision.
+	*/
+	{
+		name: 'region', group: 'Writing', usage: 'draw region <panel> at <col>,<row> [--text s | --glyph g] [flags]',
+		route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'add one content region to a panel, in place',
+		example: 'draw region key at 0,0 --cols 7 --text "multi-site topology" --align center --outline',
+		args: [{ name: 'panel', about: 'a spanning node, by id or name' },
+			{ name: 'at', about: "the literal word 'at'" },
+			{ name: 'col,row', about: 'the region origin INSIDE the panel, from 0,0' }],
+		flags: [{ name: '--cols', about: 'width in panel cells; default 1' }, { name: '--rows', about: 'height; default 1' },
+			{ name: '--text', about: 'the text to show' }, { name: '--glyph', about: 'a glyph name instead of text' },
+			{ name: '--align', about: 'left, center or right' }, { name: '--bg', about: 'background, #hex' },
+			{ name: '--accent', about: 'accent colour, #hex' }, { name: '--fill', about: 'text colour, #hex' },
+			{ name: '--outline', about: 'draw a border' }, { name: '--rx', about: 'corner radius, 0-30' },
+			{ name: '--action', about: 'make it a button with this action id' },
+			{ name: '--input', about: 'make it editable in run mode' },
+			{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [ref, at, cr] = args;
+			if (!ref || at !== 'at' || !cr) die('usage: draw region <panel> at <col>,<row>');
+			if (!/^\d+,\d+$/.test(cr)) die('the region origin is col,row inside the panel -- whole numbers from 0,0');
+			const [col, row] = cr.split(',').map(Number);
+			const f = ctx.flags;
+			if (!f.text && !f.glyph) die('a region shows --text or a --glyph; give one');
+			if (f.text && f.glyph) die('a region shows --text or a --glyph, not both');
+			const id = await activeId(ctx, ctx.flags);
+			const eid = await resolveId(ctx, id, ref);
+			const doc = ok(await request(ctx, `/diagrams/${id}`), 'region');
+			const node = (doc.nodes || []).find((n) => n.id === eid);
+			if (!node) die(`${ref} is not a node`);
+			if (!node.span) die(`${ref} does not span cells -- \`draw set ${ref} cols 3\` first, or create it with \`draw panel\``);
+
+			const r = { at: [col, row], cols: Number(f.cols ?? 1), rows: Number(f.rows ?? 1) };
+			if (f.text) { r.content = 'text'; r.value = String(f.text); } else { r.content = 'glyph'; r.glyph = String(f.glyph); }
+			for (const [flag, key] of [['align', 'align'], ['bg', 'bg'], ['accent', 'accent'], ['fill', 'fill'], ['action', 'action']]) {
+				if (f[flag] && f[flag] !== true) r[key] = String(f[flag]);
+			}
+			if (f.outline) r.outline = true;
+			if (f.input) r.input = true;
+			if (f.rx !== undefined && f.rx !== true) r.rx = Number(f.rx);
+			const content = [...(node.content || []), r];
+			const res = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'region'),
+					body: { ops: [{ op: 'set', kind: 'node', id: eid, patch: { content } }], label: 'region' } }), 'region');
+			return { json: { panel: eid, region: r, regions: content.length, version: res.version },
+				text: `${node.name} region ${content.length} at ${col},${row}  ${r.value || r.glyph}  v${res.version}` };
 		},
 	},
 );

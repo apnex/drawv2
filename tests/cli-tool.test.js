@@ -181,9 +181,22 @@ test('GR18: every verb declares every flag it reads and every argument it takes'
 		for (const f of new Set([...body.matchAll(/ctx\.flags\.(\w+)/g)].map((m) => m[1]))) {
 			if (!declared.includes(`--${f}`)) gaps.push(`${v.name}: reads --${f}, undeclared`);
 		}
-		const positional = /const \[[^\]]+\] = args/.test(body) || /args\[\d\]/.test(body);
+		/*
+		"Reads its arguments" includes ITERATING them.
+
+		This used to mean destructuring or indexing only, and exempted `select` by name because that
+		verb loops. A rule with an instance carved out of it is not a rule -- the moment `rm` and
+		`group` arrived with the same shape, the exemption was wrong for two more verbs and the
+		check would have demanded they declare nothing. Widened to the actual question: does the
+		body touch `args` at all.
+		*/
+		const positional = /const \[[^\]]+\] = args/.test(body)
+			|| /args\[\d\]/.test(body)
+			|| /\bof args\b/.test(body)
+			|| /args\.length/.test(body)
+			|| /\.\.\.args\b/.test(body);
 		if (positional && !(v.args || []).length) gaps.push(`${v.name}: takes positional args, declares none`);
-		if (!positional && (v.args || []).length && v.name !== 'select') {
+		if (!positional && (v.args || []).length) {
 			gaps.push(`${v.name}: declares arguments it never reads`);
 		}
 	}

@@ -82,16 +82,17 @@ Grouped by the question each answers, which is also how `draw help` prints them.
 
 ```text
 Context
-  health                   the server's own report
-  diagrams                 what exists
-  context [id|name]        the default target, persisted
-  status                   the active diagram in summary
-  get <kind> [id|name]     interrogate nodes, links, zones, groups, waypoints
-  history [--limit n]      the change log
-  about <entity-id>        what surrounds an entity: links, neighbours, group, enclosing zones
-  zone contents <zone-id>  what falls inside a zone
-  link path <link-id>      the resolved route -- what the renderer would draw
-  show                     the whole diagram: summary and every entity
+  health                                                                          the server's own report
+  diagrams [--counts]                                                             what exists
+  context [id|name]                                                               the default target, persisted
+  status                                                                          the active diagram in summary
+  get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints
+  history [--limit n]                                                             the change log
+  about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones
+  zone contents <zone-id>                                                         what falls inside a zone
+  link path <link-id>                                                             the resolved route -- what the renderer would draw
+  show                                                                            the whole diagram: summary and every entity
+  map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]  look at the canvas -- occupancy as a grid, so placement is seen rather than derived
 
 Lifecycle
   create [name]            mint a diagram; answers its id
@@ -112,6 +113,9 @@ Writing
   group <name> <ref> <ref> [ref...]                               name a set of nodes as one thing
   move <ref> to <cx>,<cy>                                         put an existing node or waypoint on a different anchor
   rename <ref> <name>                                             change what something is called
+  rm <ref> [ref...]                                               remove entities, and say what the cascade took with them
+  set <ref> <field> <value>                                       change one property of one entity
+  region <panel> at <col>,<row> [--text s | --glyph g] [flags]    add one content region to a panel, in place
 
 Placement
   near <x> <y> [--within px]                       what is already around a point, so you do not draw on top of it
