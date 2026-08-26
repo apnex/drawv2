@@ -268,14 +268,20 @@ async function readToken(ctx, id) {
 	try { held = JSON.parse(raw); } catch { held = null; }
 	if (!held || typeof held.token !== 'string') { await writeToken(ctx, id, null); return null; }
 	/*
-	The server sends epoch MILLISECONDS, and `Date.parse(1787783231273)` is NaN, so a check written
-	as `Date.parse(v) <= Date.now()` never fires -- it compares NaN and answers false forever. The
-	first version of this was exactly that, and the test did not catch it because the test invented
-	an ISO string the server never sends. Same shape as B107: a fixture that is not the thing that
-	runs. Both forms are accepted because a caller reading this file should not have to know which.
+	The token is handed over whatever the clock says -- B141.
+
+	This used to discard a token whose `expiresAt` had passed, which was right in intent and wrong
+	in authority. `expiresAt` is minted by the SERVER and was being compared to `Date.now()` here,
+	so any skew between the two machines made the tool declare a live token dead, delete it, send
+	nothing, and collect a 409 from the server that still held the lock -- reported as *another
+	controller*, which is the reading least likely to be true and most likely to make an agent back
+	off. Reproduced mid-authoring: renewal at 23:54:48, refusal two seconds later, slot provably
+	free a minute after that.
+
+	B140 exists so the holder can always renew. A client-side expiry guess takes that away again.
+	The server is the only party that knows whether its lock is live, so the refusal comes from
+	there; expiry survives for HOUSEKEEPING alone, in `sweepTokens`, on a margin that cannot race.
 	*/
-	const deadline = typeof held.expiresAt === 'number' ? held.expiresAt : Date.parse(held.expiresAt);
-	if (Number.isFinite(deadline) && deadline <= Date.now()) { await writeToken(ctx, id, null); return null; }
 	return held.token;
 }
 async function writeToken(ctx, id, token, expiresAt = null) {
@@ -313,8 +319,18 @@ export async function sweepTokens(ctx) {
 		const file = path.join(dir, name);
 		let held = null;
 		try { held = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* dead by definition */ }
+		/*
+		A generous MARGIN, because this is housekeeping and not adjudication (B141).
+
+		Sweeping on the exact deadline meant a clock a few seconds out could delete a token the
+		server still honoured. The store only has to stop growing -- 837 files was the complaint --
+		and an hour's grace achieves that while making it impossible for a sweep to race a lock
+		whose whole life is a minute.
+		*/
+		const GRACE_MS = 60 * 60 * 1000;
 		const deadline = typeof held?.expiresAt === 'number' ? held.expiresAt : Date.parse(held?.expiresAt);
-		const alive = held && typeof held.token === 'string' && Number.isFinite(deadline) && deadline > Date.now();
+		const alive = held && typeof held.token === 'string'
+			&& Number.isFinite(deadline) && deadline + GRACE_MS > Date.now();
 		if (alive) continue;
 		try { fs.unlinkSync(file); gone++; } catch { /* not ours to remove */ }
 	}

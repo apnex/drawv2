@@ -571,7 +571,7 @@ The cost was never disk. A token that outlives its lock is still sent, so the se
 the tool relays "not server-locked" when the truth is "your lock lapsed" -- a state the tool could
 have known, because the lock response has carried `expiresAt` since B102.
 */
-test('B136: a lapsed token is discarded locally, not relayed as a 423', async () => {
+test('B141: a token past its local deadline is still SENT -- the server adjudicates', async () => {
 	await boot();
 	try {
 		const id = JSON.parse(await run('create', 'ttl', '--json')).id;
@@ -581,19 +581,36 @@ test('B136: a lapsed token is discarded locally, not relayed as a 423', async ()
 		const f = path.join(home, '.config/draw/locks', id);
 		const held = JSON.parse(fs.readFileSync(f, 'utf8'));
 		assert.ok(held.token, 'the token is stored');
-		assert.ok(held.expiresAt, 'and so is when it stops being one -- B102 returns it, so guessing is not required');
+		assert.equal(typeof held.expiresAt, 'number', 'with the epoch-millisecond deadline the server sent');
 
 		/*
-		Wind back the value the SERVER actually wrote, in the form it wrote it. The first version of
-		this test substituted an ISO string, which the server never sends -- it sends epoch
-		milliseconds -- so it exercised a branch production never takes and stayed green while
-		`Date.parse(1787783231273)` returned NaN and the expiry check never fired at all.
+		B136 taught this to discard a token whose deadline had passed, and B141 is why that was
+		wrong. `expiresAt` is minted by the SERVER and was compared against `Date.now()` here, so a
+		few seconds of clock skew made the tool bin a token the server still honoured, send nothing,
+		and collect a 409 reported as "another controller" -- the reading least likely to be true.
+
+		Wind the local copy into the past. The lock on the server is untouched and still live, so
+		the write must SUCCEED: the deadline is the server's business and the tool does not guess.
 		*/
-		assert.equal(typeof held.expiresAt, 'number', 'the server sends epoch milliseconds; the test must use that');
-		fs.writeFileSync(f, JSON.stringify({ token: held.token, expiresAt: Date.now() - 1000 }));
+		fs.writeFileSync(f, JSON.stringify({ token: held.token, expiresAt: Date.now() - 60_000 }));
+		const out = await run('add', 'server', 'at', '0,0', '--name', 'skewed', '--json');
+		assert.match(out, /skewed|node-/, 'the write went through on a token the local clock called dead');
+		assert.ok(fs.existsSync(f), 'and the token was not thrown away on the strength of a local guess');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B141: when the server DOES refuse, the tool still answers in its own vocabulary', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'refused', '--json')).id;
+		await run('context', id);
+		fs.mkdirSync(path.join(home, '.config/draw/locks'), { recursive: true });
+		// a token the server has never issued: the refusal is now genuinely the server's to make
+		fs.writeFileSync(path.join(home, '.config/draw/locks', id),
+			JSON.stringify({ token: 'never-issued', expiresAt: Date.now() + 60_000 }));
 		const err = await captureExit(() => run('add', 'server', 'at', '0,0'));
-		assert.match(err, /draw lock/, 'the tool answers for itself instead of relaying the server');
-		assert.equal(fs.existsSync(f), false, 'and the dead token is gone, so it cannot be sent again');
+		assert.match(err, /draw lock/, 'named as a verb the caller has');
+		assert.doesNotMatch(err, /POST |\/api\/v1\//, 'never as a route to call directly');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
@@ -639,9 +656,21 @@ test('B136: a lapsed token does not survive the next command, whatever that comm
 		const dir = path.join(home, '.config/draw/locks');
 		const f = path.join(dir, id);
 
-		// a lock on a DIFFERENT diagram, lapsed. readToken would never look at this one.
+		/*
+		A lock on a DIFFERENT diagram, lapsed well past the housekeeping grace. `readToken` would
+		never look at this one -- it only ever inspects the diagram in hand -- which is why the
+		sweep exists at all.
+
+		Past the GRACE, not merely past the deadline: B141 widened the sweep's margin because
+		deleting on the exact deadline let a skewed clock race a live lock. Housekeeping only has to
+		stop the store growing, so it can afford to be late and must not be early.
+		*/
 		const other = path.join(dir, 'diagram-other1');
-		fs.writeFileSync(other, JSON.stringify({ token: 'lapsed', expiresAt: Date.now() - 1 }));
+		fs.writeFileSync(other, JSON.stringify({ token: 'lapsed', expiresAt: Date.now() - 2 * 60 * 60 * 1000 }));
+
+		// and one lapsed only a moment ago SURVIVES, because that is the skew window
+		const recent = path.join(dir, 'diagram-recent');
+		fs.writeFileSync(recent, JSON.stringify({ token: 'just-lapsed', expiresAt: Date.now() - 1000 }));
 		// and a file predating the format, which can never be valid again
 		fs.writeFileSync(path.join(dir, 'diagram-legacy'), 'bare-token-from-before-the-rule');
 
@@ -650,7 +679,8 @@ test('B136: a lapsed token does not survive the next command, whatever that comm
 		// ones that return early" -- the almost-true kind this codebase keeps finding under defects.
 		await run('help');
 
-		assert.equal(fs.existsSync(other), false, 'a lapsed token for another diagram went');
+		assert.equal(fs.existsSync(other), false, 'a long-lapsed token for another diagram went');
+		assert.ok(fs.existsSync(recent), 'while one just past its deadline stayed -- the sweep must never race a live lock');
 		assert.equal(fs.existsSync(path.join(dir, 'diagram-legacy')), false, 'and so did an unparseable one');
 		assert.ok(fs.existsSync(f), 'while the LIVE lock is untouched -- the sweep judges dead, not present');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
