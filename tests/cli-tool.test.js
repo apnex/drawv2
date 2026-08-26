@@ -674,3 +674,40 @@ test('B135: with no HOME in the injected env, the real home is never touched', a
 		fs.rmSync(canary, { recursive: true, force: true });
 	}
 });
+
+/*
+GR18 -- the verb list in CLI.md is DERIVED, and checked.
+
+It drifted for two milestones with nothing to notice. The block advertised a `push` verb for Slides,
+which had been purged in both phases, and an `agents` verb whose real name is `who`, while omitting
+nine that existed -- `about`, `zone contents`, `link path`, `panel`, `near`, `place`, `access`,
+`workspace grants`, `workspace revoke`. Three of those were written the same day the doc was last
+edited.
+
+CLI.md's own next section rules that the tool must not mirror the API, and the manifest exists so
+dispatch, help, coverage and the docs read one declaration. The docs were the consumer that never
+actually read it. This is that missing edge, and it is a set comparison rather than prose matching:
+what the manifest declares and what the document lists must be the same names.
+*/
+test('GR18: CLI.md lists exactly the verbs the manifest declares', () => {
+	const doc = fs.readFileSync(new URL('../docs/spec/CLI.md', import.meta.url), 'utf8');
+	const section = doc.split('## The verbs')[1];
+	assert.ok(section, 'CLI.md still has a verb section');
+	const block = section.split('```text')[1].split('```')[0];
+
+	// a verb line is indented; a group heading is not. The name is the longest manifest verb name
+	// the line starts with, because a usage line carries arguments after it.
+	const names = new Set(VERBS.map((v) => v.name));
+	const listed = new Set();
+	for (const line of block.split('\n')) {
+		if (!/^ {2}\S/.test(line)) continue;
+		const text = line.trim();
+		let best = null;
+		for (const n of names) if (text === n || text.startsWith(`${n} `)) { if (!best || n.length > best.length) best = n; }
+		assert.ok(best, `CLI.md lists "${text.split('  ')[0]}", which is not a verb the manifest declares`);
+		listed.add(best);
+	}
+	const missing = [...names].filter((n) => !listed.has(n)).sort();
+	assert.deepEqual(missing, [], `CLI.md omits ${missing.length} verb(s) the tool has`);
+	assert.equal(listed.size, VERBS.length, 'and lists no more than it has');
+});

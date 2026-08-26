@@ -59,10 +59,11 @@ Right-drag moves a selection, and Shift raises the zone layer.
 Press `/` in the editor for the complete list.\
 That overlay is the authoritative reference, and this table is only the subset needed to get moving.
 
-The read-only `draw` CLI reports the same document from a terminal:
+The `draw` CLI drives the same document from a terminal, and is how an agent works (`docs/spec/CLI.md`):
 ```sh
 draw show
-draw get nodes
+draw add server at 5,-2 --name web-1
+draw link web-1 lb-1
 ```
 
 Inside a container, reach it through `docker exec`:

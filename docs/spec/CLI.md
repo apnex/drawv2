@@ -77,53 +77,64 @@ Which door a request uses follows from whether it carries a credential, and that
 
 ## The verbs
 
-Grouped by the question each answers, which is also how `draw help` will print them.
+Grouped by the question each answers, which is also how `draw help` prints them.\
+**This block is DERIVED from `cli/verbs.mjs` and checked against it** -- it drifted for two milestones otherwise, listing a `push` verb for a feature that had been purged and an `agents` verb that was named `who`, while omitting nine that existed.
 
 ```text
 Context
-  diagrams                      what exists
-  context [id]                  the default target, persisted
-  status                        the active diagram in summary
-  show                          status plus every entity table
-  get <kind> [id|name]          interrogate nodes, links, zones, groups, waypoints
-  history [--limit n]           the change log
-  health                        the server's own report
+  health                   the server's own report
+  diagrams                 what exists
+  context [id|name]        the default target, persisted
+  status                   the active diagram in summary
+  get <kind> [id|name]     interrogate nodes, links, zones, groups, waypoints
+  history [--limit n]      the change log
+  about <entity-id>        what surrounds an entity: links, neighbours, group, enclosing zones
+  zone contents <zone-id>  what falls inside a zone
+  link path <link-id>      the resolved route -- what the renderer would draw
+  show                     the whole diagram: summary and every entity
 
 Lifecycle
-  create [name] [--doc f.json]  mint a diagram; answers its id
-  delete <id>                   remove one; refuses 423 unless you hold the lock
-  render [--out f.svg]          the picture, as an SVG file
+  create [name]            mint a diagram; answers its id
+  delete <id|name>         remove one; refuses unless you hold the lock
+  render [--out file.svg]  the picture, as SVG
 
 Writing
-  lock / unlock                 take and release the write slot
-  lock status                   who holds it, when it frees, and the human hold
-  commit [--ops f.json|-]       a batch of ops as one transaction
-  add <type> at <cx>,<cy>       a node on a named anchor -- a cell, never a pixel
-  link <src> <dst> [--via c]    join two things; --via mints the waypoints a bend needs
-  zone <name> from <c> to <c>   enclose a rectangle of CELLS; the half-pitch is ours
-  group <name> <ref> <ref>      name a set of nodes as one thing
-  move <ref> to <cx>,<cy>       put an existing node or waypoint on a different anchor
-  rename <ref> <name>           change what something is called
-  undo [--to seq] / redo        with the expected version, never implicit
-  select <ids...>               the authoritative selection
+  lock                                                            take the write slot, and remember the token
+  unlock                                                          release the write slot
+  lock status                                                     who holds it, when it frees, and the human hold
+  commit --ops <file|->                                           a batch of ops as one transaction
+  undo [--to seq]                                                 reverse the last change, or a run
+  redo                                                            reapply what undo reversed
+  select <id...>                                                  set the authoritative selection
+  link <src> [<dst>] [--via <cx>,<cy>...] [--closed]              join two things that already exist, bending the route through cells you name
+  panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]  a node that spans cells and can carry content regions
+  zone <name> from <cx>,<cy> to <cx>,<cy>                         enclose a rectangle of CELLS -- the half-pitch offset is the tool's problem, not yours
+  group <name> <ref> <ref> [ref...]                               name a set of nodes as one thing
+  move <ref> to <cx>,<cy>                                         put an existing node or waypoint on a different anchor
+  rename <ref> <name>                                             change what something is called
 
 Placement
-  layouts                       the named grids
-  anchor nearest <x> <y>        somewhere legal near here
-  anchor free                   every anchor nothing occupies
-
-Access
-  grant <principal> <level>     on the active diagram
-  revoke <principal>
-  workspace grant|revoke        across everything you own
-  code mint <agent> / list / revoke <id>
+  near <x> <y> [--within px]                       what is already around a point, so you do not draw on top of it
+  place <type> near|inside|between <ref> [--link]  put a node beside, inside or between things -- on a free anchor, no coordinates
+  add <type> at <cx>,<cy> [--name n] [--link ref]  put a node on a named anchor -- a cell, never a pixel
+  anchor nearest <x> <y> [--layout node|zone]      the legal anchor closest to a pixel coordinate
+  anchor free [--layout node|zone]                 every anchor nothing occupies
+  layouts                                          the named grids and their offsets
 
 Awareness
-  agents                        what every agent is doing
-  viewers                       who is looking at what
+  who      who else is here: agents driving, people watching
+  viewers  who is looking at what
 
-Projection
-  push                          project to the bound Slides deck
+Access
+  access                                    who can reach this diagram, and at what level
+  grant <principal> <read|write>            let a principal reach this diagram
+  revoke <principal>                        withdraw a grant; says what access remains
+  workspace grant <principal> <read|write>  grant across everything you own
+  code mint <agent>                         mint a connection code; shown once, never again
+  code list                                 the codes you have minted, never their secrets
+  code revoke <id>                          retire a code; the agent claim survives it
+  workspace grants                          who may reach everything you own
+  workspace revoke <principal>              withdraw a workspace grant
 ```
 
 ---
