@@ -709,7 +709,9 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			if (hub) { hub.broadcast(id, 'lock', { owner: 'server' }); announceActivity(hub, store, locks); }
 			// hydrate the agent at its entry point: it should never have to ASK what the state is
 			const log = store.log(id);
-			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt,
+			// `renewed` rides along or the caller cannot tell an extension from a fresh grab: the
+			// deadline moves either way, so without it the two are indistinguishable at the tool
+			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt, renewed: !!lock.renewed,
 				version: log?.version ?? 0, canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
 				logDepth: log?.records.length ?? 0, truncated: !!log?.truncated });
 		}

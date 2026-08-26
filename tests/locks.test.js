@@ -704,3 +704,31 @@ test('B140: renewal is for the holder only -- a wrong token or none still refuse
 	assert.ok(next, 'once it lapses anyone may take it');
 	assert.notEqual(next.token, mine.token, 'and that IS a new token, because it is a new lock');
 });
+
+/*
+B140 -- and the REST layer has to SAY it renewed.
+
+The lock object carried `renewed` and the response builder did not copy it, so the extension worked
+and was unreportable: the deadline moves on a fresh acquire too, which makes the two
+indistinguishable to the caller. Caught by reading the JSON after the deploy rather than by trusting
+that a passing unit test meant the field arrived.
+*/
+test('B140: the lock response reports whether it renewed or acquired', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-renew-'));
+	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const base = `http://127.0.0.1:${app.port}/api/v1`;
+	try {
+		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;
+		const first = await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json();
+		assert.ok(first.token);
+		assert.equal(first.renewed, false, 'a first acquire says so');
+
+		const again = await (await fetch(`${base}/diagrams/${id}/lock`,
+			{ method: 'POST', headers: { 'x-draw-lock': first.token } })).json();
+		assert.equal(again.renewed, true, 'and a renewal says so');
+		assert.equal(again.token, first.token, 'with the token the caller already stored');
+
+		const stranger = await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' });
+		assert.equal(stranger.status, 409, 'while somebody without the token is still refused');
+	} finally { await app.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
