@@ -699,7 +699,9 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			if (!store.canWrite(id, principal)) {
 				return json(res, 403, { error: 'forbidden: no write access to this diagram', code: 'forbidden' });
 			}
-			const lock = locks.acquire(id, principal);
+			// B140: the caller's own token makes this a renewal, so the 409 below only fires when
+			// somebody else really does hold the slot -- which is what it always claimed
+			const lock = locks.acquire(id, principal, req.headers['x-draw-lock'] || null);
 			if (!lock) return json(res, 409, { error: 'already server-locked by another controller' });
 			// D22: the human reclaimed recently — refuse, and say for how long, so a retry loop backs
 			// off instead of racing the remedy

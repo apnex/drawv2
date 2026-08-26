@@ -655,3 +655,52 @@ test('B115: one announcement per sweep, not one per freed diagram', () => {
 		assert.equal(sent.length, 1, 'and were announced once');
 	});
 });
+
+/*
+B140 -- the holder can renew; nobody else can take.
+
+`acquire` opened with `if (this._live(id)) return null`, so a live lock refused every caller
+including the one whose token it was, and the REST layer turned that into `409 already
+server-locked by another controller` -- false for the commonest case there is.
+
+Measured against the workflow rather than in the abstract: the slot frees after about a minute and
+authoring a diagram one entity at a time takes far longer, so an agent MUST re-acquire mid-sequence.
+Refusing it there left only one strategy -- let the lock lapse and race for it -- which is worse for
+every party. In one authoring batch this session, two writes landed on a surviving token and the
+next six failed.
+*/
+test('B140: re-acquiring with your own token renews it, and keeps the same token', () => {
+	let t = 1000;
+	const locks = new Locks({ ttlMs: 500, now: () => t });
+	const first = locks.acquire('diagram-aa0001', 'agent:one');
+	assert.ok(first.token, 'acquired');
+	assert.equal(first.renewed, undefined, 'a first acquire is not a renewal');
+
+	t += 400;                                        // still live, but close to lapsing
+	const again = locks.acquire('diagram-aa0001', 'agent:one', first.token);
+	assert.ok(again, 'the holder is not refused its own slot');
+	assert.equal(again.renewed, true, 'and it is reported as a renewal');
+	assert.equal(again.token, first.token,
+		'the SAME token: reissuing would silently invalidate the one the caller already stored');
+	assert.equal(again.expiresAt, t + 500, 'the deadline moved out from now, not from the original');
+
+	t += 400;                                        // past the ORIGINAL deadline, inside the renewed one
+	assert.equal(locks.locked('diagram-aa0001'), true, 'the renewal really extended it');
+});
+
+test('B140: renewal is for the holder only -- a wrong token or none still refuses', () => {
+	let t = 1000;
+	const locks = new Locks({ ttlMs: 500, now: () => t });
+	const mine = locks.acquire('diagram-aa0002', 'agent:one');
+
+	assert.equal(locks.acquire('diagram-aa0002', 'agent:two', 'not-the-token'), null,
+		'a wrong token is refused, so the 409 saying "another controller" is now true when it fires');
+	assert.equal(locks.acquire('diagram-aa0002', 'agent:two'), null, 'and so is no token at all');
+	assert.equal(locks.acquire('diagram-aa0002', 'agent:one'), null,
+		'even the same PRINCIPAL without the token -- the token is the capability, not the identity');
+
+	t += 600;                                        // lapsed
+	const next = locks.acquire('diagram-aa0002', 'agent:two');
+	assert.ok(next, 'once it lapses anyone may take it');
+	assert.notEqual(next.token, mine.token, 'and that IS a new token, because it is a new lock');
+});

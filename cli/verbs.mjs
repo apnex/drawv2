@@ -433,9 +433,14 @@ VERBS.push(
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
-			const b = ok(await request(ctx, `/diagrams/${id}/lock`, { method: 'POST', body: { owner: 'agent' } }), 'lock');
+			// B140: send the token we already hold, so calling `draw lock` again RENEWS rather than
+			// colliding with itself. That makes it safe before any batch, which is what an agent
+			// authoring one entity at a time actually needs.
+			const mine = await readToken(ctx, id);
+			const b = ok(await request(ctx, `/diagrams/${id}/lock`,
+				{ method: 'POST', headers: mine ? { 'x-draw-lock': mine } : {}, body: { owner: 'agent' } }), 'lock');
 			await writeToken(ctx, id, b.token, b.expiresAt || b.heldUntil || null);
-			return { json: { ...b, token: 'stored' }, text: `locked ${id}  v${b.version}  frees ${new Date(b.expiresAt).toISOString()}` };
+			return { json: { ...b, token: 'stored' }, text: `${b.renewed ? 'renewed' : 'locked'} ${id}  v${b.version ?? ''}  frees ${new Date(b.expiresAt).toISOString()}` };
 		},
 	},
 	{

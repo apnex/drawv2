@@ -51,20 +51,37 @@ export class Locks {
 
 	// claim the server-side write lock; null if another live controller holds it, or if the human
 	// has just reclaimed and the hold has not lapsed
-	acquire(id, principal = null) {
-		if (this._live(id)) return null;
+	/*
+	`token` makes this RENEWAL for the holder -- B140.
+
+	`if (this._live(id)) return null` refused every caller while a lock was live, including the one
+	whose token it was, and the 409 above it said *another controller* -- false for the commonest
+	case there is. The slot frees after about a minute and authoring a diagram one entity at a time
+	takes far longer, so an agent must re-acquire mid-sequence; refusing it there meant the only way
+	to keep working was to let the lock lapse and race for it, which is worse for everyone.
+
+	Extending rather than reissuing is deliberate. A new token on renewal would invalidate the one
+	the caller has already stored and turn a renewal into a silent revocation of its own writes.
+	*/
+	acquire(id, principal = null, token = null) {
+		const live = this._live(id);
+		if (live) {
+			if (!token || live.token !== token) return null;
+			live.expiresAt = this.now() + this.ttlMs;
+			return { token: live.token, expiresAt: live.expiresAt, renewed: true };
+		}
 		const hold = this.holds.get(id);
 		if (hold !== undefined) {
 			if (hold > this.now()) return { held: true, retryAfter: hold - this.now() };
 			this.holds.delete(id);
 		}
-		const token = crypto.randomBytes(16).toString('hex');
+		const fresh = crypto.randomBytes(16).toString('hex');
 		const expiresAt = this.now() + this.ttlMs;
 		// B105: WHO holds it, not just that it is held. Without this the estate could say a diagram
 		// was locked and never say by whom, so an operator could see that something was happening
 		// and not what -- which is the whole of what the agent indicator has to answer.
-		this.map.set(id, { token, expiresAt, principal, since: this.now() });
-		return { token, expiresAt };
+		this.map.set(id, { token: fresh, expiresAt, principal, since: this.now() });
+		return { token: fresh, expiresAt };
 	}
 
 	/*
