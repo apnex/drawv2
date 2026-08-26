@@ -412,3 +412,129 @@ test('B133: a structural verb refuses a pixel where a cell belongs', async () =>
 		assert.match(bad, /takes a CELL like/, 'a fractional cell never reaches the server');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+/*
+The verbs added after the first live rebuild, each because the rebuild could not proceed without it.
+
+These are not speculative surface. Every one was written because a real attempt to reproduce a real
+diagram through the tool stopped at it, which is a better specification than any amount of guessing
+about what an agent might want.
+*/
+test('B133: draw panel owns the frame and takes content as data', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'paneltest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		const f = path.join(home, 'regions.json');
+		fs.writeFileSync(f, JSON.stringify([
+			{ at: [0, 0], cols: 3, rows: 1, content: 'text', value: 'title', align: 'center' },
+			{ at: [0, 1], cols: 1, rows: 1, content: 'glyph', glyph: 'router' },
+		]));
+		const p = JSON.parse(await run('panel', 'key', 'at', '-10,-6', '--cols', '3', '--rows', '2', '--content', f, '--json'));
+		assert.deepEqual(p.span, { cols: 3, rows: 2 }, 'the frame is the verb\'s job');
+		assert.equal(p.regions, 2, 'the content came from the file, unflattened');
+
+		// the split is the point: geometry is validated by the verb, content is passed through
+		const bad = await captureExit(() => run('panel', 'x', 'at', '-8,-6', '--cols', '0', '--rows', '2'));
+		assert.match(bad, /at least 1/, 'a degenerate span is refused locally');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B133: a ring is a source and the bends that return to it', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'ringtest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'vxlan', 'at', '0,-3', '--name', 'overlay');
+
+		/*
+		`closed` means "loop dst back to src", so a ring needs a dst that is NOT the source -- and in
+		a ring that dst is a waypoint the caller has not created. Requiring them to name it would put
+		waypoint minting back on the caller, which is the defect this verb exists to close. So the
+		last bend becomes the destination.
+		*/
+		const r = JSON.parse(await run('link', 'overlay', '--closed', '--via', '-2,-1', '--via', '0,1', '--via', '2,-1', '--json'));
+		assert.equal(r.closed, true);
+		assert.equal(r.via.length, 2, 'three bends: two are the route, the last is the destination');
+		assert.match(r.dst, /^waypoint-/, 'and the destination is a minted waypoint, not a node the caller had to make');
+
+		const thin = await captureExit(() => run('link', 'overlay', '--closed', '--via', '4,-1'));
+		assert.match(thin, /at least two --via/, 'a one-bend ring would draw a line back over itself');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('GR18: a refusal names a verb the caller has, never a route to call directly', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'locktest', '--json')).id;
+		await run('context', id);
+		/*
+		The server answers a lost write slot with "not server-locked -- POST /api/v1/.../lock first",
+		which is right for an HTTP client and exactly wrong for this one: it tells an agent driving
+		`draw` to go around `draw`. A tool whose own error recommends the thing GR18 forbids has lost
+		that argument before the agent even reads it.
+		*/
+		// No token at all is the CLI's OWN check, and it already said the right thing. The path that
+		// relays the server is a STALE token: one the tool holds and the server rejects. The first
+		// version of this test used the no-token case, passed, and stayed green when the translation
+		// was deleted -- a test that looks like it covers a rule and covers the rule next to it.
+		const mine = await captureExit(() => run('add', 'server', 'at', '0,0'));
+		assert.match(mine, /draw lock/, 'with no token the tool answers for itself');
+
+		fs.mkdirSync(path.join(home, '.config/draw/locks'), { recursive: true });
+		fs.writeFileSync(path.join(home, '.config/draw/locks', id), 'stale-token-that-the-server-will-refuse');
+		const relayed = await captureExit(() => run('add', 'server', 'at', '0,0'));
+		assert.match(relayed, /draw lock/, 'the refusal names the verb that fixes it');
+		assert.doesNotMatch(relayed, /POST |curl|\/api\/v1\//,
+			'and never a raw route -- the server says "POST /api/v1/.../lock first" and that must not reach an agent driving the tool');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('select resolves names, like every other structural verb', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'seltest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-4,0', '--name', 'core-1');
+		await run('add', 'router', 'at', '4,0', '--name', 'core-2');
+		// it took ids only, so `draw select core-1` failed while `draw link core-1 core-2` beside it
+		// resolved the same word -- one verb in a family behaving differently reads as a typo
+		const out = await run('select', 'core-1', 'core-2', '--json');
+		assert.equal(JSON.parse(out).selection.length, 2, 'names resolve to ids');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+B135 -- the lock and context stores obey the INJECTED environment.
+
+`main(argv, env, out)` accepts an env so the tool can be driven as a library, and `tokenFile()` and
+`ctxFile()` read `process.env.HOME` instead. Every test therefore wrote into the developer's real
+home: 812 token files had collected in a directory no test cleaned, because no test knew it was
+being used. Isolation the harness advertised and did not have.
+
+Asserted on the FILESYSTEM rather than on behaviour, deliberately. A behavioural test passes either
+way -- the tool finds a token in whichever home it looked in and carries on -- which is exactly how
+this survived. The only observable that distinguishes the two is where the bytes land.
+*/
+test('B135: the lock token lands under the injected HOME, not the real one', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'hometest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+
+		const mine = path.join(home, '.config/draw/locks', id);
+		assert.ok(fs.existsSync(mine), `the token belongs under the injected HOME (${mine})`);
+		assert.ok(fs.readFileSync(mine, 'utf8').trim().length > 0, 'and it is a real token, not an empty file');
+
+		// the context file too -- same bypass, same fix
+		assert.ok(fs.existsSync(path.join(home, '.config/draw/context')), 'the context store obeys it as well');
+
+		// and nothing was written to the real home for this diagram
+		const real = path.join(process.env.HOME || '/nonexistent', '.config/draw/locks', id);
+		assert.equal(fs.existsSync(real), false, 'and the developer\'s home is untouched');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});

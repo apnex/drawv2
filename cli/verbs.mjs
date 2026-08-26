@@ -16,7 +16,17 @@ rough edge.
 */
 import { request, table, die } from './draw.mjs';
 
-const ctxFile = () => `${process.env.HOME}/.config/draw/context`;
+/*
+Both stores take the env from the CALLER -- B135.
+
+`main(argv, env, out)` accepts an environment so the tool can be driven as a library, and these two
+read `process.env.HOME` instead, which meant every test wrote into the developer's real home: 812
+token files had collected in a directory no test cleaned, because no test knew it was being used.
+An injected dependency that two functions quietly bypass is worse than no injection, because the
+harness advertises isolation it does not have.
+*/
+const homeOf = (ctx) => (ctx?.env?.HOME) || process.env.HOME;
+const ctxFile = (ctx) => `${homeOf(ctx)}/.config/draw/context`;
 
 async function activeId(ctx, flags) {
 	const want = flags.diagram || ctx.flags?.diagram;
@@ -31,7 +41,7 @@ async function activeId(ctx, flags) {
 	}
 	const fs = await import('node:fs');
 	try {
-		const saved = fs.readFileSync(ctxFile(), 'utf8').trim();
+		const saved = fs.readFileSync(ctxFile(ctx), 'utf8').trim();
 		if (list.some((d) => d.id === saved)) return saved;
 	} catch { /* no context yet */ }
 	return list[0].id;
@@ -56,9 +66,30 @@ async function resolveId(ctx, diagramId, ref) {
 	return hits[0];
 }
 
+/*
+Server refusals are re-said in the tool's own vocabulary before they reach a caller.
+
+The server answers a lost write slot with *"not server-locked -- POST /api/v1/diagrams/:id/lock
+first"*, which is correct for an HTTP client and exactly wrong here: it tells an agent driving
+`draw` to go around `draw`. GR18 says an agent that cannot do a thing through the tool extends the
+tool or raises it, and a tool whose own error message recommends `curl` has already lost that
+argument. This was hit four times in one session before anyone read it as a defect rather than as
+noise.
+
+Translated, not suppressed: the status and the server's sentence still appear under `--json`, and
+only the human-facing line is re-said. A refusal that names a verb the caller has is worth more
+than a refusal that names a route they should not be calling.
+*/
+const RESAID = [
+	[/not server-locked/i, (what) => `${what} needs the write slot -- run \`draw lock\` first (it frees after about a minute)`],
+	[/server-locked|held by another/i, (what) => `${what} is blocked: another controller holds the write slot -- \`draw lock status\` says who and until when`],
+];
 const ok = (res, what) => {
-	if (!res.ok) die(`${what}: ${res.body?.error || `HTTP ${res.status}`}${res.body?.opIndex !== undefined ? ` (op ${res.body.opIndex})` : ''}`);
-	return res.body;
+	if (res.ok) return res.body;
+	const said = String(res.body?.error || '');
+	for (const [pattern, say] of RESAID) if (pattern.test(said)) die(say(what));
+	die(`${what}: ${said || `HTTP ${res.status}`}${res.body?.opIndex !== undefined ? ` (op ${res.body.opIndex})` : ''}`);
+	return null;
 };
 
 /*
@@ -99,8 +130,8 @@ export const VERBS = [
 			const fs = await import('node:fs'), path = await import('node:path');
 			if (!args[0]) { const id = await activeId(ctx, ctx.flags); return { json: { context: id }, text: id }; }
 			const id = await activeId(ctx, { diagram: args[0] });
-			fs.mkdirSync(path.dirname(ctxFile()), { recursive: true });
-			fs.writeFileSync(ctxFile(), id);
+			fs.mkdirSync(path.dirname(ctxFile(ctx)), { recursive: true });
+			fs.writeFileSync(ctxFile(ctx), id);
 			return { json: { context: id }, text: id };
 		},
 	},
@@ -163,19 +194,19 @@ The lock token has to outlive the process.
 carry between them is a write slot it cannot use. Kept beside the context file, one per diagram, so
 holding two locks at once is representable rather than accidentally impossible.
 */
-const tokenFile = (id) => `${process.env.HOME}/.config/draw/locks/${id}`;
-async function readToken(id) {
+const tokenFile = (ctx, id) => `${homeOf(ctx)}/.config/draw/locks/${id}`;
+async function readToken(ctx, id) {
 	const fs = await import('node:fs');
-	try { return fs.readFileSync(tokenFile(id), 'utf8').trim() || null; } catch { return null; }
+	try { return fs.readFileSync(tokenFile(ctx, id), 'utf8').trim() || null; } catch { return null; }
 }
-async function writeToken(id, token) {
+async function writeToken(ctx, id, token) {
 	const fs = await import('node:fs'), path = await import('node:path');
-	fs.mkdirSync(path.dirname(tokenFile(id)), { recursive: true });
-	if (token) fs.writeFileSync(tokenFile(id), token, { mode: 0o600 });
-	else try { fs.unlinkSync(tokenFile(id)); } catch { /* already gone */ }
+	fs.mkdirSync(path.dirname(tokenFile(ctx, id)), { recursive: true });
+	if (token) fs.writeFileSync(tokenFile(ctx, id), token, { mode: 0o600 });
+	else try { fs.unlinkSync(tokenFile(ctx, id)); } catch { /* already gone */ }
 }
 const held = async (ctx, id, what) => {
-	const t = await readToken(id);
+	const t = await readToken(ctx, id);
 	if (!t) die(`${what} needs the write slot -- run \`draw lock\` first`);
 	return { 'x-draw-lock': t };
 };
@@ -203,9 +234,9 @@ VERBS.push(
 		async run(ctx, args) {
 			if (!args[0]) die('delete needs a diagram -- naming it is deliberate, there is no default target for a destructive verb');
 			const id = await activeId(ctx, { diagram: args[0] });
-			const token = await readToken(id);
+			const token = await readToken(ctx, id);
 			const b = ok(await request(ctx, `/diagrams/${id}`, { method: 'DELETE', headers: token ? { 'x-draw-lock': token } : {} }), 'delete');
-			await writeToken(id, null);
+			await writeToken(ctx, id, null);
 			return { json: b, text: `deleted ${b.deleted}` };
 		},
 	},
@@ -232,7 +263,7 @@ VERBS.push(
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			const b = ok(await request(ctx, `/diagrams/${id}/lock`, { method: 'POST', body: { owner: 'agent' } }), 'lock');
-			await writeToken(id, b.token);
+			await writeToken(ctx, id, b.token);
 			return { json: { ...b, token: 'stored' }, text: `locked ${id}  v${b.version}  frees ${new Date(b.expiresAt).toISOString()}` };
 		},
 	},
@@ -243,7 +274,7 @@ VERBS.push(
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			const b = ok(await request(ctx, `/diagrams/${id}/lock`, { method: 'DELETE', headers: await held(ctx, id, 'unlock') }), 'unlock');
-			await writeToken(id, null);
+			await writeToken(ctx, id, null);
 			return { json: b, text: `released ${id}` };
 		},
 	},
@@ -303,14 +334,23 @@ VERBS.push(
 	},
 	{
 		name: 'select', group: 'Writing', usage: 'draw select <id...>', route: '/diagrams/<id>/selection', method: 'PUT',
-		summary: 'set the authoritative selection', example: 'draw select node-aa0001 node-aa0002',
-		args: [{ name: 'id...', about: 'entity ids; none clears the selection' }],
+		summary: 'set the authoritative selection', example: 'draw select core-1 core-2',
+		args: [{ name: 'ref...', about: 'entity ids or names; none clears the selection' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		also: ['GET /diagrams/<id>'],
 		async run(ctx, args) {
 			const id = await activeId(ctx, ctx.flags);
+			/*
+			Names, like every other structural verb. This took ids only, so `draw select core-1`
+			answered *invalid selection id: core-1* while `draw link core-1 core-2` beside it
+			resolved the same word without comment. One verb in a family behaving differently is
+			read as a typo by the caller, not as a rule.
+			*/
+			const ids = [];
+			for (const ref of args) ids.push(await resolveId(ctx, id, ref));
 			const b = ok(await request(ctx, `/diagrams/${id}/selection`,
-				{ method: 'PUT', headers: await held(ctx, id, 'select'), body: { ids: args } }), 'select');
-			return { json: b, text: `${args.length} selected` };
+				{ method: 'PUT', headers: await held(ctx, id, 'select'), body: { ids } }), 'select');
+			return { json: b, text: `${ids.length} selected` };
 		},
 	},
 );
@@ -640,6 +680,7 @@ VERBS.push({
 		{ name: 'cx,cy', about: 'the CELL, not pixels -- `draw anchor nearest` converts if you have pixels' }],
 	flags: [{ name: '--name', about: 'what to call it' },
 		{ name: '--link', about: 'a node id or name to link it to' },
+		{ name: '--shape', about: 'the outer frame: circle or square. Independent of type' },
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
 		const [type, at, cell] = args;
@@ -656,7 +697,17 @@ VERBS.push({
 		if (spot.occupant) die(`cell ${cx},${cy} is taken by ${spot.occupant} -- \`draw about ${spot.occupant}\` says what it is`);
 
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
-		const ops = [{ op: 'put', kind: 'node', entity: { id: nid, name: ctx.flags.name || nid, type, x: spot.x, y: spot.y } }];
+		const entity = { id: nid, name: ctx.flags.name || nid, type, x: spot.x, y: spot.y };
+		/*
+		`shape` is the outer frame and is INDEPENDENT of `type`, which is the glyph inside it. The
+		server's vocabulary is two values and no more, so the refusal is local and names both --
+		relaying a 422 for a closed set the tool already knows is a round trip that teaches nothing.
+		*/
+		if (ctx.flags.shape) {
+			if (!['circle', 'square'].includes(ctx.flags.shape)) die(`--shape takes circle or square, not ${ctx.flags.shape}`);
+			entity.shape = ctx.flags.shape;
+		}
+		const ops = [{ op: 'put', kind: 'node', entity }];
 		if (ctx.flags.link && ctx.flags.link !== true) {
 			const doc = ok(await request(ctx, `/diagrams/${id}`), 'add');
 			const peer = doc.nodes.find((n) => n.id === ctx.flags.link || n.name === ctx.flags.link);
@@ -849,24 +900,36 @@ async function cellToPx(ctx, id, layout, { cx, cy }, what) {
 
 VERBS.push(
 	{
-		name: 'link', group: 'Writing', usage: 'draw link <src> <dst> [--via <cx>,<cy>...] [--closed]',
+		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed]',
 		route: '/diagrams/<id>/commit', method: 'POST',
 		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
 		summary: 'join two things that already exist, bending the route through cells you name',
 		example: 'draw link a-edge core-1 --via -8,-7',
-		args: [{ name: 'src', about: 'a node id or name' }, { name: 'dst', about: 'a node id or name' }],
+		args: [{ name: 'src', about: 'a node id or name' },
+			{ name: 'dst', about: 'a node id or name. Omit it with --closed to loop back to src' }],
 		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
-			{ name: '--closed', about: 'loop dst back to src -- a ring, render-only' },
+			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
 			{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
 			const [src, dst] = args;
-			if (!src || !dst) die('usage: draw link <src> <dst> [--via <cx>,<cy>...]');
+			if (!src) die('usage: draw link <src> <dst> [--via <cx>,<cy>...]');
+			/*
+			A ring is a source and the bends that return to it -- B133.
+
+			`closed` is a render-only property meaning "loop dst back to src", so expressing one
+			needs a dst that is not the source, and in a ring that dst is a WAYPOINT the caller has
+			not created yet. Requiring them to name it would put waypoint minting back on the
+			caller, which is the whole defect this verb exists to close. So with `--closed` and no
+			dst, the LAST bend becomes the destination and the rest are the route: `draw link
+			overlay --closed --via -2,-1 --via 0,1 --via 2,-1` is a triangle hanging off `overlay`.
+			*/
+			const ring = !dst && ctx.flags.closed;
+			if (!dst && !ring) die('usage: draw link <src> <dst> [--via <cx>,<cy>...], or --closed with bends and no dst');
 			const id = await activeId(ctx, ctx.flags);
 			const a = await resolveId(ctx, id, src);
-			const b = await resolveId(ctx, id, dst);
-			if (a === b) die('a link needs two different endpoints');
 
 			const raw = ctx.flags.via === undefined ? [] : [].concat(ctx.flags.via);
+			if (ring && raw.length < 2) die('a ring needs at least two --via bends; with one it would draw a line back over itself');
 			const ops = [];
 			const via = [];
 			for (const v of raw) {
@@ -878,6 +941,9 @@ VERBS.push(
 				ops.push({ op: 'put', kind: 'waypoint', entity: { id: w, x: spot.x, y: spot.y } });
 				via.push(w);
 			}
+			// the ring's destination is its last bend; a plain link's is the node the caller named
+			const b = ring ? via.pop() : await resolveId(ctx, id, dst);
+			if (a === b) die('a link needs two different endpoints');
 			const lid = mint('link');
 			const entity = { id: lid, src: a, dst: b };
 			if (via.length) entity.via = via;
@@ -887,6 +953,59 @@ VERBS.push(
 				{ method: 'POST', headers: await held(ctx, id, 'link'), body: { ops, label: 'link' } }), 'link');
 			return { json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed, version: r.version },
 				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}  v${r.version}` };
+		},
+	},
+	{
+		name: 'panel', group: 'Writing', usage: 'draw panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]',
+		route: '/diagrams/<id>/commit', method: 'POST',
+		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/node/anchors'],
+		summary: 'a node that spans cells and can carry content regions',
+		example: 'draw panel key at -15,-8 --cols 7 --rows 2 --content legend.json',
+		args: [{ name: 'name', about: 'what to call it' },
+			{ name: 'at', about: "the literal word 'at'" },
+			{ name: 'cx,cy', about: 'the CELL of its top-left corner' }],
+		flags: [{ name: '--cols', about: 'width in cells' }, { name: '--rows', about: 'height in cells' },
+			{ name: '--content', about: 'a JSON file of content regions -- see API.md' },
+			{ name: '--type', about: 'the glyph type behind the content; default host' },
+			{ name: '--diagram', about: 'target by id or name' }],
+		/*
+		The split here is deliberate and is the answer to "why is there no --text flag".
+
+		A panel's FRAME is geometry -- an anchor and a span in cells -- so the verb owns it, for the
+		same reason `add` owns a cell: it is the part a caller can get wrong in a way the tool can
+		prevent. Its CONTENT is a list of regions with a dozen optional fields each, and flattening
+		that into flags would produce a command nobody can read and a parser nobody can trust.
+		CLI.md's rule is that a verb earns its place by making a caller less wrong; a --text flag
+		would not, and a file does, because it is reviewable and re-runnable.
+		*/
+		async run(ctx, args) {
+			const [name, at, c] = args;
+			if (!name || at !== 'at' || !c) die('usage: draw panel <name> at <cx>,<cy> --cols n --rows n');
+			const cols = Number(ctx.flags.cols), rows = Number(ctx.flags.rows);
+			if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || rows < 1) {
+				die('--cols and --rows are whole numbers of CELLS, at least 1 each');
+			}
+			const id = await activeId(ctx, ctx.flags);
+			const spot = await cellToPx(ctx, id, 'node', cell(c, 'at'), 'panel');
+			if (spot.occupant) die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
+			const entity = { id: mint('node'), name, type: ctx.flags.type || 'host',
+				x: spot.x, y: spot.y, span: { cols, rows } };
+			if (ctx.flags.content && ctx.flags.content !== true) {
+				const fs = await import('node:fs');
+				let regions;
+				try { regions = JSON.parse(fs.readFileSync(ctx.flags.content, 'utf8')); }
+				catch (e) { die(`--content ${ctx.flags.content}: ${e.message}`); }
+				// accept either a bare array or { content: [...] }, because both are what a caller writes
+				regions = Array.isArray(regions) ? regions : regions.content;
+                if (!Array.isArray(regions)) die('--content must be a JSON array of regions, or an object with a `content` array');
+				entity.content = regions;
+			}
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'panel'),
+					body: { ops: [{ op: 'put', kind: 'node', entity }], label: 'panel' } }), 'panel');
+			return { json: { id: entity.id, name, span: entity.span, regions: entity.content?.length || 0, version: r.version },
+				text: `${name} (${entity.id}) ${cols}x${rows} at cell ${c}`
+					+ `${entity.content ? `, ${entity.content.length} region(s)` : ''}  v${r.version}` };
 		},
 	},
 	{
