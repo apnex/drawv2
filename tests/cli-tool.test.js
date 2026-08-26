@@ -538,3 +538,61 @@ test('B135: the lock token lands under the injected HOME, not the real one', asy
 		assert.equal(fs.existsSync(real), false, 'and the developer\'s home is untouched');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+/*
+B136 -- the token store shrinks as well as grows.
+
+`writeToken(.., null)` removed a file on an explicit `draw unlock`, which is the case that rarely
+happens. The two that do are the lock LAPSING after about a minute and the diagram being DELETED,
+and neither removed anything: 837 files had collected on the first machine to be measured, 835 of
+them naming diagrams that no longer existed.
+
+The cost was never disk. A token that outlives its lock is still sent, so the server answers 423 and
+the tool relays "not server-locked" when the truth is "your lock lapsed" -- a state the tool could
+have known, because the lock response has carried `expiresAt` since B102.
+*/
+test('B136: a lapsed token is discarded locally, not relayed as a 423', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'ttl', '--json')).id;
+		await run('context', id);
+		await run('lock');
+
+		const f = path.join(home, '.config/draw/locks', id);
+		const held = JSON.parse(fs.readFileSync(f, 'utf8'));
+		assert.ok(held.token, 'the token is stored');
+		assert.ok(held.expiresAt, 'and so is when it stops being one -- B102 returns it, so guessing is not required');
+
+		/*
+		Wind back the value the SERVER actually wrote, in the form it wrote it. The first version of
+		this test substituted an ISO string, which the server never sends -- it sends epoch
+		milliseconds -- so it exercised a branch production never takes and stayed green while
+		`Date.parse(1787783231273)` returned NaN and the expiry check never fired at all.
+		*/
+		assert.equal(typeof held.expiresAt, 'number', 'the server sends epoch milliseconds; the test must use that');
+		fs.writeFileSync(f, JSON.stringify({ token: held.token, expiresAt: Date.now() - 1000 }));
+		const err = await captureExit(() => run('add', 'server', 'at', '0,0'));
+		assert.match(err, /draw lock/, 'the tool answers for itself instead of relaying the server');
+		assert.equal(fs.existsSync(f), false, 'and the dead token is gone, so it cannot be sent again');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B136: a token for a deleted diagram is pruned, unexpired or not', async () => {
+	await boot();
+	try {
+		const keep = JSON.parse(await run('create', 'keeper', '--json')).id;
+		await run('context', keep);
+		await run('lock');
+
+		// a perfectly valid token for a diagram that does not exist. readToken cannot catch this --
+		// it is not expired -- which is why pruning is a separate rule and not a stricter read.
+		const dir = path.join(home, '.config/draw/locks');
+		const ghost = path.join(dir, 'diagram-dead01');
+		fs.writeFileSync(ghost, JSON.stringify({ token: 'still-valid', expiresAt: new Date(Date.now() + 600000).toISOString() }));
+		assert.equal(fs.existsSync(ghost), true);
+
+		await run('diagrams');   // any verb that lists is the free moment to prune
+		assert.equal(fs.existsSync(ghost), false, 'the orphan went');
+		assert.equal(fs.existsSync(path.join(dir, keep)), true, 'and the live one stayed');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});

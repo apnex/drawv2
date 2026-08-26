@@ -39,6 +39,9 @@ async function activeId(ctx, flags) {
 		if (!hit) die(`no diagram named ${want}`);
 		return hit.id;
 	}
+	// B136: we are holding the live set, so this is the free moment to drop tokens for diagrams
+	// that are gone. 835 of 837 files on the first machine to be measured were in that state.
+	await pruneTokens(ctx, new Set(list.map((d) => d.id)));
 	const fs = await import('node:fs');
 	try {
 		const saved = fs.readFileSync(ctxFile(ctx), 'utf8').trim();
@@ -118,6 +121,10 @@ export const VERBS = [
 		summary: 'what exists', example: 'draw diagrams',
 		async run(ctx) {
 			const b = ok(await request(ctx, '/diagrams'), 'diagrams');
+			// B136: the rule is "whenever we learn the live set, prune", and this verb learns it
+			// without going through activeId. Putting the call in one of the two places and calling
+			// the rule general is how the store grew to 837 files in the first place.
+			await pruneTokens(ctx, new Set(b.map((d) => d.id)));
 			return { json: b, text: table(b.map((d) => [d.id, d.name, d.version]), ['ID', 'NAME', 'VERSION']) };
 		},
 	},
@@ -195,15 +202,69 @@ carry between them is a write slot it cannot use. Kept beside the context file, 
 holding two locks at once is representable rather than accidentally impossible.
 */
 const tokenFile = (ctx, id) => `${homeOf(ctx)}/.config/draw/locks/${id}`;
+/*
+A stored token carries its own expiry -- B136.
+
+The file used to hold the bare token and nothing removed it except an explicit `draw unlock`, which
+is the one case that rarely happens: a lock LAPSES after about a minute, and a diagram gets DELETED.
+Measured after four days of use: 837 files, 835 of them naming diagrams that no longer existed.
+
+The cost was not disk. A token that outlives its lock is still presented on the next write, so the
+server answers 423 and the tool relays *not server-locked* when the truth is *your lock lapsed* --
+a state the tool could have known, because B102 put `expiresAt` on the lock response for exactly
+this reason. Knowing it locally turns a confusing relay into `run draw lock`.
+
+A file that does not parse is treated as lapsed and removed rather than tolerated. Every one of the
+835 was in that shape, none of them could ever be valid again, and carrying a second format forever
+to avoid one `draw lock` is the back-compat X1 rules out.
+*/
 async function readToken(ctx, id) {
 	const fs = await import('node:fs');
-	try { return fs.readFileSync(tokenFile(ctx, id), 'utf8').trim() || null; } catch { return null; }
+	let raw;
+	try { raw = fs.readFileSync(tokenFile(ctx, id), 'utf8').trim(); } catch { return null; }
+	let held;
+	try { held = JSON.parse(raw); } catch { held = null; }
+	if (!held || typeof held.token !== 'string') { await writeToken(ctx, id, null); return null; }
+	/*
+	The server sends epoch MILLISECONDS, and `Date.parse(1787783231273)` is NaN, so a check written
+	as `Date.parse(v) <= Date.now()` never fires -- it compares NaN and answers false forever. The
+	first version of this was exactly that, and the test did not catch it because the test invented
+	an ISO string the server never sends. Same shape as B107: a fixture that is not the thing that
+	runs. Both forms are accepted because a caller reading this file should not have to know which.
+	*/
+	const deadline = typeof held.expiresAt === 'number' ? held.expiresAt : Date.parse(held.expiresAt);
+	if (Number.isFinite(deadline) && deadline <= Date.now()) { await writeToken(ctx, id, null); return null; }
+	return held.token;
 }
-async function writeToken(ctx, id, token) {
+async function writeToken(ctx, id, token, expiresAt = null) {
 	const fs = await import('node:fs'), path = await import('node:path');
 	fs.mkdirSync(path.dirname(tokenFile(ctx, id)), { recursive: true });
-	if (token) fs.writeFileSync(tokenFile(ctx, id), token, { mode: 0o600 });
+	if (token) fs.writeFileSync(tokenFile(ctx, id), JSON.stringify({ token, expiresAt }), { mode: 0o600 });
 	else try { fs.unlinkSync(tokenFile(ctx, id)); } catch { /* already gone */ }
+}
+
+/*
+Orphans go when we are already holding the answer.
+
+`activeId` lists every diagram on almost every verb, so a token naming an id that is not in that
+list can be deleted for free -- no extra request, no verb for the operator to remember, no growth.
+This is the half `readToken` cannot do: a token for a DELETED diagram may be perfectly unexpired
+and is still worthless.
+
+Deliberately silent and best-effort. A caller ran `draw about`; a message about housekeeping would
+be noise, and a permissions error on someone else's file must not fail their actual command.
+*/
+async function pruneTokens(ctx, live) {
+	const fs = await import('node:fs'), path = await import('node:path');
+	const dir = path.dirname(tokenFile(ctx, 'x'));
+	let names;
+	try { names = fs.readdirSync(dir); } catch { return 0; }
+	let gone = 0;
+	for (const name of names) {
+		if (live.has(name)) continue;
+		try { fs.unlinkSync(path.join(dir, name)); gone++; } catch { /* not ours to remove */ }
+	}
+	return gone;
 }
 const held = async (ctx, id, what) => {
 	const t = await readToken(ctx, id);
@@ -263,7 +324,7 @@ VERBS.push(
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			const b = ok(await request(ctx, `/diagrams/${id}/lock`, { method: 'POST', body: { owner: 'agent' } }), 'lock');
-			await writeToken(ctx, id, b.token);
+			await writeToken(ctx, id, b.token, b.expiresAt || b.heldUntil || null);
 			return { json: { ...b, token: 'stored' }, text: `locked ${id}  v${b.version}  frees ${new Date(b.expiresAt).toISOString()}` };
 		},
 	},
