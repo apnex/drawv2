@@ -48,6 +48,10 @@ Positions are **anchors**, never pixels.\
 Ask for **context** rather than assembling it.\
 `draw about <entity>` answers what connects to a thing, what contains it and where it sits, in one call -- so a caller never derives a relationship the model could have been asked for.
 
+The same idea drives the structural verbs, which is why they take cells and names rather than geometry.\
+`draw link a-edge core-1 --via -8,-7` mints the waypoints a bend needs, and `draw zone site-a from -15,-6 to -9,4` owns the half pitch the zone grid sits on.\
+Both existed only as hand-written JSON through `commit --ops` until B133, and the cost was that the caller re-derived rules the codebase already owns -- which is the same failure as reaching for `curl`, wearing a better disguise.
+
 ---
 
 ## Design

@@ -337,3 +337,78 @@ test('B119: every request a verb issues is declared, in route or also', () => {
 	}
 });
 
+
+/*
+B133 -- the structural verbs, and the rules they take off the caller.
+
+The reason these exist is not convenience. Before them, anything with a zone, a group, a routed
+link or a move went through `commit --ops` as hand-authored entity JSON, which meant the CALLER
+re-derived cell-to-pixel, the zone half-pitch offset, the `<kind>-<six hex>` id grammar and three
+invariants. A 20-node topology built that way got two of them wrong on the first attempt. So what
+is asserted here is that the TOOL owns each of those, not that the verb returns 200.
+*/
+test('B133: draw zone takes CELLS and owns the half-pitch offset', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'zonetest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		const z = JSON.parse(await run('zone', 'site-a', 'from', '-15,-6', 'to', '-9,4', '--json'));
+		/*
+		The zone grid sits half a pitch off the node grid, so a zone bounding cells -15..-9 starts
+		30 BEFORE the first cell centre and runs 60 past the last. These are the exact numbers a
+		caller was computing by hand, and the reason the verb takes cells rather than a rectangle.
+		*/
+		assert.equal(z.x, -930, 'left edge is half a pitch before cell -15');
+		assert.equal(z.y, -390, 'top edge is half a pitch before cell -6');
+		assert.equal(z.w, 420, 'seven cells wide');
+		assert.equal(z.h, 660, 'eleven cells tall');
+		assert.match(z.id, /^zone-[0-9a-f]{6}$/, 'the id grammar is the tool\'s job');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B133: draw link mints a waypoint per --via, and repeats accumulate', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'linktest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-6,0', '--name', 'left');
+		await run('add', 'router', 'at', '6,0', '--name', 'right');
+
+		const one = JSON.parse(await run('link', 'left', 'right', '--via', '0,-2', '--json'));
+		assert.equal(one.via.length, 1, 'one --via mints one waypoint');
+		assert.match(one.via[0], /^waypoint-[0-9a-f]{6}$/);
+
+		/*
+		A REPEATED flag accumulates. `parseArgs` used to assign, so the second `--via` overwrote the
+		first: the link drew one bend instead of two and reported success. Found by using the verb
+		minutes after writing it, which is the argument for driving the tool rather than reading it.
+		*/
+		const two = JSON.parse(await run('link', 'left', 'right', '--via', '0,2', '--via', '2,2', '--json'));
+		assert.equal(two.via.length, 2, 'two --via flags mint two waypoints, in order');
+		assert.notEqual(two.via[0], two.via[1], 'and they are distinct waypoints');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B133: a structural verb refuses a pixel where a cell belongs', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'celltest', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		// B110 ruled that the server REFUSES off-grid geometry rather than snapping it. The CLI's
+		// job is to make the mistake unrepresentable, so the refusal names the unit, not the bound.
+		// -900,-360 is a syntactically valid CELL, so the refusal cannot come from the format --
+		// it comes from the anchor lookup, and it must name the UNIT rather than the bound.
+		// `captureExit`, not assert.rejects: `die` exits the process, and a test that awaits a
+		// rejection instead silently takes the whole FILE down with every subtest still green.
+		const unit = await captureExit(() => run('zone', 'z', 'from', '-900,-360', 'to', '-540,240'));
+		assert.match(unit, /look like pixels, and this takes a CELL/, 'the verb names the unit mistake, not just "outside"');
+		assert.match(unit, /anchor nearest/, 'and offers the verb that converts them');
+
+		// a malformed pair is refused on FORMAT, before any request is made
+		const bad = await captureExit(() => run('zone', 'z', 'from', '1.5,2', 'to', '3,4'));
+		assert.match(bad, /takes a CELL like/, 'a fractional cell never reaches the server');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});

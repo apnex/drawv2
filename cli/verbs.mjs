@@ -651,14 +651,8 @@ VERBS.push({
 		const id = await activeId(ctx, ctx.flags);
 		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'add').anchors;
 		const spot = anchors.find((a) => a.cx === cx && a.cy === cy);
-		if (!spot) {
-			// the likely mistake is pixels, and cells are small numbers -- say so rather than
-			// leaving the caller to wonder why a coordinate they can see on screen is "outside"
-			const looksLikePixels = Math.abs(cx) > 40 || Math.abs(cy) > 40;
-			const range = `cx ${anchors[0].cx}..${anchors[anchors.length - 1].cx}`;
-			die(`no anchor at cell ${cx},${cy} (${range})`
-				+ (looksLikePixels ? ` -- those look like pixels; \`draw anchor nearest ${cx} ${cy}\` converts them` : ''));
-		}
+		// B133: the same sentence every cell-taking verb gives, from one place
+		if (!spot) die(noAnchor(cx, cy, anchors, 'node'));
 		if (spot.occupant) die(`cell ${cx},${cy} is taken by ${spot.occupant} -- \`draw about ${spot.occupant}\` says what it is`);
 
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
@@ -786,6 +780,218 @@ VERBS.push(
 			const b = ok(await request(ctx, `/workspace/grants/${encodeURIComponent(args[0])}`, { method: 'DELETE' }), 'workspace revoke');
 			// a per-diagram grant may still apply, so the server says what is left rather than just "done"
             return { json: b, text: `${args[0]} now: ${b.effective || 'no workspace access'}` };
+		},
+	},
+);
+
+/*
+Structural verbs -- B133 / H11.12.
+
+Everything below existed only as hand-authored JSON through `commit --ops` until this landed, and
+the cost was not the typing. It was that an agent building a zone had to know the zone grid sits
+half a pitch off the node grid, an agent routing a link had to mint waypoint ids in a grammar
+written down in `server/validate.js`, and an agent doing either had to re-derive cell-to-pixel. A
+20-node topology built this way re-implemented six rules the codebase already owns, in a throwaway
+script, and got two of them wrong on the first attempt.
+
+That is B117 wearing a better disguise: not reaching past the tool to `curl`, but reaching past the
+tool's vocabulary to a generic transport inside it, with the identical consequence -- the tool stays
+as incapable as it was and the gap stops being visible.
+
+These are CONTEXTUAL, not one wrapper per route. `draw link a b --via 3,-2` mints the waypoints,
+because a waypoint is an implementation detail of a bend and an agent that has to mint one is an
+agent doing the tool's job. `draw zone` takes the two CELLS it should enclose and owns the offset
+arithmetic. The test is whether the verb makes a caller less wrong, not whether it mirrors an
+endpoint -- `commit --ops` stays for genuine batches and for the regions a verb would only obscure.
+*/
+
+const CELL = /^-?\d+,-?\d+$/;
+const cell = (s, what) => {
+	if (!CELL.test(String(s))) {
+		die(`${what} takes a CELL like 3,-2 -- whole numbers, comma separated. `
+			+ 'Pixels would let you land off the grid, which the server refuses (B110); '
+			+ '`draw anchor nearest <x> <y>` converts them.');
+	}
+	const [cx, cy] = String(s).split(',').map(Number);
+	return { cx, cy };
+};
+// the id grammar lives in server/validate.js; minting it by hand in a caller's script is B133
+const mint = (kind) => `${kind}-${Math.random().toString(16).slice(2, 8).padStart(6, '0')}`;
+
+// cell -> pixel for BOTH grids, asked of the server rather than recomputed here. `add` already
+// reads the node anchors for exactly this reason; doing the arithmetic in the CLI would put a
+// second copy of `kernel/geometry.mjs` in a second language, which is the twin B111 closed.
+async function anchorsOf(ctx, id, layout) {
+	return ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors`), 'anchors').anchors;
+}
+/*
+The one refusal for "that cell does not exist", shared by every verb that takes one.
+
+`add` grew this first and kept it inline: the likely mistake is PIXELS, cells are small numbers, and
+a caller who typed a coordinate they can see on screen deserves to be told the unit is wrong rather
+than that their position is "outside". Extracted at B133 because four more verbs now need the same
+sentence, and four copies of a diagnostic is how the diagnostic stops being true in three of them.
+*/
+function noAnchor(cx, cy, anchors, layout) {
+	const looksLikePixels = Math.abs(cx) > 40 || Math.abs(cy) > 40;
+	const range = anchors.length ? `cx ${anchors[0].cx}..${anchors[anchors.length - 1].cx}` : 'none';
+	return `no ${layout} anchor at cell ${cx},${cy} (${range})`
+		+ (looksLikePixels
+			? ` -- those look like pixels, and this takes a CELL; \`draw anchor nearest ${cx} ${cy}\` converts them`
+			: ` -- \`draw anchor free --layout ${layout}\` lists what is open`);
+}
+async function cellToPx(ctx, id, layout, { cx, cy }, what) {
+	const anchors = await anchorsOf(ctx, id, layout);
+	const spot = anchors.find((a) => a.cx === cx && a.cy === cy);
+	if (!spot) die(noAnchor(cx, cy, anchors, layout));
+	return spot;
+}
+
+VERBS.push(
+	{
+		name: 'link', group: 'Writing', usage: 'draw link <src> <dst> [--via <cx>,<cy>...] [--closed]',
+		route: '/diagrams/<id>/commit', method: 'POST',
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
+		summary: 'join two things that already exist, bending the route through cells you name',
+		example: 'draw link a-edge core-1 --via -8,-7',
+		args: [{ name: 'src', about: 'a node id or name' }, { name: 'dst', about: 'a node id or name' }],
+		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
+			{ name: '--closed', about: 'loop dst back to src -- a ring, render-only' },
+			{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [src, dst] = args;
+			if (!src || !dst) die('usage: draw link <src> <dst> [--via <cx>,<cy>...]');
+			const id = await activeId(ctx, ctx.flags);
+			const a = await resolveId(ctx, id, src);
+			const b = await resolveId(ctx, id, dst);
+			if (a === b) die('a link needs two different endpoints');
+
+			const raw = ctx.flags.via === undefined ? [] : [].concat(ctx.flags.via);
+			const ops = [];
+			const via = [];
+			for (const v of raw) {
+				const spot = await cellToPx(ctx, id, 'node', cell(v, '--via'), 'link');
+				// a waypoint IS a node for placement (B110/B112), so an occupied anchor refuses here
+				// rather than at the server, where the message would name a cell the caller never typed
+				if (spot.occupant) die(`--via ${v} is taken by ${spot.occupant} -- a waypoint needs a free anchor`);
+				const w = mint('waypoint');
+				ops.push({ op: 'put', kind: 'waypoint', entity: { id: w, x: spot.x, y: spot.y } });
+				via.push(w);
+			}
+			const lid = mint('link');
+			const entity = { id: lid, src: a, dst: b };
+			if (via.length) entity.via = via;
+			if (ctx.flags.closed) entity.closed = true;
+			ops.push({ op: 'put', kind: 'link', entity });
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'link'), body: { ops, label: 'link' } }), 'link');
+			return { json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed, version: r.version },
+				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}  v${r.version}` };
+		},
+	},
+	{
+		name: 'zone', group: 'Writing', usage: 'draw zone <name> from <cx>,<cy> to <cx>,<cy>',
+		route: '/diagrams/<id>/commit', method: 'POST',
+		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/zone/anchors'],
+		summary: 'enclose a rectangle of CELLS -- the half-pitch offset is the tool\'s problem, not yours',
+		example: 'draw zone site-a from -15,-6 to -9,4',
+		args: [{ name: 'name', about: 'what to call the zone' },
+			{ name: 'from', about: "the literal word 'from'" },
+			{ name: 'cx,cy', about: 'the first corner CELL, inclusive' },
+			{ name: 'to', about: "the literal word 'to'" },
+			{ name: 'cx,cy', about: 'the opposite corner CELL, inclusive' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [name, from, c0, to, c1] = args;
+			if (!name || from !== 'from' || to !== 'to' || !c0 || !c1) {
+				die('usage: draw zone <name> from <cx>,<cy> to <cx>,<cy>');
+			}
+			const A = cell(c0, 'from'), B = cell(c1, 'to');
+			const id = await activeId(ctx, ctx.flags);
+			// resolve both corners on the NODE grid, then let the server's zone grid own the offset:
+			// a zone bounds cells, so its edges fall BETWEEN them, and that half pitch is exactly the
+			// arithmetic every caller was getting wrong by hand
+			const lo = await cellToPx(ctx, id, 'node', { cx: Math.min(A.cx, B.cx), cy: Math.min(A.cy, B.cy) }, 'zone');
+			const hi = await cellToPx(ctx, id, 'node', { cx: Math.max(A.cx, B.cx), cy: Math.max(A.cy, B.cy) }, 'zone');
+			const zid = mint('zone');
+			const entity = { id: zid, name, x: lo.x - 30, y: lo.y - 30, w: hi.x - lo.x + 60, h: hi.y - lo.y + 60 };
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'zone'), body: { ops: [{ op: 'put', kind: 'zone', entity }], label: 'zone' } }), 'zone');
+			return { json: { id: zid, ...entity, version: r.version },
+				text: `${name} (${zid}) ${entity.w}x${entity.h} at ${entity.x},${entity.y}  v${r.version}` };
+		},
+	},
+	{
+		name: 'group', group: 'Writing', usage: 'draw group <name> <ref> <ref> [ref...]',
+		route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'name a set of nodes as one thing',
+		example: 'draw group web-tier-a a-web-1 a-web-2 a-web-3',
+		args: [{ name: 'name', about: 'what to call the group' },
+			{ name: 'ref...', about: 'two or more node ids or names' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [name, ...refs] = args;
+			// the server enforces this too (B85); saying it here costs a round trip nobody needs
+			if (!name || refs.length < 2) die('a group holds at least two members: draw group <name> <ref> <ref> [...]');
+			const id = await activeId(ctx, ctx.flags);
+			const members = [];
+			for (const r of refs) members.push(await resolveId(ctx, id, r));
+			const gid = mint('group');
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'group'),
+					body: { ops: [{ op: 'put', kind: 'group', entity: { id: gid, name, members } }], label: 'group' } }), 'group');
+			return { json: { id: gid, name, members, version: r.version },
+				text: `${name} (${gid}) holds ${members.length}: ${members.join(' ')}  v${r.version}` };
+		},
+	},
+	{
+		name: 'move', group: 'Writing', usage: 'draw move <ref> to <cx>,<cy>',
+		route: '/diagrams/<id>/commit', method: 'POST',
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
+		summary: 'put an existing node or waypoint on a different anchor',
+		example: 'draw move a-web-1 to -14,1',
+		args: [{ name: 'ref', about: 'a node or waypoint, by id or name' },
+			{ name: 'to', about: "the literal word 'to'" },
+			{ name: 'cx,cy', about: 'the destination CELL' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [ref, to, c] = args;
+			if (!ref || to !== 'to' || !c) die('usage: draw move <ref> to <cx>,<cy>');
+			const id = await activeId(ctx, ctx.flags);
+			const eid = await resolveId(ctx, id, ref);
+			const kind = eid.split('-')[0];
+			if (kind !== 'node' && kind !== 'waypoint') die(`${ref} is a ${kind}; only a node or a waypoint sits on an anchor`);
+			const spot = await cellToPx(ctx, id, 'node', cell(c, 'to'), 'move');
+			if (spot.occupant && spot.occupant !== eid) {
+				die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
+			}
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'move'),
+					body: { ops: [{ op: 'set', kind, id: eid, patch: { x: spot.x, y: spot.y } }], label: 'move' } }), 'move');
+			return { json: { id: eid, at: { x: spot.x, y: spot.y }, version: r.version },
+				text: `${eid} -> cell ${c} = ${spot.x},${spot.y}  v${r.version}` };
+		},
+	},
+	{
+		name: 'rename', group: 'Writing', usage: 'draw rename <ref> <name>',
+		route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'change what something is called',
+		example: 'draw rename node-019130 web-1',
+		args: [{ name: 'ref', about: 'a node, zone or group, by id or name' },
+			{ name: 'name', about: 'the new name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const [ref, name] = args;
+			if (!ref || !name) die('usage: draw rename <ref> <name>');
+			const id = await activeId(ctx, ctx.flags);
+			const eid = await resolveId(ctx, id, ref);
+			const kind = eid.split('-')[0];
+			// a waypoint has no name field at all, and a link's name would be invented
+			if (!['node', 'zone', 'group'].includes(kind)) die(`a ${kind} has no name -- only a node, zone or group carries one`);
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'rename'),
+					body: { ops: [{ op: 'set', kind, id: eid, patch: { name } }], label: 'rename' } }), 'rename');
+			return { json: { id: eid, name, version: r.version }, text: `${eid} is now ${name}  v${r.version}` };
 		},
 	},
 );

@@ -98,10 +98,12 @@ Writing
   lock / unlock                 take and release the write slot
   lock status                   who holds it, when it frees, and the human hold
   commit [--ops f.json|-]       a batch of ops as one transaction
-  node add|move|set|rm          the high-level verbs, server-minted ids
-  link add|rm
-  zone add|rm
-  group add|rm
+  add <type> at <cx>,<cy>       a node on a named anchor -- a cell, never a pixel
+  link <src> <dst> [--via c]    join two things; --via mints the waypoints a bend needs
+  zone <name> from <c> to <c>   enclose a rectangle of CELLS; the half-pitch is ours
+  group <name> <ref> <ref>      name a set of nodes as one thing
+  move <ref> to <cx>,<cy>       put an existing node or waypoint on a different anchor
+  rename <ref> <name>           change what something is called
   undo [--to seq] / redo        with the expected version, never implicit
   select <ids...>               the authoritative selection
 
@@ -148,6 +150,36 @@ near <x> <y>          what is around a point, which is how an agent places witho
 
 Each needs a route that does not exist yet, and each composes existing model methods behind it.\
 That is the test for a contextual verb: it assembles what the model already knows, and it never computes a relationship the model could have been asked for.
+
+### The structural verbs, and what they take off the caller
+
+Amended 2026-08-26, and the amendment corrects this document rather than the code.\
+The verb list above used to read `node add|move|set|rm`, `link add|rm`, `zone add|rm`, `group add|rm`.\
+That is one sub-verb per CRUD operation per kind, which is exactly the API mirroring the section above rules against.\
+It was never built that way, and the gap was not noticed because nothing checks this list against the manifest.
+
+What the absence actually cost is **B133**.\
+With no write verb for a zone, a group, a waypoint, a link between existing nodes, a move or a rename, every structural change went through `commit --ops` as hand-authored entity JSON.\
+A twenty-node topology built that way made the CALLER re-derive six rules the codebase already owns: cell-to-pixel from `kernel/geometry.mjs`, the zone grid's half-pitch offset from `LAYOUTS`, the `<kind>-<six hex>` id grammar from `server/validate.js`, one-occupant-per-anchor from `model/invariants.mjs`, one-straight-link-per-pair from B80, and waypoint exclusivity, which was written down nowhere and was learned by being refused.\
+Two of the six were wrong on the first attempt.
+
+That is B117 in a better disguise.\
+B117 was an agent reaching past the tool to `curl`; this is an agent reaching past the tool's vocabulary to a generic transport inside it.\
+The consequence is identical -- the tool stays as incapable as it was, the gap stops being visible, and the reasoning ends up in a throwaway script instead of a verb anyone can re-run.
+
+So each verb owns a rule rather than a route:
+
+| verb | the rule it takes off the caller |
+|---|---|
+| `link <src> <dst> --via <cell>` | a waypoint is an implementation detail of a bend, so the verb mints them, orders them, and refuses an occupied anchor before the server has to |
+| `zone <name> from <cell> to <cell>` | the zone grid sits half a pitch off the node grid; the caller names the cells it wants enclosed and never sees the offset |
+| `group <name> <ref> <ref>` | resolves names to ids and refuses a group of one locally, because the server's refusal would cost a round trip to say the same thing |
+| `move <ref> to <cell>` | occupancy, checked against the anchor list rather than discovered as a 422 |
+| `rename <ref> <name>` | which kinds carry a name at all -- a waypoint does not, and a link's would be invented |
+
+`commit --ops` stays.\
+A batch transport is legitimate, and content regions are genuinely better expressed as data than as flags.\
+What changed is that it is no longer the only way to say anything structural.
 
 ## Help is a first-class output
 

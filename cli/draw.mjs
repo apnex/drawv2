@@ -34,7 +34,20 @@ function parseArgs(argv) {
 		*/
 		const next = argv[i + 1];
 		if (next === undefined || next.startsWith('--')) { flags[key] = true; continue; }
-		flags[key] = argv[++i];
+		/*
+		A REPEATED flag accumulates; it does not overwrite.
+
+		`flags[key] = argv[++i]` kept only the last, so `draw link a b --via 3,-2 --via 5,-2` drew
+		one bend and silently dropped the other -- a command that appears to succeed and produces
+		the wrong picture, which is the same shape as the boolean bug above. Found within minutes
+		of `--via` existing, by using it.
+
+		Single occurrence stays a scalar so no existing consumer changes; only repetition, which
+		previously discarded data, produces an array.
+		*/
+		const value = argv[++i];
+		if (Object.hasOwn(flags, key)) flags[key] = [].concat(flags[key], value);
+		else flags[key] = value;
 	}
 	return { flags, rest };
 }

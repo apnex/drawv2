@@ -26,20 +26,28 @@ const ALLOW = {};
 Routes the tool deliberately does NOT wrap, with the reason, keyed by path so an entry names one
 operation rather than a whole family.
 
-The high-level entity verbs take pixels. `draw add <type> at <cx>,<cy>` and `draw place <type>
-near|inside|between` cover the same ground and cover it better, because a cell cannot be off the
-grid where a pixel can -- a thin wrapper would re-open the class of mistake B110 closed. `commit
---ops` stays the exact escape hatch for anything the two verbs cannot say.
+Each of these is SUPERSEDED, not missing, and the distinction is the whole design: the entity routes
+take pixels, and a cell cannot be off the grid where a pixel can, so a thin wrapper would re-open the
+class of mistake B110 closed. Every one now has a contextual verb that commits through
+`/diagrams/:id/commit` instead.
+
+B133 is why the reasons below are specific rather than a repeated "as above". They used to read that
+way, and eight identical notes hid the fact that half of them named work that had no verb AT ALL --
+so a 20-node topology went in as one hand-authored `commit --ops` and re-derived cell-to-pixel, the
+zone half-pitch, the id grammar and three invariants in a throwaway script. A deferral that does not
+say what it costs is not a deferral, it is an omission with a comment on it.
 */
 const PENDING = {
-	'diagrams/:id/nodes': 'superseded by draw add / draw place; a pixel-taking wrapper would re-open B110',
-	'diagrams/:id/nodes/:entity': 'as above; a move is a commit --ops, or draw place on a free anchor',
-	'diagrams/:id/links': 'as above; draw place --link creates the common case',
-	'diagrams/:id/links/:entity': 'as above',
-	'diagrams/:id/zones': 'as above; zones sit on the half-offset grid, which an anchor verb should own',
-	'diagrams/:id/zones/:entity': 'as above',
-	'diagrams/:id/groups': 'as above',
-	'diagrams/:id/groups/:entity': 'as above',
+	'diagrams/:id/nodes': 'superseded by `draw add <type> at <cell>` and `draw place near|inside|between` (B110: a wrapper would take pixels)',
+	// keyed by PATH, so one reason has to cover POST, PATCH and DELETE together. Where they differ,
+	// the reason says so rather than letting the strongest case speak for all three.
+	'diagrams/:id/nodes/:entity': 'PATCH superseded by `draw move` and `draw rename`; DELETE has NO verb -- removing an entity is still `commit --ops` with `{op:"del"}` (B133 remainder)',
+	'diagrams/:id/links': 'superseded by `draw link <src> <dst> --via <cell>`, which mints the waypoints a bend needs (B133)',
+	'diagrams/:id/links/:entity': 'no verb yet: re-routing an existing link. `draw link` replaces it; `commit --ops` edits it',
+	'diagrams/:id/zones': 'superseded by `draw zone <name> from <cell> to <cell>`, which owns the half-pitch offset (B133)',
+	'diagrams/:id/zones/:entity': 'PATCH partly superseded by `draw rename`; resizing and DELETE have no verb (B133 remainder)',
+	'diagrams/:id/groups': 'superseded by `draw group <name> <ref> <ref>` (B133)',
+	'diagrams/:id/groups/:entity': 'PATCH partly superseded by `draw rename`; membership changes and DELETE have no verb (B133 remainder)',
 };
 
 
