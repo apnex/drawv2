@@ -7,14 +7,38 @@ hardcodes an extent. The kernel owns numbers; this owns state + chrome.
 /* ---- app frame ---- */
 html, body { margin: 0; height: 100%; background: #060606; font-family: monospace; overflow: hidden; }
 body { display: flex; flex-direction: column; }
+/*
+B156: ONE height for every control in the bar.
+
+Nothing declared a height, so each element computed its own from font size, padding and border, and
+the eleven controls landed at four different values -- the inputs and buttons near 26px, the two
+indicators near 17px, `#lockstate` near 19px, and the two bare spans at whatever their line box came
+to. A row of controls that do not share a top and bottom edge reads as clutter however carefully
+each one is aligned, and B155 settled the horizontal geometry while leaving the vertical unstated.
+
+`--control-h` is the single number, and `box-sizing: border-box` is what makes it honest: with it,
+padding and border are inside the declared height, so the figure here is the height on screen rather
+than a starting point every element adds to differently. Vertical padding is zeroed at each site all
+the same, because with a fixed height it buys nothing and can only squeeze the text.
+*/
 #menu {
+	--control-h: 26px;
 	flex: 0 0 40px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
 	background: #181818; border-bottom: 1px solid #262626; color: #aed581; user-select: none;
 }
+#menu > * { height: var(--control-h); box-sizing: border-box; }
+/*
+The spans are not controls and do not centre their own text. `inline-block` plus a `line-height`
+equal to the height does it, for a single line, and is chosen over flex centring deliberately:
+`text-overflow: ellipsis` has no effect on a flex container, and `#banner` needs the ellipsis
+because it is the element absorbing the slack. `inline-block` also matters on its own -- `height`
+does nothing to an inline element, which is what a bare span is.
+*/
+#menu > span { display: inline-block; line-height: var(--control-h); }
 #logo { font-weight: bold; letter-spacing: 1px; }
 #menu input, #menu select, #menu button {
 	background: #101010; color: #ddddff; border: 1px solid #303030; border-radius: 4px;
-	font-family: monospace; font-size: 13px; padding: 4px 8px; outline: none;
+	font-family: monospace; font-size: 13px; padding: 0 8px; outline: none;
 }
 #menu input:focus, #menu select:focus { border-color: #aed581; }
 #menu button { cursor: pointer; }
@@ -39,7 +63,7 @@ stays right-aligned so it still reads where it always did, and grows leftward in
 }
 #lockstate {
 	font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em;
-	padding: 3px 0; border-radius: 10px; color: #101010; display: inline-block; box-sizing: border-box;
+	padding: 0; border-radius: 10px; color: #101010; box-sizing: border-box;
 	width: 76px; text-align: center;
 }
 .lock-unlocked { background-color: #aed581; }
@@ -77,7 +101,7 @@ the generic control chrome BEAT the indicator's own rule -- its `border: 0`, `bo
 with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 */
 #menu #agents, #menu #whoami {
-	font: inherit; font-size: 11px; padding: 2px 1ch; border: 0; border-radius: 3px;
+	font: inherit; font-size: 11px; padding: 0 1ch; border: 0; border-radius: 3px;
 	width: 26ch; box-sizing: border-box; text-align: center;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }

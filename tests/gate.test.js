@@ -1035,3 +1035,41 @@ test('B155: nothing in the cluster hides, and every branch leaves text behind', 
 	assert.doesNotMatch(src, /menu\.whoami\.textContent\s*=\s*''/,
 		'an empty string is a blank box — the resting state has to say something');
 });
+
+/*
+B156 / H10.27 -- one height for every control in the header.
+
+Nothing declared a height, so each of the eleven elements computed its own from font size, padding
+and border and landed at one of four values: the inputs and buttons near 26px, the two indicators
+near 17px, `#lockstate` near 19px, and the two bare spans at their line box. A row of controls that
+do not share a top and bottom edge reads as clutter however carefully each is aligned.
+
+The invariant is that the height has ONE source. A second `height` on a header element is how four
+values happened in the first place, and it would not look wrong in a diff.
+*/
+test('B156: every header control takes its height from one declaration', () => {
+	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
+	const header = css.slice(css.indexOf('#menu {'), css.indexOf('#content {'));
+
+	assert.match(header, /#menu\s*\{[^}]*--control-h:\s*\d+px/, 'the single number is a custom property on #menu');
+	assert.match(header, /#menu > \*\s*\{[^}]*height:\s*var\(--control-h\)/, 'and every child takes it');
+	assert.match(header, /#menu > \*\s*\{[^}]*box-sizing:\s*border-box/,
+		'border-box is what makes the figure the height on screen rather than one each element adds to');
+
+	// no element may set its own height, which is the shape of the original defect
+	const rogue = [...header.matchAll(/^#(?!menu > )([\w-]+)[^{]*\{([^}]*)\}/gm)]
+		.filter(([, , body]) => /(^|;|\s)height:/.test(body)).map((m) => m[1]);
+	assert.deepEqual(rogue, [], 'a second height source is how four different heights happened');
+
+	/*
+	`height` does nothing to an inline element, so a bare span would ignore the rule entirely and
+	silently keep its line box. The spans are made inline-block, and centred with `line-height`
+	rather than flex, because `text-overflow: ellipsis` has no effect on a flex container and
+	`#banner` is the element absorbing the slack.
+	*/
+	assert.match(header, /#menu > span\s*\{[^}]*display:\s*inline-block/, 'or the spans ignore the height');
+	assert.match(header, /#menu > span\s*\{[^}]*line-height:\s*var\(--control-h\)/, 'and their text sits off-centre');
+	const banner = header.match(/#banner\s*\{([^}]*)\}/);
+	assert.ok(banner && /text-overflow:\s*ellipsis/.test(banner[1]), '#banner must still ellipse');
+	assert.doesNotMatch(banner[1], /display:\s*(inline-)?flex/, 'flex would silently disable that ellipsis');
+});
