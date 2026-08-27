@@ -10,6 +10,7 @@ exactly one side writes at a time.
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/index.mjs';
 import { NODE_EXT } from '../model/index.mjs';
+import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -419,7 +420,7 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 		(async () => {
 			const body = await readJson(req);
 			if (bodyRejected(req, res, body)) return;
-			const name = typeof body?.name === 'string' ? body.name.slice(0, 64) : undefined;
+			const name = typeof body?.name === 'string' ? body.name.slice(0, NAME_MAX) : undefined;
 			const result = store.create(name, body?.doc || null, principal);
 			if (!result.ok) {
 				const capped = /limit reached/.test(result.error);

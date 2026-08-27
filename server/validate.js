@@ -4,7 +4,9 @@ radically narrowed). The server never trusts the wire: every mutation and every
 pushed document is validated for shape, ranges, and referential integrity.
 */
 
-import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
+import { NODE_EXT, ZONE_EXT, SELECTABLE_KINDS } from '../model/index.mjs';
+import { OPTIONAL } from '../model/shape.mjs';
+import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
 import { collectionCap } from '../engine/policy.mjs';
 
@@ -24,7 +26,9 @@ alphanumeric, which is the DNS label shape and therefore already familiar to any
 */
 const PRINCIPAL = /^(user:[^\s@]{1,64}@[^\s@]{1,190}|agent:[a-z0-9][a-z0-9-]{0,62})$/;
 const ID = /^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$/;
-const SELECTABLE = /^(node|waypoint|link|zone)-[0-9a-f]{6}$/;   // selectable kinds (group/diagram excluded)
+// DERIVED from the model's list, which used to be pinned to this line by a comment reading
+// "MUST match server/validate.js SELECTABLE" -- a comment doing a check's job (B86).
+const SELECTABLE = new RegExp(`^(${SELECTABLE_KINDS.join('|')})-[0-9a-f]{6}$`);
 const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 const ACTIONS = ['put', 'set', 'del'];
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
@@ -83,17 +87,17 @@ const id = (v, kind) => typeof v === 'string' && ID.test(v) && v.startsWith(kind
 // a node's multi-cell footprint: {cols,rows} positive integer cell counts (no extra keys). 64 ≫ the
 // surface in cells (32×18) — a generous cap; the anchor x/y range-check keeps the node on-surface.
 const dims = (v) => !!v && typeof v === 'object' && !Array.isArray(v)
-	&& int(v.cols, 1, 64) && int(v.rows, 1, 64)
+	&& int(v.cols, 1, SPAN_MAX) && int(v.rows, 1, SPAN_MAX)
 	&& Object.keys(v).every((k) => k === 'cols' || k === 'rows');
 // a node CONTENT region (W2): a text|glyph in a merged socket sub-grid. All free strings are constrained
 // for SVG-attribute safety — colours hex-only, glyph [a-z0-9-], text length-capped (rendered escaped).
 const color = (v) => typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v);
 const REGION = {
-	at: (v) => Array.isArray(v) && v.length === 2 && v.every((n) => int(n, 0, 64)),
-	cols: (v) => int(v, 1, 64),
-	rows: (v) => int(v, 1, 64),
+	at: (v) => Array.isArray(v) && v.length === 2 && v.every((n) => int(n, 0, SPAN_MAX)),
+	cols: (v) => int(v, 1, SPAN_MAX),
+	rows: (v) => int(v, 1, SPAN_MAX),
 	content: (v) => v === 'text' || v === 'glyph',
-	value: (v) => str(v, 256),
+	value: (v) => str(v, CONTENT_VALUE_MAX),
 	glyph: (v) => str(v, 32) && /^[a-z0-9-]+$/.test(v),
 	align: (v) => v === 'left' || v === 'center' || v === 'right',
 	outline: (v) => typeof v === 'boolean',
@@ -111,7 +115,7 @@ const content = (v) => Array.isArray(v) && v.length <= 200 && v.every(region);
 const FIELDS = {
 	node: {
 		id: (v) => id(v, 'node'),
-		name: (v) => str(v, 64),
+		name: (v) => str(v, NAME_MAX),
 		type: (v) => str(v, 32) && /^[a-z0-9-]+$/.test(v),
 		shape: (v) => SHAPES.includes(v),
 		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),
@@ -133,24 +137,32 @@ const FIELDS = {
 	},
 	zone: {
 		id: (v) => id(v, 'zone'),
-		name: (v) => str(v, 64),
+		name: (v) => str(v, NAME_MAX),
 		// the zone grid is offset by half a pitch: a zone bounds CELLS, so its edges fall between them
 		x: (v) => num(v, -ZEXT.x, ZEXT.x) && onGrid('zone', v),
 		y: (v) => num(v, -ZEXT.y, ZEXT.y) && onGrid('zone', v),
-		w: (v) => num(v, 60, 2 * ZEXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
-		h: (v) => num(v, 60, 2 * ZEXT.y) && onGrid('node', v)
+		w: (v) => num(v, PITCH, 2 * ZEXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
+		h: (v) => num(v, PITCH, 2 * ZEXT.y) && onGrid('node', v)
 	},
 	group: {
 		id: (v) => id(v, 'group'),
-		name: (v) => str(v, 64),
+		name: (v) => str(v, NAME_MAX),
 		members: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node') || id(m, 'waypoint'))
 	}
 };
 
-// fields that may be omitted even in a full (put / doc-load) validation: documents
-// written before the field existed must still load. Absent → the renderer's default
-// (node.shape → 'circle'). New writes that include the field are still range-checked.
-const OPTIONAL = { node: new Set(['shape', 'span', 'content']), link: new Set(['via', 'closed']) };
+/*
+OPTIONAL is IMPORTED, not restated (B86).
+
+Fields that may be omitted even in a full (put / doc-load) validation: documents written before the
+field existed must still load. Absent means the renderer's default (node.shape -> 'circle'); new
+writes that include the field are still range-checked.
+
+`model/shape.mjs` has claimed since it was written that it superseded "the OPTIONAL map in
+server/validate.js", and the map was still here and still the one consulted -- while `server/txn.mjs`
+imported the shape.mjs version and never used it, so the tree LOOKED single-sourced from every angle
+except the one that mattered. The imported map also carries the three kinds this one omitted, which
+the consuming loop already tolerated either way (`optional && optional.has(key)`).
 
 /*
 H9.4d: `grant()` needs this and must not carry its own copy.
@@ -256,7 +268,7 @@ export function validateDoc(doc) {
 	if (!ID.test(doc.meta.id || '') || !doc.meta.id.startsWith('diagram-')) {
 		return 'invalid meta.id';
 	}
-	if (!str(doc.meta.name || '', 64)) return 'invalid meta.name';
+	if (!str(doc.meta.name || '', NAME_MAX)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
 		if (!['id', 'name', 'version', 'schema', 'owner', 'grants'].includes(key)) return `unknown meta key: ${key}`;
 	}
@@ -349,7 +361,7 @@ export function validateMetaPatch(patch) {
 	if (!patch || typeof patch !== 'object') return 'patch is not an object';
 	for (const key of Object.keys(patch)) {
 		if (key === 'name') {
-			if (!str(patch.name, 64) || patch.name.trim() === '') return 'invalid name';
+			if (!str(patch.name, NAME_MAX) || patch.name.trim() === '') return 'invalid name';
 		} else {
 			return `meta.${key} is not writable`;
 		}

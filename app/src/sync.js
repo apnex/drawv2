@@ -1,5 +1,6 @@
 import { applyOps } from '../../model/ops.mjs';
 import * as commands from './commands.js';
+import { NAME_MAX } from '../../model/limits.mjs';
 
 /*
 Sync — wires the model to the wire. The SERVER owns the document; this client
@@ -525,7 +526,7 @@ export class Sync {
 	*/
 	rename(name) {
 		if (this.readOnly) return this.emitState({}); // read-only: revert the field
-		const trimmed = name.trim().slice(0, 64);
+		const trimmed = name.trim().slice(0, NAME_MAX);
 		if (!trimmed || trimmed === this.model.state.meta.name) return this.emitState({});
 		this.changes.commit(commands.renameDocument(trimmed));
 		this.emitState({});

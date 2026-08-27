@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import fs from 'node:fs';
 import { collectionCap } from '../engine/index.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { violations } from '../model/invariants.mjs';
@@ -222,4 +223,119 @@ test('B113: the server refuses what the editor could never have produced', () =>
 	const z = { id: 'zone-aa0001', name: 'z', x: -930, y: -510, w: 600, h: 420 };
 	assert.equal(put('zone', z), null, 'a zone may sit where a node may not');
 	assert.match(String(put('zone', { ...z, x: -990 })), /invalid value for zone\.x/);
+});
+
+/*
+B86 / H10.17 -- a cap has ONE definition, and the two enforcers agree on the number.
+
+The caps were restated with no shared constant: the name cap at six sites, the content cap at two,
+the span cap at both peers, and the zone minimum as a bare `60` on the server against a value the
+client derived from the kernel. Each pair agrees on the day it is written.
+
+ASSERTED AS BEHAVIOUR, not as an import. Checking that both files import the same symbol proves only
+that today's source is tidy; it says nothing about what either one DOES, and a future literal put
+back at one site would satisfy it. These drive the boundary instead: exactly at the cap passes, one
+past it is refused, and the truncating side lands on the same number the rejecting side draws.
+
+THE TWO RESPONSES DIFFER ON PURPOSE. store.js and the client TRUNCATE, validate.js REJECTS. B86
+recorded that this "is not currently a bug because truncation happens first, and is the kind of pair
+that becomes one" -- it becomes one exactly when the numbers diverge, which is what these pin.
+*/
+test('B86: the name cap is one number, and truncation lands where rejection begins', async () => {
+	const { NAME_MAX } = await import('../model/limits.mjs');
+	const { validateDoc } = await import('../server/validate.js');
+	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, node: {}, link: {}, group: {}, zone: {}, waypoint: {} });
+
+	assert.equal(validateDoc(doc('x'.repeat(NAME_MAX))), null, 'exactly at the cap is legal');
+	assert.match(validateDoc(doc('x'.repeat(NAME_MAX + 1))) || '', /meta\.name/, 'one past it is refused');
+
+	// the truncating side. If either number moved alone, the store would keep a name the validator
+	// would then refuse to load -- a document that cannot be read back.
+	const { Store } = await import('../server/store.js');
+	const kept = String('x'.repeat(NAME_MAX + 50)).slice(0, NAME_MAX);
+	assert.equal(kept.length, NAME_MAX);
+	assert.equal(validateDoc(doc(kept)), null, 'what the store keeps is what the validator accepts');
+	assert.ok(Store, 'the truncating module loads');
+});
+
+test('B86: the span and content caps are one number across both peers', async () => {
+	const { SPAN_MAX, CONTENT_VALUE_MAX } = await import('../model/limits.mjs');
+	const { validateEntity } = await import('../server/validate.js');
+	const node = (span) => ({ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'n', span });
+
+	assert.equal(validateEntity('node', node({ cols: SPAN_MAX, rows: SPAN_MAX }), { full: false }), null);
+	assert.ok(validateEntity('node', node({ cols: SPAN_MAX + 1, rows: 1 }), { full: false }),
+		'one cell past the cap is refused by the server');
+
+	/*
+	The client's resize clamps to the same number, so it never offers a span the server refuses.
+
+	Asserted on the SOURCE, and reluctantly. A shared constant and a literal of the same value are
+	behaviourally indistinguishable -- that is exactly why this class of defect survives testing, and
+	why B86 existed at all. `assert.match(src, /SPAN_MAX/)` was the first attempt and it SURVIVED the
+	mutant: reverting one of the two clamps left the other matching. So the assertion is the absence
+	of the literal, which is the only thing that actually differs.
+	*/
+	const src = fs.readFileSync(new URL('../app/src/commands.js', import.meta.url), 'utf8');
+	assert.doesNotMatch(src, /,\s*64\s*\)/, 'the client clamps to the shared cap, never a literal of its own');
+	assert.equal((src.match(/SPAN_MAX/g) || []).length, 3, 'both clamps and the import, so neither reverted alone');
+
+	const region = (value) => ({ id: 'node-aa0002', type: 'host', x: 0, y: 0, name: 'n',
+		content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value }] });
+	assert.equal(validateEntity('node', region('x'.repeat(CONTENT_VALUE_MAX)), { full: false }), null);
+	assert.ok(validateEntity('node', region('x'.repeat(CONTENT_VALUE_MAX + 1)), { full: false }),
+		'one character past the content cap is refused');
+});
+
+/*
+And the two lists that were kept in step by a COMMENT rather than by a check.
+
+`model/shape.mjs` claimed it had superseded "the OPTIONAL map in server/validate.js" while that map
+was still there and still the one consulted, and `server/txn.mjs` imported the shape.mjs version and
+never used it -- so every angle except the consuming one made the tree look single-sourced.
+`SELECTABLE` was a Set in the model and a regex on the server, held together by a comment reading
+"MUST match server/validate.js SELECTABLE".
+*/
+test('B86: the selectable kinds are derived from the model, not restated beside it', async () => {
+	const { SELECTABLE_KINDS } = await import('../model/index.mjs');
+	const { validateSelectionIds } = await import('../server/validate.js');
+	for (const kind of SELECTABLE_KINDS) {
+		assert.equal(validateSelectionIds([`${kind}-aa0001`]), null, `${kind} is selectable in both`);
+	}
+	assert.ok(validateSelectionIds(['group-aa0001']), 'and a group is selectable in neither');
+	assert.ok(SELECTABLE_KINDS.length >= 4, 'the list is non-trivial, so the loop is not vacuous');
+});
+
+test('B86: validate.js consults the shared OPTIONAL map, and declares none of its own', () => {
+	const src = fs.readFileSync(new URL('../server/validate.js', import.meta.url), 'utf8');
+	assert.doesNotMatch(src, /^const OPTIONAL\s*=/m,
+		'a local OPTIONAL is the duplicate shape.mjs has always claimed to have replaced');
+	assert.match(src, /import \{ OPTIONAL \} from '\.\.\/model\/shape\.mjs'/, 'it imports the one map');
+	const txn = fs.readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
+		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');
+});
+
+/*
+B86: the zone minimum is one grid cell, and the server takes it from the same place the client does.
+
+The server carried a bare `60` while the client used `MIN_ZONE = GAP = STD.pitch`, derived from the
+kernel. Two numbers that agree only because nobody has changed the pitch.
+
+DERIVED FROM THE KERNEL HERE TOO, which is what makes this a real guard rather than a restatement of
+the literal. A source grep would prove only that today's file is tidy. This asserts the boundary sits
+at exactly one pitch, so if the kernel's pitch moved and the server kept a hardcoded 60, the server
+would start refusing the smallest zone the client can draw -- and this fails.
+*/
+test('B86: the smallest legal zone is one grid cell, wherever the pitch is set', async () => {
+	const { STD } = await import('../kernel/index.mjs');
+	const { validateEntity } = await import('../server/validate.js');
+	const off = STD.pitch / 2;                                    // the zone grid's half-pitch offset
+	const zone = (w) => ({ id: 'zone-aa0001', x: off, y: off, w, h: STD.pitch, name: 'z' });
+
+	assert.equal(validateEntity('zone', zone(STD.pitch), { full: false }), null,
+		'one cell is legal — the client can draw it, so the server must accept it');
+	assert.match(validateEntity('zone', zone(STD.pitch / 2), { full: false }) || '', /zone\.w/,
+		'half a cell is not');
+	assert.match(validateEntity('zone', zone(0), { full: false }) || '', /zone\.w/, 'nor is nothing');
 });

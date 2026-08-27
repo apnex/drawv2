@@ -18,6 +18,7 @@ import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './t
 import { Log } from './log.mjs';
 import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
+import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 
 const FLUSH_MS = 200;
 
@@ -117,7 +118,7 @@ function cleanMeta(id, meta = {}, trusted = false) {
 	}
 	return {
 		id,
-		name: String(meta.name || 'untitled').slice(0, 64),
+		name: String(meta.name || 'untitled').slice(0, NAME_MAX),
 		version: Number.isInteger(meta.version) && meta.version >= 0 ? meta.version : 0,
 		schema: SCHEMA,
 		owner: trusted ? str(meta.owner) : '',

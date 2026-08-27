@@ -21,6 +21,7 @@ import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/index.mjs';
 import { isStraight, pairKey } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
+import { SPAN_MAX } from '../../model/limits.mjs';
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history
@@ -364,8 +365,8 @@ export function resizeNodeStep(model, ids, dx, dy) {
 	const node = model.get('node', ids[0]);
 	if (!node) return none;
 	const cur = node.span || { cols: 1, rows: 1 };
-	const cols = Math.min(Math.max(cur.cols + dx, 1), 64);
-	const rows = Math.min(Math.max(cur.rows + dy, 1), 64);
+	const cols = Math.min(Math.max(cur.cols + dx, 1), SPAN_MAX);
+	const rows = Math.min(Math.max(cur.rows + dy, 1), SPAN_MAX);
 	if (cols === cur.cols && rows === cur.rows) return none;
 	return resizeNodeSpan(node.id, { cols, rows });
 }

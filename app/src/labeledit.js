@@ -4,10 +4,10 @@ the entity's label; Enter/blur commits an undoable rename, Escape cancels.
 */
 
 import { NODE_R } from './snap.js';
-import { kindOf } from '../../model/index.mjs';
+import { kindOf, NAME_MAX, CONTENT_VALUE_MAX } from '../../model/index.mjs';
 import * as commands from './commands.js';
 
-const MAX_NAME = 64;
+// the caps are the model's, shared with the server rather than restated here (B86)
 
 export class LabelEditor {
 	constructor({ svg, model, history }) {
@@ -65,7 +65,7 @@ export class LabelEditor {
 
 		const input = document.createElement('input');
 		input.id = 'label-editor';
-		input.maxLength = MAX_NAME;
+		input.maxLength = NAME_MAX;
 		input.spellcheck = false;
 		input.value = entity.name || '';
 		const width = 160;
@@ -107,7 +107,7 @@ export class LabelEditor {
 
 		const input = document.createElement('input');
 		input.id = 'label-editor';
-		input.maxLength = 256;
+		input.maxLength = CONTENT_VALUE_MAX;
 		input.spellcheck = false;
 		input.value = region.value || '';
 		// match the box EXACTLY so the editor doesn't appear to enlarge it: border/padding inside the rect
@@ -169,7 +169,7 @@ export class LabelEditor {
 		}
 		// rename a node / zone (Enter/blur)
 		const { kind, id, before } = editing;
-		const after = input.value.trim().slice(0, MAX_NAME);
+		const after = input.value.trim().slice(0, NAME_MAX);
 		if (!after || after === before) return;
 		if (!this.model.get(kind, id)) return;
 		this.history.commit(commands.renameEntity(kind, id, before, after));

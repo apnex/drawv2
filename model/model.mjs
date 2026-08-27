@@ -10,7 +10,12 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 
 const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 const KEY = { node: 'nodes', waypoint: 'waypoints', link: 'links', zone: 'zones', group: 'groups' };
-const SELECTABLE = new Set(['node', 'waypoint', 'link', 'zone']);   // selectable kinds — MUST match server/validate.js SELECTABLE (a group/diagram is never selected directly)
+// the selectable kinds: a group or a diagram is never selected directly. EXPORTED because
+// server/validate.js builds its id regex from this list -- it used to carry its own copy, pinned
+// to this line by a comment reading "MUST match server/validate.js SELECTABLE", which is a
+// comment doing a check's job (B86).
+export const SELECTABLE_KINDS = ['node', 'waypoint', 'link', 'zone'];
+const SELECTABLE = new Set(SELECTABLE_KINDS);
 
 /*
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state

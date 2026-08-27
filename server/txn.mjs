@@ -28,7 +28,7 @@ out, as the Store's injected {flushMs, writeDoc, now}.
 
 import { projection } from '../model/index.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
-import { COMPOSITE, OPTIONAL } from '../model/shape.mjs';
+import { COMPOSITE } from '../model/shape.mjs';   // OPTIONAL was imported here and never used (B86)
 import { groupAfterRemoval, collectionCap } from '../engine/index.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { STD } from '../kernel/index.mjs';

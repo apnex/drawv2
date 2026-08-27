@@ -34,6 +34,7 @@ refused and the client is resynced read-only — it can never clobber the contro
 // whether the diagram is currently Server-Locked (read-only for it).
 import crypto from 'node:crypto';
 import { announceActivity } from './rest.js';
+import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 
 export function snapshotBody(model, store, locks, principal = null, hub = null) {
 	const id = model.state.meta.id;
@@ -278,7 +279,7 @@ export class Session {
 				// CREATE: the id is minted here and `doc.meta.id` is ignored (I11), so offline work
 				// lands in a new diagram instead of overwriting whichever one the server answered
 				// with. That overwrite was B2.
-				const name = typeof body.name === 'string' ? body.name.slice(0, 64) : undefined;
+				const name = typeof body.name === 'string' ? body.name.slice(0, NAME_MAX) : undefined;
 				const res = this.store.create(name, body.doc || null, this.principal);
 				if (!res.ok) return this.error(`create rejected: ${res.error}`, 'create-rejected', body.txnId);
 				return this.snapshot(res.model);
