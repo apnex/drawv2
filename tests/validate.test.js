@@ -339,3 +339,76 @@ test('B86: the smallest legal zone is one grid cell, wherever the pitch is set',
 		'half a cell is not');
 	assert.match(validateEntity('zone', zone(0), { full: false }) || '', /zone\.w/, 'nor is nothing');
 });
+
+/*
+B83 / H10.16 -- the two referential paths agree, because there is only one of them.
+
+Five cross-entity rules were written twice inside `server/validate.js`: once incrementally against a
+live Model in `validateMutation`, once globally against a plain doc in `validateDoc`. Two
+implementations, two error vocabularies, two complexity classes, and nothing forcing them to agree.
+A disagreement means a document the wire refuses can be loaded from disk, or the reverse -- and the
+two peers then hold different beliefs about what a valid diagram is.
+
+DIFFERENTIAL, not unit. Asserting that each path rejects a bad document proves each path works; it
+cannot prove they work ALIKE, which is the only property the collapse actually buys. So each case is
+put through both doors -- whole-document, and entity by entity as a client would build it -- and the
+VERDICTS are compared. Sharing the predicate is what makes them agree; this is what would notice if
+someone unshared it.
+*/
+test('B83: the document door and the mutation door reach the same verdict', async () => {
+	const { validateDoc, validateMutation } = await import('../server/validate.js');
+	const { Model } = await import('../model/index.mjs');
+
+	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
+	const W = (n, y) => ({ id: `waypoint-aa000${n}`, x: 60, y });
+	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, zones: [], groups: [], waypoints: [] };
+
+	const cases = {
+		'clean, two nodes and a link':
+			{ nodes: [N(1, 0), N(2, 60)], links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' }] },
+		'link to a node that does not exist':
+			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0009' }] },
+		'self-link':
+			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0001' }] },
+		'clean route through a waypoint':
+			{ nodes: [N(1, 0), N(2, 60)], waypoints: [W(1, 60)],
+				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }] },
+		'via a waypoint that does not exist':
+			{ nodes: [N(1, 0), N(2, 60)],
+				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0009'] }] },
+		'one waypoint in two roles on one link':
+			{ nodes: [N(1, 0)], waypoints: [W(1, 60)],
+				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0001'] }] },
+		'one waypoint shared by two links':
+			{ nodes: [N(1, 0), N(2, 60), N(3, 120), N(4, 180)], waypoints: [W(1, 60)],
+				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
+					{ id: 'link-aa0002', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }] },
+		'group member that does not exist':
+			{ nodes: [N(1, 0), N(2, 60)], links: [],
+				groups: [{ id: 'group-aa0001', members: ['node-aa0001', 'node-aa0009'], name: 'g' }] },
+		'clean group':
+			{ nodes: [N(1, 0), N(2, 60)], links: [],
+				groups: [{ id: 'group-aa0001', members: ['node-aa0001', 'node-aa0002'], name: 'g' }] },
+	};
+
+	let rejected = 0;
+	for (const [name, parts] of Object.entries(cases)) {
+		const doc = { ...base, ...parts };
+		const viaDoc = validateDoc(doc);
+
+		// the same content assembled the way a client builds it: dependencies first, then the
+		// entities that reference them, each through the mutation door
+		const m = new Model();
+		let viaMutation = null;
+		for (const [kind, list] of [['node', doc.nodes], ['waypoint', doc.waypoints], ['link', doc.links], ['group', doc.groups]]) {
+			for (const entity of list || []) {
+				viaMutation ||= validateMutation(m, { action: 'put', kind, entity });
+				if (!viaMutation) m.put(kind, entity);
+			}
+		}
+		assert.equal(Boolean(viaDoc), Boolean(viaMutation),
+			`"${name}": the doors disagree — document says ${viaDoc || 'OK'}, mutation says ${viaMutation || 'OK'}`);
+		if (viaDoc) rejected++;
+	}
+	assert.equal(rejected, 6, 'six of the nine cases are bad — if this drops, the corpus stopped exercising the rules');
+});

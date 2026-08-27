@@ -165,9 +165,8 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
 | 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 5 | H9.20 | verifier | A stated count must not contradict one the repo can compute. The board rule still deferred pending a convention, cheap once chosen. H10.20 left the board on 2026-08-27: B88's lexical form matches zero live claims and is held, and **B150** carries the data-shaped successor. |
-| 6 | H10.16, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. H7 CLOSED 2026-08-27: H7.4 gated the doc style and H7.6 put the image in CI. |
-| 7 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
-| 8 | H10.16, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. H10.17 landed 2026-08-27 -- the caps have one home in `model/limits.mjs`. |
+| 6 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
+| 7 | H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
 **What the arc left undone, deliberately.**\
@@ -505,7 +504,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.22 | A revoked peer's open tab still believes it may write until it reconnects -- a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 - M | `TODO` |
 | H10.21 | Two specs asserted facts the code contradicted -- the SVG route's authentication and H9.3's existence -- corrected with dated amendments | **B89** | S2 - S | `DONE` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 - S | `DONE` |
-| H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 - L | `TODO` |
+| H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 - L | `DONE` |
 | H10.17 | Share the constants restated across files -- `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 - M | `DONE` |
 | H10.7 | Parallel connections between two containers, count bounded by the column span -- designed and walked in `design/walk/FINDINGS.md`, never implemented | **B127** | S4 - L | `TODO` |
 | H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 - M | `TODO` |

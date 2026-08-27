@@ -6,6 +6,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 
 import { NODE_EXT, ZONE_EXT, SELECTABLE_KINDS } from '../model/index.mjs';
 import { OPTIONAL } from '../model/shape.mjs';
+import { linkReferential, groupReferential, waypointOwners } from '../model/referential.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
 import { collectionCap } from '../engine/policy.mjs';
@@ -213,34 +214,34 @@ export function validateMutation(model, mutation) {
 	const err = validateEntity(kind, entity, { full: action === 'put' });
 	if (err) return err;
 
-	// referential integrity against current model state (post-merge view for set)
+	/*
+	Referential integrity, against the CURRENT model state and under a post-merge view for `set`.
+
+	The rules themselves live in `model/referential.mjs` and are shared with `validateDoc`, which
+	used to carry a second hand-written copy of all five (B83). What stays here is the part that is
+	genuinely about MUTATION: merging the patch over the stored entity, so a `set` that touches only
+	`via` is still checked against the `src` and `dst` it is keeping.
+	*/
+	const access = {
+		hasNode: (eid) => !!model.get('node', eid),
+		hasWaypoint: (eid) => !!model.get('waypoint', eid),
+		// built ONCE per mutation. This was a rescan of every link for every waypoint, which is
+		// O(waypoints x links) on each write for a predicate that does not change within the call.
+		ownersOf: (() => {
+			let owners = null;
+			return (w) => (owners ??= waypointOwners(model.all('link'))).get(w) || [];
+		})(),
+	};
 	if (kind === 'link') {
 		const current = model.get('link', entity.id) || {};
-		const src = entity.src ?? current.src;
-		const dst = entity.dst ?? current.dst;
-		const ep = (eid) => model.get('node', eid) || model.get('waypoint', eid);
-		if (!ep(src)) return `link src does not exist: ${src}`;
-		if (!ep(dst)) return `link dst does not exist: ${dst}`;
-		if (src === dst) return 'link src and dst are the same endpoint';
-		const via = entity.via ?? current.via ?? [];
-		for (const w of via) if (!model.get('waypoint', w)) return `link via waypoint does not exist: ${w}`;
-		// XOR occupancy: every waypoint this link touches (endpoint or via) must belong to no OTHER
-		// link, and to one role within this link — a waypoint participates in at most one link.
-		const refs = [src, dst, ...via].filter((eid) => model.get('waypoint', eid));
-		if (new Set(refs).size !== refs.length) return 'link uses a waypoint in two roles';
-		for (const w of refs) {
-			for (const other of model.all('link')) {
-				if (other.id === entity.id) continue;
-				if (other.src === w || other.dst === w || (Array.isArray(other.via) && other.via.includes(w))) {
-					return `waypoint already in use by another link: ${w}`;
-				}
-			}
-		}
+		const merged = { id: entity.id, src: entity.src ?? current.src, dst: entity.dst ?? current.dst,
+			via: entity.via ?? current.via ?? [] };
+		const err = linkReferential(merged, access);
+		if (err) return err;
 	}
 	if (kind === 'group' && entity.members) {
-		for (const m of entity.members) {
-			if (!model.get('node', m) && !model.get('waypoint', m)) return `group member does not exist: ${m}`;
-		}
+		const err = groupReferential(entity, access);
+		if (err) return err;
 	}
 	return null;
 }
@@ -309,26 +310,29 @@ export function validateDoc(doc) {
 			seen.add(entity.id);
 		}
 	}
-	// referential integrity within the document
+	/*
+	Referential integrity within the document -- the SAME five rules the mutation path applies,
+	from `model/referential.mjs`, reached through a lookup over these arrays instead of a Model.
+
+	This block used to be a second hand-written implementation of all of them, with its own error
+	vocabulary and its own complexity class (B83). Nothing forced the pair to agree, and a
+	disagreement means a document the wire refuses can be loaded from disk, or the reverse.
+	*/
 	const nodeIds = new Set((doc.nodes || []).map((n) => n.id));
 	const waypointIds = new Set((doc.waypoints || []).map((w) => w.id));
-	const isEndpoint = (eid) => nodeIds.has(eid) || waypointIds.has(eid);
-	const wpUse = new Map();   // waypoint id → # of links referencing it (must be ≤ 1, any role)
+	const owners = waypointOwners(doc.links || []);
+	const access = {
+		hasNode: (eid) => nodeIds.has(eid),
+		hasWaypoint: (eid) => waypointIds.has(eid),
+		ownersOf: (w) => owners.get(w) || [],
+	};
 	for (const link of doc.links || []) {
-		if (!isEndpoint(link.src) || !isEndpoint(link.dst)) return `link ${link.id} references missing endpoint`;
-		if (link.src === link.dst) return `link ${link.id} is a self-link`;
-		const refs = [];
-		if (waypointIds.has(link.src)) refs.push(link.src);
-		if (waypointIds.has(link.dst)) refs.push(link.dst);
-		for (const w of link.via || []) { if (!waypointIds.has(w)) return `link ${link.id} references missing waypoint ${w}`; refs.push(w); }
-		if (new Set(refs).size !== refs.length) return `link ${link.id} uses a waypoint in two roles`;
-		for (const w of refs) wpUse.set(w, (wpUse.get(w) || 0) + 1);
+		const err = linkReferential(link, access);
+		if (err) return `${err} (${link.id})`;
 	}
-	for (const [w, n] of wpUse) if (n > 1) return `waypoint ${w} is used by ${n} links (max 1)`;
 	for (const group of doc.groups || []) {
-		for (const m of group.members) {
-			if (!nodeIds.has(m) && !waypointIds.has(m)) return `group ${group.id} references missing member ${m}`;
-		}
+		const err = groupReferential(group, access);
+		if (err) return `${err} (${group.id})`;
 	}
 	// model-state (status): shape-validate the persisted selection key if present. Tolerate-stale by
 	// design — see validateSelectionIds. (MS1)
