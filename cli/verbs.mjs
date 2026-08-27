@@ -690,7 +690,7 @@ const DIRS = {
 
 VERBS.push({
 	name: 'place', group: 'Placement', usage: 'draw place <type> near|inside|between <ref> [--link]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 	summary: 'put a node beside, inside or between things -- on a free anchor, no coordinates',
 	example: 'draw place server near lb-1 --dir right --link',
 	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
@@ -915,7 +915,7 @@ merely validated.
 */
 VERBS.push({
 	name: 'add', group: 'Placement', usage: 'draw add <type> at <cx>,<cy> [--name n] [--link ref]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 	summary: 'put a node on a named anchor -- a cell, never a pixel',
 	example: 'draw add server at 5,-2 --name web-1',
 	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
@@ -1145,7 +1145,7 @@ VERBS.push(
 	{
 		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed]',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'join two things that already exist, bending the route through cells you name',
 		example: 'draw link a-edge core-1 --via -8,-7',
 		args: [{ name: 'src', about: 'a node id or name' },
@@ -1201,7 +1201,7 @@ VERBS.push(
 	{
 		name: 'panel', group: 'Writing', usage: 'draw panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/node/anchors'],
+		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'a node that spans cells and can carry content regions',
 		example: 'draw panel key at -15,-8 --cols 7 --rows 2 --content legend.json',
 		args: [{ name: 'name', about: 'what to call it' },
@@ -1254,7 +1254,7 @@ VERBS.push(
 	{
 		name: 'zone', group: 'Writing', usage: 'draw zone <name> from <cx>,<cy> to <cx>,<cy>',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/zone/anchors'],
+		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'enclose a rectangle of CELLS -- the half-pitch offset is the tool\'s problem, not yours',
 		example: 'draw zone site-a from -15,-6 to -9,4',
 		args: [{ name: 'name', about: 'what to call the zone' },
@@ -1309,7 +1309,7 @@ VERBS.push(
 	{
 		name: 'move', group: 'Writing', usage: 'draw move <ref> to <cx>,<cy>',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/node/anchors'],
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'put an existing node or waypoint on a different anchor',
 		example: 'draw move a-web-1 to -14,1',
 		args: [{ name: 'ref', about: 'a node or waypoint, by id or name' },
@@ -1927,7 +1927,7 @@ export function parityOf(model, render, placed) {
 VERBS.push({
 	name: 'parity', group: 'Context', usage: 'draw parity',
 	route: '/diagrams/<id>', method: 'GET',
-	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/node/anchors', 'GET /d/<id>.svg'],
+	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors', 'GET /d/<id>.svg'],
 	summary: 'do the model, the render and the map agree -- A5, measured rather than assumed',
 	example: 'draw parity',
 	flags: [{ name: '--diagram', about: 'target by id or name' }],

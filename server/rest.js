@@ -304,19 +304,41 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 	const url = new URL(req.url, 'http://localhost');
 	const parts = url.pathname.split('/').filter(Boolean);
 
-	if (url.pathname === '/health') {
-		// flushFailures: a retried flush repairs the mechanism but leaves the failure invisible.
-		// Surfacing it is what makes B4's retry observable rather than merely survivable.
-		// invariantFailures: a GR9 breach reported as ITSELF (B20). `degraded` says the environment
-		// is failing us and a retry may fix it; `corrupt` says this process mis-minted a seq and no
-		// retry will. They shared a counter and a status until B20, so an operator could not tell a
-		// flaky disk from a bug in the log — the two need opposite responses.
+	/*
+	One report, two doors -- B132.
+
+	flushFailures: a retried flush repairs the mechanism but leaves the failure invisible. Surfacing
+	it is what makes B4's retry observable rather than merely survivable.
+	invariantFailures: a GR9 breach reported as ITSELF (B20). `degraded` says the environment is
+	failing us and a retry may fix it; `corrupt` says this process mis-minted a seq and no retry
+	will. They shared a counter and a status until B20, so an operator could not tell a flaky disk
+	from a bug in the log -- the two need opposite responses.
+	*/
+	const healthReport = () => {
 		const flushFailures = store.flushFailures();
 		const invariantFailures = store.invariantFailures();
-		const status = invariantFailures ? 'corrupt' : flushFailures ? 'degraded' : 'ok';
-		return json(res, 200, { status, diagrams: store.total(), flushFailures, invariantFailures }), true;
-	}
+		return { status: invariantFailures ? 'corrupt' : flushFailures ? 'degraded' : 'ok',
+			diagrams: store.total(), flushFailures, invariantFailures };
+	};
+	/*
+	The ROOT one is the liveness contract: Cloud Run and the Dockerfile probe it, so it carries no
+	credential and must not start needing one. It is deliberately NOT in `server/routes.mjs`, which
+	declares the versioned surface -- listing it there was the defect, because that file states its
+	paths are relative to the version prefix and this one is not, which is why the prover that
+	checks every declared route had to carry a special case for exactly one path (B132).
+	*/
+	if (url.pathname === '/health') return json(res, 200, healthReport()), true;
 	if (parts[0] !== 'api') return false;
+	/*
+	And the VERSIONED one, which is what an agent reaches. `draw health` asks for `<prefix>/health`
+	like every other verb, so without this it asked for a route that did not exist and had never
+	worked in any configuration -- against the deployment or locally. Same payload, reached through
+	the same door as everything else, so the credential story stays uniform.
+	*/
+	if (parts[1] === 'v1' && parts[2] === 'health' && parts.length === 3) {
+		if (req.method !== 'GET') return json(res, 405, { error: 'health: GET' }), true;
+		return json(res, 200, healthReport()), true;
+	}
 
 	/*
 	Workspace grants -- H9.4c. A workspace is the set of diagrams owned by a principal.

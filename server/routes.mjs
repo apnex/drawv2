@@ -14,9 +14,20 @@ nobody writes a test for it.
 
 `:id` and `:name` are placeholders the prover fills. Paths are relative to the version prefix, which
 is a door rather than a route (`/api/v1` or `/connect/v1`).
+
+Two paths are deliberately ABSENT because they are not relative to that prefix, and listing them
+here made the rule above false. The root `/health` is the liveness contract Cloud Run and the
+Dockerfile probe, so it carries no credential and must not start needing one. `/d/<id>.svg` is the
+picture, reached through its own door entry (B101).
+
+`health` below was always the correct DECLARATION -- prefix-relative, so `/api/v1/health` -- and the
+server simply never implemented it. The prover papered over the gap by special-casing this one entry
+to the root, so it proved a different route from the one declared, and `draw health` asked for the
+declared one and collected a 404 in every configuration for two milestones (B132). The route exists
+now and the exception is gone.
 */
 export const ROUTES = [
-	{ path: 'health',                          methods: ['GET'],            about: 'liveness and store health; no credential' },
+	{ path: 'health',                          methods: ['GET'],            about: 'store health, through the versioned door -- what an agent reads' },
 
 	{ path: 'diagrams',                        methods: ['GET', 'POST'],    about: 'list, and mint a new one' },
 	{ path: 'diagrams/:id',                    methods: ['GET', 'DELETE'],  about: 'the document, and removing it' },

@@ -56,8 +56,11 @@ test('B119: every declared route and method is answered by the running server', 
 			for (const method of route.methods) {
 				// `diagrams/:id` DELETE would remove the diagram every other probe needs
 				if (route.path === 'diagrams/:id' && method === 'DELETE') continue;
-				const url = route.path === 'health'
-					? `http://127.0.0.1:${app.port}/health` : `${base}/${fill(route.path)}`;
+				// B132: no exception for `health` any more. It needed one because ROUTES declared a
+				// path this file says is relative to the version prefix, and that one was at the
+				// root -- so the prover proved a different route from the one declared, for exactly
+				// one entry, which is how `draw health` never worked and nothing noticed.
+				const url = `${base}/${fill(route.path)}`;
 				const res = await fetch(url, {
 					method,
 					headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },

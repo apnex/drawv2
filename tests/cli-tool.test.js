@@ -353,10 +353,27 @@ test('B119: every request a verb issues is declared, in route or also', () => {
 			...(v.also || []).map((a) => { const [m, p] = a.split(' '); return `${m} ${shape(p)}`; })]);
 		// find the call, then read the method OUT of it -- an optional group after a lazy
 		// quantifier is simply skipped, which reported every write as a GET
+		/*
+		A declared `*` is a WILDCARD, because that is what a placeholder means.
+
+		Comparing it as a literal token made a verb that always uses one grid unable to satisfy both
+		checks at once: `scan-cli` requires the declaration to match `server/routes.mjs`, which
+		routes on `:name`, while this required it to match the issued path, which is the literal
+		`node`. The declaration cannot be both strings. It can be the placeholder, and this side can
+		read a placeholder as standing for whatever segment arrives -- which is the only reading
+		under which the two checks are asking the same question.
+		*/
+		const matches = (key) => [...declared].some((d) => {
+			const [dm, dp] = d.split(' ');
+			const [km, kp] = key.split(' ');
+			if (dm !== km) return false;
+			const ds = dp.split('/'), ks = kp.split('/');
+			return ds.length === ks.length && ds.every((seg, i) => seg === '*' || seg === ks[i]);
+		});
 		for (const m of body.matchAll(/request\(ctx, [`']([^`']+)[`']([^;]{0,200})/g)) {
 			const verb = m[2].match(/method: '(POST|PUT|DELETE|PATCH)'/)?.[1] || 'GET';
 			const key = `${verb} ${shape(m[1])}`;
-			assert.ok(declared.has(key), `${v.name} issues ${key} and declares only ${[...declared].join(', ')}`);
+			assert.ok(matches(key), `${v.name} issues ${key} and declares only ${[...declared].join(', ')}`);
 		}
 	}
 });
@@ -1165,4 +1182,39 @@ test('A5/B145: the parity rule reports a disagreement from either side', () => {
 	// both at once, because a single-fault check is a claim about one fault
 	const both = parityOf(model, { nodes: 19, waypoints: 7, links: 20, zones: 3 }, 25);
 	assert.equal(both.deltas.length, 2, 'each disagreement is reported, not just the first');
+});
+
+/*
+B132 -- `draw health` reaches a route that exists, and a verb cannot declare one that does not.
+
+The verb had never worked in ANY configuration. It asks for `<prefix>/health` like every other verb,
+`server/routes.mjs` declared `health` as prefix-relative, and the server implemented it only at the
+root -- so the declaration was right, the request was right, and the route was missing. The prover
+that checks every declared route papered over it by special-casing this one entry to the root, so it
+proved a different route from the one declared. `scan-cli` counted the pair covered because the verb
+DECLARED it: a declaration checked against a declaration, which is B119 one level up.
+*/
+test('B132: draw health answers through the same door as every other verb', async () => {
+	await boot();
+	try {
+		const out = JSON.parse(await run('health', '--json'));
+		assert.match(out.status, /^(ok|degraded|corrupt)$/, 'a real report, not a 404');
+		assert.equal(typeof out.diagrams, 'number');
+		assert.equal(typeof out.invariantFailures, 'number', 'B20 distinguishes corrupt from degraded');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B132: the root liveness probe stays uncredentialed, and stays out of ROUTES', async () => {
+	await boot();
+	try {
+		// Cloud Run and the Dockerfile probe the root path, so it must never start needing a
+		// credential. It is deliberately absent from ROUTES, which declares prefix-relative paths.
+		const root = await fetch(`${host}/health`);
+		assert.equal(root.status, 200, 'the liveness contract is intact');
+		assert.equal((await root.json()).status, 'ok');
+
+		const { ROUTES } = await import('../server/routes.mjs');
+		assert.equal(ROUTES.some((r) => r.path === '/health'), false,
+			'and the root path is not declared as though it were part of the versioned surface');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });

@@ -84,6 +84,41 @@ const unreached = pairs.filter((p) => !declared.has(p.key));
 const routes = inventory();
 const reached = new Set(routes.filter((r) => [...declared].some((d) => d.includes(`/${r}`) || d.endsWith(` ${r}`))));
 
+/*
+The reverse direction: a route a VERB declares must be one the server has -- B132.
+
+Everything above asks whether each declared route is reached by some verb. Nothing asked the
+opposite, so a verb could name a route that does not exist and the count would still read clean:
+`draw health` declared `/health`, the matcher found `health` in ROUTES, and the pair was counted
+covered while the verb asked for `<prefix>/health` and collected a 404 in every configuration.
+
+Declaration compared against declaration is the fault B119 closed for methods and left open for
+paths. The server's own surface is the authority here, and `tests/routes.test.js` proves that
+surface against a running process, so a verb agreeing with it is a fact rather than an inference.
+*/
+const known = new Set(ROUTES.map((r) => norm(r.path)));
+/*
+Two paths sit OUTSIDE the versioned surface by design, and `server/routes.mjs` says so: it declares
+paths relative to the version prefix, and these are not relative to anything.
+
+`/d/<id>.svg` is the picture, reached through its own door entry (`/connect/d/` -> `/d/`, B101).
+The root `/health` is the liveness contract that Cloud Run and the Dockerfile probe, and it stays
+uncredentialed for that reason -- B132 gave the agent a prefix-relative `health` beside it rather
+than moving the probe. Listing `/d/<id>.svg` in ROUTES would make that file's own stated rule false.
+*/
+const OFF_SURFACE = new Set(['d/*.svg']);
+const invented = [];
+for (const v of VERBS) {
+	for (const d of [v.route, ...(v.also || [])]) {
+		if (!d) continue;
+		const path = norm(String(d).replace(/^[A-Z]+\s+/, ''));
+		if (!known.has(path) && !OFF_SURFACE.has(path)) {
+			invented.push(`${v.name} declares ${d}, which server/routes.mjs does not have`);
+		}
+	}
+}
+for (const line of invented) console.log(`  \u2717 ${line}`);
+
 const missing = unreached.filter((p) => !ALLOW[p.path] && !PENDING[p.path]);
 const pending = unreached.filter((p) => PENDING[p.path]);
 const stale = Object.keys(PENDING).filter((p) => !unreached.some((u) => u.path === p));
@@ -96,7 +131,7 @@ if (stale.length) {
 	console.error('  Delete the line: PENDING is a countdown, and a stale entry hides the progress it was meant to show.');
 	process.exit(1);
 }
-if (missing.length) {
+if (missing.length || invented.length) {
 	console.error(`\n  FAIL — ${missing.length} pair(s) no CLI verb reaches and nothing accounts for:`);
 	for (const p of missing) console.error(`    ${p.method} /${p.path}`);
 	console.error('  GR18: add a verb, or record it in PENDING with the work, or in ALLOW with the reason.');
