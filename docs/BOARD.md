@@ -16,8 +16,16 @@ each other.
 
 Five rules. They exist so the plan can move fast without the record losing fidelity.
 
-1. **Every board item cites a `B` row.** A finding with no row is not ready for the board -- it gets a row
-   first, with `[V, file:line]` evidence, per the BACKLOG's own "Adding a row" contract.
+1. **Every board item recording a DEFECT cites a `B` row; an item building a FEATURE says `feature`.**
+   A finding with no row is not ready for the board -- it gets a row first, with `[V, file:line]`
+   evidence, per the BACKLOG's own "Adding a row" contract.
+   The rule used to read *every* item and was therefore never true: `H9.9` and `H9.22` were open and
+   uncited, a long tail of closed items never cited anything either, and `scan-board`'s R1 only ever
+   checked that a citation which EXISTS resolves. A rule demanded everywhere is enforced nowhere.
+   It is also wrong as written -- BACKLOG's own contract requires a row for a deletion, a deferral or
+   an unfixed defect, and not for planned work that was never a finding (**B128**).
+   Enforced on OPEN items only, by R11: a closed item's citation no longer keeps a finding from being
+   lost, and demanding one retroactively would rewrite records made before the rule.
 2. **Closing a board item closes its `B` row in the same commit.** Never one without the other.
 3. **A `B` row that is `Open` with a revival trigger is NOT on the board** until its trigger fires. They are
    listed under [Held](#held----on-the-record-not-on-the-board) so the comparison is explicit rather than implied by absence.
@@ -459,9 +467,9 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.34 | API.md never states the entity id grammar it enforces | **B104** | S1 · S | `DONE` |
 | H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes -- widened to public methods of exported classes, under a DIFFERENT rule from exports, with the scope stated | **B91** | S2 · S | `DONE` |
 | H9.21 | An agent may create a diagram and owns it -- `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 · M | `DONE` |
-| H9.22 | Long-poll: `history?since=&wait=` -- the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | -- | S4 · M | `TODO` |
+| H9.22 | Long-poll: `history?since=&wait=` -- the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | feature | S4 · M | `TODO` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup -- IAM cannot name a consumer domain | **B66** | S2 · S | `DONE` |
-| H9.9 | Examples become templates; first write forks a per-owner copy -- reverses the first-boot seed, amended in `SCOPE.md` | -- | S3 · L | `TODO` |
+| H9.9 | Examples become templates; first write forks a per-owner copy -- reverses the first-boot seed, amended in `SCOPE.md` | feature | S3 · L | `TODO` |
 | H9.10 | Decide the fate of the 12 unowned diagrams in `gs://diagrams.apnex.io` -- adopt or delete, explicitly. Recorded as 11 until the bucket was counted at cutover | -- | S3 · S | `DONE` |
 | H9.12 | Gate reads: `hello`, `open`, `store.first`, the REST document and log, and the SVG rendering -- writes were gated, reads never were | **B67** | S2 · M | `DONE` |
 | H9.13 | Name every identity refusal, once per reason, so a misconfiguration announces itself instead of presenting as a uniform denial | **B68**, **B69** | S2 · S | `DONE` |
@@ -521,7 +529,7 @@ should have caught it was scoped narrower than its own claim.
 | H11.2 | Reconciliation ran one way: R1 checked that a board item cites a live row and nothing checked that a live row reached the plan. R8 adds the direction, R9 its converse for Held, and Held becomes a list the scanner reads rather than a section a reader recognises | **B123** | S2 · M | `DONE` |
 | H11.3 | Three items were follow-on work whose cited row had closed without them, so the register read as settled while the work was unstarted. Each remainder gets its own row rather than reopening a row that correctly closed | **B124** | S3 · S | `DONE` |
 | H11.6 | Five rows were malformed markdown tables -- unescaped `\|` in prose and in code spans, a stray backtick for an apostrophe, a trailing empty cell -- so they mis-rendered on GitHub and handed every downstream rule the wrong text. Repaired at the source; R10 counts fields | **B122** | S3 · S | `DONE` |
-| H11.7 | Contract rule 1 says every board item cites a row and nothing checks that one exists, so the rule that keeps findings out of a mutable file is decorative. It is also wrong as written -- a feature was never a finding -- so narrow it to defects and enforce that | **B128** | S3 · S | `TODO` |
+| H11.7 | Contract rule 1 says every board item cites a row and nothing checks that one exists, so the rule that keeps findings out of a mutable file is decorative. It is also wrong as written -- a feature was never a finding -- so narrow it to defects and enforce that | **B128** | S3 · S | `DONE` |
 | H11.8 | `authz` defaults on, so the suite runs the configuration the deployment runs. 152 tests failed on the flip, and the fixture supplies a principal once instead of seventeen times. Found B130 and B131 on the first run | **B129** | S3 · L | `DONE` |
 | H11.9 | Deleting a diagram strands every viewer: the survivor is resolved with no principal, so under authorization it is null. Resolve it PER VIEWER, which is what the REST comment already claims happens | **B130** | S2 · S | `DONE` |
 | H11.10 | Deleting your last diagram reseeds one nobody can read: the store refuses to be empty and the reseed is unowned, so the invariant is satisfied and its purpose is not. The reseed belongs to the principal who caused it | **B131** | S2 · S | `DONE` |

@@ -296,7 +296,7 @@ test('GR14/B77: a heading must agree with the states beneath it, and every item 
 		assert.match(r.out, /H1\.2 declares no state/, 'an uncited stateless row is reachable now');
 
 		// H2's shape: DONE heading over an open item
-		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | — | S1 | `TODO` |').replace('`WIP`', '`DONE`'));
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | feature | S1 | `TODO` |').replace('`WIP`', '`DONE`'));
 		r = run();
 		assert.equal(r.code, 1);
 		assert.match(r.out, /marked DONE with 1 item\(s\) still open/);
@@ -308,7 +308,7 @@ test('GR14/B77: a heading must agree with the states beneath it, and every item 
 		assert.match(run().out, /marked WIP with nothing open/);
 
 		// the compliant case passes, so the rules are not simply always red
-		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | — | S1 | `TODO` |'));
+		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |', '| H1.2 | b | feature | S1 | `TODO` |'));
 		r = run();
 		assert.equal(r.code, 0, 'a mixed WIP milestone with stated items is clean');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -371,19 +371,19 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 
 		// R8 -- the missing direction. B2 is open and named nowhere in the plan.
 		backlog('| **B1** | a row | `[V]` | CLOSED -- H1. |', '| **B2** | b row | `[V]` | OPEN |');
-		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | — | S1 | `TODO` |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | feature | S1 | `TODO` |');
 		r = run();
 		assert.equal(r.code, 1, 'a live row absent from the board is the defect R8 exists for');
 		assert.match(r.out, /B2 is OPEN and appears nowhere/);
 
 		// declaring it Held discharges the obligation -- that is what Held is FOR
-		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | — | S1 | `TODO` |', '| **B2** | S4 | b | a trigger |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | feature | S1 | `TODO` |', '| **B2** | S4 | b | a trigger |');
 		assert.equal(run().code, 0, 'a held row is declared, not absent');
 
 		// R9 -- the converse. A row that closes while listed as held leaves the plan advertising a
 		// deferral that no longer exists, which was true of B6, B9 and B32 when this was written.
 		backlog('| **B1** | a row | `[V]` | CLOSED -- H1. |', '| **B2** | b row | `[V]` | CLOSED -- H1. |');
-		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | — | S1 | `TODO` |', '| **B2** | S4 | b | a trigger |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | feature | S1 | `TODO` |', '| **B2** | S4 | b | a trigger |');
 		r = run();
 		assert.equal(r.code, 1);
 		assert.match(r.out, /lists B2 under Held, but .* records it as CLOSED/);
@@ -398,6 +398,37 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 
 		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | the remainder | **B1** | S1 | `TODO` |\n| H1.3 | b | **B2** | S1 | `TODO` |');
 		assert.equal(run().code, 0, 'a remainder with an open item is compliant');
+
+		/*
+		R11 (B128) -- an OPEN item cites a row or declares itself a feature.
+
+		Contract rule 1 claimed every item cites a row and had never been true: two items were open
+		and uncited, and a long tail of closed ones cited nothing either. R1 only checked that a
+		citation which EXISTS resolves, so citing NOTHING was the one case no rule could see.
+
+		The three exemptions matter more than the failure here. A DONE item is left alone because
+		demanding a citation retroactively rewrites a record made before the rule (M4); `feature`
+		is the escape a genuine non-finding declares out loud; and an empty cell must NOT read as
+		either, which is the ambiguity the old wording lived in.
+		*/
+		backlog('| **B1** | a row | `[V]` | CLOSED -- H1. |');
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | planned work | — | S1 | `TODO` |');
+		r = run();
+		assert.equal(r.code, 1, 'an open item citing nothing is what rule 1 always claimed to forbid');
+		assert.match(r.out, /H1\.2 is TODO and cites no B row/);
+
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | planned work | feature | S1 | `TODO` |');
+		assert.equal(run().code, 0, 'a feature declares itself and is exempt');
+
+		// M4: the same uncited item, closed, is a record and not a defect. A third open item keeps
+		// the fixture's hardcoded `WIP` heading honest -- an all-DONE board trips R6 instead, and
+		// reading THAT as R11 passing would have made this case vacuous.
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | planned work | — | S1 | `DONE` |\n| H1.3 | c | feature | S1 | `TODO` |');
+		assert.equal(run().code, 0, 'a DONE uncited item is history, not a finding at large');
+
+		// and an empty cell is not a quiet `feature`
+		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | planned work |  | S1 | `WIP` |');
+		assert.match(run().out, /H1\.2 is WIP and cites no B row/);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

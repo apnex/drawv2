@@ -24,6 +24,7 @@ rather than by a human re-reading both files on every commit:
   R8  a live row is an item on the board or a declared entry under Held, never an absence
   R9  a row listed under Held is not one the register records as settled
   R10 a row has the six fields the table declares
+  R11 an open item cites a B row or declares itself a feature
 
 Rules 4 (dropped items keep a trigger) and 5 (a fix ships with a test proven red) of the CONTRACT —
 as distinct from R4/R5 above — are judgement, not text, and are deliberately NOT faked here: a
@@ -165,7 +166,7 @@ for (const line of board.split('\n')) {
 		// that closed months ago, so the rule is that a row DECLARES a state, and the last token
 		// wins where a row somehow carries two.
 		const tokens = [...line.matchAll(/`(DONE|TODO|WIP|BLOCKED|DROPPED)`/g)].map((x) => x[1]);
-		allRows.push({ h: m[1], state: tokens.length ? tokens[tokens.length - 1] : null, line });
+		allRows.push({ h: m[1], state: tokens.length ? tokens[tokens.length - 1] : null, line, cells: splitCells(line) });
 		if (ids.length) items.push({ h: m[1], ids, done: /`(DONE|DROPPED)`/.test(line) });
 	}
 }
@@ -206,6 +207,30 @@ as whatever the surrounding rows imply.
 */
 for (const r of allRows) {
 	if (!r.state) fail(`${BOARD} ${r.h} declares no state in its last cell — DONE, TODO, WIP or BLOCKED`);
+}
+
+/*
+R11 — an OPEN item cites a `B` row or declares itself a feature (B128).
+
+Contract rule 1 said every board item cites a row, and it had never been true. `H9.9` and `H9.22`
+were open and uncited; a long tail of closed items cited nothing either. R1 only ever checked that a
+citation which EXISTS resolves, so an item citing nothing at all was the one case no rule could see.
+A rule demanded everywhere is enforced nowhere.
+
+It was also wrong as written. The BACKLOG's own contract wants a row for a deletion, a deferral or an
+unfixed defect -- for a FINDING, which must not live only in a mutable file. Planned work that was
+never a finding has nothing to record, and `H9.9` is not a defect for being uncited. So the rule now
+distinguishes the two and makes the feature case SAY so, rather than leaving an empty cell to mean
+either "feature" or "someone forgot".
+
+OPEN items only. A closed item's citation no longer keeps a finding from being lost, and demanding
+one retroactively would rewrite records made before the rule -- which is what M4 is for.
+*/
+for (const r of allRows) {
+	if (r.state === 'DONE' || r.state === 'DROPPED') continue;
+	if (/\*\*B\d+\*\*/.test(r.line)) continue;
+	if (/\bfeature\b/.test(r.cells[3] || '')) continue;
+	fail(`${BOARD} ${r.h} is ${r.state} and cites no B row — add one with [V, file:line] evidence, or put \`feature\` in its cites cell if it records no finding`);
 }
 
 /*
