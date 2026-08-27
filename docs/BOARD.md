@@ -164,18 +164,14 @@ The ranking below therefore weighs one question above size: **does this let an a
 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
-| 1 | H11.4 | verifier | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. |
-| 2 | H11.5 | user | `DELETE` shipped, the bucket holds a real seven-day window, and nothing in the product reaches it. The only item here a person would notice, and its trigger has fired. |
-| 3 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. |
-| 4 | H11.11 | agent | `draw health` has never worked in any configuration, and `scan-cli` calls the pair covered because the verb DECLARES the route. A declaration checked against a declaration. |
-| 5 | H10.19 | verifier | `scan-writers` asks whether an entry carries a forbidden key and never whether it carries a required one. Same shape as B122, one file, small. |
-| 6 | H11.7 | verifier | Contract rule 1 is decorative, which is what let three items sit on the board with no register entry. |
-| 7 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. |
-| 8 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
-| 9 | H10.20, H9.20 | verifier | The two board rules deferred pending a convention. Cheap once chosen; both still real. |
-| 10 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
-| 11 | H7.4, H7.6 | verifier | Doc style and the Docker image, both CI-shaped, both a per-deploy manual tax. B137 is the argument for the second: a broken symlink shipped in every image because nothing builds one. |
-| 12 | H10.16, H10.17, H10.6, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. |
+| 1 | H11.4 | verifier | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. Sharpened since: B147 shipped three times because each test asserted the layer below the one that broke, and mutation cannot see that, because a mutant only probes the assertions that exist. |
+| 2 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
+| 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
+| 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
+| 5 | H10.20, H9.20 | verifier | The two board rules deferred pending a convention. Cheap once chosen; both still real. |
+| 6 | H7.4, H7.6 | verifier | Doc style and the Docker image, both CI-shaped, both a per-deploy manual tax. B137 is the argument for the second: a broken symlink shipped in every image because nothing builds one. **H7.4 needs a ruling first** -- whether this gate may depend on a sibling `mission-kit` checkout, or vendor a rule that has one owner and that S3 argues against duplicating. |
+| 7 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
+| 8 | H10.16, H10.17, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
 **What the arc left undone, deliberately.** The map shows what is where and not what connects to what, and links are not going on it -- `links`, `about` and `link path` answer connectivity as lists, and a text grid carrying both would be the mess the design set out to avoid.\
@@ -547,6 +543,7 @@ should have caught it was scoped narrower than its own claim.
 | H11.22 | `zone contents` and `link path` take ids only, and `place` reimplements the name lookup four times without the ambiguity refusal. Resolution is per-verb habit, not a rule | **B143** | S3 · S | `DONE` |
 | H11.23 | `about` answers every relation in ids, and prints `undefined` for a group because `links` carries two shapes. The verb built to stop cross-referencing forces it | **B144** | S3 · S | `DONE` |
 | H11.24 | A5 Perceptual Parity was satisfied by instinct and never verified: the instruments got built, the delta was never measured, and both existing A5 citations are about the HUMAN's view of a symmetry that has two sides | **B145** | S2 · M | `DONE` |
+| H11.25 | The ranked Next slice advertises finished work: four of its ten entries are DONE, and no rule reads the ranking table. R11 made every item row accountable and left the ranking over those rows unchecked | **B149** | S1 · S | `DONE` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 · L | `TODO` |
 | H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 · M | `DONE` |
 

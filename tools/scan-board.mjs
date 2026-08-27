@@ -25,6 +25,7 @@ rather than by a human re-reading both files on every commit:
   R9  a row listed under Held is not one the register records as settled
   R10 a row has the six fields the table declares
   R11 an open item cites a B row or declares itself a feature
+  R12 the ranked Next slice does not offer work that is finished
 
 Rules 4 (dropped items keep a trigger) and 5 (a fix ships with a test proven red) of the CONTRACT —
 as distinct from R4/R5 above — are judgement, not text, and are deliberately NOT faked here: a
@@ -231,6 +232,48 @@ for (const r of allRows) {
 	if (/\*\*B\d+\*\*/.test(r.line)) continue;
 	if (/\bfeature\b/.test(r.cells[3] || '')) continue;
 	fail(`${BOARD} ${r.h} is ${r.state} and cites no B row — add one with [V, file:line] evidence, or put \`feature\` in its cites cell if it records no finding`);
+}
+
+/*
+R12 — the ranked Next slice does not advertise finished work (B149).
+
+R3 holds an item against its row and R11 holds an item to citing one, so every ITEM row is now
+accountable. The RANKING over those rows was not: four of its ten entries read DONE in their own item
+rows while the table still offered them as the next thing to do.
+
+That table is the single highest-traffic surface here -- it is what a director or an agent reads to
+choose a move -- and it was the least trustworthy, which is the recurring shape this scanner keeps
+finding one level up from wherever it last looked.
+
+Only entries NAMING an item are judged. The ranking also carries prose entries like `Level 2
+placement`, which are legitimate and have no state to disagree with.
+*/
+// cut at the next heading OR at end of file. A lookahead for `\n## ` alone read a section that ends
+// the document as absent, which is the shape of every rule this scanner exists to catch.
+const sliceStart = board.search(/^##\s+Next slice/m);
+const rest = sliceStart < 0 ? '' : board.slice(board.indexOf('\n', sliceStart) + 1);
+const sliceEnd = rest.search(/^##\s/m);
+const slice = sliceStart < 0 ? null : [null, sliceEnd < 0 ? rest : rest.slice(0, sliceEnd)];
+if (!slice) {
+	fail(`${BOARD} has no "Next slice" section — R12 cannot read a ranking that is not there, and a silently absent section is how a check becomes decorative`);
+} else {
+	const state = {};
+	for (const r of allRows) state[r.h] = r.state;
+	let entries = 0;
+	for (const line of slice[1].split('\n')) {
+		if (!/^\|\s*(?:\d+|--)\s*\|/.test(line)) continue;   // the header and the divider are not entries
+		entries++;
+		for (const id of line.matchAll(/\bH\d+\.\d+[a-z]?\b/g)) {
+			if (state[id[0]] === 'DONE' || state[id[0]] === 'DROPPED') {
+				fail(`${BOARD} ranks ${id[0]} in the Next slice, and its item row reads ${state[id[0]]} — the ranking offers work that is finished`);
+			}
+		}
+	}
+	// a ranking nothing matched is a broken rule, not a clean board -- the table's shape changed once
+	// already and this rule would have gone quiet rather than said so. Counting ENTRIES rather than
+	// named items, because the first version counted items and would have called an all-prose
+	// ranking broken: `Level 2 placement` is a legitimate entry that names no H id.
+	if (!entries) fail(`${BOARD} Next slice matched NO ranked entry — the scan is broken, not the ranking clean`);
 }
 
 /*

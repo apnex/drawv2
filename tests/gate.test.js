@@ -281,7 +281,9 @@ test('GR14/B77: a heading must agree with the states beneath it, and every item 
 		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
 		catch (e) { return { out: e.stdout || '', code: e.status }; }
 	};
-	const rows = (...r) => `## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${r.join('\n')}\n`;
+	// a Next slice section because R12 requires one -- a board without a ranking is its own defect,
+	// and a fixture must differ from a valid board in exactly the thing under test
+	const rows = (...r) => `## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${r.join('\n')}\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n| 1 | future work | feature | because |\n`;
 	try {
 		// the shape that shipped: a heading claiming nothing has started, above finished work
 		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |').replace('`WIP`', '`TODO`'));
@@ -339,8 +341,11 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		catch (e) { return { out: e.stdout || '', code: e.status }; }
 	};
 	const backlog = (...rows) => fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), `${rows.join('\n')}\n`);
-	const board = (items, held = '') => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
-		`## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${items}\n\n## Held\n\n| Row | Sev | Held item | Revival trigger |\n|---|---|---|---|\n${held}\n\n## Not in this arc\n`);
+	const board = (items, held = '', slice = '| 1 | future work | feature | because |') => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+		// the fixture carries a valid Next slice because R12 requires one. A fixture must differ from
+		// a valid board in exactly the defect under test, and a board with no ranking is its own
+		// separate defect -- the same reasoning that made two R6/R8 fixtures declare `feature`.
+		`## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${items}\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n${slice}\n\n## Held\n\n| Row | Sev | Held item | Revival trigger |\n|---|---|---|---|\n${held}\n\n## Not in this arc\n`);
 	const both = '| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | **B2** | S1 | `TODO` |';
 
 	try {
@@ -429,6 +434,47 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		// and an empty cell is not a quiet `feature`
 		board('| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | planned work |  | S1 | `WIP` |');
 		assert.match(run().out, /H1\.2 is WIP and cites no B row/);
+
+		/*
+		R12 (B149) -- the ranked Next slice does not offer work that is finished.
+
+		R3 holds an item against its row and R11 holds an item to citing one, so every ITEM row is
+		accountable. The RANKING over those rows was not, and five of its ten entries named items
+		that read DONE -- on the one table a reader consults to choose the next move.
+
+		The all-prose case is the one worth keeping. This rule's first floor demanded a NAMED ITEM
+		and would have called an all-prose ranking broken; `Level 2 placement` is a real entry that
+		names no H id. The floor counts ENTRIES now.
+		*/
+		backlog('| **B1** | a row | `[V]` | CLOSED -- H1. |', '| **B2** | b | `[V]` | OPEN |');
+		const live = '| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | **B2** | S1 | `TODO` |';
+		board(live, '', '| 1 | H1.2 | user | still open |');
+		assert.equal(run().code, 0, 'a ranking naming open work is clean');
+
+		board(live, '', '| 1 | H1.1 | user | already done |');
+		r = run();
+		assert.equal(r.code, 1, 'the ranking must not offer finished work');
+		assert.match(r.out, /ranks H1\.1 in the Next slice, and its item row reads DONE/);
+
+		board(live, '', '| 1 | Level 2 placement | feature | names no item, and is legitimate |');
+		assert.equal(run().code, 0, 'an all-prose ranking is a ranking, not a broken scan');
+
+		// the floor: a table shape change must SAY so rather than go quiet
+		board(live, '', '');
+		assert.match(run().out, /Next slice matched NO ranked entry/);
+
+		/*
+		And the section GONE, which needs a raw write because both fixture helpers always emit one.
+
+		This case survived its first mutant. Deleting the missing-section branch left the floor to
+		catch an absent section, so the scanner still failed and every test still passed -- two
+		branches with one observable outcome, and the less useful message winning. They are kept
+		apart because "there is no Next slice section" is actionable and "matched NO ranked entry"
+		sends a reader looking for a table that is not there.
+		*/
+		fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+			'## H1 — m · `WIP`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n' + live + '\n');
+		assert.match(run().out, /has no "Next slice" section/);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
