@@ -636,6 +636,17 @@ test('B109: an unreadable entry is withheld under authorization, not shown to ev
 		assert.equal(theirs.entries[0].name, 'theirs', 'named from the tag written at delete time');
 
 		assert.deepEqual((await s.recoverable(null)).entries, [], 'and no principal sees nothing at all');
+
+		/*
+		B100: an agent's work belongs to its claimant, so a diagram an agent deleted is tagged with
+		the HUMAN's id. Comparing the tag to the raw principal hid an agent's own deletions from it
+		-- verified live before this line existed, where the entry was tagged correctly and filtered
+		out anyway. `ownerFor` is the resolution the rest of the store already uses.
+		*/
+		s.agents.set('agent:helper', { by: OTHER });
+		const asAgent = await s.recoverable('agent:helper');
+		assert.deepEqual(asAgent.entries.map((d) => d.id), ['diagram-bb0002'],
+			'an agent sees what its claimant owns, which is what it deleted');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

@@ -761,9 +761,22 @@ export class Store {
 			its grants with it, "unreadable" is exactly the state where the check matters most. A
 			recycle bin that leaks on the error path is worse than one that omits a row.
 			*/
+			/*
+			Compared against `ownerFor`, not the raw principal.
+
+			B100 rules that an agent's work belongs to its CLAIMANT, so a diagram created by
+			`agent:planner` is owned by the human who minted its code. Comparing the tag to the
+			principal therefore hid an agent's own deletions from it -- verified live: the entry was
+			tagged correctly and filtered out anyway. `ownerFor` is the resolution the rest of the
+			store already uses, and the recycle bin was the one place asking the question by hand.
+
+			An entry with no owner tag predates tagging and cannot be attributed to anybody, so it
+			stays out of every list and is counted instead.
+			*/
 			if (this.authz) {
-				if (!principal) continue;
-				if (!readable || !owner || owner !== principal) continue;
+				const mine = this.ownerFor(principal);
+				if (!mine) continue;
+				if (!readable || !owner || owner !== mine) continue;
 			}
 			out.push({ id, name, owner, generation: item.generation,
 				deletedAt: item.deletedAt, purgeAt: item.purgeAt });
