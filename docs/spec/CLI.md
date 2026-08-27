@@ -97,6 +97,7 @@ Context
   links [ref]                                                                     what connects to a thing -- the other end named, routed marked
   holds [ref]                                                                     what contains a thing -- its zones and its group, upward
   peers [ref]                                                                     what sits one hop away -- neighbours, and the rest of its group
+  parity                                                                          do the model, the render and the map agree -- A5, measured rather than assumed
 
 Lifecycle
   create [name]            mint a diagram; answers its id

@@ -1872,3 +1872,93 @@ VERBS.push(
 		},
 	},
 );
+
+/*
+`parity` -- the delta between what the model holds, what the renderer draws, and what the map shows.
+
+A5 Perceptual Parity requires that a human and an agent share symmetric perception of one reality,
+and names Measured Parity as the mechanic: the delta is itself measured and held within a stated
+bound, because "symmetry is a verified property, not an aspiration". Everything built here before
+this verb was the OTHER mechanic -- Synthetic Sensory Organs, instruments for an agent to perceive
+its own output. Instruments without a measurement satisfy the axiom by instinct.
+
+Three views of one diagram already exist and are produced by three different code paths:
+
+  MODEL    what `GET /diagrams/<id>` says the document contains
+  RENDER   what the SVG actually emits -- the picture a person is looking at
+  MAP      what occupies an anchor, which is what an agent places against
+
+A disagreement between any two is a perception defect by definition: it means the human and the
+agent are looking at different diagrams, or the agent is placing against a canvas that is not the
+one being drawn. The bound A5 asks to be stated is therefore zero, which is the easiest bound to
+state and the easiest to check.
+
+This is not hypothetical. `render --summary` shipped this session omitting waypoints, reporting 20
+elements where the map reported 27 occupied anchors, and the disagreement was noticed by eye.
+*/
+/*
+The comparison itself, as a unit -- and it is exported because it has to be TESTED against a
+disagreement.
+
+The first version was inline, and the test that drove it only ever saw a diagram the tool had just
+built, which agrees with itself by construction. Deleting either half of the comparison left that
+test green: a parity check that has only seen parity is the same kind of unverified claim it exists
+to refute, which the test's own comment said while failing to avoid it. Fetching three views is
+plumbing; deciding whether they agree is the rule, and the rule is what needs driving from both
+sides.
+*/
+export function parityOf(model, render, placed) {
+	const rows = [
+		['nodes', model.nodes, render.nodes, '-'],
+		['waypoints', model.waypoints, render.waypoints, '-'],
+		['links', model.links, render.links, '-'],
+		['zones', model.zones, render.zones, '-'],
+		// occupancy is the only figure the map contributes, and it spans two kinds
+		['on an anchor', model.nodes + model.waypoints, '-', placed],
+	];
+	const deltas = [];
+	for (const [what, held, drew, shown] of rows) {
+		if (drew !== '-' && drew !== held) deltas.push(`${what}: the model holds ${held}, the render drew ${drew}`);
+		if (shown !== '-' && shown !== held) deltas.push(`${what}: the model holds ${held}, the map shows ${shown}`);
+	}
+	return { rows, deltas };
+}
+
+VERBS.push({
+	name: 'parity', group: 'Context', usage: 'draw parity',
+	route: '/diagrams/<id>', method: 'GET',
+	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/node/anchors', 'GET /d/<id>.svg'],
+	summary: 'do the model, the render and the map agree -- A5, measured rather than assumed',
+	example: 'draw parity',
+	flags: [{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx) {
+		const id = await activeId(ctx, ctx.flags);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'parity');
+		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'parity').anchors;
+
+		// the render is fetched raw, like `draw render` does -- the one route that is not JSON
+		const url = `${ctx.host}${ctx.code ? '/connect' : ''}/d/${id}.svg`;
+		const res = await fetch(url, { headers: ctx.code ? { authorization: `Bearer ${ctx.code}` } : {} });
+		if (!res.ok) die(`parity: the render answered HTTP ${res.status}`);
+		const body = (await res.text()).split('</defs>').pop();
+		const drew = (kind) => (body.match(new RegExp(`<g id="${kind}-[0-9a-f]{6}"`, 'g')) || []).length;
+
+		const held = (k) => (doc[k] || []).length;
+		const placed = anchors.filter((a) => a.occupant).length;
+		const { rows, deltas } = parityOf(
+			{ nodes: held('nodes'), waypoints: held('waypoints'), links: held('links'), zones: held('zones') },
+			{ nodes: drew('node'), waypoints: drew('waypoint'), links: drew('link'), zones: drew('zone') },
+			placed,
+		);
+		const text = [
+			table(rows.map((r) => r.map(String)), ['WHAT', 'MODEL', 'RENDER', 'MAP']),
+			'',
+			deltas.length
+				? `PARITY BROKEN -- ${deltas.length} disagreement(s):\n  ${deltas.join('\n  ')}`
+				: 'parity holds -- the model, the picture and the canvas agree (A5, bound 0)',
+		].join('\n');
+		// a broken parity is a failure, not a report: an agent must not read this and carry on
+		if (deltas.length && !ctx.json) die(text);
+		return { json: { diagram: id, rows, deltas, parity: deltas.length === 0 }, text };
+	},
+});

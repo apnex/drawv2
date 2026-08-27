@@ -17,7 +17,7 @@ import { makeApp } from './fixtures/app.mjs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { main } from '../cli/draw.mjs';
-import { VERBS, byName } from '../cli/verbs.mjs';
+import { VERBS, byName, parityOf } from '../cli/verbs.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 let app, host, dataDir, home;
@@ -1095,4 +1095,74 @@ test('B144: about names its relations, and a group does not print undefined', as
 		assert.doesNotMatch(group, /undefined/, 'a group reports its links like anything else');
 		assert.match(group, /lb/, 'and names the far end');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+A5 Perceptual Parity, measured rather than assumed -- B145.
+
+The axiom asks for two things and this codebase had only built one. Synthetic Sensory Organs -- the
+instruments an agent uses to perceive its own output -- are `map`, `render --summary` and the
+walking verbs. Measured Parity is the other, and it is the one that makes the first verifiable:
+"the delta is itself measured and held within an explicitly-defined bound; symmetry is a verified
+property, not an aspiration".
+
+Three views produced by three different code paths must agree. The test drives a real disagreement
+rather than a clean case, because a parity check that has only ever seen parity is the same kind of
+claim it exists to refute.
+*/
+test('A5/B145: parity holds across model, render and map -- and fails loudly when it cannot', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'parity', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-2,0', '--name', 'r1');
+		await run('add', 'server', 'at', '2,0', '--name', 's1');
+		await run('link', 'r1', 's1', '--via', '0,-2');
+		await run('zone', 'z', 'from', '-3,-3', 'to', '3,3');
+
+		const clean = JSON.parse(await run('parity', '--json'));
+		assert.equal(clean.parity, true, 'a diagram the tool built agrees with itself');
+		assert.deepEqual(clean.deltas, [], 'and the bound is zero, not "small"');
+
+		// every kind is compared, or the check is a claim about a subset. `render --summary` shipped
+		// omitting waypoints and reported 20 elements where the map showed 27 occupied anchors --
+		// exactly the disagreement this exists to catch, and it was caught by eye.
+		const compared = clean.rows.map((r) => r[0]);
+		for (const kind of ['nodes', 'waypoints', 'links', 'zones', 'on an anchor']) {
+			assert.ok(compared.includes(kind), `${kind} is compared, not assumed`);
+		}
+		const waypoints = clean.rows.find((r) => r[0] === 'waypoints');
+		assert.equal(waypoints[1], 1, 'the model holds the minted waypoint');
+		assert.equal(waypoints[2], 1, 'and the render drew it -- the omission that started this');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+And the rule driven from the FAILING side, which is the half the end-to-end test cannot reach.
+
+A diagram the tool has just built agrees with itself by construction, so a test that only sees that
+case stays green when either half of the comparison is deleted -- which is exactly what happened,
+in a test whose own comment warned against it. `parityOf` is exported so a disagreement can be
+handed to it directly.
+*/
+test('A5/B145: the parity rule reports a disagreement from either side', () => {
+	const model = { nodes: 20, waypoints: 7, links: 20, zones: 3 };
+
+	const agree = parityOf(model, { nodes: 20, waypoints: 7, links: 20, zones: 3 }, 27);
+	assert.deepEqual(agree.deltas, [], 'three views of one diagram, agreeing');
+
+	// the exact defect that shipped: the renderer drops waypoints and nothing notices
+	const dropped = parityOf(model, { nodes: 20, waypoints: 0, links: 20, zones: 3 }, 27);
+	assert.equal(dropped.deltas.length, 1, 'a render that omits a kind is a disagreement');
+	assert.match(dropped.deltas[0], /waypoints: the model holds 7, the render drew 0/);
+
+	// and the other direction: the canvas an agent places against disagrees with the document
+	const stale = parityOf(model, { nodes: 20, waypoints: 7, links: 20, zones: 3 }, 25);
+	assert.equal(stale.deltas.length, 1, 'a map showing fewer occupants is a disagreement too');
+	assert.match(stale.deltas[0], /on an anchor: the model holds 27, the map shows 25/);
+
+	// both at once, because a single-fault check is a claim about one fault
+	const both = parityOf(model, { nodes: 19, waypoints: 7, links: 20, zones: 3 }, 25);
+	assert.equal(both.deltas.length, 2, 'each disagreement is reported, not just the first');
 });
