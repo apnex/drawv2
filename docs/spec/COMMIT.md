@@ -24,12 +24,16 @@
 | 2 | Target architecture | the one write function, the op vocabulary, Request/Change/Log, the commit contract, the callers |
 | 3 | Decisions | D1-D30, each with its consequence |
 | 4 | Correctness invariants | I1-I16, each with the milestone and the test that pins it |
-| 5 | Mechanized guardrails | GR1-GR13, and the rule governing when each attaches |
+| 5 | Mechanized guardrails | GR1-GR18 (GR14 has no row here -- B154), and the rule governing when each attaches |
 | 6 | The milestone sequence | CS1 -> CS6, entry conditions, verification gates, test ledger |
 | 7 | What is deleted | the deletion tables, the deletion-consequence contract, three demonstrated traces |
 | 8 | Non-goals | N1-N12 |
-| 9 | Recorded deviations | X1-X5 |
+| 9 | Recorded deviations | X1-X17 |
 | 10 | Backlog seed | B1-B9, `docs/BACKLOG.md` at CS1 |
+
+*(Amended 2026-08-27)* -- the index above said `GR1-GR13` and `X1-X5` while the sections held `GR18` and `X17`.\
+The rulings are untouched; only this table, which describes what the file contains, was stale.\
+Both ranges are now pinned by `tests/spec.test.js`, so the index cannot drift from the sections again (B77).
 
 ---
 

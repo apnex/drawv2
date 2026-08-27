@@ -190,3 +190,54 @@ test('B104: the id grammar in API.md is the one validate.js enforces', () => {
 	assert.ok(samples.length >= 6, `expected the example ids to be found, got ${samples.length}`);
 	for (const s of samples) assert.ok(re.test(s), `API.md shows ${s}, which the server would refuse`);
 });
+
+/*
+B77 / H9.20 (minor half) -- COMMIT.md's index must not contradict its own sections.
+
+H9.20 asked for a general rule: a stated count must not contradict one the repo can compute. Measured
+across every document, the population for that rule is almost nothing, and deliberately so. A number
+here is normally a MEASUREMENT -- inside `[V, ...]` evidence, in a per-item changelog trail, or in an
+audit pinned to a commit hash -- true when made and protected by M4. Re-checking those against today
+would report the board's own test-count history as seven defects and be wrong seven times.
+
+The exception is a CLAIM ABOUT NOW, and COMMIT.md's contents table is the one place the repo makes
+them: each row says a section holds `X1-Xn`, which asserts that `n` is the highest `X` in the file.
+Two were wrong when this was written -- the index read `GR1-GR13` against `GR18`, and `X1-X5` against
+`X17` -- so the file's own front page understated its most load-bearing sections.
+
+THE TOP, NOT THE COUNT. `GR14` has no row here (B154), so the guardrails have a gap; a range claim is
+about where the ids END, and a retired id in the middle is legitimate. Counting rows instead would
+fail on a fact that is not a defect.
+
+READ FROM THE CONTENTS TABLE, not from anywhere the pattern appears. `CS1-CS4 are code-revertible` at
+:613 is prose about the first four milestones, not a claim that there are four -- and there are six.
+Scoping to the table is the same distinction that made R12 read a column rather than a sentence.
+*/
+test('B77: every range in COMMIT.md\'s contents table matches the highest id defined below it', () => {
+	const src = fs.readFileSync(new URL('../docs/spec/COMMIT.md', import.meta.url), 'utf8');
+
+	/*
+	The `## Contents` TABLE ROWS, not the section.
+
+	Reading the whole section failed on the amendment note beneath the table, which quotes the two
+	ranges it corrected -- true prose, read as a live claim. Read the rows, not the surrounding
+	sentences: the same distinction R12 needed when an entry's Why column explained that an item had
+	left the board, and the same one that made B88's lexical form unbuildable.
+	*/
+	const section = (src.split(/^##\s+Contents\b/m)[1] || '').split(/^##\s/m)[0];
+	const table = section.split('\n').filter((l) => l.trimStart().startsWith('|')).join('\n');
+	const claims = [...table.matchAll(/\b([A-Z]{1,2})1-\1(\d+)\b/g)].map((m) => [m[1], Number(m[2])]);
+	assert.ok(claims.length >= 5, 'the contents table stopped declaring ranges — this check just went vacuous');
+
+	for (const [prefix, top] of claims) {
+		// a definition is a heading (`### D1 - ...`) or a table row (`| **I1** | ...`); the sections
+		// genuinely use both, and picking one style silently skips whichever section uses the other
+		const ids = [
+			...src.matchAll(new RegExp(`^###\\s+${prefix}(\\d+)\\b`, 'gm')),
+			...src.matchAll(new RegExp(`^\\|\\s*\\*\\*${prefix}(\\d+)`, 'gm')),
+		].map((m) => Number(m[1]));
+		assert.ok(ids.length, `the contents table claims ${prefix}1-${prefix}${top} and no ${prefix} is defined anywhere`);
+		assert.equal(Math.max(...ids), top,
+			`the index says ${prefix}1-${prefix}${top} but the highest ${prefix} in the file is ${prefix}${Math.max(...ids)}`);
+	}
+});

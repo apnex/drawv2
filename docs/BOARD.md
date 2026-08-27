@@ -164,7 +164,7 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 2 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
 | 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
 | 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
-| 5 | H9.20 | verifier | A stated count must not contradict one the repo can compute. The board rule still deferred pending a convention, cheap once chosen. H10.20 left the board on 2026-08-27: B88's lexical form matches zero live claims and is held, and **B150** carries the data-shaped successor. |
+| 5 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
 | 6 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
 | 7 | H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
@@ -477,7 +477,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.16 | Scanner: what `server.js` passes must match what `createApp` destructures -- the composition root is unscanned, and the worst defect of the cutover lived there | **B70** | S2 - S | `DONE` |
 | H9.17 | Turn `authz` off-by-default into on-by-default, or delete the switch -- a flag that is on in the only deployment that exists is a second code path nobody runs. **B116 and B115 both shipped through this gap.** Ruled 2026-08-26: default on, switch retained; the work and its findings are H11.8 | **B129** | S3 - S | `DONE` |
 | H9.18 | Scanner: every item declares a state, and a heading agrees with the states beneath it in both directions | **B77** | S2 - S | `DONE` |
-| H9.20 | Scanner: a stated count must not contradict one the repo can compute -- deferred from H9.18, needs the convention decided before it is enforceable | **B77** | S3 - M | `TODO` |
+| H9.20 | Scanner: a stated count must not contradict one the repo can compute -- deferred from H9.18, needs the convention decided before it is enforceable | **B77** | S3 - M | `DONE` |
 | H9.19 | `scan-board` matched milestones as `H\d`, so H10 and every item under it were silently unenforced while the gate said PASS | **B78** | S1 - S | `DONE` |
 
 ---
@@ -549,6 +549,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 | H11.26 | R12 holds a ranked entry to not being finished and never to existing, so the ranking survived pointing at an item deleted the same commit. Structured data, unambiguous, one branch | **B151** | S1 - S | `DONE` |
 | H11.27 | The server emits non-ASCII in agent-facing error strings, so an agent reads a character it cannot type back into a grep or an assertion. Three strings, plus the rule that keeps them out | **B152** | S3 - S | `TODO` |
 | H11.28 | `Decisions required` is the last declared list nothing reads, and the one wrong twice. The Held pattern applied to a second section: a `RULING-OWED` verdict and one bidirectional rule | **B153** | S3 - S | `DONE` |
+| H11.29 | `COMMIT.md` section 5 claims to list the mechanized guardrails and has no row for `GR14`, which is cited on this board and enforced in the gate | **B154** | S4 - S | `TODO` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 - L | `TODO` |
 | H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 - M | `DONE` |
 
