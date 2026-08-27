@@ -809,7 +809,20 @@ export class Store {
 		shedRetired(doc);
 		const err = validateDoc(doc);
 		if (err) return `restored file is not a valid document: ${err}`;
-		this.install(id, doc, log, `${id}.json`);
+		/*
+		`Log.from`, exactly as `init` does it -- and the first version passed the parsed object
+		straight through.
+
+		`parse` returns the log BLOCK, which is data; a Store entry needs a `Log`, which has
+		behaviour. Handing over the raw shape produced a diagram that installed cleanly and then
+		threw `log?.canUndo is not a function` the moment anybody opened it -- so the restore
+		reported success and left the store holding something unusable.
+
+		Every restore test until now drove the filesystem backend, which refuses before it reaches
+		this line. The refusals were covered and the success path was not, which is the only reason
+		this shipped.
+		*/
+		this.install(id, doc, Log.from(log, doc.meta.version), `${id}.json`);
 		return null;
 	}
 

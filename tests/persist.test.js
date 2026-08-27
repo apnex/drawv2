@@ -682,3 +682,73 @@ test('B109: a filesystem answers null, which is not an empty recycle bin', async
 		assert.match(await s.restore('diagram-aaaaaa', OWNER), /no delete window/);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+B109 -- a restore that SUCCEEDS, and a diagram that works afterwards.
+
+Every restore test before this one drove the filesystem backend, which has no window and refuses
+before it reaches the install. The refusals were covered and the success path was not, so the store
+installed a restored diagram with the raw parsed log block instead of a `Log` -- data where
+behaviour was needed. It reported success and threw `log?.canUndo is not a function` the moment
+anybody opened it, which is exactly how the director found it.
+
+So this drives the whole path through a backend that can actually restore, and then USES the
+diagram: a restore that cannot be opened is not a restore.
+*/
+function recycleBin(dir) {
+	const real = fsFiles(dir);
+	const bin = new Map();          // name -> { text, generation, tags }
+	return {
+		...real,
+		async remove(name, tags) {
+			try { bin.set(name, { text: await real.read(name), generation: '7', tags: tags || null }); }
+			catch { /* nothing to keep */ }
+			return real.remove(name);
+		},
+		async recoverable() {
+			return [...bin.entries()].map(([name, v]) => ({ name, generation: v.generation, tags: v.tags,
+				deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' }));
+		},
+		async restore(name) {
+			const held = bin.get(name);
+			if (!held) throw new Error(`not in the bin: ${name}`);
+			await real.write(name, held.text);
+			bin.delete(name);
+		},
+	};
+}
+
+test('B109: a restored diagram is usable -- it opens, undoes and commits', async () => {
+	const dir = tmp();
+	const s = new Store(dir, { flushMs: 3_600_000, files: recycleBin(dir), authz: false });
+	await s.init();
+	try {
+		const id = s.list(null)[0].id;
+		const before = s.get(id).all('node').length;
+		s.commit(id, { ops: [put('node', node('node-ab0001', 60))], label: 'one' }, 'server', 't', null);
+		await s.flushAll();
+
+		assert.equal(await s.remove(id, null), null, 'removed');
+		assert.ok(!s.get(id), 'and gone from the store');
+
+		assert.equal(await s.restore(id, null), null, 'restore reports success');
+		const model = s.get(id);
+		assert.ok(model, 'and the diagram is back');
+		assert.equal(model.all('node').length, before + 1, 'with the content it had');
+
+		/*
+		The assertions that would have caught the defect. `install` takes a `Log`, and the log block
+		`parse` returns is data with no methods -- so the diagram installed and then threw on the
+		first thing that asked it a question.
+		*/
+		const log = s.log(id);
+		assert.equal(typeof log.canUndo, 'function', 'the entry holds a Log, not a parsed block');
+		assert.equal(log.canUndo(), true, 'and it knows the change that was committed before the delete');
+		assert.equal(s.durableVersion(id), log.version, 'restored from disk, so it is durable at what it holds');
+
+		// and it still takes writes, which is the whole point of bringing it back
+		const r = s.commit(id, { ops: [put('node', node('node-ab0002', 120))], label: 'after' }, 'server', 't', null);
+		assert.equal(r.ok, true, 'a restored diagram is writable');
+		assert.equal(s.undo(id, null, null).ok, true, 'and its history is intact');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
