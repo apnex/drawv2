@@ -67,7 +67,52 @@ export function base(flags, env = process.env) {
 	return { host: host.replace(/\/$/, ''), code, prefix: code ? '/connect/v1' : '/api/v1' };
 }
 
-export async function request(ctx, path, { method = 'GET', body = null, headers = {} } = {}) {
+/*
+B160 -- a throttle is waited out, not reported as a broken credential.
+
+The agent door is deliberately not behind IAP, so it carries a rate limit (B159). Cloud Armor
+answers a request over the rate with a 429 whose body is not JSON -- which used to fall into the
+branch below and tell the caller to check a credential that was never the problem.
+
+RETRIED, because the remedy is purely to wait and that is mechanical work the tool should absorb
+rather than hand to an agent to reason about (A11). It is safe to retry: an edge 429 is refused at
+the load balancer, so the request never reached the backend and nothing was partially applied.
+
+BOUNDED, because A7 names the Blocked Actor -- an actor paused with no resume path -- and an
+unbounded retry is exactly that wearing a helpful face. Four attempts, roughly fifteen seconds, then
+a refusal that says what the limit is instead of guessing at a cause.
+
+ANNOUNCED, because A5 asks that an agent perceive its own situation. A tool that silently sleeps for
+fifteen seconds is indistinguishable from a slow one, and the difference is the whole diagnosis.
+
+JITTERED, so that several agents throttled at once do not come back in step and re-trip it together.
+*/
+const THROTTLE_ATTEMPTS = 4;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export async function request(ctx, path, opts = {}) {
+	for (let attempt = 0; ; attempt++) {
+		const res = await requestOnce(ctx, path, opts);
+		/*
+		Only an EDGE 429 is retried. The application always answers JSON, so a 429 carrying a parsed
+		body came from the service itself and means something this function has no business
+		second-guessing -- it is returned for the verb to report.
+		*/
+		if (res.status !== 429 || res.body !== null) return res;
+		if (attempt >= THROTTLE_ATTEMPTS - 1) {
+			die(`rate limited by the agent door after ${THROTTLE_ATTEMPTS} attempts`
+				+ ' -- it allows a burst and then paces you. Slow down, or space the run out.');
+		}
+		// honour Retry-After when the edge sends one, otherwise 1s, 2s, 4s with up to 50% jitter
+		const after = Number(res.retryAfter) * 1000;
+		const wait = Number.isFinite(after) && after > 0 ? after : 2 ** attempt * 1000 * (1 + Math.random() / 2);
+		process.stderr.write(`${paint(DIM, '[ wait ]')} rate limited, retrying in ${(wait / 1000).toFixed(1)}s`
+			+ ` (attempt ${attempt + 2} of ${THROTTLE_ATTEMPTS})\n`);
+		await sleep(wait);
+	}
+}
+
+async function requestOnce(ctx, path, { method = 'GET', body = null, headers = {} } = {}) {
 	const url = `${ctx.host}${path.startsWith('/d/') ? '' : ctx.prefix}${path}`;
 	const h = { ...headers };
 	if (ctx.code) h.authorization = `Bearer ${ctx.code}`;
@@ -81,11 +126,14 @@ export async function request(ctx, path, { method = 'GET', body = null, headers 
 	const text = await res.text();
 	let parsed = null;
 	try { parsed = text ? JSON.parse(text) : null; } catch { /* not json */ }
-	if (parsed === null && text) {
+	// a 429 from the edge is not JSON either, and must reach the retry above rather than be read as
+	// a sign-in page -- so the credential guess is made only when the status does not explain itself
+	if (parsed === null && text && res.status !== 429) {
 		// an IAP sign-in page is the classic case, and "unexpected token <" helps nobody
 		die(`non-JSON response from ${url} (HTTP ${res.status}) -- is a credential needed?`);
 	}
-	return { status: res.status, body: parsed, ok: res.status >= 200 && res.status < 300 };
+	return { status: res.status, body: parsed, ok: res.status >= 200 && res.status < 300,
+		retryAfter: res.headers.get('retry-after') };
 }
 
 export function die(message) {

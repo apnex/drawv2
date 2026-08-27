@@ -15,6 +15,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { execFileSync } from 'node:child_process';
+import http from 'node:http';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { main } from '../cli/draw.mjs';
 import { VERBS, byName, parityOf } from '../cli/verbs.mjs';
@@ -1260,4 +1262,86 @@ test('B109: restore refuses a name, because a deleted diagram has none to resolv
 		const gone = await captureExit(() => run('restore', 'diagram-aaaaaa'));
 		assert.match(gone, /no delete window|nothing recoverable/, 'a well-formed id still refuses honestly here');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+B160 / H10.31 -- a throttle is waited out, not reported as a broken credential.
+
+The agent door is deliberately outside IAP, so it carries a rate limit. Cloud Armor answers a
+request over the rate with a 429 whose body is not JSON, and `request()` used to read any non-JSON
+body as an IAP sign-in page and die with *is a credential needed?* -- the right guess for the case
+it was written for and the wrong one here. The agent was told to check a credential that was fine,
+about a condition that clears by waiting.
+
+Driven against a fake edge rather than the real one, because the property under test is what the
+CLI does with a 429, and standing up Cloud Armor to find out would test Google's product instead.
+*/
+test('B160: an edge 429 is retried, announced, and eventually succeeds', async () => {
+	const { request } = await import('../cli/draw.mjs');
+	let hits = 0;
+	const srv = http.createServer((req, res) => {
+		hits++;
+		if (hits <= 2) { res.writeHead(429, { 'content-type': 'text/html', 'retry-after': '0' }); return res.end('<html>denied</html>'); }
+		res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true }));
+	});
+	await new Promise((r) => srv.listen(0, r));
+	const ctx = { host: `http://127.0.0.1:${srv.address().port}`, code: null, prefix: '/api/v1' };
+	try {
+		const res = await request(ctx, '/health');
+		assert.equal(res.ok, true, 'it got through rather than dying on the first refusal');
+		assert.equal(hits, 3, 'and it actually retried — twice refused, once served');
+	} finally { srv.close(); }
+});
+
+test('B160: an APPLICATION 429 is returned, never retried', async () => {
+	const { request } = await import('../cli/draw.mjs');
+	let hits = 0;
+	const srv = http.createServer((req, res) => {
+		hits++;
+		res.writeHead(429, { 'content-type': 'application/json' });
+		res.end(JSON.stringify({ error: 'slow down', code: 'app-limit' }));
+	});
+	await new Promise((r) => srv.listen(0, r));
+	const ctx = { host: `http://127.0.0.1:${srv.address().port}`, code: null, prefix: '/api/v1' };
+	try {
+		/*
+		The distinction is the body. The service always answers JSON, so a 429 that parses came from
+		the application and means something this layer must not second-guess -- retrying it could
+		replay work the backend has already seen, which an edge 429 never can because it never
+		reached the backend at all.
+		*/
+		const res = await request(ctx, '/health');
+		assert.equal(res.status, 429, 'handed back for the verb to report');
+		assert.equal(hits, 1, 'and NOT retried — only the edge refusal is safe to repeat');
+		assert.equal(res.body.code, 'app-limit', 'with its body intact');
+	} finally { srv.close(); }
+});
+
+test('B160: a non-JSON body that is NOT a 429 still asks about the credential', async () => {
+	const srv = http.createServer((req, res) => {
+		res.writeHead(200, { 'content-type': 'text/html' }); res.end('<html>sign in</html>');
+	});
+	await new Promise((r) => srv.listen(0, r));
+	const tool = path.join(root, 'cli/draw.mjs');
+	try {
+		/*
+		Shelled out because `die()` exits the process, so the message cannot be observed in-process.
+
+		The IAP sign-in page this branch was written for must KEEP its message. The fix narrows the
+		guess to statuses that do not explain themselves rather than removing it, and a test that
+		only proved the 429 path would not notice if the narrowing had swallowed the original case.
+		*/
+		// SPAWNED, not execFileSync: the sync variant blocks the event loop, so the server above can
+		// never accept the connection and the two deadlock -- the child waits for a response the
+		// parent cannot serve. Cost me a 300-second test timeout to find.
+		const stderr = await new Promise((resolve) => {
+			const kid = spawn(process.execPath, [tool, 'health'], {
+				env: { ...process.env, DRAW_HOST: `http://127.0.0.1:${srv.address().port}`, DRAW_CODE: '' },
+			});
+			let err = '';
+			kid.stderr.on('data', (d) => { err += d; });
+			kid.on('close', () => resolve(err));
+		});
+		assert.match(stderr, /is a credential needed/, 'the sign-in guess survives for the case it was for');
+	} finally { srv.close(); }
 });
