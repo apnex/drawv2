@@ -40,3 +40,85 @@ jobs:
       - run: npm run gate
         env:
           MISSION_KIT: ${{ github.workspace }}/.mission-kit
+
+  # B53 / H7.6 - the artefact the README leads with is the one nothing exercised.
+  #
+  # `npm run gate` runs against a full source checkout where every path exists. The image has a
+  # genuinely different filesystem: .dockerignore strips tests/, docs/, design/, *.md and .git, and
+  # tools/ is never copied in. Two defects have already shipped through that difference. B52 broke
+  # `npm ci` inside the image and survived a green gate, a green CI run and a push. B137 symlinked
+  # `draw` to a file retired two milestones earlier, and `ln -s` does not check its target.
+  #
+  # THE HEALTH PROBE ALONE WOULD NOT HAVE CAUGHT B137, which is why this job does not stop there.
+  # Measured, not assumed: with the broken symlink restored the image builds clean and /health
+  # answers 200. The CLI step is the one that fails. A check narrower than the defect that motivated
+  # it is the shape this repo keeps finding, so the probe exercises what the Dockerfile installs.
+  #
+  # A SEPARATE JOB, and CI-only by nature - see X17. A local pre-push hook cannot build an image on
+  # every push, so `npm run gate` is no longer the whole proof. That asymmetry is deliberate and
+  # recorded rather than left to be discovered.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # B52's class: a packaging or `npm ci` failure that only exists inside the image
+      - name: build the image
+        run: docker build -t drawv2:ci .
+
+      - name: boot it
+        run: docker run -d --name drawci -p 8080:8080 drawv2:ci
+
+      # a retry loop, not a sleep: a fixed wait is either too short on a slow runner or wasted on a
+      # fast one, and a flaky gate gets ignored, which is worse than no gate
+      - name: wait for the liveness contract
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health > /dev/null; then
+              echo "healthy after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "never became healthy"; docker logs drawci; exit 1
+
+      # the root probe carries no credential BY CONTRACT - Cloud Run and the Dockerfile HEALTHCHECK
+      # both call it, so it must keep answering without one
+      - name: the health report is real, not merely a 200
+        run: |
+          body=$(curl -fsS http://localhost:8080/health)
+          echo "$body"
+          echo "$body" | grep -q '"status": *"ok"' || { echo 'no ok status in the body'; exit 1; }
+
+      # B137's class, and the step the row that filed this did not ask for. Exit status is read
+      # DIRECTLY and never through a pipe - a pipeline hands back the last command's status, which
+      # is how a red gate shipped a commit earlier in this project's history.
+      - name: the CLI the image installs actually runs
+        run: |
+          docker exec drawci draw health
+          docker exec drawci draw diagrams > /dev/null
+
+      - name: the editor is served
+        run: curl -fsS -o /dev/null http://localhost:8080/
+
+      # The container runs OPEN when no identity source is configured, and that is correct: you
+      # cannot authorize whom you cannot identify, so `canRead`/`canWrite` return true and this is a
+      # local-dev artefact. What makes it safe is the boot guard - with real persistence configured
+      # and no way to identify a caller, the server must REFUSE to start rather than list every
+      # diagram to everyone.
+      #
+      # Nothing else reaches this. It lives at the top level of server/server.js, so it is only
+      # observable by actually booting the process, and the suite tests Store.init's refusals rather
+      # than this one. It is the most security-critical line in the file and the image is the only
+      # place it can be exercised.
+      - name: it refuses to boot with persistence and no identity
+        run: |
+          if docker run --rm -e BUCKET=fake-bucket drawv2:ci > /tmp/guard.log 2>&1; then
+            echo 'BOOTED with a bucket and no identity source - every diagram would be listed to every caller'
+            cat /tmp/guard.log; exit 1
+          fi
+          grep -q 'refusing to boot' /tmp/guard.log || { echo 'exited, but not for this reason:'; cat /tmp/guard.log; exit 1; }
+          cat /tmp/guard.log
+
+      - name: logs on failure
+        if: failure()
+        run: docker logs drawci

@@ -165,7 +165,7 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
 | 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 5 | H9.20 | verifier | A stated count must not contradict one the repo can compute. The board rule still deferred pending a convention, cheap once chosen. H10.20 left the board on 2026-08-27: B88's lexical form matches zero live claims and is held, and **B150** carries the data-shaped successor. |
-| 6 | H7.6 | verifier | Build the Docker image in CI and probe it. B137 is the argument: a broken symlink shipped in every image because nothing builds one. H7.4 landed 2026-08-27 -- the doc style is gated by `scan-docstyle`, five mission-kit rules run rather than copied, cloned at HEAD per **X16**. |
+| 6 | H10.16, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. H7 CLOSED 2026-08-27: H7.4 gated the doc style and H7.6 put the image in CI. |
 | 7 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
 | 8 | H10.16, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. H10.17 landed 2026-08-27 -- the caps have one home in `model/limits.mjs`. |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
@@ -394,7 +394,7 @@ The H2.1 net is unchanged from the day it was written -- which is the whole proo
 
 ---
 
-## H7 -- ship it - `WIP`
+## H7 -- ship it - `DONE`
 
 The push that expires **X14**.\
 Its first CI run immediately found a guardrail that had been weaker than its own output claimed for two milestones -- which is the argument for CI, made better by running it than by writing it down.
@@ -406,7 +406,7 @@ Its first CI run immediately found a guardrail that had been weaker than its own
 | H7.3 | README rewritten to mission-kit's doc style: S9 order, S4 journeys, OAuth tutorial extracted to `docs/slides-setup.md`. 281 -> 214 lines | **B50** | S4 - M | `DONE` |
 | H7.4 | Gate the doc style, so B50 cannot recur | **B51** | S4 - M | `DONE` |
 | H7.5 | Repair the Docker build broken by the `prepare` hook | **B52** | S2 - S | `DONE` |
-| H7.6 | Build the image in CI and probe it, so packaging regressions cannot ship | **B53** | S3 - M | `TODO` |
+| H7.6 | Build the image in CI and probe it, so packaging regressions cannot ship | **B53** | S3 - M | `DONE` |
 | H7.7 | Evict half-open sockets with a ws ping sweep | **B54** | S4 - S | `DONE` |
 
 ---

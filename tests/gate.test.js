@@ -936,3 +936,36 @@ test('B51: the gate script actually runs scan-docstyle', () => {
 	assert.match(pkg.scripts.gate, /node tools\/scan-docstyle\.mjs/,
 		'scan-docstyle is not in the gate — an uninvoked scanner enforces nothing');
 });
+
+/*
+B53 / H7.6 -- the packaging proof exists, and cannot be quietly deleted.
+
+`npm run gate` runs against a full source checkout where every path exists. The image has a
+different filesystem, and two defects have shipped through the difference: B52 broke `npm ci` inside
+the image and survived a green gate and a push, and B137 symlinked `draw` to a file retired two
+milestones earlier.
+
+This test cannot run docker, so it does not pretend to. It asserts the JOB IS DECLARED, which is the
+failure mode that matters here: the steps were verified by running them locally against a real image
+(including against a rebuilt B137, where the build succeeded, /health answered 200, and only the CLI
+step failed). What no one can verify by running it once is that the job is still there in a year.
+
+The health probe alone is asserted NOT to be the whole job, because the row that filed B53 proposed
+exactly that and it would not have caught B137 -- measured, not assumed.
+*/
+test('B53: CI builds the image, and the probe is more than a health check', () => {
+	const wf = fs.readFileSync(path.join(root, '.github/workflows/gate.yml'), 'utf8');
+	assert.match(wf, /^\s{2}image:$/m, 'the image job is gone — packaging regressions ship silently again');
+	assert.match(wf, /docker build .* \./, 'the job must actually build the image');
+	assert.match(wf, /docker exec \w+ draw /,
+		'and RUN the CLI the image installs — B137 built clean and answered /health with `draw` broken');
+	assert.match(wf, /BUCKET=fake-bucket/,
+		'and prove the boot guard refuses persistence with no identity source, which nothing else reaches');
+
+	// the local gate stays the source proof, and X17 records why the two now differ
+	const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+	assert.doesNotMatch(pkg.scripts.gate, /docker/,
+		'an image build in the pre-push hook is a gate people learn to skip');
+	const commit = fs.readFileSync(path.join(root, 'docs/spec/COMMIT.md'), 'utf8');
+	assert.match(commit, /\*\*X17\*\*/, 'the local/CI asymmetry is a recorded deviation, not an accident');
+});
