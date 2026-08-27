@@ -1201,6 +1201,19 @@ export class Input {
 		disagree, accepted by the optimistic apply and refused at the boundary.
 		*/
 		this.history.commit(commands.chainHop(this.ctx.placed, node, link));
+		/*
+		Retire THIS hop's preview before starting the next one.
+
+		`chainFrom` replaces `this.ctx` with a fresh `previewPath`, so the one being replaced has to
+		be taken out of the overlay first or it is simply orphaned there -- the link `commit` handler
+		calls `ctx.path.remove()` for exactly this reason before it chains, and this path did not.
+
+		Two symptoms, one cause, both reported from the editor. `.link-live` is `stroke-dasharray:
+		10 8`, so each abandoned preview stayed on screen as a dashed line back to the node the run
+		had already left. And the overlay sits ABOVE every render layer, so those leftovers read as
+		links drawn on top of the glyphs -- which is what made a z-order defect out of a leak.
+		*/
+		this.ctx.path.remove();
 		this.chainFrom(node, this.lastPos);
 	}
 

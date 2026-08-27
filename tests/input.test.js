@@ -1412,3 +1412,40 @@ test('B147: a digit while idle still picks up the stamp hand', () => {
 		assert.equal(h.model.all('node').length, 0, 'and picking up a stamp places nothing by itself');
 	} finally { h.restore(); }
 });
+
+/*
+B147 -- a chained hop retires its own preview.
+
+`chainFrom` replaces `this.ctx` with a fresh `previewPath`, so whatever it replaces must be taken
+out of the overlay first. The link `commit` handler calls `ctx.path.remove()` for exactly that
+reason before it chains; `chainThroughNode` did not, and simply orphaned each one.
+
+Two symptoms reported from the editor, one cause. `.link-live` is `stroke-dasharray: 10 8`, so every
+abandoned preview stayed on screen as a dashed line back to a node the run had already left. And the
+overlay sits ABOVE every render layer, so those leftovers read as links drawn on top of the glyphs
+-- a leak that presented as a z-order defect. Both cleared on reload, which is the tell: nothing was
+wrong with the committed document, only with what had been left lying on the overlay.
+*/
+test('B147: chaining leaves exactly one live preview, not one per hop', () => {
+	const h = makeInput();
+	const [a] = seedNodes(h.model, [[-120, 0, 'router']]);
+	try {
+		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
+		h.input.onDown(pointer(-120, 0, { target, shiftKey: true }));
+		h.input.onMove(pointer(0, 0));
+		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'one preview while drawing');
+
+		h.input.lastPos = { x: 0, y: 0 };
+		h.input.onKeyDown(key('3'));
+		assert.equal(h.drawn('#overlay', 'link-live').length, 1,
+			'still one after a hop -- the previous hop took its dashed line with it');
+
+		h.input.lastPos = { x: 120, y: 0 };
+		h.input.onKeyDown(key('5'));
+		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'and after a second');
+
+		// and the run still ends cleanly, leaving nothing behind
+		h.input.onUp(pointer(240, 0));
+		assert.equal(h.drawn('#overlay', 'link-live').length, 0, 'releasing clears the last one');
+	} finally { h.restore(); }
+});
