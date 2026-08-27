@@ -549,6 +549,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 | H11.25 | The ranked Next slice advertises finished work: four of its ten entries are DONE, and no rule reads the ranking table. R11 made every item row accountable and left the ranking over those rows unchecked | **B149** | S1 - S | `DONE` |
 | H11.26 | R12 holds a ranked entry to not being finished and never to existing, so the ranking survived pointing at an item deleted the same commit. Structured data, unambiguous, one branch | **B151** | S1 - S | `DONE` |
 | H11.27 | The server emits non-ASCII in agent-facing error strings, so an agent reads a character it cannot type back into a grep or an assertion. Three strings, plus the rule that keeps them out | **B152** | S3 - S | `TODO` |
+| H11.28 | `Decisions required` is the last declared list nothing reads, and the one wrong twice. The Held pattern applied to a second section: a `RULING-OWED` verdict and one bidirectional rule | **B153** | S3 - S | `DONE` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 - L | `TODO` |
 | H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 - M | `DONE` |
 
@@ -586,12 +587,20 @@ The deployment that fired its trigger is also the one that answered it: object s
 
 ## Decisions required
 
-**One.**\
-Corrected 2026-08-26 to `None`, and re-opened 2026-08-27 by the work that tried to close B88.
+**None.**\
+Wrong twice, and now checked rather than trusted.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B150** | Should blocked-ness become a FIELD on the item row, with the prose generated from it or gated against it? | It changes this file's schema, so it is not mine to rule |
+
+**R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
+A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
+Those are the two ways this section has actually failed.\
+Zero entries is a legitimate answer and stays cheap to say -- the floor is that the SECTION exists, not that it has rows.
+
+**B150 was ruled on 2026-08-27 and split.**\
+The ruling-owed half became **B153**, built the same day.\
+The `Blocks` field half was folded into **B88**'s held scope: its population is one blocked item against 159 rows, and B88's trigger already fires when a second appears.
 
 **B88 is deferred, not closed**, and the measurement is the reason.\
 Its tractable form reads *blocks Hn.m* as a fixed phrase.\

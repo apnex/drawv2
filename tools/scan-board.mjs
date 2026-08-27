@@ -26,6 +26,7 @@ rather than by a human re-reading both files on every commit:
   R10 a row has the six fields the table declares
   R11 an open item cites a B row or declares itself a feature
   R12 the ranked Next slice does not offer work that is finished
+  R13 a ruling owed is declared under Decisions required, and a landed one is not
 
 Rules 4 (dropped items keep a trigger) and 5 (a fix ships with a test proven red) of the CONTRACT —
 as distinct from R4/R5 above — are judgement, not text, and are deliberately NOT faked here: a
@@ -93,6 +94,10 @@ const VERDICTS = new Map([
 	["WON'T DO", 'DONE'], ['DROPPED', 'DONE'],
 	['PART-CLOSED', 'REMAINDER'],
 	['OPEN', 'LIVE'], ['DEFERRED', 'LIVE'], ['HELD', 'LIVE'],
+	// B153 — a row waiting on a ruling is LIVE. It is not deferred, because nothing about it is
+	// postponed: the work is ready and the authority is not this agent's. R13 holds it to being
+	// declared where the director looks for it.
+	['RULING-OWED', 'LIVE'],
 	// DROPPED is settled, not open: contract rule 4 permits dropping an item so long as the row
 	// carries the reason as a revival trigger, which is a record and not a plan.
 	['DROPPED', 'DONE'],
@@ -299,6 +304,54 @@ if (!slice) {
 	// named items, because the first version counted items and would have called an all-prose
 	// ranking broken: `Level 2 placement` is a legitimate entry that names no H id.
 	if (!entries) fail(`${BOARD} Next slice matched NO ranked entry — the scan is broken, not the ranking clean`);
+}
+
+/*
+R13 — a ruling owed is declared where the director looks for it (B153).
+
+`Held` is the pattern: R8 says a live row is an item or a declared Held entry, R9 says a Held entry
+is live. Two directions, so a deferral can neither vanish nor outlive itself. This is that pattern
+applied to the one declared list that had neither.
+
+It is the list that needed it most. `Decisions required` asserted four blockers that had all been
+answered by later work, and after that correction sat three days asserting one that had been ruled
+on. Its own text calls it worth reading with suspicion. The section a director consults to learn
+whether they are the blocker was the least trustworthy thing in the file.
+
+CHECKED, not generated. Generation is stronger where a list is long; at this size it buys nothing
+the bidirectional check does not, and it puts a build step in front of a file humans write in.
+
+Zero entries is a LEGITIMATE state here, unlike the Next slice — "None" is the answer most of the
+time and must stay cheap to say. So the floor is the section's EXISTENCE, not its population:
+delete the heading and the rule fails rather than going quiet.
+*/
+const owedSection = (board.split(/^##\s+Decisions required\b/m)[1] || '').split(/^##\s/m)[0];
+if (!board.match(/^##\s+Decisions required\b/m)) {
+	fail(`${BOARD} has no "Decisions required" section — R13 cannot read a list that is not there, and a silently absent section is how a check becomes decorative`);
+} else {
+	// the FIRST table only, on R8's reasoning: the section also carries a `Resolved, and by what`
+	// table, and reading those as owed would report every settled ruling as an outstanding one
+	const owed = new Set();
+	let inTable = false;
+	for (const line of owedSection.split('\n')) {
+		const row = /^\|\s*\*\*(B\d+)\*\*\s*\|/.exec(line);
+		if (row) { inTable = true; owed.add(row[1]); continue; }
+		if (inTable && !line.trimStart().startsWith('|')) break;
+	}
+	// forward: a row whose verdict says a ruling is owed must be listed
+	for (const [id, r] of rows) {
+		if (r.verdict === 'RULING-OWED' && !owed.has(id)) {
+			fail(`${BACKLOG} ${id} is RULING-OWED but ${BOARD} does not list it under Decisions required — the director cannot rule on what the plan does not show them`);
+		}
+	}
+	// and back: a listed entry must still be waiting on one
+	for (const id of owed) {
+		const r = rows.get(id);
+		if (!r) { fail(`${BOARD} lists ${id} under Decisions required, and it has no row in ${BACKLOG}`); continue; }
+		if (r.verdict !== 'RULING-OWED') {
+			fail(`${BOARD} lists ${id} under Decisions required, but ${BACKLOG} records it as ${r.verdict} — a ruling that has landed is not still owed`);
+		}
+	}
 }
 
 /*

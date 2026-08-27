@@ -283,7 +283,7 @@ test('GR14/B77: a heading must agree with the states beneath it, and every item 
 	};
 	// a Next slice section because R12 requires one -- a board without a ranking is its own defect,
 	// and a fixture must differ from a valid board in exactly the thing under test
-	const rows = (...r) => `## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${r.join('\n')}\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n| 1 | future work | feature | because |\n`;
+	const rows = (...r) => `## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${r.join('\n')}\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n| 1 | future work | feature | because |\n\n## Decisions required\n\n| Row | Decision owed | Why |\n|---|---|---|\n`;
 	try {
 		// the shape that shipped: a heading claiming nothing has started, above finished work
 		write(rows('| H1.1 | a | **B1** | S1 | `DONE` |').replace('`WIP`', '`TODO`'));
@@ -341,11 +341,11 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		catch (e) { return { out: e.stdout || '', code: e.status }; }
 	};
 	const backlog = (...rows) => fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), `${rows.join('\n')}\n`);
-	const board = (items, held = '', slice = '| 1 | future work | feature | because |') => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+	const board = (items, held = '', slice = '| 1 | future work | feature | because |', owed = '') => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
 		// the fixture carries a valid Next slice because R12 requires one. A fixture must differ from
 		// a valid board in exactly the defect under test, and a board with no ranking is its own
 		// separate defect -- the same reasoning that made two R6/R8 fixtures declare `feature`.
-		`## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${items}\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n${slice}\n\n## Held\n\n| Row | Sev | Held item | Revival trigger |\n|---|---|---|---|\n${held}\n\n## Not in this arc\n`);
+		`## H1 — m · \`WIP\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n${items}\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n${slice}\n\n## Held\n\n| Row | Sev | Held item | Revival trigger |\n|---|---|---|---|\n${held}\n\n## Decisions required\n\n| Row | Decision owed | Why |\n|---|---|---|\n${owed}\n\n## Not in this arc\n`);
 	const both = '| H1.1 | a | **B1** | S1 | `DONE` |\n| H1.2 | b | **B2** | S1 | `TODO` |';
 
 	try {
@@ -472,6 +472,51 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		// stands in its Item column; B88 is the standing argument for not parsing the sentence.
 		board(live, '', '| 1 | H1.2 | user | H1.9 left the board, and H1.1 is done |');
 		assert.equal(run().code, 0, 'ids named in the Why column are prose, not offers');
+
+		/*
+		R13 (B153) -- a ruling owed is declared, and a landed one stops asserting itself.
+
+		Both directions, because `Decisions required` has failed in both: it asserted four blockers
+		that later work had answered, then sat three days asserting one already ruled on. Held has
+		had this pair since B123 (R8/R9) and this section had neither.
+
+		EVERY case keeps one DONE and one open item, because the fixture heading is `WIP` and R6
+		fails a board that is all one or all the other. Two drafts of this test did not, and R6's
+		failure read as R13 firing -- the assertion passed while the rule under test stayed silent.
+		The RULED row promises no milestone, so R3 leaves its open item alone.
+		*/
+		const ITEMS = '| H1.1 | a | **B2** | S1 | `DONE` |\n| H1.2 | b | **B1** | S1 | `TODO` |';
+		const OWED = '| **B1** | should X become a field? | it changes the schema |';
+		const owedBoard = (rows) => board(ITEMS, '', '| 1 | H1.2 | user | live |', rows);
+		const CLOSED2 = '| **B2** | b row | `[V]` | CLOSED -- H1. |';
+
+		backlog('| **B1** | a row | `[V]` | RULING-OWED -- needs a schema call. |', CLOSED2);
+		owedBoard(OWED);
+		assert.equal(run().code, 0, 'declared where the director looks for it');
+
+		// forward: owed, and not shown
+		owedBoard('');
+		r = run();
+		assert.equal(r.code, 1, 'a decision the plan does not show cannot be ruled on');
+		assert.match(r.out, /B1 is RULING-OWED but .* does not list it under Decisions required/);
+
+		// back: ruled, and still listed -- the three-day failure, exactly
+		backlog('| **B1** | a row | `[V]` | RULED 2026-08-27 -- settled, no milestone promised. |', CLOSED2);
+		owedBoard(OWED);
+		r = run();
+		assert.equal(r.code, 1, 'a ruling that has landed is not still owed');
+		assert.match(r.out, /lists B1 under Decisions required, but .* records it as RULED/);
+
+		// zero entries is LEGITIMATE here, unlike the ranking -- "None" is the usual answer and
+		// must stay cheap to say, so the floor is the section's existence and not its population
+		owedBoard('');
+		assert.equal(run().code, 0, 'an empty Decisions required is an answer, not a broken scan');
+
+		// and deleting the heading fails rather than going quiet
+		fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+			'## H1 — m · `WIP`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n' + ITEMS
+			+ '\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n| 1 | H1.2 | user | live |\n');
+		assert.match(run().out, /has no "Decisions required" section/);
 
 		// the floor: a table shape change must SAY so rather than go quiet
 		board(live, '', '');
