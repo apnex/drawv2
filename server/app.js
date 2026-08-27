@@ -138,7 +138,7 @@ export function sweepLocks(locks, hub, store) {
 	return freed;
 }
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '' } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '', lockTtlMs = 0 } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -211,7 +211,9 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	}
 
 	// Server-Locked control plane: lock arbiter + websocket broadcast hub
-	const locks = new Locks();
+	// B142: the backstop is a decision, taken here and tunable by the operator, rather than a
+	// default nobody revisited. `reclaim` remains what actually protects a person's control.
+	const locks = new Locks(lockTtlMs ? { ttlMs: lockTtlMs } : {});
 	const hub = new Hub();
 
 	// the backend is self-sufficient: with no client directory it runs API-only

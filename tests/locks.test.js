@@ -732,3 +732,50 @@ test('B140: the lock response reports whether it renewed or acquired', async () 
 		assert.equal(stranger.status, 409, 'while somebody without the token is still refused');
 	} finally { await app.close(); fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+B142 -- the slot survives a pause to think, and `reclaim` still answers instantly.
+
+Sliding was never the gap: `heartbeat` has always moved the deadline on every write, so a client
+that writes CONTINUOUSLY never lapses. That is a browser's rhythm. An agent's is a burst of writes
+and then a pause to decide what to draw next, and the pause is what the sixty-second default kept
+taking the slot away for -- authoring the reference topology lost it twice in the gaps and never
+once during the work.
+
+So what is asserted here is the pair, because raising a timeout on its own would be a guess: a
+realistic reasoning gap no longer costs the lock, AND the thing that actually protects a person's
+control is unaffected by the change.
+*/
+test('B142: a pause between bursts does not cost the slot', () => {
+	let t = 0;
+	const locks = new Locks({ now: () => t });          // the shipped default, deliberately not overridden
+	const held = locks.acquire('diagram-bb0001', 'agent:one');
+
+	t += 90_000;                                        // a minute and a half deciding what to draw
+	assert.equal(locks.locked('diagram-bb0001'), true, 'ninety seconds of thinking used to lose it');
+	assert.equal(locks.verify('diagram-bb0001', held.token), true, 'and the token still writes');
+
+	assert.equal(locks.heartbeat('diagram-bb0001', held.token), true, 'a write slides it again');
+	t += 14 * 60_000;
+	assert.equal(locks.locked('diagram-bb0001'), true, 'still inside the backstop');
+	t += 2 * 60_000;
+	assert.equal(locks.locked('diagram-bb0001'), false,
+		'and an ABANDONED slot still clears unattended -- the backstop is longer, not absent');
+});
+
+test('B142: reclaim is what protects the human, and the longer backstop does not touch it', () => {
+	let t = 0;
+	const locks = new Locks({ now: () => t });
+	const held = locks.acquire('diagram-bb0002', 'agent:one');
+	assert.equal(locks.locked('diagram-bb0002'), true);
+
+	// no token, no waiting for any deadline: that is the whole point of D22
+	locks.reclaim('diagram-bb0002');
+	assert.equal(locks.locked('diagram-bb0002'), false, 'the person has control immediately');
+	assert.equal(locks.verify('diagram-bb0002', held.token), false, 'and the agent no longer writes');
+	// not a bare refusal: the post-reclaim hold answers with how long to wait, so a retry loop backs
+	// off instead of racing the person who just took control
+	const rebuffed = locks.acquire('diagram-bb0002', 'agent:one');
+	assert.equal(rebuffed.held, true, 'nor can it grab the slot straight back');
+	assert.ok(rebuffed.retryAfter > 0, 'and it is told for how long');
+});

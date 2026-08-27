@@ -13,7 +13,23 @@ always frees itself and the behavior is deterministic for tests (inject `now`).
 import crypto from 'node:crypto';
 
 export class Locks {
-	constructor({ ttlMs = 60000, holdMs = 30000, now = () => Date.now() } = {}) {
+	/*
+	`ttlMs` is a BACKSTOP, not the control -- B142.
+
+	What stops an agent holding the write slot against a person is `reclaim` (D22): it force-releases
+	with no token, instantly, and imposes `holdMs` afterwards so the agent cannot immediately grab it
+	back. The timer only matters for a controller that has crashed while nobody is watching.
+
+	It used to default to sixty seconds, which is a browser's rhythm -- a client writing continuously
+	never lapses, because `heartbeat` slides the deadline on every write. An agent's rhythm is a
+	burst of writes and then a pause to decide what to draw next, and that pause routinely runs past
+	a minute, so the slot was taken away for thinking rather than for stopping. Authoring the
+	reference topology lost it twice in the gaps and never once during the work.
+
+	Fifteen minutes loses no reasoning gap and still clears an abandoned slot unattended. Calibrating
+	the backstop as though it were the control is what made it fight the caller it exists for.
+	*/
+	constructor({ ttlMs = 15 * 60 * 1000, holdMs = 30000, now = () => Date.now() } = {}) {
 		this.ttlMs = ttlMs;
 		this.holdMs = holdMs;
 		this.holds = new Map();   // diagramId -> heldUntil (D22, the post-reclaim human hold)
