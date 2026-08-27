@@ -711,21 +711,49 @@ export class Store {
 		if (typeof this.files.recoverable !== 'function') return null;
 		const found = await this.files.recoverable();
 		if (found === null) return null;
-		const out = [];
+		/*
+		One entry per ID, the newest generation.
+
+		Each delete mints a soft-deleted generation, and `remove` issues two (the entry's file and
+		the canonical name), so a diagram created and deleted twice appears four times. Listing them
+		all is not merely noisy: `restore` names an id, so duplicates make the verb ambiguous about
+		which version it would bring back. The newest is the only one anybody means.
+		*/
+		const newest = new Map();
 		for (const item of found) {
 			if (!FILE.test(item.name)) continue;
 			const id = item.name.replace(/\.json$/, '');
 			// a diagram that has since been restored, or re-created under the same id, is not
 			// "recoverable" -- it is simply here, and offering to restore it would be a lie
 			if (this.diagrams.has(id)) continue;
-			let name = null, owner = null;
+			const prior = newest.get(id);
+			if (!prior || String(item.deletedAt) > String(prior.deletedAt)) newest.set(id, item);
+		}
+		const out = [];
+		for (const [id, item] of newest) {
+			let name = null, owner = null, readable = false;
 			try {
 				const { doc } = parse(await this.files.read(item.name, item.generation));
 				name = doc?.meta?.name ?? null;
 				owner = doc?.meta?.owner ?? null;
-			} catch { /* unreadable: still recoverable, just unnamed */ }
-			if (this.authz && principal && owner && owner !== principal) continue;
-			if (this.authz && !principal) continue;
+				readable = true;
+			} catch (err) {
+				// named, because an unreadable entry is the difference between a filtered list and
+				// a leaked one, and "it did not work" is not a diagnosis
+				console.warn(`[ store ] cannot read deleted ${item.name} gen ${item.generation}: ${err.message}`);
+			}
+			/*
+			FAIL CLOSED on an unknown owner.
+
+			The first version skipped the ownership test when the document could not be read, which
+			meant an unreadable entry was shown to everybody -- and since a deleted document takes
+			its grants with it, "unreadable" is exactly the state where the check matters most. A
+			recycle bin that leaks on the error path is worse than one that omits a row.
+			*/
+			if (this.authz) {
+				if (!principal) continue;
+				if (!readable || !owner || owner !== principal) continue;
+			}
 			out.push({ id, name, owner, generation: item.generation,
 				deletedAt: item.deletedAt, purgeAt: item.purgeAt });
 		}

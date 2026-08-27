@@ -587,3 +587,87 @@ test('Phase 2: the schema refuses meta.slides, and a pre-purge file still loads'
 		assert.equal('slides' in onDisk.meta, false, 'rewritten clean, so it validates on its own next time');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+B109 -- the recycle bin fails CLOSED, and reports one row per diagram.
+
+Both of these were wrong in the first version and both showed up the moment it ran against the real
+bucket. Every entry read as `(unreadable)`, and the ownership test was written to skip when the
+owner could not be determined -- so an unreadable entry was shown to everybody. Since a deleted
+document takes its grants with it, "unreadable" is exactly the state where the check matters most.
+
+The duplicates were the second: each delete mints a soft-deleted generation and `remove` issues two,
+so a diagram created and deleted twice appeared four times -- which also makes `restore <id>`
+ambiguous about which version it would bring back.
+
+Driven through a fake backend, because the property is about what the STORE does with what a
+backend hands it, and no real bucket can be made to answer unreadably on demand.
+*/
+test('B109: an unreadable entry is withheld under authorization, not shown to everyone', async () => {
+	const dir = tmp();
+	const real = fsFiles(dir);
+	const OTHER = 'user:someone-else@example.com';
+	const files = {
+		...real,
+		async recoverable() {
+			return [
+				{ name: 'diagram-aa0001.json', generation: '1', deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
+				{ name: 'diagram-bb0002.json', generation: '2', deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
+			];
+		},
+		async read(name, gen) {
+			if (name === 'diagram-aa0001.json' && gen) throw new Error('gone');   // unreadable
+			if (name === 'diagram-bb0002.json' && gen) {
+				return serialize({ meta: { id: 'diagram-bb0002', name: 'theirs', owner: OTHER, schema: 1, version: 0, grants: {} },
+					nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] }, null);
+			}
+			return real.read(name);
+		},
+	};
+	const s = new Store(dir, { flushMs: 3_600_000, files, authz: true });
+	await s.init();
+	try {
+		const mine = await s.recoverable(OWNER);
+		assert.deepEqual(mine, [], 'neither the unreadable one nor somebody else\'s reaches me');
+
+		const theirs = await s.recoverable(OTHER);
+		assert.deepEqual(theirs.map((d) => d.id), ['diagram-bb0002'], 'the owner sees their own');
+		assert.equal(theirs[0].name, 'theirs', 'read back from the deleted document itself');
+
+		assert.deepEqual(await s.recoverable(null), [], 'and no principal sees nothing at all');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B109: repeated deletions of one diagram are one row, the newest', async () => {
+	const dir = tmp();
+	const real = fsFiles(dir);
+	const files = {
+		...real,
+		// `remove` issues two deletes per diagram, so generations accumulate per id
+		async recoverable() {
+			return [
+				{ name: 'diagram-cc0003.json', generation: '1', deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
+				{ name: 'diagram-cc0003.json', generation: '2', deletedAt: '2026-01-03T00:00:00Z', purgeAt: '2026-01-10T00:00:00Z' },
+				{ name: 'diagram-cc0003.json', generation: '3', deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
+			];
+		},
+		async read() { throw new Error('unreadable'); },
+	};
+	const s = new Store(dir, { flushMs: 3_600_000, files, authz: false });
+	await s.init();
+	try {
+		const found = await s.recoverable(null);
+		assert.equal(found.length, 1, 'one row per diagram, however many generations exist');
+		assert.equal(found[0].generation, '2', 'and it is the newest -- restore names an id, so it must be unambiguous');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B109: a filesystem answers null, which is not an empty recycle bin', async () => {
+	const dir = tmp();
+	const s = await openStore(dir);
+	try {
+		assert.equal(await s.recoverable(OWNER), null,
+			'null says there is no window; [] would claim there is one and it is empty');
+		assert.match(await s.restore('diagram-aaaaaa', OWNER), /no delete window/);
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
