@@ -1101,16 +1101,33 @@ test('B157: every single-glyph header button is square', () => {
 	assert.ok(single.length >= 4, 'and still has single-glyph ones, which are the subject');
 	for (const b of single) {
 		const id = (b.attrs.match(/id="([^"]+)"/) || [])[1];
-		assert.match(b.attrs, /class="[^"]*\bicon\b/,
+		assert.match(b.attrs, /class="[^"]*\bmenu-icon\b/,
 			`the single-glyph button #${id} is sized by its glyph's advance, so it is not square`);
 	}
 	// and a multi-glyph one must NOT be squared, or the indicators collapse to 26px
 	for (const b of buttons.filter((x) => x.label.length > 1)) {
-		assert.doesNotMatch(b.attrs, /class="[^"]*\bicon\b/, 'a worded button is not an icon');
+		assert.doesNotMatch(b.attrs, /class="[^"]*\bmenu-icon\b/, 'a worded button is not an icon');
 	}
 
-	assert.match(css, /#menu button\.icon\s*\{[^}]*width:\s*var\(--control-h\)/,
+	/*
+	THE CLASS NAME MUST BE THE HEADER'S ALONE, and this is the assertion that would have saved three
+	rounds. The first version used `class="icon"`, which the kernel art primitives already own:
+	`.icon { transform: scale(0.3) }`, for SVG glyph artwork in the palette. `transform` conflicts
+	with nothing the header rule sets, so BOTH applied -- computed width stayed 26px while the
+	rendered box was 7.8px. Every reading of the stylesheet said the geometry was correct and the
+	screen disagreed, so the failure looked like a sizing problem and was not one.
+	*/
+	const cls = (header.match(/class="[^"]*\b(menu-icon)\b/) || [])[1];
+	assert.ok(cls, 'the header icon buttons carry a class');
+	// comments out FIRST: the prose above the rule names the class and the collision it describes,
+	// and matching that reported the explanation as a second owner. Read the rules, not the essay.
+	const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+	const owners = [...rules.matchAll(new RegExp(`^([^{@\n][^{]*\\.${cls}\\b[^{]*)\\{`, 'gm'))].map((m) => m[1].trim());
+	assert.deepEqual(owners, ['#menu button.menu-icon'],
+		`.${cls} is styled somewhere else too — a shared class silently adds whatever that rule sets`);
+
+	assert.match(css, /#menu button\.menu-icon\s*\{[^}]*width:\s*var\(--control-h\)/,
 		'square means the width comes from the same property as the height');
-	assert.match(css, /#menu button\.icon\s*\{[^}]*padding:\s*0/,
+	assert.match(css, /#menu button\.menu-icon\s*\{[^}]*padding:\s*0/,
 		'and padding must not add to it — box-sizing keeps the height honest, not the width');
 });

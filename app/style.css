@@ -26,9 +26,30 @@ the same, because with a fixed height it buys nothing and can only squeeze the t
 	flex: 0 0 40px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
 	background: #181818; border-bottom: 1px solid #262626; color: #aed581; user-select: none;
 }
-#menu > * { height: var(--control-h); box-sizing: border-box; }
+/*
+`flex: 0 0 auto` is the half that makes the declared sizes real.
+
+Every flex item shrinks by default, so a declared width is only a STARTING size -- the moment the bar
+is wider than the window the browser takes the difference out of whatever will give. With `padding: 0`
+an icon button's automatic minimum is a single glyph, so it gave the most: a 26px square rendered at
+about 5px. The widths above were never wrong; nothing said they were fixed.
+
+So nothing flexes except the two that should. `#banner` grows and shrinks because it exists to absorb
+the slack, and the name field and picker may shrink after it, in that order, because losing a few
+characters of a text field is a smaller harm than an unreadable control. The indicators, the icons
+and the lock never move.
+*/
+#menu > * { height: var(--control-h); box-sizing: border-box; flex: 0 0 auto; }
+#diagram-name, #diagram-list { flex: 0 1 auto; min-width: 4ch; }
 /*
 B157: a single-glyph button is SQUARE, and by construction rather than by luck.
+
+THE CLASS IS `menu-icon`, NOT `icon`, and the name is the whole lesson. `.icon` was already taken by
+the kernel art primitives forty lines below -- `.icon { transform: scale(0.3) }`, which scales SVG
+glyph artwork in the palette. Adding `class="icon"` to these buttons inherited that transform, and
+because `transform` conflicts with nothing this rule sets, both applied: computed width stayed 26px
+while the rendered box was 7.8px. Every stylesheet reading said the geometry was right and the
+screen disagreed, which is why it survived three attempts to fix it by changing sizes.
 
 `+`, `-x-`, `retry` and `?` were sized by `padding: 0 8px` around whatever advance their glyph
 happened to have. Two of the four are not ASCII, so they can be served by a fallback face with a
@@ -37,8 +58,15 @@ an amount nobody can predict from the stylesheet and that changes with the insta
 
 Taking the width from the same property as the height removes the question. It cannot be verified
 by reading a browser from here, so it is arranged not to need verifying.
+
+THE GLYPH IS SIZED SEPARATELY, and squaring the box without doing so was the first attempt's mistake.
+At the shared 13px a single character sits lost in a 26px square -- correct geometry, unreadable
+control. `line-height: 1` is here for a second reason: with no padding and a fixed height, a button's
+default line box can exceed the content box and clip the glyph it is meant to centre.
 */
-#menu button.icon { width: var(--control-h); padding: 0; }
+#menu button.menu-icon {
+	width: var(--control-h); padding: 0; font-size: 17px; line-height: 1;
+}
 /*
 The spans are not controls and do not centre their own text. `inline-block` plus a `line-height`
 equal to the height does it, for a single line, and is chosen over flex centring deliberately:
