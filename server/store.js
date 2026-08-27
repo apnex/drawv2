@@ -680,10 +680,16 @@ export class Store {
 		}
 		this.diagrams.delete(id);
 		try {
+			/*
+			Tagged on the way out -- B109. The store still knows whose diagram this is; the recycle
+			bin later will not, because a soft-deleted object serves its metadata and refuses its
+			data. This is the last moment the answer exists.
+			*/
+			const tags = { owner: entry.model.state.meta.owner || '', name: entry.model.state.meta.name || '' };
 			// the backend owns the temp artefact of its own write strategy, so this no longer
 			// names a `.json.tmp` -- that was filesystem shape leaking into the caller (B55)
-			await this.files.remove(entry.file);
-			await this.files.remove(`${id}.json`);
+			await this.files.remove(entry.file, tags);
+			await this.files.remove(`${id}.json`, tags);
 		} catch (err) {
 			console.warn(`[ store ] could not remove ${id}.json: ${err.message}`);
 		}
@@ -730,18 +736,23 @@ export class Store {
 			if (!prior || String(item.deletedAt) > String(prior.deletedAt)) newest.set(id, item);
 		}
 		const out = [];
+		let unattributable = 0;
 		for (const [id, item] of newest) {
-			let name = null, owner = null, readable = false;
-			try {
-				const { doc } = parse(await this.files.read(item.name, item.generation));
-				name = doc?.meta?.name ?? null;
-				owner = doc?.meta?.owner ?? null;
-				readable = true;
-			} catch (err) {
-				// named, because an unreadable entry is the difference between a filtered list and
-				// a leaked one, and "it did not work" is not a diagnosis
-				console.warn(`[ store ] cannot read deleted ${item.name} gen ${item.generation}: ${err.message}`);
-			}
+			/*
+			Identity comes from the TAGS, not from the document.
+
+			The first version read the deleted file to find its owner, and against the live bucket
+			every read answered 400: GCS keeps a soft-deleted object's metadata and refuses its data.
+			So the answer has to be written down before the delete, which `remove` now does, and read
+			back from the listing here.
+
+			An entry with no tags predates that and cannot be attributed to anyone. It is counted
+			rather than shown, because a row nobody can be shown to is not a row.
+			*/
+			const name = item.tags?.name || null;
+			const owner = item.tags?.owner || null;
+			const readable = !!owner;
+			if (!readable) unattributable++;
 			/*
 			FAIL CLOSED on an unknown owner.
 
@@ -757,7 +768,15 @@ export class Store {
 			out.push({ id, name, owner, generation: item.generation,
 				deletedAt: item.deletedAt, purgeAt: item.purgeAt });
 		}
-		return out.sort((a, b) => String(a.purgeAt).localeCompare(String(b.purgeAt)));
+		out.sort((a, b) => String(a.purgeAt).localeCompare(String(b.purgeAt)));
+		/*
+		An OBJECT, not an array with a property bolted on.
+
+		`unattributable` has to travel so a surface can say the window holds more than it can show,
+		and hanging it off the array would be a field no reader of `entries.length` would ever find.
+		The shape is `null` for no window at all, or `{ entries, unattributable }` for one.
+		*/
+		return { entries: out, unattributable };
 	}
 
 	/*
@@ -768,7 +787,7 @@ export class Store {
 		if (this.diagrams.has(id)) return 'that diagram is already here';
 		const window = await this.recoverable(principal);
 		if (window === null) return 'this deployment has no delete window';
-		const hit = window.find((w) => w.id === id);
+		const hit = window.entries.find((w) => w.id === id);
 		// the filter above is the authorization: an entry a principal cannot see is one it cannot
 		// name, so a wrong id and someone else's id give the same answer, which is the correct one
 		if (!hit) return 'nothing recoverable by that name';

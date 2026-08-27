@@ -99,6 +99,7 @@ const undelete = {
 	close: document.getElementById('undelete-close'),
 };
 let recoverable = [];
+let unattributable = 0;
 
 // hours, then days past two -- the number that decides whether to act now, at the precision that
 // decision actually needs
@@ -117,14 +118,20 @@ async function refreshUndelete() {
 		if (!res.ok) { menu.undelete.hidden = true; return; }
 		const body = await res.json();
 		recoverable = body.window ? (body.deleted || []) : [];
+		unattributable = body.unattributable || 0;
 		menu.undelete.hidden = recoverable.length === 0;
 	} catch { menu.undelete.hidden = true; }
 }
 
 function renderUndelete() {
-	undelete.note.textContent = recoverable.length === 1
+	// the count of entries that cannot be attributed is said out loud: a shorter list than the
+	// window actually holds, with no explanation, reads as a promise nobody made
+	const aside = unattributable
+		? ` ${unattributable} older ${unattributable === 1 ? 'entry predates' : 'entries predate'} ownership tagging and cannot be shown.`
+		: '';
+	undelete.note.textContent = (recoverable.length === 1
 		? 'One diagram is still recoverable. After the window closes it is gone for good.'
-		: `${recoverable.length} diagrams are still recoverable. After the window closes they are gone for good.`;
+		: `${recoverable.length} diagrams are still recoverable. After the window closes they are gone for good.`) + aside;
 	undelete.list.innerHTML = '';
 	for (const d of recoverable) {
 		const left = timeLeft(d.purgeAt);

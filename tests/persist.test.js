@@ -609,32 +609,33 @@ test('B109: an unreadable entry is withheld under authorization, not shown to ev
 	const OTHER = 'user:someone-else@example.com';
 	const files = {
 		...real,
+		/*
+		Identity arrives as TAGS, because a soft-deleted object serves its metadata and refuses its
+		data -- verified against the live bucket, which answers 400 to a read. An entry with no tags
+		predates the tagging and cannot be attributed to anybody.
+		*/
 		async recoverable() {
 			return [
-				{ name: 'diagram-aa0001.json', generation: '1', deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
-				{ name: 'diagram-bb0002.json', generation: '2', deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
+				{ name: 'diagram-aa0001.json', generation: '1', tags: null,
+					deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
+				{ name: 'diagram-bb0002.json', generation: '2', tags: { owner: OTHER, name: 'theirs' },
+					deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
 			];
-		},
-		async read(name, gen) {
-			if (name === 'diagram-aa0001.json' && gen) throw new Error('gone');   // unreadable
-			if (name === 'diagram-bb0002.json' && gen) {
-				return serialize({ meta: { id: 'diagram-bb0002', name: 'theirs', owner: OTHER, schema: 1, version: 0, grants: {} },
-					nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] }, null);
-			}
-			return real.read(name);
 		},
 	};
 	const s = new Store(dir, { flushMs: 3_600_000, files, authz: true });
 	await s.init();
 	try {
 		const mine = await s.recoverable(OWNER);
-		assert.deepEqual(mine, [], 'neither the unreadable one nor somebody else\'s reaches me');
+		assert.deepEqual(mine.entries, [], 'neither the untagged one nor somebody else\'s reaches me');
+		assert.equal(mine.unattributable, 1,
+			'the untagged one is COUNTED, so a surface can say the window holds more than it can show');
 
 		const theirs = await s.recoverable(OTHER);
-		assert.deepEqual(theirs.map((d) => d.id), ['diagram-bb0002'], 'the owner sees their own');
-		assert.equal(theirs[0].name, 'theirs', 'read back from the deleted document itself');
+		assert.deepEqual(theirs.entries.map((d) => d.id), ['diagram-bb0002'], 'the owner sees their own');
+		assert.equal(theirs.entries[0].name, 'theirs', 'named from the tag written at delete time');
 
-		assert.deepEqual(await s.recoverable(null), [], 'and no principal sees nothing at all');
+		assert.deepEqual((await s.recoverable(null)).entries, [], 'and no principal sees nothing at all');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -646,17 +647,16 @@ test('B109: repeated deletions of one diagram are one row, the newest', async ()
 		// `remove` issues two deletes per diagram, so generations accumulate per id
 		async recoverable() {
 			return [
-				{ name: 'diagram-cc0003.json', generation: '1', deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
-				{ name: 'diagram-cc0003.json', generation: '2', deletedAt: '2026-01-03T00:00:00Z', purgeAt: '2026-01-10T00:00:00Z' },
-				{ name: 'diagram-cc0003.json', generation: '3', deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
+				{ name: 'diagram-cc0003.json', generation: '1', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
+				{ name: 'diagram-cc0003.json', generation: '2', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-03T00:00:00Z', purgeAt: '2026-01-10T00:00:00Z' },
+				{ name: 'diagram-cc0003.json', generation: '3', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
 			];
 		},
-		async read() { throw new Error('unreadable'); },
 	};
 	const s = new Store(dir, { flushMs: 3_600_000, files, authz: false });
 	await s.init();
 	try {
-		const found = await s.recoverable(null);
+		const found = (await s.recoverable(null)).entries;
 		assert.equal(found.length, 1, 'one row per diagram, however many generations exist');
 		assert.equal(found[0].generation, '2', 'and it is the newest -- restore names an id, so it must be unambiguous');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }

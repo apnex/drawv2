@@ -1996,11 +1996,18 @@ VERBS.push(
 				// NOT "nothing to restore" -- the distinction is the whole reason the seam answers null
 				return { json: b, text: 'this deployment has no delete window: a removed diagram is gone' };
 			}
-			if (!b.deleted.length) return { json: b, text: 'nothing in the delete window' };
+			// an entry the tool cannot attribute is counted rather than listed, and saying so is the
+			// difference between "nothing is recoverable" and "nothing I can show you is"
+			const aside = b.unattributable
+				? `\n${b.unattributable} more predate ownership tagging and cannot be attributed`
+				: '';
+			if (!b.deleted.length) {
+				return { json: b, text: `nothing in the delete window${aside}` };
+			}
 			// LEFT first, because it is the column that decides whether to act now
 			const rows = b.deleted.map((d) => [REMAINING(d.purgeAt), d.id, d.name ?? '(unreadable)',
 				d.deletedAt ? d.deletedAt.replace('T', ' ').slice(0, 16) : '?']);
-			return { json: b, text: table(rows, ['LEFT', 'ID', 'NAME', 'DELETED']) };
+			return { json: b, text: `${table(rows, ['LEFT', 'ID', 'NAME', 'DELETED'])}${aside}` };
 		},
 	},
 	{

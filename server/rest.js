@@ -466,7 +466,10 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 	*/
 	if (parts[3] === 'deleted' && parts.length === 4) {
 		store.recoverable(principal)
-			.then((found) => json(res, 200, { window: found !== null, deleted: found || [] }))
+			.then((found) => json(res, 200, { window: found !== null, deleted: found?.entries || [],
+				// entries the window holds that predate ownership tagging: shown as a count, since
+				// a row nobody can be attributed to is not a row
+				unattributable: found?.unattributable || 0 }))
 			.catch((err) => {
 				console.warn(`[ rest ] recoverable failed: ${err && err.message}`);
 				if (!res.headersSent) json(res, 500, { error: 'internal error' });

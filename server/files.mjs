@@ -11,14 +11,25 @@ has keys, not directories, so a seam that passed `path.join(dir, file)` around w
 shape into a place that has none. The implementation owns where a name lives.
 
   list()             -> Promise<string[]>   every document name currently stored
-  read(name, gen?)   -> Promise<string>     utf8 text, rejects if absent; `gen` reads a soft-deleted version
+  read(name)         -> Promise<string>     utf8 text, rejects if absent
   write(name, text)  -> Promise<void>       atomic: a reader sees the old text or the new, never a splice
-  remove(name)       -> Promise<void>       idempotent, absent is success
+  remove(name, tags?) -> Promise<void>      idempotent; `tags` are small strings kept BESIDE the bytes, so a
+                                            deleted object can still say whose it was
 
 And two that only some backends can answer (B109):
 
   recoverable()      -> Promise<entry[] | null>   what is inside the delete window; NULL if there is no window
   restore(name, gen) -> Promise<void>             bring one back
+
+`tags` exist because of what a soft-deleted object will NOT tell you. GCS keeps a deleted object's
+METADATA and refuses its DATA -- a read with `softDeleted=true&alt=media` answers 400, verified
+against the live bucket -- so a recycle bin cannot open a document to find out whose it was.
+
+They are written on the way OUT rather than on every write, and that placement is deliberate. The
+write path carries the compare-and-swap that makes concurrent writers loud (B6), and moving it to a
+multipart upload to attach metadata would put the system's most load-bearing call at risk for a
+field only a deletion ever reads. A delete is rare, already does two round trips, and is the exact
+moment the store still knows whose diagram it is.
 
 `null` is not `[]`, and the difference is the whole point. An empty array says "nothing is
 recoverable right now"; null says "this backend has no recycle bin at all", which is true of a
@@ -53,8 +64,6 @@ export function fsFiles(dir) {
 		async list() {
 			return fs.readdirSync(dir);
 		},
-		// `generation` is accepted and ignored: a filesystem keeps one version, and refusing the
-		// argument would make the seam's shape depend on which backend answers it
 		async read(name) {
 			return fs.readFileSync(at(name), 'utf8');
 		},
@@ -64,6 +73,7 @@ export function fsFiles(dir) {
 			fs.writeFileSync(tmp, text);
 			fs.renameSync(tmp, file);
 		},
+		// `tags` are accepted and dropped: there is no window for them to survive into
 		async remove(name) {
 			// `force` makes absence success rather than an error, which is what idempotent means
 			// here: delete is called on a best-effort basis and must not throw on a second attempt.
@@ -214,19 +224,8 @@ export function gcsFiles(bucket, {
 			return names;
 		},
 
-		/*
-		`generation` reads a version that is no longer live -- B109.
-
-		Without it there is no way to see what a deleted document CONTAINED, and the recycle bin
-		would have to offer a list of ids with no names and no owner, which is both useless to a
-		person and unfilterable by grant. `softDeleted=true` is required alongside it: the API will
-		not serve a soft-deleted generation to a plain read.
-		*/
-		async read(name, generation = null) {
-			const q = generation
-				? `?alt=media&softDeleted=true&generation=${encodeURIComponent(generation)}`
-				: '?alt=media';
-			const res = await call(`${objectUrl(name)}${q}`);
+		async read(name) {
+			const res = await call(`${objectUrl(name)}?alt=media`);
 			if (res.status === 404) throw new Error(`no such object: ${name}`);
 			if (!res.ok) throw new Error(`gcs read failed for ${name}: ${res.status}`);
 			const gen = res.headers.get('x-goog-generation');
@@ -260,7 +259,26 @@ export function gcsFiles(bucket, {
 			if (body.generation) generations.set(name, body.generation);
 		},
 
-		async remove(name) {
+		async remove(name, tags = null) {
+			/*
+			Tag before deleting, so the soft-deleted generation carries who it belonged to.
+
+			A metadata PATCH bumps the METAgeneration and leaves the data generation alone, so this
+			does not disturb the compare-and-swap the write path depends on. Best-effort: failing to
+			label a deletion must never stop the deletion, and an untagged entry is simply one the
+			recycle bin cannot attribute.
+			*/
+			if (tags) {
+				try {
+					await call(objectUrl(name), {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ metadata: tags }),
+					});
+				} catch (err) {
+					console.warn(`[ gcs ] could not tag ${name} before delete: ${err.message}`);
+				}
+			}
 			const res = await call(objectUrl(name), { method: 'DELETE' });
 			// absent is success -- the seam promises idempotence and delete is best-effort
 			if (res.status === 404 || res.ok) { generations.delete(name); return; }
@@ -290,13 +308,13 @@ export function gcsFiles(bucket, {
 			let pageToken;
 			do {
 				const q = new URLSearchParams({ softDeleted: 'true',
-					fields: 'items(name,generation,softDeleteTime,hardDeleteTime),nextPageToken' });
+					fields: 'items(name,generation,softDeleteTime,hardDeleteTime,metadata),nextPageToken' });
 				if (pageToken) q.set('pageToken', pageToken);
 				const res = await call(`${GCS_API}/${encodeURIComponent(bucket)}/o?${q}`);
 				if (!res.ok) throw new Error(`gcs recoverable failed: ${res.status} ${await res.text()}`);
 				const body = await res.json();
 				for (const it of body.items || []) {
-					out.push({ name: it.name, generation: it.generation,
+					out.push({ name: it.name, generation: it.generation, tags: it.metadata || null,
 						deletedAt: it.softDeleteTime || null, purgeAt: it.hardDeleteTime || null });
 				}
 				pageToken = body.nextPageToken;
