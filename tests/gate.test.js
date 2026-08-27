@@ -661,3 +661,27 @@ test('B109: the undelete wiring runs after the object it wires', () => {
 	assert.match(html, /id="diagram-undelete"[^>]*hidden/, 'the control ships hidden');
 	assert.match(html, /id="undelete"[^>]*hidden/, 'and so does the panel');
 });
+
+/*
+B109 -- the delete window is refreshed before it is read, and when the tab is looked at again.
+
+Visibility used to be recomputed only when a snapshot carrying a diagram list arrived, and a delete
+notifies only the people watching the deleted diagram. A tab sitting on anything else never learned
+the window had changed, so the control stayed hidden until a reload -- the same shape as B94, a tab
+believing something the server has since changed.
+
+Asserted structurally, because the alternative is standing up a browser. What can be checked is that
+the two refresh moments exist and that neither is a timer: polling would spend requests continuously
+to be right at a moment which already announces itself.
+*/
+test('B109: the recycle bin refreshes on open and on regaining focus, and never polls', () => {
+	const src = fs.readFileSync(path.join(root, 'app/src/main.js'), 'utf8');
+	const wiring = src.slice(src.indexOf('menu.undelete.onclick'));
+
+	assert.match(wiring.slice(0, 300), /await refreshUndelete\(\);\s*renderUndelete\(\)/,
+		'opening the panel refetches BEFORE rendering, so a list is never stale when acted on');
+	assert.match(src, /visibilitychange[\s\S]{0,120}refreshUndelete/,
+		'and coming back to the tab rechecks, which is when a person looks');
+	assert.equal(/setInterval\([^)]*refreshUndelete/.test(src), false,
+		'no polling: a timer spends requests continuously to be right at a moment that announces itself');
+});

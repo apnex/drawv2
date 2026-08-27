@@ -165,10 +165,25 @@ function renderUndelete() {
 }
 
 if (menu.undelete) {
-	menu.undelete.onclick = () => { renderUndelete(); undelete.panel.hidden = false; };
+	/*
+	Refreshed before it is READ, and when the tab is looked at again.
+
+	The button's visibility used to be recomputed only when a snapshot carrying a diagram list
+	arrived, and a delete notifies just the people watching the deleted diagram -- so a tab sitting
+	on anything else never learned the window had changed and needed a reload to show the control.
+	That is the same shape as B94: a tab confidently believing something the server has since
+	changed.
+
+	Two cheap moments instead of polling. Opening the panel refetches, so a list is never stale at
+	the instant somebody acts on it. And `visibilitychange` catches coming back to the tab, which is
+	when a person looks -- a timer would spend requests continuously to be right at the one moment
+	that already announces itself.
+	*/
+	menu.undelete.onclick = async () => { await refreshUndelete(); renderUndelete(); undelete.panel.hidden = false; };
 	undelete.close.onclick = () => { undelete.panel.hidden = true; };
 	// the same dismissal idiom as #access and #help: the backdrop closes, the card does not
 	undelete.panel.onclick = (e) => { if (e.target === undelete.panel) undelete.panel.hidden = true; };
+	document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshUndelete(); });
 }
 
 
