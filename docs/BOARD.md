@@ -168,7 +168,7 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 2 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
 | 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
 | 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
-| 5 | H10.20, H9.20 | verifier | The two board rules deferred pending a convention. Cheap once chosen; both still real. |
+| 5 | H9.20 | verifier | A stated count must not contradict one the repo can compute. The board rule still deferred pending a convention, cheap once chosen. H10.20 left the board on 2026-08-27: B88's lexical form matches zero live claims and is held, and **B150** carries the data-shaped successor. |
 | 6 | H7.4, H7.6 | verifier | Doc style and the Docker image, both CI-shaped, both a per-deploy manual tax. B137 is the argument for the second: a broken symlink shipped in every image because nothing builds one. **H7.4 needs a ruling first** -- whether this gate may depend on a sibling `mission-kit` checkout, or vendor a rule that has one owner and that S3 argues against duplicating. |
 | 7 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
 | 8 | H10.16, H10.17, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. |
@@ -496,7 +496,6 @@ Every item here was found by using the application rather than by running the ga
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 · S | `DONE` |
 | H10.18 | A `del` entry with no entity threw in the browser and shipped -- every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
 | H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one -- the asymmetry that turned a correct rejection into a broken fix | **B125** | S2 · S | `DONE` |
-| H10.20 | Scanner: a board claim of the form *blocks Hn.m* must agree with that item's state -- prose is outside R6, so a paragraph can assert that finished work is blocked | **B88** | S3 · S | `TODO` |
 | H10.22 | A revoked peer's open tab still believes it may write until it reconnects -- a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 · M | `TODO` |
 | H10.21 | Two specs asserted facts the code contradicted -- the SVG route's authentication and H9.3's existence -- corrected with dated amendments | **B89** | S2 · S | `DONE` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 · S | `DONE` |
@@ -544,6 +543,7 @@ should have caught it was scoped narrower than its own claim.
 | H11.23 | `about` answers every relation in ids, and prints `undefined` for a group because `links` carries two shapes. The verb built to stop cross-referencing forces it | **B144** | S3 · S | `DONE` |
 | H11.24 | A5 Perceptual Parity was satisfied by instinct and never verified: the instruments got built, the delta was never measured, and both existing A5 citations are about the HUMAN's view of a symmetry that has two sides | **B145** | S2 · M | `DONE` |
 | H11.25 | The ranked Next slice advertises finished work: four of its ten entries are DONE, and no rule reads the ranking table. R11 made every item row accountable and left the ranking over those rows unchecked | **B149** | S1 · S | `DONE` |
+| H11.26 | R12 holds a ranked entry to not being finished and never to existing, so the ranking survived pointing at an item deleted the same commit. Structured data, unambiguous, one branch | **B151** | S1 · S | `DONE` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 · L | `TODO` |
 | H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 · M | `DONE` |
 
@@ -564,6 +564,7 @@ reader recognises: a live row must be here or be an item, and a settled row must
 | **B10** | **S2** | Put-based inverse loses intra-kind ordering → stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
+| **B88** | S3 | Prose can assert that finished work is blocked, and no rule reads a sentence | a second blocked entry appears on the board, or any `Decisions required` entry returns |
 
 **Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:
 
@@ -583,26 +584,28 @@ local `write`+`rename` the row was written against, so the arc closed the row by
 
 ## Decisions required
 
-**None.** Corrected 2026-08-26: this section has now been wrong twice in the same way, and the second
-time is the more interesting one.
+**One.** Corrected 2026-08-26 to `None`, and re-opened 2026-08-27 by the work that tried to close B88.
 
-The first correction (2026-08-21) found three of four entries answered by later work that never came
-back to amend the section, and every *"blocks Hn.m"* claim false. It left one live entry -- **B32**, the
-REST diagram lifecycle -- and that was ruled on 2026-08-23. `POST` and `DELETE` both exist; `DELETE` is
-gated on write access rather than ownership, because the ruling's own logic sets the threshold at the
-gate `store.remove` already applied to the websocket, and it answers 423 while another controller holds
-the lock, except to the holder. The section then sat for three days asserting that a decision was
-required, which it was not.
+| Row | Decision owed | Why it cannot be settled without you |
+|---|---|---|
+| **B150** | Should blocked-ness become a FIELD on the item row, with the prose generated from it or gated against it? | It changes this file's schema, so it is not mine to rule |
 
-**Registered as B88, and still open**, because the mechanism is the point rather than the instance.
-`H9.18` checks that a milestone HEADING agrees with the items beneath it. Prose is outside every rule
-this file has, so a paragraph may assert that finished work is blocked, or that a ruling is owed, and
-the gate passes cleanly. H10.20 proposes the tractable narrow form -- *blocks Hn.m* is a fixed phrase
-and can be checked against that item's state. It does not reach *"a decision is required"*, which has
-no fixed phrase, and pretending otherwise would be a fourth check narrower than its own claim.
+**B88 is deferred, not closed**, and the measurement is the reason. Its tractable form reads *blocks Hn.m*
+as a fixed phrase. Against this board that phrase matches ZERO live claims: the one real blocking claim
+is at the `blocked` tier of the Next slice, *H10.7 is blocked in practice on H10.8*, where the item
+precedes the verb and the blocker follows *on*. The rule would have caught the 2026-08-21 phrasing
+(`**Blocks H5.3**`, verbatim) and misses the phrasing this file has since moved to.
 
-Until then this section is maintained by hand and is worth reading with suspicion, which is the honest
-disposition rather than a comfortable one.
+A widened pattern matches one claim, *Unblocked: H9.4*, which is correct. A third candidate -- every
+`Hn.m` in prose resolving to a real item -- has one hit in 205 mentions, and it is a false positive.
+
+**The finding is worth more than the rule was.** Every `scan-board` rule that finds anything reads
+STRUCTURE: a column, a state token, a table row. R12 found five stale entries the same morning. The
+candidates with a population of zero are the ones that read English, and adding them would have been the
+H9.20 mistake committed in the act of closing it.
+
+This section is still maintained by hand and still worth reading with suspicion. What changed is that
+the thing it now asserts is a ruling owed, which is a claim someone can act on.
 
 ### Resolved, and by what
 

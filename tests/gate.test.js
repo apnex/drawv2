@@ -459,6 +459,20 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		board(live, '', '| 1 | Level 2 placement | feature | names no item, and is legitimate |');
 		assert.equal(run().code, 0, 'an all-prose ranking is a ranking, not a broken scan');
 
+		// B151 -- an id with NO item row. `state[id]` is undefined, which is neither DONE nor
+		// DROPPED, so the first version read a dangling rank as clean and let a deleted item stay
+		// ranked in the commit that deleted it.
+		board(live, '', '| 1 | H1.9 | user | deleted from the board, still ranked |');
+		r = run();
+		assert.equal(r.code, 1, 'a ranked id with no item row is dangling');
+		assert.match(r.out, /ranks H1\.9 in the Next slice, and it has no item row/);
+
+		// and the ITEM cell only. Reading the whole row flagged an entry whose Why column explains
+		// that an item LEFT the board -- true prose, called a dangling rank. The ranking offers what
+		// stands in its Item column; B88 is the standing argument for not parsing the sentence.
+		board(live, '', '| 1 | H1.2 | user | H1.9 left the board, and H1.1 is done |');
+		assert.equal(run().code, 0, 'ids named in the Why column are prose, not offers');
+
 		// the floor: a table shape change must SAY so rather than go quiet
 		board(live, '', '');
 		assert.match(run().out, /Next slice matched NO ranked entry/);

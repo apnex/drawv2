@@ -263,8 +263,33 @@ if (!slice) {
 	for (const line of slice[1].split('\n')) {
 		if (!/^\|\s*(?:\d+|--)\s*\|/.test(line)) continue;   // the header and the divider are not entries
 		entries++;
-		for (const id of line.matchAll(/\bH\d+\.\d+[a-z]?\b/g)) {
-			if (state[id[0]] === 'DONE' || state[id[0]] === 'DROPPED') {
+		/*
+		The ITEM cell only, not the whole row.
+
+		Reading the line flagged an entry whose Why column explains that H10.20 LEFT the board --
+		true prose, and the rule called it a dangling rank. The ranking OFFERS what stands in its
+		Item column; the Why column is a sentence, and B88 is the standing argument for not parsing
+		one. Read the column, not the sentence, which is the same distinction that made this rule
+		worth building and B88's worth deferring.
+		*/
+		const offered = splitCells(line)[2] || '';
+		for (const id of offered.matchAll(/\bH\d+\.\d+[a-z]?\b/g)) {
+			/*
+			B151 — an id with NO item row is dangling, and the first version read it as clean.
+
+			`state[id]` is undefined for a missing item, which is neither DONE nor DROPPED, so
+			deleting H10.20 left the ranking pointing at it and the gate green in the same commit
+			that removed it. Held against the states of items that exist, and never against the set
+			of items that exist.
+
+			Unambiguous here in a way the prose form is not: B88's `blocks Hn.m` was rejected because
+			a sentence may legitimately name an item that was split or retired, and `H9.3` at :501 is
+			exactly that. A RANKING is structured data offering work to a reader, and it cannot mean
+			anything by naming an item that is not on the board.
+			*/
+			if (!(id[0] in state)) {
+				fail(`${BOARD} ranks ${id[0]} in the Next slice, and it has no item row — the ranking offers work the board does not carry`);
+			} else if (state[id[0]] === 'DONE' || state[id[0]] === 'DROPPED') {
 				fail(`${BOARD} ranks ${id[0]} in the Next slice, and its item row reads ${state[id[0]]} — the ranking offers work that is finished`);
 			}
 		}
