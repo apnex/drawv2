@@ -421,7 +421,19 @@ because there is nowhere to go and a control that does nothing is worse than non
 let agentTarget = null;
 function renderAgents(agents, currentId, diagrams) {
 	const list = Array.isArray(agents) ? agents : [];
-	if (!list.length) { menu.agents.hidden = true; agentTarget = null; return; }
+	/*
+	B155: a RESTING state, never hidden. Appearing is motion, and motion in the header shoves the
+	neighbouring indicators sideways at the exact moment the operator is reading them. `no agents`
+	is a true answer to what this element asks, and `#lockstate` has always answered `offline` the
+	same way rather than vanishing.
+	*/
+	if (!list.length) {
+		menu.agents.className = 'agents-none';
+		menu.agents.textContent = 'no agents';
+		menu.agents.title = 'no agent is working in this workspace';
+		agentTarget = null;
+		return;
+	}
 
 	const nameOf = (id) => (diagrams || []).find((d) => d.id === id)?.name || id;
 	const here = list.find((a) => a.diagram === currentId);
@@ -429,7 +441,6 @@ function renderAgents(agents, currentId, diagrams) {
 	const who = a.principal ? a.principal.replace(/^agent:/, '') : 'an agent';
 	const extra = list.length > 1 ? ` +${list.length - 1}` : '';
 
-	menu.agents.hidden = false;
 	menu.agents.className = here ? 'agents-here' : 'agents-idle';
 	menu.agents.textContent = here ? `${who} is driving${extra}` : `${who}: ${nameOf(a.diagram)}${extra}`;
 	menu.agents.title = here
@@ -472,13 +483,23 @@ const sync = new Sync({
 		Hidden entirely when there is no principal. "anonymous" would name a state that does not
 		exist in a single-tenant run.
 		*/
+		/*
+		B155: `local` at rest, never hidden.
+
+		The prior reasoning was that "anonymous would name a state that does not exist in a
+		single-tenant run", and that is right about `anonymous` and wrong about the conclusion. The
+		state DOES exist and has a name: no identity source is configured, which is also why
+		`server/server.js` leaves authorization off. So the resting text reports something true
+		rather than reserving blank space.
+		*/
 		if (principal) {
-			menu.whoami.hidden = false;
+			menu.whoami.className = '';
 			menu.whoami.textContent = principal.startsWith('user:') ? principal.slice(5) : principal;
 			menu.whoami.title = principal;
 		} else {
-			menu.whoami.hidden = true;
-			menu.whoami.textContent = '';
+			menu.whoami.className = 'whoami-local';
+			menu.whoami.textContent = 'local';
+			menu.whoami.title = 'no identity source is configured, so authorization is off';
 		}
 		// H9.4d: identity and the access it confers are the same question, so the affordance hangs
 		// off the element that already answers "who am I" rather than earning a button of its own.
@@ -488,7 +509,7 @@ const sync = new Sync({
 		// workspace half is always theirs. The diagram half is hidden by CSS when they do not own
 		// what is on screen — the server would refuse those calls, and offering a door certain not
 		// to open is worse than offering none.
-		menu.whoami.classList.toggle('can-admin', !!principal);
+		if (principal) menu.whoami.classList.add('can-admin');
 		menu.whoami.title = principal
 			? `${principal} — click to manage who can reach ${isOwner ? 'this diagram, and everything you own' : 'everything you own'}`
 			: '';

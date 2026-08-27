@@ -510,6 +510,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 - M | `TODO` |
 | H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 - S | `DONE` |
 | H10.25 | A rejected commit is spliced from the outbox in memory and left in localStorage, so a command the server can never accept replays on every reload -- observed as the same entity id refused twelve times | **B148** | S1 - S | `DONE` |
+| H10.26 | The header's right cluster shifts on every edit and pops in and out. Fixed widths in `ch`, resting states, the email boxed, and the banner given the slack so nothing can push the cluster | **B155** | S3 - S | `TODO` |
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |

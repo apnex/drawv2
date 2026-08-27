@@ -25,8 +25,18 @@ body { display: flex; flex-direction: column; }
 #slides-push.ok { color: #aed581; border-color: #aed581; }
 #slides-push.err { color: #e57373; border-color: #e57373; }
 #diagram-del.armed, #diagram-del.armed:hover { color: #e57373; border-color: #e57373; }
-#menu-spacer { flex: 1; }
-#banner { font-size: 11px; color: #9a9; }
+/*
+B155: the banner takes the slack, so the indicators to its right cannot be pushed.
+
+This was `#menu-spacer { flex: 1 }` sitting BEFORE the banner, which meant the banner's own width
+was set by its text -- a live `N nodes - M links - K zones` count -- and every edit moved every
+element to its right. Giving the banner the flex slack fixes the cluster to the right edge; the text
+stays right-aligned so it still reads where it always did, and grows leftward into its own space.
+*/
+#banner {
+	font-size: 11px; color: #9a9; flex: 1; min-width: 0; text-align: right;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 #lockstate {
 	font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em;
 	padding: 3px 0; border-radius: 10px; color: #101010; display: inline-block; box-sizing: border-box;
@@ -37,27 +47,58 @@ body { display: flex; flex-direction: column; }
 .lock-offline  { background-color: #555; color: #ddd; }
 .lock-readonly { background-color: #90a4ae; color: #fff; }
 /*
-B105: the AGENT indicator -- a second axis, not a second state of the pill.
+B105/B155: the AGENT indicator -- a second axis, not a second state of the pill.
 
 The pill answers "what may I do here" and this answers "what is happening anywhere", and the two
-co-occur, which is the test that says they cannot share an element. It is the only one of the two
-that is clickable, because it is the only one that names somewhere else to be.
+co-occur, which is the test that says they cannot share an element. It is clickable only when it
+names somewhere else to be.
 
-Deliberately quieter than the pill: this is ambient awareness, not an authority the operator must
-read before acting. Hidden entirely when no agent is working, so a still workspace has a still
-header rather than a box saying nothing is happening.
+ALWAYS PRESENT, which reverses B105's original reasoning. That said: "Hidden entirely when no agent
+is working, so a still workspace has a still header rather than a box saying nothing is happening."
+The cost it did not price is that appearing is itself motion -- the box arrives, its neighbours jump,
+and the eye loses what it was following. A resting box says nothing loudly; an arriving box says
+nothing and moves three other things while doing it. `#lockstate` had the answer all along and says
+`offline` rather than vanishing.
+
+WIDTH IN `ch`, SHARED WITH `#whoami`.
+
+`1ch` is one character advance in a monospace face, so `26ch` states a character budget rather than
+a pixel guess that happens to fit today's font. The budget is set by the longer tenant -- an email
+like `aobersnel@apnex.com.au` is 22 characters -- and the two share it so the pair reads as one
+column rather than two ragged boxes. Anything longer ellipses, with the full value in the tooltip.
 */
-#agents {
-	font: inherit; font-size: 11px; padding: 2px 8px; border: 0; border-radius: 3px;
-	background-color: #37474f; color: #b0bec5; cursor: pointer; max-width: 220px;
+/*
+`#menu` is in the selector on purpose, and it is not decoration.
+
+`#menu input, #menu select, #menu button` is specificity (1,0,1) and a bare `#agents` is (1,0,0), so
+the generic control chrome BEAT the indicator's own rule -- its `border: 0`, `border-radius`,
+`padding` and `font-size: 11px` never applied, and it has been rendering at 13px inside a 1px
+#303030 box. Only the state colours took effect, because a class puts them at (1,1,0). Prefixing
+with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
+*/
+#menu #agents, #menu #whoami {
+	font: inherit; font-size: 11px; padding: 2px 1ch; border: 0; border-radius: 3px;
+	width: 26ch; box-sizing: border-box; text-align: center;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-#agents:hover { background-color: #455a64; color: #eceff1; }
-#agents.agents-here { background-color: #4a3b00; color: #ffd54f; }   /* driving the diagram in view */
-/* B76: identity sits immediately left of the authority pill -- who you are, then what you may do.
-   Muted and un-boxed so it reads as context rather than as another control. */
-#whoami { color: #9e9e9e; font-size: 11px; max-width: 200px; overflow: hidden;
-	text-overflow: ellipsis; white-space: nowrap; }
+/* an agent working elsewhere: quieter than the pill, and clickable because it names a destination */
+#menu #agents.agents-idle { background-color: #37474f; color: #b0bec5; cursor: pointer; }
+#menu #agents.agents-idle:hover { background-color: #455a64; color: #eceff1; }
+#menu #agents.agents-here { background-color: #4a3b00; color: #ffd54f; cursor: default; }   /* driving the diagram in view */
+/* B76/B155: identity sits immediately left of the authority pill -- who you are, then what you may
+   do. Boxed now rather than bare text: it opens the access panel whenever it shows an identity, so
+   it was always a control and only looked like a caption. */
+#menu #whoami { background-color: #263238; color: #cfd8dc; cursor: pointer; }
+#menu #whoami:hover { background-color: #2f3f46; color: #eceff1; }
+/*
+The two RESTING states, dimmed to the same value as `.lock-offline` so all three indicators agree
+about what "nothing to report" looks like. Neither is clickable, and both say something true:
+`no agents` is a real answer, and `local` is the state of a run with no identity source configured
+-- which is also why authorization is off, so the indicator is reporting rather than filling space.
+*/
+#menu #agents.agents-none, #menu #whoami.whoami-local {
+	background-color: #242424; color: #6b6b6b; cursor: default;
+}
 
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {
@@ -206,7 +247,8 @@ header rather than a box saying nothing is happening.
 #access-level, #access-grant { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
 #access-error { color: #e57373; margin: 10px 0 0; min-height: 1em; }
 /* the owner gets a pointer, because for anyone else the element is only a label */
-#whoami.can-admin { cursor: pointer; text-decoration: underline dotted; }
+/* B155: the box IS the affordance now, so the dotted underline that used to hint at it is gone. */
+#menu #whoami.can-admin { cursor: pointer; }
 #access-card h2 + p, #access-ws-note { color: #9e9e9e; margin: 0 0 10px; max-width: 46em; }
 #access-ws-head { margin-top: 22px !important; border-top: 1px solid #333; padding-top: 18px; }
 #access-ws-list { border-collapse: collapse; width: 100%; }

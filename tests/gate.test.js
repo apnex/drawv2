@@ -969,3 +969,69 @@ test('B53: CI builds the image, and the probe is more than a health check', () =
 	const commit = fs.readFileSync(path.join(root, 'docs/spec/COMMIT.md'), 'utf8');
 	assert.match(commit, /\*\*X17\*\*/, 'the local/CI asymmetry is a recorded deviation, not an accident');
 });
+
+/*
+B155 / H10.26 -- the header's right cluster holds still.
+
+`#agents` and `#whoami` were hidden until they had something to say and sized by their content, so
+an agent starting work or an identity resolving inserted a box and shoved its neighbours sideways.
+Fixing their widths alone would not have stopped the movement: `#menu-spacer` was `flex: 1` and sat
+BEFORE `#banner`, which carries a live node/link/zone count, so the whole cluster slid on every edit
+and fixed-width indicators would have slid in formation.
+
+Asserted as INVARIANTS rather than as the presence of strings. There is no browser here, so what can
+be proved is the geometry contract: one slack absorber and it is left of the cluster; one shared
+width, declared in characters; nothing in the cluster hidden in markup or at runtime; and every
+branch that writes an indicator writes text into it.
+*/
+test('B155: exactly one element takes the header slack, and it is left of the indicators', () => {
+	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
+	const html = fs.readFileSync(path.join(root, 'app/index.html'), 'utf8');
+
+	// the header rules only -- #content, #stage and the access panel legitimately use flex: 1
+	const header = css.slice(css.indexOf('#menu {'), css.indexOf('#content {'));
+	const slack = [...header.matchAll(/^#([\w-]+)[^{]*\{[^}]*\bflex:\s*1\b/gm)].map((m) => m[1]);
+	assert.deepEqual(slack, ['banner'],
+		'exactly one header element may absorb slack; a second would let it push the cluster again');
+
+	const order = ['banner', 'help-btn', 'agents', 'whoami', 'lockstate'];
+	const at = order.map((id) => html.indexOf(`id="${id}"`));
+	assert.ok(at.every((i) => i > 0), 'every indicator is in the markup');
+	assert.deepEqual([...at].sort((a, b) => a - b), at,
+		'the slack absorber must come FIRST or it cannot protect what follows it');
+});
+
+test('B155: the two indicators share one width, stated in characters', () => {
+	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
+	const rule = css.match(/#menu #agents,\s*#menu #whoami\s*\{([^}]*)\}/);
+	assert.ok(rule, 'the two indicators are styled by ONE rule, which is what makes the width shared');
+	assert.match(rule[1], /width:\s*\d+ch\b/,
+		'width is a character budget — a pixel figure is a guess about the font that happens to fit');
+	assert.match(rule[1], /box-sizing:\s*border-box/, 'or padding would make the declared width a lie');
+
+	/*
+	`#menu` is in that selector because `#menu input, #menu select, #menu button` is (1,0,1) and a
+	bare `#agents` is (1,0,0), so the generic control chrome BEAT the indicator's own rule. Its
+	border, padding and 11px size never applied; only the state colours did, because a class lifts
+	them to (1,1,0). Dropping the prefix would silently restore that.
+	*/
+	assert.doesNotMatch(css, /^#agents[\s,{]/m, 'an unprefixed rule loses to `#menu button` and does nothing');
+	assert.doesNotMatch(css, /^#whoami[\s,{]/m, 'and so does this one');
+});
+
+test('B155: nothing in the cluster hides, and every branch leaves text behind', () => {
+	const html = fs.readFileSync(path.join(root, 'app/index.html'), 'utf8');
+	for (const id of ['agents', 'whoami', 'lockstate']) {
+		const tag = html.slice(html.indexOf(`id="${id}"`)).split('>')[0];
+		assert.doesNotMatch(tag, /\bhidden\b/, `#${id} must ship visible — arriving is the motion being removed`);
+	}
+	// a resting state is text, not an empty box: `no agents` and `local` are answers
+	assert.match(html, /id="agents"[^>]*>[^<]+</, '#agents ships with resting text');
+	assert.match(html, /id="whoami"[^>]*>[^<]+</, '#whoami ships with resting text');
+
+	const src = fs.readFileSync(path.join(root, 'app/src/main.js'), 'utf8');
+	assert.doesNotMatch(src, /menu\.(agents|whoami)\.hidden/,
+		'and nothing hides them at runtime, which is where the popping came from');
+	assert.doesNotMatch(src, /menu\.whoami\.textContent\s*=\s*''/,
+		'an empty string is a blank box — the resting state has to say something');
+});

@@ -22,11 +22,28 @@
 			pixel from the delete button is how a wrong click happens.
 			-->
 			<button id="diagram-undelete" title="recoverable diagrams" hidden>&#8634;</button>
-			<span id="menu-spacer"></span>
+			<!--
+			B155: the right cluster holds still.
+
+			`#banner` takes the slack instead of a spacer, so the three indicators are pinned to the
+			right edge and a node count that grows cannot push them. It used to be `#menu-spacer`
+			with `flex: 1` sitting BEFORE the banner, which meant the banner's own text width moved
+			every element to its right on every edit -- fixing the indicators alone would have made
+			them slide in perfect formation.
+
+			All three ship VISIBLE, with a resting state. `#agents` was hidden when no agent was
+			working, on the reasoning that a still workspace deserves a still header; in use the
+			opposite is true, because a box arriving shoves its neighbours sideways and the eye
+			loses what it was tracking. `#lockstate` has always done it this way -- it says
+			`offline` rather than vanishing -- so this makes two elements follow a pattern the
+			third already set.
+			-->
 			<span id="banner"></span>
 			<button id="help-btn" title="keyboard shortcuts (/)">?</button>
-			<button id="agents" class="agents-idle" hidden></button>
-			<span id="whoami" hidden></span>
+			<button id="agents" class="agents-none">no agents</button>
+			<!-- a button, not a span: it opens the access panel, so it should be reachable by
+			     keyboard and look like the control it already was. -->
+			<button id="whoami" class="whoami-local">local</button>
 			<span id="lockstate" class="lock-offline" title="connecting…">offline</span>
 		</header>
 		<!--
