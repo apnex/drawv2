@@ -812,3 +812,113 @@ test('B138: `draw` runs when invoked through a symlink, as both installers creat
 			'nor does a link to a spaced path');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+The zone boxes are drawn in the GUTTERS, and never at the cost of a cell.
+
+The zone grid sits half a pitch off the node grid, so a zone edge falls exactly between two cells --
+which is where the two-column layout already leaves a space. That makes the borders geometrically
+exact rather than approximate, and it is the whole reason they can be added without widening the
+map or shifting a column.
+
+The assertion is chosen so it does NOT restate the layout arithmetic. Recomputing which columns are
+cells and which are gutters would be the same sum twice, and the second copy is the one that goes
+wrong. Instead: render with and without the boxes and require that every row carries the identical
+number of CELL characters. If a border ever consumed a cell, that count drops, whatever the
+arithmetic happens to be.
+*/
+const CELLS = /[.rflshv+#]/g;
+
+test('map: a zone box never costs a cell, and lands only in the gutters', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'boxes', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-2,-1', '--name', 'r1');
+		await run('add', 'server', 'at', '2,1', '--name', 's1');
+		await run('zone', 'pen', 'from', '-3,-2', 'to', '3,2');
+
+		const withBox = (await run('map')).split('\n');
+		const without = (await run('map', '--no-zones')).split('\n');
+
+		const cellsPerRow = (lines) => lines
+			.filter((l) => /^\s*-?\d+\s/.test(l))
+			.map((l) => (l.match(CELLS) || []).length);
+		assert.deepEqual(cellsPerRow(withBox), cellsPerRow(without),
+			'the same cells are shown either way -- a border never overwrites one');
+		assert.ok(cellsPerRow(withBox).length > 0, 'and there were rows to compare');
+
+		// the box itself
+		assert.ok(withBox.some((l) => l.includes('\u250c') && l.includes('pen') && l.includes('\u2510')),
+			'a top edge carries the zone name between its corners');
+		assert.ok(withBox.some((l) => l.includes('\u2514') && l.includes('\u2518')), 'and a bottom edge closes it');
+
+		/*
+		The members must LINE UP with the corners, and this is the assertion that earns its place.
+
+		The cell-count check above cannot see a border drawn on a cell column, because cells are
+		painted after the borders and simply overwrite one -- so a misplaced side vanishes on every
+		cell row while still appearing on the border rows, and the box comes out ragged rather than
+		wrong. Comparing the columns catches exactly that: a side that is not under its own corner.
+		*/
+		const colsOf = (line, re) => [...line].map((c, i) => (re.test(c) ? i : -1)).filter((i) => i >= 0);
+		const top = withBox.find((l) => l.includes('\u250c'));
+		const corners = colsOf(top, /[\u250c\u2510]/);
+		assert.equal(corners.length, 2, 'the top edge has both corners');
+
+		/*
+		Count the bordered rows BEFORE comparing their columns.
+
+		The first version iterated the rows containing a side and asserted their alignment, which
+		passes trivially when there are none -- and there are none precisely in the failure being
+		hunted: a side placed on a cell column is overwritten by the glyph painted after it, so it
+		disappears from every cell row and the loop runs zero times. A vacuous pass, in the test
+		written to catch the defect. The expected count comes from the model's own report of the
+		zone's cell range, so it is read rather than recomputed.
+		*/
+		const zone = JSON.parse(await run('map', '--json')).zones.find((z) => z.name === 'pen');
+		const rows = withBox.filter((l) => /^\s*-?\d+\s/.test(l) && l.includes('\u2502'));
+		assert.equal(rows.length, zone.cells.y1 - zone.cells.y0 + 1,
+			'every row the zone spans carries its sides -- none of them silently overwritten');
+		for (const row of rows) {
+			assert.deepEqual(colsOf(row, /\u2502/), corners,
+				'and each side sits directly under a corner -- the box is square, not ragged');
+		}
+
+		// suppression is total, not partial
+		assert.equal(without.join('').match(/[\u2500-\u257f]/g), null, '--no-zones leaves no box drawing at all');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('map: a zone running past the window keeps its sides and drops the corner', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'clip', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '0,0', '--name', 'mid');
+		await run('zone', 'big', 'from', '-6,-6', 'to', '6,6');
+
+		// a window strictly inside the zone: the sides must still show, and neither horizontal edge
+		// belongs here -- a corner drawn at the crop would claim the zone ends where the view does
+		const tight = (await run('map', '--around', 'mid', '--radius', '2')).split('\n');
+		assert.ok(tight.some((l) => l.includes('\u2502')), 'the sides continue through the window');
+		assert.equal(tight.join('').includes('\u250c'), false, 'no top corner: the zone does not start here');
+		assert.equal(tight.join('').includes('\u2518'), false, 'and no bottom corner either');
+
+		/*
+		And the case the first version of this test could not reach: clipped SIDEWAYS while a
+		horizontal edge IS in view. Above, the zone's top and bottom are both outside the window, so
+		no border row is emitted at all and the corner rule is never consulted -- the assertions
+		passed without exercising anything. A wide, shallow zone puts its top edge inside the window
+		and both vertical sides outside it, which is the only arrangement that asks the question.
+		*/
+		await run('zone', 'wide', 'from', '-6,-1', 'to', '6,1');
+		const shallow = (await run('map', '--around', 'mid', '--radius', '2')).split('\n');
+		const edge = shallow.find((l) => l.includes('\u2500') && l.includes('wide'));
+		assert.ok(edge, 'the top edge of the wide zone is drawn, name and all');
+		assert.equal(/[\u250c\u2510\u2514\u2518]/.test(edge), false,
+			'and carries NO corner, because neither side of it is in view');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});

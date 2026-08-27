@@ -1357,6 +1357,7 @@ VERBS.push({
 		{ name: '--around', about: 'centre on an entity, by id or name' },
 		{ name: '--radius', about: 'cells either side of --around; default 4' },
 		{ name: '--layout', about: 'node (default) or zone -- the zone grid shows legal zone corners' },
+		{ name: '--no-zones', about: 'leave the zone boxes off' },
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
@@ -1405,27 +1406,93 @@ VERBS.push({
 		const cell = new Map();
 		for (const a of anchors) if (a.occupant) cell.set(`${a.cx},${a.cy}`, a.occupant);
 
-		// ---- the grid. Two columns per cell, ticks every five, labels on both axes.
-		const lines = [];
+		/*
+		---- the grid. Two columns per cell, ticks every five, labels on both axes.
+
+		Zone borders are drawn in the GUTTERS, and that is not a compromise -- it is exact. The zone
+		grid sits half a pitch off the node grid, so a zone's edge falls precisely between two cells,
+		which is where the gutter already is. A border therefore never overwrites a glyph and never
+		shifts a column: measured on the reference topology, all six vertical edges of three zones
+		land on gutter columns.
+
+		Horizontally there is no such gap, so a border ROW is inserted -- but only where a zone
+		actually starts or ends, never between every pair of cells. Three zones in a thirteen-row map
+		cost four extra lines instead of thirteen, and the vertical runs stay visually continuous
+		because consecutive cell rows put their `|` in the same column.
+		*/
 		const pad = 5;
+		const W = pad + (win.x1 - win.x0 + 1) * 2;
+		const colOf = (cx) => pad + (cx - win.x0) * 2;
+		const blank = () => Array(W).fill(' ');
+		const put = (a, i, ch) => { if (i >= 0 && i < W) a[i] = ch; };
+		const boxes = ctx.flags['no-zones'] ? []
+			: (doc.zones || []).map((z) => ({ ...zoneCells(z), name: z.name }))
+				.filter((z) => z.x1 >= win.x0 && z.x0 <= win.x1 && z.y1 >= win.y0 && z.y0 <= win.y1);
+
+		const lines = [];
 		let ruler = ' '.repeat(pad), ticks = ' '.repeat(pad);
 		for (let cx = win.x0; cx <= win.x1; cx++) {
 			const on = cx % 5 === 0;
 			ticks += on ? '| ' : '  ';
-			if (on) { const s = String(cx); ruler = ruler.padEnd(pad + (cx - win.x0) * 2) + s; }
+			if (on) { const s = String(cx); ruler = ruler.padEnd(colOf(cx)) + s; }
 		}
 		lines.push(ruler.trimEnd(), ticks.trimEnd());
+
+		// a zone's side is drawn only if that side is INSIDE the window; one running off the edge
+		// gets no corner there, which is how a reader can tell it continues
+		const leftIn = (z) => z.x0 >= win.x0;
+		const rightIn = (z) => z.x1 <= win.x1;
+		const border = (k) => {
+			const tops = boxes.filter((z) => z.y0 === k);
+			const bots = boxes.filter((z) => z.y1 + 1 === k);
+			if (!tops.length && !bots.length) return null;
+			const a = blank();
+			for (const z of boxes) {                       // zones merely passing through this line
+				if (z.y0 < k && k <= z.y1) {
+					if (leftIn(z)) put(a, colOf(z.x0) - 1, '\u2502');
+					if (rightIn(z)) put(a, colOf(z.x1) + 1, '\u2502');
+				}
+			}
+			const edge = (z, top) => {
+				const L = Math.max(colOf(z.x0) - 1, 0), R = Math.min(colOf(z.x1) + 1, W - 1);
+				for (let i = L; i <= R; i++) a[i] = '\u2500';
+				if (leftIn(z)) put(a, L, top ? '\u250c' : '\u2514');
+				if (rightIn(z)) put(a, R, top ? '\u2510' : '\u2518');
+				// the name rides the top edge, which is where a reader looks for it -- but only if
+				// the box is wide enough that it does not swallow the corners
+				if (top) {
+					const label = ` ${z.name} `;
+					if (R - L - 1 >= label.length + 1) for (let i = 0; i < label.length; i++) put(a, L + 2 + i, label[i]);
+				}
+			};
+			for (const z of bots) edge(z, false);
+			for (const z of tops) edge(z, true);
+			return a.join('').trimEnd();
+		};
+
 		const seen = new Set();
 		for (let cy = win.y0; cy <= win.y1; cy++) {
-			let row = String(cy).padStart(pad - 2) + '  ';
+			const b = border(cy);
+			if (b) lines.push(b);
+			const a = blank();
+			const label = String(cy).padStart(pad - 2);
+			for (let i = 0; i < label.length; i++) a[i] = label[i];
+			for (const z of boxes) {
+				if (z.y0 <= cy && cy <= z.y1) {
+					if (leftIn(z)) put(a, colOf(z.x0) - 1, '\u2502');
+					if (rightIn(z)) put(a, colOf(z.x1) + 1, '\u2502');
+				}
+			}
 			for (let cx = win.x0; cx <= win.x1; cx++) {
 				const occ = cell.get(`${cx},${cy}`);
 				const g = occ ? glyphFor(occ) : '.';
 				if (occ) seen.add(g);
-				row += `${g} `;
+				a[colOf(cx)] = g;
 			}
-			lines.push(row.trimEnd());
+			lines.push(a.join('').trimEnd());
 		}
+		const closing = border(win.y1 + 1);
+		if (closing) lines.push(closing);
 
 		const legend = [...seen].sort().map((g) => `${g} ${LEGEND[g]}`).join('   ');
 		const inWin = (a) => a.cx >= win.x0 && a.cx <= win.x1 && a.cy >= win.y0 && a.cy <= win.y1;
@@ -1442,7 +1509,7 @@ VERBS.push({
 			'',
 			...lines,
 			'',
-			`  ${legend || '(nothing placed)'}   . free`,
+			`  ${legend || '(nothing placed)'}   . free${boxes.length ? '   \u2502\u2500 zone bounds' : ''}`,
 			...(key.length ? ['', ...key] : []),
 			...(zones.length && layout === 'node' ? ['', 'zones:', ...zones] : []),
 		].join('\n');
