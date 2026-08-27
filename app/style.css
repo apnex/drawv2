@@ -68,6 +68,13 @@ default line box can exceed the content box and clip the glyph it is meant to ce
 	width: var(--control-h); padding: 0; font-size: 17px; line-height: 1;
 }
 /*
+`?` is a tall glyph with a full-height stem and a dot, so at the shared 17px it carries visibly more
+ink than `+` or the multiplication sign and reads a size larger than its neighbours. The box stays
+26px square with the rest; only the character inside it is trimmed. Two ids, so this beats the rule
+above without needing !important.
+*/
+#menu #help-btn { font-size: 15px; }
+/*
 The spans are not controls and do not centre their own text. `inline-block` plus a `line-height`
 equal to the height does it, for a single line, and is chosen over flex centring deliberately:
 `text-overflow: ellipsis` has no effect on a flex container, and `#banner` needs the ellipsis
