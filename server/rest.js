@@ -79,7 +79,17 @@ function contextOf(model, kind, e) {
 	if (kind === 'zone') { out.bounds = { x: e.x, y: e.y, w: e.w, h: e.h }; out.contents = inside(model, e); }
 	if (kind === 'group') {
 		out.members = e.members || [];
-		out.links = [...new Set((e.members || []).flatMap((m) => model.linksOf(m).map((l) => l.id)))];
+		/*
+		The SAME shape `links` has everywhere else -- B144.
+
+		This returned bare ids while the node branch above returned `{id, src, dst, routed}`, so one
+		field name carried two shapes and any reader that handled one printed `undefined` for the
+		other. That is what `draw about <group>` did, four times in a row.
+		*/
+		const seen = new Set();
+		out.links = (e.members || []).flatMap((m) => model.linksOf(m))
+			.filter((l) => !seen.has(l.id) && seen.add(l.id))
+			.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
 	}
 	return out;
 }

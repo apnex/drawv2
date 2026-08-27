@@ -93,6 +93,10 @@ Context
   link path <link>                                                                the resolved route -- what the renderer would draw
   show                                                                            the whole diagram: summary and every entity
   map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]  look at the canvas -- occupancy as a grid, so placement is seen rather than derived
+  focus [ref]                                                                     the entity the relation verbs read from, persisted; omit to see it
+  links [ref]                                                                     what connects to a thing -- the other end named, routed marked
+  holds [ref]                                                                     what contains a thing -- its zones and its group, upward
+  peers [ref]                                                                     what sits one hop away -- neighbours, and the rest of its group
 
 Lifecycle
   create [name]            mint a diagram; answers its id

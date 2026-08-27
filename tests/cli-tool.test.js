@@ -943,12 +943,37 @@ ship id-only. A behavioural test would cover the three that exist today and noth
 test('GR18/B143: every verb taking an entity reference resolves it by name', () => {
 	// an argument naming a thing rather than a literal, a coordinate or a value
 	const REFERENCE = /^(ref|entity|zone|link|panel|node|group|waypoint)(-id)?(\.\.\.)?$/;
+	/*
+	Resolution counts whether it happens in the verb or in a helper the verb calls.
+
+	The first version looked for `resolveId(` in the verb body alone, and flagged three verbs that
+	resolve perfectly well one level down -- a check narrower than its own claim, which is the fault
+	it exists to catch. Following one level of indirection is the fix; naming the helper as an
+	exception would have been the same mistake as exempting `select` by name.
+	*/
+	const src = fs.readFileSync(new URL('../cli/verbs.mjs', import.meta.url), 'utf8');
+	const helpers = new Map();
+	for (const m of src.matchAll(/(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{/g)) {
+		const start = m.index + m[0].length;
+		let depth = 1, i = start;
+		while (i < src.length && depth > 0) { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; }
+		helpers.set(m[1], src.slice(start, i));
+	}
+	const resolves = (body, seen = new Set()) => {
+		if (/resolveId\(/.test(body)) return true;
+		for (const [name, source] of helpers) {
+			if (seen.has(name) || !new RegExp(`\\b${name}\\s*\\(`).test(body)) continue;
+			seen.add(name);
+			if (resolves(source, seen)) return true;
+		}
+		return false;
+	};
 	const gaps = [];
 	for (const v of VERBS) {
 		const refs = (v.args || []).filter((a) => REFERENCE.test(a.name));
 		if (!refs.length) continue;
-		if (!/resolveId\(/.test(v.run.toString())) {
-			gaps.push(`${v.name}: takes ${refs.map((r) => r.name).join(', ')} and never calls resolveId`);
+		if (!resolves(v.run.toString())) {
+			gaps.push(`${v.name}: takes ${refs.map((r) => r.name).join(', ')} and never reaches resolveId`);
 		}
 	}
 	assert.deepEqual(gaps, [], `these accept ids only:\n  ${gaps.join('\n  ')}`);
@@ -972,5 +997,102 @@ test('B143: zone contents and link path take a name, and refuse the wrong kind b
 		const wrong = await captureExit(() => run('zone', 'contents', 'r1'));
 		assert.match(wrong, /is a node, not a zone/, 'the refusal names the kind it got');
 		assert.match(wrong, /draw about r1/, 'and offers the verb that would describe it');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+Walking: a focus, and relations read from it.
+
+`about` answers everything at once, which is right for "tell me about this" and wrong for moving
+around. A walk is a sequence of narrow questions where each answer decides the next step, and
+re-naming the subject every time means carrying it between commands.
+
+What is asserted is the property that makes the state safe rather than the convenience it buys:
+every relation verb NAMES the subject it used, and the focus does not survive a change of diagram.
+Hidden state answering confidently about the wrong thing is the failure this codebase keeps finding;
+a focus is only worth having if it cannot do that.
+*/
+test('walk: relation verbs read the focus, and always say what they read', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'walk', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'loadbalancer', 'at', '0,0', '--name', 'lb');
+		await run('add', 'server', 'at', '2,0', '--name', 'web-1', '--link', 'lb');
+		await run('add', 'server', 'at', '4,0', '--name', 'web-2', '--link', 'lb');
+		await run('group', 'tier', 'web-1', 'web-2');
+		await run('zone', 'dc', 'from', '-1,-1', 'to', '5,1');
+
+		await run('focus', 'web-1');
+		const held = await run('holds');
+		assert.match(held, /web-1 is held by/, 'the subject is named even though it was not passed');
+		assert.match(held, /zone\s+dc/, 'containment upward -- the inverse of `zone contents`');
+		assert.match(held, /group\s+tier/);
+
+		const peers = await run('peers');
+		assert.match(peers, /linked\s+lb/, 'one hop along a link');
+		assert.match(peers, /grouped\s+web-2/, 'and a sibling in the same group, which is a peer too');
+
+		const links = await run('links');
+		assert.match(links, /links of web-1/);
+		assert.match(links, /lb/, 'the OTHER end is what a walk wants, not the link id alone');
+
+		// naming the entity explicitly must beat the focus, or the argument is decoration
+		assert.match(await run('holds', 'lb'), /lb is held by/, 'an explicit reference wins');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('walk: a focus does not survive a change of diagram', async () => {
+	await boot();
+	try {
+		const a = JSON.parse(await run('create', 'walk-a', '--json')).id;
+		await run('context', a);
+		await run('lock');
+		await run('add', 'router', 'at', '0,0', '--name', 'only-in-a');
+		await run('focus', 'only-in-a');
+		assert.match(await run('holds'), /only-in-a/, 'the focus works where it was set');
+
+		/*
+		An entity id means nothing outside the diagram that minted it. Unscoped, this answered
+		`unknown entity: node-...` on the other diagram -- a real refusal, but one that blames the
+		entity instead of saying the focus does not belong here. Scoped, it simply does not apply.
+		*/
+		const b = JSON.parse(await run('create', 'walk-b', '--json')).id;
+		const err = await captureExit(() => run('holds', '--diagram', b));
+		assert.match(err, /focus in THIS diagram/, 'the refusal names the real reason');
+		assert.doesNotMatch(err, /unknown entity/, 'and does not blame an entity that was never asked for');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+B144 -- `about` answers in names, and a group's links have the same shape as everyone else's.
+*/
+test('B144: about names its relations, and a group does not print undefined', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'named', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'loadbalancer', 'at', '0,0', '--name', 'lb');
+		await run('add', 'server', 'at', '2,0', '--name', 'web-1', '--link', 'lb');
+		await run('add', 'server', 'at', '4,0', '--name', 'web-2', '--link', 'lb');
+		await run('group', 'tier', 'web-1', 'web-2');
+		await run('zone', 'dc', 'from', '-1,-1', 'to', '5,1');
+
+		const node = await run('about', 'web-1');
+		assert.match(node, /zones\s+dc/, 'a zone by name');
+		assert.match(node, /group\s+tier/, 'a group by name');
+		assert.match(node, /neighbours\s+lb/, 'a neighbour by name');
+		// the header legitimately carries the entity's own id; the RELATION rows must not
+		const relations = node.split('\n').filter((l) => /^(zones|group|neighbours|links)\s/.test(l.trim()));
+		assert.ok(relations.length >= 3, 'the relations were found');
+		assert.equal(relations.join(' ').match(/node-[0-9a-f]{6}/), null, 'and none of them shows a bare id');
+
+		// the group branch returned bare ids where the node branch returned objects, so one field
+		// name carried two shapes and the renderer printed `undefined` four times
+		const group = await run('about', 'tier');
+		assert.doesNotMatch(group, /undefined/, 'a group reports its links like anything else');
+		assert.match(group, /lb/, 'and names the far end');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });

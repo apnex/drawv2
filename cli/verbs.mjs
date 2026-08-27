@@ -103,6 +103,23 @@ const RESAID = [
 	[/not server-locked/i, (what) => `${what} needs the write slot -- run \`draw lock\` first (it frees after about a minute)`],
 	[/server-locked|held by another/i, (what) => `${what} is blocked: another controller holds the write slot -- \`draw lock status\` says who and until when`],
 ];
+/*
+Naming, on the way OUT -- B144.
+
+`resolveId` turns a name into an id on the way in; this is its mirror. A relation answered as
+`node-97e437` makes the reader do the lookup the contextual verbs exist to remove, in the other
+direction. Ids stay in `--json`, which is what composes.
+*/
+const naming = (doc) => {
+	const m = new Map();
+	for (const k of ['nodes', 'waypoints', 'zones', 'groups', 'links']) {
+		for (const e of doc[k] || []) m.set(e.id, e.name || e.id);
+	}
+	return (ref) => m.get(ref) || ref;
+};
+// a link reads as its journey, since that is the only thing anyone wants from one
+const linkLabel = (l, nm) => `${nm(l.src)}->${nm(l.dst)}${l.routed ? '*' : ''}`;
+
 const ok = (res, what) => {
 	if (res.ok) return res.body;
 	const said = String(res.body?.error || '');
@@ -565,7 +582,7 @@ VERBS.push(
 		name: 'about', group: 'Context', usage: 'draw about <entity-id>', route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
 		summary: 'what surrounds an entity: links, neighbours, group, enclosing zones',
 		example: 'draw about node-aa0001',
-		args: [{ name: 'entity-id', about: 'any node, waypoint, link, zone or group id -- the kind is worked out for you' }],
+		args: [{ name: 'entity', about: 'any node, waypoint, link, zone or group, by id or name -- the kind is worked out for you' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
 			if (!args[0]) die('about needs an entity id or name');
@@ -578,16 +595,26 @@ VERBS.push(
 			that was plainly there. The route takes an id because ids are what the model keys on; the
 			TOOL is where that gap gets closed, which is the whole reason it exists.
 			*/
-			const b = ok(await request(ctx, `/diagrams/${id}/context/${await resolveId(ctx, id, args[0])}`), 'context');
+			const doc = ok(await request(ctx, `/diagrams/${id}`), 'about');
+			const b = ok(await request(ctx, `/diagrams/${id}/context/${await resolveId(ctx, id, args[0], doc)}`), 'context');
+			/*
+			Answered in NAMES -- B144.
+
+			Every relation used to come back as an id, so the verb built to stop a reader
+			cross-referencing made it cross-reference, one lookup per relation. B143 fixed the same
+			thing on the way IN and left the mirror alone. Ids remain under `--json`, which is what
+			composes.
+			*/
+			const nm = naming(doc);
 			const rows = [];
 			if (b.at) rows.push(['at', `${b.at.x},${b.at.y}`]);
-			if (b.group) rows.push(['group', b.group]);
-			if (b.zones?.length) rows.push(['zones', b.zones.join(' ')]);
-			if (b.neighbours?.length) rows.push(['neighbours', b.neighbours.join(' ')]);
-			if (b.links?.length) rows.push(['links', b.links.map((l) => l.id + (l.routed ? '*' : '')).join(' ')]);
-			if (b.members?.length) rows.push(['members', b.members.join(' ')]);
-			if (b.contents?.length) rows.push(['contents', b.contents.map((c) => c.id).join(' ')]);
-			if (b.path) rows.push(['path', JSON.stringify(b.path)]);
+			if (b.group) rows.push(['group', nm(b.group)]);
+			if (b.zones?.length) rows.push(['zones', b.zones.map(nm).join(' ')]);
+			if (b.neighbours?.length) rows.push(['neighbours', b.neighbours.map(nm).join(' ')]);
+			if (b.links?.length) rows.push(['links', b.links.map((l) => linkLabel(l, nm)).join('  ')]);
+			if (b.members?.length) rows.push(['members', b.members.map(nm).join(' ')]);
+			if (b.contents?.length) rows.push(['contents', b.contents.map((c) => nm(c.id)).join(' ')]);
+			if (b.path) rows.push(['path', b.path.map((p) => `${p.x},${p.y}`).join(' -> ')]);
 			return { json: b, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
 		},
 	},
@@ -1695,6 +1722,153 @@ VERBS.push(
 					body: { ops: [{ op: 'set', kind: 'node', id: eid, patch: { content } }], label: 'region' } }), 'region');
 			return { json: { panel: eid, region: r, regions: content.length, version: res.version },
 				text: `${node.name} region ${content.length} at ${col},${row}  ${r.value || r.glyph}  v${res.version}` };
+		},
+	},
+);
+
+/*
+Walking the diagram -- a focus, and relations read from it.
+
+`about` answers everything at once, which is right for "tell me about this" and wrong for moving
+around. Walking is a sequence of narrow questions -- what connects to this, what contains it, what
+else is in its group -- and each answer decides the next step. Bundling them means reading five
+relations to use one, and re-naming the subject on every call means carrying it in working memory
+between commands.
+
+So: a persistent focus, and relation verbs that default to it.
+
+THE FOCUS IS ALWAYS PRINTED, and that is not decoration. Hidden state is the most dangerous thing
+this tool could offer an agent -- a verb silently answering about something set ten commands ago is
+a confidently wrong answer, which is the failure this whole codebase keeps finding. Every verb
+below names the subject it used, so the state can never be both implicit and invisible.
+*/
+const focusFile = (ctx) => `${homeOf(ctx)}/.config/draw/focus`;
+/*
+The focus is stored WITH its diagram, and ignored anywhere else.
+
+An entity id means nothing outside the diagram that minted it, so a focus carried across a switch is
+state that is both stale and invisible -- which is the hazard this whole family of verbs has to earn
+its way past. Left unguarded it answered `unknown entity: node-42c3be` on the new diagram: a real
+refusal, but one that blames the entity rather than saying the focus does not belong here.
+
+Scoped, it simply does not apply: the relation verbs then ask for a reference, which is the honest
+answer to "you are not standing anywhere in this diagram".
+*/
+async function readFocus(ctx, diagramId) {
+	if (!homeOf(ctx)) return null;
+	const fs = await import('node:fs');
+	try {
+		const held = JSON.parse(fs.readFileSync(focusFile(ctx), 'utf8'));
+		return held.diagram === diagramId ? held.id : null;
+	} catch { return null; }
+}
+async function writeFocus(ctx, diagramId, ref) {
+	if (!homeOf(ctx)) return;
+	const fs = await import('node:fs'), path = await import('node:path');
+	fs.mkdirSync(path.dirname(focusFile(ctx)), { recursive: true });
+	if (ref) fs.writeFileSync(focusFile(ctx), JSON.stringify({ diagram: diagramId, id: ref }));
+	else try { fs.unlinkSync(focusFile(ctx)); } catch { /* gone */ }
+}
+/*
+The subject of a relation verb: what was named, or the focus.
+
+Returns the resolved id AND the document, because every caller needs both and fetching twice for
+one question is the cost that made `about` feel expensive.
+*/
+async function subject(ctx, id, arg, what) {
+	const doc = ok(await request(ctx, `/diagrams/${id}`), what);
+	const ref = arg || await readFocus(ctx, id);
+	if (!ref) die(`${what} needs an entity, or a focus in THIS diagram -- \`draw focus <ref>\` sets one`);
+	return { doc, eid: await resolveId(ctx, id, ref, doc), nm: naming(doc) };
+}
+
+VERBS.push(
+	{
+		name: 'focus', group: 'Context', usage: 'draw focus [ref]',
+		route: '/diagrams/<id>', method: 'GET', also: ['GET /diagrams'],
+		summary: 'the entity the relation verbs read from, persisted; omit to see it',
+		example: 'draw focus a-lb',
+		args: [{ name: 'ref', about: 'the entity to stand on; omit to report the current one' }],
+		flags: [{ name: '--clear', about: 'forget it' }, { name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const id = await activeId(ctx, ctx.flags);
+			if (ctx.flags.clear) { await writeFocus(ctx, id, null); return { json: { focus: null }, text: 'focus cleared' }; }
+			const doc = ok(await request(ctx, `/diagrams/${id}`), 'focus');
+			const nm = naming(doc);
+			if (!args[0]) {
+				const cur = await readFocus(ctx, id);
+				if (!cur) return { json: { focus: null }, text: 'no focus -- `draw focus <ref>` sets one' };
+				return { json: { focus: cur, name: nm(cur) }, text: `${nm(cur)}  ${cur}` };
+			}
+			const eid = await resolveId(ctx, id, args[0], doc);
+			await writeFocus(ctx, id, eid);
+			return { json: { focus: eid, name: nm(eid), kind: eid.split('-')[0] },
+				text: `${nm(eid)}  ${eid}  (${eid.split('-')[0]})` };
+		},
+	},
+	{
+		name: 'links', group: 'Context', usage: 'draw links [ref]',
+		route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'what connects to a thing -- the other end named, routed marked',
+		example: 'draw links a-lb',
+		args: [{ name: 'ref', about: 'the entity; omit to use the focus' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const id = await activeId(ctx, ctx.flags);
+			const { eid, nm } = await subject(ctx, id, args[0], 'links');
+			const b = ok(await request(ctx, `/diagrams/${id}/context/${eid}`), 'links');
+			const rows = (b.links || []).map((l) => {
+				// the OTHER end is the useful column: a walk asks where a link goes, not what it is
+				const far = l.src === eid ? l.dst : l.src;
+				return [nm(l.id), nm(far), l.routed ? 'routed' : 'straight'];
+			});
+			return { json: { of: eid, name: nm(eid), links: b.links || [] },
+				text: `links of ${nm(eid)}\n${rows.length ? table(rows, ['LINK', 'TO', 'ROUTE']) : '  (none)'}` };
+		},
+	},
+	{
+		name: 'holds', group: 'Context', usage: 'draw holds [ref]',
+		route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'what contains a thing -- its zones and its group, upward',
+		example: 'draw holds a-web-1',
+		args: [{ name: 'ref', about: 'the entity; omit to use the focus' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		/*
+		The INVERSE of `zone contents`, and the relation that had no verb at all.
+
+		Containment was only ever answerable downward -- `zone contents site-a` -- or buried in
+		`about`. Walking asks it upward far more often: standing on a node, what is it part of.
+		*/
+		async run(ctx, args) {
+			const id = await activeId(ctx, ctx.flags);
+			const { eid, nm } = await subject(ctx, id, args[0], 'holds');
+			const b = ok(await request(ctx, `/diagrams/${id}/context/${eid}`), 'holds');
+			const rows = [];
+			for (const z of b.zones || []) rows.push(['zone', nm(z), z]);
+			if (b.group) rows.push(['group', nm(b.group), b.group]);
+			return { json: { of: eid, name: nm(eid), zones: b.zones || [], group: b.group ?? null },
+				text: `${nm(eid)} is held by\n${rows.length ? table(rows, ['KIND', 'NAME', 'ID']) : '  (nothing -- it sits loose on the canvas)'}` };
+		},
+	},
+	{
+		name: 'peers', group: 'Context', usage: 'draw peers [ref]',
+		route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
+		summary: 'what sits one hop away -- neighbours, and the rest of its group',
+		example: 'draw peers a-web-1',
+		args: [{ name: 'ref', about: 'the entity; omit to use the focus' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx, args) {
+			const id = await activeId(ctx, ctx.flags);
+			const { doc, eid, nm } = await subject(ctx, id, args[0], 'peers');
+			const b = ok(await request(ctx, `/diagrams/${id}/context/${eid}`), 'peers');
+			const rows = (b.neighbours || []).map((n) => ['linked', nm(n), n]);
+			// group siblings are peers in a different sense, and a walk wants both without asking twice
+			if (b.group) {
+				const g = (doc.groups || []).find((x) => x.id === b.group);
+				for (const m of (g?.members || []).filter((m) => m !== eid)) rows.push(['grouped', nm(m), m]);
+			}
+			return { json: { of: eid, name: nm(eid), neighbours: b.neighbours || [] },
+				text: `peers of ${nm(eid)}\n${rows.length ? table(rows, ['HOW', 'NAME', 'ID']) : '  (none)'}` };
 		},
 	},
 );
