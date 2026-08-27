@@ -1189,11 +1189,18 @@ export class Input {
 
 		const node = this.model.makeNode(type, snapped);
 		this.model.put('node', node);          // live, so the preview and the next segment can see it
-		const placed = [...(this.ctx.placed || []), node];
 		const via = [...(this.ctx.via || [])];
 		const link = { ...this.model.makeLink(this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
-		// one undo step for the hop: the waypoints threaded into it, the node it lands on, the link
-		this.history.commit(commands.routeLink(placed, link));
+		/*
+		`chainHop`, not `routeLink` -- the kinds are named rather than assumed.
+
+		`routeLink` maps everything in `placed` to `kind: 'waypoint'`, which is correct for a route
+		and wrong for a hop, because a hop lands on a NODE. Passing the node through that list built
+		a `put/waypoint` carrying a node's fields: the browser applied it locally and the server
+		answered `commit rejected - invalid`. B87's shape exactly -- an entry whose kind and payload
+		disagree, accepted by the optimistic apply and refused at the boundary.
+		*/
+		this.history.commit(commands.chainHop(this.ctx.placed, node, link));
 		this.chainFrom(node, this.lastPos);
 	}
 

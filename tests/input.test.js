@@ -1356,6 +1356,26 @@ test('B147: a digit mid-link-drag places that node, ends the segment on it, and 
 		// the proof that the run carried on: the second segment starts where the first ended
 		assert.equal(links[1].src, made[0].id, 'the second continues from the node the first placed');
 		assert.equal(links[1].dst, made[1].id, 'so one drag drew a chain of different types');
+
+		/*
+		And the COMMIT must survive the server, which is the assertion this test shipped without.
+
+		The first version checked the model and stopped. The browser applies optimistically, so a
+		malformed entry looks perfect locally -- the node was there, the link was there, everything
+		asserted here passed -- and the server answered `commit rejected - invalid` the moment the
+		director tried it. `routeLink` had labelled the node `kind: 'waypoint'`.
+
+		B87 is the same shape and this suite already had the guard for it, twenty lines up.
+		*/
+		for (const c of h.commits) {
+			for (const op of c.ops) {
+				assert.equal(validateEntity(op.kind, op.entity), null,
+					`${op.kind} ${op.entity?.id} would be rejected: ${validateEntity(op.kind, op.entity)}`);
+			}
+		}
+		const kinds = h.commits.flatMap((c) => opKinds(c.ops));
+		assert.ok(kinds.includes('put/node'), 'the node is committed AS a node');
+		assert.equal(kinds.includes('put/waypoint'), false, 'and never mislabelled as a waypoint');
 	} finally { h.restore(); }
 });
 

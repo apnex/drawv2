@@ -261,6 +261,29 @@ export function routeLink(placed, link) {
 	};
 }
 
+/*
+One hop of a chained link run -- B147.
+
+`routeLink` above maps everything in `placed` to `kind: 'waypoint'`, which is right for what it was
+built for and wrong for a hop: a hop lands on a NODE. Passing the node through that list produced a
+`put/waypoint` carrying a node's fields, which the browser applied happily and the server refused
+with `commit rejected - invalid` -- caught by the director in the editor, not by any test here.
+
+So the kinds are named rather than assumed. The waypoints threaded into this segment, the node the
+segment lands on, and the link, as ONE entry list: undoing a chain should step back one hop, not
+unpick a node from its link.
+*/
+export function chainHop(waypoints, node, link) {
+	return {
+		label: 'chain',
+		entries: [
+			...(waypoints || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			{ op: 'put', kind: 'node', entity: clone('node', node) },
+			{ op: 'put', kind: 'link', entity: clone('link', link) },
+		],
+	};
+}
+
 // ---- document metadata. `meta` is a single record, so these patch it rather than an entity. ----
 // Both were written out by hand in sync.js — the second copy is why this
 // exists as a builder rather than a third literal.
