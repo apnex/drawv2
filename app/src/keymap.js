@@ -10,7 +10,7 @@ Each entry declares its own tolerances instead:
 
 	mutates        does it author a change?  → refused while Server-Locked (SCOPE decision 5)
 	duringHelp     meaningful with the help overlay open? (only Escape and `?`)
-	duringGesture  meaningful mid-drag? (only Escape, Shift, and `w` — dropping a bend IS the point)
+	duringGesture  meaningful mid-drag? Escape, Shift, `w` for a bend, and 1-6 to chain a node (B147)
 
 Defaults are the safe ones: a new entry mutates, and is inert during help and during a gesture,
 until its author says otherwise. Adding a key wrongly then FAILS CLOSED rather than quietly becoming
@@ -88,7 +88,9 @@ export const KEYMAP = [
 	{ id: 'waypoint',  prevent: false, mutates: true, duringGesture: true, when: (e) => is(e, 'w') && plain(e), run: 'onWaypointKey' },
 	{ id: 'text-tool', mutates: true, when: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
 	{ id: 'reshape',   mutates: true, when: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
-	{ id: 'hand',      mutates: true, when: (e) => /^[1-7]$/.test(e.key) && plain(e),           run: 'onHandDigit' },
+		// B147: meaningful mid-drag now -- a digit places that node and carries the link run through
+	// it, which is the same argument `w` already makes for a bend
+	{ id: 'hand',      mutates: true, duringGesture: true, when: (e) => /^[1-6]$/.test(e.key) && plain(e), run: 'onHandDigit' },
 	{ id: 'pipette',   mutates: true, when: (e) => is(e, 'q') && plain(e),                      run: 'onPipette' },
 	{ id: 'stamp',     prevent: false, mutates: true, when: (e) => e.key === 'Enter',                           run: 'onStampKey' },
 	{ id: 'nudge',       mutates: true, when: (e) => arrow(e) && !e.shiftKey,                   run: 'onArrowKey' },

@@ -1150,11 +1150,51 @@ export class Input {
 		if (cmd.entries.length) this.history.commit(cmd);
 	}
 
-	// ---- the stamp hand. Idle-only: a held press owns the selection and the pointer. ----
+	// ---- the stamp hand, and mid-drag chaining. ----
 	onHandDigit(evt) {
+		// B146: no `7` branch. The waypoint left the palette because it is a routing anchor rather
+		// than a node type, and `w` already places one in both states.
+		const type = NODE_TYPES[Number(evt.key) - 1];
+		if (!type) return;
+		// B147: mid-link-drag a digit CREATES that node and carries the run through it
+		if (this.mode === 'link') { evt.preventDefault(); return this.chainThroughNode(type); }
 		if (this.mode) return;
-		this.palette.toggleHand(evt.key === '7' ? 'waypoint' : NODE_TYPES[Number(evt.key) - 1]);
+		this.palette.toggleHand(type);
 		this.refreshHand();
+	}
+
+	/*
+	B147 -- place a node mid-drag, end the segment on it, and carry the run on from it.
+
+	A link run could already chain, but only through nodes that ALREADY existed: `chainFrom` restarts
+	link mode from whatever the release landed on. So drawing `client -> firewall -> lb -> server`
+	was four placements and three separate drags, when the shape is one continuous gesture.
+
+	Deliberately NOT what `w` does. A waypoint threads into the SAME link as a bend -- it is a shape
+	in one connection. A node TERMINATES the segment and starts another, because a device is a thing
+	the path goes through rather than a corner it turns.
+
+	Per-segment commit, matching `chainFrom` on Shift-release rather than inventing a second
+	transaction shape: each hop is its own undo step, which is also what a person expects when they
+	undo halfway along a run they are still drawing.
+	*/
+	chainThroughNode(type) {
+		if (!this.lastPos) return;
+		const snapped = snapNode(this.lastPos);
+		// the same refusal `dropRouteWaypoint` makes, for the same reason: a taken cell is taken
+		if (occupiedAt(this.model, snapped)) return;
+		// the source can die mid-gesture (a peer deleting it), and committing onto a corpse would
+		// write a link to nothing
+		if (!this.model.endpointOf(this.ctx.src.id)) return;
+
+		const node = this.model.makeNode(type, snapped);
+		this.model.put('node', node);          // live, so the preview and the next segment can see it
+		const placed = [...(this.ctx.placed || []), node];
+		const via = [...(this.ctx.via || [])];
+		const link = { ...this.model.makeLink(this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
+		// one undo step for the hop: the waypoints threaded into it, the node it lands on, the link
+		this.history.commit(commands.routeLink(placed, link));
+		this.chainFrom(node, this.lastPos);
 	}
 
 	onPipette() {

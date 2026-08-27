@@ -1291,3 +1291,104 @@ test('B75: right-click is suppressed on panels, and left alone in a text field',
 		assert.equal(fire(target('[contenteditable="true"]')), false, 'and an editable region');
 	} finally { h.restore(); }
 });
+
+/*
+B146 + B147 -- the waypoint leaves the palette, and a digit chains a node mid-drag.
+
+Ruled together because they are one confusion. A waypoint was listed as palette slot `7` beside six
+glyph types, and the help row `w / waypoint (7)` presented that slot number as a keyboard alias for
+the verb -- so `7` mid-drag read as a broken routing pivot when it was a stamp mode that is
+meaningless mid-drag by design. That was B73, a labelling defect all along.
+
+Removing it left the digits free to mean something better. `w` threads a BEND into the current link;
+a digit now terminates the segment on a new node and carries the run on from it, which is the
+difference between a corner and a device.
+*/
+test('B146: the waypoint is not a palette digit, and `w` still covers both states', () => {
+	const h = makeInput();
+	try {
+		// idle: `w` places a standalone waypoint. This is the case the tile duplicated.
+		h.input.lastPos = { x: 0, y: 0 };
+		h.input.onKeyDown(key('w'));
+		assert.equal(h.model.all('waypoint').length, 1, '`w` places one when idle');
+
+		// `7` is no longer a hand digit at all
+		assert.equal(resolveKey(key('7'), { gesturing: false }), null, '7 resolves to nothing');
+		assert.ok(resolveKey(key('6'), { gesturing: false }), 'while 6 is still the sixth type');
+
+		// and no rule anywhere mentions the waypoint as a stamp type
+		assert.equal(KEYMAP.some((r) => /waypoint/.test(String(r.when))), false,
+			'no keymap rule reaches for a waypoint hand');
+	} finally { h.restore(); }
+});
+
+test('B147: a digit mid-link-drag places that node, ends the segment on it, and chains on', () => {
+	const h = makeInput();
+	const [a] = seedNodes(h.model, [[-120, 0, 'router']]);
+	try {
+		/*
+		Asserted at the COMMIT BOUNDARY, never on `input.mode` or `input.ctx`.
+
+		The H2.1 net is sealed to that boundary on purpose: a test reading gesture internals breaks
+		at every restructuring and becomes a tax on the refactor instead of its net. It also would
+		not have proved the interesting part here. "Does the run continue" is not a fact about a
+		field -- it is the fact that a SECOND digit chains onto the first, which is exactly what a
+		person means by one gesture.
+		*/
+		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
+		h.input.onDown(pointer(-120, 0, { target, shiftKey: true }));
+		h.input.onMove(pointer(0, 0));
+
+		h.input.lastPos = { x: 0, y: 0 };
+		h.input.onKeyDown(key('3'));                       // loadbalancer, the third type
+		h.input.lastPos = { x: 120, y: 0 };
+		h.input.onKeyDown(key('5'));                       // vxlan, the fifth
+
+		const made = h.model.all('node').filter((n) => n.id !== a.id);
+		assert.equal(made.length, 2, 'each digit CREATED a node');
+		assert.deepEqual(made.map((n) => n.type), ['loadbalancer', 'vxlan'], 'of the types the digits name');
+		assert.deepEqual(made.map((n) => n.x), [0, 120], 'each at the cursor anchor of its keystroke');
+
+		const links = h.model.all('link');
+		assert.equal(links.length, 2, 'two segments, one per hop');
+		assert.equal(links[0].src, a.id, 'the first runs from where the drag started');
+		assert.equal(links[0].dst, made[0].id, 'and TERMINATES on the new node -- not threaded as a bend');
+		// the proof that the run carried on: the second segment starts where the first ended
+		assert.equal(links[1].src, made[0].id, 'the second continues from the node the first placed');
+		assert.equal(links[1].dst, made[1].id, 'so one drag drew a chain of different types');
+	} finally { h.restore(); }
+});
+
+test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => {
+	const h = makeInput();
+	const [a, blocker] = seedNodes(h.model, [[-120, 0, 'router'], [0, 0, 'host']]);
+	try {
+		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
+		h.input.onDown(pointer(-120, 0, { target, shiftKey: true }));
+		h.input.onMove(pointer(0, 0));
+		h.input.lastPos = { x: 0, y: 0 };                  // sitting on `blocker`
+
+		const before = h.model.all('node').length;
+		h.input.onKeyDown(key('2'));
+		assert.equal(h.model.all('node').length, before, 'nothing was stacked on the occupied cell');
+		assert.equal(h.model.all('link').length, 0, 'and no segment was committed to a node that was not made');
+		assert.ok(blocker, 'the occupant is still there');
+
+		// the run is untouched -- shown by it still working from the ORIGINAL source, which is a
+		// fact about the next commit rather than about a field
+		h.input.lastPos = { x: 120, y: 0 };
+		h.input.onKeyDown(key('2'));
+		const link = h.model.all('link')[0];
+		assert.ok(link, 'a later hop still commits');
+		assert.equal(link.src, a.id, 'from the source the refused keystroke did not move');
+	} finally { h.restore(); }
+});
+
+test('B147: a digit while idle still picks up the stamp hand', () => {
+	const h = makeInput();
+	try {
+		h.input.onKeyDown(key('2'));
+		assert.equal(h.called('palette.toggleHand'), true, 'idle behaviour is unchanged');
+		assert.equal(h.model.all('node').length, 0, 'and picking up a stamp places nothing by itself');
+	} finally { h.restore(); }
+});

@@ -143,25 +143,24 @@ export class Palette {
 			container.appendChild(item);
 			this.items[type] = item;
 		});
-		// tile #7: the Waypoint — a routing pivot / single-use link terminal (a ring, no glyph)
-		const NS = 'http://www.w3.org/2000/svg';
-		const wp = document.createElementNS(NS, 'svg');
-		wp.setAttribute('viewBox', '-26 -26 52 52');
-		wp.setAttribute('class', 'palette-item node');
-		wp.dataset.type = 'waypoint';
-		const ring = document.createElementNS(NS, 'circle');
-		ring.setAttribute('r', 20); ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#4fc3f7'); ring.setAttribute('stroke-width', 2);
-		wp.appendChild(ring);
-		const wdot = document.createElementNS(NS, 'circle');
-		wdot.setAttribute('r', 2.6); wdot.setAttribute('fill', '#4fc3f7');
-		wp.appendChild(wdot);
-		const wbadge = document.createElementNS(NS, 'text');
-		wbadge.setAttribute('class', 'digit-badge'); wbadge.setAttribute('x', 18); wbadge.setAttribute('y', -14);
-		wbadge.textContent = '7';
-		wp.appendChild(wbadge);
-		wp.addEventListener('pointerdown', (e) => this.onDown(e, wp, 'waypoint'));
-		container.appendChild(wp);
-		this.items['waypoint'] = wp;
+		/*
+		The waypoint is NOT a palette tile -- B146, ruled 2026-08-27.
+
+		This panel lists node TYPES, and a waypoint is not one: it carries no type, no glyph and no
+		name, because it is a routing anchor rather than a device on the canvas. `NODE_TYPES` holds
+		six entries and never held it; the seventh tile existed only here, and forced a matching
+		special case in `onHandDigit` and a `[1-7]` range in the keymap.
+
+		Listing it also cost more than tidiness. The help row read `w / waypoint (7)`, which presents
+		the palette slot number as a keyboard alias for the verb, and a reader who tries `7` mid-drag
+		finds it refused and concludes the routing pivot is broken. That was B73, and it was a
+		labelling defect the whole time.
+
+		Nothing is lost. `w` places a waypoint idle (`placeWaypoint`) and mid-drag
+		(`dropRouteWaypoint`), which is every case the tile covered except holding the key to stamp
+		several -- and a routing anchor placed repeatedly with no link to bend is not a use anybody
+		has.
+		*/
 	}
 
 	onDown(evt, item, type) {
