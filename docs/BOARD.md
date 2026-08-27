@@ -141,31 +141,38 @@ So the arc is: **server data-loss now → build the client net → then the clie
 
 ## Next slice -- ordered by A14 capital-forward value
 
-Re-cut 2026-08-26. Ranked by deleted future friction rather than by size or by how recently something was noticed.\
-A14 weighs adjacency to load-bearing infrastructure, mechanization of toil, and lessons becoming invariants before build, and it names recurrence of an already-mined lesson as a fault in its own right.
+Re-cut 2026-08-27, after the agent-first authoring arc.\
+Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
-The previous cut was organized around four production defects passing a green gate. That argument held and the verifier work it ranked first is done.\
-**The organizing finding of this cut is different, and it is a pattern rather than an incident.** Across roughly thirty defects the dominant shape is a check whose scope is narrower than its stated claim -- GR10 blind to two of three route forms, `scan-cli` counting segments where it claimed methods, `scan-board` parsing a convention the register abandoned sixty rows earlier, the socket test that only ever built a panel, the whole suite running with authorization off. In every case the mechanism existed and the claim above it was wider than the predicate underneath.
+The previous cut organized around a pattern -- a check whose scope is narrower than its stated claim -- and that pattern held: it accounted for eleven of the defects closed since.\
+**What changed is that a second organizing axis appeared, and it is named in the axioms rather than invented here.**
 
-That places two things above features. First, the remaining checks whose subject is narrower than their name. Second, and ranked highest, the one gap where **no** check exists at all -- because the suite still cannot answer whether a test exercises the shipped path, and it is the tests that everything else is trusted through.
+**A5 Perceptual Parity** turns out to describe the whole agent-first arc, and it was being satisfied by instinct.\
+Its first mechanic, Synthetic Sensory Organs, is what `map`, `render --summary` and the walking verbs are.\
+Its second, Measured Parity, is `draw parity`, and it did not exist until it was looked for.\
+Two of its four named faults were live all day: Cognitive Friction, with the director acting as the agent's eyes, and Black-Box Failure, where 594 green tests coexisted with a `draw` that could not run through a symlink.
+
+The ranking below therefore weighs one question above size: **does this let an agent perceive something it currently has to be told, or reason about something it currently has to derive?**
 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
-| ~~1~~ | H9.17 `DONE` | dead path | Landed 2026-08-26 and paid for itself on the first run: 152 tests red, and **B130** and **B131** found -- two live defects in `DELETE`, a verb three days old that had never once worked in the deployment. |
-| 2 | H11.4 | verifier | The general form of every defect above it. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. |
-| 3 | H10.19 | verifier | `scan-writers` asks whether an entry carries a forbidden key and never whether it carries a required one. Same shape as B122, one file, small. |
-| 4 | H11.7 | verifier | The rule that keeps findings out of a mutable file is currently decorative, which is what let three items sit on the board with no register entry. |
-| 5 | H11.5 | user | The trigger has fired: `DELETE` shipped, the bucket really does hold a seven-day window, and nothing in the product says so. The only item here a person would notice. |
-| 6 | H10.3 | user | The durable status surface. Errors survive until the next message overwrites them, so the one channel the client has for server trouble is the one that forgets. |
+| 1 | H11.4 | verifier | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. |
+| 2 | H11.5 | user | `DELETE` shipped, the bucket holds a real seven-day window, and nothing in the product reaches it. The only item here a person would notice, and its trigger has fired. |
+| 3 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. |
+| 4 | H11.11 | agent | `draw health` has never worked in any configuration, and `scan-cli` calls the pair covered because the verb DECLARES the route. A declaration checked against a declaration. |
+| 5 | H10.19 | verifier | `scan-writers` asks whether an entry carries a forbidden key and never whether it carries a required one. Same shape as B122, one file, small. |
+| 6 | H11.7 | verifier | Contract rule 1 is decorative, which is what let three items sit on the board with no register entry. |
 | 7 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. |
-| 8 | H10.20, H9.20 | verifier | The two board rules deferred as needing a convention decided first. Cheap once the convention is chosen; both are still real. |
-| 9 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and the reason the anchor vocabulary exists. |
-| 10 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user, and getting less so. |
-| 11 | H7.4, H7.6 | verifier | Doc style and the Docker image, both CI-shaped and both a per-deploy manual tax today. Larger than the scanners above, so they follow. |
-| 12 | H10.16, H10.17, H10.6, H10.8, H9.22 | local | Real, small, and compounding into nothing on their own. Take them opportunistically rather than scheduling them. |
-| -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. Say so rather than ranking it. |
+| 8 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
+| 9 | H10.20, H9.20 | verifier | The two board rules deferred pending a convention. Cheap once chosen; both still real. |
+| 10 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
+| 11 | H7.4, H7.6 | verifier | Doc style and the Docker image, both CI-shaped, both a per-deploy manual tax. B137 is the argument for the second: a broken symlink shipped in every image because nothing builds one. |
+| 12 | H10.16, H10.17, H10.6, H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. |
+| -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
-**What is deliberately not here.** H11.1, H11.2, H11.3 and H11.6 land with this cut rather than after it -- a reconciliation that reports drift and does not fix it is a longer version of no reconciliation.
+**What the arc left undone, deliberately.** The map shows what is where and not what connects to what, and links are not going on it -- `links`, `about` and `link path` answer connectivity as lists, and a text grid carrying both would be the mess the design set out to avoid.\
+Type glyphs are also not identity: three servers read as `s s s` and the key disambiguates them.\
+That is acceptable while authoring, and is the weakest part of the surface for reading a diagram somebody else built, which is the test case not yet run.
 
 ---
 
@@ -517,7 +524,7 @@ should have caught it was scoped narrower than its own claim.
 | H11.10 | Deleting your last diagram reseeds one nobody can read: the store refuses to be empty and the reseed is unowned, so the invariant is satisfied and its purpose is not. The reseed belongs to the principal who caused it | **B131** | S2 · S | `DONE` |
 | H11.11 | `draw health` has never worked: the CLI prefixes a root path, the agent door has no entry for it, and `scan-cli` calls the pair covered because the verb DECLARES the route. Coverage that compares a manifest to a manifest is B119 one level up | **B132** | S3 · M | `TODO` |
 | H11.12 | The CLI has no write verb for a zone, group, waypoint, link, span, move or rename, so anything structural goes through `commit --ops` and the agent re-derives cell-to-pixel, the zone half-pitch, id minting and three invariants by hand. B117 in a better disguise | **B133** | S2 · L | `DONE` |
-| H11.13 | The tool creates every kind of entity and removes none: `draw rm <ref>` does not exist, so tidying up is still `commit --ops`. The cascade is the interesting half -- the verb should report what else went | **B134** | S3 · M | `TODO` |
+| H11.13 | The tool creates every kind of entity and removes none: `draw rm <ref>` does not exist, so tidying up is still `commit --ops`. The cascade is the interesting half -- the verb should report what else went | **B134** | S3 · M | `DONE` |
 | H11.14 | The CLI's lock and context stores read `process.env.HOME` directly, so `main`'s injected env is bypassed and 812 token files accumulated in the developer's real home. Isolation the harness advertises and does not have | **B135** | S2 · M | `DONE` |
 | H11.15 | The lock token store never shrinks: 837 credential files, 835 naming deleted diagrams. A token outliving its lock is why the tool reports `not server-locked` when the truth is `your lock lapsed` | **B136** | S2 · M | `DONE` |
 | H11.16 | The image ships a broken `draw`: the Dockerfile symlinks it to the retired `cli/draw.sh`, and `ln -s` never checks its target so every build is green. `scan-docrefs` reads docs and not the Dockerfile | **B137** | S3 · S | `DONE` |

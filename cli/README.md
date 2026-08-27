@@ -40,7 +40,7 @@ Every verb answers `--json`, because an agent parses output and a verb that cann
 
 ---
 
-## The two ideas worth knowing
+## The three ideas worth knowing
 
 Positions are **anchors**, never pixels.\
 `draw add server at 5,-2` takes a cell, and a cell cannot be off the grid; `draw anchor nearest 130 60` converts a pixel if you have one.
@@ -51,6 +51,13 @@ Ask for **context** rather than assembling it.\
 The same idea drives the structural verbs, which is why they take cells and names rather than geometry.\
 `draw link a-edge core-1 --via -8,-7` mints the waypoints a bend needs, and `draw zone site-a from -15,-6 to -9,4` owns the half pitch the zone grid sits on.\
 Both existed only as hand-written JSON through `commit --ops` until B133, and the cost was that the caller re-derived rules the codebase already owns -- which is the same failure as reaching for `curl`, wearing a better disguise.
+
+**Look** before deciding, and check that everyone is looking at the same thing.\
+`draw map` draws the canvas as text -- occupancy, zone boxes, free anchors -- so placement is seen rather than derived from coordinates; `--zone`, `--around` and `--full` scope it.\
+`draw focus` then stands on an entity and `links`, `holds` and `peers` read relations from it, which is how you walk a diagram you did not build.\
+`draw parity` compares what the model holds, what the render draws and what the map shows, and refuses if they disagree -- because a human and an agent looking at different diagrams is a defect, not a difference of opinion.
+
+This last idea is [A5 Perceptual Parity](../../mission-kit/axioms/A5-perceptual-parity.md) and the verbs are its two mechanics: instruments for an agent to perceive its own output, and a measurement that keeps the instruments honest.
 
 ---
 

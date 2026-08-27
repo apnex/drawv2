@@ -201,6 +201,43 @@ So each verb owns a rule rather than a route:
 A batch transport is legitimate, and content regions are genuinely better expressed as data than as flags.\
 What changed is that it is no longer the only way to say anything structural.
 
+### Perception, and why it is a verb surface at all
+
+Added 2026-08-27, and the frame is **A5 Perceptual Parity** rather than anything invented here.\
+The axiom requires that a human operator and an agent hold symmetric perception of one reality, and it names two mechanics.\
+This document had been satisfying the first by instinct and had never heard of the second.
+
+**Synthetic Sensory Organs** are the instruments an agent uses to perceive its own output rather than emitting it blind.\
+Before them, every verb answered with a TABLE, so an agent extending a diagram rebuilt its geometry from coordinates before it could choose where anything went.\
+`map` is the answer: the canvas as text, scoped to content, a zone, or a radius around an entity.\
+`render --summary` is the other half -- what the renderer actually emitted, by element, so confirming a picture needs no browser.
+
+**Measured Parity** is the mechanic that makes the first verifiable: *the delta is itself measured and held within an explicitly-defined bound, because symmetry is a verified property and not an aspiration*.\
+`draw parity` compares three views produced by three different code paths -- what the model holds, what the render emits, what the map shows -- and refuses when they disagree.\
+The bound is zero.\
+It is not hypothetical: `render --summary` shipped omitting waypoints, reporting 20 elements where the map reported 27 occupied anchors, and that was caught by eye.
+
+The map is shaped for an agent reading a terminal, which changes several defaults away from what a person would want:
+
+| decision | why |
+|---|---|
+| absolute labels on both axes | counting characters to recover a coordinate is the easiest mistake available, so the map never asks for it |
+| two terminal columns per cell | the canvas is fixed at 31 cells, so the widest possible map is 62 columns plus a gutter, inside 80 always. A wrapped grid is worse than no grid because it still looks correct |
+| cropped to content by default | most diagrams use a fraction of 527 cells, and empty rows cost attention |
+| the legend prints every time | there is no hovering and no remembered glyph table |
+| the key is one entity per line | lines parse; columns do not |
+| zone borders in the GUTTERS | the zone grid sits half a pitch off the node grid, so an edge falls exactly between two cells. The borders are geometrically exact and cost neither a column nor a glyph |
+
+### Walking, and the danger of a focus
+
+`about` answers everything at once, which is right for *tell me about this* and wrong for moving around.\
+Walking is a sequence of narrow questions where each answer decides the next step, so `focus` sets a subject and `links`, `holds` and `peers` read from it.\
+`holds` is the relation that had no verb at all: containment was answerable downward through `zone contents`, or buried inside `about`, and standing on a node and asking what it is part of is the question a walk asks constantly.
+
+**A focus is state, and hidden state is the most dangerous thing this tool can offer.**\
+A verb answering confidently about something set ten commands ago is the failure this codebase keeps finding, so two rules are not negotiable: the subject is PRINTED by every verb that uses it, and the focus is scoped to its diagram.\
+An entity id means nothing outside the diagram that minted it, and unscoped it answered `unknown entity: node-42c3be` on the next one -- a real refusal that blames the entity instead of saying the focus does not belong there.
+
 ## Help is a first-class output
 
 `draw help` prints the groups above.\
