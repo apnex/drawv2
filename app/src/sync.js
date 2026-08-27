@@ -284,6 +284,20 @@ export class Sync {
 			const dropped = this.outbox.findIndex((m) => m.txnId === b.txnId);
 			if (dropped >= 0) {
 				this.outbox.splice(dropped, 1);
+				/*
+				WRITE THROUGH -- B148, and this was the one mutation that did not.
+
+				`submit`, `pruneOutbox`, the read-only clear and the diagram switch all persist; this
+				splice dropped the message from memory and left it in localStorage, so `restoreOutbox`
+				pushed it back on the next load. A command the server can NEVER accept therefore
+				replayed on every reload: observed live as the same entity id refused twelve times,
+				still flickering after the defect that minted it had been fixed and deployed.
+
+				D30 made the outbox durable so unsent work survives a tab close. Durability applied to
+				a command that cannot succeed is a trap, and the only place that removes one for good
+				was the only place that forgot to say so.
+				*/
+				this.persistOutbox();
 				// The commit was applied LOCALLY before it was submitted — that is what makes a
 				// gesture feel instant. A rejection therefore leaves this tab holding a change the
 				// server refused, and it will never converge on its own. Ask for authoritative

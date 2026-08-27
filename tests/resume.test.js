@@ -321,3 +321,38 @@ test('resume: unknown diagram is a typed refusal, and never binds the session', 
 		assert.equal(session.diagramId, null, 'a refused resume leaves the session unbound');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+B148 -- a rejected commit does not outlive the reload.
+
+D30 made the outbox durable so unsent work survives a tab close. Applied to a command the server can
+never accept, durability is a trap: the rejection spliced the message out of memory and left it in
+localStorage, so the next load restored it, resent it, and collected the same refusal again.
+
+Observed live, not reasoned about. `draw-00049-h8s` logged `invalid id for waypoint: node-f57eb1`
+twelve times with the SAME entity id -- one poisoned command resent, not twelve keystrokes -- and
+the editor was still flickering after the defect that minted it had been fixed and deployed. That is
+what makes this worse than the bug it carried: it outlives the release that fixes it.
+*/
+test('B148: a rejected commit is removed from disk, not only from memory', () => {
+	storage.clear();
+	const first = tab();
+	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 3 } });
+	first.changes.commit({ label: 'create', entries: [{ op: 'put', kind: 'node', entity: node('node-bad001', 60, 60) }] });
+
+	const sent = only(first.sent, 'commit');
+	assert.equal(sent.length, 1, 'it went out');
+	assert.ok(storage.has('draw.outbox'), 'and it is on disk, which is D30 working');
+
+	// the server refuses it: a shape it will refuse every time, however often it arrives
+	first.net.recv({ cmd: 'error', body: { message: 'invalid id for waypoint: node-bad001', code: 'commit-rejected', txnId: sent[0].body.txnId } });
+
+	const saved = JSON.parse(storage.get('draw.outbox') || '{"msgs":[]}');
+	assert.deepEqual(saved.msgs, [], 'the refusal cleared the DISK copy, not just the in-memory one');
+
+	// the tab reloads against the same storage. Nothing should go out.
+	const next = tab();
+	next.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 3 } });
+	assert.deepEqual(only(next.sent, 'commit'), [],
+		'a command the server can never accept does not come back on the next load');
+});
