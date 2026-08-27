@@ -67,14 +67,20 @@ Deliberately checks entities in the order a caller is most likely to mean, and r
 rather than guessing: two things sharing a name is a diagram problem, and silently picking one
 would turn it into a mystery about which one moved.
 */
-async function resolveId(ctx, diagramId, ref) {
+async function resolveId(ctx, diagramId, ref, known = null) {
 	if (/^(node|waypoint|link|zone|group)-[0-9a-f]{6}$/.test(ref)) return ref;
-	const doc = ok(await request(ctx, `/diagrams/${diagramId}`), 'resolve');
+	// `known` lets a verb that has already fetched the document reuse it. `place` used to avoid the
+	// second read by reimplementing the lookup inline, four times, which is how the ambiguity
+	// refusal below got dropped from three of them (B143).
+	const doc = known || ok(await request(ctx, `/diagrams/${diagramId}`), 'resolve');
 	const hits = [];
 	for (const k of ['nodes', 'zones', 'groups', 'links', 'waypoints']) {
 		for (const e of doc[k] || []) if (e.name === ref) hits.push(e.id);
 	}
-	if (!hits.length) die(`nothing called ${ref} in this diagram`);
+	// the hint belongs HERE, not in each caller. B143 routed four verbs through this function and
+	// they each lost their own "`draw get nodes` lists them" line on the way; one message that
+	// names the way to look is better than four that disagree about it.
+	if (!hits.length) die(`nothing called ${ref} in this diagram -- \`draw show\` lists every entity, \`draw map\` shows where they are`);
 	if (hits.length > 1) die(`${ref} is ambiguous: ${hits.join(', ')} -- name it by id`);
 	return hits[0];
 }
@@ -602,26 +608,34 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone-id>', route: '/diagrams/<id>/zones/<zone>/contents', method: 'GET',
-		summary: 'what falls inside a zone', example: 'draw zone contents zone-aa0001',
-		args: [{ name: 'zone-id', about: 'the zone to look inside' }],
+		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone>', route: '/diagrams/<id>/zones/<zone>/contents', method: 'GET',
+		summary: 'what falls inside a zone', example: 'draw zone contents site-a',
+		args: [{ name: 'zone', about: 'the zone to look inside, by id or name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
-			if (!args[0]) die('zone contents needs a zone id');
+			if (!args[0]) die('zone contents needs a zone, by id or name');
 			const id = await activeId(ctx, ctx.flags);
-			const b = ok(await request(ctx, `/diagrams/${id}/zones/${args[0]}/contents`), 'zone contents');
+			// B143: by NAME, like every other verb taking a reference. This took an id only, so
+			// `draw zone contents site-a` failed beside `draw about a-lb` resolving the same word.
+			const zid = await resolveId(ctx, id, args[0]);
+			if (!zid.startsWith('zone-')) die(`${args[0]} is a ${zid.split('-')[0]}, not a zone -- \`draw about ${args[0]}\` describes it`);
+			const b = ok(await request(ctx, `/diagrams/${id}/zones/${zid}/contents`), 'zone contents');
 			return { json: b, text: table(b.contents.map((c) => [c.kind, c.id, c.name ?? '', `${c.x},${c.y}`]), ['KIND', 'ID', 'NAME', 'AT']) };
 		},
 	},
 	{
-		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link-id>', route: '/diagrams/<id>/links/<link>/path', method: 'GET',
+		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link>', route: '/diagrams/<id>/links/<link>/path', method: 'GET',
 		summary: 'the resolved route -- what the renderer would draw', example: 'draw link path link-aa00ff',
-		args: [{ name: 'link-id', about: 'the link to resolve' }],
+		args: [{ name: 'link', about: 'the link to resolve, by id or name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
-			if (!args[0]) die('link path needs a link id');
+			if (!args[0]) die('link path needs a link, by id or name');
 			const id = await activeId(ctx, ctx.flags);
-			const b = ok(await request(ctx, `/diagrams/${id}/links/${args[0]}/path`), 'link path');
+			// B143: resolved, not interpolated. A link rarely carries a name, but the refusal for a
+			// non-link should say what the thing IS rather than 404 from the server.
+			const lid = await resolveId(ctx, id, args[0]);
+			if (!lid.startsWith('link-')) die(`${args[0]} is a ${lid.split('-')[0]}, not a link -- \`draw about ${args[0]}\` lists the links that touch it`);
+			const b = ok(await request(ctx, `/diagrams/${id}/links/${lid}/path`), 'link path');
 			if (!b.path) die(`link ${b.link} does not resolve -- a dangling endpoint or a missing bend`);
 			return { json: b, text: `${b.src} -> ${b.dst}${b.via.length ? ` via ${b.via.join(' ')}` : ''}\n${b.path.map((p) => p.join(',')).join('  ')}` };
 		},
@@ -684,23 +698,33 @@ VERBS.push({
 		// who a --link should attach to; internal, so NOT smuggled through ctx.flags -- the help
 		// audit rightly reads anything there as a flag the user can pass, and it is not one
 		let linkEnds = null;
+		/*
+		B143: one resolver, reusing the document already in hand.
+
+		These four lookups were `find((n) => n.id === ref || n.name === ref)` written out inline,
+		which is a fourth copy of `resolveId`'s rule -- and three of the copies had quietly lost its
+		refusal of an ambiguous name, so two entities sharing one silently picked the first. Passing
+		`doc` keeps the single read this verb already pays for.
+		*/
+		const refId = await resolveId(ctx, id, ref, doc);
 		if (near === 'inside') {
-			const zone = doc.zones.find((z) => z.id === ref || z.name === ref);
-			if (!zone) die(`no zone called ${ref} -- \`draw get zones\` lists them`);
+			const zone = doc.zones.find((z) => z.id === refId);
+			if (!zone) die(`${ref} is not a zone -- \`draw get zones\` lists them`);
 			options = options.filter((a) => a.x >= zone.x && a.x <= zone.x + zone.w && a.y >= zone.y && a.y <= zone.y + zone.h);
 			if (!options.length) die(`zone ${ref} has no free anchor -- \`draw zone contents ${zone.id}\` shows what fills it`);
 			anchorNode = { id: zone.id, name: zone.name, x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 };
 		} else if (near === 'between') {
 			const other = args[3];
 			if (!other) die('usage: draw place <type> between <a> <b>');
-			const a = doc.nodes.find((n) => n.id === ref || n.name === ref);
-			const b2 = doc.nodes.find((n) => n.id === other || n.name === other);
+			const otherId = await resolveId(ctx, id, other, doc);
+			const a = doc.nodes.find((n) => n.id === refId);
+			const b2 = doc.nodes.find((n) => n.id === otherId);
 			if (!a || !b2) die(`between needs two nodes that exist: ${!a ? ref : other} is not one`);
 			anchorNode = { id: a.id, name: `${a.name || a.id} and ${b2.name || b2.id}`, x: (a.x + b2.x) / 2, y: (a.y + b2.y) / 2 };
 			linkEnds = [a.id, b2.id];
 		} else {
-			anchorNode = doc.nodes.find((n) => n.id === ref || n.name === ref);
-			if (!anchorNode) die(`no node called ${ref} -- \`draw get nodes\` lists them`);
+			anchorNode = doc.nodes.find((n) => n.id === refId);
+			if (!anchorNode) die(`${ref} is not a node -- \`draw get nodes\` lists them`);
 		}
 
 		let target;

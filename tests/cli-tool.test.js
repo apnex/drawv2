@@ -154,7 +154,11 @@ test('place refuses a direction with nothing free, rather than placing elsewhere
 		const id = (await run('create', 'boxed-in')).trim();
 		await run('lock', '--diagram', id);
 		const err = await captureExit(() => run('place', 'server', 'near', 'nonexistent', '--diagram', id));
-		assert.match(err, /no node called nonexistent/, 'and it says how to find the real ones');
+		// B143: the refusal now comes from `resolveId`, one place for every verb that takes a
+		// reference, and the hint moved with it -- four callers each carried their own and they
+		// disagreed about which verb to suggest
+		assert.match(err, /nothing called nonexistent/, 'the name is named');
+		assert.match(err, /draw show|draw map/, 'and it says how to find the real ones');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
@@ -920,5 +924,53 @@ test('map: a zone running past the window keeps its sides and drops the corner',
 		assert.ok(edge, 'the top edge of the wide zone is drawn, name and all');
 		assert.equal(/[\u250c\u2510\u2514\u2518]/.test(edge), false,
 			'and carries NO corner, because neither side of it is in view');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
+B143 -- a verb that takes an entity reference resolves NAMES.
+
+`resolveId` exists so a caller can say `site-a` instead of `zone-629f3e`, and it was applied verb by
+verb as a habit rather than as a rule. Two contextual verbs interpolated `args[0]` straight into a
+URL, so `draw zone contents site-a` answered *unknown zone* while `draw about a-lb` beside it
+resolved the same kind of word without comment. `place` was worse in kind: it resolved names inline
+at four sites, a fourth copy of the rule, and three of those copies had lost `resolveId`'s refusal
+of an ambiguous name -- two entities sharing one silently picked the first.
+
+Static, like the flag and argument audits above it, because the point is that the NEXT verb cannot
+ship id-only. A behavioural test would cover the three that exist today and nothing after them.
+*/
+test('GR18/B143: every verb taking an entity reference resolves it by name', () => {
+	// an argument naming a thing rather than a literal, a coordinate or a value
+	const REFERENCE = /^(ref|entity|zone|link|panel|node|group|waypoint)(-id)?(\.\.\.)?$/;
+	const gaps = [];
+	for (const v of VERBS) {
+		const refs = (v.args || []).filter((a) => REFERENCE.test(a.name));
+		if (!refs.length) continue;
+		if (!/resolveId\(/.test(v.run.toString())) {
+			gaps.push(`${v.name}: takes ${refs.map((r) => r.name).join(', ')} and never calls resolveId`);
+		}
+	}
+	assert.deepEqual(gaps, [], `these accept ids only:\n  ${gaps.join('\n  ')}`);
+});
+
+test('B143: zone contents and link path take a name, and refuse the wrong kind by saying what it is', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'byname', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-2,-1', '--name', 'r1');
+		await run('add', 'server', 'at', '2,1', '--name', 's1');
+		await run('zone', 'pen', 'from', '-3,-2', 'to', '3,2');
+
+		const inside = await run('zone', 'contents', 'pen', '--json');
+		const names = JSON.parse(inside).contents.map((c) => c.name).sort();
+		assert.deepEqual(names, ['r1', 's1'], 'the zone is found by NAME and reports what it holds');
+
+		// and a reference of the wrong kind is told what it actually is, rather than 404ing
+		const wrong = await captureExit(() => run('zone', 'contents', 'r1'));
+		assert.match(wrong, /is a node, not a zone/, 'the refusal names the kind it got');
+		assert.match(wrong, /draw about r1/, 'and offers the verb that would describe it');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });

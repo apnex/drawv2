@@ -89,8 +89,8 @@ Context
   get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints
   history [--limit n]                                                             the change log
   about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones
-  zone contents <zone-id>                                                         what falls inside a zone
-  link path <link-id>                                                             the resolved route -- what the renderer would draw
+  zone contents <zone>                                                            what falls inside a zone
+  link path <link>                                                                the resolved route -- what the renderer would draw
   show                                                                            the whole diagram: summary and every entity
   map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]  look at the canvas -- occupancy as a grid, so placement is seen rather than derived
 
