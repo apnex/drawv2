@@ -685,3 +685,73 @@ test('B109: the recycle bin refreshes on open and on regaining focus, and never 
 	assert.equal(/setInterval\([^)]*refreshUndelete/.test(src), false,
 		'no polling: a timer spends requests continuously to be right at a moment that announces itself');
 });
+
+/*
+B125 -- scan-writers asks what an entry MUST carry, not only what it must not.
+
+The `before` rule above asks whether an entry carries a key it should not, and nothing asked the
+mirror. That asymmetry is how B87 shipped: a `del` built without the field its op needs was refused
+by the browser at runtime and waved through by every static check.
+
+Driven over fixtures, and the third case is the one that matters. The vocabulary is the ENTRY shape
+from `changes.js#toOp`, not the wire shape from `model/ops.mjs` -- an entry carries `entity` on a
+delete and `after` on a set, and the converter turns them into `id` and `patch`. Checking the wrong
+one of those two tables flagged twenty-one healthy builders on this rule's first run.
+*/
+test('GR3/B125: an entry missing a key its op requires is caught, in the ENTRY vocabulary', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b125-'));
+	fs.mkdirSync(path.join(dir, 'app/src'), { recursive: true });
+	fs.mkdirSync(path.join(dir, 'model'), { recursive: true });
+	fs.mkdirSync(path.join(dir, 'server'), { recursive: true });
+	fs.copyFileSync(path.join(root, 'model/ops.mjs'), path.join(dir, 'model/ops.mjs'));
+	const write = (body) => fs.writeFileSync(path.join(dir, 'app/src/commands.js'), body);
+	/*
+	Asserted on THIS RULE's output, not on the scanner's exit code.
+
+	The other rules carry broken-scan floors -- "NO model.load calls matched at all" and friends --
+	which are correct on the real tree and fire on any partial fixture. Reading the exit code would
+	make this test pass or fail on rules that are not its subject, which is the confusion it exists
+	to prevent one layer down.
+	*/
+	const run = () => {
+		let out;
+		try { out = execFileSync('node', [path.join(root, 'tools/scan-writers.mjs'), '--root', dir], { encoding: 'utf8' }); }
+		catch (e) { out = e.stdout || ''; }
+		return out.split('\n').filter((l) => /entry op|missing a key their op requires/.test(l)).join('\n');
+	};
+	try {
+		// the ENTRY shapes, as `changes.js#toOp` consumes them
+		write(`export function ok(link) {
+			return { label: 'x', entries: [
+				{ op: 'put', kind: 'link', entity: link },
+				{ op: 'del', kind: 'link', entity: link },
+				{ op: 'set', kind: 'link', id: link.id, after: { via: [] } },
+			] };
+		}\n`);
+		assert.equal(run(), '', 'healthy entries draw no complaint from this rule');
+
+		// B87 exactly: a delete with no entity for the converter to read an id from
+		write(`export function bad(link) {
+			return { label: 'x', entries: [{ op: 'del', kind: 'link', id: link.id }] };
+		}\n`);
+		assert.match(run(), /entry op 'del' needs entity/);
+
+		// a set with no payload: applied as undefined, silently
+		write(`export function bad2(link) {
+			return { label: 'x', entries: [{ op: 'set', kind: 'link', id: link.id }] };
+		}\n`);
+		assert.match(run(), /entry op 'set' needs after/);
+
+		// an op the converter would throw on -- nothing static said so before
+		write(`export function bad3(link) {
+			return { label: 'x', entries: [{ op: 'remove', kind: 'link', entity: link }] };
+		}\n`);
+		assert.match(run(), /unknown entry op 'remove'/);
+
+		// a spread carries keys this cannot see, so it must not be judged
+		write(`export function spread(base, link) {
+			return { label: 'x', entries: [{ ...base, op: 'del', kind: 'link' }] };
+		}\n`);
+		assert.equal(run(), '', 'a literal building on a spread is left alone');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

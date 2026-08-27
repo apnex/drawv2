@@ -31,6 +31,18 @@ Usage: node tools/scan-writers.mjs
 import fs from 'node:fs';
 import path from 'node:path';
 
+/*
+`--root <dir>` so the rules can be driven over FIXTURES.
+
+`scan-board` gained this for the reason that applies here too: the only other way to prove a rule
+FAILS correctly is to corrupt the real tree, and a check whose failure path is untested is exactly
+what B77 and B78 both were. B125's rule was written without it and its first version flagged
+twenty-one healthy builders, which a fixture would have shown in seconds.
+*/
+const rootArg = process.argv.indexOf('--root');
+const DIR = rootArg > -1 ? `${process.argv[rootArg + 1]}/` : '';
+const at = (p) => `${DIR}${p}`;
+
 const ROOTS = ['server', 'model'];
 const EXT = /\.(js|mjs)$/;
 
@@ -65,7 +77,7 @@ it was written to remove.
 Cheap to hold now (no test reads them), expensive to retrofit later — so it is held now.
 */
 const INTERNALS = /\b(?:input|inp|h\.input)\.(mode|ctx)\b/g;
-const TEST_ROOT = 'tests';
+const TEST_ROOT = 'tests';   // resolved through at() at its walk, like the others
 
 /*
 B44 — the command boundary. Every committed action must come from a builder in commands.js.
@@ -120,8 +132,66 @@ const entriesCarryingBefore = (text) => {
 	}
 	return out;
 };
-const CLIENT_ROOT = 'app/src';
-const BUILDER = 'app/src/commands.js';
+/*
+B125 -- an entry must carry what its op REQUIRES, not merely avoid what it forbids.
+
+The rule above asks whether an entry carries a key it should not. Nothing asked the mirror, and that
+asymmetry is how B87 shipped: a `del` built without the field its op needs was refused by the browser
+at runtime and waved through by every static check here.
+
+THE VOCABULARY IS THE ENTRY SHAPE, NOT THE WIRE SHAPE, and getting that wrong is the first thing this
+rule did. `model/ops.mjs` declares `{op:'del', kind, id}` and `{op:'set', kind, id, patch}`, and
+`app/src/commands.js` builds neither -- it builds ENTRIES, which carry `entity` on a delete and
+`after` on a set. `app/src/changes.js#toOp` is the converter, and it is the authority: it reads
+`entry.entity.id` for a delete and `entry.after` for a set, so those are the fields an entry must
+have. Checking commands.js against the wire table flagged twenty-one healthy builders.
+
+The two shapes differing is itself worth knowing, and is close to what B87 was about -- a `del`
+carrying `entity` looks wrong until you find the line that turns it into an `id`.
+
+Reuses the same brace walk: from `op:` out to the enclosing literal, because an entry's values are
+themselves objects and a regex spanning two keys fails the moment the real shape appears.
+*/
+const ENTRY_KEYS = { put: ['kind', 'entity'], del: ['kind', 'entity'], set: ['kind', 'id', 'after'], meta: ['patch'] };
+
+const entriesMissingKeys = (text) => {
+	const out = [];
+	for (const m of text.matchAll(/\bop\s*:\s*'(\w+)'/g)) {
+		const op = m[1];
+		const need = ENTRY_KEYS[op];
+		// an op the converter does not know throws at runtime; nothing here would have said so
+		if (!need) {
+			out.push({ line: text.slice(0, m.index).split('\n').length, why: `unknown entry op '${op}'` });
+			continue;
+		}
+		let i = m.index, depth = 0;
+		while (i > 0 && !(text[i] === '{' && depth === 0)) {
+			if (text[i] === '}') depth++;
+			else if (text[i] === '{') depth--;
+			i--;
+		}
+		let j = i, d = 0;
+		do {
+			if (text[j] === '{') d++;
+			else if (text[j] === '}') d--;
+			j++;
+		} while (d > 0 && j < text.length);
+		const literal = text.slice(i, j);
+		// a spread carries keys this cannot see, so a literal building on one is not judged
+		if (/\.\.\./.test(literal)) continue;
+		// `kind,` shorthand is the key present, and the first version read only `kind:`
+		const missing = need.filter((k) => !new RegExp(`\\b${k}\\s*[:,}]`).test(literal));
+		if (missing.length) {
+			out.push({ line: text.slice(0, m.index).split('\n').length,
+				why: `entry op '${op}' needs ${missing.join(', ')}`,
+				text: literal.replace(/\s+/g, ' ').slice(0, 80) });
+		}
+	}
+	return out;
+};
+
+const CLIENT_ROOT = at('app/src');
+const BUILDER = at('app/src/commands.js');
 
 /*
 B45 / GR17 — the DOM stays where the DOM belongs.
@@ -155,7 +225,11 @@ const ALLOW = {
 	'server/txn.mjs': { mutate: 0, load: 0, reach: 0 },
 };
 
+// a root that does not exist is an EMPTY root, not a crash. Under `--root` a fixture supplies only
+// the tree the rule under test needs, and demanding all of them back would make every rule
+// untestable in isolation -- which is the state that let B125's first version flag 21 healthy builders.
 function walk(dir, out = []) {
+	if (!fs.existsSync(dir)) return out;
 	for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
 		const p = path.join(dir, e.name);
 		if (e.isDirectory()) walk(p, out);
@@ -185,7 +259,7 @@ let reaches = 0;
 
 // the client-internals rule, scanned over tests/ only
 let internals = 0;
-for (const file of walk(TEST_ROOT)) {
+for (const file of walk(at(TEST_ROOT))) {
 	const h = hits(decomment(fs.readFileSync(file, 'utf8')), INTERNALS);
 	if (!h.length) continue;
 	internals += h.length;
@@ -209,6 +283,13 @@ for (const file of walk(CLIENT_ROOT)) {
 			bad++;
 			console.log(`  \u2717 ${file}: ${stale.length} entr(ies) carry \`before\` — changes.js drops it; the server derives the inverse`);
 			stale.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+		}
+		// B125: and the mirror -- what an op REQUIRES, not only what it forbids
+		const short = entriesMissingKeys(text);
+		if (short.length) {
+			bad++;
+			console.log(`  \u2717 ${file}: ${short.length} entr(ies) missing a key their op requires — app/src/changes.js#toOp is the shape it must satisfy`);
+			short.forEach((x) => console.log(`      :${x.line}  ${x.why}${x.text ? `  ${x.text.trim()}` : ''}`));
 		}
 	}
 	// the builder file is exempt from the hand-built rule ONLY — it is still held to the DOM and
@@ -259,7 +340,7 @@ if (builders === 0) {
 	bad++;
 }
 
-for (const file of ROOTS.flatMap((r) => walk(r))) {
+for (const file of ROOTS.map(at).flatMap((r) => walk(r))) {
 	const text = fs.readFileSync(file, 'utf8');
 	const allow = ALLOW[file] ?? { mutate: 0, load: 0, reach: 0 };
 	const m = hits(text, MUTATE);

@@ -491,7 +491,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.13 | Document invariants get the surface the log invariant already has: checked at load and creation, counted, reported through `/health` -- never a refusal | **B83** | S2 · S | `DONE` |
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 · S | `DONE` |
 | H10.18 | A `del` entry with no entity threw in the browser and shipped -- every builder branch now converts through the real `Changes` | **B87** | S1 · S | `DONE` |
-| H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one -- the asymmetry that turned a correct rejection into a broken fix | **B125** | S2 · S | `TODO` |
+| H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one -- the asymmetry that turned a correct rejection into a broken fix | **B125** | S2 · S | `DONE` |
 | H10.20 | Scanner: a board claim of the form *blocks Hn.m* must agree with that item's state -- prose is outside R6, so a paragraph can assert that finished work is blocked | **B88** | S3 · S | `TODO` |
 | H10.22 | A revoked peer's open tab still believes it may write until it reconnects -- a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 · M | `TODO` |
 | H10.21 | Two specs asserted facts the code contradicted -- the SVG route's authentication and H9.3's existence -- corrected with dated amendments | **B89** | S2 · S | `DONE` |
