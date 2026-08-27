@@ -1962,3 +1962,68 @@ VERBS.push({
 		return { json: { diagram: id, rows, deltas, parity: deltas.length === 0 }, text };
 	},
 });
+
+/*
+The delete window -- B109.
+
+`DELETE` has existed since H9.21 and felt final, because nothing in the product said otherwise. It
+is not: `gs://diagrams.apnex.io` carries a 604800s soft-delete retention, so seven days of removals
+have been sitting there recoverable and unreachable. A backstop nobody can reach is a backstop only
+in the sense that it would have worked.
+
+Two answers that must stay apart. A backend with NO window at all -- the filesystem -- is not the
+same as a window that happens to be empty, and collapsing them would tell a caller their work is
+gone when the truth is that this deployment never had a recycle bin.
+*/
+const REMAINING = (purgeAt) => {
+	if (!purgeAt) return '?';
+	const ms = Date.parse(purgeAt) - Date.now();
+	if (!Number.isFinite(ms)) return '?';
+	if (ms <= 0) return 'due';
+	const h = Math.floor(ms / 3600000);
+	return h >= 48 ? `${Math.floor(h / 24)}d` : `${h}h`;
+};
+
+VERBS.push(
+	{
+		name: 'deleted', group: 'Lifecycle', usage: 'draw deleted',
+		route: '/diagrams/deleted', method: 'GET',
+		summary: 'what is still recoverable, and how long is left',
+		example: 'draw deleted',
+		async run(ctx) {
+			const b = ok(await request(ctx, '/diagrams/deleted'), 'deleted');
+			if (!b.window) {
+				// NOT "nothing to restore" -- the distinction is the whole reason the seam answers null
+				return { json: b, text: 'this deployment has no delete window: a removed diagram is gone' };
+			}
+			if (!b.deleted.length) return { json: b, text: 'nothing in the delete window' };
+			// LEFT first, because it is the column that decides whether to act now
+			const rows = b.deleted.map((d) => [REMAINING(d.purgeAt), d.id, d.name ?? '(unreadable)',
+				d.deletedAt ? d.deletedAt.replace('T', ' ').slice(0, 16) : '?']);
+			return { json: b, text: table(rows, ['LEFT', 'ID', 'NAME', 'DELETED']) };
+		},
+	},
+	{
+		name: 'restore', group: 'Lifecycle', usage: 'draw restore <id>',
+		route: '/diagrams/deleted/<id>/restore', method: 'POST', also: ['GET /diagrams/deleted'],
+		summary: 'bring one back out of the delete window',
+		example: 'draw restore diagram-a97651',
+		args: [{ name: 'id', about: 'the diagram id, as `draw deleted` lists it' }],
+		async run(ctx, args) {
+			if (!args[0]) die('restore needs a diagram id -- `draw deleted` lists what is recoverable');
+			/*
+			By ID and not by name, alone among the reference-taking verbs.
+
+			`resolveId` resolves against a LIVE document, and every entry here is one that is not
+			there -- so there is nothing to resolve against. Names are also not unique across the
+			window: deleting two diagrams called `scratch` is ordinary, and picking one silently
+			would be the worst possible behaviour on a recovery surface.
+			*/
+			if (!/^diagram-[0-9a-f]{6}$/.test(args[0])) {
+				die(`restore takes a diagram id like diagram-a97651, not a name -- a deleted diagram has no live name to resolve, and two may share one. \`draw deleted\` lists the ids.`);
+			}
+			const b = ok(await request(ctx, `/diagrams/deleted/${args[0]}/restore`, { method: 'POST' }), 'restore');
+			return { json: b, text: `restored ${b.name || b.restored}  (${b.restored})` };
+		},
+	},
+);

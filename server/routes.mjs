@@ -31,6 +31,8 @@ export const ROUTES = [
 
 	{ path: 'diagrams',                        methods: ['GET', 'POST'],    about: 'list, and mint a new one' },
 	{ path: 'diagrams/:id',                    methods: ['GET', 'DELETE'],  about: 'the document, and removing it' },
+	{ path: 'diagrams/deleted',                methods: ['GET'],            about: 'what is inside the delete window (B109)' },
+	{ path: 'diagrams/deleted/:id/restore',    methods: ['POST'],           about: 'bring one back from the window' },
 	{ path: 'diagrams/:id/commit',             methods: ['POST'],           about: 'a batch of ops as one transaction' },
 	{ path: 'diagrams/:id/history',            methods: ['GET'],            about: 'the change log' },
 	{ path: 'diagrams/:id/lock',               methods: ['GET', 'POST', 'DELETE'], about: 'the write slot' },

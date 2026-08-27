@@ -103,6 +103,8 @@ Lifecycle
   create [name]            mint a diagram; answers its id
   delete <id|name>         remove one; refuses unless you hold the lock
   render [--out file.svg]  the picture, as SVG
+  deleted                  what is still recoverable, and how long is left
+  restore <id>             bring one back out of the delete window
 
 Writing
   lock                                                            take the write slot, and remember the token

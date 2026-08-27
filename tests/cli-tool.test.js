@@ -1218,3 +1218,46 @@ test('B132: the root liveness probe stays uncredentialed, and stays out of ROUTE
 			'and the root path is not declared as though it were part of the versioned surface');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+/*
+B109 -- the delete window, and the answer a filesystem must give.
+
+`DELETE` has felt final since H9.21 because nothing said otherwise, while the deployment's bucket
+has carried seven days of retention the whole time. The distinction that matters most here is not
+the list: it is that "no window at all" and "a window with nothing in it" are different facts, and
+a surface that collapses them tells a person their work is gone when nobody has looked.
+
+These run on the filesystem backend, which is the `null` case -- so what is asserted is that the
+tool says so rather than reassuring.
+*/
+test('B109: with no delete window, the tool says so instead of reporting nothing to restore', async () => {
+	await boot();
+	try {
+		const out = await run('deleted');
+		assert.match(out, /no delete window/, 'the honest answer, not "nothing recoverable"');
+		assert.doesNotMatch(out, /nothing in the delete window/, 'which would be reassurance a filesystem cannot give');
+
+		const j = JSON.parse(await run('deleted', '--json'));
+		assert.equal(j.window, false, 'and the fact is carried structurally, not only in prose');
+		assert.deepEqual(j.deleted, []);
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B109: restore refuses a name, because a deleted diagram has none to resolve', async () => {
+	await boot();
+	try {
+		/*
+		Alone among the reference-taking verbs, this one takes an id only. `resolveId` resolves
+		against a live document and every entry in the window is one that is not there. Names are
+		also not unique across it -- deleting two diagrams called `scratch` is ordinary -- so
+		picking one silently would be the worst available behaviour on a recovery surface.
+		*/
+		const err = await captureExit(() => run('restore', 'scratch'));
+		assert.match(err, /diagram id like diagram-/, 'it says what shape it wants');
+		assert.match(err, /two may share one/, 'and why a name will not do');
+		assert.match(err, /draw deleted/, 'and where to find the ids');
+
+		const gone = await captureExit(() => run('restore', 'diagram-aaaaaa'));
+		assert.match(gone, /no delete window|nothing recoverable/, 'a well-formed id still refuses honestly here');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});

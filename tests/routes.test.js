@@ -66,7 +66,23 @@ test('B119: every declared route and method is answered by the running server', 
 					headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
 					body: ['GET', 'DELETE'].includes(method) ? undefined : '{}',
 				});
-				if (res.status === 404 || res.status === 405) missing.push(`${method} ${route.path} -> ${res.status}`);
+				/*
+				A 404 is ambiguous, and telling the two apart is the point of this prover.
+
+				"No such route" and "no such resource" share a status. The router's own miss answers
+				a bare `{ error: 'not found' }`; a handler that ran and found nothing answers with a
+				`code`, because every refusal in this API names its reason. So a 404 CARRYING a code
+				is a route that answered, and one without is a route that does not exist.
+
+				B109 forced the distinction: `POST diagrams/deleted/:id/restore` is the one route
+				whose subject is absent by definition -- there is nothing in a fresh store's delete
+				window -- so it can only ever 404 here, and reading that as "missing" would have made
+				the route unprovable rather than unproven.
+				*/
+				const answered = res.status === 404 && !!(await res.clone().json().catch(() => null))?.code;
+				if ((res.status === 404 && !answered) || res.status === 405) {
+					missing.push(`${method} ${route.path} -> ${res.status}`);
+				}
 			}
 		}
 		assert.deepEqual(missing, [],

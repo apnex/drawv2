@@ -537,7 +537,7 @@ should have caught it was scoped narrower than its own claim.
 | H11.23 | `about` answers every relation in ids, and prints `undefined` for a group because `links` carries two shapes. The verb built to stop cross-referencing forces it | **B144** | S3 · S | `DONE` |
 | H11.24 | A5 Perceptual Parity was satisfied by instinct and never verified: the instruments got built, the delta was never measured, and both existing A5 citations are about the HUMAN's view of a symmetry that has two sides | **B145** | S2 · M | `DONE` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 · L | `TODO` |
-| H11.5 | A deleted diagram is recoverable for seven days and nothing in the product says so. Trigger has fired -- `DELETE` shipped at H9.21 and the bucket carries a real 604800s soft-delete window -- so the window exists and is unreachable from the UI | **B109** | S2 · M | `TODO` |
+| H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 · M | `DONE` |
 
 **Exit:** the plan and the record agree mechanically, in both directions, and a live row cannot be
 invisible in either file.

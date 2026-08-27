@@ -30,7 +30,20 @@ An id in the body is ignored: the server mints it, which is what stops offline w
 It answers `423` while another controller holds the lock, unless you are that controller, and anyone watching the diagram is moved onto a surviving one.\
 The store never goes empty: removing the last diagram reseeds the examples.
 
-A removed diagram is recoverable from object-store soft delete for seven days, and nothing in the product surfaces that yet.
+A removed diagram is recoverable while the backend's delete window lasts, and two routes reach it.
+
+`GET /api/v1/diagrams/deleted` answers `{ window, deleted[] }`.\
+`window` is a boolean and it is not the same question as whether the list is empty: `false` means this deployment has no recycle bin at all, which is the honest answer on a filesystem, while `true` with an empty list means the window exists and nothing is in it.\
+Collapsing the two would tell a caller their work is gone when nobody has looked.\
+Each entry carries `id`, `name`, `owner`, `deletedAt` and `purgeAt` -- the last being the one that decides whether to act now.\
+The list is filtered by ownership, read from the deleted document itself, because a removed diagram took its grants with it and there is nothing left for `canRead` to consult.
+
+`POST /api/v1/diagrams/deleted/<id>/restore` brings one back and loads it, answering `{ restored, name }`.\
+It takes no lock: the write slot governs edits to a live document and there is none to hold it against.\
+An id the caller cannot see and an id that never existed give the same `404`, which is the correct answer to both.\
+A deployment with no window answers `501`.
+
+On `gs://diagrams.apnex.io` the retention is 604800 seconds.
 
 `MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
 It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.

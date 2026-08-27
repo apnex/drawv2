@@ -11,9 +11,19 @@ has keys, not directories, so a seam that passed `path.join(dir, file)` around w
 shape into a place that has none. The implementation owns where a name lives.
 
   list()             -> Promise<string[]>   every document name currently stored
-  read(name)         -> Promise<string>     utf8 text, rejects if absent
+  read(name, gen?)   -> Promise<string>     utf8 text, rejects if absent; `gen` reads a soft-deleted version
   write(name, text)  -> Promise<void>       atomic: a reader sees the old text or the new, never a splice
   remove(name)       -> Promise<void>       idempotent, absent is success
+
+And two that only some backends can answer (B109):
+
+  recoverable()      -> Promise<entry[] | null>   what is inside the delete window; NULL if there is no window
+  restore(name, gen) -> Promise<void>             bring one back
+
+`null` is not `[]`, and the difference is the whole point. An empty array says "nothing is
+recoverable right now"; null says "this backend has no recycle bin at all", which is true of a
+filesystem and false of a bucket with soft-delete configured. Collapsing them would let the product
+tell a person their work is unrecoverable when the real answer is that nobody looked.
 
 Every verb is ASYNC, including the filesystem one that has no need to be (B59). The seam shipped
 synchronous, which quietly excluded the backend it was built for: there is no synchronous HTTP, so
@@ -43,6 +53,8 @@ export function fsFiles(dir) {
 		async list() {
 			return fs.readdirSync(dir);
 		},
+		// `generation` is accepted and ignored: a filesystem keeps one version, and refusing the
+		// argument would make the seam's shape depend on which backend answers it
 		async read(name) {
 			return fs.readFileSync(at(name), 'utf8');
 		},
@@ -59,6 +71,15 @@ export function fsFiles(dir) {
 			// the write-then-rename above can leave this behind if the process died between the two
 			fs.rmSync(`${at(name)}.tmp`, { force: true });
 		},
+		/*
+		A filesystem has no delete window, and says so rather than pretending it is empty.
+
+		`rmSync` is final here. Answering `[]` would be a claim that nothing is recoverable, which
+		reads as reassurance; `null` is the honest answer -- there is nowhere for a deleted document
+		to be. The product can then say "not on this deployment" instead of "nothing to restore".
+		*/
+		async recoverable() { return null; },
+		async restore() { throw new Error('this backend has no delete window: a removed file is gone'); },
 	};
 }
 
@@ -193,8 +214,19 @@ export function gcsFiles(bucket, {
 			return names;
 		},
 
-		async read(name) {
-			const res = await call(`${objectUrl(name)}?alt=media`);
+		/*
+		`generation` reads a version that is no longer live -- B109.
+
+		Without it there is no way to see what a deleted document CONTAINED, and the recycle bin
+		would have to offer a list of ids with no names and no owner, which is both useless to a
+		person and unfilterable by grant. `softDeleted=true` is required alongside it: the API will
+		not serve a soft-deleted generation to a plain read.
+		*/
+		async read(name, generation = null) {
+			const q = generation
+				? `?alt=media&softDeleted=true&generation=${encodeURIComponent(generation)}`
+				: '?alt=media';
+			const res = await call(`${objectUrl(name)}${q}`);
 			if (res.status === 404) throw new Error(`no such object: ${name}`);
 			if (!res.ok) throw new Error(`gcs read failed for ${name}: ${res.status}`);
 			const gen = res.headers.get('x-goog-generation');
@@ -233,6 +265,56 @@ export function gcsFiles(bucket, {
 			// absent is success -- the seam promises idempotence and delete is best-effort
 			if (res.status === 404 || res.ok) { generations.delete(name); return; }
 			throw new Error(`gcs remove failed for ${name}: ${res.status}`);
+		},
+
+		/*
+		What is inside the soft-delete window -- B109.
+
+		A DELETE against a bucket with soft-delete configured does not destroy the object; it keeps
+		the generation, marks it, and purges it when the retention lapses. `gs://diagrams.apnex.io`
+		carries 604800s, so seven days of deletions are sitting there and nothing in the product has
+		ever said so -- which makes `DELETE` feel more final than it is and a mistake feel
+		unrecoverable when it is not.
+
+		`softDeleteTime` and `hardDeleteTime` both come back, and BOTH are reported. The first says
+		when it went; only the second answers the question a person actually has, which is how long
+		they have to decide.
+
+		A bucket with soft-delete OFF answers 200 with no items, which is indistinguishable from a
+		window that happens to be empty. That is fine and deliberately not special-cased: with no
+		policy nothing can ever appear here, so "nothing recoverable" is a true statement either way.
+		The `null` case is reserved for a backend with no window AT ALL, which is the filesystem.
+		*/
+		async recoverable() {
+			const out = [];
+			let pageToken;
+			do {
+				const q = new URLSearchParams({ softDeleted: 'true',
+					fields: 'items(name,generation,softDeleteTime,hardDeleteTime),nextPageToken' });
+				if (pageToken) q.set('pageToken', pageToken);
+				const res = await call(`${GCS_API}/${encodeURIComponent(bucket)}/o?${q}`);
+				if (!res.ok) throw new Error(`gcs recoverable failed: ${res.status} ${await res.text()}`);
+				const body = await res.json();
+				for (const it of body.items || []) {
+					out.push({ name: it.name, generation: it.generation,
+						deletedAt: it.softDeleteTime || null, purgeAt: it.hardDeleteTime || null });
+				}
+				pageToken = body.nextPageToken;
+			} while (pageToken);
+			return out;
+		},
+
+		/*
+		Bring one back. The generation is not optional: soft-delete keeps a specific version, and
+		restoring without naming which one is a request the API cannot answer.
+		*/
+		async restore(name, generation) {
+			if (!generation) throw new Error(`restore needs the generation of ${name}`);
+			const res = await call(`${objectUrl(name)}/restore?generation=${encodeURIComponent(generation)}`,
+				{ method: 'POST' });
+			if (!res.ok) throw new Error(`gcs restore failed for ${name}: ${res.status} ${await res.text()}`);
+			const body = await res.json().catch(() => ({}));
+			if (body.generation) generations.set(name, body.generation);
 		},
 	};
 }

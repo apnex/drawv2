@@ -634,3 +634,30 @@ test('BOARD: every in-file anchor resolves to a heading', () => {
 	const dangling = links.filter((a) => !headings.has(a));
 	assert.deepEqual(dangling, [], `docs/BOARD.md links to ${dangling.length} anchor(s) with no heading`);
 });
+
+/*
+B109 -- the delete-window UI is wired in an order that actually runs.
+
+`node --check` parses a module; it does not execute it, so it cannot see a reference to a `const`
+that is declared further down. The first version of this wiring called `menu.undelete` at module
+load with `menu` declared three thousand characters later -- a temporal dead zone that throws on
+import and takes the whole editor with it, while every syntax check stayed green.
+
+Asserted by ORDER rather than by executing the module, because `main.js` reaches for a real DOM and
+a websocket the moment it loads. Order is the property that was wrong, and it is the property this
+can see.
+*/
+test('B109: the undelete wiring runs after the object it wires', () => {
+	const src = fs.readFileSync(path.join(root, 'app/src/main.js'), 'utf8');
+	const menuAt = src.indexOf('const menu = {');
+	const wiringAt = src.indexOf('menu.undelete.onclick');
+	assert.ok(menuAt > 0 && wiringAt > 0, 'both are present');
+	assert.ok(wiringAt > menuAt,
+		'the wiring touches `menu` at module load, so it must come after the declaration or the import throws');
+
+	// and the button is hidden in the markup: its appearance IS the signal that something is
+	// recoverable, so shipping it visible would make the signal meaningless
+	const html = fs.readFileSync(path.join(root, 'app/index.html'), 'utf8');
+	assert.match(html, /id="diagram-undelete"[^>]*hidden/, 'the control ships hidden');
+	assert.match(html, /id="undelete"[^>]*hidden/, 'and so does the panel');
+});

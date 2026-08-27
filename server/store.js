@@ -691,6 +691,68 @@ export class Store {
 		return null;
 	}
 
+	/*
+	What is inside the delete window, and who may see it -- B109.
+
+	A deleted diagram is recoverable for as long as the backend's retention allows, and until now
+	nothing in the product said so: `DELETE` felt final, and a mistake felt unrecoverable when it
+	was not. The window is real -- `gs://diagrams.apnex.io` carries seven days.
+
+	Two answers that must not be conflated. `null` means the backend has no window at all, which is
+	the honest answer on a filesystem and lets the surface say "not on this deployment" instead of
+	"nothing to restore". An array, possibly empty, means the window exists and this is what is in it.
+
+	FILTERED BY OWNERSHIP, and this is the part that needs care. A recycle bin is the one surface
+	where the document is gone and its grants went with it, so the store cannot ask `canRead` -- the
+	answer is no for everyone. The owner is read from the deleted document itself, which means
+	reading it back; with authorization off there is nothing to filter and everything shows.
+	*/
+	async recoverable(principal = null) {
+		if (typeof this.files.recoverable !== 'function') return null;
+		const found = await this.files.recoverable();
+		if (found === null) return null;
+		const out = [];
+		for (const item of found) {
+			if (!FILE.test(item.name)) continue;
+			const id = item.name.replace(/\.json$/, '');
+			// a diagram that has since been restored, or re-created under the same id, is not
+			// "recoverable" -- it is simply here, and offering to restore it would be a lie
+			if (this.diagrams.has(id)) continue;
+			let name = null, owner = null;
+			try {
+				const { doc } = parse(await this.files.read(item.name, item.generation));
+				name = doc?.meta?.name ?? null;
+				owner = doc?.meta?.owner ?? null;
+			} catch { /* unreadable: still recoverable, just unnamed */ }
+			if (this.authz && principal && owner && owner !== principal) continue;
+			if (this.authz && !principal) continue;
+			out.push({ id, name, owner, generation: item.generation,
+				deletedAt: item.deletedAt, purgeAt: item.purgeAt });
+		}
+		return out.sort((a, b) => String(a.purgeAt).localeCompare(String(b.purgeAt)));
+	}
+
+	/*
+	Bring one back, and load it, so the caller sees a diagram rather than a promise about one.
+	*/
+	async restore(id, principal = null) {
+		if (typeof this.files.restore !== 'function') return 'this deployment has no delete window';
+		if (this.diagrams.has(id)) return 'that diagram is already here';
+		const window = await this.recoverable(principal);
+		if (window === null) return 'this deployment has no delete window';
+		const hit = window.find((w) => w.id === id);
+		// the filter above is the authorization: an entry a principal cannot see is one it cannot
+		// name, so a wrong id and someone else's id give the same answer, which is the correct one
+		if (!hit) return 'nothing recoverable by that name';
+		await this.files.restore(`${id}.json`, hit.generation);
+		const { doc, log } = parse(await this.files.read(`${id}.json`));
+		shedRetired(doc);
+		const err = validateDoc(doc);
+		if (err) return `restored file is not a valid document: ${err}`;
+		this.install(id, doc, log, `${id}.json`);
+		return null;
+	}
+
 	// ---- mutations (validated) ----
 	/*
 	The one write gate -- H9.3. Returns an error string when a principal may not, else null.

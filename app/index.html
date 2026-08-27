@@ -12,6 +12,16 @@
 			<select id="diagram-list" title="open diagram"></select>
 			<button id="diagram-new" title="new diagram">+</button>
 			<button id="diagram-del" title="delete this diagram (click twice)">&#215;</button>
+			<!--
+			B109: hidden unless something IS recoverable, and that is the design rather than a
+			detail. Permanent chrome for a rare need trains a reader to stop seeing it; a control
+			that appears only when it applies is discoverable at the moment somebody goes looking
+			for a diagram that is missing, and its mere presence is the answer to their question.
+			Deliberately NOT an optgroup in the picker: choosing an entry in a picker means "open
+			this", a deleted diagram cannot be opened, and a verb that is not "open" sitting one
+			pixel from the delete button is how a wrong click happens.
+			-->
+			<button id="diagram-undelete" title="recoverable diagrams" hidden>&#8634;</button>
 			<span id="menu-spacer"></span>
 			<span id="banner"></span>
 			<button id="help-btn" title="keyboard shortcuts (/)">?</button>
@@ -24,6 +34,18 @@
 		hidden by default. Reachable only by clicking #whoami, and only rendered for the owner: an
 		affordance offered to someone the server will refuse is a worse experience than no affordance.
 		-->
+		<!--
+		The delete window (B109). Same card pattern as the access panel below, because this is the
+		same kind of thing: a short-lived, focused list that answers one question and closes.
+		-->
+		<div id="undelete" hidden>
+			<div id="undelete-card">
+				<h2>recoverable diagrams</h2>
+				<p id="undelete-note"></p>
+				<table id="undelete-list"></table>
+				<div id="undelete-actions"><button id="undelete-close">close</button></div>
+			</div>
+		</div>
 		<div id="access" hidden>
 			<div id="access-card">
 				<h2>who can reach this diagram</h2>

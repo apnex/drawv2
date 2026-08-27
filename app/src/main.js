@@ -69,11 +69,101 @@ const menu = {
 	list: document.getElementById('diagram-list'),
 	create: document.getElementById('diagram-new'),
 	del: document.getElementById('diagram-del'),
+	undelete: document.getElementById('diagram-undelete'),
 	lock: document.getElementById('lockstate'),
 	agents: document.getElementById('agents'),
 	whoami: document.getElementById('whoami'),
 	banner: document.getElementById('banner'),
 };
+
+/*
+The delete window -- B109.
+
+`DELETE` has felt final since it shipped, and it is not: the bucket keeps a removed diagram for
+seven days. A backstop nobody can reach is a backstop only in the sense that it would have worked.
+
+The button is HIDDEN unless something is recoverable, which is the design and not an optimisation.
+Permanent chrome for a rare need trains a reader to stop seeing it; a control that appears only when
+it applies is discoverable at exactly the moment somebody goes looking for a diagram that is
+missing, and its presence alone answers their question before the panel opens.
+
+`window: false` is not an empty list. A deployment with no recycle bin at all -- a filesystem --
+must never render a panel saying "nothing to restore", because that reads as reassurance about a
+thing nobody checked. In that case the button simply never appears.
+*/
+const undelete = {
+	panel: document.getElementById('undelete'),
+	card: document.getElementById('undelete-card'),
+	note: document.getElementById('undelete-note'),
+	list: document.getElementById('undelete-list'),
+	close: document.getElementById('undelete-close'),
+};
+let recoverable = [];
+
+// hours, then days past two -- the number that decides whether to act now, at the precision that
+// decision actually needs
+function timeLeft(purgeAt) {
+	const ms = Date.parse(purgeAt || '') - Date.now();
+	if (!Number.isFinite(ms)) return { text: '?', urgent: false };
+	if (ms <= 0) return { text: 'due', urgent: true };
+	const h = Math.floor(ms / 3600000);
+	return h >= 48 ? { text: `${Math.floor(h / 24)} days left`, urgent: false } : { text: `${h}h left`, urgent: true };
+}
+
+async function refreshUndelete() {
+	if (!menu.undelete) return;
+	try {
+		const res = await fetch('/api/v1/diagrams/deleted');
+		if (!res.ok) { menu.undelete.hidden = true; return; }
+		const body = await res.json();
+		recoverable = body.window ? (body.deleted || []) : [];
+		menu.undelete.hidden = recoverable.length === 0;
+	} catch { menu.undelete.hidden = true; }
+}
+
+function renderUndelete() {
+	undelete.note.textContent = recoverable.length === 1
+		? 'One diagram is still recoverable. After the window closes it is gone for good.'
+		: `${recoverable.length} diagrams are still recoverable. After the window closes they are gone for good.`;
+	undelete.list.innerHTML = '';
+	for (const d of recoverable) {
+		const left = timeLeft(d.purgeAt);
+		const tr = document.createElement('tr');
+		const cell = (cls, text) => { const td = document.createElement('td'); td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
+		cell(`left${left.urgent ? '' : ' roomy'}`, left.text);
+		cell('name', d.name || '(unreadable)');
+		cell('id', d.id);
+		const act = document.createElement('td');
+		const btn = document.createElement('button');
+		btn.textContent = 'restore';
+		btn.onclick = async () => {
+			btn.disabled = true;
+			btn.textContent = 'restoring';
+			const res = await fetch(`/api/v1/diagrams/deleted/${d.id}/restore`, { method: 'POST' });
+			if (!res.ok) {
+				// D28/I16: a refusal is shown where the action was taken, not swallowed
+				btn.textContent = 'refused';
+				undelete.note.textContent = (await res.json().catch(() => ({}))).error || 'restore refused';
+				return;
+			}
+			await refreshUndelete();
+			if (!recoverable.length) undelete.panel.hidden = true; else renderUndelete();
+			// the restored diagram is live now, so the picker must learn about it
+			location.reload();
+		};
+		act.appendChild(btn);
+		tr.appendChild(act);
+		undelete.list.appendChild(tr);
+	}
+}
+
+if (menu.undelete) {
+	menu.undelete.onclick = () => { renderUndelete(); undelete.panel.hidden = false; };
+	undelete.close.onclick = () => { undelete.panel.hidden = true; };
+	// the same dismissal idiom as #access and #help: the backdrop closes, the card does not
+	undelete.panel.onclick = (e) => { if (e.target === undelete.panel) undelete.panel.hidden = true; };
+}
+
 
 /*
 Access administration -- H9.4d/B90.
@@ -429,6 +519,9 @@ const sync = new Sync({
 		if (diagrams) {
 			menu.list.innerHTML = '';
 			diagrams.forEach((d) => { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; menu.list.appendChild(o); });
+			// B109: the list changed, so what is recoverable may have too -- a delete is the most
+			// likely reason this branch ran at all
+			refreshUndelete();
 		}
 		menu.list.value = meta.id;
 		const current = menu.list.querySelector(`option[value="${meta.id}"]`);

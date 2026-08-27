@@ -456,6 +456,23 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 	if (parts.length === 3) {
 		return json(res, 200, store.list(principal)), true;
 	}
+	/*
+	The delete window -- B109. Placed BEFORE the `store.get` below, because every entry here names a
+	diagram that deliberately is not in the store: looking one up would 404 on the whole route.
+
+	`window: null` and an empty list are different answers and the surface must keep them apart --
+	no window at all versus a window with nothing in it. A caller that collapses them tells a person
+	their work is unrecoverable when the truth is that this deployment never had a recycle bin.
+	*/
+	if (parts[3] === 'deleted' && parts.length === 4) {
+		store.recoverable(principal)
+			.then((found) => json(res, 200, { window: found !== null, deleted: found || [] }))
+			.catch((err) => {
+				console.warn(`[ rest ] recoverable failed: ${err && err.message}`);
+				if (!res.headersSent) json(res, 500, { error: 'internal error' });
+			});
+		return true;
+	}
 	const model = store.get(parts[3]);
 	if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;
 	// B67: gated once here, covering the document AND everything below it -- lock state, history,
@@ -665,6 +682,25 @@ async function handleWorkspace(req, res, store, parts, principal) {
 
 async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	const id = parts[3];
+	/*
+	Restore -- B109, and it must come before the existence check below.
+
+	Every other write names a diagram that IS here; this one names precisely one that is not, so the
+	`unknown diagram` guard would refuse the only route whose subject is absent by definition.
+
+	No lock, deliberately. The write slot governs edits to a live document, and there is no live
+	document to hold it against -- demanding one would mean locking a thing that does not exist yet.
+	Authorization is the recycle bin's own filter: an entry a principal cannot see is one it cannot
+	name, so a wrong id and someone else's id give the same answer.
+	*/
+	if (id === 'deleted' && parts[5] === 'restore' && parts.length === 6 && req.method === 'POST') {
+		const err = await store.restore(parts[4], principal);
+		if (err) return json(res, /no delete window/.test(err) ? 501 : 404, { error: err, code: 'restore-refused' });
+		const model = store.get(parts[4]);
+		if (hub) announceActivity(hub, store, locks);
+		console.log(`[ rest ] restored diagram ${parts[4]}`);
+		return json(res, 200, { restored: parts[4], name: model?.state.meta.name ?? null });
+	}
 	if (!store.get(id)) return json(res, 404, { error: `unknown diagram: ${id}` });
 
 	/*
