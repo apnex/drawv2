@@ -423,6 +423,18 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 			const name = typeof body?.name === 'string' ? body.name.slice(0, NAME_MAX) : undefined;
 			const result = store.create(name, body?.doc || null, principal);
 			if (!result.ok) {
+				/*
+				B158: the two caps get DIFFERENT answers, because they have different remedies.
+
+				A full store is 507 -- the service cannot hold more, nobody's own housekeeping fixes
+				it, and the caller should back off or ask for the ceiling to be raised. Being over
+				your own quota is 403: the service is fine and this caller may not add to it until
+				they delete something of theirs. Returning 507 for both would send an agent to wait
+				for a condition that will never clear on its own.
+				*/
+				if (/per-principal diagram limit/.test(result.error)) {
+					return json(res, 403, { error: result.error, code: 'principal-cap' }), true;
+				}
 				const capped = /limit reached/.test(result.error);
 				return json(res, capped ? 507 : 422, { error: result.error, code: capped ? 'diagram-cap' : 'create-rejected' });
 			}

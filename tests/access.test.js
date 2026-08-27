@@ -1264,7 +1264,9 @@ test('B98: the store refuses past MAX_DIAGRAMS, and refuses before writing anyth
 	try {
 		const cap = Number(process.env.MAX_DIAGRAMS) || 500;
 		while (t.app.store.total() < cap) {
-			assert.equal(t.app.store.create(`filler-${t.app.store.total()}`, null, OWNER).ok, true);
+			// B158: the fill lifts the PER-PRINCIPAL quota, or it stops at 20 and this test stops
+			// testing the global cap it is named for. Two caps, two subjects.
+			assert.equal(t.app.store.create(`filler-${t.app.store.total()}`, null, OWNER, { maxPerPrincipal: Infinity }).ok, true);
 		}
 		const res = await fetch(api, { method: 'POST', body: JSON.stringify({ name: 'one too many' }) });
 		assert.equal(res.status, 507, 'a full store is not a malformed request — it says so with its own code');
@@ -1833,4 +1835,64 @@ test('B114: presence is pushed on the same terms, and derived from the live sess
 	// a session that drops stops being reported, without anything noticing it dropped
 	hub.remove(guest);
 	assert.deepEqual(hub.viewers().map((v) => v.diagram), [secret]);
+});
+
+/*
+B158 / H10.29 -- a principal may not consume the ceiling everyone shares.
+
+`create` gated on holding an identity and nothing else, and the only ceiling was `MAX_DIAGRAMS`,
+which is GLOBAL and whose own comment calls it a runaway guard rather than a quota. A global counter
+is a shared resource: one principal filling it locks out every other, the owner included. Harmless
+while sign-in is restricted to a trusted domain, and the thing that has to change first if
+`ALLOW_DOMAINS` widens.
+
+Confidentiality was never the exposure -- grants default-deny, so a stranger signs in and sees an
+empty list. What they could do is exhaust a number.
+*/
+test('B158: the cap is per principal, so one identity cannot lock out another', async () => {
+	const t = await grantable();
+	try {
+		// derived, not assumed: the fixture already seeds a diagram owned by OWNER, and the first
+		// version of this test hardcoded a start of zero and read `4/3` back
+		const start = t.app.store.countOwnedBy(OWNER);
+		const cap = start + 3;
+		for (let i = 0; i < 3; i++) {
+			assert.equal(t.app.store.create(`mine-${i}`, null, OWNER, { maxPerPrincipal: cap }).ok, true, `within quota at ${i}`);
+		}
+		const over = t.app.store.create('one too many', null, OWNER, { maxPerPrincipal: cap });
+		assert.equal(over.ok, false, 'over quota is refused');
+		assert.match(over.error, /per-principal diagram limit/);
+		assert.match(over.error, new RegExp(`${cap}/${cap}`), 'the message says where they stand');
+
+		// the half a GLOBAL check would pass: another identity is unaffected by the first's usage
+		assert.equal(t.app.store.create('theirs', null, GUEST, { maxPerPrincipal: 1 }).ok, true,
+			'a second principal is not blocked by the first one filling their own quota');
+
+		// and it is a quota, not a ratchet: releasing one of your own frees the slot, because the
+		// count is read from the store rather than kept as a tally that delete could forget
+		const mine = t.app.store.list(OWNER).filter((d) => d.name.startsWith('mine-'));
+		t.app.store.remove(mine[0].id, OWNER);
+		assert.equal(t.app.store.create('after a delete', null, OWNER, { maxPerPrincipal: cap }).ok, true,
+			'a delete releases the slot');
+	} finally { await t.close(); }
+});
+
+test('B158: over quota answers 403 with its own code, never 507', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1/diagrams`;
+	try {
+		while (t.app.store.countOwnedBy(OWNER) < 20) {
+			assert.equal(t.app.store.create(`f-${t.app.store.total()}`, null, OWNER).ok, true);
+		}
+		const res = await fetch(api, { method: 'POST', body: JSON.stringify({ name: 'one too many' }) });
+		/*
+		The two caps get DIFFERENT answers because the remedies differ. A full store is 507: nobody's
+		own housekeeping clears it. Being over your own quota is 403: the service is fine and this
+		caller may not add until they delete something of theirs. 507 for both would send an agent to
+		wait for a condition that never clears on its own.
+		*/
+		assert.equal(res.status, 403, 'the service is not full — this caller is');
+		assert.equal((await res.json()).code, 'principal-cap', 'and it is distinguishable from diagram-cap');
+		assert.equal(t.app.store.countOwnedBy(OWNER), 20, 'the refusal cost nothing');
+	} finally { await t.close(); }
 });

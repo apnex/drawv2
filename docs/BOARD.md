@@ -513,6 +513,8 @@ Every item here was found by using the application rather than by running the ga
 | H10.26 | The header's right cluster shifts on every edit and pops in and out. Fixed widths in `ch`, resting states, the email boxed, and the banner given the slack so nothing can push the cluster | **B155** | S3 - S | `DONE` |
 | H10.27 | The header's eleven controls are four different heights because none is declared. One `--control-h`, applied to every child | **B156** | S4 - S | `DONE` |
 | H10.28 | The four single-glyph header buttons are sized by their glyph's advance, two of them non-ASCII, so they are neither square nor equal. Width from `--control-h` | **B157** | S4 - S | `DONE` |
+| H10.29 | A per-principal diagram quota. The 500 cap is global, so one signed-in stranger can lock out the owner -- and it gates widening sign-in | **B158** | S2 - S | `DONE` |
+| H10.30 | Cloud Armor on the agent door, which is deliberately IAP-free. Threshold measured, preview first | **B159** | S2 - M | `TODO` |
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |

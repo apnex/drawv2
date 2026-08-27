@@ -58,6 +58,25 @@ deployment nobody here can see.
 */
 const MAX_DIAGRAMS = Number(process.env.MAX_DIAGRAMS) || 500;
 
+/*
+B158 -- and a PER-PRINCIPAL cap, which is a different instrument from the one above.
+
+`MAX_DIAGRAMS` is a runaway guard and says so. It is also GLOBAL, and a global counter is a shared
+resource: one principal filling it locks out every other, including the owner. That does not matter
+while sign-in is restricted to a domain whose members are all trusted. It matters the moment
+`ALLOW_DOMAINS` widens, because `create` gates on holding an identity and nothing else -- so anyone
+who can sign in can consume the ceiling everyone else depends on.
+
+Confidentiality is NOT the exposure. Grants default-deny, so a stranger signs in and sees an empty
+list. What they can do is exhaust a number, which is a denial of service against the owner's own
+data rather than a leak.
+
+ONE RULE FOR EVERYONE, with no owner exemption, ruled 2026-08-27. An exemption would need a second
+concept of privilege in a file that has exactly one -- ownership of a diagram -- and the owner can
+raise the number instead, which is a decision they can see rather than one baked in here.
+*/
+const MAX_PER_PRINCIPAL = Number(process.env.MAX_PER_PRINCIPAL) || 20;
+
 // The document generation. `meta.grid` was accidentally serving this role — a doc without it was
 // a pre-center-origin file — and dropping grid without a replacement would leave the format with
 // no discriminator at all for the next migration (D8).
@@ -558,10 +577,50 @@ export class Store {
 	// wire, so this is the only path by which ownership is established, and it cannot be forged.
 	// Trailing and defaulted, matching the H9.3a convention, but here an un-updated caller yields
 	// an UNOWNED diagram rather than a refused one, which is why both return paths set it.
-	create(name, doc = null, principal = null) {
+	/*
+	How many diagrams a principal owns.
+
+	Counted, not tracked: a stored tally is a second source of truth that goes wrong on delete,
+	restore and ownership adoption, and the store is already bounded by `MAX_DIAGRAMS`, so the walk
+	is over hundreds at worst.
+
+	Read through `ownerFor`, so an agent counts against the human who authorised it. The first
+	version passed a DIAGRAM ID to `ownerFor`, which takes a PRINCIPAL and resolves it to its
+	claimant -- it answered null for everything and the quota never fired. The name reads as though
+	it means "the owner of this thing", and it does not.
+	*/
+	countOwnedBy(principal) {
+		const owner = this.ownerFor(principal);
+		if (!owner) return 0;
+		let n = 0;
+		for (const entry of this.diagrams.values()) {
+			if (entry.model.state.meta.owner === owner) n++;
+		}
+		return n;
+	}
+
+	// `maxPerPrincipal` is an override for tests and for a caller that knows better than the
+	// environment; unset means the deployment's number.
+	create(name, doc = null, principal = null, { maxPerPrincipal = MAX_PER_PRINCIPAL } = {}) {
 		// checked first, so a store at the cap writes nothing and mints no id
+		/*
+		THE GLOBAL CAP IS CHECKED FIRST, and the order is a decision rather than an accident.
+
+		The first version asked the per-principal question first, reasoning that a caller over quota
+		should not be told the service is full. That is right when only the quota is exceeded and
+		wrong when both are: a full store refuses everyone, including a caller well under their
+		quota, so "you own too many" would name a cause that is not the operative one and point at a
+		remedy that may not clear it. Checked in this order each refusal states the binding
+		constraint. `tests/access.test.js` B98 caught the inversion.
+		*/
 		if (this.diagrams.size >= MAX_DIAGRAMS) {
 			return { ok: false, error: `diagram limit reached (${MAX_DIAGRAMS}) -- delete something, or raise MAX_DIAGRAMS` };
+		}
+		if (principal) {
+			const owned = this.countOwnedBy(principal);
+			if (owned >= maxPerPrincipal) {
+				return { ok: false, error: `per-principal diagram limit reached (${owned}/${maxPerPrincipal}) -- delete one of yours, or raise MAX_PER_PRINCIPAL` };
+			}
 		}
 		const taken = Object.fromEntries([...this.diagrams.keys()].map((k) => [k, true]));
 		const id = newId('diagram', taken);
