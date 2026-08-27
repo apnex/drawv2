@@ -44,7 +44,7 @@ function dispatched() {
 }
 
 test('GR10: every command the server dispatches is documented in SCOPE.md', () => {
-	const wire = reference('Wire protocol (one websocket) — as shipped');
+	const wire = reference('Wire protocol (one websocket) - as shipped');
 	const missing = dispatched().filter((cmd) => !wire.includes(`\`${cmd}`) && !wire.includes(`"${cmd}"`));
 	assert.deepEqual(missing, [], `undocumented ws commands: ${missing.join(', ')}`);
 });
@@ -52,7 +52,7 @@ test('GR10: every command the server dispatches is documented in SCOPE.md', () =
 test('GR10: SCOPE.md documents no command the server has stopped answering', () => {
 	// only the REFERENCE, not the amendment below it: an amendment's job is to NAME the commands
 	// it retired, so scanning it would make the file permanently unfixable.
-	const wire = reference('Wire protocol (one websocket) — as shipped');
+	const wire = reference('Wire protocol (one websocket) - as shipped');
 	const live = new Set(dispatched());
 	// what the section claims the CLIENT may send: `{cmd:"x"` and the management back-tick list
 	const claimed = new Set([
@@ -162,8 +162,8 @@ test('GR10: every locked decision this arc reversed carries a dated amendment', 
 
 	// undo/redo moved server-side; the server live-pushes changes; the wire is server-authoritative
 	assert.match(section('In scope (functions)'), /undo\/redo are a SERVER capability/i);
-	assert.match(section('Wire protocol (one websocket) — as shipped'), /\*\(Amended 2026-08/);
-	assert.match(scope, /\*\(Amended 2026-08[^)]*\)\* — the REST verb is `\/commit`/);
+	assert.match(section('Wire protocol (one websocket) - as shipped'), /\*\(Amended 2026-08/);
+	assert.match(scope, /\*\(Amended 2026-08[^)]*\)\* - the REST verb is `\/commit`/);
 });
 
 /*

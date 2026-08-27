@@ -846,3 +846,48 @@ test('GR3/B125: an entry missing a key its op requires is caught, in the ENTRY v
 		assert.equal(run(), '', 'a literal building on a spread is left alone');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+B51 / H7.4 -- the documentation is style-gated by machine, and the gate cannot go quiet.
+
+The five mission-kit rules were real and their enforcement was not: run by hand, from memory, on
+whichever files an author thought of. That is how B50 landed -- a README rewritten to miss S4,
+caught by a person reading it rather than by the gate.
+
+The property worth pinning is not "the docs are clean today", which the scanner reports on every
+run. It is that the scanner FAILS when it cannot check, rather than passing. A style gate that
+skips when its tools are missing is decorative, which is the shape B122, B128 and B88 all had, and
+in CI the tools arrive by network fetch -- so absent tools is the LIKELY failure, not a hypothetical.
+*/
+test('B51: scan-docstyle fails when it cannot find its rules, and never skips', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docstyle-'));
+	fs.mkdirSync(path.join(dir, 'docs'));
+	fs.writeFileSync(path.join(dir, 'docs/X.md'), '# x\n\nA sentence.\n');
+	const run = (env) => {
+		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-docstyle.mjs'), '--root', dir], { encoding: 'utf8', env: { ...process.env, ...env } }), code: 0 }; }
+		catch (e) { return { out: (e.stdout || '') + (e.stderr || ''), code: e.status }; }
+	};
+	try {
+		// all three resolution candidates missing. HOME is redirected because the second candidate
+		// reads it, and `dir` is under /tmp so the sibling candidate lands on /tmp/mission-kit.
+		const r = run({ MISSION_KIT: '/nonexistent', HOME: '/nonexistent' });
+		assert.equal(r.code, 1, 'no tools means the gate has NOT run, so it must not report a pass');
+		assert.match(r.out, /no mission-kit checkout found/);
+		assert.doesNotMatch(r.out, /PASS/, 'and it must not print a pass alongside the failure');
+
+		// with the tools resolvable it actually reads the tree
+		const found = run({ MISSION_KIT: path.join(os.homedir(), 'taceng/mission-kit') });
+		if (found.out.includes('no mission-kit checkout found')) return;   // no local checkout; CI supplies one
+		assert.match(found.out, /1 document\(s\) against 5 rules/, 'and it reports what it read');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+And the gate names it. `npm run gate` is the one place the scanner set is declared, and a scanner
+that exists but is never invoked is the same nothing as no scanner at all -- GR1's own claim.
+*/
+test('B51: the gate script actually runs scan-docstyle', () => {
+	const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+	assert.match(pkg.scripts.gate, /node tools\/scan-docstyle\.mjs/,
+		'scan-docstyle is not in the gate — an uninvoked scanner enforces nothing');
+});

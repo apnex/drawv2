@@ -11,7 +11,7 @@
 	"scripts": {
 		"start": "node server/server.js",
 		"test": "node --test tests/*.test.js",
-		"gate": "npm test && node tools/scan-writers.mjs && node tools/scan-claims.mjs docs/spec/COMMIT.md#7 docs/spec/COMMIT-DELETIONS.md && node tools/scan-board.mjs && node tools/scan-dead.mjs && node tools/scan-twins.mjs && node tools/scan-docrefs.mjs && node tools/scan-wiring.mjs && node tools/scan-cli.mjs",
+		"gate": "npm test && node tools/scan-writers.mjs && node tools/scan-claims.mjs docs/spec/COMMIT.md#7 docs/spec/COMMIT-DELETIONS.md && node tools/scan-board.mjs && node tools/scan-docstyle.mjs && node tools/scan-dead.mjs && node tools/scan-twins.mjs && node tools/scan-docrefs.mjs && node tools/scan-wiring.mjs && node tools/scan-cli.mjs",
 		"gate:install": "sh tools/install-hook.sh",
 		"prepare": "[ ! -f tools/install-hook.sh ] || sh tools/install-hook.sh"
 	},

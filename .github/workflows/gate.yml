@@ -28,4 +28,15 @@ jobs:
       # `npm ci` runs `prepare`, which installs the pre-push hook. That is not ceremony here: it is
       # what lets tests/gate.test.js ASSERT the hook exists rather than warn, on a fresh checkout.
       - run: npm ci
+      # scan-docstyle runs the mission-kit style enforcers rather than copying them, because a rule
+      # with one owner must not have two definitions. HEAD, not a pinned SHA, by the director's
+      # ruling on 2026-08-27: the rules stay current, and the accepted cost is that an upstream
+      # change can turn this repo red with no commit here. That is the mechanism working.
+      - name: fetch the style rules (mission-kit @ HEAD)
+        uses: actions/checkout@v4
+        with:
+          repository: apnex/mission-kit
+          path: .mission-kit
       - run: npm run gate
+        env:
+          MISSION_KIT: ${{ github.workspace }}/.mission-kit
