@@ -10,8 +10,8 @@
 			<span id="logo">draw·next</span>
 			<input id="diagram-name" spellcheck="false" maxlength="64" title="diagram name">
 			<select id="diagram-list" title="open diagram"></select>
-			<button id="diagram-new" title="new diagram">+</button>
-			<button id="diagram-del" title="delete this diagram (click twice)">&#215;</button>
+			<button id="diagram-new" class="icon" title="new diagram">+</button>
+			<button id="diagram-del" class="icon" title="delete this diagram (click twice)">&#215;</button>
 			<!--
 			B109: hidden unless something IS recoverable, and that is the design rather than a
 			detail. Permanent chrome for a rare need trains a reader to stop seeing it; a control
@@ -21,7 +21,7 @@
 			this", a deleted diagram cannot be opened, and a verb that is not "open" sitting one
 			pixel from the delete button is how a wrong click happens.
 			-->
-			<button id="diagram-undelete" title="recoverable diagrams" hidden>&#8634;</button>
+			<button id="diagram-undelete" class="icon" title="recoverable diagrams" hidden>&#8634;</button>
 			<!--
 			B155: the right cluster holds still.
 
@@ -39,7 +39,7 @@
 			third already set.
 			-->
 			<span id="banner"></span>
-			<button id="help-btn" title="keyboard shortcuts (/)">?</button>
+			<button id="help-btn" class="icon" title="keyboard shortcuts (/)">?</button>
 			<button id="agents" class="agents-none">no agents</button>
 			<!-- a button, not a span: it opens the access panel, so it should be reachable by
 			     keyboard and look like the control it already was. -->

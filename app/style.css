@@ -28,6 +28,18 @@ the same, because with a fixed height it buys nothing and can only squeeze the t
 }
 #menu > * { height: var(--control-h); box-sizing: border-box; }
 /*
+B157: a single-glyph button is SQUARE, and by construction rather than by luck.
+
+`+`, `-x-`, `retry` and `?` were sized by `padding: 0 8px` around whatever advance their glyph
+happened to have. Two of the four are not ASCII, so they can be served by a fallback face with a
+different advance from the monospace one -- which makes the four buttons four widths, off-square by
+an amount nobody can predict from the stylesheet and that changes with the installed fonts.
+
+Taking the width from the same property as the height removes the question. It cannot be verified
+by reading a browser from here, so it is arranged not to need verifying.
+*/
+#menu button.icon { width: var(--control-h); padding: 0; }
+/*
 The spans are not controls and do not centre their own text. `inline-block` plus a `line-height`
 equal to the height does it, for a single line, and is chosen over flex centring deliberately:
 `text-overflow: ellipsis` has no effect on a flex container, and `#banner` needs the ellipsis

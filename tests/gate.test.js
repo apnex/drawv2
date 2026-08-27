@@ -1073,3 +1073,44 @@ test('B156: every header control takes its height from one declaration', () => {
 	assert.ok(banner && /text-overflow:\s*ellipsis/.test(banner[1]), '#banner must still ellipse');
 	assert.doesNotMatch(banner[1], /display:\s*(inline-)?flex/, 'flex would silently disable that ellipsis');
 });
+
+/*
+B157 -- a single-glyph button in the header is square, by construction.
+
+`+`, `x`, the undelete arrow and `?` were sized by horizontal padding around whatever advance their
+glyph happened to have. Two of the four are not ASCII, so a fallback face can give them a different
+advance from the monospace one and the four buttons become four widths -- off-square by an amount
+the stylesheet does not predict and that moves with the installed fonts.
+
+DERIVED, not restated. The test does not hold a list of ids: it reads the markup, finds every button
+whose visible label is one character, and requires the class. A list would go stale the moment
+someone adds the fifth icon button, which is exactly when this is worth catching.
+*/
+test('B157: every single-glyph header button is square', () => {
+	const html = fs.readFileSync(path.join(root, 'app/index.html'), 'utf8');
+	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
+	const header = html.slice(html.indexOf('<header id="menu">'), html.indexOf('</header>'));
+
+	// `&#215;` is six characters of source and one glyph on screen, so entities collapse first
+	const glyph = (label) => label.replace(/&#\d+;|&\w+;/g, '.').trim();
+	const buttons = [...header.matchAll(/<button([^>]*)>([^<]*)<\/button>/g)]
+		.map(([, attrs, label]) => ({ attrs, label: glyph(label) }));
+	assert.ok(buttons.length >= 5, 'the header still has its buttons — otherwise this passes vacuously');
+
+	const single = buttons.filter((b) => b.label.length === 1);
+	assert.ok(single.length >= 4, 'and still has single-glyph ones, which are the subject');
+	for (const b of single) {
+		const id = (b.attrs.match(/id="([^"]+)"/) || [])[1];
+		assert.match(b.attrs, /class="[^"]*\bicon\b/,
+			`the single-glyph button #${id} is sized by its glyph's advance, so it is not square`);
+	}
+	// and a multi-glyph one must NOT be squared, or the indicators collapse to 26px
+	for (const b of buttons.filter((x) => x.label.length > 1)) {
+		assert.doesNotMatch(b.attrs, /class="[^"]*\bicon\b/, 'a worded button is not an icon');
+	}
+
+	assert.match(css, /#menu button\.icon\s*\{[^}]*width:\s*var\(--control-h\)/,
+		'square means the width comes from the same property as the height');
+	assert.match(css, /#menu button\.icon\s*\{[^}]*padding:\s*0/,
+		'and padding must not add to it — box-sizing keeps the height honest, not the width');
+});
