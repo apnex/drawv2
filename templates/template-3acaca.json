@@ -1,0 +1,141 @@
+{
+	"meta": {
+		"id": "template-3acaca",
+		"name": "arrow",
+		"version": 0,
+		"schema": 1
+	},
+	"nodes": [
+		{
+			"id": "node-23a639",
+			"name": "router-1",
+			"type": "router",
+			"shape": "circle",
+			"x": -480,
+			"y": -300
+		},
+		{
+			"id": "node-e734e7",
+			"name": "router-2",
+			"type": "router",
+			"shape": "circle",
+			"x": -60,
+			"y": -300
+		},
+		{
+			"id": "node-b7a0a4",
+			"name": "vxlan-1",
+			"type": "vxlan",
+			"shape": "circle",
+			"x": -780,
+			"y": 0
+		}
+	],
+	"waypoints": [
+		{
+			"id": "waypoint-735fd4",
+			"x": 60,
+			"y": -180
+		},
+		{
+			"id": "waypoint-c6f2f8",
+			"x": 300,
+			"y": 0
+		},
+		{
+			"id": "waypoint-8a4dd5",
+			"x": 60,
+			"y": 180
+		},
+		{
+			"id": "waypoint-cf3412",
+			"x": 60,
+			"y": 60
+		},
+		{
+			"id": "waypoint-dcf3e2",
+			"x": -420,
+			"y": 60
+		},
+		{
+			"id": "waypoint-9d6de2",
+			"x": -420,
+			"y": -60
+		},
+		{
+			"id": "waypoint-ce9ff2",
+			"x": 60,
+			"y": -60
+		},
+		{
+			"id": "waypoint-241f2d",
+			"x": -420,
+			"y": -420
+		},
+		{
+			"id": "waypoint-1a3d0f",
+			"x": -120,
+			"y": -420
+		},
+		{
+			"id": "waypoint-ddf675",
+			"x": -420,
+			"y": -180
+		},
+		{
+			"id": "waypoint-6a746f",
+			"x": -120,
+			"y": -180
+		}
+	],
+	"links": [
+		{
+			"id": "link-29ba7c",
+			"src": "waypoint-735fd4",
+			"dst": "waypoint-ce9ff2",
+			"via": [
+				"waypoint-c6f2f8",
+				"waypoint-8a4dd5",
+				"waypoint-cf3412",
+				"waypoint-dcf3e2",
+				"waypoint-9d6de2"
+			],
+			"closed": true
+		},
+		{
+			"id": "link-16baf2",
+			"src": "node-23a639",
+			"dst": "node-e734e7",
+			"via": []
+		},
+		{
+			"id": "link-ca587f",
+			"src": "node-23a639",
+			"dst": "node-e734e7",
+			"via": [
+				"waypoint-241f2d",
+				"waypoint-1a3d0f"
+			]
+		},
+		{
+			"id": "link-4bcfe1",
+			"src": "node-23a639",
+			"dst": "node-e734e7",
+			"via": [
+				"waypoint-ddf675",
+				"waypoint-6a746f"
+			]
+		}
+	],
+	"zones": [],
+	"groups": [
+		{
+			"id": "group-a7c918",
+			"name": "group-1",
+			"members": [
+				"waypoint-8a4dd5",
+				"waypoint-cf3412"
+			]
+		}
+	]
+}

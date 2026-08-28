@@ -55,10 +55,15 @@ Every entity id is its kind, a hyphen, and exactly six lowercase hex digits.
 ```text
 node-0003fc      waypoint-aa0001      link-b09674
 zone-285c5e      group-8582bf         diagram-7bc886
+template-c8d87c
 ```
 
-The server enforces `^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
+The server enforces `^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
 A refusal here is a `422` naming the op that carried the bad id.
+
+*(Amended 2026-08-27, H9.9)* -- `template` joins the grammar as a second DOCUMENT-level kind beside `diagram`.\
+A template is read from the image, never written to the store, and forks into a `diagram-` id on first write.\
+The kind lives in the identifier so that any path which does not handle one is refused here, rather than treating it as an ordinary diagram.
 
 An agent supplying its own ids must match the grammar, and the six digits are the only free part.\
 Nothing checks that ids are random, so a batch may use `node-000001` upward, but two entities of the same kind cannot share one.

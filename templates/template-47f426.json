@@ -1,0 +1,103 @@
+{
+	"meta": {
+		"id": "template-47f426",
+		"name": "agent-draw",
+		"version": 0,
+		"schema": 1
+	},
+	"nodes": [
+		{
+			"id": "node-40c596",
+			"name": "client",
+			"type": "host",
+			"x": -600,
+			"y": 0
+		},
+		{
+			"id": "node-8eff76",
+			"name": "edge",
+			"type": "router",
+			"x": -240,
+			"y": 0
+		},
+		{
+			"id": "node-e7cc7e",
+			"name": "fw-1",
+			"type": "firewall",
+			"x": -120,
+			"y": 0
+		},
+		{
+			"id": "node-a0ba87",
+			"name": "lb-1",
+			"type": "loadbalancer",
+			"x": 0,
+			"y": 0
+		},
+		{
+			"id": "node-019130",
+			"name": "web-1",
+			"type": "server",
+			"x": 120,
+			"y": -120
+		},
+		{
+			"id": "node-6cb30d",
+			"name": "web-2",
+			"type": "server",
+			"x": 120,
+			"y": 0
+		},
+		{
+			"id": "node-25404c",
+			"name": "web-3",
+			"type": "server",
+			"x": 120,
+			"y": 120
+		}
+	],
+	"waypoints": [],
+	"links": [
+		{
+			"id": "link-41b65f",
+			"src": "node-a0ba87",
+			"dst": "node-019130"
+		},
+		{
+			"id": "link-95e2b1",
+			"src": "node-a0ba87",
+			"dst": "node-6cb30d"
+		},
+		{
+			"id": "link-698064",
+			"src": "node-a0ba87",
+			"dst": "node-25404c"
+		},
+		{
+			"id": "link-aa0001",
+			"src": "node-40c596",
+			"dst": "node-8eff76"
+		},
+		{
+			"id": "link-aa0002",
+			"src": "node-8eff76",
+			"dst": "node-e7cc7e"
+		},
+		{
+			"id": "link-aa0003",
+			"src": "node-e7cc7e",
+			"dst": "node-a0ba87"
+		}
+	],
+	"zones": [
+		{
+			"id": "zone-aa0001",
+			"name": "web-tier",
+			"x": 90,
+			"y": -210,
+			"w": 60,
+			"h": 420
+		}
+	],
+	"groups": []
+}

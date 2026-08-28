@@ -412,3 +412,51 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 	}
 	assert.equal(rejected, 6, 'six of the nine cases are bad — if this drops, the corpus stopped exercising the rules');
 });
+
+/*
+H9.9 -- `template` is a document-level kind in the ID grammar, not a fact tracked beside the id.
+
+Templates are read from the image, never written to the store, and fork on first write. Putting the
+kind IN the identifier is the design decision, and it is worth a test because the alternative was
+close: templates carrying `diagram-` ids, told apart by a lookup. That needed a branch in roughly
+fifteen store methods, and a path that forgot the branch would fail SILENTLY -- `remove` deleting a
+file that lives in the image, `grant` sharing something with no owner. Here an unhandled kind is
+refused by the grammar, which is loud.
+
+The four shipped templates are validated as the documents they are, so a malformed one is a test
+failure rather than a boot failure.
+*/
+test('H9.9: a template id is a valid document id, and a made-up kind is not', async () => {
+	const { validateDoc } = await import('../server/validate.js');
+	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, nodes: [], links: [], groups: [], zones: [], waypoints: [] });
+
+	assert.equal(validateDoc(doc('template-4f2c11')), null, 'a template is a document');
+	assert.equal(validateDoc(doc('diagram-4f2c11')), null, 'and so is a diagram, unchanged');
+	assert.match(validateDoc(doc('node-4f2c11')) || '', /meta\.id/, 'an ENTITY kind is not a document');
+	assert.match(validateDoc(doc('sketch-4f2c11')) || '', /meta\.id/, 'and an invented kind is refused');
+
+	// kindOf needed no change at all: it is `id.split('-')[0]`, so the id answers for itself
+	const { kindOf } = await import('../model/index.mjs');
+	assert.equal(kindOf('template-4f2c11'), 'template', 'the identifier carries the kind');
+});
+
+test('H9.9: every shipped template is a valid document', async () => {
+	const { validateDoc } = await import('../server/validate.js');
+	const dir = new URL('../templates/', import.meta.url);
+	const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+	assert.ok(files.length >= 4, 'the template set is present — otherwise this passes vacuously');
+	const names = new Set();
+	for (const f of files) {
+		const doc = JSON.parse(fs.readFileSync(new URL(f, dir), 'utf8'));
+		assert.equal(validateDoc(doc), null, `${f} is a valid document`);
+		assert.equal(`${doc.meta.id}.json`, f, `${f} is named for the id it carries`);
+		assert.match(doc.meta.id, /^template-[0-9a-f]{6}$/, `${f} carries a template id`);
+		// a template has no owner and no grants by construction: it is nobody's, which is what
+		// makes it listable to everyone and forkable by anyone
+		assert.equal(doc.meta.owner, undefined, `${f} has no owner`);
+		assert.equal(doc.meta.grants, undefined, `${f} has no grants`);
+		assert.equal(doc.selection, undefined, `${f} carries no selection — that was the author's, not the forker's`);
+		assert.equal(names.has(doc.meta.name), false, `${doc.meta.name} appears twice — the picker would be ambiguous`);
+		names.add(doc.meta.name);
+	}
+});

@@ -516,6 +516,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.29 | A per-principal diagram quota. The 500 cap is global, so one signed-in stranger can lock out the owner -- and it gates widening sign-in | **B158** | S2 - S | `DONE` |
 | H10.30 | Cloud Armor on the agent door, which is deliberately IAP-free. Threshold measured, preview first | **B159** | S2 - M | `TODO` |
 | H10.31 | `draw` reads a throttle as a credential problem and gives up on a condition that clears by waiting. Bounded backoff, announced | **B160** | S2 - S | `DONE` |
+| H10.32 | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. Refuse an unread positional in the dispatcher | **B161** | S2 - S | `TODO` |
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |

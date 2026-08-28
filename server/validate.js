@@ -26,7 +26,21 @@ No colon, so the namespace prefix stays unambiguous. Sixty-three characters and 
 alphanumeric, which is the DNS label shape and therefore already familiar to anyone naming one.
 */
 const PRINCIPAL = /^(user:[^\s@]{1,64}@[^\s@]{1,190}|agent:[a-z0-9][a-z0-9-]{0,62})$/;
-const ID = /^(node|waypoint|link|zone|group|diagram)-[0-9a-f]{6}$/;
+/*
+`template` is a document-level kind alongside `diagram`, not an entity kind (H9.9).
+
+A template is read from the image, never written to the store, and forks on first write. Putting it
+in the ID GRAMMAR rather than tracking it beside the id is the whole design decision: `kindOf` is
+`id.split('-')[0]`, so a template announces itself everywhere for free, and any path that does not
+handle one is refused here rather than treating it as an ordinary diagram.
+
+The alternative -- templates carrying `diagram-` ids, told apart by a lookup -- was measured and
+rejected. It needed a branch in roughly fifteen store methods, and a path that FORGOT the branch
+would have failed silently: `remove` deleting a file that lives in the image, `grant` handing out
+access to something with no owner, `commit` writing where there is nowhere to write. Here, a
+forgotten path fails loudly on an unknown kind, which is the difference that decided it.
+*/
+const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;
 // DERIVED from the model's list, which used to be pinned to this line by a comment reading
 // "MUST match server/validate.js SELECTABLE" -- a comment doing a check's job (B86).
 const SELECTABLE = new RegExp(`^(${SELECTABLE_KINDS.join('|')})-[0-9a-f]{6}$`);
@@ -266,7 +280,9 @@ output; a Model has never reached this function and should not.
 export function validateDoc(doc) {
 	if (!doc || typeof doc !== 'object') return 'doc is not an object';
 	if (!doc.meta || typeof doc.meta !== 'object') return 'invalid meta';
-	if (!ID.test(doc.meta.id || '') || !doc.meta.id.startsWith('diagram-')) {
+	// a document is a diagram or a template; both validate identically, and which one it is comes
+	// from the id rather than from where the caller happened to read it
+	if (!ID.test(doc.meta.id || '') || !/^(diagram|template)-/.test(doc.meta.id)) {
 		return 'invalid meta.id';
 	}
 	if (!str(doc.meta.name || '', NAME_MAX)) return 'invalid meta.name';
