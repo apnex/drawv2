@@ -57,7 +57,11 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 		// H9.3c: the same predicate the server refuses with, so the UI cannot drift from the
 		// rule it is presenting. Deliberately not folded into `locked` -- Server-Locked means
 		// someone else is driving and offers "take it back", which a reader may not do (B64).
-		mayWrite: store.canWrite(id, principal),
+		// H9.9: a template is writable in the sense the client cares about -- the first gesture
+		// forks it. Reporting canWrite here left the UI read-only, so the fork was unreachable.
+		mayWrite: store.canWrite(id, principal) || store.mayFork(id, principal),
+		// and the client says so before the user draws, rather than surprising them afterwards
+		template: store.templates.has(id),
 		/*
 		B76: who the client is. The PRINCIPAL, not the email -- the browser must never have to
 		parse an identity, and `user:` vs `agent:` is the distinction that matters to anything

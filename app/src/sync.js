@@ -265,6 +265,26 @@ export class Sync {
 		}
 		// someone else's change. Apply it, unless a gesture is mid-flight — a model.load or a
 		// competing write landing under a live drag fights the preview (D12).
+		/*
+		H9.9 -- the server forked a template under us, and this session now belongs to the fork.
+
+		The first gesture against a template creates a real diagram owned by whoever made it. The
+		server rebinds its own side and sends this; without handling it the client kept believing it
+		was on the template, so the picker showed the wrong entry, the outbox belonged to a document
+		this session no longer wrote to, and a reload went back to the template.
+
+		`resync` rather than a local id swap: the fork is a document this client has never seen, and
+		the server's snapshot is the authoritative answer for what it contains. Guessing its content
+		from the template plus one applied op is the kind of derivation that drifts.
+		*/
+		if (msg.cmd === 'forked') {
+			this.diagramId = msg.body.diagram;
+			this.outbox = [];            // it belonged to the template, which we are no longer editing
+			this.persistOutbox();
+			this.expectLoad = true;
+			this.net.send('open', { id: msg.body.diagram });
+			return;
+		}
 		if (msg.cmd === 'agents') {
 			this.agents = Array.isArray(msg.body?.agents) ? msg.body.agents : [];
 			this.emitState({});

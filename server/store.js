@@ -1039,6 +1039,22 @@ export class Store {
 	// taking the server-side write lock is a write capability held outside this class (B63), and a
 	// second copy of this rule in the caller is a rule that drifts. `#mayWrite` is the same
 	// question phrased as an error string, for the mutators that return one.
+	/*
+	H9.9 -- may this caller START from here? A different question from `canWrite`.
+
+	`canWrite` stays false for a template and that is deliberate: it is what the REST lock path
+	relies on, and making it true would grant write access to something that can never be written.
+	But the answer a CLIENT needs is not "may I write to this document" -- it is "may I begin
+	editing", and for a template the answer is yes, with the caveat that the first edit makes the
+	result yours.
+
+	Without this the browser rendered a template read-only and refused every gesture, so the fork
+	could never be triggered from the UI at all: the feature existed and was unreachable.
+	*/
+	mayFork(id, principal) {
+		return this.templates.has(id) && (!this.authz || !!principal);
+	}
+
 	canWrite(id, principal) {
 		if (!this.authz) return true;
 		const level = this.access(id, principal);

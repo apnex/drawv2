@@ -293,3 +293,38 @@ test('H9.9: with authorization off, a local run still opens one', async () => {
 		assert.equal(store.canRead([...store.templates.keys()][0], null), true, 'and can read it');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+H9.9 -- a template must not present as READ-ONLY, or the fork can never be triggered.
+
+`mayWrite` was `store.canWrite`, which is false for a template by design. The browser renders
+`!mayWrite` as read-only: badge, disabled name field, and `input.setReadOnly(true)`, which refuses
+every authoring gesture. So the feature existed on the wire and was unreachable from the UI -- the
+director opened a template, saw "read-only", and had no way to start from it.
+
+`canWrite` deliberately stays false: the REST lock path depends on it, and making it true would
+grant write access to something that can never be written. The client is asking a DIFFERENT
+question -- may I begin editing -- and for a template the answer is yes, with the first edit making
+the result yours. That question gets its own name.
+*/
+test('H9.9: a template reports as writable, and the client is told it is a template', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { templatesDir: TEMPLATES, authz: true });
+	await store.init();
+	try {
+		const id = shipped()[0][1].meta.id;
+		const ME = 'user:me@example.com';
+		assert.equal(store.canWrite(id, ME), false, 'canWrite stays false -- the lock path relies on it');
+		assert.equal(store.mayFork(id, ME), true, 'but a principal may START from it');
+		assert.equal(store.mayFork(id, null), false, 'and nobody may not -- same door as canRead');
+
+		// what the snapshot reports is the union, because the client asks the second question
+		const mayWrite = store.canWrite(id, ME) || store.mayFork(id, ME);
+		assert.equal(mayWrite, true, 'so the UI is not read-only and the gesture can reach the server');
+
+		// a real diagram is unaffected: mayFork is false, canWrite decides as it always did
+		const mine = store.create('mine', null, ME);
+		assert.equal(store.mayFork(mine.model.state.meta.id, ME), false, 'a diagram is not forkable');
+		assert.equal(store.canWrite(mine.model.state.meta.id, ME), true, 'it is simply writable');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
