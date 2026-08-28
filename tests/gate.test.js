@@ -1131,3 +1131,36 @@ test('B157: every single-glyph header button is square', () => {
 	assert.match(css, /#menu button\.menu-icon\s*\{[^}]*padding:\s*0/,
 		'and padding must not add to it — box-sizing keeps the height honest, not the width');
 });
+
+/*
+H9.9 -- the picker marks a template, because it is the one surface showing a name and nothing else.
+
+Everywhere else the id disambiguates: `template-3acaca arrow` beside `diagram-c1f6cc arrow` is
+unambiguous in the CLI and in the snapshot payload. In the picker the id is the option's VALUE and
+only the name is drawn, so a forked `arrow` and the template it came from looked identical.
+
+A BORDER is not an option here, measured rather than assumed: Chrome's dropdown renderer paints
+`color`, `background-color` and font properties on an `<option>` and ignores the box model. The
+background fills the row, which is the nearest honest equivalent to a box.
+*/
+test('H9.9: the picker distinguishes a template, and does it with paintable properties', () => {
+	const main = fs.readFileSync(path.join(root, 'app/src/main.js'), 'utf8');
+	assert.match(main, /if \(d\.template\) o\.className = 'tpl'/,
+		'the option is marked from the flag the server already sends');
+
+	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
+	const rule = css.match(/#diagram-list option\.tpl\s*\{([^}]*)\}/);
+	assert.ok(rule, 'and the mark is styled');
+
+	/*
+	Only properties an option actually paints. A `border` here would look correct in the stylesheet,
+	survive review, and render as nothing -- which is the failure mode this whole session kept
+	hitting: a rule that is right on paper and invisible on screen.
+	*/
+	const paintable = /^(color|background-color|font-style|font-weight)$/;
+	const props = rule[1].split(';').map((d) => d.split(':')[0].trim()).filter(Boolean);
+	assert.ok(props.length > 0, 'the rule declares something');
+	for (const p of props) {
+		assert.match(p, paintable, `\`${p}\` is not painted on an <option> — it would render as nothing`);
+	}
+});

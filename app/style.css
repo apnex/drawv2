@@ -91,6 +91,20 @@ does nothing to an inline element, which is what a bare span is.
 #menu button { cursor: pointer; }
 #menu button:hover { border-color: #aed581; color: #aed581; }
 #diagram-name { width: 150px; }
+/*
+B155/H9.9: templates are marked in the picker by colour, because that is what an `<option>` allows.
+
+A BORDER is not available: Chrome's dropdown renderer paints `color`, `background-color` and the
+font properties on an option and ignores the box model, so a literal box around a template is not a
+thing that can be built here. `background-color` fills the row, which reads as a band and is the
+nearest honest equivalent.
+
+The muted slate is `#whoami`'s, deliberately, and not the amber used by the lock and the agent
+indicator. Amber means ATTENTION on this bar -- a held lock, an agent driving -- and a template is
+not a warning. It is context: something you may start from and do not own.
+*/
+#diagram-list option.tpl { color: #cfd8dc; background-color: #263238; font-style: italic; }
+
 #slides-url { width: 220px; }
 #slides-push.busy { color: #ffd54f; border-color: #ffd54f; }
 #slides-push.ok { color: #aed581; border-color: #aed581; }

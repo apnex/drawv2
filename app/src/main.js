@@ -561,7 +561,22 @@ const sync = new Sync({
 		if (error) menu.banner.textContent = `✗ ${error}`;
 		if (diagrams) {
 			menu.list.innerHTML = '';
-			diagrams.forEach((d) => { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; menu.list.appendChild(o); });
+			/*
+			H9.9: a template is marked in the picker, because the picker is the one surface that
+			shows a name and nothing else.
+
+			Everywhere else the id disambiguates -- `template-3acaca arrow` beside `diagram-c1f6cc
+			arrow` is unambiguous in the CLI and in the payload. Here the id is the option's VALUE
+			and only the name is drawn, so a forked `arrow` and the `arrow` it came from looked
+			identical. The class carries what the option text cannot.
+			*/
+			diagrams.forEach((d) => {
+				const o = document.createElement('option');
+				o.value = d.id;
+				o.textContent = d.name;
+				if (d.template) o.className = 'tpl';
+				menu.list.appendChild(o);
+			});
 			// B109: the list changed, so what is recoverable may have too -- a delete is the most
 			// likely reason this branch ran at all
 			refreshUndelete();
