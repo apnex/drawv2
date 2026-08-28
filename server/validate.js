@@ -41,6 +41,16 @@ access to something with no owner, `commit` writing where there is nowhere to wr
 forgotten path fails loudly on an unknown kind, which is the difference that decided it.
 */
 const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;
+
+/*
+The DOCUMENT-level ids, exported, because more than one place needs to recognise one.
+
+`server/app.js` matched deep links with its own copy of this pattern -- `/^\/d\/diagram-[0-9a-f]{6}$/`
+-- and never learned about templates, so refreshing the browser on a template fell through to a file
+lookup and answered 404. A restated grammar is a grammar that goes out of date somewhere, and this
+one did so in the exact way H9.9 was careful to avoid everywhere else.
+*/
+export const DOCUMENT_ID = /^(diagram|template)-[0-9a-f]{6}$/;
 // DERIVED from the model's list, which used to be pinned to this line by a comment reading
 // "MUST match server/validate.js SELECTABLE" -- a comment doing a check's job (B86).
 const SELECTABLE = new RegExp(`^(${SELECTABLE_KINDS.join('|')})-[0-9a-f]{6}$`);
@@ -282,7 +292,7 @@ export function validateDoc(doc) {
 	if (!doc.meta || typeof doc.meta !== 'object') return 'invalid meta';
 	// a document is a diagram or a template; both validate identically, and which one it is comes
 	// from the id rather than from where the caller happened to read it
-	if (!ID.test(doc.meta.id || '') || !/^(diagram|template)-/.test(doc.meta.id)) {
+	if (!DOCUMENT_ID.test(doc.meta.id || '')) {
 		return 'invalid meta.id';
 	}
 	if (!str(doc.meta.name || '', NAME_MAX)) return 'invalid meta.name';

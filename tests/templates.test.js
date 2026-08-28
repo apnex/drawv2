@@ -328,3 +328,33 @@ test('H9.9: a template reports as writable, and the client is told it is a templ
 		assert.equal(store.canWrite(mine.model.state.meta.id, ME), true, 'it is simply writable');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+H9.9 -- refreshing the browser on a template must serve the editor, not 404.
+
+`serveStatic` matched deep links with its own copy of the id grammar,
+`/^\/d\/diagram-[0-9a-f]{6}$/`, which never learned about templates. A refresh on
+`/d/template-c8d87c` fell through to a file lookup for a file that does not exist and answered 404,
+so the first thing a user did after opening a template broke.
+
+The grammar is IMPORTED now. A restated grammar is one that goes out of date somewhere, and this is
+the third place in this feature where the id had to be recognised -- the other two were told by
+`kindOf` for free, which is exactly why the kind lives in the identifier.
+*/
+test('H9.9: a deep link to a template serves the editor, and nonsense still does not', async () => {
+	const { DOCUMENT_ID } = await import('../server/validate.js');
+	for (const [id, want] of [
+		['template-c8d87c', true], ['diagram-000001', true],
+		['node-000001', false], ['nonsense', false], ['template-XYZ', false], ['', false],
+	]) {
+		assert.equal(DOCUMENT_ID.test(id), want, `${id || '(empty)'} as a deep link`);
+	}
+	// the shipped templates all satisfy it, so every one of them is refreshable
+	for (const [, doc] of shipped()) {
+		assert.equal(DOCUMENT_ID.test(doc.meta.id), true, `${doc.meta.id} is a valid deep link`);
+	}
+	// and the pattern is not restated in the server that consumes it
+	const app = fs.readFileSync(new URL('../server/app.js', import.meta.url), 'utf8');
+	assert.doesNotMatch(app, /\\\/d\\\/diagram-\[0-9a-f\]/, 'app.js must import the grammar, never restate it');
+	assert.match(app, /DOCUMENT_ID/, 'and it does');
+});

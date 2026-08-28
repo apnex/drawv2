@@ -6,6 +6,7 @@ into both the websocket sessions and the REST writes.
 Importable for tests (port 0 = random); server.js is the CLI entry.
 */
 
+import { DOCUMENT_ID } from './validate.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -57,8 +58,10 @@ function serveFrom(req, res, baseDir, prefix) {
 function serveStatic(req, res, clientDir) {
 	const url = new URL(req.url, 'http://localhost');
 	// deep links: /d/<diagram-id> is the editor with that diagram preselected
-	const route = (url.pathname === '/' || /^\/d\/diagram-[0-9a-f]{6}$/.test(url.pathname))
-		? 'index.html' : url.pathname;
+	// the grammar is IMPORTED, not restated. This carried its own `diagram-` copy, so a refresh on a
+	// template 404'd -- the deep link fell through to a file lookup for a file that does not exist.
+	const deep = url.pathname.startsWith('/d/') && DOCUMENT_ID.test(url.pathname.slice(3));
+	const route = (url.pathname === '/' || deep) ? 'index.html' : url.pathname;
 	let file = path.normalize(path.join(clientDir, route));
 	if (!file.startsWith(clientDir)) {
 		res.writeHead(403);
