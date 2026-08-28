@@ -162,11 +162,10 @@ The ranking below therefore weighs one question above size: **does this let an a
 |---|---|---|---|
 | 1 | H11.4 | verifier | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. Sharpened since: B147 shipped three times because each test asserted the layer below the one that broke, and mutation cannot see that, because a mutant only probes the assertions that exist. |
 | 2 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
-| 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
-| 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
-| 5 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
-| 6 | H10.32 | agent | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. It nearly shipped the wrong document as a template. |
-| 7 | H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
+| 3 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
+| 4 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
+| 5 | H10.32 | agent | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. It nearly shipped the wrong document as a template. |
+| 6 | H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
 **What the arc left undone, deliberately.**\
@@ -501,7 +500,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 - S | `DONE` |
 | H10.18 | A `del` entry with no entity threw in the browser and shipped -- every builder branch now converts through the real `Changes` | **B87** | S1 - S | `DONE` |
 | H10.19 | `scan-writers` checks that no entry carries a forbidden key and not that it carries a required one -- the asymmetry that turned a correct rejection into a broken fix | **B125** | S2 - S | `DONE` |
-| H10.22 | A revoked peer's open tab still believes it may write until it reconnects -- a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 - M | `TODO` |
+| H10.22 | A revoked peer's open tab still believes it may write until it reconnects -- a contentless signal that prompts each session to refresh its own snapshot, NOT a broadcast grant map, which would put a second copy of the predicate in the browser | **B94** | S3 - M | `DONE` |
 | H10.21 | Two specs asserted facts the code contradicted -- the SVG route's authentication and H9.3's existence -- corrected with dated amendments | **B89** | S2 - S | `DONE` |
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 - S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 - L | `DONE` |

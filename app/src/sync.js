@@ -285,6 +285,24 @@ export class Sync {
 			this.net.send('open', { id: msg.body.diagram });
 			return;
 		}
+		/*
+		B94 -- access moved somewhere, so ask again. The signal says nothing else on purpose.
+
+		A grant reached no open session, so a revoked peer kept rendering an editable canvas and a
+		granted peer never saw the diagram appear -- the second read as the invitation having failed.
+
+		`requestResync` rather than trusting the message, because the message CANNOT carry the
+		answer: `mayWrite` and the visible list are per-principal, and one broadcast body would be
+		wrong for somebody. Re-fetching means the server decides what this principal may see, which
+		is where that decision belongs and where it already is.
+
+		The reply is a snapshot, which carries both symptoms' cures at once -- the corrected
+		`mayWrite` and the corrected diagram list.
+		*/
+		if (msg.cmd === 'access') {
+			this.requestResync();
+			return;
+		}
 		if (msg.cmd === 'agents') {
 			this.agents = Array.isArray(msg.body?.agents) ? msg.body.agents : [];
 			this.emitState({});

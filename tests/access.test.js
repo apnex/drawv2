@@ -1896,3 +1896,82 @@ test('B158: over quota answers 403 with its own code, never 507', async () => {
 		assert.equal(t.app.store.countOwnedBy(OWNER), 20, 'the refusal cost nothing');
 	} finally { await t.close(); }
 });
+
+/*
+B94 / H10.22 -- a grant change reaches every open session, and tells them nothing.
+
+A grant travelled over neither the websocket nor any event, so a session learned nothing about
+access it had just been given or lost. Two symptoms, one cause: a revoked peer kept rendering an
+editable canvas, and a GRANTED peer never saw the diagram appear at all -- observed in production,
+where an invitation looked as though it had simply failed.
+
+CONTENTLESS is the design, not a shortcut. `mayWrite` and the visible list are per-principal, so one
+broadcast body would be wrong for somebody on the wire. The signal says only "ask again"; each
+session re-fetches its own snapshot and the server answers with what THAT principal may see, so no
+authorization decision travels.
+
+Driven over a REAL socket rather than by stubbing the hub, which the app does not expose anyway --
+and the property worth proving is that a session receives it, not that a method was called.
+*/
+test('B94: a grant signals an open session, and the signal carries nothing', async () => {
+	const t = await grantable();
+	const api = `http://127.0.0.1:${t.app.port}/api/v1`;
+	const ws = new WebSocket(`ws://127.0.0.1:${t.app.port}/ws`);
+	const seen = [];
+	ws.on('message', (d) => seen.push(JSON.parse(d.toString())));
+	await new Promise((r) => ws.on('open', r));
+	const settle = () => new Promise((r) => setTimeout(r, 150));
+	try {
+		ws.send(JSON.stringify({ cmd: 'hello', body: {} }));
+		await settle();
+		const id = t.app.store.list(OWNER)[0].id;
+		seen.length = 0;
+
+		await fetch(`${api}/diagrams/${id}/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }),
+		});
+		await settle();
+		const sig = seen.find((m) => m.cmd === 'access');
+		assert.ok(sig, 'the open session is told access moved');
+		assert.deepEqual(sig.body, {}, 'and told NOTHING else -- a per-principal answer cannot be broadcast');
+
+		// the mirror, which is the half this row was originally written about
+		seen.length = 0;
+		await fetch(`${api}/diagrams/${id}/grants/${encodeURIComponent(GUEST)}`, { method: 'DELETE' });
+		await settle();
+		assert.ok(seen.find((m) => m.cmd === 'access'), 'revoking signals too');
+
+		/*
+		A REFUSED grant signals nobody. Nothing moved, so telling every session to re-fetch would be
+		a lie that costs each of them a round trip -- and a signal that fires when nothing happened
+		is one people learn to ignore.
+		*/
+		seen.length = 0;
+		const bad = await fetch(`${api}/diagrams/${id}/grants`, {
+			method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'sideways' }),
+		});
+		assert.notEqual(bad.status, 200, 'the grant is refused');
+		await settle();
+		assert.equal(seen.filter((m) => m.cmd === 'access').length, 0, 'and no session is disturbed');
+
+		/*
+		ALL FOUR sites, because there are four and the first version of this test covered two.
+
+		Mutation said so: deleting the workspace signal changed nothing, because the test only ever
+		exercised the per-diagram path. A workspace grant is the one most likely to matter -- it is
+		how you hand somebody everything you own -- and it was the half going unwatched.
+		*/
+		for (const [what, req] of [
+			['workspace grant', { url: `${api}/workspace/grants`, init: { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }) } }],
+			['workspace revoke', { url: `${api}/workspace/grants/${encodeURIComponent(GUEST)}`, init: { method: 'DELETE' } }],
+		]) {
+			seen.length = 0;
+			const r = await fetch(req.url, req.init);
+			assert.equal(r.status, 200, `${what} lands`);
+			await settle();
+			const m = seen.find((x) => x.cmd === 'access');
+			assert.ok(m, `${what} signals every session`);
+			assert.deepEqual(m.body, {}, `${what} carries nothing`);
+		}
+	} finally { ws.close(); await t.close(); }
+});

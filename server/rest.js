@@ -392,7 +392,7 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 		}
 		if (parts[3] !== 'grants' && parts[3] !== 'codes') return json(res, 404, { error: 'not found' }), true;
 		if (!principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
-		handleWorkspace(req, res, store, parts, principal).catch((err) => {
+		handleWorkspace(req, res, store, parts, principal, hub).catch((err) => {
 			console.warn(`[ rest ] workspace grant failed: ${err && err.message}`);
 			try { if (!res.headersSent) json(res, 500, { error: 'internal error' }); } catch { /* response already gone */ }
 		});
@@ -645,7 +645,9 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 	return json(res, 404, { error: 'not found' }), true;
 }
 
-async function handleWorkspace(req, res, store, parts, principal) {
+// `hub` is threaded in for B94's access signal: a workspace grant changes what other sessions
+// may see, and this handler had no way to tell them.
+async function handleWorkspace(req, res, store, parts, principal, hub) {
 	/*
 	Connection codes -- H9.5. Minting sits on the workspace, not on a diagram: a code authenticates
 	an agent identity, which is not a property of any one document.
@@ -694,6 +696,23 @@ async function handleWorkspace(req, res, store, parts, principal) {
 		// grant on somebody else's workspace, which is the one thing this route must not allow
 		const err = await store.grantOwner(principal, body.principal, body.level);
 		if (err) return json(res, 422, { error: err, code: 'grant-rejected' });
+			/*
+		B94 -- tell every session that access moved, without telling any of them what moved.
+
+		A grant travelled over neither the websocket nor any event, so a session learned nothing
+		about access it had just been given or lost. Two symptoms, one cause: a revoked peer kept
+		rendering an editable canvas, and a GRANTED peer never saw the diagram appear at all --
+		observed in production, where an invitation looked like it had simply failed.
+
+		CONTENTLESS, and that is the whole design. `mayWrite` and the visible list are
+		per-principal, so one broadcast body would be wrong for somebody on the wire. This body
+		says only "ask again"; each session then re-fetches its OWN snapshot and the server
+		answers it with exactly what that principal may see. No authorization decision travels.
+
+		To EVERY session, not to those on this diagram: the person just granted access is very
+		likely looking at something else, and their picker is the surface that has to change.
+		*/
+		if (hub) hub.announce('access', {});
 		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
 	}
 	if (req.method === 'DELETE' && parts.length === 5) {
@@ -702,6 +721,23 @@ async function handleWorkspace(req, res, store, parts, principal) {
 		catch { return json(res, 400, { error: 'principal is not valid percent-encoding', code: 'grant-malformed' }); }
 		const err = await store.revokeOwner(principal, target);
 		if (err) return json(res, 422, { error: err, code: 'grant-rejected' });
+			/*
+		B94 -- tell every session that access moved, without telling any of them what moved.
+
+		A grant travelled over neither the websocket nor any event, so a session learned nothing
+		about access it had just been given or lost. Two symptoms, one cause: a revoked peer kept
+		rendering an editable canvas, and a GRANTED peer never saw the diagram appear at all --
+		observed in production, where an invitation looked like it had simply failed.
+
+		CONTENTLESS, and that is the whole design. `mayWrite` and the visible list are
+		per-principal, so one broadcast body would be wrong for somebody on the wire. This body
+		says only "ask again"; each session then re-fetches its OWN snapshot and the server
+		answers it with exactly what that principal may see. No authorization decision travels.
+
+		To EVERY session, not to those on this diagram: the person just granted access is very
+		likely looking at something else, and their picker is the surface that has to change.
+		*/
+		if (hub) hub.announce('access', {});
 		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
 	}
 	return json(res, 405, { error: 'workspace grants: GET to read, POST { principal, level } to grant, DELETE .../grants/<principal> to revoke' });
@@ -873,6 +909,23 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			}
 			const err = store.grant(id, body.principal, body.level, principal);
 			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'grant-rejected' });
+			/*
+			B94 -- tell every session that access moved, without telling any of them what moved.
+
+			A grant travelled over neither the websocket nor any event, so a session learned nothing
+			about access it had just been given or lost. Two symptoms, one cause: a revoked peer kept
+			rendering an editable canvas, and a GRANTED peer never saw the diagram appear at all --
+			observed in production, where an invitation looked like it had simply failed.
+
+			CONTENTLESS, and that is the whole design. `mayWrite` and the visible list are
+			per-principal, so one broadcast body would be wrong for somebody on the wire. This body
+			says only "ask again"; each session then re-fetches its OWN snapshot and the server
+			answers it with exactly what that principal may see. No authorization decision travels.
+
+			To EVERY session, not to those on this diagram: the person just granted access is very
+			likely looking at something else, and their picker is the surface that has to change.
+			*/
+			if (hub) hub.announce('access', {});
 			return json(res, 200, { grants: { ...store.get(id).state.meta.grants } });
 		}
 		// the principal is percent-encoded in the path: it carries a colon, and an address carries
@@ -884,6 +937,23 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			catch { return json(res, 400, { error: 'principal is not valid percent-encoding', code: 'grant-malformed' }); }
 			const err = store.revoke(id, target, principal);
 			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'grant-rejected' });
+			/*
+			B94 -- tell every session that access moved, without telling any of them what moved.
+
+			A grant travelled over neither the websocket nor any event, so a session learned nothing
+			about access it had just been given or lost. Two symptoms, one cause: a revoked peer kept
+			rendering an editable canvas, and a GRANTED peer never saw the diagram appear at all --
+			observed in production, where an invitation looked like it had simply failed.
+
+			CONTENTLESS, and that is the whole design. `mayWrite` and the visible list are
+			per-principal, so one broadcast body would be wrong for somebody on the wire. This body
+			says only "ask again"; each session then re-fetches its OWN snapshot and the server
+			answers it with exactly what that principal may see. No authorization decision travels.
+
+			To EVERY session, not to those on this diagram: the person just granted access is very
+			likely looking at something else, and their picker is the surface that has to change.
+			*/
+			if (hub) hub.announce('access', {});
 			// H9.4c: removing the diagram entry is not the same as removing access -- a workspace
 			// grant on this diagram's owner survives it. Report what the principal can still do, so
 			// "revoked" is never inferred from the absence of a row.
