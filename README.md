@@ -109,8 +109,9 @@ A commit is a user-action-rate event and goes out immediately, while live drag f
 Diagrams persist as JSON in `diagrams/<id>.json`, each carrying its own change log.\
 Coordinates are center-origin: `[0,0]` is the canvas center, and the node grid falls on multiples of 60.
 
-`examples/` is the shipped corpus, tracked in git and copied into the data directory on first boot only.\
-Delete one and it stays deleted.\
+`templates/` is the shipped starting set, tracked in git and read straight from the image.\
+A template is listed to everyone, owned by nobody, and never written to: the first edit against one forks a copy that belongs to whoever made it.\
+Delete your fork and it stays deleted -- the template it came from is still offered, because it was never yours to delete.\
 `diagrams/` is runtime state and is not tracked, because the store rewrites a file on every edit.
 
 Undo survives a process restart.\

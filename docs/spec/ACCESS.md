@@ -397,13 +397,23 @@ A template reappearing after its fork is deleted is not a resurrection, because 
 So the reversal is narrower than it appears.\
 `GR10` requires a dated amendment for a reversed decision, and it belongs in `SCOPE.md` beside the seeding rule rather than here.
 
-### Undecided
+### Decided 2026-08-27, on building it
 
-Whether a fork shadows its template in the listing, or appears beside it.\
-Shadowing reads better -- the diagram is simply yours now -- but it makes the listing a merge of two sources rather than a query over one.
+**A fork sits BESIDE its template, never shadowing it.**\
+Shadowing reads better in a sentence and makes the listing a merge of two sources rather than a query, and every listing defect this store has had came from exactly that -- `store.first()` with no principal in B130, the pushed agent list going stale against the pulled one in B115.\
+A redundant row is a smaller cost than two sources that must agree.
 
-What becomes of the eleven diagrams currently in `gs://diagrams.apnex.io`.\
-They are the seeded examples from before this change, so under templates they are orphans with no owner: they are either adopted by the operator or deleted, and the choice should be explicit rather than incidental.
+**A template is offered to every PRINCIPAL, not to everyone.**\
+`canRead` returned true unconditionally at first, reasoning that something owned by nobody gives authorization nothing to decide.\
+That is true about the grant and false about the door: `/connect` sits outside IAP, so an unauthenticated caller read a real topology in full before this was corrected.
+
+**Taking the write slot on a template forks it, and the lock is taken on the fork.**\
+`canWrite` is false for a template, so under authorization the REST path could not lock, could not write, and could never fork.\
+Locking the template instead was rejected: a lock serialises writers, so one person starting from a template would block everyone else from starting from the same one, and two people forking the same template are not in contention at all.
+
+**The old eleven are resolved.**\
+They were adopted by `OWNER` when authorization landed, so they are user work rather than orphans.\
+Four of them were re-exported from LIVE as the template set; the shipped copies had drifted far from what the director had been editing.
 
 ---
 

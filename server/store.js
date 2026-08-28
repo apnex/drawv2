@@ -156,7 +156,7 @@ export class Store {
 	(server/server.js) decides; every other caller — including every test that is not about seeding
 	— gets the single programmatic example and is unaffected by whatever ships in examples/.
 	*/
-	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null, authz = true } = {}) {
+	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null, templatesDir = null, authz = true } = {}) {
 		/*
 		Authorization is OFF unless asked for -- ACCESS.md.
 
@@ -180,6 +180,9 @@ export class Store {
 		this.flushMs = flushMs;
 		this.now = now;
 		this.examplesDir = examplesDir;
+		this.templatesDir = templatesDir;
+		// id -> Model. Read from the image at boot, never written, listed to everyone (H9.9).
+		this.templates = new Map();
 		// B55 -- the WHOLE persistence surface, injectable. Was `writeDoc` alone, which left boot's
 		// list and read, and delete's three removals, reaching `fs` directly: a backend that is not
 		// a filesystem could not be supplied at all. Four verbs over names, never paths.
@@ -230,7 +233,16 @@ export class Store {
 			for (const why of failures) console.error(`[ store ] ${why}`);
 			throw new Error(`refusing to boot: ${candidates} diagram file(s) present, none loaded`);
 		}
-		if (this.diagrams.size === 0) this.seed();
+		/*
+		H9.9: an EMPTY store is legitimate once templates exist, so the seed only runs without them.
+
+		The seed existed because a store with nothing in it gave a client nothing to open. Templates
+		are listed to every principal and forked on first write, so the listing is never empty even
+		when the store is -- and seeding on top of them produced two entries called `example`, one
+		real and one a template, which is worse than either alone.
+		*/
+		this.#loadTemplates();
+		if (this.diagrams.size === 0 && this.templates.size === 0) this.seed();
 		await this.#loadAccess();
 		await this.#loadCodes();
 		console.log(`[ store ] ${this.diagrams.size} diagram(s) in ${this.dir}`);
@@ -599,6 +611,27 @@ export class Store {
 		return n;
 	}
 
+	/*
+	Fork a template into a real diagram owned by the caller.
+
+	Content only: the new diagram takes the template's entities and its name, and nothing else. It
+	is a `diagram-` id because it IS one now -- a fork is ordinary work from the moment it exists,
+	and giving it any lingering template-ness would mean every path had to keep asking.
+
+	`create` does the minting, ownership and quota, so a fork counts against MAX_PER_PRINCIPAL like
+	anything else. A template is not a way around a quota.
+	*/
+	forkTemplate(templateId, principal) {
+		const model = this.templates.get(templateId);
+		if (!model) return { ok: false, error: `unknown template: ${templateId}` };
+		if (this.authz && !principal) return { ok: false, error: 'forbidden: no identity', forbidden: true };
+		const doc = model.toJSON();
+		delete doc.meta;
+		const made = this.create(model.state.meta.name, doc, principal);
+		if (!made.ok) return made;
+		return { ok: true, id: made.model.state.meta.id };
+	}
+
 	// `maxPerPrincipal` is an override for tests and for a caller that knows better than the
 	// environment; unset means the deployment's number.
 	create(name, doc = null, principal = null, { maxPerPrincipal = MAX_PER_PRINCIPAL } = {}) {
@@ -685,7 +718,42 @@ export class Store {
 		if (principal !== owner) model.state.meta.grants = { ...model.state.meta.grants, [principal]: 'write' };
 	}
 
+	/*
+	Templates -- read from the image at boot, never written, listed to everyone (H9.9).
+
+	A SEPARATE MAP from `diagrams`, which is the whole safety property. Templates cannot be written,
+	deleted, granted or owned, and keeping them out of `this.diagrams` means every existing path
+	that walks diagrams keeps its meaning without being told about templates. The paths that DO
+	serve them say so explicitly, and `template-` in the id is what makes a missed one loud.
+
+	Failure to load one is a warning and not a boot refusal, unlike a diagram: a diagram that will
+	not parse is somebody's lost work, and a template that will not parse is a packaging mistake
+	that costs a menu entry. The counts are logged so the difference is visible either way.
+	*/
+	#loadTemplates() {
+		if (!this.templatesDir || !fs.existsSync(this.templatesDir)) return;
+		let bad = 0;
+		for (const file of fs.readdirSync(this.templatesDir).filter((f) => f.endsWith('.json')).sort()) {
+			try {
+				const doc = JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8'));
+				const why = validateDoc(doc);
+				if (why) throw new Error(why);
+				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
+				const model = new Model();
+				model.load(doc);
+				this.templates.set(doc.meta.id, model);
+			} catch (err) {
+				bad++;
+				console.warn(`[ store ] template ${file} skipped: ${err.message}`);
+			}
+		}
+		console.log(`[ store ] ${this.templates.size} template(s)${bad ? `, ${bad} skipped` : ''}`);
+	}
+
 	get(id) {
+		const t = this.templates.get(id);
+		if (t) return t;
+
 		const entry = this.diagrams.get(id);
 		return entry ? entry.model : null;
 	}
@@ -722,14 +790,39 @@ export class Store {
 		const visible = this.authz
 			? [...this.diagrams.values()].filter((e) => this.access(e.model.state.meta.id, principal))
 			: [...this.diagrams.values()];
-		return visible.map((e) => ({
-			id: e.model.state.meta.id,
-			name: e.model.state.meta.name,
-			version: e.model.state.meta.version
-		}));
+		/*
+		Templates appear BESIDE a principal's own diagrams, never shadowing them (ruled H9.9).
+
+		Shadowing -- hiding a template once you have forked it -- reads better in a sentence and is
+		the wrong shape here: it makes the listing a MERGE of two sources rather than a query, and
+		every listing defect this store has had came from exactly that. B130's `store.first()` with
+		no principal, B115's pushed agent list going stale against the pulled one. A redundant row
+		is a smaller cost than a listing assembled from two places that must agree.
+
+		`template: true` is what lets a caller tell them apart without parsing the id, though the id
+		carries it too.
+		*/
+		return [
+			...visible.map((e) => ({
+				id: e.model.state.meta.id,
+				name: e.model.state.meta.name,
+				version: e.model.state.meta.version,
+			})),
+			// and the same rule in the listing: a caller with no principal is not offered them, or the
+			// names alone leak from behind a door they have not come through
+			...(!this.authz || principal ? [...this.templates.values()] : []).map((m) => ({
+				id: m.state.meta.id,
+				name: m.state.meta.name,
+				version: m.state.meta.version,
+				template: true,
+			})),
+		];
 	}
 
 	async remove(id, principal) {
+		// a template is nobody's, so it is not yours to delete. Saying so beats 'unknown diagram',
+		// which would be a lie about something the caller can plainly see in the listing.
+		if (this.templates.has(id)) return 'cannot delete a template: it ships with the image';
 		const entry = this.diagrams.get(id);
 		if (!entry) return 'unknown diagram';
 		const denied = this.#mayWrite(id, principal);
@@ -753,7 +846,10 @@ export class Store {
 		} catch (err) {
 			console.warn(`[ store ] could not remove ${id}.json: ${err.message}`);
 		}
-		if (this.diagrams.size === 0) this.seed(principal); // never empty, and the reseed is YOURS (B131)
+		// B131 reseeded so deleting your last diagram did not strand you. Templates do that job now
+		// and do it better -- what you get back is a choice rather than a blank document nobody asked
+		// for -- so the reseed only runs where there are no templates to fall back on.
+		if (this.diagrams.size === 0 && this.templates.size === 0) this.seed(principal);
 		return null;
 	}
 
@@ -908,6 +1004,19 @@ export class Store {
 	Any level reads. `read` and `write` differ on writing, not on seeing.
 	*/
 	canRead(id, principal) {
+		/*
+		H9.9: a template is readable by every PRINCIPAL -- which is not the same as by everyone.
+
+		The first version returned true unconditionally, on the reasoning that a template is owned by
+		nobody so authorization has nothing to decide. That is true about the GRANT and false about
+		the door. `/connect` is deliberately outside IAP, so an unauthenticated caller reached it,
+		and `curl` with no credential returned the whole of a real network topology.
+
+		A template is not public content. It is content offered to anyone who has got through the
+		door, and getting through the door is exactly what having a principal means. Writing is a
+		separate question and `commit` answers it by forking.
+		*/
+		if (this.templates.has(id)) return !!principal;
 		if (!this.authz) return true;
 		return this.access(id, principal) !== null;
 	}
@@ -929,7 +1038,27 @@ export class Store {
 	}
 
 	// THE ONE WRITE. Every writer reaches the model through here.
+	/*
+	H9.9 -- the first write against a template FORKS it, and the answer says so.
+
+	A template is read-only content in the image, so a write cannot land on it. Rather than refuse,
+	the write is applied to a fresh diagram seeded from the template and owned by the caller, and
+	the result carries `forkedTo` so the caller can follow. Refusing would be simpler and would make
+	a template a thing you look at rather than a thing you start from, which is the entire point.
+
+	FORKED HERE, at the one write choke point, rather than at each caller. REST and the websocket
+	both funnel through `commit`, so this is the only place that can see every write; doing it in
+	either transport would leave the other silently writing to nowhere.
+	*/
 	commit(id, request, by = 'client', actor = null, principal) {
+		if (this.templates.has(id)) {
+			const forked = this.forkTemplate(id, principal);
+			if (!forked.ok) return forked;
+			const res = this.commit(forked.id, request, by, actor, principal);
+			// the fork stands even if the write is then rejected: the caller asked to start from
+			// this template, and handing back a rejection with no diagram would lose that intent
+			return { ...res, forkedTo: forked.id };
+		}
 		const entry = this.diagrams.get(id);
 		if (!entry) return { ok: false, error: 'unknown diagram' };
 		const denied = this.#mayWrite(id, principal);
@@ -940,6 +1069,8 @@ export class Store {
 	}
 
 	undo(id, to = null, principal) {
+		if (this.templates.has(id)) return { ok: false, error: `cannot undo a template: write to it first, which forks a copy you own` };
+
 		const entry = this.diagrams.get(id);
 		if (!entry) return { ok: false, error: 'unknown diagram' };
 		const denied = this.#mayWrite(id, principal);
@@ -950,6 +1081,8 @@ export class Store {
 	}
 
 	redo(id, principal) {
+		if (this.templates.has(id)) return { ok: false, error: `cannot redo a template: write to it first, which forks a copy you own` };
+
 		const entry = this.diagrams.get(id);
 		if (!entry) return { ok: false, error: 'unknown diagram' };
 		const denied = this.#mayWrite(id, principal);

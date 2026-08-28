@@ -18,7 +18,9 @@ misses: a SECOND load appearing inside a file that legitimately has one.
                                    identical need: allocate entity k against the entity k-1 just
                                    invented. Two consumers, one per side of the wire, so it moved
                                    to the substrate — and this allowance moved with it.
-  server/store.js    load x1       Store.install — the whole-document entry
+  server/store.js    load x2       Store.install (the whole-document entry) + #loadTemplates (H9.9),
+                                   which builds a read-only Model per template. No log, no commits,
+                                   no inverses to corrupt, and never in `this.diagrams`.
   server/txn.mjs     load x0       none of its own now; it calls model/projection()
 
 That second load is a real second caller. The spec says "no module other than Store.install calls
@@ -221,7 +223,12 @@ const DOM_ALLOW = new Set([
 const ALLOW = {
 	'model/ops.mjs': { mutate: null, load: 0, reach: 0 },
 	'model/model.mjs': { mutate: 0, load: 1, reach: 0 },      // projection()'s scratch — H6.10
-	'server/store.js': { mutate: 0, load: 1, reach: null },   // it owns the Map
+	// H9.9 raises the load budget to 2. The second is `#loadTemplates`, which builds a Model per
+	// template at boot. The rule guards STORED INVERSES -- an out-of-band load corrupts every
+	// inverse below it -- and a template has none: it is never committed to, never logged, never
+	// written back, and lives outside `this.diagrams` entirely. Counted rather than exempted, so
+	// a THIRD load still has to argue for itself.
+	'server/store.js': { mutate: 0, load: 2, reach: null },   // it owns the Map
 	'server/txn.mjs': { mutate: 0, load: 0, reach: 0 },
 };
 

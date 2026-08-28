@@ -14,7 +14,9 @@ server and can never accidentally test itself against in-process state.
 */
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { VERBS, byName, sweepTokens } from './verbs.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { VERBS, byName, sweepTokens, ctxFile } from './verbs.mjs';
 
 const RESET = '\x1b[0m', RED = '\x1b[31m', DIM = '\x1b[2m', BOLD = '\x1b[1m';
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -90,6 +92,38 @@ JITTERED, so that several agents throttled at once do not come back in step and 
 const THROTTLE_ATTEMPTS = 4;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/*
+H9.9 -- when a write forks a template, SAY SO and follow it.
+
+The websocket rebinds its session, so a browser writing to a template lands on the fork and stays
+there. REST has no session, and without this the CLI kept naming the template and forked AGAIN on
+every write: two commands produced two diagrams both called `arrow`, one node in each, and nothing
+told the caller that either had happened.
+
+Two things, and the second is what was actually broken. It PRINTS, because an agent whose work moved
+to a different id and was not told cannot reason about anything it does next (A5). And it RE-POINTS
+the context, which is the CLI's equivalent of the session rebind, so the next command without an
+explicit `--diagram` goes to the fork rather than starting a third copy.
+
+HERE rather than in `ok()`, because this needs `ctx` and the verbs do not pass it -- putting it
+there meant every write verb had to remember, which is the shape of defect this whole feature was
+careful to avoid one layer down.
+
+An explicit `--diagram template-x` still forks again, and that is right: naming the template is
+asking to start from it. What was wrong was doing it in silence.
+*/
+function followFork(ctx, res) {
+	const to = res.body?.forkedTo;
+	if (!to) return;
+	// neutral wording on purpose: this fires for a LOCK as well as a write, and 'your write
+	// landed on' is a lie when nothing has been written yet
+	process.stderr.write(`${paint(DIM, '[ fork ]')} a template is read-only -- you now have your own copy: ${to}\n`);
+	try {
+		fs.mkdirSync(path.dirname(ctxFile(ctx)), { recursive: true });
+		fs.writeFileSync(ctxFile(ctx), to);
+	} catch { /* a context we cannot write is a smaller problem than not reporting the fork */ }
+}
+
 export async function request(ctx, path, opts = {}) {
 	for (let attempt = 0; ; attempt++) {
 		const res = await requestOnce(ctx, path, opts);
@@ -98,7 +132,7 @@ export async function request(ctx, path, opts = {}) {
 		body came from the service itself and means something this function has no business
 		second-guessing -- it is returned for the verb to report.
 		*/
-		if (res.status !== 429 || res.body !== null) return res;
+		if (res.status !== 429 || res.body !== null) { followFork(ctx, res); return res; }
 		if (attempt >= THROTTLE_ATTEMPTS - 1) {
 			die(`rate limited by the agent door after ${THROTTLE_ATTEMPTS} attempts`
 				+ ' -- it allows a burst and then paces you. Slow down, or space the run out.');

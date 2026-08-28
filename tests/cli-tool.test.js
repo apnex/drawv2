@@ -1345,3 +1345,71 @@ test('B160: a non-JSON body that is NOT a 429 still asks about the credential', 
 		assert.match(stderr, /is a credential needed/, 'the sign-in guess survives for the case it was for');
 	} finally { srv.close(); }
 });
+
+/*
+H9.9 -- the CLI follows a fork, because REST has no session to rebind.
+
+A websocket session moves to the fork and stays there. REST is stateless, so before this the CLI
+kept naming the template and forked AGAIN on every write: two commands produced two diagrams both
+called `arrow` with one node each, and nothing told the caller either had happened. Observed in the
+shipped image rather than reasoned about.
+
+The context file is the CLI's session, and re-pointing it is what makes a later write land beside
+the first instead of starting a third copy.
+*/
+test('H9.9: a write to a template is announced, and the context follows the fork', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tplcli-'));
+	const hm = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tplhome-'));
+	const templatesDir = fileURLToPath(new URL('../templates', import.meta.url));
+	const a = await makeApp({ dataDir: dir, secretsDir: dir, port: 0, templatesDir });
+	const h = `http://127.0.0.1:${a.port}`;
+	const err = [];
+	const realWrite = process.stderr.write.bind(process.stderr);
+	process.stderr.write = (s) => { err.push(String(s)); return true; };
+	const say = [];
+	const cli = (...argv) => main([...argv, '--host', h], { HOME: hm }, (s) => say.push(s));
+	try {
+		const tpl = [...a.store.templates.keys()].sort()[0];
+		const node = a.store.get(tpl).all('node')[0].name;
+
+		/*
+		LOCK forks, and this is the case that only appears with authorization ON.
+
+		`canWrite` is false for a template -- it has no owner and no grants -- so under authz the
+		lock was refused and the REST/CLI path could never fork at all. It worked in a container with
+		no identity source, which is not the configuration production runs.
+
+		Locking the template itself was rejected as the fix: a lock SERIALISES writers, so one person
+		starting from a template would block everyone else from starting from the same one. Taking
+		the write slot is declaring intent to mutate, and for read-only content the only honest way
+		to honour that is to hand back something the caller can mutate.
+		*/
+		await cli('lock', '--diagram', tpl);
+		await cli('rename', node, 'renamed-by-me');
+
+		const shouted = err.join('');
+		assert.match(shouted, /\[ fork \]/, 'the caller is TOLD its write moved');
+		const forkId = (shouted.match(/diagram-[0-9a-f]{6}/) || [])[0];
+		assert.ok(forkId, 'and told where to');
+
+		// the context is the CLI's session. Without this the next write names the template again
+		// and forks a second time, which is exactly what the shipped image did.
+		const ctx = fs.readFileSync(path.join(hm, '.config/draw/context'), 'utf8').trim();
+		assert.equal(ctx, forkId, 'the context followed the fork');
+		// and the TOKEN followed it too. Stored under the requested id, the caller held a token for
+		// something that was never locked, and the next write said "run draw lock" with one held.
+		assert.match(say.join(''), new RegExp(`locked ${forkId}`), 'the lock names what it actually locked');
+
+		const mine = a.store.list('user:owner@example.com').filter((e) => !e.template);
+		assert.equal(mine.length, 1, 'exactly one fork exists');
+		assert.equal(a.store.get(forkId).all('node').some((n) => n.name === 'renamed-by-me'), true,
+			'and the write is in it');
+		assert.equal(a.store.get(tpl).all('node').some((n) => n.name === 'renamed-by-me'), false,
+			'the template is untouched -- it is content in the image');
+	} finally {
+		process.stderr.write = realWrite;
+		await a.close();
+		fs.rmSync(dir, { recursive: true, force: true });
+		fs.rmSync(hm, { recursive: true, force: true });
+	}
+});

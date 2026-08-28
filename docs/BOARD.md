@@ -165,7 +165,7 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 3 | H10.22 | user | A revoked peer keeps believing it may write until it reconnects. Contentless prompt-to-refresh, deliberately not a broadcast grant map. Same stale-tab family as B148. |
 | 4 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 5 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
-| 6 | H9.9 | feature | Examples become templates. Still cheapest while there is exactly one user. |
+| 6 | H10.32 | agent | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. It nearly shipped the wrong document as a template. |
 | 7 | H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
@@ -468,7 +468,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.21 | An agent may create a diagram and owns it -- `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 - M | `DONE` |
 | H9.22 | Long-poll: `history?since=&wait=` -- the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | feature | S4 - M | `TODO` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup -- IAM cannot name a consumer domain | **B66** | S2 - S | `DONE` |
-| H9.9 | Examples become templates; first write forks a per-owner copy -- reverses the first-boot seed, amended in `SCOPE.md` | feature | S3 - L | `TODO` |
+| H9.9 | Examples become templates; first write forks a per-owner copy -- reverses the first-boot seed, amended in `SCOPE.md`. Four exported from live, `template` in the id grammar, fork on write and on taking the write slot | feature | S3 - L | `DONE` |
 | H9.10 | Decide the fate of the 12 unowned diagrams in `gs://diagrams.apnex.io` -- adopt or delete, explicitly. Recorded as 11 until the bucket was counted at cutover | -- | S3 - S | `DONE` |
 | H9.12 | Gate reads: `hello`, `open`, `store.first`, the REST document and log, and the SVG rendering -- writes were gated, reads never were | **B67** | S2 - M | `DONE` |
 | H9.13 | Name every identity refusal, once per reason, so a misconfiguration announces itself instead of presenting as a uniform denial | **B68**, **B69** | S2 - S | `DONE` |

@@ -36,7 +36,7 @@ reaches around an injected dependency is the injection failing quietly, which is
 No HOME means no store. Every reader below treats that as "nothing held", which is true.
 */
 const homeOf = (ctx) => ctx?.env?.HOME || null;
-const ctxFile = (ctx) => `${homeOf(ctx)}/.config/draw/context`;
+export const ctxFile = (ctx) => `${homeOf(ctx)}/.config/draw/context`;
 
 async function activeId(ctx, flags) {
 	const want = flags.diagram || ctx.flags?.diagram;
@@ -478,8 +478,11 @@ VERBS.push(
 			const mine = await readToken(ctx, id);
 			const b = ok(await request(ctx, `/diagrams/${id}/lock`,
 				{ method: 'POST', headers: mine ? { 'x-draw-lock': mine } : {}, body: { owner: 'agent' } }), 'lock');
-			await writeToken(ctx, id, b.token, b.expiresAt || b.heldUntil || null);
-			return { json: { ...b, token: 'stored' }, text: `${b.renewed ? 'renewed' : 'locked'} ${id}  v${b.version ?? ''}  frees ${new Date(b.expiresAt).toISOString()}` };
+			// H9.9: a lock on a TEMPLATE forks and locks the fork, so the token belongs to the fork.
+			// Storing it under the requested id left the caller holding a token for something that
+			// was never locked, and the next write said "run draw lock" with a lock already held.
+			await writeToken(ctx, b.diagram || id, b.token, b.expiresAt || b.heldUntil || null);
+			return { json: { ...b, token: 'stored' }, text: `${b.renewed ? 'renewed' : 'locked'} ${b.diagram || id}  v${b.version ?? ''}  frees ${new Date(b.expiresAt).toISOString()}` };
 		},
 	},
 	{

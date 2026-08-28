@@ -271,12 +271,23 @@ async function commitWrite(res, store, hub, locks, id, token, ops, label, extra,
 	// durability: a REST/agentic caller is one-shot — it has no reconnect backstop, so an acked
 	// write must be on disk, not merely in the ~200ms debounce window. Flush before acking. (The ws
 	// path keeps the debounce — drag writes are high-frequency and self-heal on reconnect.)
-	await store.flush(id);
+	/*
+	H9.9: a write against a TEMPLATE forked it, and everything after this point concerns the fork.
+
+	`id` still names the template, so the flush, the change body and the broadcast must all be
+	re-pointed or they would flush nothing, describe the wrong document and broadcast to a channel
+	nobody is on. A REST caller is one-shot and has no session to rebind, so `forkedTo` travels in
+	the response -- it is the same id `POST /diagrams` would have returned, because that is what
+	just happened on its behalf.
+	*/
+	const landed = result.forkedTo || id;
+	const forked = result.forkedTo ? { forkedTo: result.forkedTo } : {};
+	await store.flush(landed);
 	// a value-identical write is accepted and is not a change
-	if (!result.change) return json(res, 200, { version: result.version, noop: true, ...(extra || {}) });
-	const body = changeBody(result.change, store, id);
-	if (hub) hub.broadcast(id, 'change', body);
-	return json(res, 200, { ...body, ...(extra || {}) });
+	if (!result.change) return json(res, 200, { version: result.version, noop: true, ...forked, ...(extra || {}) });
+	const body = changeBody(result.change, store, landed);
+	if (hub) hub.broadcast(landed, 'change', body);
+	return json(res, 200, { ...body, ...forked, ...(extra || {}) });
 }
 
 // set the authoritative selection (model-state / status). Mirrors commitWrite: re-verify the token
@@ -697,7 +708,7 @@ async function handleWorkspace(req, res, store, parts, principal) {
 }
 
 async function handleWrite(req, res, store, locks, hub, parts, principal) {
-	const id = parts[3];
+	let id = parts[3];   // H9.9: reassigned when a lock on a template forks it
 	/*
 	Restore -- B109, and it must come before the existence check below.
 
@@ -777,6 +788,33 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 	// lock lifecycle: POST .../lock to acquire, DELETE .../lock to release
 	if (parts[4] === 'lock' && parts.length === 5) {
 		if (req.method === 'POST') {
+			/*
+			H9.9 -- taking the write slot on a TEMPLATE forks it, and locks the fork.
+
+			A template cannot be written, so there is nothing here to lock. The two alternatives were
+			both worse in the same way: making `canWrite` true for a template grants write access to
+			something that can never be written, and transferring the lock afterwards still takes one
+			on the template first. Either way a lock lands on the template -- and a lock SERIALISES
+			writers, so one person starting from a template would block everyone else from starting
+			from the same one. Two users forking the same template are not in contention at all.
+
+			Acquiring the write slot IS declaring intent to mutate. For read-only content the only
+			honest way to honour that is to hand back something the caller can mutate, so the fork
+			happens here and the lock is taken on the fork. No lock is ever held on a template.
+
+			`forkedTo` rides on the response, so the CLI announces it and re-points its context by the
+			same path a forking write uses -- one mechanism, not two.
+			*/
+			let forkedTo = null;
+			if (store.templates.has(id)) {
+				const forked = store.forkTemplate(id, principal);
+				if (!forked.ok) {
+					return json(res, forked.forbidden ? 403 : 422,
+						{ error: forked.error, code: forked.forbidden ? 'forbidden' : 'fork-rejected' });
+				}
+				forkedTo = forked.id;
+				id = forked.id;
+			}
 			// B63: the write slot is a write capability, so a reader must not take it. Checked here
 			// and not in `locks` — acquiring is not a store mutation, which is why the H9.3a sweep
 			// over the seven mutating methods never reached this route.
@@ -796,6 +834,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			// `renewed` rides along or the caller cannot tell an extension from a fresh grab: the
 			// deadline moves either way, so without it the two are indistinguishable at the tool
 			return json(res, 200, { token: lock.token, expiresAt: lock.expiresAt, renewed: !!lock.renewed,
+				...(forkedTo ? { forkedTo, diagram: forkedTo } : {}),
 				version: log?.version ?? 0, canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
 				logDepth: log?.records.length ?? 0, truncated: !!log?.truncated });
 		}

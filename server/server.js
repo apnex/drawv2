@@ -4,6 +4,7 @@ draw server — CLI entry. Serves the client, the read-only REST API, and the
 persistence websocket on one port. State lives in <dataDir>/<diagram-id>.json.
 */
 
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { gcsFiles } from './files.mjs';
@@ -23,8 +24,13 @@ const secretsDir = process.env.SECRETS_DIR || flag('secrets', undefined);
 const host = process.env.HOST || flag('host', undefined);
 // The example corpus, shipped in the repo and copied into the data dir on FIRST boot only. The
 // data dir is runtime state (gitignored, a mounted bucket in production); examples/ is content.
-const examplesDir = process.env.EXAMPLES_DIR
-	|| flag('examples', fileURLToPath(new URL('../examples', import.meta.url)));
+// H9.9: the example corpus is retired. It seeded real, shared, mutable diagrams on first
+// boot; templates replace it -- read from the image, listed to everyone, forked on first write.
+const examplesDir = null;
+// H9.9: templates are read-only content in the image, listed to everyone and forked on first
+// write. Same shape as the example corpus it replaces -- injected, never discovered.
+const templatesDir = process.env.TEMPLATES_DIR
+	|| (fs.existsSync(new URL('../templates', import.meta.url)) ? fileURLToPath(new URL('../templates', import.meta.url)) : null);
 
 /*
 BUCKET selects the object store; its absence selects the local filesystem -- B6.
@@ -74,7 +80,7 @@ if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 // the source IS the identity argument, so there is nothing left to test in place of passing it.
 // H9.28: ALLOW_ORIGINS is an escape hatch, not the main path. Same-origin is recognised without
 // configuration by matching the Host header, which is what the editor always produces.
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains, origins: process.env.ALLOW_ORIGINS || '', lockTtlMs: Number(process.env.LOCK_TTL_MS) || 0 });
+const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, templatesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains, origins: process.env.ALLOW_ORIGINS || '', lockTtlMs: Number(process.env.LOCK_TTL_MS) || 0 });
 if (source) {
 	console.log(domains.length
 		? `[ draw ] sign-in restricted to ${domains.join(', ')}`

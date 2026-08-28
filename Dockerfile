@@ -26,9 +26,12 @@ COPY engine/ engine/
 # the model substrate ESM (served at /model; imported by server/store.js + seed.js at boot)
 COPY model/ model/
 
-# the shipped example corpus — copied into $DATA_DIR on FIRST boot only (see server/store.js).
-# NOT the data dir: /data is a volume, and a fresh container must come up with content.
-COPY examples/ examples/
+# the shipped TEMPLATE set (H9.9). Read straight from the image and never written: a template is
+# listed to everyone, owned by nobody, and forks into a real diagram on first write. It replaced the
+# example corpus, which was COPIED into $DATA_DIR on first boot and became shared mutable state that
+# every principal could edit -- wrong once the store had per-diagram access control.
+# NOT the data dir: /data is a volume, and a fresh container must come up with something to start from.
+COPY templates/ templates/
 # CLI on PATH; node must own cli/ so `draw context` can write its context file at runtime.
 # draw.mjs, not draw.sh: the shell version was retired when the CLI was rewritten Node-first (B117)
 # and the link went on pointing at it for two milestones. `ln -s` does not check its target, so the

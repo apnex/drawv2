@@ -289,6 +289,18 @@ export class Session {
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;
 				const res = this.store.commit(this.diagramId, body, 'client', this.actor, this.principal);
+				/*
+				H9.9: writing to a template forked it, so this SESSION now belongs to the fork.
+
+				Rebinding here rather than leaving it to the client is what stops the next write
+				landing on the template again and forking a second time -- a user who drew three
+				shapes would otherwise end up with three diagrams. The client is told, so its own
+				id and its URL can follow.
+				*/
+				if (res.forkedTo) {
+					this.diagramId = res.forkedTo;
+					this.send('forked', { from: body.from ?? null, diagram: res.forkedTo });
+				}
 				if (!res.ok) return this.error(`commit rejected: ${res.error}`, 'commit-rejected', body.txnId);
 				if (this.locks) this.locks.releaseHold(this.diagramId);   // the human took the wheel
 				if (!res.change) return this.send('ack', { acked: body.txnId ?? null, noop: true });

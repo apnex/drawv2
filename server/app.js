@@ -138,7 +138,7 @@ export function sweepLocks(locks, hub, store) {
 	return freed;
 }
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '', lockTtlMs = 0 } = {}) {
+export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, templatesDir = null, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '', lockTtlMs = 0 } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -185,7 +185,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 			+ '`principalOf`, which server.js resolves through identitySource(). Authorization with no '
 			+ 'identity source refuses every caller including the owner.');
 	}
-	const store = new Store(data, { examplesDir, files, authz });
+	const store = new Store(data, { examplesDir, templatesDir, files, authz });
 	await store.init();
 	/*
 	H9.6: two doors, one boundary. A Google identity via `principalOf`, or a connection code as a
