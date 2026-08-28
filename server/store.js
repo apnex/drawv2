@@ -764,6 +764,20 @@ export class Store {
 		for (const entry of this.diagrams.values()) {
 			if (this.canRead(entry.model.state.meta.id, principal)) return entry.model;
 		}
+		/*
+		H9.9 -- and a TEMPLATE when the caller owns nothing yet, which is the whole point of them.
+
+		This walked `diagrams` alone, so a principal with none of their own got `null`, the session
+		answered "no diagrams available", and the picker came up EMPTY while four templates sat right
+		there. That is exactly the person templates exist for: someone signing in for the first time
+		with nothing to open.
+
+		Only for a principal, on the same reasoning as `canRead`: a caller who has not come through
+		the door is offered nothing, not even a starting point.
+		*/
+		// the same condition the listing uses, not a second spelling of it: with authorization off
+		// there are no principals at all, and offering nothing would leave a local run empty
+		if (!this.authz || principal) for (const model of this.templates.values()) return model;
 		return null;
 	}
 
@@ -1016,8 +1030,8 @@ export class Store {
 		door, and getting through the door is exactly what having a principal means. Writing is a
 		separate question and `commit` answers it by forking.
 		*/
-		if (this.templates.has(id)) return !!principal;
 		if (!this.authz) return true;
+		if (this.templates.has(id)) return !!principal;
 		return this.access(id, principal) !== null;
 	}
 

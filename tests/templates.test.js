@@ -252,3 +252,44 @@ test('H9.9: an unauthenticated caller is offered no template, and can read none'
 		assert.ok(store.list('user:someone@example.com').length > 0, 'while a principal sees them');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+H9.9 -- someone who owns nothing yet is offered a template, which is the whole point of them.
+
+`first()` walked `diagrams` alone, so a principal with none of their own got null, the session
+answered "no diagrams available", and the picker came up EMPTY with four templates sitting right
+there. That is exactly the person this feature exists for: signing in for the first time with
+nothing to open.
+
+Found by the director looking at the picker after a deploy, not by any test here -- the suite had
+covered listing, forking and refusing, and never the first thing a new user sees.
+*/
+test('H9.9: a principal who owns nothing opens a template rather than nothing', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { templatesDir: TEMPLATES, authz: true });
+	await store.init();
+	try {
+		assert.equal(store.total(), 0, 'nobody owns anything');
+		const opened = store.first('user:newcomer@example.com');
+		assert.ok(opened, 'a newcomer is given something to open');
+		assert.match(opened.state.meta.id, /^template-/, 'and it is a template');
+
+		// the door still decides. A caller with no principal is offered nothing at all, or the
+		// templates would be readable from outside IAP through the agent door.
+		assert.equal(store.first(null), null, 'and nobody is offered nothing');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H9.9: with authorization off, a local run still opens one', async () => {
+	const dir = tmp();
+	const store = new Store(dir, { templatesDir: TEMPLATES, authz: false });
+	await store.init();
+	try {
+		// authorization off means there are no principals at all, so requiring one would leave a
+		// local run staring at an empty picker. The condition mirrors canRead rather than restating
+		// it -- an earlier version had `!!principal` ahead of the authz check and refused its own
+		// templates on a machine with no identity source configured.
+		assert.ok(store.first(null), 'a local run opens a template');
+		assert.equal(store.canRead([...store.templates.keys()][0], null), true, 'and can read it');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
