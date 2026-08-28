@@ -99,11 +99,14 @@ font properties on an option and ignores the box model, so a literal box around 
 thing that can be built here. `background-color` fills the row, which reads as a band and is the
 nearest honest equivalent.
 
-The muted slate is `#whoami`'s, deliberately, and not the amber used by the lock and the agent
-indicator. Amber means ATTENTION on this bar -- a held lock, an agent driving -- and a template is
-not a warning. It is context: something you may start from and do not own.
+The slate is `#agents`' idle background, not the amber the lock and the agent indicator use for
+state. Amber means ATTENTION on this bar -- a held lock, an agent driving -- and a template is not a
+warning. It is context: something you may start from and do not own.
+
+Italic was tried and dropped: the band already carries the distinction, and slanting the text made
+the row harder to read for a difference the colour had already made.
 */
-#diagram-list option.tpl { color: #cfd8dc; background-color: #263238; font-style: italic; }
+#diagram-list option.tpl { color: #cfd8dc; background-color: #37474f; }
 
 #slides-url { width: 220px; }
 #slides-push.busy { color: #ffd54f; border-color: #ffd54f; }
