@@ -259,7 +259,31 @@ export class Sync {
 			const sent = this.outbox.find((m) => m.txnId === b.acked);
 			if (sent) sent.version = b.version;
 			this.pruneOutbox(b.durableVersion);
-			if (Array.isArray(b.ops) && (b.label === 'undo' || b.label === 'redo')) applyOps(this.model, b.ops);
+			/*
+			B162 / I7 -- the server EXPANDED this transaction, and the expansion must reach us too.
+
+			Our own ops are already in the model, applied optimistically, which is why this used to
+			apply the server's list only for undo and redo. But `plan()` now adds ops we never sent:
+			a waypoint the transaction orphaned is swept in the same step. Those deletions arrived in
+			`b.ops`, were skipped, and the bends stayed on the canvas -- correct on the server, stale
+			in the browser, which is precisely the divergence I7 forbids.
+
+			ONLY WHAT WE DID NOT SEND. Re-applying the whole list would replay our own ops on a model
+			that may have moved on -- a later local edit clobbered by an older ack. The outbox holds
+			exactly what we submitted, so the difference is the server's contribution and nothing
+			else.
+
+			Undo and redo still take the whole list: their ops are the server's by definition, and
+			nothing of ours is in flight to be overwritten.
+			*/
+			if (Array.isArray(b.ops)) {
+				if (b.label === 'undo' || b.label === 'redo') applyOps(this.model, b.ops);
+				else {
+					const mine = new Set((sent?.ops || []).map((o) => `${o.op}:${o.kind}:${o.id ?? o.entity?.id}`));
+					const added = b.ops.filter((o) => !mine.has(`${o.op}:${o.kind}:${o.id ?? o.entity?.id}`));
+					if (added.length) applyOps(this.model, added);
+				}
+			}
 			this.emitState({});
 			return;
 		}

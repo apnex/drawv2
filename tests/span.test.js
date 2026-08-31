@@ -486,3 +486,43 @@ test('B162: an endpoint is drawn heavier, on the same footprint as a bend', asyn
 	assert.equal(end.r + end.w / 2, 20, 'the endpoint sits inside the frame extent exactly');
 	assert.ok(end.r + end.w / 2 <= bend.r + bend.w / 2, 'and never reaches further out than a bend');
 });
+
+/*
+B162 -- the bend/endpoint rule has ONE definition, and both renderers call it.
+
+The live editor and the SVG export are deliberately separate renderers (B28): one keeps addressable
+DOM for a person editing, the other produces a finished document. What must not differ is the RULE,
+and it did -- the role landed in `resolve()`, which only the export walks, so the download drew
+endpoints correctly while the canvas drew everything as a bend. Checking the export said it worked.
+
+This is the twin guard: if either renderer grows its own copy of the rule, or stops calling the
+shared one, this fails.
+*/
+test('B162: one rule, consumed by the client renderer and the kernel alike', async () => {
+	const k = await import('../kernel/index.mjs');
+	assert.equal(typeof k.waypointRole, 'function', 'the rule is exported from the kernel');
+
+	// the four cases, asserted on the rule itself rather than through either renderer
+	const open = [{ from: 'w1', to: 'w2', via: ['w3'], close: false }];
+	const ring = [{ from: 'w1', to: 'w2', via: ['w3'], close: true }];
+	assert.equal(k.waypointRole('w1', open), 'endpoint', 'a terminal on an open path');
+	assert.equal(k.waypointRole('w3', open), 'bend', 'a via is a corner');
+	assert.equal(k.waypointRole('w1', ring), 'bend', 'a RING has no ends');
+	assert.equal(k.waypointRole('w9', []), 'bend', 'and an orphan draws plainly');
+
+	/*
+	Both renderers must ASK for the role rather than decide it.
+
+	Asserted as the positive only. My first attempt also tried to catch a re-derivation by pattern,
+	and matched the client's own `endpoint ? 'endpoint' : 'bend'` -- which is naming a CSS class, not
+	deciding a rule. A heuristic that cannot tell labelling from logic reports the correct code as
+	the defect, which is worse than not checking.
+
+	What the negative guard cannot do, the shared function does structurally: there is one
+	`waypointRole`, and a renderer that stopped calling it would fail the assertion below.
+	*/
+	const client = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	const engine = fs.readFileSync(new URL('../kernel/engine.mjs', import.meta.url), 'utf8');
+	assert.match(client, /waypointRole\(/, 'the live renderer asks for the role');
+	assert.match(engine, /waypointRole\(/, 'and so does the kernel');
+});

@@ -96,6 +96,35 @@ in the renderer is what lets the live canvas and the SVG export agree without ei
 rule -- they both consume this.
 */
 export const waypoint = (cx, cy, role = 'bend') => ({ kind: 'waypoint', cx, cy, role });
+
+/*
+The bend/endpoint rule, in ONE place, because two renderers need the same answer.
+
+The live editor builds addressable DOM for a person editing; the kernel builds a finished SVG for
+everyone else. B28 ruled that split deliberate and it stands -- but the RULE for what a waypoint is
+must not be duplicated across it, or the export and the canvas disagree and only one of them gets
+looked at. That happened: the role landed in `resolve()`, which the client never calls.
+
+Takes the LINKS TOUCHING this waypoint, which both callers already hold -- the kernel from
+`schema.relations`, the client from the engine's maintained `linksAt` index. Each supplies its own
+shape; neither restates the rule.
+
+  in a route's via        -> bend, the path turns here
+  at from/to, open route  -> endpoint, a line terminates here
+  at from/to, CLOSED      -> bend, because a ring has no ends
+  touched by nothing      -> bend, drawn plainly; the sweep will take it
+*/
+export const waypointRole = (id, touching) => {
+	let endpoint = false;
+	for (const t of touching || []) {
+		if ((t.via || []).includes(id)) return 'bend';          // threaded: a corner, whatever else
+		if (t.from === id || t.to === id) {
+			if (t.close) return 'bend';                          // a ring has no ends
+			endpoint = true;
+		}
+	}
+	return endpoint ? 'endpoint' : 'bend';
+};
 export const zone = (x, y, w, h) => ({ kind: 'zone', x, y, w, h });
 export const group = (x, y, w, h) => ({ kind: 'group', x, y, w, h });
 export const port = (cx, cy, o = {}) => ({ kind: 'port', cx, cy, style: o.style || 'square', size: o.size || 10 });

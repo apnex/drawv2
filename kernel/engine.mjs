@@ -25,7 +25,7 @@
 // bend. ONE anchor per cell = the centre. Parallel/mechanism realizers are a future additive
 // layer (kept in design/sim), deliberately out of this kernel cut.
 import { STD, derive, BEND_R } from './spec.mjs';
-import { cellPx, node, waypoint, zone, group, path, groupHull } from './geometry.mjs';
+import { cellPx, node, waypoint, waypointRole, zone, group, path, groupHull } from './geometry.mjs';
 import { gridSnap } from './router.mjs';
 
 const VARIANTS = { standard: STD };
@@ -61,21 +61,12 @@ export function resolve(schema) {
 	closing a path changes how its corners draw with nothing rewritten and nothing to fall out of
 	step -- and the SVG export gets the same answer, because it resolves the same schema.
 	*/
-	const endpoints = new Set();
-	const bends = new Set();
-	for (const r of schema.relations || []) {
-		const rt = r.route;
-		if (!rt) continue;
-		for (const v of rt.via || []) bends.add(v);
-		// a ring has no ends, so a closed route's terminals are corners like any other
-		if (rt.close) { bends.add(rt.from); bends.add(rt.to); }
-		else { endpoints.add(rt.from); endpoints.add(rt.to); }
-	}
+	const routes = (schema.relations || []).map((r) => r.route).filter(Boolean);
 	for (const e of schema.entities || []) {
 		if (e.kind !== 'waypoint') continue;
 		const [cx, cy] = cellPx(e.cell, V);
-		// a bend wins: threaded through a route it is a corner, whatever else it also terminates
-		const el = waypoint(cx, cy, bends.has(e.id) ? 'bend' : (endpoints.has(e.id) ? 'endpoint' : 'bend'));
+		// the rule lives in geometry.mjs so the live client reaches the same answer from its own index
+		const el = waypoint(cx, cy, waypointRole(e.id, routes));
 		el.id = e.id;
 		byId[e.id] = { e, el, cx, cy, kind: 'waypoint' };
 		scene.push(el);

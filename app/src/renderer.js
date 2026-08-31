@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRole, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -220,9 +220,26 @@ export class Renderer {
 			el('rect', { class: 'group-hull', x: b.x, y: b.y, width: b.w, height: b.h, rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
 		}
 		if (kind === 'waypoint') {
-			const g = el('g', { id: entity.id, class: 'waypoint' }, this.layers.waypoints);
+			/*
+			The role comes from the KERNEL's rule, not from a second copy of it here.
+
+			The live editor and the SVG export are deliberately separate renderers (B28): one keeps
+			addressable DOM for a person editing, the other produces a finished document. What must
+			NOT differ is the rule for what a waypoint IS -- and it did, because the role landed in
+			`resolve()`, which only the export walks. The canvas kept drawing every waypoint as a
+			bend while the download drew endpoints correctly, so checking the export said it worked.
+
+			`linksAt` is the engine's maintained incidence index, so this is O(1) and re-derives on
+			every render -- closing a path with `c` changes the drawing with nothing stored.
+			*/
+			const touching = (this.model.linksAt?.(entity.id) || [])
+				.map((l) => ({ from: l.src, to: l.dst, via: l.via || [], close: !!l.closed }));
+			const endpoint = waypointRole(entity.id, touching) === 'endpoint';
+			const g = el('g', { id: entity.id, class: `waypoint ${endpoint ? 'endpoint' : 'bend'}` }, this.layers.waypoints);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			el('circle', { class: 'wp-ring', r: FE, fill: 'none', stroke: TOKENS.waypoint, 'stroke-width': 1.6, 'stroke-opacity': 0.7 }, g);
+			// a heavy ring pulled inside the frame extent, so an endpoint never grows the footprint
+			const w = endpoint ? 5 : 1.6;
+			el('circle', { class: 'wp-ring', r: endpoint ? FE - w / 2 : FE, fill: 'none', stroke: TOKENS.waypoint, 'stroke-width': w, 'stroke-opacity': endpoint ? 1 : 0.7 }, g);
 			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
