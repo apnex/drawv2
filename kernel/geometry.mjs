@@ -5,6 +5,7 @@
 // Coordinate model: CELLS = the logical integer grid (center-origin). PX = resolved canvas
 // units (cell · pitch). The single per-cell ANCHOR is the cell CENTRE (cellCenter) — routes
 // thread cell centres; a Waypoint is a placeable anchor that bends a path between cells.
+import { TOKENS } from './theme.mjs';
 import { STD, L_STD, BEND_R } from './spec.mjs';
 
 // ---- the grid: cell (logical, integer) ↔ px (resolved, center-origin) ----
@@ -114,6 +115,33 @@ shape; neither restates the rule.
   at from/to, CLOSED      -> bend, because a ring has no ends
   touched by nothing      -> bend, drawn plainly; the sweep will take it
 */
+/*
+How a waypoint of each role is DRAWN, beside the rule for what it is.
+
+The two renderers are deliberately separate (B28) -- one keeps addressable DOM for a person editing,
+the other emits a finished SVG string -- but they had each inlined the same four decisions: stroke
+weight, radius, fill and opacity. Change the pad weight in one and the canvas and the export diverge
+in silence, which is exactly the failure this pair produced twice while it was being built.
+
+The kernel owns the numbers and each renderer owns only its emission. That is not a new idea here:
+`L_STD`, `TOKENS`, `contentLayout`, `groupHull` and `roundedPath` already work this way and the
+client imports every one of them. The waypoint style was the outlier.
+
+  endpoint  a copper-trace pad -- heavy ring near the path's own weight, opaque so the line
+            terminates ON it, radius pulled in by half the stroke so it never grows the footprint
+  bend      a light hollow ring -- the path turns here and must stay visible doing so
+*/
+export const waypointStyle = (role, ext) => {
+	const endpoint = role === 'endpoint';
+	const width = endpoint ? 5 : 1.6;
+	return {
+		width,
+		radius: ext - (endpoint ? width / 2 : 0),
+		fill: endpoint ? TOKENS.panel : 'none',
+		opacity: endpoint ? 1 : 0.7,
+	};
+};
+
 export const waypointRole = (id, touching) => {
 	let endpoint = false;
 	for (const t of touching || []) {

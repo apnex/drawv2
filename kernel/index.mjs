@@ -14,7 +14,7 @@ export { roundedPath, gridSnap } from './router.mjs';
 export { docToSchema, schemaToDoc } from './adapt.mjs';
 export { px, cellPx, cellCenter, cellOf, groupHull, bboxOf, spanExtent } from './geometry.mjs';
 // B162: the bend/endpoint rule, so the live renderer and the SVG export reach the same answer
-export { waypointRole } from './geometry.mjs';
+export { waypointRole, waypointStyle } from './geometry.mjs';
 export { LAYOUTS, layoutOf, onLayout, snapLayout, cellOn, pxOn, nearestAnchor, anchorAt } from './geometry.mjs';
 
 import { resolve } from './engine.mjs';

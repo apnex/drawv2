@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRole, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRole, waypointStyle, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -235,14 +235,12 @@ export class Renderer {
 			*/
 			const touching = (this.model.linksAt?.(entity.id) || [])
 				.map((l) => ({ from: l.src, to: l.dst, via: l.via || [], close: !!l.closed }));
-			const endpoint = waypointRole(entity.id, touching) === 'endpoint';
-			const g = el('g', { id: entity.id, class: `waypoint ${endpoint ? 'endpoint' : 'bend'}` }, this.layers.waypoints);
+			const role = waypointRole(entity.id, touching);
+			// the numbers are the kernel's, shared with the SVG export; this only emits them
+			const st = waypointStyle(role, FE);
+			const g = el('g', { id: entity.id, class: `waypoint ${role === 'endpoint' ? 'endpoint' : 'bend'}` }, this.layers.waypoints);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			// a heavy ring pulled inside the frame extent, so an endpoint never grows the footprint
-			const w = endpoint ? 5 : 1.6;
-			// opaque on an endpoint so the path terminates ON the pad; hollow on a bend so the turn
-			// stays visible through it. TOKENS.panel is the theme's canvas fill, used by `junction` too.
-			el('circle', { class: 'wp-ring', r: endpoint ? FE - w / 2 : FE, fill: endpoint ? TOKENS.panel : 'none', stroke: TOKENS.waypoint, 'stroke-width': w, 'stroke-opacity': endpoint ? 1 : 0.7 }, g);
+			el('circle', { class: 'wp-ring', r: st.radius, fill: st.fill, stroke: TOKENS.waypoint, 'stroke-width': st.width, 'stroke-opacity': st.opacity }, g);
 			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}

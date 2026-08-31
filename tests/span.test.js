@@ -574,3 +574,59 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	assert.equal(fills.endpoint, '#101010', 'the endpoint is filled with the canvas colour');
 	assert.equal(fills.bend, 'none', 'and the bend is not filled at all');
 });
+
+/*
+B162 -- the waypoint's STYLE has one owner, as its ROLE does.
+
+`waypointRole` fixed the rule and left the drawing duplicated: both renderers had inlined the same
+four decisions -- stroke weight, radius, fill, opacity. Change the pad weight in one and the canvas
+and the export diverge in silence, which is exactly the failure this pair produced twice while it
+was being built.
+
+Not a new idea. `L_STD`, `TOKENS`, `contentLayout`, `groupHull` and `roundedPath` already work this
+way and the client imports every one of them: the kernel owns the numbers, each renderer owns only
+its emission. The waypoint style was the outlier.
+*/
+test('B162: the waypoint style has one owner, and neither renderer restates it', async () => {
+	const k = await import('../kernel/index.mjs');
+	const end = k.waypointStyle('endpoint', 20);
+	const bend = k.waypointStyle('bend', 20);
+
+	assert.ok(end.width > bend.width * 2, 'a pad is far heavier than a corner');
+	assert.equal(end.radius + end.width / 2, 20, 'and never grows the footprint');
+	assert.equal(end.fill, '#101010', 'opaque, so the path terminates on it');
+	assert.equal(bend.fill, 'none', 'hollow, so the path stays visible turning');
+
+	/*
+	The guard that matters: neither renderer may decide these again. A second copy would pass every
+	behavioural test in this file -- both would be correct on the day it was written -- and then
+	drift the first time one side changed.
+	*/
+	for (const f of ['../app/src/renderer.js', '../kernel/renderer.mjs']) {
+		const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
+		assert.match(src, /waypointStyle\(/, `${f} must ASK for the style`);
+		assert.doesNotMatch(src, /endpoint\s*\?\s*5\s*:\s*1\.6/, `${f} restates the stroke weight`);
+		assert.doesNotMatch(src, /endpoint\s*\?\s*1\s*:\s*0\.7/, `${f} restates the opacity`);
+		assert.doesNotMatch(src, /endpoint\s*\?\s*TOKENS\.panel/, `${f} restates the fill`);
+	}
+});
+
+test('B162: the two renderers agree, value for value', async () => {
+	const k = await import('../kernel/index.mjs');
+	// what the export emits, parsed back out of the SVG it produced
+	const svg = k.render(k.docToSchema({
+		meta: { id: 'diagram-aa0001', name: 't' },
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
+		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 0, y: -120 }],
+		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		zones: [], groups: [],
+	}));
+	const drawn = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*r="([\d.]+)" fill="([^"]*)"[^>]*stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"/g)]
+		.map(([, role, r, fill, w, op]) => [role, { radius: Number(r), fill, width: Number(w), opacity: Number(op) }]));
+
+	// the live renderer sets exactly these attributes from the same call, so comparing the export
+	// against the shared source proves both sides emit one set of numbers
+	for (const role of ['endpoint', 'bend']) {
+		assert.deepEqual(drawn[role], k.waypointStyle(role, 20), `${role} is drawn as the kernel specifies`);
+	}
+});
