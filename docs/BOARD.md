@@ -565,6 +565,56 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 
 ---
 
+## H12 -- the programmable engine pilot - `TODO`
+
+Opened 2026-09-01 out of the **B163** survey, `surveys/b163-rules-system-survey.md`, which settled the ambition as a programmable geometric engine and named tower defence the pilot use case that drives the design.\
+The director then reduced the pilot to its smallest honest form: **click an endpoint waypoint in read view and it spawns movers along its path, consumed at the far end.**\
+That is the creep lifecycle -- spawn, traverse, despawn -- minus combat, and it is the seed of enemies-along-a-path.
+
+**The ordering is the point, and it comes from the survey rather than from taste.**\
+The surface is EXTRACTED from what the pilot needed, never designed ahead of it -- A3 *Earned Exposure*, and A3 *Logic Density*, which files premature abstraction as a defect rather than a virtue.
+
+**Director's rule, 2026-09-01: *no premature abstraction, unless the work IS the abstraction*.**\
+This corrects an over-application of A3 in the first draft of this milestone, which used *Logic Density* to defer the deliverable itself.\
+The discriminator: an abstraction is PREMATURE when it generalises over instances that have not been seen, and it IS THE WORK when the deliverable is a surface something else must be built on.
+
+By that test the simulation, the clock and the **situation** are the work and are built properly here.\
+Dispatch is not, and it is deferred on the survey's F3 prior-art prerequisite rather than on A3 -- the shape of a rule surface is owed research the director has not yet authorised.\
+So this milestone ships a real situation and exactly ONE rule expressed as a predicate over it, and no table.
+
+**Boundaries, each owning exactly one concern (A3 Law of One).**
+
+| Unit | Owns | Knows nothing about |
+|---|---|---|
+| `kernel/router.mjs` | the shape of a route -- decomposition, length, sampling | movers, time, the document |
+| `engine/movers.mjs` | which movers exist at time `t` and where | the document, the DOM, the clock |
+| the situation | what is true right now, as a value | what anyone intends to do about it |
+| the clock | one agreed `now()` across peers | movers, geometry |
+| the presentation layer | drawing movers | truth -- it reads simulation output and never answers back |
+
+The simulation takes `t` as an argument rather than reaching for a clock, and takes spawner descriptors rather than reading the document.\
+Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about alone.
+
+| # | Item | Cites | Size | State |
+|---|---|---|---|---|
+| H12.1 | One decomposition of a route into lines and quadratic corners, consumed by BOTH the SVG string and the measurement -- a second copy of the corner rule would be the undeclared twin `scan-twins` exists to catch, and `BEND_R` is 20 on a 40px grid so a consumer walking the raw polyline departs the drawn line by ~8px at every bend | feature | S2 - S | `TODO` |
+| H12.2 | The browser's own path measurement as a GATE oracle, not a one-off probe: kernel length and sampling proven against `getTotalLength` / `getPointAtLength` in headless Chrome. Measured at 0.018% and 0.0145px on the probe; the gate is what keeps it true | feature | S2 - S | `TODO` |
+| H12.3 | `engine/movers.mjs` -- `moversAt(spawners, t)`, pure, portable, DOM-free. The simulation, and the thing a tower will later query | feature | S3 - S | `TODO` |
+| H12.4 | One agreed clock: `serverNow` on the snapshot handshake, client-side offset, so parity does not depend on whose laptop is right | feature | S2 - S | `TODO` |
+| H12.5 | `spawn` config on an endpoint waypoint -- document state, undoable, shared. Direction derives from which end was pressed; a closed route has no endpoints and cannot be armed | feature | S2 - S | `TODO` |
+| H12.6 | The **situation** as a value: model-level, serialisable, DOM-free, buildable without a browser. The survey made this binding and it survived the rule table's demotion, because it is the read-surface a mod needs before it can decide anything. Built here because the work IS the abstraction, not deferred as scaffolding | feature | S3 - M | `TODO` |
+| H12.7 | The pilot rule, expressed as ONE predicate over the situation rather than a branch in a handler body: in read view, a click on an endpoint waypoint toggles spawn. The same click SELECTS in author view -- the situation-conditioned meaning `KEYMAP` cannot currently express, which is **B163** stated as a feature rather than a defect. No dispatch table; the shape of one is owed the F3 prior-art pass | **B163** | S3 - M | `TODO` |
+| H12.8 | Presentation via WAAPI `offset-path`, seeded from the agreed clock. Motion only in read view; the spawn config stays visible in every mode, so an author can see that a diagram emits without it moving | feature | S3 - M | `TODO` |
+
+**Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
+**The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.
+
+**Not in this milestone:** mutable per-mover state, towers, range queries, waves, combat.\
+The sparse-overlay design for deviating movers is named in the survey and is not built here.\
+An undeviated mover is a closed form, so this pilot needs no reconciliation at all.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\

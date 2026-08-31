@@ -4,3 +4,4 @@
 export { groupAfterRemoval, collectionCap } from './policy.mjs';
 export { attachRelations } from './store.mjs';
 export { makeRelations } from './relations.mjs';
+export { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from './movers.mjs';

@@ -47,7 +47,7 @@ axiom-principle-anchors:
   secondary: [A5 perceptual parity, A11 cognitive minimalism (held as a brake), A4 zero-loss knowledge]
   round-1: [A3 sovereign composition, A2 isomorphic specification]
   round-2: [A3 sovereign composition (strongest form), A5 perceptual parity]
-anti-goals-count: 5
+anti-goals-count: 6
 flags-count: 7
 calibration-data:
   stakeholder-time-cost-minutes: 0
@@ -289,7 +289,8 @@ It is held in check by **A11 cognitive minimalism**, and the *base game is a mod
 
 | AG | Description | Composes-with target |
 |---|---|---|
-| AG-1 | **A clock.** No `requestAnimationFrame`, no tick, no scheduler. The ephemeral tier is designed and reserved, not driven. | A later engine-runtime slice; the first point at which a game is demonstrable rather than expressible |
+| AG-1 | ~~**A clock.** No `requestAnimationFrame`, no tick, no scheduler.~~ **OVERRIDDEN by the director, 2026-09-01, and recorded rather than left to drift.** The pilot he specified -- an endpoint that spawns movers along its path on an interval -- cannot exist without one. The override is narrower than the anti-goal it replaces: a clock that drives a DERIVED view is far weaker than a clock that drives mutable state, and the mutable tier stays out (see AG-6) | `H12` -- the clock arrives as one agreed `now()` seeded from the server, because parity was ruled desirable and a per-machine clock cannot deliver it |
+| AG-6 | **Mutable per-mover state.** Raised with the override above, to keep what AG-1 was actually protecting. A mover is a closed form of time, so nothing deviates, nothing is stored, and the transaction log is untouched | The sparse-overlay tier in `§3`; arrives when a mover must take damage, be slowed, or die early -- which is the first thing tower defence needs that this pilot does not |
 | AG-2 | **A mod loader, sandbox or trust model.** Nothing loads, isolates or authorises third-party code in this slice. | Follows a decision on third-party authorship, which Q6 did not settle -- it settled the process boundary, not the trust boundary |
 | AG-3 | **The context menu.** Ruled out by the director at Q2 of the first pass, before this survey. | A later projection of whatever surface is chosen |
 | AG-4 | **Runtime-authored editor dispatch.** The editor's own bindings stay source-gated even if mods are dynamic. | Revisit only if the *base game is a mod* bar makes the distinction untenable, which is a real possibility and is flagged as F6 |
