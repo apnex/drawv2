@@ -565,7 +565,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 
 ---
 
-## H12 -- the programmable engine pilot - `TODO`
+## H12 -- the programmable engine pilot - `WIP`
 
 Opened 2026-09-01 out of the **B163** survey, `surveys/b163-rules-system-survey.md`, which settled the ambition as a programmable geometric engine and named tower defence the pilot use case that drives the design.\
 The director then reduced the pilot to its smallest honest form: **click an endpoint waypoint in read view and it spawns movers along its path, consumed at the far end.**\
@@ -597,9 +597,9 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
-| H12.1 | One decomposition of a route into lines and quadratic corners, consumed by BOTH the SVG string and the measurement -- a second copy of the corner rule would be the undeclared twin `scan-twins` exists to catch, and `BEND_R` is 20 on a 40px grid so a consumer walking the raw polyline departs the drawn line by ~8px at every bend | feature | S2 - S | `TODO` |
-| H12.2 | The browser's own path measurement as a GATE oracle, not a one-off probe: kernel length and sampling proven against `getTotalLength` / `getPointAtLength` in headless Chrome. Measured at 0.018% and 0.0145px on the probe; the gate is what keeps it true | feature | S2 - S | `TODO` |
-| H12.3 | `engine/movers.mjs` -- `moversAt(spawners, t)`, pure, portable, DOM-free. The simulation, and the thing a tower will later query | feature | S3 - S | `TODO` |
+| H12.1 | One decomposition of a route into lines and quadratic corners, consumed by BOTH the SVG string and the measurement -- a second copy of the corner rule would be the undeclared twin `scan-twins` exists to catch, and `BEND_R` is 20 on a 40px grid so a consumer walking the raw polyline departs the drawn line by ~8px at every bend | feature | S2 - S | `DONE` |
+| H12.2 | The browser's own path measurement as a GATE oracle, not a one-off probe: kernel length and sampling proven against `getTotalLength` / `getPointAtLength` in headless Chrome. Measured at 0.018% and 0.0145px on the probe; the gate is what keeps it true | feature | S2 - S | `DONE` |
+| H12.3 | `engine/movers.mjs` -- `moversAt(spawners, t)`, pure, portable, DOM-free. The simulation, and the thing a tower will later query | feature | S3 - S | `DONE` |
 | H12.4 | One agreed clock: `serverNow` on the snapshot handshake, client-side offset, so parity does not depend on whose laptop is right | feature | S2 - S | `TODO` |
 | H12.5 | `spawn` config on an endpoint waypoint -- document state, undoable, shared. Direction derives from which end was pressed; a closed route has no endpoints and cannot be armed | feature | S2 - S | `TODO` |
 | H12.6 | The **situation** as a value: model-level, serialisable, DOM-free, buildable without a browser. The survey made this binding and it survived the rule table's demotion, because it is the read-surface a mod needs before it can decide anything. Built here because the work IS the abstraction, not deferred as scaffolding | feature | S3 - M | `TODO` |
