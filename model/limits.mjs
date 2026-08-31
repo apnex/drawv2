@@ -39,3 +39,20 @@ export const CONTENT_VALUE_MAX = 256;
 // Both peers cap it -- `app/src/commands.js` while resizing, `server/validate.js` on arrival -- and
 // neither had a shared source. Found while closing B86 rather than listed in it.
 export const SPAN_MAX = 64;
+
+/*
+H12.5 -- the bounds on an authored spawner.
+
+These ARE user-supplied values, which is why they belong here and why the derived cap on how many
+movers may be alive at once does not: `MAX_MOVERS_PER_SPAWNER` in `engine/movers.mjs` is a runtime
+safety bound over numbers that have already passed these, and folding the two together would give
+this file a second concern.
+
+The floor on the interval is what keeps a spawner authorable-but-not-abusive: below it the departure
+rate stops being a rate a person chose and starts being a way to ask for a swarm. The ceiling on
+speed is the same idea from the other side -- a mover crossing the whole canvas within one frame is
+not visible motion, it is a flicker.
+*/
+export const SPAWN_INTERVAL_MIN = 50;        // ms between departures, floor
+export const SPAWN_INTERVAL_MAX = 600_000;   // ms, ceiling -- ten minutes is already "effectively off"
+export const SPAWN_SPEED_MAX = 4000;         // px per second, ceiling

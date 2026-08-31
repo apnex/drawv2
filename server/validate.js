@@ -7,7 +7,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 import { NODE_EXT, ZONE_EXT, SELECTABLE_KINDS } from '../model/index.mjs';
 import { OPTIONAL } from '../model/shape.mjs';
 import { linkReferential, groupReferential, waypointOwners } from '../model/referential.mjs';
-import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX } from '../model/limits.mjs';
+import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
 import { collectionCap } from '../engine/policy.mjs';
 
@@ -136,6 +136,26 @@ const region = (r) => !!r && typeof r === 'object' && !Array.isArray(r)
 	&& Object.keys(r).every((k) => Object.hasOwn(REGION, k) && REGION[k](r[k]));
 const content = (v) => Array.isArray(v) && v.length <= 200 && v.every(region);
 
+/*
+H12.5 -- a spawner's configuration, whole or absent.
+
+`SINCE_FLOOR` rejects a stamp from before this system could have produced one, and the ceiling
+rejects one implausibly far ahead. Both exist because `since` feeds arithmetic: `engine/movers.mjs`
+derives the live window from it, and a wild value asks for a walk nobody wanted. A clock a little
+fast is normal and tolerated; a clock wrong by years is a corrupt field.
+*/
+const SINCE_FLOOR = 1_600_000_000_000;                       // 2020-09, comfortably before this tree existed
+const SINCE_CEIL = () => Date.now() + 86_400_000;            // a day ahead absorbs any sane clock skew
+const SPAWN = {
+	interval: (v) => num(v, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX),
+	speed: (v) => num(v, 1, SPAWN_SPEED_MAX),
+	colour: color,
+	since: (v) => num(v, SINCE_FLOOR, SINCE_CEIL()),
+};
+const spawn = (v) => !!v && typeof v === 'object' && !Array.isArray(v)
+	&& Object.keys(SPAWN).every((k) => Object.hasOwn(v, k))            // whole, never partial
+	&& Object.keys(v).every((k) => Object.hasOwn(SPAWN, k) && SPAWN[k](v[k]));
+
 // per-kind field validators; `full` requires every field, otherwise subset (for set)
 const FIELDS = {
 	node: {
@@ -165,7 +185,24 @@ const FIELDS = {
 		leaves it alone. Threading a link through it clears the pin: from then on it is part of that
 		link's shape and shares its fate.
 		*/
-		pinned: (v) => typeof v === 'boolean'
+		pinned: (v) => typeof v === 'boolean',
+		/*
+		H12.5 -- this endpoint EMITS movers along its link.
+
+		Whole-object, with every key required: a spawner is either configured or absent, and there
+		is no such thing as half of one. Accepting a partial would push a default into whoever read
+		it next, and two readers would eventually choose differently.
+
+		`since` is the shared phase -- an epoch instant, so every peer computes the SAME departure
+		times from it rather than each starting its own animation when it happened to load. It is
+		bounded rather than free: a stamp far outside living memory is a corrupt value, not a
+		diagram somebody armed, and admitting it would let one bad field ask the simulation to walk
+		an absurd window.
+
+		Direction is deliberately NOT a field here -- see `model/shape.mjs`. It is read off which
+		end of the link this waypoint occupies.
+		*/
+		spawn: (v) => spawn(v)
 	},
 	link: {
 		id: (v) => id(v, 'link'),

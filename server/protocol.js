@@ -53,6 +53,18 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 	return {
 		doc: model.toJSON(),
 		diagrams: store.list(principal),
+		/*
+		H12.4: the server's instant, so every peer can share ONE clock.
+
+		A mover's position is a function of `t` (`engine/movers.mjs`), which means two browsers agree
+		on where a thing is exactly as far as their clocks agree -- and nothing enforces that a
+		laptop's clock is right. Stamping the instant here makes the server authoritative and costs
+		one field on a message every client already receives, rather than a protocol of its own.
+
+		Deliberately on the SNAPSHOT rather than a dedicated round trip: a snapshot arrives on first
+		connect and on every reconnect, which is precisely when a client's offset could be stale.
+		*/
+		serverNow: Date.now(),
 		locked: locks ? locks.locked(id) : false,
 		// H9.3c: the same predicate the server refuses with, so the UI cannot drift from the
 		// rule it is presenting. Deliberately not folded into `locked` -- Server-Locked means

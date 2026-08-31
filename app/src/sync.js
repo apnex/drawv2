@@ -1,6 +1,7 @@
 import { applyOps } from '../../model/ops.mjs';
 import * as commands from './commands.js';
 import { NAME_MAX } from '../../model/limits.mjs';
+import { Clock } from './clock.js';
 
 /*
 Sync — wires the model to the wire. The SERVER owns the document; this client
@@ -51,6 +52,15 @@ export class Sync {
 		this.changes = history;   // the commit boundary (Changes); named for what it now is
 		this.selection = selection;
 		this.onState = onState || (() => {});
+		/*
+		H12.4 -- the shared clock, and the local instant its correction needs.
+
+		`requestSentAt` is stamped when `hello` or `resume` leaves, so the snapshot that answers can
+		be corrected for the round trip instead of arriving one hop stale. Sync owns it because Sync
+		is what sends those two messages; the Clock itself stays ignorant of the protocol.
+		*/
+		this.clock = new Clock();
+		this.requestSentAt = null;
 		this.hydrated = false;
 		/*
 		B106 -- the version the MODEL is actually at, which is not the version the UI displays.
@@ -377,6 +387,14 @@ export class Sync {
 	// Load a snapshot. Split out of `onMessage` so B71's deferral has somewhere to send a held
 	// message when the gesture ends, instead of re-entering the handler past its own guard.
 	applySnapshot(msg) {
+			/*
+			H12.4 -- take the server's clock BEFORE anything else in this method can return early.
+
+			A snapshot has several exits below (the B2 fresh-diagram path among them), and the offset
+			is wanted on every one of them: whichever way this snapshot is handled, the client has
+			just heard from the server and that is the only moment the offset can be learnt.
+			*/
+			this.clock.seed(msg.body.serverNow, this.requestSentAt);
 			const doc = msg.body.doc;
 			if (!this.expectLoad && !this.hydrated && this.localEntityCount() > 0 && !msg.body.locked) {
 				/*
@@ -517,12 +535,14 @@ export class Sync {
 			if (!this.hydrated) {
 				let last = null;
 				try { last = localStorage.getItem(LAST_DIAGRAM_KEY); } catch { /* private mode */ }
+				this.requestSentAt = Date.now();   // H12.4 -- for the round-trip correction
 				this.net.send('hello', { diagram: this.urlDiagram() || last || undefined });
 			} else {
 				// Reconnect. Say what we believe we hold and let the server decide — it answers
 				// `sync`, a snapshot, or a snapshot marked `rewound`. The outbox is NOT dropped:
 				// what it holds is precisely the work the server has not confirmed durable, and
 				// dropping it here is what made the old client-authoritative push necessary.
+				this.requestSentAt = Date.now();   // H12.4 -- same on reconnect
 				this.net.send('resume', {
 					diagram: this.model.state.meta.id,
 					version: this.changes.state.version

@@ -34,7 +34,17 @@ export const OPTIONAL = {
 	link:     new Set(['via', 'closed']),
 	group:    new Set(),
 	zone:     new Set(),
-	// B162: `pinned` says the author placed this waypoint deliberately, with no link to derive a
-	// role from. Optional because almost none carry it -- a bend never does.
-	waypoint: new Set(['pinned']),
+	/*
+	B162: `pinned` says the author placed this waypoint deliberately, with no link to derive a
+	role from. Optional because almost none carry it -- a bend never does.
+
+	H12.5: `spawn` says this endpoint EMITS along its link. One composite field rather than four
+	loose ones, because absent means "not a spawner" and that is a single fact -- four independent
+	optional numbers would make a half-configured spawner representable, and it is not a state.
+
+	The DIRECTION is not stored. It is derived from which end of the link this waypoint is: press
+	the `src` end and movers run src to dst, press `dst` and they run the other way. Storing it
+	would be a twin of the link, wrong the first time a route was reversed.
+	*/
+	waypoint: new Set(['pinned', 'spawn']),
 };
