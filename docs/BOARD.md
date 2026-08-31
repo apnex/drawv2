@@ -520,6 +520,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |
+| H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `docs/spec/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `TODO` |
 
 ---
 
@@ -594,11 +595,12 @@ The deployment that fired its trigger is also the one that answered it: object s
 
 ## Decisions required
 
-**None.**\
-Wrong twice, and now checked rather than trusted.
+**One.**\
+Wrong twice before, and now checked rather than trusted.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B163** | Ratify `docs/spec/RULES.md`, and settle its three open questions: does the situation include hover, does the context menu ship in this slice, and is an overlapping rule pair always a gate failure | Q1 is a product call about what a menu is for, not a performance detail. Q2 sets whether this is one slice or two. Q3 is the escape hatch that rotted the last ladder, so granting it is a decision about how much rope the table gets |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
