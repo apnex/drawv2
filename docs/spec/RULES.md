@@ -2,11 +2,19 @@
 
 The sovereign spec for how the system decides what an input MEANS, given the situation the document is in.
 
-> **Status: DRAFT, and RULING-OWED.**\
+> **Status: DRAFT, RULING-OWED, and PARTLY SUPERSEDED by the survey run to validate it.**\
 > Section 0 is FACT -- measured at `7e774a6` and cited in **B163**.\
-> Everything from section 2 on is proposed design and binds nothing until the director ratifies it.\
-> Section 10 lists what cannot be settled without him.\
-> Section 7 records a wider hypothesis that this slice deliberately does not build, and must not foreclose.
+> Section 10 lists what cannot be settled without the director.
+>
+> **Read `surveys/b163-rules-system-survey.md` before acting on this document.**\
+> A K5 survey captured the director's intent on 2026-09-01 and changed three things this spec asserts.\
+> The target is a **programmable geometric engine**, not an editor with a seam left open.\
+> Tower defence is the **pilot use case that drives the design**, not a stress case applied afterwards.\
+> And the **ordered rule table of section 3 is demoted to one candidate**, pending a prior-art pass -- the director's instruction was to take inspiration from game modding and control-plane ecosystems *"rather than blindly assume this will be a table"*.\
+> Section 3 arrived by fixing a defect, which is a sound route to a local answer and an unsound route to a platform surface.
+>
+> The defect in section 0 and the invariants in section 5 are unaffected and still stand.\
+> Sections 2, 3 and 4 are candidate shapes awaiting the prior-art pass.
 
 ## 0. Why this document exists
 
@@ -88,7 +96,12 @@ Naming them once means a rule cannot get *closed* subtly wrong in its own arrow 
 
 ---
 
-## 3. The rule table
+## 3. The rule table  *(CANDIDATE -- superseded pending the prior-art pass)*
+
+> **This section is no longer the design-of-record.**\
+> The director ruled on 2026-09-01 that the surface shape must be chosen from prior art rather than inherited from the defect that prompted it.\
+> What follows is retained as one candidate and as the reasoning that produced it, not as a decision.\
+> The load-bearing distinction below -- guard versus condition -- is expected to survive whatever shape wins, because it is about authority versus subject rather than about tables.
 
 A rule is a row.\
 Its condition is a predicate over the situation and **nothing else**:
