@@ -267,6 +267,15 @@ about what "nothing to report" looks like. Neither is clickable, and both say so
 .waypoint.linkband { cursor: crosshair; }
 .waypoint .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
 .waypoint.selected .select-box { display: block; }
+/*
+A waypoint on a SELECTED path takes the selection green, so the path and its anchors agree.
+
+`#aed581` is the same green `.link.selected` uses -- one selection colour, not a second one that
+drifts. Ranked above `.armed` deliberately: arming is a threat and must still shout red over a
+selection.
+*/
+.waypoint.on-selected-path .wp-ring { stroke: #aed581; stroke-opacity: 1; }
+.waypoint.on-selected-path .wp-dot { fill: #aed581; }
 .waypoint.armed .wp-ring { stroke: #e57373; stroke-opacity: 1; }
 .waypoint.armed .wp-dot { fill: #e57373; }
 /* stamp ghost (waypoint hand): ring has no inline stroke, so CSS provides it; red when blocked */

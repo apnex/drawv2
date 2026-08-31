@@ -122,3 +122,41 @@ test('Shift raises the zone layer indicator, but never mid-drag', () => {
 		assert.equal(h.svg.classList.contains('zonegrid'), false);
 	} finally { h.restore(); }
 });
+
+/*
+A selected path highlights its own ANCHORS, and lets go of them when the selection moves.
+
+Selecting a link turned it green while its waypoints kept the link colour, so a green line ran
+through blue rings and terminated on blue pads -- the path and the things it is made of disagreeing
+about whether they are selected.
+
+Called DIRECTLY on a duck-typed object rather than driven through a pointer gesture. Simulating a
+click cost me two rounds tonight and proved nothing either time: the synthetic event did not move the
+selection, so the "deselected" case looked broken when it was the probe that had failed. The method
+is plain logic over the model, and this tests the logic.
+*/
+test('a selected link lights its waypoints, and releases them when selection moves', async () => {
+	const { Renderer } = await import('../app/src/renderer.js');
+	const { Model } = await import('../model/index.mjs');
+	const model = new Model();
+	model.put('node', { id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' });
+	model.put('waypoint', { id: 'waypoint-aa0001', x: 120, y: 0 });
+	model.put('waypoint', { id: 'waypoint-aa0002', x: 0, y: -120 });
+	model.put('waypoint', { id: 'waypoint-aa0003', x: 300, y: 300 });   // on no link at all
+	model.put('link', { id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] });
+
+	const state = new Map();
+	const host = { model, selectedSet: new Set(['link-aa0001']), pathLit: undefined,
+		setState: (id, cls, on) => state.set(`${id}:${cls}`, on) };
+
+	Renderer.prototype.reflectPathSelection.call(host);
+	assert.equal(state.get('waypoint-aa0001:on-selected-path'), true, 'the endpoint lights');
+	assert.equal(state.get('waypoint-aa0002:on-selected-path'), true, 'and so does the bend — it sits ON the line');
+	assert.equal(state.has('waypoint-aa0003:on-selected-path'), false, 'a waypoint elsewhere is untouched');
+
+	// the selection moves to the node: the path's anchors must let go
+	host.selectedSet = new Set(['node-aa0001']);
+	Renderer.prototype.reflectPathSelection.call(host);
+	assert.equal(state.get('waypoint-aa0001:on-selected-path'), false, 'the endpoint releases');
+	assert.equal(state.get('waypoint-aa0002:on-selected-path'), false, 'and the bend releases');
+});

@@ -120,6 +120,40 @@ export class Renderer {
 		this.selectedSet.forEach((id) => { if (!next.has(id)) this.setState(id, 'selected', false); });
 		next.forEach((id) => { if (!this.selectedSet.has(id)) this.setState(id, 'selected', true); });
 		this.selectedSet = next;
+		this.reflectPathSelection();
+	}
+
+	/*
+	A selected path highlights its own ANCHORS, not just its line.
+
+	Selecting a link turns it green; its waypoints kept the link colour, so a green line ran through
+	blue rings and terminated on blue pads -- the path and the thing it is made of disagreeing about
+	whether they are selected.
+
+	BOTH roles, not endpoints alone. A bend's hollow ring sits ON the line, so a blue ring around a
+	green path reads as a foreign object rather than part of it. The whole path highlights or none
+	of it does.
+
+	A separate class from `selected`: these waypoints are not themselves selected -- deleting the
+	selection must not delete them, and their own brackets must stay off. This says "the path you
+	have selected passes through me".
+
+	Client-only, deliberately. The SVG export never receives a selection (`svg.mjs` calls
+	`docToSchema(doc)` with no `opts.selected`), because a downloaded picture should not carry
+	somebody's transient highlight.
+	*/
+	reflectPathSelection() {
+		const lit = new Set();
+		for (const id of this.selectedSet) {
+			const link = this.model.get('link', id);
+			if (!link) continue;
+			for (const w of [link.src, link.dst, ...(link.via || [])]) {
+				if (this.model.get('waypoint', w)) lit.add(w);
+			}
+		}
+		this.pathLit?.forEach((id) => { if (!lit.has(id)) this.setState(id, 'on-selected-path', false); });
+		lit.forEach((id) => this.setState(id, 'on-selected-path', true));
+		this.pathLit = lit;
 	}
 
 	handle(action, kind, entity) {
@@ -246,6 +280,9 @@ export class Renderer {
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)
 		if (this.selectedSet.has(entity.id)) this.setState(entity.id, 'selected', true);
+		// and the same for a waypoint lit by a selected path -- render() replaces the DOM, so a
+		// re-render during a live selection would drop the highlight without this
+		if (this.pathLit?.has(entity.id)) this.setState(entity.id, 'on-selected-path', true);
 	}
 
 	/*
