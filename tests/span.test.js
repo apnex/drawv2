@@ -430,3 +430,59 @@ test('W4: both node shapes obey showsSockets, which is what drifted', () => {
 		assert.equal(/class="socket"/.test(renderElement(el, STD, L_STD, { sockets: true })), true, `${what}: shown when asked`);
 	}
 });
+
+/*
+B162 -- a waypoint's ROLE is derived in the kernel, so both renderers agree without either
+restating the rule.
+
+A bend is a light ring: the path turns here. An endpoint is a copper-trace pad -- a heavy ring in
+the link colour, near the weight of the path, because a line TERMINATES here rather than passing
+through. The engine reads the role off `schema.relations`, which the live canvas and the SVG export
+both resolve, so neither has to know the rule.
+
+Nothing is stored. Closing a path changes how its corners draw because a ring HAS no ends, and that
+falls out of the derivation rather than out of a rewrite.
+*/
+test('B162: the kernel derives bend from endpoint, and closing a path flips it', async () => {
+	const k = await import('../kernel/index.mjs');
+	const doc = (closed) => ({
+		meta: { id: 'diagram-aa0001', name: 't' },
+		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
+		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 60, y: 60 }],
+		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'], closed }],
+		zones: [], groups: [],
+	});
+	const roles = (d) => [...k.render(k.docToSchema(d)).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
+
+	assert.deepEqual(roles(doc(false)), ['endpoint', 'bend'], 'a terminal is an endpoint, a via is a bend');
+	assert.deepEqual(roles(doc(true)), ['bend', 'bend'], 'and a RING has no ends — both are corners');
+});
+
+test('B162: an endpoint is drawn heavier, on the same footprint as a bend', async () => {
+	const k = await import('../kernel/index.mjs');
+	const svg = k.render(k.docToSchema({
+		meta: { id: 'diagram-aa0001', name: 't' },
+		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
+		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 60, y: 60 }],
+		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		zones: [], groups: [],
+	}));
+	const drawn = [...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*r="([\d.]+)"[^>]*stroke-width="([\d.]+)"/g)]
+		.map(([, role, r, w]) => ({ role, r: Number(r), w: Number(w) }));
+	const end = drawn.find((d) => d.role === 'endpoint');
+	const bend = drawn.find((d) => d.role === 'bend');
+	assert.ok(end && bend, 'both roles are drawn');
+
+	assert.ok(end.w > bend.w * 2, 'the endpoint ring is far heavier — it terminates a line');
+	/*
+	THE HEAVY RING MUST NOT GROW THE FOOTPRINT. A stroke straddles its radius, so a 5px ring left at
+	r=20 would reach 22.5 and an endpoint would visibly bulge past a bend -- closing a path would
+	look like it resized its corners. Pulling the radius in by half the stroke puts the endpoint's
+	OUTER edge exactly on the frame extent.
+
+	The bend still straddles 20 and so reaches 20.8, half a stroke proud. That is the thin ring's
+	own geometry and not worth distorting; what matters is that the heavy one does not exceed it.
+	*/
+	assert.equal(end.r + end.w / 2, 20, 'the endpoint sits inside the frame extent exactly');
+	assert.ok(end.r + end.w / 2 <= bend.r + bend.w / 2, 'and never reaches further out than a bend');
+});

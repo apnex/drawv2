@@ -131,7 +131,30 @@ function renderEl(el, V, L, opts = {}) {
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is
 	// inscribed in the ring — it reads as "the path turns here". Hollow, so the bend stays visible.
-	if (el.kind === 'waypoint') { const r = L.frame.ext; return `<g class="waypoint"><circle cx="${el.cx}" cy="${el.cy}" r="${r}" fill="none" stroke="${TOKENS.waypoint}" stroke-width="1.6" stroke-opacity="0.7"/><circle cx="${el.cx}" cy="${el.cy}" r="2.2" fill="${TOKENS.waypoint}"/></g>`; }
+	/*
+	A waypoint draws according to its ROLE, which the engine derived from the relations.
+
+	A BEND is a light ring: the path turns here, and the thin outline keeps the turn visible through
+	it. An ENDPOINT is a copper-trace pad -- a heavy ring in the link colour, near the weight of the
+	path itself, because a line TERMINATES here rather than passing through. That is the same
+	distinction the `junction` element below draws for a tie point on a trunk.
+
+	The heavy ring's radius is pulled in by half its stroke, so its OUTER edge lands on the frame
+	extent rather than half a stroke past it. Left at r=20 a 5px ring would reach 22.5 and an
+	endpoint would visibly bulge past a bend, so closing a path would look like it resized its
+	corners. The thin ring still straddles 20 and reaches 20.8; what matters is that the heavy one
+	never exceeds it.
+
+	Both stay HOLLOW. An opaque pad reads more like solder, and was considered and deferred: packets
+	animating out of one endpoint and into another will want to be visible inside the ring.
+	*/
+	if (el.kind === 'waypoint') {
+		const endpoint = el.role === 'endpoint';
+		const w = endpoint ? 5 : 1.6;
+		const r = L.frame.ext - (endpoint ? w / 2 : 0);
+		const op = endpoint ? 1 : 0.7;
+		return `<g class="waypoint ${endpoint ? 'endpoint' : 'bend'}"><circle cx="${el.cx}" cy="${el.cy}" r="${r}" fill="none" stroke="${TOKENS.waypoint}" stroke-width="${w}" stroke-opacity="${op}"/><circle cx="${el.cx}" cy="${el.cy}" r="2.2" fill="${TOKENS.waypoint}"/></g>`;
+	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are
 	// connected", vs links that merely cross. Opaque centre so wires meet its edges cleanly.
 	if (el.kind === 'junction') { const s = 10; return `<rect x="${el.cx - s / 2}" y="${el.cy - s / 2}" width="${s}" height="${s}" rx="1.5" fill="${TOKENS.panel}" stroke="${TOKENS.junction}" stroke-width="2.6"/>`; }

@@ -52,11 +52,30 @@ export function resolve(schema) {
 		scene.push(el);
 	}
 
-	// 2 — waypoints (cell → px centre): placeable routing anchors
+	/*
+	2 — waypoints (cell → px centre): placeable routing anchors.
+
+	Their ROLE is derived here, from the relations this schema already carries, and never read off
+	the document. A waypoint in a route's `via` is a BEND; one at its `from`/`to` is an ENDPOINT; one
+	at the from/to of a CLOSED route is a bend again, because a ring has no ends. Deriving it means
+	closing a path changes how its corners draw with nothing rewritten and nothing to fall out of
+	step -- and the SVG export gets the same answer, because it resolves the same schema.
+	*/
+	const endpoints = new Set();
+	const bends = new Set();
+	for (const r of schema.relations || []) {
+		const rt = r.route;
+		if (!rt) continue;
+		for (const v of rt.via || []) bends.add(v);
+		// a ring has no ends, so a closed route's terminals are corners like any other
+		if (rt.close) { bends.add(rt.from); bends.add(rt.to); }
+		else { endpoints.add(rt.from); endpoints.add(rt.to); }
+	}
 	for (const e of schema.entities || []) {
 		if (e.kind !== 'waypoint') continue;
 		const [cx, cy] = cellPx(e.cell, V);
-		const el = waypoint(cx, cy);
+		// a bend wins: threaded through a route it is a corner, whatever else it also terminates
+		const el = waypoint(cx, cy, bends.has(e.id) ? 'bend' : (endpoints.has(e.id) ? 'endpoint' : 'bend'));
 		el.id = e.id;
 		byId[e.id] = { e, el, cx, cy, kind: 'waypoint' };
 		scene.push(el);

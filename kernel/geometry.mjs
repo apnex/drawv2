@@ -85,9 +85,17 @@ export const node = (cx, cy, o = {}) => {
 	if (o.spanH) n.spanH = o.spanH;
 	return n;
 };
-// waypoint: a placeable 40px-circle routing pivot. A path bends through its centre with r=20,
-// so the bend is inscribed exactly in the circle. Permeable (not a routing obstacle).
-export const waypoint = (cx, cy) => ({ kind: 'waypoint', cx, cy });
+/*
+waypoint: a placeable 40px-circle routing pivot. A path bends through its centre with r=20, so the
+bend is inscribed exactly in the circle. Permeable (not a routing obstacle).
+
+`role` is DERIVED by the engine from the relations, never stored on the document: a waypoint in a
+route's `via` is a BEND, one at its `from`/`to` is an ENDPOINT, and one at the from/to of a CLOSED
+route is a bend again, because a ring has no ends. Carrying it on the element rather than deciding
+in the renderer is what lets the live canvas and the SVG export agree without either restating the
+rule -- they both consume this.
+*/
+export const waypoint = (cx, cy, role = 'bend') => ({ kind: 'waypoint', cx, cy, role });
 export const zone = (x, y, w, h) => ({ kind: 'zone', x, y, w, h });
 export const group = (x, y, w, h) => ({ kind: 'group', x, y, w, h });
 export const port = (cx, cy, o = {}) => ({ kind: 'port', cx, cy, style: o.style || 'square', size: o.size || 10 });
