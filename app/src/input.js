@@ -743,7 +743,16 @@ export class Input {
 		if (!this.lastPos) return false;
 		const snapped = snapNode(this.lastPos);
 		if (occupiedAnyAt(this.model, snapped)) return false;
-		const wp = this.model.makeWaypoint(snapped);
+		/*
+		B162: placed deliberately, with no link -- so it carries `pinned`.
+
+		Every other waypoint is part of a path and its role is derived from the links: a bend in
+		`via`, an endpoint at `src`/`dst`, a bend again on a closed ring because a ring has no ends.
+		This one has no link to read an intention off, and the orphan sweep would take it. `pinned`
+		is the only fact about a waypoint worth storing, and it means exactly "the author meant this
+		to exist". Threading a link through it clears it -- from then on it shares the link's fate.
+		*/
+		const wp = { ...this.model.makeWaypoint(snapped), pinned: true };
 		this.history.commit(commands.createEntity('waypoint', wp));
 		this.selection.set([wp.id]);
 		this.labels.setFocus(wp.id);
@@ -759,6 +768,15 @@ export class Input {
 		if (existing) {
 			if (existing.id === this.ctx.src.id) return;        // don't thread the source itself
 			if (!waypointFree(this.model, existing.id)) return;        // occupied by another link
+			/*
+			B162: threading a PINNED waypoint clears the pin.
+
+			The pin means "the author placed this deliberately, with no link". Once a link runs
+			through it that is no longer true -- it is part of that link's shape, and when the link
+			goes it should go too. Leaving the pin set would strand it on the canvas forever, which
+			is the debris the sweep exists to prevent.
+			*/
+			if (existing.pinned) this.model.set('waypoint', existing.id, { pinned: false });
 			if (!this.ctx.via.includes(existing.id)) this.ctx.via.push(existing.id);
 		} else {
 			if (occupiedAt(this.model, snapped)) return;        // a node cell — refuse

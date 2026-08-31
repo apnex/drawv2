@@ -91,6 +91,63 @@ export function plan(model, ops) {
 		inv.unshift(...step.inverse);          // pre-reversed: undo replays inv in order
 	}
 	/*
+	B162 -- a waypoint that has lost every link self-destructs, in the same transaction.
+
+	The cascade already runs the other way: deleting a waypoint deletes a link that cannot survive
+	it, because "a link that cannot survive the operation does not limp on in a degenerate form".
+	This is the mirror. A waypoint exists to be part of a path; with no path it is debris that still
+	renders and still holds its anchor, so a removed shape used to leave its bends scattered on the
+	canvas -- 64 of them, from one deleted ring.
+
+	ON THE RESULT, not per op, for the same reason the invariant check below is: a batch may
+	transiently orphan and end valid. Deleting one link while re-routing another through the same
+	bends is legal and a per-op sweep would eat them in between.
+
+	IN THIS TRANSACTION, so the inverse restores waypoint and link together and one undo puts the
+	shape back whole.
+
+	THE ROLE IS DERIVED, never stored. In a link's `via` it is a bend; at `src`/`dst` of an open
+	link an endpoint; at `src`/`dst` of a CLOSED link a bend again, because a ring has no ends; and
+	referenced nowhere, an orphan. Only `pinned` is written down, because a waypoint placed
+	deliberately with no link has no structure to read an intention off.
+	*/
+	const refs = (m) => {
+		const set = new Set();
+		for (const l of m.all('link')) {
+			set.add(l.src);
+			set.add(l.dst);
+			for (const w of Array.isArray(l.via) ? l.via : []) set.add(w);
+		}
+		return set;
+	};
+	/*
+	ONLY WHAT THIS TRANSACTION ORPHANED, which is the same rule the invariant check below uses and
+	for the same reason. Sweeping every unreferenced waypoint would make an unrelated commit quietly
+	delete debris the caller never mentioned, and would put those deletions in its inverse -- so an
+	undo of "move a node" would resurrect somebody else's litter. A document that reached a messy
+	state stays repairable on its own terms.
+
+	Found by the GR5 differential: the frozen oracle and the modern planner diverged on random
+	mutations that touched no link at all, because the corpus contains documents with pre-existing
+	orphans. That divergence was the design telling me the scope was wrong.
+	*/
+	const wasReferenced = refs(model);
+	const nowReferenced = refs(proj);
+	const swept = [];
+	for (const w of proj.all('waypoint')) {
+		if (nowReferenced.has(w.id) || w.pinned) continue;
+		if (!wasReferenced.has(w.id)) continue;          // it arrived unreferenced; not ours to remove
+		swept.push({ op: 'del', kind: 'waypoint', id: w.id });
+		inv.unshift({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) });
+	}
+	// applied to the projection so the invariant check below sees the state that will actually be
+	// stored, rather than one still carrying the debris this just removed
+	if (swept.length) {
+		out.push(...swept);
+		applyOps(proj, swept);
+	}
+
+	/*
 	B81 -- the document invariants, checked once against the state this transaction would produce.
 
 	On the RESULT rather than per op, because a batch may transiently violate and end valid:

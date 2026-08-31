@@ -34,5 +34,7 @@ export const OPTIONAL = {
 	link:     new Set(['via', 'closed']),
 	group:    new Set(),
 	zone:     new Set(),
-	waypoint: new Set(),
+	// B162: `pinned` says the author placed this waypoint deliberately, with no link to derive a
+	// role from. Optional because almost none carry it -- a bend never does.
+	waypoint: new Set(['pinned']),
 };

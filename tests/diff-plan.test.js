@@ -114,6 +114,7 @@ const norm = (ops) => ops.map((o) => {
 test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mutations', () => {
 	const r = rng(20260818);
 	let compared = 0, rejectedBoth = 0, narrowedPuts = 0, collisionDroppedLinks = 0, invariantRefusals = 0;
+	let sweptOrphans = 0;   // B162: waypoints this transaction orphaned and the sweep removed
 
 	for (let i = 1; i <= 1000; i++) {
 		const doc = makeDoc(r, i);
@@ -236,12 +237,42 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 			compared++;
 			continue;
 		}
+		/*
+		The THIRD deliberate divergence (B162): the modern planner sweeps a waypoint this
+		transaction orphaned, and the frozen oracle predates the rule.
+
+		Named and bounded rather than edited into the oracle, exactly as the CS6 narrowing above is.
+		The sweep may only remove waypoints that WERE referenced before and are not after -- so the
+		divergence is subtractive and confined to waypoint deletions. Everything else must still
+		match op for op, which is what the filtered comparison below asserts.
+
+		Pre-existing orphans are deliberately NOT swept, on the same reasoning the B81 invariant
+		check uses: a commit must not quietly delete debris its caller never mentioned, and an undo
+		of "move a node" must not resurrect somebody else's litter. The corpus proved that scope
+		wrong first time -- it contains such documents, and every unrelated mutation diverged.
+		*/
+		const act = (o) => o.action || o.op;
+		const sweptWps = b.ops.filter((o) => o.kind === 'waypoint' && act(o) === 'del'
+			&& !narrowLegacy.some((l) => l.kind === 'waypoint' && act(l) === 'del' && l.id === o.id));
+		if (sweptWps.length) {
+			const ids = new Set(sweptWps.map((o) => o.id));
+			sweptOrphans += ids.size;
+			assert.deepEqual(
+				norm(b.ops.filter((o) => !(o.kind === 'waypoint' && ids.has(o.id)))),
+				norm(narrowLegacy),
+				`iteration ${i}: divergence beyond the B162 orphan sweep`,
+			);
+			compared++;
+			continue;
+		}
 		assert.deepEqual(norm(b.ops), norm(narrowLegacy), `iteration ${i}: op lists diverge for ${JSON.stringify(modern)}`);
 		compared++;
 	}
 	assert.ok(compared > 500, `expected a healthy sample, compared ${compared}`);
 	assert.ok(rejectedBoth > 0, 'the corpus should exercise rejection too');
 	assert.ok(narrowedPuts > 20, `the corpus must REACH the CS6 narrowing, hit it ${narrowedPuts} times`);
+	// and it must REACH the sweep, or the divergence above is allowed by a branch nothing enters
+	assert.ok(sweptOrphans > 0, `the corpus must reach the B162 sweep, hit it ${sweptOrphans} times`);
 	assert.ok(invariantRefusals > 0,
 		`the corpus must REACH the B81 invariant, hit it ${invariantRefusals} times — a divergence nothing exercises is not proven`);
 });

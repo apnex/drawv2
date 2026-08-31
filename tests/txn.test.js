@@ -402,3 +402,108 @@ test('B85: the threshold comes from policy, not from a number the invariant inve
 		'and a policy that dissolves nothing reports nothing — the invariant defers to it entirely');
 	assert.equal(typeof never, 'function');
 });
+
+/*
+B162 -- a waypoint that has lost every link self-destructs, in the same transaction.
+
+The cascade already ran the other way: deleting a waypoint deletes a link that cannot survive it,
+because "a link that cannot survive the operation does not limp on in a degenerate form". This is
+the mirror, and it was missing -- removing one 65-point closed shape left 64 waypoints on the
+canvas, each still rendering and each still holding its anchor.
+
+THE ROLE IS DERIVED, never stored: in `via` a bend, at src/dst of an open link an endpoint, at
+src/dst of a CLOSED link a bend again because a ring has no ends. Only `pinned` is written down,
+because a waypoint placed deliberately with no link has no structure to read an intention off.
+*/
+test('B162: deleting a link takes its bends, and one undo puts them back', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	m.put('node', { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' });
+	m.put('waypoint', { id: 'waypoint-aa0001', x: 60, y: 60 });
+	m.put('waypoint', { id: 'waypoint-aa0002', x: 120, y: 60 });
+	m.put('link', { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001', 'waypoint-aa0002'] });
+
+	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0001' }]);
+	assert.equal(r.ok, true);
+	const gone = r.ops.filter((o) => o.kind === 'waypoint' && o.op === 'del').map((o) => o.id).sort();
+	assert.deepEqual(gone, ['waypoint-aa0001', 'waypoint-aa0002'], 'both bends go with the link');
+	// ONE undoable step: the inverse restores the waypoints as well as the link
+	const back = r.inverse.filter((o) => o.kind === 'waypoint' && o.op === 'put').map((o) => o.entity.id).sort();
+	assert.deepEqual(back, ['waypoint-aa0001', 'waypoint-aa0002'], 'and the undo brings them back');
+});
+
+test('B162: an ENDPOINT waypoint goes too -- nothing else may claim it', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	m.put('waypoint', { id: 'waypoint-aa0003', x: 120, y: 0 });
+	m.put('link', { id: 'link-aa0002', src: 'node-aa0001', dst: 'waypoint-aa0003' });
+	// XOR occupancy means no other link may be using it, so an unattached endpoint is as dead as a
+	// bend. The distinction matters for RENDERING, not for survival.
+	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
+	assert.ok(r.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-aa0003'), 'the endpoint is swept');
+});
+
+/*
+`pinned` is a BACKSTOP, and mutation is what established that -- the first version of this test
+passed with the pin ignored entirely.
+
+A waypoint placed deliberately outside any gesture was never referenced by a link, so the
+transaction-scope rule already protects it: the sweep only removes what THIS transaction orphaned.
+The pin is never consulted on that path.
+
+Where it does the work is the state that should not arise: a pinned waypoint that somehow carries a
+link. Threading is meant to clear the pin, and if that ever fails to happen the author's intent
+still outranks the sweep. Asserting the reachable case is the difference between testing the flag
+and testing the guard that happens to sit in front of it.
+*/
+test('B162: a lone waypoint is safe by SCOPE, not by the pin', () => {
+	const m = new Model();
+	m.put('waypoint', { id: 'waypoint-bb0001', x: 60, y: 60, pinned: true });
+	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	const r = plan(m, [{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' } }]);
+	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'a lone waypoint stays');
+
+	// and it is the SCOPE rule doing it: an unpinned lone waypoint is equally safe
+	const m2 = new Model();
+	m2.put('waypoint', { id: 'waypoint-bb0002', x: 60, y: 60 });
+	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	const r2 = plan(m2, [{ op: 'put', kind: 'node', entity: { id: 'node-aa0004', type: 'host', x: 180, y: 0, name: 'd' } }]);
+	assert.equal(r2.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'pinned or not');
+});
+
+test('B162: the pin outranks the sweep when a linked waypoint loses its link', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	m.put('waypoint', { id: 'waypoint-bb0003', x: 120, y: 0, pinned: true });
+	m.put('link', { id: 'link-bb0001', src: 'node-aa0001', dst: 'waypoint-bb0003' });
+	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-bb0001' }]);
+	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0003'), false,
+		'the author said keep it, so the sweep leaves it');
+
+	// the same shape without the pin IS swept, or the assertion above proves nothing
+	const m2 = new Model();
+	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	m2.put('waypoint', { id: 'waypoint-bb0004', x: 120, y: 0 });
+	m2.put('link', { id: 'link-bb0002', src: 'node-aa0001', dst: 'waypoint-bb0004' });
+	const r2 = plan(m2, [{ op: 'del', kind: 'link', id: 'link-bb0002' }]);
+	assert.ok(r2.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0004'), 'unpinned goes');
+});
+
+/*
+ONLY WHAT THIS TRANSACTION ORPHANED, which is the rule the B81 invariant check already uses.
+
+Sweeping every unreferenced waypoint would make an unrelated commit quietly delete debris its caller
+never mentioned, and would put those deletions in its inverse -- so undoing "move a node" would
+resurrect someone else's litter. The GR5 differential found this: the corpus contains documents with
+pre-existing orphans, and every unrelated mutation diverged from the frozen oracle.
+*/
+test('B162: pre-existing debris is left alone -- a commit removes only what it orphaned', () => {
+	const m = new Model();
+	m.put('waypoint', { id: 'waypoint-cc0001', x: 60, y: 60 });          // already unreferenced
+	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	const r = plan(m, [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 180 } }]);
+	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false,
+		'moving a node does not sweep litter it did not create');
+	assert.equal(r.inverse.some((o) => o.kind === 'waypoint'), false,
+		'and its undo does not resurrect any');
+});

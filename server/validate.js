@@ -151,7 +151,21 @@ const FIELDS = {
 	waypoint: {
 		id: (v) => id(v, 'waypoint'),
 		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),   // a waypoint IS a node for placement
-		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v)
+		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
+		/*
+		B162 -- INTENT, and the only thing about a waypoint worth storing.
+
+		Its ROLE is derived and never written down: in a link's `via` it is a bend, at `src`/`dst`
+		of an open link an endpoint, at `src`/`dst` of a CLOSED link a bend again because a ring has
+		no ends, and referenced nowhere an orphan. A stored role would be a twin of the links, to be
+		rewritten every time a path is closed and wrong the first time that is missed.
+
+		What cannot be derived is a waypoint placed deliberately with no link at all -- there is no
+		structure to read an intention off. `pinned` says the author meant it to exist, so the sweep
+		leaves it alone. Threading a link through it clears the pin: from then on it is part of that
+		link's shape and shares its fate.
+		*/
+		pinned: (v) => typeof v === 'boolean'
 	},
 	link: {
 		id: (v) => id(v, 'link'),
