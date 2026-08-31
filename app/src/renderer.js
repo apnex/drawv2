@@ -206,6 +206,7 @@ export class Renderer {
 			const d = this.linkPath(entity);
 			if (!d) return;
 			el('path', { id: entity.id, class: 'link', 'stroke-width': LINK_W, fill: 'none', d }, this.layers.links);
+			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
 			const g = el('g', { id: entity.id, class: 'zone' }, this.layers.zones);
@@ -239,12 +240,36 @@ export class Renderer {
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
 			// a heavy ring pulled inside the frame extent, so an endpoint never grows the footprint
 			const w = endpoint ? 5 : 1.6;
-			el('circle', { class: 'wp-ring', r: endpoint ? FE - w / 2 : FE, fill: 'none', stroke: TOKENS.waypoint, 'stroke-width': w, 'stroke-opacity': endpoint ? 1 : 0.7 }, g);
+			// opaque on an endpoint so the path terminates ON the pad; hollow on a bend so the turn
+			// stays visible through it. TOKENS.panel is the theme's canvas fill, used by `junction` too.
+			el('circle', { class: 'wp-ring', r: endpoint ? FE - w / 2 : FE, fill: endpoint ? TOKENS.panel : 'none', stroke: TOKENS.waypoint, 'stroke-width': w, 'stroke-opacity': endpoint ? 1 : 0.7 }, g);
 			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)
 		if (this.selectedSet.has(entity.id)) this.setState(entity.id, 'selected', true);
+	}
+
+	/*
+	A link change can change what its WAYPOINTS are.
+
+	A waypoint's role is derived from the links touching it, so creating, re-routing or closing a
+	link makes its terminals and bends draw differently. Only the link's own path was being updated,
+	so a waypoint kept whatever ring it was first drawn with.
+
+	Invisible on a fresh load, because every link already exists and the initial render is correct.
+	It only showed while AUTHORING -- place a waypoint, link to it, and nothing redrew it. Called
+	from BOTH render and update: a NEW link is exactly what turns a lone waypoint into an endpoint,
+	and fixing only the update path left the common case broken.
+
+	Re-rendered rather than patched: the role decides fill, radius, stroke width and class together,
+	and setting those four from here would be a second copy of the drawing.
+	*/
+	refreshWaypointsOf(link) {
+		for (const id of [link.src, link.dst, ...(link.via || [])]) {
+			const w = this.model.get('waypoint', id);
+			if (w) this.render('waypoint', w);
+		}
 	}
 
 	update(kind, entity) {
@@ -286,6 +311,7 @@ export class Renderer {
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
 			if (d) setAttrs(dom, { d });
+			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
 			setAttrs(dom.querySelector('.zone-rect'), { x: entity.x, y: entity.y, width: entity.w, height: entity.h });

@@ -145,15 +145,20 @@ function renderEl(el, V, L, opts = {}) {
 	corners. The thin ring still straddles 20 and reaches 20.8; what matters is that the heavy one
 	never exceeds it.
 
-	Both stay HOLLOW. An opaque pad reads more like solder, and was considered and deferred: packets
-	animating out of one endpoint and into another will want to be visible inside the ring.
+	An ENDPOINT is OPAQUE, filled with the canvas colour, so the path disappears behind it and reads
+	as terminating ON the pad rather than running under it. That is the whole point of a pad. A BEND
+	stays hollow: the path passes through it and must stay visible doing so.
+
+	The fill is `TOKENS.panel`, which the theme already calls the "canvas / opaque-centre fill" and
+	which the `junction` element below already uses for the same reason -- a tie point hides the
+	wires beneath it.
 	*/
 	if (el.kind === 'waypoint') {
 		const endpoint = el.role === 'endpoint';
 		const w = endpoint ? 5 : 1.6;
 		const r = L.frame.ext - (endpoint ? w / 2 : 0);
 		const op = endpoint ? 1 : 0.7;
-		return `<g class="waypoint ${endpoint ? 'endpoint' : 'bend'}"><circle cx="${el.cx}" cy="${el.cy}" r="${r}" fill="none" stroke="${TOKENS.waypoint}" stroke-width="${w}" stroke-opacity="${op}"/><circle cx="${el.cx}" cy="${el.cy}" r="2.2" fill="${TOKENS.waypoint}"/></g>`;
+		return `<g class="waypoint ${endpoint ? 'endpoint' : 'bend'}"><circle cx="${el.cx}" cy="${el.cy}" r="${r}" fill="${endpoint ? TOKENS.panel : 'none'}" stroke="${TOKENS.waypoint}" stroke-width="${w}" stroke-opacity="${op}"/><circle cx="${el.cx}" cy="${el.cy}" r="2.2" fill="${TOKENS.waypoint}"/></g>`;
 	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are
 	// connected", vs links that merely cross. Opaque centre so wires meet its edges cleanly.

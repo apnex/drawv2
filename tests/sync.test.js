@@ -302,3 +302,54 @@ test('B105: agent activity reaches the UI through the same state callback as eve
 	assert.equal(last.agents.length, 1, 'and carried the agents, beside locked/mayWrite/principal');
 	assert.equal(sync.agents, last.agents);
 });
+
+/*
+B162 / I7 -- the server's EXPANSION of our own transaction has to reach the model.
+
+Our ops are applied optimistically, which is why the ack path used to apply the server's list only
+for undo and redo. Then `plan()` began adding ops we never sent: a waypoint the transaction orphaned
+is swept in the same step. Those deletions arrived in the ack, were skipped, and the bend stayed on
+the canvas -- right on the server, stale in the browser, which is the divergence I7 forbids.
+
+The director found this by deleting a link in the editor and watching the waypoint remain. Every
+test I had was server-side, where the sweep works perfectly.
+*/
+test('B162: an ack applies what the server ADDED, and not what we sent', () => {
+	const { model, sync } = harness();
+	model.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	model.put('node', { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' });
+	model.put('waypoint', { id: 'waypoint-aa0001', x: 60, y: 60 });
+	model.put('link', { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] });
+
+	// what the client sent, and applied optimistically
+	const mine = [{ op: 'del', kind: 'link', id: 'link-aa0001' }];
+	sync.outbox.push({ ops: mine, label: 'delete', txnId: 't1' });
+	model.del('link', 'link-aa0001');
+
+	// what the server answers: our op, plus the sweep it added
+	sync.onMessage({ cmd: 'ack', body: { acked: 't1', version: 2, label: 'delete',
+		ops: [...mine, { op: 'del', kind: 'waypoint', id: 'waypoint-aa0001' }] } });
+
+	assert.equal(model.get('waypoint', 'waypoint-aa0001'), undefined,
+		'the swept bend is gone from the client model too');
+});
+
+test('B162: an ack does NOT replay our own ops over later local work', () => {
+	const { model, sync } = harness();
+	model.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+
+	sync.outbox.push({ ops: [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 60 } }], label: 'move', txnId: 't1' });
+	model.set('node', 'node-aa0001', { x: 60 });
+	// the user keeps working while the ack is in flight
+	model.set('node', 'node-aa0001', { x: 300 });
+
+	/*
+	Replaying the whole list would put the node back at 60 -- an older ack clobbering newer local
+	work. Applying only the server's ADDITION is what makes that impossible, and it is why this
+	filters against the outbox rather than simply calling applyOps on everything.
+	*/
+	sync.onMessage({ cmd: 'ack', body: { acked: 't1', version: 2, label: 'move',
+		ops: [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 60 } }] } });
+
+	assert.equal(model.get('node', 'node-aa0001').x, 300, 'the later local edit survives the ack');
+});

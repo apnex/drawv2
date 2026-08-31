@@ -526,3 +526,51 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	assert.match(client, /waypointRole\(/, 'the live renderer asks for the role');
 	assert.match(engine, /waypointRole\(/, 'and so does the kernel');
 });
+
+/*
+B162 -- a link change redraws its waypoints, on BOTH the create and the update path.
+
+A waypoint's role is derived from the links touching it, so creating or re-routing a link changes
+how its terminals draw. The renderer only rewrote the link's own path, so a waypoint kept whatever
+ring it was first drawn with.
+
+Invisible on a fresh load -- every link already exists and the initial render is right -- so the
+export looked correct and so did any reloaded page. It only showed while AUTHORING: place a
+waypoint, link to it, and nothing redrew it. That is what the director hit, twice.
+
+And fixing only `update` left the common case broken: a NEW link is exactly what turns a lone
+waypoint into an endpoint, and a new link goes through `render`. Both call the same helper now.
+*/
+test('B162: both the create and the update path refresh a link\'s waypoints', () => {
+	const src = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	const calls = (src.match(/this\.refreshWaypointsOf\(/g) || []).length;
+	assert.equal(calls, 2, 'render() and update() must BOTH refresh — one of them is the authoring case');
+	assert.match(src, /refreshWaypointsOf\(link\)\s*\{/, 'and the refresh is one helper, not two copies');
+
+	// it must cover every role a waypoint can hold on a link, or one of them stays stale
+	const body = src.slice(src.indexOf('refreshWaypointsOf(link) {'));
+	assert.match(body.slice(0, 400), /link\.src/, 'a src terminal');
+	assert.match(body.slice(0, 400), /link\.dst/, 'a dst terminal');
+	assert.match(body.slice(0, 400), /link\.via/, 'and the bends');
+});
+
+test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
+	const k = await import('../kernel/index.mjs');
+	const svg = k.render(k.docToSchema({
+		meta: { id: 'diagram-aa0001', name: 't' },
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
+		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 0, y: -120 }],
+		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		zones: [], groups: [],
+	}));
+	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*fill="([^"]*)"/g)]
+		.map(([, role, fill]) => [role, fill]));
+	/*
+	The pad hides the trace beneath it, which is what makes a line read as TERMINATING rather than
+	passing under. A bend must stay hollow for the opposite reason: the path goes through it and has
+	to be visible doing so. `TOKENS.panel` is the theme's own "canvas / opaque-centre fill", already
+	used by the `junction` element for exactly this.
+	*/
+	assert.equal(fills.endpoint, '#101010', 'the endpoint is filled with the canvas colour');
+	assert.equal(fills.bend, 'none', 'and the bend is not filled at all');
+});
