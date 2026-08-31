@@ -5,7 +5,8 @@ The sovereign spec for how the system decides what an input MEANS, given the sit
 > **Status: DRAFT, and RULING-OWED.**\
 > Section 0 is FACT -- measured at `7e774a6` and cited in **B163**.\
 > Everything from section 2 on is proposed design and binds nothing until the director ratifies it.\
-> Section 10 lists what cannot be settled without him.
+> Section 10 lists what cannot be settled without him.\
+> Section 7 records a wider hypothesis that this slice deliberately does not build, and must not foreclose.
 
 ## 0. Why this document exists
 
@@ -161,15 +162,63 @@ Falsifiable, and each one is the negation of a defect the tree has already had.
 
 A general rule engine is the obvious overreach, and it would be worse than the nesting it replaces.
 
-Three bounds hold it:
+Three bounds hold **this table**:
 
 1. **The condition vocabulary is closed.** Extending it is a deliberate edit to one file, reviewable in one diff.
-2. **No runtime-authored rules.** The table is source, gated like source. Nobody writes rules through the UI.
+2. **No runtime-authored rules in the editor table.** It is source, gated like source. Nobody edits editor dispatch through the UI.
 3. **No DSL.** Plain JavaScript predicates over a typed situation. The moment it needs a parser, the design was wrong.
+
+**These bound the internal table, not the system.**\
+An earlier draft of this section said *no runtime-authored rules* without qualification, which would have foreclosed section 7 by accident.\
+It is corrected here rather than left to be discovered: the editor's own dispatch stays closed, and a mod surface is a different tier with different rules.
 
 ---
 
-## 7. Axiom alignment  *(M7, required before implementation)*
+## 7. The wider hypothesis -- rules as a modding surface
+
+**Not in this slice, and recorded so the slice does not foreclose it.**\
+The director's framing is that drawv2 is a programmable geometric engine, and that behaviours triggered by click, hover, select and place should be a first-class surface -- the modding model of Factorio, OpenTTD or Minecraft rather than a fixed editor.\
+The stress case is a tower-defence game built from the existing primitives.
+
+**The seam already exists in embryo, and is already named.**\
+`main.js:56` calls it *the self-hosting interface -- the diagram emits actions, the app maps them to behaviour*.\
+In run mode a clickable region fires a `draw:action` CustomEvent carrying an action string, and the host wires it.\
+It is one-directional, stringly-typed, and has exactly one listener: `help` is wired real and everything else raises a toast.
+
+**Where this design helps.**\
+A mod needs to ask *what is true right now* before it can decide anything, and that is precisely the situation object of section 2.\
+Building it well is the cheapest down-payment available on a mod surface, on one condition stated as a requirement rather than an aspiration:
+
+> The situation is **not** an `input.js` private.\
+> It is a model-level value, serialisable, buildable without a DOM, and passable to a consumer that is not the editor.
+
+`engine/ivm.mjs` is the other half already in place -- a generic maintained reverse index over a change stream, parameterised by a tenant's keying, and explicitly written to be promoted when a second tenant appears.\
+Range and occupancy queries are what a game asks constantly, and that machinery exists.
+
+**Where the tree is genuinely not ready.**\
+Three gaps, and the tower-defence case separates them cleanly:
+
+| Need | Tower-defence example | Today |
+|---|---|---|
+| placement and topology | towers on anchors, creep routes along links | **fits** -- this is what the primitives already are |
+| spatial query | what is in range of this tower | **partly** -- `engine/ivm.mjs`, awaiting a second tenant |
+| a clock | creeps advance whether or not anyone clicks | **absent** -- no `requestAnimationFrame` and no `setInterval` anywhere in `app/src`, `kernel` or `engine` |
+| ephemeral state | creep positions at frame rate | **absent, and actively hostile** -- see below |
+| a way back in | a mod registering a behaviour, not merely receiving a string | **absent** -- actions escape, nothing returns |
+
+**The ephemeral-state gap is the sharp one.**\
+Every mutation today is a versioned, logged, persisted, undoable transaction, and `server/log.mjs:27` caps the ring at `LOG_MAX = 100` records with oldest-first eviction.\
+A game loop driving state through that boundary would evict the entire real history in under two seconds at frame rate, and would replicate it to every viewer while doing so.\
+So a mod tier needs a **second state tier that mints no transaction**: document state stays authoritative, undoable and shared, and ephemeral state is none of those things.\
+Which entity state is which is the first question a modding design has to answer, and it is not answered here.
+
+**What this section commits to: nothing but the shape of the seam.**\
+No mod loader, no sandbox, no lifecycle, no clock.\
+The single binding consequence is the requirement above -- the situation is model-level and DOM-free -- because retrofitting that later means rewriting every predicate.
+
+---
+
+## 8. Axiom alignment  *(M7, required before implementation)*
 
 - **A1 Sovereign State Transparency** -- load-bearing. Interaction state is currently readable only by assembling model, selection, palette and a help flag from four places. The situation makes it one value.
 - **A2 Isomorphic Specification** -- load-bearing, and already violated. The overlay is declared intent, the table is running reality, and they have drifted with no gate between them.
@@ -182,7 +231,7 @@ Section 6 resolves it by capping expressiveness at a closed vocabulary, and acce
 
 ---
 
-## 8. Verification
+## 9. Verification
 
 Each invariant has a test that can fail, and each is proven by mutation before it is trusted.
 
@@ -202,10 +251,17 @@ One row expresses both, and no handler body contains an `if`.
 
 ---
 
-## 9. Decisions required
+## 10. Decisions required
+
+**Settled.**\
+**Q2 -- no context menu in this slice.**\
+Ruled by the director.\
+The table and the generated overlay land first; the menu is a later projection of the same table and nothing here depends on it.
+
+**Still owed.**
 
 | # | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| Q1 | Does the situation include HOVER, or selection only? | Hover is what makes a context menu useful, and it recomputes on every pointer move. It is a product call about what the menu is for, not a performance detail. |
-| Q2 | Does the menu ship with this, or does the spec land first and the menu follow? | Determines whether this is one slice or two, and whether the overlay is regenerated now or later. |
+| Q1 | Does the situation include HOVER, or selection only? | With the menu deferred, the case for hover is now section 7 rather than the menu, and that is a weaker and more speculative reason. Selection-only is the cheaper start and hover can be added to a closed vocabulary later. |
 | Q3 | Is an overlapping pair always a gate failure, or may a row declare `overrides:`? | A hard failure is simpler and will occasionally be inconvenient. An escape hatch is the exact mechanism by which the last ladder rotted. |
+| Q4 | Is the section 7 requirement binding now -- the situation model-level, serialisable and DOM-free? | It costs a little discipline in this slice and it is the one thing that cannot be retrofitted without rewriting every predicate. Declining it is legitimate and should be a decision rather than a drift. |

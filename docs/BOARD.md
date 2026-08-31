@@ -600,7 +600,7 @@ Wrong twice before, and now checked rather than trusted.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B163** | Ratify `docs/spec/RULES.md`, and settle its three open questions: does the situation include hover, does the context menu ship in this slice, and is an overlapping rule pair always a gate failure | Q1 is a product call about what a menu is for, not a performance detail. Q2 sets whether this is one slice or two. Q3 is the escape hatch that rotted the last ladder, so granting it is a decision about how much rope the table gets |
+| **B163** | Ratify `docs/spec/RULES.md`, and settle the three questions still owed in its section 10: does the situation include hover, is an overlapping rule pair always a gate failure, and is the section 7 requirement binding now. The context menu is already ruled out of this slice | Q1 lost its strongest argument when the menu was deferred, so it is now a call on speculative value. Q3 is the escape hatch that rotted the last ladder, so granting it decides how much rope the table gets. Q4 is the only one that cannot be retrofitted -- a situation that is not model-level and DOM-free forecloses the section 7 hypothesis, and reversing it later means rewriting every predicate |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
