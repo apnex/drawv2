@@ -470,10 +470,15 @@ export function toggleSpawn(model, waypointId, now, opts = {}) {
 		const { spawn, ...without } = wp;
 		return { label: 'stop spawning', entries: [{ op: 'put', kind: 'waypoint', entity: clone('waypoint', without) }] };
 	}
+	/*
+	RED by default, per the director. It is DOCUMENT state rather than a stylesheet rule, because a
+	spawner may eventually want its own colour -- so changing this default moves NEW spawners only,
+	and anything already armed keeps the colour it was authored with. Disarm and re-arm to adopt it.
+	*/
 	const spawn = {
 		interval: opts.interval ?? 900,
 		speed: opts.speed ?? 140,
-		colour: opts.colour ?? '#4fc3f7',
+		colour: opts.colour ?? '#e57373',
 		since: now,
 	};
 	// NESTED, not spread. `after` is the patch applied to the WAYPOINT, so a bare spread would

@@ -279,12 +279,19 @@ selection.
 /*
 H12.8 -- an armed spawner reads as armed in EVERY mode, and never moves in author view.
 
+GREEN, and a DIFFERENT green from `#aed581`. Blue was the first choice and was wrong for the reason
+the director gave: `TOKENS.waypoint` is already `#4fc3f7`, so an armed endpoint looked exactly like
+an unarmed one. But `#aed581` was not available either -- it already means `TOKENS.port` AND, since
+this morning, a selected path. A third meaning would be worse than the blue it replaced, and the
+ambiguity would bite hardest in author view, where an armed endpoint is PERSISTENT and a selection
+is TRANSIENT: the same colour would say two things with opposite lifetimes.
+
 Placed ABOVE `.armed` deliberately: arming a TOOL is a transient thing the person is doing right
 now and must still shout over this, which is a lasting property of the diagram. Same ordering
 reasoning as the selected-path highlight above.
 */
-.waypoint.spawning .wp-ring { stroke: #4fc3f7; stroke-opacity: 1; stroke-width: 3; }
-.waypoint.spawning .wp-dot { fill: #4fc3f7; }
+.waypoint.spawning .wp-ring { stroke: #66bb6a; stroke-opacity: 1; stroke-width: 3; }
+.waypoint.spawning .wp-dot { fill: #66bb6a; }
 /* a mover is presentation only: never a pointer target, so it cannot intercept a click meant for
    the line it is riding, and no transition -- the compositor owns its motion via offset-path. */
 .mover { pointer-events: none; }
