@@ -200,6 +200,28 @@ test('H12.3: a pathological configuration is CAPPED, so bad numbers look wrong i
 	assert.equal(moversAt([swarm], 1_000_000).length, MAX_MOVERS_PER_SPAWNER);
 });
 
+/*
+B173 -- the cap is PER SPAWNER, which is what its name says and what it did not do.
+
+Checked against the shared output array, the first spawner consumed the whole budget and every one
+after it emitted nothing: a second armed endpoint simply looked unarmed. Silent, and invisible below
+256 movers, which is why it survived. Two spawners is the smallest case that can show it.
+*/
+test('B173: one saturating spawner does not starve the next', () => {
+	const a = spawner({ id: 'waypoint-aaaaaa', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
+	const b = spawner({ id: 'waypoint-bbbbbb', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
+	const by = moversAt([a, b], 1_000_000).reduce((m, x) => (m[x.spawnerId] = (m[x.spawnerId] || 0) + 1, m), {});
+	assert.equal(by['waypoint-aaaaaa'], MAX_MOVERS_PER_SPAWNER);
+	assert.equal(by['waypoint-bbbbbb'], MAX_MOVERS_PER_SPAWNER, 'the SECOND spawner emitted nothing before B173');
+});
+
+test('B173: two ordinary spawners are both represented, in the order given', () => {
+	const a = spawner({ id: 'waypoint-aaaaaa' });
+	const b = spawner({ id: 'waypoint-bbbbbb', interval: 700, speed: CELLS(72), pts: [[0, 0], [600, 0]] });
+	const by = moversAt([a, b], 60_000).reduce((m, x) => (m[x.spawnerId] = (m[x.spawnerId] || 0) + 1, m), {});
+	assert.ok(by['waypoint-aaaaaa'] > 0 && by['waypoint-bbbbbb'] > 0, 'both spawners emit');
+});
+
 test('H12.3: movers ride the DRAWN line, so a bend never throws one off it', () => {
 	const s = spawner({ pts: [[0, 0], [200, 0], [200, 200]] });
 	for (const m of moversAt([s], 2000)) {

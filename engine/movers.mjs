@@ -113,7 +113,17 @@ export function moversAt(prepared, t) {
 		if (!(elapsed >= 0)) continue;                      // armed in the future: nothing yet
 		const newest = Math.floor(elapsed / s.interval);
 		const oldest = Math.max(0, Math.ceil((elapsed - transit) / s.interval));
-		for (let k = oldest; k <= newest && out.length < MAX_MOVERS_PER_SPAWNER; k++) {
+		/*
+		B173 -- the cap is PER SPAWNER, as its name has always said.
+
+		It was checked against the shared output array, so the first spawner could consume the whole
+		budget and every one after it emitted NOTHING. Two saturating spawners produced 256 movers
+		and zero: not a throttle, a starvation, and silent -- the second endpoint simply looked
+		unarmed. Found while investigating a two-spawner report that turned out to be something
+		else; the reproduction needs 256 movers, which is why nobody had hit it.
+		*/
+		let mine = 0;
+		for (let k = oldest; k <= newest && mine < MAX_MOVERS_PER_SPAWNER; k++) {
 			const travelled = ((elapsed - k * s.interval) / 1000) * s.pxSpeed;
 			/*
 			A FLOATING-POINT BACKSTOP. The window above is what decides liveness.
@@ -138,6 +148,7 @@ export function moversAt(prepared, t) {
 			no test bit. The window is tested by COST, which is the only way its absence shows.
 			*/
 			if (travelled < 0 || travelled > s.length) continue;
+			mine++;
 			out.push({
 				id: `${s.id}#${k}`,          // stable identity -- the seam the deviation tier needs
 				spawnerId: s.id,

@@ -613,6 +613,8 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 
 | H12.12 | A spawner refers to a centralised look rather than copying one, and its speed is in the grid's unit. `kind` resolves to a stylesheet class, so one edit reaches spawners that already exist; `speed` is cells per second, converted to pixels once at the simulation boundary. Old documents are migrated on read, because the validator is strict and a refused document is SKIPPED rather than reported | **B172** | S3 - M | `DONE` |
 
+| H12.13 | One spawner could exhaust the mover budget and starve every spawner after it -- the cap was named per-spawner and enforced globally, so a second armed endpoint silently never emitted | **B173** | S3 - S | `DONE` |
+
 **Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
 **The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.
 
