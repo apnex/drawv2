@@ -108,3 +108,13 @@ export const inReadView = (s) => s.mode === 'run';
 
 // the target is an endpoint that is already emitting
 export const onSpawner = (s) => onEndpoint(s) && !!s.target.spawning;
+
+/*
+The gesture is on open ground -- no entity under it.
+
+An absence, stated as a named question rather than as `!s.target` written at each call site. It is
+the condition tower placement turns on, and it is the first predicate here that is TRUE of nothing:
+`describeTarget` already answers null deliberately, calling that a real answer and not a gap, so
+this only gives that answer a name.
+*/
+export const onOpenGround = (s) => !s.target;

@@ -431,3 +431,16 @@ is one a person stops reading, which is the failure this row exists to end rathe
 #server-say { color: #6b6b6b; font-size: 12px; white-space: nowrap; overflow: hidden;
 	text-overflow: ellipsis; max-width: 46ch; margin-left: 14px; }
 #server-say.err { color: #e57373; }
+
+/* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
+   needs to read as is a connection that is either there or not. `pointer-events: none` matters more
+   than it looks: play places towers by pressing open ground, and a beam sweeping under the cursor
+   must never eat that press. */
+.beams { pointer-events: none; }
+.beam {
+	stroke: #ef5350;
+	stroke-width: 2;
+	stroke-linecap: round;
+	opacity: 0.85;
+	filter: drop-shadow(0 0 3px #ef5350);
+}

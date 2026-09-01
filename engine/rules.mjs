@@ -125,6 +125,16 @@ folding the same function over the same inputs. Nothing here needs synchronising
 */
 export function combatAt(world, t) {
 	const now = tickAt(t);
+	/*
+	A board with no towers is exactly the H12 pilot, and must cost exactly what it cost then.
+
+	Nothing can be damaged, so nothing accumulates, so a mover is still a closed form of `t` and the
+	fold has no work to do. Without this every diagram in the estate -- none of which has a tower --
+	would start paying for combat the moment this shipped, which is a real cost for an absent feature.
+	*/
+	if (!world.towers.length) {
+		return { tick: now, alive: moversAt(world.spawners, now * TICK_MS), dead: new Map(), hp: new Map(), hits: [] };
+	}
 	// `pxSpeed > 0` guards a division the validator already prevents -- speed has a floor of 0.1, so
 	// this branch is unreachable from any stored document and mutation cannot kill it. Kept because
 	// worldOf is also fed hand-built fixtures. Survivor accepted, per tools/mutate.mjs.

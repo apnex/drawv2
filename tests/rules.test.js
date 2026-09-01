@@ -12,7 +12,7 @@ slowly is a number; a tower that kills a different creep on two machines is the 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
-import { worldOf, combatAt, factsAt, DERIVATIONS, tickAt, TICK_MS } from '../engine/index.mjs';
+import { worldOf, combatAt, factsAt, DERIVATIONS, tickAt, TICK_MS, moversAt } from '../engine/index.mjs';
 import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
@@ -299,4 +299,41 @@ test('H12.16: a kind with no beam never fires, rather than firing forever', () =
 			assert.equal(factsAt(w, tick, [target]).length, 0, `tick ${tick} must stay dark`);
 		}
 	} finally { TOWERS.loadbalancer = spec; }
+});
+
+test('H13.1: a board with no towers costs what it cost before combat existed', () => {
+	/*
+	Every diagram in the estate has no tower, so this path is the common one and must stay the H12
+	pilot exactly: nothing can be damaged, nothing accumulates, and a mover is still a closed form.
+	Asserted as EQUIVALENCE to the unfolded answer, so the shortcut cannot drift from the long way.
+	*/
+	const m = board({ towers: [] });
+	const w = worldOf(m);
+	assert.equal(w.towers.length, 0);
+	const c = combatAt(w, 30_000);
+	assert.equal(c.dead.size, 0);
+	assert.equal(c.hits.length, 0);
+	assert.deepEqual(c.alive.map((x) => x.id), moversAt(w.spawners, c.tick * TICK_MS).map((x) => x.id));
+
+	/*
+	The first version of this asserted the call took under 0.5ms, which was a GUESSED threshold and
+	proved nothing: the full fold on this board costs 0.18ms, comfortably under the bar, so deleting
+	the shortcut entirely left the test green. Measured properly the two differ by 18.5x.
+
+	Compared RELATIVELY, and against the same work in the same process, so it stays meaningful on a
+	slower machine and still collapses to ~1x the moment the shortcut stops being taken.
+	*/
+	const bench = (f, n) => {
+		const t0 = process.hrtime.bigint();
+		for (let i = 0; i < n; i++) f(i);
+		return Number(process.hrtime.bigint() - t0) / 1e6 / n;
+	};
+	const shortcut = bench((i) => combatAt(w, 30_000 + i * 200), 400);
+	const folded = bench((i) => {
+		const now = tickAt(30_000 + i * 200);
+		const sp = w.spawners[0];
+		const transit = (sp.length / sp.pxSpeed) * 1000;
+		for (let tk = now - Math.ceil(transit / TICK_MS) - 1; tk <= now; tk++) moversAt(w.spawners, tk * TICK_MS);
+	}, 400);
+	assert.ok(folded / shortcut > 4, `towerless costs ${(folded / shortcut).toFixed(1)}x less than folding -- expected far more`);
 });

@@ -43,7 +43,7 @@ import { newId, kindOf } from '../../model/index.mjs';
 import { isStraight } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
-import { situationOf, inReadView, onEndpoint } from '../../engine/index.mjs';
+import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/index.mjs';
 
 const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -593,6 +593,38 @@ export class Input {
 			}
 		}
 		const t = evt.target.closest && evt.target.closest('[data-action],[data-input]');
+		/*
+		THE SECOND RULE, and the one that makes the surface a surface:
+
+			in read view + on open ground  ->  place a tower
+
+		It is deliberately the same shape as the pilot rule above -- a named predicate over a
+		situation -- because two instances are what distinguish a pattern from a single design. The
+		first rule was the only evidence the shape worked; this is the second, and it needed no new
+		mechanism to express.
+
+		PLACEMENT IS THE ONLY THING THAT TRAVELS. A tower firing is derived by every peer from the
+		board and the clock, so it is never sent; a tower being PLACED is intent, cannot be derived
+		from anything, and therefore rides the ordinary document machinery that already orders and
+		broadcasts it. A third client replays placements and arrives at the same battle.
+
+		Guarded to open ground rather than to a modifier, so play stays a one-button surface. It runs
+		after the entity and control checks below it precisely so a press on a waypoint, a node or a
+		button keeps its existing meaning -- placement is the fallback, never an interception.
+		*/
+		if (!t && !wp && evt.target.closest && !evt.target.closest('.node,.zone,.link,.group')) {
+			const s = this.situation(null);
+			if (inReadView(s) && onOpenGround(s) && !this.readOnly) {
+				const snapped = snapNode(toCanvas(evt, this.svg));
+				if (!occupiedAnyAt(this.model, snapped)) {
+					evt.preventDefault();
+					const node = this.model.makeNode('loadbalancer', snapped);
+					this.history.commit(commands.createEntity('node', node));
+					this.afterHistory();
+					return;
+				}
+			}
+		}
 		if (t && t.dataset.action) {
 			evt.preventDefault();
 			this.host.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));

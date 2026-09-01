@@ -660,6 +660,7 @@ Level and game remain the same object for now, with three costs accepted and a r
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
 | H13.1 | The derivation surface: a kind declares its own game data, and a rule is a pure function of `(world, tick)` returning facts. A tower fires because the board and the clock imply it, so only tower placement travels and a third client recomputes rather than being told | `feature` | S3 - M | `DONE` |
+| H13.3 | A player places a tower during play, and the laser is drawn. Placement is the only thing that travels; the beam is derived by every peer from the board and the clock | `feature` | S2 - M | `DONE` |
 | H13.2 | A tower rotates to face what it is burning. Deferred from H13.1 by ruling, and it is presentation only -- the angle is derived from two positions the fold already knows, so nothing is stored and no peer needs telling | `feature` | S1 - S | `TODO` |
 
 **Exit:** a player places a tower during play, it burns creeps that come into range, and two browsers watching the same diagram agree on which creeps died without exchanging anything but the placement.

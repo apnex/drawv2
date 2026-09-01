@@ -24,7 +24,7 @@ file's -- so an author can see that an endpoint emits without it moving under th
 */
 
 import { el } from './painter.js';
-import { moversAt, spawnersOf } from '../../engine/index.mjs';
+import { moversAt, spawnersOf, worldOf, combatAt } from '../../engine/index.mjs';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 
 // how often to look for a NEWLY DEPARTED mover. Not a frame rate -- the compositor owns motion.
@@ -37,7 +37,10 @@ export class Movers {
 		this.layer = layer;
 		this.now = typeof now === 'function' ? now : () => Date.now();
 		this.anims = new Map();     // mover id -> { el, anim }
+		this.beams = new Map();     // tower id -> { line, targetId }
+		this.beamLayer = null;
 		this.timer = null;
+		this.raf = null;
 	}
 
 	/*
@@ -74,18 +77,51 @@ export class Movers {
 	start() {
 		if (this.timer) return;
 		this.timer = setInterval(() => this.render(), TICK_MS);
+		/*
+		A frame loop, which this file otherwise refuses -- and the exception is narrow enough to state.
+
+		The compositor owns MOTION because a mover's whole journey is known when it departs, so the
+		browser can be handed a path and left alone. A beam has no such journey: it is a line between
+		two things that are both moving, and nothing can interpolate it for us.
+
+		It is still not reading the DOM back. Each frame recomputes the target's position from the
+		SIMULATION -- `moversAt`, measured at 0.006ms -- and writes it out. Truth still flows one way;
+		what changed is only that this consumer needs it more often than five times a second.
+
+		The expensive half stays slow: `combatAt` folds damage over the transit window at 2.87ms a
+		call, so WHO is being burned is decided at TICK_MS and only WHERE they are is tracked here.
+		*/
+		const frame = () => {
+			this.trackBeams();
+			this.raf = requestAnimationFrame(frame);
+		};
+		this.raf = requestAnimationFrame(frame);
 	}
 
 	stop() {
 		if (this.timer) { clearInterval(this.timer); this.timer = null; }
+		if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
 		this.clear();
 	}
 
 	render() {
-		const prepared = this.spawners();
-		const live = moversAt(prepared, this.now());
+		/*
+		The world rather than the spawners, because a mover can now be dead.
+
+		`combatAt` folds damage forward and returns who is still flying. Before towers existed this
+		was `moversAt` alone -- a closed form of `t` needing no history -- and the difference is the
+		cost the deviation tier knowingly buys: state accumulates, so the answer has to be folded.
+
+		What it does NOT buy is a protocol. Every peer folds the same function over the same document
+		and the same clock, so two tabs agree on which creeps died without exchanging anything.
+		*/
+		const world = worldOf(this.model);
+		const prepared = world.spawners;
+		const combat = combatAt(world, this.now());
+		const live = combat.alive;
 		const seen = new Set();
 		const byId = new Map(prepared.map((s) => [s.id, s]));
+		this.syncBeams(world, combat);
 
 		/*
 		B171 -- a mover in flight must adopt a route that changed under it.
@@ -116,8 +152,8 @@ export class Movers {
 			}
 			this.spawnEl(m, s);
 		}
-		// a mover the simulation no longer lists has been consumed -- it arrived, or its spawner
-		// was disarmed. Either way the element goes; nothing is "destroyed" in the simulation.
+		// a mover the simulation no longer lists is gone: it arrived, its spawner was disarmed, or a
+		// tower killed it. The element goes either way -- this layer does not need to know which.
 		for (const [id, rec] of this.anims) {
 			if (seen.has(id)) continue;
 			rec.anim?.cancel();
@@ -158,8 +194,56 @@ export class Movers {
 		this.anims.set(mover.id, { el: dot, anim, d });
 	}
 
+	/*
+	Which tower is burning which mover, refreshed at TICK_MS.
+
+	A beam is not a projectile and deliberately so -- ruled 2026-09-02. It connects instantaneously,
+	so there is nothing in flight to derive a position for, and no question of what a shot does when
+	its target dies before it lands. The line drawn here IS the hit.
+	*/
+	syncBeams(world, combat) {
+		if (!this.layer) return;
+		if (!this.beamLayer) this.beamLayer = el('g', { class: 'beams' }, this.layer);
+		const towers = new Map(world.towers.map((t) => [t.id, t]));
+		const firing = new Set();
+		for (const f of combat.hits) {
+			firing.add(f.tower);
+			const t = towers.get(f.tower);
+			let rec = this.beams.get(f.tower);
+			if (!rec) {
+				const line = el('line', { class: 'beam', x1: t.x, y1: t.y, x2: t.x, y2: t.y }, this.beamLayer);
+				rec = { line, targetId: f.target };
+				this.beams.set(f.tower, rec);
+			}
+			rec.targetId = f.target;
+			rec.line.setAttribute('x1', t.x);
+			rec.line.setAttribute('y1', t.y);
+		}
+		// a tower that stopped firing -- cooled down, or ran out of targets in range
+		for (const [id, rec] of this.beams) {
+			if (firing.has(id)) continue;
+			rec.line.remove();
+			this.beams.delete(id);
+		}
+	}
+
+	// the fast half: only the far END of each live beam, recomputed from the simulation each frame
+	trackBeams() {
+		if (!this.beams.size) return;
+		const live = moversAt(this.spawners(), this.now());
+		const at = new Map(live.map((m) => [m.id, m.at]));
+		for (const [, rec] of this.beams) {
+			const p = at.get(rec.targetId);
+			if (!p) continue;                       // target died this frame; the next pass removes the line
+			rec.line.setAttribute('x2', p[0]);
+			rec.line.setAttribute('y2', p[1]);
+		}
+	}
+
 	clear() {
 		for (const [, rec] of this.anims) { rec.anim?.cancel(); rec.el.remove(); }
 		this.anims.clear();
+		for (const [, rec] of this.beams) rec.line.remove();
+		this.beams.clear();
 	}
 }
