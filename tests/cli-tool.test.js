@@ -1413,3 +1413,21 @@ test('H9.9: a write to a template is announced, and the context follows the fork
 		fs.rmSync(hm, { recursive: true, force: true });
 	}
 });
+
+/*
+B167 -- the CLI's copy of the renderable node types must equal the kernel's.
+
+`cli/` cannot import the kernel: it is installed standalone, and B138 above is the test that proves
+an outside import breaks a real installation. So the list is declared twice on purpose, and this is
+the check that keeps the two honest. Without it, adding a glyph would leave `draw add` refusing a
+type the editor happily draws.
+*/
+test('B167: the CLI\'s node types are exactly the kernel\'s renderable glyphs', async () => {
+	const { GLYPH_BB } = await import('../kernel/theme.mjs');
+	const src = fs.readFileSync(path.join(root, 'cli/verbs.mjs'), 'utf8');
+	const decl = src.match(/const NODE_TYPES = \[([^\]]*)\]/);
+	assert.ok(decl, 'the declaration moved -- this assertion needs re-pointing');
+	const cli = decl[1].match(/'([a-z0-9-]+)'/g).map((x) => x.slice(1, -1));
+	assert.deepEqual([...cli].sort(), Object.keys(GLYPH_BB).sort(),
+		'cli/verbs.mjs and kernel/theme.mjs disagree about what can be drawn');
+});

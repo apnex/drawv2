@@ -15,6 +15,20 @@ not explain can go to API.md rather than guess who said no.
 rough edge.
 */
 import { request, table, die } from './draw.mjs';
+/*
+B167 -- the renderable node types.
+
+DECLARED here rather than imported, and that is forced. `cli/` is a standalone deliverable: both
+installers put it somewhere the rest of the tree is not, and B138 exists because it is invoked
+through a symlink from such a place. An `import` of `kernel/theme.mjs` resolves in this checkout
+and fails in every install -- which is exactly how it failed, on the one test that shells out.
+
+So this is a deliberate second copy of a set the kernel owns, and the drift it invites is closed by
+a gate instead: `tests/cli-tool.test.js` asserts this list equals `Object.keys(GLYPH_BB)`. Same
+reasoning as B86 -- one meaning, two enforcers, and a check holding them together, except here the
+two cannot share a module at all.
+*/
+const NODE_TYPES = ['host', 'server', 'firewall', 'router', 'loadbalancer', 'vxlan'];
 
 /*
 Both stores take the env from the CALLER -- B135.
@@ -616,6 +630,11 @@ VERBS.push(
 			if (b.neighbours?.length) rows.push(['neighbours', b.neighbours.map(nm).join(' ')]);
 			if (b.links?.length) rows.push(['links', b.links.map((l) => linkLabel(l, nm)).join('  ')]);
 			if (b.members?.length) rows.push(['members', b.members.map(nm).join(' ')]);
+			// B169 -- whatever the entity itself carries, so a new optional field needs no change here
+			for (const [k, v] of Object.entries(b.fields || {})) {
+				rows.push([k, typeof v === 'object' && v !== null
+					? Object.entries(v).map(([kk, vv]) => `${kk}=${vv}`).join(' ') : String(v)]);
+			}
 			if (b.contents?.length) rows.push(['contents', b.contents.map((c) => nm(c.id)).join(' ')]);
 			if (b.path) rows.push(['path', b.path.map((p) => `${p.x},${p.y}`).join(' -> ')]);
 			return { json: b, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
@@ -696,7 +715,7 @@ VERBS.push({
 	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 	summary: 'put a node beside, inside or between things -- on a free anchor, no coordinates',
 	example: 'draw place server near lb-1 --dir right --link',
-	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
+	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')}` },
 		{ name: 'where', about: 'near | inside | between -- how the position is described' },
 		{ name: 'ref', about: 'a node for near/between, a zone for inside' },
 		{ name: 'ref2', about: 'the second node, for between' }],
@@ -706,6 +725,8 @@ VERBS.push({
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
 		const [type, near, ref] = args;
+		// B167 -- `place` takes a type for the same reason `add` does, and checked it just as little
+		if (type && !NODE_TYPES.includes(type)) die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')}`);
 		if (!type || !['near', 'inside', 'between'].includes(near) || !ref) {
 			die('usage: draw place <type> near <ref> | inside <zone> | between <a> <b>');
 		}
@@ -916,12 +937,79 @@ merely validated.
 `place` says where by relationship, `add` says where exactly. Same sentence shape on purpose --
 `draw add server at 5,-2` beside `draw place server near lb-1` -- so the pair reads as one idea.
 */
+/*
+`spawn` -- arm an endpoint waypoint to emit movers along its link, or stop it.
+
+H12.10. The editor gained this before the CLI did, which made the whole feature reachable only by
+clicking: an agent could not arm an endpoint, and B169 meant it could not even see one that was
+armed. GR18 says a gap like that is the deliverable, not a thing to work around, so it is a verb.
+
+The direction is not an argument. It derives from WHICH end is named -- arm the src and movers run
+src to dst, arm the dst and they run the other way. Storing it would be a twin of the link and
+wrong the first time a route was reversed.
+*/
+VERBS.push({
+	name: 'spawn', group: 'Writing', usage: 'draw spawn <waypoint> [--interval ms] [--speed px] [--colour #hex] [--off]',
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams/<id>'],
+	summary: 'arm an endpoint waypoint to emit movers along its path, or stop it',
+	example: 'draw spawn waypoint-aa0001 --interval 700 --speed 160',
+	args: [{ name: 'waypoint', about: 'the ENDPOINT waypoint to arm, by id or name' }],
+	flags: [{ name: '--interval', about: 'ms between departures; default 900' },
+		{ name: '--speed', about: 'px per second; default 140' },
+		{ name: '--colour', about: 'mover colour as #rgb or #rrggbb; default #e57373' },
+		{ name: '--off', about: 'disarm it' },
+		{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx, args) {
+		if (!args[0]) die('usage: draw spawn <waypoint> [--off]');
+		const id = await activeId(ctx, ctx.flags);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'spawn');
+		const wid = await resolveId(ctx, id, args[0], doc);
+		if (!wid.startsWith('waypoint-')) die(`${args[0]} is a ${wid.split('-')[0]}, not a waypoint -- only an endpoint emits`);
+		const wp = (doc.waypoints || []).find((w) => w.id === wid);
+		if (!wp) die(`${wid} is not in this diagram`);
+
+		/*
+		Only an ENDPOINT may be armed, and the refusal says which case this is. A bend turns a path
+		and a ring has no ends -- both are legitimate waypoints that simply cannot emit, and a
+		caller who picked one deserves to know which mistake they made rather than a flat no.
+		*/
+		const touching = (doc.links || []).filter((l) => l.src === wid || l.dst === wid || (l.via || []).includes(wid));
+		const bend = touching.find((l) => (l.via || []).includes(wid));
+		if (bend) die(`${wid} is a BEND on ${bend.id}, not an endpoint -- it turns the path rather than ending it`);
+		const link = touching.find((l) => (l.src === wid || l.dst === wid) && !l.closed);
+		if (!link) {
+			const ring = touching.find((l) => l.closed);
+			die(ring ? `${wid} is on the closed route ${ring.id} -- a ring has no ends, so nothing can emit from it`
+				: `${wid} ends no link -- link it to something first, then arm it`);
+		}
+
+		if (ctx.flags.off) {
+			if (!wp.spawn) die(`${wid} is not spawning`);
+			const { spawn, ...without } = wp;
+			const r = ok(await request(ctx, `/diagrams/${id}/commit`, { method: 'POST', headers: await held(ctx, id, 'spawn'),
+				body: { ops: [{ op: 'put', kind: 'waypoint', entity: without }], label: 'stop spawning' } }), 'spawn');
+			return { json: { id: wid, spawning: false, version: r.version }, text: `${wid} stopped  v${r.version}` };
+		}
+		const num = (f, d) => (ctx.flags[f] === undefined ? d : Number(ctx.flags[f]));
+		const spawn = { interval: num('interval', 900), speed: num('speed', 140),
+			colour: ctx.flags.colour || '#e57373', since: Date.now() };
+		for (const k of ['interval', 'speed']) {
+			if (!Number.isFinite(spawn[k])) die(`--${k} takes a number, not ${ctx.flags[k]}`);
+		}
+		const r = ok(await request(ctx, `/diagrams/${id}/commit`, { method: 'POST', headers: await held(ctx, id, 'spawn'),
+			body: { ops: [{ op: 'set', kind: 'waypoint', id: wid, patch: { spawn } }], label: 'spawn' } }), 'spawn');
+		const dir = link.src === wid ? `${link.src} -> ${link.dst}` : `${link.dst} -> ${link.src}`;
+		return { json: { id: wid, spawning: true, along: link.id, spawn, version: r.version },
+			text: `${wid} spawning along ${link.id}  ${dir}  every ${spawn.interval}ms at ${spawn.speed}px/s  v${r.version}` };
+	},
+});
+
 VERBS.push({
 	name: 'add', group: 'Placement', usage: 'draw add <type> at <cx>,<cy> [--name n] [--link ref]',
 	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 	summary: 'put a node on a named anchor -- a cell, never a pixel',
 	example: 'draw add server at 5,-2 --name web-1',
-	args: [{ name: 'type', about: 'node type: host, server, router, loadbalancer, vxlan, text' },
+	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, a kind of its own` },
 		{ name: 'at', about: "the literal word 'at'" },
 		{ name: 'cx,cy', about: 'the CELL, not pixels -- `draw anchor nearest` converts if you have pixels' }],
 	flags: [{ name: '--name', about: 'what to call it' },
@@ -931,6 +1019,19 @@ VERBS.push({
 	async run(ctx, args) {
 		const [type, at, cell] = args;
 		if (!type || at !== 'at' || !cell) die('usage: draw add <type> at <cx>,<cy>');
+		/*
+		B167 -- the type is a CLOSED set, and `waypoint` is a KIND rather than a type.
+
+		Neither was checked. `draw add waypoint at 1,2` minted a NODE whose type was the string
+		"waypoint", answered success, and left `draw get waypoint` reporting none: the caller was
+		told they had made the thing they asked for, and the thing they got renders as `?` because
+		no glyph answers to that name. Two failures at once, and the only way to notice was to go
+		looking for what was absent.
+
+		The server cannot catch it -- `type` validates as any lowercase string, and a node with an
+		odd type is a legal node. So the refusal is local and names the set, exactly as `--shape`
+		already does one screen below.
+		*/
 		const [cx, cy] = String(cell).split(',').map(Number);
 		if (!Number.isInteger(cx) || !Number.isInteger(cy)) {
 			die(`at takes a CELL like 5,-2 -- whole numbers. Pixels would let you land off the grid, which the server refuses (B110)`);
@@ -942,6 +1043,17 @@ VERBS.push({
 		if (!spot) die(noAnchor(cx, cy, anchors, 'node'));
 		if (spot.occupant) die(`cell ${cx},${cy} is taken by ${spot.occupant} -- \`draw about ${spot.occupant}\` says what it is`);
 
+		if (type === 'waypoint') {
+			const wid = mint('waypoint');
+			const wops = [{ op: 'put', kind: 'waypoint', entity: { id: wid, x: spot.x, y: spot.y } }];
+			const wb = ok(await request(ctx, `/diagrams/${id}/commit`,
+				{ method: 'POST', headers: await held(ctx, id, 'add'), body: { ops: wops, label: 'add waypoint' } }), 'add');
+			return { json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
+				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}` };
+		}
+		if (!NODE_TYPES.includes(type)) {
+			die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, which is a kind of its own`);
+		}
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
 		const entity = { id: nid, name: ctx.flags.name || nid, type, x: spot.x, y: spot.y };
 		/*

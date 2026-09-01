@@ -565,7 +565,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 
 ---
 
-## H12 -- the programmable engine pilot - `WIP`
+## H12 -- the programmable engine pilot - `DONE`
 
 Opened 2026-09-01 out of the **B163** survey, `surveys/b163-rules-system-survey.md`, which settled the ambition as a programmable geometric engine and named tower defence the pilot use case that drives the design.\
 The director then reduced the pilot to its smallest honest form: **click an endpoint waypoint in read view and it spawns movers along its path, consumed at the far end.**\
@@ -607,7 +607,7 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 | H12.9 | One vocabulary for a link's ends and its ring flag. `src`/`dst`/`closed` everywhere, including inside `kernel/`, and BOTH translation sites deleted rather than reconciled. Found while building H12.6, where adding a second adapter is what revealed the first | **B166** | S3 - M | `DONE` |
 | H12.8 | Presentation via WAAPI `offset-path`, seeded from the agreed clock. Motion only in read view; the spawn config stays visible in every mode, so an author can see that a diagram emits without it moving | feature | S3 - M | `DONE` |
 
-| H12.10 | The pilot's AGENT surface: a verb that mints a waypoint-terminated link, a verb that arms an endpoint, a read verb that reports the fields an entity HAS rather than a fixed list, and `add` refusing a type no glyph exists for. Found by trying to build and then verify this milestone's own fixture through `draw`, and failing at every step in both directions | **B167**, **B168**, **B169** | S3 - M | `TODO` |
+| H12.10 | The pilot's AGENT surface: a verb that mints a waypoint-terminated link, a verb that arms an endpoint, a read verb that reports the fields an entity HAS rather than a fixed list, and `add` refusing a type no glyph exists for. Found by trying to build and then verify this milestone's own fixture through `draw`, and failing at every step in both directions | **B167**, **B168**, **B169** | S3 - M | `DONE` |
 
 **Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
 **The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.

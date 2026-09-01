@@ -66,6 +66,23 @@ what connects here, what owns this, what encloses it, and what is close enough t
 */
 function contextOf(model, kind, e) {
 	const out = { id: e.id, kind, name: e.name ?? null };
+	/*
+	B169 -- what the entity CARRIES, not only what this function remembers to ask about.
+
+	Everything below enumerates a fixed set per kind, which is right for DERIVED facts: links,
+	neighbours, enclosing zones and the rest are computed here and exist nowhere on the entity. It
+	was wrong as the whole answer. `spawn` shipped on a waypoint and no read surface mentioned it,
+	so an agent could not audit a diagram it had not authored, confirm its own write, or tell that
+	a diagram was emitting -- while a person saw a coloured ring in every mode. That gap is what
+	A5 perceptual parity exists to bound.
+
+	`fields` closes the CLASS rather than the instance: the next optional field is visible the day
+	it is added, with no second pass here. Structural keys are excluded because they are already
+	reported, better, under their own names.
+	*/
+	const STRUCTURAL = new Set(['id', 'name', 'x', 'y', 'src', 'dst', 'via', 'members']);
+	const fields = Object.fromEntries(Object.entries(e).filter(([k]) => !STRUCTURAL.has(k)));
+	if (Object.keys(fields).length) out.fields = fields;
 	if (kind === 'node' || kind === 'waypoint') {
 		out.at = { x: e.x, y: e.y };
 		const links = kind === 'node' ? model.linksOf(e.id) : model.linksAt(e.id);
