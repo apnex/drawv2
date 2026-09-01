@@ -108,6 +108,9 @@ export class Renderer {
 		// every node, not only the panels. Gating a plain node's socket on the mode is pointless if
 		// switching mode never re-renders it -- the change would appear on the next unrelated edit.
 		this.model.all('node').forEach((n) => this.render('node', n));
+		// H12.8 -- one hook, so the composition root can start or stop the movers without the
+		// renderer knowing they exist. The renderer draws the document; movers are not in it.
+		this.onMode?.(this.mode);
 		return this.mode;
 	}
 
@@ -273,7 +276,15 @@ export class Renderer {
 			const role = waypointRole(entity.id, this.model.linksAt?.(entity.id) || []);
 			// the numbers are the kernel's, shared with the SVG export; this only emits them
 			const st = waypointStyle(role, FE);
-			const g = el('g', { id: entity.id, class: `waypoint ${role === 'endpoint' ? 'endpoint' : 'bend'}` }, this.layers.waypoints);
+			/*
+			H12.8 -- an armed endpoint LOOKS armed in every mode, including author view.
+
+			Motion is read-view only, by ruling. But `spawn` is document state, so hiding it while
+			authoring would mean the diagram was emitting and the person editing it had no way to
+			know. The class marks the fact; the CSS makes it legible; nothing here moves.
+			*/
+			const armed = entity.spawn ? ' spawning' : '';
+			const g = el('g', { id: entity.id, class: `waypoint ${role === 'endpoint' ? 'endpoint' : 'bend'}${armed}` }, this.layers.waypoints);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
 			el('circle', { class: 'wp-ring', r: st.radius, fill: st.fill, stroke: TOKENS.waypoint, 'stroke-width': st.width, 'stroke-opacity': st.opacity }, g);
 			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);

@@ -45,7 +45,7 @@ export function bindGestureDefer(input, sync) {
 }
 
 export class Sync {
-	constructor({ model, net, history, selection, onState }) {
+	constructor({ model, net, history, selection, onState, clock }) {
 		this.model = model;
 		this.net = net;
 		this.history = history;
@@ -59,7 +59,7 @@ export class Sync {
 		be corrected for the round trip instead of arriving one hop stale. Sync owns it because Sync
 		is what sends those two messages; the Clock itself stays ignorant of the protocol.
 		*/
-		this.clock = new Clock();
+		this.clock = clock || new Clock();   // the root injects one it shares; bare construction still works
 		this.requestSentAt = null;
 		this.hydrated = false;
 		/*

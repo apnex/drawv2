@@ -161,6 +161,10 @@
 					<g id="links"></g>
 					<g id="waypoints"></g>
 					<g id="nodes"></g>
+					<!-- H12.8: movers ride ABOVE the graph so a packet is never hidden by the line it
+					     travels, and in their own layer so the renderer's reconcile never sees them --
+					     they are derived presentation, not document entities. -->
+					<g id="movers"></g>
 					<g id="overlay"></g>
 				</svg>
 			</main>

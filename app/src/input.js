@@ -43,6 +43,7 @@ import { newId, kindOf } from '../../model/index.mjs';
 import { isStraight } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
+import { situationOf, inReadView, onEndpoint } from '../../engine/index.mjs';
 
 const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -363,7 +364,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now }) {
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
@@ -379,6 +380,16 @@ export class Input {
 		// palette's surface at H6.13 and belong here too, or `bare` construction throws on the first `t`.
 		this.palette = palette || { hand: null, textTool: false, setHand() {}, toggleHand() {}, trackHand() {},
 			hideHand() {}, setTextTool() {}, holding() { return false; }, releaseTools() {} };
+		/*
+		H12.4/H12.7 -- the agreed instant, injected as a FUNCTION rather than reached for.
+
+		Input does not own a clock and must not know that one is negotiated with the server. It is
+		handed `now` and asks it; the seam that makes the offset shared lives in `app/src/clock.js`
+		and is wired by the composition root. Defaulting to the local clock keeps bare construction
+		total, exactly as the readout and palette null objects above do -- a default that throws is
+		a trap, and this tree has already paid for one.
+		*/
+		this.now = typeof now === 'function' ? now : () => Date.now();
 		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)
 		this.overlay = svg.querySelector('#overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
@@ -539,8 +550,48 @@ export class Input {
 		};
 	}
 
+	/*
+	H12.7 -- the situation this surface is in, as a VALUE.
+
+	Everything transient is gathered here and nothing downstream reaches back for more. That is what
+	lets a decision be a predicate rather than a walk through `this`: `engine/situation.mjs` owns the
+	description, the rule reads it, and neither can see a DOM.
+	*/
+	situation(targetId = null) {
+		return situationOf({
+			get: (kind, id) => this.model.get(kind, id),
+			linksTouching: (id) => this.model.linksAt?.(id) || [],
+		}, {
+			mode: this.renderer.mode,
+			readOnly: this.readOnly,
+			targetId,
+			selection: this.selection.list(),
+		}, this.now());
+	}
+
 	runModePress(evt) {
 		if (evt.button !== 0) return;
+		/*
+		THE PILOT RULE, and the only one. One predicate over the situation:
+
+			in read view + on an endpoint waypoint  ->  toggle whether it spawns
+
+		The SAME click selects that waypoint in author view, which is exactly the situation-dependent
+		meaning `KEYMAP` cannot currently express -- B163 stated as a feature. There is no dispatch
+		table here on purpose: the shape of one is owed the prior-art pass (survey flag F3), and
+		inventing it from a single rule is how the last surface was got wrong.
+		*/
+		const wp = evt.target.closest && evt.target.closest('.waypoint');
+		if (wp) {
+			const s = this.situation(wp.id);
+			if (inReadView(s) && onEndpoint(s)) {
+				evt.preventDefault();
+				if (this.readOnly) return;      // reading someone else's diagram arms nothing
+				const cmd = commands.toggleSpawn(this.model, wp.id, s.at);
+				if (cmd) { this.history.commit(cmd); this.afterHistory(); }
+				return;
+			}
+		}
 		const t = evt.target.closest && evt.target.closest('[data-action],[data-input]');
 		if (t && t.dataset.action) {
 			evt.preventDefault();

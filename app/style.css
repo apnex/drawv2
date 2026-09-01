@@ -276,6 +276,18 @@ selection.
 */
 .waypoint.on-selected-path .wp-ring { stroke: #aed581; stroke-opacity: 1; }
 .waypoint.on-selected-path .wp-dot { fill: #aed581; }
+/*
+H12.8 -- an armed spawner reads as armed in EVERY mode, and never moves in author view.
+
+Placed ABOVE `.armed` deliberately: arming a TOOL is a transient thing the person is doing right
+now and must still shout over this, which is a lasting property of the diagram. Same ordering
+reasoning as the selected-path highlight above.
+*/
+.waypoint.spawning .wp-ring { stroke: #4fc3f7; stroke-opacity: 1; stroke-width: 3; }
+.waypoint.spawning .wp-dot { fill: #4fc3f7; }
+/* a mover is presentation only: never a pointer target, so it cannot intercept a click meant for
+   the line it is riding, and no transition -- the compositor owns its motion via offset-path. */
+.mover { pointer-events: none; }
 .waypoint.armed .wp-ring { stroke: #e57373; stroke-opacity: 1; }
 .waypoint.armed .wp-dot { fill: #e57373; }
 /* stamp ghost (waypoint hand): ring has no inline stroke, so CSS provides it; red when blocked */

@@ -12,6 +12,8 @@ import { attachRelations } from '../../engine/index.mjs';
 import { Changes } from './changes.js';
 import { Renderer } from './renderer.js';
 import { Selection } from './selection.js';
+import { Clock } from './clock.js';
+import { Movers } from './movers.js';
 import { Input } from './input.js';
 import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
@@ -47,7 +49,27 @@ const palette = new Palette({ container: document.getElementById('palette'), svg
 // look the same element up for itself, so the id had two owners (B45).
 const helpBtn = document.getElementById('help-btn');
 const help = document.getElementById('help');
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, snap });
+/*
+H12.4/H12.8 -- ONE clock, owned by the composition root and handed to whoever needs an instant.
+
+Sync seeds it from the server's snapshot; Input stamps `since` with it when an endpoint is armed;
+Movers seeds each animation from it. Constructing it here rather than inside Sync is what lets the
+other two have it without reaching through Sync to get it (A3 Air-Gap), and is the shape
+`scan-wiring` checks: a value the root computes must reach the thing it constructs.
+*/
+const clock = new Clock();
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, now: () => clock.now(), snap });
+/*
+H12.8 -- the presentation layer for movers. Started and stopped by MODE, refreshed by CHANGE.
+
+Both wires live here rather than inside either party: the renderer does not know movers exist, and
+the movers do not listen to the renderer. The root connects them, which is the only place that
+legitimately knows about both.
+*/
+const movers = new Movers({ model, renderer, layer: svg.querySelector('#movers'), now: () => clock.now() });
+renderer.onMode = () => movers.sync();
+model.onChange(() => movers.sync());
+
 if (helpBtn && help) {
 	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });
 	help.addEventListener('click', (e) => { if (e.target === help) help.hidden = true; });
@@ -456,7 +478,7 @@ const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on 
 // no way to forward an uncommitted change, because uncommitted changes never pass through Changes.
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
-	model, net, history, selection,
+	model, net, history, selection, clock,
 	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
