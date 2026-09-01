@@ -67,6 +67,20 @@ export function prepareSpawner(spawner) {
 // whether a prepared spawner can produce anything at all. A zero-length route, a non-positive
 // interval or a non-positive speed each describe a spawner that emits nothing, and each would
 // otherwise divide by zero or loop forever.
+/*
+SURVIVORS RECORDED, so the next reader does not rediscover them.
+
+`tools/mutate.mjs` reports three survivors on this line and one on the `elapsed >= 0` guard below.
+They are REDUNDANT rather than untested: each condition here is covered by another, so relaxing one
+alone changes no answer. `geo.length > 0` is subsumed by `length > 0` -- an empty decomposition has
+no length -- and a spawner failing either fails both. The `>= 0` guard survives on the single
+instant `elapsed === 0`, where admitting or refusing the not-yet-departed mover gives the same
+empty set.
+
+Kept as separate conditions because each names a distinct way to be silent, and a reader asking
+"can a zero-speed spawner emit" should find `speed > 0` rather than infer it. Documented instead of
+deleted or allow-listed: an allow-list moves the fact away from the code it is about.
+*/
 const emits = (s) => s && s.geo && s.geo.length > 0 && s.length > 0 && s.interval > 0 && s.speed > 0;
 
 /*

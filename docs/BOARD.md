@@ -160,13 +160,13 @@ The ranking below therefore weighs one question above size: **does this let an a
 
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
-| 1 | H11.4 | verifier | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. Sharpened since: B147 shipped three times because each test asserted the layer below the one that broke, and mutation cannot see that, because a mutant only probes the assertions that exist. |
+| 1 | -- | verifier | **H11.4 closed 2026-09-01, re-scoped by measurement.** The stated check was undecidable; the census candidate scored 2 of 9. `tools/mutate.mjs` automates the technique that caught seven of the nine, and found two more gaps on its first run. Original ranking note follows | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. Sharpened since: B147 shipped three times because each test asserted the layer below the one that broke, and mutation cannot see that, because a mutant only probes the assertions that exist. |
 | 2 | -- | user | **H10.3 closed 2026-09-01.** The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
 | 3 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 4 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
 | 5 | -- | agent | **H10.32 closed 2026-09-01.** A verb now refuses a positional it never declared, at the dispatcher rather than in 41 verbs. Kept as a rank so the ordering below is not silently renumbered |
 | 6 | H10.8 | local | Real, small, compounding into nothing alone. Take them opportunistically. **H9.22 closed and left this tier 2026-09-01.** Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
-| -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
+| -- | H10.7 | blocked | Bounded parallel connections. **H10.11 closed and left this tier 2026-09-01.** **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
 **What the arc left undone, deliberately.**\
 The map shows what is where and not what connects to what, and links are not going on it -- `links`, `about` and `link path` answer connectivity as lists, and a text grid carrying both would be the mess the design set out to avoid.\
@@ -494,7 +494,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 - S | `DONE` |
 | H10.9 | One straight link per pair, permitted alongside any number of routed ones -- H10.4 keyed the refusal on any link, so drawing order decided what was reachable | **B80** | S2 - S | `DONE` |
 | H10.10 | The rule becomes a document invariant in a sovereign validator, and the waypoint cascade deletes a link it would leave colliding | **B81** | S2 - M | `DONE` |
-| H10.11 | Resolve straight-link capacity from a node-kind config property, settable at runtime by operator or API -- the seam exists, the configuration does not | **B126** | S4 - L | `TODO` |
+| H10.11 | Resolve straight-link capacity from a node-kind config property, settable at runtime by operator or API -- the seam exists, the configuration does not | **B126** | S4 - L | `DONE` |
 | H10.12 | "No entity is in two groups" becomes an invariant -- it was enforced on `put` only, so a `set` produced a document the client and server read differently | **B82** | S1 - M | `DONE` |
 | H10.13 | Document invariants get the surface the log invariant already has: checked at load and creation, counted, reported through `/health` -- never a refusal | **B83** | S2 - S | `DONE` |
 | H10.14 | Export `isStraight` and `pairKey` so the rule's vocabulary lives where the rule does | **B84** | S2 - S | `DONE` |
@@ -642,6 +642,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
+| **B170** | S3 | A synthetic input event fails silently, so a test that simulates a gesture proves nothing and still passes | a THIRD place loses a round to it, or a new test dispatches a synthetic event -- the moment a rule would have paid for itself |
 | **B165** | S3 | `SCOPE.md`'s entity block describes the MVP's four kinds and denies waypoints and routing, both of which shipped | the next entity field lands, or an agent is observed acting on the stale block -- and the real fix is a rule that reads the block, since prose no check consults is where this drifts again |
 | **B88** | S3 | Prose can assert that finished work is blocked, and no rule reads a sentence | a second blocked entry appears on the board, or any `Decisions required` entry returns |
 

@@ -205,6 +205,26 @@ test('H12.3: positionOf answers for ONE mover without building the set', () => {
 	assert.deepEqual(positionOf(s, 0, 1000), [100, 0]);
 	assert.equal(positionOf(s, 0, 20_000), null);     // consumed
 	assert.equal(positionOf(s, 3, 1000), null);       // not yet departed
+	/*
+	k > 0 AND ALIVE, which the three above never reach -- and `tools/mutate.mjs` found that on its
+	first run. Every case here used either k = 0, where the departure offset contributes nothing,
+	or a k that has not departed, where both signs land off the route and return null. So
+	`- k * interval` could have been `+` and no test would have objected: mover 3 would be reported
+	somewhere it had never been, and only a person watching the screen would know.
+	*/
+	assert.deepEqual(positionOf(s, 3, 5000), [200, 0], 'the departure offset is SUBTRACTED');
+	assert.deepEqual(positionOf(s, 1, 5000), [400, 0], 'and scales with k');
+	/*
+	A NON-ZERO `since`, which the helper above never supplies -- the second gap the mutation run
+	found in this one function. With `since: 0`, `t - since` and `t + since` are the same
+	expression, so the arming instant could have been ADDED to the elapsed time and every test here
+	would still have passed. A spawner armed at any real epoch instant -- which is every spawner
+	that has ever existed outside this file -- would then have put its movers at twice the age of
+	the universe.
+	*/
+	const later = spawner({ since: 10_000 });
+	assert.deepEqual(positionOf(later, 0, 12_000), [200, 0], 'elapsed is measured FROM `since`');
+	assert.equal(positionOf(later, 0, 9_000), null, 'and nothing exists before it');
 });
 
 /*
