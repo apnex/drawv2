@@ -39,6 +39,8 @@ export class Movers {
 		this.anims = new Map();     // mover id -> { el, anim }
 		this.beams = new Map();     // tower id -> { line, targetId }
 		this.beamLayer = null;
+		this.moverLayer = null;
+		this.deaths = new Map();    // mover id -> tick it died, from the last fold
 		this.timer = null;
 		this.raf = null;
 	}
@@ -62,7 +64,26 @@ export class Movers {
 	sync() {
 		if (this.renderer.mode !== 'run') return this.stop();
 		this.start();
-		this.render();
+		this.fold();
+		this.paint();
+	}
+
+	/*
+	Two layers, in a fixed order, because the order is the visual.
+
+	A beam drawn BEHIND an opaque packet is occluded from the packet's near edge inward, so the line
+	appears to stop at the edge rather than reach the middle -- which is precisely what a laser
+	should not look like. Movers were appended to the layer continuously and the beam group was
+	created once, so every packet made after the first beam landed on top of it. Ordering the two
+	groups explicitly makes that independent of when anything was created.
+	*/
+	layers() {
+		if (!this.layer) return false;
+		if (!this.moverLayer || !this.moverLayer.isConnected) {
+			this.moverLayer = el('g', { class: 'packets' }, this.layer);
+			this.beamLayer = el('g', { class: 'beams' }, this.layer);   // second child: drawn over the packets
+		}
+		return true;
 	}
 
 	/*
@@ -76,7 +97,7 @@ export class Movers {
 	*/
 	start() {
 		if (this.timer) return;
-		this.timer = setInterval(() => this.render(), TICK_MS);
+		this.timer = setInterval(() => this.fold(), TICK_MS);
 		/*
 		A frame loop, which this file otherwise refuses -- and the exception is narrow enough to state.
 
@@ -92,6 +113,7 @@ export class Movers {
 		call, so WHO is being burned is decided at TICK_MS and only WHERE they are is tracked here.
 		*/
 		const frame = () => {
+			this.paint();
 			this.trackBeams();
 			this.raf = requestAnimationFrame(frame);
 		};
@@ -100,28 +122,49 @@ export class Movers {
 
 	stop() {
 		if (this.timer) { clearInterval(this.timer); this.timer = null; }
+		this.deaths = new Map();
 		if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
 		this.clear();
 	}
 
-	render() {
-		/*
-		The world rather than the spawners, because a mover can now be dead.
+	/*
+	THE SLOW HALF -- who is alive, who is dead, who is being burned.
 
-		`combatAt` folds damage forward and returns who is still flying. Before towers existed this
-		was `moversAt` alone -- a closed form of `t` needing no history -- and the difference is the
-		cost the deviation tier knowingly buys: state accumulates, so the answer has to be folded.
-
-		What it does NOT buy is a protocol. Every peer folds the same function over the same document
-		and the same clock, so two tabs agree on which creeps died without exchanging anything.
-		*/
+	`combatAt` folds damage over the transit window at 2.87ms a call, which is the cost the deviation
+	tier knowingly buys: a damaged mover accumulates state, so the answer has to be folded rather
+	than evaluated. Kept at TICK_MS because the ANSWER changes slowly -- a creep takes three hits to
+	die -- while its POSITION changes every frame.
+	*/
+	fold() {
 		const world = worldOf(this.model);
-		const prepared = world.spawners;
 		const combat = combatAt(world, this.now());
-		const live = combat.alive;
+		this.deaths = combat.dead;
+		this.syncBeams(world, combat);
+	}
+
+	/*
+	THE FAST HALF -- which elements should exist, run every frame.
+
+	This used to run at TICK_MS with the fold, and that was visible: an element is only created once
+	`moversAt` lists its mover, so a packet departing just after a tick waited up to 200ms to appear,
+	then was SEEDED to its true position and popped into existence 8.4px along its route. With a
+	900ms interval against a 200ms tick the phase alternates, so every other packet emerged from the
+	source centre and the ones between it did not -- which is exactly what the director reported.
+
+	Running it per frame drops the worst case to one frame, about 1.4px, and costs almost nothing:
+	`moversAt` is 0.006ms because an undamaged mover is still a closed form of `t`. Only the fold is
+	expensive, and the fold stayed where it was.
+	*/
+	paint() {
+		if (!this.layers()) return;
+		const prepared = this.spawners();
+		const dead = this.deaths || new Map();
+		const live = moversAt(prepared, this.now()).filter((m) => !dead.has(m.id));
 		const seen = new Set();
 		const byId = new Map(prepared.map((s) => [s.id, s]));
-		this.syncBeams(world, combat);
+		// one path string per SPAWNER per frame, not one per mover: `roundedPath` builds a string,
+		// and rebuilding it for each of twenty packets sixty times a second is work for nothing.
+		const paths = new Map(prepared.map((s) => [s.id, this.pathOf(s)]));
 
 		/*
 		B171 -- a mover in flight must adopt a route that changed under it.
@@ -145,12 +188,12 @@ export class Movers {
 			const s = byId.get(m.spawnerId);
 			const rec = this.anims.get(m.id);
 			if (rec) {
-				if (rec.d === this.pathOf(s)) continue;   // same route: leave the compositor alone
+				if (rec.d === paths.get(m.spawnerId)) continue;   // same route: leave the compositor alone
 				rec.anim?.cancel();
 				rec.el.remove();
 				this.anims.delete(m.id);
 			}
-			this.spawnEl(m, s);
+			this.spawnEl(m, s, paths.get(m.spawnerId));
 		}
 		// a mover the simulation no longer lists is gone: it arrived, its spawner was disarmed, or a
 		// tower killed it. The element goes either way -- this layer does not need to know which.
@@ -168,9 +211,9 @@ export class Movers {
 		return spawner ? roundedPath(spawner.pts, spawner.radius ?? BEND_R, false) : null;
 	}
 
-	spawnEl(mover, spawner) {
-		if (!spawner || !this.layer) return;
-		const d = this.pathOf(spawner);
+	spawnEl(mover, spawner, path) {
+		if (!spawner || !this.layers()) return;
+		const d = path || this.pathOf(spawner);
 		// B45 -- `painter.el` rather than `document.createElementNS`. A DOM global welds a module to
 		// the one page it happens to run on; the painter is the surface that legitimately owns it.
 		// the mover's stable identity travels onto the element, so anything inspecting the page --
@@ -178,7 +221,7 @@ export class Movers {
 		// happens to be first in the DOM. Costs an attribute; without it, identity is unobservable.
 		// B172 -- the KIND names a class and the stylesheet owns the look, so one edit reaches every
 		// packet including those already armed. A stored hex could never do that; three repaints proved it.
-		const dot = el('circle', { r: 6, class: `mover ${spawner.kind || 'packet'}`, 'data-mover': mover.id }, this.layer);
+		const dot = el('circle', { r: 6, class: `mover ${spawner.kind || 'packet'}`, 'data-mover': mover.id }, this.moverLayer);
 		dot.style.offsetPath = `path("${d}")`;
 		dot.style.offsetRotate = '0deg';          // a packet does not bank into the corners
 
@@ -202,8 +245,7 @@ export class Movers {
 	its target dies before it lands. The line drawn here IS the hit.
 	*/
 	syncBeams(world, combat) {
-		if (!this.layer) return;
-		if (!this.beamLayer) this.beamLayer = el('g', { class: 'beams' }, this.layer);
+		if (!this.layers()) return;
 		const towers = new Map(world.towers.map((t) => [t.id, t]));
 		const firing = new Set();
 		for (const f of combat.hits) {

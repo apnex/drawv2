@@ -336,7 +336,17 @@ test('B171: the presentation rebuilds a mover whose route changed, and only then
 	drift, the check silently stops firing and the defect returns without a test failing.
 	*/
 	const src = readFileSync(new URL('../app/src/movers.js', import.meta.url), 'utf8');
-	assert.match(src, /rec\.d === this\.pathOf\(s\)/, 'a live mover is compared against the current route');
+	/*
+	The comparison moved when painting went per-frame: rebuilding a path string for each of twenty
+	packets sixty times a second is work for nothing, so it is built once per SPAWNER per frame and
+	both sides read that map. The property is unchanged and is still the one that matters -- the
+	string an element was BUILT with is the string it is COMPARED against -- but it now holds because
+	both come from one map rather than from two calls.
+	*/
+	assert.match(src, /rec\.d === paths\.get\(m\.spawnerId\)/, 'a live mover is compared against the current route');
+	assert.match(src, /paths = new Map\(prepared\.map\(\(s\) => \[s\.id, this\.pathOf\(s\)\]\)\)/,
+		'and that map is produced by pathOf, so the comparison cannot drift from the build');
+	assert.match(src, /this\.spawnEl\(m, s, paths\.get\(m\.spawnerId\)\)/, 'the element is built from the same entry');
 	assert.match(src, /this\.anims\.set\([^)]*\bd\b/, 'and the route it was built with is remembered');
 	assert.match(src, /pathOf\(spawner\)/, 'one function produces the string, so build and compare cannot drift');
 	// the old unconditional skip must be gone, not merely bypassed

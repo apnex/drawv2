@@ -438,9 +438,12 @@ is one a person stops reading, which is the failure this row exists to end rathe
    must never eat that press. */
 .beams { pointer-events: none; }
 .beam {
-	stroke: #ef5350;
-	stroke-width: 2;
+	/* brighter, per the director. #ef5350 is a muted material red that reads as a thin line rather
+	   than as energy; this is a hot core at full opacity with a saturated glow carrying the colour,
+	   which is how a beam reads as bright without becoming thick. */
+	stroke: #ff5d47;
+	stroke-width: 2.5;
 	stroke-linecap: round;
-	opacity: 0.85;
-	filter: drop-shadow(0 0 3px #ef5350);
+	opacity: 1;
+	filter: drop-shadow(0 0 2px #ff8a65) drop-shadow(0 0 6px #ff3d00);
 }
