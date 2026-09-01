@@ -154,6 +154,17 @@ export class Movers {
 	Running it per frame drops the worst case to one frame, about 1.4px, and costs almost nothing:
 	`moversAt` is 0.006ms because an undamaged mover is still a closed form of `t`. Only the fold is
 	expensive, and the fold stayed where it was.
+
+	NOTHING HERE ANIMATES, and the distinction is worth stating because the method name suggests
+	otherwise. Motion is entirely WAAPI: an element is handed a path and a duration and the
+	compositor interpolates it off the main thread. This decides only which elements should EXIST.
+	The single thing JS positions per frame is the beam, which has no keyframe to hand off because
+	both of its ends move independently.
+
+	A packet therefore still appears at distance 0 rather than growing or sliding out from under the
+	source marker. Ruled 2026-09-02: consistency was the win, and emergence is left until turret
+	rotation and death effects land, since both change how the whole thing reads. Do not 'fix' this
+	in isolation -- it was looked at and left.
 	*/
 	paint() {
 		if (!this.layers()) return;
