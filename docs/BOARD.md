@@ -602,12 +602,23 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 | H12.3 | `engine/movers.mjs` -- `moversAt(spawners, t)`, pure, portable, DOM-free. The simulation, and the thing a tower will later query | feature | S3 - S | `DONE` |
 | H12.4 | One agreed clock: `serverNow` on the snapshot handshake, client-side offset, so parity does not depend on whose laptop is right | feature | S2 - S | `DONE` |
 | H12.5 | `spawn` config on an endpoint waypoint -- document state, undoable, shared. Direction derives from which end was pressed; a closed route has no endpoints and cannot be armed | feature | S2 - S | `DONE` |
-| H12.6 | The **situation** as a value: model-level, serialisable, DOM-free, buildable without a browser. The survey made this binding and it survived the rule table's demotion, because it is the read-surface a mod needs before it can decide anything. Built here because the work IS the abstraction, not deferred as scaffolding | feature | S3 - M | `TODO` |
+| H12.6 | The **situation** as a value: model-level, serialisable, DOM-free, buildable without a browser. The survey made this binding and it survived the rule table's demotion, because it is the read-surface a mod needs before it can decide anything. Built here because the work IS the abstraction, not deferred as scaffolding | feature | S3 - M | `DONE` |
 | H12.7 | The pilot rule, expressed as ONE predicate over the situation rather than a branch in a handler body: in read view, a click on an endpoint waypoint toggles spawn. The same click SELECTS in author view -- the situation-conditioned meaning `KEYMAP` cannot currently express, which is **B163** stated as a feature rather than a defect. No dispatch table; the shape of one is owed the F3 prior-art pass | **B163** | S3 - M | `TODO` |
 | H12.8 | Presentation via WAAPI `offset-path`, seeded from the agreed clock. Motion only in read view; the spawn config stays visible in every mode, so an author can see that a diagram emits without it moving | feature | S3 - M | `TODO` |
 
 **Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
 **The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.
+
+**Why this pilot cannot desync, and when that stops being true.**\
+The director noted the resemblance to OpenTTD -- distributed simulation with seed and hash validation to catch desyncs -- and the comparison is right about the class of system and not yet about this one.\
+Lockstep simulations desync because their state ACCUMULATES: tick `n+1` is computed from tick `n`, so a one-ULP divergence compounds without bound, which is why OpenTTD and Factorio use fixed-point arithmetic and exchange periodic state hashes.\
+A mover here accumulates nothing -- it is a closed form of `t` -- so a float discrepancy affects one frame and is gone the next, and the two inputs are the document and the clock, both of which come from the server rather than from each peer's own reckoning.\
+That is why parity needed no protocol: there is nothing for two peers to independently derive.
+
+**The deviation tier changes this, and the cost should be known before it is chosen.**\
+The moment a mover can be damaged or slowed, its state accumulates and every lockstep problem arrives together: ordering of events across peers, and the free use of floating point that is harmless today becoming the reason two clients disagree.\
+The options at that point are the ones those games already found -- make the server authoritative over deviations and broadcast them, or make the simulation bit-exact and hash-check it.\
+A hash built now would detect nothing, so building one would be mechanism against an unmeasured problem (**A11**); what is worth keeping is that `moversAt` already returns plain values, so it is hashable the day that changes.
 
 **Not in this milestone:** mutable per-mover state, towers, range queries, waves, combat.\
 The sparse-overlay design for deviating movers is named in the survey and is not built here.\

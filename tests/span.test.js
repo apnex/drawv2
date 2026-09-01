@@ -523,8 +523,31 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	*/
 	const client = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const engine = fs.readFileSync(new URL('../kernel/engine.mjs', import.meta.url), 'utf8');
-	assert.match(client, /waypointRole\(/, 'the live renderer asks for the role');
-	assert.match(engine, /waypointRole\(/, 'and so does the kernel');
+	const routes = fs.readFileSync(new URL('../engine/routes.mjs', import.meta.url), 'utf8');
+
+	/*
+	H12.6 re-pointed the client half of this, and the reason is worth keeping.
+
+	The renderer used to call `waypointRole` directly, mapping the model's `src`/`dst`/`closed` into
+	the kernel's `from`/`to`/`close` inline. The situation needed the same mapping, which made it a
+	twin, so it moved to `engine/routes.mjs` and the renderer now reaches the rule through `roleOf`.
+
+	The PROPERTY was never "calls a particular symbol" -- it is "asks for the role rather than
+	deciding it", and that is what is asserted. Pinning to the old name would have reported a
+	correct refactor as a defect, which is the same failure this test's own comment warns about
+	one paragraph up.
+	*/
+	assert.match(client, /roleOf\(/, 'the live renderer asks for the role');
+	assert.match(routes, /waypointRole\(/, 'and the adapter it asks through reaches the one rule');
+	assert.match(engine, /waypointRole\(/, 'as does the kernel');
+
+	// the chain is unbroken in FACT, not merely in text: the adapter must produce the kernel's answer
+	const { roleOf } = await import('../engine/routes.mjs');
+	assert.equal(roleOf('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
+	assert.equal(roleOf('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }]), 'bend', 'a ring still has no ends');
+
+	// and the vocabulary is gone from the renderer -- the twin is retired, not merely unused
+	assert.doesNotMatch(client, /from:\s*l\.src/, 'the model-to-kernel mapping must not live here again');
 });
 
 /*

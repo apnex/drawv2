@@ -7,8 +7,9 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRole, waypointStyle, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointStyle, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
+import { roleOf } from '../../engine/routes.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
 const SOCKET = STD.socket;             // glyph box (26)
@@ -267,9 +268,11 @@ export class Renderer {
 			`linksAt` is the engine's maintained incidence index, so this is O(1) and re-derives on
 			every render -- closing a path with `c` changes the drawing with nothing stored.
 			*/
-			const touching = (this.model.linksAt?.(entity.id) || [])
-				.map((l) => ({ from: l.src, to: l.dst, via: l.via || [], close: !!l.closed }));
-			const role = waypointRole(entity.id, touching);
+			// H12.6 -- the model-to-kernel vocabulary lives in `engine/routes.mjs` now. It was
+			// mapped inline here and needed again by the situation, and `close` versus `closed`
+			// fails silently rather than loudly: a wrong guess is undefined, which is falsy, so a
+			// ring would quietly report ends and simply draw wrong.
+			const role = roleOf(entity.id, this.model.linksAt?.(entity.id) || []);
 			// the numbers are the kernel's, shared with the SVG export; this only emits them
 			const st = waypointStyle(role, FE);
 			const g = el('g', { id: entity.id, class: `waypoint ${role === 'endpoint' ? 'endpoint' : 'bend'}` }, this.layers.waypoints);
