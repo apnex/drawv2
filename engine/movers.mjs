@@ -36,6 +36,17 @@ index into whatever array happened to be built this frame.
 */
 
 import { routeGeometry, pathLength, pointAtDistance } from '../kernel/router.mjs';
+import { STD } from '../kernel/spec.mjs';
+
+/*
+B172 -- `speed` is authored in CELLS per second and the geometry is in pixels, so the conversion
+happens ONCE, here, at the boundary between the two. Everything below this line is px/s.
+
+Cells is the authored unit because the grid is this system's unit of distance (B110), so a stored
+speed keeps its meaning if the pitch ever changes. Pixels is the computed unit because that is what
+a path is measured in. Converting at the edge is what keeps both true at the same time.
+*/
+const PITCH = STD.pitch;
 
 /*
 A runtime bound, not a document limit -- so it is here rather than in `model/limits.mjs`, whose
@@ -59,9 +70,12 @@ handing over a description; that adapter is somebody else's one concern.
   speed     px per second
 */
 export function prepareSpawner(spawner) {
-	const { pts, close = false, radius = 20 } = spawner || {};
-	const geo = routeGeometry(pts, radius, close);
-	return { ...spawner, geo, length: pathLength(geo) };
+	const { pts, closed = false, radius = 20 } = spawner || {};
+	const geo = routeGeometry(pts, radius, closed);
+	// `pxSpeed` is the only speed anything below uses; `speed` stays as authored so a caller
+	// reading a prepared spawner back sees the number it supplied rather than a derived one.
+	const pxSpeed = typeof spawner?.speed === 'number' ? spawner.speed * PITCH : 0;
+	return { ...spawner, geo, length: pathLength(geo), pxSpeed };
 }
 
 // whether a prepared spawner can produce anything at all. A zero-length route, a non-positive
@@ -81,7 +95,7 @@ Kept as separate conditions because each names a distinct way to be silent, and 
 "can a zero-speed spawner emit" should find `speed > 0` rather than infer it. Documented instead of
 deleted or allow-listed: an allow-list moves the fact away from the code it is about.
 */
-const emits = (s) => s && s.geo && s.geo.length > 0 && s.length > 0 && s.interval > 0 && s.speed > 0;
+const emits = (s) => s && s.geo && s.geo.length > 0 && s.length > 0 && s.interval > 0 && s.pxSpeed > 0;
 
 /*
 The movers alive at `t`, in departure order, across every prepared spawner.
@@ -94,13 +108,13 @@ export function moversAt(prepared, t) {
 	const out = [];
 	for (const s of prepared || []) {
 		if (!emits(s)) continue;
-		const transit = (s.length / s.speed) * 1000;        // ms from departure to consumption
+		const transit = (s.length / s.pxSpeed) * 1000;        // ms from departure to consumption
 		const elapsed = t - s.since;
 		if (!(elapsed >= 0)) continue;                      // armed in the future: nothing yet
 		const newest = Math.floor(elapsed / s.interval);
 		const oldest = Math.max(0, Math.ceil((elapsed - transit) / s.interval));
 		for (let k = oldest; k <= newest && out.length < MAX_MOVERS_PER_SPAWNER; k++) {
-			const travelled = ((elapsed - k * s.interval) / 1000) * s.speed;
+			const travelled = ((elapsed - k * s.interval) / 1000) * s.pxSpeed;
 			/*
 			A FLOATING-POINT BACKSTOP. The window above is what decides liveness.
 
@@ -141,7 +155,7 @@ export function moversAt(prepared, t) {
 // the answer is a function rather than a lookup into something the renderer happened to populate.
 export function positionOf(prepared, k, t) {
 	if (!emits(prepared)) return null;
-	const travelled = ((t - prepared.since - k * prepared.interval) / 1000) * prepared.speed;
+	const travelled = ((t - prepared.since - k * prepared.interval) / 1000) * prepared.pxSpeed;
 	if (travelled < 0 || travelled > prepared.length) return null;
 	return pointAtDistance(prepared.geo, travelled);
 }

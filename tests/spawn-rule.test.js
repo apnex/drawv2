@@ -109,8 +109,8 @@ test('H12.7: the built spawn passes the authored bounds it will be validated aga
 	applyOps(m, [{ op: 'set', kind: 'waypoint', id: WP_A, patch: spawn }]);
 	assert.equal(validateEntity('waypoint', m.get('waypoint', WP_A)), null);
 	// and a caller may override, still within bounds
-	const custom = toggleSpawn(doc(), WP_A, NOW, { interval: 300, speed: 400, colour: '#aed581' }).entries[0].after;
-	assert.deepEqual(custom, { spawn: { interval: 300, speed: 400, colour: '#aed581', since: NOW } });
+	const custom = toggleSpawn(doc(), WP_A, NOW, { interval: 300, speed: 400, kind: 'packet' }).entries[0].after;
+	assert.deepEqual(custom, { spawn: { interval: 300, speed: 400, kind: 'packet', since: NOW } });
 });
 
 test('H12.7: a missing waypoint yields no command rather than a throw', () => {

@@ -294,7 +294,15 @@ reasoning as the selected-path highlight above.
 .waypoint.spawning .wp-dot { fill: #66bb6a; }
 /* a mover is presentation only: never a pointer target, so it cannot intercept a click meant for
    the line it is riding, and no transition -- the compositor owns its motion via offset-path. */
+/*
+B172 -- the mover's look lives HERE, not in the document.
+
+Each spawner stores a `kind`; the class it resolves to carries the colour. That is what makes a
+change of mind one edit instead of a rewrite of every diagram that has a spawner -- the previous
+arrangement stored a hex per spawner and three repaints only ever reached newly armed ones.
+*/
 .mover { pointer-events: none; }
+.mover.packet { fill: #ffa726; }
 .waypoint.armed .wp-ring { stroke: #e57373; stroke-opacity: 1; }
 .waypoint.armed .wp-dot { fill: #e57373; }
 /* stamp ghost (waypoint hand): ring has no inline stroke, so CSS provides it; red when blocked */

@@ -73,7 +73,7 @@ test('H12.4: TWO peers whose machine clocks disagree still agree on the instant'
 test('H12.4: and therefore they draw the mover in the SAME PLACE', () => {
 	// parity stated as the thing a person would actually notice
 	const server = 1_700_000_000_000;
-	const spawner = prepareSpawner({ id: 'waypoint-aaaaaa', pts: [[0, 0], [1000, 0]], since: server - 4000, interval: 1000, speed: 100 });
+	const spawner = prepareSpawner({ id: 'waypoint-aaaaaa', pts: [[0, 0], [1000, 0]], since: server - 4000, interval: 1000, speed: 1.4 });
 	const a = onMachine(45_000, () => { const c = new Clock(); c.seed(server); return c; });
 	const b = onMachine(-120_000, () => { const c = new Clock(); c.seed(server); return c; });
 	const seen = (clock, skew) => onMachine(skew, () => moversAt([spawner], clock.now()).map((m) => m.k));

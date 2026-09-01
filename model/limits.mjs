@@ -55,4 +55,10 @@ not visible motion, it is a flicker.
 */
 export const SPAWN_INTERVAL_MIN = 50;        // ms between departures, floor
 export const SPAWN_INTERVAL_MAX = 600_000;   // ms, ceiling -- ten minutes is already "effectively off"
-export const SPAWN_SPEED_MAX = 4000;         // px per second, ceiling
+/*
+CELLS per second, not pixels -- B172. The grid is this system's unit of distance (B110: positions
+are anchors, never pixels), so a speed in pixels silently changes meaning if the pitch ever moves,
+and cannot be reasoned about without knowing it. 20 cells/s crosses the whole canvas in under two
+seconds, which is the point past which motion stops reading as motion.
+*/
+export const SPAWN_SPEED_MAX = 20;

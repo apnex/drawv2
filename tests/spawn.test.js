@@ -17,7 +17,7 @@ import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../mode
 import { Model } from '../model/model.mjs';
 
 const wp = (extra) => ({ id: 'waypoint-aaaaaa', x: 0, y: 0, ...extra });
-const armed = () => ({ interval: 1000, speed: 100, colour: '#aed581', since: Date.now() });
+const armed = () => ({ interval: 1000, speed: 1.4, kind: 'packet', since: Date.now() });
 
 test('H12.5: a waypoint may carry spawn, and the two peers agree that it may', () => {
 	assert.ok(OPTIONAL.waypoint.has('spawn'), 'the model must allow the field');
@@ -30,7 +30,7 @@ test('H12.5: absent spawn is the normal case and stays legal', () => {
 });
 
 test('H12.5: a spawner is WHOLE or absent -- a partial one is not a state', () => {
-	for (const missing of ['interval', 'speed', 'colour', 'since']) {
+	for (const missing of ['interval', 'speed', 'kind', 'since']) {
 		const partial = armed();
 		delete partial[missing];
 		assert.ok(validateEntity('waypoint', wp({ spawn: partial })), `missing ${missing} must be refused`);
@@ -52,6 +52,7 @@ test('H12.5: the authored bounds come from limits, and both edges are enforced',
 	assert.ok(at({ interval: SPAWN_INTERVAL_MAX + 1 }));
 	assert.equal(at({ speed: SPAWN_SPEED_MAX }), null);
 	assert.ok(at({ speed: SPAWN_SPEED_MAX + 1 }));
+	assert.ok(at({ speed: 0.05 }), 'below the floor -- slower than this is not motion');
 	assert.ok(at({ speed: 0 }), 'a spawner that emits nothing is a mistake, not a configuration');
 });
 
@@ -66,7 +67,7 @@ test('H12.5: `since` is bounded, because it feeds arithmetic', () => {
 test('H12.5: the colour must be a colour', () => {
 	assert.ok(validateEntity('waypoint', wp({ spawn: { ...armed(), colour: 'red' } })));
 	assert.ok(validateEntity('waypoint', wp({ spawn: { ...armed(), colour: 'javascript:x' } })));
-	assert.equal(validateEntity('waypoint', wp({ spawn: { ...armed(), colour: '#fff' } })), null);
+	assert.equal(validateEntity('waypoint', wp({ spawn: { ...armed(), kind: 'packet' } })), null);
 });
 
 test('H12.5: spawn survives a document round trip, so arming outlives a reload', () => {
@@ -81,4 +82,43 @@ test('H12.5: a malformed spawn is refused whole -- nothing partial reaches the d
 	for (const bad of [[], 'on', 42, null, true, { }]) {
 		assert.ok(validateEntity('waypoint', wp({ spawn: bad })), `${JSON.stringify(bad)} must be refused`);
 	}
+});
+
+/*
+B172 -- a document written in the OLD spawn shape must still open.
+
+This is the half that can lose data rather than merely misbehave. `spawn` is whole-or-absent and
+refuses an unknown key, so a stored `colour` would be REFUSED at load -- and a refused document is
+SKIPPED, which is a diagram vanishing from the list rather than an error anybody sees. The one
+already armed on production would have been the first casualty.
+
+Written against the shape a document is actually STORED in. A first version of this test used an
+object keyed by id, the migration threw on it, and the fixture was wrong rather than the code --
+which is why this reads the real thing rather than a hand-drawn approximation of it.
+*/
+test('B172: a spawner stored with `colour` and pixel speed still loads, converted', async () => {
+	const { Store } = await import('../server/store.js');
+	const os = await import('node:os'); const fsp = await import('node:fs'); const pathp = await import('node:path');
+	const { STD } = await import('../kernel/spec.mjs');
+
+	const dir = fsp.mkdtempSync(pathp.join(os.tmpdir(), 'draw-b172-'));
+	fsp.writeFileSync(pathp.join(dir, 'diagram-aa0001.json'), JSON.stringify({
+		meta: { id: 'diagram-aa0001', name: 'legacy', version: 3, schema: 1 },
+		nodes: [], zones: [], groups: [],
+		waypoints: [{ id: 'waypoint-aa0001', x: 0, y: 180,
+			spawn: { interval: 700, speed: 160, colour: '#4fc3f7', since: 1788000000000 } }],
+		links: [],
+	}));
+	try {
+		const store = new Store(dir, { flushMs: 3_600_000 });
+		await store.init();
+		const entry = store.diagrams.get('diagram-aa0001');
+		assert.ok(entry, 'the diagram LOADED -- a refused one is skipped, which is data loss');
+		const wp = entry.model.all('waypoint').find((w) => w.id === 'waypoint-aa0001');
+		assert.equal(wp.spawn.colour, undefined, 'the retired key is gone');
+		assert.equal(wp.spawn.kind, 'packet', 'and a kind took its place');
+		assert.equal(wp.spawn.speed, Math.round((160 / STD.pitch) * 100) / 100, 'pixels became cells');
+		assert.equal(wp.spawn.interval, 700, 'everything else is untouched');
+		assert.equal(validateEntity('waypoint', wp), null, 'and the result passes the strict schema');
+	} finally { fsp.rmSync(dir, { recursive: true, force: true }); }
 });

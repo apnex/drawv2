@@ -477,8 +477,12 @@ export function toggleSpawn(model, waypointId, now, opts = {}) {
 	*/
 	const spawn = {
 		interval: opts.interval ?? 900,
-		speed: opts.speed ?? 140,
-		colour: opts.colour ?? '#e57373',
+		// CELLS per second (B172). 1.4 crosses a cell in about 700ms, which reads as travelling
+		// rather than flickering. The conversion to pixels is the simulation's, done once.
+		speed: opts.speed ?? 1.4,
+		// a KIND, not a colour -- the stylesheet owns the look, so changing it reaches spawners
+		// that already exist rather than only the next one armed
+		kind: opts.kind ?? 'packet',
 		since: now,
 	};
 	// NESTED, not spread. `after` is the patch applied to the WAYPOINT, so a bare spread would

@@ -11,6 +11,10 @@ import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
 import { validateMutation, validateDoc, validateSelectionIds, validPrincipal } from './validate.js';
 import crypto from 'node:crypto';
+import { STD } from '../kernel/index.mjs';
+
+// the grid's own pitch, sourced not restated -- a speed in CELLS is meaningless without it
+const PITCH = STD.pitch;
 import { mintCode, formatCode, hashCode } from './codes.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { violations } from '../model/invariants.mjs';
@@ -112,7 +116,40 @@ function shedRetired(doc) {
 	for (const key of RETIRED_META) {
 		if (key in doc.meta) { delete doc.meta[key]; shed = true; }
 	}
-	return shed;
+	return migrateSpawn(doc) || shed;
+}
+
+/*
+B172 -- a spawner's stored shape changed twice, and old documents must still open.
+
+The first `spawn` carried `colour` as a hex string and `speed` in PIXELS per second. Both were
+wrong for the same reason: a hex per spawner meant changing the look required rewriting every
+document that had one -- three repaints proved it -- and pixels contradict this tree's own rule that
+positions are anchors and never pixels (B110), so a stored speed silently changes meaning if the
+pitch ever moves.
+
+Now: `kind` names a class the stylesheet owns, and `speed` is CELLS per second.
+
+STRIPPED AND CONVERTED HERE, BEFORE VALIDATION, exactly as the retired meta key above is. The
+validator is strict -- `spawn` is whole-or-absent and refuses an unknown key -- so a document
+carrying the old shape would be REFUSED at load, and a refused document is SKIPPED. That is not a
+migration failing loudly; it is a diagram disappearing from the list. The one already armed on
+production would have been the first casualty.
+
+Keyed on `colour` rather than on a guess about the magnitude of `speed`. A heuristic like "a value
+above 20 must be pixels" would mis-convert the first person who wants a genuinely fast mover.
+*/
+function migrateSpawn(doc) {
+	let moved = false;
+	for (const w of doc.waypoints || []) {
+		if (!w.spawn || typeof w.spawn !== 'object') continue;
+		if (!('colour' in w.spawn)) continue;              // already the new shape
+		delete w.spawn.colour;
+		w.spawn.kind = 'packet';
+		if (typeof w.spawn.speed === 'number') w.spawn.speed = Math.round((w.spawn.speed / PITCH) * 100) / 100;
+		moved = true;
+	}
+	return moved;
 }
 
 /*

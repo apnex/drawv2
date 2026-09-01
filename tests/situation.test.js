@@ -57,7 +57,7 @@ test('H12.6: an unreferenced waypoint is a bend, and a missing target is null', 
 });
 
 test('H12.6: `spawning` reports whether the endpoint is on, not how it is configured', () => {
-	const armed = { ...entities, [WP]: { ...entities[WP], spawn: { interval: 1000, speed: 100, colour: '#fff', since: Date.now() } } };
+	const armed = { ...entities, [WP]: { ...entities[WP], spawn: { interval: 1000, speed: 100, kind: 'packet', since: Date.now() } } };
 	const s = situationOf(accessOf(armed, [openLink]), { targetId: WP });
 	assert.equal(s.target.spawning, true);
 	assert.equal(typeof s.target.spawning, 'boolean', 'the numbers belong to whoever runs them');
@@ -83,7 +83,7 @@ test('H12.6: defaults are the safe ones -- view mode, not read-only, nothing sel
 });
 
 test('H12.6: the predicates name the question, so no caller re-derives it', () => {
-	const armed = { ...entities, [WP]: { ...entities[WP], spawn: { interval: 1000, speed: 100, colour: '#fff', since: Date.now() } } };
+	const armed = { ...entities, [WP]: { ...entities[WP], spawn: { interval: 1000, speed: 100, kind: 'packet', since: Date.now() } } };
 	const s = situationOf(accessOf(armed, [openLink]), { mode: 'run', targetId: WP, selection: [WP] });
 	assert.equal(inReadView(s), true);
 	assert.equal(onEndpoint(s), true);

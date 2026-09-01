@@ -949,14 +949,14 @@ src to dst, arm the dst and they run the other way. Storing it would be a twin o
 wrong the first time a route was reversed.
 */
 VERBS.push({
-	name: 'spawn', group: 'Writing', usage: 'draw spawn <waypoint> [--interval ms] [--speed px] [--colour #hex] [--off]',
+	name: 'spawn', group: 'Writing', usage: 'draw spawn <waypoint> [--interval ms] [--speed cells] [--kind k] [--off]',
 	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams/<id>'],
 	summary: 'arm an endpoint waypoint to emit movers along its path, or stop it',
-	example: 'draw spawn waypoint-aa0001 --interval 700 --speed 160',
+	example: 'draw spawn waypoint-aa0001 --interval 700 --speed 2',
 	args: [{ name: 'waypoint', about: 'the ENDPOINT waypoint to arm, by id or name' }],
 	flags: [{ name: '--interval', about: 'ms between departures; default 900' },
-		{ name: '--speed', about: 'px per second; default 140' },
-		{ name: '--colour', about: 'mover colour as #rgb or #rrggbb; default #e57373' },
+		{ name: '--speed', about: 'CELLS per second; default 1.4' },
+		{ name: '--kind', about: 'what the movers are; default packet. The look is the stylesheet\'s' },
 		{ name: '--off', about: 'disarm it' },
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
@@ -991,8 +991,8 @@ VERBS.push({
 			return { json: { id: wid, spawning: false, version: r.version }, text: `${wid} stopped  v${r.version}` };
 		}
 		const num = (f, d) => (ctx.flags[f] === undefined ? d : Number(ctx.flags[f]));
-		const spawn = { interval: num('interval', 900), speed: num('speed', 140),
-			colour: ctx.flags.colour || '#e57373', since: Date.now() };
+		const spawn = { interval: num('interval', 900), speed: num('speed', 1.4),
+			kind: ctx.flags.kind || 'packet', since: Date.now() };
 		for (const k of ['interval', 'speed']) {
 			if (!Number.isFinite(spawn[k])) die(`--${k} takes a number, not ${ctx.flags[k]}`);
 		}
@@ -1000,7 +1000,7 @@ VERBS.push({
 			body: { ops: [{ op: 'set', kind: 'waypoint', id: wid, patch: { spawn } }], label: 'spawn' } }), 'spawn');
 		const dir = link.src === wid ? `${link.src} -> ${link.dst}` : `${link.dst} -> ${link.src}`;
 		return { json: { id: wid, spawning: true, along: link.id, spawn, version: r.version },
-			text: `${wid} spawning along ${link.id}  ${dir}  every ${spawn.interval}ms at ${spawn.speed}px/s  v${r.version}` };
+			text: `${wid} spawning along ${link.id}  ${dir}  every ${spawn.interval}ms at ${spawn.speed} cells/s  v${r.version}` };
 	},
 });
 

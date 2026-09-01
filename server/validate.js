@@ -146,10 +146,22 @@ fast is normal and tolerated; a clock wrong by years is a corrupt field.
 */
 const SINCE_FLOOR = 1_600_000_000_000;                       // 2020-09, comfortably before this tree existed
 const SINCE_CEIL = () => Date.now() + 86_400_000;            // a day ahead absorbs any sane clock skew
+/*
+B172 -- `kind` names a look, it does not carry one.
+
+`colour` used to be a hex per spawner, which meant the appearance of every packet in the estate was
+copied into each document that had one: three changes of mind proved that changing it meant
+rewriting data. A kind resolves to a CSS class instead, so the stylesheet owns the look and one edit
+reaches everything -- including spawners already armed, which a stored hex can never do.
+
+It is the same shape the tree already uses for a node: `type` is stored, the glyph is resolved.
+Per-kind appearance stays expressible, which is what creep types will need.
+*/
+const SPAWN_KINDS = ['packet'];
 const SPAWN = {
 	interval: (v) => num(v, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX),
-	speed: (v) => num(v, 1, SPAWN_SPEED_MAX),
-	colour: color,
+	speed: (v) => num(v, 0.1, SPAWN_SPEED_MAX),          // CELLS per second
+	kind: (v) => SPAWN_KINDS.includes(v),
 	since: (v) => num(v, SINCE_FLOOR, SINCE_CEIL()),
 };
 const spawn = (v) => !!v && typeof v === 'object' && !Array.isArray(v)

@@ -153,11 +153,13 @@ export class Movers {
 		// the mover's stable identity travels onto the element, so anything inspecting the page --
 		// a probe, a future overlay, a person in devtools -- can follow ONE mover rather than whichever
 		// happens to be first in the DOM. Costs an attribute; without it, identity is unobservable.
-		const dot = el('circle', { r: 5, class: 'mover', fill: spawner.colour, 'data-mover': mover.id }, this.layer);
+		// B172 -- the KIND names a class and the stylesheet owns the look, so one edit reaches every
+		// packet including those already armed. A stored hex could never do that; three repaints proved it.
+		const dot = el('circle', { r: 6, class: `mover ${spawner.kind || 'packet'}`, 'data-mover': mover.id }, this.layer);
 		dot.style.offsetPath = `path("${d}")`;
 		dot.style.offsetRotate = '0deg';          // a packet does not bank into the corners
 
-		const duration = (spawner.length / spawner.speed) * 1000;
+		const duration = (spawner.length / spawner.pxSpeed) * 1000;   // px/px-per-s; the cells conversion is the simulation's
 		const anim = dot.animate(
 			[{ offsetDistance: '0%' }, { offsetDistance: '100%' }],
 			{ duration, fill: 'forwards' },

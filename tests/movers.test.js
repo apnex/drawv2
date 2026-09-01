@@ -3,6 +3,17 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
 import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/index.mjs';
+import { STD } from '../kernel/spec.mjs';
+
+/*
+B172 -- these fixtures are written in PIXELS because the geometry they assert is.
+
+`speed` is authored in cells per second and the simulation converts once, at the boundary. The
+assertions below are about px travelled along a px route, so the helper states the px speed it wants
+and divides -- rather than restating every expected coordinate in a unit the arithmetic does not use.
+The conversion itself is asserted separately, at the bottom of this file.
+*/
+const CELLS = (px) => px / STD.pitch;
 
 // H12.1 — one decomposition, two consumers.
 // The string and the measurement must be built from the SAME list, or the corner rule exists twice
@@ -77,7 +88,7 @@ test('H12.1: a sample midway round a corner is ON the corner, not at the vertex'
 // ---- H12.3 — the simulation ----
 
 const spawner = (o = {}) => prepareSpawner({
-	id: 'waypoint-aaaaaa', pts: [[0, 0], [1000, 0]], since: 0, interval: 1000, speed: 100, ...o,
+	id: 'waypoint-aaaaaa', pts: [[0, 0], [1000, 0]], since: 0, interval: 1000, speed: CELLS(100), ...o,
 });
 
 test('H12.3: a prepared spawner carries its own route and length, and stays plain data', () => {
@@ -185,7 +196,7 @@ test('H12.3: a spawner that cannot emit is silent rather than infinite', () => {
 });
 
 test('H12.3: a pathological configuration is CAPPED, so bad numbers look wrong instead of hanging', () => {
-	const swarm = spawner({ interval: 1, speed: 1, pts: [[0, 0], [4000, 0]] });
+	const swarm = spawner({ interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
 	assert.equal(moversAt([swarm], 1_000_000).length, MAX_MOVERS_PER_SPAWNER);
 });
 
@@ -309,4 +320,14 @@ test('B171: the presentation rebuilds a mover whose route changed, and only then
 	// the old unconditional skip must be gone, not merely bypassed
 	assert.doesNotMatch(src, /if \(this\.anims\.has\(m\.id\)\) continue/,
 		'the unconditional skip is what caused B171 and must not come back');
+});
+
+test('B172: speed is authored in CELLS and converted to pixels exactly once', () => {
+	// the whole reason the fixtures above divide. Authored in the grid's unit (B110), computed in
+	// the unit a path is measured in, and the conversion lives at the boundary between them.
+	const s = prepareSpawner({ id: 'w', pts: [[0, 0], [600, 0]], since: 0, interval: 1000, speed: 2 });
+	assert.equal(s.speed, 2, 'the authored value survives, so a reader sees what they supplied');
+	assert.equal(s.pxSpeed, 2 * STD.pitch, 'and the computed one is pixels');
+	// 2 cells/s over a 600px route = 120px/s, so 1s of travel is 120px
+	assert.equal(Math.round(moversAt([s], 1000)[0].travelled), 120);
 });
