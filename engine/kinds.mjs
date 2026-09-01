@@ -30,15 +30,34 @@ export const tickAt = (t) => Math.floor(t / TICK_MS);
 /*
 A node kind that fires.
 
-	range    CELLS, inclusive. Compared as squared cell distance -- integers, no sqrt, no hypot.
-	period   TICKS between shots. Expressed in ticks rather than shots-per-second so the schedule
-	         is exact: a rate of 3/s would be 3.33 ticks and the rounding would be a decision made
-	         silently, differently, at each call site.
-	damage   hit points removed per shot.
+	range     CELLS, inclusive. Compared as squared cell distance -- integers, no sqrt, no hypot.
+	beam      TICKS the laser is on. It is a sustained beam, not a shot: while lit it damages the
+	          leading target every tick, re-acquiring as targets die or leave range.
+	cooldown  TICKS dark before it may light again. May be 0, which is a beam that never stops --
+	          the cooldown is a balance lever and is not assumed anywhere to be present.
+	damage    hit points removed per lit tick.
+
+Durations are in TICKS rather than seconds so the schedule is exact. A rate of 3/s would be 3.33
+ticks, and that rounding would be a decision made silently, and possibly differently, at each call
+site -- the same class of divergence H12.15 removed from the arithmetic.
+
+THE WEAPON IS A LASER, ruled 2026-09-02, and the reason is mechanical rather than cosmetic: a beam
+connects to its target instantaneously, so there is no projectile in flight, no travel time, and no
+lead to predict. A ballistic shot would need its own position derived every tick and would raise the
+question of what happens when its target dies mid-flight. The laser deletes that entire problem.
 */
 export const TOWERS = {
-	loadbalancer: { range: 3, period: 5, damage: 1 },
+	loadbalancer: { range: 3, beam: 10, cooldown: 10, damage: 1 },
 };
+
+/*
+The full on-off cycle in ticks, and the only place the two durations are combined.
+
+Floored at 1 because the schedule is `tick % cycle`, and a zero cycle would be a modulo by zero --
+NaN, which compares false against everything and would leave a tower firing permanently rather than
+failing loudly. A kind with no beam at all is a kind that never fires, which is what the floor gives.
+*/
+export const cycleOf = (t) => Math.max(1, t.beam + t.cooldown);
 
 /*
 A mover kind that can be hurt.

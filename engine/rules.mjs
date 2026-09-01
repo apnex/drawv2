@@ -28,7 +28,7 @@ protocol. Mutation stays with player intent. Ruled 2026-09-01.
 
 import { moversAt } from './movers.mjs';
 import { spawnersOf } from './spawners.mjs';
-import { towerFor, moverFor, tickAt, TICK_MS } from './kinds.mjs';
+import { towerFor, moverFor, tickAt, cycleOf, TICK_MS } from './kinds.mjs';
 import { STD } from '../kernel/spec.mjs';
 
 const PITCH = STD.pitch;
@@ -68,15 +68,21 @@ evidence that made this surface worth extracting rather than imagining.
 export const DERIVATIONS = [
 	{
 		id: 'tower-fires',
-		about: 'a tower fires on its own schedule at the mover furthest along, within range',
+		about: 'while its beam is lit a tower burns the leading mover in range, re-acquiring each tick',
 		facts(world, tick, alive) {
 			const out = [];
 			for (const t of world.towers) {
-				// the schedule is the tick index itself, so it needs no origin and no placement time.
-				// Every tower of a period fires together, which is visible and deliberate: staggering
-				// would need a per-tower phase, and a phase derived from an id is a hash nobody can
-				// predict from the board.
-				if (tick % t.period !== 0) continue;
+				/*
+				The schedule is the tick index itself, so it needs no origin and no placement time.
+				Towers sharing a cycle light together; synchronised fire was ruled acceptable, and it
+				is what lets the phase come from the clock rather than from a per-tower hash nobody
+				could predict by looking at the board.
+
+				A LIT BEAM DAMAGES EVERY TICK. That is what makes the duration mean something: the
+				tower is not taking one shot with a long animation, it is burning for a second and
+				sweeping onto the next target as each one dies.
+				*/
+				if (tick % cycleOf(t) >= t.beam) continue;
 				/*
 				ONE target per shot, the furthest along its route. Deterministic by construction:
 				progress is a number both peers derive, and the id breaks a tie so the answer never
@@ -86,7 +92,13 @@ export const DERIVATIONS = [
 				const targets = alive.filter((m) => inRange(t, m.at));
 				if (!targets.length) continue;
 				targets.sort((a, b) => (b.progress - a.progress) || (a.id < b.id ? -1 : 1));
-				out.push({ kind: 'hit', tower: t.id, target: targets[0].id, damage: t.damage, tick });
+				/*
+				`progress` is distance along the route, so the leading target is the one nearest the
+				far end -- furthest in the direction of travel, which is the one about to escape.
+				Ruled 2026-09-02, and it is also the only tie-break that needs no notion of which way
+				a link points.
+				*/
+				out.push({ kind: 'beam', tower: t.id, target: targets[0].id, damage: t.damage, tick });
 			}
 			return out;
 		},
@@ -129,7 +141,7 @@ export function combatAt(world, t) {
 		const alive = moversAt(world.spawners, tick * TICK_MS)
 			.filter((m) => !dead.has(m.id));
 		for (const f of factsAt(world, tick, alive)) {
-			if (f.kind !== 'hit') continue;
+			if (f.kind !== 'beam') continue;
 			const max = moverFor(world.byId.get(f.target.split('#')[0]).kind).hp;
 			const left = (hp.has(f.target) ? hp.get(f.target) : max) - f.damage;
 			hp.set(f.target, left);

@@ -618,7 +618,6 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 | H12.14 | The document-to-spawner adapter moves to `engine/`, and `draw movers` reports what is in flight. A client-side report was uninvestigable because the only code that could answer lived in a browser tab | **B174** | S2 - M | `DONE` |
 
 | H12.15 | Segment length uses an exactly-specified `sqrt` rather than the implementation-approximated `Math.hypot`, so every engine computes the same mover position. A prerequisite for derived combat, where a disagreement is folded forward instead of recomputed away | **B176** | S2 - S | `DONE` |
-| H12.16 | The derivation surface: a kind declares its own game data, and a rule is a pure function of `(world, tick)` returning facts. A tower fires because the board and the clock imply it, so only tower placement travels and a third client recomputes rather than being told | **H12.16** | S3 - M | `DONE` |
 
 **Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
 **The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.
@@ -637,6 +636,36 @@ A hash built now would detect nothing, so building one would be mechanism agains
 **Not in this milestone:** mutable per-mover state, towers, range queries, waves, combat.\
 The sparse-overlay design for deviating movers is named in the survey and is not built here.\
 An undeviated mover is a closed form, so this pilot needs no reconciliation at all.
+
+---
+
+## H13 -- the deviation tier - `WIP`
+
+Opened 2026-09-02.\
+H12 closed as a pilot that deliberately excluded combat, on the reasoning that an undeviated mover is a closed form of `t` and therefore cannot desync.\
+This milestone spends that property knowingly: the moment a creep can be damaged its state ACCUMULATES, and every lockstep problem H12 avoided arrives at once.
+
+**What buys it back is that only the non-derivable travels.**\
+A player placing a tower is intent, and rides the document machinery that already orders and broadcasts it.\
+A tower firing is not intent -- it is implied by the board and the clock, so a peer told about it is being told what it could have worked out.\
+That is the level-triggered shape, chosen against prior art rather than by taste: an event-handler surface needs every peer to receive every event in order, which is precisely what obliges those games into lockstep with hash exchange and a resync path.
+
+**Director rulings, 2026-09-02.**\
+Towers are automatic and are `loadbalancer` nodes placed during read/play.\
+Firing is derived; a tower burns the leading creep in range -- furthest in the direction of travel, the one about to escape.\
+The weapon is a LASER, and the reason is mechanical rather than cosmetic: a beam connects instantaneously, so there is no projectile in flight and no lead to predict.\
+Synchronised fire between towers is acceptable, which is what lets the schedule come from the clock rather than a per-tower hash.\
+Level and game remain the same object for now, with three costs accepted and a revival trigger.
+
+| # | Item | Cites | Size | State |
+|---|---|---|---|---|
+| H13.1 | The derivation surface: a kind declares its own game data, and a rule is a pure function of `(world, tick)` returning facts. A tower fires because the board and the clock imply it, so only tower placement travels and a third client recomputes rather than being told | `feature` | S3 - M | `DONE` |
+| H13.2 | A tower rotates to face what it is burning. Deferred from H13.1 by ruling, and it is presentation only -- the angle is derived from two positions the fold already knows, so nothing is stored and no peer needs telling | `feature` | S1 - S | `TODO` |
+
+**Exit:** a player places a tower during play, it burns creeps that come into range, and two browsers watching the same diagram agree on which creeps died without exchanging anything but the placement.
+
+**Not in this milestone:** waves, scoring, lives, separated in-game authoring, the deviation memo.\
+The memo is a checkpoint so folding starts from the last clean point; it is an optimisation and is not needed until the fold is measurably slow.
 
 ---
 

@@ -13,7 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
 import { worldOf, combatAt, factsAt, DERIVATIONS, tickAt, TICK_MS } from '../engine/index.mjs';
-import { TOWERS, MOVERS } from '../engine/kinds.mjs';
+import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
 	const m = new Model();
@@ -27,7 +27,7 @@ function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
 test('H12.16: the document stores no game numbers -- range, rate and damage come from the KIND', () => {
 	const m = board();
 	const node = m.get('node', 'node-bb0001');
-	for (const banned of ['range', 'period', 'damage', 'tower']) {
+	for (const banned of ['range', 'beam', 'cooldown', 'damage', 'tower']) {
 		assert.equal(node[banned], undefined, `${banned} must not be on the entity -- B172's lesson`);
 	}
 	assert.ok(TOWERS.loadbalancer.range > 0, 'it comes from the kind table instead');
@@ -95,7 +95,7 @@ test('H12.16: range is inclusive and measured in CELLS, in exact integer arithme
 
 test('H12.16: a creep dies when its hit points run out, and stays dead', () => {
 	const strong = { ...TOWERS.loadbalancer };
-	TOWERS.loadbalancer = { range: 3, period: 2, damage: 1 };
+	TOWERS.loadbalancer = { range: 3, beam: 10, cooldown: 2, damage: 1 };
 	try {
 		const c = combatAt(worldOf(board()), 30_000);
 		assert.ok(c.dead.size > 0, 'a tower that out-damages the flow kills');
@@ -190,18 +190,17 @@ test('H12.16: it takes exactly hp/damage hits to kill -- not one more, not one f
 	// `left <= 0` degraded to `left < 0` survived: deaths still happened, just a shot late. Asserting
 	// that something dies cannot distinguish three hits from four.
 	const w = worldOf(board());
-	const spec = TOWERS.loadbalancer;
-	const need = Math.ceil(MOVERS.packet.hp / spec.damage);
+	const need = Math.ceil(MOVERS.packet.hp / TOWERS.loadbalancer.damage);
 	const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
 	let hp = MOVERS.packet.hp, shots = 0;
 	while (hp > 0) { hp -= factsAt(w, 0, [target])[0].damage; shots++; }
-	assert.equal(shots, need, `${MOVERS.packet.hp}hp against ${spec.damage} damage is ${need} shots`);
+	assert.equal(shots, need, `${MOVERS.packet.hp}hp against ${TOWERS.loadbalancer.damage} damage is ${need} shots`);
 	assert.equal(hp, 0, 'and lands exactly on zero rather than overshooting');
 });
 
 test('H12.16: the reported hits belong to the tick asked for', () => {
 	// `hits` was returned by combatAt and asserted by nothing at all.
-	TOWERS.loadbalancer = { range: 3, period: 1, damage: 1 };
+	TOWERS.loadbalancer = { range: 3, beam: 20, cooldown: 0, damage: 1 };
 	try {
 		const w = worldOf(board());
 		/*
@@ -217,7 +216,7 @@ test('H12.16: the reported hits belong to the tick asked for', () => {
 			if (c.hits.length) seen++;
 		}
 		assert.ok(seen > 0, 'across a second of fire the tower hit something at least once');
-	} finally { TOWERS.loadbalancer = { range: 3, period: 5, damage: 1 }; }
+	} finally { TOWERS.loadbalancer = { range: 3, beam: 10, cooldown: 10, damage: 1 }; }
 });
 
 test('H12.16: death lands exactly on zero hit points, in combatAt itself', () => {
@@ -229,12 +228,75 @@ test('H12.16: death lands exactly on zero hit points, in combatAt itself', () =>
 	This asserts against the fold's own record. Where damage divides hit points evenly a corpse must
 	show exactly 0; a threshold demanding strictly-negative would leave -1 behind.
 	*/
-	TOWERS.loadbalancer = { range: 3, period: 2, damage: 1 };
+	TOWERS.loadbalancer = { range: 3, beam: 10, cooldown: 2, damage: 1 };
 	try {
 		const c = combatAt(worldOf(board()), 30_000);
 		assert.ok(c.dead.size > 0, 'something died, or this test proves nothing');
 		for (const id of c.dead.keys()) {
 			assert.equal(c.hp.get(id), 0, `${id} died on exactly zero, not overshot`);
 		}
-	} finally { TOWERS.loadbalancer = { range: 3, period: 5, damage: 1 }; }
+	} finally { TOWERS.loadbalancer = { range: 3, beam: 10, cooldown: 10, damage: 1 }; }
+});
+
+test('H12.16: the beam burns for exactly `beam` ticks, then is dark for exactly `cooldown`', () => {
+	/*
+	The ruled fire pattern -- one second lit, one second cooling -- was asserted by nothing at all.
+	Widening the lit window by a single tick survived, and so did collapsing the cycle to zero, which
+	left the tower firing permanently. Both passed seventeen tests.
+
+	Held against a target pinned inside range, so the only thing that can vary is the schedule.
+	*/
+	const w = worldOf(board());
+	const spec = TOWERS.loadbalancer;
+	const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+	const lit = [];
+	for (let tick = 0; tick < cycleOf(spec) * 2; tick++) {
+		lit.push(factsAt(w, tick, [target]).length ? 1 : 0);
+	}
+	const oneCycle = [...Array(spec.beam).fill(1), ...Array(spec.cooldown).fill(0)];
+	assert.deepEqual(lit, [...oneCycle, ...oneCycle], 'two identical cycles, lit then dark');
+	/*
+	Deliberately derived from the table rather than asserting one second. The burn and the cooldown
+	are BALANCE, and the director has flagged the cooldown may not survive; a test that hardcoded
+	1000ms would turn a tuning change into a broken build and quietly discourage the tuning.
+
+	What is pinned here is the SHAPE -- lit for exactly `beam`, dark for exactly `cooldown` -- which
+	stays true at every setting including none.
+	*/
+});
+
+test('H12.16: an unknown mover kind falls back instead of throwing', () => {
+	// only one kind exists today, so the fallback is reached by nothing and mutation cannot see it
+	assert.equal(moverFor('no-such-kind'), MOVERS.packet);
+	assert.equal(moverFor(undefined), MOVERS.packet);
+});
+
+test('H12.16: cooldown is a lever -- zero means a beam that never stops', () => {
+	/*
+	Ruled 2026-09-02: the cooldown may not survive balancing, so removing it must be a table edit and
+	nothing else. This is the setting that would break a schedule written as "fire every N ticks".
+	*/
+	const spec = { ...TOWERS.loadbalancer };
+	TOWERS.loadbalancer = { range: 3, beam: 10, cooldown: 0, damage: 1 };
+	try {
+		const w = worldOf(board());
+		const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+		for (let tick = 0; tick < 25; tick++) {
+			assert.equal(factsAt(w, tick, [target]).length, 1, `tick ${tick} must still be burning`);
+		}
+	} finally { TOWERS.loadbalancer = spec; }
+});
+
+test('H12.16: a kind with no beam never fires, rather than firing forever', () => {
+	// the degenerate setting: `tick % 0` is NaN, and NaN fails every comparison, so an unguarded
+	// cycle would invert this into a permanently-on tower -- the loudest possible wrong answer.
+	const spec = { ...TOWERS.loadbalancer };
+	TOWERS.loadbalancer = { range: 3, beam: 0, cooldown: 0, damage: 1 };
+	try {
+		const w = worldOf(board());
+		const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+		for (let tick = 0; tick < 25; tick++) {
+			assert.equal(factsAt(w, tick, [target]).length, 0, `tick ${tick} must stay dark`);
+		}
+	} finally { TOWERS.loadbalancer = spec; }
 });
