@@ -169,7 +169,15 @@
 				</svg>
 			</main>
 		</div>
-		<footer id="status"><span id="readout-bottom" class="readout"></span></footer>
+		<footer id="status"><span id="readout-bottom" class="readout"></span>
+			<!--
+			B74/H10.3: what the server last said, and it STAYS said.
+
+			Deliberately not the readout: `readout.js` resolves ONE string for all its mounts, so a
+			server message and the live gesture coordinates would contend for the same slot and the
+			gesture would win, being more frequent. This is its own channel with its own lifetime.
+			-->
+			<span id="server-say" title="the last thing the server said"></span></footer>
 		<script type="module" src="/src/main.js"></script>
 	</body>
 </html>

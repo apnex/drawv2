@@ -161,7 +161,7 @@ The ranking below therefore weighs one question above size: **does this let an a
 | Order | Item | Tier | Why it ranks here |
 |---|---|---|---|
 | 1 | H11.4 | verifier | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. Sharpened since: B147 shipped three times because each test asserted the layer below the one that broke, and mutation cannot see that, because a mutant only probes the assertions that exist. |
-| 2 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
+| 2 | -- | user | **H10.3 closed 2026-09-01.** The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
 | 3 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 4 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
 | 5 | -- | agent | **H10.32 closed 2026-09-01.** A verb now refuses a positional it never declared, at the dispatcher rather than in 41 verbs. Kept as a rank so the ordering below is not silently renumbered |
@@ -490,7 +490,7 @@ Every item here was found by using the application rather than by running the ga
 |---|---|---|---|---|
 | H10.1 | Defer an inbound `snapshot` under a live gesture, as D12 already does for `change` -- it silently deleted work in progress | **B71** | S2 - M | `DONE` |
 | H10.2 | The client is told which principal it is; one field on `snapshotBody`, not an email | **B76** | S2 - S | `DONE` |
-| H10.3 | A durable status surface for the last server event, right-aligned in `#status` -- errors currently survive until the next message | **B74** | S2 - M | `TODO` |
+| H10.3 | A durable status surface for the last server event, right-aligned in `#status` -- errors currently survive until the next message | **B74** | S2 - M | `DONE` |
 | H10.4 | A routed link may duplicate an existing pair; a straight duplicate still refuses, because it would render invisibly | **B72** | S3 - S | `DONE` |
 | H10.9 | One straight link per pair, permitted alongside any number of routed ones -- H10.4 keyed the refusal on any link, so drawing order decided what was reachable | **B80** | S2 - S | `DONE` |
 | H10.10 | The rule becomes a document invariant in a sovereign validator, and the waypoint cascade deletes a link it would leave colliding | **B81** | S2 - M | `DONE` |

@@ -96,6 +96,7 @@ const menu = {
 	agents: document.getElementById('agents'),
 	whoami: document.getElementById('whoami'),
 	banner: document.getElementById('banner'),
+	say: document.getElementById('server-say'),   // B74 -- the durable server channel
 };
 
 /*
@@ -479,7 +480,7 @@ const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on 
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
 const sync = new Sync({
 	model, net, history, selection, clock,
-	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound }) {
+	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound, said }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
 		// be offered the one remedy the server is certain to refuse.
@@ -555,6 +556,19 @@ const sync = new Sync({
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
 		document.title = `draw·next — ${meta.name}`;
+		/*
+		B74/H10.3 -- the durable channel, written from STATE rather than from an event.
+
+		`#banner` is overwritten below by the entity counts on the very next emit, which is the
+		defect: a rejection lived for milliseconds. This element is driven by `said`, which Sync
+		carries on every emit until something replaces it, so the answer to "what did the server
+		last tell me" survives being asked later.
+		*/
+		if (menu.say) {
+			menu.say.textContent = said ? `${said.text}${said.code ? ` (${said.code})` : ''}` : '';
+			menu.say.classList.toggle('err', !!(said && said.err));
+			menu.say.title = said ? `${new Date(said.at).toLocaleTimeString()} -- ${said.text}` : 'the last thing the server said';
+		}
 		menu.banner.textContent = `${model.all('node').length} nodes · ${model.all('link').length} links · ${model.all('zone').length} zones`;
 		// D29 — the server came back holding LESS than we do: it restarted before flushing changes
 		// it had already acked. Say so. The alternative is reverting the user's work in silence.

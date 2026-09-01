@@ -61,6 +61,18 @@ export class Sync {
 		*/
 		this.clock = clock || new Clock();   // the root injects one it shares; bare construction still works
 		this.requestSentAt = null;
+		/*
+		B74 -- the last thing the server said, and it SURVIVES the next state emit.
+
+		The defect was not a short timeout. The message was an EVENT payload: `emitState({ error })`
+		carried it and the very next `emitState({})` -- from an ack, a change, a lock, a rename, any
+		of nine call sites -- carried no `error` key, so the UI had nothing to render and a rejection
+		vanished in milliseconds. Holding it as STATE is the fix; it goes out with every emit until
+		something replaces it.
+
+		`null` rather than absent, so "nothing said yet" is a value a renderer can test.
+		*/
+		this.said = null;
 		this.hydrated = false;
 		/*
 		B106 -- the version the MODEL is actually at, which is not the version the UI displays.
@@ -262,6 +274,9 @@ export class Sync {
 		}
 		// our own request came back: reflect the server's authority, prune what is now durable
 		if (msg.cmd === 'ack') {
+			// B74 -- the ordinary case has to speak too, or a blank channel means both "fine" and
+			// "not listening". A version number is the smallest true thing the server just said.
+			this.say(`accepted v${msg.body?.version ?? '?'}`);
 			const b = msg.body || {};
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version, undoLabel: b.label,
 				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
@@ -312,6 +327,7 @@ export class Sync {
 		from the template plus one applied op is the kind of derivation that drifts.
 		*/
 		if (msg.cmd === 'forked') {
+			this.say('forked a copy -- templates are read-only');
 			this.diagramId = msg.body.diagram;
 			this.outbox = [];            // it belonged to the template, which we are no longer editing
 			this.persistOutbox();
@@ -380,6 +396,9 @@ export class Sync {
 			console.warn(`[ sync ] server: ${b.message} (${b.code || 'error'})`);
 			// emitState, not onState: the readout reads meta/status off every state it is handed,
 			// so a bare { error } would throw on the way to displaying the error (D28/I16).
+			this.say(b.message, { code: b.code, err: true });
+			// `error`/`code` stay in the payload: B28's readout consumer still reads them, and the
+			// durable channel is additive rather than a replacement for a working path.
 			this.emitState({ error: b.message, code: b.code });
 		}
 	}
@@ -552,6 +571,14 @@ export class Sync {
 		this.emitState({});
 	}
 
+	/*
+	Record what the server just told us. `err` distinguishes a refusal from a routine event, which
+	is the only thing the surface colours differently.
+	*/
+	say(text, { code = null, err = false } = {}) {
+		this.said = { text, code, err, at: this.clock.now() };
+	}
+
 	emitState(extra) {
 		this.onState({
 			status: this.net.status,
@@ -560,6 +587,7 @@ export class Sync {
 			mayWrite: this.mayWrite,
 			principal: this.principal,
 			agents: this.agents,
+			said: this.said,
 			...extra
 		});
 	}

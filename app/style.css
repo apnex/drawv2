@@ -325,7 +325,7 @@ reasoning as the selected-path highlight above.
 #grid-zones circle { fill: #202020; pointer-events: none; }
 
 /* ---- footer readout ---- */
-#status { flex: 0 0 40px; display: flex; align-items: center; padding: 0 14px; background: #181818; border-top: 1px solid #262626; }
+#status { flex: 0 0 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #181818; border-top: 1px solid #262626; }
 .readout { font-family: monospace; font-size: 12px; color: #ddddff; cursor: pointer; white-space: nowrap; user-select: none; }
 
 /* ---- data view (Tab numeric overlay) ---- */
@@ -412,3 +412,14 @@ decides whether to act now; the rest is identification.
 #undelete-list td.id { color: #6a6a6a; font-size: 11px; }
 #undelete-list button { background: #2d3b2d; color: #aed581; border: 1px solid #3f5340; border-radius: 3px; padding: 2px 10px; cursor: pointer; }
 #undelete-actions { margin-top: 14px; text-align: right; }
+
+/*
+B74/H10.3 -- the durable server channel, right of the readout.
+
+Muted while nothing is wrong, because this reports the last event of ANY kind and most of them are
+routine. It earns colour only when the server refused something: a surface that shouts constantly
+is one a person stops reading, which is the failure this row exists to end rather than repeat.
+*/
+#server-say { color: #6b6b6b; font-size: 12px; white-space: nowrap; overflow: hidden;
+	text-overflow: ellipsis; max-width: 46ch; margin-left: 14px; }
+#server-say.err { color: #e57373; }
