@@ -393,3 +393,21 @@ test('B176: sqrt and hypot genuinely differ, so the ban is not superstition', ()
 	// but this asserts the hazard is present rather than theoretical.
 	assert.notEqual(Math.hypot(120, -360), Math.sqrt(120 * 120 + 360 * 360));
 });
+
+test('H13.5: painting has a timer floor, so a hidden tab still makes progress', () => {
+	/*
+	Structural, because the property is about WHICH clock drives element creation and there is no DOM
+	harness in this suite to observe a backgrounded tab.
+
+	`requestAnimationFrame` does not fire at all in a hidden Chrome tab. When creation moved onto rAF
+	for smoothness, a peer that was not the foreground tab stopped creating packets entirely -- the
+	fold went on running while nothing appeared, and switching to it flushed the backlog at once.
+
+	The frame loop is an enhancement; the interval is the guarantee. Both must call `paint`.
+	*/
+	const src = readFileSync(new URL('../app/src/movers.js', import.meta.url), 'utf8');
+	assert.match(src, /setInterval\(\(\) => \{ this\.fold\(\); this\.paint\(\); \}, TICK_MS\)/,
+		'the interval must paint as well as fold, or a hidden tab creates nothing');
+	assert.match(src, /const frame = \(\) => \{\s*this\.paint\(\);/,
+		'and the frame loop still paints when the tab is visible');
+});

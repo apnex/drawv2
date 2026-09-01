@@ -97,7 +97,20 @@ export class Movers {
 	*/
 	start() {
 		if (this.timer) return;
-		this.timer = setInterval(() => this.fold(), TICK_MS);
+		/*
+		The timer runs BOTH halves, and the rAF loop below is an enhancement on top of it.
+
+		Chrome pauses `requestAnimationFrame` completely in a hidden tab. Element creation moved onto
+		rAF for smoothness, and that quietly made a background peer create no packets at all: the
+		fold kept running throttled while nothing appeared, and switching to the tab materialised the
+		backlog in one go -- a freeze followed by a jump, which is precisely what a peer would look
+		like from the outside.
+
+		So the timer is the FLOOR and rAF is the improvement. A visible tab paints every frame; a
+		hidden one still paints five times a second, exactly as it did before the frame loop existed.
+		Timers are throttled in background tabs too, but throttled is not stopped.
+		*/
+		this.timer = setInterval(() => { this.fold(); this.paint(); }, TICK_MS);
 		/*
 		A frame loop, which this file otherwise refuses -- and the exception is narrow enough to state.
 
