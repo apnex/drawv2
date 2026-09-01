@@ -36,7 +36,7 @@ export function grc(elements, V, L) {
 			// sit on the ±zone.ext ladder, not the clean cell line) and are gated by `attachment`.
 			el.pts.forEach(([x, y], i) => {
 				if (frac(x) || frac(y)) { off.push(`path-frac@(${x},${y})`); return; }
-				const isEnd = !el.close && (i === 0 || i === el.pts.length - 1);
+				const isEnd = !el.closed && (i === 0 || i === el.pts.length - 1);
 				if (!isEnd && (!onGrid(x, sub) || !onGrid(y, sub))) off.push(`path-corner-off-grid@(${x},${y})`);
 			});
 			continue;
@@ -70,7 +70,7 @@ export function grc(elements, V, L) {
 	const at = (x, y) => anchors.some(([ax, ay]) => Math.hypot(ax - x, ay - y) < 1.5);
 	const dangling = [];
 	for (const w of paths) {
-		if (w.close) continue;
+		if (w.closed) continue;
 		const a = w.pts[0], b = w.pts[w.pts.length - 1];
 		if (!at(a[0], a[1])) dangling.push(`(${a[0]},${a[1]})`);
 		if (!at(b[0], b[1])) dangling.push(`(${b[0]},${b[1]})`);
@@ -85,7 +85,7 @@ export function grc(elements, V, L) {
 
 	// rule 5 — ortho: every path segment axis-aligned (no diagonals)
 	const diag = [];
-	for (const w of paths) for (const s of segmentsOf(w.pts, w.close)) if (!isAxis(s)) diag.push(`(${s[0][0]},${s[0][1]})-(${s[1][0]},${s[1][1]})`);
+	for (const w of paths) for (const s of segmentsOf(w.pts, w.closed)) if (!isAxis(s)) diag.push(`(${s[0][0]},${s[0][1]})-(${s[1][0]},${s[1][1]})`);
 	out.push({ rule: 'ortho', pass: diag.length === 0, why: diag.join(' ') });
 
 	// rule 6 — obstacle: a path segment must not pass through a NODE's interior unless it
@@ -101,7 +101,7 @@ export function grc(elements, V, L) {
 		return false;
 	};
 	const hits = [];
-	for (const w of paths) for (const s of segmentsOf(w.pts, w.close)) for (const nd of nodes) if (segHitsNode(s, nd)) hits.push(`@(${nd.cx},${nd.cy})`);
+	for (const w of paths) for (const s of segmentsOf(w.pts, w.closed)) for (const nd of nodes) if (segHitsNode(s, nd)) hits.push(`@(${nd.cx},${nd.cy})`);
 	out.push({ rule: 'obstacle', pass: hits.length === 0, why: [...new Set(hits)].join(' ') });
 
 	// rule 7 — overlap: two DISTINCT paths must not run collinear over a shared SPAN. Drawing one
@@ -109,7 +109,7 @@ export function grc(elements, V, L) {
 	// (which only counts perpendicular hits). Touching at a point is fine (a crossing/junction);
 	// a shared segment length is not. This is the rule the routing walk proved was missing.
 	const segs = [];
-	paths.forEach((w, wi) => segmentsOf(w.pts, w.close).forEach((s) => { if (s[0][0] !== s[1][0] || s[0][1] !== s[1][1]) segs.push({ s, wi }); }));
+	paths.forEach((w, wi) => segmentsOf(w.pts, w.closed).forEach((s) => { if (s[0][0] !== s[1][0] || s[0][1] !== s[1][1]) segs.push({ s, wi }); }));
 	const ov = [];
 	for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++) {
 		if (segs[i].wi === segs[j].wi) continue;
@@ -142,7 +142,7 @@ const segCross = (s1, s2) => {
 	return X > xLo && X < xHi && Y > yLo && Y < yHi;               // strict interior crossing
 };
 export function crossings(elements) {
-	const segs = pathsOf(elements).flatMap((w, wi) => segmentsOf(w.pts, w.close).map((s) => ({ s, wi })));
+	const segs = pathsOf(elements).flatMap((w, wi) => segmentsOf(w.pts, w.closed).map((s) => ({ s, wi })));
 	let n = 0;
 	for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++)
 		if (segs[i].wi !== segs[j].wi && segCross(segs[i].s, segs[j].s)) n++;

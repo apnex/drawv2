@@ -26,7 +26,7 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { roleOf } from './routes.mjs';
+import { waypointRole } from '../kernel/index.mjs';
 
 /*
 Build the situation.
@@ -66,9 +66,13 @@ function describeTarget(access, id) {
 		The role is DERIVED here exactly as it is derived everywhere else -- B162's rule, read from
 		the links that touch this waypoint rather than from a stored field. A situation that carried
 		its own idea of the role would be a third copy, and the first to go stale.
+
+		B166: model links are handed straight to the kernel now. There was briefly an adapter here
+		translating `src`/`dst`/`closed` into `from`/`to`/`close`; unifying the vocabulary deleted
+		both the adapter and the class of silent bug it existed to contain.
 		*/
 		const touching = access.linksTouching ? access.linksTouching(id) : [];
-		t.role = roleOf(id, touching);
+		t.role = waypointRole(id, touching);
 		// whether this endpoint is already emitting. A boolean rather than the config, because the
 		// question a decision asks is "is it on"; the numbers belong to whoever is going to run them.
 		t.spawning = !!entity.spawn;

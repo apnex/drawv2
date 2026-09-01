@@ -25,9 +25,9 @@ function standardSchema() {
 	entities.push({ id: 'gTL', kind: 'group', members: ['n-1_-1', 'n0_-1'] });   // top-left pair (intra top zone)
 	entities.push({ id: 'gR', kind: 'group', members: ['n1_-1', 'n1_0', 'n1_1'] }); // right column (cross-zone)
 	const relations = [
-		{ route: { from: 'n-1_-1', to: 'n-1_0' } },   // down out of the group
-		{ route: { from: 'n0_0', to: 'n1_0' } },       // across the middle row
-		{ route: { from: 'n1_0', to: 'n1_1' } }        // down into the bottom zone
+		{ route: { src: 'n-1_-1', dst: 'n-1_0' } },   // down out of the group
+		{ route: { src: 'n0_0', dst: 'n1_0' } },       // across the middle row
+		{ route: { src: 'n1_0', dst: 'n1_1' } }        // down into the bottom zone
 	];
 	return { entities, relations };
 }
@@ -43,8 +43,8 @@ function cloverSchema() {
 	const relations = [];
 	for (let k = 0; k < 4; k++) {
 		entities.push({ id: `L${k}`, kind: 'node', cell: leafCell[k], glyph: leafGlyph[k], frame: k % 2 ? 'square' : 'circle' });
-		relations.push({ route: { from: 'C', to: `L${k}`, via: rotPath(nLeft, k).slice(1, -1), radius: R } });
-		relations.push({ route: { from: 'C', to: `L${k}`, via: rotPath(nRight, k).slice(1, -1), radius: R } });
+		relations.push({ route: { src: 'C', dst: `L${k}`, via: rotPath(nLeft, k).slice(1, -1), radius: R } });
+		relations.push({ route: { src: 'C', dst: `L${k}`, via: rotPath(nRight, k).slice(1, -1), radius: R } });
 	}
 	return { entities, relations };
 }
@@ -66,7 +66,7 @@ export const FIXTURES = [
 				{ id: 'w', kind: 'waypoint', cell: [0, 2] },
 				{ id: 'b', kind: 'node', cell: [2, 2], glyph: 'host', frame: 'square' }
 			],
-			relations: [{ route: { from: 'a', via: ['w'], to: 'b' } }]
+			relations: [{ route: { src: 'a', via: ['w'], dst: 'b' } }]
 		}
 	},
 	{
@@ -79,7 +79,7 @@ export const FIXTURES = [
 				{ id: 'w2', kind: 'waypoint', cell: [2, 1] },
 				{ id: 'b', kind: 'node', cell: [2, 3], glyph: 'server', frame: 'square' }
 			],
-			relations: [{ route: { from: 'a', via: ['w1', 'w2'], to: 'b' } }]
+			relations: [{ route: { src: 'a', via: ['w1', 'w2'], dst: 'b' } }]
 		}
 	},
 	{
@@ -90,7 +90,7 @@ export const FIXTURES = [
 				{ id: 'a', kind: 'node', cell: [0, 0], glyph: 'router' }, { id: 'b', kind: 'node', cell: [0, 4], glyph: 'host' },
 				{ id: 'z', kind: 'zone', span: { cols: [-1, 1], rows: [2, 2] } }
 			],
-			relations: [{ route: { from: 'a', to: 'b' } }]
+			relations: [{ route: { src: 'a', dst: 'b' } }]
 		}
 	},
 	{
@@ -101,7 +101,7 @@ export const FIXTURES = [
 			entities: [
 				{ id: 'a', kind: 'node', cell: [0, 0], glyph: 'router' }, { id: 'mid', kind: 'node', cell: [0, 2], glyph: 'firewall', frame: 'square' }, { id: 'b', kind: 'node', cell: [0, 4], glyph: 'host' }
 			],
-			relations: [{ route: { from: 'a', to: 'b' } }]
+			relations: [{ route: { src: 'a', dst: 'b' } }]
 		}
 	},
 	// ── clover (the routing acceptance signature) ───────────────────────────────────────────

@@ -14,7 +14,7 @@
 //     { id, kind:'group',    members:[ids] },                     // hugs its member nodes
 //   ],
 //   relations: [
-//     { id?, route:{ from:ref, to:ref, via:[ref,…], radius?, close? } },   // hand-routed path
+//     { id?, route:{ src:ref, dst:ref, via:[ref,…], radius?, closed? } },   // hand-routed path
 //   ],
 // Each resolved scene element carries its source `id` (entity id, or relation/route id for a
 // path) so an interactive host can map scene → DOM for hit-testing and state classes.
@@ -120,7 +120,7 @@ function resolveRoute(rt, byId, V) {
 		const b = byId[ref];
 		return b ? [b.cx, b.cy] : null;            // unresolved entity ref
 	};
-	const pts = [rt.from, ...(rt.via || []), rt.to].map(anchor);
+	const pts = [rt.src, ...(rt.via || []), rt.dst].map(anchor);
 	if (pts.some((p) => p == null)) return null;   // a dangling route degrades to nothing, never throws
-	return path(gridSnap(pts, V.pitch / 2), { radius: rt.radius ?? BEND_R, close: !!rt.close });
+	return path(gridSnap(pts, V.pitch / 2), { radius: rt.radius ?? BEND_R, closed: !!rt.closed });
 }

@@ -21,25 +21,6 @@ const WP = 'waypoint-aaaaaa', WP2 = 'waypoint-bbbbbb', ND = 'node-cccccc';
 const entities = { [WP]: { id: WP, x: 0, y: 0 }, [WP2]: { id: WP2, x: 40, y: 0 }, [ND]: { id: ND, x: 80, y: 0 } };
 const openLink = { id: 'link-dddddd', src: WP, dst: WP2 };
 
-/*
-The mapping itself, asserted directly rather than only through the role it feeds.
-
-Mutation is the reason this exists. Swapping `src` and `dst` in `asRoute` failed NO test, and that
-was correct: `waypointRole` asks `from === id || to === id`, which is symmetric, so the role cannot
-see the difference. Direction can. H12.7 decides which way movers run from which end the gesture
-touched, and by then a silent transposition would send every mover backwards with the role tests
-still green -- so the contract is pinned now, before anything leans on it.
-*/
-test('H12.6: asRoute maps the model vocabulary onto the kernel one, in the right order', async () => {
-	const { asRoute } = await import('../engine/routes.mjs');
-	const r = asRoute({ id: 'link-dddddd', src: 'waypoint-aaaaaa', dst: 'waypoint-bbbbbb', via: ['waypoint-cccccc'], closed: true });
-	assert.deepEqual(r, { from: 'waypoint-aaaaaa', to: 'waypoint-bbbbbb', via: ['waypoint-cccccc'], close: true });
-	// `close` and `closed` differ by one letter and a wrong guess is undefined, which is falsy --
-	// so an unmapped ring reports ends and nothing throws
-	assert.equal(asRoute({ src: 'a', dst: 'b' }).close, false, 'absent closed is false, never undefined');
-	assert.deepEqual(asRoute({ src: 'a', dst: 'b' }).via, [], 'absent via is empty, never undefined');
-});
-
 test('H12.6: a situation SERIALISES -- it survives a round trip through JSON unchanged', () => {
 	const s = situationOf(accessOf(entities, [openLink]), { mode: 'run', targetId: WP, selection: [WP, ND] }, 1234);
 	assert.deepEqual(JSON.parse(JSON.stringify(s)), s, 'a value that cannot cross a boundary forecloses the server');

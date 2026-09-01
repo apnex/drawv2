@@ -127,7 +127,7 @@ function socketGridSvg(cols, rows, V) {
 function renderEl(el, V, L, opts = {}) {
 	if (el.kind === 'zone') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${TOKENS.zoneFill}" fill-opacity="${TOKENS.zoneFillOp}" stroke="${TOKENS.zoneStroke}" stroke-opacity="${TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
 	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${TOKENS.group}" stroke-width="1.1"/>`;
-	if (el.kind === 'path') return `<path d="${roundedPath(el.pts, el.radius, el.close)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"/>`;
+	if (el.kind === 'path') return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"/>`;
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is
 	// inscribed in the ring — it reads as "the path turns here". Hollow, so the bend stays visible.

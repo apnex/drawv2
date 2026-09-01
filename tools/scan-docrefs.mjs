@@ -131,6 +131,10 @@ const ALLOW = {
 	'docs/spec/ATOMICS.md:design/sim/parallel.mjs': 'as above',
 	'docs/spec/ATOMICS.md:design/sim/star.mjs': 'as above',
 	// provenance: naming a superseded file is the point of the sentence, not a broken pointer
+	// B166 unified the link vocabulary and deleted the adapter that existed only to translate it.
+	// The register cites the file BECAUSE it is gone -- the row is the record of its whole life.
+	'docs/BACKLOG.md:engine/routes.mjs': 'provenance -- the adapter B166 deleted; the row records why it existed and why it does not',
+	'tools/scan-docrefs.mjs:engine/routes.mjs': 'this scanner\'s own allow-list text',
 	'server/txn.mjs:server/commit.mjs': 'provenance header — records the file this one replaced (CS1)',
 	'kernel/renderer.mjs:design/widgets/render.mjs': 'provenance — the mockup the content-region renderer was derived from',
 	'tools/scan-docrefs.mjs:server/commit.mjs': 'this scanner\'s own allow-list text',

@@ -146,8 +146,8 @@ export const waypointRole = (id, touching) => {
 	let endpoint = false;
 	for (const t of touching || []) {
 		if ((t.via || []).includes(id)) return 'bend';          // threaded: a corner, whatever else
-		if (t.from === id || t.to === id) {
-			if (t.close) return 'bend';                          // a ring has no ends
+		if (t.src === id || t.dst === id) {
+			if (t.closed) return 'bend';                          // a ring has no ends
 			endpoint = true;
 		}
 	}
@@ -159,7 +159,7 @@ export const port = (cx, cy, o = {}) => ({ kind: 'port', cx, cy, style: o.style 
 export const junction = (cx, cy) => ({ kind: 'junction', cx, cy });       // a tap point on a trunk
 // path = a routed polyline through grid waypoints (px). The router renders it with rounded
 // corners; GRC validates its turns. `pts` = [[x,y], …]; radius defaults to the locked bend.
-export const path = (pts, o = {}) => ({ kind: 'path', pts, radius: o.radius ?? BEND_R, close: !!o.close });
+export const path = (pts, o = {}) => ({ kind: 'path', pts, radius: o.radius ?? BEND_R, closed: !!o.closed });
 
 // bounding box of an element (px). null for links/paths — they're lines, checked by endpoint.
 export function bboxOf(el, L = L_STD) {

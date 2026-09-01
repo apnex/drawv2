@@ -44,7 +44,7 @@ export function docToSchema(doc, opts = {}) {
 	});
 	(doc.waypoints || []).forEach((w) => entities.push({ id: w.id, kind: 'waypoint', cell: [cell(w.x), cell(w.y)] }));
 	(doc.groups || []).forEach((g) => entities.push({ id: g.id, kind: 'group', members: [...(g.members || [])] }));
-	(doc.links || []).forEach((l) => relations.push({ id: l.id, route: { from: l.src, to: l.dst, via: l.via || [], close: !!l.closed } }));
+	(doc.links || []).forEach((l) => relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed } }));
 	return { variant: 'standard', entities, relations };
 }
 
@@ -66,6 +66,6 @@ export function schemaToDoc(schema, meta = {}) {
 			zones.push({ id: e.id, name: e.name || '', x: c0 * P - P / 2, y: r0 * P - P / 2, w: (c1 - c0 + 1) * P, h: (r1 - r0 + 1) * P });
 		} else if (e.kind === 'group') groups.push({ id: e.id, name: e.name || '', members: [...(e.members || [])] });
 	});
-	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.from, dst: r.route.to, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.close ? { closed: true } : {}) }); });
+	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.src, dst: r.route.dst, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.closed ? { closed: true } : {}) }); });
 	return { meta: { id: '', name: 'untitled', version: 0, schema: 1, ...meta }, nodes, waypoints, links, zones, groups };
 }

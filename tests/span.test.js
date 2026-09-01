@@ -385,7 +385,7 @@ test('B38: a straight connection is a two-point path — no separate element kin
 	const sch = { entities: [
 		{ id: 'node-000001', kind: 'node', cell: [0, 0] },
 		{ id: 'node-000002', kind: 'node', cell: [2, 0] },
-	], relations: [{ id: 'link-000001', route: { from: 'node-000001', to: 'node-000002' } }] };
+	], relations: [{ id: 'link-000001', route: { src: 'node-000001', dst: 'node-000002' } }] };
 	const { scene } = resolve(sch);
 	const wires = scene.filter((e) => e.kind === 'path');
 	assert.equal(wires.length, 1);
@@ -503,8 +503,8 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	assert.equal(typeof k.waypointRole, 'function', 'the rule is exported from the kernel');
 
 	// the four cases, asserted on the rule itself rather than through either renderer
-	const open = [{ from: 'w1', to: 'w2', via: ['w3'], close: false }];
-	const ring = [{ from: 'w1', to: 'w2', via: ['w3'], close: true }];
+	const open = [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }];
+	const ring = [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }];
 	assert.equal(k.waypointRole('w1', open), 'endpoint', 'a terminal on an open path');
 	assert.equal(k.waypointRole('w3', open), 'bend', 'a via is a corner');
 	assert.equal(k.waypointRole('w1', ring), 'bend', 'a RING has no ends');
@@ -523,31 +523,30 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	*/
 	const client = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const engine = fs.readFileSync(new URL('../kernel/engine.mjs', import.meta.url), 'utf8');
-	const routes = fs.readFileSync(new URL('../engine/routes.mjs', import.meta.url), 'utf8');
 
 	/*
-	H12.6 re-pointed the client half of this, and the reason is worth keeping.
+	B166 settled the vocabulary this used to need translating.
 
-	The renderer used to call `waypointRole` directly, mapping the model's `src`/`dst`/`closed` into
-	the kernel's `from`/`to`/`close` inline. The situation needed the same mapping, which made it a
-	twin, so it moved to `engine/routes.mjs` and the renderer now reaches the rule through `roleOf`.
+	The renderer once mapped the model's `src`/`dst`/`closed` into a kernel that said
+	`from`/`to`/`close`. That translation existed twice, and `close` versus `closed` failed
+	silently -- a wrong guess is undefined, undefined is falsy, so a ring reported ends and simply
+	drew wrong. The kernel now speaks one vocabulary and both adapters are gone, so a model link
+	goes straight to the rule.
 
-	The PROPERTY was never "calls a particular symbol" -- it is "asks for the role rather than
-	deciding it", and that is what is asserted. Pinning to the old name would have reported a
-	correct refactor as a defect, which is the same failure this test's own comment warns about
-	one paragraph up.
+	The PROPERTY asserted is unchanged and is the only thing that ever mattered: both renderers ASK
+	for the role rather than deciding it.
 	*/
-	assert.match(client, /roleOf\(/, 'the live renderer asks for the role');
-	assert.match(routes, /waypointRole\(/, 'and the adapter it asks through reaches the one rule');
+	assert.match(client, /waypointRole\(/, 'the live renderer asks for the role');
 	assert.match(engine, /waypointRole\(/, 'as does the kernel');
 
-	// the chain is unbroken in FACT, not merely in text: the adapter must produce the kernel's answer
-	const { roleOf } = await import('../engine/routes.mjs');
-	assert.equal(roleOf('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
-	assert.equal(roleOf('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }]), 'bend', 'a ring still has no ends');
+	// B166 -- a model link is accepted by the rule DIRECTLY, with nothing translating on the way
+	assert.equal(k.waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
+	assert.equal(k.waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }]), 'bend', 'a ring still has no ends');
 
-	// and the vocabulary is gone from the renderer -- the twin is retired, not merely unused
-	assert.doesNotMatch(client, /from:\s*l\.src/, 'the model-to-kernel mapping must not live here again');
+	// and no translation may reappear anywhere -- this is the whole point of the unification
+	for (const [label, src] of [['renderer', client], ['kernel engine', engine]]) {
+		assert.doesNotMatch(src, /from:\s*\w+\.src/, `${label} must not re-introduce the mapping`);
+	}
 });
 
 /*
