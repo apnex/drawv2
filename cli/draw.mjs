@@ -253,6 +253,31 @@ export async function main(argv, env = process.env, out = (s) => process.stdout.
 
 	const ctx = { ...base(flags, env), flags, json: !!flags.json, env };
 	const args = rest.slice(verb.sub ? 2 : 1);
+	/*
+	B161 -- an argument the verb does not understand is REFUSED, never discarded.
+
+	`draw show diagram-a97651` answered about `diagram-000001` and said nothing about it: `show`
+	takes no positional, so the id fell on the floor, `activeId` used the saved focus instead, and
+	the output named the diagram it had chosen -- which reads like an answer. The caller is told
+	something true about the wrong document, which is worse than an error, because nothing about
+	the reply suggests looking again. It was found while exporting templates, one step away from
+	shipping the wrong file.
+
+	Checked HERE rather than in each verb because there are 41 of them and the manifest already
+	holds the answer: `args` declares what a verb accepts. A per-verb guard is 41 chances to forget,
+	and forgetting is silent.
+
+	Variadic verbs are read off their own usage line -- `<id...>` and `[ref...]` are how they
+	already say so, and the alternative is a second declaration that can disagree with the first.
+	*/
+	const variadic = /\.\.\./.test(verb.usage || '');
+	const declared = (verb.args || []).length;
+	if (!variadic && args.length > declared) {
+		const extra = args.slice(declared);
+		die(declared === 0
+			? `${verb.name} takes no arguments, and got ${extra.join(' ')} -- target another diagram with --diagram, not a positional`
+			: `${verb.name} takes ${declared} argument${declared === 1 ? '' : 's'}, and got ${args.length}: ${extra.join(' ')} is extra\nusage: ${verb.usage}`);
+	}
 	const res = await verb.run(ctx, args);
 	if (res === undefined || res === null) return 0;
 	const rendered = ctx.json ? JSON.stringify(res.json ?? res, null, 2) : (res.text ?? res);

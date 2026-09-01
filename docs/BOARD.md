@@ -164,8 +164,8 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 2 | H10.3 | user | The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
 | 3 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 4 | H11.29 | verifier | `COMMIT.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
-| 5 | H10.32 | agent | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. It nearly shipped the wrong document as a template. |
-| 6 | H10.8, H9.22 | local | Real, small, compounding into nothing alone. Take them opportunistically. Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
+| 5 | -- | agent | **H10.32 closed 2026-09-01.** A verb now refuses a positional it never declared, at the dispatcher rather than in 41 verbs. Kept as a rank so the ordering below is not silently renumbered |
+| 6 | H10.8 | local | Real, small, compounding into nothing alone. Take them opportunistically. **H9.22 closed and left this tier 2026-09-01.** Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
 | -- | H10.7, H10.11 | blocked | Bounded parallel connections and per-kind link capacity. **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
 **What the arc left undone, deliberately.**\
@@ -426,7 +426,7 @@ The plan is `docs/spec/DEPLOY.md`, written before any of this.
 
 ---
 
-## H9 -- access control - `WIP`
+## H9 -- access control - `DONE`
 
 Authorization for an **agent-first** tool, designed in `docs/spec/ACCESS.md`.\
 Two authentication methods -- Google identity via IAP, and an agent identity holding a connection code -- resolving to one grant model, scoped per diagram or per owner.\
@@ -465,7 +465,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 | H9.34 | API.md never states the entity id grammar it enforces | **B104** | S1 - S | `DONE` |
 | H9.23 | `scan-dead` says "every export" but reads only module exports, so an uncalled method of an exported class passes -- widened to public methods of exported classes, under a DIFFERENT rule from exports, with the scope stated | **B91** | S2 - S | `DONE` |
 | H9.21 | An agent may create a diagram and owns it -- `POST /api/v1/diagrams` follows from the agent-first ruling; `DELETE` does not and stays open as B32 | **B32** | S3 - M | `DONE` |
-| H9.22 | Long-poll: `history?since=&wait=` -- the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | feature | S4 - M | `TODO` |
+| H9.22 | Long-poll: `history?since=&wait=` -- the response COMPLETES, which is why it fits a harness that shells out where SSE does not. Additive; the agent surface does not depend on it | feature | S4 - M | `DONE` |
 | H9.8 | Domain allowlist in the app, composed into the authentication boundary so it runs before any grant lookup -- IAM cannot name a consumer domain | **B66** | S2 - S | `DONE` |
 | H9.9 | Examples become templates; first write forks a per-owner copy -- reverses the first-boot seed, amended in `SCOPE.md`. Four exported from live, `template` in the id grammar, fork on write and on taking the write slot | feature | S3 - L | `DONE` |
 | H9.10 | Decide the fate of the 12 unowned diagrams in `gs://diagrams.apnex.io` -- adopt or delete, explicitly. Recorded as 11 until the bucket was counted at cutover | -- | S3 - S | `DONE` |
@@ -515,7 +515,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.29 | A per-principal diagram quota. The 500 cap is global, so one signed-in stranger can lock out the owner -- and it gates widening sign-in | **B158** | S2 - S | `DONE` |
 | H10.30 | Cloud Armor on the agent door, which is deliberately IAP-free. Threshold measured, preview first | **B159** | S2 - M | `TODO` |
 | H10.31 | `draw` reads a throttle as a credential problem and gives up on a condition that clears by waiting. Bounded backoff, announced | **B160** | S2 - S | `DONE` |
-| H10.32 | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. Refuse an unread positional in the dispatcher | **B161** | S2 - S | `TODO` |
+| H10.32 | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. Refuse an unread positional in the dispatcher | **B161** | S2 - S | `DONE` |
 | H10.33 | Deleting a link orphans its `via` waypoints and they still render, so a removed shape leaves debris and holds its anchors. The cascade exists for a node's links and not for a link's bends | **B162** | S3 - S | `DONE` |
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |

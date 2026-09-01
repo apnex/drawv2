@@ -1431,3 +1431,53 @@ test('B167: the CLI\'s node types are exactly the kernel\'s renderable glyphs', 
 	assert.deepEqual([...cli].sort(), Object.keys(GLYPH_BB).sort(),
 		'cli/verbs.mjs and kernel/theme.mjs disagree about what can be drawn');
 });
+
+/*
+B161 -- an argument a verb does not understand is refused, not discarded.
+
+`draw show diagram-a97651` used to answer about `diagram-000001` in silence: `show` takes no
+positional, the id fell on the floor, and the reply named the diagram it had picked instead. Being
+told something TRUE about the wrong document is worse than an error, because nothing in the answer
+suggests looking again.
+
+Checked at the dispatcher, so this asserts the manifest is what decides -- not 41 per-verb guards.
+*/
+test('B161: a verb refuses a positional it never declared', () => {
+	/*
+	Shelled out, like B138, and for the same kind of reason: the guard lives in the DISPATCHER, so
+	asserting anything about the manifest would be testing a different thing than the one that
+	ships. A first version of this checked that `show` declares no args -- true, and no evidence at
+	all that an extra one is refused.
+
+	No --host: the refusal happens before the verb runs, so it never reaches the network. That is
+	itself part of the property -- a wrong target is rejected without a round trip.
+	*/
+	const draw = path.join(root, 'cli/draw.mjs');
+	const run = (args) => {
+		try { return { out: execFileSync(draw, args, { encoding: 'utf8', env: { ...process.env } }), code: 0 }; }
+		catch (e) { return { out: (e.stdout || '') + (e.stderr || ''), code: e.status }; }
+	};
+	const zero = run(['show', 'diagram-a97651']);
+	assert.notEqual(zero.code, 0, 'it must fail rather than answer about something else');
+	assert.match(zero.out, /takes no arguments/);
+	assert.match(zero.out, /--diagram/, 'and it must say how to target one');
+	assert.match(zero.out, /diagram-a97651/, 'naming what it refused');
+
+	const overfull = run(['about', 'thing', 'extra']);
+	assert.notEqual(overfull.code, 0);
+	assert.match(overfull.out, /takes 1 argument/);
+	assert.match(overfull.out, /usage: draw about/, 'an over-full verb prints its usage');
+
+	// and a variadic verb is untouched -- it fails for a real reason, not an arity one
+	const many = run(['rm', 'a', 'b', 'c']);
+	assert.doesNotMatch(many.out, /takes \d+ argument|takes no arguments/, 'rm accepts many by declaration');
+});
+
+test('B161: every verb that accepts many says so in its own usage line', () => {
+	// the variadic test reads `...` off the usage string, so a variadic verb that omits it would
+	// start refusing its own arguments. This is the check that the two stay in step.
+	for (const v of VERBS) {
+		const many = (v.args || []).some((a) => /\.\.\./.test(a.name || ''));
+		if (many) assert.match(v.usage || '', /\.\.\./, `${v.name} takes many but its usage does not say so`);
+	}
+});
