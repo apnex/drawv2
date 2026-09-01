@@ -615,6 +615,8 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 
 | H12.13 | One spawner could exhaust the mover budget and starve every spawner after it -- the cap was named per-spawner and enforced globally, so a second armed endpoint silently never emitted | **B173** | S3 - S | `DONE` |
 
+| H12.14 | The document-to-spawner adapter moves to `engine/`, and `draw movers` reports what is in flight. A client-side report was uninvestigable because the only code that could answer lived in a browser tab | **B174** | S2 - M | `DONE` |
+
 **Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
 **The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.
 

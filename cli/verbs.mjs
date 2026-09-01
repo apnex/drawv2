@@ -938,6 +938,68 @@ merely validated.
 `draw add server at 5,-2` beside `draw place server near lb-1` -- so the pair reads as one idea.
 */
 /*
+`movers` -- what is in flight right now, computed rather than observed.
+
+B174. A report that "one spawner is not animating" could not be investigated at all: the only place
+the answer existed was inside a browser tab, and the only way to read it was to ask the director to
+open a console. That is the A5 fault -- the human acting as the agent's eyes for a fact the system
+already knows.
+
+It is DERIVED, not sampled. The simulation is a pure function of the document and an instant, and
+`engine/spawners.mjs` is the same adapter the browser uses, so this reports exactly what a correct
+client must be drawing. When a tab disagrees with this, the divergence is in the tab -- which is
+itself the finding, and narrows the search to one layer instead of three.
+
+`--at` takes an instant so the answer is reproducible. Without it the reading is of NOW and two runs
+a second apart legitimately differ, which makes it useless as evidence in a defect report.
+*/
+VERBS.push({
+	name: 'movers', group: 'Context', usage: 'draw movers [--at epoch-ms] [--spawner ref]',
+	route: '/diagrams/<id>', method: 'GET',
+	summary: 'what is in flight right now -- the movers a correct client must be drawing',
+	example: 'draw movers --at 1788256200000',
+	args: [],
+	flags: [{ name: '--at', about: 'the instant to report, epoch ms. Default now -- pass one to make a reading reproducible' },
+		{ name: '--spawner', about: 'only this endpoint' },
+		{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx, args) {
+		const id = await activeId(ctx, ctx.flags);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'movers');
+		const { Model } = await import('../model/index.mjs');
+		const { spawnersOf, moversAt } = await import('../engine/index.mjs');
+		const model = new Model();
+		model.load(doc);
+		let prepared = spawnersOf(model);
+		if (ctx.flags.spawner && ctx.flags.spawner !== true) {
+			const want = await resolveId(ctx, id, ctx.flags.spawner, doc);
+			prepared = prepared.filter((s) => s.id === want);
+		}
+		const at = ctx.flags.at && ctx.flags.at !== true ? Number(ctx.flags.at) : Date.now();
+		if (!Number.isFinite(at)) die(`--at takes epoch milliseconds, not ${ctx.flags.at}`);
+		const live = moversAt(prepared, at);
+
+		const rows = prepared.map((s) => {
+			const mine = live.filter((m) => m.spawnerId === s.id);
+			return {
+				spawner: s.id, link: s.link,
+				cells: Math.round((s.length / 60) * 100) / 100,
+				speed: s.speed, interval: s.interval,
+				transit: Math.round((s.length / s.pxSpeed) * 10) / 10,
+				inFlight: mine.length,
+				at: mine.map((m) => `${Math.round(m.progress * 100)}%`).join(' '),
+			};
+		});
+		if (!rows.length) return { json: { at, spawners: [], movers: 0 }, text: 'no armed endpoints in this diagram' };
+		return {
+			json: { at, spawners: rows, movers: live.length },
+			text: table(rows.map((r) => [r.spawner, r.link, String(r.cells), String(r.speed),
+				`${r.interval}ms`, `${r.transit}s`, String(r.inFlight), r.at]),
+				['SPAWNER', 'LINK', 'CELLS', 'CELLS/S', 'EVERY', 'TRANSIT', 'IN FLIGHT', 'PROGRESS']),
+		};
+	},
+});
+
+/*
 `spawn` -- arm an endpoint waypoint to emit movers along its link, or stop it.
 
 H12.10. The editor gained this before the CLI did, which made the whole feature reachable only by

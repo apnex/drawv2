@@ -24,7 +24,7 @@ file's -- so an author can see that an endpoint emits without it moving under th
 */
 
 import { el } from './painter.js';
-import { prepareSpawner, moversAt } from '../../engine/index.mjs';
+import { moversAt, spawnersOf } from '../../engine/index.mjs';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 
 // how often to look for a NEWLY DEPARTED mover. Not a frame rate -- the compositor owns motion.
@@ -48,24 +48,11 @@ export class Movers {
 	them the other way -- which is why direction is never stored: reversing a route reverses the
 	movers for free, and a stored copy would have been wrong the moment that happened.
 	*/
+	// B174 -- the adapter moved to `engine/spawners.mjs`. It reads only the model, so keeping it here
+	// made it unreachable from anywhere but a browser tab, and a client-side report could not be
+	// investigated without a human reading numbers out of a console.
 	spawners() {
-		const out = [];
-		for (const wp of this.model.all('waypoint')) {
-			if (!wp.spawn) continue;
-			const links = this.model.linksAt?.(wp.id) || [];
-			const link = links.find((l) => (l.src === wp.id || l.dst === wp.id) && !l.closed);
-			if (!link) continue;                       // a ring has no ends, so it emits nothing
-			const pts = this.model.pathOf(link);
-			if (!pts || pts.length < 2) continue;      // a dangling route resolves to nothing
-			out.push(prepareSpawner({
-				id: wp.id,
-				pts: link.src === wp.id ? pts : [...pts].reverse(),
-				closed: false,
-				radius: BEND_R,
-				...wp.spawn,
-			}));
-		}
-		return out;
+		return spawnersOf(this.model);
 	}
 
 	// run mode shows motion; every other mode is still. Called on mode change and on every commit.
