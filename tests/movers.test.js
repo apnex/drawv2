@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
 import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/index.mjs';
 
@@ -260,4 +261,52 @@ test('H12.3: two peers with the same document and clock agree, having exchanged 
 	// A5 perceptual parity, as a property rather than a protocol
 	const a = [spawner()], b = [spawner()];
 	for (const t of [0, 137, 999, 4021, 9999]) assert.deepEqual(moversAt(a, t), moversAt(b, t));
+});
+
+/*
+B171 -- a route that changes under a mover in flight.
+
+The SIMULATION half, which is where the fix has to be correct by construction. `moversAt` reads the
+live document every call, so a mover's progress is already right for a route that just changed; the
+defect was entirely in the presentation, which cached the path string on the element.
+
+What these pin is the property the rebuild depends on: travel is conserved as DISTANCE, not as a
+fraction. Get that wrong and the presentation fix -- reseeding from `m.progress` -- would put every
+packet in the wrong place on any edit, and the drawing would look plausible while being false.
+*/
+test('B171: moving an endpoint does not move the movers already travelling', () => {
+	const short = spawner({ pts: [[0, 0], [1000, 0]] });
+	const long = spawner({ pts: [[0, 0], [2000, 0]] });   // the same spawner, endpoint dragged out
+	const t = 4000;                                        // 4s at 100px/s = 400px covered
+	const a = moversAt([short], t).find((m) => m.k === 0);
+	const b = moversAt([long], t).find((m) => m.k === 0);
+	assert.equal(Math.round(a.travelled), 400, 'distance covered is a function of TIME and speed');
+	assert.equal(Math.round(b.travelled), 400, 'and does not change because the route got longer');
+	assert.ok(b.progress < a.progress, 'so the same distance is a smaller FRACTION of a longer route');
+});
+
+test('B171: a route that shortens past a mover CONSUMES it rather than stranding it', () => {
+	// dragging an endpoint inwards can put a mover beyond the new far end. The window handles it:
+	// it arrives, rather than hanging at 100% forever on a path that no longer reaches it.
+	const long = spawner({ pts: [[0, 0], [1000, 0]] });
+	const short = spawner({ pts: [[0, 0], [200, 0]] });
+	const t = 5000;                                        // 500px covered -- beyond the short route
+	assert.ok(moversAt([long], t).some((m) => m.k === 0), 'still travelling the long route');
+	assert.ok(!moversAt([short], t).some((m) => m.k === 0), 'already arrived on the short one');
+});
+
+test('B171: the presentation rebuilds a mover whose route changed, and only then', () => {
+	/*
+	Structural, because the alternative is driving a browser and this property is about WHEN an
+	element is torn down. The two halves that matter: the comparison exists at all, and the string
+	it compares against is produced by the same function that built the element -- if those two ever
+	drift, the check silently stops firing and the defect returns without a test failing.
+	*/
+	const src = readFileSync(new URL('../app/src/movers.js', import.meta.url), 'utf8');
+	assert.match(src, /rec\.d === this\.pathOf\(s\)/, 'a live mover is compared against the current route');
+	assert.match(src, /this\.anims\.set\([^)]*\bd\b/, 'and the route it was built with is remembered');
+	assert.match(src, /pathOf\(spawner\)/, 'one function produces the string, so build and compare cannot drift');
+	// the old unconditional skip must be gone, not merely bypassed
+	assert.doesNotMatch(src, /if \(this\.anims\.has\(m\.id\)\) continue/,
+		'the unconditional skip is what caused B171 and must not come back');
 });

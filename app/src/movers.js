@@ -100,10 +100,33 @@ export class Movers {
 		const seen = new Set();
 		const byId = new Map(prepared.map((s) => [s.id, s]));
 
+		/*
+		B171 -- a mover in flight must adopt a route that changed under it.
+
+		The old line here read *already flying: leave the compositor alone*, which is right while the
+		geometry holds and wrong the moment it does not. `offset-path` is baked onto the element at
+		creation, so moving an endpoint left packets travelling a line the diagram no longer drew --
+		two distinct paths in the air at once, measured at 8 old against 2 new.
+
+		The simulation never had this problem: `moversAt` reads the live document every call, so the
+		progress below is ALREADY correct for the new route. Only the drawing was stale, which is why
+		the fix is to rebuild the element from the simulation rather than to compute anything new.
+
+		Travel is PRESERVED, not restarted. Speed is constant, so what is conserved is distance
+		covered, and `m.progress` is that distance against the new length -- reseeding from it puts a
+		mover where it genuinely is. Restarting the animation instead would teleport every packet
+		back to its source on any edit, which is a worse defect than the one being fixed.
+		*/
 		for (const m of live) {
 			seen.add(m.id);
-			if (this.anims.has(m.id)) continue;        // already flying: leave the compositor alone
 			const s = byId.get(m.spawnerId);
+			const rec = this.anims.get(m.id);
+			if (rec) {
+				if (rec.d === this.pathOf(s)) continue;   // same route: leave the compositor alone
+				rec.anim?.cancel();
+				rec.el.remove();
+				this.anims.delete(m.id);
+			}
 			this.spawnEl(m, s);
 		}
 		// a mover the simulation no longer lists has been consumed -- it arrived, or its spawner
@@ -116,9 +139,15 @@ export class Movers {
 		}
 	}
 
+	// the route as the browser will be given it. One function, so the string an element was BUILT
+	// with and the string it is COMPARED against cannot drift -- which is the whole mechanism here.
+	pathOf(spawner) {
+		return spawner ? roundedPath(spawner.pts, spawner.radius ?? BEND_R, false) : null;
+	}
+
 	spawnEl(mover, spawner) {
 		if (!spawner || !this.layer) return;
-		const d = roundedPath(spawner.pts, spawner.radius ?? BEND_R, false);
+		const d = this.pathOf(spawner);
 		// B45 -- `painter.el` rather than `document.createElementNS`. A DOM global welds a module to
 		// the one page it happens to run on; the painter is the surface that legitimately owns it.
 		// the mover's stable identity travels onto the element, so anything inspecting the page --
@@ -136,7 +165,8 @@ export class Movers {
 		// SEEDED, not started: the browser is told how far through it already is, from the shared
 		// clock. This one line is the whole reason two tabs agree.
 		anim.currentTime = mover.progress * duration;
-		this.anims.set(mover.id, { el: dot, anim });
+		// `d` is remembered so the next pass can tell whether the route moved underneath it
+		this.anims.set(mover.id, { el: dot, anim, d });
 	}
 
 	clear() {
