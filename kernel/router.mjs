@@ -13,7 +13,22 @@
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
-const len = (v) => Math.hypot(v[0], v[1]);
+/*
+B176 -- `sqrt` rather than `hypot`, because DETERMINISM is the property that matters here.
+
+ECMAScript specifies `Math.sqrt` and the four operators as exactly IEEE 754, and explicitly permits
+`Math.hypot` to be APPROXIMATED. So two engines may return different last bits for the same segment,
+and this feeds pathLength, transit time and where a mover is at an instant.
+
+Invisible while positions are recomputed every frame -- an error is gone by the next one. Load-
+bearing the moment combat derives: a range check that decides whether a creep died is folded into
+later state, and two peers that disagree once stay disagreed. Measured: hypot and sqrt already
+differ on (120,-360), a real segment from a live diagram, inside a single engine.
+
+`hypot` buys overflow resistance at magnitudes a canvas bounded at a few thousand pixels cannot
+reach, so nothing is given up.
+*/
+const len = (v) => Math.sqrt(v[0] * v[0] + v[1] * v[1]);
 const scl = (v, s) => [v[0] * s, v[1] * s];
 const r3 = (n) => { const v = Math.round(n * 1e3) / 1e3; return Object.is(v, -0) ? 0 : v; };
 const fmt = (p) => `${r3(p[0])} ${r3(p[1])}`;

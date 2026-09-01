@@ -67,7 +67,9 @@ export function grc(elements, V, L) {
 	// rule 3 — attachment: every path's free ENDS coincide with a port/node/junction/waypoint.
 	// (closed paths have no free ends.)
 	const anchors = elements.filter((el) => el.kind === 'port' || el.kind === 'node' || el.kind === 'junction' || el.kind === 'waypoint').map((el) => [el.cx, el.cy]);
-	const at = (x, y) => anchors.some(([ax, ay]) => Math.hypot(ax - x, ay - y) < 1.5);
+	// B176 -- exactly-specified sqrt, for the same reason as kernel/router.mjs. A checker that answers
+	// differently on different engines is worse than no checker, because it disagrees silently.
+	const at = (x, y) => anchors.some(([ax, ay]) => Math.sqrt((ax - x) * (ax - x) + (ay - y) * (ay - y)) < 1.5);
 	const dangling = [];
 	for (const w of paths) {
 		if (w.closed) continue;

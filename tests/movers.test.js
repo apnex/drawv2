@@ -353,3 +353,33 @@ test('B172: speed is authored in CELLS and converted to pixels exactly once', ()
 	// 2 cells/s over a 600px route = 120px/s, so 1s of travel is 120px
 	assert.equal(Math.round(moversAt([s], 1000)[0].travelled), 120);
 });
+
+/*
+B176 -- the derived path uses only EXACTLY SPECIFIED arithmetic.
+
+`Math.hypot` is permitted by ECMAScript to be approximated; `sqrt` and the operators are not. Since
+every peer must derive the same answer without exchanging a message, an approximated function in the
+measurement path means two browsers can disagree about where a mover is -- and once combat folds
+that into later state, they stay disagreed.
+
+Asserted over the SOURCE deliberately, and it is one of the few places that is the right instrument:
+the property is "this function is not called here", which no behavioural test can see. A run in one
+engine cannot detect a difference that only appears in another.
+*/
+test('B176: no approximated maths in the measurement path', async () => {
+	const files = ['../kernel/router.mjs', '../kernel/grc.mjs', '../engine/movers.mjs'];
+	for (const f of files) {
+		const src = readFileSync(new URL(f, import.meta.url), 'utf8');
+		// strip block comments: this file explains WHY hypot is banned, and must not trip its own rule
+		const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+		for (const banned of ['Math.hypot', 'Math.sin', 'Math.cos', 'Math.tan', 'Math.pow']) {
+			assert.ok(!code.includes(banned), `${f} uses ${banned}, which engines may approximate differently`);
+		}
+	}
+});
+
+test('B176: sqrt and hypot genuinely differ, so the ban is not superstition', () => {
+	// a real segment from a live diagram. If these ever agree everywhere the rule is still right,
+	// but this asserts the hazard is present rather than theoretical.
+	assert.notEqual(Math.hypot(120, -360), Math.sqrt(120 * 120 + 360 * 360));
+});
