@@ -618,6 +618,7 @@ Both are Air-Gap: a unit that reaches for what it needs cannot be reasoned about
 | H12.14 | The document-to-spawner adapter moves to `engine/`, and `draw movers` reports what is in flight. A client-side report was uninvestigable because the only code that could answer lived in a browser tab | **B174** | S2 - M | `DONE` |
 
 | H12.15 | Segment length uses an exactly-specified `sqrt` rather than the implementation-approximated `Math.hypot`, so every engine computes the same mover position. A prerequisite for derived combat, where a disagreement is folded forward instead of recomputed away | **B176** | S2 - S | `DONE` |
+| H12.16 | The derivation surface: a kind declares its own game data, and a rule is a pure function of `(world, tick)` returning facts. A tower fires because the board and the clock imply it, so only tower placement travels and a third client recomputes rather than being told | **H12.16** | S3 - M | `DONE` |
 
 **Exit:** an endpoint armed in read view spawns movers that ride the drawn line and are consumed at the far end, two browsers agree on where they are, and the simulation can answer where any mover is without touching a DOM.\
 **The abstraction bar, which is the harder half of the exit:** the pilot's rule reads a situation it did not build, and the simulation answers a question no browser was involved in -- so both are already the surface a mod would use, rather than something to be generalised afterwards.
