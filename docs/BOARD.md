@@ -673,7 +673,7 @@ Building ownership enforcement with its failure mode undesigned would be the rad
 | H13.9 | `draw` can dump a diagram and report towers and combat, and `draw help` can be read by a machine. Filed because I routed around the CLI twice rather than extending it, which GR18 calls a defect | **B179** | S1 - S | `DONE` |
 | H13.10 | The client ladder: `offline` is reversible and never reloads, `stale` needs evidence and does, `unreachable` holds and says so. One `/health` call is both the staleness test and the reachability test, so a tab never reloads into a void | **B178** | S2 - M | `DONE` |
 | H13.11 | A write conflict is proof another instance owns the document, so the store stops retrying a write it cannot win and the hub retires that diagram's sessions. The detection existed and drove nothing -- 3203 retries while both instances served their own clients | **B178** | S2 - M | `DONE` |
-| H13.2 | A tower rotates to face what it is burning. Deferred from H13.1 by ruling, and it is presentation only -- the angle is derived from two positions the fold already knows, so nothing is stored and no peer needs telling | `feature` | S1 - S | `TODO` |
+| H13.2 | A tower rotates to face what it is tracking. The `loadbalancer` glyph's middle arrow points east at rest, so orientation IS the aiming component and this needed no new art. Aim is separated from firing, so a turret follows its target through the cooldown | `feature` | S1 - S | `DONE` |
 
 **Exit:** a player places a tower during play, it burns creeps that come into range, and two browsers watching the same diagram agree on which creeps died without exchanging anything but the placement.
 

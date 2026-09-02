@@ -7,5 +7,5 @@ export { makeRelations } from './relations.mjs';
 export { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from './movers.mjs';
 export { spawnersOf } from './spawners.mjs';
 export { TICK_MS, tickAt, TOWERS, MOVERS, towerFor, moverFor } from './kinds.mjs';
-export { worldOf, factsAt, combatAt, DERIVATIONS } from './rules.mjs';
+export { worldOf, factsAt, combatAt, aimAt, DERIVATIONS } from './rules.mjs';
 export { situationOf, oneSelected, onEndpoint, inReadView, onSpawner, onOpenGround } from './situation.mjs';

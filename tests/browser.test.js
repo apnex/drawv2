@@ -258,3 +258,38 @@ test('H13.8: pressing open ground in run mode places a tower', { skip: SKIP }, a
 	}
 	assert.ok(placed.length, `no tower placed across ${Math.min(spots.length, 12)} open points`);
 });
+
+test('H13.8/H13.2: a turret rotates to face what it is tracking', { skip: SKIP }, async () => {
+	/*
+	The only assertion in this file that would have caught a purely visual defect before the
+	director did. The `loadbalancer` glyph's middle arrow points east at rest, so a rotation of 0
+	means "aiming east" and any other value means the turret has turned.
+
+	The fixture puts the tower ON the route with packets flowing past it in both directions relative
+	to the tower's centre, so the bearing must move -- a turret welded at 0 would pass a test that
+	only checked the attribute exists.
+	*/
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	assert.equal(booted.inRun, true, 'precondition: run mode');
+
+	const read = `(() => { const n = document.getElementById('node-ba0004');
+		const g = n && n.querySelector('[data-layer="glyph"]');
+		return g && g.dataset.aim !== undefined ? g.dataset.aim : null; })()`;
+
+	const first = await until(tab, read, 12000);
+	assert.ok(first !== null, 'the turret never took a bearing while packets were in range');
+
+	// and it TRACKS: sampled until the bearing differs, because a target crossing the tower sweeps it
+	const deadline = Date.now() + 12000;
+	const seen = new Set([first]);
+	while (Date.now() < deadline && seen.size < 2) {
+		await sleep(200);
+		const now = await tab.eval(read);
+		if (now !== null) seen.add(now);
+	}
+	assert.ok(seen.size > 1, `the bearing never changed: only ever ${[...seen].join(', ')}`);
+
+	// the rotation is actually applied, not merely recorded
+	const transform = await tab.eval(`document.getElementById('node-ba0004').querySelector('[data-layer="glyph"]').getAttribute('transform')`);
+	assert.match(String(transform), /^rotate\(-?\d+\)$/, `expected a rotate transform, got ${transform}`);
+});

@@ -24,7 +24,7 @@ file's -- so an author can see that an endpoint emits without it moving under th
 */
 
 import { el } from './painter.js';
-import { moversAt, spawnersOf, worldOf, combatAt } from '../../engine/index.mjs';
+import { moversAt, spawnersOf, worldOf, combatAt, aimAt } from '../../engine/index.mjs';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 
 // how often to look for a NEWLY DEPARTED mover. Not a frame rate -- the compositor owns motion.
@@ -41,6 +41,7 @@ export class Movers {
 		this.beamLayer = null;
 		this.moverLayer = null;
 		this.deaths = new Map();    // mover id -> tick it died, from the last fold
+		this.glyphs = new Map();    // node id -> its glyph element, so a turret is not re-queried per frame
 		this.timer = null;
 		this.raf = null;
 	}
@@ -153,6 +154,7 @@ export class Movers {
 		const combat = combatAt(world, this.now());
 		this.deaths = combat.dead;
 		this.syncBeams(world, combat);
+		this.aimTurrets(world, combat.alive);
 	}
 
 	/*
@@ -306,10 +308,59 @@ export class Movers {
 		}
 	}
 
+	/*
+	H13.2 -- a turret faces what it is tracking.
+
+	The `loadbalancer` glyph already carries the affordance: its middle arrow points east at rest, so
+	orientation is the aiming component and this needs no new art. Rotating the whole glyph by the
+	bearing to the target makes that arrow the barrel.
+
+	TRACKED, NOT FIRED AT. The angle comes from `aimAt`, which is the board alone with no schedule,
+	so a turret follows its target through the cooldown instead of snapping back between burns. That
+	also keeps it derived: two peers compute the same bearing from the same document and tick, so
+	nothing is sent and nothing drifts. Holding the last angle would have been per-peer state and two
+	viewers would slowly disagree about where a tower is looking.
+
+	Presentation only, and written straight onto the glyph rather than into the document -- a stored
+	angle would be a second copy of something already derivable, and the first thing to go stale.
+	*/
+	aimTurrets(world, alive) {
+		if (!world.towers.length) return;
+		const aim = aimAt(world, alive);
+		for (const t of world.towers) {
+			const glyph = this.glyphOf(t.id);
+			if (!glyph) continue;
+			const target = aim.get(t.id);
+			if (!target) continue;                  // nothing in range: hold the last bearing
+			const deg = Math.round(Math.atan2(target.at[1] - t.y, target.at[0] - t.x) * 180 / Math.PI);
+			if (glyph.dataset.aim === String(deg)) continue;   // the DOM write is the expensive part
+			glyph.dataset.aim = String(deg);
+			glyph.setAttribute('transform', `rotate(${deg})`);
+		}
+	}
+
+	/*
+	The glyph element of a node, cached because a `querySelector` per tower per frame is work for
+	nothing once the element is known.
+
+	Asked of the RENDERER rather than found in the document. The first version reached for
+	`document.getElementById` and `scan-writers` refused it under B45 -- correctly: a DOM global
+	welds this module to the one page it runs in, and how a node is assembled is the renderer's
+	business, not presentation's.
+	*/
+	glyphOf(id) {
+		let g = this.glyphs.get(id);
+		if (g && g.isConnected) return g;
+		g = this.renderer.glyphOf ? this.renderer.glyphOf(id) : null;
+		if (g) this.glyphs.set(id, g); else this.glyphs.delete(id);
+		return g;
+	}
+
 	clear() {
 		for (const [, rec] of this.anims) { rec.anim?.cancel(); rec.el.remove(); }
 		this.anims.clear();
 		for (const [, rec] of this.beams) rec.line.remove();
 		this.beams.clear();
+		this.glyphs.clear();
 	}
 }

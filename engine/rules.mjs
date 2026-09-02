@@ -73,11 +73,40 @@ const inRange = (tower, at) => {
 THE RULES. Two exist, and they are the same construct with different triggers -- which is the
 evidence that made this surface worth extracting rather than imagining.
 */
+/*
+WHO a tower is aiming at, separated from WHETHER it is firing.
+
+Extracted because a turret should TRACK its target through the cooldown rather than snapping back
+between burns -- H13.2, ruled 2026-09-02. Aim is therefore a function of the board alone, while the
+beam adds the schedule on top.
+
+Keeping it derived matters even though rotation is only presentation: two peers computing aim from
+the same document and the same tick point their turrets the same way, so nothing has to be sent and
+nothing can drift. Holding the last angle instead would have been per-peer state, and two viewers
+would slowly disagree about where a tower is looking.
+*/
+export function aimAt(world, alive) {
+	const aim = new Map();
+	for (const t of world.towers) {
+		const targets = alive.filter((m) => inRange(t, m.at));
+		if (!targets.length) continue;
+		/*
+		The leading target: `progress` is distance along the route, so this is the mover furthest in
+		the direction of travel -- the one about to escape. Ruled 2026-09-02, and the id breaks a tie
+		so the answer never depends on array order.
+		*/
+		targets.sort((a, b) => (b.progress - a.progress) || (a.id < b.id ? -1 : 1));
+		aim.set(t.id, targets[0]);
+	}
+	return aim;
+}
+
 export const DERIVATIONS = [
 	{
 		id: 'tower-fires',
 		about: 'while its beam is lit a tower burns the leading mover in range, re-acquiring each tick',
 		facts(world, tick, alive) {
+			const aim = aimAt(world, alive);
 			const out = [];
 			for (const t of world.towers) {
 				/*
@@ -91,22 +120,9 @@ export const DERIVATIONS = [
 				sweeping onto the next target as each one dies.
 				*/
 				if (tick % cycleOf(t) >= t.beam) continue;
-				/*
-				ONE target per shot, the furthest along its route. Deterministic by construction:
-				progress is a number both peers derive, and the id breaks a tie so the answer never
-				depends on array order. "Furthest along" is also the only choice that plays like a
-				tower defence -- it shoots what is about to escape.
-				*/
-				const targets = alive.filter((m) => inRange(t, m.at));
-				if (!targets.length) continue;
-				targets.sort((a, b) => (b.progress - a.progress) || (a.id < b.id ? -1 : 1));
-				/*
-				`progress` is distance along the route, so the leading target is the one nearest the
-				far end -- furthest in the direction of travel, which is the one about to escape.
-				Ruled 2026-09-02, and it is also the only tie-break that needs no notion of which way
-				a link points.
-				*/
-				out.push({ kind: 'beam', tower: t.id, target: targets[0].id, damage: t.damage, tick });
+				const target = aim.get(t.id);
+				if (!target) continue;
+				out.push({ kind: 'beam', tower: t.id, target: target.id, damage: t.damage, tick });
 			}
 			return out;
 		},

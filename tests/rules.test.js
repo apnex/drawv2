@@ -12,7 +12,7 @@ slowly is a number; a tower that kills a different creep on two machines is the 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
-import { worldOf, combatAt, factsAt, DERIVATIONS, tickAt, TICK_MS, moversAt } from '../engine/index.mjs';
+import { worldOf, combatAt, factsAt, aimAt, DERIVATIONS, tickAt, TICK_MS, moversAt } from '../engine/index.mjs';
 import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
@@ -336,4 +336,36 @@ test('H13.1: a board with no towers costs what it cost before combat existed', (
 		for (let tk = now - Math.ceil(transit / TICK_MS) - 1; tk <= now; tk++) moversAt(w.spawners, tk * TICK_MS);
 	}, 400);
 	assert.ok(folded / shortcut > 4, `towerless costs ${(folded / shortcut).toFixed(1)}x less than folding -- expected far more`);
+});
+
+test('H13.2: aim is the board alone -- a turret tracks through the cooldown', () => {
+	/*
+	Separated from firing so a turret follows its target between burns instead of snapping back.
+	`facts` gates on the beam phase; `aimAt` must not, or a tower would look away every second.
+	*/
+	const w = worldOf(board());
+	const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+	const spec = TOWERS.loadbalancer;
+	const dark = spec.beam;                       // the first tick of the cooldown
+	assert.equal(factsAt(w, dark, [target]).length, 0, 'not firing during cooldown');
+	assert.equal(aimAt(w, [target]).size, 1, 'but still aiming at it');
+});
+
+test('H13.2: a turret aims at the leading target, and does not depend on input order', () => {
+	// the same determinism the beam has: two peers must point a turret the same way without asking
+	const w = worldOf(board());
+	const near = { id: 'waypoint-aa0001#1', progress: 0.10, at: [600, 0] };
+	const far = { id: 'waypoint-aa0001#2', progress: 0.90, at: [600, 0] };
+	for (const order of [[near, far], [far, near]]) {
+		const aim = aimAt(w, order);
+		assert.equal(aim.get('node-bb0001').id, far.id, 'the one about to escape');
+	}
+});
+
+test('H13.2: nothing in range means no aim, rather than a default bearing', () => {
+	// a tower with nothing to track holds its last angle in the DOM; the engine must say "none"
+	// rather than inventing a direction the peers would have to agree on
+	const w = worldOf(board());
+	assert.equal(aimAt(w, []).size, 0);
+	assert.equal(aimAt(w, [{ id: 'waypoint-aa0001#0', progress: 0.5, at: [99999, 0] }]).size, 0);
 });

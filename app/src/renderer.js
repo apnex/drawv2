@@ -101,6 +101,22 @@ export class Renderer {
 		return { sockets: this.mode === 'edit' };
 	}
 
+	/*
+	H13.2 -- the glyph element of a node, for whoever needs to orient it.
+
+	Exposed here because the renderer OWNS node DOM and nothing else should be reaching into it.
+	`app/src/movers.js` first did this with `document.getElementById`, which `scan-writers` refused
+	under B45: a DOM global welds a module to the one page it happens to run in, and the presentation
+	layer had no business knowing how a node is assembled.
+
+	Scoped to the nodes layer rather than the document, so it cannot accidentally match a template,
+	a legend, or an off-canvas copy of the same id.
+	*/
+	glyphOf(id) {
+		const node = this.layers.nodes.querySelector(`[id="${id}"]`);
+		return node ? node.querySelector('[data-layer="glyph"]') : null;
+	}
+
 	setMode(mode) {
 		this.mode = mode;
 		this.svg.classList.toggle('edit-mode', mode === 'edit');
