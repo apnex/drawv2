@@ -24,8 +24,7 @@ References are mined for narrow mechanisms only.
    nodes +/-900/+/-480, zones +/-930/+/-510. Docs carry `meta.grid: "center"`; legacy
    top-left documents are migrated on load by a uniform (-930, -510)
    translation (preserves layout exactly; outermost right/bottom band clamps
-   inward one cell). The Slides transform adds (+960, +540) before the pt
-   conversion - slide fidelity unchanged.
+   inward one cell).
    *(Amended 2026-08-18, CS1/CS5)* - the **geometry above is unchanged**; its two
    mechanisms are gone. Load-time legacy migration was deleted at **CS1**: a
    quadrant-confined top-left document validates clean, so it loaded silently
@@ -137,16 +136,19 @@ The substrate directory was renamed because `document` covered three concepts at
 
 ---
 
-## Entities (MVP = exactly four)
+## Entities (five)
 
 ```json
 {
   "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 1,
               "owner": "user:someone@example.com",
               "grants": { "user:other@example.com": "read", "agent:planner": "write" },
-              "slides": { "url": "", "presentationId": "", "pageId": "" } },
+              },
   "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 } ],
-  "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6" } ],
+  "waypoints": [ { "id": "waypoint-5e5e5e", "x": 570, "y": 270,
+                "spawn": { "interval": 900, "speed": 1.4, "kind": "packet", "since": 1788300000000 } } ],
+  "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6",
+                "via": ["waypoint-5e5e5e"], "closed": false } ],
   "zones":  [ { "id": "zone-77bb01", "name": "dmz", "x": 480, "y": 240, "w": 240, "h": 180 } ],
   "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ]
 }
@@ -167,10 +169,15 @@ Still pending from the same amendment and not yet built: a grant may name an OWN
   attached in its middle, snapped to a grid point, with editable label. Frame and glyph
   are independent layers (`#frame-*` raw-canvas shapes + `#glyph-*` 0.3-scaled art);
   `shape` is optional and defaults to `circle` (legacy docs load unchanged).
-- link: straight line between two node centers. No waypoints, no routing.
+- link: a route between two endpoints, each a node or a waypoint. Bends through any `via`
+  waypoints and is drawn with rounded corners (`BEND_R` on the grid pitch); `closed` makes it
+  a ring with no ends. `src`/`dst`/`closed` is the one vocabulary, kernel and model alike (B166).
+- waypoint: a grid point a link may terminate at or bend through. An ENDPOINT waypoint may carry
+  a `spawn` composite, which makes it emit movers along its link in read view -- whole or absent,
+  never partial. The numbers a mover obeys are declared in `engine/kinds.mjs`, never stored here.
 - zone: grid-aligned rectangle on the half-offset grid, with label. Purely visual.
 - group: logical member set; selecting/moving any member moves all. Not rendered, not synced
-  as a shape (optionally mapped to Slides `groupObjects` later).
+  as a shape.
 
 ---
 
@@ -195,8 +202,7 @@ Client -> server:
   `delete {id}` (answers with a snapshot of a surviving diagram; the store
   reseeds the example rather than ever going empty), `list {}`.
   Renaming a diagram and binding a deck are CHANGES, so they travel as a `meta` op inside a
-  `commit` - undoable and broadcast like any other. The Slides binding
-  (`presentationId`/`pageId`) is status the SERVER records after a successful push.
+  `commit` - undoable and broadcast like any other.
 - failures answer `{cmd:"error", body:{message, code, txnId}}`; sessions survive any payload
 
 Server -> client, unprompted: `{cmd:"change", body:{..., ops}}` - every accepted transaction is broadcast to the other sessions on that diagram, so a second tab and an agent write converge without refetching.\
@@ -267,7 +273,7 @@ Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, 
 
 - `GET /api/v1/diagrams` - list
 - `GET /api/v1/diagrams/:id` - full document
-- `GET /api/v1/diagrams/:id/{nodes|links|zones|groups}[/:entityId]`
+- `GET /api/v1/diagrams/:id/{nodes|waypoints|links|zones|groups}[/:entityId]`
 - `GET /health`
 - `POST /api/v1/diagrams/:id/sync/slides` - action endpoint (not a model mutation); also
   triggered by the canvas push button
@@ -282,50 +288,13 @@ All responses plain JSON, curl/jq-friendly.
 
 ---
 
-## Google Slides sync contract
+## Google Slides sync -- REMOVED
 
-- Target: presentation URL pasted into the canvas menu, stored in `meta.slides`.
-- Transform: PAGE-AWARE - the push reads the deck's pageSize and derives a
-  uniform scale (min(pageW/1920, pageH/1080)), anchored at the page CENTER
-  (matching the center-origin model); output is integer EMU. The default 10in
-  page renders exactly as the original 1px = 0.375pt mapping; a metric
-  19.2 x 10.8 cm page (File -> Page setup) gives 1px = 0.1mm - every position
-  decimal-exact, and Slides' From-Center readout equals the model coordinate
-  /100 in cm. Text and stroke weights scale with the page so the rendered
-  look is identical at any size. Non-16:9 pages letterbox, centered. No mode,
-  nothing stored: the deck's page size IS the switch, reversible by re-push.
-- Mapping (native shapes only) - as shipped:
-  - zone -> `RECTANGLE` (sharp: the Slides API exposes no corner-radius
-    adjustment; the default ROUND_RECTANGLE radius is far rounder than the
-    source rx 6px ~= 2.25pt, so sharp is the closest match), translucent fill,
-    label text INSIDE the shape. Accepted deviation: inline zone labels sit
-    at the API's fixed ~7.2pt text inset (~19px) from the left border vs the
-    canvas's 10px - verified unfixable (no inset fields anywhere in the API
-    schema; negative paragraph indents are stored but clamped at render);
-    kept inline because the label then moves AND resizes with the zone
-  - node -> `ELLIPSE` for every node regardless of `shape`, faithful to the canvas
-    circle icons; circles also make connector attachment read center-out like the
-    source. The client `shape` frame (circle/square) is not yet mapped here -
-    `square -> RECTANGLE` + inner glyphs remain a deliberate future discussion.
-  - node labels -> adjacent TEXT_BOX below the shape (v1 look)
-  - center handles -> each node carries a small visible HUB dot at its center;
-    connectors bind to the hub (every site of a 6px ellipse IS the center,
-    so attachment is center-out from any angle, no site quantization)
-  - node parts (circle + hub + label) are grouped via `groupObjects`, so a
-    node dragged in Slides moves as one and bound lines track its center
-  - link -> `createLine` edge-to-edge geometry, then best-effort hub binding;
-    each ladder rung (bind, group) degrades gracefully if the API rejects it
-- Identity: Slides `objectId` = entity id (our format is valid). Re-sync is
-  idempotent and two-tiered: the TARGET slide is wiped of every draw-shaped
-  id (stale cleanup - deleted entities are no longer in the model), while every
-  OTHER slide is wiped only of ids belonging to this diagram's entities (URL
-  re-binding cleans up after itself; sibling diagrams on other slides are never
-  touched). Consequence: two diagrams bound to the SAME slide replace each
-  other - one diagram per slide. Recreate from model.
-- Auth: Google OAuth installed-app flow, `presentations` scope, stored refresh token.
-  Setup documented in README.
-- One-way push only. No import, no live binding.
+Retired.\
+`slides` is the sole entry in `RETIRED_META` in `server/store.js`: the key is stripped from every document on read, so no diagram carries it and nothing writes it.\
+The `POST /api/v1/diagrams/:id/sync/slides` endpoint this section used to specify does not exist in `server/routes.mjs`.
 
+Recorded as removed rather than deleted outright, because a reader who meets `slides` in an old export or in the retired-meta list should be able to find out what it was and that it is gone.
 ---
 
 ## Durability - what is actually guaranteed
@@ -349,8 +318,7 @@ Recorded as deviation **X2**; `docs/BACKLOG.md` **B6** carries the revival trigg
 Drawing: palette create, snap move, delete, clone, link draw (node edge drag), zone draw, labels (double-click edit).\
 Selection: click, marquee, multi-move.\
 Undo/redo: client-side command stack.\
-Persistence: continuous auto-save over WS, named diagrams (list/create/open/delete with two-click arming), first-boot example seed (from the tracked `examples/` corpus into the untracked runtime data dir - content and state are different things), hydrate on connect/reconnect.\
-Slides: URL field + push button + idempotent sync.
+Persistence: continuous auto-save over WS, named diagrams (list/create/open/delete with two-click arming), first-boot example seed (from the tracked `examples/` corpus into the untracked runtime data dir - content and state are different things), hydrate on connect/reconnect.
 
 *(Amended 2026-08-20, H9)* - **the example corpus becomes a TEMPLATE set, not a first-boot seed.**\
 Under per-diagram access control the old behaviour is wrong twice: the corpus is shared state every principal can edit, and no principal has a starting point of their own.\
@@ -380,11 +348,11 @@ Revisit only if an operator hits a case the REST call cannot serve.
 
 ## Explicitly out of scope
 
-Auto-layout; routes/waypoints/orthogonal routing; style/class/theme systems beyond built-in CSS variables; multi-user editing, presence, conflicts (single editor, last-write-wins); server->client pushes beyond hydrate/ack; Slides import or live sync; pan/zoom; touch/mobile; auth on the local server; external system bindings; a *write*/mutation CLI (the read-only CLI is in scope - see above); arbitrary shapes/images; diagram-to-diagram copy.
+Auto-layout; orthogonal routing; style/class/theme systems beyond built-in CSS variables; Slides import or live sync; pan/zoom; touch/mobile; auth on the local server; external system bindings; a *write*/mutation CLI (the read-only CLI is in scope - see above); arbitrary shapes/images; diagram-to-diagram copy.
 
 ---
 
 ## Definition of done (MVP)
 
-Fresh clone -> `npm install` -> `npm start` -> draw nodes/links/zones/groups -> close browser, reopen, state persists -> `curl localhost:<port>/api/v1/diagrams/<id> | jq` works -> paste a Slides URL, hit push -> the diagram appears in Slides as native, individually editable shapes -> push again after edits -> slide updates in place.\
+Fresh clone -> `npm install` -> `npm start` -> draw nodes/waypoints/links/zones/groups -> close browser, reopen, state persists -> `curl localhost:<port>/api/v1/diagrams/<id> | jq` works -> paste a Slides URL, hit push -> the diagram appears in Slides as native, individually editable shapes -> push again after edits -> slide updates in place.\
 Tests pass via `npm test`.

@@ -664,6 +664,7 @@ Level and game remain the same object for now, with three costs accepted and a r
 | H13.6 | A clock stamp is consumed by the snapshot it belongs to, so a peer's offset cannot absorb the age of its own tab. Two viewers of one diagram saw a route full of packets and no packets at all, from the same document | **B177** | S2 - S | `DONE` |
 | H13.7 | An instance that has proven another writer owns a diagram stops answering for it and tells its clients, instead of retrying a write it can never win. A deploy strands the tabs that were already open, and nothing today makes that visible to anyone holding one | **B178** | S2 - M | `TODO` |
 | H13.8 | A browser harness that drives REAL input through CDP, discharging **B170**. The laser had no test, and every visual defect in this tier was found by the director rather than by the suite | **B170** | S2 - M | `DONE` |
+| H13.9 | `draw` can dump a diagram and report towers and combat, and `draw help` can be read by a machine. Filed because I routed around the CLI twice rather than extending it, which GR18 calls a defect | **B179** | S1 - S | `TODO` |
 | H13.2 | A tower rotates to face what it is burning. Deferred from H13.1 by ruling, and it is presentation only -- the angle is derived from two positions the fold already knows, so nothing is stored and no peer needs telling | `feature` | S1 - S | `TODO` |
 
 **Exit:** a player places a tower during play, it burns creeps that come into range, and two browsers watching the same diagram agree on which creeps died without exchanging anything but the placement.
@@ -687,7 +688,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
-| **B165** | S3 | `SCOPE.md`'s entity block describes the MVP's four kinds and denies waypoints and routing, both of which shipped | the next entity field lands, or an agent is observed acting on the stale block -- and the real fix is a rule that reads the block, since prose no check consults is where this drifts again |
 | **B88** | S3 | Prose can assert that finished work is blocked, and no rule reads a sentence | a second blocked entry appears on the board, or any `Decisions required` entry returns |
 
 **Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:

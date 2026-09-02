@@ -73,7 +73,18 @@ test('GR10: the retired wire tokens are gone from the reference, not merely anno
 });
 
 test('GR10: the entity block carries the schema the server actually validates', () => {
-	const entities = section('Entities (MVP = exactly four)');
+	/*
+	B165 -- this test pinned the defect it was named after.
+
+	The heading it keyed on was `Entities (MVP = exactly four)` while the model had five, so the gate
+	was actively holding a false claim in place: correcting the document broke the build.
+
+	Worse, the title overclaimed. It checked the META whitelist only, which is why an entire entity
+	kind could be missing from the block for as long as waypoints have existed without anything
+	noticing. B96 is called out as the same disease a few lines below this one. The kind check below
+	is the assertion the title always promised.
+	*/
+	const entities = section('Entities (five)');
 	assert.equal(entities.includes('"rev"'), false, 'meta.rev died at CS5');
 	assert.equal(entities.includes('"grid"'), false, 'meta.grid died at CS5');
 	assert.match(entities, /"version"/);
@@ -86,6 +97,20 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	for (const key of whitelist[1].match(/'(\w+)'/g).map((k) => k.slice(1, -1))) {
 		assert.ok(entities.includes(`"${key}"`), `meta.${key} is validated but not documented`);
 	}
+
+	// every kind the server validates appears in the block, DERIVED rather than listed here --
+	// a hand-kept list would drift exactly as the heading did
+	const fields = validate.slice(validate.indexOf('const FIELDS = {'));
+	const kinds = [...fields.matchAll(/^\t(\w+): \{$/gm)].map((m) => m[1]);
+	assert.ok(kinds.length >= 5, `expected the validator to declare at least five kinds, found ${kinds}`);
+	for (const kind of kinds) {
+		assert.ok(entities.includes(`"${kind}s"`), `${kind} is validated but absent from the entity block`);
+	}
+	// the heading itself is not inside the section body, so it is read from the whole document
+	assert.match(scope, /## Entities \((\w+)\)/, 'the heading states how many kinds there are');
+	const said = scope.match(/## Entities \((\w+)\)/)[1];
+	const words = { four: 4, five: 5, six: 6, seven: 7 };
+	assert.equal(words[said], kinds.length, `the heading says ${said} kinds; the validator declares ${kinds.length}`);
 });
 
 /*
