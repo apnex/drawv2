@@ -84,3 +84,33 @@ test('H12.4: and therefore they draw the mover in the SAME PLACE', () => {
 	const rawB = onMachine(-120_000, () => moversAt([spawner], Date.now()).map((m) => m.k));
 	assert.notDeepEqual(rawA, rawB, 'unseeded peers must visibly disagree, or this proves nothing');
 });
+
+test('B177: a stale send time is refused rather than trusted', () => {
+	/*
+	The round-trip correction assumes `sentAt` belongs to THIS snapshot's request. When it does not,
+	the correction is not merely imprecise -- it is catastrophically wrong in a specific direction:
+	the midpoint lands halfway back to whenever that stamp was made, and the offset absorbs the whole
+	gap. A session open sixty seconds produced a +30s clock.
+
+	Observed live across two accounts. One tab armed a spawner and the other showed nothing at all;
+	armed the other way, the first showed a route already full of packets that never left the source.
+	Both are the same defect seen from opposite ends of a clock disagreement.
+
+	Falling back to arrival is late by one hop, which is honest. Trusting a stamp from a minute ago
+	is wrong by half a minute, which is not.
+	*/
+	const c = new Clock();
+	const serverNow = Date.now();
+	c.seed(serverNow, Date.now() - 60_000);
+	assert.ok(Math.abs(c.skew().offset) < 1000,
+		`a 60s-old stamp produced an offset of ${(c.skew().offset / 1000).toFixed(1)}s`);
+});
+
+test('B177: a plausible round trip is still corrected for', () => {
+	// the guard must not throw away the correction it exists to protect
+	const c = new Clock();
+	const sentAt = Date.now() - 100;
+	c.seed(Date.now() + 5000, sentAt);
+	assert.ok(c.skew().seeded);
+	assert.ok(Math.abs(c.skew().offset - 5000) < 200, `expected ~5000ms, got ${c.skew().offset}`);
+});

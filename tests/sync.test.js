@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
+import fs from 'node:fs';
 
 // R2: the client forwards a selection (model-state) change to the server on the pulse. Tested with a
 // fake net (no browser): construct Sync, clear its auto-pulse, drive flush() manually.
@@ -352,4 +353,37 @@ test('B162: an ack does NOT replay our own ops over later local work', () => {
 		ops: [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 60 } }] } });
 
 	assert.equal(model.get('node', 'node-aa0001').x, 300, 'the later local edit survives the ack');
+});
+
+test('B177: the send stamp is consumed by the snapshot it belongs to', () => {
+	/*
+	Two tabs on one diagram disagreed about the time by tens of seconds. One armed a spawner and the
+	other showed no packets at all; armed the other way, the first showed a route already full of
+	packets that had never left the source. Both are one clock disagreement seen from either end.
+
+	The cause was a stamp that outlived its request. `requestSentAt` was set when `hello` left and
+	never cleared, so a resync arriving a minute later corrected itself against the start of the
+	session and the offset absorbed half the tab's age.
+
+	An unsolicited snapshot has no request behind it. Only clearing lets it say so.
+	*/
+	const { sync } = harness();
+	sync.expectLoad = true;
+	sync.requestSentAt = Date.now() - 50;
+	sync.applySnapshot({ body: { serverNow: Date.now(), doc: (() => { const m = new Model(); m.state.meta.id = "diagram-aa0001"; return m.toJSON(); })(), version: 1 } });
+	assert.equal(sync.requestSentAt, null, 'the stamp must not survive the snapshot that used it');
+
+	// and a second, unsolicited snapshot must therefore fall back to arrival rather than reuse it
+	const before = sync.clock.skew().offset;
+	sync.applySnapshot({ body: { serverNow: Date.now(), doc: (() => { const m = new Model(); m.state.meta.id = "diagram-aa0001"; return m.toJSON(); })(), version: 2 } });
+	assert.ok(Math.abs(sync.clock.skew().offset) < 1000,
+		`an unsolicited snapshot skewed the clock to ${sync.clock.skew().offset}ms (was ${before}ms)`);
+});
+
+test('B177: every open that expects a snapshot stamps its send time', () => {
+	// a resync is the commonest late snapshot, and it was the one path that never stamped
+	const src = fs.readFileSync(new URL('../app/src/sync.js', import.meta.url), 'utf8');
+	const opens = [...src.matchAll(/this\.net\.send\('open'/g)].length;
+	const stamps = [...src.matchAll(/this\.requestSentAt = Date\.now\(\)/g)].length;
+	assert.ok(stamps >= opens, `${opens} open(s) send a snapshot-bearing request but only ${stamps} stamp`);
 });

@@ -30,6 +30,20 @@ NOT HERE, deliberately: no periodic resync, no drift tracking, no monotonic sour
 does not wander meaningfully over a session, and a snapshot arrives on every reconnect anyway, so
 each of those would be mechanism bought against a problem nobody has measured.
 */
+/*
+The longest round trip this correction will believe, in ms.
+
+Not a tuning knob -- a plausibility check. The correction assumes `sentAt` belongs to the request
+that produced THIS snapshot, and when that assumption breaks the error is not small: the midpoint
+lands halfway back to whenever the stamp was made and the offset absorbs the entire gap. A session
+open for a minute produced a +30s clock, which put a route's worth of packets on screen at once for
+one viewer and nothing at all for the other (B177).
+
+Five seconds is far beyond any real request and far below the gap a stale stamp produces, so it
+separates the two cleanly without needing to know which is which.
+*/
+const MAX_RTT = 5000;
+
 export class Clock {
 	#offset = 0;
 	#seeded = false;
@@ -41,7 +55,10 @@ export class Clock {
 	seed(serverNow, sentAt = null) {
 		if (!Number.isFinite(serverNow)) return false;   // an absent stamp leaves the clock local
 		const arrived = Date.now();
-		const local = Number.isFinite(sentAt) && sentAt <= arrived ? sentAt + (arrived - sentAt) / 2 : arrived;
+		// a usable stamp is one that could plausibly belong to this reply. Anything older is a
+		// leftover from an earlier request, and arrival -- late by one hop -- beats it by a mile.
+		const usable = Number.isFinite(sentAt) && sentAt <= arrived && (arrived - sentAt) <= MAX_RTT;
+		const local = usable ? sentAt + (arrived - sentAt) / 2 : arrived;
 		this.#offset = serverNow - local;
 		this.#seeded = true;
 		return true;

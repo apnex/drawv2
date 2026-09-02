@@ -332,6 +332,7 @@ export class Sync {
 			this.outbox = [];            // it belonged to the template, which we are no longer editing
 			this.persistOutbox();
 			this.expectLoad = true;
+			this.requestSentAt = Date.now();   // B177 -- this reply is a snapshot and carries a clock
 			this.net.send('open', { id: msg.body.diagram });
 			return;
 		}
@@ -413,7 +414,21 @@ export class Sync {
 			is wanted on every one of them: whichever way this snapshot is handled, the client has
 			just heard from the server and that is the only moment the offset can be learnt.
 			*/
-			this.clock.seed(msg.body.serverNow, this.requestSentAt);
+			/*
+			B177 -- the stamp is CONSUMED, not merely read.
+
+			`requestSentAt` was set when `hello` or `resume` left and never cleared, so every later
+			snapshot -- a resync, a fork, an access change, an unsolicited push -- corrected itself
+			against a send time from the beginning of the session. The offset then absorbed half the
+			age of the tab.
+
+			An unsolicited snapshot has no request behind it and must fall back to arrival, which
+			only clearing can express. The clock refuses an implausible gap as well, but that is
+			defence in depth: this is where the mistake actually was.
+			*/
+			const sentAt = this.requestSentAt;
+			this.requestSentAt = null;
+			this.clock.seed(msg.body.serverNow, sentAt);
 			const doc = msg.body.doc;
 			if (!this.expectLoad && !this.hydrated && this.localEntityCount() > 0 && !msg.body.locked) {
 				/*
@@ -469,6 +484,7 @@ export class Sync {
 	requestResync() {
 		if (!this.hydrated || !this.net.isOpen()) return;
 		this.expectLoad = true;
+		this.requestSentAt = Date.now();   // B177 -- a resync is the commonest source of a late snapshot
 		this.net.send('open', { id: this.model.state.meta.id });
 	}
 
@@ -601,6 +617,7 @@ export class Sync {
 		this.expectLoad = true;
 		this.outbox = [];
 		this.persistOutbox();
+		this.requestSentAt = Date.now();   // B177 -- switching diagrams answers with a snapshot too
 		this.net.send('open', { id });
 	}
 
