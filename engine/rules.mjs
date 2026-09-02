@@ -16,6 +16,14 @@ shared state. A peer that misses everything and reconnects simply recomputes. Th
 client joining this diagram already costs nothing, and it is the property worth protecting above
 convenience.
 
+PARITY HAS THREE INPUTS, NOT TWO. The document and the clock are the obvious pair, and both are
+enforced -- one by the transaction log, the other by `app/src/clock.js`. The third is THIS FILE and
+`kinds.mjs` beside it: a tower's range and damage are declared in code and stored nowhere, so the
+running revision is a parameter of the derivation. Two peers on different revisions agree on the
+document, agree on the clock, and still derive different kills, and nothing here can detect it
+because nothing here is wrong. That is why `docs/spec/AUTHORITY.md` treats keeping every client on
+one revision as a correctness mechanism rather than as hygiene.
+
 THE ONLY THING THAT TRAVELS IS WHAT CANNOT BE DERIVED. A player placing a tower is intent, and rides
 the document machinery that already orders and broadcasts it. A tower firing is not intent -- it is
 implied by the board and the clock, so broadcasting it would be sending the receiver something it

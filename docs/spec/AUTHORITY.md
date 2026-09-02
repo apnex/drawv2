@@ -126,6 +126,29 @@ It is the strongest guarantee short of write-through, and it puts a storage roun
 
 ---
 
+## 5b. Code is the third parity input
+
+The engine's guarantee is that two peers derive the same answer from the same document and the same clock.\
+That is what `moversAt` and `combatAt` rest on, and it is why a third client joining costs nothing.
+
+**There is a third input, and it was never named: the code itself.**
+
+Derivation reads `TOWERS` and `MOVERS` from `engine/kinds.mjs`.\
+Those are declared centrally and stored nowhere, which is deliberate -- B172 established that a number copied into a document is a decision you can no longer change.\
+The consequence was not followed through: a game constant that lives only in code makes the running REVISION a parameter of the derivation.
+
+Two clients on different revisions hold an identical document, agree perfectly on the clock, and still derive different kills.\
+Neither the document check nor the clock correction can see it, because neither is wrong.
+
+So B178 is not only an infrastructure defect.\
+It is a hole in the invariant the deviation tier was built on, and it opened the moment a kind began declaring data.\
+A peer folding with stale constants and reporting a creep destroyed is asserting a result the other peers never computed, which is **I15** in the place it costs most.
+
+**This is a reason for section 6, not a side effect of it.**\
+Keeping every client on one revision is what makes the third input constant, and the client ladder is therefore load-bearing for game correctness rather than for hygiene.
+
+---
+
 ## 6. The client repairs itself
 
 The server cannot be the only trigger.\

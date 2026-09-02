@@ -10,11 +10,19 @@ The sovereign spec for how the system decides what an input MEANS, given the sit
 > A K5 survey captured the director's intent on 2026-09-01 and changed three things this spec asserts.\
 > The target is a **programmable geometric engine**, not an editor with a seam left open.\
 > Tower defence is the **pilot use case that drives the design**, not a stress case applied afterwards.\
-> And the **ordered rule table of section 3 is demoted to one candidate**, pending a prior-art pass -- the director's instruction was to take inspiration from game modding and control-plane ecosystems *"rather than blindly assume this will be a table"*.\
+> And the **ordered rule table of section 3 is demoted to one candidate** -- the director's instruction was to take inspiration from game modding and control-plane ecosystems *"rather than blindly assume this will be a table"*.\
 > Section 3 arrived by fixing a defect, which is a sound route to a local answer and an unsound route to a platform surface.
 >
 > The defect in section 0 and the invariants in section 5 are unaffected and still stand.\
-> Sections 2, 3 and 4 are candidate shapes awaiting the prior-art pass.
+> **The prior-art pass is DONE, and section 3 remains a candidate for a different reason.**\
+> Run 2026-09-02 and recorded at `engine/rules.mjs`.\
+> Two shapes were compared. Factorio's -- declare data, then hook `on_event` -- is closest to how the goal was described and is the one NOT to copy: an event-handler surface requires every peer to receive every event in order, and a peer that misses one diverges permanently, which is what obliges those games into lockstep with hash exchange and a resync path.\
+> Kubernetes' controller shape -- reconcile from state rather than react to events -- needs only shared state, so a peer that misses everything and reconnects simply recomputes.\
+> **Level-triggered was chosen, and the tree was already there**: `engine/rules.mjs` asks `(world, tick) -> facts` and announces nothing.
+>
+> So sections 2 and 4 are settled in shape by that finding.\
+> Section 3's ordered table is still a candidate, now because nothing has needed it: two rules exist -- arm on an endpoint, place on open ground -- and both are single predicates over a situation.\
+> A dispatch table generalising over two instances would be **A11** mechanism against an unmeasured problem.
 
 ## 0. Why this document exists
 
@@ -96,7 +104,7 @@ Naming them once means a rule cannot get *closed* subtly wrong in its own arrow 
 
 ---
 
-## 3. The rule table  *(CANDIDATE -- superseded pending the prior-art pass)*
+## 3. The rule table  *(CANDIDATE -- unbuilt because nothing has needed it)*
 
 > **This section is no longer the design-of-record.**\
 > The director ruled on 2026-09-01 that the surface shape must be chosen from prior art rather than inherited from the defect that prompted it.\
