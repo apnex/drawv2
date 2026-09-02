@@ -119,6 +119,27 @@ export class Hub {
 	// Each send is isolated: after CS3 this is the ONLY channel by which a viewer learns anything,
 	// and the caller has already applied, logged and flushed the transaction. A dead socket must
 	// not silence the other viewers, and must never turn a committed write into a 500.
+	/*
+	B178 -- retire every session on a diagram this instance no longer owns.
+
+	Scoped to the diagram rather than the whole instance: losing one document says nothing about
+	the others, and retiring a session that was never affected would be a reload nobody needed.
+
+	Deliberately a MESSAGE, not a socket close. A close is a reconnect, and a reconnect from a page
+	whose JavaScript came from the superseded revision lands the same stale client on a new socket
+	-- the connection refreshed and the application not. Telling the page to reload replaces both,
+	and `app/src/watchdog.js` preflights before acting so it never reloads into a void.
+	*/
+	retire(diagramId, reason) {
+		let told = 0;
+		this.sessions.forEach((s) => {
+			if (s.diagramId !== diagramId) return;
+			try { s.send('retire', { reason }); told++; }
+			catch (err) { console.warn(`[ hub ] retire send failed: ${err.message}`); }
+		});
+		return told;
+	}
+
 	broadcast(diagramId, cmd, body, except = null) {
 		this.sessions.forEach((s) => {
 			if (s.diagramId !== diagramId || s === except) return;

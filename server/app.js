@@ -188,7 +188,18 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 			+ '`principalOf`, which server.js resolves through identitySource(). Authorization with no '
 			+ 'identity source refuses every caller including the owner.');
 	}
-	const store = new Store(data, { examplesDir, templatesDir, files, authz });
+	/*
+	B178 -- the store proves the loss, the hub acts on it.
+
+	Deferred through a closure because the hub does not exist yet at this line, and inverting the
+	order would make the store depend on sessions -- which is the coupling the injection avoids.
+	*/
+	let hubRef = null;
+	const store = new Store(data, { examplesDir, templatesDir, files, authz,
+		onLostAuthority: (id, reason) => {
+			const told = hubRef?.retire(id, reason) ?? 0;
+			console.error(`[ app ] retired ${told} session(s) on ${id}: ${reason}`);
+		} });
 	await store.init();
 	/*
 	H9.6: two doors, one boundary. A Google identity via `principalOf`, or a connection code as a
@@ -218,6 +229,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	// default nobody revisited. `reclaim` remains what actually protects a person's control.
 	const locks = new Locks(lockTtlMs ? { ttlMs: lockTtlMs } : {});
 	const hub = new Hub();
+	hubRef = hub;
 
 	// the backend is self-sufficient: with no client directory it runs API-only
 	// (websocket + REST), e.g. as a container behind a separately served client

@@ -193,7 +193,7 @@ export class Store {
 	(server/server.js) decides; every other caller — including every test that is not about seeding
 	— gets the single programmatic example and is unaffected by whatever ships in examples/.
 	*/
-	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, examplesDir = null, templatesDir = null, authz = true } = {}) {
+	constructor(dataDir, { flushMs = FLUSH_MS, files = null, now = Date.now, onLostAuthority = null, examplesDir = null, templatesDir = null, authz = true } = {}) {
 		/*
 		Authorization is OFF unless asked for -- ACCESS.md.
 
@@ -215,6 +215,14 @@ export class Store {
 		this.agents = new Map();
 		this.dir = dataDir;
 		this.flushMs = flushMs;
+		/*
+		B178 -- what to do on PROOF that another writer owns a document.
+
+		Injected rather than reached for, because the store must not know what a session is. It
+		reports the loss; whoever owns the sessions decides that means retiring them.
+		*/
+		this.onLostAuthority = onLostAuthority;
+		this.lost = new Set();      // diagrams this instance has stopped claiming to own
 		this.now = now;
 		this.examplesDir = examplesDir;
 		this.templatesDir = templatesDir;
@@ -1302,6 +1310,27 @@ export class Store {
 			// a retry that repairs the mechanism silently leaves the failure unobservable.
 			entry.flushFailures = (entry.flushFailures || 0) + 1;
 			console.error(`[ store ] flush failed for ${id} (${entry.flushFailures}): ${err.message}`);
+			/*
+			B178 -- a write CONFLICT is not a flaky disk, and must not be retried like one.
+
+			`files.mjs` refuses to overwrite when another writer holds a newer generation, and
+			says so in as many words. That refusal is PROOF: this instance is no longer
+			authoritative for this document, and no number of retries will make it so. Retrying
+			anyway is what produced 3203 failures against one diagram while both instances went on
+			serving their own clients as though each were the only one.
+
+			So the retry stops, the loss is reported once, and whoever owns the sessions decides
+			what to tell them. Distinguished from every other flush failure by the message the
+			backend raises, because a transient write error DOES deserve B4's retry -- the two need
+			opposite responses and shared a path until now.
+			*/
+			if (/write conflict/.test(err.message) && !this.lost.has(id)) {
+				this.lost.add(id);
+				console.error(`[ store ] lost authority for ${id} -- another writer holds it; not retrying`);
+				try { this.onLostAuthority?.(id, 'another instance is writing this diagram'); }
+				catch (e) { console.error(`[ store ] onLostAuthority failed: ${e.message}`); }
+				return;
+			}
 			if (!entry.timer) {
 				entry.timer = setTimeout(() => { entry.timer = null; this.flush(id).catch((e) => console.error(`[ store ] retry flush failed for ${id}: ${e.message}`)); }, this.flushMs);
 				if (entry.timer.unref) entry.timer.unref();

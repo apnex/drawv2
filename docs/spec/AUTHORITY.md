@@ -118,6 +118,9 @@ A **failed lease renewal** is proof: someone else holds what this instance belie
 Both drive retirement immediately.\
 The loss window is therefore near-zero exactly while a document is being edited, which is the only time there is anything to lose.
 
+**The conflict half is BUILT** -- `server/store.js` stops retrying a write it has proved it cannot win, reports the loss once per document, and `server/hub.js` retires the sessions on that diagram so their clients reload onto the current instance.\
+The lease and its renewal are not built, so the idle case is not yet covered.
+
 A **slow background poll** exists only for the idle case, where by definition nothing is at risk.\
 It is a backstop, not the primary mechanism, and saying so is what keeps this from being mechanism against an unmeasured problem (**A11**).
 
