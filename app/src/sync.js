@@ -1,4 +1,14 @@
 import { applyOps } from '../../model/ops.mjs';
+
+/*
+How many changes may arrive from a future this tab never saw before it stops calling that a repair.
+
+One is ordinary -- a dropped frame, a race with a reconnect -- and resyncing fixes it. A run of them
+means resyncing is NOT fixing it, which is the only honest reading of Q6d's unreconcilable gap.
+Three rather than a guessed threshold: it is the smallest number that cannot be a single hiccup, and
+the cost of being wrong is one reload, not lost work.
+*/
+const GAP_LIMIT = 3;
 import * as commands from './commands.js';
 import { NAME_MAX } from '../../model/limits.mjs';
 import { Clock } from './clock.js';
@@ -45,7 +55,7 @@ export function bindGestureDefer(input, sync) {
 }
 
 export class Sync {
-	constructor({ model, net, history, selection, onState, clock }) {
+	constructor({ model, net, history, selection, onState, clock, watchdog = null}) {
 		this.model = model;
 		this.net = net;
 		this.history = history;
@@ -60,6 +70,7 @@ export class Sync {
 		is what sends those two messages; the Clock itself stays ignorant of the protocol.
 		*/
 		this.clock = clock || new Clock();   // the root injects one it shares; bare construction still works
+		this.watchdog = watchdog;   // B178 -- the client ladder, injected so Sync owns no policy
 		this.requestSentAt = null;
 		/*
 		B74 -- the last thing the server said, and it SURVIVES the next state emit.
@@ -368,6 +379,18 @@ export class Sync {
 			this.emitState({});
 			return;
 		}
+		/*
+		B178 -- the instance has lost authority and is telling its clients.
+
+		A message rather than a socket close, because a close is a reconnect and a reconnect from a
+		page whose JavaScript came from the superseded revision lands the same stale client on a new
+		socket: the connection refreshed and the application not.
+		*/
+		if (msg.cmd === 'retire') {
+			this.say(msg.body?.reason || 'this session was retired');
+			this.watchdog?.retire(msg.body?.reason);
+			return;
+		}
 		if (msg.cmd === 'error') {
 			// B3/I16: a rejection is surfaced against the request that caused it, never dropped
 			const b = msg.body || {};
@@ -429,6 +452,9 @@ export class Sync {
 			const sentAt = this.requestSentAt;
 			this.requestSentAt = null;
 			this.clock.seed(msg.body.serverNow, sentAt);
+			// B178 -- which revision this socket is pinned to. Taken here for the same reason as the
+			// clock: whichever way the snapshot is handled below, this is when the server spoke.
+			this.watchdog?.pin(msg.body.revision);
 			const doc = msg.body.doc;
 			if (!this.expectLoad && !this.hydrated && this.localEntityCount() > 0 && !msg.body.locked) {
 				/*
@@ -495,8 +521,15 @@ export class Sync {
 		const v = this.appliedVersion;                       // B106: what the MODEL is at, not the counter
 		if (typeof body.from === 'number') {
 			if (body.from < v) return;                       // already applied: ignore, never re-apply
-			if (body.from > v) return this.requestResync();  // we missed one: repair, do not guess
+			if (body.from > v) {
+				// B178 -- a resync repairs a missed change; REPEATED misses are evidence this tab is
+				// out of step in a way resyncing is not fixing, which is rung-2 evidence (Q6d).
+				this.missed = (this.missed || 0) + 1;
+				if (this.missed >= GAP_LIMIT) { this.missed = 0; this.watchdog?.gap(); }
+				return this.requestResync();
+			}
 		}
+		this.missed = 0;                                 // a change applied in order clears the streak
 		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
 		if (typeof body.version === 'number') this.appliedVersion = body.version;
 	}

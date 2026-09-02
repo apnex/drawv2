@@ -347,7 +347,19 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 		const flushFailures = store.flushFailures();
 		const invariantFailures = store.invariantFailures();
 		return { status: invariantFailures ? 'corrupt' : flushFailures ? 'degraded' : 'ok',
-			diagrams: store.total(), flushFailures, invariantFailures };
+			diagrams: store.total(), flushFailures, invariantFailures,
+			/*
+			B178 -- WHICH instance answered.
+
+			An HTTP request is routed afresh and therefore reaches the CURRENT revision, while a
+			websocket stays pinned to whichever revision it connected to. That asymmetry is the only
+			thing in the system able to tell a stranded tab that it is stranded.
+
+			On the unauthenticated liveness route deliberately: a client deciding whether to reload
+			must be able to ask without a credential, and this is the one route that already carries
+			none. It is also why the same fetch answers reachability -- see AUTHORITY.md 6.3.
+			*/
+			revision: process.env.K_REVISION || null };
 	};
 	/*
 	The ROOT one is the liveness contract: Cloud Run and the Dockerfile probe it, so it carries no

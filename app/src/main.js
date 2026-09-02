@@ -18,6 +18,7 @@ import { Input } from './input.js';
 import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
+import { Watchdog } from './watchdog.js';
 import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
 
@@ -478,13 +479,44 @@ const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on 
 // D4 — the inversion. Sync subscribes to the COMMIT boundary, never to the model. There is then
 // no way to forward an uncommitted change, because uncommitted changes never pass through Changes.
 // A 4-second 3-node drag went from ~60 server transactions to exactly one.
+/*
+B178 -- the client ladder. `docs/spec/AUTHORITY.md` section 6.
+
+The probe and the reload are injected so the ladder itself stays testable without a browser, and
+because they are the two things that must never happen by accident.
+
+`/health` is the probe for a reason worth stating: an HTTP request is routed afresh and reaches the
+CURRENT revision while this socket stays pinned to whichever revision it connected to. The same call
+therefore answers both questions -- what revision is live, and can the server be reached at all --
+so this tab never reloads into a void.
+*/
+const watchdog = new Watchdog({
+	probe: async () => {
+		const res = await fetch('/health', { cache: 'no-store' });
+		if (!res.ok) return null;
+		return (await res.json()).revision ?? null;
+	},
+	reload: () => window.location.reload(),
+	onRung: (rung, reason) => { rungState = { rung, reason }; sync?.emitState({}); },
+});
+let rungState = { rung: 'live', reason: null };
+net.onStatus((status) => (status === 'open' ? watchdog.noteOpen() : watchdog.noteClosed()));
+
 const sync = new Sync({
-	model, net, history, selection, clock,
+	model, net, history, selection, clock, watchdog,
 	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound, said }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
 		// be offered the one remedy the server is certain to refuse.
-		if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
+		/*
+		B178 -- the ladder is read BEFORE the connection, because a stale tab is worse than a
+		disconnected one and the two are not the same answer. `offline` is reversible and safe;
+		`stale` means this page is running replaced code; `unreachable` means it knows and cannot
+		fix itself. Each is a true answer to what this element asks -- what may I do.
+		*/
+		if (rungState.rung === 'unreachable') { menu.lock.className = 'lock-unreachable'; menu.lock.textContent = 'reload needed'; menu.lock.title = `${rungState.reason || 'this tab is out of date'} -- the server cannot be reached to reload`; }
+		else if (rungState.rung === 'stale') { menu.lock.className = 'lock-stale'; menu.lock.textContent = 'updating'; menu.lock.title = rungState.reason || 'this tab is running a replaced version'; }
+		else if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
 		else if (!mayWrite) { menu.lock.className = 'lock-readonly'; menu.lock.textContent = 'read-only'; menu.lock.title = 'you have view access to this diagram'; }
 		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }

@@ -447,3 +447,9 @@ is one a person stops reading, which is the failure this row exists to end rathe
 	opacity: 1;
 	filter: drop-shadow(0 0 2px #ff8a65) drop-shadow(0 0 6px #ff3d00);
 }
+
+/* B178 -- the two rungs above `offline`. A stale tab is worse than a disconnected one, so these
+   read as action-required rather than as a passive state. `unreachable` is the louder of the two
+   because it is the one the client cannot resolve on its own. */
+.lock-stale { background: #ffa726; color: #1a1a1a; }
+.lock-unreachable { background: #ef5350; color: #fff; font-weight: 600; }

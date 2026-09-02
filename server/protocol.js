@@ -65,6 +65,9 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 		connect and on every reconnect, which is precisely when a client's offset could be stale.
 		*/
 		serverNow: Date.now(),
+		// B178 -- the revision this SOCKET is pinned to, which the client compares against the one
+		// answering HTTP. Equal means current; different means this tab is running replaced code.
+		revision: process.env.K_REVISION || null,
 		locked: locks ? locks.locked(id) : false,
 		// H9.3c: the same predicate the server refuses with, so the UI cannot drift from the
 		// rule it is presenting. Deliberately not folded into `locked` -- Server-Locked means

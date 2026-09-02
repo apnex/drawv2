@@ -387,3 +387,23 @@ test('B177: every open that expects a snapshot stamps its send time', () => {
 	const stamps = [...src.matchAll(/this\.requestSentAt = Date\.now\(\)/g)].length;
 	assert.ok(stamps >= opens, `${opens} open(s) send a snapshot-bearing request but only ${stamps} stamp`);
 });
+
+test('B178: the snapshot pins the socket revision on the watchdog', () => {
+	// the wiring, tested because a ladder nobody feeds is a ladder that silently never fires
+	const { sync } = harness();
+	const pinned = [];
+	sync.watchdog = { pin: (r) => pinned.push(r), retire: () => {}, gap: () => {} };
+	sync.expectLoad = true;
+	sync.applySnapshot({ body: { serverNow: Date.now(), revision: 'draw-00074-dmh',
+		doc: (() => { const m = new Model(); m.state.meta.id = 'diagram-aa0001'; return m.toJSON(); })(), version: 1 } });
+	assert.deepEqual(pinned, ['draw-00074-dmh'], 'the revision the socket is pinned to must reach the watchdog');
+});
+
+test('B178: a retire message reaches the watchdog and is said out loud', () => {
+	const { sync } = harness();
+	const retired = [];
+	sync.watchdog = { pin: () => {}, retire: (r) => retired.push(r), gap: () => {} };
+	sync.onMessage({ cmd: 'retire', body: { reason: 'a newer revision is live' } });
+	assert.deepEqual(retired, ['a newer revision is live']);
+	assert.match(String(sync.said&&sync.said.text), /newer revision/, 'the operator is told why the page is about to change');
+});
