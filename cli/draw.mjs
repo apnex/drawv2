@@ -243,6 +243,23 @@ export async function main(argv, env = process.env, out = (s) => process.stdout.
 	*/
 	await sweepTokens({ env }).catch(() => 0);
 	if (!rest.length || rest[0] === 'help') {
+		/*
+		B179 -- `draw help --json` answers the agent this CLI exists for.
+
+		The human form pads usage lines into columns and paints them, which is right for a person and
+		useless to a parser: an attempt to list the verb set from it returned 56 repetitions of the
+		word `draw`, and two verbs were guessed that do not exist. A surface an agent cannot enumerate
+		is friction at the front door of an agent-first tool.
+		*/
+		if (flags.json) {
+			const target = rest[1] && byName(rest[1], rest[2]);
+			const shape = (v) => ({ name: v.name, group: v.group, usage: v.usage, summary: v.summary,
+				route: v.route ?? null, method: v.method ?? null, example: v.example ?? null,
+				args: (v.args || []).map((a) => (typeof a === 'string' ? { name: a } : a)),
+				flags: (v.flags || []).map((f) => ({ name: f.name, about: f.about ?? null })) });
+			out(`${JSON.stringify(target ? shape(target) : VERBS.map(shape), null, 2)}\n`);
+			return 0;
+		}
 		const target = rest[1] && byName(rest[1], rest[2]);
 		out(`${target ? helpVerb(target) : helpAll()}\n`);
 		return 0;

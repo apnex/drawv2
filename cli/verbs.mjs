@@ -954,6 +954,72 @@ itself the finding, and narrows the search to one layer instead of three.
 a second apart legitimately differ, which makes it useless as evidence in a defect report.
 */
 VERBS.push({
+	/*
+	B179 -- the whole document, as the server holds it.
+
+	Filed because I read live state with `gcloud storage cp` instead, which GR18 calls a defect
+	rather than a workaround. `draw get` answers one entity and `draw context` answers what an
+	entity carries; neither answers "show me everything", which is what an investigation needs
+	before it knows what to ask about.
+	*/
+	name: 'dump', group: 'Context', usage: 'draw dump [--diagram ref]',
+	route: '/diagrams/<id>', method: 'GET',
+	summary: 'the entire document as JSON -- what the server holds, not what a viewer renders',
+	example: 'draw dump --diagram mover',
+	args: [],
+	flags: [{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx) {
+		const id = await activeId(ctx, ctx.flags);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'dump');
+		const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups']
+			.map((k) => `${(doc[k] || []).length} ${k}`).join('  ');
+		return { json: doc, text: `${JSON.stringify(doc, null, 2)}\n\n${counts}` };
+	},
+}, {
+	/*
+	B179 -- who is shooting whom, right now.
+
+	`draw movers` reports what is in flight and stops there, so a report of odd combat could not be
+	investigated without asking the director to read a console -- the A5 friction that raised B174
+	for movers, arriving again for towers.
+
+	DERIVED here exactly as the browser derives it, from the same `combatAt`. That is the point: if
+	this disagreed with a tab, one of them would be wrong, and the parity claim says neither can be.
+	*/
+	name: 'combat', group: 'Context', usage: 'draw combat [--at epoch-ms] [--diagram ref]',
+	route: '/diagrams/<id>', method: 'GET',
+	summary: 'towers, what each is burning, and which movers are alive or dead at an instant',
+	example: 'draw combat --at 1788256200000',
+	args: [],
+	flags: [{ name: '--at', about: 'the instant to report, epoch ms. Default now -- pass one to make a reading reproducible' },
+		{ name: '--diagram', about: 'target by id or name' }],
+	async run(ctx) {
+		const id = await activeId(ctx, ctx.flags);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'combat');
+		const { Model } = await import('../model/index.mjs');
+		const { worldOf, combatAt } = await import('../engine/index.mjs');
+		const model = new Model();
+		model.load(doc);
+		const at = ctx.flags.at && ctx.flags.at !== true ? Number(ctx.flags.at) : Date.now();
+		if (!Number.isFinite(at)) die(`--at takes epoch milliseconds, not ${ctx.flags.at}`);
+
+		const world = worldOf(model);
+		if (!world.towers.length && !world.spawners.length) {
+			return { json: { at, towers: [], alive: 0, destroyed: 0 }, text: 'no towers and no armed spawners' };
+		}
+		const c = combatAt(world, at);
+		const burning = new Map(c.hits.map((h) => [h.tower, h.target]));
+		const towers = world.towers.map((t) => ({ id: t.id, x: t.x, y: t.y, range: t.range,
+			beam: t.beam, cooldown: t.cooldown, damage: t.damage, burning: burning.get(t.id) || null }));
+		const summary = `tick ${c.tick}   alive ${c.alive.length}   destroyed ${c.dead.size}   beams this tick ${c.hits.length}`;
+		return {
+			json: { at, tick: c.tick, towers, alive: c.alive.length, destroyed: c.dead.size, beams: c.hits.length },
+			text: `${table(towers.map((t) => [t.id, `${t.x},${t.y}`, `${t.range} cells`,
+				`${t.beam}/${t.cooldown} ticks`, String(t.damage), t.burning || '-']),
+			['TOWER', 'AT', 'RANGE', 'BEAM/COOL', 'DMG', 'BURNING'])}\n\n${summary}`,
+		};
+	},
+}, {
 	name: 'movers', group: 'Context', usage: 'draw movers [--at epoch-ms] [--spawner ref]',
 	route: '/diagrams/<id>', method: 'GET',
 	summary: 'what is in flight right now -- the movers a correct client must be drawing',

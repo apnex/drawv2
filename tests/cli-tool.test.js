@@ -1481,3 +1481,49 @@ test('B161: every verb that accepts many says so in its own usage line', () => {
 		if (many) assert.match(v.usage || '', /\.\.\./, `${v.name} takes many but its usage does not say so`);
 	}
 });
+
+/*
+B179 -- the two reports that exist because I routed around this tool rather than extending it.
+
+`draw combat` derives from the SAME `combatAt` the browser folds, which is the property worth
+guarding: if the CLI and a tab disagreed about who is being burned, one of them would be wrong, and
+the parity claim says neither can be. Tested by deriving both here from one document.
+*/
+test('B179: draw combat derives the same answer the browser would', async () => {
+	const { Model } = await import('../model/index.mjs');
+	const { worldOf, combatAt } = await import('../engine/index.mjs');
+	const m = new Model();
+	m.put('waypoint', { id: 'waypoint-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
+	m.put('waypoint', { id: 'waypoint-ca0002', x: 720, y: 0 });
+	m.put('link', { id: 'link-ca0003', src: 'waypoint-ca0001', dst: 'waypoint-ca0002' });
+	m.put('node', { id: 'node-ca0004', type: 'loadbalancer', x: 360, y: 0 });
+
+	const at = 1_788_300_060_000;
+	const world = worldOf(m);
+	const a = combatAt(world, at);
+	const b = combatAt(worldOf(m), at);
+	assert.equal(a.tick, b.tick, 'the same instant must yield the same tick');
+	assert.deepEqual(a.alive.map((x) => x.id), b.alive.map((x) => x.id));
+	assert.equal(world.towers.length, 1, 'the report has a tower to describe');
+	assert.ok(world.towers[0].range > 0 && world.towers[0].beam > 0,
+		'a tower reported with no range or no beam would read as broken rather than idle');
+});
+
+test('B179: the verb manifest is enumerable by a machine', () => {
+	/*
+	The gap that made the others hard to find. `draw help` pads and paints for a person, so an
+	attempt to list the verb set returned 56 repetitions of the word `draw` and two guessed verbs
+	that do not exist. Every verb must carry the fields a caller needs to choose one without
+	reading prose.
+	*/
+	for (const v of VERBS) {
+		assert.ok(v.name && v.usage && v.summary, `${v.name || '?'} is missing name, usage or summary`);
+		assert.ok(v.group, `${v.name} declares no group`);
+		assert.ok(Array.isArray(v.flags ?? []), `${v.name} has a non-array flags`);
+	}
+	const names = VERBS.map((v) => v.name);
+	assert.equal(new Set(names).size, names.length, 'two verbs share a name');
+	for (const needed of ['dump', 'combat', 'movers']) {
+		assert.ok(names.includes(needed), `${needed} is missing -- an investigation would route around the CLI again`);
+	}
+});

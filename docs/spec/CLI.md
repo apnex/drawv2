@@ -91,6 +91,8 @@ Context
   about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones
   zone contents <zone>                                                            what falls inside a zone
   link path <link>                                                                the resolved route -- what the renderer would draw
+  combat [--at epoch-ms]                                                          towers, what each is burning, and which movers are alive or dead at an instant
+  dump                                                                            the entire document as JSON -- what the server holds, not what a viewer renders
   movers [--at epoch-ms] [--spawner ref]                                          what is in flight right now -- the movers a correct client must be drawing
   show                                                                            the whole diagram: summary and every entity
   map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]  look at the canvas -- occupancy as a grid, so placement is seen rather than derived
