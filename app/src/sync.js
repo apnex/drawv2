@@ -17,6 +17,18 @@ Long enough to clear the server's rolling window, so a throttled tab stops rathe
 budget the instant it reopens and being refused again forever.
 */
 const THROTTLE_BACKOFF_MS = 6000;
+
+/*
+B183 -- how many times one queued change may be replayed before it is abandoned.
+
+A restored or unacknowledged commit is re-sent on every snapshot. If it never becomes durable, that
+is a retry with no exit, and during the incident it became a feedback loop: replay bumps the
+version, the version bump triggers a resync, the resync replays.
+
+Five is enough to survive a reconnect, a resync and a fork rebinding in succession, and far too few
+to sustain a loop. Losing an undeliverable change is the lesser harm, and the user is told.
+*/
+const MAX_REPLAYS = 5;
 import * as commands from './commands.js';
 import { NAME_MAX } from '../../model/limits.mjs';
 import { Clock } from './clock.js';
@@ -206,7 +218,9 @@ export class Sync {
 	*/
 	persistOutbox() {
 		try {
-			const pending = this.outbox.filter((m) => !m.verb).map(({ ops, label, txnId }) => ({ ops, label, txnId }));
+			// B183 -- `tries` rides along, or a reload resets the bound and the loop survives it. The
+			// outbox is durable by design (D30); its give-up counter has to be just as durable.
+			const pending = this.outbox.filter((m) => !m.verb).map(({ ops, label, txnId, tries }) => ({ ops, label, txnId, tries: tries || 0 }));
 			if (!pending.length) localStorage.removeItem(OUTBOX_KEY);
 			else localStorage.setItem(OUTBOX_KEY, JSON.stringify({ diagram: this.model.state.meta.id, msgs: pending }));
 		} catch { /* private mode: the outbox is still correct in memory */ }
@@ -219,7 +233,9 @@ export class Sync {
 		try { saved = JSON.parse(localStorage.getItem(OUTBOX_KEY) || 'null'); } catch { /* corrupt */ }
 		if (!saved || saved.diagram !== diagramId || !Array.isArray(saved.msgs)) return;
 		const msgs = saved.msgs.filter((m) => m && Array.isArray(m.ops) && m.ops.length);
-		for (const m of msgs) this.outbox.push({ ops: m.ops, label: m.label, txnId: `t${++this.txn}` });
+		// the attempt count is restored with the message: a change that has already failed four times
+		// has one attempt left, not five, however many times the tab has been reloaded since
+		for (const m of msgs) this.outbox.push({ ops: m.ops, label: m.label, txnId: `t${++this.txn}`, tries: Number(m.tries) || 0 });
 	}
 
 	/*
@@ -231,9 +247,36 @@ export class Sync {
 	DID receive plans zero ops and is accepted as a no-op rather than applied twice.
 	*/
 	replayOutbox({ reapply }) {
+		/*
+		B183 -- a replay is an ATTEMPT, and an attempt that never lands must eventually be given up.
+
+		This is the feedback loop the incident ran on. Every snapshot marks the outbox unsent and
+		re-sends it; each re-send bumps the version; the resulting change arrives ahead of what this
+		tab has applied, which asks for another snapshot, which replays again. While
+		`durableVersion` was frozen by a write conflict nothing could ever prune, so the cycle was
+		self-sustaining and reached roughly 130 attempts per second.
+
+		B148 already ruled on the principle: "durability applied to a command that cannot succeed is
+		a trap". It was enforced only for a command the server EXPLICITLY refused. A command that is
+		replayed forever and never confirmed durable is the same trap wearing a different face, and
+		it is the one that actually bit.
+
+		Counted rather than timed, because the loop is driven by events and not by a clock: a
+		bounded number of attempts is a bound whatever rate the cycle runs at.
+		*/
+		const kept = [];
 		for (const m of this.outbox) {
+			m.tries = (m.tries || 0) + 1;
+			if (m.tries > MAX_REPLAYS) continue;      // given up on: dropped below, with a word to the user
+			kept.push(m);
 			m.sent = false;
 			if (reapply && Array.isArray(m.ops)) applyOps(this.model, m.ops);
+		}
+		const abandoned = this.outbox.length - kept.length;
+		if (abandoned) {
+			this.outbox = kept;
+			this.persistOutbox();
+			this.say(`${abandoned} unsent change${abandoned > 1 ? 's' : ''} could not be delivered and ${abandoned > 1 ? 'were' : 'was'} discarded`, { err: true });
 		}
 		this.drain();
 	}
