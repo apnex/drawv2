@@ -1107,6 +1107,20 @@ export class Store {
 	}
 
 	#mayWrite(id, principal) {
+		/*
+		B178 -- an instance that has PROVEN another writer owns this document must stop accepting
+		edits for it, not merely stop trying to persist them.
+
+		Stopping the retry was half a fix and the dangerous half was left: the instance went on
+		taking commits, applying them in memory and broadcasting them to its own clients, while
+		every one of them was discarded the moment the tab closed. A refusal a user can see beats
+		an acceptance that silently loses their work -- I15, in the place it costs most.
+
+		Checked BEFORE authorization because it is not about this principal. Nobody may write here,
+		including the owner, and answering `forbidden` would send them to look at grants for a
+		problem that has nothing to do with access.
+		*/
+		if (this.lost.has(id)) return 'this server no longer owns this diagram -- reload to reach the one that does';
 		if (this.canWrite(id, principal)) return null;
 		// 403, not 423: a lock is someone else driving and is worth retrying, this is not
 		return 'forbidden: no write access to this diagram';
@@ -1324,11 +1338,23 @@ export class Store {
 			backend raises, because a transient write error DOES deserve B4's retry -- the two need
 			opposite responses and shared a path until now.
 			*/
-			if (/write conflict/.test(err.message) && !this.lost.has(id)) {
+			if (/write conflict/.test(err.message)) {
+				/*
+				REPORTING is once; STOPPING is every time. The first version of this welded both to
+				`!this.lost.has(id)`, so the second conflict fell straight through into B4's retry
+				and the instance went on fighting a write it had already proved it could not win.
+
+				Observed in production: authority lost at 00:35:03 and two sessions retired
+				correctly, then conflicts 2 through 7 over the next fourteen minutes. Retiring once
+				and carrying on is not retiring -- it is announcing a rule and then breaking it.
+				*/
+				const first = !this.lost.has(id);
 				this.lost.add(id);
-				console.error(`[ store ] lost authority for ${id} -- another writer holds it; not retrying`);
-				try { this.onLostAuthority?.(id, 'another instance is writing this diagram'); }
-				catch (e) { console.error(`[ store ] onLostAuthority failed: ${e.message}`); }
+				if (first) {
+					console.error(`[ store ] lost authority for ${id} -- another writer holds it; not retrying`);
+					try { this.onLostAuthority?.(id, 'another instance is writing this diagram'); }
+					catch (e) { console.error(`[ store ] onLostAuthority failed: ${e.message}`); }
+				}
 				return;
 			}
 			if (!entry.timer) {

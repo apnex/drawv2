@@ -150,3 +150,58 @@ test('H13.11: the hub retires only the sessions on the affected diagram', async 
 	assert.deepEqual([...new Set(got.map((g) => g[1]))], ['retire']);
 	assert.match(got[0][2], /another instance/, 'the client is told why it is being replaced');
 });
+
+test('H13.11: a SECOND conflict still stops -- reporting is once, stopping is every time', async () => {
+	/*
+	The defect the first version shipped, found in production rather than here.
+
+	`!this.lost.has(id)` gated both the report and the stop, so only the FIRST conflict returned
+	early. Every one after it fell through into B4's retry and the instance went on fighting a write
+	it had proved it could not win: authority lost at 00:35:03 with two sessions correctly retired,
+	then conflicts 2 through 7 over the next fourteen minutes.
+
+	Retiring once and carrying on is not retiring. This drives the flush repeatedly, which is what
+	the earlier test never did -- it measured one conflict and concluded the mechanism worked.
+	*/
+	const lost = [];
+	const b = backend({ failWith: 'gcs write conflict for diagram-aa0001.json: another writer holds a newer generation (expected 7)' });
+	const { s, dir } = await storeWith({}, b.files, lost);
+	try {
+		const created = await s.create({ name: 'victim' }, null);
+		const id = created?.id || [...s.diagrams.keys()][0];
+		await sleep(120);
+
+		const entry = s.diagrams.get(id);
+		assert.ok(entry, 'the diagram vanished');
+		// keep dirtying it, exactly as a client editing through a stale instance would
+		for (let i = 0; i < 5; i++) {
+			entry.dirty = true;
+			await s.flush(id);
+		}
+		assert.equal(lost.filter(([lostId]) => lostId === id).length, 1, 'reported more than once');
+		assert.equal(entry.timer, null, 'a retry is still scheduled after a proven conflict');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('H13.11: a lost diagram refuses writes rather than silently discarding them', async () => {
+	/*
+	The dangerous half of the first fix. Stopping the retry stopped the LOG noise; the instance went
+	on accepting commits, applying them in memory and broadcasting them to its own clients, while
+	every one was discarded the moment the tab closed.
+
+	A refusal a user can see beats an acceptance that loses their work.
+	*/
+	const lost = [];
+	const b = backend({ failWith: 'gcs write conflict for diagram-aa0001.json: another writer holds a newer generation (expected 7)' });
+	const { s, dir } = await storeWith({}, b.files, lost);
+	try {
+		const created = await s.create({ name: 'victim' }, null);
+		const id = created?.id || [...s.diagrams.keys()][0];
+		await sleep(120);
+		assert.ok(s.lost.has(id), 'precondition: authority was lost');
+
+		const refusal = await s.remove(id, null);
+		assert.match(String(refusal), /no longer owns/, `a write on a lost diagram was accepted: ${refusal}`);
+		assert.match(String(refusal), /reload/, 'the refusal must tell the client what to do about it');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
