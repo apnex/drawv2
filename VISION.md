@@ -20,7 +20,9 @@ Behaviour is not attached to those things; it is a **consequence of where they a
 A range is measured in cells, a speed is cells per second, an arrival is a distance reached.\
 Nothing in that list is a property stored on a shape.
 
-The editor is one consumer of the engine among several; the command surface and any future mod are peers of it, not subordinates.
+The editor is intended to be one consumer of the engine among several, with the command surface and any future mod as peers rather than subordinates.\
+Today the editor is the only consumer that can drive the world; the others can inspect it.\
+That gap is the distance still to travel, not a claim about what exists.
 
 The endeavour is to find out what becomes possible when a diagram stops being a picture of a system and becomes **a world with physics** - and when that world is computed identically by everyone watching it.
 
@@ -88,34 +90,45 @@ A consequence is never sent, because sending it would tell a peer something it c
 
 ---
 
-## What would count as succeeding
+## Why it has value
 
-Dimensions, deliberately not collapsible into a score.\
-A single number would hide the weakest one, and the weakest one is the one that ends programmes.
+A diagram of a system tells you what someone believed when they drew it.\
+It cannot be wrong in an interesting way, because it asserts nothing that could be checked.
 
-**Parity.**\
-Two observers of the same document at the same instant compute the same state, and the system can prove it rather than assert it.
+A world with physics can be wrong, and that is the whole of its value.\
+Place a thing and consequences follow that nobody wrote down: something is now in range, a path is now longer, a flow now arrives late.\
+The diagram stops being a record of a decision and becomes a place to find out whether the decision was any good.
 
-**Derivation depth.**\
-How much behaviour is computed rather than stored.\
-Measured by what a document does *not* contain: no positions of things in motion, no outcomes, no numbers belonging to a kind.\
-The limit case is a document that declares only geometry and intent, and from which everything else follows.
+**And because the consequences are derived rather than stored, they are the same for everyone.**\
+Two people looking at one world are not comparing two renderings of an agreed picture; they are watching one thing happen.\
+That is what makes the world shareable without a protocol for sharing it, and it is why derivation is a constraint on the design rather than an efficiency.
 
-**Programmability.**\
-Whether a new behaviour can be expressed without touching the engine.\
-Measured in two degrees, matching the two degrees of physics: today, whether a rule over a situation suffices; eventually, whether a new kind of force, motion or collision can be introduced without the engine knowing about it in advance.\
-The pilot is the current evidence; a second, unlike consumer would be stronger.
+---
 
-**Observability without a human relay.**\
-Whether an agent can answer a question about the running system using its own instruments.\
-Every occasion a person is asked to read something back is a failure on this dimension.
+## The asymptote
 
-**Honesty of the record.**\
-Whether the declared state of the system matches the running one.\
-Drift found by a person rather than by a gate counts against this.
+What this tends toward as it matures, stated as a direction rather than a plan.
 
-They are expected to disagree.\
-Where they do, the disagreement is information and is taken to the board rather than averaged away.
+**These four are also what would count as succeeding**, deliberately as directions rather than as a score.\
+A single number would hide the weakest of them, and the weakest is what ends programmes.\
+They are expected to disagree - progress along one often costs another - and where they do, the disagreement is information and goes to the board rather than being averaged away.
+
+**Geometry carries more and stores less.**\
+The limit is a document that declares only where things are and what was intended, from which everything else follows.\
+Every number that remains stored on a shape is distance from that limit.
+
+**Physics becomes extensible rather than fixed.**\
+Today the engine knows about motion along paths and consequence within a range, and a new behaviour is a rule expressed over that.\
+At the limit the engine holds space, motion and interaction as a first-class layer, and a new kind of force, motion or collision can be introduced without the engine having anticipated it.
+
+**The editor stops being privileged.**\
+At the limit no consumer is the primary one, and the world can be driven equally by a person, a command, an agent or a mod - because each is only another observer that also acts.
+
+**The world becomes worth inhabiting rather than only worth reading.**\
+The pilot is the first evidence of this and deliberately not the last: a second, unlike world running on the same engine is the point at which the engine is real rather than argued.
+
+These do not converge on a finished state.\
+They are directions along which the system can always be further, and a version of this system that had arrived at all four would no longer be this endeavour.
 
 ---
 
