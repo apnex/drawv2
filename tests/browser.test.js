@@ -51,7 +51,16 @@ function fixture() {
 	const wp = (id, x, y, spawn) => ({ id, x, y, ...(spawn ? { spawn } : {}) });
 	return {
 		meta: { id: DIAGRAM, name: 'harness', version: 1 },
-		nodes: [{ id: 'node-ba0004', name: 'lb', type: 'loadbalancer', x: 6 * PITCH, y: 0, shape: 'circle' }],
+		/*
+		The tower sits BESIDE the route, two cells off, not on it.
+
+		On the line a bearing can only ever be 0 or 180, and since a tower tracks the LEADING target
+		it is almost always the eastern one -- so the angle never moves and a turret welded at zero
+		would pass. The first version of this fixture did exactly that and the test passed standalone
+		by luck, then failed in the full suite. Beside the path the bearing sweeps a wide arc as a
+		packet goes by, which is both the honest test and how a player actually places one.
+		*/
+		nodes: [{ id: 'node-ba0004', name: 'lb', type: 'loadbalancer', x: 6 * PITCH, y: 2 * PITCH, shape: 'circle' }],
 		waypoints: [
 			// `since` must be a real stamp: the validator floors it at 2020-09 and a document it refuses is
 		// SKIPPED, not reported -- which is how the first fixture vanished without a word
@@ -210,7 +219,7 @@ test('H13.8: a firing tower draws a beam anchored on itself', { skip: SKIP }, as
 	assert.ok(beam, 'no .beam element appeared while a tower had packets in range');
 	const b = JSON.parse(beam);
 	assert.equal(b.x1, 6 * PITCH, 'the beam starts at the tower');
-	assert.equal(b.y1, 0);
+	assert.equal(b.y1, 2 * PITCH);
 	assert.ok(b.x2 !== b.x1 || b.y2 !== b.y1, 'the beam has length -- it reaches a target');
 });
 

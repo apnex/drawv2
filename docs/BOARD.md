@@ -655,7 +655,14 @@ Towers are automatic and are `loadbalancer` nodes placed during read/play.\
 Firing is derived; a tower burns the leading creep in range -- furthest in the direction of travel, the one about to escape.\
 The weapon is a LASER, and the reason is mechanical rather than cosmetic: a beam connects instantaneously, so there is no projectile in flight and no lead to predict.\
 Synchronised fire between towers is acceptable, which is what lets the schedule come from the clock rather than a per-tower hash.\
-Level and game remain the same object for now, with three costs accepted and a revival trigger.
+Level and game remain the same object for now, with three costs accepted and a revival trigger.\
+One of those three is now a RULING rather than a wince: **undo depth is bounded by design**, so a long game evicting level history is a decision and not a defect (director, 2026-09-02).\
+That matters beyond undo, because it is what makes folding unambiguously safe to add later -- a checkpoint can never be lossier than a ring that already forgets.
+
+**We are transaction-bounded already; it is the DERIVATIONS where folding applies.**\
+The log is a ring of `LOG_MAX` records evicting oldest-first, nothing rebuilds state by replaying it, and a joining client receives a snapshot rather than a history.\
+So there is no log collapse to build.\
+The one place anything still integrates from a prior point is accumulated damage in `combatAt`, which is **B180**.
 
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|

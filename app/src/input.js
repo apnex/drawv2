@@ -606,7 +606,12 @@ export class Input {
 		PLACEMENT IS THE ONLY THING THAT TRAVELS. A tower firing is derived by every peer from the
 		board and the clock, so it is never sent; a tower being PLACED is intent, cannot be derived
 		from anything, and therefore rides the ordinary document machinery that already orders and
-		broadcasts it. A third client replays placements and arrives at the same battle.
+		broadcasts it.
+
+		Stated precisely, because a looser version of this claim was repeated for a while: a joining
+		client receives the DOCUMENT as a snapshot, not a history to replay. What it never receives,
+		and derives instead, is the battle -- movers, beams, kills. That is where the derivation
+		earns its keep, and it is why a third client costs nothing.
 
 		Guarded to open ground rather than to a modifier, so play stays a one-button surface. It runs
 		after the entity and control checks below it precisely so a press on a waypoint, a node or a

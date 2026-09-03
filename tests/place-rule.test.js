@@ -98,8 +98,13 @@ test('H13.1: placement produces an ordinary committable entry -- this is what tr
 	assert.equal(bad, null, `the server must accept it: ${bad}`);
 });
 
-test('H13.1: a peer replaying only the placement derives the same tower', () => {
-	// the third-client property, stated as a test: no state transfer, just the op
+test('H13.1: a peer given only the placement op derives the same tower', () => {
+	/*
+	The live-delta path, and named carefully. A JOINING client receives the document as a snapshot;
+	this is what happens to a peer already connected when a placement arrives. It carries the op and
+	nothing about the tower's stats, which is the property worth pinning -- range, beam and damage
+	come from the kind table on the receiving side.
+	*/
 	const author = doc();
 	const node = author.makeNode('loadbalancer', { x: 120, y: 0 });
 	const cmd = createEntity('node', node);
