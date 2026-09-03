@@ -329,7 +329,7 @@ async function commitSelection(res, store, hub, locks, id, token, ids, principal
 }
 
 // returns true if the request was handled (may complete asynchronously)
-export function handleRest(req, res, store, locks, hub, principal = null) {
+export function handleRest(req, res, store, locks, hub, principal = null, sessions = null) {
 	const url = new URL(req.url, 'http://localhost');
 	const parts = url.pathname.split('/').filter(Boolean);
 
@@ -376,6 +376,21 @@ export function handleRest(req, res, store, locks, hub, principal = null) {
 	worked in any configuration -- against the deployment or locally. Same payload, reached through
 	the same door as everything else, so the credential story stays uniform.
 	*/
+	/*
+	B182 -- what each client DID, so a loop is diagnosed by asking rather than by grepping logs.
+
+	On the versioned surface because it reaches through `/connect`, which is the agent's IAP-free
+	door. That is the point: A5 says an agent holds its own instruments, and this incident was spent
+	asking the director to read a browser console instead.
+
+	Read-only and derived from a bounded in-memory ring, so asking cannot change an outcome.
+	*/
+	if (parts[1] === 'v1' && parts[2] === 'sessions' && parts.length === 3) {
+		if (req.method !== 'GET') return json(res, 405, { error: 'sessions: GET' }), true;
+		// whole and unfiltered: the ring is bounded at 40 sessions, and one route with no query
+		// parameters is a route `scan-cli` can actually prove. Selection belongs to the caller.
+		return json(res, 200, { sessions: sessions ? sessions.report() : [] }), true;
+	}
 	if (parts[1] === 'v1' && parts[2] === 'health' && parts.length === 3) {
 		if (req.method !== 'GET') return json(res, 405, { error: 'health: GET' }), true;
 		return json(res, 200, healthReport()), true;

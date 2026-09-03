@@ -32,6 +32,12 @@ The store never goes empty: removing the last diagram reseeds the examples.
 
 A removed diagram is recoverable while the backend's delete window lasts, and two routes reach it.
 
+`GET /api/v1/sessions` answers `{ sessions[] }` -- what each client DID, not what the document became.\
+Each entry carries the actor, principal, diagram, whether it is still live, its counts of commits and refusals, and a bounded narrative of recent events.\
+The report is whole and unfiltered -- bounded at 40 sessions by construction -- and `draw sessions --hot n` selects a runaway client from it.\
+Held in memory and bounded on both axes, so it is a troubleshooting instrument rather than state anything may depend on.\
+It exists because an agent asked the director to read a browser console during an incident, which is the anti-pattern **A5** names in its own rationale (**B182**).
+
 `GET /api/v1/diagrams/deleted` answers `{ window, deleted[] }`.\
 `window` is a boolean and it is not the same question as whether the list is empty: `false` means this deployment has no recycle bin at all, which is the honest answer on a filesystem, while `true` with an empty list means the window exists and nothing is in it.\
 Collapsing the two would tell a caller their work is gone when nobody has looked.\

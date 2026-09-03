@@ -91,6 +91,7 @@ Context
   about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones
   zone contents <zone>                                                            what falls inside a zone
   link path <link>                                                                the resolved route -- what the renderer would draw
+  sessions [--diagram ref] [--hot n] [--events actor]                             what each client did -- commits, refusals, reconnects, and how fast
   combat [--at epoch-ms]                                                          towers, what each is burning, and which movers are alive or dead at an instant
   dump                                                                            the entire document as JSON -- what the server holds, not what a viewer renders
   movers [--at epoch-ms] [--spawner ref]                                          what is in flight right now -- the movers a correct client must be drawing

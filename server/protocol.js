@@ -201,7 +201,7 @@ function ackBody(change, store, id, txnId) {
 }
 
 export class Session {
-	constructor(ws, store, hub = null, locks = null, principal = null) {
+	constructor(ws, store, hub = null, locks = null, principal = null, sessions = null) {
 		// a stable per-session identity: the `actor` on every Change it authors, and what lets
 		// undo tell 'my own last change' from 'someone else's'
 		this.actor = `s-${crypto.randomUUID().slice(0, 8)}`;
@@ -212,10 +212,15 @@ export class Session {
 		this.hub = hub;
 		this.locks = locks;
 		this.diagramId = null;
+		// B182 -- the narrative of what this client does, kept server-side so nobody has to read a
+		// browser console to find out. Optional, so a Session built without one still works.
+		this.sessions = sessions;
+		this.sessions?.open(this.actor, principal);
 		if (hub) hub.add(this);
 		// onMessage is async; nothing can await a socket event, so the rejection is caught here.
 		ws.on('message', (data) => this.onMessage(data).catch((err) => console.error(`[ session ] unhandled: ${err && err.message}`)));
 		ws.on('close', () => {
+			this.sessions?.close(this.actor);
 			if (!hub) return;
 			hub.remove(this);
 			announceActivity(hub, store, locks);              // B114: a viewer left
@@ -238,6 +243,9 @@ export class Session {
 
 	snapshot(model) {
 		this.diagramId = model.state.meta.id;
+		// B182 -- which document this session is on, so a report can be read per diagram
+		if (this.sessions) { const r = this.sessions.report().find((x) => x.actor === this.actor); if (r) r.diagram = this.diagramId; }
+		this.sessions?.note(this.actor, 'open-diagram', { id: this.diagramId });
 		announceActivity(this.hub, this.store, this.locks);   // B114: presence moved
 		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal, this.hub));
 	}
@@ -342,6 +350,7 @@ export class Session {
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;
 				if (this.tooFast()) {
+					this.sessions?.note(this.actor, 'refused', { why: 'rate-limited', label: body.label || null });
 					/*
 					B181 -- a session may not flood a shared document, whatever is wrong with it.
 
@@ -358,6 +367,7 @@ export class Session {
 						'too many changes too quickly -- this session is rate limited, reload if this persists',
 						'rate-limited', body.txnId);
 				}
+				this.sessions?.note(this.actor, 'commit', { label: body.label || null });
 				const res = this.store.commit(this.diagramId, body, 'client', this.actor, this.principal);
 				/*
 				H9.9: writing to a template forked it, so this SESSION now belongs to the fork.

@@ -977,6 +977,64 @@ VERBS.push({
 	},
 }, {
 	/*
+	B182 -- what each client DID, server-side.
+
+	Exists because the agent asked the director to read a browser console during the B181 incident.
+	That inverts A5 -- an agent is supposed to hold its own instruments, not borrow the operator's
+	eyes -- and it spends the attention A13 names as the one irreplaceable resource.
+
+	The server already saw all of this and kept none of it in readable form. Reconstructing "one
+	session committed at 78 per second while sessions churned" took an hour of log greps; it is now
+	one question.
+	*/
+	name: 'sessions', group: 'Awareness', usage: 'draw sessions [--diagram ref] [--hot n] [--events actor]',
+	route: '/sessions', method: 'GET',
+	summary: 'what each client did -- commits, refusals, reconnects, and how fast',
+	example: 'draw sessions --hot 5',
+	args: [],
+	flags: [{ name: '--diagram', about: 'only sessions on this diagram' },
+		{ name: '--hot', about: 'only sessions committing at least this many per second -- a loop, whatever its cause' },
+		{ name: '--events', about: 'the full event narrative for one actor, newest last' }],
+	async run(ctx) {
+		/*
+		Filtered HERE, not by query string.
+
+		`scan-cli` normalises any interpolation in a request path to `*`, so a URL carrying filters
+		can never match a declared route -- and satisfying the prover with a wildcard `also` would be
+		the check defeating itself. The report is bounded at 40 sessions by construction, so fetching
+		it whole and selecting locally costs nothing and keeps one route honest.
+		*/
+		const body = ok(await request(ctx, '/sessions'), 'sessions');
+		let list = body.sessions || [];
+		if (ctx.flags.diagram && ctx.flags.diagram !== true) {
+			const want = await activeId(ctx, ctx.flags);
+			list = list.filter((x) => x.diagram === want);
+		}
+		if (ctx.flags.hot && ctx.flags.hot !== true) {
+			const n = Number(ctx.flags.hot);
+			list = list.filter((x) => x.commitsPerSecond !== null && x.commitsPerSecond >= n);
+		}
+		if (ctx.flags.events && ctx.flags.events !== true) {
+			const one = list.find((x) => x.actor === ctx.flags.events);
+			if (!one) die(`no session ${ctx.flags.events} -- \`draw sessions\` lists what is remembered`);
+			return {
+				json: one,
+				text: table(one.events.map((e) => [new Date(e.at).toISOString().slice(11, 23), e.kind,
+					e.detail ? JSON.stringify(e.detail) : '']), ['AT', 'EVENT', 'DETAIL']),
+			};
+		}
+		if (!list.length) return { json: { sessions: [] }, text: 'no sessions remembered' };
+		return {
+			json: { sessions: list },
+			text: table(list.map((x) => [x.actor, x.principal || '-', x.diagram || '-',
+				x.live ? 'live' : 'closed', `${Math.round(x.openedMs / 1000)}s`,
+				String(x.counts.commit || 0), String(x.counts.refused || 0),
+				x.commitsPerSecond === null ? '-' : String(x.commitsPerSecond)]),
+			['ACTOR', 'WHO', 'DIAGRAM', 'STATE', 'AGE', 'COMMITS', 'REFUSED', 'PER SEC']),
+		};
+	},
+}, {
+	/*
 	B179 -- who is shooting whom, right now.
 
 	`draw movers` reports what is in flight and stops there, so a report of odd combat could not be

@@ -27,6 +27,7 @@ declared one and collected a 404 in every configuration for two milestones (B132
 now and the exception is gone.
 */
 export const ROUTES = [
+	{ path: 'sessions',                        methods: ['GET'],            about: 'what each client did -- commits, refusals, reconnects and how fast (B182)' },
 	{ path: 'health',                          methods: ['GET'],            about: 'store health, through the versioned door -- what an agent reads' },
 
 	{ path: 'diagrams',                        methods: ['GET', 'POST'],    about: 'list, and mint a new one' },

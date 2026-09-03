@@ -19,6 +19,7 @@ import { domainGate, bearerIdentity, anyOf } from './identity.mjs';
 import { originPolicy } from './origin.mjs';
 import { Locks } from './locks.js';
 import { Hub } from './hub.js';
+import { SessionLog } from './sessionlog.mjs';
 import { svgDocument } from './svg.mjs';
 
 const MIME = {
@@ -229,6 +230,8 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	// default nobody revisited. `reclaim` remains what actually protects a person's control.
 	const locks = new Locks(lockTtlMs ? { ttlMs: lockTtlMs } : {});
 	const hub = new Hub();
+	// B182 -- what each client did, kept server-side (A5: the agent holds its own instrument)
+	const sessions = new SessionLog();
 	hubRef = hub;
 
 	// the backend is self-sufficient: with no client directory it runs API-only
@@ -247,7 +250,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		// resolved here rather than inside the router, so every REST handler receives a principal
 		// and none of them reads a header (ACCESS.md -- one boundary)
 		const principal = await identify(req.headers).catch(() => null);
-		if (handleRest(req, res, store, locks, hub, principal)) return;
+		if (handleRest(req, res, store, locks, hub, principal, sessions)) return;
 		if (req.method !== 'GET') {
 			res.writeHead(405);
 			return res.end();
@@ -330,7 +333,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		// the upgrade request carries the same IAP headers as any other; resolving once per socket
 		// rather than per message is right because the identity cannot change mid-connection
 		identify(request?.headers || {}).catch(() => null)
-			.then((principal) => new Session(ws, store, hub, locks, principal));
+			.then((principal) => new Session(ws, store, hub, locks, principal, sessions));
 	});
 
 	// ONE sweep for every client, not a timer per socket. `terminate()` is deliberate: it produces
