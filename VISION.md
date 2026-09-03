@@ -1,14 +1,13 @@
 # drawv2 - vision
 
-> **Status: DRAFT, awaiting director ratification.**\
-> Drafted by the engineer on 2026-09-03 from the ratified record, not from recollection: `surveys/b163-rules-system-survey.md`, the rulings carried in the commit corpus, and `docs/BACKLOG.md`.\
-> Intent is the one thing no role but the director may supply, so until it is ratified this document states what the record appears to say and nothing more.\
-> Authored against `AR6` from the devices rather than a template, per `M6`.
->
-> **Two claims were removed on director correction, and the reason is worth keeping.**\
-> A first draft excluded *multi-writer* as an enduring non-goal. That was wrong on the facts -- two tabs already write to one diagram, and always have. What exists is single-writer per SERVER INSTANCE, which is a property of the architecture at this instant and belongs to `AR1`. Replace the storage substrate with one that arbitrates writes and the exclusion dies, which is exactly the discriminator that says it was never a vision statement.\
-> A first draft also listed *interruption cost* as a success dimension. It is a delta's exit criterion, not a measure of enduring purpose, and it was recency from an incident rather than intent.
+**Status: enduring.**\
+Ratified by the director on 2026-09-03.\
+This document states why drawv2 exists and what it will never be.\
+It carries no current state, no roadmap, and no schedule.
 
+Holding this document authorises nothing.\
+It does not ratify a decision, approve a change, or promote code.\
+A direction change is recorded as a decision and absorbed here afterwards, so the reasoning behind a change survives the change.
 ---
 
 ## What this is

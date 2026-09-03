@@ -7,6 +7,15 @@ What we are doing next, in order.
 This file is the *plan* -- mutable, reorderable, and short.\
 They are maintained together and checked against each other.
 
+**Ranked against [`VISION.md`](../VISION.md), ratified 2026-09-03.**\
+A board with no stated intent can only rank on local pressure, which is the fault the vision exists to prevent.\
+The vision's three directions -- geometry carries more and stores less, physics becomes extensible rather than fixed, the editor stops being privileged -- are the axis a move is worth something against.\
+They do not collapse into a score, so a move that advances one while costing another is a judgement to be made openly rather than averaged away.
+
+**Not yet applied to the rows below.**\
+This board predates the vision and its items were triaged on impact and principle breach alone.\
+Re-ranking the open set against the vision is owed work, and until it is done a high position here means what it always meant rather than what the vision would say.
+
 > **Opened 2026-08-19** from a full-tree audit at the close of the CS arc (CS1-CS6). Seeded with
 > `BACKLOG.md` rows **B13-B33**.
 > **Triaged 2026-08-19** -- every active row scored and re-sorted; see [what triage changed](#what-the-triage-pass-changed).

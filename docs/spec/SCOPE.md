@@ -1,9 +1,22 @@
 # draw - Scope
 
+> **Status: SUPERSEDED IN PREMISE by `VISION.md`, ratified 2026-09-03.**\
+> This document opens by describing "a strictly minimally scoped, grid-aligned diagramming tool -- complete MVP product".\
+> That is no longer what this system is: the ratified purpose is a programmable geometric engine whose behaviour is derived from geometry, with the editor as one consumer among several.
+>
+> **What remains true and load-bearing** is the detail below the premise: the entity model, the wire protocol, the REST surface, durability, and the grid vocabulary.\
+> Several gates read this file and prove those parts against the running system, so it is not stale in the way a forgotten document is.
+>
+> **What is false** is its framing -- the identity, the MVP completion claim, and any scope judgement derived from them.\
+> A proposal must not be argued in or out of scope by citing this document.\
+> `VISION.md` holds purpose; where the two disagree, the vision governs.
+>
+> **This is a known gap, not an oversight.**\
+> No `AR1` architecture record exists, and re-baselining or retiring this file is the work that follows from having a vision at last.
+
 A strictly minimally scoped, grid-aligned diagramming tool.\
 Browser editor, server persistence, a self-contained editor and agent surface.\
 Complete MVP product - narrow, finished, tested.
-
 ## Lineage position
 
 Fourth generation of the draw lineage (`draw` 2021 -> `graph` 2023 -> `prism` 2026, cloned under `.refs/` for reference).\
