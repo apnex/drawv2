@@ -36,6 +36,15 @@ import crypto from 'node:crypto';
 import { announceActivity } from './rest.js';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 
+/*
+B181 -- how many commits one session may land in a rolling window before it is refused.
+
+30 in 5 seconds is six per second sustained, which is an order of magnitude above any real gesture
+and an order of magnitude below the 78 per second observed during the incident.
+*/
+const COMMIT_WINDOW_MS = 5000;
+const COMMIT_BUDGET = 30;
+
 export function snapshotBody(model, store, locks, principal = null, hub = null) {
 	const id = model.state.meta.id;
 	/*
@@ -239,6 +248,31 @@ export class Session {
 
 	// a browser write is refused while its diagram is Server-Locked; resync the
 	// client read-only rather than silently dropping the write
+	/*
+	B181 -- the write budget for ONE session, as a rolling window.
+
+	Sized against what a person or an agent can legitimately produce, not against what the wire can
+	carry. A four-second three-node drag is ONE transaction by design (D4); arrow-key bursts coalesce
+	client-side into one undo step; `draw` commits one at a time. So sustained double-digit writes per
+	second is not use, it is a defect -- and the number is deliberately generous so that being wrong
+	costs a refusal a user can read rather than work they cannot recover.
+	*/
+	tooFast() {
+		const now = Date.now();
+		this.writes = (this.writes || []).filter((t) => now - t < COMMIT_WINDOW_MS);
+		if (this.writes.length >= COMMIT_BUDGET) {
+			if (!this.throttled) {
+				this.throttled = true;
+				console.error(`[ session ] rate limited ${this.actor || 'a client'} on ${this.diagramId}: `
+					+ `${this.writes.length} commits in ${COMMIT_WINDOW_MS}ms`);
+			}
+			return true;
+		}
+		this.throttled = false;
+		this.writes.push(now);
+		return false;
+	}
+
 	rejectIfLocked(id) {
 		if (!this.locks || !this.locks.locked(id)) return false;
 		const model = this.store.get(id);
@@ -307,6 +341,23 @@ export class Session {
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
 				if (this.rejectIfLocked(this.diagramId)) return;
+				if (this.tooFast()) {
+					/*
+					B181 -- a session may not flood a shared document, whatever is wrong with it.
+
+					Observed live: one session committing `spawn` / `stop spawning` alternately at 78
+					transactions per second, taking a diagram past version 144000 and producing GCS
+					write conflicts, evicted history and visibly stuttering peers.
+
+					The trigger was never identified and this does not depend on identifying it. Any
+					client-side loop -- an event storm, a rule re-entering, a defect not yet written
+					-- is bounded here, because a server that accepts writes as fast as a bug can
+					emit them has no defence that a client fix can provide.
+					*/
+					return this.error(
+						'too many changes too quickly -- this session is rate limited, reload if this persists',
+						'rate-limited', body.txnId);
+				}
 				const res = this.store.commit(this.diagramId, body, 'client', this.actor, this.principal);
 				/*
 				H9.9: writing to a template forked it, so this SESSION now belongs to the fork.
