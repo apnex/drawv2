@@ -16,13 +16,7 @@
 **drawv2 is a programmable geometric engine.**
 
 A document declares geometry - things placed on a grid, and the paths between them.\
-Behaviour is not attached to those things; it is a **consequence of where they are**.\
-A range is measured in cells, a speed is cells per second, an arrival is a distance reached.\
-Nothing in that list is a property stored on a shape.
-
-The editor is intended to be one consumer of the engine among several, with the command surface and any future mod as peers rather than subordinates.\
-Today the editor is the only consumer that can drive the world; the others can inspect it.\
-That gap is the distance still to travel, not a claim about what exists.
+Everything else that happens is a consequence of that geometry rather than a property recorded beside it.
 
 The endeavour is to find out what becomes possible when a diagram stops being a picture of a system and becomes **a world with physics** - and when that world is computed identically by everyone watching it.
 
@@ -46,8 +40,7 @@ A pilot earns its place by exercising the engine harder than the editor does.\
 The day a feature is justified because it makes the game better rather than because it makes the engine more capable, the pilot has captured the programme.
 
 **Not a system that stores what it can derive.**\
-A number copied into a document is a decision that can no longer be changed.\
-Derived state is not an optimisation here; it is the reason two peers agree without a protocol.
+A number copied into a document is a decision that can no longer be changed.
 
 ---
 
@@ -109,7 +102,7 @@ That is what makes the world shareable without a protocol for sharing it, and it
 
 What this tends toward as it matures, stated as a direction rather than a plan.
 
-**These four are also what would count as succeeding**, deliberately as directions rather than as a score.\
+**These three are also what would count as succeeding**, deliberately as directions rather than as a score.\
 A single number would hide the weakest of them, and the weakest is what ends programmes.\
 They are expected to disagree - progress along one often costs another - and where they do, the disagreement is information and goes to the board rather than being averaged away.
 
@@ -119,16 +112,15 @@ Every number that remains stored on a shape is distance from that limit.
 
 **Physics becomes extensible rather than fixed.**\
 Today the engine knows about motion along paths and consequence within a range, and a new behaviour is a rule expressed over that.\
-At the limit the engine holds space, motion and interaction as a first-class layer, and a new kind of force, motion or collision can be introduced without the engine having anticipated it.
+At the limit the engine holds space, motion and interaction as a first-class layer, and a new kind of force, motion or collision can be introduced without the engine having anticipated it.\
+The pilot is the first evidence and deliberately not the last: a second, unlike world running on the same engine is the point at which the engine is real rather than argued.
 
 **The editor stops being privileged.**\
-At the limit no consumer is the primary one, and the world can be driven equally by a person, a command, an agent or a mod - because each is only another observer that also acts.
-
-**The world becomes worth inhabiting rather than only worth reading.**\
-The pilot is the first evidence of this and deliberately not the last: a second, unlike world running on the same engine is the point at which the engine is real rather than argued.
+Today it is the only consumer that can drive the world; the command surface and any future mod can inspect it.\
+At the limit no consumer is the primary one, and the world is driven equally by a person, a command, an agent or a mod - because each is only another observer that also acts.
 
 These do not converge on a finished state.\
-They are directions along which the system can always be further, and a version of this system that had arrived at all four would no longer be this endeavour.
+They are directions along which the system can always be further, and a version of this system that had arrived at all three would no longer be this endeavour.
 
 ---
 
