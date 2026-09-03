@@ -1177,7 +1177,20 @@ export class Store {
 
 		Answered with the ORIGINAL version, because that is what the client is waiting to hear: it
 		prunes on `durableVersion`, and a repeat that returned a fresh version would prune the wrong
-		entry. `applied: true` marks it so a caller can tell a no-op from real work.
+		entry.
+
+		WHAT THIS GUARANTEE DOES NOT COVER, stated here because an unstated bound is how F5 went
+		wrong -- that note concluded exactly-once was unnecessary and was the direct ancestor of the
+		incident this closes.
+
+		Exactly-once holds WITHIN a server lifetime and WITHIN `SEEN_MAX` commits. This map is in
+		memory, so a restart forgets it and a replay across one applies a second time. That is a
+		cost, not a loop: the ops are idempotent so the document converges, the client's id is now
+		stable so it earns a real acknowledgement, and the entry prunes. One extra transaction.
+
+		Persisting it is deliberately NOT done. A restart already forces every client to resync, and
+		adding durable state against a case nobody has hit would be mechanism ahead of measurement
+		(A11) -- which is the habit that produced tonight.
 		*/
 		if (request.txnId && entry.seen?.has(request.txnId)) {
 			// `has`, not a truthiness or !== undefined test: a stored version of 0 or undefined is

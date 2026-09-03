@@ -243,3 +243,22 @@ test('B184: the server applies a repeated commit ONCE and answers with the origi
 		assert.ok(store.diagrams.get(id).model.state.meta.version > v1, 'new work must still advance the version');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('B184: the guarantee states its own bounds', () => {
+	/*
+	Not a behaviour test -- a guard on the RECORD.
+
+	F5 concluded exactly-once was unnecessary, described the cost as "history depth rather than
+	document state", and that reasoning was the direct ancestor of this incident. The bound was real
+	and the note was too weak to stop the author relying on it.
+
+	So the two limits must stay written where someone meets them: the memory is per-process, and it
+	is bounded by count. A future reader assuming more than that is exactly how this recurs.
+	*/
+	const store = fs.readFileSync(new URL('../server/store.js', import.meta.url), 'utf8');
+	const guard = store.slice(store.indexOf('B184 -- a commit this diagram has ALREADY applied'));
+	const note = guard.slice(0, guard.indexOf('*/'));
+	assert.match(note, /restart/i, 'the per-process limit is not stated where the mechanism lives');
+	assert.match(note, /SEEN_MAX/, 'the count bound is not named');
+	assert.ok(/not done|NOT done/.test(note), 'the decision not to persist is not recorded as a decision');
+});
