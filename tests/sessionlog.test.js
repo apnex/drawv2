@@ -17,7 +17,7 @@ and nothing grows without bound.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SessionLog, SESSIONS_KEPT, EVENTS_PER_SESSION } from '../server/sessionlog.mjs';
+import { SessionLog, SESSIONS_KEPT, EVENTS_PER_SESSION, OPENING_KEPT } from '../server/sessionlog.mjs';
 
 test('B182: the incident is visible in one question', () => {
 	/*
@@ -138,4 +138,34 @@ test('B182: the diagram a session is on actually reaches the report', () => {
 	// and it survives the session closing, which is when it is most often read
 	log.close('s-a', 1200);
 	assert.equal(log.report(1300)[0].diagram, 'diagram-aa0001', 'lost on close');
+});
+
+test('B182: the OPENING of a session survives any flood that follows', () => {
+	/*
+	The correction the incident forced, and the reason a whole night produced no cause.
+
+	A ring keeps the LAST events. For a runaway session those are a wall of identical refusals --
+	the least informative thing it did -- while the events that would explain it are overwritten.
+	Polling could not close the gap either: the burst reaches 130 per second, so a two-second poll
+	arrives after the ring has already been filled by the flood it is meant to explain.
+
+	The fix is not a faster poll. It is not throwing the beginning away.
+	*/
+	const log = new SessionLog();
+	let t = 0;
+	log.open('s-x', 'user:a@x', t);
+	log.attach('s-x', 'diagram-aa0001');
+	log.note('s-x', 'open-diagram', { id: 'diagram-aa0001' }, t += 1);
+	log.note('s-x', 'commit', { label: 'spawn' }, t += 1);
+	for (let i = 0; i < 900; i++) log.note('s-x', 'refused', { why: 'rate-limited' }, t += 1);
+
+	const [rec] = log.report(t);
+	assert.equal(rec.events.length, EVENTS_PER_SESSION, 'the recent ring is still bounded');
+	assert.deepEqual([...new Set(rec.events.map((e) => e.kind))], ['refused'],
+		'the ring is exactly the uninformative tail this exists to survive');
+
+	assert.equal(rec.first.length, OPENING_KEPT, 'the opening is held to its own bound');
+	assert.deepEqual(rec.first.slice(0, 3).map((e) => e.kind), ['open', 'open-diagram', 'commit'],
+		'how the session BEGAN must survive whatever it did afterwards');
+	assert.equal(rec.counts.refused, 900, 'and the total is still there');
 });

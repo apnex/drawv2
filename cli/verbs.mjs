@@ -1017,11 +1017,19 @@ VERBS.push({
 		if (ctx.flags.events && ctx.flags.events !== true) {
 			const one = list.find((x) => x.actor === ctx.flags.events);
 			if (!one) die(`no session ${ctx.flags.events} -- \`draw sessions\` lists what is remembered`);
-			return {
-				json: one,
-				text: table(one.events.map((e) => [new Date(e.at).toISOString().slice(11, 23), e.kind,
-					e.detail ? JSON.stringify(e.detail) : '']), ['AT', 'EVENT', 'DETAIL']),
-			};
+			/*
+			The OPENING first, then the recent tail.
+
+			For a runaway session the ring is a wall of identical refusals -- the least informative
+			thing it did -- while the events that would explain it were overwritten before anyone
+			could poll fast enough. `first` is held from the start and never trimmed, so the two
+			together read as: how it began, then how it ended.
+			*/
+			const row = (e) => [new Date(e.at).toISOString().slice(11, 23), e.kind,
+				e.detail ? JSON.stringify(e.detail) : ''];
+			const opening = table((one.first || []).map(row), ['AT', 'OPENING', 'DETAIL']);
+			const recent = table(one.events.map(row), ['AT', 'RECENT', 'DETAIL']);
+			return { json: one, text: `${opening}\n\n${recent}` };
 		}
 		if (!list.length) return { json: { sessions: [] }, text: 'no sessions remembered' };
 		return {

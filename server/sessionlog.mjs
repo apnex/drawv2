@@ -30,6 +30,8 @@ the incident it was built for, which is the worst possible time.
 // how many finished sessions to remember, and how many events within one session
 export const SESSIONS_KEPT = 40;
 export const EVENTS_PER_SESSION = 60;
+// how many of a session's FIRST events are held forever, whatever happens afterwards
+export const OPENING_KEPT = 25;
 
 export class SessionLog {
 	#live = new Map();      // actor -> record, while the socket is open
@@ -40,7 +42,7 @@ export class SessionLog {
 	gap -- there is no identity then, and inventing one would make a single-tenant run look otherwise.
 	*/
 	open(actor, principal, now = Date.now()) {
-		const rec = { actor, principal: principal || null, opened: now, closed: null, events: [], counts: {} };
+		const rec = { actor, principal: principal || null, opened: now, closed: null, first: [], events: [], counts: {} };
 		this.#live.set(actor, rec);
 		this.note(actor, 'open', principal ? { as: principal } : null, now);
 		return rec;
@@ -58,7 +60,20 @@ export class SessionLog {
 		const rec = this.#live.get(actor);
 		if (!rec) return;
 		rec.counts[kind] = (rec.counts[kind] || 0) + 1;
-		rec.events.push({ at: now, kind, ...(detail ? { detail } : {}) });
+		const e = { at: now, kind, ...(detail ? { detail } : {}) };
+		/*
+		THE OPENING IS KEPT SEPARATELY, and this is the correction the incident forced.
+
+		A ring keeps the LAST events, which for a runaway session is a wall of identical refusals --
+		the least informative thing it did. What was never captured, across an entire night, is what
+		the session did FIRST: the events before the flood, which is where a cause would show.
+
+		Polling could not close the gap either. The burst reaches 130 per second, so by the time a
+		two-second poll notices, the ring has already been overwritten by the flood it is meant to
+		explain. The fix is not a faster poll; it is not throwing the beginning away.
+		*/
+		if (rec.first.length < OPENING_KEPT) rec.first.push(e);
+		rec.events.push(e);
 		if (rec.events.length > EVENTS_PER_SESSION) rec.events.splice(0, rec.events.length - EVENTS_PER_SESSION);
 	}
 
@@ -105,6 +120,7 @@ export class SessionLog {
 				openedMs: Math.round((r.closed || now) - r.opened),
 				counts: { ...r.counts },
 				commitsPerSecond: secs >= 1 ? Math.round((commits / secs) * 10) / 10 : null,
+				first: r.first,
 				events: r.events,
 			};
 		};

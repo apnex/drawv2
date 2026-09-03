@@ -41,6 +41,7 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
+	'server/sessionlog.mjs:OPENING_KEPT': 'the bound on how many of a session FIRST events are kept forever. Exported so tests/sessionlog.test.js asserts against the number the module uses; the property under test is that a flood cannot overwrite the opening, which the test can only check by knowing where the opening stops.',
 	'server/sessionlog.mjs:SESSIONS_KEPT': 'the bound on how many finished sessions are remembered. Exported so tests/sessionlog.test.js asserts the ring against the number the module actually uses; a copy in the test would drift, and the property under test is precisely that neither ring grows without bound.',
 	'server/sessionlog.mjs:EVENTS_PER_SESSION': 'the bound on the per-session event narrative, exported for the same reason as SESSIONS_KEPT. The test that matters proves the COUNT survives trimming, and it can only prove that by knowing where trimming starts.',
 	'cli/draw.mjs:main': 'the tool`s entry point. Its production caller is the `import.meta.url` guard at the bottom of the same file, so the export earns its keep from tests -- and it must, because a CLI tested only by spawning a subprocess is a CLI whose failures arrive as exit codes and stdout diffs. Driving `main` directly is how a verb`s behaviour is asserted rather than its formatting.',
