@@ -144,6 +144,18 @@ export class Sync {
 		this.deferred = [];          // inbound changes held while a gesture is live (D12)
 		this.deferredSnapshot = null; // an unsolicited snapshot held the same way (B71)
 		this.diagramId = null;       // the loaded diagram; what a resync and the outbox belong to
+		/*
+		B184 -- a commit's identity is minted ONCE and never changes.
+
+		It used to be minted per SEND: `submit` numbered each attempt, and `restoreOutbox` renumbered
+		everything it restored. So the same intent arrived under a different name every time it was
+		replayed, and neither side could answer "did this already land?". That question being
+		unanswerable is what made replay unbounded -- the loop was the symptom.
+
+		Seeded from a random prefix rather than a counter, because a counter restarts at zero on
+		reload and two sessions of the same tab would mint colliding ids for different changes.
+		*/
+		this.txnPrefix = `${Math.random().toString(36).slice(2, 8)}`;
 		this.txn = 0;                // correlation ids, so a rejection can name its request
 
 		net.subscribe((msg) => this.onMessage(msg));
@@ -172,7 +184,7 @@ export class Sync {
 	submit(request) {
 		if (this.readOnly) return;                     // read-only: Server-Locked, or no write grant
 		if (!this.hydrated) return;
-		const txnId = `t${++this.txn}`;
+		const txnId = request.txnId || `${this.txnPrefix}-${++this.txn}`;
 		const msg = request.verb
 			? { verb: request.verb, expect: request.expect, to: request.to ?? null, txnId }
 			: { ops: request.ops, label: request.label, txnId };
@@ -235,7 +247,22 @@ export class Sync {
 		const msgs = saved.msgs.filter((m) => m && Array.isArray(m.ops) && m.ops.length);
 		// the attempt count is restored with the message: a change that has already failed four times
 		// has one attempt left, not five, however many times the tab has been reloaded since
-		for (const m of msgs) this.outbox.push({ ops: m.ops, label: m.label, txnId: `t${++this.txn}`, tries: Number(m.tries) || 0 });
+		/*
+		The id is RESTORED, not re-minted. Renumbering here is what made a replay indistinguishable
+		from a new command: the server saw a fresh name and applied it again, every time.
+		*/
+		for (const m of msgs) {
+			/*
+			A record written before B184 carries no id, and one is minted for it here rather than
+			the record being dropped. Discarding a well-formed pending change would trade a loop for
+			lost work, which is the worse defect and is what an existing D30 assertion caught.
+
+			Such a record replays ONCE without protection -- the server has no memory of an id that
+			never existed -- and from then on it has a stable identity like any other.
+			*/
+			const txnId = m.txnId || `${this.txnPrefix}-r${++this.txn}`;
+			this.outbox.push({ ops: m.ops, label: m.label, txnId, tries: Number(m.tries) || 0 });
+		}
 	}
 
 	/*
@@ -353,6 +380,14 @@ export class Sync {
 			this.appliedVersion = b.version || 0;          // our own ops are already in the model
 			const sent = this.outbox.find((m) => m.txnId === b.acked);
 			if (sent) sent.version = b.version;
+			/*
+			B184 -- a replay is acknowledged, and that acknowledgement RETIRES the entry.
+
+			Without this the client keeps an entry the server has already applied, replays it on the
+			next snapshot, is told again that it is a replay, and keeps it again. Recognising the
+			replay server-side only helps if the client acts on being told.
+			*/
+			if (b.replayed && sent) sent.sent = true;
 			this.pruneOutbox(b.durableVersion);
 			/*
 			B162 / I7 -- the server EXPANDED this transaction, and the expansion must reach us too.

@@ -383,6 +383,22 @@ export class Session {
 				}
 				if (!res.ok) return this.error(`commit rejected: ${res.error}`, 'commit-rejected', body.txnId);
 				if (this.locks) this.locks.releaseHold(this.diagramId);   // the human took the wheel
+				/*
+				B184 -- a REPLAY is acknowledged with the version it originally produced.
+
+				A bare noop ack carries no version, so the client cannot prune the entry that caused
+				it and the outbox keeps it forever -- which is the loop this closes. Answering with
+				the original version lets the ordinary prune path retire it, so the second attempt
+				terminates instead of becoming a third.
+
+				`durableVersion` is included for the same reason: pruning is gated on durability, and
+				a replay whose work was flushed long ago must not wait for a fresh flush that will
+				never come.
+				*/
+				if (res.replayed) {
+					return this.send('ack', { acked: body.txnId ?? null, replayed: true,
+						version: res.version, durableVersion: this.store.durableVersion(this.diagramId) });
+				}
 				if (!res.change) return this.send('ack', { acked: body.txnId ?? null, noop: true });
 				this.send('ack', ackBody(res.change, this.store, this.diagramId, body.txnId));
 				if (this.hub) this.hub.broadcast(this.diagramId, 'change', changeBody(res.change, this.store, this.diagramId), this);

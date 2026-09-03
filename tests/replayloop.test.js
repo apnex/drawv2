@@ -123,3 +123,123 @@ test('B183: the count survives persistence, so a reload cannot reset the bound',
 	const rbody = restore.slice(0, restore.indexOf('\n\t}'));
 	assert.match(rbody, /tries/, 'the attempt count is not restored, so a reload resets the bound');
 });
+
+/*
+B184 -- the construction that closes the loop, rather than bounding it.
+
+MAX_REPLAYS is a circuit breaker: it stops the fire and still loses the work. What was missing is
+the ability for either side to answer "did this already land?" -- the client renamed a commit on
+every attempt and the server remembered nothing, so a replay was indistinguishable from new work.
+
+Stable identity plus server memory makes the PROTOCOL idempotent, not merely the ops. The second
+attempt terminates on an acknowledgement instead of becoming a second transaction, so the cycle
+cannot form and the bound becomes a backstop.
+*/
+
+test('B184: a commit keeps its identity across a restore', () => {
+	/*
+	The client half. `restoreOutbox` used to renumber everything it restored, so the same intent
+	arrived under a new name every time -- which is precisely why the server could not recognise it.
+	*/
+	const { sync } = harness();
+	localStorage.setItem('draw.outbox', JSON.stringify({
+		diagram: 'diagram-aa0001',
+		msgs: [{ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete', txnId: 'abc123-7', tries: 2 }],
+	}));
+	sync.restoreOutbox('diagram-aa0001');
+	assert.equal(sync.outbox.length, 1);
+	assert.equal(sync.outbox[0].txnId, 'abc123-7', 'the id must survive the restore unchanged');
+	assert.equal(sync.outbox[0].tries, 2, 'and so must the attempt count');
+});
+
+test('B184: two different changes never share an id', () => {
+	// a counter alone restarts at zero on reload, so two sessions of one tab would collide
+	const { sync } = harness();
+	sync.submit({ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'a' });
+	sync.submit({ ops: [{ op: 'del', kind: 'node', id: 'node-aa0002' }], label: 'b' });
+	const ids = sync.outbox.map((m) => m.txnId);
+	assert.equal(new Set(ids).size, ids.length, `ids collided: ${ids}`);
+	const other = harness().sync;
+	other.submit({ ops: [{ op: 'del', kind: 'node', id: 'node-aa0003' }], label: 'c' });
+	assert.notEqual(other.outbox[0].txnId, ids[0], 'two sessions minted the same id');
+});
+
+test('B184: a legacy record without an id is adopted, never dropped', () => {
+	/*
+	Caught by an existing D30 assertion, and the catch was right. A record written before stable ids
+	is well-formed pending work; discarding it would trade a loop for lost changes, which is the
+	worse defect.
+	*/
+	const { sync } = harness();
+	localStorage.setItem('draw.outbox', JSON.stringify({
+		diagram: 'diagram-aa0001',
+		msgs: [{ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete' }],
+	}));
+	sync.restoreOutbox('diagram-aa0001');
+	assert.equal(sync.outbox.length, 1, 'a legacy record must still replay');
+	assert.ok(sync.outbox[0].txnId, 'and must be given an identity for every attempt after this one');
+});
+
+test('B184: being told a commit was a replay retires it', () => {
+	/*
+	Recognising a replay server-side only helps if the client acts on being told. Without this the
+	entry stays, replays on the next snapshot, is recognised again, and stays again -- the loop
+	surviving the fix that was supposed to end it.
+	*/
+	const { sync } = harness();
+	sync.outbox.push({ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete', txnId: 'x-1', sent: true });
+	sync.onMessage({ cmd: 'ack', body: { acked: 'x-1', replayed: true, version: 12, durableVersion: 12 } });
+	assert.equal(sync.outbox.length, 0, 'a replayed commit must leave the outbox on its acknowledgement');
+});
+
+test('B184: the server applies a repeated commit ONCE and answers with the original version', async () => {
+	/*
+	The server half, against the real store. This is the property that makes the protocol idempotent:
+	the ops were always idempotent, so the DOCUMENT converged -- but every replay was still a new
+	transaction, a new version and a new broadcast, which is what gave a peer a reason to resync and
+	closed the loop.
+	*/
+	const os = await import('node:os');
+	const path = await import('node:path');
+	const { Store } = await import('../server/store.js');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b184-'));
+	try {
+		const store = new Store(dir, { flushMs: 5, authz: false });
+		await store.init();
+		/*
+		The id comes from the created MODEL. `create` answers `{ ok, model }` and carries no `id`, so
+		an earlier draft fell back to the first key in the map -- a different, seeded diagram -- and
+		asserted replay behaviour against a document it had never committed to. Wrong-subject again.
+		*/
+		const created = store.create({ name: 'idem' }, null);
+		assert.equal(created.ok, true, 'the fixture diagram was not created');
+		const id = created.model.state.meta.id;
+		const node = { id: 'node-bb0001', name: 'n', type: 'host', shape: 'circle', x: 60, y: 60 };
+		const req = { ops: [{ op: 'put', kind: 'node', entity: node }], label: 'create node', txnId: 'stable-1' };
+
+		const first = store.commit(id, req, 'client', 's-a', null);
+		assert.equal(first.ok, true, `first commit refused: ${first.error}`);
+		const v1 = store.diagrams.get(id).model.state.meta.version;
+
+		const second = store.commit(id, req, 'client', 's-a', null);
+		assert.equal(second.ok, true, 'a replay must be accepted, not refused');
+		assert.equal(second.replayed, true, 'and must be recognised AS a replay');
+		assert.equal(second.change, null, 'a replay must produce no new change to broadcast');
+		assert.equal(store.diagrams.get(id).model.state.meta.version, v1,
+			'the version moved, so the replay became a second transaction -- the loop is still possible');
+		// `first.version` is the log's version after the commit. `change` carries `seq` and `from`
+		// and no `version` at all -- an assumption that cost two rounds here and one in the store.
+		assert.equal(second.version, first.version,
+			'the replay must answer with the version it originally produced');
+
+		/*
+		The control: genuinely new work must still land. Placed at a DIFFERENT anchor, because the
+		first draft put a second node on the same coordinates and the occupancy rule refused it --
+		so the control proved nothing and reported it as a failure of the replay logic.
+		*/
+		const other = store.commit(id, { ops: [{ op: 'put', kind: 'node',
+			entity: { ...node, id: 'node-bb0002', x: 180, y: 180 } }], label: 'create node', txnId: 'stable-2' }, 'client', 's-a', null);
+		assert.equal(other.ok, true, `new work refused: ${other.error}`);
+		assert.ok(store.diagrams.get(id).model.state.meta.version > v1, 'new work must still advance the version');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

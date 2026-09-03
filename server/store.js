@@ -108,6 +108,15 @@ still opens once and is written back clean.
 One key today. If a second is ever retired it joins this list, and the list is the whole record of
 what the loader forgives.
 */
+/*
+B184 -- how many recent commit ids a diagram remembers, so a replay is recognised as one.
+
+Counted rather than timed. 200 is generous against any burst a real client produces and trivial in
+memory, and it states the limitation plainly: a client that reconnects more than 200 commits behind
+has its replay treated as new work.
+*/
+const SEEN_MAX = 200;
+
 const RETIRED_META = ['slides'];
 
 function shedRetired(doc) {
@@ -1152,7 +1161,46 @@ export class Store {
 		if (!entry) return { ok: false, error: 'unknown diagram' };
 		const denied = this.#mayWrite(id, principal);
 		if (denied) return { ok: false, error: denied, forbidden: true };
+		/*
+		B184 -- a commit this diagram has ALREADY applied is answered, not applied again.
+
+		The outbox replays on every snapshot, which is correct: unsent work must survive a
+		reconnect. What was missing is any way for either side to answer "did this already land?".
+		The client renamed a commit on every attempt and the server remembered nothing, so a replay
+		was indistinguishable from a new command -- it applied again, bumped the version, and the
+		version bump earned another resync, which replayed again. That loop reached 130 attempts a
+		second and was the P0.
+
+		Stable ids (client half) plus this memory (server half) make the PROTOCOL idempotent, not
+		merely the ops. The second attempt terminates on an acknowledgement rather than becoming a
+		second transaction, so the cycle cannot form.
+
+		Answered with the ORIGINAL version, because that is what the client is waiting to hear: it
+		prunes on `durableVersion`, and a repeat that returned a fresh version would prune the wrong
+		entry. `applied: true` marks it so a caller can tell a no-op from real work.
+		*/
+		if (request.txnId && entry.seen?.has(request.txnId)) {
+			// `has`, not a truthiness or !== undefined test: a stored version of 0 or undefined is
+			// still a record that this id was applied, and an earlier draft that checked the VALUE
+			// silently never fired because the value it stored was undefined.
+			return { ok: true, replayed: true, version: entry.seen.get(request.txnId), change: null };
+		}
+
 		const res = txnCommit(entry.model, entry.log, request, by, actor);
+		if (res.ok && request.txnId) {
+			entry.seen = entry.seen || new Map();
+			// `res.version` is the log's version after the commit -- `change` carries `seq`/`from`
+			// and no `version` field at all, which an earlier draft assumed and stored as undefined.
+			entry.seen.set(request.txnId, res.version ?? entry.model.state.meta.version);
+			// bounded by COUNT rather than by time: N maps onto "how far behind may a reconnecting
+			// client be" and does not drift with load. A client further behind than this has its
+			// replay treated as new -- the same class of bound as LOG_MAX, ruled acceptable.
+			if (entry.seen.size > SEEN_MAX) {
+				const drop = entry.seen.size - SEEN_MAX;
+				let n = 0;
+				for (const k of entry.seen.keys()) { if (n++ >= drop) break; entry.seen.delete(k); }
+			}
+		}
 		if (res.ok && res.change) this.markDirty(id);
 		return res;
 	}
