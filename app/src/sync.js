@@ -9,6 +9,14 @@ Three rather than a guessed threshold: it is the smallest number that cannot be 
 the cost of being wrong is one reload, not lost work.
 */
 const GAP_LIMIT = 3;
+
+/*
+B181 -- how long a client stays quiet after the server says it is writing too fast.
+
+Long enough to clear the server's rolling window, so a throttled tab stops rather than spending its
+budget the instant it reopens and being refused again forever.
+*/
+const THROTTLE_BACKOFF_MS = 6000;
 import * as commands from './commands.js';
 import { NAME_MAX } from '../../model/limits.mjs';
 import { Clock } from './clock.js';
@@ -165,6 +173,14 @@ export class Sync {
 	// `ack` alone would drop a change the server has accepted but not yet flushed.
 	drain() {
 		if (!this.net.isOpen() || this.readOnly) return;
+		/*
+		B181 -- honour the server's throttle instead of spending the budget the moment it reopens.
+
+		Without this the backoff is a note nobody reads: a looping client would refill the window
+		immediately and be refused forever, which is the state the incident actually reached. The
+		outbox is untouched, so nothing is lost -- the work goes out when the window has passed.
+		*/
+		if (this.throttledUntil && Date.now() < this.throttledUntil) return;
 		for (const msg of this.outbox) {
 			if (msg.sent) continue;
 			const ok = msg.verb
@@ -411,6 +427,25 @@ export class Sync {
 				was the only place that forgot to say so.
 				*/
 				this.persistOutbox();
+				/*
+				B181 -- a rate limit means SLOW DOWN, and must not be answered with a resync.
+
+				Every refusal used to ask for a full snapshot. During the incident a client was
+				attempting roughly 300 commits a second and being refused every time, so it also
+				demanded 300 snapshots a second -- each one reloading the model and re-rendering the
+				whole diagram. That is a feedback loop, and it is what the director saw as stuttering.
+
+				A resync is the right answer to a REJECTED command, because the tab holds a change
+				the server will never accept and cannot converge alone. It is exactly the wrong
+				answer to a THROTTLED one: the command was not wrong, there was merely too much of
+				it, and answering with the most expensive request available amplifies the flood it
+				is meant to damp.
+				*/
+				if (b.code === 'rate-limited') {
+					this.say(b.message, { code: b.code, err: true });
+					this.throttledUntil = Date.now() + THROTTLE_BACKOFF_MS;
+					return;
+				}
 				// The commit was applied LOCALLY before it was submitted — that is what makes a
 				// gesture feel instant. A rejection therefore leaves this tab holding a change the
 				// server refused, and it will never converge on its own. Ask for authoritative

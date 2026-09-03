@@ -114,3 +114,38 @@ test('B181: the limit is wired into the commit path, and refuses rather than dro
 	assert.match(body, /rate-limited/, 'the refusal must carry a code the client can act on');
 	assert.match(body, /reload if this persists/, 'the refusal must tell the user what to do');
 });
+
+/*
+The client half. A limit the client answers by retrying instantly is not a limit.
+*/
+const client = fs.readFileSync(new URL('../app/src/sync.js', import.meta.url), 'utf8');
+
+test('B181: a throttled client backs off instead of asking for a resync', () => {
+	/*
+	The amplifier, and the thing the director actually saw. Every refusal used to call
+	`requestResync()`. At roughly 300 refused commits a second that is 300 full snapshots a second,
+	each reloading the model and re-rendering the diagram -- a feedback loop presenting as stutter.
+
+	A resync is right for a REJECTED command: the tab holds a change the server will never accept.
+	It is exactly wrong for a THROTTLED one, where the command was fine and there was merely too
+	much of it, and the most expensive request available is the worst possible reply.
+	*/
+	const handler = client.slice(client.indexOf("if (msg.cmd === 'error')"));
+	const body = handler.slice(0, handler.indexOf('requestResync()'));
+	assert.match(body, /rate-limited/, 'the throttle case is not distinguished from a rejection');
+	assert.match(body, /throttledUntil/, 'the throttle does not record a backoff');
+	assert.match(body, /return;/, 'the throttle case must return before the resync');
+});
+
+test('B181: the backoff is actually honoured on the outbound path', () => {
+	// a recorded backoff nothing reads is a comment. `drain` is the one outbound path.
+	const drain = client.slice(client.indexOf('\tdrain() {'));
+	const body = drain.slice(0, drain.indexOf('\n\t}'));
+	assert.match(body, /throttledUntil/, 'drain does not honour the throttle');
+	assert.ok(/Date\.now\(\) < this\.throttledUntil/.test(body), 'the backoff comparison is missing or inverted');
+});
+
+test('B181: the backoff outlasts the server window, so a tab cannot refill it instantly', () => {
+	const backoff = Number(client.match(/const THROTTLE_BACKOFF_MS = (\d+);/)[1]);
+	assert.ok(backoff > WINDOW, `a ${backoff}ms backoff against a ${WINDOW}ms window refills immediately`);
+});
