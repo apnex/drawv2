@@ -119,3 +119,23 @@ test('B182: observing cannot change an outcome', () => {
 	log.report(100); log.hot(1, 100); log.report(100);
 	assert.equal(JSON.stringify(log.report(100)), before, 'reading the report mutated it');
 });
+
+test('B182: the diagram a session is on actually reaches the report', () => {
+	/*
+	A defect in the instrument itself, found while using it during the incident. The first version
+	set `diagram` on the object returned by `report()` -- which is a shaped COPY -- so every row read
+	`-` and the per-diagram filter matched nothing.
+
+	An instrument that quietly reports nothing is worse than no instrument, because it is believed.
+	*/
+	const log = new SessionLog();
+	log.open('s-a', 'user:a@x', 0);
+	log.attach('s-a', 'diagram-aa0001');
+	log.note('s-a', 'commit', null, 10);
+	const [rec] = log.report(1000);
+	assert.equal(rec.diagram, 'diagram-aa0001', 'the diagram never reached the report');
+
+	// and it survives the session closing, which is when it is most often read
+	log.close('s-a', 1200);
+	assert.equal(log.report(1300)[0].diagram, 'diagram-aa0001', 'lost on close');
+});

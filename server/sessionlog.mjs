@@ -62,6 +62,18 @@ export class SessionLog {
 		if (rec.events.length > EVENTS_PER_SESSION) rec.events.splice(0, rec.events.length - EVENTS_PER_SESSION);
 	}
 
+	/*
+	Which document this session is on.
+
+	A method rather than a field poked from outside: the first version reached in through `report()`,
+	which returns SHAPED COPIES, so it set the diagram on a throwaway object and every row read `-`.
+	An instrument that quietly reports nothing is worse than none, because it is believed.
+	*/
+	attach(actor, diagramId) {
+		const rec = this.#live.get(actor);
+		if (rec) rec.diagram = diagramId;
+	}
+
 	// the socket went away. Moved to the past ring rather than dropped, because a session that
 	// vanished is exactly the one worth reading -- reconnect churn is invisible if only the live
 	// ones are kept, and that is precisely what was missed during the incident.

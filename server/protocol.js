@@ -244,7 +244,7 @@ export class Session {
 	snapshot(model) {
 		this.diagramId = model.state.meta.id;
 		// B182 -- which document this session is on, so a report can be read per diagram
-		if (this.sessions) { const r = this.sessions.report().find((x) => x.actor === this.actor); if (r) r.diagram = this.diagramId; }
+		this.sessions?.attach(this.actor, this.diagramId);
 		this.sessions?.note(this.actor, 'open-diagram', { id: this.diagramId });
 		announceActivity(this.hub, this.store, this.locks);   // B114: presence moved
 		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal, this.hub));
