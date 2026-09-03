@@ -91,6 +91,57 @@ Expiry is therefore expressed against **storage generations and the storage serv
 
 ---
 
+### 3.3 The design, in full
+
+Not built.\
+Recorded so it is not re-derived under pressure the day it is needed, and so the reasoning survives the session that produced it.
+
+**The primitive is not "who owns this".**\
+It is **"has the owner proven it is alive since I last looked"**, and choosing that shape is what collapses F1 and F2 into one mechanism instead of two.
+
+The lease object holds `{ holder, revision, seq }`.\
+The holder renews by incrementing `seq`.\
+An observer records `(seq, its own local time)` on first sight; if `seq` has not moved after a locally-measured interval, the holder is not renewing and the lease is free.
+
+**That answers F2 without ever comparing clocks.**\
+B177 was a cross-machine timestamp comparison, and the two peers disagreed by tens of seconds while both believed they were right.\
+Elapsed duration measured locally is safe; an absolute timestamp written by one machine and compared by another is not.\
+Nobody here ever reads a time somebody else wrote.
+
+Acquisition is a compare-and-swap against the generation observed, which `server/files.mjs` already enforces with `ifGenerationMatch`.\
+Two instances racing: one wins, the other takes a 412 and loses safely.\
+The mechanism exists and is already proven in production -- it is what detected the two-writer state at all.
+
+**F1 -- what a refusal carries.\
+Hold-and-retry, bounded by the renewal interval.**
+
+A redirect requires the client to see topology, and every routing hop is another chance to land on a non-holder.\
+That is the loop.\
+Stealing before the interval is where two-holder defects live, and is never done.
+
+Hold-and-retry has exactly one failure mode -- blocking on a dead holder -- and `seq` already answers it: a holder that stops renewing is detectably dead within one interval.\
+So the wait is bounded by the same mechanism that defines the lease, with no second timer and no second concept.\
+A non-holder answers **not me, retry in N**, where N derives from the renewal interval rather than being guessed.
+
+**A client never reloads to solve a routing problem.**\
+That is what makes the loop structurally impossible rather than merely unlikely, and it is the lesson of the night this design came from: a reload is the answer to stale CODE, never to a misrouted request.
+
+**Deliberately excluded.**\
+No lease on READ -- only writes need an owner, and a viewer on a non-holder gets a correct document and a read-only session, which is also the honest answer for scaling since reads are what benefit from more instances.\
+No lease store beyond GCS: no Redis, no Admin API, no second service to hold one string.
+
+**How it would be built.**\
+Failure modes before the happy path, because this is enforcement machinery: when it is wrong it does not degrade, it locks people out.\
+Two instances racing to acquire, a holder dying mid-write, a client bouncing between non-holders, and a lease object that is corrupt or absent -- each against a fake storage backend that can be made to conflict on demand, as `tests/authority.test.js` already does.\
+The CDP harness covers the real path afterwards.
+
+**Why it is still not built.**\
+With `max-instances=1` the idle case cannot occur, and the conflict-driven half of section 5 already covers the case that actually caused harm.\
+Enforcement whose failure mode is lockout is worse than the drift it prevents, and shipping machinery ahead of a measured need is the habit that produced the incident this document exists for (**A11**).\
+It becomes real the day the service is deliberately scaled past one instance.
+
+---
+
 ## 4. Losing authority
 
 An instance that discovers it is not the holder **retires**: it stops answering for that document and tells its clients.
@@ -244,6 +295,10 @@ Needs a precise, false-positive-free definition, or it should be dropped from th
 
 **Outbox replay safety (F5).**\
 Needs establishing before any reload is automatic.
+
+**The refusal payload (F1) and the expiry mechanism (F2) are no longer open.**\
+Both are designed in 3.3 and neither is built.\
+What section 8 still cannot settle is whether the lease should be built at all before the service is deliberately scaled, which is a director decision rather than a technical one.
 
 **Sequencing.**\
 The client ladder is independently valuable, independently testable, and is the half that still works when the server cannot speak.\

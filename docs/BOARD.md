@@ -671,7 +671,12 @@ The one place anything still integrates from a prior point is accumulated damage
 | H13.6 | A clock stamp is consumed by the snapshot it belongs to, so a peer's offset cannot absorb the age of its own tab. Two viewers of one diagram saw a route full of packets and no packets at all, from the same document | **B177** | S2 - S | `DONE` |
 | H13.7 | Authority over a document is a LEASE, held rather than assumed, so exactly one instance answers for it whatever the instance count. The conflict half shipped as H13.11; this is the idle case, where nobody writes so no conflict ever proves anything | **B178** | S3 - L | `BLOCKED` |
 
-**H13.7 is BLOCKED on F1, deliberately.**\
+**H13.7 is DESIGNED and deliberately unbuilt.**\
+The design is `docs/spec/AUTHORITY.md` 3.3, written so it is not re-derived under pressure the day it is needed.\
+F1 and F2 are answered there: hold-and-retry bounded by the renewal interval, and a lease with no expiry clock at all -- the holder increments a counter and an observer measures how long IT has waited, so no machine ever reads a time another machine wrote.\
+What remains is not a technical question but a director one: whether to build enforcement before the service is deliberately scaled, given its failure mode is lockout rather than drift.
+
+**The original blocker, kept because it became real.**\
 `surveys/b178-instance-authority-survey.md` flag F1 asks what a non-holder's refusal carries so a bounced client makes progress.\
 At one instance per revision a refusal can simply say reload, because a non-holder is a superseded instance.\
 At N instances of the SAME revision that answer loops: the client reloads, is routed anywhere, and may land on a non-holder again.\
