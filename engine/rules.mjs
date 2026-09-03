@@ -139,6 +139,16 @@ This is the cost the director accepted when creeps became destructible. `moversA
 instant in one step; damage does not, because a creep's condition depends on every shot before it.
 So the window is folded forward, tick by tick.
 
+THIS IS WHERE SAMPLING STOPS BEING UNIFORM, and it is worth naming because the rest of the engine
+reads as though it never does. `moversAt` is a closed form of `t`: position is derived, so any
+instant costs the same as any other and a peer can ask about the past as cheaply as the present.
+That property is what makes a late joiner free and `draw movers --at` possible at all.
+
+Health does not work that way. It accumulates, so this function INTEGRATES from a prior point rather
+than sampling, and the further back the question the more there is to fold. B180 holds the remedy: a
+cached fold at tick N restores O(1) sampling for every instant after N. Deferred deliberately -- the
+present costs 4ms -- and the trigger is wanting to scrub BACKWARDS, not the present getting slow.
+
 BOUNDED BY THE LONGEST TRANSIT, not by how long the diagram has existed. Nothing that departed
 before the oldest living mover can still be alive, so there is nothing before that to replay -- a
 spawner armed an hour ago costs exactly what one armed a minute ago costs. The same reasoning that

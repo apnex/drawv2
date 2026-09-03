@@ -678,7 +678,10 @@ Building ownership enforcement with its failure mode undesigned would be the rad
 **Exit:** a player places a tower during play, it burns creeps that come into range, and two browsers watching the same diagram agree on which creeps died without exchanging anything but the placement.
 
 **Not in this milestone:** waves, scoring, lives, separated in-game authoring, the deviation memo.\
-The memo is a checkpoint so folding starts from the last clean point; it is an optimisation and is not needed until the fold is measurably slow.
+The memo is a checkpoint so folding starts from the last clean point.\
+Filed as **B180** and re-reasoned: it is not an optimisation, it is what restores UNIFORM sampling of a derived world.\
+`moversAt` is a closed form of `t`, so any instant costs the same; `combatAt` must integrate, so the further back the question the more there is to fold.\
+The trigger is therefore wanting to scrub backwards, not the present becoming slow -- the present costs 4ms.
 
 ---
 
@@ -696,6 +699,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
+| **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to SCRUB BACKWARDS -- replay a wave, review a death, audit a disputed kill. Not slowness: the present costs 4ms | a cached fold at tick N restores O(1) sampling after N |
 | **B88** | S3 | Prose can assert that finished work is blocked, and no rule reads a sentence | a second blocked entry appears on the board, or any `Decisions required` entry returns |
 
 **Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:
