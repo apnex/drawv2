@@ -179,6 +179,28 @@ export function gcsFiles(bucket, {
 	loud, and loud is the point.
 	*/
 	const generations = new Map();
+	/*
+	B185 -- one write at a time per object, because the precondition is read-modify-write.
+
+	`write` reads the cached generation, sends it as `ifGenerationMatch`, and updates the cache from
+	the response. Two overlapping writes to one object therefore both read the SAME generation before
+	either reply lands: the first succeeds and moves the object on, and the second is refused with a
+	412 naming a generation that was current when it started.
+
+	Observed against a brand-new diagram, on a single instance, with no other writer: the store
+	reported "another writer holds it" about ITSELF, marked the document lost, and then refused every
+	edit including its own deletion. The conflict detection was working exactly as designed. What it
+	detected was this function racing itself.
+
+	A promise chain per name rather than a lock: writes to one object serialise, writes to different
+	objects stay parallel, and there is no release to forget.
+	*/
+	const inFlight = new Map();
+	const serialise = (name, fn) => {
+		const mine = (inFlight.get(name) ?? Promise.resolve()).catch(() => {}).then(fn);
+		inFlight.set(name, mine.catch(() => {}));   // a refused write must not wedge the next one
+		return mine;
+	};
 
 	async function call(url, init = {}, { retryable = true } = {}) {
 		let attempt = 0;
@@ -240,7 +262,7 @@ export function gcsFiles(bucket, {
 		for a name we have never seen: if it turns out to exist, something else created it and we
 		must not overwrite it blind.
 		*/
-		async write(name, text) {
+		async write(name, text) { return serialise(name, async () => {
 			const expected = generations.get(name) ?? '0';
 			const q = new URLSearchParams({ uploadType: 'media', name, ifGenerationMatch: expected });
 			const res = await call(`${GCS_UPLOAD}/${encodeURIComponent(bucket)}/o?${q}`, {
@@ -257,7 +279,7 @@ export function gcsFiles(bucket, {
 			if (!res.ok) throw new Error(`gcs write failed for ${name}: ${res.status} ${await res.text()}`);
 			const body = await res.json();
 			if (body.generation) generations.set(name, body.generation);
-		},
+		}); },
 
 		async remove(name, tags = null) {
 			/*

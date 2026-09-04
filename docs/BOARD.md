@@ -696,6 +696,7 @@ Building ownership enforcement with its failure mode undesigned would be the rad
 | H13.11 | A write conflict is proof another instance owns the document, so the store stops retrying a write it cannot win and the hub retires that diagram's sessions. The detection existed and drove nothing -- 3203 retries while both instances served their own clients | **B178** | S2 - M | `DONE` |
 | H13.12 | The outbox replay loop that caused the P0: a snapshot re-sends everything, a re-send earns another snapshot. Replay is now bounded and the count survives a reload | **B183** | S1 - S | `DONE` |
 | H13.13 | Exactly-once delivery by construction: a commit's identity is minted once and the server remembers what it applied, so a replay is acknowledged rather than re-applied. Closes the P0 at its cause rather than bounding it | **B184** | S2 - M | `DONE` |
+| H13.14 | A single instance reported a write conflict against its own document, because the GCS write is read-modify-write and nothing serialised it. One promise chain per object | **B185** | S1 - S | `DONE` |
 | H13.2 | A tower rotates to face what it is tracking. The `loadbalancer` glyph's middle arrow points east at rest, so orientation IS the aiming component and this needed no new art. Aim is separated from firing, so a turret follows its target through the cooldown | `feature` | S1 - S | `DONE` |
 
 **Exit:** a player places a tower during play, it burns creeps that come into range, and two browsers watching the same diagram agree on which creeps died without exchanging anything but the placement.

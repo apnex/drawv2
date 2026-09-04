@@ -185,3 +185,66 @@ test('B6: an unreachable metadata server is a sentence, not an undici stack trac
 		return true;
 	});
 });
+
+test('B185: concurrent writes to one object serialise, so the precondition cannot race itself', async () => {
+	/*
+	The defect that stopped a demo, and the one the conflict detector reported as somebody else.
+
+	`write` is read-modify-write: it reads the cached generation, sends it as `ifGenerationMatch`,
+	and updates the cache from the reply. Two overlapping writes to one object therefore both read
+	the SAME generation before either reply lands -- the first succeeds and moves the object on, and
+	the second is refused with a 412 naming a generation that was current when it started.
+
+	Observed against a brand-new diagram, on a single instance, with no other writer: the store
+	reported "another writer holds it" about ITSELF, marked the document lost under B178, and then
+	refused every edit including its own deletion. The detection was correct. What it detected was
+	this function racing itself, and the fix belongs here rather than in the detector.
+
+	Writes to DIFFERENT objects must stay parallel, or every flush in the store queues behind every
+	other one.
+	*/
+	let gen = 0, inflight = 0, maxConcurrent = 0, conflicts = 0;
+	const seenNames = new Set();
+	const fetchStub = async (url) => {
+		const u = String(url);
+		if (!u.includes('uploadType=media')) return { ok: true, status: 200, json: async () => ({}), text: async () => '' };
+		const name = new URL(u).searchParams.get('name');
+		seenNames.add(name);
+		inflight += 1; maxConcurrent = Math.max(maxConcurrent, inflight);
+		const expected = new URL(u).searchParams.get('ifGenerationMatch');
+		await new Promise((r) => setTimeout(r, 15));            // a round trip wide enough to overlap
+		inflight -= 1;
+		if (name === 'one.json' && expected !== String(gen)) {
+			conflicts += 1;
+			return { ok: false, status: 412, json: async () => ({}), text: async () => '' };
+		}
+		if (name === 'one.json') gen += 1;
+		return { ok: true, status: 200, json: async () => ({ generation: String(gen) }), text: async () => '' };
+	};
+
+	const files = gcsFiles('b', { token: async () => 'tok', fetch: fetchStub });
+	const results = await Promise.allSettled([
+		files.write('one.json', 'a'), files.write('one.json', 'b'),
+		files.write('one.json', 'c'), files.write('one.json', 'd'),
+	]);
+
+	assert.equal(conflicts, 0, `${conflicts} write(s) raced and were refused by their own precondition`);
+	assert.equal(maxConcurrent, 1, `${maxConcurrent} writes to one object were in flight at once`);
+	assert.equal(results.filter((r) => r.status === 'rejected').length, 0, 'a serialised write was rejected');
+	assert.equal(gen, 4, 'every write must land, in order');
+});
+
+test('B185: writes to DIFFERENT objects stay parallel', async () => {
+	// the serialisation is per object. Queuing all writes globally would make one slow flush block
+	// every other diagram in the store, trading a race for a bottleneck.
+	let inflight = 0, maxConcurrent = 0;
+	const files = gcsFiles('b', { token: async () => 'tok', fetch: async (url) => {
+		if (!String(url).includes('uploadType=media')) return { ok: true, status: 200, json: async () => ({}), text: async () => '' };
+		inflight += 1; maxConcurrent = Math.max(maxConcurrent, inflight);
+		await new Promise((r) => setTimeout(r, 15));
+		inflight -= 1;
+		return { ok: true, status: 200, json: async () => ({ generation: '1' }), text: async () => '' };
+	} });
+	await Promise.all([files.write('a.json', 'x'), files.write('b.json', 'x'), files.write('c.json', 'x')]);
+	assert.ok(maxConcurrent > 1, 'writes to different objects were serialised against each other');
+});
