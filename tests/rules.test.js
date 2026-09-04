@@ -17,9 +17,9 @@ import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval, speed, kind: 'packet', since: 0 } });
-	m.put('waypoint', { id: 'waypoint-aa0002', x: 1200, y: 0 });
-	m.put('link', { id: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval, speed, kind: 'packet', since: 0 } });
+	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 1200, y: 0 });
+	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
 	towers.forEach(([x, y], i) => m.put('node', { id: `node-bb00${i}1`, type: 'loadbalancer', x, y }));
 	return m;
 }
@@ -83,9 +83,9 @@ test('H12.16: towers are iterated in a fixed order whatever the document says', 
 test('H12.16: range is inclusive and measured in CELLS, in exact integer arithmetic', () => {
 	// a tower at the origin, range 3 cells = 180px at a 60px pitch. 180 is in, 181 is out.
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
-	m.put('waypoint', { id: 'waypoint-aa0002', x: 1200, y: 0 });
-	m.put('link', { id: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
+	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 1200, y: 0 });
+	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
 	m.put('node', { id: 'node-bb0001', type: 'loadbalancer', x: 0, y: 0 });
 	const w = worldOf(m);
 	const at = (x) => factsAt(w, 0, [{ id: 'waypoint-aa0001#0', progress: 0.5, at: [x, 0] }]);
@@ -156,9 +156,9 @@ test('H12.16: range is measured in BOTH axes -- the y term is load-bearing', () 
 	// the original test put every tower and mover on y=0, so `dx*dx + dy*dy` would have passed
 	// with the y term deleted, or subtracted. Range is a circle; a test on one axis cannot see that.
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
-	m.put('waypoint', { id: 'waypoint-aa0002', x: 1200, y: 0 });
-	m.put('link', { id: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
+	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 1200, y: 0 });
+	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
 	m.put('node', { id: 'node-bb0001', type: 'loadbalancer', x: 300, y: 180 });
 	const w = worldOf(m);
 	const at = (x, y) => factsAt(w, 0, [{ id: 'waypoint-aa0001#0', progress: 0.5, at: [x, y] }]).length;

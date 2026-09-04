@@ -30,7 +30,7 @@ export function controlBarDoc() {
 		{ id: 'node-d22001', name: 'router', type: 'router', shape: 'circle', x: -3 * C, y: 0 },
 		{ id: 'node-e33001', name: 'server', type: 'server', shape: 'square', x: 2 * C, y: 0 }];
 	const links = [
-		{ id: 'link-000001', src: 'node-c11001', dst: 'node-d22001' },
-		{ id: 'link-000002', src: 'node-d22001', dst: 'node-e33001' }];
+		{ id: 'link-000001', name: 'link-000001', src: 'node-c11001', dst: 'node-d22001' },
+		{ id: 'link-000002', name: 'link-000002', src: 'node-d22001', dst: 'node-e33001' }];
 	return { meta: { id: 'diagram-cba001', name: 'control-bar' }, nodes, waypoints: [], links, zones: [], groups: [] };
 }

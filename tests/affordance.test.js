@@ -140,10 +140,10 @@ test('a selected link lights its waypoints, and releases them when selection mov
 	const { Model } = await import('../model/index.mjs');
 	const model = new Model();
 	model.put('node', { id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' });
-	model.put('waypoint', { id: 'waypoint-aa0001', x: 120, y: 0 });
-	model.put('waypoint', { id: 'waypoint-aa0002', x: 0, y: -120 });
-	model.put('waypoint', { id: 'waypoint-aa0003', x: 300, y: 300 });   // on no link at all
-	model.put('link', { id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] });
+	model.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 });
+	model.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 });
+	model.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 300, y: 300 });   // on no link at all
+	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] });
 
 	const state = new Map();
 	const host = { model, selectedSet: new Set(['link-aa0001']), pathLit: undefined,

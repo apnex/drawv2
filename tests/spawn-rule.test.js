@@ -23,9 +23,9 @@ const WP_A = 'waypoint-aaaaaa', WP_B = 'waypoint-bbbbbb', LINK = 'link-cccccc';
 
 function doc() {
 	const m = new Model();
-	m.put('waypoint', { id: WP_A, x: 0, y: 0 });
-	m.put('waypoint', { id: WP_B, x: 200, y: 0 });
-	m.put('link', { id: LINK, src: WP_A, dst: WP_B });
+	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('waypoint', { id: WP_B, name: WP_B, x: 200, y: 0 });
+	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_B });
 	return m;
 }
 
@@ -46,7 +46,7 @@ test('H12.7: the SAME target means different things in read view and author view
 
 test('H12.7: only an ENDPOINT is armable -- a bend and a node are not', () => {
 	const m = doc();
-	m.put('waypoint', { id: 'waypoint-dddddd', x: 40, y: 0 });
+	m.put('waypoint', { id: 'waypoint-dddddd', name: 'waypoint-dddddd', x: 40, y: 0 });
 	m.set('link', LINK, { via: ['waypoint-dddddd'] });
 	assert.equal(armable(sit(m, 'waypoint-dddddd', 'run')), false, 'a bend turns a path, it does not end one');
 	assert.equal(armable(sit(m, WP_A, 'run')), true, 'its endpoints still are');
@@ -54,8 +54,8 @@ test('H12.7: only an ENDPOINT is armable -- a bend and a node are not', () => {
 
 test('H12.7: a CLOSED route cannot be armed, because a ring has no ends', () => {
 	const m = new Model();
-	m.put('waypoint', { id: WP_A, x: 0, y: 0 });
-	m.put('link', { id: LINK, src: WP_A, dst: WP_A, closed: true });
+	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_A, closed: true });
 	assert.equal(armable(sit(m, WP_A, 'run')), false);
 });
 

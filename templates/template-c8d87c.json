@@ -232,134 +232,160 @@
 		{
 			"id": "waypoint-03bfa1",
 			"x": 180,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-1"
 		},
 		{
 			"id": "waypoint-ba6979",
 			"x": 180,
-			"y": -60
+			"y": -60,
+			"name": "waypoint-2"
 		},
 		{
 			"id": "waypoint-8e1b57",
 			"x": -180,
-			"y": 240
+			"y": 240,
+			"name": "waypoint-3"
 		},
 		{
 			"id": "waypoint-deeaa5",
 			"x": -180,
-			"y": 360
+			"y": 360,
+			"name": "waypoint-4"
 		},
 		{
 			"id": "waypoint-fe847f",
 			"x": -120,
-			"y": 300
+			"y": 300,
+			"name": "waypoint-5"
 		},
 		{
 			"id": "waypoint-4db9bb",
 			"x": -60,
-			"y": 240
+			"y": 240,
+			"name": "waypoint-6"
 		},
 		{
 			"id": "waypoint-d4caaa",
 			"x": -60,
-			"y": 360
+			"y": 360,
+			"name": "waypoint-7"
 		},
 		{
 			"id": "waypoint-1fe6ad",
 			"x": 720,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-8"
 		},
 		{
 			"id": "waypoint-e291c1",
 			"x": 720,
-			"y": 120
+			"y": 120,
+			"name": "waypoint-9"
 		},
 		{
 			"id": "waypoint-3dc579",
 			"x": 780,
-			"y": 120
+			"y": 120,
+			"name": "waypoint-10"
 		},
 		{
 			"id": "waypoint-64de7c",
 			"x": 780,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-11"
 		},
 		{
 			"id": "waypoint-019220",
 			"x": -360,
-			"y": -120
+			"y": -120,
+			"name": "waypoint-12"
 		},
 		{
 			"id": "waypoint-125675",
 			"x": -180,
-			"y": -120
+			"y": -120,
+			"name": "waypoint-13"
 		},
 		{
 			"id": "waypoint-d6ff56",
 			"x": -180,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-14"
 		},
 		{
 			"id": "waypoint-04c4d3",
 			"x": -240,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-15"
 		},
 		{
 			"id": "waypoint-ee1b29",
 			"x": -240,
-			"y": -60
+			"y": -60,
+			"name": "waypoint-16"
 		},
 		{
 			"id": "waypoint-c1c455",
 			"x": -300,
-			"y": -60
+			"y": -60,
+			"name": "waypoint-17"
 		},
 		{
 			"id": "waypoint-4e5cc0",
 			"x": -300,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-18"
 		},
 		{
 			"id": "waypoint-9b0de9",
 			"x": -360,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-19"
 		}
 	],
 	"links": [
 		{
 			"id": "link-ead55a",
 			"src": "node-2ae99d",
-			"dst": "node-72c7cc"
+			"dst": "node-72c7cc",
+			"name": "link-1"
 		},
 		{
 			"id": "link-439c5a",
 			"src": "node-c3b527",
-			"dst": "node-cb4e93"
+			"dst": "node-cb4e93",
+			"name": "link-2"
 		},
 		{
 			"id": "link-27b00b",
 			"src": "node-a09e9c",
-			"dst": "node-6b838e"
+			"dst": "node-6b838e",
+			"name": "link-3"
 		},
 		{
 			"id": "link-1c588f",
 			"src": "node-75d99e",
-			"dst": "node-3095f0"
+			"dst": "node-3095f0",
+			"name": "link-4"
 		},
 		{
 			"id": "link-e0f7ae",
 			"src": "node-75d99e",
-			"dst": "node-06e134"
+			"dst": "node-06e134",
+			"name": "link-5"
 		},
 		{
 			"id": "link-64c524",
 			"src": "node-d1b723",
-			"dst": "node-e46954"
+			"dst": "node-e46954",
+			"name": "link-6"
 		},
 		{
 			"id": "link-054aea",
 			"src": "node-6d3707",
-			"dst": "node-febb25"
+			"dst": "node-febb25",
+			"name": "link-7"
 		},
 		{
 			"id": "link-afa2cd",
@@ -369,7 +395,8 @@
 				"waypoint-03bfa1",
 				"waypoint-ba6979"
 			],
-			"closed": false
+			"closed": false,
+			"name": "link-8"
 		},
 		{
 			"id": "link-7cbe4d",
@@ -380,12 +407,14 @@
 				"waypoint-4db9bb",
 				"waypoint-d4caaa"
 			],
-			"closed": true
+			"closed": true,
+			"name": "link-9"
 		},
 		{
 			"id": "link-088ba1",
 			"src": "waypoint-1fe6ad",
-			"dst": "waypoint-e291c1"
+			"dst": "waypoint-e291c1",
+			"name": "link-10"
 		},
 		{
 			"id": "link-8dc443",
@@ -393,47 +422,56 @@
 			"dst": "node-000006",
 			"via": [
 				"waypoint-64de7c"
-			]
+			],
+			"name": "link-11"
 		},
 		{
 			"id": "link-381b20",
 			"src": "node-08be47",
-			"dst": "node-76d156"
+			"dst": "node-76d156",
+			"name": "link-12"
 		},
 		{
 			"id": "link-0d3fc0",
 			"src": "node-76d156",
-			"dst": "node-febdf3"
+			"dst": "node-febdf3",
+			"name": "link-13"
 		},
 		{
 			"id": "link-abb5b8",
 			"src": "node-febdf3",
-			"dst": "node-476f85"
+			"dst": "node-476f85",
+			"name": "link-14"
 		},
 		{
 			"id": "link-92059c",
 			"src": "node-003c0c",
-			"dst": "node-22db5a"
+			"dst": "node-22db5a",
+			"name": "link-15"
 		},
 		{
 			"id": "link-16c586",
 			"src": "node-db1b78",
-			"dst": "node-75d99e"
+			"dst": "node-75d99e",
+			"name": "link-16"
 		},
 		{
 			"id": "link-0095c0",
 			"src": "node-83fff3",
-			"dst": "node-e1a10b"
+			"dst": "node-e1a10b",
+			"name": "link-17"
 		},
 		{
 			"id": "link-90d8bf",
 			"src": "node-e1a10b",
-			"dst": "node-db1b78"
+			"dst": "node-db1b78",
+			"name": "link-18"
 		},
 		{
 			"id": "link-d0bc93",
 			"src": "node-db1b78",
-			"dst": "node-83fff3"
+			"dst": "node-83fff3",
+			"name": "link-19"
 		},
 		{
 			"id": "link-e481b3",
@@ -447,7 +485,8 @@
 				"waypoint-c1c455",
 				"waypoint-4e5cc0"
 			],
-			"closed": true
+			"closed": true,
+			"name": "link-20"
 		}
 	],
 	"zones": [

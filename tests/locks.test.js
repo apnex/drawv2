@@ -481,7 +481,7 @@ test('B16: a multi-op transaction is ONE change and ONE version bump', async () 
 		const ops = [
 			{ op: 'put', kind: 'node', entity: { id: 'node-c0de02', name: 'a', type: 'host', shape: 'circle', x: 360, y: 0 } },
 			{ op: 'put', kind: 'node', entity: { id: 'node-c0de03', name: 'b', type: 'host', shape: 'circle', x: 420, y: 0 } },
-			{ op: 'put', kind: 'link', entity: { id: 'link-c0de04', src: 'node-c0de02', dst: 'node-c0de03' } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-c0de04', name: 'link-c0de04', src: 'node-c0de02', dst: 'node-c0de03' } },
 		];
 		const r = await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 			method: 'POST', headers: H(lock.token), body: JSON.stringify({ ops, label: 'wire pair' }) });

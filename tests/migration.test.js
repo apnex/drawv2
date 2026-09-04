@@ -28,7 +28,7 @@ const oldDoc = (over = {}) => ({
 	},
 	nodes: [node('node-aa0001', 60, 60), node('node-aa0002', -120, 300)],
 	waypoints: [],
-	links: [{ id: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' }],
+	links: [{ id: 'link-aa0003', name: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' }],
 	zones: [{ id: 'zone-aa0004', name: 'dmz', x: 30, y: 30, w: 240, h: 180 }],
 	groups: [{ id: 'group-aa0005', name: 'g', members: ['node-aa0001', 'node-aa0002'] }],
 	selection: ['node-aa0001'],
@@ -92,14 +92,48 @@ test('invariant() ignores key order and collection order — a reserialization i
 	assert.equal(invariant(b), invariant(a));
 });
 
+/*
+B187 -- mint `<kind>-<n>` for any waypoint or link without a name, exactly as `migrateNames` in
+`server/store.js` does. Mirrored rather than imported because that function is internal to the
+store, and the vocabulary check below asserts the two stay in step.
+*/
+function nameEverything(doc) {
+	const taken = new Set();
+	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+		for (const e of doc[k] || []) if (typeof e?.name === 'string') taken.add(e.name);
+	}
+	for (const [key, prefix] of [['waypoints', 'waypoint'], ['links', 'link']]) {
+		for (const e of doc[key] || []) {
+			if (typeof e?.name === 'string') continue;
+			let n = 1;
+			while (taken.has(`${prefix}-${n}`)) n += 1;
+			e.name = `${prefix}-${n}`;
+			taken.add(e.name);
+		}
+	}
+}
+
 // ---- end to end, through a real Store ----
 
 test('CS5 gate: a migrated corpus boots, and every entity is deep-equal through the new binary', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-mig-'));
 	try {
 		const docs = [oldDoc(), oldDoc({ meta: { id: 'diagram-bb0002', name: 'two', rev: 4, grid: 'center', slides: { url: '', presentationId: '', pageId: '' } } })];
+		/*
+		B187 -- the baseline is taken with names ALREADY applied.
+
+		`invariant` compares whole entities, and it exists to prove CS5's coordinate migration loses
+		nothing. Adding a mandatory `name` to waypoints and links is a deliberate change it cannot
+		tell apart from loss, so comparing a pre-B187 snapshot against a post-B187 load reports the
+		addition as a missing entity.
+
+		Naming both sides keeps the check testing what it is for -- that every coordinate, id and
+		relation survives the binary -- rather than asserting that nothing about the schema may ever
+		change again.
+		*/
 		const before = new Map();
 		for (const d of docs) {
+			nameEverything(d);
 			before.set(d.meta.id, invariant(d));
 			fs.writeFileSync(path.join(dir, `${d.meta.id}.json`), JSON.stringify(migrateDoc(d, null), null, '\t') + '\n');
 		}
@@ -128,5 +162,48 @@ test('CS5 gate: an UNMIGRATED file is a named boot failure, never a silent resee
 		const store = new Store(dir, { flushMs: 3_600_000 });
 		await assert.rejects(() => store.init(), /refusing to boot/, 'the old shape is refused, loudly');
 		assert.equal(store.diagrams.size, 0, 'and nothing was seeded over it');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B187: a document written before names gains them on read, uniquely', async () => {
+	/*
+	X1 -- pure target state. `name` is mandatory on every kind, so a stored document that predates
+	the field is migrated once on read rather than tolerated forever by an optional-field shim.
+
+	The uniqueness case is the one worth pinning: a name is minted against every name ALREADY in the
+	document, not against a counter. Here a node is squatting on `waypoint-1`, so the two waypoints
+	must become `waypoint-2` and `waypoint-3` -- `resolveId` refuses an ambiguous name, so a
+	duplicate would surface later as an unrelated verb failing.
+	*/
+	const os = await import('node:os');
+	const path = await import('node:path');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b187-'));
+	try {
+		const doc = {
+			meta: { id: 'diagram-aa0001', name: 'legacy', version: 3 },
+			nodes: [{ id: 'node-aa0001', name: 'waypoint-1', type: 'host', shape: 'circle', x: 0, y: 0 }],
+			// deliberately UNNAMED -- this is the legacy shape the migration exists to repair, so it
+			// must not be swept along with the fixtures that only needed a name to satisfy the schema
+			waypoints: [{ id: 'waypoint-aa0002', x: 60, y: 0 }, { id: 'waypoint-aa0003', x: 120, y: 0 }],
+			links: [{ id: 'link-aa0004', src: 'waypoint-aa0002', dst: 'waypoint-aa0003' }],
+			zones: [], groups: [], selection: [],
+		};
+		fs.writeFileSync(path.join(dir, 'diagram-aa0001.json'), JSON.stringify(doc));
+
+		const { Store } = await import('../server/store.js');
+		const store = new Store(dir, { flushMs: 5, authz: false });
+		await store.init();
+
+		const entry = store.diagrams.get('diagram-aa0001');
+		assert.ok(entry, 'the document was refused -- an unnamed entity must migrate, not vanish');
+		const out = entry.model.toJSON();
+
+		assert.equal(out.nodes[0].name, 'waypoint-1', 'an existing name must not be rewritten');
+		const wp = out.waypoints.map((w) => w.name);
+		assert.deepEqual(wp, ['waypoint-2', 'waypoint-3'], `minted around the squatter, got ${wp}`);
+		assert.equal(out.links[0].name, 'link-1');
+
+		const all = [...out.nodes, ...out.waypoints, ...out.links].map((e) => e.name);
+		assert.equal(new Set(all).size, all.length, `names collided: ${all}`);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

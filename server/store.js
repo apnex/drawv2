@@ -125,7 +125,41 @@ function shedRetired(doc) {
 	for (const key of RETIRED_META) {
 		if (key in doc.meta) { delete doc.meta[key]; shed = true; }
 	}
-	return migrateSpawn(doc) || shed;
+	return migrateNames(doc) || migrateSpawn(doc) || shed;
+}
+
+/*
+B187 -- every entity carries a name, so documents written before that gain one on read.
+
+Waypoints and links were the two kinds without the field. `resolveId` has always matched on
+`e.name`, so those two were the only addressable entities that could not be referred to in words --
+which cost a demo rehearsal and forced piping JSON through a script to recover two ids.
+
+Named the way a fresh one would be, `<kind>-<n>`, and uniqued against every name already in the
+document rather than against a counter. Two waypoints migrating in the same document must not both
+become `waypoint-1`, and an existing entity may already be holding that name.
+
+TARGET STATE, no compatibility shim: the validator requires the field, this supplies it once on
+read, and the document is written back with it. Nothing downstream needs to tolerate its absence.
+*/
+function migrateNames(doc) {
+	let changed = false;
+	const taken = new Set();
+	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+		for (const e of doc[k] || []) if (e && typeof e.name === 'string') taken.add(e.name);
+	}
+	const mint = (prefix) => {
+		let n = 1;
+		while (taken.has(`${prefix}-${n}`)) n++;
+		taken.add(`${prefix}-${n}`);
+		return `${prefix}-${n}`;
+	};
+	for (const [key, prefix] of [['waypoints', 'waypoint'], ['links', 'link']]) {
+		for (const e of doc[key] || []) {
+			if (e && typeof e.name !== 'string') { e.name = mint(prefix); changed = true; }
+		}
+	}
+	return changed;
 }
 
 /*

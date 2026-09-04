@@ -67,7 +67,7 @@ function fixture() {
 		wp('waypoint-ba0002', 0, 0, { interval: 600, speed: 2, kind: 'packet', since: Date.now() - 60_000 }),
 			wp('waypoint-ba0003', 12 * PITCH, 0),
 		],
-		links: [{ id: 'link-ba0005', src: 'waypoint-ba0002', dst: 'waypoint-ba0003' }],
+		links: [{ id: 'link-ba0005', name: 'link-ba0005', src: 'waypoint-ba0002', dst: 'waypoint-ba0003' }],
 		zones: [], groups: [], selection: [],
 	};
 }

@@ -385,7 +385,7 @@ test('B38: a straight connection is a two-point path — no separate element kin
 	const sch = { entities: [
 		{ id: 'node-000001', kind: 'node', cell: [0, 0] },
 		{ id: 'node-000002', kind: 'node', cell: [2, 0] },
-	], relations: [{ id: 'link-000001', route: { src: 'node-000001', dst: 'node-000002' } }] };
+	], relations: [{ id: 'link-000001', name: 'link-000001', route: { src: 'node-000001', dst: 'node-000002' } }] };
 	const { scene } = resolve(sch);
 	const wires = scene.filter((e) => e.kind === 'path');
 	assert.equal(wires.length, 1);
@@ -448,8 +448,8 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 	const doc = (closed) => ({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 60, y: 60 }],
-		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'], closed }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 60, y: 60 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'], closed }],
 		zones: [], groups: [],
 	});
 	const roles = (d) => [...k.render(k.docToSchema(d)).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
@@ -463,8 +463,8 @@ test('B162: an endpoint is drawn heavier, on the same footprint as a bend', asyn
 	const svg = k.render(k.docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 60, y: 60 }],
-		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 60, y: 60 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
 		zones: [], groups: [],
 	}));
 	const drawn = [...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*r="([\d.]+)"[^>]*stroke-width="([\d.]+)"/g)]
@@ -581,8 +581,8 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	const svg = k.render(k.docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 0, y: -120 }],
-		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
 		zones: [], groups: [],
 	}));
 	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*fill="([^"]*)"/g)]
@@ -639,8 +639,8 @@ test('B162: the two renderers agree, value for value', async () => {
 	const svg = k.render(k.docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', x: 0, y: -120 }],
-		links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
 		zones: [], groups: [],
 	}));
 	const drawn = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*r="([\d.]+)" fill="([^"]*)"[^>]*stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"/g)]

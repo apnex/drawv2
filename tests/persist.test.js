@@ -508,8 +508,8 @@ test('B83: a document with a cross-entity violation LOADS, and is counted', asyn
 		nodes: [0, 1].map((i) => ({ id: `node-ee000${i}`, name: `n${i}`, type: 'host', shape: 'circle', x: i * 60, y: 0 })),
 		waypoints: [], zones: [], groups: [], selection: [],
 		// two straight links on one pair: writable before the rule existed, uncreatable now
-		links: [{ id: 'link-ee0002', src: 'node-ee0000', dst: 'node-ee0001' },
-			{ id: 'link-ee0003', src: 'node-ee0000', dst: 'node-ee0001' }],
+		links: [{ id: 'link-ee0002', name: 'link-ee0002', src: 'node-ee0000', dst: 'node-ee0001' },
+			{ id: 'link-ee0003', name: 'link-ee0003', src: 'node-ee0000', dst: 'node-ee0001' }],
 	};
 	fs.writeFileSync(path.join(dir, 'diagram-ee0001.json'), JSON.stringify(doc, null, '\t'));
 

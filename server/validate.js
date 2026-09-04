@@ -182,6 +182,21 @@ const FIELDS = {
 	},
 	waypoint: {
 		id: (v) => id(v, 'waypoint'),
+		/*
+		B187 -- every entity may be named, and a waypoint is not the exception.
+
+		The `pinned` note below says a waypoint stores INTENT and nothing else, and that argued
+		against this field. The ruling is that a name IS intent -- an author calling a bend
+		`flow-in` has recorded something no geometry can express -- and that naming is a property of
+		the schema rather than of any one kind.
+
+		It also closes a real gap: `resolveId` has always matched on `e.name` across every kind, so
+		waypoints were the only addressable entity that could not be referred to in words. Two of
+		them cost a demo rehearsal, and forced piping JSON through a script to recover their ids.
+
+		Optional, like every other name.
+		*/
+		name: (v) => str(v, NAME_MAX),
 		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),   // a waypoint IS a node for placement
 		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
 		/*
@@ -218,6 +233,7 @@ const FIELDS = {
 	},
 	link: {
 		id: (v) => id(v, 'link'),
+		name: (v) => str(v, NAME_MAX),   // B187 -- naming is schema-wide, and a link was the other gap
 		src: (v) => id(v, 'node') || id(v, 'waypoint'),   // endpoint = node OR waypoint
 		dst: (v) => id(v, 'node') || id(v, 'waypoint'),
 		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'waypoint')),

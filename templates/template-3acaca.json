@@ -35,57 +35,68 @@
 		{
 			"id": "waypoint-735fd4",
 			"x": 60,
-			"y": -180
+			"y": -180,
+			"name": "waypoint-1"
 		},
 		{
 			"id": "waypoint-c6f2f8",
 			"x": 300,
-			"y": 0
+			"y": 0,
+			"name": "waypoint-2"
 		},
 		{
 			"id": "waypoint-8a4dd5",
 			"x": 60,
-			"y": 180
+			"y": 180,
+			"name": "waypoint-3"
 		},
 		{
 			"id": "waypoint-cf3412",
 			"x": 60,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-4"
 		},
 		{
 			"id": "waypoint-dcf3e2",
 			"x": -420,
-			"y": 60
+			"y": 60,
+			"name": "waypoint-5"
 		},
 		{
 			"id": "waypoint-9d6de2",
 			"x": -420,
-			"y": -60
+			"y": -60,
+			"name": "waypoint-6"
 		},
 		{
 			"id": "waypoint-ce9ff2",
 			"x": 60,
-			"y": -60
+			"y": -60,
+			"name": "waypoint-7"
 		},
 		{
 			"id": "waypoint-241f2d",
 			"x": -420,
-			"y": -420
+			"y": -420,
+			"name": "waypoint-8"
 		},
 		{
 			"id": "waypoint-1a3d0f",
 			"x": -120,
-			"y": -420
+			"y": -420,
+			"name": "waypoint-9"
 		},
 		{
 			"id": "waypoint-ddf675",
 			"x": -420,
-			"y": -180
+			"y": -180,
+			"name": "waypoint-10"
 		},
 		{
 			"id": "waypoint-6a746f",
 			"x": -120,
-			"y": -180
+			"y": -180,
+			"name": "waypoint-11"
 		}
 	],
 	"links": [
@@ -100,13 +111,15 @@
 				"waypoint-dcf3e2",
 				"waypoint-9d6de2"
 			],
-			"closed": true
+			"closed": true,
+			"name": "link-1"
 		},
 		{
 			"id": "link-16baf2",
 			"src": "node-23a639",
 			"dst": "node-e734e7",
-			"via": []
+			"via": [],
+			"name": "link-2"
 		},
 		{
 			"id": "link-ca587f",
@@ -115,7 +128,8 @@
 			"via": [
 				"waypoint-241f2d",
 				"waypoint-1a3d0f"
-			]
+			],
+			"name": "link-3"
 		},
 		{
 			"id": "link-4bcfe1",
@@ -124,7 +138,8 @@
 			"via": [
 				"waypoint-ddf675",
 				"waypoint-6a746f"
-			]
+			],
+			"name": "link-4"
 		}
 	],
 	"zones": [],

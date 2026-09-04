@@ -61,32 +61,38 @@
 		{
 			"id": "link-41b65f",
 			"src": "node-a0ba87",
-			"dst": "node-019130"
+			"dst": "node-019130",
+			"name": "link-1"
 		},
 		{
 			"id": "link-95e2b1",
 			"src": "node-a0ba87",
-			"dst": "node-6cb30d"
+			"dst": "node-6cb30d",
+			"name": "link-2"
 		},
 		{
 			"id": "link-698064",
 			"src": "node-a0ba87",
-			"dst": "node-25404c"
+			"dst": "node-25404c",
+			"name": "link-3"
 		},
 		{
 			"id": "link-aa0001",
 			"src": "node-40c596",
-			"dst": "node-8eff76"
+			"dst": "node-8eff76",
+			"name": "link-4"
 		},
 		{
 			"id": "link-aa0002",
 			"src": "node-8eff76",
-			"dst": "node-e7cc7e"
+			"dst": "node-e7cc7e",
+			"name": "link-5"
 		},
 		{
 			"id": "link-aa0003",
 			"src": "node-e7cc7e",
-			"dst": "node-a0ba87"
+			"dst": "node-a0ba87",
+			"name": "link-6"
 		}
 	],
 	"zones": [

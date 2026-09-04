@@ -19,7 +19,7 @@ const accessOf = (entities, links = []) => ({
 
 const WP = 'waypoint-aaaaaa', WP2 = 'waypoint-bbbbbb', ND = 'node-cccccc';
 const entities = { [WP]: { id: WP, x: 0, y: 0 }, [WP2]: { id: WP2, x: 40, y: 0 }, [ND]: { id: ND, x: 80, y: 0 } };
-const openLink = { id: 'link-dddddd', src: WP, dst: WP2 };
+const openLink = { id: 'link-dddddd', name: 'link-dddddd', src: WP, dst: WP2 };
 
 test('H12.6: a situation SERIALISES -- it survives a round trip through JSON unchanged', () => {
 	const s = situationOf(accessOf(entities, [openLink]), { mode: 'run', targetId: WP, selection: [WP, ND] }, 1234);
@@ -39,12 +39,12 @@ test('H12.6: the target role is DERIVED from the links, not told', () => {
 	const s = situationOf(accessOf(entities, [openLink]), { targetId: WP });
 	assert.equal(s.target.role, 'endpoint', 'src of an open link terminates it');
 	// the same waypoint, threaded as a bend instead, is a bend -- nothing about the situation changed
-	const bent = situationOf(accessOf(entities, [{ id: 'link-eeeeee', src: ND, dst: WP2, via: [WP] }]), { targetId: WP });
+	const bent = situationOf(accessOf(entities, [{ id: 'link-eeeeee', name: 'link-eeeeee', src: ND, dst: WP2, via: [WP] }]), { targetId: WP });
 	assert.equal(bent.target.role, 'bend');
 });
 
 test('H12.6: a CLOSED route has no ends, so nothing on it reads as an endpoint', () => {
-	const ring = { id: 'link-ffffff', src: WP, dst: WP, closed: true };
+	const ring = { id: 'link-ffffff', name: 'link-ffffff', src: WP, dst: WP, closed: true };
 	const s = situationOf(accessOf(entities, [ring]), { targetId: WP });
 	assert.equal(s.target.role, 'bend');
 	assert.equal(onEndpoint(s), false, 'a ring cannot be armed, and this is why');

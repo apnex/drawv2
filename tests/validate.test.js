@@ -103,8 +103,8 @@ test('B110: the refusal covers `set`, which is how a node MOVES', () => {
 });
 
 test('B110: a waypoint shares the NODE grid', () => {
-	assert.equal(put('waypoint', { id: 'waypoint-aa0001', x: -120, y: 60 }), null);
-	assert.match(String(put('waypoint', { id: 'waypoint-aa0001', x: -90, y: 60 })),
+	assert.equal(put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: -120, y: 60 }), null);
+	assert.match(String(put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: -90, y: 60 })),
 		/invalid value for waypoint\.x/,
 		'the exact value the agent wrote live, and that the browser then snapped to -120');
 });
@@ -147,7 +147,7 @@ test('B112: two nodes on one anchor is a violation', () => {
 test('B112: a waypoint occupies an anchor, because a waypoint IS a node for placement', () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 120, y: 0 });
-	m.put('waypoint', { id: 'waypoint-aa0001', x: 180, y: 0 });
+	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 180, y: 0 });
 	assert.deepEqual(violations(m), [], 'distinct anchors are fine');
 	m.set('waypoint', 'waypoint-aa0001', { x: 120 });
 	assert.match(String(violations(m)), /occupy the same anchor \(120,0\)/,
@@ -360,29 +360,29 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 	const { Model } = await import('../model/index.mjs');
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
-	const W = (n, y) => ({ id: `waypoint-aa000${n}`, x: 60, y });
+	const W = (n, y) => ({ id: `waypoint-aa000${n}`, name: `w${n}`, x: 60, y });
 	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, zones: [], groups: [], waypoints: [] };
 
 	const cases = {
 		'clean, two nodes and a link':
-			{ nodes: [N(1, 0), N(2, 60)], links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' }] },
+			{ nodes: [N(1, 0), N(2, 60)], links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' }] },
 		'link to a node that does not exist':
-			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0009' }] },
+			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0009' }] },
 		'self-link':
-			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0001' }] },
+			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0001' }] },
 		'clean route through a waypoint':
 			{ nodes: [N(1, 0), N(2, 60)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }] },
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }] },
 		'via a waypoint that does not exist':
 			{ nodes: [N(1, 0), N(2, 60)],
-				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0009'] }] },
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0009'] }] },
 		'one waypoint in two roles on one link':
 			{ nodes: [N(1, 0)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0001'] }] },
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0001'] }] },
 		'one waypoint shared by two links':
 			{ nodes: [N(1, 0), N(2, 60), N(3, 120), N(4, 180)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
-					{ id: 'link-aa0002', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }] },
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
+					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }] },
 		'group member that does not exist':
 			{ nodes: [N(1, 0), N(2, 60)], links: [],
 				groups: [{ id: 'group-aa0001', members: ['node-aa0001', 'node-aa0009'], name: 'g' }] },

@@ -377,7 +377,16 @@ test('B30: duplicating a routed link keeps its route', () => {
 
 		const wp = ops.filter((o) => o.kind === 'waypoint').map((o) => o.entity);
 		assert.equal(wp.length, 1, 'the via waypoint was pulled into the closure');
-		assert.deepEqual(Object.keys(wp[0]).sort(), ['id', 'x', 'y'], 'a waypoint is {id,x,y} — a clone must not invent a name');
+		/*
+		B187 reversed this assertion, and the reversal is the point.
+
+		It used to read `a waypoint is {id,x,y} -- a clone must not invent a name`, because the schema
+		had no such field and inventing one made the clone apply locally then be refused on the wire.
+		Every entity is named now, so the hazard is the opposite: a spread copy carries the ORIGINAL's
+		name, and two waypoints sharing one makes `resolveId` refuse them both as ambiguous.
+		*/
+		assert.deepEqual(Object.keys(wp[0]).sort(), ['id', 'name', 'x', 'y'], 'a cloned waypoint carries a name');
+		assert.notEqual(wp[0].name, w.name, 'and it is a FRESH name, not the original\'s');
 	} finally { h.restore(); }
 });
 

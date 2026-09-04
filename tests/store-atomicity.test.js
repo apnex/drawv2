@@ -41,7 +41,7 @@ test('commit: a validateMutation-rejected mutation also writes nothing (gate err
 	try {
 		const versionBefore = model.state.meta.version;
 		// a link to a non-existent endpoint — rejected by validateMutation (referential integrity)
-		const res = store.commit(id, { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-ffffff', src: 'node-ffffff', dst: 'node-eeeeee' } }] }, 'server', null, OWNER);
+		const res = store.commit(id, { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-ffffff', name: 'link-ffffff', src: 'node-ffffff', dst: 'node-eeeeee' } }] }, 'server', null, OWNER);
 		assert.equal(res.ok, false);
 		assert.match(res.error, /does not exist/);
 		assert.equal(model.get('link', 'link-ffffff'), undefined, 'no link created');
@@ -56,7 +56,7 @@ test('commit: an accepted del-node cascade applies atomically (link cascade-dele
 		assert.equal(store.commit(id, { ops: [{ op: 'put', kind: 'node', entity: { id: nodeId, name: 'a', type: 'host', shape: 'circle', x: 120, y: 120 } }] }, 'server', null, OWNER).ok, true);
 		const other = model.all('node').find((n) => n.id !== nodeId).id;
 		const linkId = 'link-aaaaaa';
-		assert.equal(store.commit(id, { ops: [{ op: 'put', kind: 'link', entity: { id: linkId, src: nodeId, dst: other } }] }, 'server', null, OWNER).ok, true);
+		assert.equal(store.commit(id, { ops: [{ op: 'put', kind: 'link', entity: { id: linkId, name: linkId, src: nodeId, dst: other } }] }, 'server', null, OWNER).ok, true);
 
 		const versionBefore = model.state.meta.version;
 		assert.equal(store.commit(id, { ops: [{ op: 'del', kind: 'node', id: nodeId }] }, 'server', null, OWNER).ok, true);

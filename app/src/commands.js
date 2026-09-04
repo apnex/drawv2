@@ -395,8 +395,18 @@ export function cloneSubgraph(model, seedIds) {
 	// server rejects makes the clone apply locally and then be refused on the wire.
 	const cloneEntity = (kind, src) => {
 		const copy = { ...src, id: newId(kind, scratch.collection(kind)) };
-		if (kind === 'node') copy.name = scratch.nextName(src.type);
-		else if (kind === 'zone') copy.name = scratch.nextName('zone');
+		/*
+		B187 -- EVERY clone is renamed, by kind rather than by a list of kinds.
+
+		This renamed a node and a zone and deliberately skipped a waypoint, because the schema had no
+		name field and inventing one made the clone apply locally then be refused on the wire. The
+		hazard is now inverted: `{...src}` carries the ORIGINAL's name, and two entities sharing one
+		makes `resolveId` refuse them both as ambiguous.
+
+		A node is renamed from its TYPE -- `host-4`, not `node-4` -- which is the convention
+		`nextName` was built for and the only reason this is not a one-liner.
+		*/
+		copy.name = scratch.nextName(kind === 'node' ? src.type : kind);
 		idMap.set(src.id, copy.id);
 		scratch.put(kind, copy);             // the THROWAWAY, so sibling k+1 can see it
 		clones.push({ kind, entity: copy });
@@ -428,7 +438,10 @@ export function cloneSubgraph(model, seedIds) {
 			const w = model.get('waypoint', wid);
 			if (w) cloneEntity('waypoint', w);
 		});
-		const copy = { id: newId('link', scratch.collection('link')), src: idMap.get(link.src), dst: idMap.get(link.dst) };
+		// B187 -- the copy is named from the SCRATCH model, so a duplicated subgraph does not collide
+		// with the names already in it
+		const copy = { id: newId('link', scratch.collection('link')), name: scratch.nextName('link'),
+			src: idMap.get(link.src), dst: idMap.get(link.dst) };
 		const mapped = via.map((wid) => idMap.get(wid)).filter(Boolean);
 		if (mapped.length) copy.via = mapped;
 		if (link.closed) copy.closed = true;

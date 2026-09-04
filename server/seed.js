@@ -28,7 +28,8 @@ export function seedDoc() {
 	const n = (i) => nodes[i].id;
 	const links = [
 		[0, 1], [1, 2], [2, 3], [3, 4], [3, 5], [3, 6], [4, 7], [5, 7], [6, 7]
-	].map(([src, dst]) => ({ id: make('link'), src: n(src), dst: n(dst) }));
+	// B187 -- every entity is named, and a link minted from a pair is named from its index
+	].map(([src, dst], i) => ({ id: make('link'), name: `link-${i + 1}`, src: n(src), dst: n(dst) }));
 
 	return {
 		meta: {

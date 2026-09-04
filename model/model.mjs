@@ -220,12 +220,18 @@ export class Model {
 		return this.all('waypoint').find((w) => w.x === p.x && w.y === p.y);
 	}
 
+	/*
+	B187 -- the next free `<prefix>-<n>`, unique across EVERY named kind.
+
+	The scan used to read nodes, zones and groups only. That was correct while those were the only
+	kinds carrying a name; now that a waypoint and a link carry one too, omitting them would mint a
+	duplicate the first time somebody named a waypoint `link-1`, and `resolveId` refuses an ambiguous
+	name -- so the collision would surface as an unrelated verb suddenly failing.
+	*/
 	nextName(prefix) {
-		const taken = new Set([
-			...this.all('node').map((n) => n.name),
-			...this.all('zone').map((z) => z.name),
-			...this.all('group').map((g) => g.name)
-		]);
+		// KINDS, not a second list: after B187 every kind is named, so "named kinds" and "kinds"
+		// are the same set and a separate constant would be a twin waiting to drift.
+		const taken = new Set(KINDS.flatMap((k) => this.all(k).map((e) => e.name)));
 		let n = 1;
 		while (taken.has(`${prefix}-${n}`)) n++;
 		return `${prefix}-${n}`;
@@ -261,12 +267,16 @@ export class Model {
 	}
 
 	makeLink(src, dst) {
-		return { id: newId('link', this.collection('link')), src, dst };
+		// B187 -- a link is named like everything else. Minted from its two ends rather than from a
+		// request for a named thing, so the name is generated.
+		return { id: newId('link', this.collection('link')), name: this.nextName('link'), src, dst };
 	}
 
 	// a placeable ANCHOR — a cell-centre point a link's route can thread through and bend at
 	makeWaypoint(pos) {
-		return { id: newId('waypoint', this.collection('waypoint')), x: pos.x, y: pos.y };
+		// B187 -- named like every other entity. A waypoint is minted from a position rather than
+		// from a request for a named thing, so the name is generated rather than asked for.
+		return { id: newId('waypoint', this.collection('waypoint')), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
 	}
 
 	makeZone(box) {

@@ -25,7 +25,7 @@ function seeded() {
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', -120)),
 		put('node', node('node-aa0002', 120)),
-		put('link', { id: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' }),
 	] }, 'server', 't');
 	return { m, log };
 }
@@ -71,7 +71,7 @@ test('commit: a batch of N ops is ONE change', () => {
 	const r = commit(m, log, { ops: [
 		put('node', node('node-bb0001', -60)),
 		put('node', node('node-bb0002', 60)),
-		put('link', { id: 'link-bb0003', src: 'node-bb0001', dst: 'node-bb0002' }),
+		put('link', { id: 'link-bb0003', name: 'link-bb0003', src: 'node-bb0001', dst: 'node-bb0002' }),
 	] }, 'server', 't');
 	assert.equal(r.version, 1, 'one transaction, one version');
 	assert.equal(r.change.ops.length, 3);
@@ -83,7 +83,7 @@ test('plan: op k is validated against the state left by op k-1', () => {
 	const r = commit(m, log, { ops: [
 		put('node', node('node-cc0001', -60)),
 		put('node', node('node-cc0002', 60)),
-		put('link', { id: 'link-cc0003', src: 'node-cc0001', dst: 'node-cc0002' }),
+		put('link', { id: 'link-cc0003', name: 'link-cc0003', src: 'node-cc0001', dst: 'node-cc0002' }),
 	] }, 'server', 't');
 	assert.equal(r.ok, true, r.error);
 });
@@ -249,8 +249,8 @@ already deletes the link rather than stripping it to a degenerate form.
 function pairWithBoth() {
 	const { m, log } = seeded();                                    // node-aa0001 -- node-aa0002, straight
 	commit(m, log, { ops: [
-		put('waypoint', { id: 'waypoint-bb0001', x: 0, y: -60 }),
-		put('link', { id: 'link-bb0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-bb0001'] }),
+		put('waypoint', { id: 'waypoint-bb0001', name: 'waypoint-bb0001', x: 0, y: -60 }),
+		put('link', { id: 'link-bb0002', name: 'link-bb0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-bb0001'] }),
 	] }, 'server', 't');
 	return { m, log };
 }
@@ -308,7 +308,7 @@ test('B81: an already-broken document can still be repaired, not bricked', () =>
 	// corpus does. Refusing every write to it would make the repair itself impossible.
 	const { m, log } = seeded();
 	const doc = m.toJSON();
-	doc.links.push({ id: 'link-cc0001', src: 'node-aa0001', dst: 'node-aa0002', name: 'dupe' });
+	doc.links.push({ id: 'link-cc0001', name: 'link-cc0001', src: 'node-aa0001', dst: 'node-aa0002', name: 'dupe' });
 	m.load(doc);
 	assert.equal(m.all('link').length, 2, 'two straight links on one pair, loaded not committed');
 
@@ -419,9 +419,9 @@ test('B162: deleting a link takes its bends, and one undo puts them back', () =>
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	m.put('node', { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' });
-	m.put('waypoint', { id: 'waypoint-aa0001', x: 60, y: 60 });
-	m.put('waypoint', { id: 'waypoint-aa0002', x: 120, y: 60 });
-	m.put('link', { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001', 'waypoint-aa0002'] });
+	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 60, y: 60 });
+	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 120, y: 60 });
+	m.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001', 'waypoint-aa0002'] });
 
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0001' }]);
 	assert.equal(r.ok, true);
@@ -435,8 +435,8 @@ test('B162: deleting a link takes its bends, and one undo puts them back', () =>
 test('B162: an ENDPOINT waypoint goes too -- nothing else may claim it', () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	m.put('waypoint', { id: 'waypoint-aa0003', x: 120, y: 0 });
-	m.put('link', { id: 'link-aa0002', src: 'node-aa0001', dst: 'waypoint-aa0003' });
+	m.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 120, y: 0 });
+	m.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'waypoint-aa0003' });
 	// XOR occupancy means no other link may be using it, so an unattached endpoint is as dead as a
 	// bend. The distinction matters for RENDERING, not for survival.
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
@@ -458,14 +458,14 @@ and testing the guard that happens to sit in front of it.
 */
 test('B162: a lone waypoint is safe by SCOPE, not by the pin', () => {
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-bb0001', x: 60, y: 60, pinned: true });
+	m.put('waypoint', { id: 'waypoint-bb0001', name: 'waypoint-bb0001', x: 60, y: 60, pinned: true });
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	const r = plan(m, [{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' } }]);
 	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'a lone waypoint stays');
 
 	// and it is the SCOPE rule doing it: an unpinned lone waypoint is equally safe
 	const m2 = new Model();
-	m2.put('waypoint', { id: 'waypoint-bb0002', x: 60, y: 60 });
+	m2.put('waypoint', { id: 'waypoint-bb0002', name: 'waypoint-bb0002', x: 60, y: 60 });
 	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	const r2 = plan(m2, [{ op: 'put', kind: 'node', entity: { id: 'node-aa0004', type: 'host', x: 180, y: 0, name: 'd' } }]);
 	assert.equal(r2.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'pinned or not');
@@ -474,8 +474,8 @@ test('B162: a lone waypoint is safe by SCOPE, not by the pin', () => {
 test('B162: the pin outranks the sweep when a linked waypoint loses its link', () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	m.put('waypoint', { id: 'waypoint-bb0003', x: 120, y: 0, pinned: true });
-	m.put('link', { id: 'link-bb0001', src: 'node-aa0001', dst: 'waypoint-bb0003' });
+	m.put('waypoint', { id: 'waypoint-bb0003', name: 'waypoint-bb0003', x: 120, y: 0, pinned: true });
+	m.put('link', { id: 'link-bb0001', name: 'link-bb0001', src: 'node-aa0001', dst: 'waypoint-bb0003' });
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-bb0001' }]);
 	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0003'), false,
 		'the author said keep it, so the sweep leaves it');
@@ -483,8 +483,8 @@ test('B162: the pin outranks the sweep when a linked waypoint loses its link', (
 	// the same shape without the pin IS swept, or the assertion above proves nothing
 	const m2 = new Model();
 	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	m2.put('waypoint', { id: 'waypoint-bb0004', x: 120, y: 0 });
-	m2.put('link', { id: 'link-bb0002', src: 'node-aa0001', dst: 'waypoint-bb0004' });
+	m2.put('waypoint', { id: 'waypoint-bb0004', name: 'waypoint-bb0004', x: 120, y: 0 });
+	m2.put('link', { id: 'link-bb0002', name: 'link-bb0002', src: 'node-aa0001', dst: 'waypoint-bb0004' });
 	const r2 = plan(m2, [{ op: 'del', kind: 'link', id: 'link-bb0002' }]);
 	assert.ok(r2.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0004'), 'unpinned goes');
 });
@@ -499,7 +499,7 @@ pre-existing orphans, and every unrelated mutation diverged from the frozen orac
 */
 test('B162: pre-existing debris is left alone -- a commit removes only what it orphaned', () => {
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-cc0001', x: 60, y: 60 });          // already unreferenced
+	m.put('waypoint', { id: 'waypoint-cc0001', name: 'waypoint-cc0001', x: 60, y: 60 });          // already unreferenced
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	const r = plan(m, [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 180 } }]);
 	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false,

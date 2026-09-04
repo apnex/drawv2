@@ -1493,9 +1493,9 @@ test('B179: draw combat derives the same answer the browser would', async () => 
 	const { Model } = await import('../model/index.mjs');
 	const { worldOf, combatAt } = await import('../engine/index.mjs');
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
-	m.put('waypoint', { id: 'waypoint-ca0002', x: 720, y: 0 });
-	m.put('link', { id: 'link-ca0003', src: 'waypoint-ca0001', dst: 'waypoint-ca0002' });
+	m.put('waypoint', { id: 'waypoint-ca0001', name: 'waypoint-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
+	m.put('waypoint', { id: 'waypoint-ca0002', name: 'waypoint-ca0002', x: 720, y: 0 });
+	m.put('link', { id: 'link-ca0003', name: 'link-ca0003', src: 'waypoint-ca0001', dst: 'waypoint-ca0002' });
 	m.put('node', { id: 'node-ca0004', type: 'loadbalancer', x: 360, y: 0 });
 
 	const at = 1_788_300_060_000;

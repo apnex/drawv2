@@ -29,9 +29,9 @@ const WP_A = 'waypoint-aaaaaa', WP_B = 'waypoint-bbbbbb', LINK = 'link-cccccc';
 
 function doc() {
 	const m = new Model();
-	m.put('waypoint', { id: WP_A, x: 0, y: 0 });
-	m.put('waypoint', { id: WP_B, x: 200, y: 0 });
-	m.put('link', { id: LINK, src: WP_A, dst: WP_B });
+	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('waypoint', { id: WP_B, name: WP_B, x: 200, y: 0 });
+	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_B });
 	return m;
 }
 

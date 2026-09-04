@@ -319,8 +319,8 @@ test('B162: an ack applies what the server ADDED, and not what we sent', () => {
 	const { model, sync } = harness();
 	model.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	model.put('node', { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' });
-	model.put('waypoint', { id: 'waypoint-aa0001', x: 60, y: 60 });
-	model.put('link', { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] });
+	model.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 60, y: 60 });
+	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] });
 
 	// what the client sent, and applied optimistically
 	const mine = [{ op: 'del', kind: 'link', id: 'link-aa0001' }];

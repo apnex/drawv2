@@ -208,16 +208,16 @@ after it emitted nothing: a second armed endpoint simply looked unarmed. Silent,
 256 movers, which is why it survived. Two spawners is the smallest case that can show it.
 */
 test('B173: one saturating spawner does not starve the next', () => {
-	const a = spawner({ id: 'waypoint-aaaaaa', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
-	const b = spawner({ id: 'waypoint-bbbbbb', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
+	const a = spawner({ id: 'waypoint-aaaaaa', name: 'waypoint-aaaaaa', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
+	const b = spawner({ id: 'waypoint-bbbbbb', name: 'waypoint-bbbbbb', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
 	const by = moversAt([a, b], 1_000_000).reduce((m, x) => (m[x.spawnerId] = (m[x.spawnerId] || 0) + 1, m), {});
 	assert.equal(by['waypoint-aaaaaa'], MAX_MOVERS_PER_SPAWNER);
 	assert.equal(by['waypoint-bbbbbb'], MAX_MOVERS_PER_SPAWNER, 'the SECOND spawner emitted nothing before B173');
 });
 
 test('B173: two ordinary spawners are both represented, in the order given', () => {
-	const a = spawner({ id: 'waypoint-aaaaaa' });
-	const b = spawner({ id: 'waypoint-bbbbbb', interval: 700, speed: CELLS(72), pts: [[0, 0], [600, 0]] });
+	const a = spawner({ id: 'waypoint-aaaaaa', name: 'waypoint-aaaaaa' });
+	const b = spawner({ id: 'waypoint-bbbbbb', name: 'waypoint-bbbbbb', interval: 700, speed: CELLS(72), pts: [[0, 0], [600, 0]] });
 	const by = moversAt([a, b], 60_000).reduce((m, x) => (m[x.spawnerId] = (m[x.spawnerId] || 0) + 1, m), {});
 	assert.ok(by['waypoint-aaaaaa'] > 0 && by['waypoint-bbbbbb'] > 0, 'both spawners emit');
 });

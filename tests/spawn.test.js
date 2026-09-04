@@ -16,7 +16,7 @@ import { OPTIONAL } from '../model/shape.mjs';
 import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { Model } from '../model/model.mjs';
 
-const wp = (extra) => ({ id: 'waypoint-aaaaaa', x: 0, y: 0, ...extra });
+const wp = (extra) => ({ id: 'waypoint-aaaaaa', name: 'waypoint-aaaaaa', x: 0, y: 0, ...extra });
 const armed = () => ({ interval: 1000, speed: 1.4, kind: 'packet', since: Date.now() });
 
 test('H12.5: a waypoint may carry spawn, and the two peers agree that it may', () => {
@@ -105,7 +105,7 @@ test('B172: a spawner stored with `colour` and pixel speed still loads, converte
 	fsp.writeFileSync(pathp.join(dir, 'diagram-aa0001.json'), JSON.stringify({
 		meta: { id: 'diagram-aa0001', name: 'legacy', version: 3, schema: 1 },
 		nodes: [], zones: [], groups: [],
-		waypoints: [{ id: 'waypoint-aa0001', x: 0, y: 180,
+		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 180,
 			spawn: { interval: 700, speed: 160, colour: '#4fc3f7', since: 1788000000000 } }],
 		links: [],
 	}));

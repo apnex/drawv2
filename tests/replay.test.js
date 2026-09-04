@@ -69,9 +69,9 @@ const WP_A = 'waypoint-aa0004', WP_B = 'waypoint-aa0005';
 function doc() {
 	const m = new Model();
 	m.put('node', { id: NODE, name: 'n', type: 'host', shape: 'circle', x: 60, y: 60 });
-	m.put('waypoint', { id: WP_A, x: 0, y: 0 });
-	m.put('waypoint', { id: WP_B, x: 240, y: 0 });
-	m.put('link', { id: LINK, src: WP_A, dst: WP_B });
+	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('waypoint', { id: WP_B, name: WP_B, x: 240, y: 0 });
+	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_B });
 	return m;
 }
 

@@ -218,3 +218,36 @@ test('pathOf: a dangling route resolves to nothing, never a partial path', () =>
 	const l2 = { ...m.makeLink(a.id, a.id), via: ['waypoint-dead1'] };
 	assert.equal(m.pathOf(l2), null, 'a missing BEND is as dangling as a missing end');
 });
+
+test('B187: every factory mints a named entity, and the names do not collide', () => {
+	/*
+	The factories are the guarantee that nothing UNNAMED is ever created; the migration only repairs
+	what was stored before. Removing the name from `makeWaypoint` failed no test until this one --
+	the validator would have caught it at the wire, but only for a caller that reached the wire.
+
+	`nextName` uniques across all five kinds, which matters now that a waypoint and a link are
+	named: a document already holding `waypoint-1` on a NODE must not get a second one.
+	*/
+	const m = new Model();
+	const made = [
+		m.makeNode('host', { x: 0, y: 0 }),
+		m.makeWaypoint({ x: 60, y: 0 }),
+		m.makeZone({ x: 30, y: 30, w: 120, h: 120 }),
+	];
+	for (const e of made) assert.ok(typeof e.name === 'string' && e.name, `${e.id} was minted unnamed`);
+
+	m.put('node', made[0]); m.put('waypoint', made[1]); m.put('zone', made[2]);
+	const link = m.makeLink(made[0].id, made[1].id);
+	assert.ok(link.name, 'makeLink minted an unnamed link');
+	m.put('link', link);
+
+	const w2 = m.makeWaypoint({ x: 120, y: 0 });
+	assert.notEqual(w2.name, made[1].name, 'two waypoints share a name');
+
+	// a node squatting on the waypoint namespace must push the next mint past it
+	const squat = m.makeNode('host', { x: 180, y: 0 });
+	squat.name = 'waypoint-9';
+	m.put('node', squat);
+	const w3 = m.makeWaypoint({ x: 240, y: 0 });
+	assert.notEqual(w3.name, 'waypoint-9', 'nextName does not scan every named kind');
+});

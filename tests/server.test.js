@@ -131,7 +131,7 @@ test('invalid mutations are rejected and not applied', async () => {
 	assert.match(err.body.message, /unknown field/);
 
 	// dangling link
-	c.send('commit', { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-bbbb03', src: 'node-bbbb04', dst: 'node-bbbb05' } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-bbbb03', name: 'link-bbbb03', src: 'node-bbbb04', dst: 'node-bbbb05' } }] });
 	err = await c.expect('error');
 	assert.match(err.body.message, /does not exist/);
 
@@ -443,7 +443,7 @@ test('REGRESSION: bare del-node cascades links and groups server-side (doc alway
 		c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: mk(id, x) }] });
 		await c.expect('ack');
 	}
-	c.send('commit', { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-efef04', src: 'node-efef01', dst: 'node-efef02' } }] });
+	c.send('commit', { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-efef04', name: 'link-efef04', src: 'node-efef01', dst: 'node-efef02' } }] });
 	await c.expect('ack');
 	c.send('commit', { ops: [{ op: 'put', kind: 'group', entity: { id: 'group-efef05', name: 'g', members: ['node-efef01', 'node-efef02', 'node-efef03'] } }] });
 	await c.expect('ack');
@@ -599,7 +599,7 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 		for (let b = a + 1; b < ids.length; b++) {
 			const lid = `link-${(0xd00000 + made).toString(16)}`;
 			const r = store.commit(id, { ops: [{ op: 'put', kind: 'link',
-				entity: { id: lid, src: ids[a], dst: ids[b] } }] }, 'server', null, OWNER);
+				entity: { id: lid, name: lid, src: ids[a], dst: ids[b] } }] }, 'server', null, OWNER);
 			if (!r.ok) { refusal = r.error; break outer; }
 			made++;
 		}
@@ -857,7 +857,7 @@ test('B112: free anchors exclude what is occupied, and an anchor round-trips int
 		const w = free.anchors[1];
 		await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
-			body: JSON.stringify({ ops: [{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-a11c01', x: w.x, y: w.y } }] }),
+			body: JSON.stringify({ ops: [{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-a11c01', name: 'waypoint-a11c01', x: w.x, y: w.y } }] }),
 		});
 		const wq = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=${w.x}&y=${w.y}`)).body;
 		assert.equal(wq.occupant, 'waypoint-a11c01', 'a waypoint IS a node for placement');
@@ -939,7 +939,7 @@ test('B103: a rejected commit names WHICH op failed, not just what was wrong', a
 			headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
 			body: JSON.stringify({ ops: [
 				{ op: 'put', kind: 'node', entity: { id: 'node-c10001', name: 'ok', type: 'host', x: 0, y: 0 } },
-				{ op: 'put', kind: 'link', entity: { id: 'link-c10001', src: 'node-c10001', dst: 'node-ffffff' } },
+				{ op: 'put', kind: 'link', entity: { id: 'link-c10001', name: 'link-c10001', src: 'node-c10001', dst: 'node-ffffff' } },
 			], label: 'one good op then one bad' }),
 		});
 		const body = await r.json();
@@ -1049,7 +1049,7 @@ test('create {doc} validateDoc rejections: duplicate ids and self-links', async 
 	let err = await c.expect('error');
 	assert.match(err.body.message, /duplicate id/);
 
-	c.send('create', { name: 'self', doc: { ...doc, nodes: [node], links: [{ id: 'link-dada02', src: node.id, dst: node.id }], zones: [], groups: [] } });
+	c.send('create', { name: 'self', doc: { ...doc, nodes: [node], links: [{ id: 'link-dada02', name: 'link-dada02', src: node.id, dst: node.id }], zones: [], groups: [] } });
 	err = await c.expect('error');
 	assert.match(err.body.message, /self-link|same node|missing node/);
 

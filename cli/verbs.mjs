@@ -896,7 +896,7 @@ VERBS.push({
 		// `between` links BOTH ends, because that is what standing between two things means
 		const linkTo = ctx.flags.link ? (linkEnds || [anchorNode.id]) : [];
 		for (const src of linkTo) {
-			ops.push({ op: 'put', kind: 'link', entity: { id: `link-${Math.random().toString(16).slice(2, 8)}`, src, dst: nid } });
+			ops.push({ op: 'put', kind: 'link', entity: (() => { const lid = `link-${Math.random().toString(16).slice(2, 8)}`; return { id: lid, name: lid, src, dst: nid }; })() });
 		}
 		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
 			{ method: 'POST', headers: await held(ctx, id, 'place'),
@@ -1335,7 +1335,8 @@ VERBS.push({
 
 		if (type === 'waypoint') {
 			const wid = mint('waypoint');
-			const wops = [{ op: 'put', kind: 'waypoint', entity: { id: wid, x: spot.x, y: spot.y } }];
+			// B187 -- named from its own id: a waypoint minted at a cell was not asked for by name
+			const wops = [{ op: 'put', kind: 'waypoint', entity: { id: wid, name: wid, x: spot.x, y: spot.y } }];
 			const wb = ok(await request(ctx, `/diagrams/${id}/commit`,
 				{ method: 'POST', headers: await held(ctx, id, 'add'), body: { ops: wops, label: 'add waypoint' } }), 'add');
 			return { json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
@@ -1360,7 +1361,7 @@ VERBS.push({
 			const doc = ok(await request(ctx, `/diagrams/${id}`), 'add');
 			const peer = doc.nodes.find((n) => n.id === ctx.flags.link || n.name === ctx.flags.link);
 			if (!peer) die(`--link names ${ctx.flags.link}, which is not a node here`);
-			ops.push({ op: 'put', kind: 'link', entity: { id: `link-${Math.random().toString(16).slice(2, 8)}`, src: peer.id, dst: nid } });
+			ops.push({ op: 'put', kind: 'link', entity: { ...(() => { const lid = `link-${Math.random().toString(16).slice(2, 8)}`; return { id: lid, name: lid }; })(), src: peer.id, dst: nid } });
 		}
 		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
 			{ method: 'POST', headers: await held(ctx, id, 'add'), body: { ops, label: `add ${type}` } }), 'add');
@@ -1586,14 +1587,16 @@ VERBS.push(
 				// rather than at the server, where the message would name a cell the caller never typed
 				if (spot.occupant) die(`--via ${v} is taken by ${spot.occupant} -- a waypoint needs a free anchor`);
 				const w = mint('waypoint');
-				ops.push({ op: 'put', kind: 'waypoint', entity: { id: w, x: spot.x, y: spot.y } });
+				ops.push({ op: 'put', kind: 'waypoint', entity: { id: w, name: w, x: spot.x, y: spot.y } });
 				via.push(w);
 			}
 			// the ring's destination is its last bend; a plain link's is the node the caller named
 			const b = ring ? via.pop() : await resolveId(ctx, id, dst);
 			if (a === b) die('a link needs two different endpoints');
 			const lid = mint('link');
-			const entity = { id: lid, src: a, dst: b };
+			// B187 -- every entity carries a name. Named from its own id: a link minted by `draw link`
+			// was not asked for by name, and the id is unique by construction.
+			const entity = { id: lid, name: lid, src: a, dst: b };
 			if (via.length) entity.via = via;
 			if (ctx.flags.closed) entity.closed = true;
 			ops.push({ op: 'put', kind: 'link', entity });
