@@ -6,7 +6,7 @@ model, not the DOM, not a renderer's private field. One concern, and the whole o
 the present"; it holds no opinion about what anyone should do with the description.
 
 WHY THIS IS THE WORK RATHER THAN SCAFFOLDING. The rules surface is undecided and deliberately so --
-its shape is owed a prior-art pass (`surveys/b163-rules-system-survey.md`, flag F3). The SITUATION is
+its shape is owed a prior-art pass (B163, flag F3). The SITUATION is
 not owed anything: whatever shape dispatch eventually takes, a mod, an agent, a menu and a keystroke
 all have to ask the same first question, and they must all get the same answer. Building it now is
 the director's rule that an abstraction is premature only when it generalises over instances nobody

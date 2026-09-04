@@ -576,7 +576,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 
 ## H12 -- the programmable engine pilot - `DONE`
 
-Opened 2026-09-01 out of the **B163** survey, `surveys/b163-rules-system-survey.md`, which settled the ambition as a programmable geometric engine and named tower defence the pilot use case that drives the design.\
+Opened 2026-09-01 out of the **B163** intent capture, which settled the ambition as a programmable geometric engine and named tower defence the pilot use case that drives the design.\
 The director then reduced the pilot to its smallest honest form: **click an endpoint waypoint in read view and it spawns movers along its path, consumed at the far end.**\
 That is the creep lifecycle -- spawn, traverse, despawn -- minus combat, and it is the seed of enemies-along-a-path.
 
@@ -686,7 +686,7 @@ F1 and F2 are answered there: hold-and-retry bounded by the renewal interval, an
 What remains is not a technical question but a director one: whether to build enforcement before the service is deliberately scaled, given its failure mode is lockout rather than drift.
 
 **The original blocker, kept because it became real.**\
-`surveys/b178-instance-authority-survey.md` flag F1 asks what a non-holder's refusal carries so a bounced client makes progress.\
+Flag F1 of the B178 intent capture asks what a non-holder's refusal carries so a bounced client makes progress.\
 At one instance per revision a refusal can simply say reload, because a non-holder is a superseded instance.\
 At N instances of the SAME revision that answer loops: the client reloads, is routed anywhere, and may land on a non-holder again.\
 Building ownership enforcement with its failure mode undesigned would be the radical refactor the director asked to avoid, so the lease waits on that ruling rather than guessing it.
@@ -746,7 +746,7 @@ Wrong twice before, and now checked rather than trusted.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B163** | Ratify the survey envelope `surveys/b163-rules-system-survey.md`, which captured intent on 2026-09-01 and superseded part of `docs/spec/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
+| **B163** | Ratify the captured intent from 2026-09-01 and superseded part of `docs/spec/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

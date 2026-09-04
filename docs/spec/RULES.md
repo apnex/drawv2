@@ -6,8 +6,8 @@ The sovereign spec for how the system decides what an input MEANS, given the sit
 > Section 0 is FACT -- measured at `7e774a6` and cited in **B163**.\
 > Section 10 lists what cannot be settled without the director.
 >
-> **Read `surveys/b163-rules-system-survey.md` before acting on this document.**\
-> A K5 survey captured the director's intent on 2026-09-01 and changed three things this spec asserts.\
+> **The director's intent was captured on 2026-09-01 and changed three things this spec asserts.**\
+> 
 > The target is a **programmable geometric engine**, not an editor with a seam left open.\
 > Tower defence is the **pilot use case that drives the design**, not a stress case applied afterwards.\
 > And the **ordered rule table of section 3 is demoted to one candidate** -- the director's instruction was to take inspiration from game modding and control-plane ecosystems *"rather than blindly assume this will be a table"*.\

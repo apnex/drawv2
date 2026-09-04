@@ -3,7 +3,7 @@
 The sovereign spec for who may answer for a document, and for what a client does when it can no longer trust what it is running.
 
 > **Status: DESIGN-OF-RECORD, awaiting review. Nothing here is implemented.**\
-> Concretizes `surveys/b178-instance-authority-survey.md`, which captured the director's intent on 2026-09-02.\
+> Concretizes the intent the director settled on 2026-09-02, ahead of any design.\
 > Serves **B178** and **H13.7**, both of which were filed against a narrower framing and are restated by this document.
 >
 > Section 1 is FACT -- measured in production on 2026-09-02.\

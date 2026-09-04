@@ -29,7 +29,7 @@ Three consequences, and they are the reason this shape was chosen over an entity
 
 WHAT THIS DELIBERATELY CANNOT DO. A mover that takes damage, is slowed, or dies early is not a
 function of time, and this unit will never express one. That is the sparse-overlay tier named in
-`surveys/b163-rules-system-survey.md`: the closed form stays the baseline for the overwhelming
+the B163 intent capture: the closed form stays the baseline for the overwhelming
 majority that never deviate, and only the deviations get stored. Stable identity is what makes that
 addition possible without a rewrite, which is why a mover carries `spawnerId` and `k` rather than an
 index into whatever array happened to be built this frame.
