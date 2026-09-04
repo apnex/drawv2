@@ -62,6 +62,24 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	/*
+	`SCOPE.md` was split and removed on 2026-09-03: the wire contract, vocabulary and entity model to
+	`docs/spec/API.md`, the ruling register to `docs/DECISIONS.md`, durability to `COMMIT.md`. The
+	scope framing itself was superseded in premise by `VISION.md` and is gone.
+
+	These citations are PROVENANCE and are the point of the sentence they sit in -- a milestone table
+	recording which locked decision it amended, an audit preserved as performed, a backlog row citing
+	the file that carried the defect. Repointing them would rewrite what those records say happened.
+	Same precedent as the ATOMICS and DEPLOY entries below.
+	*/
+	'docs/BACKLOG.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/BOARD.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/DECISIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/spec/API.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/spec/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/spec/COMMIT-DELETIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/spec/COMMIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/spec/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'*:server/slides/auth.js': 'the Slides feature, PURGED at Phase 1 and recorded in COMMIT-DELETIONS.md. Every remaining reference is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing lines as evidence for rulings made while it existed, and BACKLOG rows describing defects in it. M4 forbids rewriting an artifact recorded before the change.',
 	'*:server/slides/sync.js': 'as above -- cited as evidence in records written while the feature existed.',
 	'*:tests/slides.test.js': 'as above.',
@@ -125,6 +143,7 @@ const ALLOW = {
 	'docs/slides-setup.md:secrets/google-credentials.json': 'runtime, gitignored: the user downloads it during OAuth setup - the doc is telling them where to put it',
 	'docs/slides-setup.md:secrets/google-token.json': 'runtime, gitignored: written by the OAuth flow on first authorization',
 	'docs/spec/COMMIT.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
+	'docs/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',
 	'docs/spec/ATOMICS.md:design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
 	'docs/spec/ATOMICS.md:design/sim/handles.mjs': 'as above — provenance citation, not a live path',

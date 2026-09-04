@@ -1,5 +1,5 @@
 /*
-Input — pointer/keyboard state machine. Two-button gestures (docs/spec/SCOPE.md decision 2):
+Input — pointer/keyboard state machine. Two-button gestures (`docs/DECISIONS.md` decision 2):
   click             select (Shift/Ctrl+click adds/toggles)
   left-drag node    create link (whole node is the source, crosshair ring)
   right-drag        move node/zone selection (snap on release)  [v1 convention]

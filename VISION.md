@@ -157,8 +157,8 @@ Where each of those lives, so a reader who wants them does not mistake this for 
 | [`surveys/`](surveys/) | Captured director intent, ahead of each design commitment |
 
 **There is no architecture record yet.**\
-`docs/spec/SCOPE.md` is the closest thing and it describes an earlier endeavour, which is a known gap rather than an oversight.\
-Until one exists, this document is the only statement of purpose and nothing states the system's shape at an instant.
+The specs above each describe one concern; none states the system's shape at an instant, so nothing can be diffed against a target.\
+That is a known gap rather than an oversight, and it is the work that follows from having a vision at last.
 
 ---
 

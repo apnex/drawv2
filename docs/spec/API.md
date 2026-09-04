@@ -1,11 +1,20 @@
-# draw -- REST API
+# draw -- the interface surface
+
+Every way something outside the engine reaches it: the vocabulary, the entities, the websocket protocol and the HTTP surface.
+
+> **Widened 2026-09-03.**\
+> This file was `REST API` and pointed at `SCOPE.md` for the wire protocol, the vocabulary and the entity model.\
+> Those lived in a scope document because nothing else held them, and a reader following the cross-reference landed in a file whose premise was superseded.\
+> They are here now, beside the REST surface they are cited next to, and the anchors that pointed away resolve within this document.
+
+---
 
 The HTTP surface an agent drives.\
 Split out of the README at H9.27 because it answers a different reader: the README is for an operator installing and running `draw`, and this is for whoever is writing something that drives it.\
 It was also the largest section by some way, and the one that grows every time the surface does.
 
-The websocket protocol is specified separately in [SCOPE.md](SCOPE.md#wire-protocol-one-websocket--as-shipped), and the authorization model these routes enforce is in [ACCESS.md](ACCESS.md).\
-Two nouns appear throughout and are defined in [SCOPE.md](SCOPE.md#vocabulary): a **Model** is the live object, a **doc** is the flat JSON these routes carry.
+The websocket protocol is specified below, and the authorization model these routes enforce is in [ACCESS.md](ACCESS.md).\
+Two nouns appear throughout and are defined below under Vocabulary: a **Model** is the live object, a **doc** is the flat JSON these routes carry.
 
 ---
 
@@ -53,6 +62,152 @@ On `gs://diagrams.apnex.io` the retention is 604800 seconds.
 
 `MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
 It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.
+
+## Vocabulary
+
+Two nouns, one spelling each, and confusing them is the most common question this repository produces.\
+A **Model** is the live object: indices, selection, mutation methods, the thing an editor or the server holds in memory.\
+A **doc** is the flat JSON that comes off disk and travels the wire, produced by `model.toJSON()` and consumed by `Model.load()`.
+
+`validateDoc` is named for the second and is not a leftover from the `document/` to `model/` rename.\
+Validation exists only at the serialization boundary -- a file read at boot, or a `create {doc}` arriving from a client -- so a `validateModel` would name something that never happens.\
+The substrate directory was renamed because `document` covered three concepts at once: the substrate, the browser global, and a persisted diagram.\
+`doc` was kept because it covers exactly one.
+
+---
+
+## Entities (five)
+
+```json
+{
+  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 1,
+              "owner": "user:someone@example.com",
+              "grants": { "user:other@example.com": "read", "agent:planner": "write" },
+              },
+  "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 } ],
+  "waypoints": [ { "id": "waypoint-5e5e5e", "x": 570, "y": 270,
+                "spawn": { "interval": 900, "speed": 1.4, "kind": "packet", "since": 1788300000000 } } ],
+  "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6",
+                "via": ["waypoint-5e5e5e"], "closed": false } ],
+  "zones":  [ { "id": "zone-77bb01", "name": "dmz", "x": 480, "y": 240, "w": 240, "h": 180 } ],
+  "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ]
+}
+```
+
+`owner` and `grants` are AUTHORIZATION and are server-recorded status, not document content.\
+They are written by the store rather than by a commit, so they carry no undo record -- a grant that undo could reverse would restore access to a principal just revoked.\
+A principal is `user:<email>` or `agent:<name>`, namespaced so an agent can never be mistaken for a person, and a level is `read` or `write`.\
+An agent name is lowercase, starts alphanumeric, allows hyphens, and is bounded at 63 -- the DNS label shape, chosen because case-variant identities are a confusion attack rather than a convenience.\
+Neither key is writable through a meta patch, and neither survives arriving on a document from the wire.\
+Designed in `docs/spec/ACCESS.md`.\
+Corrected 2026-08-21 (B89): this read *enforcement is H9.3 and not yet built*, which stopped being true at H9.3a.\
+Writes are gated at all seven mutating store methods, reads at `hello`, `open`, the REST document and log, and `/d/<id>.svg` (B67), and lock acquisition and reclaim at H9.4.\
+A connection code is a CREDENTIAL that authenticates as an agent identity, and is deliberately NOT a principal (H9.4b): conflating them meant revoking a code destroyed an owner, rotating one lost every grant, and a code could not be reused across diagrams because the code was the grant.\
+Still pending from the same amendment and not yet built: a grant may name an OWNER as well as a diagram, so an agent granted on a person reaches everything that person owns.
+
+- node: a `shape` frame (the outer shell - `circle` | `square`) with a `type` glyph
+  attached in its middle, snapped to a grid point, with editable label. Frame and glyph
+  are independent layers (`#frame-*` raw-canvas shapes + `#glyph-*` 0.3-scaled art);
+  `shape` is optional and defaults to `circle` (legacy docs load unchanged).
+- link: a route between two endpoints, each a node or a waypoint. Bends through any `via`
+  waypoints and is drawn with rounded corners (`BEND_R` on the grid pitch); `closed` makes it
+  a ring with no ends. `src`/`dst`/`closed` is the one vocabulary, kernel and model alike (B166).
+- waypoint: a grid point a link may terminate at or bend through. An ENDPOINT waypoint may carry
+  a `spawn` composite, which makes it emit movers along its link in read view -- whole or absent,
+  never partial. The numbers a mover obeys are declared in `engine/kinds.mjs`, never stored here.
+- zone: grid-aligned rectangle on the half-offset grid, with label. Purely visual.
+- group: logical member set; selecting/moving any member moves all. Not rendered, not synced
+  as a shape.
+
+---
+
+## Wire protocol (one websocket) - as shipped
+
+Client -> server:
+- `{cmd:"hello", body:{diagram?}}` -> `{cmd:"snapshot", body:{doc, diagrams, locked, version, canUndo, canRedo}}`
+- `{cmd:"commit", body:{ops, label?, expect?, txnId?}}` -> `{cmd:"ack", body:{seq, from, version,
+  durableVersion, canUndo, canRedo, ops, acked}}`. One request is one TRANSACTION: a whole
+  gesture, not one entity. `expect` is an optional compare-and-swap precondition.
+- `{cmd:"undo"|"redo", body:{expect, txnId?}}` -> ack carrying the ops to apply
+- `{cmd:"resume", body:{diagram, version}}` - reconnect. The client states what it BELIEVES it
+  holds; the server answers `{cmd:"sync", body:{version, canUndo, canRedo, locked}}` if they are
+  in step, a snapshot if the client is behind, or a snapshot carrying `rewound:{from,to}` if the
+  client is ahead. **The client never sends a document to overwrite one.**
+- `{cmd:"create", body:{name?, doc?}}` - `doc` is the only whole-document path a client has, and
+  it can only CREATE: the server mints the id and ignores `doc.meta.id`
+- `{cmd:"select", body:{ids}}` -> `ack`, and the server broadcasts `{cmd:"selection", body:{ids, actor}}`
+  to the other sessions on that diagram. Selection is model-state, not a change: no version bump, not
+  undoable - but it IS a first-class event, because it is what lets a human watch an agent work.
+- diagram management: `open {id}`, `reclaim {id?}`,
+  `delete {id}` (answers with a snapshot of a surviving diagram; the store
+  reseeds the example rather than ever going empty), `list {}`.
+  Renaming a diagram and binding a deck are CHANGES, so they travel as a `meta` op inside a
+  `commit` - undoable and broadcast like any other.
+- failures answer `{cmd:"error", body:{message, code, txnId}}`; sessions survive any payload
+
+Server -> client, unprompted: `{cmd:"change", body:{..., ops}}` - every accepted transaction is broadcast to the other sessions on that diagram, so a second tab and an agent write converge without refetching.\
+`{cmd:"lock", body:{owner}}` on a Server-Locked handoff.
+
+Server: validates (janitor-lite: field whitelists, ranges, referential integrity, collection caps), commits through ONE write path, debounce-writes JSON to `diagrams/<id>.json` (200ms pulse, atomic tmp+rename).\
+Deletes cascade server-side too, so a persisted document always reloads.\
+On FIRST connect the client hydrates (hello -> snapshot); on RE-connect it sends `resume` and the server decides.\
+Content drawn before first hydration becomes a NEW diagram via `create {doc}` - it is never pushed over the diagram the server happened to answer with.\
+A commit goes out immediately (it is a user-action-rate event); what coalesces is a burst of same-shape edits, into ONE undoable change.\
+Live drag frames never reach the wire at all.
+
+*(Amended 2026-08-18, CS1-CS5 - see `docs/spec/COMMIT.md`)* - **the server owns the document.**\
+The section above HAS BEEN REWRITTEN, not merely annotated: a wire reference is what a reader copies from, so a superseded-but-still-printed line gets sent.\
+This amendment is late - **CS1 and CS3 each owed one and did not pay it**, so those lines were false for three milestones rather than the one GR10 allows, and nothing mechanized the check (now `tests/spec.test.js`).\
+What changed:
+
+- **`apply {action, kind, entity}` -> `commit {ops, label?, expect?, txnId?}`** (CS1). One
+  request carries a whole transaction, not one entity. The reply is
+  `ack {seq, from, version, durableVersion, canUndo, canRedo, ops, acked}`, not
+  `{rev}`, and errors are typed: `error {message, code, txnId}`.
+- **`push {doc}` was deleted** (CS4). A client never sends a document to overwrite one.
+  On RE-connect it sends `resume {diagram, version}` - a *belief* - and the server
+  answers `sync {version, canUndo, canRedo, locked}` if they are in step, a snapshot if
+  the client is behind, or a snapshot carrying `rewound {from, to}` if the client is
+  **ahead** (a server that restarted before flushing changes it had acked). Content
+  drawn before first hydration is no longer pushed over whichever diagram the server
+  named - it becomes a **new** diagram via `create {name, doc}`, whose id the server
+  mints and whose `doc.meta.id` is ignored.
+- **The 200ms client pulse was removed** (CS3). A commit is a user-action-rate event and
+  goes out immediately; what batches now is a *burst of same-shape edits* (arrow-key
+  nudges), coalesced into ONE change client-side. Live drag frames never reach the wire
+  at all - the sync layer subscribes to the commit boundary, not to the model.
+- **The server does push model changes** (CS1/CS3): every accepted transaction is
+  broadcast to the other sessions on that diagram as `change {..., ops}`, so a second tab
+  and an agent write converge without refetching. **Undo and redo are server
+  capabilities** (`undo`/`redo {expect, txnId?}`), reversing any writer's change, not
+  only the browser's own.
+
+- **`meta.rev` -> `meta.version`, and `meta.grid` is gone** (CS5). `rev` counted render
+  emissions - one drag advanced it ~60 times - and described no transaction. `version`
+  is minted once per accepted transaction and is what `expect` compares. `meta.schema`
+  takes over the generation-discriminator role `grid` was accidentally serving. The 17
+  live files were migrated by `tools/migrate-version.mjs`; the pre-CS5 binary cannot
+  read the result.
+
+*(Amended 2026-08-19, H4)* - three agent-facing surfaces corrected, none visible to the browser:
+
+- **`POST /api/v1/diagrams/:id/commit` takes `{ops, label?}`** - the transaction vocabulary it was
+  always documented as taking and never did. It accepted a single legacy `{action, kind, entity}`
+  mutation, so the websocket's own shape answered 422 and **multi-op transactions were unreachable
+  over REST**: an agent had to issue N round trips, each a window another writer could interleave.
+  The legacy shape is **gone, not aliased** (X1 - an alias is a second surface to keep true).
+- **`expect` on forward writes rides the `X-Draw-Expect` header** and now actually reaches the
+  transaction; it was silently discarded, so an agent believing it held a compare-and-swap held
+  nothing. Mandatory `expect` on undo/redo keeps the body form, and is now enforced on the
+  **websocket** as well - it had been waived for redo entirely and for undo by the record's own
+  author, contrary to D14 (**B39**).
+- **Selection broadcasts as `selection {ids, actor}`** on both transports. REST shipped a whole
+  document snapshot for a focus change; the websocket broadcast nothing at all, so two viewers never
+  shared a selection. Neither was right.
+
+Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, the server validates everything, sessions survive any payload, and the store reseeds rather than ever going empty.
+
+---
 
 ## What an id looks like
 

@@ -39,7 +39,7 @@ Three pieces of state live in the process, and that is the design rather than an
 | `Hub` | the set of live websocket sessions | viewers on B never see a change made on A |
 | `Locks` | the lock table | two controllers each believe they hold it |
 
-`SCOPE.md` puts multi-user editing out of scope, so the single-writer model is deliberate.\
+The single-writer model is a property of this deployment rather than of the product: `../../VISION.md` does not exclude concurrent editing, and `AUTHORITY.md` holds why one instance owns a document at a time.\
 The deployment question is therefore narrow: run exactly one instance, durably, and expose it safely.
 
 `min=1` is what keeps that true across idle periods.\

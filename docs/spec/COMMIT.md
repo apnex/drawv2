@@ -542,6 +542,25 @@ Lands at **CS4**, with the deletion of `push`-on-reconnect that made it necessar
 
 ---
 
+## 3b. Durability - what is actually guaranteed
+
+*(Moved 2026-09-03 from `SCOPE.md`, which was superseded in premise.\
+The guarantee is a property of what a commit promises, and belongs beside the transaction contract rather than beside a scope statement.)*
+
+**Undo survives a *process* restart.\
+A machine-level kill can lose the last 200 ms of websocket work - document and log together, consistent, never corrupt.**
+
+Stated at exactly the strength the code makes, and no more.\
+There is no `fsync` anywhere in the server: a write is `writeFileSync` + `renameSync`, which is atomic against a process dying but not against a kernel that has not yet flushed its page cache.\
+The document and its change log are ONE file, so a lost write loses both together and never leaves a log describing a document that does not exist.
+
+REST writes are stronger, deliberately: an agentic caller is one-shot and has no reconnect backstop, so a REST 200 means flushed, not merely accepted.\
+The 200 ms debounce applies to websocket work only, where a browser reconnects and replays its outbox.
+
+Recorded as deviation **X2**; `docs/BACKLOG.md` **B6** carries the revival trigger (any multi-instance or GCS-backed deployment - confirm the gcsfuse assumptions against a real bucket before relying on them).
+
+---
+
 ## 4. Correctness invariants  [LOCKED]
 
 Sixteen.\
@@ -591,7 +610,7 @@ Each row's **Attaches** column names the milestone at whose close it becomes loa
 | **GR7** | The user's data is never rewritten by an unproven transform, and the backup outlives the arc. | `tools/migrate-version.mjs`, **committed** - the five-step procedure is specified at section 6, CS5. `tests/migration.test.js` runs it over old-shape fixtures. | a live server on the port; a count mismatch; any entity-level difference - a count-only assertion passes a `jq` typo that mangles every coordinate. | CS5; **`diagrams.bak` retained until CS6 closes** |
 | **GR8** | The store never fabricates success - pins **I15**, implements **D17**. | `Store.init` tracks a `failed` count across the load loop (`server/store.js:120-141` `[V]`) and seeds at `:142` only when `failed === 0`; otherwise it logs every per-file rejection reason and exits non-zero. ~4 lines. | a data dir where candidates were present and none loaded. Free today: `tests/server.test.js:601-616` keeps one good file among three, so `size === 1` and it still passes `[V]`. | CS1, standing |
 | **GR9** | `version` and `seq` monotonic across restarts - pins **I12**. | `Log.toJSON()` emits `version`; `Log.from(json, fallback = 0)` reads it back; a runtime post-condition inside `flush()` asserts **`log.records.every(r => r.seq <= log.version)`** from CS1 (the two watermarks deliberately diverge on undo per **D3**, so equality would be false after the first undo and would throw on an empty log), together with an append-time assertion that **`change.seq === log.version`**, and additionally **`meta.version === log.version`** from CS5 - it therefore fires on every existing test and every new one. CS5's migration seeds `meta.version` from the persisted `log.version`. | any restart that re-mints a live `seq`; any path that moves one watermark without the other. | assertion CS1, load-bearing CS2, extended CS5 |
-| **GR10** | `docs/spec/SCOPE.md` never asserts the opposite of the running wire for longer than one milestone. | Each milestone amends the lines it falsifies **in the same commit**, in the file's existing dated-amendment form (section 6.2). `tests/spec.test.js` asserts (a) a dated amendment exists against each reversed locked decision - `SCOPE.md:149-150`, `:210-211`, `:217`, `:223-224`, `:225` `[V]` - and (b) no `push`/`apply`/`rev` wire token survives in `SCOPE.md` after CS5 (`:113`, `:135`, `:136` `[V]`). | a milestone that ships without its amendment. | CS1 / CS3 / CS4 / CS5 / CS6 |
+| **GR10** | the interface record never asserts the opposite of the running wire for longer than one milestone. | Each milestone amends the lines it falsifies **in the same commit**, in the file's existing dated-amendment form (section 6.2). `tests/spec.test.js` asserts (a) a dated amendment exists against each reversed locked decision - `SCOPE.md:149-150` (now `../DECISIONS.md`), `:210-211`, `:217`, `:223-224`, `:225` `[V]` - and (b) no `push`/`apply`/`rev` wire token survives in `SCOPE.md` after CS5 (`:113`, `:135`, `:136` `[V]`). | a milestone that ships without its amendment. | CS1 / CS3 / CS4 / CS5 / CS6 |
 | **GR11** | The destructive verb cannot be issued blind, and the human's remedy cannot be raced away. | `POST .../undo\|redo` without `expect` -> `400 {code:'expect-required', version}`, and the ws `undo`/`redo` likewise when the sender did not originate the top record. `undo {to: seq}` reverses a run as one transaction, one version bump, one broadcast. `Locks.reclaim(id)` records `heldUntil = now + HOLD_MS`, during which `acquire` returns `null` with `{error:'reclaimed by the human', retryAfter}`. `actor` is minted server-side at CS1. | a blind undo; an agent re-locking inside the hold. `tests/undo.test.js` - *"undo without `expect` -> 400"*, *"`undo {to: seq}` reverses a run in one action"*, *"reclaim -> agent re-lock refused -> Ctrl+Z succeeds"*. | `actor` **CS1**; mandatory `expect` (D14) and the reclaim hold (D22) **CS3 - with the hazard**; `undo {to: seq}` (D21) **CS6**. Standing from CS3 |
 | **GR12** | A fanout failure can never fail the primary transaction. | `Hub.broadcast` wraps **each** session send in its own `try/catch` and logs the offending session, so one throwing socket can neither abort the loop nor propagate into the caller's response. `tests/server.test.js` - *"a session whose `send` throws does not prevent other sessions receiving the change, and the REST caller still gets 200"*. | any fanout error reaching the transaction path; a 500 returned for a transaction already applied, logged and flushed. Today `broadcast` is a bare `forEach` (`server/hub.js:25-29` `[V]`), `server/rest.js:56` broadcasts *before* `:57` responds, and `handleWrite(...).catch` at `:99-102` finds `!res.headersSent` `[V]` - cosmetic today, load-bearing once D7 makes the fanout the sole channel by which a viewer learns anything. | CS3, standing |
 | **GR13** | The agent-facing payload stays inside its budget, and `inverse` never reaches the wire. | `tests/server.test.js` asserts `GET /api/v1/diagrams/:id/history` is <= **16 KiB** at the 100-record cap `[V, measured: a projected record is 146 B; x100 + envelope = 14,787 B]`, and that no response under **any** query - `?verbose=1` included - carries an `inverse` key. | any history response over budget; any `inverse` on the wire. | CS3, standing |
@@ -618,22 +637,25 @@ CS1-CS4 are code-revertible: no user file changes shape, and the CS2 `log` key i
 **CS5 is forward-only.**\
 CS6 is code-revertible.
 
-### 6.2 `SCOPE.md` amendments
+### 6.2 Amendments to locked decisions
 
-Three locked `SCOPE.md` decisions are reversed by this arc, plus the wire and schema sections.\
+Three locked decisions are reversed by this arc, plus the wire and schema sections.\
+*(2026-09-03: `SCOPE.md` was split and removed.\
+The decisions and their amendments are in `../DECISIONS.md`, the wire and schema in `API.md`.\
+The line references below are to the file as it stood, and are kept because this table records what each milestone amended rather than where to look today.)*\
 Each is amended **in the milestone that breaks it**, in the file's existing dated-amendment form (10 such blocks already exist `[V, SCOPE.md:17, :28, :33, :40, :44, :48, :52, :59, :74, :215]`).\
 Pinned by **GR10**.
 
 | lines | locked text | amended at | becomes |
 |---|---|---|---|
-| `SCOPE.md:17-25` (decision 1) | center-origin migration of legacy top-left docs | **CS1** | dated amendment retiring the migration, preserving the (-930, -510) transform and the clamp rule verbatim |
-| `SCOPE.md:210-211` | *"Undo/redo: client-side command stack"* | **CS3** | server-side per-diagram log + cursor; the browser holds two booleans and a label |
-| `SCOPE.md:149-150`, `:223-224` | *"Server never pushes model changes except snapshot-on-request and acks"* / *"server->client pushes beyond hydrate/ack"* out of scope | **CS3** | the server broadcasts one `change` per accepted transaction, origin excluded |
-| `SCOPE.md:135` | ws `apply` -> `ack{rev}` | **CS3** (verb), **CS5** (`rev`) | `commit`/`undo`/`redo` -> `ack{version, ...}` |
-| `SCOPE.md:136`, `:146-148` | `push` full-document resync, client-authoritative | **CS4** | `resume {diagram, version}` -> `sync` \| `snapshot` \| `snapshot{rewound}`; `create {name, doc}` for adopt-local-content |
-| `SCOPE.md:113` | `"rev": 12` in the entity JSON | **CS5** | `"version": 12`, `"schema": 1`; `grid` gone |
-| `SCOPE.md:152-161` | REST section | **CS5** | records deviation **X1**: `/api/v1` is redefined **in place** |
-| `SCOPE.md:217`, `:225` | *"Still strictly read-only - it adds no mutation path"* / *"a \*write\*/mutation CLI"* out of scope | **CS6** | `draw undo` / `draw redo` are write verbs - answered deliberately, or the exclusion stands and they are not built. `draw history` at CS3 needs no amendment: it is a read. |
+| `SCOPE.md:17-25` (now `../DECISIONS.md`) (decision 1) | center-origin migration of legacy top-left docs | **CS1** | dated amendment retiring the migration, preserving the (-930, -510) transform and the clamp rule verbatim |
+| `SCOPE.md:210-211` (now `../DECISIONS.md`) | *"Undo/redo: client-side command stack"* | **CS3** | server-side per-diagram log + cursor; the browser holds two booleans and a label |
+| `SCOPE.md:149-150` (now `../DECISIONS.md`), `:223-224` | *"Server never pushes model changes except snapshot-on-request and acks"* / *"server->client pushes beyond hydrate/ack"* out of scope | **CS3** | the server broadcasts one `change` per accepted transaction, origin excluded |
+| `SCOPE.md:135` (now `../DECISIONS.md`) | ws `apply` -> `ack{rev}` | **CS3** (verb), **CS5** (`rev`) | `commit`/`undo`/`redo` -> `ack{version, ...}` |
+| `SCOPE.md:136` (now `../DECISIONS.md`), `:146-148` | `push` full-document resync, client-authoritative | **CS4** | `resume {diagram, version}` -> `sync` \| `snapshot` \| `snapshot{rewound}`; `create {name, doc}` for adopt-local-content |
+| `SCOPE.md:113` (now `../DECISIONS.md`) | `"rev": 12` in the entity JSON | **CS5** | `"version": 12`, `"schema": 1`; `grid` gone |
+| `SCOPE.md:152-161` (now `../DECISIONS.md`) | REST section | **CS5** | records deviation **X1**: `/api/v1` is redefined **in place** |
+| `SCOPE.md:217` (now `../DECISIONS.md`), `:225` | *"Still strictly read-only - it adds no mutation path"* / *"a \*write\*/mutation CLI"* out of scope | **CS6** | `draw undo` / `draw redo` are write verbs - answered deliberately, or the exclusion stands and they are not built. `draw history` at CS3 needs no amendment: it is a read. |
 
 ### 6.3 Sequence at a glance
 
@@ -858,7 +880,7 @@ The outbox, the change broadcast and `durableVersion` exist - `push`'s replaceme
 | 5 | A tab close with unsent work, then reopen -> the outbox drains (D30). |
 | 6 | Kill the server mid-debounce: the acked gesture is either present or **reported** - I16 plus the rewind reply; never silently reverted. |
 | 7 | **I11** gated. |
-| 8 | `SCOPE.md:136`, `:146-148` amended in the same commit (**GR10**). |
+| 8 | `SCOPE.md:136` (now `../DECISIONS.md`), `:146-148` amended in the same commit (**GR10**). |
 
 **Expected tests: ~260 -> ~267** `[I]` (four rewrites, +7 new).\
 **Safe to stop: yes.\
@@ -960,7 +982,7 @@ CS5's gate green; `diagrams.bak` still present.
 | 1 | `undo {to: seq}` reverses a run in one action, one version bump, one broadcast (**GR11**). |
 | 2 | **I14** eviction floor active and `truncated` surfaced in the browser undo affordance. |
 | 3 | CAS 409 on a moved top; the 409 body carries the recovery records. `GET .../history` attribution end-to-end. |
-| 4 | `SCOPE.md:217`, `:225` amended - or the write-CLI question is answered *no* and the exclusion stands (**GR10**); the durability wording carried into `SCOPE.md` and the README. |
+| 4 | `SCOPE.md:217` (now `../DECISIONS.md`), `:225` amended - or the write-CLI question is answered *no* and the exclusion stands (**GR10**); the durability wording carried into `SCOPE.md` and the README. |
 | 5 | **`diagrams.bak` may be deleted only after this gate is green** `[V, X4 / GR7 - it is the only copy of 17 untracked files, .gitignore:4]`. |
 | 6 | **GR11 still green end-to-end**: D14's blind-reversal refusal and D22's reclaim hold, both live since CS3, plus D21's bulk reversal shipped here. |
 | 7 | **Arc close**: every `docs/BACKLOG.md` row is closed by its named milestone or carries a live revival trigger, and **all thirteen guardrails** (GR1-GR13) run green as standing regressions. |
@@ -1161,7 +1183,7 @@ Each is recorded here **and** in `docs/spec/SCOPE.md` in that file's existing da
 | **X2** | **No `fsync`.** Durability is asserted at process granularity only. | "Undo survives a restart" reads as machine-crash durability; the code makes no such claim `[V, exhaustive grep: 0 fsync/fdatasync]`. | **Accepted.** **Condition:** the guarantee is carried into `SCOPE.md` and the README in exactly N5's wording; CS2's gate says "process restart", never "restart". Backlog **B6** carries the revival trigger. |
 | **X3** | **Cloud Run revision overlap.** Two processes over one mount during a deploy, each running `flushAll()` on SIGTERM (`server/server.js:32-37` -> `server/store.js:327-333` `[V]`), last writer taking the whole file - **including the other's log and its inverses**. | Single-writer ownership assumes one process. | **Accepted.** Rests on `[A]` external Cloud Run drain behaviour; the deployment is scoped single-instance, so it is not load-bearing today. **Revival trigger: min-instances > 1, any revision-overlap deploy setting, or any shared-mount deployment.** The remedy if triggered is a data-dir advisory owner file written at boot, not coordination. |
 | **X4** | **The CS5 schema migration rewrites 17 untracked user files.** | Nothing before CS5 is code-revertible past this point. | **CLOSED 2026-08-18** - the gate ran green (286/286), all 17 files were verified identical to the backup entity-by-entity, and `diagrams.bak` was released on the owner's instruction. The arc is now irreversible in fact, not only in principle. Original terms, all met: **Approved as a named gate**, on these terms and no others: the committed `tools/migrate-version.mjs` with the five-step procedure at section 6 CS5 - health-port interlock, the store's own filename regex, dry-run-and-verify into a temp copy with per-id deep-equality, swap only then, and **never delete `diagrams.bak` - retained until CS6 closes** - plus `tests/migration.test.js` over old-shape fixtures. |
-| **X5** | **Three locked `SCOPE.md` decisions are reversed.** Undo moves server-side (`SCOPE.md:210-211`); the server pushes model changes to browsers (`:223-224`); the CLI gains write verbs (`:217`, `:225` - admitted 2026-06-13 only on the condition that it *"adds no mutation path"*) `[V]`. | `SCOPE.md` decisions are locked. | **Approved:** amended deliberately, each in the milestone that breaks it, with a dated amendment in the same commit - never a milestone later. **CS3** -> `:149-150`, `:210-211`, `:223-224`. **CS6** -> `:217`, `:225`, or the write-CLI question is answered *no* and the exclusion stands. Pinned by **GR10**. Note two of the three lines are **not** in the wire section `[V]` - the amendment targets the lines, not the section. |
+| **X5** | **Three locked `SCOPE.md` decisions are reversed.** Undo moves server-side (`SCOPE.md:210-211` (now `../DECISIONS.md`)); the server pushes model changes to browsers (`:223-224`); the CLI gains write verbs (`:217`, `:225` - admitted 2026-06-13 only on the condition that it *"adds no mutation path"*) `[V]`. | `SCOPE.md` decisions are locked. | **Approved:** amended deliberately, each in the milestone that breaks it, with a dated amendment in the same commit - never a milestone later. **CS3** -> `:149-150`, `:210-211`, `:223-224`. **CS6** -> `:217`, `:225`, or the write-CLI question is answered *no* and the exclusion stands. Pinned by **GR10**. Note two of the three lines are **not** in the wire section `[V]` - the amendment targets the lines, not the section. |
 | **X6** | **`SCOPE.md` was amended three milestones late.** X5 and GR10 both require the amendment in the *same commit* as the reversal. CS1 and CS3 each shipped without one; the file had not been touched since genesis `[V, git log --oneline -- docs/spec/SCOPE.md = 1 commit]`. All of CS1-CS4's reversals are amended together at CS4. | GR10: never opposite the running wire for longer than one milestone. | **Recorded, not approved** - the rule was broken and the debt paid late. The remedy is procedural, not code: the SCOPE amendment is now written *first* in the milestone, before the deletion it describes. Nothing mechanized this, which is why nothing caught it. |
 | **X7** | **`store.apply` outlived its milestone.** section 7.1 assigns the adapter's death to CS3 with its caller, but three test files still called it, so CS3 deleted `case 'apply'` and left the adapter standing with no production reader `[V, exhaustive grep after CS3: 8 call sites, all in tests/]`. Deleted at CS4, its call sites driven onto `store.commit`. | A deletion table row names the milestone the symbol dies in. | **Recorded.** The lesson generalises: an adapter kept "so the existing tests are the fidelity control" acquires the tests as its own constituency, and the tests then keep it alive past its date. A CS-scoped adapter needs its test migration scheduled in the same milestone as its deletion. |
 | **X8** | **`planPut` now narrows an identical `put` to zero ops.** Not in section 3; added at CS4. `planSet` and `planDel` already narrowed (I6), `planPut` did not - so replaying an accepted `put` minted a second record and a second version bump for a document that had not moved. | The plan is specified per-op in section 2; a narrowing rule is a decision. | **Accepted, and load-bearing:** D30's outbox replay is only safe-and-free if a request the server already accepted costs a no-op. Narrowing is suppressed whenever the put also steals group members, so the "node in at most one group" repair is never skipped. Pinned by *"the replayed change planned zero ops"* in `tests/server.test.js`. |

@@ -395,7 +395,7 @@ A template is not user work.\
 A template reappearing after its fork is deleted is not a resurrection, because the template was never the caller's to delete -- what must remain impossible is the deleted *fork* returning.
 
 So the reversal is narrower than it appears.\
-`GR10` requires a dated amendment for a reversed decision, and it belongs in `SCOPE.md` beside the seeding rule rather than here.
+`GR10` requires a dated amendment for a reversed decision, and it belongs in `../DECISIONS.md` beside the seeding rule rather than here.
 
 ### Decided 2026-08-27, on building it
 

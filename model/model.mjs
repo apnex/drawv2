@@ -1,6 +1,6 @@
 /*
 Model — pure entity store for one diagram. No DOM, no layout knowledge.
-Entities: node, link, zone, group (docs/spec/SCOPE.md). IDs are '<kind>-<6hex>' (graph lineage).
+Entities: node, link, zone, group (`docs/spec/API.md`). IDs are '<kind>-<6hex>' (graph lineage).
 Mutations are primitive (put/set/del); cascade semantics live in commands.js so that
 every committed change is capturable and undoable.
 
@@ -324,7 +324,7 @@ export class Model {
 	}
 
 	/*
-	---- doc (de)serialization — the persisted JSON shape from docs/spec/SCOPE.md ----
+	---- doc (de)serialization — the persisted JSON shape from docs/spec/API.md ----
 
 	This method IS the boundary between the two nouns, which is why the distinction is worth stating
 	here as well as at `validateDoc`. Above this line is a Model: live, indexed, with methods. Below

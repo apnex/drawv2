@@ -1,6 +1,6 @@
 /*
 Selection — the model's authoritative selected-id set (model-state / status). Selecting a grouped
-node expands to its whole group (group = move/select-as-one, docs/spec/SCOPE.md decision 3). Holds NO state of
+node expands to its whole group (group = move/select-as-one, `docs/DECISIONS.md` decision 3). Holds NO state of
 its own: a thin behavior layer over `model.state.selection` (MS1), and NO renderer (the R7 shed —
 observers subscribe()). Reconcile-to-config (auto-prune on del, restore-on-load) is single-sourced
 in the Model (expandSelection/setSelection, load-filter, del-net). Testable without a renderer.

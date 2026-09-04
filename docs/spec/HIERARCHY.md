@@ -2,7 +2,7 @@
 
 > **Status: DRAFT.** The **geometry variant `standard` is LOCKED** (section 2); everything
 > else (entity + state, colours, behaviour) is still draft. This document iterates
-> *ahead* of `SCOPE.md`; locked parts graduate into `SCOPE.md` and the code.
+> *ahead* of the interface record; locked parts graduate into `API.md`, `DECISIONS.md` and the code.
 > **section 0 is the vision / North Star - read it first.** Lineage: PRISM (cell / selection / group / zone concepts).
 >
 > Tags per item: **[LOCKED]** settled & frozen - **[AGREED]** settled in discussion -

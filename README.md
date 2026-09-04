@@ -8,7 +8,7 @@ Node 18+, no build step, one runtime dependency (`ws`).
 Diagrams are a browser SVG editor over a server-held JSON document.\
 Everything is snapped to a center-origin grid, every edit is undoable across restarts, and a server-side agent can drive the same document over REST while a human watches it change.
 
-See [SCOPE.md](docs/spec/SCOPE.md) for the locked scope.
+See [VISION.md](VISION.md) for what this is for, and [docs/spec/API.md](docs/spec/API.md) for the interface it exposes.
 
 ---
 
