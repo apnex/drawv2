@@ -52,7 +52,43 @@ No HOME means no store. Every reader below treats that as "nothing held", which 
 const homeOf = (ctx) => ctx?.env?.HOME || null;
 export const ctxFile = (ctx) => `${homeOf(ctx)}/.config/draw/context`;
 
-async function activeId(ctx, flags) {
+/*
+B186 -- the selected diagram, PER HOST.
+
+A context is only meaningful for the server that holds the diagram. A single id was ambiguous the
+moment `DRAW_HOST` changed: pointing at a different server carried a stale id that resolves to
+nothing there, and the failure is silent because the id is well-formed.
+
+Stored as `{ host: diagramId }`. A bare string is the pre-B186 shape and is read once as "whatever
+host is configured now", so an existing context survives the change rather than being discarded.
+*/
+async function readContexts(ctx) {
+	const fsx = await import('node:fs');
+	try {
+		const raw = fsx.readFileSync(ctxFile(ctx), 'utf8').trim();
+		if (!raw) return {};
+		if (raw.startsWith('{')) return JSON.parse(raw);
+		return { [ctx.host]: raw };            // migrate the flat form on first read
+	} catch { return {}; }
+}
+
+async function readContext(ctx) {
+	return (await readContexts(ctx))[ctx.host] || null;
+}
+
+async function writeContext(ctx, id) {
+	const fsx = await import('node:fs');
+	const pathx = await import('node:path');
+	const all = await readContexts(ctx);
+	if (id) all[ctx.host] = id; else delete all[ctx.host];
+	fsx.mkdirSync(pathx.dirname(ctxFile(ctx)), { recursive: true });
+	fsx.writeFileSync(ctxFile(ctx), `${JSON.stringify(all, null, '\t')}\n`);
+}
+
+async function activeId(ctx, flags, opts = {}) {
+	// write-ness comes from the manifest's own `method`, so adding a mutating verb cannot forget to
+	// opt in. An explicit `write` still overrides, for a verb whose method understates what it does.
+	const write = opts.write ?? ['POST', 'DELETE', 'PUT', 'PATCH'].includes(ctx.verb?.method);
 	const want = flags.diagram || ctx.flags?.diagram;
 	const { body, ok } = await request(ctx, '/diagrams');
 	if (!ok) die(`cannot list diagrams (HTTP ${body?.error || ''})`);
@@ -66,11 +102,25 @@ async function activeId(ctx, flags) {
 	// B136: we are holding the live set, so this is the free moment to drop tokens for diagrams
 	// that are gone. 835 of 837 files on the first machine to be measured were in that state.
 	await pruneTokens(ctx, new Set(list.map((d) => d.id)));
-	const fs = await import('node:fs');
-	try {
-		const saved = fs.readFileSync(ctxFile(ctx), 'utf8').trim();
-		if (list.some((d) => d.id === saved)) return saved;
-	} catch { /* no context yet */ }
+	const saved = await readContext(ctx);
+	if (saved && list.some((d) => d.id === saved)) return saved;
+
+	/*
+	B186 -- a WRITE with no context refuses rather than guessing.
+
+	This used to fall through to `list[0]`, whichever diagram happened to sort first. That is how a
+	demo rehearsal wrote fourteen nodes into `example` and collided with a waypoint already standing
+	there: every command succeeded, against the wrong document.
+
+	A silent default on a write surface is the same class of defect as an implicit undo target, which
+	`D14` already refuses. Reads keep the default -- answering the wrong question is recoverable and
+	obvious, writing the wrong document is neither.
+	*/
+	if (write) {
+		die(saved
+			? `the selected diagram ${saved} is not on ${ctx.host} -- run \`draw use <ref>\` to choose one here`
+			: `no diagram selected -- run \`draw use <ref>\`, or pass --diagram`);
+	}
 	return list[0].id;
 }
 
@@ -164,6 +214,52 @@ export const VERBS = [
 		},
 	},
 	{
+	/*
+	B186 -- choose the diagram every other verb works on.
+
+	Named `use` rather than `ctx` for two reasons. There is already a `context` verb in this group
+	that answers something else, so `ctx` would put two unrelated meanings one keystroke apart. And
+	`use` states the intent rather than the mechanism -- this agent reached for `focus` during a
+	rehearsal precisely because it was the only word that sounded like switching diagrams, and
+	`focus` sets an ENTITY. Fourteen nodes went into the wrong document before that was noticed.
+
+	Reports how the current selection was RESOLVED, not just what it is. The resolution path is the
+	thing that bites: a flag, a stored context, or -- until B186 -- whichever diagram sorted first.
+	*/
+	name: 'use', group: 'Context', usage: 'draw use [ref]',
+	route: '/diagrams', method: 'GET',
+	summary: 'choose the diagram other verbs act on, per host; omit to report the current one',
+	example: 'draw use spine-leaf',
+	args: [{ name: 'ref', about: 'the diagram to select, by id or name; omit to report' }],
+	flags: [],
+	async run(ctx, args) {
+		const list = ok(await request(ctx, '/diagrams'), 'use');
+		if (!args.length) {
+			const saved = await readContext(ctx);
+			const hit = saved && list.find((d) => d.id === saved);
+			if (!saved) {
+				return { json: { host: ctx.host, diagram: null },
+					text: `no diagram selected on ${ctx.host}\nrun \`draw use <ref>\` -- \`draw diagrams\` lists them` };
+			}
+			if (!hit) {
+				return { json: { host: ctx.host, diagram: saved, present: false },
+					text: `${saved} is selected on ${ctx.host}, but no diagram with that id is here` };
+			}
+			return { json: { host: ctx.host, diagram: hit.id, name: hit.name },
+				text: table([[hit.name, hit.id, ctx.host]], ['NAME', 'ID', 'HOST']) };
+		}
+		const want = args[0];
+		const hit = list.find((d) => d.id === want || d.name === want);
+		if (!hit) die(`no diagram called ${want} on ${ctx.host} -- \`draw diagrams\` lists them`);
+		const twin = list.filter((d) => d.name === want);
+		if (twin.length > 1 && !list.some((d) => d.id === want)) {
+			die(`${want} is ambiguous: ${twin.map((d) => d.id).join(', ')} -- name it by id`);
+		}
+		await writeContext(ctx, hit.id);
+		return { json: { host: ctx.host, diagram: hit.id, name: hit.name },
+			text: `using ${hit.name}  ${hit.id}  on ${ctx.host}` };
+	},
+}, {
 		name: 'diagrams', group: 'Context', usage: 'draw diagrams [--counts]', route: '/diagrams', method: 'GET',
 		also: ['GET /diagrams/<id>'],
 		summary: 'what exists', example: 'draw diagrams',

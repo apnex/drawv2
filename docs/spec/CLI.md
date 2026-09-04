@@ -85,6 +85,7 @@ Context
   health                                                                          the server's own report
   diagrams [--counts]                                                             what exists
   context [id|name]                                                               the default target, persisted
+  use [ref]                                                                       choose the diagram other verbs act on, per host; omit to report the current one
   status                                                                          the active diagram in summary
   get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints
   history [--limit n]                                                             the change log

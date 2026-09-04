@@ -1527,3 +1527,62 @@ test('B179: the verb manifest is enumerable by a machine', () => {
 		assert.ok(names.includes(needed), `${needed} is missing -- an investigation would route around the CLI again`);
 	}
 });
+
+/*
+B186 -- `draw use`, and a write that refuses to guess which diagram it means.
+*/
+
+test('B186: the write verbs are derived from the manifest, not listed', () => {
+	/*
+	`activeId` decides read-versus-write from each verb's declared `method`. A hand-kept list of
+	mutating verbs would be a twin, and the first verb added without touching it would silently get
+	the read behaviour -- which is the guess this change exists to remove.
+	*/
+	const src = fs.readFileSync(new URL('../cli/verbs.mjs', import.meta.url), 'utf8');
+	assert.match(src, /ctx\.verb\?\.method/, 'write-ness is not derived from the manifest');
+	const dispatch = fs.readFileSync(new URL('../cli/draw.mjs', import.meta.url), 'utf8');
+	assert.match(dispatch, /ctx\.verb = verb;/, 'the dispatcher does not tell activeId which verb is running');
+
+	const mutating = VERBS.filter((v) => ['POST', 'DELETE', 'PUT', 'PATCH'].includes(v.method));
+	assert.ok(mutating.length > 20, `only ${mutating.length} verbs declare a mutating method`);
+});
+
+test('B186: a write with no selected diagram refuses rather than defaulting', () => {
+	/*
+	The load-bearing half. This used to fall through to `list[0]` -- whichever diagram sorted first
+	-- and that is how a rehearsal wrote fourteen nodes into `example`, colliding with a waypoint
+	already standing there. Every command succeeded, against the wrong document.
+
+	Same principle as `undo --expect`: a write surface may not choose its own target.
+	*/
+	const src = fs.readFileSync(new URL('../cli/verbs.mjs', import.meta.url), 'utf8');
+	const fn = src.slice(src.indexOf('async function activeId'));
+	const body = fn.slice(0, fn.indexOf('\n}'));
+	assert.match(body, /if \(write\) \{/, 'activeId does not branch on write');
+	assert.match(body, /no diagram selected/, 'the refusal does not say what is wrong');
+	assert.match(body, /draw use <ref>/, 'the refusal does not say what to do about it');
+	// and a READ still defaults: answering the wrong question is recoverable, writing is not
+	assert.match(body, /return list\[0\]\.id;/, 'reads must keep a default');
+});
+
+test('B186: context is stored per host', () => {
+	// a diagram id is only meaningful on the server holding it. A single id was ambiguous the moment
+	// DRAW_HOST changed, and the failure is silent because a stale id is still well-formed.
+	const src = fs.readFileSync(new URL('../cli/verbs.mjs', import.meta.url), 'utf8');
+	assert.match(src, /all\[ctx\.host\] = id/, 'the context is not keyed by host');
+	assert.match(src, /return \{ \[ctx\.host\]: raw \}/, 'the pre-B186 flat file is not migrated');
+});
+
+test('B186: use is named for the intent, and does not collide with an existing verb', () => {
+	/*
+	`ctx` was the alternative and was rejected: a `context` verb already exists in this group and
+	answers something else, so the two would sit one keystroke apart meaning unrelated things.
+	*/
+	const names = VERBS.map((v) => v.name);
+	assert.ok(names.includes('use'), 'the use verb is missing');
+	assert.ok(names.includes('context'), 'context is expected to exist -- this test guards the collision');
+	assert.equal(names.filter((n) => n === 'use').length, 1, 'use is declared twice');
+	const use = VERBS.find((v) => v.name === 'use');
+	assert.equal(use.args.length, 1, 'use takes an optional ref');
+	assert.match(use.summary, /per host/, 'the summary does not say the selection is per host');
+});

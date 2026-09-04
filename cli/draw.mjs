@@ -295,6 +295,14 @@ export async function main(argv, env = process.env, out = (s) => process.stdout.
 			? `${verb.name} takes no arguments, and got ${extra.join(' ')} -- target another diagram with --diagram, not a positional`
 			: `${verb.name} takes ${declared} argument${declared === 1 ? '' : 's'}, and got ${args.length}: ${extra.join(' ')} is extra\nusage: ${verb.usage}`);
 	}
+	/*
+	B186 -- the verb being run, so `activeId` can tell a read from a write.
+
+	Derived from the manifest's declared `method` rather than listed anywhere: 27 verbs mutate, and a
+	hand-kept list of them is a twin that drifts the first time a verb is added. The dispatcher
+	already knows which verb it is holding, so it says so once here.
+	*/
+	ctx.verb = verb;
 	const res = await verb.run(ctx, args);
 	if (res === undefined || res === null) return 0;
 	const rendered = ctx.json ? JSON.stringify(res.json ?? res, null, 2) : (res.text ?? res);
