@@ -23,3 +23,15 @@ cli/.draw_context
 # referenced by docs as provenance and never committed. Ignored by name so a clone made for
 # reference cannot be published by a `git add -A`, which is the same habit H9.29 guarded above.
 .refs/
+
+# How THIS instance is deployed: the procedure, the project and bucket identifiers, the DNS and
+# certificate ordering, the pages served outside IAP, and a probe that runs against a real bucket.
+# Kept in the working tree because the operator needs it, ignored because the repository describes
+# the system rather than one hosting of it -- `docs/spec/HOSTING.md` carries the reasoning that
+# survives the choice.
+#
+# UNTRACKED MEANS UNBACKED. Nothing here is in git history after the commit that removed it, so a
+# fresh clone has no deploy/ and a wipe of this working tree loses it. It belongs somewhere durable
+# outside this repository; the copy here is a convenience, not the record.
+deploy/
+

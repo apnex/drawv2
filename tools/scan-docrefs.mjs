@@ -200,7 +200,17 @@ const docs = [];
 	if (!fs.existsSync(dir)) return;
 	for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
 		const p = path.join(dir, e.name);
-		if (e.isDirectory()) { if (e.name !== 'node_modules' && !e.name.startsWith('.')) walk(p); }
+		/*
+		`deploy/` is skipped for the same reason `node_modules` is: it is not part of the published
+		record. It holds how ONE instance is hosted, is gitignored, and its paths are relative to a
+		procedure rather than to this tree -- so scanning it reports breakage in a document the
+		repository does not claim.
+
+		Skipped by NAME rather than by reading .gitignore, because a scanner that silently follows an
+		ignore file would change scope whenever that file changed, and the scope of a proof should be
+		stated where the proof is.
+		*/
+		if (e.isDirectory()) { if (e.name !== 'node_modules' && e.name !== 'deploy' && !e.name.startsWith('.')) walk(p); }
 		else if (e.name.endsWith('.md')) docs.push(p);
 	}
 })('.');
