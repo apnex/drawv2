@@ -229,7 +229,7 @@ Thirty rulings, each with the consequence it accepts.
 ### D1 - Durable log, in the diagram file, store-owned [LOCKED]
 
 The log is **durable**.\
-The stated deployment is a single-instance Cloud Run that scales to zero; an in-memory log means "an agent wrote, the instance recycled, Ctrl+Z is gone" - retiring the headline feature in the exact deployment it is for.\
+The stated deployment is a single-instance Cloud Run that scales to zero; an in-memory log means "an agent wrote, the instance recycled, Ctrl+Z is gone" - retiring the headline feature in the exact deployment it is for.
 **In the same file, not a sidecar:** `flush()` already rewrites the entire document on every debounce tick (`server/store.js:319-320` `[V]`), so an in-doc log adds bytes to a write that already happens.\
 **Store-owned, not in `Model.toJSON()`** - putting it in the Model leaks it into `GET /api/v1/diagrams/:id` (`server/rest.js:117`), into the Slides push payload (`server/rest.js:223`), into every snapshot, and into the browser's Model `[V]`.
 
@@ -328,7 +328,7 @@ Three additions follow and are not optional: typed `error {code, txnId}` landing
 `Model.set` is `Object.assign` (`model/model.mjs:75` `[V]`) - a merge with **no unset**.\
 Five fields are legitimately absent (`OPTIONAL` at `server/validate.js:90`: `node.shape/span/content`, `link.via/closed` `[V]`).\
 A key-projected inverse of "add `span`" yields `{span: undefined}`, which `validateEntity` rejects and `JSON.stringify` silently drops - so the persisted inverse would be `{}` and Ctrl+Z on a Shift+arrow resize would be a silent no-op forever.\
-Today's builders dodge this by fabricating the default (`app/src/input.js:1333-1334`, `app/src/input.js:521`, `app/src/commands.js:197` `[V]`); a mechanical projection cannot.\
+Today's builders dodge this by fabricating the default (`app/src/input.js:1333-1334`, `app/src/input.js:521`, `app/src/commands.js:197` `[V]`); a mechanical projection cannot.
 **Rule:** every key of the narrowed patch already present on the pre-entity -> the inverse is a projected `set`; **any** key being added -> the inverse is `{op:'put', entity: clone(pre)}`, because `put` replaces the whole entity object (`model/model.mjs:67` `[V]`).
 
 **Consequence:** a few hundred bytes in the log for `span`/`shape`/`content`/`closed`/`via` first-writes.
@@ -362,7 +362,7 @@ The claim at `server/rest.js:50-53` that the ws path is safe *"because the brows
 ### D14 - `expect` - optional on forward writes, MANDATORY on undo and redo [LOCKED]
 
 **Forward writes:** `expect` is optional; present -> 409 on mismatch.\
-Mandatory `expect` would break trivial `curl` one-liners for no gain - forward writes are additive, attributable, arbitrated by the lock, and each names its target in the URL.\
+Mandatory `expect` would break trivial `curl` one-liners for no gain - forward writes are additive, attributable, arbitrated by the lock, and each names its target in the URL.
 **Undo and redo:** `expect` is **mandatory**.\
 Absent -> `400 {error:'expect required', code:'expect-required', version:<current>}` on `POST .../undo|redo`, and on the ws `undo`/`redo` when the sender did not originate the top record.\
 **Undo is the one verb whose target is implicit**, over a cursor that `reclaim` does not touch and that `rejectIfLocked` does not arbitrate between tabs (`server/protocol.js:70-76` `[V]`).

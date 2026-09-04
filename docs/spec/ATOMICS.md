@@ -57,7 +57,7 @@ Future intent: routing may be enabled only **inside a zone** (scoped routing reg
 
 ## Manual-link routing [PARTIAL]
 Manual links are orthogonal, rounded at **r=20**, on the 30/60 grid; they attach per the dual-mode rule and the crossing/junction convention.\
-Parallel-link capacity is settled (below).\
+Parallel-link capacity is settled (below).
 **Still open:** the manual waypoint-laying affordance; bundled-vs-individual link rendering.
 
 ---

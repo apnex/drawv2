@@ -158,7 +158,7 @@ A principal is `user:someone@example.com`, so the prefix is stripped rather than
 ### One boundary, and everything past it deals in principals
 
 Both authentication methods resolve in a single function, which takes a request and returns a principal string or nothing.\
-A verified IAP assertion becomes `user:<email>`; a bearer connection code resolves to the `agent:<name>` it was minted for; anything else is nobody.\
+A verified IAP assertion becomes `user:<email>`; a bearer connection code resolves to the `agent:<name>` it was minted for; anything else is nobody.
 **Amended 2026-08-22 (H9.4b/H9.5):** this line read *a bearer connection code becomes `code:<id>`*, which the identity split reversed -- a code is a credential and never a principal, so it authenticates AS an agent rather than becoming one.\
 Past that function **nothing knows IAP exists**, and no handler reads a header.
 
@@ -275,7 +275,7 @@ A public identifier for direct lookup was considered and rejected as solving a p
 At a few dozen codes the server hashes the presented value and looks it up, which is constant time and needs no prefix.
 
 Codes live outside the document, and outside the diagram files.\
-`store.js:25` restricts the store to `/^diagram-[0-9a-f]{6}\.json$/`, so a second object can sit beside them in the bucket without the store trying to parse it as a diagram.\
+`store.js:25` restricts the store to `/^diagram-[0-9a-f]{6}\.json$/`, so a second object can sit beside them in the bucket without the store trying to parse it as a diagram.
 **Amended 2026-08-22 (H9.4c):** this called a second kind of persisted thing the one genuinely new piece of structure here, and H9.4c already paid that cost -- `access.json` sits beside the diagrams under the same rule, so codes are the third kind and follow an established pattern rather than inventing one.
 
 ### Audit is already present
