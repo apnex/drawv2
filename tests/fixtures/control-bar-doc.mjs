@@ -1,5 +1,5 @@
 // control-bar-doc — the multi-region control-bar document used as a span/content fixture.
-// Extracted from design/widgets/control-bar-live.mjs when the design/ generator scripts were
+// Extracted from docs/design/widgets/control-bar-live.mjs when the docs/design/ generator scripts were
 // retired: this is the PURE half (a plain document object). The render/screenshot half stayed
 // behind with the mocks it produced. Consumed by tests/span.test.js.
 

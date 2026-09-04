@@ -23,7 +23,7 @@
 // (→ that cell's centre). Bends therefore land on cell centres, on-grid by construction; a
 // placed Waypoint makes a bend visible (and inscribes the r=20 turn), a bare [cx,cy] is a free
 // bend. ONE anchor per cell = the centre. Parallel/mechanism realizers are a future additive
-// layer (kept in design/sim), deliberately out of this kernel cut.
+// layer (kept in docs/design/sim), deliberately out of this kernel cut.
 import { STD, derive, BEND_R } from './spec.mjs';
 import { cellPx, node, waypoint, waypointRole, zone, group, path, groupHull } from './geometry.mjs';
 import { gridSnap } from './router.mjs';

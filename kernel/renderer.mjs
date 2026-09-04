@@ -93,7 +93,7 @@ const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = 15 } = {}) =
 // a CONTENT region inside a node, in node-LOCAL px (origin cell centre = 0,0). A region occupies a merged
 // sub-grid at offset `at` [col,row] sized cols×rows of the node's 26px socket grid, holding TEXT (align +
 // optional outline/fill/radius; multi-row wraps as a paragraph) or a GLYPH. Ported from the settled mock
-// (design/widgets/render.mjs renderContent). label/input/button/pill are all text + optional outline/fill.
+// (docs/design/widgets/render.mjs renderContent). label/input/button/pill are all text + optional outline/fill.
 export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 	const P = V.pitch, SE = L.socket.ext, S = V.socket;
 	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines } = contentLayout(r, V, L);

@@ -268,7 +268,7 @@ Coalesce survivors + borrowed routing concepts ([[line-routing-references]]) int
 1. **scene-as-data** - a scene is a *list of placed primitives* (type, grid coords, extents),
    composed from (variant geometry) x (rung topology) x (connection style). Refactor
    `build.mjs` so SVG renders *from* this data (today it builds SVG strings directly).
-2. **rung library** - `design/rungs/*.mjs`: each rung a topology generator returning
+2. **rung library** - `../design/rungs/*.mjs`: each rung a topology generator returning
    scene-data (containers + relationships), connection-style-agnostic.
 3. **DRC checker** - **BUILT** as `kernel/grc.mjs`: scene-data -> pass/fail per *auto* criterion
    (grid-snap, clearance, overlap, on-grid attachment, reserve-not-squish).

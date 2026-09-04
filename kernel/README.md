@@ -5,7 +5,7 @@ One declarative **schema** → one resolved **scene** (px primitives) → **SVG*
 pass/fail (the **GRC** rule check). No client-app coupling: glyph artwork, styles, and colours
 are vendored into `theme.mjs`.
 
-> The exploration sandbox lives in `design/sim/` (mockups, the routing-strategy walk, showcase).
+> The exploration sandbox lives in `docs/design/sim/` (mockups, the routing-strategy walk, showcase).
 > `kernel/` is the curated, locked core; iterate visuals here.
 
 ## Modules

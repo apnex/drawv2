@@ -1,7 +1,7 @@
 # draw - geometry & interaction ATOMICS
 
 Living record of the foundational visual + interaction decisions, resolved *before* any routing engine.\
-Mockups that drove these: `design/sim/handles.mjs` and `design/sim/atomics.mjs` (`node ...` -> `/tmp/draw-preview.png`).\
+Mockups that drove these: `../design/sim/handles.mjs` and `../design/sim/atomics.mjs` (`node ...` -> `/tmp/draw-preview.png`).\
 Tags: **[LOCKED] / [OPEN] / [DEFERRED] / [OUT OF SCOPE]**.
 
 ## Pixel spec - variant `standard` [LOCKED]
@@ -71,7 +71,7 @@ The COUNT per face is capped by the boundary, because the outer port must clear 
   corners ~12px clear). An N-cell group face holds ~3N. **More cells = more room.**
 - **Hub principle:** a high-fan-out node is wrapped in a GROUP; links attach to the group hull, which
   has the boundary length a bare node face lacks. Beyond capacity -> more cells / a wider group.
-Mockups: `design/sim/star.mjs` (5x5: node +/-20 vs single-cell group +/-26) - `design/sim/parallel.mjs`.
+Mockups: `../design/sim/star.mjs` (5x5: node +/-20 vs single-cell group +/-26) - `../design/sim/parallel.mjs`.
 
 ---
 

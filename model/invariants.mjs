@@ -34,7 +34,7 @@ a hunt through call sites.
 Straight links are the constrained resource because two of them between the same pair render along
 the identical path: the second is invisible and indistinguishable from a no-op. Routed links carry
 distinct bends and fan out, so they are not limited here. The designed end state caps those too, by
-the column span available between the two containers (`design/walk/FINDINGS.md`, rung
+the column span available between the two containers (`docs/design/walk/FINDINGS.md`, rung
 `3-parallel3`), which is H10.7 and needs geometry this does not attempt.
 */
 function straightCapacity(_model, _a, _b) {

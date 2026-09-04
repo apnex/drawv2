@@ -30,12 +30,12 @@ file, it stops reading the file. Measured before narrowing this list, `COMMIT-DE
 in order to permit 48 dead ones, and any one of those 551 could rot without a word. Same shape for
 `COMMIT-AUDIT.md`: 54 refs, 43 resolving.
 
-Both are read now, with their genuinely dead paths named individually below. `design/README.md`
+Both are read now, with their genuinely dead paths named individually below. `docs/design/README.md`
 stays because there the ratio is the other way -- 8 refs, 2 resolving -- and it describes itself as
 defunct, so per-path entries would be ceremony over a file nobody is maintaining.
 */
 const HISTORICAL = new Set([
-	'design/README.md',                // 8 refs, 2 resolve, and the file says it is defunct
+	'docs/design/README.md',                // 8 refs, 2 resolve, and the file says it is defunct
 ]);
 
 /*
@@ -145,17 +145,17 @@ const ALLOW = {
 	'docs/spec/COMMIT.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
 	'docs/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',
-	'docs/spec/ATOMICS.md:design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
-	'docs/spec/ATOMICS.md:design/sim/handles.mjs': 'as above — provenance citation, not a live path',
-	'docs/spec/ATOMICS.md:design/sim/parallel.mjs': 'as above',
-	'docs/spec/ATOMICS.md:design/sim/star.mjs': 'as above',
+	'docs/spec/ATOMICS.md:../design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
+	'docs/spec/ATOMICS.md:../design/sim/handles.mjs': 'as above — provenance citation, not a live path',
+	'docs/spec/ATOMICS.md:../design/sim/parallel.mjs': 'as above',
+	'docs/spec/ATOMICS.md:../design/sim/star.mjs': 'as above',
 	// provenance: naming a superseded file is the point of the sentence, not a broken pointer
 	// B166 unified the link vocabulary and deleted the adapter that existed only to translate it.
 	// The register cites the file BECAUSE it is gone -- the row is the record of its whole life.
 	'docs/BACKLOG.md:engine/routes.mjs': 'provenance -- the adapter B166 deleted; the row records why it existed and why it does not',
 	'tools/scan-docrefs.mjs:engine/routes.mjs': 'this scanner\'s own allow-list text',
 	'server/txn.mjs:server/commit.mjs': 'provenance header — records the file this one replaced (CS1)',
-	'kernel/renderer.mjs:design/widgets/render.mjs': 'provenance — the mockup the content-region renderer was derived from',
+	'kernel/renderer.mjs:docs/design/widgets/render.mjs': 'provenance — the mockup the content-region renderer was derived from',
 	'tools/scan-docrefs.mjs:server/commit.mjs': 'this scanner\'s own allow-list text',
 	'tools/scan-docrefs.mjs:design/sim/atomics.mjs': 'as above',
 	'tools/scan-docrefs.mjs:design/sim/handles.mjs': 'as above',
@@ -166,8 +166,8 @@ const ALLOW = {
 	'docs/BOARD.md:tests/diff-inverse.test.js': 'as above',
 	'docs/BACKLOG.md:tests/diff-inverse.test.js': 'as above (B22, closed by retirement)',
 	'docs/spec/COMMIT.md:server/commit.mjs': '§7.1 is a deletion table and D5 records the removal — naming the dead is the job',
-	'design/walk/FINDINGS.md:design/walk/grc.mjs': 'the walk record is historical; the checker graduated to kernel/grc.mjs',
-	'design/widgets/DESIGN.md:model/arc-catalog.json': 'a mockup input from the pre-kernel design sandbox, never part of this tree',
+	'docs/design/walk/FINDINGS.md:docs/design/walk/grc.mjs': 'the walk record is historical; the checker graduated to kernel/grc.mjs',
+	'docs/design/widgets/DESIGN.md:model/arc-catalog.json': 'a mockup input from the pre-kernel design sandbox, never part of this tree',
 	'docs/BACKLOG.md:kernel/view.mjs': 'B31 cites the broken paths AS ITS EVIDENCE — the row recording the drift must name it',
 	'docs/BACKLOG.md:design/view.mjs': 'as above (B31 evidence)',
 	'docs/BACKLOG.md:design/shot.mjs': 'as above (B31 evidence)',

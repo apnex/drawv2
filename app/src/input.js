@@ -220,7 +220,7 @@ const GESTURES = {
 			which is not an improvement.
 
 			The design end state is up to N parallel connections bounded by the column span
-			(`design/walk/FINDINGS.md`, rung `3-parallel3`); that is H10.7 and needs spacing this
+			(`docs/design/walk/FINDINGS.md`, rung `3-parallel3`); that is H10.7 and needs spacing this
 			does not attempt. This is the editor rule only.
 			*/
 			// B80: the refusal is about STRAIGHT links colliding, so it must ask whether a straight
