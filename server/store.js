@@ -926,7 +926,7 @@ export class Store {
 
 	A deleted diagram is recoverable for as long as the backend's retention allows, and until now
 	nothing in the product said so: `DELETE` felt final, and a mistake felt unrecoverable when it
-	was not. The window is real -- `gs://diagrams.apnex.io` carries seven days.
+	was not. The window is real -- a bucket soft-delete policy is measured in days, not moments.
 
 	Two answers that must not be conflated. `null` means the backend has no window at all, which is
 	the honest answer on a filesystem and lets the surface say "not on this deployment" instead of

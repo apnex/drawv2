@@ -63,6 +63,18 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
 	/*
+	Removed before publishing on 2026-09-03: `DEPLOY.md` carried one deployment's procedure, project
+	identifiers and DNS, and `gcs-probe.mjs` ran against that deployment's bucket. How a particular
+	instance is hosted is not a property of the system, and a published repository describing it
+	invites a reader to treat one wiring as the wiring. The durable half -- why one writer, and why
+	storage is an adapter rather than a mount -- is `docs/spec/HOSTING.md`.
+
+	These rows cite the removed files AS THE EVIDENCE FOR A DEFECT that was real at the time, which
+	is the same provenance precedent as the SCOPE.md entries below.
+	*/
+	'docs/BACKLOG.md:docs/spec/DEPLOY.md': 'removed before publishing; the row cites it as the document the defect was found in',
+	'docs/BACKLOG.md:tools/gcs-probe.mjs': 'removed before publishing; the row cites the probe that surfaced the defect',
+	/*
 	`SCOPE.md` was split and removed on 2026-09-03: the wire contract, vocabulary and entity model to
 	`docs/spec/API.md`, the ruling register to `docs/DECISIONS.md`, durability to `COMMIT.md`. The
 	scope framing itself was superseded in premise by `VISION.md` and is gone.
@@ -134,9 +146,6 @@ const ALLOW = {
 	'docs/BACKLOG.md:cli/draw.sh': 'rows describing the defects that ended it, B61 and B117, written while it was the CLI.',
 	'docs/BOARD.md:cli/draw.sh': 'H11.16, which records the Dockerfile still symlinking a retired path. Naming the dead path is the item.',
 	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
-	'docs/spec/DEPLOY.md:/src/main.js': 'a URL path, not a repository path -- app/ is served at the web root, so the client bundle is fetched from /src/main.js. Named because it is the request used to prove the app itself is still behind IAP.',
-	'docs/spec/DEPLOY.md:core/engineer.js': 'a file of the 2021 generation (github.com/apnex/draw), named as evidence that the v1 bucket was a stale deploy rather than divergent work',
-	'docs/spec/DEPLOY.md:core/loader.js': 'as above - v1 provenance, not a path in this repository',
 	'docs/BACKLOG.md:secrets/google-credentials.json': 'B49 cites the paths that exposed the defect AS ITS EVIDENCE — same as B31 below',
 	'docs/BACKLOG.md:secrets/google-token.json': 'as above (B49 evidence)',
 	'docs/BACKLOG.md:diagrams/diagram-000001.json': 'as above (B49 evidence)',

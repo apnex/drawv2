@@ -55,7 +55,7 @@ The filesystem implementation, and the default.
 Atomicity is write-then-rename, because `rename(2)` is atomic within a filesystem: a reader either
 sees the old inode or the new one. That is exactly the property an object store provides for free on
 a single PUT, and exactly the property a `gcsfuse` mount does NOT provide, since it emulates rename
-as copy-then-delete -- which is why the cloud backend is an adapter rather than a mount (DEPLOY.md).
+as copy-then-delete -- which is why the cloud backend is an adapter rather than a mount (HOSTING.md).
 */
 export function fsFiles(dir) {
 	fs.mkdirSync(dir, { recursive: true });
@@ -98,7 +98,7 @@ export function fsFiles(dir) {
 The GCS implementation -- B6.
 
 Raw `fetch` against the JSON API, not `@google-cloud/storage`. The SDK is 60 packages and 18MB
-against 1 package and 212KB for what this needs (DEPLOY.md); four verbs over four endpoints does
+against 1 package and 212KB for what this needs (HOSTING.md); four verbs over four endpoints does
 not justify the dependency, and a cold start pays for every megabyte.
 
 It is an ADAPTER rather than a `gcsfuse` mount because the mount cannot honour the contract above.
@@ -289,7 +289,7 @@ export function gcsFiles(bucket, {
 		What is inside the soft-delete window -- B109.
 
 		A DELETE against a bucket with soft-delete configured does not destroy the object; it keeps
-		the generation, marks it, and purges it when the retention lapses. `gs://diagrams.apnex.io`
+		the generation, marks it, and purges it when the retention lapses. the bucket
 		carries 604800s, so seven days of deletions are sitting there and nothing in the product has
 		ever said so -- which makes `DELETE` feel more final than it is and a mistake feel
 		unrecoverable when it is not.

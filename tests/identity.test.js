@@ -11,7 +11,10 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { iapIdentity } from '../server/identity.mjs';
 
-const AUD = '/projects/531843488473/global/backendServices/3078630696779732675';
+// a well-formed IAP audience, shaped like one a deployment configures. The real project's value
+// was removed before publishing: the test proves the FORM is verified, and any conforming string
+// exercises that identically.
+const AUD = '/projects/000000000000/global/backendServices/0000000000000000000';
 const ISS = 'https://cloud.google.com/iap';
 const KID = 'test-kid';
 

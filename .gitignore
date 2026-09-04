@@ -18,3 +18,8 @@ code.txt
 codes.json
 cli/.draw_context
 .claude/
+
+# The draw lineage clones (`draw` 2021, `graph` 2023, `prism` 2026) are a local research checkout,
+# referenced by docs as provenance and never committed. Ignored by name so a clone made for
+# reference cannot be published by a `git add -A`, which is the same habit H9.29 guarded above.
+.refs/

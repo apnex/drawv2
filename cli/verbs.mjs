@@ -2276,7 +2276,7 @@ VERBS.push({
 The delete window -- B109.
 
 `DELETE` has existed since H9.21 and felt final, because nothing in the product said otherwise. It
-is not: `gs://diagrams.apnex.io` carries a 604800s soft-delete retention, so seven days of removals
+is not: the bucket carries a 604800s soft-delete retention, so seven days of removals
 have been sitting there recoverable and unreachable. A backstop nobody can reach is a backstop only
 in the sense that it would have worked.
 

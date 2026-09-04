@@ -148,7 +148,7 @@ IAP sends `X-Goog-Authenticated-User-Email`, but Google states plainly that *"yo
 Today nothing can reach this service except through IAP -- ingress is load-balancer-only and `run.invoker` is held solely by the IAP service agent -- but that is a configuration invariant rather than a cryptographic one.\
 Widening ingress once, or broadening the invoker binding, silently converts a trusted header into a forgeable claim, and nothing would fail visibly at the moment it happened.
 
-So the JWT is the source of truth, verified against Google's public keys with the audience `/projects/531843488473/global/backendServices/<service-id>`.\
+So the JWT is the source of truth, verified against Google's public keys with the deployment's configured audience `/projects/531843488473/global/backendServices/<service-id>`.\
 The keys are public and the audience is a string, so this needs no secret and no SDK.\
 The email header is then a cross-check rather than an input, which is exactly the role Google assigns it.
 

@@ -408,7 +408,7 @@ demonstrate that: they would pass just as well if the store still reached `fs` b
 
 So this store runs on a Map. No directory is created, nothing touches disk, and the four verbs take
 names because an object store has keys rather than paths -- which is the shape the GCS adapter needs
-(DEPLOY.md, H8.2).
+(HOSTING.md, H8.2).
 */
 test('B55: the store runs on a backend with no filesystem at all', async () => {
 	const mem = new Map();

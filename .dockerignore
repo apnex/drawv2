@@ -6,7 +6,9 @@ diagrams
 tests
 *.md
 docs/
-design/
+# design/ moved under docs/ on 2026-09-03 and is covered by the line above. The bare entry is gone
+# rather than kept "just in case": a rule naming a path that does not exist reads as protection and
+# provides none, and the next reader cannot tell which of the two is load-bearing.
 *.log
 .gitignore
 .dockerignore

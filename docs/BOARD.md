@@ -420,7 +420,7 @@ Its first CI run immediately found a guardrail that had been weaker than its own
 
 ## H8 -- cloud deployment - `DONE`
 
-The plan is `docs/spec/DEPLOY.md`, written before any of this.
+The reasoning that survived is `docs/spec/HOSTING.md`; the deployment procedure itself was removed before publishing.
 
 | # | Item | Row | Sev - Size | Status |
 |---|---|---|---|---|

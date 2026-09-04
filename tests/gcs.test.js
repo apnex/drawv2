@@ -3,8 +3,8 @@ The GCS adapter against a fake `fetch` -- B6.
 
 What this can and cannot show is worth stating, because the distinction is the one this project
 keeps getting wrong. A fake `fetch` proves the adapter speaks the protocol I BELIEVE GCS speaks: it
-cannot tell me that belief is right. Only a real bucket can do that, and `tools/gcs-probe.mjs` does
-it against `gs://diagrams.apnex.io`, outside the gate because CI has no credentials.
+cannot tell me that belief is right. Only a real bucket can do that, and an out-of-gate probe against one does
+it against a real bucket, outside the gate because CI has no credentials.
 
 So these tests are about the logic the probe cannot easily force -- pagination, a 412, a 503 storm,
 token caching -- and the probe is about the protocol these cannot verify. Neither is sufficient.

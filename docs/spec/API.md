@@ -58,7 +58,7 @@ It takes no lock: the write slot governs edits to a live document and there is n
 An id the caller cannot see and an id that never existed give the same `404`, which is the correct answer to both.\
 A deployment with no window answers `501`.
 
-On `gs://diagrams.apnex.io` the retention is 604800 seconds.
+Where the bucket sets one, the retention is a soft-delete window in seconds -- 604800 is a week.
 
 `MAX_DIAGRAMS` bounds the store, defaulting to 500, and a create past it answers `507`.\
 It is a runaway guard rather than a quota -- invisible to real use, and present for the retry loop that thinks its last call failed.
