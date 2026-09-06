@@ -710,6 +710,43 @@ The trigger is therefore wanting to scrub backwards, not the present becoming sl
 
 ---
 
+## H14 -- the narrative tier - `TODO`
+
+Opened 2026-09-04.\
+H12 made the world derivable from a clock and H13 made it deviate without desyncing, so the engine can now show a system BEHAVING.\
+What it cannot do is explain one.\
+A diagram of anything non-trivial arrives as a single crowded picture with no order to read it in, and the words that would make it legible live in chat rather than with the geometry.
+
+**Intent is captured rather than assumed.**\
+`docs/surveys/b188-beats-and-stories-survey.md` ran the two-round instrument before any design, because the preceding conversation had assembled beats, a cursor, captions and position overrides entirely from the proposer's reading -- the B163 symptom.\
+Six picks ratified, and the decisive one is that **position is an index, not an instant**.\
+A story stores an ordinal cursor; a presenter advances it, a reader scrubs it, a late arrival reads it, and unattended playback is an agent moving it on a timer.\
+That single mechanism is what lets all four consumption modes hold at once, and it is why pacing is a transition property rather than the thing that defines position.
+
+**A story is a LENS, and the document stays authoritative.**\
+Every entity exists at commit and visibility is DERIVED from the cursor, so `draw get` answers identically at every position and the unfurl is a pure function -- the same shape as a mover's position under H12.\
+This is reading C of three held open, chosen over beat-as-program: making the document a function of position would force every consumer to ask WHEN and would prevent a link to an entity that does not yet exist.\
+The cost accepted is that a lens can go stale, so a beat naming a deleted entity renders what remains and the story reports it.
+
+**Two things the design conversation assumed are NOT ratified.**\
+Per-beat position overrides were designed at length and no pick sanctioned them; they create a second source of truth for position and collide with **B110**, so F3 owes an explicit ruling before any schema is written.\
+The beat/story/timeline entity count is likewise unsettled, and F4 asks it to be named once before three words become three things.
+
+| # | Item | Cites | Size | State |
+|---|---|---|---|---|
+| H14.1 | An agent can perceive the derived visible state it is authoring, rather than asking the director to read a screen. Hard prerequisite for everything below: authoring a visual artifact blind is the failure **B110** exists for, and A5 names it verbatim | **B188** | S2 - M | `TODO` |
+| H14.2 | Rule F3 and F4 before schema: whether a beat may move an entity, and whether beat/story/timeline are one entity or three. Both are director decisions the survey deliberately left open | **B188** | S3 - S | `TODO` |
+| H14.3 | A story is a stored lens over a document -- ordered beats, an ordinal cursor, a caption per beat -- and visibility derives from the cursor. Absolute visible set rather than a delta, so reordering and insertion stay safe | **B188** | S3 - L | `TODO` |
+| H14.4 | A caption is the second channel, typed into the footer bar rather than drawn on the canvas, and its reveal derives from elapsed-within-beat. The origin must be the stored cursor change, never wall-clock-since-commit -- that is the clock-skew class B177 closed | **B188** | S2 - M | `TODO` |
+
+**Exit:** an agent composes a multi-beat explanation of a system through `draw` alone, and a reader who opens the diagram at beat 7 of 12 sees the state at beat 7 with its caption, without a narrator present.
+
+**Not in this milestone:** private per-viewer position, canvas authoring, and any declarative `draw apply`.\
+The first two are AG-1 and AG-2 in the envelope, each with a revival trigger and a note on how it composes.\
+The third is a different thing entirely -- convergence toward a declared target state, which is not what a beat is.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
