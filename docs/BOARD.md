@@ -710,7 +710,7 @@ The trigger is therefore wanting to scrub backwards, not the present becoming sl
 
 ---
 
-## H14 -- the write model - `TODO`
+## H14 -- the write model - `WIP`
 
 Opened 2026-09-04, and RESCOPED the same day by the design conversation it opened for.\
 It was filed as the narrative tier, carrying the B188 survey's story layer -- ordered beats, a stored cursor, scrubbing.\
@@ -738,11 +738,17 @@ The ops of a beat apply immediately and completely; only VISIBILITY is derived, 
 At most one instant is stored -- the active beat's origin -- and everything queued behind derives from it, so no stamp can go stale, nothing promotes the queue, and a late joiner computes the same position as everyone else.\
 That is the H12 shape one level down: `moversAt` derives motion over a static board, this derives the arrival of structure over a complete document.
 
-**The design of record is `docs/spec/WRITES.md`**, which carries the rejected alternatives, six owed rulings and two hypotheses with triggers.
+**Director ruling, 2026-09-04.**\
+A `set` is a group of ops, a `beat` is a REVEAL, and the story layer's step is neither -- it is unnamed, and naming it is owed when that layer is designed.\
+`beat` had acquired three meanings in one design conversation, which is the shape of the B187 gap: machinery under a word that meant different things in different places.\
+The reveal keeps the name because that is the sense the feature was described in, it is the one shipping first, and it is the musical sense -- a moment of timing rather than a place to return to.\
+Recorded in `API.md` under Vocabulary; the B188 survey uses `beat` for the story step throughout and carries a reading note rather than being rewritten (**M4**).
+
+**The design of record is `docs/spec/WRITES.md`**, which carries the rejected alternatives, the remaining owed rulings and two hypotheses with triggers.
 
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
-| H14.1 | Rule the vocabulary before schema. "Beat" means a one-shot reveal in `WRITES.md` and a story step in the B188 survey; three meanings appeared across one conversation, which is how the **B187** gap happened -- machinery under a word that meant different things in different places | **B188** | S2 - S | `TODO` |
+| H14.1 | Rule the vocabulary before schema. "Beat" meant a one-shot reveal in `WRITES.md` and a story step in the B188 survey; three meanings appeared across one conversation, which is how the B187 gap happened -- machinery under a word that meant different things in different places | **B188** | S2 - S | `DONE` |
 | H14.2 | A set: ops drafted locally with the SAME verbs an agent already uses, then committed as one call. The atomic transport exists -- `commit --ops` applies a batch as one transaction and `CLI.md` rules it stays -- so the gap is the draft, not the batch: today assembling that JSON is the caller's problem, which is the hand-authored-ops failure B133 closed, where the caller re-derived six rules the codebase owned and got two wrong | **B188** | S2 - S | `TODO` |
 | H14.3 | Perception symmetric with authoring: `draft show` for the staged ops, `--draft` on reads for the projection, `draft diff` for the delta. A non-empty draft is surfaced by reads, so an agent cannot silently accumulate | **B188** | S2 - M | `TODO` |
 | H14.4 | A beat: a set plus pacing and a caption, revealed by derivation from one stored origin. The caption plays in the menu bar as the second channel, and cancel drops the reveal while leaving the ops | **B188** | S3 - L | `TODO` |

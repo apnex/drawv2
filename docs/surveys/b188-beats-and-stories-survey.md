@@ -75,6 +75,12 @@ contradictory-constraints:
 **Classification candidate:** feature
 **Lifecycle handoff:** `intent-open -> intent-captured` only; this envelope grants no design, seed, implementation, or delivery effect.
 
+> **Reading note, added 2026-09-04. The captured content below is unaltered.**\
+> This envelope uses `beat` throughout for a cursor-addressable step in a story -- a position a reader can scrub back to.\
+> After it was ratified, the word was ruled to mean something else: a `beat` is a one-shot REVEAL attached to a commit, specified in `docs/spec/WRITES.md` and recorded in `docs/spec/API.md`.\
+> The story step this envelope describes is currently unnamed, and naming it is owed when the story layer is designed.\
+> Nothing here is rewritten, because the picks and interpretations are a record of what was captured on the day (**M4**).
+
 ---
 
 ## S0 Context

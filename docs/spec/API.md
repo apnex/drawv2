@@ -74,6 +74,20 @@ Validation exists only at the serialization boundary -- a file read at boot, or 
 The substrate directory was renamed because `document` covered three concepts at once: the substrate, the browser global, and a persisted diagram.\
 `doc` was kept because it covers exactly one.
 
+*(Amended 2026-09-04, H14.1)* -- **a `set` is a group of ops, a `beat` is a reveal, and neither is a story step.**
+
+A **set** is ops applied as one transaction: one version, one undo, complete on its own.\
+A **beat** is a set plus pacing and a caption, so the set's changes APPEAR over time rather than at once.\
+A beat references a set; a set knows nothing about beats, which is what lets a reveal be cancelled while the work stays.
+
+The ruling exists because `beat` had acquired three meanings in one design conversation -- a group of ops, a paced reveal, and a step in a story.\
+That is the shape of the **B187** gap, where machinery lived under a word that meant different things in different places and the field it needed did not exist.\
+`beat` is the reveal, ruled by the director on 2026-09-04: it is the sense the feature was described in, it is the one shipping first, and it is the musical sense -- a moment of timing rather than a place to return to.
+
+**The story layer's step is therefore NOT a beat and is unnamed.**\
+`docs/surveys/b188-beats-and-stories-survey.md` uses `beat` throughout for a cursor-addressable step that a reader can scrub back to, and that artifact is a ratified record which is not rewritten (**M4** protects a record of what was true).\
+Read it with this amendment in hand: its `beat` is this document's unnamed story step, and naming that is owed when the story layer is designed.
+
 ---
 
 ## Entities (five)

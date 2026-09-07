@@ -231,7 +231,9 @@ It cannot answer "does this target exist, is this anchor free," and it should no
 An ordered list of beats with a stored cursor, scrubbable, replayable, authored over a finished document.\
 The B188 survey captured intent for it and almost none of that intent is spent here.\
 A beat in this document is a one-shot reveal attached to a commit; a beat in the survey is a step in a story.\
-**Those are different things sharing a word, and the vocabulary is owed a ruling before either is built** (section 9).
+**Those were different things sharing a word, and the ruling separated them** (2026-09-04, recorded in `API.md`).\
+A `beat` is the reveal specified here.\
+The story layer's step is unnamed, and naming it is owed when that layer is designed -- the survey calls it a beat throughout, and is read with the amendment rather than rewritten.
 
 **Skip.**\
 Deferred.\
@@ -254,7 +256,7 @@ Every variant reintroduces surprise; a draft commits when told.
 
 | # | Question | Owner |
 |---|---|---|
-| W1 | **Vocabulary.** "Beat" means a reveal here and a story step in the B188 survey. Three meanings appeared across one conversation, which is how the **B187** gap happened -- machinery under a word that meant different things in different places. Fix in `API.md` before schema. | director |
+| ~~W1~~ | **Vocabulary. RULED 2026-09-04 and recorded in `API.md`.** A `set` is a group of ops, a `beat` is a reveal, and the story layer's step is neither -- it is unnamed, and naming it is owed when that layer is designed. The B188 survey's `beat` means the story step throughout; that artifact is a ratified record and is read with the amendment rather than rewritten. | director |
 | W2 | **Does a set outlive its beat, and how long does either persist?** A caption held until replaced means the most recent completed beat must survive. Retaining an id and touched-set per commit is bounded and small, but it is a step toward the chain-of-batches hypothesis and should be taken deliberately. | design |
 | W3 | **What does `commit` return, and how is a set addressed afterwards?** Needed for inspection and for a beat to attach to an existing set. | design |
 | W4 | **Is `draw draft begin` built in the first slice, or is `--draft` alone enough to learn from?** Whether per-op verbosity is acceptable to an agent authoring forty ops is empirical -- driving the spine-leaf demo through the explicit form answers it in one session. | measurement |
