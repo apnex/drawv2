@@ -298,9 +298,10 @@ op2 near lb-1 -> { x: -60, y: 0 }   distinct: true
 
 Two intents, two distinct anchors, inside one transaction -- which is what two round trips buy today.
 
-**The duplication this risks already exists.**\
-`cli/verbs.mjs:888` and `server/rest.js:642` each carry their own `Math.hypot` nearest-anchor loop.\
-Moving selection server-side is therefore a chance to end a twin rather than create one, and the resolver should be sovereign -- one function, imported by both the REST anchor route and `planOne`, with `scan-twins` holding it.
+**The rule has one home, and it is the wrong one.**\
+The server ANSWERS occupancy -- `anchors?free=1` filters the grid and returns every free anchor -- but nothing server-side picks one.\
+Selection is `cli/verbs.mjs` alone, which is why `place` costs two round trips and why `plan()` cannot resolve an intent op today.\
+So this moves a rule rather than duplicating one, and the resolver should be sovereign: one function over `(model, layout, relationship)`, reachable from `planOne` (**B189**).
 
 **Shape.**\
 An intent op names a relationship in place of a resolved position:
@@ -319,6 +320,16 @@ Refusal keeps `plan()`'s existing contract -- `{ ok: false, error, opIndex }` --
 Not all 44 call sites: most resolve a REFERENCE (`resolveId` turning a name into an id), which the server already does and B187 made unambiguous.\
 The ones that need an intent op are those resolving a POSITION -- `place` in its three forms, and any later verb that positions by relationship.\
 An absolute op (`add at 0,0`, `move`, `rename`, `rm`) needs nothing new and stages as it stands.
+
+**Relational is not declarative, and the difference is load-bearing.**\
+An intent op says what should be TRUE -- a server near `lb-1` -- and the system computes how, which is the declarative move and is why the pieces kept already existing.\
+But a declarative surface is idempotent and convergent: applying an unchanged declaration twice is a no-op.\
+`place server near lb-1` twice gives two servers, correctly, because it is an imperative instruction whose POSITIONING is deferred rather than a statement of desired state.
+
+So the ops are **relational**, not convergent, and re-committing a set duplicates everything in it.\
+Undo is the only unwind (section 6).\
+Full convergence needs a target state to diff against, which nothing here produces -- that is **AG-4**, `draw apply <document>`, deferred.\
+This is the substrate such a thing would need, and the director has held it open for consideration once this interaction is coherent.
 
 ### The lock
 
@@ -367,8 +378,8 @@ Every variant reintroduces surprise; a draft commits when told.
 | W6 | **Does a completed beat stay visible in the queue view?** Same question as W2 from the reporting side. | design |
 | ~~W7~~ | **How does a relational op resolve inside a draft? RULED 2026-09-04: it does not -- the op carries INTENT and the server resolves at commit.** `plan()` already advances a projection between ops; what is missing is an op form naming a relationship, and the relational logic moving out of `cli/verbs.mjs` to where a transaction can use it. Section 7 carries the measurement. | director |
 | ~~W8~~ | **Does `cli/` take a dependency on `model/`? CLOSED by the W7 ruling: no.** The tool stays standalone and `CLI.md` needs no amendment. | -- |
-| ~~W9~~ | **What is the intent op's shape, and which relational verbs emit it? ANSWERED in section 7.** An `at:` clause naming a relationship, resolved by `planOne` into the `put` it would have received. Only position-resolving verbs need it -- reference resolution is already the server's. The kernel already exports the geometry, and the nearest-anchor loop is ALREADY twinned between `cli/verbs.mjs:888` and `server/rest.js:642`, so this ends a twin rather than making one. | design |
-| W10 | **Does the sovereign resolver land before or with H14.2?** Ending the `Math.hypot` twin is a defect fix that stands alone and is worth registering as its own **B** row; folding it into the draft work hides it. | design |
+| ~~W9~~ | **What is the intent op's shape, and which relational verbs emit it? ANSWERED in section 7.** An `at:` clause naming a relationship, resolved by `planOne` into the `put` it would have received. Only position-resolving verbs need it -- reference resolution is already the server's. The kernel already exports the geometry; what is missing is SELECTION, which lives in `cli/verbs.mjs` alone and must move to where a transaction can reach it (**B189**). | design |
+| W10 | **Does the sovereign resolver land before or with H14.2?** Moving selection server-side stands alone as **B189** and is worth landing first; folding it into the draft work hides it inside a feature. | design |
 
 ---
 
