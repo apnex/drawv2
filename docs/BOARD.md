@@ -743,7 +743,7 @@ That is the H12 shape one level down: `moversAt` derives motion over a static bo
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
 | H14.1 | Rule the vocabulary before schema. "Beat" means a one-shot reveal in `WRITES.md` and a story step in the B188 survey; three meanings appeared across one conversation, which is how the **B187** gap happened -- machinery under a word that meant different things in different places | **B188** | S2 - S | `TODO` |
-| H14.2 | A set: ops drafted locally, committed as one API call, applied atomically, one undo. Structural validation on append and semantic on commit, since the standalone CLI cannot import the kernel and a pre-validated draft would be lying anyway | **B188** | S2 - M | `TODO` |
+| H14.2 | A set: ops drafted locally with the SAME verbs an agent already uses, then committed as one call. The atomic transport exists -- `commit --ops` applies a batch as one transaction and `CLI.md` rules it stays -- so the gap is the draft, not the batch: today assembling that JSON is the caller's problem, which is the hand-authored-ops failure B133 closed, where the caller re-derived six rules the codebase owned and got two wrong | **B188** | S2 - S | `TODO` |
 | H14.3 | Perception symmetric with authoring: `draft show` for the staged ops, `--draft` on reads for the projection, `draft diff` for the delta. A non-empty draft is surfaced by reads, so an agent cannot silently accumulate | **B188** | S2 - M | `TODO` |
 | H14.4 | A beat: a set plus pacing and a caption, revealed by derivation from one stored origin. The caption plays in the menu bar as the second channel, and cancel drops the reveal while leaving the ops | **B188** | S3 - L | `TODO` |
 

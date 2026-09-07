@@ -28,6 +28,24 @@ That is **B188**, and the reveal in section 5 is the smallest thing that answers
 
 ---
 
+## 0b. What already exists, and what is actually missing
+
+`draw commit --ops <file|->` ships today.\
+It takes a JSON array of ops, applies them as ONE transaction with one undo label, and `CLI.md` rules that it stays -- a batch transport is legitimate, and content regions are better expressed as data than as flags.
+
+So the atomic-apply half of a set is **built**.\
+An agent can already avoid forty round trips by assembling ops itself and posting them once.
+
+What is missing is everything around it.\
+Assembling that JSON is the caller's problem, which is precisely the failure **B133** recorded: with no write verb for a zone or a link between existing nodes, every structural change went through `commit --ops` as hand-authored entity JSON, and the CALLER re-derived six rules the codebase already owned.\
+Two of the six were wrong on the first attempt.
+
+**The gap is the draft, not the batch.**\
+An agent should compose a set with the same verbs it already uses -- `draw place node`, `draw link` -- and have the tool accumulate them, rather than hand-writing the transport format those verbs exist to hide.\
+That is what sections 2 through 4 specify, and it is why a set is a small slice rather than a large one.
+
+---
+
 ## 1. The two objects
 
 The word "batch" was doing two jobs in the conversation that produced this document, and the design only became clear once they were separated.
