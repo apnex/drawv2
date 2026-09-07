@@ -240,35 +240,43 @@ Run sequentially the same two verbs succeed, because the second sees the first's
 **A draft that only accumulates emitted ops is therefore wrong.**\
 It would work for ops whose arguments are absolute (`add at 0,0`, `rename`, `rm`) and fail for every verb that resolves a relationship -- which is the verb set B133 was filed to create, and the reason an agent uses the tool instead of hand-writing JSON.
 
-Three shapes answer it, and the first was ruled after probing what already exists:
+Three shapes answer it, and the second was ruled:
 
-- **Resolve against the projection.** The draft keeps a local model of the document as the set would leave it, and each verb resolves against that rather than the server's copy.
-- **Defer resolution to the server.** The op stores the INTENT (`near lb-1`) rather than a resolved position, and the server resolves each op as it applies. More honest about what the agent expressed; costs a new op form and every relational verb must learn to emit it.
+- **Resolve against a local projection.** The draft keeps its own model of the document as the set would leave it. Cheaper to build -- `projection()` and `violations()` already exist in `model/` -- but `cli/` stops being self-contained.
+- **Defer resolution to the server.** The op stores the INTENT (`near lb-1`) rather than a resolved position, and the server resolves each op as it applies. **RULED.**
 - **Refuse the combination.** A draft accepts only absolute ops. Cheap and useless: it excludes exactly the verbs a set is for.
+### W7 RULED: the op carries INTENT, and the server resolves it
 
-### W7 RULED: resolve against the projection
+Ruled by the director 2026-09-04, against the projection-in-the-CLI alternative.
 
-`model/model.mjs` already exports `projection(model)` -- a scratch `Model` loaded from `model.toJSON()`, which is precisely a document-as-it-would-be.\
-Measured 2026-09-04: staging an op into a projection leaves the source model untouched, and a second op sees the first's anchor as occupied.
+A drafted op stores what the agent EXPRESSED -- `place server near lb-1` -- rather than a position resolved against a document the draft cannot see.\
+Resolution happens at commit, in the server, where the document is.\
+`cli/` stays standalone: it imports `node:` builtins and its own two files, and takes no dependency on `model/`.
 
-`model/invariants.mjs` exports `violations(model)`, and run locally against a projection holding the two colliding nodes it returns:
+**The server half already exists.**\
+`server/txn.mjs` `plan(model, ops)` runs each op against a scratch projection and calls `applyOps(proj, step.ops)` between them -- the comment on the line reads *"advance the projection for op i+1"*.\
+So ops in one request already resolve against the accumulated result of the ones before them.
+
+Measured 2026-09-04, calling `plan()` directly on a two-node document:
 ```text
-node-aa2222 and node-aa1111 occupy the same anchor (0,-60)
+distinct anchors -> ok
+same anchor      -> refused at op-1: node-bb2222 and node-bb1111 occupy the same anchor (0,-60)
 ```
 
-That is the SAME string the server returned when the set was refused, from the same code -- so a draft validates against the sovereign definition rather than a second implementation of it, which is what `scan-twins` exists to prevent.
+That is the whole mechanism a draft needs, already built and already the single mutation point -- `tools/scan-writers.mjs` fails the build on any write outside `applyOps`.
 
-**The claim that blocked this was wrong, and it was mine.**\
-Earlier revisions of this document said `cli/` cannot import the kernel and cited **B138**.\
-B138 is about `draw` failing silently when invoked through a symlink; it says nothing about imports.\
-Verified: the kernel imports cleanly from outside the repo, and the Dockerfile ships `cli/`, `model/`, `kernel/` and `engine/` side by side, so there is no deployment barrier either.
+**What is missing is one op form.**\
+`planOne` accepts `put`, `set`, `del` and `meta`, each carrying resolved values.\
+An intent op names a relationship instead, and `planOne` must learn to resolve it against the projection it already holds.\
+The relational logic exists but lives in the wrong place: `cli/verbs.mjs` computes free anchors and picks one across 44 call sites, and that reasoning has to move server-side to be usable inside a transaction.
 
-The CLI importing the model is therefore a NEW dependency to take deliberately, not a forbidden one.\
-What it buys is large: a draft that resolves relationships correctly, and structural plus invariant validation before anything reaches the wire.\
-What it costs is that `cli/` stops being self-contained -- worth stating in `CLI.md`, since nothing there ruled it either way and the tool had simply grown that way.
+**Why this over resolving in the CLI.**\
+The projection alternative was cheaper to build -- `projection()` and `violations()` already exist in `model/` and return the server's own error strings -- but it costs a coupling: `cli/` would stop being self-contained, and a change to `Model` could break the tool.\
+Intent is the better architecture for the reason the survey's derived-visibility pick was: the stored thing is what was MEANT, and the resolution is computed where the truth is.\
+It also composes with a beat, where the gap between authoring and applying is wider still.
 
-Semantic validation still belongs to the server.\
-A projection cannot know whether another writer changed the document since the draft began, so `commit` remains the authority and a draft's local check is an early warning rather than a guarantee.
+**W8 is therefore closed rather than owed.**\
+The CLI takes no new dependency, and `CLI.md` needs no amendment about self-containment.
 
 **A draft validates structurally on append and semantically on commit.**\
 The CLI can answer "is this a well-formed op with coherent flags" -- it already does for 60 verbs.\
@@ -319,8 +327,9 @@ Every variant reintroduces surprise; a draft commits when told.
 | W4 | **Is `draw draft begin` built in the first slice, or is `--draft` alone enough to learn from?** Whether per-op verbosity is acceptable to an agent authoring forty ops is empirical -- driving the spine-leaf demo through the explicit form answers it in one session. | measurement |
 | W5 | **Flag naming.** `--draft` reads well on a write and less well on a read, where `--projected` or `--pending` may say more. Symmetry argues for one word. | design |
 | W6 | **Does a completed beat stay visible in the queue view?** Same question as W2 from the reporting side. | design |
-| ~~W7~~ | **How does a relational op resolve inside a draft? RULED 2026-09-04: against a local projection.** `projection()` and `violations()` already exist in `model/`, produce the server's own error string, and import cleanly -- the B138 citation that blocked this was wrong, and was mine. Section 7 carries the measurement. | design |
-| W8 | **`cli/` gains a dependency on `model/`.** Nothing ruled the tool self-contained; it grew that way. Taking the dependency deliberately means saying so in `CLI.md`, and deciding whether the CLI may import `kernel/` and `engine/` too or only the model. | design |
+| ~~W7~~ | **How does a relational op resolve inside a draft? RULED 2026-09-04: it does not -- the op carries INTENT and the server resolves at commit.** `plan()` already advances a projection between ops; what is missing is an op form naming a relationship, and the relational logic moving out of `cli/verbs.mjs` to where a transaction can use it. Section 7 carries the measurement. | director |
+| ~~W8~~ | **Does `cli/` take a dependency on `model/`? CLOSED by the W7 ruling: no.** The tool stays standalone and `CLI.md` needs no amendment. | -- |
+| W9 | **What is the intent op's shape, and which relational verbs emit it?** 44 call sites in `cli/verbs.mjs` resolve against live state; each is a candidate. The op must name a relationship (`near <ref>`, `inside <zone>`, `between <a> <b>`) in a form `planOne` can resolve, and the anchor-choosing logic has to move server-side without becoming a second implementation of what `cli/` does today. | design |
 
 ---
 
