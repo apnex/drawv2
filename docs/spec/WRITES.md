@@ -282,6 +282,44 @@ The CLI takes no new dependency, and `CLI.md` needs no amendment about self-cont
 The CLI can answer "is this a well-formed op with coherent flags" -- it already does for 60 verbs.\
 It cannot answer "does this target exist, is this anchor free," and a draft that pre-validated semantically would be lying anyway, because the document can change between draft and commit.
 
+### W9: the intent op, and where its logic already lives
+
+**The relational logic does not need to be written, and mostly does not need to move.**\
+`kernel/geometry.mjs` exports `LAYOUTS`, `anchorAt` and `nearestAnchor`; `server/rest.js` already imports them to answer `layouts/<layout>/anchors?free=1`.\
+`txn.mjs` can import the same kernel the rest of the server does, so a resolver inside `planOne` composes what exists rather than restating it.
+
+What `cli/verbs.mjs` adds on top is the SELECTION, and it is small: filter the free list to a zone's bounds for `inside`, take the midpoint for `between`, walk outward by 60px for `--dir`, else pick nearest.
+
+Measured 2026-09-04, resolving `near lb-1` twice against a projection advanced between them:
+```text
+op1 near lb-1 -> { x: 0, y: -60 }
+op2 near lb-1 -> { x: -60, y: 0 }   distinct: true
+```
+
+Two intents, two distinct anchors, inside one transaction -- which is what two round trips buy today.
+
+**The duplication this risks already exists.**\
+`cli/verbs.mjs:888` and `server/rest.js:642` each carry their own `Math.hypot` nearest-anchor loop.\
+Moving selection server-side is therefore a chance to end a twin rather than create one, and the resolver should be sovereign -- one function, imported by both the REST anchor route and `planOne`, with `scan-twins` holding it.
+
+**Shape.**\
+An intent op names a relationship in place of a resolved position:
+```text
+{ op: 'place', kind: 'node', entity: { name, type }, at: { near: 'lb-1', dir: 'right' } }
+{ op: 'place', kind: 'node', entity: { name, type }, at: { inside: 'dmz' } }
+{ op: 'place', kind: 'node', entity: { name, type }, at: { between: ['a', 'b'] } }
+```
+
+`planOne` resolves `at` against the projection it already holds, producing exactly the `put` it would have received, then proceeds unchanged.\
+So the op form is additive: `put`, `set`, `del` and `meta` keep their meanings, and a resolved `put` remains the thing that reaches `applyOps`.
+
+Refusal keeps `plan()`'s existing contract -- `{ ok: false, error, opIndex }` -- so `zone dmz has no free anchor` refuses op 3 of a set and names it, and the whole set is refused because that is what atomic apply means.
+
+**Which verbs emit it.**\
+Not all 44 call sites: most resolve a REFERENCE (`resolveId` turning a name into an id), which the server already does and B187 made unambiguous.\
+The ones that need an intent op are those resolving a POSITION -- `place` in its three forms, and any later verb that positions by relationship.\
+An absolute op (`add at 0,0`, `move`, `rename`, `rm`) needs nothing new and stages as it stands.
+
 ### The lock
 
 A write today requires the write slot -- `draw add` refuses with `add needs the write slot -- run draw lock first`.\
@@ -329,7 +367,8 @@ Every variant reintroduces surprise; a draft commits when told.
 | W6 | **Does a completed beat stay visible in the queue view?** Same question as W2 from the reporting side. | design |
 | ~~W7~~ | **How does a relational op resolve inside a draft? RULED 2026-09-04: it does not -- the op carries INTENT and the server resolves at commit.** `plan()` already advances a projection between ops; what is missing is an op form naming a relationship, and the relational logic moving out of `cli/verbs.mjs` to where a transaction can use it. Section 7 carries the measurement. | director |
 | ~~W8~~ | **Does `cli/` take a dependency on `model/`? CLOSED by the W7 ruling: no.** The tool stays standalone and `CLI.md` needs no amendment. | -- |
-| W9 | **What is the intent op's shape, and which relational verbs emit it?** 44 call sites in `cli/verbs.mjs` resolve against live state; each is a candidate. The op must name a relationship (`near <ref>`, `inside <zone>`, `between <a> <b>`) in a form `planOne` can resolve, and the anchor-choosing logic has to move server-side without becoming a second implementation of what `cli/` does today. | design |
+| ~~W9~~ | **What is the intent op's shape, and which relational verbs emit it? ANSWERED in section 7.** An `at:` clause naming a relationship, resolved by `planOne` into the `put` it would have received. Only position-resolving verbs need it -- reference resolution is already the server's. The kernel already exports the geometry, and the nearest-anchor loop is ALREADY twinned between `cli/verbs.mjs:888` and `server/rest.js:642`, so this ends a twin rather than making one. | design |
+| W10 | **Does the sovereign resolver land before or with H14.2?** Ending the `Math.hypot` twin is a defect fix that stands alone and is worth registering as its own **B** row; folding it into the draft work hides it. | design |
 
 ---
 
