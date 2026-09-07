@@ -34,6 +34,7 @@ import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { STD } from '../kernel/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { violations, isStraight, pairKey } from '../model/invariants.mjs';
+import { resolveAnchor } from './anchor.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
 // B113: per KIND, per diagram -- a different enforcement POINT from validateDoc, deliberately, but
@@ -177,6 +178,26 @@ export function plan(model, ops) {
 
 function planOne(model, op) {
 	if (op.op === 'meta') return planMeta(model, op);
+
+	/*
+	B189/W9 -- a `place` op names a RELATIONSHIP and is resolved here, against the projection this
+	planner already advances between ops.
+
+	That is the whole reason resolution is server-side. A drafted set resolves op 2 against the
+	document op 1 has already changed; resolving both client-side against one pre-draft snapshot
+	picks the same anchor twice and the set is refused for occupancy. Measured before this existed:
+	`node-aa2222 and node-aa1111 occupy the same anchor (0,-60)`.
+
+	Additive by construction: resolution rewrites the op into exactly the `put` it would have been
+	handed, and everything below -- validation, planPut, the inverse, applyOps -- is untouched. A
+	refusal keeps plan()'s contract, so the set is refused whole and names the op that failed.
+	*/
+	if (op.op === 'place') {
+		const at = resolveAnchor(model, op.at || {});
+		if (!at.ok) return { ok: false, error: at.error };
+		op = { op: 'put', kind: op.kind, entity: { ...op.entity, x: at.x, y: at.y } };
+	}
+
 	if (!['put', 'set', 'del'].includes(op.op)) return { ok: false, error: `unknown op '${op.op}'` };
 
 	// validateMutation speaks the legacy {action, kind, entity} shape; it is the trust boundary and

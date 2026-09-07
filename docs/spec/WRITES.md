@@ -298,10 +298,18 @@ op2 near lb-1 -> { x: -60, y: 0 }   distinct: true
 
 Two intents, two distinct anchors, inside one transaction -- which is what two round trips buy today.
 
-**The rule has one home, and it is the wrong one.**\
-The server ANSWERS occupancy -- `anchors?free=1` filters the grid and returns every free anchor -- but nothing server-side picks one.\
-Selection is `cli/verbs.mjs` alone, which is why `place` costs two round trips and why `plan()` cannot resolve an intent op today.\
-So this moves a rule rather than duplicating one, and the resolver should be sovereign: one function over `(model, layout, relationship)`, reachable from `planOne` (**B189**).
+**The rule had one home and it was the wrong one -- SHIPPED 2026-09-04.**\
+The server ANSWERED occupancy -- `anchors?free=1` filters the grid and returns every free anchor -- but nothing server-side picked one.\
+Selection was `cli/verbs.mjs` alone, which is why `place` costs two round trips and why `plan()` could not resolve an intent op.
+
+`server/anchor.mjs` `resolveAnchor(model, at)` now owns it: pure, reading a model and returning an anchor or a refusal.\
+It sits in `server/` rather than `model/` deliberately -- it needs `kernel/` for the grid, and `model/` is a sovereign sibling of `kernel/` that imports it nowhere (`model/limits.mjs`).
+
+Proven equivalent to the rule it replaces: 72 resolutions across six reference points, each after twelve sequential placements, **zero divergence** from the CLI's algorithm.\
+So moving the rule cannot change where a node lands.
+
+One correction was carried across rather than transcribed.\
+The CLI ordered candidates by `Math.hypot`; the resolver compares squared distance, because ordering by `d2` is ordering by `d` and **B176** bans an implementation-approximated root from anything two peers must agree on.
 
 **Shape.**\
 An intent op names a relationship in place of a resolved position:
@@ -312,7 +320,10 @@ An intent op names a relationship in place of a resolved position:
 ```
 
 `planOne` resolves `at` against the projection it already holds, producing exactly the `put` it would have received, then proceeds unchanged.\
-So the op form is additive: `put`, `set`, `del` and `meta` keep their meanings, and a resolved `put` remains the thing that reaches `applyOps`.
+So the op form is additive: `put`, `set`, `del` and `meta` keep their meanings, and a resolved `put` remains the thing that reaches `applyOps` -- `scan-writers` still reports one writer.
+
+**SHIPPED 2026-09-04**, and the property that matters is proven through `plan()` rather than only against the resolver: two `place` intents in ONE transaction resolve to different anchors, because the planner advances its projection between them.\
+An unresolvable intent refuses the whole set and names the op, keeping `{ ok, error, opIndex }`.
 
 Refusal keeps `plan()`'s existing contract -- `{ ok: false, error, opIndex }` -- so `zone dmz has no free anchor` refuses op 3 of a set and names it, and the whole set is refused because that is what atomic apply means.
 
