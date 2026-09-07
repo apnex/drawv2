@@ -210,18 +210,53 @@ Undo at that moment removes the twelfth -- the one nobody has seen -- not the on
 
 Ops apply in authored order, sequentially.
 
-An op referring to something created earlier in the same set is the obvious case -- place a node, then link to it -- and the reference cannot be an id, because ids are server-minted 6 hex characters and a client-chosen one is a collision waiting to happen.
+An op referring to something created earlier in the same set is the obvious case -- place a node, then link to it.
 
-**B187 already solved this.**\
+**B187 already solved the reference half.**\
 Every entity carries a mandatory name, `resolveId` matches on names, and names are unique across all five kinds.\
-So an op refers to `web-01` and the server resolves it while applying, in order.
+So an op refers to `web-01` and the server resolves it while applying, in order.\
+Ids do not need to travel: `place` already mints its own client-side (`node-<6 hex>`) and the server accepts it, so a set may name what it created.
 
 A forward reference -- naming something created later in the same set -- is a refusal, not a puzzle to solve.\
 The set is refused whole, which is what atomic apply means.
 
+### The resolution hazard, measured
+
+**This is the real work of a draft, and it is not the transport.**
+
+A write verb does not simply record what the agent typed.\
+`draw place server near lb-1` READS the live document, asks the server for free anchors, picks one, and emits an op carrying a resolved `x,y`.\
+Forty-four call sites in `cli/verbs.mjs` resolve an argument against live state this way.
+
+So two drafted ops both resolve against the SAME pre-draft document and both choose the same anchor.\
+Measured on the live estate 2026-09-04, on a scratch diagram, with two `place` ops committed as one set:
+```text
+commit: node-aa2222 and node-aa1111 occupy the same anchor (0,-60)
+```
+
+The set is refused WHOLE, which is atomic apply behaving correctly -- **B112** holds one occupant per anchor and the server enforces it.\
+Run sequentially the same two verbs succeed, because the second sees the first's result.
+
+**A draft that only accumulates emitted ops is therefore wrong.**\
+It would work for ops whose arguments are absolute (`add at 0,0`, `rename`, `rm`) and fail for every verb that resolves a relationship -- which is the verb set B133 was filed to create, and the reason an agent uses the tool instead of hand-writing JSON.
+
+Three shapes answer it, and the choice is owed (W7):
+
+- **Resolve against the projection.** The draft keeps a local model of the document as the set would leave it, and each verb resolves against that rather than the server's copy. Correct, and it is what a human editor does; the cost is that the CLI needs the projection, and `cli/` is standalone and cannot import the kernel (**B138**).
+- **Defer resolution to the server.** The op stores the INTENT (`near lb-1`) rather than a resolved position, and the server resolves each op as it applies. No client-side model needed, and it is more honest -- the intent is what the agent expressed. The cost is a new op form the server must understand, and every relational verb must learn to emit it.
+- **Refuse the combination.** A draft accepts only absolute ops and rejects relational ones. Cheap and useless: it excludes exactly the verbs a set is for.
+
+The second is the most likely answer and the most work, and it is the reason H14.2 is not merely a local accumulator.
+
 **A draft validates structurally on append and semantically on commit.**\
 The CLI can answer "is this a well-formed op with coherent flags" -- it already does for 60 verbs.\
-It cannot answer "does this target exist, is this anchor free," and it should not try: `cli/` is standalone and cannot import the kernel (**B138**), and a draft that pre-validated semantically would be lying anyway, because the document can change between draft and commit.
+It cannot answer "does this target exist, is this anchor free," and a draft that pre-validated semantically would be lying anyway, because the document can change between draft and commit.
+
+### The lock
+
+A write today requires the write slot -- `draw add` refuses with `add needs the write slot -- run draw lock first`.\
+A draft is local and takes no lock: nothing is being written while ops accumulate, and a long authoring session must not hold the slot against every other writer.\
+The lock is needed at `commit` and nowhere earlier, which is one more reason drafting locally is worth having.
 
 ---
 
@@ -262,6 +297,7 @@ Every variant reintroduces surprise; a draft commits when told.
 | W4 | **Is `draw draft begin` built in the first slice, or is `--draft` alone enough to learn from?** Whether per-op verbosity is acceptable to an agent authoring forty ops is empirical -- driving the spine-leaf demo through the explicit form answers it in one session. | measurement |
 | W5 | **Flag naming.** `--draft` reads well on a write and less well on a read, where `--projected` or `--pending` may say more. Symmetry argues for one word. | design |
 | W6 | **Does a completed beat stay visible in the queue view?** Same question as W2 from the reporting side. | design |
+| W7 | **How does a relational op resolve inside a draft?** Measured: two `place near lb-1` ops in one set both pick the same anchor and the set is refused whole. Resolve against a local projection, defer resolution to the server, or refuse relational ops in a draft -- section 7 states the three and why the second is most likely. This is the load-bearing decision of H14.2 and blocks it. | design |
 
 ---
 
