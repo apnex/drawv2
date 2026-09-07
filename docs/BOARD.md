@@ -710,40 +710,48 @@ The trigger is therefore wanting to scrub backwards, not the present becoming sl
 
 ---
 
-## H14 -- the narrative tier - `TODO`
+## H14 -- the write model - `TODO`
 
-Opened 2026-09-04.\
-H12 made the world derivable from a clock and H13 made it deviate without desyncing, so the engine can now show a system BEHAVING.\
-What it cannot do is explain one.\
-A diagram of anything non-trivial arrives as a single crowded picture with no order to read it in, and the words that would make it legible live in chat rather than with the geometry.
+Opened 2026-09-04, and RESCOPED the same day by the design conversation it opened for.\
+It was filed as the narrative tier, carrying the B188 survey's story layer -- ordered beats, a stored cursor, scrubbing.\
+Designing it found a cheaper thing underneath that has to exist first and is worth building alone.
 
-**Intent is captured rather than assumed.**\
-`docs/surveys/b188-beats-and-stories-survey.md` ran the two-round instrument before any design, because the preceding conversation had assembled beats, a cursor, captions and position overrides entirely from the proposer's reading -- the B163 symptom.\
-Six picks ratified, and the decisive one is that **position is an index, not an instant**.\
-A story stores an ordinal cursor; a presenter advances it, a reader scrubs it, a late arrival reads it, and unattended playback is an agent moving it on a timer.\
-That single mechanism is what lets all four consumption modes hold at once, and it is why pacing is a transition property rather than the thing that defines position.
+**The churn is authoring, not rendering.**\
+An agent building a twenty-node topology makes one call per op: a round trip, a version bump, a transaction and a separate undo entry each.\
+The write budget is 30 commits per rolling 5s, so a real build hits it and backs off for 6 seconds mid-topology, and undoing "the web tier" means undoing eleven times and counting carefully.\
+Grouping ops locally and committing once removes all of that, and it is worth doing whether or not anything is ever narrated.
 
-**A story is a LENS, and the document stays authoritative.**\
-Every entity exists at commit and visibility is DERIVED from the cursor, so `draw get` answers identically at every position and the unfurl is a pure function -- the same shape as a mover's position under H12.\
-This is reading C of three held open, chosen over beat-as-program: making the document a function of position would force every consumer to ask WHEN and would prevent a link to an entity that does not yet exist.\
-The cost accepted is that a lens can go stale, so a beat naming a deleted entity renders what remains and the story reports it.
+**Two objects, one dependency.**\
+A **set** is a group of ops applied atomically -- one version, one undo, complete on its own.\
+A **beat** is a set plus a reveal, so its changes appear over time with a caption.\
+A beat references a set; a set knows nothing about beats, which is what makes cancelling a reveal leave the work in place.\
+A document with no beats is the normal case, so every document that exists today is already correct and needs no migration.
 
-**Two things the design conversation assumed are NOT ratified.**\
-Per-beat position overrides were designed at length and no pick sanctioned them; they create a second source of truth for position and collide with **B110**, so F3 owes an explicit ruling before any schema is written.\
-The beat/story/timeline entity count is likewise unsettled, and F4 asks it to be named once before three words become three things.
+**The draft is a destination, not a mode.**\
+A mode that changes what a verb does is hidden state, and an agent invoking `draw` per-command has no prompt to remind it.\
+So `--draft` targets the draft for one op and `draw draft begin` remembers that target for a session, following the `draw use` per-host precedent.\
+The Junos property that makes a mode safe -- the prompt showing it on every line -- is provided by every write reporting the draft state, because silence is the failure mode.
+
+**Atomic apply, derived reveal.**\
+The ops of a beat apply immediately and completely; only VISIBILITY is derived, from one origin plus the interval and each entity's index.\
+`draw get` is never a function of time.\
+At most one instant is stored -- the active beat's origin -- and everything queued behind derives from it, so no stamp can go stale, nothing promotes the queue, and a late joiner computes the same position as everyone else.\
+That is the H12 shape one level down: `moversAt` derives motion over a static board, this derives the arrival of structure over a complete document.
+
+**The design of record is `docs/spec/WRITES.md`**, which carries the rejected alternatives, six owed rulings and two hypotheses with triggers.
 
 | # | Item | Cites | Size | State |
 |---|---|---|---|---|
-| H14.1 | An agent can perceive the derived visible state it is authoring, rather than asking the director to read a screen. Hard prerequisite for everything below: authoring a visual artifact blind is the failure **B110** exists for, and A5 names it verbatim | **B188** | S2 - M | `TODO` |
-| H14.2 | Rule F3 and F4 before schema: whether a beat may move an entity, and whether beat/story/timeline are one entity or three. Both are director decisions the survey deliberately left open | **B188** | S3 - S | `TODO` |
-| H14.3 | A story is a stored lens over a document -- ordered beats, an ordinal cursor, a caption per beat -- and visibility derives from the cursor. Absolute visible set rather than a delta, so reordering and insertion stay safe | **B188** | S3 - L | `TODO` |
-| H14.4 | A caption is the second channel, typed into the footer bar rather than drawn on the canvas, and its reveal derives from elapsed-within-beat. The origin must be the stored cursor change, never wall-clock-since-commit -- that is the clock-skew class B177 closed | **B188** | S2 - M | `TODO` |
+| H14.1 | Rule the vocabulary before schema. "Beat" means a one-shot reveal in `WRITES.md` and a story step in the B188 survey; three meanings appeared across one conversation, which is how the **B187** gap happened -- machinery under a word that meant different things in different places | **B188** | S2 - S | `TODO` |
+| H14.2 | A set: ops drafted locally, committed as one API call, applied atomically, one undo. Structural validation on append and semantic on commit, since the standalone CLI cannot import the kernel and a pre-validated draft would be lying anyway | **B188** | S2 - M | `TODO` |
+| H14.3 | Perception symmetric with authoring: `draft show` for the staged ops, `--draft` on reads for the projection, `draft diff` for the delta. A non-empty draft is surfaced by reads, so an agent cannot silently accumulate | **B188** | S2 - M | `TODO` |
+| H14.4 | A beat: a set plus pacing and a caption, revealed by derivation from one stored origin. The caption plays in the menu bar as the second channel, and cancel drops the reveal while leaving the ops | **B188** | S3 - L | `TODO` |
 
-**Exit:** an agent composes a multi-beat explanation of a system through `draw` alone, and a reader who opens the diagram at beat 7 of 12 sees the state at beat 7 with its caption, without a narrator present.
+**Exit:** an agent builds a topology as a handful of drafted sets rather than forty calls, sees exactly what it staged before committing, and can attach a paced caption to a set so a viewer watches it arrive rather than finding it already there.
 
-**Not in this milestone:** private per-viewer position, canvas authoring, and any declarative `draw apply`.\
-The first two are AG-1 and AG-2 in the envelope, each with a revival trigger and a note on how it composes.\
-The third is a different thing entirely -- convergence toward a declared target state, which is not what a beat is.
+**Not in this milestone:** the story layer -- an ordered list of beats with a stored cursor, scrubbable and replayable over a finished document.\
+The B188 survey captured intent for it and almost none of that intent is spent here; a beat in this milestone is a one-shot reveal attached to a commit.\
+Also out: skip, a queue bound, multiple drafts, auto-commit, and any declarative `draw apply`, which is convergence toward a target state and a different thing entirely (**AG-4**).
 
 ---
 
