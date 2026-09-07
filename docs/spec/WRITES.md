@@ -240,13 +240,35 @@ Run sequentially the same two verbs succeed, because the second sees the first's
 **A draft that only accumulates emitted ops is therefore wrong.**\
 It would work for ops whose arguments are absolute (`add at 0,0`, `rename`, `rm`) and fail for every verb that resolves a relationship -- which is the verb set B133 was filed to create, and the reason an agent uses the tool instead of hand-writing JSON.
 
-Three shapes answer it, and the choice is owed (W7):
+Three shapes answer it, and the first was ruled after probing what already exists:
 
-- **Resolve against the projection.** The draft keeps a local model of the document as the set would leave it, and each verb resolves against that rather than the server's copy. Correct, and it is what a human editor does; the cost is that the CLI needs the projection, and `cli/` is standalone and cannot import the kernel (**B138**).
-- **Defer resolution to the server.** The op stores the INTENT (`near lb-1`) rather than a resolved position, and the server resolves each op as it applies. No client-side model needed, and it is more honest -- the intent is what the agent expressed. The cost is a new op form the server must understand, and every relational verb must learn to emit it.
-- **Refuse the combination.** A draft accepts only absolute ops and rejects relational ones. Cheap and useless: it excludes exactly the verbs a set is for.
+- **Resolve against the projection.** The draft keeps a local model of the document as the set would leave it, and each verb resolves against that rather than the server's copy.
+- **Defer resolution to the server.** The op stores the INTENT (`near lb-1`) rather than a resolved position, and the server resolves each op as it applies. More honest about what the agent expressed; costs a new op form and every relational verb must learn to emit it.
+- **Refuse the combination.** A draft accepts only absolute ops. Cheap and useless: it excludes exactly the verbs a set is for.
 
-The second is the most likely answer and the most work, and it is the reason H14.2 is not merely a local accumulator.
+### W7 RULED: resolve against the projection
+
+`model/model.mjs` already exports `projection(model)` -- a scratch `Model` loaded from `model.toJSON()`, which is precisely a document-as-it-would-be.\
+Measured 2026-09-04: staging an op into a projection leaves the source model untouched, and a second op sees the first's anchor as occupied.
+
+`model/invariants.mjs` exports `violations(model)`, and run locally against a projection holding the two colliding nodes it returns:
+```text
+node-aa2222 and node-aa1111 occupy the same anchor (0,-60)
+```
+
+That is the SAME string the server returned when the set was refused, from the same code -- so a draft validates against the sovereign definition rather than a second implementation of it, which is what `scan-twins` exists to prevent.
+
+**The claim that blocked this was wrong, and it was mine.**\
+Earlier revisions of this document said `cli/` cannot import the kernel and cited **B138**.\
+B138 is about `draw` failing silently when invoked through a symlink; it says nothing about imports.\
+Verified: the kernel imports cleanly from outside the repo, and the Dockerfile ships `cli/`, `model/`, `kernel/` and `engine/` side by side, so there is no deployment barrier either.
+
+The CLI importing the model is therefore a NEW dependency to take deliberately, not a forbidden one.\
+What it buys is large: a draft that resolves relationships correctly, and structural plus invariant validation before anything reaches the wire.\
+What it costs is that `cli/` stops being self-contained -- worth stating in `CLI.md`, since nothing there ruled it either way and the tool had simply grown that way.
+
+Semantic validation still belongs to the server.\
+A projection cannot know whether another writer changed the document since the draft began, so `commit` remains the authority and a draft's local check is an early warning rather than a guarantee.
 
 **A draft validates structurally on append and semantically on commit.**\
 The CLI can answer "is this a well-formed op with coherent flags" -- it already does for 60 verbs.\
@@ -297,7 +319,8 @@ Every variant reintroduces surprise; a draft commits when told.
 | W4 | **Is `draw draft begin` built in the first slice, or is `--draft` alone enough to learn from?** Whether per-op verbosity is acceptable to an agent authoring forty ops is empirical -- driving the spine-leaf demo through the explicit form answers it in one session. | measurement |
 | W5 | **Flag naming.** `--draft` reads well on a write and less well on a read, where `--projected` or `--pending` may say more. Symmetry argues for one word. | design |
 | W6 | **Does a completed beat stay visible in the queue view?** Same question as W2 from the reporting side. | design |
-| W7 | **How does a relational op resolve inside a draft?** Measured: two `place near lb-1` ops in one set both pick the same anchor and the set is refused whole. Resolve against a local projection, defer resolution to the server, or refuse relational ops in a draft -- section 7 states the three and why the second is most likely. This is the load-bearing decision of H14.2 and blocks it. | design |
+| ~~W7~~ | **How does a relational op resolve inside a draft? RULED 2026-09-04: against a local projection.** `projection()` and `violations()` already exist in `model/`, produce the server's own error string, and import cleanly -- the B138 citation that blocked this was wrong, and was mine. Section 7 carries the measurement. | design |
+| W8 | **`cli/` gains a dependency on `model/`.** Nothing ruled the tool self-contained; it grew that way. Taking the dependency deliberately means saying so in `CLI.md`, and deciding whether the CLI may import `kernel/` and `engine/` too or only the model. | design |
 
 ---
 
