@@ -422,3 +422,41 @@ test('B192: a queued beat still starts after the one ahead, with the boundary mo
 	assert.equal(revealedAt(r, 399).has('node-bb0001'), false, 'beat 2 has not begun');
 	assert.equal(revealedAt(r, 400).has('node-bb0001'), true, 'beat 2 opens once beat 1 has finished saying itself');
 });
+
+/*
+B193 -- a beat arriving into a DRAINED queue starts a schedule rather than joining one.
+
+The origin was stamped once, when the first beat was created, and never moved. Later beats queued
+behind it by duration, which is right for beats committed together and wrong for one committed after
+the schedule already finished: ten minutes on, its window sits in the first ten seconds and is long
+closed, so every entity appears at once. The caption still shows -- held until replaced -- so the
+narration reads correctly while the unfurl it describes never happened.
+
+`at most one instant is stored` is unchanged and is the point. What is added is knowing when that
+instant is STALE. An agent narrating across a pause is the whole use case, not an edge.
+*/
+test('B193: a beat committed after the queue drained gets a fresh origin', async () => {
+	const { commit } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: NODE('node-aa0001', 'a', 0, 0) }], pace: 100, caption: 'first' });
+	const first = m.state.reveal.origin;
+	// the first beat's schedule is 1 * 100ms; pretend a long pause by ageing the origin
+	m.state.reveal.origin = first - 600000;
+	const aged = m.state.reveal.origin;
+
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: NODE('node-bb0001', 'b', 60, 0) }], pace: 100, caption: 'second' });
+	assert.notEqual(m.state.reveal.origin, aged, 'the drained schedule was restarted, not extended');
+	assert.equal(m.state.reveal.beats.length, 1, 'and the expired beat was dropped rather than carried');
+	assert.equal(m.state.reveal.beats[0].caption, 'second');
+
+	// the new beat must actually be in its own window NOW, which is the property that failed live
+	const { beatsOf, revealedAt } = await import('../model/reveal.mjs');
+	const now = m.state.reveal.origin;
+	assert.equal(beatsOf(m.state.reveal, now).active.caption, 'second');
+	assert.equal(revealedAt(m.state.reveal, now).has('node-bb0001'), true, 'its entity is revealed at its own origin');
+});
+

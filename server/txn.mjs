@@ -404,8 +404,24 @@ export function commit(model, log, request, by = 'client', actor = null) {
 		if (ids.length) {
 			const beat = { interval: request.pace, ids };
 			if (request.caption) beat.caption = String(request.caption);
-			model.state.reveal = model.state.reveal
-				? { ...model.state.reveal, beats: [...model.state.reveal.beats, beat] }
+			/*
+			B193 -- a beat joins a schedule that is still playing, and STARTS one that has drained.
+
+			The origin was stamped once and never moved, so a beat committed after the queue finished
+			inherited a window that had already closed and never unfurled. The caption still showed,
+			being held until replaced, so the narration read correctly while nothing paced -- which
+			is why it survived being watched.
+
+			An agent narrating across a pause is the use case rather than an edge, so the test is
+			whether the existing schedule has ENDED, not whether one exists. A drained reveal is
+			replaced rather than appended to: carrying expired beats forward would leave the record
+			describing unfurls nobody can ever see, and they have already played.
+			*/
+			const prev = model.state.reveal;
+			const playing = prev && Date.now() < prev.origin
+				+ prev.beats.reduce((a, b) => a + (b.ids?.length || 0) * (b.interval || 0), 0);
+			model.state.reveal = playing
+				? { ...prev, beats: [...prev.beats, beat] }
 				: { origin: Date.now(), beats: [beat] };
 		}
 	}
