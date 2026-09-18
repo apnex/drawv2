@@ -260,9 +260,23 @@ about what "nothing to report" looks like. Neither is clickable, and both say so
 `no agents` is a real answer, and `local` is the state of a run with no identity source configured
 -- which is also why authorization is off, so the indicator is reporting rather than filling space.
 */
+/*
+The resting greys. `cursor` is NOT set here, deliberately.
+
+Both elements are pressable -- `#menu #agents, #menu #whoami` says so once -- and this rule carries
+two ids plus a class, so a `cursor: default` here outranks it and wins. That is exactly what
+happened: the shared declaration was added, the five scattered ones were removed, and this one was
+left because it looked like the resting COLOUR rule rather than a cursor rule. Measured afterwards,
+`agents-none` still computed `default` while every other state computed `pointer`.
+
+`#whoami.whoami-local` shares the greys and nothing else. It is inert for a real reason -- nobody
+signed in, so there is no identity to administer -- and its `cursor: default` moves to its own rule
+rather than riding along here, where it was silently governing the agents button too.
+*/
 #menu #agents.agents-none, #menu #whoami.whoami-local {
-	background-color: #242424; color: #6b6b6b; cursor: default;
+	background-color: #242424; color: #6b6b6b;
 }
+#menu #whoami.whoami-local { cursor: default; }
 
 /*
 `no agents` is a BUTTON, and has to look like one.
