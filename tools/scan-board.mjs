@@ -41,6 +41,7 @@ Usage: node tools/scan-board.mjs
 */
 
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
 // `--root <dir>` so the rules can be driven over fixtures. Without it the only way to prove R5
 // and R6 FAIL correctly is to corrupt the real board, and a check whose failure path is untested
@@ -468,6 +469,50 @@ for (const id of held) {
 	// `closed`, not `!live`: a PART-CLOSED row may legitimately sit under Held, because its
 	// remainder is exactly the kind of thing that waits on a trigger.
 	if (r && r.closed) fail(`${BOARD} lists ${id} under Held, but ${BACKLOG} records it as ${r.verdict} — a settled row is not a deferral`);
+}
+
+/*
+R9 -- work that SHIPPED must be in the register (B181/B182/B186).
+
+Both files agreeing says nothing about work that reached neither. Three B-numbers shipped with
+commit subjects naming them and rows in neither file: the P0 write flood, the session log that made
+it diagnosable, and `draw use`. The ledger was internally consistent and blind to all three, and
+they were found by hand rather than by this scanner.
+
+Git is the third party here, and the only one that cannot be forgotten: a commit subject is written
+at the moment the work lands. Read from the log rather than the working tree, because the question
+is what was DONE, not what is currently checked out.
+*/
+function shippedBs() {
+	const out = new Set();
+	try {
+		const log = execSync('git log --format=%s', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+		for (const line of log.split('\n')) {
+			const m = line.match(/^(B\d+)\b/);
+			if (m) out.add(m[1]);
+		}
+	} catch (e) {
+		// A missing git is a legitimate skip; anything else is this function being broken, and a
+		// silent skip is how it stayed broken. The first version called `require` in an ES module,
+		// threw `require is not defined`, was swallowed here, and reported a clean board while
+		// checking nothing -- the exact false green this file's own floor exists to prevent.
+		if (!/not a git repository|ENOENT/i.test(e.message)) {
+			fail(`the shipped-work check could not run: ${e.message.split('\n')[0]}`);
+		}
+	}
+	return out;
+}
+/*
+Only against the REAL register. A `--root` run drives the rules over a fixture board whose
+B-numbers are invented for the test, and this repository's history has nothing to say about them --
+asking git about a fixture would fail every one of them for not existing.
+*/
+if (!DIR) {
+	for (const id of shippedBs()) {
+		if (!rows.has(id)) {
+			fail(`${id} names a commit but has no row in ${BACKLOG} — work that shipped is invisible to the register`);
+		}
+	}
 }
 
 // The broken-scan floor. A scan that matches nothing is a false green: the tables were reformatted,
