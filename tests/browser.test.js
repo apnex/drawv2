@@ -389,5 +389,14 @@ test('H14.4: the beat caption is centred on the canvas, not on the footer', { sk
 			font: parseFloat(getComputedStyle(document.getElementById('beat-caption')).fontSize) };
 	})())`, 4000));
 	assert.ok(Math.abs(got.off) <= 1, `caption centre is ${got.off}px from the canvas centre`);
-	assert.ok(got.font >= 16, `the caption should be larger than the readout, got ${got.font}px`);
+	/*
+	Pinned to the ruled size rather than a floor. `>= 16` passed at 15, 17 and 19 alike, so it
+	asserted "bigger than the readout" and not the size that was actually chosen -- and the size IS
+	the decision here, arrived at by the director looking at it twice. A floor would let the next
+	edit drift it back down and stay green.
+	*/
+	assert.equal(got.font, 19, `the caption is ruled at 19px, got ${got.font}px`);
+	const readout = Number(await tab.eval(
+		`parseFloat(getComputedStyle(document.getElementById('readout-bottom')).fontSize)`));
+	assert.ok(got.font > readout, `and must outrank the readout beside it (${readout}px)`);
 });

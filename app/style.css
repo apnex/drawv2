@@ -489,7 +489,7 @@ that a wider border would make visible. Change either and the caption follows.
 for them; `max-width` so a long caption ellipsises rather than colliding with the readout.
 */
 #beat-caption { position: absolute; left: calc(50% + (var(--rail) + var(--rail-border)) / 2); transform: translateX(-50%);
-	max-width: 52ch; text-align: center; color: #e4e4e4; font-size: 17px;
+	max-width: 52ch; text-align: center; color: #e4e4e4; font-size: 19px;
 	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
 /* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
