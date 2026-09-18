@@ -117,6 +117,22 @@ export class Renderer {
 		return node ? node.querySelector('[data-layer="glyph"]') : null;
 	}
 
+	/*
+	H14.4 -- the element carrying an entity, for whoever needs to mark it rather than draw it.
+
+	Exposed for the same reason as `glyphOf` above and under the same rule (B45): the renderer owns
+	entity DOM, and `app/src/reveal.js` marking an unrevealed entity has no business knowing which
+	layer a kind lives in or how the element is assembled. Searched across every layer because a
+	reveal names ids without regard to kind -- a beat may withhold a link as readily as a node.
+	*/
+	byId(id) {
+		for (const layer of Object.values(this.layers)) {
+			const hit = layer?.querySelector?.(`[id="${id}"]`);
+			if (hit) return hit;
+		}
+		return null;
+	}
+
 	setMode(mode) {
 		this.mode = mode;
 		this.svg.classList.toggle('edit-mode', mode === 'edit');

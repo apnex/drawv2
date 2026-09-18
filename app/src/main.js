@@ -21,6 +21,7 @@ import { Sync, bindGestureDefer } from './sync.js';
 import { Watchdog } from './watchdog.js';
 import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
+import { Reveal } from './reveal.js';
 
 const svg = document.getElementById('container');
 
@@ -70,6 +71,24 @@ legitimately knows about both.
 const movers = new Movers({ model, renderer, layer: svg.querySelector('#movers'), now: () => clock.now() });
 renderer.onMode = () => movers.sync();
 model.onChange(() => movers.sync());
+
+/*
+H14.4 -- the reveal, wired the same way and for the same reason.
+
+The caption element is handed in rather than reached for, so `reveal.js` owns no DOM it was not
+given and runs with no page at all. It shares the clock with the movers because a beat and a packet
+are both derived from the same instant, and two peers agreeing about one but not the other would be
+a stranger failure than either alone.
+*/
+const captionEl = document.getElementById('beat-caption');
+const reveal = new Reveal({
+	model,
+	renderer,
+	now: () => clock.now(),
+	onCaption: (text) => { if (captionEl) captionEl.textContent = text || ''; },
+});
+model.onChange(() => reveal.sync());
+reveal.sync();
 
 if (helpBtn && help) {
 	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });

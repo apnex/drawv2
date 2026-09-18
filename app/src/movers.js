@@ -26,6 +26,7 @@ file's -- so an author can see that an endpoint emits without it moving under th
 import { el } from './painter.js';
 import { moversAt, spawnersOf, worldOf, combatAt, aimAt } from '../../engine/index.mjs';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
+import { loop, clockOf } from './paintloop.js';
 
 // how often to look for a NEWLY DEPARTED mover. Not a frame rate -- the compositor owns motion.
 const TICK_MS = 200;
@@ -35,15 +36,14 @@ export class Movers {
 		this.model = model;
 		this.renderer = renderer;
 		this.layer = layer;
-		this.now = typeof now === 'function' ? now : () => Date.now();
+		this.now = clockOf(now);
 		this.anims = new Map();     // mover id -> { el, anim }
 		this.beams = new Map();     // tower id -> { line, targetId }
 		this.beamLayer = null;
 		this.moverLayer = null;
 		this.deaths = new Map();    // mover id -> tick it died, from the last fold
 		this.glyphs = new Map();    // node id -> its glyph element, so a turret is not re-queried per frame
-		this.timer = null;
-		this.raf = null;
+		this.loop = null;
 	}
 
 	/*
@@ -97,47 +97,23 @@ export class Movers {
 	is SEEDED to its true position rather than starting from zero, so lateness costs nothing.
 	*/
 	start() {
-		if (this.timer) return;
+		if (this.loop) return;
 		/*
-		The timer runs BOTH halves, and the rAF loop below is an enhancement on top of it.
+		The floor and the frame loop are `paintloop.js`, shared with app/src/reveal.js -- both derive
+		what they draw from the clock and both need a hidden tab to keep painting. Extracted after
+		scan-twins reported the pair at 57%.
 
-		Chrome pauses `requestAnimationFrame` completely in a hidden tab. Element creation moved onto
-		rAF for smoothness, and that quietly made a background peer create no packets at all: the
-		fold kept running throttled while nothing appeared, and switching to the tab materialised the
-		backlog in one go -- a freeze followed by a jump, which is precisely what a peer would look
-		like from the outside.
-
-		So the timer is the FLOOR and rAF is the improvement. A visible tab paints every frame; a
-		hidden one still paints five times a second, exactly as it did before the frame loop existed.
-		Timers are throttled in background tabs too, but throttled is not stopped.
+		The EXPENSIVE half stays on the interval: `combatAt` folds damage over the transit window at
+		2.87ms a call, so WHO is being burned is decided at TICK_MS. `trackBeams` rides every frame
+		because a beam is a line between two things that are both moving, and nothing can interpolate
+		it for us -- it recomputes from the simulation rather than reading the DOM back.
 		*/
-		this.timer = setInterval(() => { this.fold(); this.paint(); }, TICK_MS);
-		/*
-		A frame loop, which this file otherwise refuses -- and the exception is narrow enough to state.
-
-		The compositor owns MOTION because a mover's whole journey is known when it departs, so the
-		browser can be handed a path and left alone. A beam has no such journey: it is a line between
-		two things that are both moving, and nothing can interpolate it for us.
-
-		It is still not reading the DOM back. Each frame recomputes the target's position from the
-		SIMULATION -- `moversAt`, measured at 0.006ms -- and writes it out. Truth still flows one way;
-		what changed is only that this consumer needs it more often than five times a second.
-
-		The expensive half stays slow: `combatAt` folds damage over the transit window at 2.87ms a
-		call, so WHO is being burned is decided at TICK_MS and only WHERE they are is tracked here.
-		*/
-		const frame = () => {
-			this.paint();
-			this.trackBeams();
-			this.raf = requestAnimationFrame(frame);
-		};
-		this.raf = requestAnimationFrame(frame);
+		this.loop = loop(() => { this.fold(); this.paint(); this.trackBeams(); }, TICK_MS);
 	}
 
 	stop() {
-		if (this.timer) { clearInterval(this.timer); this.timer = null; }
+		if (this.loop) { this.loop.stop(); this.loop = null; }
 		this.deaths = new Map();
-		if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
 		this.clear();
 	}
 

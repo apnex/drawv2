@@ -62,7 +62,16 @@ export class Model {
 			links: {},
 			zones: {},
 			groups: {},
-			selection: new Set()   // model-state (status): the authoritative selected-id set (MS1). NOT a KIND — round-trips as doc.selection, never via the KINDS loops.
+			selection: new Set(),  // model-state (status): the authoritative selected-id set (MS1). NOT a KIND — round-trips as doc.selection, never via the KINDS loops.
+			/*
+			H14.4 -- the reveal, when the document carries one. Null is the normal case and means
+			"everything is visible", so every document that predates beats is already correct.
+
+			Config rather than status, unlike selection: a beat is created BY a commit and undone
+			with it, so it must survive a write and travel in the snapshot. Held opaque here --
+			`model/reveal.mjs` owns what it means, and this only has to not lose it.
+			*/
+			reveal: null
 		};
 		this.subs = [];
 		this.index = null; // optional maintained-relations index (engine attachRelations); null → query methods scan
@@ -350,6 +359,9 @@ export class Model {
 			doc[KEY[kind]] = this.all(kind).map((e) => ({ ...e }));
 		});
 		doc.selection = [...this.state.selection];   // model-state (status): authoritative selection (MS1)
+		// omitted entirely when absent: a document with no beat must not grow a null key, or every
+		// stored diagram gains a field the moment this ships
+		if (this.state.reveal) doc.reveal = structuredClone(this.state.reveal);
 		return doc;
 	}
 
@@ -372,6 +384,11 @@ export class Model {
 		// model-state (status): restore the authoritative selection, reconciled to the config loaded
 		// above (tolerate-stale: drop ids that aren't a live selectable entity). Before emit. (MS1)
 		this.state.selection = new Set((doc.selection || []).filter((id) => this.selectable(id)));
+		// H14.4 -- the reveal travels with the document, opaque to the model. Not reconciled against
+		// live ids the way selection is: a beat naming an entity that has since gone is a STALE
+		// beat, which `model/reveal.mjs` simply does not reveal, and silently rewriting the record
+		// would destroy the author's stated order to hide a fact worth seeing.
+		this.state.reveal = doc.reveal ? structuredClone(doc.reveal) : null;
 		this.emit('load', 'model', null);
 	}
 }

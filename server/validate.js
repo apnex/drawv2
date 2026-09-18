@@ -445,6 +445,37 @@ export function validateDoc(doc) {
 		const err = validateSelectionIds(doc.selection);
 		if (err) return err;
 	}
+	/*
+	H14.4 -- the reveal, GATED rather than tolerated.
+
+	Unlike the selection key above, a malformed reveal is refused. Selection is tolerate-stale
+	because a dangling id there costs nothing -- the model reconciles it on load. A reveal drives
+	what a viewer SEES, so a bad interval or a non-id in the list is a document that renders wrong
+	rather than a document missing a highlight, and the two peers would disagree about which.
+
+	A beat naming an entity that no longer exists is NOT malformed and passes here: that is a stale
+	beat, and `model/reveal.mjs` answers by not revealing it. The shape is the contract; whether the
+	entities still exist is the document's business and changes under the record all the time.
+	*/
+	if ('reveal' in doc && doc.reveal !== null) {
+		const r = doc.reveal;
+		if (!r || typeof r !== 'object' || Array.isArray(r)) return 'invalid reveal';
+		if (!Number.isFinite(r.origin)) return 'invalid reveal.origin';
+		if (!Array.isArray(r.beats)) return 'invalid reveal.beats';
+		for (const key of Object.keys(r)) {
+			if (!['origin', 'beats'].includes(key)) return `unknown reveal key: ${key}`;
+		}
+		for (const beat of r.beats) {
+			if (!beat || typeof beat !== 'object' || Array.isArray(beat)) return 'invalid beat';
+			for (const key of Object.keys(beat)) {
+				if (!['interval', 'caption', 'ids'].includes(key)) return `unknown beat key: ${key}`;
+			}
+			if (!Number.isInteger(beat.interval) || beat.interval < 0) return 'invalid beat.interval';
+			if ('caption' in beat && !str(beat.caption, NAME_MAX)) return 'invalid beat.caption';
+			if (!Array.isArray(beat.ids)) return 'invalid beat.ids';
+			for (const id of beat.ids) if (!ID.test(id || '')) return `invalid beat id: ${id}`;
+		}
+	}
 	// the change log (store-owned) is TOLERATED, never gated: a malformed or truncated log costs
 	// undo history, but rejecting the doc for it would make the whole diagram vanish on boot
 	// (the store skips invalid docs at load). Log.from drops what it cannot read. Same rationale

@@ -432,6 +432,25 @@ is one a person stops reading, which is the failure this row exists to end rathe
 	text-overflow: ellipsis; max-width: 46ch; margin-left: 14px; }
 #server-say.err { color: #e57373; }
 
+/*
+H14.4 -- the beat.
+
+An unrevealed entity is HIDDEN rather than removed, because it is genuinely in the document: the
+ops of a beat applied when it committed, and the unfurl is presentation over complete state. The
+transition is a fade in, so an entity arriving reads as arriving rather than as a glitch, and
+`visibility` rather than `display` so nothing reflows as the beat plays.
+
+The caption is the second channel of a narrated build: centred, larger than the readout, and
+holding whatever was last said until a new beat replaces it. It takes the middle because while a
+beat is playing it is the thing being said, and the gesture coordinates beside it are not.
+*/
+[data-unrevealed] { opacity: 0; visibility: hidden; }
+#nodes [id], #links [id], #zones [id], #groups [id], #waypoints [id] {
+	transition: opacity 180ms ease-out;
+}
+#beat-caption { flex: 1; text-align: center; color: #d8d8d8; font-size: 15px;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
    needs to read as is a connection that is either there or not. `pointer-events: none` matters more
    than it looks: play places towers by pressing open ground, and a beam sweeping under the cursor

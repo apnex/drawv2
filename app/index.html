@@ -177,7 +177,16 @@
 			server message and the live gesture coordinates would contend for the same slot and the
 			gesture would win, being more frequent. This is its own channel with its own lifetime.
 			-->
-			<span id="server-say" title="the last thing the server said"></span></footer>
+			<span id="server-say" title="the last thing the server said"></span>
+			<!--
+			H14.4: the beat's caption -- the second channel of a narrated build.
+
+			Its own slot for the same reason `server-say` has one: `readout.js` resolves one string
+			for all its mounts, and a caption that lost a race with gesture coordinates would be a
+			narration nobody could read. Centred and larger than the readout, because while a beat
+			is playing this is the thing being said and the coordinates are not.
+			-->
+			<span id="beat-caption" title="the beat being played"></span></footer>
 		<script type="module" src="/src/main.js"></script>
 	</body>
 </html>

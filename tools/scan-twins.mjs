@@ -32,8 +32,19 @@ const KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'return', 'el
 
 // pair -> why the shared lines are permitted to stay. Reviewed at each milestone close.
 const ALLOW = {
-	// Empty, and that is the point: the tree's one twin (B40) was extracted at H5.6 rather than
-	// excused. An ALLOW entry is a standing exception, so it should be rare and it should shrink.
+	// Was empty, and the reason it was is still the rule: the tree's one twin (B40) was extracted at
+	// H5.6 rather than excused. An ALLOW entry is a standing exception, so it should be rare and it
+	// should shrink.
+	'app/src/movers.js:constructor <-> app/src/reveal.js:constructor':
+		'dependency injection, not shared logic. What the two have in common is `this.model =`, '
+		+ '`this.renderer =` and `this.now = clockOf(now)` -- the shape every injected constructor in '
+		+ 'this tree has, and the only part carrying a DECISION (what to do when no clock is handed '
+		+ 'in) was extracted to paintloop.js:clockOf when this pair first reported. What remains is '
+		+ 'assignment. Extracting it would mean a base class shared by a mover painter and a beat '
+		+ 'painter, which couples two modules that have nothing to say to each other in order to hide '
+		+ 'a coincidence of field names -- and would put a superclass between each and the thing it '
+		+ 'actually does. The 57% start() pair reported alongside this one WAS real and was extracted '
+		+ 'to paintloop.js:loop.',
 };
 
 function walk(dir, out = []) {
