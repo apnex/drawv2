@@ -533,7 +533,7 @@ const sync = new Sync({
 		`stale` means this page is running replaced code; `unreachable` means it knows and cannot
 		fix itself. Each is a true answer to what this element asks -- what may I do.
 		*/
-		if (rungState.rung === 'unreachable') { menu.lock.className = 'lock-unreachable'; menu.lock.textContent = 'reload needed'; menu.lock.title = `${rungState.reason || 'this tab is out of date'} -- the server cannot be reached to reload`; }
+		if (rungState.rung === 'unreachable') { menu.lock.className = 'lock-unreachable'; menu.lock.textContent = 'reload'; menu.lock.title = `${rungState.reason || 'this tab is out of date'} -- the server cannot be reached to reload`; }
 		else if (rungState.rung === 'stale') { menu.lock.className = 'lock-stale'; menu.lock.textContent = 'updating'; menu.lock.title = rungState.reason || 'this tab is running a replaced version'; }
 		else if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
 		else if (!mayWrite) { menu.lock.className = 'lock-readonly'; menu.lock.textContent = 'read-only'; menu.lock.title = 'you have view access to this diagram'; }
