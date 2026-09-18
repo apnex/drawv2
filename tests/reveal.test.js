@@ -194,3 +194,174 @@ test('undoing a beat restores everything it was hiding', async () => {
 	r.sync();
 	for (const [id, m] of marks) assert.equal(m.attrs.size, 0, `${id} was left hidden`);
 });
+
+/*
+H14.7 -- authoring a beat, and undoing one.
+
+The reveal record is built SERVER-side because only the planner knows which ids a commit produced:
+an intent op names `near lb-1` and the id is minted while resolving it, so a client assembling the
+record would be guessing at the very ids the feature exists to order.
+
+Ruled 2026-09-04: the reveal is part of what a commit changes, so it INVERTS. Undoing a beat takes
+its reveal with it and restores the one before, which is what keeps `one undo per beat` true and
+stops the document holding a record that describes a commit already reversed.
+*/
+test('a commit carrying pace and caption records a reveal over the ids it produced', async () => {
+	const { commit } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+	const r = commit(m, log, {
+		ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', name: 'b', type: 'server', x: 60, y: 0 } },
+		],
+		pace: 200, caption: 'the web tier',
+	});
+	assert.ok(r.ok, r.error);
+	const rec = m.toJSON().reveal;
+	assert.ok(rec, 'the commit recorded a reveal');
+	assert.equal(rec.beats.length, 1);
+	assert.equal(rec.beats[0].caption, 'the web tier');
+	assert.equal(rec.beats[0].interval, 200);
+	assert.deepEqual(rec.beats[0].ids, ['node-aa0001', 'node-aa0002'], 'in the order the ops applied');
+});
+
+test('a commit with no pace records nothing -- a set is not a beat', async () => {
+	const { commit } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	commit(m, new Log(), { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }] });
+	assert.equal(m.toJSON().reveal, undefined, 'no pace, no reveal');
+});
+
+test('undoing a beat takes its reveal with it', async () => {
+	const { commit, undo } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }], pace: 200, caption: 'one' });
+	assert.ok(m.state.reveal, 'the beat is recorded');
+
+	undo(m, log);
+	assert.equal(m.get('node', 'node-aa0001'), undefined, 'the entity went');
+	assert.equal(m.state.reveal, null, 'and so did the record naming it -- no ghost');
+});
+
+test('undoing back past an earlier beat restores THAT one, not nothing', async () => {
+	const { commit, undo } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }], pace: 100, caption: 'first' });
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', name: 'b', type: 'server', x: 60, y: 0 } }], pace: 300, caption: 'second' });
+	assert.equal(m.state.reveal.beats.at(-1).caption, 'second');
+
+	undo(m, log);
+	assert.ok(m.state.reveal, 'the first beat is still there');
+	assert.equal(m.state.reveal.beats.at(-1).caption, 'first', 'restored, not cleared');
+	assert.equal(m.get('node', 'node-aa0001')?.name, 'a', 'and its entity survived');
+});
+
+test('a second beat queues behind the first rather than replacing it', async () => {
+	const { commit } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }], pace: 100, caption: 'first' });
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', name: 'b', type: 'server', x: 60, y: 0 } }], pace: 100, caption: 'second' });
+	const rec = m.toJSON().reveal;
+	assert.equal(rec.beats.length, 2, 'both beats are in the queue');
+	assert.deepEqual(rec.beats.map((b) => b.caption), ['first', 'second'], 'in order');
+	// and the queue still carries ONE instant between them
+	assert.equal(Object.keys(rec).sort().join(','), 'beats,origin');
+});
+
+test('a beat records only the entities it CREATED, not ones it merely touched', async () => {
+	const { commit } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc([NODE('node-aa0001', 'existing', 0, 0)]));
+	const log = new Log();
+	commit(m, log, { ops: [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { name: 'renamed' } }], pace: 200, caption: 'rename' });
+	const rec = m.toJSON().reveal;
+	// hiding something that was already on screen would make a rename look like a deletion
+	assert.equal(rec, undefined, 'a beat that creates nothing reveals nothing');
+});
+
+test('redo puts the beat back, reveal and all', async () => {
+	const { commit, undo, redo } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }], pace: 200, caption: 'back' });
+	undo(m, log);
+	assert.equal(m.state.reveal, null);
+	redo(m, log);
+	assert.ok(m.get('node', 'node-aa0001'), 'the entity is back');
+	assert.equal(m.state.reveal?.beats.at(-1).caption, 'back', 'and so is the beat that revealed it');
+});
+
+test('a beat authored through the CLI reaches the document, end to end', async () => {
+	const fs = await import('node:fs');
+	const os = await import('node:os');
+	const path = await import('node:path');
+	const { makeApp } = await import('./fixtures/app.mjs');
+	const { main } = await import('../cli/draw.mjs');
+	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-beat-'));
+	const home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-bhome-'));
+	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	const host = `http://127.0.0.1:${app.port}`;
+	const run = async (...argv) => {
+		const out = [];
+		await main([...argv, '--host', host], { HOME: home }, (s) => out.push(s));
+		return out.join('');
+	};
+	try {
+		const id = (await run('create', 'beat-e2e')).trim();
+		await run('lock', '--diagram', id);
+		await run('add', 'server', 'at', '0,0', '--name', 'lb', '--diagram', id);
+		await run('place', 'server', 'near', 'lb', '--name', 'w1', '--draft', '--diagram', id);
+		await run('place', 'server', 'near', 'lb', '--name', 'w2', '--draft', '--diagram', id);
+		await run('commit', '--pace', '250', '--caption', 'the web tier', '--diagram', id);
+
+		const out = JSON.parse(await run('dump', '--diagram', id, '--json'));
+		assert.ok(out.reveal, 'the document carries a reveal');
+		assert.equal(out.reveal.beats.length, 1);
+		assert.equal(out.reveal.beats[0].interval, 250);
+		assert.equal(out.reveal.beats[0].caption, 'the web tier');
+		assert.equal(out.reveal.beats[0].ids.length, 2, 'both placed nodes, and not the pre-existing lb');
+		// the ids are the ones the SERVER minted while resolving `near lb`
+		const placed = out.nodes.filter((n) => n.name !== 'lb').map((n) => n.id).sort();
+		assert.deepEqual([...out.reveal.beats[0].ids].sort(), placed);
+	} finally { await app.close(); }
+});
+
+test('undoing a RUN of beats restores what stood before all of them', async () => {
+	/*
+	M2 of the mutation pass survived without this. `undo {to}` reverses several records at once, and
+	the walk goes newest-first -- so the reveal must end at the OLDEST record's inverse, not the
+	newest one it happened to see first. Restoring the newest would leave the document holding a
+	beat whose entities were just removed, which is the exact ghost this ruling exists to prevent.
+	*/
+	const { commit, undo } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+	const m = new Model();
+	m.load(doc());
+	const log = new Log();
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }], pace: 100, caption: 'first' });
+	const firstSeq = log.records.at(-1).seq;
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', name: 'b', type: 'server', x: 60, y: 0 } }], pace: 100, caption: 'second' });
+	commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0003', name: 'c', type: 'server', x: 120, y: 0 } }], pace: 100, caption: 'third' });
+	assert.equal(m.state.reveal.beats.length, 3);
+
+	undo(m, log, firstSeq);            // reverse all three in one transaction
+	assert.equal(m.get('node', 'node-aa0001'), undefined, 'every entity went');
+	assert.equal(m.state.reveal, null, 'and the reveal went back to before the FIRST beat');
+});

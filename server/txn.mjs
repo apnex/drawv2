@@ -382,12 +382,50 @@ export function commit(model, log, request, by = 'client', actor = null) {
 	const from = log.version;
 	const seq = ++log.version;
 	stamp(model, log);                                               // D6: the document carries its own version
+	/*
+	H14.4/H14.7 -- a `pace` makes this commit a BEAT, and the record is built here because here is
+	the only place that knows which ids it produced.
+
+	An intent op names a relationship and the id is minted while resolving it (B189), so a client
+	assembling this would be guessing at the very ids the beat exists to order. `planned.ops` is
+	the resolved list, in the order it applied, which is exactly the order to reveal in.
+
+	Only CREATED entities are revealed. A beat that renames something would otherwise hide an entity
+	already on screen, and a rename that made a node vanish reads as a deletion.
+
+	The reveal INVERTS like anything else (ruled 2026-09-04). It is captured before and after, and
+	the inverse restores the previous record -- so undoing a beat takes its reveal with it and
+	undoing past an earlier beat restores THAT one, rather than leaving the document holding a
+	record that describes a commit already reversed.
+	*/
+	const revealBefore = model.state.reveal ? structuredClone(model.state.reveal) : null;
+	if (Number.isInteger(request.pace) && request.pace >= 0) {
+		const ids = planned.ops.filter((o) => o.op === 'put').map((o) => o.entity.id);
+		if (ids.length) {
+			const beat = { interval: request.pace, ids };
+			if (request.caption) beat.caption = String(request.caption);
+			model.state.reveal = model.state.reveal
+				? { ...model.state.reveal, beats: [...model.state.reveal.beats, beat] }
+				: { origin: Date.now(), beats: [beat] };
+		}
+	}
+	const revealAfter = model.state.reveal ? structuredClone(model.state.reveal) : null;
+
 	const change = {
 		seq, from, at: Date.now(), by, actor,
 		label: request.label || '',
 		ops: planned.ops,
 		inverse: planned.inverse,
 	};
+	// carried beside the ops rather than inside them: a reveal is not a mutation of an entity, and
+	// applyOps is the single writer for those. Only recorded when it actually changed, so an
+	// ordinary commit's record is byte-identical to what it was before beats existed.
+	if (revealBefore !== null || revealAfter !== null) {
+		if (JSON.stringify(revealBefore) !== JSON.stringify(revealAfter)) {
+			change.reveal = revealAfter;
+			change.revealInverse = revealBefore;
+		}
+	}
 	log.append(change);
 	return { ok: true, change, version: log.version };
 }
@@ -425,12 +463,25 @@ export function undo(model, log, to = null) {
 	}
 	const target = to == null ? log.records[log.cursor - 1].seq : to;
 	const ops = [];
+	/*
+	H14.7 -- the reveal is reversed along with the ops, to the state before the OLDEST record in
+	this run. Walking outward, the last `revealInverse` seen is the earliest one, which is why it
+	is assigned rather than accumulated: undoing three beats at once restores what stood before all
+	three, not what stood before the last of them.
+
+	`undefined` means this record never touched the reveal, and must not be mistaken for `null`,
+	which means it set the reveal to nothing.
+	*/
+	let revealTo;
 	while (log.cursor > 0 && log.records[log.cursor - 1].seq >= target) {
-		ops.push(...log.records[log.cursor - 1].inverse);
+		const rec = log.records[log.cursor - 1];
+		ops.push(...rec.inverse);
+		if ('revealInverse' in rec) revealTo = rec.revealInverse;
 		log.cursor--;
 	}
 	if (!ops.length) return { ok: false, error: 'nothing to undo', version: log.version };
 	applyOps(model, ops);
+	if (revealTo !== undefined) model.state.reveal = revealTo ? structuredClone(revealTo) : null;
 	log.version++;
 	stamp(model, log);
 	return { ok: true, ops, version: log.version };
@@ -440,6 +491,9 @@ export function redo(model, log) {
 	if (!log.canRedo()) return { ok: false, error: 'nothing to redo', version: log.version };
 	const record = log.records[log.cursor];
 	applyOps(model, record.ops);
+	// H14.7 -- and the reveal forward again, or redoing a beat would restore its entities while
+	// leaving them permanently hidden by the record undo had already rolled back.
+	if ('reveal' in record) model.state.reveal = record.reveal ? structuredClone(record.reveal) : null;
 	log.cursor++;
 	log.version++;
 	stamp(model, log);

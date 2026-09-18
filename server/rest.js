@@ -265,10 +265,13 @@ round trips, each a window another writer could interleave — the hazard `undo 
 mitigate. The legacy adapter is retired rather than aliased (X1: an alias is a second surface to
 keep true); the high-level verbs now build ops directly, which is all the adapter ever did for them.
 */
-async function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect, principal) {
+// `beat` carries { pace, caption } when the caller asked for a reveal (H14.7). Named rather than
+// folded into `extra`, which decorates the RESPONSE -- the two travel in opposite directions and
+// sharing a bag would let a response field silently become a request one.
+async function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect, principal, beat) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	if (Number.isNaN(expect)) return json(res, 400, { error: 'X-Draw-Expect must be an integer version', code: 'expect-malformed' });
-	const result = store.commit(id, { ops, label, ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`, principal);
+	const result = store.commit(id, { ops, label, ...(beat || {}), ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`, principal);
 	if (!result.ok) {
 		/*
 		Three different refusals, three different codes, because an agent acts on the code -- H9.3b.
@@ -1071,7 +1074,10 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 		if (!Array.isArray(body.ops)) {
 			return json(res, 400, { error: 'commit takes { ops: [...], label? } — the transaction vocabulary the websocket uses', code: 'ops-required' });
 		}
-		return commitWrite(res, store, hub, locks, id, token, body.ops, body.label || '', undefined, expectOf(req), principal);
+		const beat = {};
+		if (body.pace !== undefined) beat.pace = body.pace;
+		if (body.caption !== undefined) beat.caption = body.caption;
+		return commitWrite(res, store, hub, locks, id, token, body.ops, body.label || '', undefined, expectOf(req), principal, beat);
 	}
 
 	// high-level verbs on a collection

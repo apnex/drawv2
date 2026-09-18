@@ -692,6 +692,8 @@ VERBS.push(
 		summary: 'apply the draft, or a batch of ops, as one transaction', example: "draw commit --label 'the web tier'",
 		flags: [{ name: '--ops', about: 'JSON file of ops, or - for stdin; omit to commit the draft' },
 			{ name: '--label', about: 'undo label' },
+			{ name: '--pace', about: 'ms between each entity appearing -- makes this commit a BEAT' },
+			{ name: '--caption', about: 'what the status bar says while the beat plays' },
 			{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			/*
@@ -716,8 +718,23 @@ VERBS.push(
 				label = label || `draft of ${ops.length} op${ops.length === 1 ? '' : 's'}`;
 				id = draft.diagram;
 			}
+			/*
+			H14.7 -- `--pace` turns the commit into a BEAT. The ops still apply at once; what the
+			server adds is a record of when each one becomes VISIBLE, built there because only the
+			planner knows which ids an intent op produced.
+			*/
+			const body = { ops, label };
+			if (ctx.flags.pace !== undefined) {
+				const pace = Number(ctx.flags.pace);
+				if (!Number.isInteger(pace) || pace < 0) die(`--pace takes whole milliseconds, not ${ctx.flags.pace}`);
+				body.pace = pace;
+			}
+			if (ctx.flags.caption !== undefined) {
+				if (body.pace === undefined) die('--caption needs --pace; a caption with no beat has nothing to play over');
+				body.caption = String(ctx.flags.caption);
+			}
 			const b = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'commit'), body: { ops, label } }), 'commit');
+				{ method: 'POST', headers: await held(ctx, id, 'commit'), body }), 'commit');
 			// cleared only after the server accepted it: a refused commit must leave the draft
 			// intact, or an agent loses the work and cannot see what it lost
 			if (!ctx.flags.ops) await writeDraft(ctx, null);
