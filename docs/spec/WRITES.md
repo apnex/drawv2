@@ -365,6 +365,22 @@ undo --expect 2  ->  1 node
 Three intents in one transaction, each resolved against the projection the planner advanced between them, and one undo removing the whole set.\
 That is the property the suite cannot assert and the reason the probe is part of the work.
 
+The beat shipped the same way, and the same probe was owed.\
+Before deploying, `--pace` and `--caption` were accepted and silently DISCARDED -- the deployed server dropping fields it did not know, which is the failure shape this document names in section 9.\
+After, on the estate:
+```text
+draft begin, three place ops, no --draft on any of them
+3 ops  v2
+reveal: origin=1789719654496  beats=1  interval=250ms  caption='the web tier'  ids=3
+t=origin-1ms    -> []
+t=origin+0ms    -> [web-01]
+t=origin+250ms  -> [web-01, web-02]
+t=origin+500ms  -> [web-01, web-02, web-03]
+undo            -> nodes=[core]  reveal=GONE
+```
+
+One origin, the unfurl derived from it, and undo taking the record with the entities it named.
+
 Two things follow.\
 **A draft outlives a refusal**: the local file is cleared only after the server accepts, so three staged ops survived the rejection and were still listed by `draft show`.\
 An agent that loses its work to a server-side refusal cannot even see what it lost.\
