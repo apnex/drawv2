@@ -386,6 +386,15 @@ The document was right and the canvas was not: three nodes committed at a 2000ms
 Two defects behind one symptom -- the reveal never crossed the wire on a change, and once it did, the painter treated its own set as proof the DOM write had landed.\
 Both are **B191**, and both are now held by a CDP test that commits a beat to a watching page.
 
+A third defect came from driving the whole surface rather than a layer, and it was not in the code.\
+A fourteen-node topology built with `place near <ref>` repeated against one reference produced a CLUSTER -- leaves above, below and beside the spines -- and the run was reported as a success because the beat record was checked and the canvas was not.\
+`near` is a proximity rule; a rank is a layout decision, and `add ... at <cell>` is how a tier is stated.\
+`draw map` renders occupancy as a grid for exactly this, and its own summary says placement is SEEN rather than derived.
+
+So the rehearsal now asserts its own layout.\
+`deploy/demo/spine-leaf.sh` builds each tier as one beat, prints the map, and exits non-zero if a tier has drifted off its row -- a check that reported and returned zero would be one nobody could gate on.\
+For anything visual the record is not evidence, and a verb exists whose whole purpose is to show the thing instead.
+
 The lesson is narrower than "test more".\
 The derivation, the model round trip and the CLI were each tested and each correct; the gap was the composition between them, and no unit test spans a websocket broadcast.\
 Verified by eye on the live app at the third attempt, which is two attempts more than a machine-watched unfurl would have cost.

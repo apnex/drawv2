@@ -75,6 +75,14 @@ const ALLOW = {
 	'docs/BACKLOG.md:docs/spec/DEPLOY.md': 'removed before publishing; the row cites it as the document the defect was found in',
 	'docs/BACKLOG.md:tools/gcs-probe.mjs': 'removed before publishing; the row cites the probe that surfaced the defect',
 	/*
+	The rehearsal script lives under the gitignored `deploy/`, for the same reason DEPLOY.md did: it
+	targets one live deployment and is not a property of the system. `WRITES.md` cites it as the
+	place a layout claim is ASSERTED rather than as something a reader should fetch -- the durable
+	half, that `near` is a proximity rule and a record is not evidence for anything visual, is in
+	the sentence itself.
+	*/
+	'docs/spec/WRITES.md:deploy/demo/spine-leaf.sh': 'gitignored: targets one deployment, and the citation is to where the check lives rather than to something to read',
+	/*
 	`SCOPE.md` was split and removed on 2026-09-03: the wire contract, vocabulary and entity model to
 	`docs/spec/API.md`, the ruling register to `docs/DECISIONS.md`, durability to `COMMIT.md`. The
 	scope framing itself was superseded in premise by `VISION.md` and is gone.
