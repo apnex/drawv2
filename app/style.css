@@ -204,6 +204,16 @@ competing for space -- unlike `#banner`, where flex would silently disable it (B
 	font: inherit; font-size: 11px; padding: 0 1ch; border: 0; border-radius: 3px;
 	width: 26ch; box-sizing: border-box;
 	display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+	/*
+	One pixel up, to land on the pill's line.
+
+	Flex centring makes the two buttons agree with each OTHER, and they still painted a pixel below
+	`#lockstate`: measured from a screenshot, ink at rows 16..23 against the pill's 15..22. The
+	cause was hunted and not found -- not the font stack, not `letter-spacing`, not the uppercase
+	transform, each ruled out by changing it and re-measuring. What is certain is the offset, so the
+	offset is what is corrected, and the measurement is recorded here rather than the theory.
+	*/
+	padding-bottom: 1px;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* an agent working elsewhere: quieter than the pill, and clickable because it names a destination */
