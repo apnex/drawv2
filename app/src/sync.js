@@ -643,6 +643,20 @@ export class Sync {
 			}
 		}
 		this.missed = 0;                                 // a change applied in order clears the streak
+		/*
+		B191 -- the reveal, which is not an op and so cannot ride in `ops`.
+
+		Set BEFORE the ops, deliberately. Assigning `state.reveal` notifies nobody -- the model emits
+		on put/set/del/load and this is none of them -- so the painter is woken by the ops that
+		follow. Setting it afterwards would leave the painter running against the previous reveal
+		for one cycle, which is long enough to paint every new entity as visible and is exactly the
+		symptom this row exists to fix.
+
+		Only when the change CARRIES the key: a change that did not touch the reveal must leave what
+		is playing alone, and `null` is a real value meaning "stop withholding" -- an undo that
+		removed a beat sends exactly that.
+		*/
+		if ('reveal' in body) this.model.state.reveal = body.reveal ? structuredClone(body.reveal) : null;
 		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
 		if (typeof body.version === 'number') this.appliedVersion = body.version;
 	}

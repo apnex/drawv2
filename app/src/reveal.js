@@ -104,10 +104,22 @@ export class Reveal {
 		const named = new Set();
 		for (const beat of rec.beats || []) for (const id of beat.ids || []) named.add(id);
 
+		/*
+		The set records what we INTEND to withhold; the DOM write is attempted every pass.
+
+		B191 -- the first version treated `hidden` as proof the attribute had landed and skipped an
+		id already in it. On the change path the reveal is applied BEFORE the ops that create the
+		elements, so the first paint marks ids whose DOM does not exist yet: `hide()` found nothing,
+		the id sat in the set, and no later pass ever retried it. The painter reported two withheld
+		entities and the canvas showed three.
+
+		Writing an attribute that is already set is free, and the alternative -- tracking whether
+		each write succeeded -- is a second piece of state that can disagree with the DOM.
+		*/
 		for (const id of named) {
 			if (visible.has(id)) {
 				if (this.hidden.delete(id)) this.show(id);
-			} else if (!this.hidden.has(id)) {
+			} else {
 				this.hidden.add(id);
 				this.hide(id);
 			}

@@ -166,6 +166,19 @@ export function changeBody(change, store, id) {
 		seq: change.seq, from: change.from, at: change.at,
 		by: change.by, actor: change.actor, label: change.label,
 		ops: change.ops,
+		/*
+		B191 -- the reveal travels with the change, or a beat does not unfurl for anyone already
+		watching.
+
+		It is not an op, so replaying `ops` cannot carry it: a viewer holding the page applied all
+		three entities and painted them at once, while a viewer who RELOADED unfurled correctly off
+		the snapshot. The feature worked exactly when nobody was watching it happen.
+
+		`'reveal' in change` rather than a truthiness test, because null is meaningful: an undo that
+		removes a beat must tell a watching page to stop withholding, and an omitted key must not be
+		confused with one set to nothing.
+		*/
+		...('reveal' in change ? { reveal: change.reveal } : {}),
 		version: log ? log.version : change.seq,
 		durableVersion: store.durableVersion(id),
 		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(), truncated: !!log?.truncated,

@@ -705,4 +705,4 @@ menu.del.addEventListener('click', () => {
 
 net.init();
 
-window.draw = { model, history, renderer, selection, input, palette, labels, readout, net, sync };
+window.draw = { model, history, renderer, selection, input, palette, labels, readout, net, sync, reveal, movers };

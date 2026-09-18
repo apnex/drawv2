@@ -302,3 +302,68 @@ test('H13.8/H13.2: a turret rotates to face what it is tracking', { skip: SKIP }
 	const transform = await tab.eval(`document.getElementById('node-ba0004').querySelector('[data-layer="glyph"]').getAttribute('transform')`);
 	assert.match(String(transform), /^rotate\(-?\d+\)$/, `expected a rotate transform, got ${transform}`);
 });
+
+/*
+H14.8/B191 -- a beat must unfurl for a viewer who is ALREADY watching.
+
+This is the defect that reached the director's screen. `txn.commit` recorded the reveal and
+`changeBody` did not forward it, so a browser holding the page applied the ops and painted every
+entity at once. The SNAPSHOT path carried it, which is the worst possible shape: reload and it
+unfurls, watch it happen and it does not.
+
+No unit test could have caught it. The derivation, the model round trip and the CLI were each
+tested and each correct; the gap was the websocket broadcast BETWEEN them. Only a real browser
+receiving a real broadcast spans that, which is what this harness is for -- and the reason the
+observation gap is fixed here rather than only the forwarding.
+
+Asserted on the DOM rather than on a timing: the entities exist (the ops applied) and the ones the
+beat has not reached carry `data-unrevealed`. A test that waited a second and counted what was
+visible would be a test about setInterval.
+*/
+test('H14.8/B191: a beat commits to a WATCHING page and the entities are withheld', { skip: SKIP }, async () => {
+	assert.ok(booted?.loaded, 'precondition: the fixture document loaded');
+
+	/*
+	The write slot, taken the way the CLI takes it. The page itself is a reader here and holds no
+	lock, but the gate refuses an unlocked write outright -- the first run of this test reported
+	HTTP 423 and would have read as "the beat did not unfurl" if the precondition had not been
+	asserted before the measurement.
+	*/
+	const lockRes = await fetch(`http://127.0.0.1:${port}/api/v1/diagrams/${DIAGRAM}/lock`, { method: 'POST' });
+	assert.ok(lockRes.ok, `precondition: the write slot was taken (HTTP ${lockRes.status})`);
+	const { token } = await lockRes.json();
+	assert.ok(token, 'precondition: the lock answered with a token');
+
+	// commit a beat over the wire, exactly as the CLI does, while this page is open
+	const res = await fetch(`http://127.0.0.1:${port}/api/v1/diagrams/${DIAGRAM}/commit`, {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-draw-lock': token },
+		body: JSON.stringify({
+			ops: [
+				{ op: 'put', kind: 'node', entity: { id: 'node-be0001', name: 'beat-a', type: 'server', x: 300, y: 300 } },
+				{ op: 'put', kind: 'node', entity: { id: 'node-be0002', name: 'beat-b', type: 'server', x: 360, y: 300 } },
+				{ op: 'put', kind: 'node', entity: { id: 'node-be0003', name: 'beat-c', type: 'server', x: 420, y: 300 } },
+			],
+			label: 'beat', pace: 4000, caption: 'the unfurl',
+		}),
+	});
+	assert.ok(res.ok, `precondition: the commit was accepted (HTTP ${res.status})`);
+
+	// the ops applied, so all three entities are in the DOM -- the reveal hides, it does not create
+	const present = await until(tab, `document.getElementById('node-be0003') ? 1 : 0`, 6000);
+	assert.ok(present, 'the third entity reached the page at all');
+
+	/*
+	The assertion the director made by eye. With a 4000ms interval, the first entity is revealed at
+	the origin and the third is four seconds behind it -- so a page that received the reveal marks
+	the later ones, and a page that did not marks nothing and shows everything at once.
+	*/
+	const withheld = await until(tab,
+		`document.querySelectorAll('[data-unrevealed]').length`, 5000);
+	assert.ok(Number(withheld) > 0,
+		'entities the beat has not reached must carry data-unrevealed -- all three appeared at once');
+
+	// and the caption reached its channel
+	const caption = await until(tab, `document.getElementById('beat-caption')?.textContent || ''`, 4000);
+	assert.match(String(caption), /the unfurl/, 'the caption reached the status bar');
+});
