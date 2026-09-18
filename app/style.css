@@ -466,14 +466,15 @@ rather than instead of it, because opacity alone leaves an invisible entity clic
 */
 [data-unrevealed] { opacity: 0; visibility: hidden; }
 /*
-300ms, ruled -- long enough to read as an arrival rather than a flicker. Stated as FADE_MS in
-model/reveal.mjs beside the trace duration, so the two ruled numbers are readable together; this is
-where it is ENFORCED, because a browser interpolating an opacity needs no help from JS. A LINK is excluded: it
+500ms, ruled, and deliberately the SAME as a link's trace: a node appearing and a line reaching it
+are one arrival, and two durations made the faster of them look like a glitch beside the other.
+Stated as FADE_MS in model/reveal.mjs beside TRACE_MS, so the two ruled numbers read together; this
+is where it is ENFORCED, because a browser interpolating an opacity needs no help from JS. A LINK is excluded: it
 traces from source to destination instead (`app/src/reveal.js`), and a fade would throw away the
 direction that is the whole reason a link is worth watching arrive.
 */
 #nodes [id], #zones [id], #groups [id], #waypoints [id] {
-	transition: opacity 300ms ease-out;
+	transition: opacity 500ms ease-out;
 }
 /*
 CENTRED ON THE CANVAS, not on the space left over.

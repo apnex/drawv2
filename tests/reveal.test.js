@@ -494,10 +494,17 @@ test('H14.12: fixed velocity gives every link the same speed, so length sets the
 	assert.equal(short.pxPerMs, long.pxPerMs, 'and the same speed throughout');
 });
 
-test('H14.12: the defaults are the ruled ones -- 500ms a link, 300ms a node', async () => {
+test('H14.12: the defaults are the ruled ones, and a node matches a link', async () => {
 	const { traceOf, TRACE_MS, FADE_MS } = await import('../model/reveal.mjs');
 	assert.equal(TRACE_MS, 500, 'a link traces in 500ms unless told otherwise');
-	assert.equal(FADE_MS, 300, 'a node fades in 300ms');
+	assert.equal(FADE_MS, 500, 'a node fades in 500ms');
+	/*
+	Equal by RULING, not by coincidence, and asserted as such so a future edit to one has to think
+	about the other. A node appearing and a line reaching it are one arrival; at 300 against 500 the
+	node landed while its links were still drawing, and the faster of the two read as a glitch
+	beside the slower.
+	*/
+	assert.equal(FADE_MS, TRACE_MS, 'an arrival is one event, so both halves of it take the same time');
 	assert.equal(traceOf(undefined, 600).ms, 500, 'no config is the default, not zero');
 });
 

@@ -457,4 +457,14 @@ test('H14.12: a link traces rather than fading, and a node does not', { skip: SK
 	const nodeArr = await tab.eval(
 		`document.getElementById('node-fa0001')?.style.strokeDasharray || ''`);
 	assert.equal(nodeArr, '', 'a node is faded, not traced');
+
+	/*
+	And the fade is the ruled 500ms, read from the STYLESHEET rather than from the constant beside
+	it. `FADE_MS` has no JS consumer -- the transition is CSS -- so a test that only read the export
+	would pass while the stylesheet said something else entirely, which is the split-brain the two
+	files' cross-references exist to prevent.
+	*/
+	const fade = await tab.eval(
+		`getComputedStyle(document.getElementById('node-fa0001')).transitionDuration`);
+	assert.equal(String(fade).trim(), '0.5s', `a node fades in the ruled 500ms, got ${fade}`);
 });

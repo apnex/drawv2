@@ -52,7 +52,7 @@ opacity. It is declared beside its sibling so the two ruled numbers are readable
 stylesheet names this file so a reader of either finds the other.
 */
 export const TRACE_MS = 500;   // a link, unless the beat says otherwise
-export const FADE_MS = 300;    // a node -- ENFORCED in app/style.css, stated here for company
+export const FADE_MS = 500;    // a node -- ENFORCED in app/style.css, stated here for company
 
 export function traceOf(cfg, length) {
 	const len = Number.isFinite(length) && length > 0 ? length : 0;
