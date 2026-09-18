@@ -67,8 +67,11 @@ def ink(box):
     if not cnt:
         return None
     bg = cnt.most_common(1)[0][0]
+    # Inset vertically as well as horizontally. A filled control -- the lock pill has a coloured
+    # background with rounded corners -- otherwise reports its own chrome as ink from the first row,
+    # which made it look like text starting at row 7 inside a 26px box.
     first = last = None
-    for y in range(y0, y0 + hgt):
+    for y in range(y0 + 2, y0 + hgt - 2):
         for x in range(x0 + 8, x0 + wid - 8):
             o = x * ch
             px = rows[y][o:o + 3]

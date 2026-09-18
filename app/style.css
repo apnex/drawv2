@@ -186,6 +186,20 @@ with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 	font: 11px ui-monospace, monospace; padding: 0 1ch; border: 0; border-radius: 3px;
 	width: 26ch; box-sizing: border-box; text-align: center;
 	/*
+	The bar's line box, which `#menu > span` already gives the pill.
+
+	`font: inherit` above carries the family but a BUTTON computes `line-height: normal` -- about
+	13px at 11px type -- and lays its text in that box, one row below the pill's 26px box. Measured
+	on the real page with identical text in all three: ink at rows 16..23 against the pill's 15..22
+	without this, 15..22 with it.
+
+	The measurement took four attempts to become trustworthy. Two earlier probes served a stub bar
+	and then attached to a STALE browser on a fixed port, so every variant read identical and three
+	commits were justified by a photograph of the wrong page. `tools/probe` now proves it is reading
+	the stylesheet on disk before it reports anything.
+	*/
+	line-height: var(--control-h);
+	/*
 	NO `line-height` here, deliberately.
 
 	`font: inherit` above is a SHORTHAND, so it inherits the bar's line-height along with the
