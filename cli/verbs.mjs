@@ -114,16 +114,42 @@ async function readDrafts(ctx) {
 
 async function readDraft(ctx) {
 	const all = await readDrafts(ctx);
-	return all[ctx.host] || { ops: [], diagram: null };
+	return all[ctx.host] || { ops: [], diagram: null, open: false };
 }
 
+/*
+W4 -- `open` is why a draft can be empty and still exist.
+
+`draw draft begin` sets the destination before anything is staged, so a record with no ops is a real
+state rather than an absence. Persisted only while it carries SOMETHING -- ops or an open session --
+so an ordinary direct-write user never grows a file.
+*/
 async function writeDraft(ctx, draft) {
 	const fsx = await import('node:fs');
 	const pathx = await import('node:path');
 	const all = await readDrafts(ctx);
-	if (draft && draft.ops.length) all[ctx.host] = draft; else delete all[ctx.host];
+	if (draft && (draft.ops.length || draft.open)) all[ctx.host] = draft; else delete all[ctx.host];
 	fsx.mkdirSync(pathx.dirname(draftFile(ctx)), { recursive: true });
 	fsx.writeFileSync(draftFile(ctx), `${JSON.stringify(all, null, '\t')}\n`);
+}
+
+/*
+Is this write STAGING? The flag, or the destination `draft begin` remembered.
+
+One predicate, because two call sites need the answer before they build their ops -- `place` emits a
+relationship rather than a resolved position when staging (B189), and `rm` cannot report a cascade
+it has not caused yet. Both originally tested `ctx.flags.draft` directly and so were blind to the
+mode: two `place near lb` ops staged by `draft begin` resolved against the same pre-draft document
+and collided on one anchor, which is the exact defect the intent op exists to prevent.
+*/
+async function staging(ctx) {
+	// `--direct` first, so a direct write builds a RESOLVED op rather than an intent one. Proven
+	// equivalent under mutation -- the server resolves an intent identically whichever way it
+	// arrives, so removing this line changes no outcome. Kept because a write that already read
+	// the document has no reason to make the planner resolve what it just looked up.
+	if (ctx.flags.direct) return false;
+	if (ctx.flags.draft) return true;
+	return (await readDraft(ctx)).open === true;
 }
 
 /*
@@ -138,8 +164,19 @@ discovering that at commit -- after twenty staged ops -- is worse than refusing 
 strays.
 */
 async function submit(ctx, id, ops, label, verb, onOk) {
-	if (ctx.flags.draft) {
-		const draft = await readDraft(ctx);
+	/*
+	W4 -- where the op lands: the flag, or the remembered destination `draft begin` set.
+
+	The verb still never changes meaning. What changed is that the destination can be stated once
+	for a session instead of on every op, which is the Junos shape -- and `--direct` is the escape,
+	so a single write can apply now without closing the session. An explicit `--draft` still works
+	and still reads correctly at the call site.
+	*/
+	if (ctx.flags.draft && ctx.flags.direct) {
+		die('--draft and --direct say opposite things; pass one');
+	}
+	const draft = ctx.flags.direct ? { open: false } : await readDraft(ctx);
+	if (ctx.flags.draft || draft.open) {
 		if (draft.diagram && draft.diagram !== id) {
 			die(`the draft targets ${draft.diagram}; \`draw draft show\` lists it, \`draw draft discard\` clears it`);
 		}
@@ -746,17 +783,41 @@ VERBS.push(
 		},
 	},
 	{
+		name: 'draft begin', sub: true, group: 'Writing', usage: 'draw draft begin', route: 'local', method: 'PUT',
+		summary: 'stage every write from now until commit, without repeating --draft',
+		example: 'draw draft begin',
+		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx) {
+			/*
+			W4 -- the destination, remembered. Not a mode that changes what a verb DOES: the op still
+			lands in the draft exactly as `--draft` would put it there, and `--direct` escapes for one
+			write. What is stored is where writes go, the same shape as `draw use` storing which
+			diagram they go to.
+			*/
+			const draft = await readDraft(ctx);
+			if (draft.open) return { json: { open: true, ops: draft.ops.length, already: true },
+				text: `already staging  (${draft.ops.length} op(s))` };
+			draft.open = true;
+			await writeDraft(ctx, draft);
+			return { json: { open: true, ops: draft.ops.length },
+				text: 'staging: writes go to the draft until `draw commit`' };
+		},
+	},
+	{
 		name: 'draft show', sub: true, group: 'Writing', usage: 'draw draft show', route: 'local', method: 'GET',
 		summary: 'what is staged, in the order it will apply', example: 'draw draft show',
 		flags: [],
 		async run(ctx) {
 			const draft = await readDraft(ctx);
-			return { json: { diagram: draft.diagram, ops: draft.ops },
+			// `open` is reported even with nothing staged: an agent that ran `draft begin` and then
+			// forgot must be able to SEE that its next write will not apply, which is the failure
+			// the running count guards against once ops exist and nothing guards before that.
+			return { json: { diagram: draft.diagram, open: !!draft.open, ops: draft.ops },
 				text: draft.ops.length
 					? table(draft.ops.map((o, i) => [String(i + 1), o.op, o.kind || '-',
 						o.entity?.name || o.id || '-', o.at ? JSON.stringify(o.at) : '-']),
 					['#', 'OP', 'KIND', 'NAME', 'AT'])
-					: 'nothing staged' };
+					: (draft.open ? 'staging, nothing staged yet' : 'nothing staged') };
 		},
 	},
 	{
@@ -765,8 +826,11 @@ VERBS.push(
 		flags: [],
 		async run(ctx) {
 			const draft = await readDraft(ctx);
+			// closes the session as well as dropping the ops: discarding while still staging would
+			// leave the next write silently going nowhere, which is the state this verb exists to end
 			await writeDraft(ctx, null);
-			return { json: { discarded: draft.ops.length }, text: `discarded ${draft.ops.length} op(s)` };
+			return { json: { discarded: draft.ops.length, open: false },
+				text: `discarded ${draft.ops.length} op(s)` };
 		},
 	},
 	{
@@ -954,6 +1018,7 @@ VERBS.push({
 		{ name: '--name', about: 'what to call it (default: the server-minted id)' },
 		{ name: '--link', about: 'also link it to the reference' },
 		{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' },
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
 		const [type, near, ref] = args;
@@ -1044,7 +1109,7 @@ VERBS.push({
 		const at = near === 'between' ? { between: [ref, args[3]] }
 			: near === 'inside' ? { inside: ref }
 				: ctx.flags.dir ? { near: ref, dir: ctx.flags.dir } : { near: ref };
-		const ops = ctx.flags.draft
+		const ops = await staging(ctx)
 			? [{ op: 'place', kind: 'node', entity, at }]
 			: [{ op: 'put', kind: 'node', entity: { ...entity, x: target.x, y: target.y } }];
 
@@ -1407,7 +1472,8 @@ VERBS.push({
 		{ name: '--kind', about: 'what the movers are; default packet. The look is the stylesheet\'s' },
 		{ name: '--off', about: 'disarm it' },
 		{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 	async run(ctx, args) {
 		if (!args[0]) die('usage: draw spawn <waypoint> [--off]');
 		const id = await activeId(ctx, ctx.flags);
@@ -1464,7 +1530,8 @@ VERBS.push({
 		{ name: '--link', about: 'a node id or name to link it to' },
 		{ name: '--shape', about: 'the outer frame: circle or square. Independent of type' },
 		{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 	async run(ctx, args) {
 		const [type, at, cell] = args;
 		if (!type || at !== 'at' || !cell) die('usage: draw add <type> at <cx>,<cy>');
@@ -1718,7 +1785,8 @@ VERBS.push(
 		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
 			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
 			{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [src, dst] = args;
 			if (!src) die('usage: draw link <src> <dst> [--via <cx>,<cy>...]');
@@ -1779,7 +1847,8 @@ VERBS.push(
 			{ name: '--content', about: 'a JSON file of content regions -- see API.md' },
 			{ name: '--type', about: 'the glyph type behind the content; default host' },
 			{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		/*
 		The split here is deliberate and is the answer to "why is there no --text flag".
 
@@ -1831,7 +1900,8 @@ VERBS.push(
 			{ name: 'to', about: "the literal word 'to'" },
 			{ name: 'cx,cy', about: 'the opposite corner CELL, inclusive' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [name, from, c0, to, c1] = args;
 			if (!name || from !== 'from' || to !== 'to' || !c0 || !c1) {
@@ -1860,7 +1930,8 @@ VERBS.push(
 		args: [{ name: 'name', about: 'what to call the group' },
 			{ name: 'ref...', about: 'two or more node ids or names' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [name, ...refs] = args;
 			// the server enforces this too (B85); saying it here costs a round trip nobody needs
@@ -1885,7 +1956,8 @@ VERBS.push(
 			{ name: 'to', about: "the literal word 'to'" },
 			{ name: 'cx,cy', about: 'the destination CELL' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [ref, to, c] = args;
 			if (!ref || to !== 'to' || !c) die('usage: draw move <ref> to <cx>,<cy>');
@@ -1911,7 +1983,8 @@ VERBS.push(
 		args: [{ name: 'ref', about: 'a node, zone or group, by id or name' },
 			{ name: 'name', about: 'the new name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [ref, name] = args;
 			if (!ref || !name) die('usage: draw rename <ref> <name>');
@@ -2169,7 +2242,8 @@ VERBS.push(
 		example: 'draw rm probe-node',
 		args: [{ name: 'ref...', about: 'entities by id or name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			if (!args.length) die('usage: draw rm <ref> [ref...]');
 			const id = await activeId(ctx, ctx.flags);
@@ -2186,7 +2260,7 @@ VERBS.push(
 			rm. A drafted one has deleted nothing yet and cannot say what a cascade will take --
 			`submit` answers with the staged count instead, which is the true thing at that moment.
 			*/
-			if (ctx.flags.draft) return submit(ctx, id, ops, 'rm', 'rm', () => null);
+			if (await staging(ctx)) return submit(ctx, id, ops, 'rm', 'rm', () => null);
 			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
 				{ method: 'POST', headers: await held(ctx, id, 'rm'), body: { ops, label: 'rm' } }), 'rm');
 			const after = census(ok(await request(ctx, `/diagrams/${id}`), 'rm'));
@@ -2216,7 +2290,8 @@ VERBS.push(
 			{ name: 'field', about: 'name, type, shape, cols or rows' },
 			{ name: 'value', about: 'the new value' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [ref, field, value] = args;
 			if (!ref || !field || value === undefined) die('usage: draw set <ref> <field> <value>');
@@ -2267,7 +2342,8 @@ VERBS.push(
 			{ name: '--action', about: 'make it a button with this action id' },
 			{ name: '--input', about: 'make it editable in run mode' },
 			{ name: '--diagram', about: 'target by id or name' },
-			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [ref, at, cr] = args;
 			if (!ref || at !== 'at' || !cr) die('usage: draw region <panel> at <col>,<row>');

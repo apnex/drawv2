@@ -155,3 +155,82 @@ test('rm stages too, so a drafted set can remove as well as add', async () => {
 			'the deletion landed on commit');
 	} finally { await app.close(); }
 });
+
+/*
+W4 -- the draft as a REMEMBERED destination, not a mode that changes what a verb means.
+
+`--draft` on every op is correct and verbose. `draw draft begin` sets the destination once, which is
+what the Junos analogy reached for -- and the property that makes configuration mode safe there is
+the prompt showing `#` on every line. An agent has no prompt, so the tool states the count on every
+append instead, which already ships.
+
+`--direct` is the escape, so a single write can still apply now without closing the session.
+*/
+test('draft begin makes staging the default, and commit closes it', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'mode-basic')).trim();
+		await run('lock', '--diagram', id);
+		await run('add', 'server', 'at', '0,0', '--name', 'lb', '--diagram', id);
+		const before = await version(id);
+
+		await run('draft', 'begin', '--diagram', id);
+		// no --draft on either of these
+		await run('place', 'server', 'near', 'lb', '--name', 'w1', '--diagram', id);
+		await run('place', 'server', 'near', 'lb', '--name', 'w2', '--diagram', id);
+		assert.equal(await version(id), before, 'the remembered destination held: nothing was written');
+		assert.equal(JSON.parse(await run('draft', 'show', '--json')).ops.length, 2);
+
+		await run('commit', '--diagram', id);
+		assert.equal(await version(id), before + 1, 'one transaction');
+
+		// and the session is closed, so the next write applies at once
+		await run('place', 'server', 'near', 'lb', '--name', 'w3', '--diagram', id);
+		assert.equal(await version(id), before + 2, 'commit cleared the destination');
+	} finally { await app.close(); }
+});
+
+test('--direct escapes an open draft for one write, without closing it', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'mode-direct')).trim();
+		await run('lock', '--diagram', id);
+		await run('add', 'server', 'at', '0,0', '--name', 'lb', '--diagram', id);
+		await run('draft', 'begin', '--diagram', id);
+		await run('place', 'server', 'near', 'lb', '--name', 'staged', '--diagram', id);
+		const before = await version(id);
+
+		await run('place', 'server', 'near', 'lb', '--name', 'now', '--direct', '--diagram', id);
+		assert.equal(await version(id), before + 1, '--direct applied immediately');
+		assert.equal(JSON.parse(await run('draft', 'show', '--json')).ops.length, 1,
+			'and the staged op is untouched -- the session is still open');
+	} finally { await app.close(); }
+});
+
+test('draft show reports whether the destination is open, even with nothing staged', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'mode-empty')).trim();
+		await run('draft', 'begin', '--diagram', id);
+		const s = JSON.parse(await run('draft', 'show', '--json'));
+		assert.equal(s.open, true, 'an open draft with no ops is a state an agent must be able to see');
+		assert.equal(s.ops.length, 0);
+	} finally { await app.close(); }
+});
+
+test('discard closes the destination as well as dropping the ops', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'mode-discard')).trim();
+		await run('lock', '--diagram', id);
+		await run('add', 'server', 'at', '0,0', '--name', 'lb', '--diagram', id);
+		await run('draft', 'begin', '--diagram', id);
+		await run('place', 'server', 'near', 'lb', '--name', 'gone', '--diagram', id);
+		const before = await version(id);
+
+		await run('draft', 'discard');
+		assert.equal(JSON.parse(await run('draft', 'show', '--json')).open, false, 'the session closed');
+		await run('place', 'server', 'near', 'lb', '--name', 'after', '--diagram', id);
+		assert.equal(await version(id), before + 1, 'and writes apply again');
+	} finally { await app.close(); }
+});

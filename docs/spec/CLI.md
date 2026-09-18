@@ -56,6 +56,7 @@ Flags are uniform across every verb, so none has to be learned twice:
 ```text
 --diagram <id|name>   target, defaulting to the context
 --draft               on a write: stage into the draft instead of applying now
+--direct              on a write: apply now, escaping an open `draft begin` session
 --json                machine output; the default is a human table
 --host <url>          server, defaulting to DRAW_HOST
 --code <code>         connection code, defaulting to DRAW_CODE
@@ -121,6 +122,7 @@ Writing
   unlock                                                          release the write slot
   lock status                                                     who holds it, when it frees, and the human hold
   commit [--ops <file|->]                                         apply the draft, or a batch of ops, as one transaction
+  draft begin                                                     stage every write from now until commit, without repeating --draft
   draft show                                                      what is staged, in the order it will apply
   draft discard                                                   throw the staged ops away
   undo [--to seq]                                                 reverse the last change, or a run
