@@ -353,6 +353,18 @@ commit: unknown op 'place' (op 0)
 The in-process suite could not find this -- it boots a server from the working tree, so the tool and the server always agree there.\
 Only the live path has a version gap, which makes a probe against the estate part of landing this rather than a courtesy.
 
+Resolved by deploying, and re-probed on the estate immediately after:
+```text
+draft +1: place server near lb-1  (3 ops staged)   document still v1
+3 ops  v2                                          one commit, one version
+lb-1 0,0   web-01 0,-60   web-02 -60,0   web-03 60,0
+4 nodes, 4 distinct anchors
+undo --expect 2  ->  1 node
+```
+
+Three intents in one transaction, each resolved against the projection the planner advanced between them, and one undo removing the whole set.\
+That is the property the suite cannot assert and the reason the probe is part of the work.
+
 Two things follow.\
 **A draft outlives a refusal**: the local file is cleared only after the server accepts, so three staged ops survived the rejection and were still listed by `draft show`.\
 An agent that loses its work to a server-side refusal cannot even see what it lost.\
