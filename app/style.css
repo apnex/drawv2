@@ -187,7 +187,21 @@ the generic control chrome BEAT the indicator's own rule -- its `border: 0`, `bo
 #303030 box. Only the state colours took effect, because a class puts them at (1,1,0). Prefixing
 with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 */
+/*
+Both are BUTTONS and both are always pressable, so the cursor is declared once.
+
+It was repeated across five rules -- `#whoami`, `.can-admin`, and three agent states -- and drifted:
+`agents-none` and `agents-here` still said `default` after spectator mode made them clickable, so
+the control with a new affordance was the one signalling none. A property that is true of every
+state belongs on the element, not on each state.
+
+`#whoami.can-admin` is gone with it. Its comment said the owner gets a pointer "because for anyone
+else the element is only a label", but the handler is gated on being SIGNED IN rather than on
+ownership -- a non-owner opens the same panel and sees the workspace half of it -- so the class
+described a restriction the behaviour does not have.
+*/
 #menu #agents, #menu #whoami {
+	cursor: pointer;
 	/*
 	The PILL's font declaration, verbatim, because the pill is the one that renders correctly.
 
@@ -229,16 +243,16 @@ with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* an agent working elsewhere: quieter than the pill, and clickable because it names a destination */
-#menu #agents.agents-idle { background-color: #37474f; color: #b0bec5; cursor: pointer; }
+#menu #agents.agents-idle { background-color: #37474f; color: #b0bec5; }
 #menu #agents.agents-idle:hover { background-color: #455a64; color: #eceff1; }
 /* driving the diagram in view: nowhere to navigate to, but arming is still available, so the
    pointer stays -- the click means "arm" here rather than "go there" */
-#menu #agents.agents-here { background-color: #4a3b00; color: #ffd54f; cursor: pointer; }
+#menu #agents.agents-here { background-color: #4a3b00; color: #ffd54f; }
 #menu #agents.agents-here:hover { background-color: #5a4800; }
 /* B76/B155: identity sits immediately left of the authority pill -- who you are, then what you may
    do. Boxed now rather than bare text: it opens the access panel whenever it shows an identity, so
    it was always a control and only looked like a caption. */
-#menu #whoami { background-color: #263238; color: #cfd8dc; cursor: pointer; }
+#menu #whoami { background-color: #263238; color: #cfd8dc; }
 #menu #whoami:hover { background-color: #2f3f46; color: #eceff1; }
 /*
 The two RESTING states, dimmed to the same value as `.lock-offline` so all three indicators agree
@@ -264,7 +278,6 @@ everywhere: a pointer, and a hover that lifts the background and the text togeth
 keeps `cursor: default` and is deliberately left behind -- it is inert for a real reason, having no
 identity to administer, and sharing a rule is not sharing a meaning.
 */
-#menu #agents.agents-none { cursor: pointer; }
 #menu #agents.agents-none:hover { background-color: #2f2f2f; color: #9a9a9a; }
 
 /*
@@ -287,7 +300,7 @@ removed -- two signals for one fact, and the dimmer one just made the label hard
 `box-sizing: border-box` and eat a pixel of the text's line box -- measurable, and exactly the class
 of one-pixel drift that cost an evening.
 */
-#menu #agents.armed { box-shadow: inset 0 0 0 1px #ffd54f; cursor: pointer; }
+#menu #agents.armed { box-shadow: inset 0 0 0 1px #ffd54f; }
 
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {
@@ -472,9 +485,6 @@ arrangement stored a hex per spawner and three repaints only ever reached newly 
 #access-principal { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
 #access-level, #access-grant { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
 #access-error { color: #e57373; margin: 10px 0 0; min-height: 1em; }
-/* the owner gets a pointer, because for anyone else the element is only a label */
-/* B155: the box IS the affordance now, so the dotted underline that used to hint at it is gone. */
-#menu #whoami.can-admin { cursor: pointer; }
 #access-card h2 + p, #access-ws-note { color: #9e9e9e; margin: 0 0 10px; max-width: 46em; }
 #access-ws-head { margin-top: 22px !important; border-top: 1px solid #333; padding-top: 18px; }
 #access-ws-list { border-collapse: collapse; width: 100%; }

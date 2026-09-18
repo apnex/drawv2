@@ -632,7 +632,11 @@ const sync = new Sync({
 		// workspace half is always theirs. The diagram half is hidden by CSS when they do not own
 		// what is on screen — the server would refuse those calls, and offering a door certain not
 		// to open is worse than offering none.
-		if (principal) menu.whoami.classList.add('can-admin');
+		/*
+		`can-admin` is gone: its only effect was `cursor: pointer`, which `#menu #whoami` now carries
+		unconditionally because the panel opens for anyone signed in. A class that is set and styled
+		by nothing is a hook a later reader will assume means something.
+		*/
 		menu.whoami.title = principal
 			? `${principal} — click to manage who can reach ${isOwner ? 'this diagram, and everything you own' : 'everything you own'}`
 			: '';
