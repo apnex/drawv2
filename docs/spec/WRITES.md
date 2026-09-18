@@ -381,6 +381,15 @@ undo            -> nodes=[core]  reveal=GONE
 
 One origin, the unfurl derived from it, and undo taking the record with the entities it named.
 
+**And then watched, which found what none of that had.**\
+The document was right and the canvas was not: three nodes committed at a 2000ms pace appeared simultaneously on a page that was already open.\
+Two defects behind one symptom -- the reveal never crossed the wire on a change, and once it did, the painter treated its own set as proof the DOM write had landed.\
+Both are **B191**, and both are now held by a CDP test that commits a beat to a watching page.
+
+The lesson is narrower than "test more".\
+The derivation, the model round trip and the CLI were each tested and each correct; the gap was the composition between them, and no unit test spans a websocket broadcast.\
+Verified by eye on the live app at the third attempt, which is two attempts more than a machine-watched unfurl would have cost.
+
 Two things follow.\
 **A draft outlives a refusal**: the local file is cleared only after the server accepts, so three staged ops survived the rejection and were still listed by `draft show`.\
 An agent that loses its work to a server-side refusal cannot even see what it lost.\

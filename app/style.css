@@ -443,6 +443,17 @@ transition is a fade in, so an entity arriving reads as arriving rather than as 
 The caption is the second channel of a narrated build: centred, larger than the readout, and
 holding whatever was last said until a new beat replaces it. It takes the middle because while a
 beat is playing it is the thing being said, and the gesture coordinates beside it are not.
+
+NOT ASSERTED, and deliberately. The CDP test checks the `data-unrevealed` attribute, which is the
+property the derivation owns; the fade is the browser interpolating between two states it was given.
+Asserting a transition means either reading computed styles mid-animation, which is timing-dependent
+and the kind of test that passes for the wrong reason, or grepping the stylesheet, which asserts
+where code lives rather than what it does -- H13.5 had to be rewritten today for exactly that. So a
+deleted transition would go unnoticed by the suite and noticed immediately by a person, which is the
+right way round for something whose whole purpose is how it looks.
+
+`visibility` rather than `display`, so nothing reflows as a beat plays -- and alongside `opacity`
+rather than instead of it, because opacity alone leaves an invisible entity clickable.
 */
 [data-unrevealed] { opacity: 0; visibility: hidden; }
 #nodes [id], #links [id], #zones [id], #groups [id], #waypoints [id] {
