@@ -22,6 +22,7 @@ import { Watchdog } from './watchdog.js';
 import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
 import { Reveal } from './reveal.js';
+import { makeSpectator, followTarget } from './spectate.js';
 
 const svg = document.getElementById('container');
 
@@ -462,6 +463,26 @@ so it should take you there. Clicking is suppressed when the work is on the diag
 because there is nowhere to go and a control that does nothing is worse than none.
 */
 let agentTarget = null;
+
+/*
+SPECTATOR MODE -- arming the button to follow an agent's work.
+
+The element was an indicator: it said where work was happening and clicking went there. Armed, it
+becomes a standing INSTRUCTION -- take me where the work is, without my asking each time. That is
+why it can be armed with nothing connected: the intent is real before there is anything to follow,
+and the agent creating a diagram no longer has to ask a person to navigate to it.
+
+Newest lock wins, ruled by the director. Locks are per DIAGRAM and an agent may hold several at
+once -- measured: `acquire(id)` keys on the diagram alone and one principal took two -- so "follow
+the agent" is ambiguous the moment anything runs in parallel. Newest is the signal that means work
+just STARTED somewhere, and is the one that matches watching. A later revision makes the button a
+list of agents to pick from, which is the real answer to contention.
+
+`seenLocks` is what makes it fire on a NEW lock rather than on every state emit: the agent list
+arrives with each snapshot, so following whatever is in it would re-navigate on every heartbeat.
+*/
+const spectator = makeSpectator();
+
 function renderAgents(agents, currentId, diagrams) {
 	const list = Array.isArray(agents) ? agents : [];
 	/*
@@ -471,9 +492,16 @@ function renderAgents(agents, currentId, diagrams) {
 	same way rather than vanishing.
 	*/
 	if (!list.length) {
-		menu.agents.className = 'agents-none';
+		menu.agents.className = spectator.armed ? 'agents-none armed' : 'agents-none';
 		menu.agents.textContent = 'no agents';
-		menu.agents.title = 'no agent is working in this workspace';
+		/*
+		The armed title outranks the resting one. `className` and `title` are both reassigned on
+		every state emit, so an armed ring set by the click handler would be wiped by the next
+		heartbeat -- the class is preserved above for the same reason.
+		*/
+		menu.agents.title = spectator.armed
+			? 'spectating: this tab follows an agent to the diagram it locks'
+			: 'no agent is working in this workspace';
 		agentTarget = null;
 		return;
 	}
@@ -484,14 +512,34 @@ function renderAgents(agents, currentId, diagrams) {
 	const who = a.principal ? a.principal.replace(/^agent:/, '') : 'an agent';
 	const extra = list.length > 1 ? ` +${list.length - 1}` : '';
 
-	menu.agents.className = here ? 'agents-here' : 'agents-idle';
+	menu.agents.className = `${here ? 'agents-here' : 'agents-idle'}${spectator.armed ? ' armed' : ''}`;
 	menu.agents.textContent = here ? `${who} is driving${extra}` : `${who}: ${nameOf(a.diagram)}${extra}`;
 	menu.agents.title = here
 		? `${who} holds the write lock on this diagram`
 		: `${who} is working on ${nameOf(a.diagram)} — click to open it`;
 	agentTarget = here ? null : a.diagram;
 }
-menu.agents.addEventListener('click', () => { if (agentTarget) sync.openDiagram(agentTarget); });
+/*
+Click: go there if there is somewhere to go, otherwise toggle arming.
+
+Opening keeps priority because it is the older, more specific act -- the button naming a diagram is
+offering to take you to THAT one, and turning that into a toggle would take away an affordance to
+add one. With nothing to open, the click is free and arming is what it means.
+*/
+menu.agents.addEventListener('click', () => {
+	if (agentTarget) { sync.openDiagram(agentTarget); return; }
+	spectator.armed = !spectator.armed;
+	menu.agents.classList.toggle('armed', spectator.armed);
+	menu.agents.title = spectator.armed
+		? 'spectating: this tab follows an agent to the diagram it locks'
+		: 'no agent is working in this workspace';
+});
+
+// the decision is `app/src/spectate.js`, which is testable without a DOM; this is the wiring
+function followNewLocks(agents, currentId) {
+	const go = followTarget(spectator, agents, currentId, !!(sync.deferInbound && sync.deferInbound()));
+	if (go) sync.openDiagram(go);
+}
 
 let onStateLastId = null;
 const net = new Net(wsUrl(location));   // B60 -- wss: on an https page, ws: on http
@@ -540,6 +588,7 @@ const sync = new Sync({
 		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
 		renderAgents(agents, meta && meta.id, diagrams);
+		followNewLocks(agents, meta && meta.id);
 		/*
 		B76 -- the signed-in identity, top right, immediately left of the authority pill.
 

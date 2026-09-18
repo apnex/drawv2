@@ -247,6 +247,28 @@ about what "nothing to report" looks like. Neither is clickable, and both say so
 	background-color: #242424; color: #6b6b6b; cursor: default;
 }
 
+/*
+ARMED -- spectator mode, the standing instruction to follow an agent's work.
+
+A ring rather than a fill, in the amber the bar already uses for agent activity. The distinction is
+the point: the FILL states say what is happening right now (`agents-here` is dark amber, the locked
+pill is bright amber), and the ring says what this operator has ASKED FOR. Filling it amber too
+would make an armed button with nothing to report look identical to a locked diagram, which is a
+different fact in the same colour.
+
+It survives `agents-none`, which is why arming is a control and not a status: the intent is real
+before there is anything to follow, and `no agents` with a ring reads as "watching, nothing yet".
+
+The ring is the ONLY change: background and text colour stay whatever the state set them to, so
+`no agents` armed is the same grey button wearing a ring. Tinting the text as well was tried and
+removed -- two signals for one fact, and the dimmer one just made the label harder to read.
+
+`inset` so the ring is drawn inside the 26px box. A real border would be absorbed by
+`box-sizing: border-box` and eat a pixel of the text's line box -- measurable, and exactly the class
+of one-pixel drift that cost an evening.
+*/
+#menu #agents.armed { box-shadow: inset 0 0 0 1px #ffd54f; cursor: pointer; }
+
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {
 	/* the rail width, single-sourced: `#beat-caption` offsets the canvas centre by it */
