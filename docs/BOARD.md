@@ -648,7 +648,7 @@ An undeviated mover is a closed form, so this pilot needs no reconciliation at a
 
 ---
 
-## H13 -- the deviation tier - `WIP`
+## H13 -- the deviation tier - `DONE`
 
 Opened 2026-09-02.\
 H12 closed as a pilot that deliberately excluded combat, on the reasoning that an undeviated mover is a closed form of `t` and therefore cannot desync.\
@@ -678,12 +678,20 @@ The one place anything still integrates from a prior point is accumulated damage
 | H13.1 | The derivation surface: a kind declares its own game data, and a rule is a pure function of `(world, tick)` returning facts. A tower fires because the board and the clock imply it, so only tower placement travels and a third client recomputes rather than being told | `feature` | S3 - M | `DONE` |
 | H13.3 | A player places a tower during play, and the laser is drawn. Placement is the only thing that travels; the beam is derived by every peer from the board and the clock | `feature` | S2 - M | `DONE` |
 | H13.6 | A clock stamp is consumed by the snapshot it belongs to, so a peer's offset cannot absorb the age of its own tab. Two viewers of one diagram saw a route full of packets and no packets at all, from the same document | **B177** | S2 - S | `DONE` |
-| H13.7 | Authority over a document is a LEASE, held rather than assumed, so exactly one instance answers for it whatever the instance count. The conflict half shipped as H13.11; this is the idle case, where nobody writes so no conflict ever proves anything | **B178** | S3 - L | `BLOCKED` |
 
 **H13.7 is DESIGNED and deliberately unbuilt.**\
 The design is `docs/spec/AUTHORITY.md` 3.3, written so it is not re-derived under pressure the day it is needed.\
 F1 and F2 are answered there: hold-and-retry bounded by the renewal interval, and a lease with no expiry clock at all -- the holder increments a counter and an observer measures how long IT has waited, so no machine ever reads a time another machine wrote.\
 What remains is not a technical question but a director one: whether to build enforcement before the service is deliberately scaled, given its failure mode is lockout rather than drift.
+
+**RULED 2026-09-04: not yet, and the lease is not assumed to be the answer.**\
+Today's failure is a brief ambiguity during a deploy, when the old instance is still serving websockets that never drain.\
+The lease's failure is a healthy instance locked out of a document nobody can then write to, on a slow disk or a paused process.\
+Nothing has gone wrong from the first, and the second is worse than what it fixes -- so the trigger is deliberately scaling past one instance, not a date.
+
+The director also ruled the SHAPE open: *"there may be a different solution entirely for when we are ready to scale."*\
+So `AUTHORITY.md` 3.3 is a design kept warm rather than a commitment, and the question to re-open is "how should ownership work at N instances", not "should we build the lease now".\
+That matters because the collision half already shipped (H13.11) and may be most of what is needed: an approach that makes the idle case prove itself on the next write, rather than on a timer, would avoid the lockout mode entirely.
 
 **The original blocker, kept because it became real.**\
 Flag F1 of the B178 intent capture asks what a non-holder's refusal carries so a bounced client makes progress.\
@@ -780,6 +788,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
+| **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to SCRUB BACKWARDS -- replay a wave, review a death, audit a disputed kill. Not slowness: the present costs 4ms | a cached fold at tick N restores O(1) sampling after N |
