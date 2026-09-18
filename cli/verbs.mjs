@@ -248,6 +248,32 @@ async function resolveId(ctx, diagramId, ref, known = null) {
 	for (const k of ['nodes', 'zones', 'groups', 'links', 'waypoints']) {
 		for (const e of doc[k] || []) if (e.name === ref) hits.push(e.id);
 	}
+
+	/*
+	B195 -- a name staged in the DRAFT resolves too, so a set can link what it is creating.
+
+	This check ran against the server's document alone, so a node staged moments earlier was
+	invisible: `draw link spine-1 leaf-1` refused while `leaf-1` existed only locally, the link
+	silently failed to stage while its nodes did, and the commit landed a tier with no wiring and
+	looked like a successful beat.
+
+	The server was never the obstacle. `plan()` advances a projection between ops and resolves each
+	against the state the ones before it left, so a leaf created two ops earlier is already
+	resolvable there -- B187 gave every entity a name for exactly this. Only this pre-flight could
+	not see it.
+
+	Searched AFTER the document and only when the document missed, so a draft cannot shadow a
+	committed entity of the same name: the thing that exists wins over the thing that is proposed.
+	*/
+	if (!hits.length) {
+		const draft = await readDraft(ctx);
+		if (draft.diagram === diagramId) {
+			for (const op of draft.ops) {
+				const e = op.entity;
+				if (e && e.name === ref && e.id) hits.push(e.id);
+			}
+		}
+	}
 	// the hint belongs HERE, not in each caller. B143 routed four verbs through this function and
 	// they each lost their own "`draw get nodes` lists them" line on the way; one message that
 	// names the way to look is better than four that disagree about it.

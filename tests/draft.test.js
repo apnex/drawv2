@@ -188,3 +188,74 @@ test('a committed draft is cleared, so the next commit cannot re-apply it', asyn
 			'and the document did not grow');
 	} finally { await app.close(); }
 });
+
+/*
+B195 -- a drafted set can link the entities it is itself creating.
+
+`draw link a b` resolved both names against the SERVER's document, so a node staged moments earlier
+was invisible: staging four leaves and then linking them refused with `nothing called leaf-1`, the
+links silently failed to stage while the nodes did, and the commit landed a tier with no wiring
+while looking like a successful beat.
+
+The server was never the problem. `plan()` advances a projection between ops, so it can resolve a
+leaf created two ops earlier -- B187 gave every entity a name for exactly this. It was the CLI's
+pre-flight check that could not see the draft, so the draft is now part of what it resolves against.
+*/
+test('B195: a drafted link can name a node staged in the same set', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'draft-link')).trim();
+		await run('lock', '--diagram', id);
+		await run('draft', 'begin', '--diagram', id);
+		await run('add', 'server', 'at', '0,0', '--name', 'alpha', '--diagram', id);
+		await run('add', 'server', 'at', '2,0', '--name', 'beta', '--diagram', id);
+		// neither exists on the server yet -- both exist only in the draft
+		await run('link', 'alpha', 'beta', '--diagram', id);
+
+		const staged = JSON.parse(await run('draft', 'show', '--json'));
+		assert.equal(staged.ops.length, 3, `expected 2 nodes + 1 link staged, got ${staged.ops.length}`);
+
+		await run('commit', '--diagram', id);
+		const doc = JSON.parse(await run('dump', '--diagram', id, '--json'));
+		assert.equal(doc.nodes.length, 2, 'both nodes landed');
+		assert.equal(doc.links.length, 1, 'and so did the link between them');
+		const byId = Object.fromEntries(doc.nodes.map((n) => [n.id, n.name]));
+		const l = doc.links[0];
+		assert.deepEqual([byId[l.src], byId[l.dst]].sort(), ['alpha', 'beta'], 'joining the right two');
+	} finally { await app.close(); }
+});
+
+test('B195: a name that exists in NEITHER the draft nor the document is still refused', async () => {
+	// the refusal is what makes the resolver worth having; widening it must not blunt it
+	await boot();
+	try {
+		const id = (await run('create', 'draft-link-miss')).trim();
+		await run('lock', '--diagram', id);
+		await run('draft', 'begin', '--diagram', id);
+		await run('add', 'server', 'at', '0,0', '--name', 'alpha', '--diagram', id);
+		const err = await captureExit(() => run('link', 'alpha', 'ghost', '--diagram', id));
+		assert.match(err, /ghost/, 'the refusal names what was not found');
+	} finally { await app.close(); }
+});
+
+test('B195: a draft targeting ANOTHER diagram does not resolve names here', async () => {
+	/*
+	M2 of the mutation pass survived without this. The draft is per-host, not per-diagram, so a set
+	staged against one document must not lend its names to another -- resolving `alpha` from a draft
+	aimed elsewhere would silently link this diagram to an id that does not exist in it, which is
+	the B186 failure class: a well-formed answer about the wrong document.
+	*/
+	await boot();
+	try {
+		const other = (await run('create', 'draft-elsewhere')).trim();
+		const here = (await run('create', 'draft-here')).trim();
+		await run('lock', '--diagram', other);
+		await run('draft', 'begin', '--diagram', other);
+		await run('add', 'server', 'at', '0,0', '--name', 'alpha', '--diagram', other);
+
+		// `alpha` is staged against `other`; naming it while targeting `here` must refuse
+		await run('lock', '--diagram', here);
+		const err = await captureExit(() => run('rename', 'alpha', 'renamed', '--diagram', here, '--direct'));
+		assert.match(err, /alpha/, 'the refusal names the entity that is not in THIS diagram');
+	} finally { await app.close(); }
+});
