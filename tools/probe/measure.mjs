@@ -108,19 +108,41 @@ try {
 	await send('Page.reload', { ignoreCache: true });
 	await sleep(600);
 
+	/*
+	The REAL strings, not a uniform test word. Identical text proves the line BOXES agree, which is
+	necessary and not sufficient: the pill is `text-transform: uppercase` and the buttons are
+	lowercase, so their ink starts on different rows even when the boxes match. A reader sees ink.
+	*/
 	await evalIn(`(() => {
-		document.getElementById('agents').textContent = 'unlocked';   // same text in all three, so a glyph difference cannot masquerade as a layout one
-		document.getElementById('whoami').textContent = 'unlocked';
+		document.getElementById('agents').textContent = 'no agents';
+		document.getElementById('whoami').textContent = 'aobersnel@apnex.com.au';
 		document.getElementById('lockstate').textContent = 'unlocked';
 		document.getElementById('lockstate').className = 'lock-unlocked';
 		return 1;
 	})()`);
 	await sleep(300);
 
+	/*
+	The BASELINE, not just the box. Ink extents differ with the glyphs present -- a descender in
+	`no agents` reaches rows the pill's `UNLOCKED` never touches -- so comparing ink spans conflates
+	letter shape with layout. A baseline is where the type actually sits, and two controls whose
+	baselines agree are aligned however their descenders fall.
+
+	Measured by planting a zero-width inline marker in each control and reading where ITS box sits:
+	an inline box's bottom is the baseline, which needs no font metric and no canvas.
+	*/
 	const boxes = await evalIn(`JSON.stringify([...document.querySelectorAll('#menu [id]')].map(e=>{
 		const r=e.getBoundingClientRect(); const cs=getComputedStyle(e);
+		let base = null;
+		if (e.firstChild && e.firstChild.nodeType === 3) {
+			const m = document.createElement('span');
+			m.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+			e.appendChild(m);
+			base = Math.round((m.getBoundingClientRect().bottom - r.top) * 10) / 10;
+			m.remove();
+		}
 		return {id:e.id,x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),
-			lh:cs.lineHeight,fs:cs.fontSize,disp:cs.display,pad:cs.paddingTop+'/'+cs.paddingBottom};
+			lh:cs.lineHeight,fs:cs.fontSize,disp:cs.display,base};
 	}))`).then(JSON.parse);
 
 	const shot = (await send('Page.captureScreenshot', { format: 'png' })).data;
