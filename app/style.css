@@ -231,7 +231,10 @@ with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 /* an agent working elsewhere: quieter than the pill, and clickable because it names a destination */
 #menu #agents.agents-idle { background-color: #37474f; color: #b0bec5; cursor: pointer; }
 #menu #agents.agents-idle:hover { background-color: #455a64; color: #eceff1; }
-#menu #agents.agents-here { background-color: #4a3b00; color: #ffd54f; cursor: default; }   /* driving the diagram in view */
+/* driving the diagram in view: nowhere to navigate to, but arming is still available, so the
+   pointer stays -- the click means "arm" here rather than "go there" */
+#menu #agents.agents-here { background-color: #4a3b00; color: #ffd54f; cursor: pointer; }
+#menu #agents.agents-here:hover { background-color: #5a4800; }
 /* B76/B155: identity sits immediately left of the authority pill -- who you are, then what you may
    do. Boxed now rather than bare text: it opens the access panel whenever it shows an identity, so
    it was always a control and only looked like a caption. */
@@ -246,6 +249,23 @@ about what "nothing to report" looks like. Neither is clickable, and both say so
 #menu #agents.agents-none, #menu #whoami.whoami-local {
 	background-color: #242424; color: #6b6b6b; cursor: default;
 }
+
+/*
+`no agents` is a BUTTON, and has to look like one.
+
+The rule above gave it `cursor: default` and no hover, which was right while it only reported: a
+control that does nothing should not invite a click. Arming changed that -- it is now always
+clickable, whether or not anything is connected -- and the styling did not follow, so the one
+control in the bar with a new affordance was the one that signalled none. The director found it by
+not knowing it could be pressed.
+
+The same two signals `#whoami` uses, because the row should answer "can I press this?" the same way
+everywhere: a pointer, and a hover that lifts the background and the text together. `whoami-local`
+keeps `cursor: default` and is deliberately left behind -- it is inert for a real reason, having no
+identity to administer, and sharing a rule is not sharing a meaning.
+*/
+#menu #agents.agents-none { cursor: pointer; }
+#menu #agents.agents-none:hover { background-color: #2f2f2f; color: #9a9a9a; }
 
 /*
 ARMED -- spectator mode, the standing instruction to follow an agent's work.
