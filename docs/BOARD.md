@@ -721,7 +721,7 @@ The trigger is therefore wanting to scrub backwards, not the present becoming sl
 
 ---
 
-## H14 -- the write model - `WIP`
+## H14 -- the write model - `DONE`
 
 Opened 2026-09-04, and RESCOPED the same day by the design conversation it opened for.\
 It was filed as the narrative tier, carrying the B188 survey's story layer -- ordered beats, a stored cursor, scrubbing.\
@@ -766,13 +766,16 @@ Recorded in `API.md` under Vocabulary; the B188 survey uses `beat` for the story
 | H14.8 | A beat must unfurl for a viewer who is ALREADY watching. `changeBody` forwarded ops and not the reveal, so a live viewer painted everything at once while a reload unfurled correctly -- the feature worked exactly when nobody was looking. Two defects, one behind the other; a CDP test now watches an unfurl so the next one is caught by a machine | **B191** | S2 - M | `DONE` |
 | H14.9 | A beat handed its caption to the next one at the instant its final entity appeared, so a one-entity beat never held it at all. A beat's DURATION and its entity spacing are different questions and one function was answering both; a beat now dwells one interval past its last arrival | **B192** | S2 - S | `DONE` |
 | H14.10 | A beat committed after the queue drained inherited an expired schedule and never unfurled -- and the caption still showed, so it read as working. A beat now JOINS a schedule still playing and STARTS one that has drained | **B193** | S2 - S | `DONE` |
-| H14.11 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm it. A surface, not a flag: viewer-opened, lock-freed, commit-landed, beat-finished all become the same verb. The server already broadcasts change/lock/selection and the hub tracks sessions, so the gap is subscribing from the CLI. Needs a bound, and must report what it waited for | **B194** | S3 - M | `TODO` |
 | H14.12 | A link TRACES source to destination rather than fading -- a fade throws away the one thing a link has that a node does not. Configurable fixed-duration or fixed-velocity, defaults 500ms a link and 300ms a node fade, both director-ruled | **B188** | S2 - M | `DONE` |
 | H14.13 | A drafted set can link the entities it is itself creating. `resolveId` consults the draft when the document misses -- in that order, so a staged name cannot shadow a committed one, and only for a draft targeting the same diagram | **B195** | S2 - M | `DONE` |
-| H14.14 | Spectator mode: the agents button ARMS, and the tab follows an agent to the diagram it locks. The button was an indicator; armed it is a standing instruction, which is why it arms with nothing connected -- the intent is real before there is anything to follow. Newest lock wins, ruled; a later revision makes it a list of agents to choose from | **B194** | S2 - M | `DONE` |
-| H14.3 | Perception symmetric with authoring: `draft show` for the staged ops, `--draft` on reads for the projection, `draft diff` for the delta. A non-empty draft is surfaced by reads, so an agent cannot silently accumulate | **B188** | S2 - M | `TODO` |
+| H14.14 | Spectator mode: the agents button ARMS, and the tab follows an agent to the diagram it locks. The button was an indicator; armed it is a standing instruction, which is why it arms with nothing connected -- the intent is real before there is anything to follow. Newest lock wins, ruled; a later revision makes it a list of agents to choose from | **B196** | S2 - M | `DONE` |
 | H14.4 | A beat: a set plus pacing and a caption, revealed by derivation from one stored origin. The caption plays in the menu bar as the second channel. `revealedAt` is a pure function of the record and the instant, so two peers agree having exchanged nothing | **B188** | S3 - L | `DONE` |
 | H14.7 | Author a beat: `--pace` and `--caption` on `commit`, the record built SERVER-side because only the planner knows which ids an intent op produced. Ruled: the reveal INVERTS, so undo takes it and undoing past an earlier beat restores that one -- measured first, where undo left a record naming entities it had just deleted | **B188** | S2 - M | `DONE` |
+
+**CLOSED 2026-09-04.**\
+The exit below was met and demonstrated live: a spine-leaf fabric built as drafted sets, `draft show` reporting what was staged before it landed, and captioned beats unfurling on a watched page.\
+Two rows moved to Held rather than holding a finished milestone open -- perception symmetry on READS, which was designed and never needed, and `draw event`, which is a different surface the director raised while watching an unfurl.\
+Both are additions that arrived during the work rather than parts of the write model, and both carry a trigger.
 
 **Exit:** an agent builds a topology as a handful of drafted sets rather than forty calls, sees exactly what it staged before committing, and can attach a paced caption to a set so a viewer watches it arrive rather than finding it already there.
 
@@ -795,6 +798,8 @@ Scored so the comparison is a judgement, not an omission.\
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
+| **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
+| **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to SCRUB BACKWARDS -- replay a wave, review a death, audit a disputed kill. Not slowness: the present costs 4ms | a cached fold at tick N restores O(1) sampling after N |
