@@ -89,13 +89,18 @@ test('a queued beat starts where the one ahead of it ends, from the SAME origin'
 		{ interval: 200, caption: 'first', ids: ['node-aa0001', 'node-aa0002'] },
 		{ interval: 100, caption: 'second', ids: ['node-bb0001', 'node-bb0002'] },
 	] };
-	// beat 1 spans 1000..1200 (two entities, one interval apart), so beat 2 opens AT 1200 --
-	// back to back, with no gap invented between them
-	assert.equal(revealedAt(two, 1199).has('node-bb0001'), false, 'beat 2 has not begun');
+	/*
+	Beat 1 holds two entities one interval apart, so its second lands at 1200 -- and it keeps the
+	floor for one further interval while that arrival is on screen (B192). Beat 2 therefore opens at
+	1400, not 1200. This test asserted 1200 when it was written, which encoded the defect: a beat
+	handing over at the instant its last entity appeared is a beat whose final arrival is narrated
+	by the NEXT caption.
+	*/
 	assert.equal(revealedAt(two, 1199).size, 1, 'beat 1 has shown only its first by then');
 	assert.equal(revealedAt(two, 1200).has('node-aa0002'), true, "beat 1's second lands at 1200");
-	assert.equal(revealedAt(two, 1200).has('node-bb0001'), true, 'and beat 2 opens at the same instant');
-	assert.equal(revealedAt(two, 1300).has('node-bb0002'), true, 'its second entity, one interval on');
+	assert.equal(revealedAt(two, 1200).has('node-bb0001'), false, 'and beat 2 has NOT begun -- beat 1 is still speaking');
+	assert.equal(revealedAt(two, 1400).has('node-bb0001'), true, 'beat 2 opens after beat 1 finishes');
+	assert.equal(revealedAt(two, 1500).has('node-bb0002'), true, 'its second entity, one interval on from 1400');
 });
 
 test('beatsOf reports which beat is current and how far into it, for the caption channel', () => {
@@ -364,4 +369,56 @@ test('undoing a RUN of beats restores what stood before all of them', async () =
 	undo(m, log, firstSeq);            // reverse all three in one transaction
 	assert.equal(m.get('node', 'node-aa0001'), undefined, 'every entity went');
 	assert.equal(m.state.reveal, null, 'and the reveal went back to before the FIRST beat');
+});
+
+/*
+B192/H14.9 -- a beat's LIFETIME is not its entity spacing, and conflating them loses the caption.
+
+`(n-1) * interval` is where the last entity LANDS, and it was also being used as when the beat ends.
+So every beat handed its caption over at the instant its final entity appeared, and a one-entity
+beat -- whose spacing is zero -- never held the caption at all: an agent writes one, the commit
+accepts it, the document stores it, and nothing ever shows it.
+
+Found by driving a real build, not by a test: three beats of 1, 4 and 8 entities, and at the origin
+the status bar already read the SECOND beat's caption. Every fixture here had two or more ids, which
+is the shape you reach for when demonstrating pacing and exactly the wrong one for finding this.
+*/
+test('B192: a one-entity beat holds its caption rather than being skipped', () => {
+	const r = { origin: 1000, beats: [
+		{ interval: 800, caption: 'first', ids: ['node-aa0001'] },
+		{ interval: 600, caption: 'second', ids: ['node-bb0001', 'node-bb0002'] },
+	] };
+	assert.equal(beatsOf(r, 1000).active.caption, 'first', 'the beat is current at its own origin');
+	assert.equal(beatsOf(r, 1400).active.caption, 'first', 'and still current partway through');
+	assert.equal(beatsOf(r, 1800).active.caption, 'second', 'the next beat takes over after it, not during');
+});
+
+test('B192: a beat keeps its caption while its LAST entity is on screen', () => {
+	// the general case the one-entity beat is the extreme of: the final entity of every beat was
+	// appearing at the same instant the next beat claimed the caption
+	const r = { origin: 0, beats: [
+		{ interval: 500, caption: 'A', ids: ['node-aa0001', 'node-aa0002'] },
+		{ interval: 500, caption: 'B', ids: ['node-bb0001'] },
+	] };
+	assert.equal(beatsOf(r, 500).active.caption, 'A', "A's second entity lands at 500 and A is still saying why");
+	assert.ok(revealedAt(r, 500).has('node-aa0002'), 'and that entity is indeed visible then');
+	assert.equal(beatsOf(r, 1000).active.caption, 'B', 'B takes over one interval later');
+});
+
+test('B192: entity SPACING is unchanged -- only the beat boundary moved', () => {
+	// the spacing rule is correct and must not drift while fixing the lifetime
+	const r = { origin: 0, beats: [{ interval: 200, ids: ['node-aa0001', 'node-aa0002', 'node-aa0003'] }] };
+	assert.deepEqual([...revealedAt(r, 0)], ['node-aa0001']);
+	assert.deepEqual([...revealedAt(r, 200)], ['node-aa0001', 'node-aa0002']);
+	assert.deepEqual([...revealedAt(r, 400)], ['node-aa0001', 'node-aa0002', 'node-aa0003']);
+});
+
+test('B192: a queued beat still starts after the one ahead, with the boundary moved', () => {
+	const r = { origin: 0, beats: [
+		{ interval: 200, ids: ['node-aa0001', 'node-aa0002'] },
+		{ interval: 200, ids: ['node-bb0001'] },
+	] };
+	// beat 1 now spans 0..400 -- two entities one interval apart, plus the dwell on the last
+	assert.equal(revealedAt(r, 399).has('node-bb0001'), false, 'beat 2 has not begun');
+	assert.equal(revealedAt(r, 400).has('node-bb0001'), true, 'beat 2 opens once beat 1 has finished saying itself');
 });

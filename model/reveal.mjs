@@ -31,11 +31,25 @@ time by tens of seconds because a stamp crossed a machine boundary. One origin, 
 each viewer's own clock, is the smallest surface that can carry.
 */
 
-// How long a beat takes to play: one interval per entity after the first. A single-entity beat is
-// instantaneous, and a zero interval reveals the whole beat at its start rather than never.
+/*
+How long a beat OCCUPIES, which is not the same as how its entities are spaced -- B192.
+
+The last entity lands at `(n-1) * interval`, and that was also being used as the beat's end, so
+every beat handed its caption to the next one at the instant its final entity appeared. A
+one-entity beat, whose spacing is zero, therefore never held the caption at all: an agent writes
+one, the commit accepts it, the document stores it, and nothing ever shows it.
+
+So a beat lasts one further interval past its last entity. That is a DWELL, not a pause -- nothing
+is waiting to be revealed during it, the beat is simply still the thing being said while its last
+arrival is on screen. Derived from the beat's own interval rather than a constant, so a beat paced
+for reading dwells for reading and a fast one does not drag.
+
+A zero interval still reveals a whole beat at its start and still occupies nothing, which keeps
+"reveal this at once" expressible.
+*/
 function durationOf(beat) {
 	const n = (beat?.ids || []).length;
-	return n > 1 ? (n - 1) * (beat.interval || 0) : 0;
+	return n ? n * (beat.interval || 0) : 0;
 }
 
 // The instant each beat begins, derived by walking the list from the one stored origin. Returned
