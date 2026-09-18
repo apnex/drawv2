@@ -133,10 +133,26 @@ stays right-aligned so it still reads where it always did, and grows leftward in
 	font-size: 11px; color: #9a9; flex: 1; min-width: 0; text-align: right;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/*
+`#lockstate` centres its text by FLEX, not by the inherited line-height.
+
+A line box centres text only when the two divide evenly, and 13px of glyph in the 26px line box
+`#menu > span` hands out lands on a half pixel -- so this indicator painted half a pixel above the
+two buttons beside it, which reads as the ROW being crooked rather than as one item being wrong.
+The buttons escaped it because that rule matches a span and they are buttons, so the browser
+centred their text itself.
+
+Fixed HERE rather than on `#menu > span`, which was the first attempt: `#banner` is also a span and
+needs `text-overflow: ellipsis`, which a flex container silently disables. The B156 test says so in
+as many words and caught it.
+
+`line-height` comes after the `font` shorthand, which would otherwise reset it.
+*/
 #lockstate {
 	font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em;
 	padding: 0; border-radius: 10px; color: #101010; box-sizing: border-box;
 	width: 76px; text-align: center;
+	display: inline-flex; align-items: center; justify-content: center; line-height: 1;
 }
 .lock-unlocked { background-color: #aed581; }
 .lock-locked   { background-color: #ffd54f; cursor: pointer; }
@@ -172,9 +188,22 @@ the generic control chrome BEAT the indicator's own rule -- its `border: 0`, `bo
 #303030 box. Only the state colours took effect, because a class puts them at (1,1,0). Prefixing
 with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 */
+/*
+Centred by FLEX, the same way `#lockstate` is.
+
+`#menu > *` gives every control the bar's height, and `align-items: center` on the bar centres the
+BOXES -- but a button then lays its own text out on its default baseline inside that box, which
+sits low. Beside the pill, which does centre its text, the two buttons read as two or three pixels
+adrift and the row looks crooked.
+
+`justify-content` rather than `text-align` for the same reason: a flex container ignores the
+latter. The ellipsis survives because it is the TEXT NODE that overflows here, not a flex child
+competing for space -- unlike `#banner`, where flex would silently disable it (B156).
+*/
 #menu #agents, #menu #whoami {
 	font: inherit; font-size: 11px; padding: 0 1ch; border: 0; border-radius: 3px;
-	width: 26ch; box-sizing: border-box; text-align: center;
+	width: 26ch; box-sizing: border-box;
+	display: inline-flex; align-items: center; justify-content: center; line-height: 1;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* an agent working elsewhere: quieter than the pill, and clickable because it names a destination */
