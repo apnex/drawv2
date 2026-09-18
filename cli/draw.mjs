@@ -296,6 +296,27 @@ export async function main(argv, env = process.env, out = (s) => process.stdout.
 			: `${verb.name} takes ${declared} argument${declared === 1 ? '' : 's'}, and got ${args.length}: ${extra.join(' ')} is extra\nusage: ${verb.usage}`);
 	}
 	/*
+	B190 -- a flag the verb does not declare is REFUSED, for the same reason B161 refuses a
+	positional it does not declare, and checked in the same place.
+
+	`--draft` shipped on `place` alone. The other write verbs accepted the flag and wrote anyway,
+	because an unrecognised flag was dropped on the floor: `draw link a b --draft` returned a new
+	version while `draft show` reported nothing staged. The flag did nothing and said nothing, which
+	is the shape B161 already named -- the caller is told something true about the wrong action.
+
+	The globals are exempt because no verb declares them. `--host`, `--code` and `--json` are read
+	by the dispatcher, `--help` is handled above, and `--diagram` is read by `activeId` for any verb
+	that targets a document -- only 45 of 62 declare it, and every one of them honours it.
+	*/
+	const GLOBAL_FLAGS = new Set(['host', 'code', 'json', 'help', 'diagram']);
+	const known = new Set((verb.flags || []).map((f) => f.name.replace(/^--/, '')));
+	const unknown = Object.keys(flags).filter((f) => !GLOBAL_FLAGS.has(f) && !known.has(f));
+	if (unknown.length) {
+		const one = unknown[0];
+		die(`unknown flag --${one} for ${verb.name}\nrun \`draw help ${verb.name}\` for what it takes`);
+	}
+
+	/*
 	B186 -- the verb being run, so `activeId` can tell a read from a write.
 
 	Derived from the manifest's declared `method` rather than listed anywhere: 27 verbs mutate, and a

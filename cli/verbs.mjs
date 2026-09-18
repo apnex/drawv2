@@ -1389,7 +1389,8 @@ VERBS.push({
 		{ name: '--speed', about: 'CELLS per second; default 1.4' },
 		{ name: '--kind', about: 'what the movers are; default packet. The look is the stylesheet\'s' },
 		{ name: '--off', about: 'disarm it' },
-		{ name: '--diagram', about: 'target by id or name' }],
+		{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 	async run(ctx, args) {
 		if (!args[0]) die('usage: draw spawn <waypoint> [--off]');
 		const id = await activeId(ctx, ctx.flags);
@@ -1417,9 +1418,8 @@ VERBS.push({
 		if (ctx.flags.off) {
 			if (!wp.spawn) die(`${wid} is not spawning`);
 			const { spawn, ...without } = wp;
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`, { method: 'POST', headers: await held(ctx, id, 'spawn'),
-				body: { ops: [{ op: 'put', kind: 'waypoint', entity: without }], label: 'stop spawning' } }), 'spawn');
-			return { json: { id: wid, spawning: false, version: r.version }, text: `${wid} stopped  v${r.version}` };
+			return submit(ctx, id, [{ op: 'put', kind: 'waypoint', entity: without }], 'stop spawning', 'spawn',
+				(r) => ({ json: { id: wid, spawning: false, version: r.version }, text: `${wid} stopped  v${r.version}` }));
 		}
 		const num = (f, d) => (ctx.flags[f] === undefined ? d : Number(ctx.flags[f]));
 		const spawn = { interval: num('interval', 900), speed: num('speed', 1.4),
@@ -1427,11 +1427,11 @@ VERBS.push({
 		for (const k of ['interval', 'speed']) {
 			if (!Number.isFinite(spawn[k])) die(`--${k} takes a number, not ${ctx.flags[k]}`);
 		}
-		const r = ok(await request(ctx, `/diagrams/${id}/commit`, { method: 'POST', headers: await held(ctx, id, 'spawn'),
-			body: { ops: [{ op: 'set', kind: 'waypoint', id: wid, patch: { spawn } }], label: 'spawn' } }), 'spawn');
 		const dir = link.src === wid ? `${link.src} -> ${link.dst}` : `${link.dst} -> ${link.src}`;
-		return { json: { id: wid, spawning: true, along: link.id, spawn, version: r.version },
-			text: `${wid} spawning along ${link.id}  ${dir}  every ${spawn.interval}ms at ${spawn.speed} cells/s  v${r.version}` };
+		return submit(ctx, id, [{ op: 'set', kind: 'waypoint', id: wid, patch: { spawn } }], 'spawn', 'spawn', (r) => ({
+			json: { id: wid, spawning: true, along: link.id, spawn, version: r.version },
+			text: `${wid} spawning along ${link.id}  ${dir}  every ${spawn.interval}ms at ${spawn.speed} cells/s  v${r.version}`,
+		}));
 	},
 });
 
@@ -1446,7 +1446,8 @@ VERBS.push({
 	flags: [{ name: '--name', about: 'what to call it' },
 		{ name: '--link', about: 'a node id or name to link it to' },
 		{ name: '--shape', about: 'the outer frame: circle or square. Independent of type' },
-		{ name: '--diagram', about: 'target by id or name' }],
+		{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 	async run(ctx, args) {
 		const [type, at, cell] = args;
 		if (!type || at !== 'at' || !cell) die('usage: draw add <type> at <cx>,<cy>');
@@ -1478,10 +1479,10 @@ VERBS.push({
 			const wid = mint('waypoint');
 			// B187 -- named from its own id: a waypoint minted at a cell was not asked for by name
 			const wops = [{ op: 'put', kind: 'waypoint', entity: { id: wid, name: wid, x: spot.x, y: spot.y } }];
-			const wb = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'add'), body: { ops: wops, label: 'add waypoint' } }), 'add');
-			return { json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
-				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}` };
+			return submit(ctx, id, wops, 'add waypoint', 'add', (wb) => ({
+				json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
+				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}`,
+			}));
 		}
 		if (!NODE_TYPES.includes(type)) {
 			die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, which is a kind of its own`);
@@ -1504,10 +1505,10 @@ VERBS.push({
 			if (!peer) die(`--link names ${ctx.flags.link}, which is not a node here`);
 			ops.push({ op: 'put', kind: 'link', entity: { ...(() => { const lid = `link-${Math.random().toString(16).slice(2, 8)}`; return { id: lid, name: lid }; })(), src: peer.id, dst: nid } });
 		}
-		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
-			{ method: 'POST', headers: await held(ctx, id, 'add'), body: { ops, label: `add ${type}` } }), 'add');
-		return { json: { id: nid, cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: b.version },
-			text: `${ctx.flags.name || nid} (${nid}) at cell ${cx},${cy} = ${spot.x},${spot.y}  v${b.version}` };
+		return submit(ctx, id, ops, `add ${type}`, 'add', (b) => ({
+			json: { id: nid, cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: b.version },
+			text: `${ctx.flags.name || nid} (${nid}) at cell ${cx},${cy} = ${spot.x},${spot.y}  v${b.version}`,
+		}));
 	},
 });
 
@@ -1699,7 +1700,8 @@ VERBS.push(
 			{ name: 'dst', about: 'a node id or name. Omit it with --closed to loop back to src' }],
 		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
 			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
-			{ name: '--diagram', about: 'target by id or name' }],
+			{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [src, dst] = args;
 			if (!src) die('usage: draw link <src> <dst> [--via <cx>,<cy>...]');
@@ -1741,10 +1743,10 @@ VERBS.push(
 			if (via.length) entity.via = via;
 			if (ctx.flags.closed) entity.closed = true;
 			ops.push({ op: 'put', kind: 'link', entity });
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'link'), body: { ops, label: 'link' } }), 'link');
-			return { json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed, version: r.version },
-				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}  v${r.version}` };
+			return submit(ctx, id, ops, 'link', 'link', (r) => ({
+				json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed, version: r.version },
+				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}  v${r.version}`,
+			}));
 		},
 	},
 	{
@@ -1759,7 +1761,8 @@ VERBS.push(
 		flags: [{ name: '--cols', about: 'width in cells' }, { name: '--rows', about: 'height in cells' },
 			{ name: '--content', about: 'a JSON file of content regions -- see API.md' },
 			{ name: '--type', about: 'the glyph type behind the content; default host' },
-			{ name: '--diagram', about: 'target by id or name' }],
+			{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		/*
 		The split here is deliberate and is the answer to "why is there no --text flag".
 
@@ -1792,12 +1795,11 @@ VERBS.push(
                 if (!Array.isArray(regions)) die('--content must be a JSON array of regions, or an object with a `content` array');
 				entity.content = regions;
 			}
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'panel'),
-					body: { ops: [{ op: 'put', kind: 'node', entity }], label: 'panel' } }), 'panel');
-			return { json: { id: entity.id, name, span: entity.span, regions: entity.content?.length || 0, version: r.version },
+			return submit(ctx, id, [{ op: 'put', kind: 'node', entity }], 'panel', 'panel', (r) => ({
+				json: { id: entity.id, name, span: entity.span, regions: entity.content?.length || 0, version: r.version },
 				text: `${name} (${entity.id}) ${cols}x${rows} at cell ${c}`
-					+ `${entity.content ? `, ${entity.content.length} region(s)` : ''}  v${r.version}` };
+					+ `${entity.content ? `, ${entity.content.length} region(s)` : ''}  v${r.version}`,
+			}));
 		},
 	},
 	{
@@ -1811,7 +1813,8 @@ VERBS.push(
 			{ name: 'cx,cy', about: 'the first corner CELL, inclusive' },
 			{ name: 'to', about: "the literal word 'to'" },
 			{ name: 'cx,cy', about: 'the opposite corner CELL, inclusive' }],
-		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [name, from, c0, to, c1] = args;
 			if (!name || from !== 'from' || to !== 'to' || !c0 || !c1) {
@@ -1826,10 +1829,10 @@ VERBS.push(
 			const hi = await cellToPx(ctx, id, 'node', { cx: Math.max(A.cx, B.cx), cy: Math.max(A.cy, B.cy) }, 'zone');
 			const zid = mint('zone');
 			const entity = { id: zid, name, x: lo.x - 30, y: lo.y - 30, w: hi.x - lo.x + 60, h: hi.y - lo.y + 60 };
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'zone'), body: { ops: [{ op: 'put', kind: 'zone', entity }], label: 'zone' } }), 'zone');
-			return { json: { id: zid, ...entity, version: r.version },
-				text: `${name} (${zid}) ${entity.w}x${entity.h} at ${entity.x},${entity.y}  v${r.version}` };
+			return submit(ctx, id, [{ op: 'put', kind: 'zone', entity }], 'zone', 'zone', (r) => ({
+				json: { id: zid, ...entity, version: r.version },
+				text: `${name} (${zid}) ${entity.w}x${entity.h} at ${entity.x},${entity.y}  v${r.version}`,
+			}));
 		},
 	},
 	{
@@ -1839,7 +1842,8 @@ VERBS.push(
 		example: 'draw group web-tier-a a-web-1 a-web-2 a-web-3',
 		args: [{ name: 'name', about: 'what to call the group' },
 			{ name: 'ref...', about: 'two or more node ids or names' }],
-		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [name, ...refs] = args;
 			// the server enforces this too (B85); saying it here costs a round trip nobody needs
@@ -1848,11 +1852,10 @@ VERBS.push(
 			const members = [];
 			for (const r of refs) members.push(await resolveId(ctx, id, r));
 			const gid = mint('group');
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'group'),
-					body: { ops: [{ op: 'put', kind: 'group', entity: { id: gid, name, members } }], label: 'group' } }), 'group');
-			return { json: { id: gid, name, members, version: r.version },
-				text: `${name} (${gid}) holds ${members.length}: ${members.join(' ')}  v${r.version}` };
+			return submit(ctx, id, [{ op: 'put', kind: 'group', entity: { id: gid, name, members } }], 'group', 'group', (r) => ({
+				json: { id: gid, name, members, version: r.version },
+				text: `${name} (${gid}) holds ${members.length}: ${members.join(' ')}  v${r.version}`,
+			}));
 		},
 	},
 	{
@@ -1864,7 +1867,8 @@ VERBS.push(
 		args: [{ name: 'ref', about: 'a node or waypoint, by id or name' },
 			{ name: 'to', about: "the literal word 'to'" },
 			{ name: 'cx,cy', about: 'the destination CELL' }],
-		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [ref, to, c] = args;
 			if (!ref || to !== 'to' || !c) die('usage: draw move <ref> to <cx>,<cy>');
@@ -1876,11 +1880,10 @@ VERBS.push(
 			if (spot.occupant && spot.occupant !== eid) {
 				die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
 			}
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'move'),
-					body: { ops: [{ op: 'set', kind, id: eid, patch: { x: spot.x, y: spot.y } }], label: 'move' } }), 'move');
-			return { json: { id: eid, at: { x: spot.x, y: spot.y }, version: r.version },
-				text: `${eid} -> cell ${c} = ${spot.x},${spot.y}  v${r.version}` };
+			return submit(ctx, id, [{ op: 'set', kind, id: eid, patch: { x: spot.x, y: spot.y } }], 'move', 'move', (r) => ({
+				json: { id: eid, at: { x: spot.x, y: spot.y }, version: r.version },
+				text: `${eid} -> cell ${c} = ${spot.x},${spot.y}  v${r.version}`,
+			}));
 		},
 	},
 	{
@@ -1890,7 +1893,8 @@ VERBS.push(
 		example: 'draw rename node-019130 web-1',
 		args: [{ name: 'ref', about: 'a node, zone or group, by id or name' },
 			{ name: 'name', about: 'the new name' }],
-		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [ref, name] = args;
 			if (!ref || !name) die('usage: draw rename <ref> <name>');
@@ -1899,10 +1903,8 @@ VERBS.push(
 			const kind = eid.split('-')[0];
 			// a waypoint has no name field at all, and a link's name would be invented
 			if (!['node', 'zone', 'group'].includes(kind)) die(`a ${kind} has no name -- only a node, zone or group carries one`);
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'rename'),
-					body: { ops: [{ op: 'set', kind, id: eid, patch: { name } }], label: 'rename' } }), 'rename');
-			return { json: { id: eid, name, version: r.version }, text: `${eid} is now ${name}  v${r.version}` };
+			return submit(ctx, id, [{ op: 'set', kind, id: eid, patch: { name } }], 'rename', 'rename',
+				(r) => ({ json: { id: eid, name, version: r.version }, text: `${eid} is now ${name}  v${r.version}` }));
 		},
 	},
 );
@@ -2149,7 +2151,8 @@ VERBS.push(
 		summary: 'remove entities, and say what the cascade took with them',
 		example: 'draw rm probe-node',
 		args: [{ name: 'ref...', about: 'entities by id or name' }],
-		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			if (!args.length) die('usage: draw rm <ref> [ref...]');
 			const id = await activeId(ctx, ctx.flags);
@@ -2161,6 +2164,12 @@ VERBS.push(
 				const kind = eid.split('-')[0];
 				ops.push({ op: 'del', kind, id: eid });
 			}
+			/*
+			The cascade report needs the document AFTER the deletion, so it exists only on a direct
+			rm. A drafted one has deleted nothing yet and cannot say what a cascade will take --
+			`submit` answers with the staged count instead, which is the true thing at that moment.
+			*/
+			if (ctx.flags.draft) return submit(ctx, id, ops, 'rm', 'rm', () => null);
 			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
 				{ method: 'POST', headers: await held(ctx, id, 'rm'), body: { ops, label: 'rm' } }), 'rm');
 			const after = census(ok(await request(ctx, `/diagrams/${id}`), 'rm'));
@@ -2189,7 +2198,8 @@ VERBS.push(
 		args: [{ name: 'ref', about: 'the entity, by id or name' },
 			{ name: 'field', about: 'name, type, shape, cols or rows' },
 			{ name: 'value', about: 'the new value' }],
-		flags: [{ name: '--diagram', about: 'target by id or name' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [ref, field, value] = args;
 			if (!ref || !field || value === undefined) die('usage: draw set <ref> <field> <value>');
@@ -2210,10 +2220,8 @@ VERBS.push(
 				if (!Number.isInteger(n) || n < 1) die(`${field} is a whole number of cells, at least 1`);
 				patch = { span: { ...span, [field]: n } };
 			} else patch = { [field]: value };
-			const r = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'set'),
-					body: { ops: [{ op: 'set', kind, id: eid, patch }], label: `set ${field}` } }), 'set');
-			return { json: { id: eid, field, value, version: r.version }, text: `${eid} ${field} = ${value}  v${r.version}` };
+			return submit(ctx, id, [{ op: 'set', kind, id: eid, patch }], `set ${field}`, 'set',
+				(r) => ({ json: { id: eid, field, value, version: r.version }, text: `${eid} ${field} = ${value}  v${r.version}` }));
 		},
 	},
 	/*
@@ -2241,7 +2249,8 @@ VERBS.push(
 			{ name: '--outline', about: 'draw a border' }, { name: '--rx', about: 'corner radius, 0-30' },
 			{ name: '--action', about: 'make it a button with this action id' },
 			{ name: '--input', about: 'make it editable in run mode' },
-			{ name: '--diagram', about: 'target by id or name' }],
+			{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' }],
 		async run(ctx, args) {
 			const [ref, at, cr] = args;
 			if (!ref || at !== 'at' || !cr) die('usage: draw region <panel> at <col>,<row>');
@@ -2266,11 +2275,10 @@ VERBS.push(
 			if (f.input) r.input = true;
 			if (f.rx !== undefined && f.rx !== true) r.rx = Number(f.rx);
 			const content = [...(node.content || []), r];
-			const res = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'region'),
-					body: { ops: [{ op: 'set', kind: 'node', id: eid, patch: { content } }], label: 'region' } }), 'region');
-			return { json: { panel: eid, region: r, regions: content.length, version: res.version },
-				text: `${node.name} region ${content.length} at ${col},${row}  ${r.value || r.glyph}  v${res.version}` };
+			return submit(ctx, id, [{ op: 'set', kind: 'node', id: eid, patch: { content } }], 'region', 'region', (res) => ({
+				json: { panel: eid, region: r, regions: content.length, version: res.version },
+				text: `${node.name} region ${content.length} at ${col},${row}  ${r.value || r.glyph}  v${res.version}`,
+			}));
 		},
 	},
 );

@@ -55,6 +55,7 @@ draw <noun> <verb> [args] [flags]
 Flags are uniform across every verb, so none has to be learned twice:
 ```text
 --diagram <id|name>   target, defaulting to the context
+--draft               on a write: stage into the draft instead of applying now
 --json                machine output; the default is a human table
 --host <url>          server, defaulting to DRAW_HOST
 --code <code>         connection code, defaulting to DRAW_CODE
@@ -63,6 +64,10 @@ Flags are uniform across every verb, so none has to be learned twice:
 
 `--json` is not decoration.\
 An agent parses output, so every verb answers JSON on request, and a verb that cannot is a verb an agent cannot compose with.
+
+**A flag a verb does not declare is REFUSED** (**B190**), which is the rule [[B161]] already applies to positionals, checked in the same place for the same reason.\
+`--draft` shipped on `place` alone and the other write verbs accepted it and wrote anyway, because an unrecognised flag was dropped on the floor -- the caller is told something true about the wrong action.\
+The five globals above are exempt: no verb declares them, and only 45 of 62 declare `--diagram` while every one of them honours it.
 
 ---
 
