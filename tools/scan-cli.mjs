@@ -74,7 +74,8 @@ for (const v of VERBS) {
 		console.error(`\n  FAIL — verb \`${v.name}\` has no ${v.summary ? 'example' : 'summary'}. CLI.md: both are mandatory.`);
 		process.exit(1);
 	}
-	declared.add(`${v.method || 'GET'} ${norm(v.route)}`);
+	// a local verb reaches nothing, so it covers nothing -- see LOCAL below
+	if (v.route !== 'local') declared.add(`${v.method || 'GET'} ${norm(v.route)}`);
 	// a composite verb reaches more than one pair, and all of them count as covered
 	for (const a of v.also || []) { const [m, pth] = a.split(' '); declared.add(`${m} ${norm(pth)}`); }
 }
@@ -107,8 +108,23 @@ uncredentialed for that reason -- B132 gave the agent a prefix-relative `health`
 than moving the probe. Listing `/d/<id>.svg` in ROUTES would make that file's own stated rule false.
 */
 const OFF_SURFACE = new Set(['d/*.svg']);
+
+/*
+A verb may reach NO route, and `local` is how it says so.
+
+H14.2 added `draft show` and `draft discard`, which read and clear a file under `~/.config/draw`
+and never speak to a server. That is not a route the tool is missing; it is a verb with nothing to
+reach, and the distinction matters in both directions -- a local verb must not be counted as
+covering a server pair, and it must not be reported as inventing one.
+
+Deliberately narrow. `local` is not an escape hatch for a verb whose route is merely unbuilt: that
+case is PENDING, which is a countdown with a count. A verb is local only when speaking to a server
+would be wrong, which today means state that exists on this machine and nowhere else.
+*/
+const LOCAL = 'local';
 const invented = [];
 for (const v of VERBS) {
+	if (v.route === LOCAL) continue;
 	for (const d of [v.route, ...(v.also || [])]) {
 		if (!d) continue;
 		const path = norm(String(d).replace(/^[A-Z]+\s+/, ''));

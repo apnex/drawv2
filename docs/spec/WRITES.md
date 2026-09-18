@@ -342,6 +342,23 @@ Undo is the only unwind (section 6).\
 Full convergence needs a target state to diff against, which nothing here produces -- that is **AG-4**, `draw apply <document>`, deferred.\
 This is the substrate such a thing would need, and the director has held it open for consideration once this interaction is coherent.
 
+### The intent op needs the server that understands it
+
+A drafted `place` carries an op form the deployed server may not have.\
+Measured 2026-09-04 against the live estate, staging three intents and committing them:
+```text
+commit: unknown op 'place' (op 0)
+```
+
+The in-process suite could not find this -- it boots a server from the working tree, so the tool and the server always agree there.\
+Only the live path has a version gap, which makes a probe against the estate part of landing this rather than a courtesy.
+
+Two things follow.\
+**A draft outlives a refusal**: the local file is cleared only after the server accepts, so three staged ops survived the rejection and were still listed by `draft show`.\
+An agent that loses its work to a server-side refusal cannot even see what it lost.\
+**And a drafted set is only as portable as the oldest server it might reach** -- `--draft` against an older revision stages happily and fails at commit, which is the right place to fail but a poor message.\
+Naming the op in the refusal is the server's job and it already does it.
+
 ### The lock
 
 A write today requires the write slot -- `draw add` refuses with `add needs the write slot -- run draw lock first`.\

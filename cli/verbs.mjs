@@ -85,6 +85,76 @@ async function writeContext(ctx, id) {
 	fsx.writeFileSync(ctxFile(ctx), `${JSON.stringify(all, null, '\t')}\n`);
 }
 
+/*
+H14.2 -- the draft, which is a DESTINATION rather than a mode.
+
+A write verb never changes meaning. `--draft` says where the op lands, and that is named in the
+command, so reading it back tells you what it did. A mode that silently changed what a verb does
+would be hidden state, and an agent invoking `draw` per-command has no prompt to remind it.
+
+Stored beside the per-host context and keyed the same way, for the same reason (B186): a draft is
+only meaningful for the server whose document it targets, and a set staged against one host is
+nonsense against another.
+
+The ops are stored as the agent expressed them -- `place ... near lb-1` carries the RELATIONSHIP,
+not a resolved position. Resolution happens server-side inside plan(), which advances its
+projection between ops, so two `near lb-1` intents land on different anchors. Resolving here
+against one pre-draft snapshot would pick the same anchor twice and the server would refuse the
+whole set for occupancy.
+*/
+const draftFile = (ctx) => `${homeOf(ctx)}/.config/draw/draft`;
+
+async function readDrafts(ctx) {
+	const fsx = await import('node:fs');
+	try {
+		const raw = fsx.readFileSync(draftFile(ctx), 'utf8').trim();
+		return raw ? JSON.parse(raw) : {};
+	} catch { return {}; }
+}
+
+async function readDraft(ctx) {
+	const all = await readDrafts(ctx);
+	return all[ctx.host] || { ops: [], diagram: null };
+}
+
+async function writeDraft(ctx, draft) {
+	const fsx = await import('node:fs');
+	const pathx = await import('node:path');
+	const all = await readDrafts(ctx);
+	if (draft && draft.ops.length) all[ctx.host] = draft; else delete all[ctx.host];
+	fsx.mkdirSync(pathx.dirname(draftFile(ctx)), { recursive: true });
+	fsx.writeFileSync(draftFile(ctx), `${JSON.stringify(all, null, '\t')}\n`);
+}
+
+/*
+Every write goes through here, so `--draft` is honoured in one place rather than fourteen.
+
+Returns what the verb should report. A drafted write states the running count, because SILENCE is
+the failure mode: an agent that stages five ops and never commits has changed nothing, and nothing
+errored. A direct write posts the set and answers as it always did.
+
+A draft refuses to mix diagrams. Two documents in one set cannot commit as one transaction, and
+discovering that at commit -- after twenty staged ops -- is worse than refusing the first one that
+strays.
+*/
+async function submit(ctx, id, ops, label, verb, onOk) {
+	if (ctx.flags.draft) {
+		const draft = await readDraft(ctx);
+		if (draft.diagram && draft.diagram !== id) {
+			die(`the draft targets ${draft.diagram}; \`draw draft show\` lists it, \`draw draft discard\` clears it`);
+		}
+		draft.diagram = id;
+		draft.ops.push(...ops);
+		await writeDraft(ctx, draft);
+		const n = draft.ops.length;
+		return { json: { staged: ops.length, ops: n, diagram: id, draft: true },
+			text: `draft +${ops.length}: ${label}  (${n} op${n === 1 ? '' : 's'} staged)` };
+	}
+	const b = ok(await request(ctx, `/diagrams/${id}/commit`,
+		{ method: 'POST', headers: await held(ctx, id, verb), body: { ops, label } }), verb);
+	return onOk(b);
+}
+
 async function activeId(ctx, flags, opts = {}) {
 	// write-ness comes from the manifest's own `method`, so adding a mutating verb cannot forget to
 	// opt in. An explicit `write` still overrides, for a verb whose method understates what it does.
@@ -618,20 +688,68 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'commit', group: 'Writing', usage: 'draw commit --ops <file|->', route: '/diagrams/<id>/commit', method: 'POST',
-		summary: 'a batch of ops as one transaction', example: "draw commit --ops ops.json --label 'add spine'",
-		flags: [{ name: '--ops', about: 'JSON file of ops, or - for stdin' }, { name: '--label', about: 'undo label' },
+		name: 'commit', group: 'Writing', usage: 'draw commit [--ops <file|->]', route: '/diagrams/<id>/commit', method: 'POST',
+		summary: 'apply the draft, or a batch of ops, as one transaction', example: "draw commit --label 'the web tier'",
+		flags: [{ name: '--ops', about: 'JSON file of ops, or - for stdin; omit to commit the draft' },
+			{ name: '--label', about: 'undo label' },
 			{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
-			if (!ctx.flags.ops) die('commit needs --ops <file|-> ; an ops batch is JSON, and a flag grammar for it would be a second way to say what JSON already says');
+			/*
+			H14.2 -- with no --ops, `commit` applies the DRAFT. That is the counterpart to `--draft`
+			on a write, and it is why the flag became optional rather than a second verb: the thing
+			being committed is a set of ops either way, and one verb for one act keeps the surface
+			from growing a synonym.
+			*/
 			const fs = await import('node:fs');
-			const raw = ctx.flags.ops === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(ctx.flags.ops, 'utf8');
-			const parsed = JSON.parse(raw);
-			const ops = Array.isArray(parsed) ? parsed : parsed.ops;
-			const id = await activeId(ctx, ctx.flags);
+			let ops, label = ctx.flags.label || '';
+			let id;
+			if (ctx.flags.ops) {
+				const raw = ctx.flags.ops === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(ctx.flags.ops, 'utf8');
+				const parsed = JSON.parse(raw);
+				ops = Array.isArray(parsed) ? parsed : parsed.ops;
+				label = label || parsed.label || '';
+				id = await activeId(ctx, ctx.flags);
+			} else {
+				const draft = await readDraft(ctx);
+				if (!draft.ops.length) die('nothing staged -- stage with `--draft` on a write, or pass --ops <file|->');
+				ops = draft.ops;
+				label = label || `draft of ${ops.length} op${ops.length === 1 ? '' : 's'}`;
+				id = draft.diagram;
+			}
 			const b = ok(await request(ctx, `/diagrams/${id}/commit`,
-				{ method: 'POST', headers: await held(ctx, id, 'commit'), body: { ops, label: ctx.flags.label || parsed.label || '' } }), 'commit');
-			return { json: b, text: `v${b.version}` };
+				{ method: 'POST', headers: await held(ctx, id, 'commit'), body: { ops, label } }), 'commit');
+			// cleared only after the server accepted it: a refused commit must leave the draft
+			// intact, or an agent loses the work and cannot see what it lost
+			if (!ctx.flags.ops) await writeDraft(ctx, null);
+			// `--ops` keeps its shipped answer -- a bare version, which tests/cli-tool.test.js asserts and
+			// callers parse. Only a DRAFT commit says how much it sent, because that is the number
+			// the agent staged blind and wants confirmed.
+			return { json: { ...b, ops: ops.length },
+				text: ctx.flags.ops ? `v${b.version}` : `${ops.length} op${ops.length === 1 ? '' : 's'}  v${b.version}` };
+		},
+	},
+	{
+		name: 'draft show', sub: true, group: 'Writing', usage: 'draw draft show', route: 'local', method: 'GET',
+		summary: 'what is staged, in the order it will apply', example: 'draw draft show',
+		flags: [],
+		async run(ctx) {
+			const draft = await readDraft(ctx);
+			return { json: { diagram: draft.diagram, ops: draft.ops },
+				text: draft.ops.length
+					? table(draft.ops.map((o, i) => [String(i + 1), o.op, o.kind || '-',
+						o.entity?.name || o.id || '-', o.at ? JSON.stringify(o.at) : '-']),
+					['#', 'OP', 'KIND', 'NAME', 'AT'])
+					: 'nothing staged' };
+		},
+	},
+	{
+		name: 'draft discard', sub: true, group: 'Writing', usage: 'draw draft discard', route: 'local', method: 'DELETE',
+		summary: 'throw the staged ops away', example: 'draw draft discard',
+		flags: [],
+		async run(ctx) {
+			const draft = await readDraft(ctx);
+			await writeDraft(ctx, null);
+			return { json: { discarded: draft.ops.length }, text: `discarded ${draft.ops.length} op(s)` };
 		},
 	},
 	{
@@ -818,6 +936,7 @@ VERBS.push({
 	flags: [{ name: '--dir', about: 'right | left | up | down (default: nearest free anchor)' },
 		{ name: '--name', about: 'what to call it (default: the server-minted id)' },
 		{ name: '--link', about: 'also link it to the reference' },
+		{ name: '--draft', about: 'stage into the draft instead of applying now' },
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
 		const [type, near, ref] = args;
@@ -891,18 +1010,40 @@ VERBS.push({
 		}
 
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
-		const ops = [{ op: 'put', kind: 'node',
-			entity: { id: nid, name: ctx.flags.name || nid, type, x: target.x, y: target.y } }];
+		const entity = { id: nid, name: ctx.flags.name || nid, type };
+
+		/*
+		B189/W9 -- a DRAFTED place carries the relationship; a direct one carries the position.
+
+		The two are not a style choice. A drafted op is resolved later, against a document the
+		ops ahead of it have already changed, so a position computed now would be stale: two
+		`near lb-1` intents resolved against one pre-draft snapshot pick the SAME anchor and the
+		server refuses the whole set for occupancy. `plan()` advances a projection between ops,
+		so an intent resolves correctly wherever it sits in the set.
+
+		A direct place keeps its resolved coordinate because it has just read the live document
+		and there is nothing ahead of it -- and because that is the shipped behaviour, unchanged.
+		*/
+		const at = near === 'between' ? { between: [ref, args[3]] }
+			: near === 'inside' ? { inside: ref }
+				: ctx.flags.dir ? { near: ref, dir: ctx.flags.dir } : { near: ref };
+		const ops = ctx.flags.draft
+			? [{ op: 'place', kind: 'node', entity, at }]
+			: [{ op: 'put', kind: 'node', entity: { ...entity, x: target.x, y: target.y } }];
+
 		// `between` links BOTH ends, because that is what standing between two things means
 		const linkTo = ctx.flags.link ? (linkEnds || [anchorNode.id]) : [];
 		for (const src of linkTo) {
 			ops.push({ op: 'put', kind: 'link', entity: (() => { const lid = `link-${Math.random().toString(16).slice(2, 8)}`; return { id: lid, name: lid, src, dst: nid }; })() });
 		}
-		const b = ok(await request(ctx, `/diagrams/${id}/commit`,
-			{ method: 'POST', headers: await held(ctx, id, 'place'),
-				body: { ops, label: `place ${type} near ${anchorNode.name || anchorNode.id}` } }), 'place');
-		return { json: { id: nid, at: { x: target.x, y: target.y }, cell: { cx: target.cx, cy: target.cy }, linked: !!ctx.flags.link, version: b.version },
-			text: `${ctx.flags.name || nid} (${nid}) at ${target.x},${target.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}` };
+		// LABEL is `^[a-z0-9 -]{0,32}$` (server/txn.mjs), so this is TRUNCATED rather than composed
+		// freely: `place <type> <where> <a long node name>` overflows and the server refuses the
+		// whole commit with `invalid label`, which reads as a placement failure and is not one.
+		const label = `place ${type} ${near} ${anchorNode.name || anchorNode.id}`.slice(0, 32).trim();
+		return submit(ctx, id, ops, label, 'place', (b) => ({
+			json: { id: nid, at: { x: target.x, y: target.y }, cell: { cx: target.cx, cy: target.cy }, linked: !!ctx.flags.link, version: b.version },
+			text: `${ctx.flags.name || nid} (${nid}) at ${target.x},${target.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}`,
+		}));
 	},
 });
 

@@ -115,7 +115,9 @@ Writing
   lock                                                            take the write slot, and remember the token
   unlock                                                          release the write slot
   lock status                                                     who holds it, when it frees, and the human hold
-  commit --ops <file|->                                           a batch of ops as one transaction
+  commit [--ops <file|->]                                         apply the draft, or a batch of ops, as one transaction
+  draft show                                                      what is staged, in the order it will apply
+  draft discard                                                   throw the staged ops away
   undo [--to seq]                                                 reverse the last change, or a run
   redo                                                            reapply what undo reversed
   select <id...>                                                  set the authoritative selection
