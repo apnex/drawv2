@@ -133,10 +133,25 @@ stays right-aligned so it still reads where it always did, and grows leftward in
 	font-size: 11px; color: #9a9; flex: 1; min-width: 0; text-align: right;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/*
+The lock indicator, matched to the two buttons beside it (director, 2026-09-04).
+
+It was a 76px uppercase pill with 10px corners next to two 26ch buttons with 3px corners, so the
+one control in the row that is not a button was also the one shaped differently -- and the shape
+was carrying no meaning the colour did not already carry.
+
+Now: the buttons' corner radius, half their width, and lowercase. HEIGHT needed nothing, because
+`#menu > *` already gives every control `var(--control-h)`; the row was measured before changing
+anything and all three were already 26px.
+
+`letter-spacing` goes with the uppercase. It was there to keep capitals legible at 11px, and
+lowercase does not need the help -- keeping it would leave the one control in the row spaced
+differently for a reason that had gone.
+*/
 #lockstate {
-	font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em;
-	padding: 0; border-radius: 10px; color: #101010; box-sizing: border-box;
-	width: 76px; text-align: center;
+	font: 11px ui-monospace, monospace;
+	padding: 0; border-radius: 3px; color: #101010; box-sizing: border-box;
+	width: 13ch; text-align: center;
 }
 .lock-unlocked { background-color: #aed581; }
 .lock-locked   { background-color: #ffd54f; cursor: pointer; }
