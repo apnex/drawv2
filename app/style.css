@@ -173,7 +173,17 @@ the generic control chrome BEAT the indicator's own rule -- its `border: 0`, `bo
 with `#menu` makes these (2,0,0), which wins cleanly and says why it needs to.
 */
 #menu #agents, #menu #whoami {
-	font: inherit; font-size: 11px; padding: 0 1ch; border: 0; border-radius: 3px;
+	/*
+	The PILL's font declaration, verbatim, because the pill is the one that renders correctly.
+
+	`font: inherit` took the bar's line-height along with the family -- the shorthand carries it --
+	and a button then laid its text inside that inherited box rather than on the `normal` line-height
+	the pill computes. Same face, same size, different box, and the glyphs sat low.
+
+	Matching the declaration rather than patching the difference: the two controls sit beside each
+	other saying the same kind of thing, and there is no reason for them to lay text out differently.
+	*/
+	font: 11px ui-monospace, monospace; padding: 0 1ch; border: 0; border-radius: 3px;
 	width: 26ch; box-sizing: border-box; text-align: center;
 	/*
 	NO `line-height` here, deliberately.
