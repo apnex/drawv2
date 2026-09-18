@@ -4,6 +4,14 @@ colours; geometry SIZES are set inline by the renderer from the kernel spec, so 
 hardcodes an extent. The kernel owns numbers; this owns state + chrome.
 */
 
+/*
+The palette rail's width, declared once because two rules need to agree about it: the rail itself,
+and `#beat-caption`, which offsets the canvas centre by half of it. A caption centred on the footer
+rather than on the canvas sits visibly left of the thing it narrates, and a second hardcoded 72
+would drift the day the rail changes.
+*/
+:root { --rail: 72px; --rail-border: 1px; }
+
 /* ---- app frame ---- */
 html, body { margin: 0; height: 100%; background: #060606; font-family: monospace; overflow: hidden; }
 body { display: flex; flex-direction: column; }
@@ -190,7 +198,8 @@ about what "nothing to report" looks like. Neither is clickable, and both say so
 
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {
-	width: 72px; flex: 0 0 72px; background: #181818; border-right: 1px solid #262626;
+	/* the rail width, single-sourced: `#beat-caption` offsets the canvas centre by it */
+	width: var(--rail); flex: 0 0 var(--rail); background: #181818; border-right: var(--rail-border) solid #262626;
 	display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 6px; user-select: none;
 }
 .palette-item { width: 56px; height: 56px; border-radius: 8px; display: block; cursor: grab; touch-action: none; }
@@ -333,7 +342,7 @@ arrangement stored a hex per spawner and three repaints only ever reached newly 
 #grid-zones circle { fill: #202020; pointer-events: none; }
 
 /* ---- footer readout ---- */
-#status { flex: 0 0 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #181818; border-top: 1px solid #262626; }
+#status { position: relative; flex: 0 0 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #181818; border-top: 1px solid #262626; }
 .readout { font-family: monospace; font-size: 12px; color: #ddddff; cursor: pointer; white-space: nowrap; user-select: none; }
 
 /* ---- data view (Tab numeric overlay) ---- */
@@ -459,8 +468,29 @@ rather than instead of it, because opacity alone leaves an invisible entity clic
 #nodes [id], #links [id], #zones [id], #groups [id], #waypoints [id] {
 	transition: opacity 180ms ease-out;
 }
-#beat-caption { flex: 1; text-align: center; color: #d8d8d8; font-size: 15px;
-	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/*
+CENTRED ON THE CANVAS, not on the space left over.
+
+`flex: 1` inside a `space-between` bar centres the caption within whatever the readout and
+`#server-say` have not taken, so it drifts sideways as either of them changes length -- and the
+readout changes on every pointer move. A caption that wanders while a beat plays reads as a fault.
+
+Taking it out of the flex flow and pinning it to a centre lines it up with what it is narrating --
+but the bar's centre is NOT the canvas centre. The footer is a sibling of `#content`, so it spans
+the palette too, and the canvas begins 73px in (72 + its border). Centring on the bar would sit the
+caption half that width left of the drawing it describes.
+
+So the offset is stated rather than eyeballed, and derived from the same numbers the rail uses:
+`calc(50% + (var(--rail) + var(--rail-border)) / 2)`. The border is part of what pushes the canvas
+right, and leaving it out lands the caption half a pixel off -- not visible, but wrong arithmetic
+that a wider border would make visible. Change either and the caption follows.
+
+`pointer-events: none` because it sits over the two live children and must not eat a click meant
+for them; `max-width` so a long caption ellipsises rather than colliding with the readout.
+*/
+#beat-caption { position: absolute; left: calc(50% + (var(--rail) + var(--rail-border)) / 2); transform: translateX(-50%);
+	max-width: 52ch; text-align: center; color: #e4e4e4; font-size: 17px;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
 /* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
    needs to read as is a connection that is either there or not. `pointer-events: none` matters more

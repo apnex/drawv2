@@ -367,3 +367,27 @@ test('H14.8/B191: a beat commits to a WATCHING page and the entities are withhel
 	const caption = await until(tab, `document.getElementById('beat-caption')?.textContent || ''`, 4000);
 	assert.match(String(caption), /the unfurl/, 'the caption reached the status bar');
 });
+
+/*
+The caption is centred on the CANVAS, not on the footer -- a cosmetic request with arithmetic in it.
+
+`#status` is a sibling of `#content`, so it spans the palette rail too. A caption centred on the bar
+therefore sits half a rail-width left of the drawing it narrates, and it drifts as the readout beside
+it changes length -- which happens on every pointer move. Pinned to `50% + (rail + border) / 2`
+instead, single-sourced from the same custom properties the rail itself uses.
+
+Measured rather than eyeballed, because the whole claim is a number: the two centres must agree, and
+"looks about right" is what the half-pixel border error would have survived.
+*/
+test('H14.4: the beat caption is centred on the canvas, not on the footer', { skip: SKIP }, async () => {
+	assert.ok(booted?.loaded, 'precondition: the fixture document loaded');
+	await tab.eval(`document.getElementById('beat-caption').textContent = 'a caption long enough to have a width'`);
+	const got = JSON.parse(await until(tab, `JSON.stringify((() => {
+		const cap = document.getElementById('beat-caption').getBoundingClientRect();
+		const svg = document.getElementById('container').getBoundingClientRect();
+		return { off: Math.round(((cap.left + cap.width / 2) - (svg.left + svg.width / 2)) * 10) / 10,
+			font: parseFloat(getComputedStyle(document.getElementById('beat-caption')).fontSize) };
+	})())`, 4000));
+	assert.ok(Math.abs(got.off) <= 1, `caption centre is ${got.off}px from the canvas centre`);
+	assert.ok(got.font >= 16, `the caption should be larger than the readout, got ${got.font}px`);
+});
