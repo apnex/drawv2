@@ -120,8 +120,14 @@ adds it. Comments are exempt -- they are not emitted -- which is the same line S
 using a character and merely writing one down.
 */
 test('B152: no agent-facing string carries a character an agent cannot type', () => {
+	/*
+	The CLIENT is held to this too. B152 was filed against the server because that is where it was
+	found, but the rule is about what a reader can type back -- and `app/src/main.js` writes the
+	banner, the tooltips and the lock messages a person actually sees. An em dash reached a tooltip
+	and the director had to report it by eye, which is the check this replaces.
+	*/
 	const files = ['server/rest.js', 'server/protocol.js', 'server/validate.js', 'server/store.js',
-		'server/txn.mjs', 'server/locks.js', 'server/app.js'];
+		'server/txn.mjs', 'server/locks.js', 'server/app.js', 'app/src/main.js'];
 	const offenders = [];
 	for (const f of files) {
 		const src = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').split('\n');
@@ -134,7 +140,13 @@ test('B152: no agent-facing string carries a character an agent cannot type', ()
 			if (t.startsWith('//') || t.startsWith('*')) return;
 			const code = line.split('//')[0];
 			for (const m of code.matchAll(/[`'"]([^`'"]*)[`'"]/g)) {
-				const bad = [...m[1]].filter((c) => c.charCodeAt(0) > 127);
+				/*
+				Standalone GLYPHS are exempt, and only those: a play mark, an undo arrow, a cross.
+				The character is the content rather than punctuation inside a sentence, and nobody
+				retypes an icon -- which is the S13 distinction between using a character and
+				writing one down. An em dash between two words is not this.
+				*/
+				const bad = [...m[1]].filter((c) => c.charCodeAt(0) > 127 && !'\u25b6\u21b6\u2717\u00d7'.includes(c));
 				if (bad.length) offenders.push(`${f}:${i + 1}  ${JSON.stringify(bad.join(''))}  ${m[1].slice(0, 60)}`);
 			}
 		});

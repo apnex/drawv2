@@ -103,6 +103,16 @@ window.addEventListener('draw:action', (e) => {
 	const action = e && e.detail && e.detail.action;
 	if (action === 'help') { if (help) help.hidden = false; return; }
 	const banner = document.getElementById('banner');
+	/*
+	B152 extends to the CLIENT: a string a person or an agent reads must be typeable back into a
+	grep, an assertion or a bug report. Em dashes and the middle dot are gone from every message
+	here for that reason.
+
+	The GLYPHS stay -- this play mark, the undo arrow, the cross on a failure and on the delete
+	button. They are the S13 exemption in its plainest form: the character IS the content rather
+	than punctuation inside a sentence, and nobody retypes an icon. Replacing them with ASCII would
+	cost a legible affordance to satisfy a rule about prose.
+	*/
 	if (banner) banner.textContent = `▶ ${action}`;   // overwritten by the next sync status update (transient)
 });
 
@@ -442,7 +452,7 @@ if (access.panel) {
 			const sel = window.getSelection();
 			sel.removeAllRanges();
 			sel.addRange(r);
-			access.error.textContent = 'could not reach the clipboard — the code is selected, copy it by hand';
+			access.error.textContent = 'could not reach the clipboard -- the code is selected, copy it by hand';
 		}
 	});
 }
@@ -516,7 +526,7 @@ function renderAgents(agents, currentId, diagrams) {
 	menu.agents.textContent = here ? `${who} is driving${extra}` : `${who}: ${nameOf(a.diagram)}${extra}`;
 	menu.agents.title = here
 		? `${who} holds the write lock on this diagram`
-		: `${who} is working on ${nameOf(a.diagram)} — click to open it`;
+		: `${who} is working on ${nameOf(a.diagram)} -- click to open it`;
 	agentTarget = here ? null : a.diagram;
 }
 /*
@@ -585,7 +595,7 @@ const sync = new Sync({
 		else if (rungState.rung === 'stale') { menu.lock.className = 'lock-stale'; menu.lock.textContent = 'updating'; menu.lock.title = rungState.reason || 'this tab is running a replaced version'; }
 		else if (status !== 'open') { menu.lock.className = 'lock-offline'; menu.lock.textContent = 'offline'; menu.lock.title = 'no server connection'; }
 		else if (!mayWrite) { menu.lock.className = 'lock-readonly'; menu.lock.textContent = 'read-only'; menu.lock.title = 'you have view access to this diagram'; }
-		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control — click to take back'; }
+		else if (locked) { menu.lock.className = 'lock-locked'; menu.lock.textContent = 'locked'; menu.lock.title = 'server has control -- click to take back'; }
 		else { menu.lock.className = 'lock-unlocked'; menu.lock.textContent = 'unlocked'; menu.lock.title = 'you have control'; }
 		renderAgents(agents, meta && meta.id, diagrams);
 		followNewLocks(agents, meta && meta.id);
@@ -638,7 +648,7 @@ const sync = new Sync({
 		by nothing is a hook a later reader will assume means something.
 		*/
 		menu.whoami.title = principal
-			? `${principal} — click to manage who can reach ${isOwner ? 'this diagram, and everything you own' : 'everything you own'}`
+			? `${principal} -- click to manage who can reach ${isOwner ? 'this diagram, and everything you own' : 'everything you own'}`
 			: '';
 		menu.whoami.onclick = principal ? () => {
 			access.panel.dataset.owner = meta.owner;
@@ -659,7 +669,7 @@ const sync = new Sync({
 		if (onStateLastId && onStateLastId !== meta.id) disarmDelete();
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
-		document.title = `draw·next — ${meta.name}`;
+		document.title = `draw-next - ${meta.name}`;
 		/*
 		B74/H10.3 -- the durable channel, written from STATE rather than from an event.
 
@@ -673,12 +683,12 @@ const sync = new Sync({
 			menu.say.classList.toggle('err', !!(said && said.err));
 			menu.say.title = said ? `${new Date(said.at).toLocaleTimeString()} -- ${said.text}` : 'the last thing the server said';
 		}
-		menu.banner.textContent = `${model.all('node').length} nodes · ${model.all('link').length} links · ${model.all('zone').length} zones`;
+		menu.banner.textContent = `${model.all('node').length} nodes / ${model.all('link').length} links / ${model.all('zone').length} zones`;
 		// D29 — the server came back holding LESS than we do: it restarted before flushing changes
 		// it had already acked. Say so. The alternative is reverting the user's work in silence.
 		if (rewound) {
 			const n = rewound.from - rewound.to;
-			menu.banner.textContent = `⚠ server restarted — ${n} change${n === 1 ? '' : 's'} were not saved`;
+			menu.banner.textContent = `! server restarted -- ${n} change${n === 1 ? '' : 's'} were not saved`;
 		}
 		/*
 		I14/D21 — the undo affordance.
@@ -695,7 +705,7 @@ const sync = new Sync({
 			menu.banner.title = '';
 		}
 		if (history.state && history.state.truncatedHuman) {
-			menu.banner.textContent = '⚠ undo history is full — your oldest changes are no longer undoable';
+			menu.banner.textContent = '! undo history is full -- your oldest changes are no longer undoable';
 		}
 		// D28/I16 — no submitted request is discarded without a user-visible notice.
 		if (error) menu.banner.textContent = `✗ ${error}`;
