@@ -233,7 +233,7 @@ function summarise(ops) {
 		const k = `${o.op} ${o.kind || 'meta'}`;
 		counts[k] = (counts[k] || 0) + 1;
 	}
-	return Object.entries(counts).map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(', ');
+	return Object.entries(counts).map(([k, n]) => (n > 1 ? `${k} x${n}` : k)).join(', ');
 }
 
 /*
@@ -1011,7 +1011,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 
 	// every model write requires holding the lock
 	if (!locks.locked(id)) {
-		return json(res, 423, { error: 'not server-locked — POST /api/v1/diagrams/:id/lock first' });
+		return json(res, 423, { error: 'not server-locked -- POST /api/v1/diagrams/:id/lock first' });
 	}
 	const token = req.headers['x-draw-lock'] || '';
 	if (!locks.verify(id, token)) {
@@ -1072,7 +1072,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 		if (bodyRejected(req, res, body)) return;
 		if (!body) return json(res, 400, { error: 'invalid JSON body' });
 		if (!Array.isArray(body.ops)) {
-			return json(res, 400, { error: 'commit takes { ops: [...], label? } — the transaction vocabulary the websocket uses', code: 'ops-required' });
+			return json(res, 400, { error: 'commit takes { ops: [...], label? } -- the transaction vocabulary the websocket uses', code: 'ops-required' });
 		}
 		const beat = {};
 		if (body.pace !== undefined) beat.pace = body.pace;

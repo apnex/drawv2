@@ -237,7 +237,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	// the backend is self-sufficient: with no client directory it runs API-only
 	// (websocket + REST), e.g. as a container behind a separately served client
 	const hasClient = fs.existsSync(path.join(client, 'index.html'));
-	if (!hasClient) console.log('[ app ] no client directory found — running API-only');
+	if (!hasClient) console.log('[ app ] no client directory found -- running API-only');
 	// the new thin UI + kernel mounts only advertise when present (absent in API-only / partial images)
 	const hasApp = fs.existsSync(path.join(appDir, 'index.html'));
 	const hasKernel = fs.existsSync(path.join(kernelDir, 'index.mjs'));

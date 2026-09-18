@@ -105,3 +105,39 @@ test('B119: the declaration covers every route family the router is seen to answ
 	assert.deepEqual(undeclared, [],
 		`the router answers these and server/routes.mjs does not declare them: ${undeclared.join(', ')}`);
 });
+
+/*
+B152/H11.27 -- the server may not emit a character an agent cannot type back.
+
+S13 holds every DOCUMENT to typeable characters, on the reasoning that a reader who must reproduce
+a string needs to be able to enter it. The wire was exempt and had the same problem one layer closer
+to the consumer: `draw` prints a server string verbatim, so an agent reading an error sees a
+character it cannot reproduce in a grep, a test assertion or a bug report.
+
+Asserted as a RULE over the source rather than as three fixed strings. Three is what exists today;
+the fourth is the one that matters, and a test naming the current three would pass the day someone
+adds it. Comments are exempt -- they are not emitted -- which is the same line S13 draws between
+using a character and merely writing one down.
+*/
+test('B152: no agent-facing string carries a character an agent cannot type', () => {
+	const files = ['server/rest.js', 'server/protocol.js', 'server/validate.js', 'server/store.js',
+		'server/txn.mjs', 'server/locks.js', 'server/app.js'];
+	const offenders = [];
+	for (const f of files) {
+		const src = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').split('\n');
+		let inBlock = false;
+		src.forEach((line, i) => {
+			const t = line.trim();
+			// a block comment may span lines; a line comment ends at the newline
+			if (inBlock) { if (t.includes('*/')) inBlock = false; return; }
+			if (t.startsWith('/*')) { if (!t.includes('*/')) inBlock = true; return; }
+			if (t.startsWith('//') || t.startsWith('*')) return;
+			const code = line.split('//')[0];
+			for (const m of code.matchAll(/[`'"]([^`'"]*)[`'"]/g)) {
+				const bad = [...m[1]].filter((c) => c.charCodeAt(0) > 127);
+				if (bad.length) offenders.push(`${f}:${i + 1}  ${JSON.stringify(bad.join(''))}  ${m[1].slice(0, 60)}`);
+			}
+		});
+	}
+	assert.deepEqual(offenders, [], `these reach an agent and cannot be typed back:\n  ${offenders.join('\n  ')}`);
+});
