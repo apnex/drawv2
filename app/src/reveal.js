@@ -21,7 +21,7 @@ off the same attribute this sets), and no caption typing. The caption TEXT is re
 owns the status bar to render; how it is typed out is presentation on top of a derived string, and
 putting it here would make this module own a second concern.
 */
-import { revealedAt, beatsOf } from '../../model/reveal.mjs';
+import { revealedAt, beatsOf, traceOf } from '../../model/reveal.mjs';
 import { loop, clockOf } from './paintloop.js';
 
 // The floor, matching movers.js. Not a frame rate -- a reveal moves at human pace, and the rAF loop
@@ -39,6 +39,7 @@ export class Reveal {
 		this.loop = null;
 		this.hidden = new Set();    // what we are currently withholding, so paint only touches deltas
 		this.said = null;           // the last caption emitted, so an unchanged one is not re-sent
+		this.trace = null;          // H14.12 trace config; null is the ruled default (500ms fixed)
 	}
 
 	// the reveal record the document carries, or null when it carries none -- which is the normal
@@ -78,9 +79,37 @@ export class Reveal {
 		if (this.said !== null) { this.said = null; this.onCaption(null); }
 	}
 
+	/*
+	H14.12 -- a node fades and a link TRACES, drawn source to destination.
+
+	The trace is a dash-offset: the whole path length is laid down as one dash and pushed out of
+	view, then animated back to zero, which is the standard SVG technique and needs no per-frame
+	work from us. The browser's own `getTotalLength` measures it rather than the kernel's
+	`pathLength`, not because the kernel is doubted -- H12.2 gates the two at 0.018% -- but because
+	this is the element being drawn and asking it avoids passing a number through three layers to
+	describe the thing already in hand.
+
+	A node keeps the fade: it has no direction to trace, and a shape growing from nothing reads as a
+	glitch rather than as an arrival.
+	*/
 	show(id) {
 		const dom = this.renderer.byId?.(id);
-		if (dom) dom.removeAttribute('data-unrevealed');
+		if (!dom) return;
+		if (dom.tagName === 'path' && typeof dom.getTotalLength === 'function') {
+			const len = dom.getTotalLength();
+			if (len > 0) {
+				const { ms } = traceOf(this.trace, len);
+				dom.style.transition = 'none';
+				dom.style.strokeDasharray = `${len}`;
+				dom.style.strokeDashoffset = `${len}`;
+				// force the start state to land before the transition is armed, or the browser
+				// coalesces both writes and the line simply appears
+				void dom.getBoundingClientRect();
+				dom.style.transition = `stroke-dashoffset ${ms}ms ease-out`;
+				dom.style.strokeDashoffset = '0';
+			}
+		}
+		dom.removeAttribute('data-unrevealed');
 	}
 
 	hide(id) {

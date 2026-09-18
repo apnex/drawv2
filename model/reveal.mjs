@@ -32,6 +32,41 @@ each viewer's own clock, is the smallest surface that can carry.
 */
 
 /*
+How an entity ARRIVES -- H14.12, ruled by the director.
+
+A node fades. A link TRACES from source to destination, because a link has a direction and a fade
+throws it away: `spine-1 -> leaf-2` is a statement about reaching, and watching it reach is the
+point. The drawing is a dash-offset the renderer animates; what lives here is only the arithmetic
+saying how long, so it can be reasoned about without a browser.
+
+Two modes, because a fabric holds links of very different lengths and neither answer is always
+right. FIXED DURATION gives every link the same time, so a beat lands on schedule and a long haul
+is simply drawn faster. FIXED VELOCITY gives every link the same speed, so the eye reads distance
+honestly and a long link takes longer. The first keeps a beat predictable, the second keeps the
+drawing truthful, and which matters depends on what is being narrated.
+*/
+/*
+The ruled durations. `TRACE_MS` is consumed here by `traceOf`; `FADE_MS` is NOT -- a node's fade is
+a CSS transition, because nothing in JS needs to know how long a browser takes to interpolate an
+opacity. It is declared beside its sibling so the two ruled numbers are readable together, and the
+stylesheet names this file so a reader of either finds the other.
+*/
+export const TRACE_MS = 500;   // a link, unless the beat says otherwise
+export const FADE_MS = 300;    // a node -- ENFORCED in app/style.css, stated here for company
+
+export function traceOf(cfg, length) {
+	const len = Number.isFinite(length) && length > 0 ? length : 0;
+	if (cfg && cfg.mode === 'velocity') {
+		const pxPerMs = cfg.pxPerMs > 0 ? cfg.pxPerMs : 1;
+		return { ms: len / pxPerMs, pxPerMs };
+	}
+	const ms = cfg && cfg.ms > 0 ? cfg.ms : TRACE_MS;
+	// a zero-length link takes no time and reports a finite speed rather than NaN or Infinity: a
+	// consumer dividing by it should get an answer, not a hole
+	return len ? { ms, pxPerMs: len / ms } : { ms: 0, pxPerMs: 0 };
+}
+
+/*
 How long a beat OCCUPIES, which is not the same as how its entities are spaced -- B192.
 
 The last entity lands at `(n-1) * interval`, and that was also being used as the beat's end, so

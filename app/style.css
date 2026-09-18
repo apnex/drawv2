@@ -465,8 +465,15 @@ right way round for something whose whole purpose is how it looks.
 rather than instead of it, because opacity alone leaves an invisible entity clickable.
 */
 [data-unrevealed] { opacity: 0; visibility: hidden; }
-#nodes [id], #links [id], #zones [id], #groups [id], #waypoints [id] {
-	transition: opacity 180ms ease-out;
+/*
+300ms, ruled -- long enough to read as an arrival rather than a flicker. Stated as FADE_MS in
+model/reveal.mjs beside the trace duration, so the two ruled numbers are readable together; this is
+where it is ENFORCED, because a browser interpolating an opacity needs no help from JS. A LINK is excluded: it
+traces from source to destination instead (`app/src/reveal.js`), and a fade would throw away the
+direction that is the whole reason a link is worth watching arrive.
+*/
+#nodes [id], #zones [id], #groups [id], #waypoints [id] {
+	transition: opacity 300ms ease-out;
 }
 /*
 CENTRED ON THE CANVAS, not on the space left over.

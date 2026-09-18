@@ -38,6 +38,7 @@ const DIAGRAM = 'diagram-ba0001';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let dir = null, srv = null, chrome = null, tab = null, port = 0, cdp = 0, booted = null;
+let lockToken = null;   // shared between the two tests that write, so they renew rather than race
 
 /*
 A purpose-built board, not the director's diagram.
@@ -333,6 +334,7 @@ test('H14.8/B191: a beat commits to a WATCHING page and the entities are withhel
 	assert.ok(lockRes.ok, `precondition: the write slot was taken (HTTP ${lockRes.status})`);
 	const { token } = await lockRes.json();
 	assert.ok(token, 'precondition: the lock answered with a token');
+	lockToken = token;   // the H14.12 test below renews this rather than competing for a new one
 
 	// commit a beat over the wire, exactly as the CLI does, while this page is open
 	const res = await fetch(`http://127.0.0.1:${port}/api/v1/diagrams/${DIAGRAM}/commit`, {
@@ -344,7 +346,7 @@ test('H14.8/B191: a beat commits to a WATCHING page and the entities are withhel
 				{ op: 'put', kind: 'node', entity: { id: 'node-be0002', name: 'beat-b', type: 'server', x: 360, y: 300 } },
 				{ op: 'put', kind: 'node', entity: { id: 'node-be0003', name: 'beat-c', type: 'server', x: 420, y: 300 } },
 			],
-			label: 'beat', pace: 4000, caption: 'the unfurl',
+			label: 'beat', pace: 1200, caption: 'the unfurl',
 		}),
 	});
 	assert.ok(res.ok, `precondition: the commit was accepted (HTTP ${res.status})`);
@@ -399,4 +401,60 @@ test('H14.4: the beat caption is centred on the canvas, not on the footer', { sk
 	const readout = Number(await tab.eval(
 		`parseFloat(getComputedStyle(document.getElementById('readout-bottom')).fontSize)`));
 	assert.ok(got.font > readout, `and must outrank the readout beside it (${readout}px)`);
+});
+
+/*
+H14.12 -- a link is DRAWN, not faded. Asserted in a browser because the claim is about the DOM.
+
+The trace is a dash-offset animating to zero. Mid-flight the offset is somewhere between the path
+length and nothing, which is the whole property: a link that faded would have no dasharray at all,
+and one that simply appeared would sit at offset 0 from the first frame.
+*/
+test('H14.12: a link traces rather than fading, and a node does not', { skip: SKIP }, async () => {
+	assert.ok(booted?.loaded, 'precondition: the fixture document loaded');
+	/*
+	The B191 test above already holds the write slot for this diagram, and a second acquire answers
+	409. Re-acquiring with the SAME token renews it rather than competing (B140), which is what a
+	second test against one fixture should do -- taking a fresh lock would make the two tests race
+	on run order.
+	*/
+	const lockRes = await fetch(`http://127.0.0.1:${port}/api/v1/diagrams/${DIAGRAM}/lock`,
+		{ method: 'POST', headers: lockToken ? { 'x-draw-lock': lockToken } : {} });
+	assert.ok(lockRes.ok, `precondition: the write slot (HTTP ${lockRes.status})`);
+	const { token } = await lockRes.json();
+
+	const res = await fetch(`http://127.0.0.1:${port}/api/v1/diagrams/${DIAGRAM}/commit`, {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-draw-lock': token },
+		body: JSON.stringify({
+			ops: [
+				{ op: 'put', kind: 'node', entity: { id: 'node-fa0001', name: 'ta', type: 'server', x: -600, y: 420 } },
+				{ op: 'put', kind: 'node', entity: { id: 'node-fa0002', name: 'tb', type: 'server', x: 600, y: 420 } },
+				{ op: 'put', kind: 'link', entity: { id: 'link-fa0001', name: 'tl', src: 'node-fa0001', dst: 'node-fa0002' } },
+			],
+			label: 'trace', pace: 250, caption: 'tracing',
+		}),
+	});
+	assert.ok(res.ok, `precondition: the commit was accepted (HTTP ${res.status})`);
+
+	// the link is the third entity, so it is revealed last -- wait until it has been
+	const armed = await until(tab, `(() => {
+		const el = document.getElementById('link-fa0001');
+		if (!el) return 0;
+		return el.style.strokeDasharray ? 1 : 0;
+	})()`, 12000);
+	assert.ok(armed, 'the link carries a stroke-dasharray, so it is being drawn rather than faded');
+
+	const dashed = await tab.eval(`(() => {
+		const el = document.getElementById('link-fa0001');
+		return JSON.stringify({ arr: parseFloat(el.style.strokeDasharray), trans: el.style.transition });
+	})()`);
+	const got = JSON.parse(dashed);
+	assert.ok(got.arr > 0, `the dash is the path length, got ${got.arr}`);
+	assert.match(got.trans, /stroke-dashoffset/, 'and the transition animates the offset');
+
+	// a node has no dasharray -- it fades
+	const nodeArr = await tab.eval(
+		`document.getElementById('node-fa0001')?.style.strokeDasharray || ''`);
+	assert.equal(nodeArr, '', 'a node is faded, not traced');
 });

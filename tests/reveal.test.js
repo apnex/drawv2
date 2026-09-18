@@ -460,3 +460,49 @@ test('B193: a beat committed after the queue drained gets a fresh origin', async
 	assert.equal(revealedAt(m.state.reveal, now).has('node-bb0001'), true, 'its entity is revealed at its own origin');
 });
 
+
+/*
+H14.12 -- a link TRACES from source to destination; a node fades.
+
+Ruled by the director. A fade throws away the one thing a link has that a node does not: a
+direction. `spine-1 -> leaf-2` is a statement about reaching, and watching it reach is the point.
+
+Two timing modes, because a fabric has links of very different lengths and neither answer is always
+right. FIXED DURATION gives every link the same 500ms, so a beat lands predictably and a long haul
+draws visibly faster than a short one. FIXED VELOCITY gives every link the same px/ms, so the eye
+reads distance honestly and a long link simply takes longer. The first keeps a beat on schedule; the
+second keeps the drawing truthful, and which matters depends on what is being narrated.
+
+`traceOf` is the arithmetic alone -- no DOM, no clock -- so the mode can be tested without a browser
+and the renderer is left with only the dash-offset to write.
+*/
+test('H14.12: fixed duration gives every link the same time regardless of length', async () => {
+	const { traceOf } = await import('../model/reveal.mjs');
+	const short = traceOf({ mode: 'duration', ms: 500 }, 100);
+	const long = traceOf({ mode: 'duration', ms: 500 }, 1000);
+	assert.equal(short.ms, 500);
+	assert.equal(long.ms, 500, 'a ten-times-longer link still takes 500ms');
+	assert.ok(long.pxPerMs > short.pxPerMs, 'so the long one is drawn faster');
+});
+
+test('H14.12: fixed velocity gives every link the same speed, so length sets the time', async () => {
+	const { traceOf } = await import('../model/reveal.mjs');
+	const short = traceOf({ mode: 'velocity', pxPerMs: 2 }, 100);
+	const long = traceOf({ mode: 'velocity', pxPerMs: 2 }, 1000);
+	assert.equal(short.ms, 50);
+	assert.equal(long.ms, 500, 'ten times the length, ten times the time');
+	assert.equal(short.pxPerMs, long.pxPerMs, 'and the same speed throughout');
+});
+
+test('H14.12: the defaults are the ruled ones -- 500ms a link, 300ms a node', async () => {
+	const { traceOf, TRACE_MS, FADE_MS } = await import('../model/reveal.mjs');
+	assert.equal(TRACE_MS, 500, 'a link traces in 500ms unless told otherwise');
+	assert.equal(FADE_MS, 300, 'a node fades in 300ms');
+	assert.equal(traceOf(undefined, 600).ms, 500, 'no config is the default, not zero');
+});
+
+test('H14.12: a degenerate length is inert rather than a division by zero', async () => {
+	const { traceOf } = await import('../model/reveal.mjs');
+	assert.equal(traceOf({ mode: 'velocity', pxPerMs: 2 }, 0).ms, 0, 'nothing to draw takes no time');
+	assert.ok(Number.isFinite(traceOf({ mode: 'duration', ms: 500 }, 0).pxPerMs), 'and no infinite speed');
+});
