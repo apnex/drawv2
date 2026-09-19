@@ -2,7 +2,7 @@
 // decisions live here; the engine has already placed everything. Sovereign: glyph defs, glyph
 // metrics, colours and the scene CSS all come from theme.mjs (no client/ coupling).
 import { STD, L_STD } from './spec.mjs';
-import { bboxOf, waypointStyle, waypointAnchor, waypointJunction, gridDot, PREVIEW_JUNCTION_ON_ENDPOINTS } from './geometry.mjs';
+import { bboxOf, waypointStyle, waypointAnchor, gridDot } from './geometry.mjs';
 import { roundedPath } from './router.mjs';
 import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 
@@ -163,12 +163,7 @@ function renderEl(el, V, L, opts = {}) {
 		const pad = el.role === 'endpoint'
 			? `<circle cx="${el.cx}" cy="${el.cy}" r="${st.radius}" fill="${st.fill}" stroke="${TOKENS.waypoint}" stroke-width="${st.width}" stroke-opacity="${st.opacity}"/>`
 			: '';
-		// B200 PREVIEW -- after the pad, for the same masking reason as the live renderer
-		const jn = waypointJunction();
-		const junction = (PREVIEW_JUNCTION_ON_ENDPOINTS && el.role === 'endpoint')
-			? `<circle cx="${el.cx}" cy="${el.cy}" r="${jn.radius}" fill="${jn.fill}" stroke="${TOKENS.waypoint}" stroke-width="${jn.width}" stroke-opacity="${jn.opacity}"/>`
-			: '';
-		return `<g class="waypoint ${el.role === 'endpoint' ? 'endpoint' : 'bend'}">${anchor}${pad}${junction}<circle cx="${el.cx}" cy="${el.cy}" r="${gridDot().radius}" fill="${TOKENS.waypoint}"/></g>`;
+		return `<g class="waypoint ${el.role === 'endpoint' ? 'endpoint' : 'bend'}">${anchor}${pad}<circle cx="${el.cx}" cy="${el.cy}" r="${gridDot().radius}" fill="${TOKENS.waypoint}"/></g>`;
 	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are
 	// connected", vs links that merely cross. Opaque centre so wires meet its edges cleanly.

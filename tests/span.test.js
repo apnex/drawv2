@@ -486,10 +486,7 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	and the centre dot. An endpoint draws three -- the same anchor, its pad, and the dot.
 	*/
 	assert.equal(bend.circles.length, 2, 'a bend is the anchor and the dot, nothing more');
-	// B200 PREVIEW: the junction ring is drawn on endpoints so the ladder can be judged on screen.
-	// When PREVIEW_JUNCTION_ON_ENDPOINTS goes, this returns to 3.
-	assert.equal(end.circles.length, k.PREVIEW_JUNCTION_ON_ENDPOINTS ? 4 : 3,
-		'an endpoint adds a pad on top of the anchor');
+	assert.equal(end.circles.length, 3, 'an endpoint adds a pad on top of the anchor');
 
 	const anchorOf = (g) => g.circles.find((c) => c.r === 20);
 	assert.ok(anchorOf(bend), 'the bend draws the anchor ring at the extent');
@@ -740,9 +737,23 @@ hardcoded 2.2 that nothing could see.
 test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the centre', async () => {
 	const k = await import('../kernel/index.mjs');
 
+	/*
+	The junction rung is RESERVED rather than exported -- nothing draws it yet, and an export with no
+	consumer is what scan-dead rejects. Its numbers are still load-bearing: the whole-number scheme
+	depends on 7/3 fitting between the dot and the pad, so the reservation is read from the kernel
+	source and checked in place. If it is ever deleted as unused, this fails and says why.
+	*/
+	const geom = fs.readFileSync(new URL('../kernel/geometry.mjs', import.meta.url), 'utf8');
+	const rung = geom.match(/const JUNCTION_RUNG = \{ radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH \};/);
+	assert.ok(rung, 'the junction rung reservation is gone -- the layer it holds space for has no geometry');
+	const junction = {
+		radius: Number(geom.match(/const JUNCTION_RADIUS = ([\d.]+);/)[1]),
+		width: Number(geom.match(/const JUNCTION_WIDTH = ([\d.]+);/)[1]),
+	};
+
 	const bands = [
 		['dot', 0, k.gridDot().radius],
-		...[['junction', k.waypointJunction()], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]
+		...[['junction', junction], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]
 			.map(([name, st]) => [name, st.radius - st.width / 2, st.radius + st.width / 2]),
 	];
 
@@ -753,7 +764,7 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 	}
 
 	// whole numbers were the point of the exercise; fractions are how the old ladder got 6.7 and 13.7
-	for (const [name, st] of [['junction', k.waypointJunction()], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]) {
+	for (const [name, st] of [['junction', junction], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]) {
 		assert.equal(st.radius % 1, 0, `${name} radius ${st.radius} is not a whole number`);
 		assert.equal(st.width % 1, 0, `${name} width ${st.width} is not a whole number`);
 	}
@@ -763,7 +774,7 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 	WEIGHT CARRIES MEANING. A heavy ring says a line terminates here; the equal-weight variant was
 	rejected for making the junction and the endpoint read as peers.
 	*/
-	assert.ok(k.waypointStyle('endpoint', 20).width > k.waypointJunction().width,
+	assert.ok(k.waypointStyle('endpoint', 20).width > junction.width,
 		'the endpoint pad must stay heavier than the junction ring');
 });
 

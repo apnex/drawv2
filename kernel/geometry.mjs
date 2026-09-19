@@ -229,26 +229,21 @@ own literal and agreed with the kernel.
 */
 export const gridDot = () => ({ radius: DOT_RADIUS });
 
-export const waypointJunction = () => ({
-	radius: JUNCTION_RADIUS,
-	width: JUNCTION_WIDTH,
-	fill: 'none',
-	opacity: 1,
-});
-
 /*
-PREVIEW SCAFFOLDING -- remove with B200.
+The junction rung -- RESERVED, not drawn.
 
-The junction sub-type has no model behind it yet: nothing sets it, nothing reads it, and no
-document can carry one. The director asked to SEE the ring against the other layers before the
-behaviour is designed, so this flag draws it on every endpoint purely so the ladder can be judged
-on screen at working zoom.
+A junction sub-type is coming and its geometry is settled: radius 7, width 3, hollow so the path
+stays visible running through, sitting between the grid dot and the endpoint pad. It was rendered
+on every endpoint as scaffolding while the sizes were chosen, then removed once they were -- the
+preview had no model behind it and a flag that draws something no document can carry is a feature
+with an off switch rather than a decision.
 
-It is a constant rather than a config value on purpose. A flag someone can switch at runtime is a
-feature with an off switch; this is a line of code with a deletion date, and the guard below pins
-the real composition so that deleting it cannot quietly change what a waypoint is.
+Kept as a constant rather than a function because nothing calls it yet, and an exported function
+with no consumer is what `scan-dead` exists to reject. The numbers are here so the rung is not
+re-litigated when the behaviour arrives: they were chosen against the other layers, at 1:1, and the
+whole-number scheme depends on 7/3 fitting where it does.
 */
-export const PREVIEW_JUNCTION_ON_ENDPOINTS = true;
+const JUNCTION_RUNG = { radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH };
 
 export const waypointRole = (id, touching) => {
 	let endpoint = false;
