@@ -127,20 +127,55 @@ The kernel owns the numbers and each renderer owns only its emission. That is no
 `L_STD`, `TOKENS`, `contentLayout`, `groupHull` and `roundedPath` already work this way and the
 client imports every one of them. The waypoint style was the outlier.
 
-  endpoint  a copper-trace pad -- heavy ring near the path's own weight, opaque so the line
-            terminates ON it, radius pulled in by half the stroke so it never grows the footprint
-  bend      a light hollow ring -- the path turns here and must stay visible doing so
+B199 -- a waypoint is an ANCHOR, and a sub-type is an additive layer on top of it.
+
+  anchor    a light hollow ring at the full extent, plus the centre dot. EVERY waypoint has one,
+            whatever it does, because the anchor is what a waypoint IS -- a grid point a link can
+            reach. It is not a style a role selects; it is the floor.
+  endpoint  adds a heavy opaque pad INSIDE the anchor. The line still runs to the centre and the
+            pad's fill masks it, so the path appears to terminate on the pad exactly as before.
+  bend      adds nothing. The path turning is the whole rendering, and what a bend looked like was
+            always just the anchor -- that is now stated rather than coincidental.
+
+The endpoint pad was `ext - width/2`, which put its outer edge at 20.0, precisely where the anchor
+ring's ink sits (19.2-20.8). Reinstating the anchor on endpoints without moving the pad would have
+fused the two into one smudged band, so the pad is pulled in to 15: outer edge 17.5, leaving 1.7px
+of clear ground before the anchor. The two numbers are coupled, and a future sub-type that draws
+near the rim has to respect the same clearance.
+
+Sub-types are expected to multiply -- sink, junction, transform have all been raised. Returning a
+layer list rather than one flat style is what lets the next one be added without every caller
+re-deciding what a waypoint looks like underneath it.
 */
+const ANCHOR_WIDTH = 1.6;
+const ANCHOR_OPACITY = 0.7;
+const ENDPOINT_RADIUS = 15;
+const ENDPOINT_WIDTH = 5;
+
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';
-	const width = endpoint ? 5 : 1.6;
 	return {
-		width,
-		radius: ext - (endpoint ? width / 2 : 0),
+		// the sub-type layer: what this waypoint adds to the anchor. `null` for a plain bend.
+		width: endpoint ? ENDPOINT_WIDTH : ANCHOR_WIDTH,
+		radius: endpoint ? ENDPOINT_RADIUS : ext,
 		fill: endpoint ? TOKENS.panel : 'none',
-		opacity: endpoint ? 1 : 0.7,
+		opacity: endpoint ? 1 : ANCHOR_OPACITY,
 	};
 };
+
+/*
+The anchor every waypoint draws, beneath whatever its sub-type adds.
+
+Identical to what `waypointStyle('bend', ext)` returns, and that is the point rather than a
+duplication: a bend adds no layer, so a bend IS its anchor. Naming it separately means an endpoint
+can draw one too without asking for the style of a role it does not have.
+*/
+export const waypointAnchor = (ext) => ({
+	radius: ext,
+	width: ANCHOR_WIDTH,
+	fill: 'none',
+	opacity: ANCHOR_OPACITY,
+});
 
 export const waypointRole = (id, touching) => {
 	let endpoint = false;

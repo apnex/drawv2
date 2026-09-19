@@ -550,3 +550,37 @@ test('B198: canvas text cannot be selected by a drag, including a class nobody h
 		assert.equal(value, 'none', `${cls} is selectable and would highlight during a rubber-band drag`);
 	}
 });
+
+/*
+B199: the LIVE canvas draws the anchor on an endpoint, not just the export.
+
+`tests/span.test.js` proves the kernel's numbers and the SVG export's emission. Neither can see
+`app/src/renderer.js`, which builds DOM rather than a string -- so making the endpoint branch skip
+the anchor passes that whole file. Measured: that exact mutation left 949 tests green.
+
+This is the B191 shape again. Every layer correct, the composition unverified, and the gap sits
+precisely where no existing test can reach. The fixture's link runs waypoint -> waypoint, so one
+endpoint is guaranteed on screen.
+*/
+test('B199: an endpoint on the live canvas draws the anchor beneath its pad', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+
+	const shape = await until(tab, `(() => {
+		const g = document.querySelector('#waypoints .waypoint.endpoint');
+		if (!g) return null;
+		const circles = [...g.querySelectorAll('circle')]
+			.map((c) => ({ cls: c.getAttribute('class'), r: Number(c.getAttribute('r')) }))
+			.filter((c) => c.cls !== 'select-box');
+		return JSON.stringify(circles);
+	})()`);
+
+	const circles = JSON.parse(shape);
+	const anchor = circles.find((c) => c.cls === 'wp-anchor');
+	const pad = circles.find((c) => c.cls === 'wp-ring');
+	const dot = circles.find((c) => c.cls === 'wp-dot');
+
+	assert.ok(anchor, 'the endpoint has no anchor ring -- it is drawing its pad INSTEAD of the anchor, which is B199');
+	assert.ok(pad, 'the endpoint pad is missing');
+	assert.ok(dot, 'the centre dot is missing');
+	assert.ok(anchor.r > pad.r, `the anchor must sit outside the pad, got anchor=${anchor.r} pad=${pad.r}`);
+});

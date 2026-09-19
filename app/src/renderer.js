@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRole, waypointStyle, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRole, waypointStyle, waypointAnchor, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -318,7 +318,19 @@ export class Renderer {
 			const armed = entity.spawn ? ' spawning' : '';
 			const g = el('g', { id: entity.id, class: `waypoint ${role === 'endpoint' ? 'endpoint' : 'bend'}${armed}` }, this.layers.waypoints);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			el('circle', { class: 'wp-ring', r: st.radius, fill: st.fill, stroke: TOKENS.waypoint, 'stroke-width': st.width, 'stroke-opacity': st.opacity }, g);
+			/*
+			B199 -- anchor first, then the sub-type layer on top.
+
+			The anchor goes down for every waypoint including an endpoint, which is the change: an
+			endpoint used to draw its pad INSTEAD of a ring at the extent, so it lost the outline
+			that says "a link can reach here". Order matters -- the pad is opaque and must cover
+			the path, so it is painted after the anchor rather than before it.
+			*/
+			const anchor = waypointAnchor(FE);
+			el('circle', { class: 'wp-anchor', r: anchor.radius, fill: anchor.fill, stroke: TOKENS.waypoint, 'stroke-width': anchor.width, 'stroke-opacity': anchor.opacity }, g);
+			if (role === 'endpoint') {
+				el('circle', { class: 'wp-ring', r: st.radius, fill: st.fill, stroke: TOKENS.waypoint, 'stroke-width': st.width, 'stroke-opacity': st.opacity }, g);
+			}
 			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}

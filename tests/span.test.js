@@ -458,7 +458,7 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 	assert.deepEqual(roles(doc(true)), ['bend', 'bend'], 'and a RING has no ends — both are corners');
 });
 
-test('B162: an endpoint is drawn heavier, on the same footprint as a bend', async () => {
+test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
 	const k = await import('../kernel/index.mjs');
 	const svg = k.render(k.docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
@@ -467,24 +467,44 @@ test('B162: an endpoint is drawn heavier, on the same footprint as a bend', asyn
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
 		zones: [], groups: [],
 	}));
-	const drawn = [...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*r="([\d.]+)"[^>]*stroke-width="([\d.]+)"/g)]
-		.map(([, role, r, w]) => ({ role, r: Number(r), w: Number(w) }));
-	const end = drawn.find((d) => d.role === 'endpoint');
-	const bend = drawn.find((d) => d.role === 'bend');
+	// each waypoint group, with EVERY circle it drew -- the composition is the subject here, so
+	// matching only the first one would have missed the whole change
+	const groups = [...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => ({
+		role,
+		circles: [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?\/>/g)].map((m) => ({
+			r: Number(m[1]),
+			// the dot carries no stroke at all, which is how it is told apart from a ring
+			w: Number((m[0].match(/stroke-width="([\d.]+)"/) || [, 0])[1]),
+		})),
+	}));
+	const end = groups.find((d) => d.role === 'endpoint');
+	const bend = groups.find((d) => d.role === 'bend');
 	assert.ok(end && bend, 'both roles are drawn');
 
-	assert.ok(end.w > bend.w * 2, 'the endpoint ring is far heavier — it terminates a line');
 	/*
-	THE HEAVY RING MUST NOT GROW THE FOOTPRINT. A stroke straddles its radius, so a 5px ring left at
-	r=20 would reach 22.5 and an endpoint would visibly bulge past a bend -- closing a path would
-	look like it resized its corners. Pulling the radius in by half the stroke puts the endpoint's
-	OUTER edge exactly on the frame extent.
-
-	The bend still straddles 20 and so reaches 20.8, half a stroke proud. That is the thin ring's
-	own geometry and not worth distorting; what matters is that the heavy one does not exceed it.
+	A BEND IS ITS ANCHOR. It adds no layer, so it draws exactly two circles: the ring at the extent
+	and the centre dot. An endpoint draws three -- the same anchor, its pad, and the dot.
 	*/
-	assert.equal(end.r + end.w / 2, 20, 'the endpoint sits inside the frame extent exactly');
-	assert.ok(end.r + end.w / 2 <= bend.r + bend.w / 2, 'and never reaches further out than a bend');
+	assert.equal(bend.circles.length, 2, 'a bend is the anchor and the dot, nothing more');
+	assert.equal(end.circles.length, 3, 'an endpoint adds a pad on top of the anchor');
+
+	const anchorOf = (g) => g.circles.find((c) => c.r === 20);
+	assert.ok(anchorOf(bend), 'the bend draws the anchor ring at the extent');
+	assert.ok(anchorOf(end), 'the ENDPOINT draws the anchor too -- this is the whole point of B199');
+	assert.deepEqual(anchorOf(end), anchorOf(bend), 'and it is the same anchor, not a similar one');
+
+	const pad = end.circles.find((c) => c.r !== 20 && c.r > 2.2);
+	assert.ok(pad, 'the endpoint pad is drawn');
+	assert.ok(pad.w > anchorOf(end).w * 2, 'the pad is far heavier -- a line terminates on it');
+
+	/*
+	THE PAD MUST CLEAR THE ANCHOR. A stroke straddles its radius, so the pad's ink reaches
+	`r + w/2` and the anchor's inner ink edge is `20 - 1.6/2 = 19.2`. The pad used to end at exactly
+	20.0, which is INSIDE that band -- reinstating the anchor without moving the pad would have
+	fused them into one smudged ring, which is why the two numbers are coupled.
+	*/
+	const clearance = (20 - anchorOf(end).w / 2) - (pad.r + pad.w / 2);
+	assert.ok(clearance > 1, `the pad must leave clear ground inside the anchor, got ${clearance}`);
 });
 
 /*
@@ -585,8 +605,16 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
 		zones: [], groups: [],
 	}));
-	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*fill="([^"]*)"/g)]
-		.map(([, role, fill]) => [role, fill]));
+	/*
+	B199 -- read the LAST ring in the group, not the first. Every waypoint now opens with the anchor,
+	which is hollow by definition, so matching the first circle reported `none` for both roles and
+	said the pad had stopped being opaque when it had not moved at all.
+	*/
+	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
+		const rings = [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]*)"[^>]*?\/>/g)]
+			.filter((m) => Number(m[1]) > 2.2);          // skip the centre dot; it is solid by nature
+		return [role, rings[rings.length - 1][2]];       // the sub-type layer sits on top of the anchor
+	}));
 	/*
 	The pad hides the trace beneath it, which is what makes a line read as TERMINATING rather than
 	passing under. A bend must stay hollow for the opposite reason: the path goes through it and has
@@ -614,10 +642,20 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 	const end = k.waypointStyle('endpoint', 20);
 	const bend = k.waypointStyle('bend', 20);
 
+	const anchor = k.waypointAnchor(20);
+
 	assert.ok(end.width > bend.width * 2, 'a pad is far heavier than a corner');
-	assert.equal(end.radius + end.width / 2, 20, 'and never grows the footprint');
 	assert.equal(end.fill, '#101010', 'opaque, so the path terminates on it');
 	assert.equal(bend.fill, 'none', 'hollow, so the path stays visible turning');
+
+	/*
+	B199 -- a bend IS the anchor, value for value. That is not a coincidence worth asserting for its
+	own sake: it is what makes "a bend adds no layer" true rather than approximately true, and if
+	the two ever diverge one of them has quietly become a sub-type nobody named.
+	*/
+	assert.deepEqual(bend, anchor, 'a bend is exactly the anchor, with nothing added');
+	assert.ok(end.radius + end.width / 2 < anchor.radius - anchor.width / 2,
+		'the pad must sit clear INSIDE the anchor rather than on top of its ink');
 
 	/*
 	The guard that matters: neither renderer may decide these again. A second copy would pass every
@@ -643,8 +681,24 @@ test('B162: the two renderers agree, value for value', async () => {
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
 		zones: [], groups: [],
 	}));
-	const drawn = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)"><circle[^>]*r="([\d.]+)" fill="([^"]*)"[^>]*stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"/g)]
-		.map(([, role, r, fill, w, op]) => [role, { radius: Number(r), fill, width: Number(w), opacity: Number(op) }]));
+	/*
+	B199 -- the SUB-TYPE layer is the last ring in the group, because the anchor is drawn first for
+	every role. Matching the first circle compared the export's anchor against the kernel's endpoint
+	style and failed on a change that had kept both sides in perfect agreement.
+	*/
+	const drawn = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
+		const rings = [...body.matchAll(/<circle[^>]*?r="([\d.]+)" fill="([^"]*)"[^>]*?stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"[^>]*?\/>/g)];
+		const [, r, fill, w, op] = rings[rings.length - 1];
+		return [role, { radius: Number(r), fill, width: Number(w), opacity: Number(op) }];
+	}));
+
+	// and the anchor itself is emitted identically for BOTH roles -- the first ring in either group
+	const anchors = [...svg.matchAll(/class="waypoint \w+"><circle[^>]*?r="([\d.]+)"[^>]*?stroke-width="([\d.]+)"/g)]
+		.map(([, r, w]) => ({ radius: Number(r), width: Number(w) }));
+	assert.equal(anchors.length, 2, 'both waypoints were drawn');
+	assert.deepEqual(anchors[0], anchors[1], 'the anchor is the same ring whatever the sub-type');
+	assert.deepEqual(anchors[0], { radius: k.waypointAnchor(20).radius, width: k.waypointAnchor(20).width },
+		'and it is the kernel anchor, not a lookalike');
 
 	// the live renderer sets exactly these attributes from the same call, so comparing the export
 	// against the shared source proves both sides emit one set of numbers

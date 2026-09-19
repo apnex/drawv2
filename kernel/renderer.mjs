@@ -2,7 +2,7 @@
 // decisions live here; the engine has already placed everything. Sovereign: glyph defs, glyph
 // metrics, colours and the scene CSS all come from theme.mjs (no client/ coupling).
 import { STD, L_STD } from './spec.mjs';
-import { bboxOf, waypointStyle } from './geometry.mjs';
+import { bboxOf, waypointStyle, waypointAnchor } from './geometry.mjs';
 import { roundedPath } from './router.mjs';
 import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 
@@ -155,8 +155,15 @@ function renderEl(el, V, L, opts = {}) {
 	*/
 	if (el.kind === 'waypoint') {
 		// the numbers are the kernel's, shared with the live renderer; this only emits them
+		// B199 -- anchor, then the sub-type layer, then the dot. Same order and same numbers as the
+		// live renderer; both take them from the kernel so the export cannot drift from the canvas.
+		const an = waypointAnchor(L.frame.ext);
+		const anchor = `<circle cx="${el.cx}" cy="${el.cy}" r="${an.radius}" fill="${an.fill}" stroke="${TOKENS.waypoint}" stroke-width="${an.width}" stroke-opacity="${an.opacity}"/>`;
 		const st = waypointStyle(el.role, L.frame.ext);
-		return `<g class="waypoint ${el.role === 'endpoint' ? 'endpoint' : 'bend'}"><circle cx="${el.cx}" cy="${el.cy}" r="${st.radius}" fill="${st.fill}" stroke="${TOKENS.waypoint}" stroke-width="${st.width}" stroke-opacity="${st.opacity}"/><circle cx="${el.cx}" cy="${el.cy}" r="2.2" fill="${TOKENS.waypoint}"/></g>`;
+		const pad = el.role === 'endpoint'
+			? `<circle cx="${el.cx}" cy="${el.cy}" r="${st.radius}" fill="${st.fill}" stroke="${TOKENS.waypoint}" stroke-width="${st.width}" stroke-opacity="${st.opacity}"/>`
+			: '';
+		return `<g class="waypoint ${el.role === 'endpoint' ? 'endpoint' : 'bend'}">${anchor}${pad}<circle cx="${el.cx}" cy="${el.cy}" r="2.2" fill="${TOKENS.waypoint}"/></g>`;
 	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are
 	// connected", vs links that merely cross. Opaque centre so wires meet its edges cleanly.
