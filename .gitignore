@@ -33,5 +33,11 @@ cli/.draw_context
 # UNTRACKED MEANS UNBACKED. Nothing here is in git history after the commit that removed it, so a
 # fresh clone has no deploy/ and a wipe of this working tree loses it. It belongs somewhere durable
 # outside this repository; the copy here is a convenience, not the record.
+#
+# That durable copy is ~/taceng/drawv2-archive/deploy-runbook/, mirrored with rsync and verified
+# with diff -r. It was named here on 2026-09-19 because the sentence above had stated the
+# obligation since it was written and no copy had ever been made -- an instruction with no address
+# is satisfied by nobody. It is a SNAPSHOT: re-mirror after changing anything under deploy/,
+# because the gate cannot see a directory it is configured to ignore.
 deploy/
 
