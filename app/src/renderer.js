@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRole, waypointStyle, waypointAnchor, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRole, waypointStyle, waypointAnchor, waypointJunction, PREVIEW_JUNCTION_ON_ENDPOINTS, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -330,6 +330,12 @@ export class Renderer {
 			el('circle', { class: 'wp-anchor', r: anchor.radius, fill: anchor.fill, stroke: TOKENS.waypoint, 'stroke-width': anchor.width, 'stroke-opacity': anchor.opacity }, g);
 			if (role === 'endpoint') {
 				el('circle', { class: 'wp-ring', r: st.radius, fill: st.fill, stroke: TOKENS.waypoint, 'stroke-width': st.width, 'stroke-opacity': st.opacity }, g);
+			}
+			// B200 PREVIEW -- drawn after the pad so it is not masked by the pad's opaque fill.
+			// Delete with PREVIEW_JUNCTION_ON_ENDPOINTS; a real junction will have its own condition.
+			if (PREVIEW_JUNCTION_ON_ENDPOINTS && role === 'endpoint') {
+				const jn = waypointJunction();
+				el('circle', { class: 'wp-junction', r: jn.radius, fill: jn.fill, stroke: TOKENS.waypoint, 'stroke-width': jn.width, 'stroke-opacity': jn.opacity }, g);
 			}
 			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)

@@ -486,14 +486,17 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	and the centre dot. An endpoint draws three -- the same anchor, its pad, and the dot.
 	*/
 	assert.equal(bend.circles.length, 2, 'a bend is the anchor and the dot, nothing more');
-	assert.equal(end.circles.length, 3, 'an endpoint adds a pad on top of the anchor');
+	// B200 PREVIEW: the junction ring is drawn on endpoints so the ladder can be judged on screen.
+	// When PREVIEW_JUNCTION_ON_ENDPOINTS goes, this returns to 3.
+	assert.equal(end.circles.length, k.PREVIEW_JUNCTION_ON_ENDPOINTS ? 4 : 3,
+		'an endpoint adds a pad on top of the anchor');
 
 	const anchorOf = (g) => g.circles.find((c) => c.r === 20);
 	assert.ok(anchorOf(bend), 'the bend draws the anchor ring at the extent');
 	assert.ok(anchorOf(end), 'the ENDPOINT draws the anchor too -- this is the whole point of B199');
 	assert.deepEqual(anchorOf(end), anchorOf(bend), 'and it is the same anchor, not a similar one');
 
-	const pad = end.circles.find((c) => c.r !== 20 && c.r > 2.2);
+	const pad = end.circles.find((c) => c.r === k.waypointStyle('endpoint', 20).radius);
 	assert.ok(pad, 'the endpoint pad is drawn');
 	assert.ok(pad.w > anchorOf(end).w * 2, 'the pad is far heavier -- a line terminates on it');
 
@@ -610,10 +613,17 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	which is hollow by definition, so matching the first circle reported `none` for both roles and
 	said the pad had stopped being opaque when it had not moved at all.
 	*/
+	/*
+	B200 -- ask for the ring by RADIUS, not by position. "The last ring" was a fair reading of the
+	sub-type layer while an endpoint drew one, and it silently started reporting the preview junction
+	the moment a second layer stacked on top. The radius comes from the kernel, so this names the pad
+	itself rather than wherever it happens to sit in the group.
+	*/
+	const want = { endpoint: k.waypointStyle('endpoint', 20).radius, bend: k.waypointAnchor(20).radius };
 	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
-		const rings = [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]*)"[^>]*?\/>/g)]
-			.filter((m) => Number(m[1]) > 2.2);          // skip the centre dot; it is solid by nature
-		return [role, rings[rings.length - 1][2]];       // the sub-type layer sits on top of the anchor
+		const ring = [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]*)"[^>]*?\/>/g)]
+			.find((m) => Number(m[1]) === want[role]);
+		return [role, ring[2]];
 	}));
 	/*
 	The pad hides the trace beneath it, which is what makes a line read as TERMINATING rather than
@@ -686,10 +696,12 @@ test('B162: the two renderers agree, value for value', async () => {
 	every role. Matching the first circle compared the export's anchor against the kernel's endpoint
 	style and failed on a change that had kept both sides in perfect agreement.
 	*/
+	const target = { endpoint: k.waypointStyle('endpoint', 20).radius, bend: k.waypointAnchor(20).radius };
 	const drawn = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
-		const rings = [...body.matchAll(/<circle[^>]*?r="([\d.]+)" fill="([^"]*)"[^>]*?stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"[^>]*?\/>/g)];
-		const [, r, fill, w, op] = rings[rings.length - 1];
-		return [role, { radius: Number(r), fill, width: Number(w), opacity: Number(op) }];
+		// B200 -- by radius, not by position: a stacked preview layer made "last" the wrong ring
+		const m = [...body.matchAll(/<circle[^>]*?r="([\d.]+)" fill="([^"]*)"[^>]*?stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"[^>]*?\/>/g)]
+			.find((x) => Number(x[1]) === target[role]);
+		return [role, { radius: Number(m[1]), fill: m[2], width: Number(m[3]), opacity: Number(m[4]) }];
 	}));
 
 	// and the anchor itself is emitted identically for BOTH roles -- the first ring in either group
@@ -705,4 +717,44 @@ test('B162: the two renderers agree, value for value', async () => {
 	for (const role of ['endpoint', 'bend']) {
 		assert.deepEqual(drawn[role], k.waypointStyle(role, 20), `${role} is drawn as the kernel specifies`);
 	}
+});
+
+/*
+B200 -- the layers form an evenly spaced ladder, and the radii are derived from it.
+
+A waypoint may carry several sub-types at once, so they must read as distinct concentric rings when
+drawn together. The rule is a uniform clear gap between every consecutive band of INK -- edge to
+edge, not centre to centre, because a stroke straddles its radius and two rings can be far apart by
+radius while their ink touches.
+
+This is what made the previous pair of numbers wrong rather than merely different: at endpoint
+r=15 the gaps were 10.3px inside and 1.7px outside, which is what two values chosen against each
+other look like once a third layer has to fit between them.
+
+Asserted as a property of the whole ladder, not as four literals. Typing the radii in here would
+pass for exactly as long as someone remembered to update both places, which is the twin this file
+already exists to prevent.
+*/
+test('B200: every waypoint layer is the same clear distance from its neighbour', async () => {
+	const k = await import('../kernel/index.mjs');
+	const DOT = 2.2;
+
+	const bands = [
+		['dot', 0, DOT],
+		...[['junction', k.waypointJunction()], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]
+			.map(([name, s]) => [name, s.radius - s.width / 2, s.radius + s.width / 2]),
+	];
+
+	// strictly nested, innermost first -- a ladder that crosses itself is not a ladder
+	for (let i = 1; i < bands.length; i++) {
+		assert.ok(bands[i][1] > bands[i - 1][2],
+			`${bands[i][0]} overlaps ${bands[i - 1][0]}: ink ${bands[i][1]} starts inside ${bands[i - 1][2]}`);
+	}
+
+	const gaps = bands.slice(1).map((b, i) => Number((b[1] - bands[i][2]).toFixed(4)));
+	assert.equal(gaps.length, 3, 'dot -> junction -> endpoint -> anchor is three gaps');
+	for (const g of gaps) {
+		assert.equal(g, gaps[0], `the ladder is uneven: ${JSON.stringify(gaps)}`);
+	}
+	assert.ok(gaps[0] >= 2, `the rungs must be far enough apart to read, got ${gaps[0]}px`);
 });

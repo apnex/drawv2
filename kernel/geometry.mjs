@@ -137,20 +137,38 @@ B199 -- a waypoint is an ANCHOR, and a sub-type is an additive layer on top of i
   bend      adds nothing. The path turning is the whole rendering, and what a bend looked like was
             always just the anchor -- that is now stated rather than coincidental.
 
-The endpoint pad was `ext - width/2`, which put its outer edge at 20.0, precisely where the anchor
-ring's ink sits (19.2-20.8). Reinstating the anchor on endpoints without moving the pad would have
-fused the two into one smudged band, so the pad is pulled in to 15: outer edge 17.5, leaving 1.7px
-of clear ground before the anchor. The two numbers are coupled, and a future sub-type that draws
-near the rim has to respect the same clearance.
+B200 -- THE LAYERS ARE EVENLY SEPARATED, and that rule sets the radii.
 
-Sub-types are expected to multiply -- sink, junction, transform have all been raised. Returning a
-layer list rather than one flat style is what lets the next one be added without every caller
-re-deciding what a waypoint looks like underneath it.
+Sub-types are expected to multiply, and a waypoint may carry several at once, so the layers have to
+read as distinct concentric rings when they are all drawn together. The governing constraint is a
+uniform LADDER_GAP of clear ground between every consecutive band of ink, measured edge to edge
+rather than centre to centre -- a stroke straddles its radius, so two rings can be far apart by
+radius and still touch.
+
+  dot       0.0 - 2.2     solid centre
+  junction  5.2 - 8.2     gap 3.0 before it
+  endpoint  11.2 - 16.2   gap 3.0
+  anchor    19.2 - 20.8   gap 3.0
+
+The endpoint moved 15 -> 13.7 to make that ladder even. At 15 the two gaps were 10.3px inside and
+1.7px outside, which is what a pair of numbers chosen against each other looks like once a third
+layer has to fit between them. The radii are therefore DERIVED from the widths and the gap, not
+typed in: change a stroke weight and the ladder re-solves rather than silently bunching up.
+
+A future sub-type takes the next rung by the same arithmetic. What the rule does NOT survive is a
+layer that is not a concentric ring -- a square or a glyph has no single ink band, and that is a
+decision between the shape and the ladder rather than something to solve here.
 */
 const ANCHOR_WIDTH = 1.6;
 const ANCHOR_OPACITY = 0.7;
-const ENDPOINT_RADIUS = 15;
+const DOT_RADIUS = 2.2;
+const LADDER_GAP = 3;
+const JUNCTION_WIDTH = 3;
 const ENDPOINT_WIDTH = 5;
+
+// each rung sits LADDER_GAP clear of the previous band's outer ink edge
+const JUNCTION_RADIUS = DOT_RADIUS + LADDER_GAP + JUNCTION_WIDTH / 2;                        // 6.7
+const ENDPOINT_RADIUS = JUNCTION_RADIUS + JUNCTION_WIDTH / 2 + LADDER_GAP + ENDPOINT_WIDTH / 2; // 13.7
 
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';
@@ -176,6 +194,35 @@ export const waypointAnchor = (ext) => ({
 	fill: 'none',
 	opacity: ANCHOR_OPACITY,
 });
+
+/*
+The junction ring -- the sub-type between the dot and the endpoint pad.
+
+Hollow, because a junction says "these links are connected here" rather than "a line stops here",
+and the path must stay visible running through it. That is the same reasoning the `junction`
+ELEMENT already carries in the kernel renderer, which uses an opaque centre for a different job:
+that one is a tie-point drawn instead of a waypoint, this one is a layer drawn on top of one.
+*/
+export const waypointJunction = () => ({
+	radius: JUNCTION_RADIUS,
+	width: JUNCTION_WIDTH,
+	fill: 'none',
+	opacity: 1,
+});
+
+/*
+PREVIEW SCAFFOLDING -- remove with B200.
+
+The junction sub-type has no model behind it yet: nothing sets it, nothing reads it, and no
+document can carry one. The director asked to SEE the ring against the other layers before the
+behaviour is designed, so this flag draws it on every endpoint purely so the ladder can be judged
+on screen at working zoom.
+
+It is a constant rather than a config value on purpose. A flag someone can switch at runtime is a
+feature with an off switch; this is a line of code with a deletion date, and the guard below pins
+the real composition so that deleting it cannot quietly change what a waypoint is.
+*/
+export const PREVIEW_JUNCTION_ON_ENDPOINTS = true;
 
 export const waypointRole = (id, touching) => {
 	let endpoint = false;
