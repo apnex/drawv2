@@ -28,7 +28,7 @@ A blanket skip is the widest exemption this scanner has: it does not permit the 
 file, it stops reading the file. Measured before narrowing this list, `COMMIT-DELETIONS.md` carried
 599 path references of which **551 resolved** -- so the skip was leaving 551 live citations unchecked
 in order to permit 48 dead ones, and any one of those 551 could rot without a word. Same shape for
-`COMMIT-AUDIT.md`: 54 refs, 43 resolving.
+`docs/history/COMMIT-AUDIT.md`: 54 refs, 43 resolving.
 
 Both are read now, with their genuinely dead paths named individually below. `docs/design/README.md`
 stays because there the ratio is the other way -- 8 refs, 2 resolving -- and it describes itself as
@@ -96,10 +96,10 @@ const ALLOW = {
 	'docs/BOARD.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/DECISIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/API.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/spec/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/history/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/COMMIT-DELETIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/COMMIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/spec/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/history/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'*:server/slides/auth.js': 'the Slides feature, PURGED at Phase 1 and recorded in COMMIT-DELETIONS.md. Every remaining reference is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing lines as evidence for rulings made while it existed, and BACKLOG rows describing defects in it. M4 forbids rewriting an artifact recorded before the change.',
 	'*:server/slides/sync.js': 'as above -- cited as evidence in records written while the feature existed.',
 	'*:tests/slides.test.js': 'as above.',
@@ -133,12 +133,12 @@ const ALLOW = {
 	'docs/spec/COMMIT-DELETIONS.md:server/slides/transform.js': 'purged with Slides, 5 commits. Cited as the thing purged.',
 	'docs/spec/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `server/txn.mjs` replaced it at CS1. A real file, really removed.',
 	'docs/spec/COMMIT-DELETIONS.md:diagrams/diagram-000001.json': 'runtime data, gitignored by design (B49). Present on a working machine, absent from a clone -- which is what `git ls-files` correctly reports.',
-	'docs/spec/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
-	'docs/spec/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
-	'docs/spec/COMMIT-AUDIT.md:server/commit.mjs': 'as above -- real, and really replaced.',
-	'docs/spec/COMMIT-AUDIT.md:methodology/M7-axiom-alignment-audit.md': 'a mission-kit path, outside this repository. Not ours to resolve.',
-	'docs/spec/COMMIT-AUDIT.md:mission-kit/methodology/M7-axiom-alignment-audit.md': 'as above.',
-	'docs/spec/COMMIT-AUDIT.md:work-types/W22-axiom-alignment-gate.md': 'as above.',
+	'docs/history/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
+	'docs/history/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
+	'docs/history/COMMIT-AUDIT.md:server/commit.mjs': 'as above -- real, and really replaced.',
+	'docs/history/COMMIT-AUDIT.md:methodology/M7-axiom-alignment-audit.md': 'a mission-kit path, outside this repository. Not ours to resolve.',
+	'docs/history/COMMIT-AUDIT.md:mission-kit/methodology/M7-axiom-alignment-audit.md': 'as above.',
+	'docs/history/COMMIT-AUDIT.md:work-types/W22-axiom-alignment-gate.md': 'as above.',
 	/*
 	WRONG, and recorded as wrong rather than excused.
 
@@ -149,7 +149,7 @@ const ALLOW = {
 	file it points at was itself purged with Slides, so the fixed path would not resolve either.
 	The error is named here so a reader meets it as an error, which is the part that was missing.
 	*/
-	'docs/spec/COMMIT-AUDIT.md:slides/sync.js': 'WRONG PATH, never existed at any commit -- the auditor meant `server/slides/sync.js` (itself since purged). Kept because the file is a verbatim external artefact; recorded as an error, not as history.',
+	'docs/history/COMMIT-AUDIT.md:slides/sync.js': 'WRONG PATH, never existed at any commit -- the auditor meant `server/slides/sync.js` (itself since purged). Kept because the file is a verbatim external artefact; recorded as an error, not as history.',
 	'docs/spec/COMMIT.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
 	'docs/BACKLOG.md:cli/draw.sh': 'rows describing the defects that ended it, B61 and B117, written while it was the CLI.',
 	'docs/BOARD.md:cli/draw.sh': 'H11.16, which records the Dockerfile still symlinking a retired path. Naming the dead path is the item.',

@@ -1,9 +1,12 @@
 # draw - Commit System
 
-> **Status: design RATIFIED - implementation GATED at CS1.** Every ruling below is **[LOCKED]** per
+> **Status: design RATIFIED, implementation SHIPPED through CS5.** The gate was at CS1 when this was
+> written; `tests/migration.test.js` now carries the CS5 gates -- a migrated corpus boots with every
+> entity deep-equal, and an unmigrated file is a named boot failure rather than a silent reseed.
+> Every ruling below is **[LOCKED]** per
 > `HIERARCHY.md`'s graduation convention: settled, and changed only by a dated amendment in this file.
-> The reasoning that produced each ruling is preserved separately in `docs/spec/COMMIT-AUDIT.md`. This
-> file states only what will be built.
+> The reasoning that produced each ruling is preserved separately in `docs/history/COMMIT-AUDIT.md`. This
+> file states what is built, and is amended rather than rewritten when a ruling changes.
 >
 > **Nothing here is built.** `npm run gate` (**GR1**) must exist and be enforced by an installed
 > `.git/hooks/pre-push` before the first line of **CS1**, and no milestone starts before its named gate is green.

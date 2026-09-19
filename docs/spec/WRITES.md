@@ -6,9 +6,14 @@ A design of record, written before the surface exists.\
 It sits under `CLI.md`, which owns the verbs, and over `COMMIT.md`, which owns durability.\
 `CLI.md` says what an agent can ask for; this says what happens between the asking and the document changing.
 
-> **Status: DESIGN, no code written.**\
-> Reached by design conversation on 2026-09-04, recorded here rather than built from the conversation.\
-> Section 9 lists what is not settled and who owns each answer.
+> **Status: BUILT and deployed.**\
+> Reached by design conversation on 2026-09-04 and implemented the same day, so this began as a
+> design of record and is now a record of what runs.\
+> Five defects changed it under construction -- **B189** moved anchor selection server-side, **B191**
+> made a beat unfurl for a viewer already watching, **B192** gave a beat a dwell so a one-entity
+> caption can be read, **B193** restarted a drained schedule, and **B195** let a drafted set link
+> what it is creating. Each is marked where it applies.\
+> Section 9 lists what is still not settled and who owns each answer.
 
 ---
 

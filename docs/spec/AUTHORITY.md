@@ -2,7 +2,15 @@
 
 The sovereign spec for who may answer for a document, and for what a client does when it can no longer trust what it is running.
 
-> **Status: DESIGN-OF-RECORD, awaiting review. Nothing here is implemented.**\
+> **Status: MOSTLY BUILT. Section 3, the lease, is designed and deliberately unbuilt.**\
+> Losing authority (4), detection following proof (5) and the client ladder (6) shipped as H13.11
+> and H13.10 -- `server/store.js` marks a diagram lost and refuses further writes, and
+> `app/src/watchdog.js` carries the three rungs.\
+> The LEASE is the exception and the reason is a ruling, not an omission: its failure mode is a
+> healthy instance locked out of a document nobody can then write to, which is worse than the brief
+> ambiguity it fixes. Deferred 2026-09-04 with the trigger being deliberately scaling past one
+> instance, and the SHAPE left open -- the director noted there may be a different answer when
+> scaling is real, so section 3 is a design kept warm rather than a commitment.\
 > Concretizes the intent the director settled on 2026-09-02, ahead of any design.\
 > Serves **B178** and **H13.7**, both of which were filed against a narrower framing and are restated by this document.
 >
