@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRole, waypointStyle, waypointAnchor, waypointJunction, PREVIEW_JUNCTION_ON_ENDPOINTS, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRole, waypointStyle, waypointAnchor, waypointJunction, gridDot, PREVIEW_JUNCTION_ON_ENDPOINTS, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -337,7 +337,7 @@ export class Renderer {
 				const jn = waypointJunction();
 				el('circle', { class: 'wp-junction', r: jn.radius, fill: jn.fill, stroke: TOKENS.waypoint, 'stroke-width': jn.width, 'stroke-opacity': jn.opacity }, g);
 			}
-			el('circle', { class: 'wp-dot', r: 2.2, fill: TOKENS.waypoint }, g);
+			el('circle', { class: 'wp-dot', r: gridDot().radius, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)

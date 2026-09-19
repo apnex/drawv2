@@ -720,41 +720,67 @@ test('B162: the two renderers agree, value for value', async () => {
 });
 
 /*
-B200 -- the layers form an evenly spaced ladder, and the radii are derived from it.
+B200 -- the layers are a nested ladder of whole numbers, and the dot belongs to the GRID.
 
-A waypoint may carry several sub-types at once, so they must read as distinct concentric rings when
-drawn together. The rule is a uniform clear gap between every consecutive band of INK -- edge to
-edge, not centre to centre, because a stroke straddles its radius and two rings can be far apart by
-radius while their ink touches.
+Two rules, and the second is the one with teeth.
 
-This is what made the previous pair of numbers wrong rather than merely different: at endpoint
-r=15 the gaps were 10.3px inside and 1.7px outside, which is what two values chosen against each
-other look like once a third layer has to fit between them.
+The ladder: every layer is a concentric ring, strictly nested, with clear ground between each band
+of INK -- edge to edge, not centre to centre, because a stroke straddles its radius. The gaps are
+3.5 / 3.0 / 2.5 rather than uniform. That is deliberate: the director chose whole radii and widths
+and let the gaps absorb the remainder, after the three candidates were rendered at 1:1 and the
+difference judged imperceptible at canvas scale. Asserting uniformity here would re-impose the
+constraint that was just traded away, so what is asserted is nesting and legibility.
 
-Asserted as a property of the whole ladder, not as four literals. Typing the radii in here would
-pass for exactly as long as someone remembered to update both places, which is the twin this file
-already exists to prevent.
+The dot: a waypoint does not own its centre dot, it HIGHLIGHTS the grid dot underneath. Same
+radius, brighter fill. This is checked by reading `app/src/main.js`, which draws the node grid,
+because the alternative is two literals that agree until one is tuned -- and that had already
+happened three times over, with `DOT_RADIUS` feeding the ladder while both renderers painted a
+hardcoded 2.2 that nothing could see.
 */
-test('B200: every waypoint layer is the same clear distance from its neighbour', async () => {
+test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the centre', async () => {
 	const k = await import('../kernel/index.mjs');
-	const DOT = 2.2;
 
 	const bands = [
-		['dot', 0, DOT],
+		['dot', 0, k.gridDot().radius],
 		...[['junction', k.waypointJunction()], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]
-			.map(([name, s]) => [name, s.radius - s.width / 2, s.radius + s.width / 2]),
+			.map(([name, st]) => [name, st.radius - st.width / 2, st.radius + st.width / 2]),
 	];
 
-	// strictly nested, innermost first -- a ladder that crosses itself is not a ladder
 	for (let i = 1; i < bands.length; i++) {
-		assert.ok(bands[i][1] > bands[i - 1][2],
-			`${bands[i][0]} overlaps ${bands[i - 1][0]}: ink ${bands[i][1]} starts inside ${bands[i - 1][2]}`);
+		const gap = bands[i][1] - bands[i - 1][2];
+		assert.ok(gap > 0, `${bands[i][0]} overlaps ${bands[i - 1][0]}: ink starts at ${bands[i][1]}, previous ends ${bands[i - 1][2]}`);
+		assert.ok(gap >= 2, `${bands[i][0]} is only ${gap}px clear of ${bands[i - 1][0]} -- too close to read as separate rings`);
 	}
 
-	const gaps = bands.slice(1).map((b, i) => Number((b[1] - bands[i][2]).toFixed(4)));
-	assert.equal(gaps.length, 3, 'dot -> junction -> endpoint -> anchor is three gaps');
-	for (const g of gaps) {
-		assert.equal(g, gaps[0], `the ladder is uneven: ${JSON.stringify(gaps)}`);
+	// whole numbers were the point of the exercise; fractions are how the old ladder got 6.7 and 13.7
+	for (const [name, st] of [['junction', k.waypointJunction()], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]) {
+		assert.equal(st.radius % 1, 0, `${name} radius ${st.radius} is not a whole number`);
+		assert.equal(st.width % 1, 0, `${name} width ${st.width} is not a whole number`);
 	}
-	assert.ok(gaps[0] >= 2, `the rungs must be far enough apart to read, got ${gaps[0]}px`);
+	assert.equal(k.gridDot().radius % 1, 0, 'the grid dot radius is not a whole number');
+
+	/*
+	WEIGHT CARRIES MEANING. A heavy ring says a line terminates here; the equal-weight variant was
+	rejected for making the junction and the endpoint read as peers.
+	*/
+	assert.ok(k.waypointStyle('endpoint', 20).width > k.waypointJunction().width,
+		'the endpoint pad must stay heavier than the junction ring');
+});
+
+test('B200: the node grid and the waypoint centre are one dot, from one source', async () => {
+	const k = await import('../kernel/index.mjs');
+	const main = fs.readFileSync(new URL('../app/src/main.js', import.meta.url), 'utf8');
+	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+
+	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
+	assert.match(renderer, /gridDot\(\)\.radius/, 'the waypoint centre must draw the same dot it highlights');
+	assert.match(kernelRenderer, /gridDot\(\)\.radius/, 'the SVG export must draw it too, or it diverges from the canvas');
+
+	// the specific literal this replaced, which survived in two renderers while the kernel computed
+	// the ladder from a third copy
+	for (const [name, src] of [['main.js', main], ['renderer.js', renderer], ['kernel/renderer.mjs', kernelRenderer]]) {
+		assert.doesNotMatch(src, /r[:=]\s*"?2\.2"?/, `${name} still carries a hardcoded dot radius`);
+	}
+	assert.equal(k.gridDot().radius, 2, 'the dot is 2 -- the value the node grid already drew');
 });

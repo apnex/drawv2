@@ -4,7 +4,7 @@ history, selection, input gesture machine, palette, label editor, readout, data-
 server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number + the glyph art.
 */
 
-import { sharedDefs, cellOf } from '../../kernel/index.mjs';
+import { sharedDefs, cellOf, gridDot } from '../../kernel/index.mjs';
 import { el, crosshair } from './painter.js';
 import { nodePoints, zonePoints, CANVAS, GAP } from './snap.js';
 import { Model } from '../../model/index.mjs';
@@ -29,11 +29,23 @@ const svg = document.getElementById('container');
 // kernel glyph + frame defs (the kernel owns the look)
 document.getElementById('kdefs').innerHTML = sharedDefs();
 
-// subtle grid dots: node grid always on, zone grid revealed while Shift held (CSS)
+/*
+Subtle grid dots: node grid always on, zone grid revealed while Shift held (CSS).
+
+B200 -- THIS IS THE DOT A WAYPOINT HIGHLIGHTS. The kernel owns it as `gridDot` and the waypoint
+renderer draws the same circle at the same radius in a brighter fill, so a waypoint reads as the
+grid point lit up rather than as a separate mark placed on top of one. They were two literals that
+happened to agree at 2, which is the kind of agreement that holds until one is tuned and nobody
+notices the other did not move.
+
+The zone grid keeps its own size: it marks the HALF-OFFSET grid, a different lattice, and reads as
+bigger on purpose because it only appears while Shift is held.
+*/
+const ZONE_GRID_DOT = 5;   // the half-offset lattice, deliberately larger than the node grid
 const gridNodes = svg.querySelector('#grid-nodes');
-nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: 2 }, gridNodes));
+nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius }, gridNodes));
 const gridZones = svg.querySelector('#grid-zones');
-zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: 5 }, gridZones));
+zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT }, gridZones));
 
 const model = new Model();
 attachRelations(model, { cellOf }); // R3 maintained reverse indices (first IVM) backing linksOf/linksAt/linkBetween/groupOf + R5 atCell; cellOf injected here (composition root) so engine/ imports no kernel; registered before other subscribers so they see a fresh index

@@ -137,38 +137,45 @@ B199 -- a waypoint is an ANCHOR, and a sub-type is an additive layer on top of i
   bend      adds nothing. The path turning is the whole rendering, and what a bend looked like was
             always just the anchor -- that is now stated rather than coincidental.
 
-B200 -- THE LAYERS ARE EVENLY SEPARATED, and that rule sets the radii.
+B200 -- THE LAYERS ARE A LADDER OF CONCENTRIC RINGS, on whole numbers.
 
 Sub-types are expected to multiply, and a waypoint may carry several at once, so the layers have to
-read as distinct concentric rings when they are all drawn together. The governing constraint is a
-uniform LADDER_GAP of clear ground between every consecutive band of ink, measured edge to edge
-rather than centre to centre -- a stroke straddles its radius, so two rings can be far apart by
-radius and still touch.
+read as distinct rings when drawn together. Separation is measured between bands of INK, edge to
+edge rather than centre to centre -- a stroke straddles its radius, so two rings can be far apart
+by radius and still touch.
 
-  dot       0.0 - 2.2     solid centre
-  junction  5.2 - 8.2     gap 3.0 before it
-  endpoint  11.2 - 16.2   gap 3.0
-  anchor    19.2 - 20.8   gap 3.0
+  layer     radius  width   ink            clear gap before it
+  dot          2    solid    0.0 -  2.0
+  junction     7      3      5.5 -  8.5    3.5
+  endpoint    14      5     11.5 - 16.5    3.0
+  anchor      20      2     19.0 - 21.0    2.5
 
-The endpoint moved 15 -> 13.7 to make that ladder even. At 15 the two gaps were 10.3px inside and
-1.7px outside, which is what a pair of numbers chosen against each other looks like once a third
-layer has to fit between them. The radii are therefore DERIVED from the widths and the gap, not
-typed in: change a stroke weight and the ladder re-solves rather than silently bunching up.
+EVERY RADIUS AND WIDTH IS A WHOLE NUMBER, and the gaps absorb the remainder instead. The first cut
+of this rule fixed the gaps at exactly 3.0 and derived the radii, which produced 6.7 and 13.7 from
+an inherited dot of 2.2 and an inherited anchor stroke of 1.6. Those two values were sediment --
+the old bend's weight and the original dot size -- and deriving from them spread their awkwardness
+through every layer that came after.
 
-A future sub-type takes the next rung by the same arithmetic. What the rule does NOT survive is a
-layer that is not a concentric ring -- a square or a glyph has no single ink band, and that is a
-decision between the shape and the ladder rather than something to solve here.
+The director inverted it: pick round radii, let the gaps land where they land. 3.5 / 3.0 / 2.5 is
+not uniform, and at canvas scale the difference is not perceptible -- the three variants were
+rendered at 1:1 and compared before this was chosen.
+
+Weight still carries meaning. The endpoint pad at 5 stays heavier than the junction ring at 3,
+because a heavy ring says a line TERMINATES here; an equal-weight variant was rejected for making
+the two rings read as peers.
+
+A future sub-type takes a rung by the same arithmetic: choose a whole radius and width, keep the
+ink clear of its neighbours. What the rule does NOT survive is a layer that is not a concentric
+ring -- a square or a glyph has no single ink band, and that is a decision between the shape and
+the ladder rather than something to solve here.
 */
-const ANCHOR_WIDTH = 1.6;
+const ANCHOR_WIDTH = 2;
 const ANCHOR_OPACITY = 0.7;
-const DOT_RADIUS = 2.2;
-const LADDER_GAP = 3;
+const DOT_RADIUS = 2;
+const JUNCTION_RADIUS = 7;
 const JUNCTION_WIDTH = 3;
+const ENDPOINT_RADIUS = 14;
 const ENDPOINT_WIDTH = 5;
-
-// each rung sits LADDER_GAP clear of the previous band's outer ink edge
-const JUNCTION_RADIUS = DOT_RADIUS + LADDER_GAP + JUNCTION_WIDTH / 2;                        // 6.7
-const ENDPOINT_RADIUS = JUNCTION_RADIUS + JUNCTION_WIDTH / 2 + LADDER_GAP + ENDPOINT_WIDTH / 2; // 13.7
 
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';
@@ -203,6 +210,25 @@ and the path must stay visible running through it. That is the same reasoning th
 ELEMENT already carries in the kernel renderer, which uses an opaque centre for a different job:
 that one is a tie-point drawn instead of a waypoint, this one is a layer drawn on top of one.
 */
+/*
+THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
+
+Every snap point on the node grid carries this dot, drawn dim at `#202020`. A waypoint sits exactly
+on one, and what it adds is brightness: the same circle at the same radius in the waypoint colour,
+shifting again to green on a selected path, to `#66bb6a` while spawning, to red when armed. The
+rings compose around a mark that was already on the canvas.
+
+That is why this is `gridDot` rather than `waypointDot`, and why `app/src/main.js` draws the grid
+with it. Two literals that both happened to be 2 is an agreement that holds until one is tuned and
+nobody notices the other did not move.
+
+It is a function, not a constant, because `DOT_RADIUS` fed the ladder arithmetic while BOTH
+renderers drew a hardcoded 2.2 -- the kernel computed spacing for a dot neither of them painted.
+Three copies of one number, and the two that mattered were invisible to the guard, which read its
+own literal and agreed with the kernel.
+*/
+export const gridDot = () => ({ radius: DOT_RADIUS });
+
 export const waypointJunction = () => ({
 	radius: JUNCTION_RADIUS,
 	width: JUNCTION_WIDTH,
