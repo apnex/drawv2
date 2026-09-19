@@ -706,8 +706,8 @@ With the anchor hidden, a bend was still marking itself with a bright centre dot
 authoring claim the anchor made. A bend is a corner the route turns, and in run mode the turn is
 already visible in the path itself.
 
-The dot is UNHIGHLIGHTED rather than removed: `#grid-nodes` paints the same circle at the same
-radius at every snap point in #202020, and a waypoint's dot is that dot lit up (B200). So the
+The dot is UNCOVERED rather than removed: `#grid-nodes` paints a dim #202020 circle at every snap
+point and a waypoint draws its own at the same radius one layer above, occluding it (B200). So the
 assertion worth making is not "the bend has no dot" but "the bend's own dot is gone AND the grid
 still draws one there" -- otherwise hiding it would leave a hole, which is a different defect that
 looks identical in a display check.

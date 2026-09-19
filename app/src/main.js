@@ -33,10 +33,11 @@ document.getElementById('kdefs').innerHTML = sharedDefs();
 Subtle grid dots: node grid always on, zone grid revealed while Shift held (CSS).
 
 B200 -- THIS IS THE DOT A WAYPOINT HIGHLIGHTS. The kernel owns it as `gridDot` and the waypoint
-renderer draws the same circle at the same radius in a brighter fill, so a waypoint reads as the
-grid point lit up rather than as a separate mark placed on top of one. They were two literals that
-happened to agree at 2, which is the kind of agreement that holds until one is tuned and nobody
-notices the other did not move.
+renderer draws its own circle at the same radius in a brighter fill, one layer up, so a waypoint
+READS as the grid point lit up while in fact occluding it. Two circles, deliberately: a waypoint
+restyling a grid element would couple the two layers, and the radius is the only part that has to
+agree. They were two literals that happened to match at 2, which is the kind of agreement that
+holds until one is tuned and nobody notices the other did not move.
 
 The zone grid keeps its own size: it marks the HALF-OFFSET grid, a different lattice, and reads as
 bigger on purpose because it only appears while Shift is held.

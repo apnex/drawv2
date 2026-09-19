@@ -214,9 +214,15 @@ that one is a tie-point drawn instead of a waypoint, this one is a layer drawn o
 THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
 
 Every snap point on the node grid carries this dot, drawn dim at `#202020`. A waypoint sits exactly
-on one, and what it adds is brightness: the same circle at the same radius in the waypoint colour,
-shifting again to green on a selected path, to `#66bb6a` while spawning, to red when armed. The
-rings compose around a mark that was already on the canvas.
+on one and draws its OWN circle at the same radius over the top, in the waypoint colour -- shifting
+again to green on a selected path, to `#66bb6a` while spawning, to red when armed.
+
+Two physical circles, not one restyled. `#grid-nodes` is painted once at startup and a waypoint
+renders into a layer above it, so the brighter dot occludes the dim one rather than recolouring it.
+They are kept separate deliberately: reaching out of a waypoint's render to restyle a grid element
+would couple two layers that are currently independent. What is shared is the RADIUS, which is the
+part that has to agree -- a waypoint sitting a pixel off the grid point it occupies would be a lie
+about where it is.
 
 That is why this is `gridDot` rather than `waypointDot`, and why `app/src/main.js` draws the grid
 with it. Two literals that both happened to be 2 is an agreement that holds until one is tuned and

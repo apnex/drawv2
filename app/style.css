@@ -453,10 +453,10 @@ With the anchor gone a bend was still marking itself with a bright centre dot, w
 authoring claim the anchor was making: "something is placed here". In run mode that is not true of
 a bend -- a bend is a corner the route turns, and the turn is already visible in the path.
 
-The dot is not removed so much as UNHIGHLIGHTED. `#grid-nodes` draws the same circle at the same
-radius at every snap point in `#202020`, and a waypoint's dot is that dot lit up (B200). Hiding the
-lit copy reveals the dim one underneath, so the bend reads as ordinary grid again rather than
-leaving a hole where a dot should be.
+The dot is not removed so much as UNCOVERED. `#grid-nodes` draws a dim `#202020` circle at every
+snap point, and a waypoint draws its OWN circle at the same radius one layer above it (B200) --
+occluding rather than recolouring. Hiding the waypoint's copy reveals the grid dot underneath, so
+the bend reads as ordinary grid again rather than leaving a hole where a dot should be.
 
 ENDPOINTS KEEP THEIRS. An endpoint is not scaffolding in run mode: it is where movers enter the
 diagram, its pad stays clickable to arm a spawner, and `.spawning` and `.armed` recolour precisely
