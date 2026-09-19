@@ -1458,3 +1458,35 @@ test('B147: chaining leaves exactly one live preview, not one per hop', () => {
 		assert.equal(h.drawn('#overlay', 'link-live').length, 0, 'releasing clears the last one');
 	} finally { h.restore(); }
 });
+
+/*
+B202: run mode is not a gesture surface -- nothing on the canvas can be dragged.
+
+The director stated it as a rule about entities: "no nodes (waypoints are a kind of node) are
+draggable in run mode". The implementation is stronger and simpler than per-entity checks --
+`onDown` hands the whole press to `runModePress` before any gesture can begin, so the surface
+stops being a gesture surface at all rather than each kind refusing individually.
+
+That guard is a one-line `if` with a comment explaining it, and NOTHING pinned it. A refactor that
+folded run mode into the gesture table would keep every existing test green and quietly make the
+diagram draggable while it runs. The B202 CSS hides the anchor and removes its grab target, which
+looks like it covers this and does not: the endpoint pad is still hit-testable in run mode by
+design, so a drag started on the pad is the case that would slip through.
+*/
+test('B202: a press in run mode starts no gesture, on a waypoint or a node', () => {
+	for (const kind of ['waypoint-aa0001', 'node-aa0001']) {
+		const h = makeInput();
+		try {
+			h.renderer.mode = 'run';
+			const el = { id: kind, closest: () => el, querySelector: () => null, dataset: {} };
+			const target = { tagName: 'circle', closest: () => el };
+
+			h.input.onDown(pointer(100, 100, { target }));
+			h.input.onMove(pointer(160, 160, { target }));
+			h.input.onUp(pointer(160, 160, { target }));
+
+			assert.equal(h.called('startMove'), false, `${kind}: run mode started a move gesture`);
+			assert.equal(h.commits.length, 0, `${kind}: a drag in run mode committed something`);
+		} finally { h.restore(); }
+	}
+});
