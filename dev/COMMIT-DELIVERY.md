@@ -84,7 +84,7 @@ Green before the first line of CS1 is written:
 |---|---|
 | 1 | `npm run gate` exists in its pre-CS1 form and an **installed** `.git/hooks/pre-push` enforces it (**GR1**). |
 | 2 | This document is committed as `docs/spec/TRANSACTIONS.md`, rulings `[LOCKED]` per `HIERARCHY.md:8-9`. |
-| 3 | `docs/spec/COMMIT-DELETIONS.md` is committed - one row per deleted symbol in section 7.1-7.3, per the section 7.4 contract. |
+| 3 | `dev/COMMIT-DELETIONS.md` is committed - one row per deleted symbol in section 7.1-7.3, per the section 7.4 contract. |
 | 4 | `docs/BACKLOG.md` exists, seeded with B1-B9 (section 10), each row carrying evidence and either a closing milestone or a revival trigger. |
 | 5 | `tools/scan-claims.mjs` is committed and green over its two scopes. |
 
@@ -477,7 +477,7 @@ Every row is a **deletion with a milestone**, not a rename, and every row carrie
 
 ### 7.4 The deletion-consequence contract  [LOCKED]
 
-**CS1 produces `docs/spec/COMMIT-DELETIONS.md` before implementation begins.**\
+**CS1 produces `dev/COMMIT-DELETIONS.md` before implementation begins.**\
 It carries one row per deleted symbol in section 7.1-7.3 and interrogates each removal as hard as an addition: what else touches the symbol, what capability disappears the moment the row lands, what restores that capability, and - where nothing does - the backlog row and revival trigger that admit the loss.\
 A deletion table is the side that ships silently; the contract is what makes it audible.\
 **GR2** runs over the file, and it is re-checked at each milestone close for the rows landing in it.

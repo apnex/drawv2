@@ -7,7 +7,7 @@ Speaks only HTTP.\
 Imports nothing from `server/`, `app/` or `model/`, so it works against any draw server and can never accidentally test itself against in-process state.
 
 Requires Node.\
-The shell version required `jq` and `column` and is retired; see `docs/spec/COMMIT-DELETIONS.md`.
+The shell version required `jq` and `column` and is retired; see `dev/COMMIT-DELETIONS.md`.
 
 ---
 

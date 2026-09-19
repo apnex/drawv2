@@ -110,7 +110,7 @@ const ALLOW = {
 	'docs/DECISIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/API.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/history/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/spec/COMMIT-DELETIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/COMMIT-DELETIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/TRANSACTIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/history/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'*:server/slides/auth.js': 'the Slides feature, PURGED at Phase 1 and recorded in COMMIT-DELETIONS.md. Every remaining reference is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing lines as evidence for rulings made while it existed, and BACKLOG rows describing defects in it. M4 forbids rewriting an artifact recorded before the change.',
@@ -141,11 +141,11 @@ const ALLOW = {
 	this repository. One is gitignored runtime data. And one is simply WRONG, and is marked as such
 	rather than excused.
 	*/
-	'docs/spec/COMMIT-DELETIONS.md:cli/draw.sh': 'the shell CLI, 6 commits, retired at B117. This file names the dead; that is its job.',
-	'docs/spec/COMMIT-DELETIONS.md:app/src/schema.js': 'the client schema module, 3 commits, deleted. Cited as the thing deleted.',
-	'docs/spec/COMMIT-DELETIONS.md:server/slides/transform.js': 'purged with Slides, 5 commits. Cited as the thing purged.',
-	'docs/spec/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `server/txn.mjs` replaced it at CS1. A real file, really removed.',
-	'docs/spec/COMMIT-DELETIONS.md:diagrams/diagram-000001.json': 'runtime data, gitignored by design (B49). Present on a working machine, absent from a clone -- which is what `git ls-files` correctly reports.',
+	'dev/COMMIT-DELETIONS.md:cli/draw.sh': 'the shell CLI, 6 commits, retired at B117. This file names the dead; that is its job.',
+	'dev/COMMIT-DELETIONS.md:app/src/schema.js': 'the client schema module, 3 commits, deleted. Cited as the thing deleted.',
+	'dev/COMMIT-DELETIONS.md:server/slides/transform.js': 'purged with Slides, 5 commits. Cited as the thing purged.',
+	'dev/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `server/txn.mjs` replaced it at CS1. A real file, really removed.',
+	'dev/COMMIT-DELETIONS.md:diagrams/diagram-000001.json': 'runtime data, gitignored by design (B49). Present on a working machine, absent from a clone -- which is what `git ls-files` correctly reports.',
 	'docs/history/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
 	'docs/history/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
 	'docs/history/COMMIT-AUDIT.md:server/commit.mjs': 'as above -- real, and really replaced.',
