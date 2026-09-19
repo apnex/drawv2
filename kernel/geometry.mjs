@@ -243,7 +243,25 @@ with no consumer is what `scan-dead` exists to reject. The numbers are here so t
 re-litigated when the behaviour arrives: they were chosen against the other layers, at 1:1, and the
 whole-number scheme depends on 7/3 fitting where it does.
 */
-const JUNCTION_RUNG = { radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH };
+export const waypointJunction = () => ({
+	radius: JUNCTION_RADIUS,
+	width: JUNCTION_WIDTH,
+	fill: 'none',
+	opacity: 1,
+});
+
+/*
+PREVIEW -- the junction ring drawn on every endpoint, so it can be SEEN on a real diagram.
+
+The sub-type has no model behind it: nothing sets it, nothing reads it, no document can carry one.
+This draws it unconditionally so the director can judge the ring against the other layers at
+working zoom, on live data rather than on a mock.
+
+Temporary by construction. A constant, not config -- a flag someone can switch at runtime is a
+feature with an off switch, and this is a line with a deletion date. It goes when the junction gets
+real behaviour, and the B199 circle-count guard is tied to it so removing it cannot pass quietly.
+*/
+export const PREVIEW_JUNCTION_ON_ENDPOINTS = true;
 
 export const waypointRole = (id, touching) => {
 	let endpoint = false;

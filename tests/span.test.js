@@ -486,7 +486,9 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	and the centre dot. An endpoint draws three -- the same anchor, its pad, and the dot.
 	*/
 	assert.equal(bend.circles.length, 2, 'a bend is the anchor and the dot, nothing more');
-	assert.equal(end.circles.length, 3, 'an endpoint adds a pad on top of the anchor');
+	// PREVIEW: the junction ring rides along on endpoints; back to 3 when the flag goes
+	assert.equal(end.circles.length, k.PREVIEW_JUNCTION_ON_ENDPOINTS ? 4 : 3,
+		'an endpoint adds a pad on top of the anchor');
 
 	const anchorOf = (g) => g.circles.find((c) => c.r === 20);
 	assert.ok(anchorOf(bend), 'the bend draws the anchor ring at the extent');
@@ -743,13 +745,7 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 	depends on 7/3 fitting between the dot and the pad, so the reservation is read from the kernel
 	source and checked in place. If it is ever deleted as unused, this fails and says why.
 	*/
-	const geom = fs.readFileSync(new URL('../kernel/geometry.mjs', import.meta.url), 'utf8');
-	const rung = geom.match(/const JUNCTION_RUNG = \{ radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH \};/);
-	assert.ok(rung, 'the junction rung reservation is gone -- the layer it holds space for has no geometry');
-	const junction = {
-		radius: Number(geom.match(/const JUNCTION_RADIUS = ([\d.]+);/)[1]),
-		width: Number(geom.match(/const JUNCTION_WIDTH = ([\d.]+);/)[1]),
-	};
+	const junction = k.waypointJunction();
 
 	const bands = [
 		['dot', 0, k.gridDot().radius],

@@ -407,9 +407,21 @@ A text box that genuinely needs selectable content opts back in, and will have a
 
 /* ---- waypoints (routing pivots; selectable/movable like nodes) ---- */
 .waypoint { cursor: move; }
-/* the ring is fill:none (hollow, so the route shows through), but the whole disc must be a
-   grab target — pointer-events:all makes the fill region hit-testable regardless of fill */
-.wp-ring { pointer-events: all; }
+/*
+B201 -- THE ANCHOR IS THE GRAB TARGET, because the anchor is the waypoint's extent.
+
+Both rings are fill:none or masked, so the whole disc must be hit-testable regardless of fill;
+that is what pointer-events:all buys. This was on `.wp-ring` alone, which was correct while the
+pad WAS the outer ring at r=20 -- B199 put the anchor outside it and left a measured dead zone at
+17-18px, between the pad's ink edge and the anchor's 2px stroke. Clicking there hit the bare svg,
+so an endpoint stopped arming and a bend could only be grabbed by its outline.
+
+On the anchor rather than on both: it is the outermost layer and its disc covers every rung
+beneath it, so one declaration makes the entire footprint grabbable and a future sub-type inherits
+that without having to ask.
+*/
+.wp-anchor { pointer-events: all; }
+.waypoint.hover .wp-anchor,
 .waypoint.hover .wp-ring { stroke-opacity: 1; }
 .waypoint.linkband { cursor: crosshair; }
 .waypoint .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }

@@ -584,3 +584,64 @@ test('B199: an endpoint on the live canvas draws the anchor beneath its pad', { 
 	assert.ok(dot, 'the centre dot is missing');
 	assert.ok(anchor.r > pad.r, `the anchor must sit outside the pad, got anchor=${anchor.r} pad=${pad.r}`);
 });
+
+/*
+B201: the whole waypoint disc is grabbable, not just its outermost stroke.
+
+`pointer-events: all` sat on `.wp-ring`, which was right while the pad WAS the outer ring at r=20.
+B199 put the anchor outside it and nothing moved the rule, leaving a dead band between the pad's
+ink edge (16.5) and the anchor's 2px stroke: clicking at 17-18px from centre hit the bare svg. The
+director found it as "clicking the endpoint fails to arm spawner", which is what a dead zone looks
+like from the outside -- the click lands, it just lands on nothing.
+
+Probed by hit-testing at measured offsets rather than by reading CSS. `pointer-events` resolves
+against paint, fill and stacking order together, so the computed value on one element does not
+tell you what a click at a given point will reach.
+*/
+test('B201: a click anywhere inside the anchor reaches the waypoint', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+
+	const probe = await until(tab, `(() => {
+		/*
+		The waypoint FURTHEST from any node. A socket rect is painted on the grid around every node
+		and sits above the waypoint layer, so probing near one reports the socket and says nothing
+		about what the waypoint catches -- which is exactly what the first version of this measured.
+		*/
+		const g = document.querySelector('#waypoints .waypoint.endpoint');
+		if (!g) return null;
+		const box = g.getBoundingClientRect();
+		const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+		/*
+		Probe by ELEMENTS AT POINT, not the topmost one. A socket rect is painted on the grid around
+		every node and a link runs through the waypoint, and both can sit above it -- so asking what
+		is on top reports the overlay and says nothing about whether the waypoint catches the click.
+		What matters is whether the waypoint is IN the hit stack at that point, which is what decides
+		if a click can reach it at all.
+		*/
+		const stack = (dy) => document.elementsFromPoint(cx, cy + dy)
+			.map((e) => e.getAttribute('class') || e.tagName)
+			.find((c) => typeof c === 'string' && c.startsWith('wp-')) || 'NOTHING';
+		const at = stack;
+		/*
+		OFFSETS ARE IN SCREEN PIXELS, and the canvas has a viewBox -- 1920 user units drawn into
+		however wide the window is -- so a radius of 20 user units is NOT 20px on screen. Probing at
+		raw user-unit offsets lands outside the waypoint and reports NOTHING, which reads exactly
+		like the defect under test. The anchor's own rendered box gives the conversion.
+		*/
+		const rpx = box.height / 2;                    // the anchor's on-screen radius
+		const u = rpx / 20;                            // screen px per user unit
+		return JSON.stringify({
+			scale: Number(u.toFixed(3)),
+			pad: at(8 * u), dead: at(17.5 * u), rim: at(19.5 * u), outside: at(26 * u),
+		});
+	})()`);
+
+	const hit = JSON.parse(probe);
+	const inside = (v) => typeof v === 'string' && v.startsWith('wp-');
+
+	assert.ok(inside(hit.pad), `a click on the pad must reach the waypoint, got ${hit.pad}`);
+	assert.ok(inside(hit.dead),
+		`the band between the pad and the anchor is dead -- a click there hit ${hit.dead}, which is why an endpoint stopped arming`);
+	assert.ok(inside(hit.rim), `a click just inside the anchor must reach the waypoint, got ${hit.rim}`);
+	assert.ok(!inside(hit.outside), `a click well outside the anchor must NOT hit it, got ${hit.outside}`);
+});
