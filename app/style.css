@@ -445,6 +445,24 @@ which is the honest rendering -- a bend IS pure authoring geometry, and in run m
 turns a corner is all there is to show.
 */
 #container.run-mode .wp-anchor { display: none; }
+
+/*
+B202 -- and a BEND leaves nothing behind but the grid it sits on.
+
+With the anchor gone a bend was still marking itself with a bright centre dot, which is the same
+authoring claim the anchor was making: "something is placed here". In run mode that is not true of
+a bend -- a bend is a corner the route turns, and the turn is already visible in the path.
+
+The dot is not removed so much as UNHIGHLIGHTED. `#grid-nodes` draws the same circle at the same
+radius at every snap point in `#202020`, and a waypoint's dot is that dot lit up (B200). Hiding the
+lit copy reveals the dim one underneath, so the bend reads as ordinary grid again rather than
+leaving a hole where a dot should be.
+
+ENDPOINTS KEEP THEIRS. An endpoint is not scaffolding in run mode: it is where movers enter the
+diagram, its pad stays clickable to arm a spawner, and `.spawning` and `.armed` recolour precisely
+this dot to say so. Hiding it there would remove the only indicator that a spawner is live.
+*/
+#container.run-mode .bend .wp-dot { display: none; }
 .waypoint.linkband { cursor: crosshair; }
 .waypoint .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
 .waypoint.selected .select-box { display: block; }

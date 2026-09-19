@@ -698,3 +698,68 @@ test('B202: run mode hides the anchor and keeps the pad clickable', { skip: SKIP
 	assert.ok(run.padHit.startsWith('wp-'),
 		`the pad must still catch a click in run mode or a spawner cannot be armed, got ${run.padHit}`);
 });
+
+/*
+B202: in run mode a bend leaves only the grid dot behind.
+
+With the anchor hidden, a bend was still marking itself with a bright centre dot -- the same
+authoring claim the anchor made. A bend is a corner the route turns, and in run mode the turn is
+already visible in the path itself.
+
+The dot is UNHIGHLIGHTED rather than removed: `#grid-nodes` paints the same circle at the same
+radius at every snap point in #202020, and a waypoint's dot is that dot lit up (B200). So the
+assertion worth making is not "the bend has no dot" but "the bend's own dot is gone AND the grid
+still draws one there" -- otherwise hiding it would leave a hole, which is a different defect that
+looks identical in a display check.
+
+An endpoint keeps its dot: `.spawning` and `.armed` recolour precisely that circle, so hiding it
+would remove the only signal that a spawner is live.
+*/
+test('B202: run mode unhighlights a bend, and keeps the endpoint dot that shows spawn state', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+
+	const probe = await until(tab, `(() => {
+		const svg = document.getElementById('container');
+		const end = document.querySelector('#waypoints .waypoint.endpoint');
+		if (!svg || !end) return null;
+		/*
+		The fixture's link runs waypoint to waypoint with no via, so it has no bend and reshaping
+		it would disturb the tests that share it. The rule under test is a CSS selector matching
+		the .bend .wp-dot selector, so a representative bend proves it: same classes, same structure,
+		appended to the same layer so it inherits the same cascade. Removed before returning.
+		*/
+		const bend = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		bend.setAttribute('class', 'waypoint bend');
+		const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+		dot.setAttribute('class', 'wp-dot');
+		bend.appendChild(dot);
+		document.getElementById('waypoints').appendChild(bend);
+		const was = svg.classList.contains('run-mode');
+		const read = () => ({
+			bendDot: getComputedStyle(bend.querySelector('.wp-dot')).display,
+			endDot: getComputedStyle(end.querySelector('.wp-dot')).display,
+			endPad: getComputedStyle(end.querySelector('.wp-ring')).display,
+		});
+		svg.classList.remove('run-mode');
+		const author = read();
+		svg.classList.add('run-mode');
+		const run = read();
+		svg.classList.toggle('run-mode', was);
+		bend.remove();
+		// the grid must still be drawing dots, or "unhighlighted" is really "deleted"
+		const grid = document.querySelectorAll('#grid-nodes circle').length;
+		const gridR = grid ? document.querySelector('#grid-nodes circle').getAttribute('r') : null;
+		return JSON.stringify({ author, run, grid, gridR });
+	})()`);
+
+	const { author, run, grid, gridR } = JSON.parse(probe);
+
+	assert.notEqual(author.bendDot, 'none', 'a bend must show its dot while authoring');
+	assert.equal(run.bendDot, 'none', 'run mode still highlights a bend');
+
+	assert.notEqual(run.endDot, 'none', 'the endpoint dot must survive -- spawning and armed recolour it');
+	assert.notEqual(run.endPad, 'none', 'the endpoint pad must survive run mode');
+
+	assert.ok(grid > 0, 'the node grid draws no dots -- a hidden bend dot would leave a hole, not the grid');
+	assert.equal(Number(gridR), 2, `the grid dot must be the same radius the bend was lit at, got ${gridR}`);
+});
