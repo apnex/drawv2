@@ -468,3 +468,44 @@ test('H14.12: a link traces rather than fading, and a node does not', { skip: SK
 		`getComputedStyle(document.getElementById('node-fa0001')).transitionDuration`);
 	assert.equal(String(fade).trim(), '0.5s', `a node fades in the ruled 500ms, got ${fade}`);
 });
+
+/*
+B197: the favicon is GENERATED from the kernel glyph, and its geometry is centred.
+
+The previous client shipped a hand-maintained `favicon.svg` whose arrow path was byte-identical to
+`#glyph-router` in GLYPH_DEFS. Two files owning one drawing is the twin problem, and a favicon is
+the asset least likely to be looked at again -- so the copy would drift in silence.
+
+The geometry assertions are the useful half. A favicon that serves 200 with valid XML and renders
+nothing looks identical to a working one from the server's side, which is exactly what happened
+while this was being built: HTTP status and `xml.parse` both passed on an icon painting 10 pixels.
+The numbers below come from GLYPH_BB, which states that the router occupies 30x30 user units
+centred on the origin after `.icon`'s own scale -- so a 32-unit viewBox centred on 0 frames it with
+one unit of margin, and the ring radius is half the glyph extent.
+*/
+test('B197: the favicon is built from the kernel glyph and framed on it', async () => {
+	const { faviconSvg, GLYPH_BB } = await import('../kernel/theme.mjs');
+	const svg = faviconSvg();
+
+	assert.match(svg, /href="#glyph-router"/, 'the favicon must USE the kernel glyph, not restate it');
+	assert.match(svg, /<defs id="defs">/, 'the glyph defs must be embedded or the href resolves to nothing');
+
+	// an <img> with no intrinsic size collapses; the archived favicon had width="100%" and did
+	// exactly that when taken out of its original page
+	assert.match(svg, /width="32" height="32"/, 'an SVG with no intrinsic size collapses in an <img>');
+
+	const [gx, gy, gw, gh] = GLYPH_BB.router;
+	assert.equal(gx + gw / 2, 0, 'the router glyph is centred on x=0');
+	assert.equal(gy + gh / 2, 0, 'the router glyph is centred on y=0');
+
+	const box = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/);
+	assert.ok(box, 'the favicon declares a viewBox');
+	const [, vx, vy, vw, vh] = box.map(Number);
+	assert.equal(Number(vx) + Number(vw) / 2, 0, 'the viewBox is centred on the glyph origin');
+	assert.equal(Number(vy) + Number(vh) / 2, 0, 'the viewBox is centred on the glyph origin');
+	assert.ok(Number(vw) >= gw && Number(vh) >= gh, 'the viewBox must not crop the glyph');
+
+	const ring = Number(svg.match(/class="ring" r="([\d.]+)"/)[1]);
+	assert.ok(ring * 2 <= Number(vw), 'the ring must fit inside the viewBox');
+	assert.ok(ring >= gw / 2 - 1, 'the ring must enclose the glyph rather than cut through it');
+});

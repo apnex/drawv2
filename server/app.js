@@ -7,6 +7,7 @@ Importable for tests (port 0 = random); server.js is the CLI entry.
 */
 
 import { DOCUMENT_ID } from './validate.js';
+import { faviconSvg } from '../kernel/theme.mjs';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -288,6 +289,19 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 				'Content-Disposition': `inline; filename="${asSvg[1]}.svg"`
 			});
 			return res.end(body);
+		}
+		/*
+		The tab icon, GENERATED rather than stored. It is the `#glyph-router` artwork the canvas
+		draws, so a static favicon file beside index.html would be a second copy of a drawing the kernel already
+		owns -- and a favicon is the asset least likely to be looked at again, which is what makes
+		that copy drift silently. The previous client shipped exactly such a file.
+
+		Unauthenticated on purpose: a browser requests the favicon before it has a session, and one
+		that 401s shows the generic page icon. It leaks the glyph set, which is public artwork.
+		*/
+		if (url.pathname === '/favicon.svg') {
+			res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=3600' });
+			return res.end(faviconSvg());
 		}
 		// the new thin UI + the kernel ESM, mounted beside the legacy client during migration
 		if (hasApp && (url.pathname === '/next' || url.pathname.startsWith('/next/'))) return serveFrom(req, res, appDir, '/next');

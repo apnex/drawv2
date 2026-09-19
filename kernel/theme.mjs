@@ -102,3 +102,32 @@ export const GLYPH_DEFS = `<defs id="defs">
 		<use href="#legs" transform="rotate(270 0 0)"/>
 	</g>
 </defs>`;
+
+/*
+faviconSvg -- the browser tab icon, built from the same `#glyph-router` artwork the canvas draws.
+
+The router was chosen because it is the glyph the product is recognised by, and an earlier version
+of this app shipped it as a hand-maintained `favicon.svg`. That file is in the archive and its
+arrow path is byte-identical to the one in GLYPH_DEFS above, which is the whole argument for not
+copying it back in: two files owning one drawing is the twin problem P3 exists to prevent, and a
+favicon is exactly the kind of asset nobody looks at again, so the drift would be silent.
+
+GLYPH_DEFS is embedded whole rather than excerpted. Slicing one `<g>` out of it would need a parser
+here and would break the moment the glyph gains a `<use>` of something defined beside it, which is
+how every other glyph in that block is already written. The unused defs cost bytes in a file served
+once; naming the glyph by href costs nothing and cannot go stale.
+
+The outline ring and the scale are the favicon's own: a tab icon is 16px of dark chrome and needs a
+boundary the canvas does not, because on the canvas a node sits inside a `.frame` that supplies one.
+*/
+export function faviconSvg() {
+	return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="-16 -16 32 32">
+<style>${KERNEL_CSS}
+.ring { fill: #101010; stroke: #aed581; stroke-width: 2; }
+</style>
+${GLYPH_DEFS}
+<circle class="ring" r="15"/>
+<use href="#glyph-router"/>
+</svg>
+`;
+}
