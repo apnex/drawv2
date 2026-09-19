@@ -99,10 +99,27 @@ const GESTURES = {
 	},
 
 	pending: {
-		update: (i, pos, evt) => i.escalate(pos, evt, i.readOnly || i.ctx.hit.kind === 'link', (x, p) => x.startMove(p), 'move'),
+		/*
+		B203 -- a LEFT drag never moves a waypoint. Left is the link button on a waypoint, and the
+		gesture it must not turn into is a move.
+
+		Two rules produce this gesture: `r-press` on the right button and `press` on the left. The
+		left one is the click-to-select path shared with every other kind, so a waypoint cannot
+		simply leave it -- dropping out of `press` would take selection with it. What is suppressed
+		is the ESCALATION: the press still selects, the drag just never becomes a move.
+
+		`link` already claims a left drag on a waypoint, but only a FREE one -- `waypointFree(id)`.
+		Once a waypoint carries a link that rule stops matching, the press falls through to here,
+		and the escalation quietly turned the link button into the move button for exactly the
+		waypoints that are part of a route. That is the defect the director reported.
+		*/
+		update: (i, pos, evt) => i.escalate(pos, evt,
+			i.readOnly || i.ctx.hit.kind === 'link' || (i.ctx.hit.kind === 'waypoint' && i.ctx.leftPress),
+			(x, p) => x.startMove(p), 'move'),
 		start: (i, hit, pos, evt) => {
 			i.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');   // for zones Shift is the layer key, not selection-add
 			i.ctx.orthoReady = !evt.shiftKey;
+			i.ctx.leftPress = evt.button === 0;   // which button opened this press; only the left one is barred above
 			return i.ctx;
 		}
 	},

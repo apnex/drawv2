@@ -1490,3 +1490,59 @@ test('B202: a press in run mode starts no gesture, on a waypoint or a node', () 
 		} finally { h.restore(); }
 	}
 });
+
+/*
+B203: a LEFT drag never moves a waypoint. Left is the link button; right is the move button.
+
+`link` already claims a left drag on a waypoint, but only a FREE one -- the rule tests
+`waypointFree(id)`. The moment a waypoint carries a link that rule stops matching, the press falls
+through to `press`, and `pending` escalated it into a move. So the link button became the move
+button for exactly the waypoints that are part of a route, which is the one case where a move is
+most likely to be an accident.
+
+The fix suppresses the ESCALATION rather than removing waypoints from `press`. Dropping out of
+`press` would take click-to-select with it, and selection is not what the director asked to change.
+Both halves are asserted here: the left press must still select, and the right drag must still
+move, or "left does not move it" has been achieved by making it do nothing at all.
+*/
+test('B203: left-drag on a linked waypoint selects but does not move it', () => {
+	const h = makeInput();
+	try {
+		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
+		h.model.put('waypoint', { id: 'waypoint-aa0002', name: 'w2', x: 180, y: 0 });
+		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+		const at = (x, y, mod) => pointer(x, y, {
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
+			...mod,
+		});
+
+		h.input.onDown(at(0, 0, { button: 0 }));
+		h.input.onMove(at(0, 240, { button: 0 }));
+		h.input.onUp(at(0, 240, { button: 0 }));
+
+		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 0, 'a LEFT drag moved the waypoint');
+		assert.equal(h.commits.length, 0, 'and it committed a change for a gesture that should not exist');
+		assert.ok(h.selection.list().includes('waypoint-aa0001'),
+			'the left press must still SELECT -- suppressing the move must not cost selection');
+	} finally { h.restore(); }
+});
+
+test('B203: right-drag still moves a waypoint', () => {
+	const h = makeInput();
+	try {
+		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
+		h.model.put('waypoint', { id: 'waypoint-aa0002', name: 'w2', x: 180, y: 0 });
+		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+		const at = (x, y) => pointer(x, y, {
+			button: 2,
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
+		});
+
+		h.input.onDown(at(0, 0));
+		h.input.onMove(at(0, 240));
+		h.input.onUp(at(0, 240));
+
+		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 240, 'the RIGHT drag is the move gesture and it did not move');
+		assert.equal(h.commits.length, 1, 'one drag is one change');
+	} finally { h.restore(); }
+});
