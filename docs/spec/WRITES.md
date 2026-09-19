@@ -3,7 +3,7 @@
 The sovereign spec for HOW a change reaches a document: one op at a time, or a group authored locally and committed whole, with or without a paced reveal.
 
 A design of record, written before the surface exists.\
-It sits under `CLI.md`, which owns the verbs, and over `COMMIT.md`, which owns durability.\
+It sits under `CLI.md`, which owns the verbs, and over `TRANSACTIONS.md`, which owns durability.\
 `CLI.md` says what an agent can ask for; this says what happens between the asking and the document changing.
 
 > **Status: BUILT and deployed.**\
@@ -483,7 +483,7 @@ Storage would grow with edit history rather than with entity count.
 ## 11. Related records
 
 - `CLI.md` -- the verb surface this extends, and the **GR18** rule that agentic interaction goes through the tool
-- `COMMIT.md` -- durability, and the transaction machinery a set commits through
+- `TRANSACTIONS.md` -- durability, and the transaction machinery a set commits through
 - `AUTHORITY.md` -- one writer per document, and the conflict surface a set inherits
 - `API.md` -- the vocabulary W1 must land in
 - **B188** -- the backlog row, and `docs/surveys/b188-beats-and-stories-survey.md` for captured intent

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // scan-claims — GR2. No deletion may ship without evidence beside it.
 //
-// Scope (Ruling B): the deletion tables in COMMIT.md §8, and all of COMMIT-DELETIONS.md.
+// Scope (Ruling B): the deletion tables in `dev/COMMIT-DELIVERY.md` section 2, and all of
+// `docs/spec/COMMIT-DELETIONS.md`. Both were sections of COMMIT.md until it was split on 2026-09-19.
 // A markdown table row is one line, which is why line-scoping is correct HERE and nowhere else.
 //
 // Rule: in a deletion table EVERY data row is a deletion by construction, so every row must carry
@@ -37,7 +38,7 @@ function rowsOf(file, onlySection8, sec) {
 }
 
 // Usage: scan-claims.mjs <file>[#section] ...
-//   docs/spec/COMMIT.md#8          scope to section 8 only
+//   docs/spec/TRANSACTIONS.md#8          scope to section 8 only
 //   docs/spec/COMMIT-DELETIONS.md  whole file
 let bad = 0, total = 0;
 for (const arg of process.argv.slice(2)) {

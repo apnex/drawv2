@@ -63,6 +63,19 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
 	/*
+	COMMIT.md was SPLIT on 2026-09-19 into `docs/spec/TRANSACTIONS.md` (the contract) and
+	`dev/COMMIT-DELIVERY.md` (the plan that delivered it). The audit is preserved verbatim -- it
+	records what was audited under the name it had -- so its citations are kept rather than
+	rewritten, on the same footing as the SCOPE.md entries above.
+	*/
+	'docs/history/COMMIT-AUDIT.md:docs/spec/COMMIT.md': 'split 2026-09-19; the audit names the file as it was, and is not edited',
+
+	'dev/COMMIT-DELIVERY.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/COMMIT-DELIVERY.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
+	'dev/COMMIT-DELIVERY.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
+	'dev/COMMIT-DELIVERY.md:tests/diff-inverse.test.js': 'GR5 as specified; retired unbuilt and recorded as deviation X15',
+	'dev/COMMIT-DELIVERY.md:server/commit.mjs': '§7.1 is a deletion table and D5 records the removal — naming the dead is the job',
+	/*
 	Removed before publishing on 2026-09-03: `DEPLOY.md` carried one deployment's procedure, project
 	identifiers and DNS, and `gcs-probe.mjs` ran against that deployment's bucket. How a particular
 	instance is hosted is not a property of the system, and a published repository describing it
@@ -84,7 +97,7 @@ const ALLOW = {
 	'docs/spec/WRITES.md:deploy/demo/spine-leaf.sh': 'gitignored: targets one deployment, and the citation is to where the check lives rather than to something to read',
 	/*
 	`SCOPE.md` was split and removed on 2026-09-03: the wire contract, vocabulary and entity model to
-	`docs/spec/API.md`, the ruling register to `docs/DECISIONS.md`, durability to `COMMIT.md`. The
+	`docs/spec/API.md`, the ruling register to `docs/DECISIONS.md`, durability to `TRANSACTIONS.md`. The
 	scope framing itself was superseded in premise by `VISION.md` and is gone.
 
 	These citations are PROVENANCE and are the point of the sentence they sit in -- a milestone table
@@ -98,7 +111,7 @@ const ALLOW = {
 	'docs/spec/API.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/history/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/COMMIT-DELETIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/spec/COMMIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'docs/spec/TRANSACTIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/history/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'*:server/slides/auth.js': 'the Slides feature, PURGED at Phase 1 and recorded in COMMIT-DELETIONS.md. Every remaining reference is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing lines as evidence for rulings made while it existed, and BACKLOG rows describing defects in it. M4 forbids rewriting an artifact recorded before the change.',
 	'*:server/slides/sync.js': 'as above -- cited as evidence in records written while the feature existed.',
@@ -150,7 +163,7 @@ const ALLOW = {
 	The error is named here so a reader meets it as an error, which is the part that was missing.
 	*/
 	'docs/history/COMMIT-AUDIT.md:slides/sync.js': 'WRONG PATH, never existed at any commit -- the auditor meant `server/slides/sync.js` (itself since purged). Kept because the file is a verbatim external artefact; recorded as an error, not as history.',
-	'docs/spec/COMMIT.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
+	'docs/spec/TRANSACTIONS.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
 	'docs/BACKLOG.md:cli/draw.sh': 'rows describing the defects that ended it, B61 and B117, written while it was the CLI.',
 	'docs/BOARD.md:cli/draw.sh': 'H11.16, which records the Dockerfile still symlinking a retired path. Naming the dead path is the item.',
 	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
@@ -159,7 +172,7 @@ const ALLOW = {
 	'docs/BACKLOG.md:diagrams/diagram-000001.json': 'as above (B49 evidence)',
 	'docs/slides-setup.md:secrets/google-credentials.json': 'runtime, gitignored: the user downloads it during OAuth setup - the doc is telling them where to put it',
 	'docs/slides-setup.md:secrets/google-token.json': 'runtime, gitignored: written by the OAuth flow on first authorization',
-	'docs/spec/COMMIT.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
+	'docs/spec/TRANSACTIONS.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
 	'docs/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',
 	'docs/spec/ATOMICS.md:../design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
@@ -179,10 +192,10 @@ const ALLOW = {
 	'tools/scan-docrefs.mjs:design/sim/parallel.mjs': 'as above',
 	'tools/scan-docrefs.mjs:design/sim/star.mjs': 'as above',
 	// GR5 is [LOCKED] and names the guardrail as designed; X15 records that it was retired unbuilt
-	'docs/spec/COMMIT.md:tests/diff-inverse.test.js': 'GR5 as specified; retired unbuilt and recorded as deviation X15',
+	'docs/spec/TRANSACTIONS.md:tests/diff-inverse.test.js': 'GR5 as specified; retired unbuilt and recorded as deviation X15',
 	'docs/BOARD.md:tests/diff-inverse.test.js': 'as above',
 	'docs/BACKLOG.md:tests/diff-inverse.test.js': 'as above (B22, closed by retirement)',
-	'docs/spec/COMMIT.md:server/commit.mjs': '§7.1 is a deletion table and D5 records the removal — naming the dead is the job',
+	'docs/spec/TRANSACTIONS.md:server/commit.mjs': '§7.1 is a deletion table and D5 records the removal — naming the dead is the job',
 	'docs/design/walk/FINDINGS.md:docs/design/walk/grc.mjs': 'the walk record is historical; the checker graduated to kernel/grc.mjs',
 	'docs/design/widgets/DESIGN.md:model/arc-catalog.json': 'a mockup input from the pre-kernel design sandbox, never part of this tree',
 	'docs/BACKLOG.md:kernel/view.mjs': 'B31 cites the broken paths AS ITS EVIDENCE — the row recording the drift must name it',

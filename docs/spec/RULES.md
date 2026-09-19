@@ -76,7 +76,7 @@ Where they are three lists, two of them are wrong and nobody knows which.
 **Boundaries.**\
 Rules own no geometry, no persistence and no gesture lifecycle.\
 They read a situation, choose one rule, and name a verb for `input.js` to run.\
-Everything downstream of that name is `INPUT.md`'s, and everything downstream of the commit boundary is `COMMIT.md`'s.
+Everything downstream of that name is `INPUT.md`'s, and everything downstream of the commit boundary is `TRANSACTIONS.md`'s.
 
 ---
 

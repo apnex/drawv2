@@ -218,7 +218,7 @@ if (exported.length === 0) {
 console.log(`  scan-dead: ${exported.length} export(s) + ${methods.length} method(s) of ${new Set(methods.map((m) => m[1])).size} exported class(es); ${findings.length} without a production consumer, ${Object.keys(ALLOW).length} allowed`);
 if (unlisted.length) {
 	console.log(`\n  FAIL — ${unlisted.length} symbol(s) with no production consumer and no recorded reason.`);
-	console.log('  Each is DELETE (via COMMIT.md §7.4), KEEP (add to ALLOW with the reason), or PROMOTE (it needs a caller).\n');
+	console.log('  Each is DELETE (via `dev/COMMIT-DELIVERY.md` section 2.4), KEEP (add to ALLOW with the reason), or PROMOTE (it needs a caller).\n');
 	process.exit(1);
 }
 console.log(`  PASS — every export, and every public method of an exported class under `

@@ -169,7 +169,7 @@ Content drawn before first hydration becomes a NEW diagram via `create {doc}` - 
 A commit goes out immediately (it is a user-action-rate event); what coalesces is a burst of same-shape edits, into ONE undoable change.\
 Live drag frames never reach the wire at all.
 
-*(Amended 2026-08-18, CS1-CS5 - see `docs/spec/COMMIT.md`)* - **the server owns the document.**\
+*(Amended 2026-08-18, CS1-CS5 - see `docs/spec/TRANSACTIONS.md`)* - **the server owns the document.**\
 The section above HAS BEEN REWRITTEN, not merely annotated: a wire reference is what a reader copies from, so a superseded-but-still-printed line gets sent.\
 This amendment is late - **CS1 and CS3 each owed one and did not pay it**, so those lines were false for three milestones rather than the one GR10 allows, and nothing mechanized the check (now `tests/spec.test.js`).\
 What changed:

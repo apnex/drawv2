@@ -2,9 +2,9 @@
 
 Who may read and write which diagram, and how they prove it.
 
-**Status:** design, not implemented.\
-Nothing here has shipped.\
-The sections marked OPEN are still being decided.
+**Status:** BUILT.\
+Two authentication methods, the grant model, connection codes and the principal-scoped lock all ship -- `server/validate.js` gates grants, the access panel is in the client, and `draw` carries seven verbs for it (`access`, `grant`, `workspace grant`, `workspace grants`, `code mint`, `code list`, `code revoke`).\
+This said "nothing here has shipped" and referred to sections marked OPEN; no such marker remains in the document, and the header outlived both facts.
 
 This exists because two workflows that sound similar need different machinery, and both are blocked on the same absent thing.\
 Sharing one diagram with a person, and handing a code to an agent, differ in how the caller authenticates and agree in what the server must then decide.\

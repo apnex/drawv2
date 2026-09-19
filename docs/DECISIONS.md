@@ -160,7 +160,7 @@ Designed in `docs/spec/ACCESS.md`, not yet built.
 The stack was destroyed by any authoritative snapshot, and a REST write broadcast one - so Ctrl+Z could not reverse an agent's change, only lose your own.\
 The server holds a bounded log of changes with their inverses; `undo`/`redo {expect}` reverse whoever's change is on top.\
 The client keeps only a coalesce window, so a burst of nudges is still ONE undo step.\
-See the wire-protocol amendment above and `docs/spec/COMMIT.md` section 3 (D3, D14, D21).\
+See the wire-protocol amendment above and `docs/spec/TRANSACTIONS.md` section 3 (D3, D14, D21).\
 Product: README with real usage, one-command start, seeded example diagram, tests (model, protocol, slides mapping with mocked API, CLI integrity).\
 *(Amended 2026-06-13)* - a sovereign **read-only `draw` CLI** (`cli/`, bash+curl+jq over the REST API) ships as a first-class agentic/operator surface; it is bundled in the single container.\
 Still strictly read-only - it adds no mutation path, honoring single-writer ownership.\

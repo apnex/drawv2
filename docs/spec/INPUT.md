@@ -9,7 +9,7 @@ The sovereign spec for how a person's gestures become committed changes.
 ## 0. Why this document exists
 
 Every other part of this system was specified before it was built.\
-Geometry has `HIERARCHY.md`, interaction atomics have `ATOMICS.md`, the transaction model has `COMMIT.md`.\
+Geometry has `HIERARCHY.md`, interaction atomics have `ATOMICS.md`, the transaction model has `TRANSACTIONS.md`.\
 **The input system was never specified - it accreted**, and it is the single densest source of defects in the tree:
 
 | Row | Defect | Shape |
@@ -40,7 +40,7 @@ Feedback is therefore a first-class output of this system, not a side effect of 
 **Boundaries.**\
 Input owns no persistence, no geometry, and no rendering of the document.\
 It reads the Model, asks `kernel/` for geometry, and emits **commands** at the commit boundary (`Changes.onCommit`).\
-Everything downstream of that boundary - versioning, undo, the wire - is `COMMIT.md`'s.
+Everything downstream of that boundary - versioning, undo, the wire - is `TRANSACTIONS.md`'s.
 
 ---
 

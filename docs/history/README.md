@@ -12,7 +12,7 @@ Each file is preserved as it was written, which is the whole reason it is not in
 
 - **`COMMIT-AUDIT.md`** -- an axiom-alignment audit run on 2026-08-18 against the COMMIT design PLAN, before any of it was implemented.
   Its milestone ids are the plan's original `M1`-`M6`, which no longer exist.
-  It is cited by `docs/spec/COMMIT.md` as the reasoning behind rulings that document carries, so it is reachable rather than deleted.
+  It is cited by `docs/spec/TRANSACTIONS.md` as the reasoning behind rulings that document carries, so it is reachable rather than deleted.
 
 - **`DESIGN.md`** -- a UI design panel report from 2026-06-12: four independent lenses, 23 proposals deduplicated to 18.
   Every item in it is marked SHIPPED with a June date and none is open, so it records a decision round rather than a plan or a state.

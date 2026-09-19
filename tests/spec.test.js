@@ -229,7 +229,7 @@ test('B104: the id grammar in API.md is the one validate.js enforces', () => {
 });
 
 /*
-B77 / H9.20 (minor half) -- COMMIT.md's index must not contradict its own sections.
+B77 / H9.20 (minor half) -- TRANSACTIONS.md's index must not contradict its own sections.
 
 H9.20 asked for a general rule: a stated count must not contradict one the repo can compute. Measured
 across every document, the population for that rule is almost nothing, and deliberately so. A number
@@ -237,7 +237,7 @@ here is normally a MEASUREMENT -- inside `[V, ...]` evidence, in a per-item chan
 audit pinned to a commit hash -- true when made and protected by M4. Re-checking those against today
 would report the board's own test-count history as seven defects and be wrong seven times.
 
-The exception is a CLAIM ABOUT NOW, and COMMIT.md's contents table is the one place the repo makes
+The exception is a CLAIM ABOUT NOW, and TRANSACTIONS.md's contents table is the one place the repo makes
 them: each row says a section holds `X1-Xn`, which asserts that `n` is the highest `X` in the file.
 Two were wrong when this was written -- the index read `GR1-GR13` against `GR18`, and `X1-X5` against
 `X17` -- so the file's own front page understated its most load-bearing sections.
@@ -250,8 +250,8 @@ READ FROM THE CONTENTS TABLE, not from anywhere the pattern appears. `CS1-CS4 ar
 :613 is prose about the first four milestones, not a claim that there are four -- and there are six.
 Scoping to the table is the same distinction that made R12 read a column rather than a sentence.
 */
-test('B77: every range in COMMIT.md\'s contents table matches the highest id defined below it', () => {
-	const src = fs.readFileSync(new URL('../docs/spec/COMMIT.md', import.meta.url), 'utf8');
+test('B77: every range in TRANSACTIONS.md\'s contents table matches the highest id defined below it', () => {
+	const src = fs.readFileSync(new URL('../docs/spec/TRANSACTIONS.md', import.meta.url), 'utf8');
 
 	/*
 	The `## Contents` TABLE ROWS, not the section.
@@ -264,7 +264,13 @@ test('B77: every range in COMMIT.md\'s contents table matches the highest id def
 	const section = (src.split(/^##\s+Contents\b/m)[1] || '').split(/^##\s/m)[0];
 	const table = section.split('\n').filter((l) => l.trimStart().startsWith('|')).join('\n');
 	const claims = [...table.matchAll(/\b([A-Z]{1,2})1-\1(\d+)\b/g)].map((m) => [m[1], Number(m[2])]);
-	assert.ok(claims.length >= 5, 'the contents table stopped declaring ranges — this check just went vacuous');
+	/*
+	FOUR, not five. The threshold was calibrated when this file also held the milestone sequence and
+	the deviations, so its index declared X and B ranges too; those moved to `dev/COMMIT-DELIVERY.md`
+	when COMMIT.md was split on 2026-09-19. Four is now the true maximum -- D, I, GR and N -- and a
+	floor above what exists is a check that fails for being correct.
+	*/
+	assert.ok(claims.length >= 4, 'the contents table stopped declaring ranges — this check just went vacuous');
 
 	for (const [prefix, top] of claims) {
 		// a definition is a heading (`### D1 - ...`) or a table row (`| **I1** | ...`); the sections

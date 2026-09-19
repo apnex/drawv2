@@ -67,7 +67,7 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 test('GR1: the registers the gate depends on exist', () => {
 	// GR1 specifies these as `test -f` steps in the gate script. Mechanized here instead: an
 	// assertion names the missing file, a shell -f chain only exits non-zero.
-	for (const f of ['docs/spec/COMMIT.md', 'docs/BACKLOG.md', 'docs/BOARD.md']) {
+	for (const f of ['docs/spec/TRANSACTIONS.md', 'docs/BACKLOG.md', 'docs/BOARD.md']) {
 		assert.ok(fs.existsSync(path.join(root, f)), `${f} is missing — the gate asserts its presence`);
 	}
 });
@@ -966,8 +966,11 @@ test('B53: CI builds the image, and the probe is more than a health check', () =
 	const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 	assert.doesNotMatch(pkg.scripts.gate, /docker/,
 		'an image build in the pre-push hook is a gate people learn to skip');
-	const commit = fs.readFileSync(path.join(root, 'docs/spec/COMMIT.md'), 'utf8');
-	assert.match(commit, /\*\*X17\*\*/, 'the local/CI asymmetry is a recorded deviation, not an accident');
+	// X-numbers are DEVIATIONS: where the build departed from the design. They moved with the
+	// delivery record when COMMIT.md was split, because a deviation is a fact about how something
+	// was made rather than part of the contract it was made against.
+	const deviations = fs.readFileSync(path.join(root, 'dev/COMMIT-DELIVERY.md'), 'utf8');
+	assert.match(deviations, /\*\*X17\*\*/, 'the local/CI asymmetry is a recorded deviation, not an accident');
 });
 
 /*
