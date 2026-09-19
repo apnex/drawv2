@@ -311,7 +311,7 @@ The one compression available is that F1, the agent's perception verb, is indepe
 - **mission-kit K5 survey** -- the survey methodology this followed
 - **B188** -- source work item
 - **`VISION.md`** -- ratified AR6; the geometry-carries-more-and-stores-less asymptote this envelope leans on
-- **`docs/DECISIONS.md`** -- where the Q1, Q2 and Q4 rulings should be recorded as AR4 entries
+- **`dev/DECISIONS.md`** -- where the Q1, Q2 and Q4 rulings should be recorded as AR4 entries
 - **B163, B178** -- prior surveys; the calibration baseline
 - **B110** -- positions are anchors, never pixels; the constraint F3 collides with
 - **B138** -- `cli/` cannot import the kernel; the constraint behind G7

@@ -85,7 +85,7 @@ That is the shape of the **B187** gap, where machinery lived under a word that m
 `beat` is the reveal, ruled by the director on 2026-09-04: it is the sense the feature was described in, it is the one shipping first, and it is the musical sense -- a moment of timing rather than a place to return to.
 
 **The story layer's step is therefore NOT a beat and is unnamed.**\
-`docs/surveys/b188-beats-and-stories-survey.md` uses `beat` throughout for a cursor-addressable step that a reader can scrub back to, and that artifact is a ratified record which is not rewritten (**M4** protects a record of what was true).\
+`dev/surveys/b188-beats-and-stories-survey.md` uses `beat` throughout for a cursor-addressable step that a reader can scrub back to, and that artifact is a ratified record which is not rewritten (**M4** protects a record of what was true).\
 Read it with this amendment in hand: its `beat` is this document's unnamed story step, and naming that is owed when the story layer is designed.
 
 ---

@@ -67,7 +67,7 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 test('GR1: the registers the gate depends on exist', () => {
 	// GR1 specifies these as `test -f` steps in the gate script. Mechanized here instead: an
 	// assertion names the missing file, a shell -f chain only exits non-zero.
-	for (const f of ['docs/spec/TRANSACTIONS.md', 'docs/BACKLOG.md', 'docs/BOARD.md']) {
+	for (const f of ['docs/spec/TRANSACTIONS.md', 'dev/BACKLOG.md', 'dev/BOARD.md']) {
 		assert.ok(fs.existsSync(path.join(root, f)), `${f} is missing — the gate asserts its presence`);
 	}
 });
@@ -129,7 +129,7 @@ test('GR14/B78: scan-board counts a two-digit milestone and its items', () => {
 	const m = /(\d+) milestone\(s\), (\d+) item\(s\), (\d+) citing/.exec(out);
 	assert.ok(m, 'scan-board reports a milestone, item and citing count');
 
-	const board = fs.readFileSync(new URL('../docs/BOARD.md', import.meta.url), 'utf8');
+	const board = fs.readFileSync(new URL('../dev/BOARD.md', import.meta.url), 'utf8');
 	assert.equal(Number(m[1]), [...board.matchAll(/^##\s+(H\d+)\b/gm)].length,
 		'every milestone heading is counted, two digits included');
 
@@ -159,19 +159,19 @@ exactly the R3 contract, and asserts the scanner REFUSES it.
 */
 test('GR14/B92: a rule fires on a lettered item, not only on an unlettered one', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b92-'));
-	fs.mkdirSync(path.join(dir, 'docs'));
+	fs.mkdirSync(path.join(dir, 'dev'));
 	// The disposition must PROMISE a milestone or R3 skips the row by design (scan-board.mjs:161),
 	// so the fixture opens with `**H1**` and is not marked CLOSED. Read from the scanner rather than
 	// assumed: the first draft of this fixture said `OPEN`, R3 correctly ignored it, and the test
 	// would have reported a green baseline as the repair.
-	fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), '| **B1** | a row | `[V]` | **H1** closes there |\n');
+	fs.writeFileSync(path.join(dir, 'dev/BACKLOG.md'), '| **B1** | a row | `[V]` | **H1** closes there |\n');
 	const run = () => {
 		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
 		catch (e) { return { out: e.stdout || '', code: e.status }; }
 	};
 	// a DONE item citing a B row that is not CLOSED -- the R3 contract, the rule the scanner header
 	// calls the one that silently rots. The heading reads DONE so R6 agrees and R3 is alone in play.
-	const write = (id) => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+	const write = (id) => fs.writeFileSync(path.join(dir, 'dev/BOARD.md'),
 		`## H1 — m · \`DONE\`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n| ${id} | a | **B1** | S1 | \`DONE\` |\n`);
 	try {
 		write('H1.1');
@@ -274,9 +274,9 @@ not that they can tell a violation from a compliance.
 */
 test('GR14/B77: a heading must agree with the states beneath it, and every item must declare one', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'board-'));
-	fs.mkdirSync(path.join(dir, 'docs'));
-	fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), '| **B1** | a row | `[V]` | OPEN |\n');
-	const write = (body) => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'), body);
+	fs.mkdirSync(path.join(dir, 'dev'));
+	fs.writeFileSync(path.join(dir, 'dev/BACKLOG.md'), '| **B1** | a row | `[V]` | OPEN |\n');
+	const write = (body) => fs.writeFileSync(path.join(dir, 'dev/BOARD.md'), body);
 	const run = () => {
 		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
 		catch (e) { return { out: e.stdout || '', code: e.status }; }
@@ -335,13 +335,13 @@ rules agree with today's file, not that they can tell a violation from a complia
 */
 test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent from the plan', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b122-'));
-	fs.mkdirSync(path.join(dir, 'docs'));
+	fs.mkdirSync(path.join(dir, 'dev'));
 	const run = () => {
 		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
 		catch (e) { return { out: e.stdout || '', code: e.status }; }
 	};
-	const backlog = (...rows) => fs.writeFileSync(path.join(dir, 'docs/BACKLOG.md'), `${rows.join('\n')}\n`);
-	const board = (items, held = '', slice = '| 1 | future work | feature | because |', owed = '') => fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+	const backlog = (...rows) => fs.writeFileSync(path.join(dir, 'dev/BACKLOG.md'), `${rows.join('\n')}\n`);
+	const board = (items, held = '', slice = '| 1 | future work | feature | because |', owed = '') => fs.writeFileSync(path.join(dir, 'dev/BOARD.md'),
 		// the fixture carries a valid Next slice because R12 requires one. A fixture must differ from
 		// a valid board in exactly the defect under test, and a board with no ranking is its own
 		// separate defect -- the same reasoning that made two R6/R8 fixtures declare `feature`.
@@ -513,7 +513,7 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		assert.equal(run().code, 0, 'an empty Decisions required is an answer, not a broken scan');
 
 		// and deleting the heading fails rather than going quiet
-		fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+		fs.writeFileSync(path.join(dir, 'dev/BOARD.md'),
 			'## H1 — m · `WIP`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n' + ITEMS
 			+ '\n\n## Next slice\n\n| Order | Item | Tier | Why |\n|---|---|---|---|\n| 1 | H1.2 | user | live |\n');
 		assert.match(run().out, /has no "Decisions required" section/);
@@ -531,7 +531,7 @@ test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent
 		apart because "there is no Next slice section" is actionable and "matched NO ranked entry"
 		sends a reader looking for a table that is not there.
 		*/
-		fs.writeFileSync(path.join(dir, 'docs/BOARD.md'),
+		fs.writeFileSync(path.join(dir, 'dev/BOARD.md'),
 			'## H1 — m · `WIP`\n\n| # | Item | Cites | Size | State |\n|---|---|---|---|---|\n' + live + '\n');
 		assert.match(run().out, /has no "Next slice" section/);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -736,11 +736,11 @@ match it, so widening this check would force exactly the retroactive edit that
 rule exists to prevent.
 */
 test('BOARD: no em dashes -- write `--`', () => {
-	const board = fs.readFileSync(path.join(root, 'docs/BOARD.md'), 'utf8');
+	const board = fs.readFileSync(path.join(root, 'dev/BOARD.md'), 'utf8');
 	const lines = board.split('\n');
 	const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => l.includes('\u2014'));
 	assert.equal(hits.length, 0,
-		`docs/BOARD.md uses an em dash on ${hits.length} line(s), first at :${hits[0]?.[0]} -- write "--" instead`);
+		`dev/BOARD.md uses an em dash on ${hits.length} line(s), first at :${hits[0]?.[0]} -- write "--" instead`);
 
 	// The check must be able to fail, and the message must name a line. Asserting only that
 	// today's file is clean would pass identically if `hits` were computed from the wrong string.
@@ -758,7 +758,7 @@ two. Three links needed updating and nothing in the tree would have said so:
 scan-docrefs resolves file paths, not fragments.
 */
 test('BOARD: every in-file anchor resolves to a heading', () => {
-	const board = fs.readFileSync(path.join(root, 'docs/BOARD.md'), 'utf8');
+	const board = fs.readFileSync(path.join(root, 'dev/BOARD.md'), 'utf8');
 	// github-slugger: lowercase, drop everything that is not alphanumeric, space, hyphen or
 	// underscore, then spaces become hyphens.
 	const slug = (h) => h.trim().toLowerCase().replace(/[^0-9a-z \-_]/g, '').replace(/ /g, '-');
@@ -768,7 +768,7 @@ test('BOARD: every in-file anchor resolves to a heading', () => {
 	const links = [...board.matchAll(/\]\(#([a-z0-9\-_]+)\)/g)].map((m) => m[1]);
 	assert.ok(links.length > 0, 'the board links to itself at all');
 	const dangling = links.filter((a) => !headings.has(a));
-	assert.deepEqual(dangling, [], `docs/BOARD.md links to ${dangling.length} anchor(s) with no heading`);
+	assert.deepEqual(dangling, [], `dev/BOARD.md links to ${dangling.length} anchor(s) with no heading`);
 });
 
 /*

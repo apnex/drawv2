@@ -491,7 +491,7 @@ onDown, which sits above the read-only gate. So the sequence "arm the tool, then
 straight past it: a text box is authored, applied locally, and dropped by Sync (sync.js:62).
 Permanent silent divergence, which is the exact failure B18 was about.
 
-Found by AUDITING the recognizer for docs/spec/INPUT.md rather than by a test failing — the ordered
+Found by AUDITING the recognizer for dev/INPUT.md rather than by a test failing — the ordered
 branches of onDown were written out as a table, and this one was visibly above a gate it depends on.
 That is the argument for the recognizer being a table: the ordering is the thing that is wrong, and
 in a 167-line ladder the ordering is invisible.

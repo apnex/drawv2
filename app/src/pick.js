@@ -2,7 +2,7 @@
 PICK — resolve a point, or an event, to the entity under it.
 
 One duty: *what is there?* Nothing here decides what to DO about it — that is the recognizer's job
-(docs/spec/INPUT.md §4) — and nothing here holds state. Two distinct questions live together because
+(dev/INPUT.md §4) — and nothing here holds state. Two distinct questions live together because
 they are the same question asked of two inputs:
 
   · from a DOM event   `hitOf(evt)`      — what did the pointer land on? (reads the rendered tree)

@@ -1,5 +1,5 @@
 /*
-Input — pointer/keyboard state machine. Two-button gestures (`docs/DECISIONS.md` decision 2):
+Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md` decision 2):
   click             select (Shift/Ctrl+click adds/toggles)
   left-drag node    create link (whole node is the source, crosshair ring)
   right-drag        move node/zone selection (snap on release)  [v1 convention]
@@ -220,7 +220,7 @@ const GESTURES = {
 			which is not an improvement.
 
 			The design end state is up to N parallel connections bounded by the column span
-			(`docs/design/walk/FINDINGS.md`, rung `3-parallel3`); that is H10.7 and needs spacing this
+			(`dev/design/walk/FINDINGS.md`, rung `3-parallel3`); that is H10.7 and needs spacing this
 			does not attempt. This is the editor rule only.
 			*/
 			// B80: the refusal is about STRAIGHT links colliding, so it must ask whether a straight

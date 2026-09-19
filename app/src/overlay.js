@@ -5,7 +5,7 @@ One duty: everything that tells a person what WILL happen, and nothing that make
 hover ring, the arming recolour, the re-plug and resize handles, the snap crosshair, the datum
 marker, the zone-layer indicator. None of it commits; all of it disappears.
 
-That is exactly what made this the risky part of H6 (docs/spec/INPUT.md §9): five of the six units
+That is exactly what made this the risky part of H6 (dev/INPUT.md §9): five of the six units
 end in a commit, so the commit-boundary net proves they survived the move. This one commits nothing,
 so it needed its own net first — `tests/affordance.test.js`, written at H2.6 against the behaviour
 rather than the structure, and verified against five regressions of exactly this shape.

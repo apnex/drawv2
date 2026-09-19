@@ -1,8 +1,8 @@
-# docs/design/sim -- SUPERSEDED by the sovereign `kernel/`
+# dev/design/sim -- SUPERSEDED by the sovereign `kernel/`
 
 > **Status: historical exploration record only (marked by CL6 of the cleanliness arc).** This
 > sandbox's core (schema / engine / renderer / router / grc) **graduated into the top-level
-> `kernel/`**, which is now the authoritative geometry core. `docs/design/sim` is NOT consumed by
+> `kernel/`**, which is now the authoritative geometry core. `dev/design/sim` is NOT consumed by
 > production, tests, or scripts -- the one in-repo reference is a comment in `kernel/engine.mjs`.
 > Do **not** build on it; if it ever diverges from `kernel/`, the kernel wins, and new geometry
 > work goes in `kernel/`. Everything below is the original bootstrap write-up, kept for lineage.
@@ -11,7 +11,7 @@ The **headless, programmable geometry engine** prototype for draw.\
 Built test-first as design scaffolding; its CORE (schema / engine / renderer / router / grc) became the **sovereign `kernel/`** (the bootstrap -- HANDOVER section 8).\
 The interactive tool is now a thin UI over the kernel.
 
-Run: `node docs/design/sim/run.mjs` -> console scorecard + `/tmp/draw-preview.{html,png}` gallery.
+Run: `node dev/design/sim/run.mjs` -> console scorecard + `/tmp/draw-preview.{html,png}` gallery.
 
 ## Pipeline
 ```
@@ -63,6 +63,6 @@ The engine snaps routes to the sub-grid; GRC validates.
 ## Status / next
 - **Done (this sweep):** kernel module split; prism `NPath` lifted + proven (L/Z/clover); fractal
 Clover signature reproduced as the routing acceptance fixture; obstacle rule + crossings metric.
-- **Walk history retained** in `docs/design/walk/` (the stylexrung science, `FINDINGS.md`) -- unchanged.
+- **Walk history retained** in `dev/design/walk/` (the stylexrung science, `FINDINGS.md`) -- unchanged.
 - **Next:** richer routing rungs (offset / pass-through / fan-out at scale) and side/port assignment;
 horizontal-facing `specBetween`; the deferred `cell-align` (+/-29 vs +/-30) consideration; then Phase 2 -- graduate `schema + engine` into drawv2's doc model.

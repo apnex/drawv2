@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 /*
-The wire contract moved to API.md and the ruling register to docs/DECISIONS.md when the interface record was
+The wire contract moved to API.md and the ruling register to dev/DECISIONS.md when the interface record was
 split on 2026-09-03. The proofs did not change: `scope` is retained as the name these assertions
 use, and now reads the two files that carry what it used to.
 
@@ -28,7 +28,7 @@ single source keeps every assertion reading exactly what it read before.
 */
 const scope = [
 	fs.readFileSync('docs/spec/API.md', 'utf8'),
-	fs.readFileSync('docs/DECISIONS.md', 'utf8'),
+	fs.readFileSync('dev/DECISIONS.md', 'utf8'),
 ].join('\n');
 const protocol = fs.readFileSync('server/protocol.js', 'utf8');
 

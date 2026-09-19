@@ -1,5 +1,5 @@
 // SPEC — the LOCKED `standard` variant + the derived px ladder. The single source of px truth
-// for the kernel. Frozen on purpose: the geometry is locked (docs/spec/HIERARCHY.md §2 / preview.html
+// for the kernel. Frozen on purpose: the geometry is locked (dev/HIERARCHY.md §2 / preview.html
 // standardSpecTable). Do not edit without a deliberate re-lock.
 //
 // Budget: pitch = node + 6·step + gutter = 40 + 6·3 + 2 = 60
@@ -17,7 +17,7 @@ export const STD = Object.freeze({
 	linkW: 6      // link / path stroke width
 });
 
-// the LOCKED bend radius (docs/spec/ATOMICS.md): a path corner radius = the node radius (20), so a 40px
+// the LOCKED bend radius (dev/ATOMICS.md): a path corner radius = the node radius (20), so a 40px
 // circle inscribes the bend exactly — which is precisely what a Waypoint is.
 export const BEND_R = STD.node;   // 20
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /*
-scan-board — GR14. The executable form of the BOARD↔BACKLOG contract (docs/BOARD.md).
+scan-board — GR14. The executable form of the BOARD↔BACKLOG contract (dev/BOARD.md).
 
-Two registers, deliberately different in kind: `docs/BACKLOG.md` is the durable record
-(append-and-close, evidenced, nothing deleted), `docs/BOARD.md` is the mutable plan (reorderable,
+Two registers, deliberately different in kind: `dev/BACKLOG.md` is the durable record
+(append-and-close, evidenced, nothing deleted), `dev/BOARD.md` is the mutable plan (reorderable,
 rescored, cleared when an arc ends). That split is the point — and it is also the failure mode.
 A mutable file is where a deferral goes to die: the axiom review of 2026-08-19 found three findings
 that existed ONLY in conversation or ONLY in the board, which is A14 Insight Depreciation and a
@@ -48,8 +48,8 @@ import { execSync } from 'node:child_process';
 // is what B77 and B78 both were.
 const rootArg = process.argv.indexOf('--root');
 const DIR = rootArg > -1 ? `${process.argv[rootArg + 1]}/` : '';
-const BOARD = `${DIR}docs/BOARD.md`;
-const BACKLOG = `${DIR}docs/BACKLOG.md`;
+const BOARD = `${DIR}dev/BOARD.md`;
+const BACKLOG = `${DIR}dev/BACKLOG.md`;
 
 let bad = 0;
 const fail = (msg) => { console.log(`  \u2717 ${msg}`); bad++; };

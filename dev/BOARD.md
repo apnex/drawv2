@@ -3,7 +3,7 @@
 The **live, triaged, prioritised queue**.\
 What we are doing next, in order.
 
-`docs/BACKLOG.md` is the durable *record* -- append-and-close, every row evidenced, nothing ever deleted.\
+`dev/BACKLOG.md` is the durable *record* -- append-and-close, every row evidenced, nothing ever deleted.\
 This file is the *plan* -- mutable, reorderable, and short.\
 They are maintained together and checked against each other.
 
@@ -191,7 +191,7 @@ The house rule is that the register is written before the implementation.
 
 | # | Item | Row | Status |
 |---|---|---|---|
-| H0.1 | Land `B13`-`B33` on `docs/BACKLOG.md` with evidence citations | -- | `DONE` |
+| H0.1 | Land `B13`-`B33` on `dev/BACKLOG.md` with evidence citations | -- | `DONE` |
 | H0.2 | Correct **B7**: its stated D12 mitigation does not exist (see B19) | B7 | `DONE` |
 | H0.3 | This board, triaged and scored | -- | `DONE` |
 | H0.4 | Resolve the ONE remaining [decision required](#decisions-required) -- B32, the REST diagram lifecycle. Three of the original four were answered by later work and the section said otherwise. **Ruled 2026-08-23**: `POST` and `DELETE` both exist, `DELETE` gated on write access rather than ownership | **B32** | `DONE` |
@@ -321,7 +321,7 @@ Zero dangling references.
 
 ## H6 -- decompose `input.js` - `DONE`
 
-> **Design: `docs/spec/INPUT.md`** -- the input system now has a sovereign spec, which is the point.
+> **Design: `dev/INPUT.md`** -- the input system now has a sovereign spec, which is the point.
 > Every other layer was specified before it was built; this one accreted, and it is the densest
 > source of defects in the tree (B14, B18, B19, B37, B42 -- five defects, three shapes, one file,
 > none of them a logic error). H6 implements that spec; the spec outlives H6.
@@ -529,7 +529,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |
-| H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `docs/spec/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `TODO` |
+| H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `dev/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `TODO` |
 
 ---
 
@@ -826,7 +826,7 @@ Wrong twice before, and now checked rather than trusted.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B163** | Ratify the captured intent from 2026-09-01 and superseded part of `docs/spec/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
+| **B163** | Ratify the captured intent from 2026-09-01 and superseded part of `dev/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
@@ -874,7 +874,7 @@ Deliberately excluded so the arc has an edge.\
   target *after* H2 gives them coverage, never before. A refactor without a net is how B14 happened.
 - **Performance** -- the five known costs -- now **B36**, trigger: *a measured frame drop*. All sub-threshold
   today and none measured; measure before optimising.
-- **Any geometry work.** Deliberately **not** given a B row: `docs/spec/HIERARCHY.md` section 0/section 7 and
+- **Any geometry work.** Deliberately **not** given a B row: `dev/HIERARCHY.md` section 0/section 7 and
   `design/walk/FINDINGS.md` are already its durable record, and a duplicate would be ceremony, not
   zero-loss. `HIERARCHY.md` is explicit that connections are the open frontier and containment
   is locked; the GRC walk has two surviving variants at rung 8 of 11, and `ATOMICS.md` still has the

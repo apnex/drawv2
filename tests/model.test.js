@@ -165,7 +165,7 @@ test('kindOf derives the kind from the id of each kind', () => {
 });
 
 /*
-pathOf — resolving a ROUTE to a PATH (docs/spec/HIERARCHY.md §0, connection taxonomy).
+pathOf — resolving a ROUTE to a PATH (dev/HIERARCHY.md §0, connection taxonomy).
 
 A route is an ordered list of anchors and carries no coordinates; a path is an ordered list of
 coordinates and carries no identity. `link` owns a route (`src`, `via[]`, `dst`); this resolves it.

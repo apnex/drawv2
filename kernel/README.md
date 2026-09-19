@@ -5,7 +5,7 @@ One declarative **schema** → one resolved **scene** (px primitives) → **SVG*
 pass/fail (the **GRC** rule check). No client-app coupling: glyph artwork, styles, and colours
 are vendored into `theme.mjs`.
 
-> The exploration sandbox lives in `docs/design/sim/` (mockups, the routing-strategy walk, showcase).
+> The exploration sandbox lives in `dev/design/sim/` (mockups, the routing-strategy walk, showcase).
 > `kernel/` is the curated, locked core; iterate visuals here.
 
 ## Modules
@@ -62,7 +62,7 @@ Budget: `pitch = node + 6·step + gutter = 40 + 18 + 2 = 60`.
 ## Out of this cut (deferred)
 
 Parallel / multi-port realizers (the **additive routing layer**) · auto-routing ·
-crossing-tunnel + junction-pad render polish (atomics locked in `../docs/spec/ATOMICS.md`) ·
+crossing-tunnel + junction-pad render polish (atomics locked in `../dev/ATOMICS.md`) ·
 labels & direction · sub-cell bend offsets.
 
 ## Run

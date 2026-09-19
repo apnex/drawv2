@@ -150,7 +150,7 @@ export class Model {
 	}
 
 	/*
-	Resolve a link's ROUTE to a PATH — docs/spec/HIERARCHY.md §0, connection taxonomy.
+	Resolve a link's ROUTE to a PATH — dev/HIERARCHY.md §0, connection taxonomy.
 
 	A route is an ordered list of ANCHORS and carries no coordinates (`src`, `via[]`, `dst`); a path
 	is an ordered list of coordinates and carries no identity. This is the one place that crosses

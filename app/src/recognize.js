@@ -1,7 +1,7 @@
 /*
 RECOGNIZE — which gesture is starting?
 
-An ORDERED table, because the order IS the specification (docs/spec/INPUT.md §3–§4). It replaces a
+An ORDERED table, because the order IS the specification (dev/INPUT.md §3–§4). It replaces a
 167-line nest in which the ordering was load-bearing and entirely invisible — and invisible ordering
 is not a stylistic complaint here, it is the measured cause of three defects:
 

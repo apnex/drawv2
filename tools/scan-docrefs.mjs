@@ -5,7 +5,7 @@ scan-docrefs — H5/C3. A path named in the documentation must exist.
 A4 *Zero-Loss Knowledge*: documentation is the working memory of the system, and an actor
 rehydrating from the record fills whatever the record gets wrong — a human guesses, a memory-less
 one invents. A citation to a file that no longer exists is worse than no citation: it sends the
-reader somewhere, confidently, and the place is gone. `docs/BACKLOG.md` requires evidence as
+reader somewhere, confidently, and the place is gone. `dev/BACKLOG.md` requires evidence as
 `[V, file:line]`, so its citations are load-bearing by construction.
 
 HISTORICAL RECORDS ARE EXEMPT, and the exemption is the whole reason this check is usable. A
@@ -28,14 +28,14 @@ A blanket skip is the widest exemption this scanner has: it does not permit the 
 file, it stops reading the file. Measured before narrowing this list, `COMMIT-DELETIONS.md` carried
 599 path references of which **551 resolved** -- so the skip was leaving 551 live citations unchecked
 in order to permit 48 dead ones, and any one of those 551 could rot without a word. Same shape for
-`docs/history/COMMIT-AUDIT.md`: 54 refs, 43 resolving.
+`dev/history/COMMIT-AUDIT.md`: 54 refs, 43 resolving.
 
-Both are read now, with their genuinely dead paths named individually below. `docs/design/README.md`
+Both are read now, with their genuinely dead paths named individually below. `dev/design/README.md`
 stays because there the ratio is the other way -- 8 refs, 2 resolving -- and it describes itself as
 defunct, so per-path entries would be ceremony over a file nobody is maintaining.
 */
 const HISTORICAL = new Set([
-	'docs/design/README.md',                // 8 refs, 2 resolve, and the file says it is defunct
+	'dev/design/README.md',                // 8 refs, 2 resolve, and the file says it is defunct
 ]);
 
 /*
@@ -68,7 +68,7 @@ const ALLOW = {
 	records what was audited under the name it had -- so its citations are kept rather than
 	rewritten, on the same footing as the SCOPE.md entries above.
 	*/
-	'docs/history/COMMIT-AUDIT.md:docs/spec/COMMIT.md': 'split 2026-09-19; the audit names the file as it was, and is not edited',
+	'dev/history/COMMIT-AUDIT.md:docs/spec/COMMIT.md': 'split 2026-09-19; the audit names the file as it was, and is not edited',
 
 	'dev/COMMIT-DELIVERY.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'dev/COMMIT-DELIVERY.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
@@ -85,8 +85,8 @@ const ALLOW = {
 	These rows cite the removed files AS THE EVIDENCE FOR A DEFECT that was real at the time, which
 	is the same provenance precedent as the SCOPE.md entries below.
 	*/
-	'docs/BACKLOG.md:docs/spec/DEPLOY.md': 'removed before publishing; the row cites it as the document the defect was found in',
-	'docs/BACKLOG.md:tools/gcs-probe.mjs': 'removed before publishing; the row cites the probe that surfaced the defect',
+	'dev/BACKLOG.md:docs/spec/DEPLOY.md': 'removed before publishing; the row cites it as the document the defect was found in',
+	'dev/BACKLOG.md:tools/gcs-probe.mjs': 'removed before publishing; the row cites the probe that surfaced the defect',
 	/*
 	The rehearsal script lives under the gitignored `deploy/`, for the same reason DEPLOY.md did: it
 	targets one live deployment and is not a property of the system. `WRITES.md` cites it as the
@@ -97,7 +97,7 @@ const ALLOW = {
 	'docs/spec/WRITES.md:deploy/demo/spine-leaf.sh': 'gitignored: targets one deployment, and the citation is to where the check lives rather than to something to read',
 	/*
 	`SCOPE.md` was split and removed on 2026-09-03: the wire contract, vocabulary and entity model to
-	`docs/spec/API.md`, the ruling register to `docs/DECISIONS.md`, durability to `TRANSACTIONS.md`. The
+	`docs/spec/API.md`, the ruling register to `dev/DECISIONS.md`, durability to `TRANSACTIONS.md`. The
 	scope framing itself was superseded in premise by `VISION.md` and is gone.
 
 	These citations are PROVENANCE and are the point of the sentence they sit in -- a milestone table
@@ -105,14 +105,14 @@ const ALLOW = {
 	the file that carried the defect. Repointing them would rewrite what those records say happened.
 	Same precedent as the ATOMICS and DEPLOY entries below.
 	*/
-	'docs/BACKLOG.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/BOARD.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/DECISIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/BACKLOG.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/BOARD.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/DECISIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/API.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/history/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/history/COMMIT-AUDIT.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'dev/COMMIT-DELETIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'docs/spec/TRANSACTIONS.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
-	'docs/history/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
+	'dev/history/DESIGN.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'*:server/slides/auth.js': 'the Slides feature, PURGED at Phase 1 and recorded in COMMIT-DELETIONS.md. Every remaining reference is frozen history -- COMMIT.md and COMMIT-AUDIT.md citing lines as evidence for rulings made while it existed, and BACKLOG rows describing defects in it. M4 forbids rewriting an artifact recorded before the change.',
 	'*:server/slides/sync.js': 'as above -- cited as evidence in records written while the feature existed.',
 	'*:tests/slides.test.js': 'as above.',
@@ -146,12 +146,12 @@ const ALLOW = {
 	'dev/COMMIT-DELETIONS.md:server/slides/transform.js': 'purged with Slides, 5 commits. Cited as the thing purged.',
 	'dev/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `server/txn.mjs` replaced it at CS1. A real file, really removed.',
 	'dev/COMMIT-DELETIONS.md:diagrams/diagram-000001.json': 'runtime data, gitignored by design (B49). Present on a working machine, absent from a clone -- which is what `git ls-files` correctly reports.',
-	'docs/history/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
-	'docs/history/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
-	'docs/history/COMMIT-AUDIT.md:server/commit.mjs': 'as above -- real, and really replaced.',
-	'docs/history/COMMIT-AUDIT.md:methodology/M7-axiom-alignment-audit.md': 'a mission-kit path, outside this repository. Not ours to resolve.',
-	'docs/history/COMMIT-AUDIT.md:mission-kit/methodology/M7-axiom-alignment-audit.md': 'as above.',
-	'docs/history/COMMIT-AUDIT.md:work-types/W22-axiom-alignment-gate.md': 'as above.',
+	'dev/history/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
+	'dev/history/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
+	'dev/history/COMMIT-AUDIT.md:server/commit.mjs': 'as above -- real, and really replaced.',
+	'dev/history/COMMIT-AUDIT.md:methodology/M7-axiom-alignment-audit.md': 'a mission-kit path, outside this repository. Not ours to resolve.',
+	'dev/history/COMMIT-AUDIT.md:mission-kit/methodology/M7-axiom-alignment-audit.md': 'as above.',
+	'dev/history/COMMIT-AUDIT.md:work-types/W22-axiom-alignment-gate.md': 'as above.',
 	/*
 	WRONG, and recorded as wrong rather than excused.
 
@@ -162,30 +162,30 @@ const ALLOW = {
 	file it points at was itself purged with Slides, so the fixed path would not resolve either.
 	The error is named here so a reader meets it as an error, which is the part that was missing.
 	*/
-	'docs/history/COMMIT-AUDIT.md:slides/sync.js': 'WRONG PATH, never existed at any commit -- the auditor meant `server/slides/sync.js` (itself since purged). Kept because the file is a verbatim external artefact; recorded as an error, not as history.',
+	'dev/history/COMMIT-AUDIT.md:slides/sync.js': 'WRONG PATH, never existed at any commit -- the auditor meant `server/slides/sync.js` (itself since purged). Kept because the file is a verbatim external artefact; recorded as an error, not as history.',
 	'docs/spec/TRANSACTIONS.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
-	'docs/BACKLOG.md:cli/draw.sh': 'rows describing the defects that ended it, B61 and B117, written while it was the CLI.',
-	'docs/BOARD.md:cli/draw.sh': 'H11.16, which records the Dockerfile still symlinking a retired path. Naming the dead path is the item.',
+	'dev/BACKLOG.md:cli/draw.sh': 'rows describing the defects that ended it, B61 and B117, written while it was the CLI.',
+	'dev/BOARD.md:cli/draw.sh': 'H11.16, which records the Dockerfile still symlinking a retired path. Naming the dead path is the item.',
 	'*:tests/cli.test.js': 'the shell CLI`s tests, deleted with it. Cited in COMMIT.md as evidence for a CS5 rewrite list. Same reason: the citation is a record of what was true then.',
-	'docs/BACKLOG.md:secrets/google-credentials.json': 'B49 cites the paths that exposed the defect AS ITS EVIDENCE — same as B31 below',
-	'docs/BACKLOG.md:secrets/google-token.json': 'as above (B49 evidence)',
-	'docs/BACKLOG.md:diagrams/diagram-000001.json': 'as above (B49 evidence)',
+	'dev/BACKLOG.md:secrets/google-credentials.json': 'B49 cites the paths that exposed the defect AS ITS EVIDENCE — same as B31 below',
+	'dev/BACKLOG.md:secrets/google-token.json': 'as above (B49 evidence)',
+	'dev/BACKLOG.md:diagrams/diagram-000001.json': 'as above (B49 evidence)',
 	'docs/slides-setup.md:secrets/google-credentials.json': 'runtime, gitignored: the user downloads it during OAuth setup - the doc is telling them where to put it',
 	'docs/slides-setup.md:secrets/google-token.json': 'runtime, gitignored: written by the OAuth flow on first authorization',
 	'docs/spec/TRANSACTIONS.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
-	'docs/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
+	'dev/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',
-	'docs/spec/ATOMICS.md:../design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
-	'docs/spec/ATOMICS.md:../design/sim/handles.mjs': 'as above — provenance citation, not a live path',
-	'docs/spec/ATOMICS.md:../design/sim/parallel.mjs': 'as above',
-	'docs/spec/ATOMICS.md:../design/sim/star.mjs': 'as above',
+	'dev/ATOMICS.md:../design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
+	'dev/ATOMICS.md:../design/sim/handles.mjs': 'as above — provenance citation, not a live path',
+	'dev/ATOMICS.md:../design/sim/parallel.mjs': 'as above',
+	'dev/ATOMICS.md:../design/sim/star.mjs': 'as above',
 	// provenance: naming a superseded file is the point of the sentence, not a broken pointer
 	// B166 unified the link vocabulary and deleted the adapter that existed only to translate it.
 	// The register cites the file BECAUSE it is gone -- the row is the record of its whole life.
-	'docs/BACKLOG.md:engine/routes.mjs': 'provenance -- the adapter B166 deleted; the row records why it existed and why it does not',
+	'dev/BACKLOG.md:engine/routes.mjs': 'provenance -- the adapter B166 deleted; the row records why it existed and why it does not',
 	'tools/scan-docrefs.mjs:engine/routes.mjs': 'this scanner\'s own allow-list text',
 	'server/txn.mjs:server/commit.mjs': 'provenance header — records the file this one replaced (CS1)',
-	'kernel/renderer.mjs:docs/design/widgets/render.mjs': 'provenance — the mockup the content-region renderer was derived from',
+	'kernel/renderer.mjs:dev/design/widgets/render.mjs': 'provenance — the mockup the content-region renderer was derived from',
 	'tools/scan-docrefs.mjs:server/commit.mjs': 'this scanner\'s own allow-list text',
 	'tools/scan-docrefs.mjs:design/sim/atomics.mjs': 'as above',
 	'tools/scan-docrefs.mjs:design/sim/handles.mjs': 'as above',
@@ -193,24 +193,24 @@ const ALLOW = {
 	'tools/scan-docrefs.mjs:design/sim/star.mjs': 'as above',
 	// GR5 is [LOCKED] and names the guardrail as designed; X15 records that it was retired unbuilt
 	'docs/spec/TRANSACTIONS.md:tests/diff-inverse.test.js': 'GR5 as specified; retired unbuilt and recorded as deviation X15',
-	'docs/BOARD.md:tests/diff-inverse.test.js': 'as above',
-	'docs/BACKLOG.md:tests/diff-inverse.test.js': 'as above (B22, closed by retirement)',
+	'dev/BOARD.md:tests/diff-inverse.test.js': 'as above',
+	'dev/BACKLOG.md:tests/diff-inverse.test.js': 'as above (B22, closed by retirement)',
 	'docs/spec/TRANSACTIONS.md:server/commit.mjs': '§7.1 is a deletion table and D5 records the removal — naming the dead is the job',
-	'docs/design/walk/FINDINGS.md:docs/design/walk/grc.mjs': 'the walk record is historical; the checker graduated to kernel/grc.mjs',
-	'docs/design/widgets/DESIGN.md:model/arc-catalog.json': 'a mockup input from the pre-kernel design sandbox, never part of this tree',
-	'docs/BACKLOG.md:kernel/view.mjs': 'B31 cites the broken paths AS ITS EVIDENCE — the row recording the drift must name it',
-	'docs/BACKLOG.md:design/view.mjs': 'as above (B31 evidence)',
-	'docs/BACKLOG.md:design/shot.mjs': 'as above (B31 evidence)',
-	'docs/BACKLOG.md:docs/spec/CLEANLINESS.md': 'as above (B31 evidence)',
-	'docs/BACKLOG.md:docs/history/PRISMV2-DESIGN.md': 'as above (B31 evidence)',
-	'docs/BACKLOG.md:app/src/schema.js': 'as above (B31 evidence) — the row names the path it was repointed FROM',
-	'docs/BACKLOG.md:client/src/renderer.js': 'as above (B31 evidence)',
+	'dev/design/walk/FINDINGS.md:dev/design/walk/grc.mjs': 'the walk record is historical; the checker graduated to kernel/grc.mjs',
+	'dev/design/widgets/DESIGN.md:model/arc-catalog.json': 'a mockup input from the pre-kernel design sandbox, never part of this tree',
+	'dev/BACKLOG.md:kernel/view.mjs': 'B31 cites the broken paths AS ITS EVIDENCE — the row recording the drift must name it',
+	'dev/BACKLOG.md:design/view.mjs': 'as above (B31 evidence)',
+	'dev/BACKLOG.md:design/shot.mjs': 'as above (B31 evidence)',
+	'dev/BACKLOG.md:docs/spec/CLEANLINESS.md': 'as above (B31 evidence)',
+	'dev/BACKLOG.md:dev/history/PRISMV2-DESIGN.md': 'as above (B31 evidence)',
+	'dev/BACKLOG.md:app/src/schema.js': 'as above (B31 evidence) — the row names the path it was repointed FROM',
+	'dev/BACKLOG.md:client/src/renderer.js': 'as above (B31 evidence)',
 };
 
 /*
 Code comments cite paths too, and they are exactly as load-bearing — a header saying "see X" sends a
 reader somewhere with the same authority a doc does. Scanning only .md missed nine such references,
-including two `see docs/history/PRISMV2-DESIGN.md` pointers to a file deleted long ago. Found by
+including two `see dev/history/PRISMV2-DESIGN.md` pointers to a file deleted long ago. Found by
 running the audit, not by designing it.
 */
 const CODE_ROOTS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli'];

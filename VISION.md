@@ -151,10 +151,10 @@ Where each of those lives, so a reader who wants them does not mistake this for 
 
 | Record | Holds |
 |---|---|
-| [`docs/BOARD.md`](docs/BOARD.md) | The live, triaged set of legal next moves |
-| [`docs/BACKLOG.md`](docs/BACKLOG.md) | What was consciously not done, each row with a revival trigger |
+| [`dev/BOARD.md`](dev/BOARD.md) | The live, triaged set of legal next moves |
+| [`dev/BACKLOG.md`](dev/BACKLOG.md) | What was consciously not done, each row with a revival trigger |
 | [`docs/spec/`](docs/spec/) | The system's design of record, per concern |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | What was ruled, when, and what each ruling reversed |
+| [`dev/DECISIONS.md`](dev/DECISIONS.md) | What was ruled, when, and what each ruling reversed |
 
 **There is no architecture record yet.**\
 The specs above each describe one concern; none states the system's shape at an instant, so nothing can be diffed against a target.\

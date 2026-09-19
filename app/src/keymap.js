@@ -1,7 +1,7 @@
 /*
 KEYMAP — which intent a keystroke means, and whether it mutates.
 
-An ORDERED table, for the same reason the recognizer is one (docs/spec/INPUT.md §4): the ordering is
+An ORDERED table, for the same reason the recognizer is one (dev/INPUT.md §4): the ordering is
 the specification, and in a 243-line ladder it is invisible. That ladder had THREE guards interleaved
 at different depths — the help modal, Server-Locked, and gesture-in-flight — so whether a key worked
 depended on which of the three it happened to sit below. B18, B37 and B42 are all instances.

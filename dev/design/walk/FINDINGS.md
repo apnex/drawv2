@@ -2,7 +2,7 @@
 
 Running record of the GRC walk (style x rung).\
 Failures are kept (history) and each generates a "what would make it pass" hypothesis -> new candidate styles/rungs.\
-Criteria: grid-snap / clearance / attachment / reserve / count-honored (`docs/design/walk/grc.mjs` + run.mjs).
+Criteria: grid-snap / clearance / attachment / reserve / count-honored (`dev/design/walk/grc.mjs` + run.mjs).
 
 ---
 

@@ -368,7 +368,7 @@ test('B38: every element kind the kernel handles is a kind resolve() can emit', 
 
 	/*
 	Two kinds are handled without being emitted by resolve(), and both are DECLARED, not dead:
-	`port` and `junction` are `[LOCKED]` in docs/spec/ATOMICS.md (the 10px port, the junction pad,
+	`port` and `junction` are `[LOCKED]` in dev/ATOMICS.md (the 10px port, the junction pad,
 	parallel-link capacity) and are anchors under the ratified taxonomy. The connection grammar that
 	places them is the next design arc; the renderer and GRC already know how to draw and check them.
 	Deleting them would delete locked design work, which is a different act from deleting dead code.

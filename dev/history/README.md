@@ -16,12 +16,12 @@ Each file is preserved as it was written, which is the whole reason it is not in
 
 - **`DESIGN.md`** -- a UI design panel report from 2026-06-12: four independent lenses, 23 proposals deduplicated to 18.
   Every item in it is marked SHIPPED with a June date and none is open, so it records a decision round rather than a plan or a state.
-  `docs/spec/INPUT.md` quotes its framing line, which is why it is kept rather than deleted.
+  `dev/INPUT.md` quotes its framing line, which is why it is kept rather than deleted.
 
 ## What is not here
 
 The ledgers stay in `docs/`: `BOARD.md`, `BACKLOG.md` and `DECISIONS.md` are current by construction, even though every row records something that happened.\
 A ledger is a live index of state, not a narrative of it.
 
-`docs/surveys/` and `docs/design/` also stay.\
+`dev/surveys/` and `dev/design/` also stay.\
 A survey is a ratified record of intent captured on a day, and **M4** protects it from being rewritten to match what was later built -- that is a different thing from a document that has gone stale.

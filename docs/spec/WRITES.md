@@ -486,7 +486,7 @@ Storage would grow with edit history rather than with entity count.
 - `TRANSACTIONS.md` -- durability, and the transaction machinery a set commits through
 - `AUTHORITY.md` -- one writer per document, and the conflict surface a set inherits
 - `API.md` -- the vocabulary W1 must land in
-- **B188** -- the backlog row, and `docs/surveys/b188-beats-and-stories-survey.md` for captured intent
+- **B188** -- the backlog row, and `dev/surveys/b188-beats-and-stories-survey.md` for captured intent
 - **B181** -- the write budget this removes the pressure from
 - **B186** -- `draw use`, the per-host target precedent a draft follows
 - **B187** -- mandatory names, which is what makes intra-set references possible
