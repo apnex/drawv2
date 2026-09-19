@@ -243,25 +243,21 @@ with no consumer is what `scan-dead` exists to reject. The numbers are here so t
 re-litigated when the behaviour arrives: they were chosen against the other layers, at 1:1, and the
 whole-number scheme depends on 7/3 fitting where it does.
 */
-export const waypointJunction = () => ({
-	radius: JUNCTION_RADIUS,
-	width: JUNCTION_WIDTH,
-	fill: 'none',
-	opacity: 1,
-});
-
 /*
-PREVIEW -- the junction ring drawn on every endpoint, so it can be SEEN on a real diagram.
+The junction rung -- RESERVED, not drawn.
 
-The sub-type has no model behind it: nothing sets it, nothing reads it, no document can carry one.
-This draws it unconditionally so the director can judge the ring against the other layers at
-working zoom, on live data rather than on a mock.
+A junction sub-type is coming and its geometry is settled: radius 7, width 3, hollow so the path
+stays visible running through, sitting between the grid dot and the endpoint pad. It was drawn on
+every endpoint as a preview while the sizes were judged on live diagrams, and removed once they
+were -- a flag that draws something no document can carry is a feature with an off switch rather
+than a decision.
 
-Temporary by construction. A constant, not config -- a flag someone can switch at runtime is a
-feature with an off switch, and this is a line with a deletion date. It goes when the junction gets
-real behaviour, and the B199 circle-count guard is tied to it so removing it cannot pass quietly.
+Kept as a constant rather than an exported function because nothing calls it yet, and an export
+with no consumer is what `scan-dead` rejects. The numbers stay because the rung is load-bearing
+even unused: the whole-number scheme depends on 7/3 fitting where it does, and the clearances
+either side of it were chosen against it at working zoom.
 */
-export const PREVIEW_JUNCTION_ON_ENDPOINTS = true;
+const JUNCTION_RUNG = { radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH };
 
 export const waypointRole = (id, touching) => {
 	let endpoint = false;
