@@ -423,6 +423,28 @@ that without having to ask.
 .wp-anchor { pointer-events: all; }
 .waypoint.hover .wp-anchor,
 .waypoint.hover .wp-ring { stroke-opacity: 1; }
+
+/*
+B202 -- THE ANCHOR IS AN AUTHORING AID, so run mode does not draw it.
+
+An anchor says "a link can reach this grid point", which is a statement to someone PLACING things.
+A person watching the diagram run does not need it and it competes with the movers for attention:
+run mode is the presentation surface, and the anchor is scaffolding that belongs to the surface
+underneath.
+
+`display: none` rather than opacity, and that is the substantive half. The anchor carries
+`pointer-events: all` for the whole waypoint (B201), so hiding it also removes the grab target --
+which is correct here and deliberate rather than incidental. Run mode is for watching, and a
+waypoint that can still be dragged while the diagram runs would be an authoring gesture leaking
+into it.
+
+Only the anchor. The endpoint pad stays, because a spawner has to remain visible and its armed and
+spawning states have to read; the grid dot stays, because it belongs to the grid rather than to the
+waypoint. A bend therefore becomes invisible in run mode except where the path bends through it,
+which is the honest rendering -- a bend IS pure authoring geometry, and in run mode a route that
+turns a corner is all there is to show.
+*/
+#container.run-mode .wp-anchor { display: none; }
 .waypoint.linkband { cursor: crosshair; }
 .waypoint .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
 .waypoint.selected .select-box { display: block; }

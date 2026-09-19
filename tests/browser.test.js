@@ -645,3 +645,56 @@ test('B201: a click anywhere inside the anchor reaches the waypoint', { skip: SK
 	assert.ok(inside(hit.rim), `a click just inside the anchor must reach the waypoint, got ${hit.rim}`);
 	assert.ok(!inside(hit.outside), `a click well outside the anchor must NOT hit it, got ${hit.outside}`);
 });
+
+/*
+B202: run mode does not draw the anchor, and the pad survives it.
+
+An anchor says "a link can reach this grid point" -- a statement to someone placing things, not to
+someone watching. Run mode is the presentation surface and the anchor is scaffolding belonging to
+the one underneath.
+
+Two halves, and the second is why this is a browser test rather than a CSS assertion. The anchor
+carries `pointer-events: all` for the entire waypoint (B201), so hiding it also removes the grab
+target. That is intended -- dragging a waypoint while the diagram runs is an authoring gesture
+leaking into run mode -- but the ENDPOINT PAD must keep catching clicks, because arming a spawner
+is a run-mode action. Hiding the wrong layer, or hiding it with something that kills the whole
+group's hit-testing, would pass a style check and break arming.
+*/
+test('B202: run mode hides the anchor and keeps the pad clickable', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+
+	const probe = await until(tab, `(() => {
+		const svg = document.getElementById('container');
+		const g = document.querySelector('#waypoints .waypoint.endpoint');
+		if (!svg || !g) return null;
+		const box = g.getBoundingClientRect();
+		const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+		const was = svg.classList.contains('run-mode');
+
+		const read = () => {
+			const anchor = g.querySelector('.wp-anchor'), pad = g.querySelector('.wp-ring');
+			// the anchor's box collapses once hidden, so the scale comes from the PAD, which stays
+			const u = (pad.getBoundingClientRect().height / 2) / 14;
+			const hit = (r) => document.elementsFromPoint(cx, cy + r * u)
+				.map((e) => e.getAttribute('class') || e.tagName)
+				.find((c) => typeof c === 'string' && c.startsWith('wp-')) || 'NOTHING';
+			return { anchor: getComputedStyle(anchor).display, pad: getComputedStyle(pad).display, padHit: hit(8) };
+		};
+
+		svg.classList.remove('run-mode');
+		const author = read();
+		svg.classList.add('run-mode');
+		const run = read();
+		svg.classList.toggle('run-mode', was);
+		return JSON.stringify({ author, run });
+	})()`);
+
+	const { author, run } = JSON.parse(probe);
+
+	assert.notEqual(author.anchor, 'none', 'the anchor must be drawn while authoring -- it is the placement aid');
+	assert.equal(run.anchor, 'none', 'run mode still draws the anchor');
+
+	assert.notEqual(run.pad, 'none', 'the endpoint pad must survive run mode -- a spawner has to stay visible');
+	assert.ok(run.padHit.startsWith('wp-'),
+		`the pad must still catch a click in run mode or a spawner cannot be armed, got ${run.padHit}`);
+});
