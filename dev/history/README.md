@@ -2,7 +2,7 @@
 
 Documents that are neither current state nor target state.
 
-`docs/` holds what is TRUE NOW or what is DESIGNED AND NOT YET BUILT.\
+`docs/` holds what is TRUE NOW or what is DESIGNED AND NOT YET BUILT, and `dev/` holds the working material behind it.\
 A document that describes a state the system has passed through belongs here instead, because a reader who takes it literally would be misled and the only way to know is to have been present.
 
 Nothing here is edited.\
@@ -20,8 +20,11 @@ Each file is preserved as it was written, which is the whole reason it is not in
 
 ## What is not here
 
-The ledgers stay in `docs/`: `BOARD.md`, `BACKLOG.md` and `DECISIONS.md` are current by construction, even though every row records something that happened.\
+The ledgers are in `dev/`, not here: `BOARD.md`, `BACKLOG.md` and `DECISIONS.md` are current by construction, even though every row records something that happened.\
 A ledger is a live index of state, not a narrative of it.
 
-`dev/surveys/` and `dev/design/` also stay.\
+`dev/surveys/` and `dev/design/` are likewise siblings rather than members.\
 A survey is a ratified record of intent captured on a day, and **M4** protects it from being rewritten to match what was later built -- that is a different thing from a document that has gone stale.
+
+*(Amended 2026-09-19)* -- the two paragraphs above said the ledgers and surveys "stay in `docs/`", which was true when written and stopped being true when the governance documents moved to `dev/`.\
+The distinction they draw is unchanged; only the locations were wrong.
