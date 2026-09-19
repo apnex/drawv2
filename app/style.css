@@ -363,6 +363,24 @@ of one-pixel drift that cost an evening.
 .node.ghost { opacity: 0.6; pointer-events: none; }
 .node.ghost.blocked { --icon: #e57373; --outer: #e57373; }
 
+/*
+B198: NOTHING on the canvas is selectable text.
+
+The canvas is a drawing surface whose primary gesture is a drag, and a drag across it is a
+rubber-band select -- never a text selection. Chrome disagrees by default: an SVG `<text>` is
+selectable, so dragging anywhere on the canvas highlights every text element the sweep crosses in
+document order, INCLUDING ones nowhere near the pointer. That is what made it a visible defect
+rather than a cosmetic one -- text boxes lit up that the mouse never passed over.
+
+`.label` and `.data-tag` each carried `user-select: none` of their own and `.content-text`, added
+later, did not. Setting it per class means every future text element is one omission away from the
+same bug, and the omission is invisible until someone drags across a diagram that happens to have
+one. Setting it on the SVG root ends the class of defect instead of this instance of it.
+
+A text box that genuinely needs selectable content opts back in, and will have a reason to.
+*/
+#container, #container text { user-select: none; -webkit-user-select: none; }
+
 /* ---- labels (UI-owned) ---- */
 .label { font-family: monospace; font-size: 15px; fill: #ddddff; user-select: none; text-anchor: middle; }
 .label.zone-label { text-anchor: start; }

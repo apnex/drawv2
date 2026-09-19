@@ -509,3 +509,44 @@ test('B197: the favicon is built from the kernel glyph and framed on it', async 
 	assert.ok(ring * 2 <= Number(vw), 'the ring must fit inside the viewBox');
 	assert.ok(ring >= gw / 2 - 1, 'the ring must enclose the glyph rather than cut through it');
 });
+
+/*
+B198: nothing on the canvas is selectable text.
+
+The director reported text boxes highlighting during a drag that never passed over them. That is
+Chrome's default: an SVG `<text>` is selectable, and a sweep across the canvas selects every text
+node between the anchor and the focus in DOCUMENT order -- so a box in a far corner lights up
+because it happens to sit between two elements the pointer did cross.
+
+The rule is asserted on a `<text>` with NO class. `.label` and `.data-tag` each carried
+`user-select: none` individually and `.content-text`, added later, did not, so a per-class test
+would have passed throughout the period the defect existed. An unclassed element is the only probe
+that distinguishes "every current class remembered" from "the surface is covered".
+*/
+test('B198: canvas text cannot be selected by a drag, including a class nobody has written yet', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+
+	const styles = await until(tab, `(() => {
+		const svg = document.getElementById('container');
+		if (!svg) return null;
+		const probe = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+		probe.textContent = 'probe';
+		svg.appendChild(probe);
+		const read = (el) => { const cs = getComputedStyle(el); return cs.userSelect || cs.webkitUserSelect; };
+		const out = { unclassed: read(probe), root: read(svg) };
+		for (const cls of ['content-text', 'label', 'data-tag']) {
+			const el = svg.querySelector('.' + cls);
+			if (el) out[cls] = read(el);
+		}
+		probe.remove();
+		return JSON.stringify(out);
+	})()`);
+
+	const got = JSON.parse(styles);
+	assert.equal(got.root, 'none', 'the canvas root must not be selectable');
+	assert.equal(got.unclassed, 'none',
+		'a <text> with no class is selectable -- the rule is per-class, so the next text element reintroduces the bug');
+	for (const [cls, value] of Object.entries(got)) {
+		assert.equal(value, 'none', `${cls} is selectable and would highlight during a rubber-band drag`);
+	}
+});
