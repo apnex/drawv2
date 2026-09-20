@@ -877,6 +877,6 @@ Deliberately excluded so the arc has an edge.\
 - **Any geometry work.** Deliberately **not** given a B row: `dev/HIERARCHY.md` section 0/section 7 and
   `design/walk/FINDINGS.md` are already its durable record, and a duplicate would be ceremony, not
   zero-loss. `HIERARCHY.md` is explicit that connections are the open frontier and containment
-  is locked; the GRC walk has two surviving variants at rung 8 of 11, and `ATOMICS.md` still has the
+  is locked; the GRC walk has two surviving variants at rung 8 of 11, and `docs/spec/ATOMICS.md` still has the
   +/-29-vs-+/-30 container-edge handle open. **That is a design arc, not a hardening arc.** It starts clean once
   this board is empty.

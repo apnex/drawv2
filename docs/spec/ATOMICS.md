@@ -1,11 +1,12 @@
 # draw - geometry & interaction ATOMICS
 
 Living record of the foundational visual + interaction decisions, resolved *before* any routing engine.\
-Mockups that drove these: `../design/sim/handles.mjs` and `../design/sim/atomics.mjs` (`node ...` -> `/tmp/draw-preview.png`).\
+Mockups that drove these: `dev/design/sim/handles.mjs` and `dev/design/sim/atomics.mjs`.\
+That sandbox is superseded by `kernel/` and no longer runnable -- the citations are provenance, recording what each decision was made against, not tools to reach for.\
 Tags: **[LOCKED] / [OPEN] / [DEFERRED] / [OUT OF SCOPE]**.
 
 ## Pixel spec - variant `standard` [LOCKED]
-See `HIERARCHY.md` section 2. pitch **60** - node **40** (+/-20) - uniform +3 ladder -> frame +/-20 - selection +/-23 - group +/-26 - zone +/-29 - radii 5/8/11/14 - socket 26 - linkW 6 - selArm 10.\
+See `dev/HIERARCHY.md` section 2. pitch **60** - node **40** (+/-20) - uniform +3 ladder -> frame +/-20 - selection +/-23 - group +/-26 - zone +/-29 - radii 5/8/11/14 - socket 26 - linkW 6 - selArm 10.\
 Connection markers: **port** = 10px square, green (`#aed581`); **junction pad** = 10px square, blue (`#4fc3f7`), opaque centre, stroke 2.6 (drawn over the links).
 
 ---
@@ -71,7 +72,7 @@ The COUNT per face is capped by the boundary, because the outer port must clear 
   corners ~12px clear). An N-cell group face holds ~3N. **More cells = more room.**
 - **Hub principle:** a high-fan-out node is wrapped in a GROUP; links attach to the group hull, which
   has the boundary length a bare node face lacks. Beyond capacity -> more cells / a wider group.
-Mockups: `../design/sim/star.mjs` (5x5: node +/-20 vs single-cell group +/-26) - `../design/sim/parallel.mjs`.
+Mockups: `dev/design/sim/star.mjs` (5x5: node +/-20 vs single-cell group +/-26) - `dev/design/sim/parallel.mjs`.
 
 ---
 
@@ -82,26 +83,26 @@ Link/node labels and link direction (arrowheads / directionality) are **deferred
 
 ## Waypoint sub-types: the junction [OPEN - design settled, unbuilt]
 
-A waypoint is an **anchor** -- a grid point a link can reach -- and sub-types are additive layers on top of it (B199).
+A waypoint is an **anchor** -- a grid point a link can reach -- and sub-types are additive layers on top of it (B199).\
 `endpoint` and `bend` exist; `junction` is the third, and it is the one that forces roles to stop being a single value.
 
-The legacy `junction` kind in `kernel/geometry.mjs` is drawv1 residue: a 10px square tie point, unreachable from any document because the validator's id grammar has no `junction`.
+The legacy `junction` kind in `kernel/geometry.mjs` is drawv1 residue: a 10px square tie point, unreachable from any document because the validator's id grammar has no `junction`.\
 It is **superseded** by this, not extended.
 
 ### What it means
 
-A junction is a **MEET**: n links converge at one grid point and are connected.
-Symmetric -- no trunk, no taps, no parent link.
+A junction is a **MEET**: n links converge at one grid point and are connected.\
+Symmetric -- no trunk, no taps, no parent link.\
 The branch reading (a tap hanging off a trunk) is what the drawv1 element described and is deliberately not carried forward.
 
-Engine semantics are intended but unspecified.
+Engine semantics are intended but unspecified.\
 A junction is a place a mover could plausibly choose a path, which makes it a routing decision point rather than only a visual claim -- the specifics are owed before anything in `engine/` reads it.
 
 ### When a bend becomes a junction
 
-**Count directions, not links.**
-A link threaded through a waypoint by `via` contributes **two** directions -- the path enters and leaves.
-A link terminating on it contributes **one**.
+**Count directions, not links.**\
+A link threaded through a waypoint by `via` contributes **two** directions -- the path enters and leaves.\
+A link terminating on it contributes **one**.\
 More than two directions is a junction.
 
 | situation | directions | role |
@@ -113,83 +114,82 @@ More than two directions is a junction.
 | one bends + one terminates | 3 | **junction** + endpoint |
 | three links terminate | 3 | **junction** + endpoint |
 
-Counting LINKS instead would call a T-junction a bend, and a drop off a trunk is the most common junction in a network diagram.
+Counting LINKS instead would call a T-junction a bend, and a drop off a trunk is the most common junction in a network diagram.\
 Counting directions makes the T fire at two links, which is what it should do.
 
 ### The capability probe -- waypoint as a declared capability, not a kind
 
 Tested on paper before any code moved, against the question: can waypoint-ness be expressed as a capability a NODE declares, with no `kind === 'waypoint'` in the path?
 
-**Role derivation: zero divergence.**
-`waypointRole(id, touching)` never consulted the kind -- it is pure link topology and is misnamed rather than miscoupled.
+**Role derivation: zero divergence.**\
+`waypointRole(id, touching)` never consulted the kind -- it is pure link topology and is misnamed rather than miscoupled.\
 All six role cases produce identical answers when gated on a declared `routable` capability instead of on the kind.
 
-**Rendering: composes.**
+**Rendering: composes.**\
 Expressed as a capability contributing LAYERS, the probe reproduced a bend, an endpoint and a plain node exactly, and then produced something currently inexpressible -- a `server` holding both `framed` and `routable`, drawing its frame and glyph AND the routing layers.
 
-**Two supporting findings.**
-`bboxOf` already treats node and waypoint identically, so the footprint was never different.
+**Two supporting findings.**\
+`bboxOf` already treats node and waypoint identically, so the footprint was never different.\
 The text box is the same pattern already in production: `type: 'text'` with `span` and `content`, branching on field presence rather than on kind, and its own comment says "no new kind".
 
-**What the probe did not cover, and where the cost sits.**
-`waypoint` is an ID PREFIX, baked into the id grammar, the CLI and every stored diagram -- so collapsing it into `node` is a migration of live documents, not a refactor.
-Ninety per-kind branches exist across the tree; the probe exercised six.
+**What the probe did not cover, and where the cost sits.**\
+`waypoint` is an ID PREFIX, baked into the id grammar, the CLI and every stored diagram -- so collapsing it into `node` is a migration of live documents, not a refactor.\
+Ninety per-kind branches exist across the tree; the probe exercised six.\
 The staged path is to introduce capabilities ALONGSIDE the kind, prove them on the junction, which needs no migration, and collapse `waypoint` only once the mechanism is load-bearing.
 
 ### Roles become a set
 
-Three of the six rows above carry two roles at once, so a single exclusive role cannot express the model.
+Three of the six rows above carry two roles at once, so a single exclusive role cannot express the model.\
 `waypointRole` returns one string today and becomes `waypointRoles`, returning the sub-types that apply.
 
-**The empty set is a bend.**
-A bend adds no layer -- the path turning is its whole rendering -- so it is the absence of a sub-type rather than a member of the list.
-Putting `bend` in the set would make `['bend', 'endpoint']` constructible, which is a contradiction nothing prevents, and would force the render loop to special-case a member meaning "draw nothing".
+**The empty set is a bend.**\
+A bend adds no layer -- the path turning is its whole rendering -- so it is the absence of a sub-type rather than a member of the list.\
+Putting `bend` in the set would make `['bend', 'endpoint']` constructible, which is a contradiction nothing prevents, and would force the render loop to special-case a member meaning "draw nothing".\
 The CSS class is derived at the edge: `roles.length ? roles.join(' ') : 'bend'`.
 
 ### The migration hazard
 
-`onEndpoint` in `engine/situation.mjs` gates spawner arming and reads `role === 'endpoint'`.
-Under a set that comparison is **false for every waypoint**, it still compiles, and spawner arming silently stops working everywhere.
+`onEndpoint` in `engine/situation.mjs` gates spawner arming and reads `role === 'endpoint'`.\
+Under a set that comparison is **false for every waypoint**, it still compiles, and spawner arming silently stops working everywhere.\
 This is B201's shape exactly -- a comparison that keeps working while meaning something else -- and it is the reason the predicate transition is guarded before the rename lands rather than after.
 
-Three producers derive the role, all by B162's rule that the derivation has one definition:
-`kernel/engine.mjs`, `app/src/renderer.js`, and `engine/situation.mjs`.
+Three producers derive the role, all by B162's rule that the derivation has one definition: `kernel/engine.mjs`, `app/src/renderer.js`, and `engine/situation.mjs`.\
 Consumers split in two: renderers ask *which layers do I draw*, which is naturally set-shaped, and predicates ask *is this an endpoint*, which is where the hazard lives.
 
 ### BLOCKER: XOR occupancy forbids every junction case
 
 `model/referential.mjs` enforces that **a waypoint participates in at most one link, and in one role within it** -- `linkReferential` refuses any waypoint already owned by another link.
 
-Measured against the table above: two links bending through one waypoint is refused, the T is refused, three terminating links is refused.
+Measured against the table above: two links bending through one waypoint is refused, the T is refused, three terminating links is refused.\
 Every topology A2 calls a junction is rejected at the trust boundary today.
 
-So a junction is **not** a rendering feature waiting to be drawn.
+So a junction is **not** a rendering feature waiting to be drawn.\
 It is an invariant change, and the rendering work is the small half.
 
-The rule carries no recorded rationale -- it is stated in a code comment and appears in no spec, decision record or backlog row.
-Before it is relaxed, that reason has to be recovered rather than assumed: it plausibly exists to keep routing unambiguous, so that a corner has exactly one owner and no link can be redrawn by editing another.
-If that is the reason, a junction is a deliberate exception and the rule needs a carve-out keyed on the capability rather than a deletion.
+The rule carries no recorded rationale -- it is stated in a code comment and appears in no spec, decision record or backlog row.\
+Before it is relaxed, that reason has to be recovered rather than assumed: it plausibly exists to keep routing unambiguous, so that a corner has exactly one owner and no link can be redrawn by editing another.\
+If that is the reason, a junction is a deliberate exception and the rule needs a carve-out keyed on the capability rather than a deletion.\
 If there is a deeper reason, junctions may need a different mechanism entirely.
 
 **What replaces it** -- ruled in discussion, unbuilt.
 
 The one rule is really two checks, and the existing test corpus already names them separately.
 
-**Self-conflict stays.**
-One link naming a waypoint twice across its own `src`, `dst` and `via` visits a point twice and the geometry is undefined.
+**Self-conflict stays.**\
+One link naming a waypoint twice across its own `src`, `dst` and `via` visits a point twice and the geometry is undefined.\
 Per-link, needs no cross-link knowledge, unchanged.
 
-**Sharing relaxes.**
+**Sharing relaxes.**\
 Two links referencing one waypoint is the junction, and it is the only part of the rule that moves.
 
-**A bend refuses a repeated endpoint pair.**
-Two links that bend at the same waypoint may not carry the same `src`/`dst` pair, compared UNORDERED so that `a<->b` and `b<->a` are one pair.
-This is the degenerate case relaxation exposes: two identical routes stacked through one corner, visually indistinguishable and separately editable.
+**A bend refuses a repeated endpoint pair.**\
+Two links that bend at the same waypoint may not carry the same `src`/`dst` pair, compared UNORDERED so that `a<->b` and `b<->a` are one pair.\
+This is the degenerate case relaxation exposes: two identical routes stacked through one corner, visually indistinguishable and separately editable.\
 It allows what it should -- the T, the cross, two links that merely share an endpoint, and a same-pair second link that does NOT bend at that point.
 
-**A junction is a POINT, so port capacity does not apply.**
-`Parallel-link capacity [LOCKED]` caps links per FACE by boundary length, on the principle that a high-fan-out node is wrapped in a group to get more boundary.
-A junction has no face and no boundary, so that rule neither bounds it nor can be stretched to.
+**A junction is a POINT, so port capacity does not apply.**\
+`Parallel-link capacity [LOCKED]` caps links per FACE by boundary length, on the principle that a high-fan-out node is wrapped in a group to get more boundary.\
+A junction has no face and no boundary, so that rule neither bounds it nor can be stretched to.\
 Whether a junction needs an arity bound of its own is therefore OPEN, and it is a separate question from how links attach -- they converge on the point rather than spacing along an edge.
 
 ### Still to settle

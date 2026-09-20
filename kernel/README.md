@@ -62,7 +62,7 @@ Budget: `pitch = node + 6·step + gutter = 40 + 18 + 2 = 60`.
 ## Out of this cut (deferred)
 
 Parallel / multi-port realizers (the **additive routing layer**) · auto-routing ·
-crossing-tunnel + junction-pad render polish (atomics locked in `../dev/ATOMICS.md`) ·
+crossing-tunnel + junction-pad render polish (atomics locked in `../docs/spec/ATOMICS.md`) ·
 labels & direction · sub-cell bend offsets.
 
 ## Run

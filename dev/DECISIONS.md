@@ -202,4 +202,4 @@ Collapsing first would migrate 26 live diagrams to prove a mechanism that had no
 Everything before step 3 is reversible; step 3 is not.
 It also changes what `via` means -- from "any waypoint" to "any node holding the capability" -- which is a semantic widening, not only a rename.
 
-**Evidence.** The capability probe is recorded in [`ATOMICS.md`](ATOMICS.md) under the junction entry: zero divergence on role derivation across all six cases, layers composing correctly, and a `server` holding both `framed` and `routable` producing a combination that is currently inexpressible.
+**Evidence.** The capability probe is recorded in [`ATOMICS.md`](../docs/spec/ATOMICS.md) under the junction entry: zero divergence on role derivation across all six cases, layers composing correctly, and a `server` holding both `framed` and `routable` producing a combination that is currently inexpressible.

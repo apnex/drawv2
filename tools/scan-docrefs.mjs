@@ -175,10 +175,10 @@ const ALLOW = {
 	'docs/spec/TRANSACTIONS.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
 	'dev/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',
-	'dev/ATOMICS.md:../design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
-	'dev/ATOMICS.md:../design/sim/handles.mjs': 'as above — provenance citation, not a live path',
-	'dev/ATOMICS.md:../design/sim/parallel.mjs': 'as above',
-	'dev/ATOMICS.md:../design/sim/star.mjs': 'as above',
+	'docs/spec/ATOMICS.md:dev/design/sim/atomics.mjs': 'design/sim is the superseded pre-kernel sandbox; ATOMICS cites it as provenance for a locked decision',
+	'docs/spec/ATOMICS.md:dev/design/sim/handles.mjs': 'as above — provenance citation, not a live path',
+	'docs/spec/ATOMICS.md:dev/design/sim/parallel.mjs': 'as above',
+	'docs/spec/ATOMICS.md:dev/design/sim/star.mjs': 'as above',
 	// provenance: naming a superseded file is the point of the sentence, not a broken pointer
 	// B166 unified the link vocabulary and deleted the adapter that existed only to translate it.
 	// The register cites the file BECAUSE it is gone -- the row is the record of its whole life.

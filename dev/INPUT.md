@@ -9,7 +9,7 @@ The sovereign spec for how a person's gestures become committed changes.
 ## 0. Why this document exists
 
 Every other part of this system was specified before it was built.\
-Geometry has `HIERARCHY.md`, interaction atomics have `ATOMICS.md`, the transaction model has `TRANSACTIONS.md`.\
+Geometry has `HIERARCHY.md`, interaction atomics have `docs/spec/ATOMICS.md`, the transaction model has `TRANSACTIONS.md`.\
 **The input system was never specified - it accreted**, and it is the single densest source of defects in the tree:
 
 | Row | Defect | Shape |

@@ -24,7 +24,6 @@ That is the whole test, and it cuts in places that feel arbitrary until the ques
 - **`HIERARCHY.md`** -- DRAFT. The graduation convention by which a ruling becomes `[LOCKED]`, and the staging area for rulings that have not.
 - **`INPUT.md`** -- the input model is DRAFT; the defect record and recognizer within it are not.
 - **`RULES.md`** -- DRAFT, three rulings owed, partly superseded by a survey.
-- **`ATOMICS.md`** -- five entries LOCKED, four open.
 
 **Governance ledgers.** Live indexes of how the work is decided.
 
