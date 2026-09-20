@@ -64,7 +64,6 @@ export const nodeAt = (model, pos, slop = NODE_R + 4) =>
 	model.all('node').find((n) => inFootprint(n, pos, slop));
 
 // a waypoint belongs to at most one link; a FREE one can still take an endpoint
-export const waypointFree = (model, id) => model.linksAt(id).length === 0;
 
 /*
 B209 -- a valid link endpoint under the cursor: a node, or ANY waypoint.
@@ -74,9 +73,10 @@ be linked to -- and a bend always carries one. So the gesture that makes a junct
 the pointer, before the validator ever saw it. That was correct while the validator refused the
 topology too; B207 relaxed that half, and this is the other.
 
-`waypointFree` stays, because the LINK rule in `recognize.js` still uses it to decide whether a
-left drag STARTS a link from this waypoint. Being a valid target and being a valid source are
-different questions, and only the first one moved.
+B211 deleted `waypointFree` with its last caller. The LINK rule used it to gate whether a left drag
+may START from a waypoint, and a junction has to be startable from a bend -- so being a valid target
+and being a valid source turned out to be the same question, and the answer to both is "any
+waypoint". A predicate every caller answers `true` is not a predicate.
 */
 export function endpointAt(model, pos) {
 	const n = nodeAt(model, pos);

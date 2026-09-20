@@ -310,33 +310,46 @@ is the ABSENCE of a sub-type rather than a member. Including it would make `['be
 constructible, which is a contradiction nothing prevents, and would force every render loop to
 special-case a member meaning "draw nothing".
 
-JUNCTION COUNTS DIRECTIONS, NOT LINKS. A link threaded by `via` contributes two -- the path enters
-and leaves -- and a link terminating contributes one. More than two is a junction. Counting links
-instead would call a T a bend, and a drop off a trunk is the commonest junction in a network
-diagram.
+B211 -- A JUNCTION IS WHERE LINKS TERMINATE, and only that.
 
-A closed ring still has no ends: `src === dst` on a ring is two directions and no endpoint.
+A junction is a MEET: paths converge and are CONNECTED. A link merely threaded through a waypoint
+is passing, not meeting, so it contributes nothing to the count -- two links bending at one point
+is two bends, which is exactly what it looks like, and stays a bend.
+
+More than one TERMINATION is therefore the test. Two links ending at a waypoint is the smallest
+meet; one is a plain terminus. Threading is invisible to it.
+
+This replaced a direction count -- a via worth two, a terminus worth one, more than two a junction
+-- which called two threaded links a junction because it counted lines converging rather than paths
+ending. The director ruled that threading must not make one, and landing on a bend must: those are
+different gestures and the count could not tell them apart.
+
+A closed ring still has no ends, so nothing on one ever terminates.
 */
 export const waypointRoles = (id, touching) => {
 	const roles = [];
-	let directions = 0;
-	let endpoint = false;
+	let terminations = 0;
 
 	for (const t of touching || []) {
-		const via = (t.via || []).filter((v) => v === id).length;
-		directions += via * 2;
-		if (t.src === id) directions += 1;
-		if (t.dst === id) directions += 1;
-		if ((t.src === id || t.dst === id) && !t.closed) endpoint = true;
+		if (t.closed) continue;                       // a ring has no ends
+		if (t.src === id) terminations += 1;
+		if (t.dst === id) terminations += 1;
 	}
+	const endpoint = terminations > 0;
 
-	if (directions > 2) roles.push('junction');
 	/*
-	THE ROLES ARE INDEPENDENT. Being threaded by one link does not stop a DIFFERENT link terminating
-	here -- that is the T, and it is both. The old single-role function returned `bend` on sight of a
-	via because it had to choose one answer; in a set there is nothing to choose between, and
-	carrying the tiebreak over would have cost a T-junction its spawner pad.
+	B211 -- A JUNCTION SUPERSEDES AN ENDPOINT, ruled by the director.
+
+	A junction is where links MEET, and every link at one terminates there, so `endpoint` would be
+	true of every junction and say nothing. Worse, it would DRAW: the pad and the ring both, two
+	sub-type layers on one waypoint where the outer one is redundant. The junction ring is the
+	statement; the pad is what a lone terminus looks like.
+
+	They remain separate roles rather than one, because the predicates ask different questions --
+	`onEndpoint` gates spawner arming, and a junction can still be armed.
 	*/
+	// TWO terminations is the smallest meet; one is a plain terminus
+	if (terminations > 1) return ['junction'];
 	if (endpoint) roles.push('endpoint');
 	return roles;
 };

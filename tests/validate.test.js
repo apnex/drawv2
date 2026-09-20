@@ -608,8 +608,10 @@ test('B210: a split turns a bend into a junction, and the result validates', asy
 	for (const l of after) {
 		assert.equal(linkReferential(l, access), null, `the split produced a document the validator refuses: ${l.id}`);
 	}
-	assert.deepEqual(waypointRoles('waypoint-aa0001', after), ['junction', 'endpoint'],
-		'after the split the waypoint is a junction that also terminates -- a MEET, not a crossing');
+	// B211 -- a junction SUPERSEDES an endpoint: every link at one terminates there, so saying both
+	// would say nothing and would draw the pad under the ring
+	assert.deepEqual(waypointRoles('waypoint-aa0001', after), ['junction'],
+		'after the split the waypoint is a junction -- a MEET, not a crossing');
 
 	// the case the split exists to prevent: nothing bends through it any more
 	assert.ok(after.every((l) => !(l.via || []).includes('waypoint-aa0001')),

@@ -35,7 +35,7 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 import { Overlay } from './overlay.js';
 import { RECOGNIZE, resolveRule } from './recognize.js';
 import { resolveKey } from './keymap.js';
-import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, waypointFree, inFootprint, footprintHits } from './pick.js';
+import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
@@ -108,10 +108,10 @@ const GESTURES = {
 		simply leave it -- dropping out of `press` would take selection with it. What is suppressed
 		is the ESCALATION: the press still selects, the drag just never becomes a move.
 
-		`link` already claims a left drag on a waypoint, but only a FREE one -- `waypointFree(id)`.
-		Once a waypoint carries a link that rule stops matching, the press falls through to here,
-		and the escalation quietly turned the link button into the move button for exactly the
-		waypoints that are part of a route. That is the defect the director reported.
+		`link` claims a left drag on a waypoint, as it does on a node -- B211 removed the FREE
+		condition so a junction can be started from a bend. Before that, a waypoint carrying a link
+		fell through to here, and the escalation turned the link button into the move button for
+		exactly the waypoints that are part of a route. That was the defect the director reported.
 		*/
 		update: (i, pos, evt) => i.escalate(pos, evt,
 			i.readOnly || i.ctx.hit.kind === 'link' || (i.ctx.hit.kind === 'waypoint' && i.ctx.leftPress),
@@ -563,7 +563,6 @@ export class Input {
 		return {
 			readOnly: this.readOnly,
 			tool: this.palette.textTool,
-			waypointFree: (id) => waypointFree(this.model, id),
 		};
 	}
 
@@ -935,7 +934,10 @@ export class Input {
 	is left holding a route that no longer describes what is on screen.
 	*/
 	splitsFor(link) {
-		const touched = [link.src, link.dst, ...(link.via || [])];
+		// B211 -- the ENDS only. Threading a bend leaves it a bend, by the director's ruling: passing
+		// through is not meeting, and two links bending at one point is two bends. Only landing on
+		// one, or starting from one, makes a junction.
+		const touched = [link.src, link.dst];
 		const out = [];
 		const seen = new Set();
 		for (const w of touched) {

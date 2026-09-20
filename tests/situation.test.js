@@ -115,13 +115,20 @@ through and another terminates at holds BOTH roles; under a single value the old
 test('B208: a waypoint holds every role that applies, and onEndpoint reads the set', async () => {
 	const { waypointRoles } = await import('../kernel/index.mjs');
 
+	/*
+	B211 -- a junction is where links TERMINATE, and threading is invisible to it. Two links bending
+	at one point is two bends, which is what it looks like. And a junction SUPERSEDES an endpoint:
+	every link at one terminates there, so saying both would say nothing and would draw two layers
+	where the outer is redundant.
+	*/
 	const cases = [
 		['a bend adds no sub-type', [{ src: 'a', dst: 'b', via: ['w'] }], []],
+		['TWO threaded links is two bends', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'c', dst: 'd', via: ['w'] }], []],
 		['a terminus is an endpoint', [{ src: 'w', dst: 'a' }], ['endpoint']],
 		['a closed ring has no ends', [{ src: 'w', dst: 'w', closed: true }], []],
-		['two paths through it is a junction', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'c', dst: 'd', via: ['w'] }], ['junction']],
-		['a T is BOTH', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'w', dst: 'c' }], ['junction', 'endpoint']],
-		['a star is both', [{ src: 'w', dst: 'a' }, { src: 'w', dst: 'b' }, { src: 'w', dst: 'c' }], ['junction', 'endpoint']],
+		['threaded plus one terminus is still just a terminus', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'w', dst: 'c' }], ['endpoint']],
+		['TWO terminations is the smallest meet', [{ src: 'a', dst: 'w' }, { src: 'w', dst: 'b' }], ['junction']],
+		['a star is a junction, not also an endpoint', [{ src: 'w', dst: 'a' }, { src: 'w', dst: 'b' }, { src: 'w', dst: 'c' }], ['junction']],
 	];
 	for (const [why, links, want] of cases) {
 		assert.deepEqual(waypointRoles('w', links), want, why);
@@ -139,12 +146,19 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 	const access = {
 		get: (kind, id) => (kind === 'waypoint' && id === 'waypoint-aa0001' ? { id, x: 0, y: 0 } : null),
 		linksTouching: () => [
-			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
+			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001' },
 			{ id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' },
 		],
 	};
 	const s = situationOf(access, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
-	assert.deepEqual(s.target.roles, ['junction', 'endpoint'], 'the situation carries the whole set');
-	assert.equal(onEndpoint(s), true,
-		'a T-junction must still arm -- if this is false, onEndpoint is reading a string and arming is dead everywhere');
+	assert.deepEqual(s.target.roles, ['junction'], 'the situation carries the set the kernel derived');
+
+	// a lone terminus still arms, and that is the predicate's job -- read from the SET, not a string
+	const lone = {
+		get: access.get,
+		linksTouching: () => [{ id: 'link-aa0001', src: 'waypoint-aa0001', dst: 'node-aa0003' }],
+	};
+	const t = situationOf(lone, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
+	assert.equal(onEndpoint(t), true,
+		'a terminus must arm -- if this is false, onEndpoint is reading a string and arming is dead everywhere');
 });

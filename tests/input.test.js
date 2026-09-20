@@ -1505,7 +1505,40 @@ The fix suppresses the ESCALATION rather than removing waypoints from `press`. D
 Both halves are asserted here: the left press must still select, and the right drag must still
 move, or "left does not move it" has been achieved by making it do nothing at all.
 */
-test('B203: left-drag on a linked waypoint selects but does not move it', () => {
+/*
+B211 -- a waypoint behaves like any other node under the left button, by the director's ruling:
+DRAG LINKS, CLICK SELECTS.
+
+B203 originally asserted that a left DRAG on a linked waypoint selects it, because at the time the
+only left gesture available was `press` and the fix suppressed its escalation to a move. Starting a
+link from a bend needs that same press, so the `link` rule now claims a waypoint as it already
+claimed a node -- and the two properties B203 actually protects are asserted separately below.
+
+A left drag must still never MOVE it, which is the defect B203 was filed for, and a left CLICK must
+still select, which `link`'s commit already does for any kind: "a no-drag press is still a click".
+*/
+test('B211: a left CLICK on a linked waypoint selects it', () => {
+	const h = makeInput();
+	try {
+		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
+		h.model.put('waypoint', { id: 'waypoint-aa0002', name: 'w2', x: 180, y: 0 });
+		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+		const at = (x, y) => pointer(x, y, {
+			button: 0,
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
+		});
+
+		// press and release on the spot -- no drag
+		h.input.onDown(at(0, 0));
+		h.input.onUp(at(0, 0));
+
+		assert.ok(h.selection.list().includes('waypoint-aa0001'),
+			'a click with no drag must select, exactly as it does on a node');
+		assert.equal(h.commits.length, 0, 'and a click alone commits nothing');
+	} finally { h.restore(); }
+});
+
+test('B203: a left drag never MOVES a waypoint', () => {
 	const h = makeInput();
 	try {
 		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
@@ -1520,10 +1553,8 @@ test('B203: left-drag on a linked waypoint selects but does not move it', () => 
 		h.input.onMove(at(0, 240, { button: 0 }));
 		h.input.onUp(at(0, 240, { button: 0 }));
 
-		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 0, 'a LEFT drag moved the waypoint');
-		assert.equal(h.commits.length, 0, 'and it committed a change for a gesture that should not exist');
-		assert.ok(h.selection.list().includes('waypoint-aa0001'),
-			'the left press must still SELECT -- suppressing the move must not cost selection');
+		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 0,
+			'a LEFT drag moved the waypoint -- left is the link button, right is the move button');
 	} finally { h.restore(); }
 });
 

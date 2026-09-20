@@ -817,7 +817,9 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 		['bend', [], ['wp-anchor', 'wp-dot']],
 		['endpoint', ['endpoint'], ['wp-anchor', 'wp-ring', 'wp-dot']],
 		['junction', ['junction'], ['wp-anchor', 'wp-junction', 'wp-dot']],
-		['a T, both roles', ['junction', 'endpoint'], ['wp-anchor', 'wp-ring', 'wp-junction', 'wp-dot']],
+		// B211 -- a junction supersedes an endpoint, so the pair never occurs; kept as a layer-order
+		// assertion in case a future sub-type does combine with the pad
+		['both, if ever combined', ['junction', 'endpoint'], ['wp-anchor', 'wp-ring', 'wp-junction', 'wp-dot']],
 	];
 	for (const [why, roles, want] of cases) {
 		assert.deepEqual(k.waypointLayers(roles, 20).map((l) => l.cls), want, why);
@@ -848,10 +850,14 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	};
 
 	assert.deepEqual(drawn(bend), { cls: 'bend', circles: 2 }, 'a bend is the anchor and the dot');
-	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0003' }]),
-		{ cls: 'junction endpoint', circles: 4 }, 'a T carries both roles and draws both layers');
+	/*
+	B211 -- threading does not make a junction, and a junction shows only its own ring.
+	*/
 	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }]),
-		{ cls: 'junction', circles: 3 }, 'a cross has no pad -- nothing terminates there');
+		{ cls: 'bend', circles: 2 }, 'two links THREADED through one point is two bends, not a junction');
+	assert.deepEqual(drawn([{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' },
+		{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' }]),
+		{ cls: 'junction', circles: 3 }, 'two links TERMINATING is a junction, and it draws the ring rather than the pad');
 });
 
 test('B209: a waypoint that already has links is a valid link target', async () => {
@@ -859,8 +865,9 @@ test('B209: a waypoint that already has links is a valid link target', async () 
 	const body = src.slice(src.indexOf('export function endpointAt'));
 	assert.doesNotMatch(body.slice(0, 400), /waypointFree\(/,
 		'endpointAt must offer a waypoint that already carries a link, or a junction cannot be DRAWN');
-	// but the rule that decides whether a left drag STARTS a link from one is a different question
-	assert.match(src, /export const waypointFree/, 'waypointFree still exists for the link-source rule');
+	// B211 -- and starting a link from one is the same question, so the predicate is gone entirely
+	assert.doesNotMatch(src, /export const waypointFree/,
+		'waypointFree has no caller: a junction must be startable from a bend, so every waypoint is a valid source');
 });
 
 /*

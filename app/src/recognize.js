@@ -55,7 +55,7 @@ export const RECOGNIZE = [
 	{ id: 'resize',    mutates: true,  when: (h, e) => L(e) && h.kind === 'handle',                gesture: 'resize' },
 	{ id: 'replug',    mutates: true,  when: (h, e) => L(e) && h.kind === 'lhandle',               gesture: 'replug' },
 	{ id: 'l-clone',   mutates: true,  when: (h, e) => L(e) && e.ctrlKey && entity(h),             gesture: 'clone-pending' },
-	{ id: 'link',      mutates: true,  when: (h, e, c) => L(e) && (h.kind === 'node' || (h.kind === 'waypoint' && c.waypointFree(h.id))), gesture: 'link' },
+	{ id: 'link',      mutates: true,  when: (h, e, c) => L(e) && (h.kind === 'node' || h.kind === 'waypoint'), gesture: 'link' },
 	{ id: 'zone-draw', mutates: true,  when: (h, e) => L(e) && h.kind === 'canvas' && e.shiftKey, gesture: 'zone' },
 
 	// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
