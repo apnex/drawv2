@@ -271,7 +271,18 @@ The hazard was undetectable until the legacy field went.\
 Removing the single field is what makes the mutation fire.\
 A legacy field kept "just in case" is a second answer to the same question.
 
-Remaining: step 4 render the layer, and open `endpointAt` to a waypoint that already has links so a junction can be DRAWN.
+**Step 4 done (2026-09-19): the junction renders, and can be drawn.**\
+`waypointLayers(roles, ext)` owns which sub-type draws what, and both renderers walk that one list instead of branching per role -- so a future sub-type is one change rather than two, which is the twin B162 exists to prevent.\
+The anchor is always first and the dot always last, so no opaque pad can bury what sits inside it.
+
+`endpointAt` now offers ANY waypoint rather than only a free one.\
+A bend always carries a link, so the gesture that makes a junction was being refused at the pointer before the validator ever saw it.\
+`waypointFree` survives, because whether a left drag STARTS a link from a waypoint is a different question from whether one may END there, and only the second moved.
+
+Rendered and checked: a bend draws two circles, a T draws four and carries both role names as classes, a cross draws three and has no pad because nothing terminates there.
+
+**The junction is built.**\
+What remains is engine semantics, which were always specified as owed.
 
 ### Still to settle
 

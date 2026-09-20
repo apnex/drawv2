@@ -556,8 +556,8 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	The PROPERTY asserted is unchanged and is the only thing that ever mattered: both renderers ASK
 	for the role rather than deciding it.
 	*/
-	assert.match(client, /waypointRole\(/, 'the live renderer asks for the role');
-	assert.match(engine, /waypointRole\(/, 'as does the kernel');
+	assert.match(client, /waypointRoles\(/, 'the live renderer asks for the role SET (B209)');
+	assert.match(engine, /waypointRoles\(/, 'as does the kernel');
 
 	// B166 -- a model link is accepted by the rule DIRECTLY, with nothing translating on the way
 	assert.equal(k.waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
@@ -671,7 +671,7 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 	*/
 	for (const f of ['../app/src/renderer.js', '../kernel/renderer.mjs']) {
 		const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
-		assert.match(src, /waypointStyle\(/, `${f} must ASK for the style`);
+		assert.match(src, /waypointLayers\(/, `${f} must ASK for the layer list (B209), not restate which role draws what`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*5\s*:\s*1\.6/, `${f} restates the stroke weight`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*1\s*:\s*0\.7/, `${f} restates the opacity`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*TOKENS\.panel/, `${f} restates the fill`);
@@ -750,13 +750,8 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 	against it. Read from source, so deleting it as unused fails here and says which layer lost its
 	geometry.
 	*/
-	const geom = fs.readFileSync(new URL('../kernel/geometry.mjs', import.meta.url), 'utf8');
-	assert.match(geom, /const JUNCTION_RUNG = \{ radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH \};/,
-		'the junction rung reservation is gone -- the layer it holds space for has no geometry');
-	const junction = {
-		radius: Number(geom.match(/const JUNCTION_RADIUS = ([\d.]+);/)[1]),
-		width: Number(geom.match(/const JUNCTION_WIDTH = ([\d.]+);/)[1]),
-	};
+	// B209 -- the rung is a drawn layer now, not a reservation read out of source text
+	const junction = k.waypointJunction();
 
 	const bands = [
 		['dot', 0, k.gridDot().radius],
@@ -792,8 +787,9 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
 
 	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
-	assert.match(renderer, /gridDot\(\)\.radius/, 'the waypoint centre must draw the same dot it highlights');
-	assert.match(kernelRenderer, /gridDot\(\)\.radius/, 'the SVG export must draw it too, or it diverges from the canvas');
+	// B209 -- both renderers get the dot through the layer list; the kernel sources it from gridDot
+	assert.match(renderer, /waypointLayers\(/, 'the waypoint centre comes from the kernel layer list');
+	assert.match(kernelRenderer, /waypointLayers\(/, 'the SVG export must use the same list, or it diverges from the canvas');
 
 	// the specific literal this replaced, which survived in two renderers while the kernel computed
 	// the ladder from a third copy
@@ -801,4 +797,68 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 		assert.doesNotMatch(src, /r[:=]\s*"?2\.2"?/, `${name} still carries a hardcoded dot radius`);
 	}
 	assert.equal(k.gridDot().radius, 2, 'the dot is 2 -- the value the node grid already drew');
+});
+
+/*
+B209: the layer LIST, and a junction that can be drawn.
+
+Two changes and one property. `waypointLayers(roles, ext)` owns which sub-type draws what, so both
+renderers walk one list instead of branching per role -- adding a sub-type is a change there rather
+than in the canvas and the export both, which is the twin B162 exists to prevent.
+
+And `endpointAt` now offers ANY waypoint, not only a free one. A bend always carries a link, so the
+gesture that makes a junction was refused at the pointer before the validator ever saw it. B207
+relaxed the validator; without this the feature is still undrawable.
+*/
+test('B209: each role combination draws its own layers, in both renderers', async () => {
+	const k = await import('../kernel/index.mjs');
+
+	const cases = [
+		['bend', [], ['wp-anchor', 'wp-dot']],
+		['endpoint', ['endpoint'], ['wp-anchor', 'wp-ring', 'wp-dot']],
+		['junction', ['junction'], ['wp-anchor', 'wp-junction', 'wp-dot']],
+		['a T, both roles', ['junction', 'endpoint'], ['wp-anchor', 'wp-ring', 'wp-junction', 'wp-dot']],
+	];
+	for (const [why, roles, want] of cases) {
+		assert.deepEqual(k.waypointLayers(roles, 20).map((l) => l.cls), want, why);
+	}
+
+	// the anchor is the floor and the dot the centre, whatever the roles
+	for (const [, roles] of cases) {
+		const ls = k.waypointLayers(roles, 20).map((l) => l.cls);
+		assert.equal(ls[0], 'wp-anchor', 'the anchor is always drawn first -- it is the floor');
+		assert.equal(ls[ls.length - 1], 'wp-dot', 'the dot is always last, so no opaque pad buries it');
+	}
+
+	/*
+	The EXPORT draws what the list says. A T renders four circles and carries both role names as
+	classes; a cross renders three and has no pad, because nothing terminates there.
+	*/
+	const doc = (links) => ({
+		meta: { id: 'diagram-aa0001', name: 't' },
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' },
+			{ id: 'node-aa0003', type: 'host', x: 0, y: 120, name: 'c' }, { id: 'node-aa0004', type: 'host', x: 0, y: -120, name: 'd' }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }],
+		links, zones: [], groups: [],
+	});
+	const bend = [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }];
+	const drawn = (links) => {
+		const m = k.render(k.docToSchema(doc(links))).match(/<g class="waypoint ([^"]*)">(.*?)<\/g>/s);
+		return { cls: m[1], circles: (m[2].match(/<circle/g) || []).length };
+	};
+
+	assert.deepEqual(drawn(bend), { cls: 'bend', circles: 2 }, 'a bend is the anchor and the dot');
+	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0003' }]),
+		{ cls: 'junction endpoint', circles: 4 }, 'a T carries both roles and draws both layers');
+	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }]),
+		{ cls: 'junction', circles: 3 }, 'a cross has no pad -- nothing terminates there');
+});
+
+test('B209: a waypoint that already has links is a valid link target', async () => {
+	const src = fs.readFileSync(new URL('../app/src/pick.js', import.meta.url), 'utf8');
+	const body = src.slice(src.indexOf('export function endpointAt'));
+	assert.doesNotMatch(body.slice(0, 400), /waypointFree\(/,
+		'endpointAt must offer a waypoint that already carries a link, or a junction cannot be DRAWN');
+	// but the rule that decides whether a left drag STARTS a link from one is a different question
+	assert.match(src, /export const waypointFree/, 'waypointFree still exists for the link-source rule');
 });

@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRole, waypointStyle, waypointAnchor, gridDot, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRoles, waypointLayers, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -305,33 +305,22 @@ export class Renderer {
 			// B166 -- model links go straight to the kernel. This used to map src/dst/closed into
 			// from/to/close inline, and the situation needed the same mapping, which is what turned
 			// a four-word detail into a twin. Unifying the vocabulary removed both copies.
-			const role = waypointRole(entity.id, this.model.linksAt?.(entity.id) || []);
+			const roles = waypointRoles(entity.id, this.model.linksAt?.(entity.id) || []);
 			// the numbers are the kernel's, shared with the SVG export; this only emits them
-			const st = waypointStyle(role, FE);
 			/*
-			H12.8 -- an armed endpoint LOOKS armed in every mode, including author view.
-
-			Motion is read-view only, by ruling. But `spawn` is document state, so hiding it while
-			authoring would mean the diagram was emitting and the person editing it had no way to
-			know. The class marks the fact; the CSS makes it legible; nothing here moves.
+			B209 -- walk the kernel's layer list. Which sub-type draws what lives in
+			`waypointLayers`, so the canvas and the SVG export cannot disagree and a new sub-type is
+			one change rather than two.
 			*/
 			const armed = entity.spawn ? ' spawning' : '';
-			const g = el('g', { id: entity.id, class: `waypoint ${role === 'endpoint' ? 'endpoint' : 'bend'}${armed}` }, this.layers.waypoints);
+			const cls = roles.length ? roles.join(' ') : 'bend';
+			const g = el('g', { id: entity.id, class: `waypoint ${cls}${armed}` }, this.layers.waypoints);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			/*
-			B199 -- anchor first, then the sub-type layer on top.
-
-			The anchor goes down for every waypoint including an endpoint, which is the change: an
-			endpoint used to draw its pad INSTEAD of a ring at the extent, so it lost the outline
-			that says "a link can reach here". Order matters -- the pad is opaque and must cover
-			the path, so it is painted after the anchor rather than before it.
-			*/
-			const anchor = waypointAnchor(FE);
-			el('circle', { class: 'wp-anchor', r: anchor.radius, fill: anchor.fill, stroke: TOKENS.waypoint, 'stroke-width': anchor.width, 'stroke-opacity': anchor.opacity }, g);
-			if (role === 'endpoint') {
-				el('circle', { class: 'wp-ring', r: st.radius, fill: st.fill, stroke: TOKENS.waypoint, 'stroke-width': st.width, 'stroke-opacity': st.opacity }, g);
+			for (const l of waypointLayers(roles, FE)) {
+				el('circle', l.fill === 'solid'
+					? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
+					: { class: l.cls, r: l.radius, fill: l.fill, stroke: TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity }, g);
 			}
-			el('circle', { class: 'wp-dot', r: gridDot().radius, fill: TOKENS.waypoint }, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)

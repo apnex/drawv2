@@ -66,11 +66,22 @@ export const nodeAt = (model, pos, slop = NODE_R + 4) =>
 // a waypoint belongs to at most one link; a FREE one can still take an endpoint
 export const waypointFree = (model, id) => model.linksAt(id).length === 0;
 
-// a valid link endpoint under the cursor: a node, or a free waypoint
+/*
+B209 -- a valid link endpoint under the cursor: a node, or ANY waypoint.
+
+It used to be a node or a FREE waypoint, which meant a waypoint already carrying a link could not
+be linked to -- and a bend always carries one. So the gesture that makes a junction was refused at
+the pointer, before the validator ever saw it. That was correct while the validator refused the
+topology too; B207 relaxed that half, and this is the other.
+
+`waypointFree` stays, because the LINK rule in `recognize.js` still uses it to decide whether a
+left drag STARTS a link from this waypoint. Being a valid target and being a valid source are
+different questions, and only the first one moved.
+*/
 export function endpointAt(model, pos) {
 	const n = nodeAt(model, pos);
 	if (n) return n;
-	return model.all('waypoint').find((w) => dist(w, pos) <= NODE_R && waypointFree(model, w.id)) || null;
+	return model.all('waypoint').find((w) => dist(w, pos) <= NODE_R) || null;
 }
 
 // cell occupancy (the engine's O(1) index, not a scan): a node rests here / anything rests here

@@ -96,7 +96,14 @@ route is a bend again, because a ring has no ends. Carrying it on the element ra
 in the renderer is what lets the live canvas and the SVG export agree without either restating the
 rule -- they both consume this.
 */
-export const waypoint = (cx, cy, role = 'bend') => ({ kind: 'waypoint', cx, cy, role });
+/*
+B209 -- carries the ROLE SET. `role` is a projection kept beside it for `bboxOf` and the hit tests,
+which ask a yes/no question and do not need the whole list.
+*/
+export const waypoint = (cx, cy, roles = []) => ({
+	kind: 'waypoint', cx, cy, roles,
+	role: roles.includes('endpoint') ? 'endpoint' : 'bend',
+});
 
 /*
 The bend/endpoint rule, in ONE place, because two renderers need the same answer.
@@ -263,7 +270,33 @@ with no consumer is what `scan-dead` rejects. The numbers stay because the rung 
 even unused: the whole-number scheme depends on 7/3 fitting where it does, and the clearances
 either side of it were chosen against it at working zoom.
 */
-const JUNCTION_RUNG = { radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH };
+/*
+The junction ring -- hollow, because a junction says "these links are CONNECTED here" rather than
+"a line stops here", so the paths must stay visible running through it. An endpoint pad is opaque
+for the opposite reason.
+
+Reserved as a constant while the sub-type had no behaviour; a layer since B209 draws it.
+*/
+export const waypointJunction = () => ({
+	radius: JUNCTION_RADIUS,
+	width: JUNCTION_WIDTH,
+	fill: 'none',
+	opacity: 1,
+});
+
+/*
+B209 -- every layer a waypoint draws, innermost last so the opaque pad cannot bury what sits inside
+it. The anchor is the floor and is always present; the rest are the sub-types `waypointRoles`
+derived. One list, walked by both renderers, so the canvas and the export cannot disagree about
+what a role looks like.
+*/
+export const waypointLayers = (roles, ext) => {
+	const out = [{ cls: 'wp-anchor', ...waypointAnchor(ext) }];
+	if (roles.includes('endpoint')) out.push({ cls: 'wp-ring', ...waypointStyle('endpoint', ext) });
+	if (roles.includes('junction')) out.push({ cls: 'wp-junction', ...waypointJunction() });
+	out.push({ cls: 'wp-dot', radius: gridDot().radius, fill: 'solid' });
+	return out;
+};
 
 /*
 B208 -- the sub-types a waypoint currently holds, as a SET.

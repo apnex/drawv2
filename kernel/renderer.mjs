@@ -2,7 +2,7 @@
 // decisions live here; the engine has already placed everything. Sovereign: glyph defs, glyph
 // metrics, colours and the scene CSS all come from theme.mjs (no client/ coupling).
 import { STD, L_STD } from './spec.mjs';
-import { bboxOf, waypointStyle, waypointAnchor, gridDot } from './geometry.mjs';
+import { bboxOf, waypointLayers } from './geometry.mjs';
 import { roundedPath } from './router.mjs';
 import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 
@@ -154,16 +154,18 @@ function renderEl(el, V, L, opts = {}) {
 	wires beneath it.
 	*/
 	if (el.kind === 'waypoint') {
-		// the numbers are the kernel's, shared with the live renderer; this only emits them
-		// B199 -- anchor, then the sub-type layer, then the dot. Same order and same numbers as the
-		// live renderer; both take them from the kernel so the export cannot drift from the canvas.
-		const an = waypointAnchor(L.frame.ext);
-		const anchor = `<circle cx="${el.cx}" cy="${el.cy}" r="${an.radius}" fill="${an.fill}" stroke="${TOKENS.waypoint}" stroke-width="${an.width}" stroke-opacity="${an.opacity}"/>`;
-		const st = waypointStyle(el.role, L.frame.ext);
-		const pad = el.role === 'endpoint'
-			? `<circle cx="${el.cx}" cy="${el.cy}" r="${st.radius}" fill="${st.fill}" stroke="${TOKENS.waypoint}" stroke-width="${st.width}" stroke-opacity="${st.opacity}"/>`
-			: '';
-		return `<g class="waypoint ${el.role === 'endpoint' ? 'endpoint' : 'bend'}">${anchor}${pad}<circle cx="${el.cx}" cy="${el.cy}" r="${gridDot().radius}" fill="${TOKENS.waypoint}"/></g>`;
+		/*
+		B209 -- the layer LIST, not a branch per role. `waypointLayers` owns which sub-types draw
+		what, so adding one is a change there rather than here and in the live renderer both. The
+		class list is the roles, or `bend` when none apply -- a bend adds no layer, so the empty set
+		still needs a name for the CSS to hang on.
+		*/
+		const roles = el.roles || [];
+		const cls = roles.length ? roles.join(' ') : 'bend';
+		const circles = waypointLayers(roles, L.frame.ext).map((l) => (l.fill === 'solid'
+			? `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${TOKENS.waypoint}"/>`
+			: `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${l.fill}" stroke="${TOKENS.waypoint}" stroke-width="${l.width}" stroke-opacity="${l.opacity}"/>`)).join('');
+		return `<g class="waypoint ${cls}">${circles}</g>`;
 	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are
 	// connected", vs links that merely cross. Opaque centre so wires meet its edges cleanly.

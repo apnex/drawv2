@@ -25,7 +25,7 @@
 // bend. ONE anchor per cell = the centre. Parallel/mechanism realizers are a future additive
 // layer (kept in dev/design/sim), deliberately out of this kernel cut.
 import { STD, derive, BEND_R } from './spec.mjs';
-import { cellPx, node, waypoint, waypointRole, zone, group, path, groupHull } from './geometry.mjs';
+import { cellPx, node, waypoint, waypointRoles, zone, group, path, groupHull } from './geometry.mjs';
 import { gridSnap } from './router.mjs';
 
 const VARIANTS = { standard: STD };
@@ -66,7 +66,8 @@ export function resolve(schema) {
 		if (e.kind !== 'waypoint') continue;
 		const [cx, cy] = cellPx(e.cell, V);
 		// the rule lives in geometry.mjs so the live client reaches the same answer from its own index
-		const el = waypoint(cx, cy, waypointRole(e.id, routes));
+		// B209 -- the SET reaches the renderer; `waypoint()` keeps `role` as its projection for hit tests
+		const el = waypoint(cx, cy, waypointRoles(e.id, routes));
 		el.id = e.id;
 		byId[e.id] = { e, el, cx, cy, kind: 'waypoint' };
 		scene.push(el);
