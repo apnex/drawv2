@@ -528,10 +528,23 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 			'two links with the same endpoints bend at the same waypoint: w1', `${why}: must be refused`);
 	}
 
-	// but a same-pair link that does NOT bend there is a parallel run, governed at the node face
+	/*
+	A same-pair link that does NOT bend there is a different shape on the canvas -- one detours
+	through the waypoint, the other does not -- so it is accepted here. Whether a SECOND STRAIGHT
+	one may join is `straightCapacity` in model/invariants.mjs, a separate rule in a separate layer.
+	Asserted together so the boundary between them is pinned: if either starts covering the other's
+	case, one of these two lines fails.
+	*/
 	const parallel = [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'n1', dst: 'n2' }];
 	assert.equal(linkReferential(parallel[1], access(parallel)), null,
 		'a same-pair link that does not bend at the waypoint is not a duplicate through it');
+
+	const { violations } = await import('../model/invariants.mjs');
+	const asModel = (links) => ({ all: (k) => (k === 'link' ? links : []), get: () => null });
+	assert.deepEqual(violations(asModel(parallel)), [],
+		'one routed and one straight between a pair is legal -- they render differently');
+	assert.equal(violations(asModel([...parallel, { id: 'l3', src: 'n1', dst: 'n2' }])).length, 1,
+		'a SECOND straight one is refused, by straightCapacity rather than by the duplicate-bend check');
 
 	// and a link using two DIFFERENT waypoints trips neither
 	const fine = { id: 'l1', src: 'n1', dst: 'n2', via: ['w1', 'w2'] };
