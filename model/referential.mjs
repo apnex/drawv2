@@ -64,7 +64,7 @@ that do not exist should say the endpoint is missing, because that is the fault 
 on, and reporting "self-link" for a pair of typos sends them looking in the wrong place.
 */
 export function linkReferential(link, access) {
-	const { hasNode, hasWaypoint, ownersOf } = access;
+	const { hasNode, hasWaypoint } = access;
 	const exists = (id) => hasNode(id) || hasWaypoint(id);
 
 	if (!exists(link.src)) return `link src does not exist: ${link.src}`;
@@ -75,7 +75,7 @@ export function linkReferential(link, access) {
 	for (const w of via) if (!hasWaypoint(w)) return `link via waypoint does not exist: ${w}`;
 
 	const refs = [link.src, link.dst, ...via].filter(hasWaypoint);
-	return selfConflict(link, refs) || sharedWithAnotherLink(link, refs, ownersOf);
+	return selfConflict(link, refs) || duplicateThroughBend(link, via, access);
 }
 
 /*
@@ -95,19 +95,44 @@ function selfConflict(link, refs) {
 }
 
 /*
-TWO LINKS referencing one waypoint.
+TWO LINKS meeting at one waypoint -- ALLOWED. That is a junction.
 
-This is the half that becomes the junction, and the only part of the old rule that moves. It is
-separated rather than changed: the behaviour here is byte-identical to what it replaced, so the
-split can be landed and verified before the meaning changes.
+This replaced `sharedWithAnotherLink`, which refused it outright and was the half of the old rule
+that had to move: every topology a junction is made of was rejected here. A waypoint carrying more
+than two path DIRECTIONS is a junction, derived rather than declared, and the derivation is
+`waypointRole`'s business rather than the validator's -- what is checked here is only whether the
+document is well-formed enough to derive from.
 
-Needs the owners index, because the question is about links this one cannot see.
+WHAT IS STILL REFUSED is the degenerate case the relaxation exposes: two links that bend at the
+same waypoint AND carry the same endpoint pair. Two identical routes stacked through one corner are
+visually indistinguishable, separately editable, and mean nothing that one link does not.
+
+The pair is compared UNORDERED, so `a<->b` and `b<->a` are the same pair -- a link drawn in the
+opposite direction is the same duplicate, and comparing ordered would let it through.
+
+Only BENDS are tested. Two links both TERMINATING at one waypoint is a star, which is a junction and
+legal however many arrive; and a same-pair link that does not bend at this point is a parallel run,
+which `Parallel-link capacity` governs at the node face rather than here.
 */
-function sharedWithAnotherLink(link, refs, ownersOf) {
-	for (const w of refs) {
-		for (const other of ownersOf(w)) {
-			// a waypoint this link already owns is not a conflict with itself
-			if (other !== link.id) return `waypoint already in use by another link: ${w}`;
+const pairKey = (l) => [l.src, l.dst].sort().join('\u0000');
+
+function duplicateThroughBend(link, via, access) {
+	const { ownersOf, linkById } = access;
+	/*
+	THROWS rather than skipping. Both callers supply this, and a third that forgot would otherwise
+	disable the duplicate rule in silence -- the document would validate, the duplicate would be
+	stored, and nothing would say so. A trust-boundary check that can be switched off by omission is
+	the defect class this repo has spent the most time closing.
+	*/
+	if (!linkById) throw new Error('linkReferential: access.linkById is required for the duplicate-bend check');
+	for (const w of via) {
+		for (const otherId of ownersOf(w)) {
+			if (otherId === link.id) continue;
+			const other = linkById(otherId);
+			if (!other || !(Array.isArray(other.via) ? other.via : []).includes(w)) continue;
+			if (pairKey(other) === pairKey(link)) {
+				return `two links with the same endpoints bend at the same waypoint: ${w}`;
+			}
 		}
 	}
 	return null;

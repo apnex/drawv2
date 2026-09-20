@@ -379,10 +379,17 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 		'one waypoint in two roles on one link':
 			{ nodes: [N(1, 0)], waypoints: [W(1, 60)],
 				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0001'] }] },
-		'one waypoint shared by two links':
+		// B207 -- LEGAL since the junction relaxation: two links meeting at one waypoint is a
+		// junction, and this case moved from the bad column to the good one.
+		'one waypoint shared by two links (a junction)':
 			{ nodes: [N(1, 0), N(2, 60), N(3, 120), N(4, 180)], waypoints: [W(1, 60)],
 				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
 					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }] },
+		// and what replaced it: the same PAIR bending at the same point is still refused
+		'two links with the same endpoints bend at one waypoint':
+			{ nodes: [N(1, 0), N(2, 60)], waypoints: [W(1, 60)],
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
+					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0002', dst: 'node-aa0001', via: ['waypoint-aa0001'] }] },
 		'group member that does not exist':
 			{ nodes: [N(1, 0), N(2, 60)], links: [],
 				groups: [{ id: 'group-aa0001', members: ['node-aa0001', 'node-aa0009'], name: 'g' }] },
@@ -410,7 +417,7 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 			`"${name}": the doors disagree — document says ${viaDoc || 'OK'}, mutation says ${viaMutation || 'OK'}`);
 		if (viaDoc) rejected++;
 	}
-	assert.equal(rejected, 6, 'six of the nine cases are bad — if this drops, the corpus stopped exercising the rules');
+	assert.equal(rejected, 6, 'six of the ten cases are bad — if this drops, the corpus stopped exercising the rules');
 });
 
 /*
@@ -482,7 +489,8 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 	const wps = new Set(['w1', 'w2']);
 	const access = (links) => {
 		const owners = waypointOwners(links);
-		return { hasNode: (i) => nodes.has(i), hasWaypoint: (i) => wps.has(i), ownersOf: (w) => owners.get(w) || [] };
+		const byId = new Map(links.map((l) => [l.id, l]));
+		return { hasNode: (i) => nodes.has(i), hasWaypoint: (i) => wps.has(i), ownersOf: (w) => owners.get(w) || [], linkById: (i) => byId.get(i) };
 	};
 
 	// SELF-CONFLICT: one link, no other links exist at all -- so sharing cannot be what refuses it
@@ -494,16 +502,36 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 			`${why}: must be refused by self-conflict, with one link in the document`);
 	}
 
-	// SHARING: every link is internally clean, so self-conflict cannot be what refuses them
+	/*
+	B207 -- SHARING IS NOW LEGAL. These are the junction topologies, and refusing them was the half
+	of the old rule that had to move. Kept as assertions rather than deleted: they are the feature,
+	and a regression that re-refused them would otherwise only surface as "I cannot draw a junction".
+	*/
 	for (const [why, links] of [
 		['two links bending at one waypoint', [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'n3', dst: 'n4', via: ['w1'] }]],
 		['a T -- one bends, one terminates', [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'w1', dst: 'n3' }]],
+		['a star -- three links terminate', [{ id: 'l1', src: 'w1', dst: 'n1' }, { id: 'l2', src: 'w1', dst: 'n2' }, { id: 'l3', src: 'w1', dst: 'n3' }]],
 	]) {
-		assert.equal(linkReferential(links[1], access(links)), 'waypoint already in use by another link: w1',
-			`${why}: must be refused by sharing, and each link is clean on its own`);
-		assert.equal(linkReferential(links[1], access([links[1]])), null,
-			`${why}: the second link ALONE must be accepted -- if not, self-conflict is refusing it and the split is wrong`);
+		assert.equal(linkReferential(links[links.length - 1], access(links)), null, `${why}: must be ACCEPTED -- this is a junction`);
 	}
+
+	/*
+	What the relaxation still refuses: the same endpoint PAIR bending at the same waypoint. Two
+	identical routes stacked through one corner are indistinguishable and separately editable.
+	Compared unordered, so drawing the second one backwards is the same duplicate.
+	*/
+	for (const [why, links] of [
+		['same pair, same bend', [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'n1', dst: 'n2', via: ['w1'] }]],
+		['same pair REVERSED', [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'n2', dst: 'n1', via: ['w1'] }]],
+	]) {
+		assert.equal(linkReferential(links[1], access(links)),
+			'two links with the same endpoints bend at the same waypoint: w1', `${why}: must be refused`);
+	}
+
+	// but a same-pair link that does NOT bend there is a parallel run, governed at the node face
+	const parallel = [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'n1', dst: 'n2' }];
+	assert.equal(linkReferential(parallel[1], access(parallel)), null,
+		'a same-pair link that does not bend at the waypoint is not a duplicate through it');
 
 	// and a link using two DIFFERENT waypoints trips neither
 	const fine = { id: 'l1', src: 'n1', dst: 'n2', via: ['w1', 'w2'] };

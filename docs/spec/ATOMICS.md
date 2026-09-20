@@ -242,7 +242,21 @@ The reconstruction is confirmed rather than assumed: neutering each half turns t
 Guarded by B206 in `tests/validate.test.js`, which pins WHICH half is which -- a self-conflict is proven with only one link in the document, so sharing cannot be what refuses it, and each sharing case is proven to pass when its second link stands alone.\
 That is what makes step 2 safe: relaxing sharing cannot quietly take self-conflict with it, and a self-conflict that stopped being refused would be a link whose rendered shape is undefined.
 
-Remaining: step 2 relax sharing and add the duplicate-pair rule, step 3 roles as a set with `onEndpoint` guarded first, step 4 render the layer and open `endpointAt` to a waypoint that already has links.
+**Step 2 done (2026-09-19): sharing relaxed, the duplicate-pair rule added.**\
+`sharedWithAnotherLink` became `duplicateThroughBend`.\
+Two links meeting at one waypoint is now ACCEPTED -- the T, the cross and the star all validate, and a T-junction document passes the whole-document door.
+
+What is still refused is the degenerate case the relaxation exposes: two links carrying the same endpoint pair AND bending at the same waypoint.\
+Compared unordered, so drawing the second one backwards is the same duplicate.\
+A same-pair link that does not bend at that point is a parallel run and is governed at the node face, not here.
+
+The check needs the other link's ENDPOINTS rather than its id, so `access` gained `linkById` beside the existing `ownersOf` index -- built once at both call sites.\
+It THROWS when absent rather than skipping: both callers supply it, and a third that forgot would disable a trust-boundary check in silence.
+
+The corpus moved a case rather than losing one.\
+"One waypoint shared by two links" is now in the good column as a junction, and a same-pair duplicate took its place in the bad column, so the door-agreement test still exercises six rejections.
+
+Remaining: step 3 roles as a set with `onEndpoint` guarded first, step 4 render the layer and open `endpointAt` to a waypoint that already has links.
 
 ### Still to settle
 

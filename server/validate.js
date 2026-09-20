@@ -334,6 +334,9 @@ export function validateMutation(model, mutation) {
 			let owners = null;
 			return (w) => (owners ??= waypointOwners(model.all('link'))).get(w) || [];
 		})(),
+		// B207 -- the duplicate-bend check needs the OTHER link's endpoints, not just its id, so it
+		// can compare the pair. The model is already indexed by id; this is a lookup, not a scan.
+		linkById: (lid) => model.get('link', lid),
 	};
 	if (kind === 'link') {
 		const current = model.get('link', entity.id) || {};
@@ -426,10 +429,12 @@ export function validateDoc(doc) {
 	const nodeIds = new Set((doc.nodes || []).map((n) => n.id));
 	const waypointIds = new Set((doc.waypoints || []).map((w) => w.id));
 	const owners = waypointOwners(doc.links || []);
+	const byId = new Map((doc.links || []).map((l) => [l.id, l]));
 	const access = {
 		hasNode: (eid) => nodeIds.has(eid),
 		hasWaypoint: (eid) => waypointIds.has(eid),
 		ownersOf: (w) => owners.get(w) || [],
+		linkById: (lid) => byId.get(lid),   // B207 -- built once, beside the owners index
 	};
 	for (const link of doc.links || []) {
 		const err = linkReferential(link, access);
