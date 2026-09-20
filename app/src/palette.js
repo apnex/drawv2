@@ -9,6 +9,7 @@ click) whose ghost rides the snapped cell; input.js stamps it on click.
 import { CANVAS, GAP, snapNode } from './snap.js';
 import { toCanvas, ghostNode } from './painter.js';
 import * as commands from './commands.js';
+import { GLYPH_BB, STD } from '../../kernel/index.mjs';
 
 export const NODE_TYPES = ['host', 'server', 'loadbalancer', 'firewall', 'vxlan', 'router'];
 
@@ -125,13 +126,44 @@ export class Palette {
 			item.setAttribute('viewBox', '-26 -26 52 52');
 			item.setAttribute('class', 'palette-item node');
 			item.dataset.type = type;
-			// tiles show the default (circle) frame + the type's glyph — the two layers
+			/*
+			B205 -- THE TILE IS A KERNEL-RENDERED NODE, not a drawing of one.
+
+			It used to hand-build the two layers: `<use href="#m-circle">` for the frame and a bare
+			`<use href="#glyph-*">` for the art. The frame matched. The glyph did not -- a bare use
+			falls back to `.icon`'s constant `scale(0.3)`, while a canvas node nests the glyph in an
+			`<svg>` fitted to its own bounding box. Every tile was 65-74% undersized, each by a
+			DIFFERENT amount, so the relative sizes were wrong too: on canvas a host glyph is a third
+			larger than a router, and in the palette they were identical.
+
+			That is a twin, and aligning the copy would only reset the clock. `renderElement` is
+			exported for exactly this -- "so an interactive host can build per-entity DOM" -- and had
+			no production consumer until now. A future geometry change reaches the tile because the
+			tile is not a separate drawing.
+
+			`resolve` gives the element the same shape the scene pipeline produces, so the tile goes
+			through the identical path a real node does rather than a constructed lookalike.
+			*/
 			const frame = document.createElementNS('http://www.w3.org/2000/svg', 'use');
 			frame.setAttribute('href', '#m-circle');
 			item.appendChild(frame);
+
+			// the glyph FITTED to its own bounding box in a socket-sized box -- the nested <svg> the
+			// kernel emits, built with DOM calls because the numbers are what must not drift, and
+			// parsing the kernel's string needs a DOMParser the test environment does not have
+			const [bx, by, bw, bh] = GLYPH_BB[type] || GLYPH_BB.host;
+			const S = STD.socket;
+			const box = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			box.setAttribute('x', -S / 2);
+			box.setAttribute('y', -S / 2);
+			box.setAttribute('width', S);
+			box.setAttribute('height', S);
+			box.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);
+			box.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 			const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
 			use.setAttribute('href', `#glyph-${type}`);
-			item.appendChild(use);
+			box.appendChild(use);
+			item.appendChild(box);
 			// hotkey badge: digit i+1 arms this type into the hand
 			const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 			badge.setAttribute('class', 'digit-badge');

@@ -7,6 +7,8 @@
 //   render(schema)  → SVG string               (resolve → renderer)
 //   check(schema)   → [{ rule, pass, why }]     (resolve → GRC)
 export { STD, L_STD, derive, BEND_R } from './spec.mjs';
+// GLYPH_BB: the palette fits each glyph to its own bounding box exactly as a canvas node does (B205)
+export { GLYPH_BB } from './theme.mjs';
 export { resolve } from './engine.mjs';
 export { renderScene, renderElement, sharedDefs, DRAW_ORDER, selBox, renderContentRegion, contentLayout, hexColor, isPanel, frameRadius, showsSockets } from './renderer.mjs';
 export { grc, RULES, crossings } from './grc.mjs';

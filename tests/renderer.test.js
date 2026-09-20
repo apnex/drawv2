@@ -7,6 +7,7 @@ the same visual rules and IS tested, so only one of the two was ever held to it 
 a different substrate, a tested implementation standing in for the one that runs.
 */
 import { test } from 'node:test';
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
 import { Renderer } from '../app/src/renderer.js';
@@ -141,4 +142,46 @@ test('Tab: hiding names does not disturb the shared element set', () => {
 		r.toggleLabels();
 		assert.deepEqual(classesIn(svg).filter((c) => c === 'frame' || c === 'socket').sort(), before);
 	});
+});
+
+/*
+B205 -- a palette tile and a canvas node draw the same glyph at the same size.
+
+The tile hand-built two layers: `<use href="#m-circle">` for the frame, which matched, and a bare
+`<use href="#glyph-*">` for the art, which did not. A bare use falls back to `.icon`'s constant
+`scale(0.3)`, while a canvas node nests the glyph in an `<svg>` FITTED to its own bounding box.
+
+Every tile was undersized, each by a different amount -- 0.300 against fits ranging 0.867 to 1.171 --
+so the relative sizes were wrong too: on canvas a host glyph is a third larger than a router and in
+the palette they were identical. The director found it by eye, as "the menu nodes are not the same
+literal nodes", after a geometry change moved one side and not the other.
+
+Asserted as AGREEMENT rather than against literals. Checking the palette emits viewBox "-15 -15 30
+30" would pin today's numbers and pass for as long as nobody changed them, which is the failure
+mode that produced the drift. What must hold is that both sides read the same source.
+*/
+test('B205: the palette fits each glyph exactly as the kernel does', async () => {
+	const { GLYPH_BB, STD } = await import('../kernel/index.mjs');
+	const src = fs.readFileSync(new URL('../app/src/palette.js', import.meta.url), 'utf8');
+
+	assert.match(src, /GLYPH_BB\[type\]/, 'the palette must fit the glyph to ITS OWN bounding box');
+	assert.match(src, /STD\.socket/, 'and into the socket-sized box a canvas node uses');
+	assert.doesNotMatch(src, /href.{0,4}, `#glyph-\$\{type\}`\);\s*\n\s*item\.appendChild\(use\)/,
+		'a bare <use> appended straight to the tile is the drift -- it takes .icon scale(0.3)');
+
+	/*
+	The numbers the tile builds from must be the numbers the kernel renders with. Compared per
+	glyph, because the whole point is that the fit is NOT a constant -- a single shared scale is
+	what the palette had.
+	*/
+	for (const type of ['router', 'host', 'server', 'loadbalancer', 'firewall', 'vxlan']) {
+		const el = resolve({ entities: [{ id: 'node-000001', kind: 'node', cell: [0, 0], glyph: type }] }).scene[0];
+		const kernel = renderElement(el, STD, L_STD);
+		const [bx, by, bw, bh] = GLYPH_BB[type] || GLYPH_BB.host;
+
+		assert.match(kernel, new RegExp(`viewBox="${bx} ${by} ${bw} ${bh}"`),
+			`${type}: the kernel does not fit this glyph to the box the palette will read`);
+		assert.match(kernel, new RegExp(`width="${STD.socket}" height="${STD.socket}"`),
+			`${type}: the kernel glyph box is not STD.socket`);
+	}
 });
