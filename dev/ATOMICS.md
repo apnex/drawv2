@@ -116,6 +116,26 @@ More than two directions is a junction.
 Counting LINKS instead would call a T-junction a bend, and a drop off a trunk is the most common junction in a network diagram.
 Counting directions makes the T fire at two links, which is what it should do.
 
+### The capability probe -- waypoint as a declared capability, not a kind
+
+Tested on paper before any code moved, against the question: can waypoint-ness be expressed as a capability a NODE declares, with no `kind === 'waypoint'` in the path?
+
+**Role derivation: zero divergence.**
+`waypointRole(id, touching)` never consulted the kind -- it is pure link topology and is misnamed rather than miscoupled.
+All six role cases produce identical answers when gated on a declared `routable` capability instead of on the kind.
+
+**Rendering: composes.**
+Expressed as a capability contributing LAYERS, the probe reproduced a bend, an endpoint and a plain node exactly, and then produced something currently inexpressible -- a `server` holding both `framed` and `routable`, drawing its frame and glyph AND the routing layers.
+
+**Two supporting findings.**
+`bboxOf` already treats node and waypoint identically, so the footprint was never different.
+The text box is the same pattern already in production: `type: 'text'` with `span` and `content`, branching on field presence rather than on kind, and its own comment says "no new kind".
+
+**What the probe did not cover, and where the cost sits.**
+`waypoint` is an ID PREFIX, baked into the id grammar, the CLI and every stored diagram -- so collapsing it into `node` is a migration of live documents, not a refactor.
+Ninety per-kind branches exist across the tree; the probe exercised six.
+The staged path is to introduce capabilities ALONGSIDE the kind, prove them on the junction, which needs no migration, and collapse `waypoint` only once the mechanism is load-bearing.
+
 ### Roles become a set
 
 Three of the six rows above carry two roles at once, so a single exclusive role cannot express the model.
@@ -135,6 +155,24 @@ This is B201's shape exactly -- a comparison that keeps working while meaning so
 Three producers derive the role, all by B162's rule that the derivation has one definition:
 `kernel/engine.mjs`, `app/src/renderer.js`, and `engine/situation.mjs`.
 Consumers split in two: renderers ask *which layers do I draw*, which is naturally set-shaped, and predicates ask *is this an endpoint*, which is where the hazard lives.
+
+### BLOCKER: XOR occupancy forbids every junction case
+
+`model/referential.mjs` enforces that **a waypoint participates in at most one link, and in one role within it** -- `linkReferential` refuses any waypoint already owned by another link.
+
+Measured against the table above: two links bending through one waypoint is refused, the T is refused, three terminating links is refused.
+Every topology A2 calls a junction is rejected at the trust boundary today.
+
+So a junction is **not** a rendering feature waiting to be drawn.
+It is an invariant change, and the rendering work is the small half.
+
+The rule carries no recorded rationale -- it is stated in a code comment and appears in no spec, decision record or backlog row.
+Before it is relaxed, that reason has to be recovered rather than assumed: it plausibly exists to keep routing unambiguous, so that a corner has exactly one owner and no link can be redrawn by editing another.
+If that is the reason, a junction is a deliberate exception and the rule needs a carve-out keyed on the capability rather than a deletion.
+If there is a deeper reason, junctions may need a different mechanism entirely.
+
+**This is the next thing to settle.**
+Nothing else in the junction design can be built until it is, because the validator will refuse the documents the feature exists to produce.
 
 ### Parked, with triggers
 
