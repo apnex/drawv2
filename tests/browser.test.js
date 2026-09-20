@@ -483,31 +483,38 @@ The numbers below come from GLYPH_BB, which states that the router occupies 30x3
 centred on the origin after `.icon`'s own scale -- so a 32-unit viewBox centred on 0 frames it with
 one unit of margin, and the ring radius is half the glyph extent.
 */
-test('B197: the favicon is built from the kernel glyph and framed on it', async () => {
+test('B197/B204: the favicon composes a node exactly as the canvas does', async () => {
 	const { faviconSvg, GLYPH_BB } = await import('../kernel/theme.mjs');
+	const { STD, L_STD } = await import('../kernel/spec.mjs');
 	const svg = faviconSvg();
 
 	assert.match(svg, /href="#glyph-router"/, 'the favicon must USE the kernel glyph, not restate it');
 	assert.match(svg, /<defs id="defs">/, 'the glyph defs must be embedded or the href resolves to nothing');
-
-	// an <img> with no intrinsic size collapses; the archived favicon had width="100%" and did
-	// exactly that when taken out of its original page
 	assert.match(svg, /width="32" height="32"/, 'an SVG with no intrinsic size collapses in an <img>');
 
-	const [gx, gy, gw, gh] = GLYPH_BB.router;
-	assert.equal(gx + gw / 2, 0, 'the router glyph is centred on x=0');
-	assert.equal(gy + gh / 2, 0, 'the router glyph is centred on y=0');
+	/*
+	B204 -- the three things that were wrong, each from inventing the composition instead of copying
+	renderEl. The fill one is the reason this is asserted structurally rather than by eye: `.hollow`
+	resolves `var(--fill, #ffffff)` and only `.node` supplies `--fill`, so omitting that one class
+	rendered the router's centre WHITE on a dark tab -- while the icon still served 200, parsed as
+	valid XML, and referenced the right glyph.
+	*/
+	assert.match(svg, /<g class="node">/,
+		'without .node the --fill variable is unset and .hollow falls back to #ffffff');
+	assert.match(svg, new RegExp(`<circle class="frame" r="${L_STD.frame.ext}"/>`),
+		'the frame must be the node frame at the layout extent, not a ring invented here');
+	assert.doesNotMatch(svg, /class="ring"/, 'the hand-rolled ring class is what this replaced');
 
+	// the glyph is FITTED to its own bounding box in a nested svg, as renderEl does -- not scaled
+	// by a constant, which is what `.icon` would have done
+	const [bx, by, bw, bh] = GLYPH_BB.router;
+	assert.match(svg, new RegExp(`viewBox="${bx} ${by} ${bw} ${bh}"`), 'the glyph must be fitted to its bounding box');
+	assert.match(svg, new RegExp(`width="${STD.socket}" height="${STD.socket}"`), 'in the socket-sized box a node uses');
+
+	// the viewBox must clear the frame's own stroke, or the ring is clipped by its weight
 	const box = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/);
-	assert.ok(box, 'the favicon declares a viewBox');
-	const [, vx, vy, vw, vh] = box.map(Number);
-	assert.equal(Number(vx) + Number(vw) / 2, 0, 'the viewBox is centred on the glyph origin');
-	assert.equal(Number(vy) + Number(vh) / 2, 0, 'the viewBox is centred on the glyph origin');
-	assert.ok(Number(vw) >= gw && Number(vh) >= gh, 'the viewBox must not crop the glyph');
-
-	const ring = Number(svg.match(/class="ring" r="([\d.]+)"/)[1]);
-	assert.ok(ring * 2 <= Number(vw), 'the ring must fit inside the viewBox');
-	assert.ok(ring >= gw / 2 - 1, 'the ring must enclose the glyph rather than cut through it');
+	assert.ok(Math.abs(Number(box[1])) > L_STD.frame.ext,
+		`the viewBox must extend past the frame radius or its stroke is cut, got ${box[1]}`);
 });
 
 /*

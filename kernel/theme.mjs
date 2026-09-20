@@ -3,6 +3,11 @@
 // waypoint style, the glyph artwork, and the minimal scene CSS all live here. Change visuals
 // here; geometry numbers live in spec.mjs.
 
+// faviconSvg composes a node exactly as the renderer does, so it needs the layout numbers. spec.mjs
+// imports nothing, so this cannot cycle -- and the alternative is restating the frame extent here,
+// which is the twin the header warns against by splitting visuals from geometry in the first place.
+import { STD, L_STD } from './spec.mjs';
+
 // ---- style tokens (the renderer reads these instead of hard-coding hex) ----
 export const TOKENS = {
 	panel: '#101010',        // canvas / opaque-centre fill
@@ -121,13 +126,32 @@ The outline ring and the scale are the favicon's own: a tab icon is 16px of dark
 boundary the canvas does not, because on the canvas a node sits inside a `.frame` that supplies one.
 */
 export function faviconSvg() {
-	return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="-16 -16 32 32">
-<style>${KERNEL_CSS}
-.ring { fill: #101010; stroke: #aed581; stroke-width: 2; }
-</style>
+	/*
+	The frame and the glyph are composed EXACTLY as `renderEl` composes a node, because a tab icon
+	that does not match the canvas is a second drawing of the same thing.
+
+	Three things were wrong when this was first written, and all three came from inventing the
+	composition instead of copying it. The frame was a hand-rolled `.ring` class at r=15 with its own
+	stroke weight, where a node uses `.frame` at the layout extent. The glyph was a bare `<use>`
+	relying on `.icon`'s scale, where a node nests it in an `<svg>` with the glyph's own bounding box
+	as the viewBox so it is FITTED rather than scaled by a constant. And the group carried no `.node`
+	class -- which is what supplies `--fill`, so `.hollow` fell back to its `#ffffff` default and the
+	router's centre rendered white on a dark tab.
+
+	viewBox is the frame extent plus half its stroke, so the ring is not clipped by its own weight.
+	*/
+	const ext = L_STD.frame.ext;                     // 20 -- the node frame half-extent
+	const S = STD.socket;                            // 26 -- the glyph box a node fits its art into
+	const [bx, by, bw, bh] = GLYPH_BB.router;
+	const half = ext + 2.1;                          // frame stroke is 2.1; keep its outer edge inside
+
+	return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="${-half} ${-half} ${half * 2} ${half * 2}">
+<style>${KERNEL_CSS}</style>
 ${GLYPH_DEFS}
-<circle class="ring" r="15"/>
-<use href="#glyph-router"/>
+<g class="node">
+	<circle class="frame" r="${ext}"/>
+	<svg x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-router"/></svg>
+</g>
 </svg>
 `;
 }
