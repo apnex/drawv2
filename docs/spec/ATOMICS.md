@@ -152,7 +152,11 @@ The derivation and its cases live in `kernel/geometry.mjs` beside the code, whic
 **The empty set is a bend.**\
 Including `bend` as a member would make `['bend','endpoint']` constructible, which is a contradiction nothing prevents, and would force every render loop to special-case a member meaning "draw nothing".
 
-`waypointLayers(roles, ext)` turns the set into the layers to draw -- anchor first, dot last, so no opaque pad buries what sits inside it.\
+`waypointLayers(roles, ext)` turns the set into the layers to draw -- anchor first, dot last, so no opaque pad buries what sits inside it.
+
+**A circle a line STOPS at is opaque; a circle a line passes through is not.**\
+The endpoint pad and the junction ring both fill with the canvas colour, so links end at their edge rather than showing their tails crossing underneath.\
+The anchor stays hollow: a bend is a path TURNING, and an opaque anchor would break every route it bends, making a corner read as a gap.\
 Both renderers walk that one list, so a new sub-type is one change rather than two.
 
 ### What the validator enforces

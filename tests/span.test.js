@@ -900,3 +900,45 @@ test('B210: pressing w on an occupied bend threads it, and the split happens on 
 		'and rides in the SAME command, so one drag is one undo -- a separate commit would let undo '
 		+ 'restore the original link alongside the halves that replaced it');
 });
+
+/*
+B212: a junction is OPAQUE, because links end at it rather than passing through.
+
+The ring was hollow on the reasoning that a junction means "these links are connected", so the
+paths should stay visible running through. B211 voided that -- a junction is terminations only, and
+nothing passes through one. Hollow showed every link's tail crossing underneath and meeting at a
+point none of them reaches.
+
+The endpoint pad already fills for exactly this reason, so the two now agree: a circle a line STOPS
+at is opaque, and a circle a line passes through is not.
+*/
+test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
+	const k = await import('../kernel/index.mjs');
+
+	const fillOf = (roles, cls) => k.waypointLayers(roles, 20).find((l) => l.cls === cls).fill;
+
+	assert.notEqual(fillOf(['junction'], 'wp-junction'), 'none',
+		'a junction must be opaque -- links END at it, and a hollow ring shows their tails crossing underneath');
+	assert.equal(fillOf(['junction'], 'wp-junction'), fillOf(['endpoint'], 'wp-ring'),
+		'and it masks with the same fill the endpoint pad uses -- both say "a line stops here"');
+
+	/*
+	The ANCHOR stays hollow, and that is the other half of the rule. A bend is a path TURNING, and
+	the path has to stay visible doing it -- an opaque anchor would break every route it bends,
+	making a corner read as a gap.
+	*/
+	assert.equal(fillOf([], 'wp-anchor'), 'none', 'the anchor is hollow: a bend shows the path turning through it');
+
+	// emitted, not just computed
+	const svg = k.render(k.docToSchema({
+		meta: { id: 'diagram-aa0001', name: 't' },
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }],
+		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' },
+			{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' }],
+		zones: [], groups: [],
+	}));
+	const ring = svg.match(/class="waypoint junction">.*?<circle[^>]*r="7"[^>]*fill="([^"]*)"/s);
+	assert.ok(ring, 'the junction ring is drawn');
+	assert.notEqual(ring[1], 'none', 'and it is emitted opaque, not merely computed so');
+});

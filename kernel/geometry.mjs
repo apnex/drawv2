@@ -271,16 +271,20 @@ even unused: the whole-number scheme depends on 7/3 fitting where it does, and t
 either side of it were chosen against it at working zoom.
 */
 /*
-The junction ring -- hollow, because a junction says "these links are CONNECTED here" rather than
-"a line stops here", so the paths must stay visible running through it. An endpoint pad is opaque
-for the opposite reason.
+The junction ring -- OPAQUE, for the same reason an endpoint pad is.
 
-Reserved as a constant while the sub-type had no behaviour; a layer since B209 draws it.
+It was hollow on the reasoning that a junction means "these links are CONNECTED here", so the paths
+should stay visible running through it. B211 voided that: a junction is terminations only, and
+nothing passes through one. Links END at its edge, so a hollow ring showed their tails crossing
+underneath and meeting at a point they do not reach.
+
+`TOKENS.panel` is the theme's canvas / opaque-centre fill, which the endpoint pad already uses to
+say exactly this.
 */
 export const waypointJunction = () => ({
 	radius: JUNCTION_RADIUS,
 	width: JUNCTION_WIDTH,
-	fill: 'none',
+	fill: TOKENS.panel,
 	opacity: 1,
 });
 
