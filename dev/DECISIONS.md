@@ -179,12 +179,13 @@ Revisit only if an operator hits a case the REST call cannot serve.
 
 ## The universal node, staged (ruled 2026-09-19)
 
-**Target.** A node declares CAPABILITIES; a capability contributes visual layers and behaviour, derived from the document.
+**Target.**\
+A node declares CAPABILITIES; a capability contributes visual layers and behaviour, derived from the document.\
 `waypoint` does not survive as a separate kind -- it becomes a capability pack on the universal node, and the last one still pretending to be a type.
 
-**Derived, not stateful.**
-A capability recomputes when the document changes -- a new link configuration, a moved entity -- and stores nothing that could disagree with it.
-This is what the system already does: `waypointRole` is called fresh on every render and nothing caches a role.
+**Derived, not stateful.**\
+A capability recomputes when the document changes -- a new link configuration, a moved entity -- and stores nothing that could disagree with it.\
+This is what the system already does: `waypointRole` is called fresh on every render and nothing caches a role.\
 A capability that needed stored state would be a different and more expensive class, and none is proposed.
 
 **Sequenced deliberately, and the order is the ruling.**
@@ -193,13 +194,28 @@ A capability that needed stored state would be a different and more expensive cl
 2. Proven on the junction, which needs no migration because it rides on the `waypoint` kind as it stands.
 3. `waypoint` collapsed into `node` only once the mechanism is load-bearing.
 
-**Why staged rather than collapse-first.**
-The two are independent: capability-driven behaviour does not require removing a kind, and the probe demonstrated exactly that by gating on `routable` while `waypoint` remained distinct.
+**Why staged rather than collapse-first.**\
+The two are independent: capability-driven behaviour does not require removing a kind, and the probe demonstrated exactly that by gating on `routable` while `waypoint` remained distinct.\
 Collapsing first would migrate 26 live diagrams to prove a mechanism that had not yet been exercised.
 
-**The one-way door is named.**
-`waypoint` is an ID PREFIX, present in the id grammar, the CLI, and every stored document.
-Everything before step 3 is reversible; step 3 is not.
+**The one-way door is named.**\
+`waypoint` is an ID PREFIX, present in the id grammar, the CLI, and every stored document.\
+Everything before step 3 is reversible; step 3 is not.\
 It also changes what `via` means -- from "any waypoint" to "any node holding the capability" -- which is a semantic widening, not only a rename.
 
-**Evidence.** The capability probe is recorded in [`ATOMICS.md`](../docs/spec/ATOMICS.md) under the junction entry: zero divergence on role derivation across all six cases, layers composing correctly, and a `server` holding both `framed` and `routable` producing a combination that is currently inexpressible.
+**Amended 2026-09-19, after the junction shipped.**\
+Step 2 did not happen as written.\
+The junction was built directly on the `waypoint` kind -- sub-type roles, layer list, validator relaxation, picking -- rather than through a capability, because that was the fast path and each step was approved on its own.\
+So the junction is BUILT and the capability mechanism is still only a probe.
+
+That is accepted rather than corrected, and the sequence is now **extract, not design-first**: finish the junction including the split, then lift the whole waypoint surface out as a pack and see whether it separates.
+
+The reason is what building it taught.\
+A capability pack for `routable` has to supply five things, and the probe had only tested two: role derivation and visual layers, both pure functions.\
+The others are validator participation, picking behaviour, and -- newly -- a WRITE.
+
+**The split is the first capability that mutates the document**, and nothing in the capability model says how a pack contributes one.\
+That is the question the extraction has to answer, and designing the seam before writing a single write is how a registry-first programme would have gone wrong.
+
+**Evidence.**\
+The capability probe is recorded in [`ATOMICS.md`](../docs/spec/ATOMICS.md) under the junction entry: zero divergence on role derivation across all six cases, layers composing correctly, and a `server` holding both `framed` and `routable` producing a combination that is currently inexpressible.

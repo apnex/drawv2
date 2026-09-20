@@ -56,6 +56,40 @@ export const isStraight = (l) => !l.via || l.via.length === 0;
 export const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
 
 /*
+B210 -- SPLIT a link at one of its bends, so that linking to a bend makes a junction.
+
+A junction is a MEET: links converge at a point and are CONNECTED there. A link merely bending
+through is not meeting anything, so two links crossing at one waypoint would be a crossing rather
+than a junction -- a different thing, and one the grid cannot currently express at all.
+
+Rather than admit that case and name it, the topology CHANGES when a junction forms: the link that
+bends is cut in two, and both halves terminate at the waypoint. Three links now end there, which is
+a meet by construction rather than by convention. "Two links bending through one point" therefore
+cannot arise.
+
+Returns the two halves' SHAPES, without ids -- minting those belongs to the caller, which knows the
+collection. The original link is replaced rather than mutated into one half: both halves are new,
+so nothing holds a stale reference to a route that no longer exists.
+
+The `via` list divides at the split index and the remainder carries to each side, so a link with
+several bends keeps the ones on either side of the cut.
+
+REFUSES rather than guessing in two cases. A closed ring has no ends and cutting one is undefined.
+A link whose `src` or `dst` is already the split waypoint would produce a self-link -- that state
+cannot exist today, because `selfConflict` refuses a waypoint in two roles on one link, so this is
+an assertion about the caller rather than a case to handle.
+*/
+export function splitAtBend(link, waypointId) {
+	if (link.closed) return null;                       // a ring has no ends to cut toward
+	if (link.src === waypointId || link.dst === waypointId) return null;   // would be a self-link
+	const via = Array.isArray(link.via) ? link.via : [];
+	const at = via.indexOf(waypointId);
+	if (at === -1) return null;                         // not a bend of this link
+	const half = (src, dst, v) => ({ src, dst, ...(v.length ? { via: v } : {}) });
+	return [half(link.src, waypointId, via.slice(0, at)), half(waypointId, link.dst, via.slice(at + 1))];
+}
+
+/*
 Every violated invariant in the document, as sentences. Plural because reporting the first and
 stopping would make a caller fix one thing, re-run, and find the next -- and because a scanner or
 a repair tool wants the whole set.

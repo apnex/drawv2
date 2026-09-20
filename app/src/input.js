@@ -40,7 +40,7 @@ import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, 
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
-import { isStraight } from '../../model/invariants.mjs';
+import { isStraight, splitAtBend } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/index.mjs';
@@ -872,7 +872,14 @@ export class Input {
 		const existing = this.model.waypointAt(snapped);   // engine occupancy index (R13)
 		if (existing) {
 			if (existing.id === this.ctx.src.id) return;        // don't thread the source itself
-			if (!waypointFree(this.model, existing.id)) return;        // occupied by another link
+			/*
+			B210 -- an OCCUPIED waypoint may be threaded, and that is how a junction is made.
+
+			This used to refuse, so pressing `w` on a bend did nothing. Nothing splits here: the
+			waypoint joins `ctx.via` like any other and the route carries on, so several bends in
+			one drag still work. The split is computed on RELEASE, in commitRoute, because until
+			the button comes up there is no link to make a junction with.
+			*/
 			/*
 			B162: threading a PINNED waypoint clears the pin.
 
@@ -911,8 +918,37 @@ export class Input {
 	*/
 	commitRoute(ctx, dstId, via) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
-		this.history.commit(commands.routeLink(ctx.placed, link));
+		this.history.commit(commands.routeLink(ctx.placed, link, this.splitsFor(link)));
 		this.selection.set([link.id]);
+	}
+
+	/*
+	B210 -- every existing link this new one turns into a junction, and how it divides.
+
+	A junction is terminations only, so a link that BENT through a waypoint the new route also
+	touches has to be cut there: both halves then terminate at it, and the meet is structural
+	rather than asserted. Only waypoints this link actually touches are considered, and only links
+	that were already bending through one of them -- a link merely terminating there is already
+	part of the meet and needs no change.
+
+	Both halves get NEW ids. The original is replaced rather than edited into one half, so nothing
+	is left holding a route that no longer describes what is on screen.
+	*/
+	splitsFor(link) {
+		const touched = [link.src, link.dst, ...(link.via || [])];
+		const out = [];
+		const seen = new Set();
+		for (const w of touched) {
+			if (!this.model.get('waypoint', w)) continue;
+			for (const other of this.model.linksAt?.(w) || []) {
+				if (other.id === link.id || seen.has(other.id)) continue;
+				const halves = splitAtBend(other, w);
+				if (!halves) continue;                      // terminates there, or cannot be cut
+				seen.add(other.id);
+				out.push({ original: other, halves: halves.map((h) => ({ ...this.model.makeLink(h.src, h.dst), ...h })) });
+			}
+		}
+		return out;
 	}
 
 	// abandon an in-progress route: drop any waypoints placed during this draw

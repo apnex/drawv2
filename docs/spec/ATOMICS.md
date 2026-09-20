@@ -166,7 +166,7 @@ It was two checks under one name and only one moved.
 
 Whether a SECOND STRAIGHT link may join a pair is `straightCapacity` in `model/invariants.mjs`, a separate rule in a separate layer.
 
-### The split [OPEN -- designed, not written]
+### The split [BUILT 2026-09-19]
 
 **Linking to a bend splits the link it bends.**\
 `a->b via [w]` becomes `a->w` and `w->b`, and the new link makes three terminating at `w`.\
@@ -184,7 +184,10 @@ Two cases must refuse rather than split.\
 A link whose `src` or `dst` is already the split waypoint would produce a self-link; that state cannot exist today because self-conflict refuses it, so assert rather than handle.\
 A CLOSED ring has no ends and cutting one is undefined.
 
-Check when building: the repeated-pair rule may become unreachable, since a second link can no longer bend where another already does.
+`splitAtBend` in `model/invariants.mjs` computes the halves; `commitRoute` finds which existing links the new one turns into junctions, and `routeLink` carries the `del` plus two `put`s in the same entry list.
+
+Checked on building: the repeated-pair rule from B207 is NOT unreachable.\
+The editor can no longer produce it, because a second link splits the first rather than bending beside it -- but the REST and CLI doors write documents directly, so the rule still fires and still earns its place.
 
 ### Open
 

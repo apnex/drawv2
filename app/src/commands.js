@@ -252,11 +252,28 @@ export function linkNodes(model, nodeIds, star) {
 
 // a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the
 // link never references a bend that does not exist yet.
-export function routeLink(placed, link) {
+export function routeLink(placed, link, splits = []) {
+	/*
+	B210 -- the SPLITS ride in the same entry list, so one drag is one undo.
+
+	Linking to a bend makes a junction, and a junction is terminations only: the link that bent
+	through the waypoint is cut, and both halves terminate there. `splitAtBend` computed the shapes;
+	this turns each into a `del` of the original and two `put`s, ordered so the removal lands before
+	the replacements.
+
+	If the split were a separate commit, an undo would leave the new link attached to halves that no
+	longer exist -- or worse, restore the original alongside them, which is two routes where the
+	author drew one.
+	*/
+	const splitEntries = (splits || []).flatMap(({ original, halves }) => [
+		{ op: 'del', kind: 'link', entity: clone('link', original) },
+		...halves.map((h) => ({ op: 'put', kind: 'link', entity: clone('link', h) })),
+	]);
 	return {
 		label: isStraight(link) ? 'link' : 'route',
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...splitEntries,
 			{ op: 'put', kind: 'link', entity: clone('link', link) }
 		]
 	};

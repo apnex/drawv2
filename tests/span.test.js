@@ -862,3 +862,34 @@ test('B209: a waypoint that already has links is a valid link target', async () 
 	// but the rule that decides whether a left drag STARTS a link from one is a different question
 	assert.match(src, /export const waypointFree/, 'waypointFree still exists for the link-source rule');
 });
+
+/*
+B210: the mid-drag path admits an occupied waypoint, and the split rides on the commit.
+
+Three code paths have to agree for a junction to be drawable, and each refused independently at
+some point: the validator (B207), `endpointAt` (B209), and this one -- `dropRouteWaypoint`, which
+threads a waypoint when `w` is pressed mid-drag and used to bail on anything already carrying a
+link. Restoring that bail passes every other test in the suite, which is why this exists.
+
+The split is asserted to happen in `commitRoute` rather than here: until the button comes up there
+is no link to make a junction with, and splitting on touch would cut a route the author might
+still be drawing through.
+*/
+test('B210: pressing w on an occupied bend threads it, and the split happens on commit', () => {
+	const src = fs.readFileSync(new URL('../app/src/input.js', import.meta.url), 'utf8');
+
+	// sliced on the METHOD DEFINITIONS -- `updateLinkPreview(pos)` also appears as a call site
+	// hundreds of lines earlier, which made the first version of this slice empty and vacuous
+	const drop = src.slice(src.indexOf('\tdropRouteWaypoint() {'), src.indexOf('\tupdateLinkPreview(pos) {'));
+	assert.doesNotMatch(drop, /if \(!waypointFree\(/,
+		'dropRouteWaypoint must not refuse an occupied waypoint -- that is how a junction is threaded');
+	assert.match(drop, /ctx\.via\.push\(existing\.id\)/, 'it threads the existing waypoint like any other');
+	assert.doesNotMatch(drop, /splitAtBend|splitsFor/,
+		'nothing may split mid-drag -- the route is still being drawn and there is no link yet');
+
+	const commit = src.slice(src.indexOf('\tcommitRoute(ctx, dstId, via) {'), src.indexOf('\tcleanupRoute(ctx) {'));
+	assert.match(commit, /splitsFor\(link\)/, 'the split is computed on release');
+	assert.match(commit, /routeLink\(ctx\.placed, link, /,
+		'and rides in the SAME command, so one drag is one undo -- a separate commit would let undo '
+		+ 'restore the original link alongside the halves that replaced it');
+});

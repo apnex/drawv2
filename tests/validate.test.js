@@ -550,3 +550,68 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 	const fine = { id: 'l1', src: 'n1', dst: 'n2', via: ['w1', 'w2'] };
 	assert.equal(linkReferential(fine, access([fine])), null, 'two distinct waypoints on one link is legal');
 });
+
+/*
+B210: linking to a bend SPLITS it, so a junction is terminations only.
+
+A junction is a MEET -- links converge and are connected there. A link merely bending through is
+not meeting anything, so rather than admit "two links crossing" as a junction and have the word
+cover two different things, the topology CHANGES: the bending link is cut, and both halves
+terminate at the waypoint. Three links end there, which is a meet by construction.
+
+The consequence worth testing is that the result VALIDATES. A split that produced a document the
+trust boundary refuses would be a gesture that cannot be committed -- and every junction topology
+was refused until two commits ago, so this is not hypothetical.
+*/
+test('B210: a split turns a bend into a junction, and the result validates', async () => {
+	const { splitAtBend } = await import('../model/invariants.mjs');
+	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
+	const { waypointRoles } = await import('../kernel/index.mjs');
+
+	// the arithmetic, including a link with bends either side of the cut
+	const cases = [
+		['single bend', { src: 'a', dst: 'b', via: ['w'] }, 'w', [{ src: 'a', dst: 'w' }, { src: 'w', dst: 'b' }]],
+		['middle of three', { src: 'a', dst: 'b', via: ['w1', 'w2', 'w3'] }, 'w2',
+			[{ src: 'a', dst: 'w2', via: ['w1'] }, { src: 'w2', dst: 'b', via: ['w3'] }]],
+		['first of two', { src: 'a', dst: 'b', via: ['w1', 'w2'] }, 'w1',
+			[{ src: 'a', dst: 'w1' }, { src: 'w1', dst: 'b', via: ['w2'] }]],
+	];
+	for (const [why, link, w, want] of cases) assert.deepEqual(splitAtBend(link, w), want, why);
+
+	// and what it refuses rather than guessing at
+	for (const [why, link, w] of [
+		['a straight link has no bend to cut', { src: 'a', dst: 'b' }, 'w'],
+		['not a bend of THIS link', { src: 'a', dst: 'b', via: ['w'] }, 'x'],
+		['a closed ring has no ends', { src: 'a', dst: 'a', via: ['w'], closed: true }, 'w'],
+		['would produce a self-link', { src: 'w', dst: 'b', via: ['w'] }, 'w'],
+	]) {
+		assert.equal(splitAtBend(link, w), null, why);
+	}
+
+	/*
+	END TO END: a->b via w, then a link drawn from w to c. The split must leave a document the
+	validator accepts, and the waypoint must read as a junction that also terminates.
+	*/
+	const orig = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] };
+	const halves = splitAtBend(orig, 'waypoint-aa0001').map((h, i) => ({ id: `link-bb000${i}`, ...h }));
+	const added = { id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' };
+	const after = [...halves, added];
+
+	const nodes = new Set(['node-aa0001', 'node-aa0002', 'node-aa0003']);
+	const wps = new Set(['waypoint-aa0001']);
+	const owners = waypointOwners(after);
+	const byId = new Map(after.map((l) => [l.id, l]));
+	const access = {
+		hasNode: (i) => nodes.has(i), hasWaypoint: (i) => wps.has(i),
+		ownersOf: (w) => owners.get(w) || [], linkById: (i) => byId.get(i),
+	};
+	for (const l of after) {
+		assert.equal(linkReferential(l, access), null, `the split produced a document the validator refuses: ${l.id}`);
+	}
+	assert.deepEqual(waypointRoles('waypoint-aa0001', after), ['junction', 'endpoint'],
+		'after the split the waypoint is a junction that also terminates -- a MEET, not a crossing');
+
+	// the case the split exists to prevent: nothing bends through it any more
+	assert.ok(after.every((l) => !(l.via || []).includes('waypoint-aa0001')),
+		'no link may still bend through a junction -- that is the crossing case the split removes');
+});
