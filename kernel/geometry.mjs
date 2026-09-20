@@ -265,17 +265,57 @@ either side of it were chosen against it at working zoom.
 */
 const JUNCTION_RUNG = { radius: JUNCTION_RADIUS, width: JUNCTION_WIDTH };
 
-export const waypointRole = (id, touching) => {
+/*
+B208 -- the sub-types a waypoint currently holds, as a SET.
+
+A waypoint is an anchor and sub-types are additive layers on it, so a single exclusive role could
+not express the model: a waypoint where three links terminate is a junction AND an endpoint, and
+one where two links bend through is a junction and nothing else.
+
+THE EMPTY SET IS A BEND. A bend adds no layer -- the path turning is its whole rendering -- so it
+is the ABSENCE of a sub-type rather than a member. Including it would make `['bend','endpoint']`
+constructible, which is a contradiction nothing prevents, and would force every render loop to
+special-case a member meaning "draw nothing".
+
+JUNCTION COUNTS DIRECTIONS, NOT LINKS. A link threaded by `via` contributes two -- the path enters
+and leaves -- and a link terminating contributes one. More than two is a junction. Counting links
+instead would call a T a bend, and a drop off a trunk is the commonest junction in a network
+diagram.
+
+A closed ring still has no ends: `src === dst` on a ring is two directions and no endpoint.
+*/
+export const waypointRoles = (id, touching) => {
+	const roles = [];
+	let directions = 0;
 	let endpoint = false;
+
 	for (const t of touching || []) {
-		if ((t.via || []).includes(id)) return 'bend';          // threaded: a corner, whatever else
-		if (t.src === id || t.dst === id) {
-			if (t.closed) return 'bend';                          // a ring has no ends
-			endpoint = true;
-		}
+		const via = (t.via || []).filter((v) => v === id).length;
+		directions += via * 2;
+		if (t.src === id) directions += 1;
+		if (t.dst === id) directions += 1;
+		if ((t.src === id || t.dst === id) && !t.closed) endpoint = true;
 	}
-	return endpoint ? 'endpoint' : 'bend';
+
+	if (directions > 2) roles.push('junction');
+	/*
+	THE ROLES ARE INDEPENDENT. Being threaded by one link does not stop a DIFFERENT link terminating
+	here -- that is the T, and it is both. The old single-role function returned `bend` on sight of a
+	via because it had to choose one answer; in a set there is nothing to choose between, and
+	carrying the tiebreak over would have cost a T-junction its spawner pad.
+	*/
+	if (endpoint) roles.push('endpoint');
+	return roles;
 };
+
+/*
+The single role, for callers that still ask for one. Derived from the set so there is one
+derivation rather than two: `endpoint` if it terminates, otherwise `bend`.
+
+Kept because the renderers and `situation` read a class name and a predicate, and migrating those
+is step 4. It will go when they do.
+*/
+export const waypointRole = (id, touching) => (waypointRoles(id, touching).includes('endpoint') ? 'endpoint' : 'bend');
 export const zone = (x, y, w, h) => ({ kind: 'zone', x, y, w, h });
 export const group = (x, y, w, h) => ({ kind: 'group', x, y, w, h });
 export const port = (cx, cy, o = {}) => ({ kind: 'port', cx, cy, style: o.style || 'square', size: o.size || 10 });

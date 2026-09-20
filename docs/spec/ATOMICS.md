@@ -256,7 +256,22 @@ It THROWS when absent rather than skipping: both callers supply it, and a third 
 The corpus moved a case rather than losing one.\
 "One waypoint shared by two links" is now in the good column as a junction, and a same-pair duplicate took its place in the bad column, so the door-agreement test still exercises six rejections.
 
-Remaining: step 3 roles as a set with `onEndpoint` guarded first, step 4 render the layer and open `endpointAt` to a waypoint that already has links.
+**Step 3 done (2026-09-19): roles are a set, and the predicate reads it.**\
+`waypointRoles(id, touching)` returns the sub-types that apply, counting DIRECTIONS as the table above specifies.\
+The empty set is a bend, and `bend` is never a member, so `['bend','endpoint']` cannot be constructed.
+
+Two findings from building it.
+
+The T nearly shipped wrong.\
+The old single-role function returned `bend` on sight of a `via` because it had to choose ONE answer, and carrying that tiebreak into a set would have cost a T-junction its endpoint role and therefore its spawner pad.\
+In a set there is nothing to choose between: being threaded by one link does not stop a different link terminating there.
+
+The hazard was undetectable until the legacy field went.\
+`situation` carried `role` beside `roles` for one commit, and with it present, reverting `onEndpoint` to `role === 'endpoint'` passed every test -- the exact silent failure the design had named in advance.\
+Removing the single field is what makes the mutation fire.\
+A legacy field kept "just in case" is a second answer to the same question.
+
+Remaining: step 4 render the layer, and open `endpointAt` to a waypoint that already has links so a junction can be DRAWN.
 
 ### Still to settle
 

@@ -37,21 +37,22 @@ test('H12.6: it carries NO methods and no live references -- inert by constructi
 
 test('H12.6: the target role is DERIVED from the links, not told', () => {
 	const s = situationOf(accessOf(entities, [openLink]), { targetId: WP });
-	assert.equal(s.target.role, 'endpoint', 'src of an open link terminates it');
+	// B208 -- the SET. A bend is the EMPTY set rather than a named role.
+	assert.deepEqual(s.target.roles, ['endpoint'], 'src of an open link terminates it');
 	// the same waypoint, threaded as a bend instead, is a bend -- nothing about the situation changed
 	const bent = situationOf(accessOf(entities, [{ id: 'link-eeeeee', name: 'link-eeeeee', src: ND, dst: WP2, via: [WP] }]), { targetId: WP });
-	assert.equal(bent.target.role, 'bend');
+	assert.deepEqual(bent.target.roles, [], 'threaded as a bend: no sub-type applies');
 });
 
 test('H12.6: a CLOSED route has no ends, so nothing on it reads as an endpoint', () => {
 	const ring = { id: 'link-ffffff', name: 'link-ffffff', src: WP, dst: WP, closed: true };
 	const s = situationOf(accessOf(entities, [ring]), { targetId: WP });
-	assert.equal(s.target.role, 'bend');
+	assert.deepEqual(s.target.roles, [], 'a ring has no ends, so no sub-type applies');
 	assert.equal(onEndpoint(s), false, 'a ring cannot be armed, and this is why');
 });
 
 test('H12.6: an unreferenced waypoint is a bend, and a missing target is null', () => {
-	assert.equal(situationOf(accessOf(entities, []), { targetId: WP }).target.role, 'bend');
+	assert.deepEqual(situationOf(accessOf(entities, []), { targetId: WP }).target.roles, [], 'no links: no sub-type');
 	assert.equal(situationOf(accessOf(entities, []), { targetId: 'waypoint-999999' }).target, null);
 	assert.equal(situationOf(accessOf(entities, []), {}).target, null, 'on nothing is a real answer');
 });
@@ -97,4 +98,53 @@ test('H12.6: the predicates name the question, so no caller re-derives it', () =
 test('H12.6: it runs where there is no DOM -- this test IS the proof', () => {
 	assert.equal(typeof globalThis.document, 'undefined');
 	assert.ok(situationOf(accessOf(entities, [openLink]), { targetId: WP }).target);
+});
+
+/*
+B208: roles are a SET, and `onEndpoint` reads it.
+
+The design named this as the migration hazard before it was written. `role === 'endpoint'` keeps
+compiling against a set-valued field, is false for every waypoint, and would stop spawner arming
+everywhere with nothing failing to build -- B201's shape, where a comparison went on working while
+meaning something else.
+
+The T is the case that proves the set was necessary rather than tidy. A waypoint one link bends
+through and another terminates at holds BOTH roles; under a single value the old function returned
+`bend` on sight of a via, so a T-junction would silently lose its spawner pad.
+*/
+test('B208: a waypoint holds every role that applies, and onEndpoint reads the set', async () => {
+	const { waypointRoles } = await import('../kernel/index.mjs');
+
+	const cases = [
+		['a bend adds no sub-type', [{ src: 'a', dst: 'b', via: ['w'] }], []],
+		['a terminus is an endpoint', [{ src: 'w', dst: 'a' }], ['endpoint']],
+		['a closed ring has no ends', [{ src: 'w', dst: 'w', closed: true }], []],
+		['two paths through it is a junction', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'c', dst: 'd', via: ['w'] }], ['junction']],
+		['a T is BOTH', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'w', dst: 'c' }], ['junction', 'endpoint']],
+		['a star is both', [{ src: 'w', dst: 'a' }, { src: 'w', dst: 'b' }, { src: 'w', dst: 'c' }], ['junction', 'endpoint']],
+	];
+	for (const [why, links, want] of cases) {
+		assert.deepEqual(waypointRoles('w', links), want, why);
+	}
+
+	// `bend` is never a member -- it is the empty set, so ['bend','endpoint'] cannot be constructed
+	for (const [, links] of cases) {
+		assert.ok(!waypointRoles('w', links).includes('bend'), 'bend must be the ABSENCE of a sub-type, not a member');
+	}
+
+	/*
+	The predicate, through a real situation rather than a hand-built object -- the point is that the
+	field `onEndpoint` reads is the one `situationOf` populates.
+	*/
+	const access = {
+		get: (kind, id) => (kind === 'waypoint' && id === 'waypoint-aa0001' ? { id, x: 0, y: 0 } : null),
+		linksTouching: () => [
+			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
+			{ id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' },
+		],
+	};
+	const s = situationOf(access, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
+	assert.deepEqual(s.target.roles, ['junction', 'endpoint'], 'the situation carries the whole set');
+	assert.equal(onEndpoint(s), true,
+		'a T-junction must still arm -- if this is false, onEndpoint is reading a string and arming is dead everywhere');
 });

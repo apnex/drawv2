@@ -26,7 +26,7 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { waypointRole } from '../kernel/index.mjs';
+import { waypointRoles } from '../kernel/index.mjs';
 
 /*
 Build the situation.
@@ -72,7 +72,18 @@ function describeTarget(access, id) {
 		both the adapter and the class of silent bug it existed to contain.
 		*/
 		const touching = access.linksTouching ? access.linksTouching(id) : [];
-		t.role = waypointRole(id, touching);
+		/*
+		B208 -- the SET, and ONLY the set.
+
+		A single `role` was populated beside it for one commit, and that made the migration hazard
+		undetectable: `role === 'endpoint'` went on working, so reverting `onEndpoint` to string
+		equality passed every test. A legacy field kept "just in case" is a second answer to the same
+		question, and the first thing to go stale.
+
+		The renderers still read a single `el.role`, but they derive it themselves from
+		`waypointRole`; nothing downstream of here needs one.
+		*/
+		t.roles = waypointRoles(id, touching);
 		// whether this endpoint is already emitting. A boolean rather than the config, because the
 		// question a decision asks is "is it on"; the numbers belong to whoever is going to run them.
 		t.spawning = !!entity.spawn;
@@ -91,7 +102,7 @@ function describeSelection(ids) {
 PREDICATES — the shared vocabulary, as free functions over an inert value.
 
 They exist so a decision asks a NAMED question rather than reaching into the shape. That matters
-more than it looks: `s.target && s.target.kind === 'waypoint' && s.target.role === 'endpoint'`
+more than it looks: `s.target && s.target.kind === 'waypoint' && s.target.roles.includes('endpoint')`
 written at three call sites is three chances to get it subtly different, and the third one is a
 defect nobody can see. It is the same argument that put `waypointRole` in the kernel.
 */
@@ -101,7 +112,19 @@ export const oneSelected = (s, kind) => s.selection.size === 1 && s.selection.ki
 
 // the gesture is on a waypoint that TERMINATES a path, rather than bending one. A closed ring has
 // no ends, so nothing on it is ever an endpoint -- that falls out of waypointRole, not from here.
-export const onEndpoint = (s) => !!s.target && s.target.kind === 'waypoint' && s.target.role === 'endpoint';
+/*
+B208 -- reads the SET, not the string.
+
+This is the migration hazard the design named in advance. `role === 'endpoint'` keeps compiling
+against a set-valued field and is false for every waypoint, so spawner arming would stop working
+everywhere with nothing failing to compile and no test noticing -- the same shape as B201, where a
+comparison went on working while meaning something else.
+
+`roles` is also why a T-junction can still be armed: it terminates a link AND carries three
+directions, so it holds both roles at once, which a single-valued field could not say.
+*/
+export const onEndpoint = (s) => !!s.target && s.target.kind === 'waypoint'
+	&& Array.isArray(s.target.roles) && s.target.roles.includes('endpoint');
 
 // the surface is being read rather than authored
 export const inReadView = (s) => s.mode === 'run';
