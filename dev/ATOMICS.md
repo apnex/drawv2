@@ -171,8 +171,31 @@ Before it is relaxed, that reason has to be recovered rather than assumed: it pl
 If that is the reason, a junction is a deliberate exception and the rule needs a carve-out keyed on the capability rather than a deletion.
 If there is a deeper reason, junctions may need a different mechanism entirely.
 
-**This is the next thing to settle.**
-Nothing else in the junction design can be built until it is, because the validator will refuse the documents the feature exists to produce.
+**What replaces it** -- ruled in discussion, unbuilt.
+
+The one rule is really two checks, and the existing test corpus already names them separately.
+
+**Self-conflict stays.**
+One link naming a waypoint twice across its own `src`, `dst` and `via` visits a point twice and the geometry is undefined.
+Per-link, needs no cross-link knowledge, unchanged.
+
+**Sharing relaxes.**
+Two links referencing one waypoint is the junction, and it is the only part of the rule that moves.
+
+**A bend refuses a repeated endpoint pair.**
+Two links that bend at the same waypoint may not carry the same `src`/`dst` pair, compared UNORDERED so that `a<->b` and `b<->a` are one pair.
+This is the degenerate case relaxation exposes: two identical routes stacked through one corner, visually indistinguishable and separately editable.
+It allows what it should -- the T, the cross, two links that merely share an endpoint, and a same-pair second link that does NOT bend at that point.
+
+**A junction is a POINT, so port capacity does not apply.**
+`Parallel-link capacity [LOCKED]` caps links per FACE by boundary length, on the principle that a high-fan-out node is wrapped in a group to get more boundary.
+A junction has no face and no boundary, so that rule neither bounds it nor can be stretched to.
+Whether a junction needs an arity bound of its own is therefore OPEN, and it is a separate question from how links attach -- they converge on the point rather than spacing along an edge.
+
+### Still to settle
+
+- **An arity bound, if any.** Twenty links at one point is legal under the rules above and visually useless. A bound would have to be argued from something other than port capacity, which does not reach a point.
+- **Why XOR occupancy was written.** No recorded rationale -- a code comment, and nothing in any spec, decision record or backlog row. The reconstruction above is that it conflated the self-conflict case, which is real, with sharing, which is the feature. That should be confirmed rather than assumed before the check is edited.
 
 ### Parked, with triggers
 
