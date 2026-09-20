@@ -74,9 +74,36 @@ export function linkReferential(link, access) {
 	const via = Array.isArray(link.via) ? link.via : [];
 	for (const w of via) if (!hasWaypoint(w)) return `link via waypoint does not exist: ${w}`;
 
-	// XOR occupancy: a waypoint participates in at most one link, and in one role within it.
 	const refs = [link.src, link.dst, ...via].filter(hasWaypoint);
-	if (new Set(refs).size !== refs.length) return 'link uses a waypoint in two roles';
+	return selfConflict(link, refs) || sharedWithAnotherLink(link, refs, ownersOf);
+}
+
+/*
+ONE LINK naming one waypoint twice, across its own `src`, `dst` and `via`.
+
+The route would visit a point twice and the geometry is undefined -- there is no answer to what
+shape the path takes. Per-link: it needs no knowledge of any other link, which is what separates it
+from the check below.
+
+This half is NOT the junction and does not relax. Split out on 2026-09-19 because it had been
+sharing a comment and a code block with the half that does, and "XOR occupancy" named both at once:
+`docs/spec/ATOMICS.md` records the reconstruction, and the pre-existing test corpus already told
+them apart as "one waypoint in two roles on one link" against "one waypoint shared by two links".
+*/
+function selfConflict(link, refs) {
+	return new Set(refs).size !== refs.length ? 'link uses a waypoint in two roles' : null;
+}
+
+/*
+TWO LINKS referencing one waypoint.
+
+This is the half that becomes the junction, and the only part of the old rule that moves. It is
+separated rather than changed: the behaviour here is byte-identical to what it replaced, so the
+split can be landed and verified before the meaning changes.
+
+Needs the owners index, because the question is about links this one cannot see.
+*/
+function sharedWithAnotherLink(link, refs, ownersOf) {
 	for (const w of refs) {
 		for (const other of ownersOf(w)) {
 			// a waypoint this link already owns is not a conflict with itself

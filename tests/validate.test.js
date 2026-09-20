@@ -460,3 +460,52 @@ test('H9.9: every shipped template is a valid document', async () => {
 		names.add(doc.meta.name);
 	}
 });
+
+/*
+B206 step 1: the two halves of "XOR occupancy" are separate checks, and only one of them moves.
+
+The rule was one comment and one code block naming two different things:
+
+  SELF-CONFLICT   one link naming a waypoint twice across its own src/dst/via. The route visits a
+                  point twice and the geometry is undefined. Per-link, no cross-link knowledge.
+  SHARING         two links referencing one waypoint. This is the junction, and it is the only
+                  part that relaxes.
+
+Split with NO behaviour change, so the separation can be verified before the meaning changes. This
+test is what makes step 2 safe: it pins which half is which, so relaxing sharing cannot quietly
+take self-conflict with it -- and a self-conflict that stopped being refused would be a link whose
+rendered shape is undefined, which no test above would notice.
+*/
+test('B206: self-conflict and sharing are independent checks', async () => {
+	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
+	const nodes = new Set(['n1', 'n2', 'n3', 'n4']);
+	const wps = new Set(['w1', 'w2']);
+	const access = (links) => {
+		const owners = waypointOwners(links);
+		return { hasNode: (i) => nodes.has(i), hasWaypoint: (i) => wps.has(i), ownersOf: (w) => owners.get(w) || [] };
+	};
+
+	// SELF-CONFLICT: one link, no other links exist at all -- so sharing cannot be what refuses it
+	for (const [why, link] of [
+		['a waypoint as both dst and via', { id: 'l1', src: 'n1', dst: 'w1', via: ['w1'] }],
+		['the same waypoint twice in via', { id: 'l1', src: 'n1', dst: 'n2', via: ['w1', 'w1'] }],
+	]) {
+		assert.equal(linkReferential(link, access([link])), 'link uses a waypoint in two roles',
+			`${why}: must be refused by self-conflict, with one link in the document`);
+	}
+
+	// SHARING: every link is internally clean, so self-conflict cannot be what refuses them
+	for (const [why, links] of [
+		['two links bending at one waypoint', [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'n3', dst: 'n4', via: ['w1'] }]],
+		['a T -- one bends, one terminates', [{ id: 'l1', src: 'n1', dst: 'n2', via: ['w1'] }, { id: 'l2', src: 'w1', dst: 'n3' }]],
+	]) {
+		assert.equal(linkReferential(links[1], access(links)), 'waypoint already in use by another link: w1',
+			`${why}: must be refused by sharing, and each link is clean on its own`);
+		assert.equal(linkReferential(links[1], access([links[1]])), null,
+			`${why}: the second link ALONE must be accepted -- if not, self-conflict is refusing it and the split is wrong`);
+	}
+
+	// and a link using two DIFFERENT waypoints trips neither
+	const fine = { id: 'l1', src: 'n1', dst: 'n2', via: ['w1', 'w2'] };
+	assert.equal(linkReferential(fine, access([fine])), null, 'two distinct waypoints on one link is legal');
+});

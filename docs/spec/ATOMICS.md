@@ -232,6 +232,18 @@ It allows what it should -- the T, the cross, two links that merely share an end
 A junction has no face and no boundary, so that rule neither bounds it nor can be stretched to.\
 Whether a junction needs an arity bound of its own is therefore OPEN, and it is a separate question from how links attach -- they converge on the point rather than spacing along an edge.
 
+### Build progress
+
+**Step 1 done (2026-09-19): the two checks are split, with no behaviour change.**\
+`linkReferential` now delegates to `selfConflict` and `sharedWithAnotherLink`.\
+Every verdict, message and error ORDER is byte-identical to before -- existence, then identity, then occupancy.
+
+The reconstruction is confirmed rather than assumed: neutering each half turns tests red independently, so they were two checks wearing one name and not one rule split cosmetically.\
+Guarded by B206 in `tests/validate.test.js`, which pins WHICH half is which -- a self-conflict is proven with only one link in the document, so sharing cannot be what refuses it, and each sharing case is proven to pass when its second link stands alone.\
+That is what makes step 2 safe: relaxing sharing cannot quietly take self-conflict with it, and a self-conflict that stopped being refused would be a link whose rendered shape is undefined.
+
+Remaining: step 2 relax sharing and add the duplicate-pair rule, step 3 roles as a set with `onEndpoint` guarded first, step 4 render the layer and open `endpointAt` to a waypoint that already has links.
+
 ### Still to settle
 
 - **An arity bound, if any.** Twenty links at one point is legal under the rules above and visually useless. A bound would have to be argued from something other than port capacity, which does not reach a point.
