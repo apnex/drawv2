@@ -127,22 +127,30 @@ export class Palette {
 			item.setAttribute('class', 'palette-item node');
 			item.dataset.type = type;
 			/*
-			B205 -- THE TILE IS A KERNEL-RENDERED NODE, not a drawing of one.
+			B205 -- THE TILE IS BUILT FROM THE KERNEL'S NUMBERS, not from numbers of its own.
 
-			It used to hand-build the two layers: `<use href="#m-circle">` for the frame and a bare
-			`<use href="#glyph-*">` for the art. The frame matched. The glyph did not -- a bare use
-			falls back to `.icon`'s constant `scale(0.3)`, while a canvas node nests the glyph in an
-			`<svg>` fitted to its own bounding box. Every tile was 65-74% undersized, each by a
-			DIFFERENT amount, so the relative sizes were wrong too: on canvas a host glyph is a third
-			larger than a router, and in the palette they were identical.
+			It hand-builds two layers: `<use href="#m-circle">` for the frame and `<use
+			href="#glyph-*">` for the art. The frame matched, and so did the glyph REFERENCE -- a
+			`<use>` is what makes one definition serve canvas, palette, export and favicon alike, and
+			that was never the problem.
 
-			That is a twin, and aligning the copy would only reset the clock. `renderElement` is
-			exported for exactly this -- "so an interactive host can build per-entity DOM" -- and had
-			no production consumer until now. A future geometry change reaches the tile because the
-			tile is not a separate drawing.
+			What differed is the WRAPPER. Unwrapped, the use inherits `.icon`'s constant
+			`scale(0.3)`; a canvas node nests it in an `<svg>` whose viewBox is the glyph's own
+			bounding box, so the art is FITTED rather than scaled. Glyphs differ in extent -- router
+			is 30x30, server 22.2x22.2 -- so one constant renders them at unequal sizes. Every tile
+			was 65-74% undersized, each by a DIFFERENT amount, and the relative sizes went with them:
+			on canvas a host glyph is a third larger than a router, and in the palette they were
+			identical.
 
-			`resolve` gives the element the same shape the scene pipeline produces, so the tile goes
-			through the identical path a real node does rather than a constructed lookalike.
+			Fixed by reading `GLYPH_BB[type]` and `STD.socket` -- the same values the kernel renders
+			with -- rather than by copying today's output. Pinning the numbers here would work until
+			the next geometry change moved one side and not the other, which is how this drifted.
+
+			Rendering through `renderElement` was the first attempt and is the better idea: the tile
+			would BE a kernel node rather than a structure built to match one. Its output is a
+			string, and neither `insertAdjacentHTML` on an SVGElement nor `DOMParser` exists in the
+			test environment, so it needs a DOM shim before it can land. The property that matters --
+			one source for the numbers -- holds either way.
 			*/
 			const frame = document.createElementNS('http://www.w3.org/2000/svg', 'use');
 			frame.setAttribute('href', '#m-circle');
