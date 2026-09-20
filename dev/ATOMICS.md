@@ -77,3 +77,68 @@ Mockups: `../design/sim/star.mjs` (5x5: node +/-20 vs single-cell group +/-26) -
 
 ## Labels & direction [DEFERRED]
 Link/node labels and link direction (arrowheads / directionality) are **deferred until routing and handle mechanics are locked** - they layer on top of the substrate and must not constrain it.
+
+---
+
+## Waypoint sub-types: the junction [OPEN - design settled, unbuilt]
+
+A waypoint is an **anchor** -- a grid point a link can reach -- and sub-types are additive layers on top of it (B199).
+`endpoint` and `bend` exist; `junction` is the third, and it is the one that forces roles to stop being a single value.
+
+The legacy `junction` kind in `kernel/geometry.mjs` is drawv1 residue: a 10px square tie point, unreachable from any document because the validator's id grammar has no `junction`.
+It is **superseded** by this, not extended.
+
+### What it means
+
+A junction is a **MEET**: n links converge at one grid point and are connected.
+Symmetric -- no trunk, no taps, no parent link.
+The branch reading (a tap hanging off a trunk) is what the drawv1 element described and is deliberately not carried forward.
+
+Engine semantics are intended but unspecified.
+A junction is a place a mover could plausibly choose a path, which makes it a routing decision point rather than only a visual claim -- the specifics are owed before anything in `engine/` reads it.
+
+### When a bend becomes a junction
+
+**Count directions, not links.**
+A link threaded through a waypoint by `via` contributes **two** directions -- the path enters and leaves.
+A link terminating on it contributes **one**.
+More than two directions is a junction.
+
+| situation | directions | role |
+|---|---|---|
+| one link bends through | 2 | bend |
+| one link terminates | 1 | endpoint |
+| closed ring through it | 2 | bend -- a ring has no ends |
+| two links bend through | 4 | **junction** |
+| one bends + one terminates | 3 | **junction** + endpoint |
+| three links terminate | 3 | **junction** + endpoint |
+
+Counting LINKS instead would call a T-junction a bend, and a drop off a trunk is the most common junction in a network diagram.
+Counting directions makes the T fire at two links, which is what it should do.
+
+### Roles become a set
+
+Three of the six rows above carry two roles at once, so a single exclusive role cannot express the model.
+`waypointRole` returns one string today and becomes `waypointRoles`, returning the sub-types that apply.
+
+**The empty set is a bend.**
+A bend adds no layer -- the path turning is its whole rendering -- so it is the absence of a sub-type rather than a member of the list.
+Putting `bend` in the set would make `['bend', 'endpoint']` constructible, which is a contradiction nothing prevents, and would force the render loop to special-case a member meaning "draw nothing".
+The CSS class is derived at the edge: `roles.length ? roles.join(' ') : 'bend'`.
+
+### The migration hazard
+
+`onEndpoint` in `engine/situation.mjs` gates spawner arming and reads `role === 'endpoint'`.
+Under a set that comparison is **false for every waypoint**, it still compiles, and spawner arming silently stops working everywhere.
+This is B201's shape exactly -- a comparison that keeps working while meaning something else -- and it is the reason the predicate transition is guarded before the rename lands rather than after.
+
+Three producers derive the role, all by B162's rule that the derivation has one definition:
+`kernel/engine.mjs`, `app/src/renderer.js`, and `engine/situation.mjs`.
+Consumers split in two: renderers ask *which layers do I draw*, which is naturally set-shaped, and predicates ask *is this an endpoint*, which is where the hazard lives.
+
+### Parked, with triggers
+
+- **Two links crossing without connecting.** Currently unexpressible: occupancy is keyed by cell (`server/validate.js`), so two waypoints cannot share a grid point and any two links through one point share its waypoint. Revive when a diagram needs an overpass.
+- **Two links bending through one point without becoming a junction.** Under this rule that is unconditionally a junction. Revive when a layout needs two routes to turn at the same cell independently.
+
+Both are the same shape -- the grid cannot currently say "coincident but unconnected" -- and neither blocks the junction itself.
