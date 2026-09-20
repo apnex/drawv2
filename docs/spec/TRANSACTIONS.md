@@ -44,7 +44,7 @@ One write function, one log and one version per diagram, one on-disk file format
 
 | In scope | Out of scope |
 |---|---|
-| the op vocabulary and the transaction shape | rendering, geometry, the grid grammar (`HIERARCHY.md`, `ATOMICS.md`) |
+| the op vocabulary and the transaction shape | rendering, geometry, the grid grammar (`ATOMICS.md`) |
 | validation, cascade, inverse, narrowing | the Slides *projection* - except the one write it implies (D19) |
 | the Log, `version`, undo/redo authority | reads (`GET /api/v1/...`) except `history` |
 | the wire shapes carrying a change | auth, identity, multi-instance (section 8) |

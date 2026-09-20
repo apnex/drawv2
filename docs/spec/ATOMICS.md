@@ -5,9 +5,49 @@ Mockups that drove these: `dev/design/sim/handles.mjs` and `dev/design/sim/atomi
 That sandbox is superseded by `kernel/` and no longer runnable -- the citations are provenance, recording what each decision was made against, not tools to reach for.\
 Tags: **[LOCKED] / [OPEN] / [DEFERRED] / [OUT OF SCOPE]**.
 
-## Pixel spec - variant `standard` [LOCKED]
-See `dev/HIERARCHY.md` section 2. pitch **60** - node **40** (+/-20) - uniform +3 ladder -> frame +/-20 - selection +/-23 - group +/-26 - zone +/-29 - radii 5/8/11/14 - socket 26 - linkW 6 - selArm 10.\
-Connection markers: **port** = 10px square, green (`#aed581`); **junction pad** = 10px square, blue (`#4fc3f7`), opaque centre, stroke 2.6 (drawn over the links).
+## Pixel spec - variant `standard` [LOCKED 2026-06-15, graduated here 2026-09-19]
+
+**`kernel/spec.mjs` is the authority.**\
+It holds the four parameters and DERIVES the ladder from them -- `L_STD = derive(STD)` -- so the extents below are a computation, not a list.\
+This section states what that computation is and why the parameters are what they are; where a number here and the kernel disagree, the kernel is right and this is stale.
+
+**Budget equation** (per cell, one axis):
+
+> **pitch = node + 18 + gutter**   -- the 18 is the ladder, 3px x 3 steps, each side
+
+That equation is the reason `standard` is a VARIANT rather than the only possible geometry.\
+Other variants change the parameters and re-derive; nothing else in the model moves.
+
+| param | value |
+|-------|-------|
+| grid pitch | **60** -- the coordinate lattice; node centres define the space, everything routes around it |
+| node | **40** (+/-20, `NODE_R 20`) |
+| ladder step | **3px** -- frame -> selection -> group -> zone |
+| zone gutter | **2px** between adjacent zones (1px each side of the cell boundary) |
+| socket (glyph box) | **26px** (+/-13) |
+
+**Derived:** frame +/-20 - selection +/-23 - group +/-26 - zone +/-29 (cell extent 58 within pitch 60, giving the 2px gutter).\
+**Rounded radii:** 5 / 8 / 11 / 14 (frame / sel / group / zone), tracking the +3 gap.
+Calibrated on a SQUARE node, because a circle hides the corner gap.\
+Also: linkW 6, selArm 10.
+
+- **selection** = corner brackets, 10px arms, rounded.
+- **group** = `bbox(member node frames) + 6`, a CONTINUOUS rounded rect rather than brackets, so it stays distinct from selection.
+  The gutter never touches it: a group's edges face the zone's outer edges, never the inter-zone gutter.
+- **zone** = a cell-extent region (58 within pitch 60), translucent fill plus stroke -- an AREA, against the outline frames -- edges on the cell grid, backmost.
+  The gutter lives only on shared inner edges between adjacent zones; outer edges stay on the cell boundary so group-to-zone clearance stays 3px.
+
+**Socket = fixed 26px square** (+/-13), the glyph container.\
+Sized just inside the inscribed square of the r20 circle: the true inscribed square is `r*sqrt(2) = 28.28`, and 26 leaves roughly 1px so even boxy glyphs clear the ring -- corners at `13*sqrt(2) = 18.4`, inside the ring's inner edge.\
+**Every glyph normalises to it** -- centre its bbox, scale max-dimension to 26 -- so glyph size is ONE number and is identical for circle and square frames.\
+The glyph is frame-shape-independent.
+
+That normalisation is what B205 turned out to be about: a palette tile scaled the art by a constant instead of fitting it to this box, so six glyphs rendered at six wrong sizes.
+
+**Z-order** (back to front): zone fill -> links -> group -> node frame -> glyph -> selection.
+
+**Connection markers:** **port** = 10px square, green (`#aed581`).
+The **junction pad** -- 10px square, blue (`#4fc3f7`), opaque centre, stroke 2.6 -- is drawv1 residue and is superseded by the waypoint junction sub-type below; it is unreachable from any document, because the validator's id grammar has no `junction`.
 
 ---
 

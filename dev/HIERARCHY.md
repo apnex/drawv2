@@ -1,7 +1,8 @@
 # draw - Object Hierarchy & Geometry (DRAFT)
 
-> **Status: DRAFT.** The **geometry variant `standard` is LOCKED** (section 2); everything
-> else (entity + state, colours, behaviour) is still draft. This document iterates
+> **Status: DRAFT.** The geometry variant `standard` was locked here and has GRADUATED to
+> `../docs/spec/ATOMICS.md` (section 2 records the move); everything remaining -- entity + state,
+> colours, behaviour -- is still draft. This document iterates
 > *ahead* of the interface record; locked parts graduate into `API.md`, `DECISIONS.md` and the code.
 > **section 0 is the vision / North Star - read it first.** Lineage: PRISM (cell / selection / group / zone concepts).
 >
@@ -126,47 +127,15 @@ See section 3.
 
 ---
 
-## 2. Geometry - variant `standard`  [LOCKED 2026-06-15]
+## 2. Geometry - variant `standard`  [GRADUATED 2026-09-19]
 
-Locked for the scope covered: node / glyph / socket + the selection / group / zone ladder + the zone gutter.\
-(Colours, entity + state, and behaviour stay open - section 3, section 5.)\
-This is the **baseline variant**; other variants are derived by changing the parameters below via the budget equation, without touching the rest of the model.
+Moved to [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md), which is where the pixel spec now lives.
 
-**[LOCKED] Budget equation** (per cell, one axis):
-> **pitch = node + 18 + gutter**   - the 18 is the ladder (3px x 3 steps, each side)
+It was locked on 2026-06-15 and stayed here for three months, which this document's own convention says should not happen: locked parts graduate into the interface record and the code.\
+Two published documents had come to cite it in the meantime, so the geometry record depended on a draft.
 
-**`standard` parameters:**
-
-| param | value |
-|-------|-------|
-| grid pitch | **60** - the coordinate lattice; node centres define the space, everything routes around it |
-| node | **40** (+/-20, `NODE_R 20`) |
-| ladder step | **3px** - frame -> selection -> group -> zone |
-| zone gutter | **2px** between adjacent zones (1px each side of the cell boundary) |
-| socket (glyph box) | **26px** (+/-13) |
-
-**Derived extents:** frame +/-20 - selection +/-23 - group +/-26 - zone +/-29 (cell extent 58 within pitch 60 -> the 2px gutter).\
-**Rounded radii:** 5 / 8 / 11 / 14 (frame / sel / group / zone - they track the +3 gap; calibrated on a square node, since a circle hides the corner gap).\
-Validated visually: the slide-4 nested stack and the slide-5 composite both render correctly in these numbers.
-- **selection** = corner brackets, 10px arms, rounded. (In code today at +/-24 rx8
-  for node-42; would become +/-23 under node-40.)
-- **group** = `bbox(member node frames) + 6`, a **continuous** rounded rect (not
-  brackets - stays distinct from selection). The gutter never touches it: a
-  group's edges face the zone's *outer* edges, never the inter-zone gutter.
-- **zone** = a cell-extent region (cell 58 in pitch 60), **translucent fill +
-  stroke** (an *area*, vs the outline frames); edges on the cell grid; backmost.
-  Gutter lives only on the shared (inner) edges between adjacent zones; outer
-  edges stay on the cell boundary so group->zone clearance stays 3px.
-
-- **[AGREED] socket = fixed 26px square** (+/-13) - the glyph container. Sized just
-  inside the inscribed square of the r20 circle (true inscribed = `r*sqrt(2) = 28.28`; 26
-  leaves a ~1px margin so even boxy glyphs clear the ring - corners at 13*sqrt(2) = 18.4 <
-  the ring inner edge). **Every glyph normalises to it** (centre its bbox, scale
-  max-dim -> 26), so glyph size is finally **one number**, and it's **identical for
-  circle & square frames** (margin inside the circle; 7px margin inside the +/-20
-  square) -> the glyph is frame-shape-independent.
-
-**Z-order (back -> front):** zone (fill) -> links -> group -> node frame -> glyph -> selection.
+`kernel/spec.mjs` is the authority for the numbers either way -- it holds the parameters and derives the ladder.\
+ATOMICS states the budget equation and what it derives to; this section held the same content and a second copy of the same numbers.
 
 ---
 
