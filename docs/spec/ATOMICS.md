@@ -286,7 +286,13 @@ What remains is engine semantics, which were always specified as owed.
 
 ### Still to settle
 
-- **A limit on links per junction, if any.** Twenty links at one point is legal under the rules above and visually useless. It would have to be argued from something other than port capacity, which caps links per node FACE by boundary length and so cannot reach a point. No current case needs one, and picking a number now means defending it later with no evidence -- so the trigger is somebody actually drawing a mess.
+- **A limit on links per junction, if any.** Twenty links at one point is legal under the rules above and visually useless.
+
+  A COUNT is not derivable, and the reason is worth keeping. Links are not constrained to right angles -- `kernel/router.mjs` describes axis-aligned segments in its determinism argument, but `roundedPath` accepts arbitrary vectors and computes the bend from whatever it is given, verified by routing a diagonal. So there is no quantised set of directions to count, and the "four directions on a grid" argument that suggests a cap of 4 is simply wrong.
+
+  What actually bounds it is ANGULAR SEPARATION at the junction ring, which is the smallest circle the links cross. At r=7 with 6px links: four links are 90 degrees apart with 5.0px clear, six are 60 degrees apart with 1.3px clear, and eight at 45 degrees overlap. Six is the hard ceiling and eight is impossible -- but only when they are evenly spaced, and two links five degrees apart are indistinguishable however few there are in total. A count cannot see that; a separation rule can, and would need each link's bearing at the waypoint, which nothing currently derives.
+
+  Left open deliberately. A cap of 4 would refuse a six-way junction that reads perfectly well while still admitting two links five degrees apart -- wrong in both directions. The trigger is somebody drawing a mess, and the fix then is angular rather than a number.
 - **Why XOR occupancy was written.** No recorded rationale -- a code comment, and nothing in any spec, decision record or backlog row. The reconstruction above is that it conflated the self-conflict case, which is real, with sharing, which is the feature. That should be confirmed rather than assumed before the check is edited.
 
 ### Parked, with triggers
