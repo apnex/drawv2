@@ -230,7 +230,7 @@ It allows what it should -- the T, the cross, two links that merely share an end
 **A junction is a POINT, so port capacity does not apply.**\
 `Parallel-link capacity [LOCKED]` caps links per FACE by boundary length, on the principle that a high-fan-out node is wrapped in a group to get more boundary.\
 A junction has no face and no boundary, so that rule neither bounds it nor can be stretched to.\
-Whether a junction needs an arity bound of its own is therefore OPEN, and it is a separate question from how links attach -- they converge on the point rather than spacing along an edge.
+Whether a junction needs a LIMIT ON HOW MANY LINKS may meet at one is therefore OPEN, and it is a separate question from how links attach -- they converge on the point rather than spacing along an edge.
 
 ### Build progress
 
@@ -286,7 +286,7 @@ What remains is engine semantics, which were always specified as owed.
 
 ### Still to settle
 
-- **An arity bound, if any.** Twenty links at one point is legal under the rules above and visually useless. A bound would have to be argued from something other than port capacity, which does not reach a point.
+- **A limit on links per junction, if any.** Twenty links at one point is legal under the rules above and visually useless. It would have to be argued from something other than port capacity, which caps links per node FACE by boundary length and so cannot reach a point. No current case needs one, and picking a number now means defending it later with no evidence -- so the trigger is somebody actually drawing a mess.
 - **Why XOR occupancy was written.** No recorded rationale -- a code comment, and nothing in any spec, decision record or backlog row. The reconstruction above is that it conflated the self-conflict case, which is real, with sharing, which is the feature. That should be confirmed rather than assumed before the check is edited.
 
 ### Parked, with triggers
