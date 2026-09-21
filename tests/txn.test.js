@@ -432,15 +432,48 @@ test('B162: deleting a link takes its bends, and one undo puts them back', () =>
 	assert.deepEqual(back, ['waypoint-aa0001', 'waypoint-aa0002'], 'and the undo brings them back');
 });
 
-test('B162: an ENDPOINT waypoint goes too -- nothing else may claim it', () => {
+/*
+B216 -- an ENDPOINT waypoint SURVIVES losing its link, and falls back to a plain anchor.
+
+This test asserted the opposite, on the reasoning that XOR occupancy meant no other link could
+claim it so an unattached endpoint was "as dead as a bend". XOR occupancy is gone -- a waypoint may
+now carry several links -- and the director ruled the distinction the other way: deleting a link
+must no more remove the waypoint it terminated at than it removes the node at the other end.
+
+The sweep's own reasoning was only ever about bends: a bend exists to shape a path, so with no path
+it is debris that still renders and still holds its anchor. An endpoint is a place the author put
+something.
+
+What it becomes is a plain anchor. `waypointRoles` returns the empty set for a waypoint with no
+links, so it draws as anchor plus dot with no sub-type layer -- which needed no change, because the
+roles were already derived from the links rather than remembered.
+*/
+test('B216: an endpoint waypoint survives its link and becomes a plain anchor', async () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	m.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 120, y: 0 });
 	m.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'waypoint-aa0003' });
-	// XOR occupancy means no other link may be using it, so an unattached endpoint is as dead as a
-	// bend. The distinction matters for RENDERING, not for survival.
+
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
-	assert.ok(r.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-aa0003'), 'the endpoint is swept');
+	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false,
+		'the waypoint a link TERMINATED at must survive it, as the node at the other end does');
+	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false, 'and so must the node');
+
+	// a BEND is still debris: that is what the sweep was written for
+	const m2 = new Model();
+	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+	m2.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
+	m2.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 120, y: 0 });
+	m2.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0003'] });
+	const r2 = plan(m2, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
+	assert.ok(r2.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-aa0003' && o.op === 'del'),
+		'a bend still goes with its link -- it exists only to shape one');
+
+	// and what survives renders as a plain anchor: no links, so no sub-type
+	const k = await import('../kernel/index.mjs');
+	assert.deepEqual(k.waypointRoles('waypoint-aa0003', []), [], 'no links means no sub-type layer');
+	assert.deepEqual(k.waypointLayers([], 20).map((l) => l.cls), ['wp-anchor', 'wp-dot'],
+		'a plain anchor: the ring and the grid dot, nothing else');
 });
 
 /*
@@ -471,22 +504,29 @@ test('B162: a lone waypoint is safe by SCOPE, not by the pin', () => {
 	assert.equal(r2.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'pinned or not');
 });
 
-test('B162: the pin outranks the sweep when a linked waypoint loses its link', () => {
-	const m = new Model();
-	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	m.put('waypoint', { id: 'waypoint-bb0003', name: 'waypoint-bb0003', x: 120, y: 0, pinned: true });
-	m.put('link', { id: 'link-bb0001', name: 'link-bb0001', src: 'node-aa0001', dst: 'waypoint-bb0003' });
-	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-bb0001' }]);
-	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0003'), false,
+test('B162: the pin outranks the sweep when a BEND loses its link', () => {
+	/*
+	B216 -- the foil is a BEND now. This test used an endpoint as its control, and endpoints are no
+	longer swept at all, so "the same shape without the pin IS swept" would have been false and the
+	pin assertion would have proved nothing -- it would have passed whether the pin was consulted or
+	not. The pin only ever does work on a waypoint the sweep would otherwise take.
+	*/
+	const bent = (wp, link, extra = {}) => {
+		const m = new Model();
+		m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
+		m.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
+		m.put('waypoint', { id: wp, name: wp, x: 120, y: 0, ...extra });
+		m.put('link', { id: link, name: link, src: 'node-aa0001', dst: 'node-aa0002', via: [wp] });
+		return plan(m, [{ op: 'del', kind: 'link', id: link }]);
+	};
+
+	const pinned = bent('waypoint-bb0003', 'link-bb0001', { pinned: true });
+	assert.equal(pinned.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0003'), false,
 		'the author said keep it, so the sweep leaves it');
 
 	// the same shape without the pin IS swept, or the assertion above proves nothing
-	const m2 = new Model();
-	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	m2.put('waypoint', { id: 'waypoint-bb0004', name: 'waypoint-bb0004', x: 120, y: 0 });
-	m2.put('link', { id: 'link-bb0002', name: 'link-bb0002', src: 'node-aa0001', dst: 'waypoint-bb0004' });
-	const r2 = plan(m2, [{ op: 'del', kind: 'link', id: 'link-bb0002' }]);
-	assert.ok(r2.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0004'), 'unpinned goes');
+	const loose = bent('waypoint-bb0004', 'link-bb0002');
+	assert.ok(loose.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0004'), 'unpinned goes');
 });
 
 /*

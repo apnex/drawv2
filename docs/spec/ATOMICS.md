@@ -144,6 +144,14 @@ Three is the smallest place routes converge.
 That keeps the role rule and the collapse rule in agreement: of the three 2-link shapes only in-and-out is expressible as a single bending link, and that is exactly the one `collapseAtWaypoint` accepts.\
 So no waypoint reads as a junction nothing will collapse, and none collapses out from under a role still claiming it.
 
+**Deleting a link never deletes what it terminated at.**\
+Not the node at one end, and not a waypoint at the other.\
+A waypoint a link ENDED at survives losing it and falls back to a plain anchor -- the ring and the grid dot, no sub-type layer, because `waypointRoles` returns the empty set for a waypoint with no links.
+
+A BEND is different and still goes.\
+It exists only to shape a path, so with no path it is debris that still renders and still holds its anchor.\
+That is what the sweep was written for -- 64 bends left over from one deleted ring -- and its reasoning never extended to a terminus.
+
 **The collapse is the split's inverse, and lives in the server planner.**\
 When a write leaves a waypoint with one link in and one out, the two rejoin into a single link bending through it and the INBOUND link's id survives -- the same id the split kept, so split-then-delete is a round trip back to the route the author drew.
 

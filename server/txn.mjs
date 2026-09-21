@@ -122,6 +122,31 @@ export function plan(model, ops) {
 		return set;
 	};
 	/*
+	B216 -- only a BEND is swept. A waypoint an author TERMINATED a link at survives losing it.
+
+	The sweep was written for bends and its reasoning is theirs: a bend exists to shape a path, so
+	with no path it is debris that still renders and still holds its anchor -- 64 of them left over
+	from one deleted ring. An endpoint is not that. It is a place the author put something, the same
+	way a node is, and deleting a link must no more remove it than it removes the node at the other
+	end.
+
+	`refs` cannot tell them apart -- it folds src, dst and via into one set -- so the role is read
+	separately from the state BEFORE the transaction. A waypoint threaded as a bend and nothing else
+	is swept; one anything terminated at is kept, and becomes a bare anchor the author can reuse or
+	delete deliberately.
+	*/
+	const wasBendOnly = (m) => {
+		const bend = new Set();
+		const terminal = new Set();
+		for (const l of m.all('link')) {
+			terminal.add(l.src);
+			terminal.add(l.dst);
+			for (const w of Array.isArray(l.via) ? l.via : []) bend.add(w);
+		}
+		for (const id of terminal) bend.delete(id);
+		return bend;
+	};
+	/*
 	ONLY WHAT THIS TRANSACTION ORPHANED, which is the same rule the invariant check below uses and
 	for the same reason. Sweeping every unreferenced waypoint would make an unrelated commit quietly
 	delete debris the caller never mentioned, and would put those deletions in its inverse -- so an
@@ -135,9 +160,11 @@ export function plan(model, ops) {
 	const wasReferenced = refs(model);
 	const nowReferenced = refs(proj);
 	const swept = [];
+	const sweepable = wasBendOnly(model);
 	for (const w of proj.all('waypoint')) {
 		if (nowReferenced.has(w.id) || w.pinned) continue;
 		if (!wasReferenced.has(w.id)) continue;          // it arrived unreferenced; not ours to remove
+		if (!sweepable.has(w.id)) continue;              // B216 -- it was a terminus, not debris
 		swept.push({ op: 'del', kind: 'waypoint', id: w.id });
 		inv.unshift({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) });
 	}
