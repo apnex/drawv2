@@ -144,6 +144,13 @@ Three is the smallest place routes converge.
 That keeps the role rule and the collapse rule in agreement: of the three 2-link shapes only in-and-out is expressible as a single bending link, and that is exactly the one `collapseAtWaypoint` accepts.\
 So no waypoint reads as a junction nothing will collapse, and none collapses out from under a role still claiming it.
 
+**The collapse is the split's inverse, and lives in the server planner.**\
+When a write leaves a waypoint with one link in and one out, the two rejoin into a single link bending through it and the INBOUND link's id survives -- the same id the split kept, so split-then-delete is a round trip back to the route the author drew.
+
+In `server/txn.mjs`, beside the orphan sweep that solves the same shape of problem and already carries the scope rule it needs: only waypoints THIS transaction touched.\
+It was first written in the client's delete command, where it could not see undo or redo -- those are computed server-side and never run a client command -- nor the CLI and REST doors.\
+One rule, one place, every door.
+
 Engine semantics are intended but unspecified.\
 A junction is a place a mover could plausibly choose a path, which makes it a routing decision point rather than only a visual claim.\
 The specifics are owed before anything in `engine/` reads it.

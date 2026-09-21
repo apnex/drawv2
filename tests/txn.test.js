@@ -507,3 +507,54 @@ test('B162: pre-existing debris is left alone -- a commit removes only what it o
 	assert.equal(r.inverse.some((o) => o.kind === 'waypoint'), false,
 		'and its undo does not resurrect any');
 });
+
+/*
+B215: a junction reverts to a bend on DELETE and on UNDO alike, because the rule lives here.
+
+A waypoint left with one link in and one out is a path passing through, which is a bend -- so the
+two survivors rejoin and the inbound link's id survives, which is the id the split kept.
+
+It was first written in `app/src/commands.js`, and that was the defect the director found. Undo and
+redo are computed by this planner and never run a client command, so an undone split stayed split;
+the CLI and REST doors write through here too, without touching `commands.js` at all. One rule, one
+place, every door -- which is why the undo case below is the load-bearing half of this test.
+*/
+test('B215: deleting the third link from a junction rejoins the other two into a bend', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
+		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'waypoint-aa0001' }),
+	] }, 'server', 't');
+	assert.equal(m.all('link').length, 3, 'precondition: a three-way junction');
+
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
+
+	const links = m.all('link');
+	assert.equal(links.length, 1, 'one in and one out is a BEND, so they rejoin');
+	assert.equal(links[0].id, 'link-aa0001', 'and the INBOUND id survives -- the one a split would have kept');
+	assert.equal(links[0].src, 'node-aa0001');
+	assert.equal(links[0].dst, 'node-aa0002');
+	assert.deepEqual(links[0].via, ['waypoint-aa0001'], 'bending through the waypoint');
+});
+
+test('B215: UNDOING the collapse restores the junction exactly', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
+		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'waypoint-aa0001' }),
+	] }, 'server', 't');
+	const before = shape(m);
+
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
+	assert.equal(m.all('link').length, 1, 'precondition: it collapsed');
+
+	undo(m, log);
+	assert.equal(shape(m), before,
+		'undo must restore the junction whole -- the collapse rides in the same transaction, so its inverse does too');
+});

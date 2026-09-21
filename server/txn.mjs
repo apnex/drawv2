@@ -33,7 +33,7 @@ import { groupAfterRemoval, collectionCap } from '../engine/index.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { STD } from '../kernel/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
-import { violations, isStraight, pairKey } from '../model/invariants.mjs';
+import { violations, isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';
 import { resolveAnchor } from './anchor.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
@@ -146,6 +146,59 @@ export function plan(model, ops) {
 	if (swept.length) {
 		out.push(...swept);
 		applyOps(proj, swept);
+	}
+
+	/*
+	B215 -- a waypoint left with one link IN and one OUT is a BEND, so rejoin them.
+
+	A junction cannot exist with two links; that shape is a path passing through the point. Deleting
+	a link from a three-way junction leaves exactly it, and without this the waypoint stays a
+	junction -- the document remembering a gesture rather than describing what is on screen.
+
+	HERE, not in the client's delete command, which is where it was first written and wrong. Undo
+	and redo are computed server-side and never run a client command, so an undone split stayed
+	split; and the CLI and REST doors write through this planner without touching `commands.js` at
+	all. One rule, one place, every door.
+
+	THE INBOUND LINK'S ID SURVIVES. It is the half that kept the original id when the link was
+	split, so split-then-delete is a round trip back to the route the author drew rather than a
+	churn of identities.
+
+	ONLY WAYPOINTS THIS TRANSACTION TOUCHED, the same scope rule the sweep above uses and for the
+	same reason: collapsing a pre-existing two-link waypoint would rewrite a shape the caller never
+	mentioned and put that rewrite in its inverse.
+	*/
+	const touched = new Set();
+	for (const op of out) {
+		const e = op.entity || (op.kind === 'link' ? model.get('link', op.id) : null);
+		if (op.kind !== 'link' || !e) continue;
+		for (const end of [e.src, e.dst]) if (proj.get('waypoint', end)) touched.add(end);
+	}
+	const merges = [];
+	for (const w of touched) {
+		const at = proj.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
+		if (at.length !== 2) continue;
+		const inbound = at.find((l) => l.dst === w);
+		const outbound = at.find((l) => l.src === w);
+		const merged = inbound && outbound ? collapseAtWaypoint(inbound, outbound, w) : null;
+		if (!merged) continue;
+		// `patch`, not `after` -- `after` is the COMMAND vocabulary and applyOps reads `patch`. The
+		// first version used the command spelling, so the del landed and the merge silently did not.
+		merges.push({ op: 'del', kind: 'link', id: outbound.id },
+			{ op: 'set', kind: 'link', id: inbound.id, patch: { dst: merged.dst, via: merged.via } });
+		/*
+		`inverseOfSet` rather than a hand-rolled patch, because it already solves the case that bit
+		here: a collapse INTRODUCES `via` on a link that had none, and restoring it with
+		`patch: { via: [] }` leaves an empty array where there was no key. An undone collapse must
+		be byte-identical to what stood before it, or a document drifts a little on every undo --
+		so when a patch introduces a key, the inverse is a `put` of the whole prior entity.
+		*/
+		inv.unshift(inverseOfSet('link', inbound, { dst: merged.dst, via: merged.via }),
+			{ op: 'put', kind: 'link', entity: clone('link', outbound) });
+	}
+	if (merges.length) {
+		out.push(...merges);
+		applyOps(proj, merges);
 	}
 
 	/*
