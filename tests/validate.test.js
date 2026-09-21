@@ -617,3 +617,49 @@ test('B210: a split turns a bend into a junction, and the result validates', asy
 	assert.ok(after.every((l) => !(l.via || []).includes('waypoint-aa0001')),
 		'no link may still bend through a junction -- that is the crossing case the split removes');
 });
+
+/*
+B213: split and collapse are inverses, and the src-side id makes that a round trip.
+
+Two defects the director found, one rule fixing both.
+
+A junction cannot exist with one link IN and one link OUT -- that shape is a path passing through
+the point, which is a bend. So deleting a link from a three-way junction rejoins the survivors, and
+without that the waypoint stayed a junction: the document remembering a gesture rather than
+describing what is on screen.
+
+The src half keeping the original id is what makes it a ROUND TRIP rather than a churn. `a->b via
+[w]` split at w gives back `a->b via [w]` with the same id, so nothing that referenced the route
+before the split is pointing at a stranger afterwards.
+*/
+test('B213: a split then a collapse restores the original link, id included', async () => {
+	const { splitAtBend, collapseAtWaypoint } = await import('../model/invariants.mjs');
+
+	const orig = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] };
+	const [srcHalf, dstHalf] = splitAtBend(orig, 'waypoint-aa0001');
+	const kept = { ...orig, ...srcHalf, via: srcHalf.via || [] };
+	const minted = { id: 'link-bb0001', name: 'm', ...dstHalf };
+
+	const back = collapseAtWaypoint(kept, minted, 'waypoint-aa0001');
+	assert.equal(back.id, orig.id, 'the collapse must restore the ORIGINAL id -- that is what the src half kept it for');
+	assert.equal(back.src, orig.src);
+	assert.equal(back.dst, orig.dst);
+	assert.deepEqual(back.via, orig.via, 'and the route through the waypoint');
+
+	/*
+	A fan is not a bend. Two links both pointing AWAY from the waypoint is two routes starting at
+	one place, not one passing through, so there is no src side and nothing to collapse.
+	*/
+	for (const [why, a, b] of [
+		['both point away', { id: 'l1', src: 'w', dst: 'a' }, { id: 'l2', src: 'w', dst: 'b' }],
+		['both point in', { id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'b', dst: 'w' }],
+		['would self-link', { id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'w', dst: 'a' }],
+	]) {
+		assert.equal(collapseAtWaypoint(a, b, 'w'), null, `${why}: must not collapse`);
+	}
+
+	// a collapse carries both halves' own bends, in route order
+	const merged = collapseAtWaypoint(
+		{ id: 'l1', src: 'a', dst: 'w', via: ['x'] }, { id: 'l2', src: 'w', dst: 'b', via: ['y'] }, 'w');
+	assert.deepEqual(merged.via, ['x', 'w', 'y'], 'the merged route keeps every bend, in order');
+});

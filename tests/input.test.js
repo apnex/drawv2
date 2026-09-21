@@ -1577,3 +1577,50 @@ test('B203: right-drag still moves a waypoint', () => {
 		assert.equal(h.commits.length, 1, 'one drag is one change');
 	} finally { h.restore(); }
 });
+
+/*
+B213: the whole round trip, through the real gesture and the real delete.
+
+The unit tests above prove `splitAtBend` and `collapseAtWaypoint` are inverses. This proves the
+GESTURE and the DELETE COMMAND actually use them that way -- the director's two defects were both
+here rather than in the arithmetic: the far end of a drag stayed a bend, and deleting a link left
+the junction standing.
+
+Asserting the id survives is the load-bearing part. A split that mints a new id for the src half
+still LOOKS right and still collapses back to the correct shape, so only the id distinguishes a
+round trip from a churn -- and anything holding the original reference is silently orphaned.
+*/
+test('B213: split then delete restores the original link, id and all', () => {
+	const h = makeInput();
+	try {
+		const m = h.model;
+		m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', x: -120, y: 0 });
+		m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', x: 120, y: 0 });
+		m.put('node', { id: 'node-aa0003', name: 'c', type: 'host', x: 0, y: 120 });
+		m.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
+		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] });
+
+		const at = (x, y, id) => pointer(x, y, {
+			button: 0,
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) },
+		});
+		h.input.onDown(at(0, 120, 'node-aa0003'));
+		h.input.onMove(at(0, 60, null));
+		h.input.onUp(at(0, 0, 'waypoint-aa0001'));
+
+		assert.equal(m.all('link').length, 3, 'the bend split, and the new link joined it');
+		const srcHalf = m.get('link', 'link-aa0001');
+		assert.ok(srcHalf, 'the SRC half keeps the original id');
+		assert.equal(srcHalf.dst, 'waypoint-aa0001', 'and it is the half ending at the waypoint');
+
+		const added = m.all('link').find((l) => l.src === 'node-aa0003' || l.dst === 'node-aa0003');
+		h.history.commit(commands.deleteSelection(m, new Set([added.id])));
+
+		const links = m.all('link');
+		assert.equal(links.length, 1, 'deleting the third link leaves one in and one out, which is a BEND');
+		assert.equal(links[0].id, 'link-aa0001', 'and it is the ORIGINAL id -- a round trip, not a churn');
+		assert.equal(links[0].src, 'node-aa0001');
+		assert.equal(links[0].dst, 'node-aa0002');
+		assert.deepEqual(links[0].via, ['waypoint-aa0001'], 'bending through the waypoint again');
+	} finally { h.restore(); }
+});

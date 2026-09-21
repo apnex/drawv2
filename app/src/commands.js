@@ -19,7 +19,7 @@ inverse-building, not the closure.
 import { groupAfterRemoval } from '../../engine/index.mjs';
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/index.mjs';
-import { isStraight, pairKey } from '../../model/invariants.mjs';
+import { isStraight, pairKey, collapseAtWaypoint } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
 
@@ -115,6 +115,39 @@ export function deleteSelection(model, ids) {
 		if (model.get('zone', id)) entries.push({ op: 'del', kind: 'zone', entity: clone('zone', model.get('zone', id)) });
 	});
 	deletedLinks.forEach((id) => entries.push({ op: 'del', kind: 'link', entity: clone('link', model.get('link', id)) }));
+
+	/*
+	B213 -- a waypoint left with exactly one link IN and one OUT is a BEND, so rejoin them.
+
+	The director's rule: a junction cannot exist with one link in and one link out. Deleting a link
+	from a three-way junction leaves that shape, and without this the waypoint stays a junction --
+	the document remembering a gesture rather than describing what is on screen.
+
+	The inbound link's id survives, which is the same id the split kept, so split-then-delete is a
+	round trip back to the original route rather than a churn of identities.
+
+	Computed against what SURVIVES this delete, not the current model: a waypoint whose links are
+	all being removed has nothing to rejoin, and one of the two candidates may itself be going.
+	*/
+	const survives = (l) => !deletedLinks.has(l.id)
+		&& !deletedNodes.has(l.src) && !deletedNodes.has(l.dst)
+		&& !deletedWaypoints.has(l.src) && !deletedWaypoints.has(l.dst);
+	const touchedWaypoints = new Set();
+	deletedLinks.forEach((id) => {
+		const l = model.get('link', id);
+		if (!l) return;
+		for (const end of [l.src, l.dst]) if (model.get('waypoint', end) && !deletedWaypoints.has(end)) touchedWaypoints.add(end);
+	});
+	for (const w of touchedWaypoints) {
+		const remaining = (model.linksAt?.(w) || []).filter(survives);
+		if (remaining.length !== 2) continue;
+		const inbound = remaining.find((l) => l.dst === w);
+		const outbound = remaining.find((l) => l.src === w);
+		const merged = collapseAtWaypoint(inbound, outbound, w);
+		if (!merged) continue;
+		entries.push({ op: 'del', kind: 'link', entity: clone('link', outbound) });
+		entries.push({ op: 'put', kind: 'link', entity: clone('link', merged) });
+	}
 	deletedNodes.forEach((id) => entries.push({ op: 'del', kind: 'node', entity: clone('node', model.get('node', id)) }));
 	// waypoints last (leaf entities → restored FIRST on undo, before via-restore + link-restore)
 	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: 'waypoint', entity: clone('waypoint', model.get('waypoint', id)) }));

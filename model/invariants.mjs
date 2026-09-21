@@ -79,6 +79,32 @@ A link whose `src` or `dst` is already the split waypoint would produce a self-l
 cannot exist today, because `selfConflict` refuses a waypoint in two roles on one link, so this is
 an assertion about the caller rather than a case to handle.
 */
+/*
+B213 -- COLLAPSE the inverse: two links meeting at a waypoint are a BEND, not a junction.
+
+Ruled by the director: a junction cannot exist with one link in and one link out. That shape is a
+path passing THROUGH the point, which is exactly what a bend is, so the document should say so --
+`a->w` plus `w->b` becomes `a->b via [w]`.
+
+THE SRC-SIDE ID WINS, meaning the link whose `dst` is the waypoint: it carries the route's original
+start, so after a split it is the half that kept the original id. Rejoining therefore restores the
+id the author drew, and split-then-collapse is a round trip rather than a churn of identities.
+
+REQUIRES ONE IN AND ONE OUT. Two links both pointing away from a waypoint is not a path through
+anything -- it is two routes starting at the same place, a fan rather than a bend -- so there is no
+src side and nothing to collapse. Same for two both pointing in.
+
+Returns the merged link, or null when the pair does not describe a path through the point.
+*/
+export function collapseAtWaypoint(inbound, outbound, waypointId) {
+	if (!inbound || !outbound || inbound.id === outbound.id) return null;
+	if (inbound.closed || outbound.closed) return null;
+	if (inbound.dst !== waypointId || outbound.src !== waypointId) return null;
+	if (inbound.src === outbound.dst) return null;              // would be a self-link
+	const via = [...(inbound.via || []), waypointId, ...(outbound.via || [])];
+	return { ...inbound, src: inbound.src, dst: outbound.dst, via };
+}
+
 export function splitAtBend(link, waypointId) {
 	if (link.closed) return null;                       // a ring has no ends to cut toward
 	if (link.src === waypointId || link.dst === waypointId) return null;   // would be a self-link

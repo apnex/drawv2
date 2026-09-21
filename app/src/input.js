@@ -934,21 +934,51 @@ export class Input {
 	is left holding a route that no longer describes what is on screen.
 	*/
 	splitsFor(link) {
-		// B211 -- the ENDS only. Threading a bend leaves it a bend, by the director's ruling: passing
-		// through is not meeting, and two links bending at one point is two bends. Only landing on
-		// one, or starting from one, makes a junction.
-		const touched = [link.src, link.dst];
-		const out = [];
-		const seen = new Set();
-		for (const w of touched) {
+		/*
+		B213 -- every existing link this new one cuts, and how each divides.
+
+		A junction is terminations only, so a link that BENT through a waypoint the new route ENDS
+		at has to be cut there. Only the new link's ends are considered: threading a bend leaves it
+		a bend (B211).
+
+		THE SRC HALF KEEPS THE ORIGINAL ID. `splitAtBend` returns [src-half, dst-half], so the piece
+		carrying the route's original `src` is index 0 and inherits the identity. That is what makes
+		the collapse deterministic -- rejoining the pair restores the id the author drew rather than
+		minting a third.
+
+		PIECES ARE RE-CUT, not the original. Both ends of the new link may be bends of the SAME link:
+		`a->b via [w1,w2]` dragged from w1 to w2 must cut twice, and the second cut applies to
+		whichever PIECE now carries w2 -- which after the first cut is the dst half, not the one that
+		kept the id. Cutting the dead original twice produced four links describing a route that no
+		longer existed; a `seen` guard against that skipped the second cut instead, leaving the far
+		end a bend, which is what the director saw.
+		*/
+		const ends = [link.src, link.dst];
+		const originals = new Map();     // original id -> { original, pieces: [] }
+
+		for (const w of ends) {
 			if (!this.model.get('waypoint', w)) continue;
 			for (const other of this.model.linksAt?.(w) || []) {
-				if (other.id === link.id || seen.has(other.id)) continue;
-				const halves = splitAtBend(other, w);
-				if (!halves) continue;                      // terminates there, or cannot be cut
-				seen.add(other.id);
-				out.push({ original: other, halves: halves.map((h) => ({ ...this.model.makeLink(h.src, h.dst), ...h })) });
+				if (other.id === link.id) continue;
+				const g = originals.get(other.id) || { original: other, pieces: [other] };
+				originals.set(other.id, g);
+				// the piece that currently bends through w is the one to cut
+				const i = g.pieces.findIndex((p) => (p.via || []).includes(w));
+				if (i === -1) continue;
+				const halves = splitAtBend(g.pieces[i], w);
+				if (!halves) continue;
+				g.pieces.splice(i, 1, ...halves);
 			}
+		}
+
+		const out = [];
+		for (const { original, pieces } of originals.values()) {
+			if (pieces.length < 2) continue;                       // nothing was cut
+			// index 0 is the src end of the original route, wherever the cuts fell
+			const halves = pieces.map((p, i) => (i === 0
+				? { ...this.model.makeLink(p.src, p.dst), ...p, id: original.id }
+				: { ...this.model.makeLink(p.src, p.dst), ...p, id: newId('link', this.model.collection('link')) }));
+			out.push({ original, halves });
 		}
 		return out;
 	}
