@@ -583,10 +583,22 @@ waypoint, link to it, and nothing redrew it. That is what the director hit, twic
 And fixing only `update` left the common case broken: a NEW link is exactly what turns a lone
 waypoint into an endpoint, and a new link goes through `render`. Both call the same helper now.
 */
-test('B162: both the create and the update path refresh a link\'s waypoints', () => {
+test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 	const src = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	/*
+	B218 -- THREE now. A waypoint's role is derived from the links at it, so every event that
+	changes which links those are has to re-derive: a new link makes a lone waypoint an endpoint, a
+	re-route changes a bend, and a DELETED link leaves its endpoint drawing a pad for a link that no
+	longer exists. That last one was missing, and the document was right while the canvas was a
+	frame behind it.
+
+	Counted rather than named because the call sites are branches of one dispatch; what matters is
+	that no branch which changes a link forgets to ask.
+	*/
 	const calls = (src.match(/this\.refreshWaypointsOf\(/g) || []).length;
-	assert.equal(calls, 2, 'render() and update() must BOTH refresh — one of them is the authoring case');
+	assert.equal(calls, 3, 'render(), update() and the del branch must ALL refresh');
+	assert.match(src, /if \(kind === 'link'\) this\.refreshWaypointsOf\(entity\);/,
+		'the delete branch refreshes from the DELETED entity -- the model no longer knows what it touched');
 	assert.match(src, /refreshWaypointsOf\(link\)\s*\{/, 'and the refresh is one helper, not two copies');
 
 	// it must cover every role a waypoint can hold on a link, or one of them stays stale

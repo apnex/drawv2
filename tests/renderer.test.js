@@ -185,3 +185,38 @@ test('B205: the palette fits each glyph exactly as the kernel does', async () =>
 			`${type}: the kernel glyph box is not STD.socket`);
 	}
 });
+
+/*
+B218: deleting a link re-derives the waypoints it touched.
+
+A waypoint's role is DERIVED from the links at it, and the delete branch only dropped the link's own
+DOM node. So an endpoint kept drawing its pad after the link that made it one was gone -- the
+document was correct and the canvas was a frame behind it, which is the divergence that is hardest
+to notice because nothing is broken on reload.
+
+Asserted on the DOM rather than on the source, because counting call sites proves the wiring exists
+and not that the ring actually clears. The delete branch has to refresh from the DELETED entity:
+once the link is out of the model, nothing else records which waypoints it touched.
+*/
+test('B218: an endpoint falls back to a plain anchor when its link is deleted', () => {
+	withRenderer(({ svg, model, make }) => {
+		make(model);
+		model.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: -120, y: 0 });
+		model.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
+		model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' });
+
+		const wp = () => svg.ownerDocument.getElementById('waypoint-aa0001');
+		const ringCount = () => wp().querySelectorAll('.wp-ring').length;
+
+		assert.equal(ringCount(), 1, 'precondition: a link terminates here, so it draws the endpoint pad');
+		assert.match(wp().getAttribute('class'), /endpoint/, 'and is classed as one');
+
+		model.del('link', 'link-aa0001');
+
+		assert.ok(wp(), 'the waypoint itself survives -- deleting a link never deletes what it terminated at');
+		assert.equal(ringCount(), 0, 'the pad is gone: with no links there is no sub-type to draw');
+		assert.equal(wp().querySelectorAll('.wp-anchor').length, 1, 'a plain anchor remains');
+		assert.equal(wp().querySelectorAll('.wp-dot').length, 1, 'with its grid dot');
+		assert.doesNotMatch(wp().getAttribute('class'), /endpoint|junction/, 'and no sub-type class');
+	});
+});

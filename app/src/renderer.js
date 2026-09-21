@@ -195,7 +195,22 @@ export class Renderer {
 		if (action === 'load') return this.syncAll();
 		if (action === 'put') this.render(kind, entity);
 		if (action === 'set') this.update(kind, entity);
-		if (action === 'del') this.remove(entity.id);
+		/*
+		B218 -- a deleted LINK re-derives the waypoints it touched.
+
+		A waypoint's role is derived from the links at it, and `remove` only dropped the DOM node.
+		So deleting a link left its endpoint drawing the pad it last had: the document was right and
+		the canvas was a frame behind it. `refreshWaypointsOf` already exists for exactly this and
+		was wired to create and update but not to delete.
+
+		AFTER the removal, so the derivation sees a model the link has left. The deleted entity is
+		the only record of which waypoints it touched -- they cannot be found from the model once it
+		is gone.
+		*/
+		if (action === 'del') {
+			this.remove(entity.id);
+			if (kind === 'link') this.refreshWaypointsOf(entity);
+		}
 	}
 
 	syncAll() {
@@ -338,9 +353,10 @@ export class Renderer {
 	so a waypoint kept whatever ring it was first drawn with.
 
 	Invisible on a fresh load, because every link already exists and the initial render is correct.
-	It only showed while AUTHORING -- place a waypoint, link to it, and nothing redrew it. Called
-	from BOTH render and update: a NEW link is exactly what turns a lone waypoint into an endpoint,
-	and fixing only the update path left the common case broken.
+	It only showed while AUTHORING -- place a waypoint, link to it, and nothing redrew it. Called from render,
+	update AND delete. A NEW link is what turns a lone waypoint into an endpoint, and fixing only
+	the update path left that case broken; B218 was the mirror -- a DELETED link leaves its endpoint
+	drawing a pad for a link that is gone.
 
 	Re-rendered rather than patched: the role decides fill, radius, stroke width and class together,
 	and setting those four from here would be a second copy of the drawing.
