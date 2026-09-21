@@ -352,8 +352,8 @@ export const waypointRoles = (id, touching) => {
 	They remain separate roles rather than one, because the predicates ask different questions --
 	`onEndpoint` gates spawner arming, and a junction can still be armed.
 	*/
-	// TWO terminations is the smallest meet; one is a plain terminus
-	if (terminations > 1) return ['junction'];
+	// THREE is the smallest meet: two is a bend, a fan, or a terminus something else reaches
+	if (terminations > 2) return ['junction'];
 	if (endpoint) roles.push('endpoint');
 	return roles;
 };

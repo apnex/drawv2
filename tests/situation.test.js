@@ -127,8 +127,11 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 		['a terminus is an endpoint', [{ src: 'w', dst: 'a' }], ['endpoint']],
 		['a closed ring has no ends', [{ src: 'w', dst: 'w', closed: true }], []],
 		['threaded plus one terminus is still just a terminus', [{ src: 'a', dst: 'b', via: ['w'] }, { src: 'w', dst: 'c' }], ['endpoint']],
-		['TWO terminations is the smallest meet', [{ src: 'a', dst: 'w' }, { src: 'w', dst: 'b' }], ['junction']],
-		['a star is a junction, not also an endpoint', [{ src: 'w', dst: 'a' }, { src: 'w', dst: 'b' }, { src: 'w', dst: 'c' }], ['junction']],
+		// B214 -- TWO is never a junction. In+out is a path through, which collapses to a bend; two
+		// arrivals or two departures is a terminus something else also reaches.
+		['two, in and out', [{ src: 'a', dst: 'w' }, { src: 'w', dst: 'b' }], ['endpoint']],
+		['two arrivals', [{ src: 'a', dst: 'w' }, { src: 'b', dst: 'w' }], ['endpoint']],
+		['THREE is the smallest meet', [{ src: 'w', dst: 'a' }, { src: 'w', dst: 'b' }, { src: 'w', dst: 'c' }], ['junction']],
 	];
 	for (const [why, links, want] of cases) {
 		assert.deepEqual(waypointRoles('w', links), want, why);
@@ -148,6 +151,7 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 		linksTouching: () => [
 			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001' },
 			{ id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' },
+			{ id: 'link-aa0003', src: 'node-aa0002', dst: 'waypoint-aa0001' },
 		],
 	};
 	const s = situationOf(access, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());

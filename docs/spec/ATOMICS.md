@@ -133,9 +133,16 @@ Superseded by this, not extended.
 A **MEET**: links converge at one grid point and are connected.\
 Symmetric -- no trunk, no taps, no parent link.
 
-**Terminations only.**\
-A link merely bending through a point is not meeting anything there, so two links crossing is a CROSSING and not a junction.\
-That case cannot arise, because linking to a bend SPLITS it -- see below.
+**Terminations only, and more than two of them.**\
+A link merely bending through a point is not meeting anything there, so threading is invisible to the count -- and that case cannot arise anyway, because landing on a bend SPLITS it.
+
+Two terminations is one of three shapes and none is a meet.\
+One in and one out is a path passing THROUGH, which is a bend.\
+Two arrivals, or two departures, is a terminus that something else also reaches or leaves from.\
+Three is the smallest place routes converge.
+
+That keeps the role rule and the collapse rule in agreement: of the three 2-link shapes only in-and-out is expressible as a single bending link, and that is exactly the one `collapseAtWaypoint` accepts.\
+So no waypoint reads as a junction nothing will collapse, and none collapses out from under a role still claiming it.
 
 Engine semantics are intended but unspecified.\
 A junction is a place a mover could plausibly choose a path, which makes it a routing decision point rather than only a visual claim.\

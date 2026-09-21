@@ -855,9 +855,11 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	*/
 	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }]),
 		{ cls: 'bend', circles: 2 }, 'two links THREADED through one point is two bends, not a junction');
+	// B214 -- THREE terminations is the smallest meet; two is a bend, a fan, or a terminus reached twice
 	assert.deepEqual(drawn([{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' },
-		{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' }]),
-		{ cls: 'junction', circles: 3 }, 'two links TERMINATING is a junction, and it draws the ring rather than the pad');
+		{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' },
+		{ id: 'link-aa0003', name: 'n', src: 'node-aa0003', dst: 'waypoint-aa0001' }]),
+		{ cls: 'junction', circles: 3 }, 'three terminations is a junction, and it draws the ring rather than the pad');
 });
 
 test('B209: a waypoint that already has links is a valid link target', async () => {
@@ -935,7 +937,8 @@ test('B212: the junction ring masks what is behind it, as the endpoint pad does'
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }],
 		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' },
-			{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' }],
+			{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' },
+			{ id: 'link-aa0003', name: 'n', src: 'node-aa0002', dst: 'waypoint-aa0001' }],
 		zones: [], groups: [],
 	}));
 	const ring = svg.match(/class="waypoint junction">.*?<circle[^>]*r="7"[^>]*fill="([^"]*)"/s);

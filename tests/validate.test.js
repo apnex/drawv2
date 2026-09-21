@@ -663,3 +663,48 @@ test('B213: a split then a collapse restores the original link, id included', as
 		{ id: 'l1', src: 'a', dst: 'w', via: ['x'] }, { id: 'l2', src: 'w', dst: 'b', via: ['y'] }, 'w');
 	assert.deepEqual(merged.via, ['x', 'w', 'y'], 'the merged route keeps every bend, in order');
 });
+
+/*
+B214: two links at a waypoint is never a junction, whatever direction they point.
+
+The director found a link landing on an endpoint turning it into one. Two terminations is one of
+three shapes and none is a meet: one in and one out is a path passing THROUGH, which is a bend and
+collapses to a single bending link; two arrivals or two departures is a terminus that something
+else also reaches or leaves from.
+
+The rule had counted terminations without asking what shape they made, so all three read alike --
+and it disagreed with `collapseAtWaypoint`, which already refused to treat two inbound links as a
+bend. That disagreement is the real defect: two functions answering the same question differently.
+*/
+test('B214: three terminations is the smallest junction, and the collapse rule agrees', async () => {
+	const { waypointRoles } = await import('../kernel/index.mjs');
+	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
+
+	const shapes = {
+		'in and out': [{ id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'w', dst: 'b' }],
+		'two arrivals': [{ id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'b', dst: 'w' }],
+		'two departures': [{ id: 'l1', src: 'w', dst: 'a' }, { id: 'l2', src: 'w', dst: 'b' }],
+	};
+	for (const [why, links] of Object.entries(shapes)) {
+		assert.deepEqual(waypointRoles('w', links), ['endpoint'], `${why}: two links is not a junction`);
+	}
+
+	assert.deepEqual(waypointRoles('w', [...shapes['in and out'], { id: 'l3', src: 'c', dst: 'w' }]), ['junction'],
+		'three terminations IS a junction');
+
+	/*
+	THE TWO RULES MUST AGREE. Of the three 2-link shapes only in+out is expressible as one bending
+	link, and that is exactly the one the collapse accepts. If either side changes alone, a waypoint
+	either reads as a junction nothing will collapse, or collapses out from under a role that still
+	claims it.
+	*/
+	const collapses = (links) => !!collapseAtWaypoint(links[0], links[1], 'w');
+	assert.equal(collapses(shapes['in and out']), true, 'a path through collapses to a bend');
+	assert.equal(collapses(shapes['two arrivals']), false, 'two arrivals is not a path through anything');
+	assert.equal(collapses(shapes['two departures']), false, 'nor is a fan');
+
+	for (const [why, links] of Object.entries(shapes)) {
+		assert.ok(!waypointRoles('w', links).includes('junction'),
+			`${why}: no 2-link shape may read as a junction while the collapse treats them differently`);
+	}
+});
