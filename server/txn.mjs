@@ -195,10 +195,19 @@ export function plan(model, ops) {
 	same reason: collapsing a pre-existing two-link waypoint would rewrite a shape the caller never
 	mentioned and put that rewrite in its inverse.
 	*/
+	/*
+	ON LOSING A LINK, not on gaining one. The scope was "any waypoint at the end of any link this
+	transaction touched", which included CREATING one -- so drawing two links that met at a
+	waypoint collapsed them into a bend the moment the second was made, and the author could never
+	build a two-link terminus at all.
+
+	A collapse is a reaction to a shape being LEFT BEHIND. Only a removal can leave one.
+	*/
 	const touched = new Set();
 	for (const op of out) {
-		const e = op.entity || (op.kind === 'link' ? model.get('link', op.id) : null);
-		if (op.kind !== 'link' || !e) continue;
+		if (op.kind !== 'link' || op.op !== 'del') continue;
+		const e = op.entity || model.get('link', op.id);
+		if (!e) continue;
 		for (const end of [e.src, e.dst]) if (proj.get('waypoint', end)) touched.add(end);
 	}
 	const merges = [];

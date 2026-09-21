@@ -155,7 +155,10 @@ That is what the sweep was written for -- 64 bends left over from one deleted ri
 **The collapse is the split's inverse, and lives in the server planner.**\
 When a write leaves a waypoint with one link in and one out, the two rejoin into a single link bending through it and the INBOUND link's id survives -- the same id the split kept, so split-then-delete is a round trip back to the route the author drew.
 
-In `server/txn.mjs`, beside the orphan sweep that solves the same shape of problem and already carries the scope rule it needs: only waypoints THIS transaction touched.\
+In `server/txn.mjs`, beside the orphan sweep that solves the same shape of problem and already carries the scope rule it needs: only waypoints THIS transaction touched.
+
+It reacts to a link being REMOVED, never to one being added.\
+A collapse answers a shape left behind, and only a removal can leave one -- scoping it to any touched link collapsed two links into a bend the moment the second was drawn, so a two-link terminus could not be built at all.\
 It was first written in the client's delete command, where it could not see undo or redo -- those are computed server-side and never run a client command -- nor the CLI and REST doors.\
 One rule, one place, every door.
 

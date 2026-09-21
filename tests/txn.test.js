@@ -598,3 +598,53 @@ test('B215: UNDOING the collapse restores the junction exactly', () => {
 	assert.equal(shape(m), before,
 		'undo must restore the junction whole -- the collapse rides in the same transaction, so its inverse does too');
 });
+
+/*
+B217: the collapse reacts to LOSING a link, never to gaining one.
+
+B215's scope was "any waypoint at the end of any link this transaction touched", and creating a
+link touches one. So drawing two links that met at a waypoint collapsed them into a bend the moment
+the second was made -- a two-link terminus could not be built at all, and deleting all the links
+from an endpoint appeared to delete the endpoint, because there had never been two links to lose.
+
+The whole suite passed throughout. It was found by the director trying to do it, and by a repro
+whose own SEED silently collapsed before the test began -- which is why the first assertion here is
+on the setup rather than on the behaviour.
+*/
+test('B217: two links meeting at a waypoint survive being drawn', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)),
+		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
+	] }, 'server', 't');
+
+	assert.equal(m.all('link').length, 2,
+		'creating two links at one waypoint must NOT collapse them -- a collapse reacts to a shape being left behind');
+
+	// and the whole point: removing them both leaves the anchor, not nothing
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0001' }] }, 'server', 't');
+	assert.equal(m.all('waypoint').length, 1, 'the terminus survives losing one link');
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0002' }] }, 'server', 't');
+	assert.equal(m.all('link').length, 0);
+	assert.equal(m.all('waypoint').length, 1, 'and losing the last one leaves a plain anchor');
+});
+
+test('B217: a collapse still fires when a junction LOSES a link', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
+		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'waypoint-aa0001' }),
+	] }, 'server', 't');
+	assert.equal(m.all('link').length, 3, 'precondition: a three-way junction, built without collapsing');
+
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
+	const links = m.all('link');
+	assert.equal(links.length, 1, 'one in and one out is a bend, so they rejoin');
+	assert.equal(links[0].id, 'link-aa0001', 'and the inbound id survives');
+	assert.deepEqual(links[0].via, ['waypoint-aa0001']);
+});
