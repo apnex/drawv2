@@ -742,3 +742,159 @@ test('B214: three terminations is the smallest junction, and the collapse rule a
 			`${why}: no 2-link shape may read as a junction while the collapse treats them differently`);
 	}
 });
+
+/*
+H15.3: a link's direction AT a waypoint, which is the only direction any rule may read.
+
+`src` and `dst` record which end the author dragged from (B222). `flow` is what the author MEANT:
+absent for an undeclared link, true when the flow follows the stored order, false when it runs
+against it. A boolean rather than an end-name because the link already holds two ends, and naming
+one again would be a second record free to disagree with the first after any edit.
+
+`facing` collapses those two facts into the one question every downstream rule asks: standing at
+this waypoint, is the flow arriving, leaving, or is there no flow at all?
+*/
+test('H15.3: facing derives direction at a point, and an undeclared link has none', async () => {
+	const { linkFacing: facing } = await import('../kernel/index.mjs');
+
+	const undeclared = { id: 'l1', src: 'a', dst: 'w' };
+	assert.equal(facing(undeclared, 'w'), null, 'an undeclared link asserts nothing at either end');
+	assert.equal(facing(undeclared, 'a'), null, 'including the end it is stored from');
+
+	// flow: true -- the head is `dst`, so the link ARRIVES at dst and LEAVES from src
+	const forward = { id: 'l2', src: 'a', dst: 'w', flow: true };
+	assert.equal(facing(forward, 'w'), 'in', 'the stored dst is where a forward flow arrives');
+	assert.equal(facing(forward, 'a'), 'out', 'and it leaves the stored src');
+
+	// flow: false -- the same two ends, the opposite meaning
+	const reverse = { id: 'l3', src: 'a', dst: 'w', flow: false };
+	assert.equal(facing(reverse, 'w'), 'out', 'a reversed flow leaves the stored dst');
+	assert.equal(facing(reverse, 'a'), 'in', 'and arrives at the stored src');
+
+	// a point the link merely threads is not an end, so it has no facing there
+	const through = { id: 'l4', src: 'a', dst: 'b', via: ['w'], flow: true };
+	assert.equal(facing(through, 'w'), null, 'a bend is passed through, not faced');
+
+	/*
+	THE POINT OF THE BOOLEAN. Flipping a link's storage must not change what it means, so a
+	declared link that is flipped carries its meaning with it -- which is what makes the B222
+	orientation safe to keep once declarations exist.
+	*/
+	const flipped = { id: 'l5', src: 'w', dst: 'a', flow: false };
+	assert.equal(facing(flipped, 'w'), 'in', 'stored the other way round, still arriving at w');
+	assert.equal(facing(forward, 'w'), facing(flipped, 'w'), 'two storages of one drawing agree');
+});
+
+/*
+H15.4: the collapse matrix -- two links at a waypoint, and what the directions make of them.
+
+B214 ruled that more than two terminations is a junction and two is never one. That was right while
+no link could declare a direction: the three 2-link shapes differed only in stored order, which
+means nothing (B222).
+
+A DECLARATION changes it. Two flows arriving is a convergence and two leaving is a divergence, and
+neither is a path passing through -- so each is a place where flow does something other than
+continue, which is what a junction is. One in and one out still passes through, and is a bend.
+
+So the rule is no longer a count. It is: one termination is an endpoint, two that agree is a bend,
+two that oppose is a junction, three or more is a junction whatever they declare.
+*/
+test('H15.4: two declared flows that oppose make a junction; agreeing ones make a bend', async () => {
+	const { waypointRoles } = await import('../kernel/index.mjs');
+	const w = 'w';
+
+	// UNDECLARED -- unchanged by this rung. No direction, so nothing can oppose: still an endpoint.
+	for (const [why, links] of Object.entries({
+		'in and out': [{ id: 'l1', src: 'a', dst: w }, { id: 'l2', src: w, dst: 'b' }],
+		'two arrivals': [{ id: 'l1', src: 'a', dst: w }, { id: 'l2', src: 'b', dst: w }],
+		'two departures': [{ id: 'l1', src: w, dst: 'a' }, { id: 'l2', src: w, dst: 'b' }],
+	})) {
+		assert.deepEqual(waypointRoles(w, links), ['endpoint'], `${why}: undeclared links cannot oppose`);
+	}
+
+	// DECLARED, AGREEING -- one arrives, one leaves. Flow passes through: a bend adds nothing.
+	const passThrough = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: w, dst: 'b', flow: true }];
+	assert.deepEqual(waypointRoles(w, passThrough), ['endpoint'],
+		'one in and one out is a path through, which is a bend rather than a meet');
+
+	// DECLARED, OPPOSING -- a convergence and a divergence. Both are junctions.
+	const converge = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w, flow: true }];
+	const diverge = [{ id: 'l1', src: w, dst: 'a', flow: true }, { id: 'l2', src: w, dst: 'b', flow: true }];
+	assert.deepEqual(waypointRoles(w, converge), ['junction'], 'two flows arriving is a convergence');
+	assert.deepEqual(waypointRoles(w, diverge), ['junction'], 'two flows leaving is a divergence');
+
+	// ONE DECLARED, ONE NOT -- the undeclared half asserts nothing, so it cannot contradict.
+	const half = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w }];
+	assert.deepEqual(waypointRoles(w, half), ['endpoint'], 'an undeclared link never creates a conflict');
+
+	// THREE OR MORE -- a junction regardless, which B214 already held and this must not disturb.
+	assert.deepEqual(waypointRoles(w, [...passThrough, { id: 'l3', src: 'c', dst: w }]), ['junction'],
+		'three terminations is a junction whatever they declare');
+
+	/*
+	THE RULING, stated as an assertion: a conflict FRAGMENTS the run rather than one declaration
+	overriding the other. Neither link is rewritten -- the waypoint between them simply reads as a
+	junction, so the break is visible exactly where it was authored.
+	*/
+	assert.equal(converge[0].flow, true, 'the earlier declaration is untouched');
+	assert.equal(converge[1].flow, true, 'and so is the later one');
+});
+
+/*
+H15.4: the two readings of `flow` must agree, because there are two of them.
+
+`facing` in model/invariants.mjs and the direction branch of `waypointRoles` in kernel/geometry.mjs
+both decide which way a link points at a waypoint. They are separate because `kernel/` imports no
+`model/` and `model/` imports no `kernel/` -- an independence worth more than one shared boolean.
+
+That is a duplicated rule, which is the shape of half the defects in this register. So it is held by
+a test instead of by an import: every combination, both readings, one answer. If either side is
+edited alone this fails, which is the whole point.
+*/
+test('H15.4: `facing` and `waypointRoles` read a declaration identically', async () => {
+	const { linkFacing, waypointRoles } = await import('../kernel/index.mjs');
+	const w = 'w';
+
+	// The MODEL twin, reached through the collapse that is its only caller. `facing` is not
+	// exported -- two importable spellings of one rule is how a pair starts to drift -- so the
+	// agreement is driven through `collapseAtWaypoint`, which is the behaviour that would break.
+	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
+
+	const cases = [];
+	for (const flow of [true, false, undefined]) {
+		for (const [src, dst] of [[w, 'a'], ['a', w], ['a', 'b']]) {
+			const link = { id: 'l', src, dst, ...(flow === undefined ? {} : { flow }) };
+			if (src !== w && dst !== w) link.via = [w];      // the threading case
+			cases.push(link);
+		}
+	}
+	assert.equal(cases.length, 9, 'every combination of declaration and stored position');
+
+	/*
+	The model's reading is observed through its EFFECT, on the three shapes the matrix names. A
+	pair the kernel calls opposing must be one `collapseAtWaypoint` refuses; a pass-through must be
+	one it merges. If either side's reading of `flow` inverts, exactly these disagree.
+	*/
+	const shapes = {
+		converge: [{ id: 'la', src: 'a', dst: w, flow: true }, { id: 'lb', src: 'b', dst: w, flow: true }],
+		diverge:  [{ id: 'la', src: w, dst: 'a', flow: true }, { id: 'lb', src: w, dst: 'b', flow: true }],
+		through:  [{ id: 'la', src: 'a', dst: w, flow: true }, { id: 'lb', src: w, dst: 'b', flow: true }],
+	};
+	for (const [why, [la, lb]] of Object.entries(shapes)) {
+		const fa = linkFacing(la, w), fb = linkFacing(lb, w);
+		const kernelSaysOpposing = fa === fb;
+		const modelRefused = collapseAtWaypoint(la, lb, w) === null;
+		assert.equal(modelRefused, kernelSaysOpposing,
+			`${why}: kernel reads ${fa}/${fb} but the model ${modelRefused ? 'refused' : 'merged'} -- the twins have drifted`);
+		assert.deepEqual(waypointRoles(w, [la, lb]), kernelSaysOpposing ? ['junction'] : ['endpoint'],
+			`${why}: and the role must follow the same reading`);
+	}
+
+	/*
+	AND THE DUPLICATE IS REALLY THE ONE IN USE. Comparing a local copy to `facing` would pass even
+	if `waypointRoles` ignored direction entirely, so this drives the real function: two flows
+	arriving must read as a junction, which only the kernel's own branch can produce.
+	*/
+	assert.deepEqual(waypointRoles(w, [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w, flow: true }]),
+		['junction'], 'the kernel branch under test is the one deciding');
+});

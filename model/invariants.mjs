@@ -113,7 +113,41 @@ matrix is in `docs/spec/ATOMICS.md`. Until then every link is symmetric and only
 
 Returns the merged link, or null when the pair cannot describe a path through the point.
 */
-const flip = (l) => ({ ...l, src: l.dst, dst: l.src, ...(l.via ? { via: [...l.via].reverse() } : {}) });
+/*
+H15.3 -- which way a link faces AT a point, and the only direction any rule may read.
+
+`src` and `dst` say which end the author dragged from; `flow` says what the author MEANT. Absent is
+undeclared -- the default, and what every link written before this field carries. `true` means the
+flow follows the stored order, `false` that it runs against it.
+
+A boolean rather than an end-name because the link already holds two ends. Naming one again would
+be a second record of the same fact, free to disagree with `src` and `dst` after any edit that
+changes them -- which is the exact shape of defect B222 was.
+
+Returns `in`, `out`, or null. Null covers two different absences and deliberately does not
+distinguish them: an undeclared link has no direction anywhere, and a declared link has none at a
+point it merely threads. Both mean "this point imposes no direction", which is all a caller needs.
+
+NOT EXPORTED. `collapseAtWaypoint` below is its only caller, and the twin every other module reaches
+for is `linkFacing` in kernel/geometry.mjs -- exported there because the test holding the two to
+agreement must drive the real function rather than a copy. Exporting this one as well would offer
+two importable spellings of one rule, which is how the pair starts to drift.
+*/
+function facing(link, pointId) {
+	if (typeof link.flow !== 'boolean') return null;        // undeclared: symmetric, no direction
+	const head = link.flow ? link.dst : link.src;           // where the flow is going
+	const tail = link.flow ? link.src : link.dst;
+	if (pointId === head) return 'in';
+	if (pointId === tail) return 'out';
+	return null;                                            // a via, not an end
+}
+
+/*
+Flipping carries `flow` with it. A flipped link stores its ends the other way round, so a
+declaration expressed relative to that order must invert to mean the same thing -- which is what
+makes the B222 orientation safe to keep once declarations exist.
+*/
+const flip = (l) => ({ ...l, src: l.dst, dst: l.src, ...(typeof l.flow === 'boolean' ? { flow: !l.flow } : {}), ...(l.via ? { via: [...l.via].reverse() } : {}) });
 
 export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	if (!inbound || !outbound || inbound.id === outbound.id) return null;
@@ -126,8 +160,26 @@ export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	const a = inbound.dst === waypointId ? inbound : flip(inbound);
 	const b = outbound.src === waypointId ? outbound : flip(outbound);
 	if (a.src === b.dst) return null;                           // would be a self-link
+	/*
+	H15.3 -- THE MERGED LINK'S DECLARATION, decided by what the two halves declare rather than by
+	whichever happened to keep its id.
+
+	Both are now oriented to face through the point, so `facing` reads each half at the waypoint:
+	the src side should be arriving and the dst side leaving. When both agree the flow passes
+	through and the merged link carries it. When only one is declared the merged link inherits it,
+	because an undeclared half asserts nothing and cannot contradict.
+
+	Two halves that OPPOSE do not merge here at all -- that pair is a junction, not a bend, and
+	the matrix in docs/spec/ATOMICS.md is where that is decided (H15.4). Until the matrix lands
+	this cannot be reached: the planner only offers pairs it already believes are a bend.
+	*/
+	const fa = facing(a, waypointId), fb = facing(b, waypointId);
+	if (fa && fb && fa === fb) return null;                     // both arriving or both leaving
+	const flow = fa ? a.flow : (fb ? b.flow : undefined);
 	const via = [...(a.via || []), waypointId, ...(b.via || [])];
-	return { ...a, src: a.src, dst: b.dst, via };
+	const merged = { ...a, src: a.src, dst: b.dst, via };
+	if (typeof flow === 'boolean') merged.flow = flow; else delete merged.flow;
+	return merged;
 }
 
 export function splitAtBend(link, waypointId) {

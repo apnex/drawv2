@@ -296,6 +296,22 @@ Two opposing declarations on one run **fragment it**: the waypoint between them 
 This is not a special case but the general rule arriving where it applies.\
 The alternative -- latest declaration wins and overwrites the earlier one -- was rejected because it silently rewrites an authored decision whose only evidence is a change somewhere off-screen.
 
+### How a declaration is stored
+
+`flow`, an optional boolean on a link.\
+Absent means undeclared, and absent is the default for every link that exists today, so no document needs migrating.
+
+It is a boolean rather than an end-name because the link already has two ends.\
+`flow: true` means the flow follows the stored order, `src` to `dst`; `flow: false` means it runs against that order.\
+Naming an end instead -- `flow: 'waypoint-a26971'` -- would be a second place the endpoints are recorded, free to disagree with `src` and `dst` after any edit that changes them.
+
+**A declaration stores only itself.**\
+No ordering, no timestamp, no precedence.\
+Two conflicting declarations are resolved by GEOMETRY, at the waypoint where they meet, rather than by which was authored later -- so nothing needs to remember when a declaration was made.
+
+The direction a link presents AT a waypoint is derived: `flow` says which stored end is the head, and the waypoint is either that end, the other, or neither.\
+No rule reads `src` or `dst` directly; they ask the link which way it faces at the point in question.
+
 ### Packets
 
 A junction passes packets, and what it does with one depends on **how much the packet knows**.

@@ -31,7 +31,7 @@ export const COMPOSITE = {
 // may be absent from a stored entity (pre-dates the field, or is genuinely optional)
 export const OPTIONAL = {
 	node:     new Set(['shape', 'span', 'content']),
-	link:     new Set(['via', 'closed']),
+	link:     new Set(['via', 'closed', 'flow']),
 	group:    new Set(),
 	zone:     new Set(),
 	/*

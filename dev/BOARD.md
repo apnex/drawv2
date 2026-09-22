@@ -810,18 +810,23 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 |---|---|---|---|---|
 | H15.1 | A collapse reads the COUNT, not the stored order -- orient the pair rather than refuse it | **B222** | **S2** | `DONE` |
 | H15.2 | Share `collapseAtWaypoint` so the client predicts the collapse it cannot currently see coming -- FOLDED INTO H15.4, which rewrites the rule the projection would carry | **B221** | S4 | `BLOCKED` |
-| H15.3 | Declared direction: a validated field, a gesture to set and clear it, an arrowhead | feature | S3 | `BLOCKED` |
-| H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` takes direction | feature | S3 | `TODO` |
+| H15.3 | `flow`, the declared direction: an optional boolean, validated, surviving a collapse that flips the link | feature | S3 | `DONE` |
+| H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` reads direction | feature | S3 | `DONE` |
+| H15.6 | The gesture and the arrowhead -- declaring a direction from the canvas, and seeing it | feature | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
-**Blocked on a director ruling.**\
-H15.5 offers two ways to resolve two opposing declarations on one run, and the choice decides what H15.3 must store, so it gates the rung before it rather than its own.
+**Ruled 2026-09-22 by the director: FRAGMENT.**\
+Two opposing declarations on one run do not fight.\
+The waypoint between them holds two links that oppose, which the matrix already calls a junction, so the run breaks there and the conflict is visible exactly where it was authored.
 
-- **Fragment** -- the waypoint between them has two links that oppose, which the table already calls a junction, so the conflict becomes visible where it happened. The general rule arriving where it applies rather than a new one.
-- **Latest wins** -- the newer declaration overrides the run. Fewer surprises mid-path, at the cost of silently rewriting an authored decision whose only evidence is a change somewhere off-screen.
+This is the general rule arriving where it applies rather than a new one, and it keeps the alternative's failure out: latest-wins would silently rewrite an authored decision whose only evidence is a change somewhere off-screen, which is the shape B220 had.
 
-The argued preference is FRAGMENT, on the grounds that a silent rewrite is the shape B220 had: a real state change with no surface.\
-Not ruled.
+The consequence for H15.3 is that a declaration stores only ITSELF.\
+No ordering, no timestamps, no precedence -- the conflict is resolved by geometry rather than by history.
+
+**H15.3 and H15.4 landed together**, because the rung boundary was wrong.\
+`facing` is a primitive with no consumer until something asks what the directions MAKE of a waypoint, and the dead-code scanner said so: the field and its reading were test-only until the matrix arrived to use them.\
+The gesture and the arrowhead split out as H15.6 instead -- they are the surface, and the rule underneath them is now provable without one.
 
 **Exit:** an author declares flow once on a path and sees it end to end, a bend survives whichever way it was drawn, and no rule anywhere reads a direction nobody asserted.
 

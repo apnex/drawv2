@@ -330,6 +330,23 @@ different gestures and the count could not tell them apart.
 
 A closed ring still has no ends, so nothing on one ever terminates.
 */
+/*
+Which way a link faces at a point: `in`, `out`, or null for an undeclared link or a point it merely
+threads. The twin of `facing` in model/invariants.mjs, which cannot be imported here -- `kernel/`
+depends on no `model/` and the reverse, an independence worth more than one boolean.
+
+Exported so the agreement between the twins is driven against THIS function rather than a copy
+re-typed in a test, which would pass while the real one drifted.
+*/
+export const linkFacing = (link, pointId) => {
+	if (typeof link.flow !== 'boolean') return null;
+	const head = link.flow ? link.dst : link.src;
+	const tail = link.flow ? link.src : link.dst;
+	if (pointId === head) return 'in';
+	if (pointId === tail) return 'out';
+	return null;
+};
+
 export const waypointRoles = (id, touching) => {
 	const roles = [];
 	let terminations = 0;
@@ -352,8 +369,35 @@ export const waypointRoles = (id, touching) => {
 	They remain separate roles rather than one, because the predicates ask different questions --
 	`onEndpoint` gates spawner arming, and a junction can still be armed.
 	*/
-	// THREE is the smallest meet: two is a bend, a fan, or a terminus something else reaches
+	// THREE is the smallest meet regardless of what anything declares
 	if (terminations > 2) return ['junction'];
+
+	/*
+	H15.4 -- TWO CAN BE A JUNCTION TOO, once a direction can be declared.
+
+	B214 ruled that two terminations is never a meet, and that was right while no link could say
+	which way it flowed: the three 2-link shapes differed only in stored order, which means nothing
+	(B222). A DECLARATION changes it. Two flows arriving is a convergence, two leaving is a
+	divergence, and neither is a path passing through -- each is a place where flow does something
+	other than continue, which is what a junction is.
+
+	`flow` is read the same way `facing` in model/invariants.mjs reads it, and the two are held to
+	agree by test rather than by a shared import: `kernel/` imports no `model/` and `model/` imports
+	no `kernel/`, which is a deliberate independence neither should lose for one boolean.
+
+	An UNDECLARED link has no direction and so cannot oppose anything -- which keeps every document
+	written before this field reading exactly as it did.
+	*/
+	if (terminations === 2) {
+		const dirs = [];
+		for (const t of touching || []) {
+			if (t.closed) continue;
+			const d = linkFacing(t, id);
+			if (d) dirs.push(d);
+		}
+		if (dirs.length === 2 && dirs[0] === dirs[1]) return ['junction'];
+	}
+
 	if (endpoint) roles.push('endpoint');
 	return roles;
 };

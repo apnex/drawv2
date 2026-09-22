@@ -45,6 +45,21 @@ const ALLOW = {
 		+ 'a coincidence of field names -- and would put a superclass between each and the thing it '
 		+ 'actually does. The 57% start() pair reported alongside this one WAS real and was extracted '
 		+ 'to paintloop.js:loop.',
+
+	'kernel/geometry.mjs:linkFacing <-> model/invariants.mjs:facing':
+		'H15.4 -- one rule, two layers that deliberately do not import each other. `kernel/` reaches '
+		+ 'for no `model/` and `model/` reaches for no `kernel/`: the kernel draws and the model '
+		+ 'rules, and every other shared fact between them travels as DATA. Extracting this would '
+		+ 'mean a third module both depend on, which buys a shared six-line boolean at the cost of '
+		+ 'the independence -- a bad trade for reading one field. '
+		+ 'The drift this scanner exists to catch is instead held by a test: '
+		+ 'tests/validate.test.js drives the REAL `linkFacing` against the model\'s reading observed '
+		+ 'through `collapseAtWaypoint`, over the three shapes the collapse matrix names, and '
+		+ 'inverting the kernel side fails it. An earlier version of that test compared `facing` to a '
+		+ 'copy of the logic re-typed in the test file, which passed with the kernel inverted -- so '
+		+ 'the guard is only worth anything because it reaches the exported function. '
+		+ 'REVISIT when the capability pack lands (H15.6): a `routable` pack owning role derivation '
+		+ 'and the collapse together would give this rule one home, and this entry should go with it.',
 };
 
 function walk(dir, out = []) {

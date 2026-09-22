@@ -237,7 +237,10 @@ const FIELDS = {
 		src: (v) => id(v, 'node') || id(v, 'waypoint'),   // endpoint = node OR waypoint
 		dst: (v) => id(v, 'node') || id(v, 'waypoint'),
 		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'waypoint')),
-		closed: (v) => typeof v === 'boolean'             // a routed link looped dst → src (render-only)
+		closed: (v) => typeof v === 'boolean',            // a routed link looped dst → src (render-only)
+		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; true means the
+		// flow follows the stored order, false that it runs against it. See `facing` in model/invariants.mjs.
+		flow: (v) => typeof v === 'boolean'
 	},
 	zone: {
 		id: (v) => id(v, 'zone'),

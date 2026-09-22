@@ -238,7 +238,12 @@ export function plan(model, ops) {
 		// right order, so writing only dst and via was sufficient; now that the src side may be
 		// flipped to face through the point, omitting it left the merged link still ending at the
 		// waypoint it was supposed to absorb.
-		const patch = { src: merged.src, dst: merged.dst, via: merged.via };
+		// FLOW travels with SRC, for the same reason. A declaration is expressed relative to the
+		// stored order, so a flip that inverts `flow` in the merged object but does not write it
+		// leaves the document declaring the opposite of what the author meant -- silently, since
+		// every other field looks right. Omitted only when the link was undeclared.
+		const patch = { src: merged.src, dst: merged.dst, via: merged.via,
+			...(typeof merged.flow === 'boolean' ? { flow: merged.flow } : {}) };
 		merges.push({ op: 'del', kind: 'link', id: outbound.id },
 			{ op: 'set', kind: 'link', id: inbound.id, patch });
 		/*

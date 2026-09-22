@@ -743,3 +743,67 @@ test('B220: a caption the commit accepts survives a reload', async () => {
 	assert.equal(over.ok, false, 'past the limit the commit must refuse');
 	assert.match(over.error, /caption is \d+ characters/, 'and say what was wrong with it');
 });
+
+/*
+H15.3: a declared direction survives the commit, the reload, and a flip.
+
+B220's lesson, applied before the defect rather than after: what the commit door accepts, the boot
+door must load. A new optional field is exactly where those two drift, because the write path and
+`validateDoc` are separate lists that nothing forces to agree.
+
+The flip case is the one worth guarding. `collapseAtWaypoint` may reverse a link's storage to face
+a pair through a point (B222), and a declaration is expressed RELATIVE to that storage -- so if the
+flip did not invert `flow`, a collapse would silently reverse what the author declared.
+*/
+test('H15.3: a declared flow round-trips, and a collapse that flips preserves its meaning', async () => {
+	const { m, log } = fresh();
+	// the kernel twin -- the model's own `facing` is internal, and these two are held to agree in
+	// tests/validate.test.js, so either spelling reads the same declaration
+	const { linkFacing: facing } = await import('../kernel/index.mjs');
+	const { validateDoc } = await import('../server/validate.js');
+	// `fresh()` mints no document id, and validateDoc checks meta first -- without this the round
+	// trip would fail on the fixture rather than on the field under test
+	const loadable = () => { const d = m.toJSON(); d.meta.id = 'diagram-cc0001'; d.meta.name = 'flow'; return d; };
+
+	commit(m, log, { ops: [
+		put('node', node('node-cc0001', -120)), put('node', node('node-cc0002', 120)), put('node', node('node-cc0003', 240)),
+		put('waypoint', { id: 'waypoint-cc0001', name: 'w', x: 0, y: 0 }),
+		// all three stored OUTWARD from the waypoint, so a collapse must flip one of them. Three
+		// DISTINCT far ends -- a repeated endpoint pair is refused as a duplicate, which would
+		// leave the fixture with two links and collapse it before the test began (the B217 trap).
+		// A PASS-THROUGH, declared. Both store the waypoint as `src`, so both need flipping -- but
+		// cc0001 declares flow AGAINST its storage, meaning it arrives at the waypoint, while
+		// cc0002 declares flow WITH its storage, meaning it leaves. One in, one out: a bend.
+		// (Both declared the same way would be two flows leaving one point, which is a divergence
+		// and stays a junction -- that case is the matrix's, H15.4.)
+		put('link', { id: 'link-cc0001', name: 'l1', src: 'waypoint-cc0001', dst: 'node-cc0001', flow: false }),
+		put('link', { id: 'link-cc0002', name: 'l2', src: 'waypoint-cc0001', dst: 'node-cc0002', flow: true }),
+		put('link', { id: 'link-cc0003', name: 'l3', src: 'waypoint-cc0001', dst: 'node-cc0003' }),
+	] }, 'server', 't');
+
+	assert.equal(m.all('link').length, 3, 'precondition: three links, every one stored outward');
+	// SNAPSHOT, not a live reference. `m.get` hands back the model's own object, so holding it
+	// across the collapse compares a value to itself -- the aliasing form of a vacuous test, and
+	// the same trap as B217 where a fixture was rewritten before the assertions ran.
+	const before = { ...m.get('link', 'link-cc0001') };
+	assert.equal(before.flow, false, 'the commit door accepted a declared flow');
+	assert.equal(facing(before, 'waypoint-cc0001'), 'in', 'and it means: arriving at the waypoint');
+	assert.equal(facing(before, 'node-cc0001'), 'out', 'having left node-cc0001');
+
+	// what the write accepted, the boot must load -- the B220 round trip
+	assert.equal(validateDoc(loadable()), null, 'a document carrying `flow` must reload');
+
+	// now force a collapse that has to flip one half
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-cc0003' }] }, 'server', 't');
+	const merged = m.all('link').find((l) => (l.via || []).includes('waypoint-cc0001'));
+	assert.ok(merged, 'precondition: the two survivors collapsed to a bend');
+
+	/*
+	THE MEANING MUST SURVIVE THE STORAGE CHANGE. Whichever way the merged link is now stored, the
+	flow still has to arrive where the author said it arrives.
+	*/
+	assert.equal(facing(merged, 'node-cc0001'), facing(before, 'node-cc0001'),
+		'a flip must invert `flow` too, or the collapse silently reverses what the author declared');
+	assert.equal(facing(merged, 'node-cc0002'), 'in', 'and the merged path still ends where the flow was going');
+	assert.equal(validateDoc(loadable()), null, 'and the merged document still loads');
+});
