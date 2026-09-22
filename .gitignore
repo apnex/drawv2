@@ -41,3 +41,6 @@ cli/.draw_context
 # because the gate cannot see a directory it is configured to ignore.
 deploy/
 
+
+# a connection code is a credential -- it lives outside the repo (see B223)
+key
