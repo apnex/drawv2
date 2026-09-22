@@ -215,14 +215,32 @@ export function plan(model, ops) {
 	for (const w of touched) {
 		const at = proj.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 		if (at.length !== 2) continue;
-		const inbound = at.find((l) => l.dst === w);
-		const outbound = at.find((l) => l.src === w);
-		const merged = inbound && outbound ? collapseAtWaypoint(inbound, outbound, w) : null;
+		/*
+		B222 -- PICK A PAIR, do not demand a stored orientation.
+
+		This chose `inbound` by `l.dst === w` and `outbound` by `l.src === w`, so two links that both
+		stored `w` as their src found no inbound and the collapse silently declined. Stored order is
+		which end the author dragged from; for an undeclared link it means nothing, and reading it
+		here made a bend's survival depend on a gesture several steps earlier.
+
+		The src side is the link that ENDS at the waypoint, preferred so the original id survives a
+		split-then-collapse round trip (B213). When neither ends here, `collapseAtWaypoint` orients
+		them; when both do, the other is flipped. Order within the pair is all that is decided here.
+		*/
+		const src = at.find((l) => l.dst === w) || at[0];
+		const other = at.find((l) => l !== src);
+		const merged = other ? collapseAtWaypoint(src, other, w) : null;
 		if (!merged) continue;
+		const inbound = src, outbound = other;
 		// `patch`, not `after` -- `after` is the COMMAND vocabulary and applyOps reads `patch`. The
 		// first version used the command spelling, so the del landed and the merge silently did not.
+		// SRC travels in the patch too. It never changed while the pair had to arrive stored in the
+		// right order, so writing only dst and via was sufficient; now that the src side may be
+		// flipped to face through the point, omitting it left the merged link still ending at the
+		// waypoint it was supposed to absorb.
+		const patch = { src: merged.src, dst: merged.dst, via: merged.via };
 		merges.push({ op: 'del', kind: 'link', id: outbound.id },
-			{ op: 'set', kind: 'link', id: inbound.id, patch: { dst: merged.dst, via: merged.via } });
+			{ op: 'set', kind: 'link', id: inbound.id, patch });
 		/*
 		`inverseOfSet` rather than a hand-rolled patch, because it already solves the case that bit
 		here: a collapse INTRODUCES `via` on a link that had none, and restoring it with
@@ -230,7 +248,7 @@ export function plan(model, ops) {
 		be byte-identical to what stood before it, or a document drifts a little on every undo --
 		so when a patch introduces a key, the inverse is a `put` of the whole prior entity.
 		*/
-		inv.unshift(inverseOfSet('link', inbound, { dst: merged.dst, via: merged.via }),
+		inv.unshift(inverseOfSet('link', inbound, patch),
 			{ op: 'put', kind: 'link', entity: clone('link', outbound) });
 	}
 	if (merges.length) {

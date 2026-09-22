@@ -785,6 +785,42 @@ Also out: skip, a queue bound, multiple drafts, auto-commit, and any declarative
 
 ---
 
+## H15 -- directed paths - `WIP`
+
+Opened 2026-09-22 by two defects the director found on a live diagram, which share one cause.\
+A link's `src` and `dst` record which end the author dragged from.\
+Nothing more -- and the collapse rule read that stored order as though the author had meant it.
+
+**The failure that opened it.**\
+Delete the source-side link of a three-way junction and both survivors store the waypoint as their `src`.\
+The planner looks for one arriving and one leaving, finds no arrival, and declines -- silently.\
+No further gesture recovers it, because nothing in the model reverses a link's direction, so the document sits in a state the rule cannot reach.\
+The director's experiment isolated it exactly: hold topology, counts and waypoint identical, vary only the drag direction; one order collapses and the other does not.
+
+**The correction.**\
+No rule may branch on `src`/`dst` ordering unless the link carries a DECLARED direction.\
+An undeclared link is symmetric, so drawing A to B and drawing B to A are the same diagram and every rule must agree that they are.
+
+**What declaring direction then buys.**\
+Direction becomes a property the author asserts and the canvas shows, inheriting along a run of bends so an end-to-end path costs one gesture.\
+A waypoint's character follows from what meets there: one link is an endpoint, two that agree is a bend, two that oppose or three or more is a junction -- a junction being where flow does something other than continue.\
+Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H15.1 | A collapse reads the COUNT, not the stored order -- orient the pair rather than refuse it | **B222** | **S2** | `DONE` |
+| H15.2 | Share `collapseAtWaypoint` so the client predicts the collapse it cannot currently see coming | **B221** | S3 | `TODO` |
+| H15.3 | Declared direction: a validated field, a gesture to set and clear it, an arrowhead | feature | S3 | `TODO` |
+| H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` takes direction | feature | S3 | `TODO` |
+| H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
+
+**Exit:** an author declares flow once on a path and sees it end to end, a bend survives whichever way it was drawn, and no rule anywhere reads a direction nobody asserted.
+
+**Not in this milestone:** the capability pack that would own these rules as one unit, the waypoint/node unification behind it, and packet movement over the graph.\
+Each is large enough to deserve its own design pass, and the pack boundary should be drawn around rules we have watched behave rather than ones we have only reasoned about (**AG-5**).
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\

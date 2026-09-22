@@ -650,6 +650,46 @@ test('B217: a collapse still fires when a junction LOSES a link', () => {
 });
 
 /*
+B222: an UNDECLARED link has no direction, so a collapse may read only the COUNT.
+
+`src` and `dst` record which end the author happened to drag from. Nothing more. The planner read
+that stored order as though it were meant -- `inbound` by `l.dst === w`, `outbound` by `l.src === w`
+-- so a waypoint whose two survivors both stored `w` as their `src` found no inbound, returned null,
+and silently declined to collapse.
+
+The state it left was UNREACHABLE. No operation reverses a link's direction, so every further
+gesture re-entered the same branch and declined again. A live diagram sat at three outward links
+across twenty commits.
+
+The director's experiment is the falsifier, and it is exact: hold topology, counts and waypoint
+identical, vary ONLY the direction of the drag. One order collapsed and the other did not, which no
+explanation but stored order survives.
+
+Two links at a waypoint, both stored outward -- geometrically a bend, and it must rejoin as one.
+*/
+test('B222: two links stored in the SAME direction still collapse -- order is not direction', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-bb0001', -120)), put('node', node('node-bb0002', 120)), put('node', node('node-bb0003', 240)),
+		put('waypoint', { id: 'waypoint-bb0001', name: 'w', x: 0, y: 0 }),
+		// every link stores the WAYPOINT as its src -- the shape a junction is left in when the
+		// link that happened to point inward is the one deleted
+		put('link', { id: 'link-bb0001', name: 'l1', src: 'waypoint-bb0001', dst: 'node-bb0001' }),
+		put('link', { id: 'link-bb0002', name: 'l2', src: 'waypoint-bb0001', dst: 'node-bb0002' }),
+		put('link', { id: 'link-bb0003', name: 'l3', src: 'waypoint-bb0001', dst: 'node-bb0003' }),
+	] }, 'server', 't');
+	assert.equal(m.all('link').length, 3, 'precondition: three links, every one stored outward');
+
+	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-bb0003' }] }, 'server', 't');
+	const links = m.all('link');
+	assert.equal(links.length, 1, 'two undeclared links at a waypoint are a bend whatever their stored order');
+	assert.equal(links[0].via.length, 1, 'and the waypoint survives as the bend between them');
+	assert.deepEqual(links[0].via, ['waypoint-bb0001']);
+	const ends = [links[0].src, links[0].dst].sort();
+	assert.deepEqual(ends, ['node-bb0001', 'node-bb0002'], 'the merged link spans what the two survivors reached');
+});
+
+/*
 B220: what the commit door accepts, the boot door must load.
 
 A beat caption was written with a bare `String(request.caption)` and no length test, while

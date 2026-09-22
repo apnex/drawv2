@@ -647,13 +647,27 @@ test('B213: a split then a collapse restores the original link, id included', as
 	assert.deepEqual(back.via, orig.via, 'and the route through the waypoint');
 
 	/*
-	A fan is not a bend. Two links both pointing AWAY from the waypoint is two routes starting at
-	one place, not one passing through, so there is no src side and nothing to collapse.
+	B222 -- A FAN WAS NEVER A FAN. Two links both stored pointing away from the waypoint looked like
+	two routes starting at one place, and that reading is what this test used to assert. It was
+	wrong: `src` and `dst` record which end the author dragged from, and an undeclared link asserts
+	nothing by storing one end first, so those two links are one path written awkwardly.
+
+	Both orientations now collapse, and the ends are ORIENTED to face through the point rather than
+	refused. What must still refuse is a pair that cannot describe a path at all.
 	*/
 	for (const [why, a, b] of [
 		['both point away', { id: 'l1', src: 'w', dst: 'a' }, { id: 'l2', src: 'w', dst: 'b' }],
 		['both point in', { id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'b', dst: 'w' }],
+	]) {
+		const back = collapseAtWaypoint(a, b, 'w');
+		assert.ok(back, `${why}: stored order is not direction, so this is a bend`);
+		assert.deepEqual([back.src, back.dst].sort(), ['a', 'b'], `${why}: and it spans what the pair reached`);
+		assert.deepEqual(back.via, ['w'], `${why}: through the waypoint it absorbed`);
+	}
+
+	for (const [why, a, b] of [
 		['would self-link', { id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'w', dst: 'a' }],
+		['neither terminates here', { id: 'l1', src: 'a', dst: 'b', via: ['w'] }, { id: 'l2', src: 'c', dst: 'd', via: ['w'] }],
 	]) {
 		assert.equal(collapseAtWaypoint(a, b, 'w'), null, `${why}: must not collapse`);
 	}
@@ -675,6 +689,13 @@ else also reaches or leaves from.
 The rule had counted terminations without asking what shape they made, so all three read alike --
 and it disagreed with `collapseAtWaypoint`, which already refused to treat two inbound links as a
 bend. That disagreement is the real defect: two functions answering the same question differently.
+
+B222 settled the disagreement the other way. The shapes differ only in STORED ORDER, which records
+which end the author dragged from and means nothing on an undeclared link, so all three are one
+drawing and all three collapse. Two functions answering alike, as this test has always demanded.
+
+The distinction returns when direction can be DECLARED: two flows arriving is a convergence and
+stays a junction. That is a rule about meaning the author asserted, not about field order.
 */
 test('B214: three terminations is the smallest junction, and the collapse rule agrees', async () => {
 	const { waypointRoles } = await import('../kernel/index.mjs');
@@ -697,11 +718,24 @@ test('B214: three terminations is the smallest junction, and the collapse rule a
 	link, and that is exactly the one the collapse accepts. If either side changes alone, a waypoint
 	either reads as a junction nothing will collapse, or collapses out from under a role that still
 	claims it.
+
+	B222 REVERSED WHICH WAY THEY AGREE, and the invariant above is unchanged by it.
+
+	All three shapes were once expected to differ: only in+out collapsed, because stored order was
+	read as though it meant something. It does not -- `src` and `dst` record which end the author
+	dragged from, so the three shapes here are ONE drawing written three ways, and a rule that
+	treated them differently made a bend's survival depend on an earlier gesture.
+
+	So all three now collapse, and all three still read as `endpoint` rather than `junction`. The
+	two rules agree as strictly as before; they simply agree that two undeclared links are a bend.
+
+	When direction can be DECLARED, two arrivals becomes a convergence and stays a junction -- and
+	this assertion comes back for declared links only. See `docs/spec/ATOMICS.md`.
 	*/
 	const collapses = (links) => !!collapseAtWaypoint(links[0], links[1], 'w');
-	assert.equal(collapses(shapes['in and out']), true, 'a path through collapses to a bend');
-	assert.equal(collapses(shapes['two arrivals']), false, 'two arrivals is not a path through anything');
-	assert.equal(collapses(shapes['two departures']), false, 'nor is a fan');
+	for (const [why, links] of Object.entries(shapes)) {
+		assert.equal(collapses(links), true, `${why}: undeclared links carry no direction, so this is a bend`);
+	}
 
 	for (const [why, links] of Object.entries(shapes)) {
 		assert.ok(!waypointRoles('w', links).includes('junction'),

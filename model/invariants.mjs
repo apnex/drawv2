@@ -90,19 +90,44 @@ THE SRC-SIDE ID WINS, meaning the link whose `dst` is the waypoint: it carries t
 start, so after a split it is the half that kept the original id. Rejoining therefore restores the
 id the author drew, and split-then-collapse is a round trip rather than a churn of identities.
 
-REQUIRES ONE IN AND ONE OUT. Two links both pointing away from a waypoint is not a path through
-anything -- it is two routes starting at the same place, a fan rather than a bend -- so there is no
-src side and nothing to collapse. Same for two both pointing in.
+B222 CORRECTS WHAT THIS ONCE REQUIRED, and the superseded reasoning is kept because it reads as
+sound. It said: two links both pointing away from a waypoint is a fan rather than a bend, so there
+is no src side and nothing to collapse. That is true of DECLARED direction and false of stored
+order, and until direction could be declared the code had no way to tell the two apart.
 
-Returns the merged link, or null when the pair does not describe a path through the point.
+`src` and `dst` record which end the author dragged from. An undeclared link asserts nothing by
+storing one end first, so `a->w` plus `w->b` and `w->a` plus `w->b` are the same drawing, and a rule
+that collapses the first but not the second is reading an intention nobody expressed.
+
+The consequence was not a wrong merge but a MISSING one, silently: a three-way junction that lost
+the link happening to point inward left two outward links, no `inbound`, null, and no further
+gesture could recover it -- nothing reverses a link's direction.
+
+So the pair is ORIENTED rather than refused. Whichever link ends at the waypoint is treated as the
+src side; if both do, or neither does, one is flipped to face through. Flipping is safe precisely
+because the link is undeclared: reversing a symmetric link changes no meaning.
+
+WHEN DIRECTION CAN BE DECLARED this function takes it as an input and the old paragraph comes back
+into force for declared links -- two flows both arriving is a convergence and stays a junction. The
+matrix is in `docs/spec/ATOMICS.md`. Until then every link is symmetric and only the count matters.
+
+Returns the merged link, or null when the pair cannot describe a path through the point.
 */
+const flip = (l) => ({ ...l, src: l.dst, dst: l.src, ...(l.via ? { via: [...l.via].reverse() } : {}) });
+
 export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	if (!inbound || !outbound || inbound.id === outbound.id) return null;
 	if (inbound.closed || outbound.closed) return null;
-	if (inbound.dst !== waypointId || outbound.src !== waypointId) return null;
-	if (inbound.src === outbound.dst) return null;              // would be a self-link
-	const via = [...(inbound.via || []), waypointId, ...(outbound.via || [])];
-	return { ...inbound, src: inbound.src, dst: outbound.dst, via };
+	// both must actually TERMINATE here -- a link merely threading the point as a via is not a
+	// half of anything, and orienting it would invent an end it does not have
+	const ends = (l) => l.src === waypointId || l.dst === waypointId;
+	if (!ends(inbound) || !ends(outbound)) return null;
+	// face them through the point: the src side ends at it, the dst side leaves it
+	const a = inbound.dst === waypointId ? inbound : flip(inbound);
+	const b = outbound.src === waypointId ? outbound : flip(outbound);
+	if (a.src === b.dst) return null;                           // would be a self-link
+	const via = [...(a.via || []), waypointId, ...(b.via || [])];
+	return { ...a, src: a.src, dst: b.dst, via };
 }
 
 export function splitAtBend(link, waypointId) {

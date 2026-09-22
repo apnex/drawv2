@@ -116,8 +116,12 @@ Mockups: `dev/design/sim/star.mjs` (5x5: node +/-20 vs single-cell group +/-26) 
 
 ---
 
-## Labels & direction [DEFERRED]
-Link/node labels and link direction (arrowheads / directionality) are **deferred until routing and handle mechanics are locked** - they layer on top of the substrate and must not constrain it.
+## Labels & direction [DIRECTION DESIGNED 2026-09-22, labels still deferred]
+Link/node **labels** remain deferred until routing and handle mechanics are locked - they layer on top of the substrate and must not constrain it.
+
+Link **direction** is no longer deferred.\
+The condition this deferral named has been met: handle mechanics locked with the junction, and routing is specified below.\
+See "Declared direction and the collapse matrix".
 
 ---
 ## Waypoint sub-types: the junction [BUILT 2026-09-19, one part open]
@@ -241,3 +245,79 @@ Both are the same shape -- the grid cannot say "coincident but unconnected".
 
 Built as B206 through B209, each step guarded before the next: the two checks split with no behaviour change, sharing relaxed, roles made a set, and the layers rendered.\
 The capability probe behind the sub-type model is recorded in [`../../dev/DECISIONS.md`](../../dev/DECISIONS.md) under the staged universal node.
+
+---
+## Declared direction and the collapse matrix [DESIGNED 2026-09-22]
+
+A link has a **stored order** -- which end the model calls `src` -- and it may have a **declared direction**, an assertion by the author that something flows one way.\
+These are different things, and conflating them is the defect this design answers.
+
+Stored order is a byproduct of which end the author happened to drag from.\
+Declared direction is meant, is visible, and is the only direction any rule may read.
+
+### The rule
+
+**No rule may branch on `src`/`dst` ordering unless the link carries a declared direction.**
+
+An undeclared link is symmetric.\
+Drawing `A` to `B` and drawing `B` to `A` produce the same diagram, and every rule must agree that they do.
+
+### What a waypoint is, by what meets there
+
+Direction is measured **relative to the waypoint**, never from the stored fields.\
+A link stored `src: w` but declared as flowing toward `w` is an inbound link at `w`, whatever `src` says.
+
+| terminations | directions | what it is |
+|---|---|---|
+| 1 | any | endpoint |
+| 2 | agree -- one in, one out | bend |
+| 2 | oppose -- both in, or both out | junction |
+| 3 or more | any | junction |
+
+An **endpoint** is a terminus: one link, nothing beyond it.\
+A **junction** is where flow does something other than continue: it converges, diverges, or has more than two ways to go.\
+A **bend** is flow passing through, which is why it adds nothing -- geometry changes, meaning does not.
+
+Two undeclared links are always a bend.\
+Having no direction, they cannot oppose one another, so only the count matters.
+
+This **revises the built rule** that more than two terminations makes a junction (B214).\
+Two can now be a junction as well, so `waypointRoles` takes direction as an input where today it only counts.
+
+### Propagation
+
+Declared direction **inherits** along a run of bends.\
+One declaration at the head of a path colours the whole run, so an end-to-end direction costs one gesture rather than one per segment.
+
+Inheritance is **derived, never stored**.\
+Undeclaring the head must un-colour the run, which is only possible if the run was never written down -- the same discipline the roles follow.
+
+Two opposing declarations on one run **fragment it**: the waypoint between them has two links that oppose, which the table above already calls a junction.\
+This is not a special case but the general rule arriving where it applies.\
+The alternative -- latest declaration wins and overwrites the earlier one -- was rejected because it silently rewrites an authored decision whose only evidence is a change somewhere off-screen.
+
+### Packets
+
+A junction passes packets, and what it does with one depends on **how much the packet knows**.
+
+- Knows nothing -> **clone**, to every outward way.
+- Knows only that it must move -> **round robin**, fairly and deterministically.
+- Knows its destination -> **route**, computed over the graph toward an armed endpoint.
+
+None of the three needs a routing table, so a junction holds no state.\
+The control plane is computed server-side and the browser is a stateless data plane: it executes and renders what it is given, and a reload recomputes the same answer rather than resuming a remembered one.
+
+### Why this is one substrate
+
+A router is not a node that routes.\
+It is a waypoint carrying a router glyph and a routing capability -- the same substrate, differently dressed.
+
+A waypoint today cannot hold a glyph, a type or content, and a node cannot be a junction or take part in a collapse.\
+Neither restriction has a recorded reason; they are two evolved shapes rather than two designed ones.
+
+### Evidence
+
+Two defects prompted this and share one cause: the collapse reads stored order as though it were declared.\
+The experiment that isolated it held topology, counts and waypoint identical and varied only the direction of the drag -- one order collapsed, the other did not.
+
+Recorded as B221 and B222.
