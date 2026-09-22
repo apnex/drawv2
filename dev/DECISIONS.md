@@ -219,3 +219,36 @@ That is the question the extraction has to answer, and designing the seam before
 
 **Evidence.**\
 The capability probe is recorded in [`ATOMICS.md`](../docs/spec/ATOMICS.md) under the junction entry: zero divergence on role derivation across all six cases, layers composing correctly, and a `server` holding both `framed` and `routable` producing a combination that is currently inexpressible.
+
+---
+## Scrubbing a published connection code, 2026-09-22
+
+**Ruled by the director**: rotate, then scrub, then force-push `main`.
+
+`key` held a live connection code and was tracked rather than ignored, so three commits carried one to a PUBLIC repository.\
+The first recommendation was to rotate and leave history alone, on the grounds that a rotated code is inert.\
+That was wrong, and the correction is worth keeping: the reasoning holds for a private repository and fails for a public one.
+
+A dead credential in a public repository is still evidence.\
+It shows the format, the filename, and that codes get committed -- a template for the next one rather than a risk in itself.\
+The string was already spent; the pattern was the exposure.
+
+**Sequence.**\
+Rotate first, because a scrub is not remediation -- treat a pushed secret as compromised from the moment it lands, whether or not the rewrite succeeds.\
+Then `K1` for the rewrite, then `K2` for the publication, which is a separate decision with different inputs.
+
+**Why the push was permitted.**\
+Blast radius, not branch name: one contributor, zero forks, zero open PRs, no CI pinning a SHA.\
+The only external references to the rewritten SHAs were B223's own rows, updated in the same change as `K2` condition 5 requires.
+
+**What it does not do.**\
+GitHub still serves orphaned commits by SHA after a successful force-push; removing them needs its support team.\
+So the scrub stops casual discovery and is not a retraction, and reporting it as one would be false.
+
+**The durable fix is the `.gitignore` entry**, not the rewrite.\
+The rewrite cleans up one incident; the ignore stops the next.
+
+**Evidence.**\
+Verified by `K1`'s three checks -- zero occurrences across every ref, tip tree hash unchanged at `d2b99b8`, commit count unchanged at 431.\
+The unchanged tree hash is the strongest of the three: it proves the rewrite touched history and nothing else.\
+Pre-scrub tip `c03826b`, backup retained on the filesystem until the push is confirmed good.

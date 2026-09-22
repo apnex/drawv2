@@ -829,7 +829,6 @@ Scored so the comparison is a judgement, not an omission.\
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
-| **B223** | **S2** | A published connection code stays readable in history at `a0e99de`; the file itself is untracked and ignored | the director rules on rotating the code, and separately on whether the repository's visibility makes a history scrub worth the force-push |
 | **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
 | **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
