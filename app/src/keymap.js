@@ -97,6 +97,7 @@ export const KEYMAP = [
 	{ id: 'resize-step', mutates: true, when: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep' },
 	{ id: 'wrap',      mutates: true, when: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
 	{ id: 'close',     mutates: true, when: (e) => is(e, 'c') && plain(e),                      run: 'onCloseKey' },
+	{ id: 'flow',      mutates: true, when: (e) => is(e, 'f') && plain(e),                      run: 'onFlowKey' },
 	{ id: 'chain',     mutates: true, when: (e) => is(e, 'l') && plain(e) && !e.shiftKey,       run: 'onChainKey' },
 	{ id: 'star',      mutates: true, when: (e) => is(e, 'l') && plain(e) && e.shiftKey,        run: 'onStarKey' },
 	{ id: 'rename',    mutates: true, when: (e) => e.key === 'F2',                              run: 'onRenameKey' },

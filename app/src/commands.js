@@ -227,6 +227,45 @@ export function toggleClosed(link) {
 }
 
 /*
+H15.6 -- CYCLE a link's declared direction. Three states, so this cycles rather than toggles.
+
+`flow` is absent (undeclared and symmetric), true (the flow follows the stored order) or false (it
+runs against it). The cycle is undeclared -> forward -> reverse -> undeclared, which lets an author
+reach every state from any state without needing to know which one they are in.
+
+RETURNING TO UNDECLARED REMOVES THE KEY rather than writing a third value. Absent is what every
+document written before this field carries and what `facing` reads as "no direction at all"; a link
+left holding `flow: null` would be a fourth state the model does not have. `flow` is listed OPTIONAL
+in model/shape.mjs, so the set-inverse rule turns the removing patch into a whole-entity put and
+undoing the last step restores a link byte-identical to one never declared.
+
+Direction is stored relative to `src`/`dst` and NOT as an end-name, so this never has to look at
+which end is which -- see `linkFacing` in kernel/geometry.mjs for what reads it.
+*/
+export function cycleFlow(link) {
+	if (typeof link.flow !== 'boolean') {
+		return { label: 'flow forward', entries: [{ op: 'set', kind: 'link', id: link.id, after: { flow: true } }] };
+	}
+	if (link.flow) {
+		return { label: 'flow reverse', entries: [{ op: 'set', kind: 'link', id: link.id, after: { flow: false } }] };
+	}
+	/*
+	CLEARING IS A PUT, not a set carrying undefined, and the difference is not cosmetic.
+
+	`after: { flow: undefined }` sets an OWN PROPERTY holding undefined. It vanishes from
+	JSON.stringify, survives `'flow' in link`, and FAILS a schema asking `typeof v === 'boolean'` --
+	so the clear was refused in memory and silently repaired by the next reload. That is B220's
+	shape: two doors disagreeing, with a restart hiding the evidence.
+
+	A whole-entity put is how this tree already removes a key -- `inverseOfSet` in server/txn.mjs
+	reaches for the same move when a patch would have to restore an absence. The entity is built
+	without `flow` rather than with it undefined.
+	*/
+	const { flow, ...without } = link;
+	return { label: 'flow cleared', entries: [{ op: 'put', kind: 'link', entity: without }] };
+}
+
+/*
 L / Shift+L — wire the selected nodes with no pointer travel. L chains them in selection order;
 Shift+L stars the first to every other. Existing pairs are skipped.
 

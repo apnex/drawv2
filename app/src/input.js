@@ -793,6 +793,24 @@ export class Input {
 		this.readout.flash(closed ? 'path closed' : 'path open');
 	}
 
+	/*
+	H15.6 -- F cycles the selected link's declared direction.
+
+	Single selection only, and a link. The same shape as `toggleClosePath` above, for the same
+	reason: a declaration is a statement about ONE path, and applying it to a multi-selection would
+	have to guess whether the author meant each link's own stored order or some shared direction --
+	and those differ the moment two links are stored facing opposite ways.
+	*/
+	cycleLinkFlow() {
+		const ids = this.selection.list();
+		if (ids.length !== 1 || kindOf(ids[0]) !== 'link') return;
+		const link = this.model.get('link', ids[0]);
+		if (!link) return;
+		const cmd = commands.cycleFlow(link);
+		this.history.commit(cmd);
+		this.readout.flash(cmd.label);
+	}
+
 	// L / Shift+L — the wiring itself is commands.linkNodes'; what stays is selecting the result
 	// and saying how many landed.
 	linkSelectedNodes(star) {
@@ -1448,6 +1466,7 @@ export class Input {
 
 	onWrapKey() { this.wrapInZone(); }
 	onCloseKey() { this.toggleClosePath(); }
+	onFlowKey() { this.cycleLinkFlow(); }
 	onChainKey() { this.linkSelectedNodes(false); }
 	onStarKey()  { this.linkSelectedNodes(true); }
 

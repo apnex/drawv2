@@ -2,7 +2,7 @@
 // decisions live here; the engine has already placed everything. Sovereign: glyph defs, glyph
 // metrics, colours and the scene CSS all come from theme.mjs (no client/ coupling).
 import { STD, L_STD } from './spec.mjs';
-import { bboxOf, waypointLayers } from './geometry.mjs';
+import { bboxOf, waypointLayers, linkMarker } from './geometry.mjs';
 import { roundedPath } from './router.mjs';
 import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 
@@ -127,7 +127,12 @@ function socketGridSvg(cols, rows, V) {
 function renderEl(el, V, L, opts = {}) {
 	if (el.kind === 'zone') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${TOKENS.zoneFill}" fill-opacity="${TOKENS.zoneFillOp}" stroke="${TOKENS.zoneStroke}" stroke-opacity="${TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
 	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${TOKENS.group}" stroke-width="1.1"/>`;
-	if (el.kind === 'path') return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"/>`;
+	if (el.kind === 'path') {
+		// H15.6 -- the head is DERIVED, by the one rule the canvas also reads
+		const head = linkMarker(el);
+		const marker = head === 'end' ? ' marker-end="url(#flow-end)"' : head === 'start' ? ' marker-start="url(#flow-start)"' : '';
+		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"${marker}/>`;
+	}
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is
 	// inscribed in the ring — it reads as "the path turns here". Hollow, so the bend stays visible.
@@ -251,11 +256,28 @@ export function renderScene(elements, V = STD, L = L_STD, pad = 18, opts = {}) {
 }
 
 // glyph defs + the variant's frame defs (shared once per page)
+/*
+H15.6 -- the arrowhead, defined once for both renderers.
+
+`markerUnits="strokeWidth"` so the head scales with the line rather than needing its own number,
+and `orient="auto"` so it follows the path's direction at the end it sits on -- which is what makes
+ONE definition serve both ends: the start marker is the same shape, turned around by the path.
+
+`context-stroke` takes the link's own colour, so a selected or armed link carries a head that
+matches it without a second rule deciding colour.
+*/
+function arrowDefs() {
+	const head = '<path d="M0 0 L6 3 L0 6 z" fill="context-stroke"/>';
+	return `<marker id="flow-end" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto">${head}</marker>`
+		+ `<marker id="flow-start" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto-start-reverse">${head}</marker>`;
+}
+
 export function sharedDefs(V = STD, L = L_STD) {
 	return `<svg width="0" height="0" style="position:absolute">${GLYPH_DEFS}
 	  <defs>
 	    <circle id="m-circle" class="frame" r="${L.frame.ext}"/>
 	    <rect id="m-square" class="frame" x="${-L.frame.ext}" y="${-L.frame.ext}" width="${2 * L.frame.ext}" height="${2 * L.frame.ext}" rx="${L.frame.r}"/>
+	    ${arrowDefs()}
 	  </defs>
 	</svg>`;
 }

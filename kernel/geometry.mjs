@@ -347,6 +347,22 @@ export const linkFacing = (link, pointId) => {
 	return null;
 };
 
+/*
+H15.6 -- WHICH END OF A LINK CARRIES THE ARROWHEAD, derived from the declaration.
+
+The first appearance in this tree that follows from a DECLARATION rather than from a type, and so
+the first real exercise of the pipeline: derived state in, one answer out, every renderer reading it
+rather than deciding again.
+
+`'end'`, `'start'`, or null for an undeclared link -- which has no head because it asserts no
+direction to point. The head sits where the flow ARRIVES, which is the same fact `linkFacing`
+reports as `in`, and a test holds the two to agreement.
+*/
+export const linkMarker = (link) => {
+	if (typeof link.flow !== 'boolean') return null;
+	return link.flow ? 'end' : 'start';
+};
+
 export const waypointRoles = (id, touching) => {
 	const roles = [];
 	let terminations = 0;

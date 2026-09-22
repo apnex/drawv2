@@ -980,3 +980,42 @@ test('B212: the junction ring masks what is behind it, as the endpoint pad does'
 	assert.ok(ring, 'the junction ring is drawn');
 	assert.notEqual(ring[1], 'none', 'and it is emitted opaque, not merely computed so');
 });
+
+/*
+H15.6: the arrowhead is DERIVED from `flow`, and it is one rule both renderers read.
+
+Direction is the first appearance that follows from a declaration rather than from a type, so it is
+the first real test of the pipeline ruled in DECISIONS.md: derived state in, one resolution out,
+consumed by every renderer without any of them deciding again.
+
+`linkMarker` answers which end carries the head, in the ONE vocabulary both the canvas and the SVG
+export can emit. An undeclared link has no head, because it asserts nothing.
+*/
+test('H15.6: the arrowhead follows the declaration, from one source', async () => {
+	const k = await import('../kernel/index.mjs');
+
+	assert.equal(k.linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
+		'an undeclared link carries no head -- it asserts no direction to point');
+	assert.equal(k.linkMarker({ id: 'l', src: 'a', dst: 'b', flow: true }), 'end',
+		'a forward flow points at the stored dst, which is the path END');
+	assert.equal(k.linkMarker({ id: 'l', src: 'a', dst: 'b', flow: false }), 'start',
+		'a reversed flow points at the stored src, which is the path START');
+
+	/*
+	AND IT AGREES WITH `linkFacing`, because they are two readings of one field and this tree has
+	paid for that shape repeatedly. The head belongs at whichever end the flow ARRIVES at.
+	*/
+	for (const flow of [true, false]) {
+		const link = { id: 'l', src: 'a', dst: 'b', flow };
+		const head = k.linkMarker(link);
+		const arrivesAt = head === 'end' ? link.dst : link.src;
+		assert.equal(k.linkFacing(link, arrivesAt), 'in',
+			'the head must sit where the flow arrives, or the picture contradicts the model');
+	}
+
+	// both renderers must define the marker, or the canvas and the export disagree about direction
+	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	assert.match(kernelRenderer, /linkMarker\(/, 'the SVG export must consult the same rule');
+	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	assert.match(clientRenderer, /linkMarker\(/, 'and so must the canvas');
+});

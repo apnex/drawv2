@@ -123,5 +123,9 @@ function resolveRoute(rt, byId, V) {
 	};
 	const pts = [rt.src, ...(rt.via || []), rt.dst].map(anchor);
 	if (pts.some((p) => p == null)) return null;   // a dangling route degrades to nothing, never throws
-	return path(gridSnap(pts, V.pitch / 2), { radius: rt.radius ?? BEND_R, closed: !!rt.closed });
+	// H15.6 -- the declaration travels with the route, so the renderer can derive its arrowhead
+	// from the same field the model reads. Absent stays absent: an undeclared route has no head.
+	const el = path(gridSnap(pts, V.pitch / 2), { radius: rt.radius ?? BEND_R, closed: !!rt.closed });
+	if (typeof rt.flow === 'boolean') el.flow = rt.flow;
+	return el;
 }
