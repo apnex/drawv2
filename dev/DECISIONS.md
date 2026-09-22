@@ -220,6 +220,45 @@ That is the question the extraction has to answer, and designing the seam before
 **Evidence.**\
 The capability probe is recorded in [`ATOMICS.md`](../docs/spec/ATOMICS.md) under the junction entry: zero divergence on role derivation across all six cases, layers composing correctly, and a `server` holding both `framed` and `routable` producing a combination that is currently inexpressible.
 
+**Amended 2026-09-22, ruled by the director: the anchor, and permission by type.**
+
+The shape the extraction was waiting to learn is now settled, and it is smaller than the five-part pack this ruling anticipated.
+
+**The base entity is the NODE, and a node has an ANCHOR.**\
+The anchor is intrinsic and empty by default -- a node can be reached whether or not anything reaches it.\
+`waypoint` was overloaded: it named the id prefix, the kind, and the anchor at once.
+
+**Endpoint, bend and junction are not behaviours a node implements.**\
+They are what the GRAPH makes of an anchor at a given moment -- derived, never stored, exactly as the roles are today.\
+An anchor does not choose to be a junction; three links terminate there, so it is one, and deleting one makes it a bend with nothing reconfigured.\
+So `routable` supplies ONE capability and the three variants fall out of it, rather than three implementations and a dispatch between them.\
+Three implementations could disagree with each other, which is the class of defect B211 through B222 all were.
+
+**A type DECLARES which variants it permits**, and the declaration reads like an import of the capabilities the anchor produces.\
+A bare waypoint permits all three, which is what makes it "just an anchor" -- it is the unrestricted case rather than a kind of its own, and that is how it disappears.\
+A router permits endpoint and junction but never bend: it is a thing the author placed, not a geometric artifact to be absorbed into a `via`.\
+A compute or server glyph permits endpoint alone.
+
+The rejected alternative was to DERIVE absorbability from whether the node carries a glyph, a name or content.\
+It infers intent from incidental properties, so a node would become un-absorbable as a side effect of being named -- the same shape as reading direction out of `src` and `dst`, which is what B222 was.\
+A declaration can be read and reasoned about; an inference cannot.\
+Permission also answers more: not only "may this collapse" but "may a link land here at all", which currently has no answer.
+
+**PER TYPE, not per instance.**\
+All servers behave alike, and the table lives with the type definition, so adding a glyph means deciding its routing permissions.\
+Per-instance permission would be hidden state that nothing on screen shows.
+
+**A violation is REFUSED**, in the validator, where the permission table belongs beside the rules that already refuse illegal states.\
+Not permitted-but-underived, which leaves two links terminating at something still calling itself a terminus; not permitted-with-escalation, which rewrites what the author placed.\
+The cost is accepted: a second link cannot be drawn to a server node, and if that is ever legitimate the TABLE changes rather than the rule bending.
+
+**What `routable` therefore owns**: the permission table, the derivation, and the write.\
+Role derivation, visual layers, picking and validation consume those rather than being separate responsibilities of the pack.\
+The boundary is smaller than the five-part version above BECAUSE the permission table absorbed the special cases.
+
+**Still not designed**: how a pack contributes a write.\
+That question is unchanged by this amendment -- the collapse is still the first one, and it is now gated by permission as well.
+
 ---
 ## Scrubbing a published connection code, 2026-09-22
 

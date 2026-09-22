@@ -813,6 +813,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.3 | `flow`, the declared direction: an optional boolean, validated, surviving a collapse that flips the link | feature | S3 | `DONE` |
 | H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` reads direction | feature | S3 | `DONE` |
 | H15.6 | The gesture and the arrowhead -- declaring a direction from the canvas, and seeing it | feature | S3 | `TODO` |
+| H15.7 | The permission table: a type declares which anchor variants it permits, and the validator refuses the rest | feature | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
 **Ruled 2026-09-22 by the director: FRAGMENT.**\
@@ -831,6 +832,8 @@ The gesture and the arrowhead split out as H15.6 instead -- they are the surface
 **Exit:** an author declares flow once on a path and sees it end to end, a bend survives whichever way it was drawn, and no rule anywhere reads a direction nobody asserted.
 
 **Not in this milestone:** the capability pack that would own these rules as one unit, the waypoint/node unification behind it, and packet movement over the graph.\
+The SHAPE of that pack is now ruled rather than open -- an intrinsic anchor on every node, three derived variants rather than three implementations, and a per-type permission table that the validator enforces.\
+Recorded as an amendment to the staged universal node in [`DECISIONS.md`](DECISIONS.md), which shrinks the pack from five responsibilities to three: the table, the derivation, and the write.\
 Each is large enough to deserve its own design pass, and the pack boundary should be drawn around rules we have watched behave rather than ones we have only reasoned about (**AG-5**).
 
 ---
