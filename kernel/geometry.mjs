@@ -411,7 +411,18 @@ export const waypointRoles = (id, touching) => {
 			const d = linkFacing(t, id);
 			if (d) dirs.push(d);
 		}
-		if (dirs.length === 2 && dirs[0] === dirs[1]) return ['junction'];
+		/*
+		B232 -- BOTH declared cases are decided here, and the second one was missing.
+
+		This returned `['junction']` when the two directions opposed and FELL THROUGH otherwise, so
+		a genuine pass-through -- one in, one out -- landed on the `endpoint` line below and read as
+		a terminus. The ruled table has always said two that agree is a BEND, and a bend is the
+		absence of a sub-type (B199), so the answer is the empty set rather than another role.
+
+		Declaring ONE of two links leaves `dirs.length === 1`: an undeclared link asserts nothing
+		and cannot make a path through by itself, so that case still falls through to `endpoint`.
+		*/
+		if (dirs.length === 2) return dirs[0] === dirs[1] ? ['junction'] : [];
 	}
 
 	if (endpoint) roles.push('endpoint');

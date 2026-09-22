@@ -812,10 +812,21 @@ test('H15.4: two declared flows that oppose make a junction; agreeing ones make 
 		assert.deepEqual(waypointRoles(w, links), ['endpoint'], `${why}: undeclared links cannot oppose`);
 	}
 
-	// DECLARED, AGREEING -- one arrives, one leaves. Flow passes through: a bend adds nothing.
+	/*
+	DECLARED, AGREEING -- one arrives, one leaves. Flow passes THROUGH, and a bend adds nothing,
+	so the role set is EMPTY.
+
+	B232: this assertion said `['endpoint']` and shipped the defect it was written to prevent.
+	The ruled table in docs/spec/ATOMICS.md has always said "2, agree -- one in, one out: bend",
+	and a bend is the absence of a sub-type (B199). Asserting `endpoint` encoded the very
+	fall-through the code had, so the guard agreed with the bug rather than with the ruling.
+
+	The director found it in one gesture: declare two links inward, making a junction, then flip
+	one so the flow passes through. The junction should become a BEND and became an endpoint.
+	*/
 	const passThrough = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: w, dst: 'b', flow: true }];
-	assert.deepEqual(waypointRoles(w, passThrough), ['endpoint'],
-		'one in and one out is a path through, which is a bend rather than a meet');
+	assert.deepEqual(waypointRoles(w, passThrough), [],
+		'one in and one out is a path through, which is a bend -- and a bend adds no sub-type at all');
 
 	// DECLARED, OPPOSING -- a convergence and a divergence. Both are junctions.
 	const converge = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w, flow: true }];
@@ -886,7 +897,9 @@ test('H15.4: `facing` and `waypointRoles` read a declaration identically', async
 		const modelRefused = collapseAtWaypoint(la, lb, w) === null;
 		assert.equal(modelRefused, kernelSaysOpposing,
 			`${why}: kernel reads ${fa}/${fb} but the model ${modelRefused ? 'refused' : 'merged'} -- the twins have drifted`);
-		assert.deepEqual(waypointRoles(w, [la, lb]), kernelSaysOpposing ? ['junction'] : ['endpoint'],
+		// B232 -- a pass-through is a BEND, which is the empty set, not `endpoint`. This said
+		// `['endpoint']` and so agreed with the defect rather than with the ruled table.
+		assert.deepEqual(waypointRoles(w, [la, lb]), kernelSaysOpposing ? ['junction'] : [],
 			`${why}: and the role must follow the same reading`);
 	}
 
