@@ -681,10 +681,27 @@ right, and leaving it out lands the caption half a pixel off -- not visible, but
 that a wider border would make visible. Change either and the caption follows.
 
 `pointer-events: none` because it sits over the two live children and must not eat a click meant
-for them; `max-width` so a long caption ellipsises rather than colliding with the readout.
+for them.
+
+B219 -- `max-width` IS THE CANVAS. It was `52ch`, roughly 595px, chosen so a long caption would
+ellipsise rather than collide with the readout -- and the collision it was avoiding turned out to
+be largely theoretical. A readout line is `cursor 4,3` or `spine-1 4,3`, around 80px of 12px
+monospace; it starts at the footer padding and mostly sits under the 72px rail rather than over
+the drawing. The cap was costing more than half the available width to protect against something
+that does not usually happen.
+
+Stated as the canvas rather than as a number, for the same reason the centring is: the caption
+describes the drawing, so the drawing is its natural limit and it can never overrun what it
+describes. Both are derived from `--rail`, so changing the rail moves the caption and resizes it
+together.
+
+A very long caption on a narrow window can still reach the readout. It ellipsises at the canvas
+edge rather than before it, and being `pointer-events: none` it cannot take a click -- so the cost
+is overlapping text in a case that needs both a narrow viewport and a long line, against a caption
+that is readable the rest of the time.
 */
 #beat-caption { position: absolute; left: calc(50% + (var(--rail) + var(--rail-border)) / 2); transform: translateX(-50%);
-	max-width: 52ch; text-align: center; color: #e4e4e4; font-size: 19px;
+	max-width: calc(100% - var(--rail) - var(--rail-border)); text-align: center; color: #e4e4e4; font-size: 19px;
 	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
 /* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it

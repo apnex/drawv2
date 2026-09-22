@@ -770,3 +770,60 @@ test('B202: run mode unhighlights a bend, and keeps the endpoint dot that shows 
 	assert.ok(grid > 0, 'the node grid draws no dots -- a hidden bend dot would leave a hole, not the grid');
 	assert.equal(Number(gridR), 2, `the grid dot must be the same radius the bend was lit at, got ${gridR}`);
 });
+
+/*
+B219: the caption is as wide as the canvas, and never wider.
+
+It was capped at `52ch` -- about 595px -- so a long beat narration ellipsised at roughly half the
+available width. The cap existed to keep it off the readout, and that collision turned out to be
+largely theoretical: a readout line is `cursor 4,3` or `spine-1 4,3`, around 80px, which mostly
+sits under the 72px rail rather than over the drawing.
+
+Asserted as a RELATIONSHIP to the canvas rather than against a pixel count. The caption describes
+the drawing, so the drawing is its limit -- and both the width and the centring derive from
+`--rail`, so a rail change must move and resize it together. A literal would pass until someone
+changed the rail and then be silently wrong.
+*/
+test('B219: the caption spans the canvas and stays inside it', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+
+	const probe = await until(tab, `(() => {
+		const cap = document.getElementById('beat-caption');
+		const svg = document.getElementById('container');
+		if (!cap || !svg) return null;
+		/*
+		LONG ENOUGH TO OVERFLOW THE VIEWPORT, not merely long. A caption that fits proves nothing
+		about containment: with no cap at all it would still sit inside the canvas, so the
+		assertion would pass on a stylesheet that had lost the rule. Measured -- 600 characters at
+		19px cannot fit any window this harness opens.
+		*/
+		const was = cap.textContent;
+		cap.textContent = 'the spine layer accepts every leaf uplink '.repeat(15);
+		const c = cap.getBoundingClientRect(), s = svg.getBoundingClientRect();
+		const out = {
+			capMax: getComputedStyle(cap).maxWidth,
+			capW: Math.round(c.width), capX: Math.round(c.x), capR: Math.round(c.x + c.width),
+			svgX: Math.round(s.x), svgR: Math.round(s.x + s.width),
+		};
+		cap.textContent = was;
+		return JSON.stringify(out);
+	})()`);
+
+	const g = JSON.parse(probe);
+
+	assert.ok(g.capX >= g.svgX - 1, `the caption starts inside the canvas: ${g.capX} vs ${g.svgX}`);
+	assert.ok(g.capR <= g.svgR + 1, `and ends inside it: ${g.capR} vs ${g.svgR}`);
+
+	/*
+	The cap must be DERIVED, not a number. `52ch` was the old value and the thing this replaced; a
+	fixed px or ch cap cannot track the rail, so the caption would stop matching the canvas the
+	moment the rail moved.
+	*/
+	assert.doesNotMatch(g.capMax, /ch$/, 'the cap must not be a character count -- it cannot track the canvas');
+	assert.ok(g.capW > 600,
+		`a long caption must use the canvas, not ellipsise at half of it -- got ${g.capW}px, the old cap was ~595`);
+
+	// and the overflowing caption is ELLIPSISED at the canvas edge rather than spilling past it
+	assert.equal(g.capW, g.svgR - g.svgX,
+		`an overlong caption must fill the canvas exactly, not overrun it -- got ${g.capW} against a canvas of ${g.svgR - g.svgX}`);
+});
