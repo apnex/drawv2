@@ -1586,3 +1586,38 @@ test('B186: use is named for the intent, and does not collide with an existing v
 	assert.equal(use.args.length, 1, 'use takes an optional ref');
 	assert.match(use.summary, /per host/, 'the summary does not say the selection is per host');
 });
+
+/*
+B231: the tool must show what the document HOLDS, not a list someone remembered to update.
+
+`get` and `show` each carried a hardcoded column list per kind. So `flow` shipped -- into the
+schema, the canvas and the exported SVG -- and was invisible to the CLI. The consequence is worse
+than a missing column: an agent that cannot read a field through the tool reaches for
+`--json | python3`, which is routing around the CLI rather than extending it, and is banned.
+
+This asserts the PROPERTY rather than the current field list: every field an entity actually carries
+appears as a column. A field added next month is covered without anyone editing this test.
+*/
+test('B231: every field an entity carries is a column, for every kind', async () => {
+	const { columnsFor } = await import('../cli/verbs.mjs');
+
+	const cases = {
+		links: [{ id: 'link-aa0001', name: 'l', src: 'a', dst: 'b', via: ['w'], flow: true, closed: false }],
+		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0, pinned: true, spawn: { every: 1 } }],
+		nodes: [{ id: 'node-aa0001', name: 'n', type: 'host', x: 0, y: 0, shape: 'square', span: { w: 2, h: 1 } }],
+	};
+	for (const [kind, list] of Object.entries(cases)) {
+		const cols = columnsFor(kind, list);
+		for (const field of Object.keys(list[0])) {
+			assert.ok(cols.includes(field), `${kind}: the tool hides '${field}', so an agent cannot read it without leaving the CLI`);
+		}
+	}
+
+	// the LEAD columns still come first, because they are what a reader scans for
+	assert.deepEqual(columnsFor('links', cases.links).slice(0, 4), ['id', 'src', 'dst', 'via'],
+		'the familiar columns keep their order -- derivation must not reshuffle the table');
+
+	// and a lead column nothing carries is dropped rather than printed empty
+	assert.ok(!columnsFor('waypoints', [{ id: 'waypoint-aa0001', x: 0, y: 0 }]).includes('name'),
+		'an unnamed set of waypoints must not print an empty NAME column');
+});

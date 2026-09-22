@@ -474,8 +474,7 @@ export const VERBS = [
 				for (const e of doc[kk] || []) named.set(e.id, e.name || e.id);
 			}
 			const show = (v) => (Array.isArray(v) ? v.map((x) => named.get(x) || x).join(',') : (named.get(v) || v));
-			const cols = k === 'links' ? ['id', 'src', 'dst', 'via'] : k === 'groups' ? ['id', 'name', 'members']
-				: k === 'zones' ? ['id', 'name', 'x', 'y', 'w', 'h'] : ['id', 'name', 'type', 'x', 'y'];
+			const cols = columnsFor(k, list);
 			const rows = list.map((e) => cols.map((c) => (e[c] === undefined ? '' : show(e[c]))));
 			return { json: list, text: table(rows, cols.map((c) => c.toUpperCase())) };
 		},
@@ -1030,6 +1029,41 @@ const DIRS = {
 	right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1],
 	above: [0, -1], below: [0, 1],
 };
+
+/*
+B231 -- COLUMNS ARE DERIVED FROM THE DATA, not from a list someone remembers to update.
+
+`get` and `show` each carried a hardcoded column list per kind. So `flow` shipped, reached the
+document and the canvas, and was INVISIBLE to the tool -- which is how an agent ends up piping
+`--json` through a script to read a field, routing around the CLI instead of extending it.
+
+The leading columns are fixed because they are the ones a reader scans for; everything else the
+entities actually carry follows, in first-seen order. A new field is therefore legible the moment it
+exists, with no edit here at all.
+*/
+const LEAD = {
+	nodes: ['id', 'name', 'type', 'x', 'y'],
+	waypoints: ['id', 'name', 'x', 'y'],
+	links: ['id', 'src', 'dst', 'via'],
+	zones: ['id', 'name', 'x', 'y', 'w', 'h'],
+	groups: ['id', 'name', 'members'],
+};
+
+export function columnsFor(kind, list) {
+	const lead = LEAD[kind] || ['id', 'name'];
+	const seen = new Set(lead);
+	const extra = [];
+	for (const e of list || []) {
+		for (const key of Object.keys(e)) {
+			if (seen.has(key)) continue;
+			seen.add(key);
+			extra.push(key);
+		}
+	}
+	// a lead column nothing carries is dropped, so a waypoint table does not print an empty NAME
+	const carried = (c) => (list || []).some((e) => e[c] !== undefined && e[c] !== null && e[c] !== '');
+	return [...lead.filter((c) => c === 'id' || carried(c)), ...extra];
+}
 
 VERBS.push({
 	name: 'place', group: 'Placement', usage: 'draw place <type> near|inside|between <ref> [--link]',
@@ -1681,14 +1715,10 @@ VERBS.push({
 		const id = await activeId(ctx, ctx.flags);
 		const d = ok(await request(ctx, `/diagrams/${id}`), 'show');
 		const out = [`${d.meta.name}  ${d.meta.id}  v${d.meta.version}`];
-		const cols = {
-			nodes: ['id', 'name', 'type', 'x', 'y'], waypoints: ['id', 'x', 'y'],
-			links: ['id', 'src', 'dst', 'via'], zones: ['id', 'name', 'x', 'y', 'w', 'h'],
-			groups: ['id', 'name', 'members'],
-		};
-		for (const [k, c] of Object.entries(cols)) {
+		for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
 			const list = d[k] || [];
 			if (!list.length) continue;
+			const c = columnsFor(k, list);
 			out.push('', k.toUpperCase(), table(list.map((e) => c.map((f) => (Array.isArray(e[f]) ? e[f].join(',') : e[f] ?? ''))), c.map((f) => f.toUpperCase())));
 		}
 		return { json: d, text: out.join('\n') };
