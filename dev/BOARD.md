@@ -813,7 +813,8 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.3 | `flow`, the declared direction: an optional boolean, validated, surviving a collapse that flips the link | feature | S3 | `DONE` |
 | H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` reads direction | feature | S3 | `DONE` |
 | H15.6 | The gesture and the arrowhead -- declaring a direction from the canvas, and seeing it | feature | S3 | `TODO` |
-| H15.7 | The permission table: a type declares which anchor variants it permits, and the validator refuses the rest | feature | S3 | `TODO` |
+| H15.7 | The permission table: a composition declares which anchor variants it permits, and the validator refuses the rest | feature | S3 | `TODO` |
+| H15.8 | The ghost draws the ladder from the kernel, and the parity guard stops naming files | **B224** | S4 | `DONE` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
 **Ruled 2026-09-22 by the director: FRAGMENT.**\

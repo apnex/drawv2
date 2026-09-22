@@ -803,10 +803,33 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	assert.match(renderer, /waypointLayers\(/, 'the waypoint centre comes from the kernel layer list');
 	assert.match(kernelRenderer, /waypointLayers\(/, 'the SVG export must use the same list, or it diverges from the canvas');
 
-	// the specific literal this replaced, which survived in two renderers while the kernel computed
-	// the ladder from a third copy
-	for (const [name, src] of [['main.js', main], ['renderer.js', renderer], ['kernel/renderer.mjs', kernelRenderer]]) {
-		assert.doesNotMatch(src, /r[:=]\s*"?2\.2"?/, `${name} still carries a hardcoded dot radius`);
+	/*
+	B224 -- THE GUARD NAMED THREE FILES, AND A FOURTH WAS ADDED.
+
+	This loop used to carry a literal list: main.js, renderer.js, kernel/renderer.mjs. It was
+	correct about all three and blind to `app/src/painter.js`, which hardcoded the placement
+	ghost at stroke-width 1.6 and dot radius 2.2 against the kernel's 2 and 2, and drew the
+	ENDPOINT class at the ANCHOR's radius. B200 is the defect this test exists to prevent, and
+	it recurred in the one file the test did not know about.
+
+	So the list is gone. Every JS source that draws is swept, and a new drawing file is covered
+	the moment it exists rather than when somebody remembers to add it here.
+	*/
+	const drawing = [];
+	for (const dir of ['../app/src', '../kernel']) {
+		const base = new URL(`${dir}/`, import.meta.url);
+		for (const f of fs.readdirSync(base)) {
+			if (!f.endsWith('.js') && !f.endsWith('.mjs')) continue;
+			drawing.push([`${dir}/${f}`, fs.readFileSync(new URL(f, base), 'utf8')]);
+		}
+	}
+	assert.ok(drawing.length >= 20, `the sweep must actually reach the tree -- found ${drawing.length} file(s)`);
+
+	const LADDER = { 'dot radius': /r[:=]\s*"?2\.2"?/, 'anchor width': /['"]?stroke-width['"]?\s*[:=]\s*"?1\.6"?/ };
+	for (const [name, src] of drawing) {
+		for (const [what, pattern] of Object.entries(LADDER)) {
+			assert.doesNotMatch(src, pattern, `${name} carries a hardcoded ${what} -- the ladder has one source`);
+		}
 	}
 	assert.equal(k.gridDot().radius, 2, 'the dot is 2 -- the value the node grid already drew');
 });

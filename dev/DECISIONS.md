@@ -259,6 +259,68 @@ The boundary is smaller than the five-part version above BECAUSE the permission 
 **Still not designed**: how a pack contributes a write.\
 That question is unchanged by this amendment -- the collapse is still the first one, and it is now gated by permission as well.
 
+**Amended again 2026-09-22, ruled by the director: a node is a CORE plus packs, and a type is a composition.**
+
+The core of a node is identity, position, and an anchor.\
+Nothing else is universal: glyph, name, content, span and shape are all things SOME nodes have, so none of them belongs in the core.
+
+Everything else is a capability pack, and **a named type is a composition of packs rather than a kind the core understands**.\
+A `server` is not a thing the core knows about; it is `glyph(server)` plus a routing pack plus, eventually, what it does with packets.\
+A `router` is a different composition, a load balancer another.
+
+This collapses a question that looked like two.\
+A per-type permission table and a registry of named pack variants are the same thing seen twice: asking what a server permits is asking which routing pack the server composition includes.\
+One lookup, not two, and no per-type row free to drift into its own opinion.
+
+It is also why the bare anchor disappears cleanly.\
+It is not a special kind to be removed -- it is the composition with the fewest packs, and it stops being distinguishable rather than being deleted.
+
+**Two families are in scope**: appearance (glyph, frame, content) and routing (which anchor variants a composition permits).\
+Both are DERIVED and stateless, which is the property every rule in this system has so far held: two peers with the same document agree without exchanging anything.
+
+**A third was raised and deliberately left out of scope**: policy, meaning permit or deny over packets and flows.\
+It is named here only so the pack model is not designed in a way that excludes it.\
+The hypothesis worth preserving is the director's: policy may be DERIVABLE the way routing is -- declare flow pairs on a control-plane graph and let the permissions follow deterministically -- which would keep it stateless rather than making it the first pack to carry per-instance configuration.\
+Not designed, not ruled, and not to be assumed by anything built before it.
+
+**Scope discipline.**\
+This reaches the glyph table, the validator's closed type vocabulary, the CLI, and the `type` field of every stored document -- all downstream of a pack mechanism that does not exist and whose hardest question, how a pack contributes a write, is still open.\
+So the model is RECORDED and the unification begins, but the claim that packs compose must be earned by composing two rather than asserted in advance.
+
+**The ontology, ruled 2026-09-22 after the core was named wrongly once.**
+
+This ruling first called the NODE the core, and that does not survive scrutiny.\
+A node has a name, a glyph, a shape and a span, and none of those is universal -- a bare routing point has none of them.\
+So "node" was doing exactly what "waypoint" had been doing: naming both the substrate and one dressed-up instance of it.
+
+| term | what it is |
+|---|---|
+| **anchor** | the CORE. Identity, position, and the fact that links can reach it. Nothing else. |
+| **pack** | one capability, composable onto an anchor -- `routable`, `glyph`, `framed`, `named`, `content`. |
+| **composition** | a named set of packs, and what an author actually picks: `server`, `router`, `load-balancer`. |
+| **node** | INFORMAL -- an anchor wearing enough packs to look like a box. Not a layer and not a kind. |
+| **waypoint** | RETIRED as a concept. An anchor carrying only `routable`. |
+
+The test this passes and node-as-core failed: it explains the residue.\
+Today a waypoint cannot hold a glyph and a node cannot be a junction, and neither restriction has a recorded reason.\
+Under anchor-as-core both are the same omission -- two compositions built separately, each missing packs the other has.\
+The disappearance is uniform too: `waypoint` stops existing because it is the anchor with only `routable`, and `node` stops being a kind for the same reason, being the anchor with `framed` and `glyph`.\
+Neither is deleted; both become descriptions.
+
+**THE IDENTIFIERS DO NOT MOVE YET.**\
+`node` remains the id prefix, the validator kind, the CLI noun and the field in every stored document, now meaning "an anchor plus its composition".\
+The ontology lives in the documentation and the identifiers lag it deliberately: renaming before the model is proven is how it gets done twice, and the id-grammar change is the irreversible step this ruling has flagged from the start.
+
+**Appearance, and what is derivable.**\
+Ruled: appearance divides into INTRINSIC -- glyph, the fit box, the colour tokens, the spec ladder, all type-supplied and irreducible -- and DERIVED, which is a function of what other packs have derived rather than a thing a pack declares.
+
+A survey of every appearance site found the derived half exists exactly ONCE.\
+`waypointLayers(roles, ext)` takes the derived role set and returns the layer list, and all three renderers walk it without re-deciding.\
+Seventeen other sites derive a visual property from state, each a single owner rather than a shared derivation, and CSS already follows the same shape without being named as such: `.spawning`, `.on-selected-path`, `.selected` and `[data-unrevealed]` are classes minted from state with the stylesheet owning the colour.
+
+So this half of the ruling is PRESCRIPTIVE, not descriptive.\
+One instance exists and the rest is the target, and saying so is the difference between a rule and a claim about the code.
+
 ---
 ## Scrubbing a published connection code, 2026-09-22
 

@@ -4,6 +4,9 @@ Painter — low-level SVG DOM helpers + ephemeral overlay widgets
 no model knowledge, raw canvas coordinates only.
 */
 
+import { waypointLayers, L_STD } from '../../kernel/index.mjs';
+import { TOKENS } from '../../kernel/theme.mjs';
+
 const NS = 'http://www.w3.org/2000/svg';
 
 export function el(tag, attrs = {}, parent = null) {
@@ -56,8 +59,21 @@ export function crosshair(overlay, canvas, gap) {
 export function ghostNode(overlay, type, shape = 'circle') {
 	const g = el('g', { class: 'node ghost' }, overlay);
 	if (type === 'waypoint') {
-		el('circle', { class: 'wp-ring', r: 20, fill: 'none', 'stroke-width': 1.6 }, g);
-		el('circle', { class: 'wp-dot', r: 2.2 }, g);
+		/*
+		B224 -- the ladder has ONE source, and this was a fourth copy of it.
+
+		These two circles were written by hand: radius 20 at stroke-width 1.6, and a dot at 2.2,
+		against the kernel's 2 and 2. The outer one also carried `wp-ring`, the ENDPOINT pad class,
+		at the ANCHOR's radius -- a name that stopped being right at B199.
+
+		A ghost is a preview of what will be placed, so it must be drawn by whatever draws the
+		real thing. An empty role set is the bare anchor, which is exactly what placing one makes.
+		*/
+		for (const l of waypointLayers([], L_STD.frame.ext)) {
+			el('circle', l.fill === 'solid'
+				? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
+				: { class: l.cls, r: l.radius, fill: l.fill, stroke: TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity }, g);
+		}
 	} else {
 		el('use', { 'data-layer': 'frame', href: `#m-${shape}` }, g);
 		el('use', { 'data-layer': 'glyph', href: `#glyph-${type}` }, g);
