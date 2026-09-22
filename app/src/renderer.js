@@ -410,6 +410,25 @@ export class Renderer {
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
 			if (d) setAttrs(dom, { d });
+			/*
+			B228 -- THE MARKER IS PART OF THE LINK, so an update must re-derive it.
+
+			`render` set it and `update` set only `d`, so the first press of `f` drew an arrow and
+			every press afterwards changed the document and nothing else: the element already
+			existed, so it never went back through `render`.
+
+			Set-or-remove rather than set-if-present. Clearing a declaration has to REMOVE the
+			attribute, and an update that only ever adds would strand the last head on a link the
+			author has since made symmetric.
+
+			B218 was this shape one branch over -- create and update refreshed a waypoint's role and
+			delete did not. A rule wired into one branch of `handle` is wired into none of the others.
+			*/
+			const head = linkMarker(entity);
+			for (const [attr, want] of [['marker-end', 'end'], ['marker-start', 'start']]) {
+				if (head === want) dom.setAttribute(attr, `url(#flow-${want})`);
+				else dom.removeAttribute(attr);
+			}
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {

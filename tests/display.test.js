@@ -37,8 +37,17 @@ test('readout: a link between two nodes names both', () => {
 	const l = m.makeLink(a.id, b.id);
 	m.put('link', l);
 	sel.set([l.id]);
-	assert.match(r.selectionText(), /↔/);
+	/*
+	B229 -- the bar was a hardcoded arrow and is now the DECLARED DIRECTION, so this asserted a
+	character that no longer appears. The property it was protecting is unchanged: a selected link
+	names both of its ends. What it must not do again is pin the separator, which said the same
+	thing whichever way the link flowed.
+	*/
+	assert.match(r.selectionText(), /<->/, 'an undeclared link is symmetric, and says so');
 	assert.ok(!r.selectionText().includes('?'), 'both ends resolved');
+
+	m.put('link', { ...m.get('link', l.id), flow: true });
+	assert.match(r.selectionText(), />>>/, 'and a declared one says which way');
 });
 
 test('B29: readout names a WAYPOINT endpoint instead of printing `?`', () => {

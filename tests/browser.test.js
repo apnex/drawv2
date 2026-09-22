@@ -829,6 +829,89 @@ test('B219: the caption spans the canvas and stays inside it', { skip: SKIP }, a
 });
 
 /*
+B228: the arrowhead must survive an UPDATE, not only a create.
+
+The first press of `f` drew an arrow and every press after it drew nothing. `render` sets the
+marker; `update` sets only `d`, so a link that already had DOM kept whatever marker it was created
+with -- which for a link created undeclared is none at all, forever.
+
+B218 was this shape one branch over: create and update refreshed a waypoint's role, delete did not.
+Here create is right and update is wrong. The lesson each time is the same -- a rule wired into one
+branch of `handle` is wired into none of the others.
+
+Driven through the REAL dispatch rather than by calling render directly, because the defect lives
+in which branch runs.
+*/
+test('B228: cycling flow changes the marker every time, not only the first', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	const seen = await tab.eval(`(() => {
+		const app = window.draw;
+		const r = app && app.renderer;
+		const model = app && app.model;
+		if (!r || !model) return { err: 'no app handle' };
+		const link = model.all('link')[0];
+		if (!link) return { err: 'no link' };
+		const markerOf = () => {
+			const el = document.getElementById(link.id);
+			if (!el) return 'MISSING';
+			return el.getAttribute('marker-end') || el.getAttribute('marker-start') || 'none';
+		};
+		// THE REAL GESTURE. Selecting the link and pressing f is what the director does, and it is
+		// the only path that exercises the command, the history commit and the renderer together.
+		app.selection.set([link.id]);
+		const sel = app.selection.list();
+		const out = [markerOf()];
+		const trace = [];
+		for (let i = 0; i < 3; i += 1) {
+			const before = String(model.get('link', link.id).flow);
+			app.input.onFlowKey();
+			const after = String(model.get('link', link.id).flow);
+			trace.push(before + '->' + after);
+			out.push(markerOf());
+		}
+		return { out, trace, sel, said: app.readout && app.readout.flashMsg, flow: String(model.get('link', link.id).flow) };
+	})()`);
+	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
+	assert.equal(seen.out[1], 'url(#flow-end)', 'forward must show the end marker after an update');
+	assert.equal(seen.out[2], 'url(#flow-start)', 'reverse must SWAP it, not keep the old one');
+	assert.equal(seen.out[3], 'none', 'and clearing must remove it rather than leave the last one');
+});
+
+/*
+B229: the readout carries the direction as STATE, not as a receipt that expires.
+
+A selected link read `a <-> b` with a hardcoded arrow whichever way it flowed, and cycling `f`
+flashed the answer for 1200ms before reverting. So the author had to remember where they were in
+the cycle, or press again to find out -- which changes the thing they were asking about.
+
+The selection line already re-renders on selection and on any change to the selected entity, so
+putting the bar there makes it follow the document with no timer at all.
+*/
+test('B229: the selection line says which way a selected link flows, and keeps saying it', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	const seen = await tab.eval(`(() => {
+		const app = window.draw;
+		const link = app.model.all('link')[0];
+		if (!link) return { err: 'no link' };
+		app.selection.set([link.id]);
+		const line = () => document.getElementById('readout-bottom').textContent;
+		const bars = [];
+		for (let i = 0; i < 3; i += 1) {
+			app.input.onFlowKey();
+			bars.push(line());
+		}
+		// and it must SURVIVE -- re-render with no further gesture and it still says the same thing
+		app.readout.render();
+		return { bars, after: line() };
+	})()`);
+	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
+	assert.match(seen.bars[0], />>>/, 'forward reads as >>>');
+	assert.match(seen.bars[1], /<<</, 'reverse reads as <<<');
+	assert.match(seen.bars[2], /<->/, 'and undeclared reads as symmetric rather than as nothing');
+	assert.match(seen.after, /<->/, 'the line is STATE -- a re-render with no gesture says the same thing');
+});
+
+/*
 H15.6 / B226: the arrowhead must actually PAINT, not merely be referenced.
 
 The marker reached the exported SVG and the canvas both carried `marker-end`, and the director

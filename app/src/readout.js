@@ -9,6 +9,7 @@ clicking any mount toggles, persisted.
 
 import { kindOf } from '../../model/index.mjs';
 import { GAP, spanExtent } from './snap.js';
+import { linkMarker } from '../../kernel/index.mjs';
 
 const UNITS_KEY = 'draw.units';
 
@@ -129,7 +130,22 @@ export class Readout {
 					if (!e) return '?';
 					return e.name || this.pair(e.x, e.y);
 				};
-				return `${nameOf(entity.src)} ↔ ${nameOf(entity.dst)}`;
+				/*
+				B229 -- THE BAR CARRIES THE DECLARED DIRECTION, and it is persistent state rather
+				than a receipt.
+
+				This was a hardcoded arrow, so a selected link read the same whichever way it
+				flowed. Cycling `f` flashed the answer for 1200ms and then the line reverted to
+				saying nothing about direction -- the author had to remember, or press again.
+
+				A selection line is the right home for it because it is STATE: it is already
+				re-rendered on selection and on any change to the selected entity, so the bar
+				follows the document without a timer. `<->` for undeclared, because a symmetric
+				link carries flow both ways rather than having no relationship.
+				*/
+				const head = linkMarker(entity);
+				const bar = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';
+				return `${nameOf(entity.src)} ${bar} ${nameOf(entity.dst)}`;
 			}
 			return id;
 		}

@@ -819,13 +819,10 @@ export class Input {
 		`<->` for undeclared, because a symmetric link is not a link with no relationship; it is one
 		that carries flow both ways as far as anything here is concerned.
 		*/
-		const after = this.model.get('link', link.id) || link;
-		const nameOf = (id) => {
-			const e = this.model.get(kindOf(id), id);
-			return (e && e.name) || id;
-		};
-		const bar = typeof after.flow !== 'boolean' ? '<->' : (after.flow ? '>>>' : '<<<');
-		this.readout.flash(`${nameOf(link.src)} ${bar} ${nameOf(link.dst)}`);
+		// B229 -- no flash. The SELECTION line carries the relation persistently, so a receipt that
+		// vanishes after 1200ms would say the same thing worse: the author would have to remember
+		// it, or press again to see where they are in the cycle.
+		this.readout.render();
 	}
 
 	// L / Shift+L — the wiring itself is commands.linkNodes'; what stays is selecting the result
