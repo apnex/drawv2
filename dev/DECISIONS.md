@@ -298,7 +298,7 @@ So "node" was doing exactly what "waypoint" had been doing: naming both the subs
 | **anchor** | the CORE. Identity, position, and the fact that links can reach it. Nothing else. |
 | **pack** | one capability, composable onto an anchor -- `routable`, `glyph`, `framed`, `named`, `content`. |
 | **composition** | a named set of packs, and what an author actually picks: `server`, `router`, `load-balancer`. |
-| **node** | INFORMAL -- an anchor wearing enough packs to look like a box. Not a layer and not a kind. |
+| **node** | an anchor AND the entirety of its composition. A precise term, not a loose one -- what it is not is a LAYER: nothing sits between the anchor and its packs. |
 | **waypoint** | RETIRED as a concept. An anchor carrying only `routable`. |
 
 The test this passes and node-as-core failed: it explains the residue.\
@@ -320,6 +320,44 @@ Seventeen other sites derive a visual property from state, each a single owner r
 
 So this half of the ruling is PRESCRIPTIVE, not descriptive.\
 One instance exists and the rest is the target, and saying so is the difference between a rule and a claim about the code.
+
+**How two derived appearances resolve, ruled 2026-09-22.**
+
+A pack declaring a derived appearance carries two fields: **`composes`**, and a **priority**.
+
+- `composes: true` -- it renders alongside the others, and priority is the z order.
+- `composes: false` -- it competes, and the highest priority wins alone.
+
+The case that forced it: a ROUTER holding `framed`, `glyph` and `routable` derives `endpoint` from the one link terminating on it.\
+If `routable` simply owned the endpoint vocabulary, the router would draw a pad inside its own frame, over its own glyph.\
+Nobody wants that, and the reason is worth stating: the endpoint pad is not what an endpoint looks like, it is what a BARE ANCHOR looks like when it is an endpoint.\
+The marks exist because nothing else is drawing; a router already shows where it is and what it is.
+
+So the glyph outranks the anchor marks with `composes: false`, and the pad is NOT EMITTED rather than drawn underneath.\
+Drawn-underneath is invisible by accident -- it breaks the moment a frame turns transparent or a glyph shrinks -- and the rule should be that the marks are absent, not hidden.
+
+Both behaviours already exist in the tree, which is why the mechanism is two fields rather than one rule.\
+`.spawning` recolours the anchor marks from `entity.spawn` rather than replacing them: derived from document state, composing with what is already drawn.\
+More are expected -- ports, flow direction, packet state -- and each is the same shape.
+
+**Session state is NOT a pack, and does not compete with one.**\
+Selection, hover, armed, ghost and the run-mode hides are session state: they live outside the document, are not derived from the graph, and are not part of any composition.\
+They DECORATE whatever was drawn.\
+This was got wrong once in the reasoning that produced this ruling -- selection brackets were offered as a counter-example to `composes`, which only worked by treating a non-pack as a pack -- and the boundary is recorded because that conflation is easy.
+
+**A boundary case worth naming**: the socket grid.\
+`showsSockets(opts)` is gated on a RENDER OPTION -- the client passes `sockets: mode === 'edit'` -- so it is mode-driven session state rather than a pack appearance, and it sits on the decorate side of the line.\
+That it looks like a derived appearance, and is not one, is exactly why the boundary needs stating.
+
+**One caution carried forward.**\
+Priority as a bare integer is where this shape rots: two packs land on the same value, or one is inserted at 50 and silently reorders another.\
+An ordered list of named layers avoids it and stays readable.\
+Not ruled, because the first two packs do not need it.
+
+**Still open**: what a router that derives JUNCTION should look like.\
+Endpoint clearly needs no mark -- the frame says something ends here.\
+Junction means three or more links meet and flow does something other than continue, and a plain frame does not say that.\
+If the answer is a ring drawn over the frame, then the anchor marks are not uniformly `composes: false` and the resolution is per-state rather than per-pack.
 
 ---
 ## Scrubbing a published connection code, 2026-09-22
