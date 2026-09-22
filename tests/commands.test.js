@@ -240,6 +240,21 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	assert.notEqual(first.label, back.label, 'each step names what it did');
 
 	/*
+	B227 -- the READOUT says the relation, and the bar is the same fact the canvas draws.
+
+	Asserted here rather than in the browser because the mapping is arithmetic: whatever
+	`linkMarker` puts on the path, the readout's bar must agree with. A picture saying one thing
+	and a readout saying another is the shape this register is full of.
+	*/
+	const bar = (l) => (typeof l.flow !== 'boolean' ? '<->' : (l.flow ? '>>>' : '<<<'));
+	const { linkMarker } = await import('../kernel/index.mjs');
+	for (const l of [undeclared, forward, reverse]) {
+		const head = linkMarker(l);
+		const expect = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';
+		assert.equal(bar(l), expect, 'the readout bar and the drawn head must be the same reading of `flow`');
+	}
+
+	/*
 	AND THE CLEARED LINK MUST SURVIVE THE VALIDATOR, which is where the first version of this
 	failed. `after: { flow: undefined }` sets an OWN PROPERTY holding undefined -- invisible to
 	JSON.stringify, visible to `'flow' in link`, and refused by a schema asking typeof === boolean.

@@ -816,6 +816,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.7 | The permission table: a composition declares which anchor variants it permits, and the validator refuses the rest | feature | S3 | `TODO` |
 | H15.8 | The ghost draws the ladder from the kernel, and the parity guard stops naming files | **B224** | S4 | `DONE` |
 | H15.10 | The declaration survives every door to the export, not only the four that were right | **B225** | S3 | `DONE` |
+| H15.11 | The head PAINTS, and the readout says the relation rather than the step | **B226**, **B227** | S3 | `DONE` |
 | H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out | feature | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 

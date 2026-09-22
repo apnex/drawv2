@@ -808,7 +808,24 @@ export class Input {
 		if (!link) return;
 		const cmd = commands.cycleFlow(link);
 		this.history.commit(cmd);
-		this.readout.flash(cmd.label);
+		/*
+		B227 -- SAY THE WHOLE RELATION, not just what changed.
+
+		`flow reverse` names the step and leaves the author to work out what it now means, which on
+		a link whose stored order they never chose is a puzzle rather than feedback. The endpoints
+		with an arrow between them says the RESULT, and the arrow is the same fact the canvas draws
+		-- so the readout and the picture cannot disagree.
+
+		`<->` for undeclared, because a symmetric link is not a link with no relationship; it is one
+		that carries flow both ways as far as anything here is concerned.
+		*/
+		const after = this.model.get('link', link.id) || link;
+		const nameOf = (id) => {
+			const e = this.model.get(kindOf(id), id);
+			return (e && e.name) || id;
+		};
+		const bar = typeof after.flow !== 'boolean' ? '<->' : (after.flow ? '>>>' : '<<<');
+		this.readout.flash(`${nameOf(link.src)} ${bar} ${nameOf(link.dst)}`);
 	}
 
 	// L / Shift+L — the wiring itself is commands.linkNodes'; what stays is selecting the result

@@ -263,11 +263,19 @@ H15.6 -- the arrowhead, defined once for both renderers.
 and `orient="auto"` so it follows the path's direction at the end it sits on -- which is what makes
 ONE definition serve both ends: the start marker is the same shape, turned around by the path.
 
-`context-stroke` takes the link's own colour, so a selected or armed link carries a head that
-matches it without a second rule deciding colour.
+B226 -- THE FILL IS THE LINK TOKEN, not `context-stroke`.
+
+`context-stroke` is the right idea and does not paint here: it resolved to the literal string in
+`getComputedStyle` and rasterised to ZERO lit pixels, against 480 for the same marker with a
+literal fill. So the head was referenced by both renderers, present in the defs, and invisible --
+which is worse than absent, because every attribute check passed.
+
+The cost of naming the colour is that a SELECTED link keeps a head in the base colour rather than
+the selection colour. That is a small, visible wrongness rather than a total one, and it is the
+trade until `context-stroke` is available.
 */
 function arrowDefs() {
-	const head = '<path d="M0 0 L6 3 L0 6 z" fill="context-stroke"/>';
+	const head = `<path d="M0 0 L6 3 L0 6 z" fill="${TOKENS.link}"/>`;
 	return `<marker id="flow-end" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto">${head}</marker>`
 		+ `<marker id="flow-start" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto-start-reverse">${head}</marker>`;
 }

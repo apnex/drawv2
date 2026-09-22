@@ -827,3 +827,65 @@ test('B219: the caption spans the canvas and stays inside it', { skip: SKIP }, a
 	assert.equal(g.capW, g.svgR - g.svgX,
 		`an overlong caption must fill the canvas exactly, not overrun it -- got ${g.capW} against a canvas of ${g.svgR - g.svgX}`);
 });
+
+/*
+H15.6 / B226: the arrowhead must actually PAINT, not merely be referenced.
+
+The marker reached the exported SVG and the canvas both carried `marker-end`, and the director
+could not see an arrow. Attribute presence is not visibility -- `fill="context-stroke"` resolves
+against the referencing element's stroke, and the canvas strokes its links from a STYLESHEET rather
+than from a stroke attribute. Whether that counts as context is the whole question, and no amount
+of reading the DOM answers it.
+
+So this asks the browser for PIXELS. `getBBox` on the rendered marker would say the shape exists;
+only a readback says it has colour on the canvas the director is looking at.
+*/
+test('B226: a declared link paints an arrowhead the user can see', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	const painted = await tab.eval(`(async () => {
+		const svg = document.querySelector('#container svg') || document.querySelector('svg');
+		const link = document.querySelector('#links .link');
+		if (!link) return { err: 'no link in the fixture' };
+		link.setAttribute('marker-end', 'url(#flow-end)');
+		// the marker must exist in the document the page actually loaded
+		const def = document.querySelector('#flow-end');
+		if (!def) return { err: 'no #flow-end marker defined on the page' };
+		const head = def.querySelector('path');
+		const fill = getComputedStyle(head).fill;
+		// serialise just this link and rasterise it, so the readback is of the REAL stroke
+		const box = link.getBBox();
+		const one = '<svg xmlns="http://www.w3.org/2000/svg" width="' + Math.ceil(box.width + 40) + '" height="' + Math.ceil(box.height + 40) + '">'
+			+ new XMLSerializer().serializeToString(document.querySelector('#kdefs svg') || document.createElementNS('http://www.w3.org/2000/svg','svg'))
+			+ '<g transform="translate(' + (20 - box.x) + ',' + (20 - box.y) + ')">' + new XMLSerializer().serializeToString(link) + '</g></svg>';
+		const img = new Image();
+		const url = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(one)));
+		await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('raster failed')); img.src = url; });
+		const c = document.createElement('canvas');
+		c.width = img.width; c.height = img.height;
+		const ctx = c.getContext('2d');
+		ctx.drawImage(img, 0, 0);
+		const d = ctx.getImageData(0, 0, c.width, c.height).data;
+		let lit = 0;
+		for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) lit += 1;
+		// control: does a marker with a LITERAL fill paint, in the same rasterisation?
+		const lit2 = await (async () => {
+			const two = one.replace('fill="context-stroke"', 'fill="#4fc3f7"');
+			const im2 = new Image();
+			await new Promise((res, rej) => { im2.onload = res; im2.onerror = rej; im2.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(two))); });
+			const c2 = document.createElement('canvas'); c2.width = im2.width; c2.height = im2.height;
+			c2.getContext('2d').drawImage(im2, 0, 0);
+			const dd = c2.getContext('2d').getImageData(0, 0, c2.width, c2.height).data;
+			let n = 0; for (let i = 0; i < dd.length; i += 4) if (dd[i + 3] > 0) n += 1;
+			return n;
+		})();
+		return { fill, lit, lit2, w: c.width, h: c.height };
+	})()`);
+	assert.ok(!painted.err, `precondition: ${painted.err || 'ok'}`);
+	/*
+	THE CONTROL IS THE POINT. `lit2` rasterises the same link with a LITERAL fill, so a zero in
+	`lit` cannot be blamed on the harness, the serialisation or the canvas -- only on the paint.
+	That control is what turned "I cannot see the arrow" into a measurement.
+	*/
+	assert.ok(painted.lit2 > 0, 'control: a literal fill must paint, or this test measures nothing');
+	assert.ok(painted.lit > 0, 'the arrowhead must PAINT -- an attribute that resolves to nothing is not a picture');
+});
