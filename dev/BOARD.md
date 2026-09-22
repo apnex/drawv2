@@ -852,6 +852,7 @@ Scored so the comparison is a judgement, not an omission.\
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
+| **B230** | S3 | No guard stops a field being wired into a renderer's CREATE branch and not its UPDATE branch -- B218 and B228 are that defect twice | a third instance appears, or H15.9 lands and makes the class unexpressible rather than merely detectable |
 | **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
 | **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
