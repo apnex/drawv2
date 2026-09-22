@@ -354,10 +354,29 @@ Priority as a bare integer is where this shape rots: two packs land on the same 
 An ordered list of named layers avoids it and stays readable.\
 Not ruled, because the first two packs do not need it.
 
-**Still open**: what a router that derives JUNCTION should look like.\
-Endpoint clearly needs no mark -- the frame says something ends here.\
-Junction means three or more links meet and flow does something other than continue, and a plain frame does not say that.\
-If the answer is a ring drawn over the frame, then the anchor marks are not uniformly `composes: false` and the resolution is per-state rather than per-pack.
+**Resolution is PER-STATE, not per-pack.**\
+The open question was what a router deriving JUNCTION should look like, and the answer came from a glyph the director drew long before any of this had a name: the router and the load balancer both carry a centre ring.
+
+That ring does the job a junction mark does -- it marks the point where paths meet and something happens to them.\
+So the glyph and the junction mark are not competing for one space; they are expressing the same fact, which is a different relationship from the endpoint case where the pad was merely redundant.
+
+| derived state | glyph vs anchor marks | why |
+|---|---|---|
+| endpoint | glyph wins alone | the frame already says something terminates here |
+| junction | the ring composes over the frame | nothing about a frame says flow meets and does something to it |
+
+A pack therefore declares `composes` and priority PER DERIVED STATE rather than once for the whole pack.
+
+**Hypothesis, not designed**: that the router's centre ring should come FROM `routable` when the anchor derives `junction`, rather than being drawn into the glyph.\
+A router with one link would then show no ring, and one with three would -- the ring becoming a reading of the graph rather than decoration, and a static ring being the same kind of error as a stored role.\
+Worth testing rather than assuming: a router that renders identically whether or not it is a junction would look wrong in a way a still image will not reveal.
+
+More broadly the director has raised DECOMPOSING the glyphs themselves into dynamic visual mechanisms.\
+That is deliberately not designed here.\
+The order is the same discipline this ruling applies to the write: build the framework and the pipeline first, and glyph decomposition then becomes pack design rather than a change to the mechanism.
+
+**Selection belongs to the grid**, not to a node or a pack.\
+The layout owns which of the things inhabiting it are selected, which is why selection sits on the decorate side with hover and mode.
 
 ---
 ## Scrubbing a published connection code, 2026-09-22
