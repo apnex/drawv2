@@ -1018,4 +1018,30 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	assert.match(kernelRenderer, /linkMarker\(/, 'the SVG export must consult the same rule');
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	assert.match(clientRenderer, /linkMarker\(/, 'and so must the canvas');
+
+	/*
+	AND IT MUST SURVIVE EVERY DOOR TO THE EXPORT, which is where this first shipped broken.
+
+	`flow` reached the document and the canvas, and the marker DEFINITIONS reached the exported
+	SVG -- but `docToSchema` built the route without the field, so the export defined two markers
+	and used neither. A picture that silently disagrees with the document is the worst outcome
+	available here, and the deploy that found it was green on 984 tests.
+
+	So this drives the real export end to end rather than checking that a function exists.
+	*/
+	const mk = (flow) => ({
+		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
+		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(flow === undefined ? {} : { flow }) }],
+		waypoints: [], zones: [], groups: [],
+	});
+	assert.match(k.render(k.docToSchema(mk(true))), /marker-end="url\(#flow-end\)"/,
+		'a forward flow must reach the exported path, not merely the defs');
+	assert.match(k.render(k.docToSchema(mk(false))), /marker-start="url\(#flow-start\)"/,
+		'and a reversed one must point the other way');
+	assert.doesNotMatch(k.render(k.docToSchema(mk(undefined))), /marker-(end|start)=/,
+		'an undeclared link must export no head at all');
+
+	// the round trip too: what the adapter carries out, it must carry back
+	const back = k.schemaToDoc(k.docToSchema(mk(false)));
+	assert.equal(back.links[0].flow, false, 'the adapter must not lose the declaration in either direction');
 });
