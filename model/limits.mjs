@@ -34,6 +34,22 @@ export const NAME_MAX = 64;
 // the longest string inside a content region's `value`
 export const CONTENT_VALUE_MAX = 256;
 
+/*
+B220 -- the longest caption a beat may carry. Its own constant, not NAME_MAX.
+
+A name identifies a thing: `spine-1`, `core-router`. A caption is the narration of a beat -- a
+sentence someone reads while the diagram builds itself. They are different kinds of string and 64
+characters is about ten words, which is a name-sized budget for prose.
+
+The value that exposed this was 105 characters and entirely reasonable: "Optus Target State
+Architecture: Hybrid Multi-Tenant NCC Core with Centralized Security & On-Prem Transit". The commit
+path stored it, the diagram worked all session, and the BOOT path refused the file -- so a document
+the system produced could not be reloaded by the system, and the diagram simply went missing.
+
+256 matches CONTENT_VALUE_MAX, which is the nearest thing to prose the schema already carries.
+*/
+export const CAPTION_MAX = 256;
+
 // the largest footprint a node may span, in cells. Its own constant rather than a second use of
 // NAME_MAX: the two share a value today and mean nothing alike, so they must be free to diverge.
 // Both peers cap it -- `app/src/commands.js` while resizing, `server/validate.js` on arrival -- and

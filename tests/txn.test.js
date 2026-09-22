@@ -648,3 +648,58 @@ test('B217: a collapse still fires when a junction LOSES a link', () => {
 	assert.equal(links[0].id, 'link-aa0001', 'and the inbound id survives');
 	assert.deepEqual(links[0].via, ['waypoint-aa0001']);
 });
+
+/*
+B220: what the commit door accepts, the boot door must load.
+
+A beat caption was written with a bare `String(request.caption)` and no length test, while
+`validateDoc` checked the stored file against NAME_MAX -- 64, a limit meant for identifiers like
+`spine-1`. So a 105-character narration was accepted, persisted, and served all session, then
+REFUSED when the server next read the file. The diagram vanished from its owner's list with nothing
+said, and the only trace was one skip line in a boot log. Three diagrams were in that state.
+
+Two defects, and the second is the one that matters. A caption is prose and deserves its own limit
+-- that part is a number. The doors DISAGREEING is the property: any value the write path admits
+must survive a restart, whatever the limit happens to be.
+
+Asserted as a round trip rather than against 256, so changing the limit cannot reintroduce the
+divergence. If a future edit loosens one door, the other fails here.
+*/
+test('B220: a caption the commit accepts survives a reload', async () => {
+	const { validateDoc } = await import('../server/validate.js');
+	const { CAPTION_MAX } = await import('../model/limits.mjs');
+
+	const withCaption = (caption) => {
+		const { m, log } = fresh();
+		commit(m, log, { ops: [put('node', node('node-aa0001', -120))] }, 'server', 't');
+		const r = commit(m, log, { ops: [put('node', node('node-aa0002', 120))], pace: 350, caption }, 'server', 't');
+		// `fresh()` mints no document id, and validateDoc checks meta before it reaches the reveal --
+		// without this the round trip fails on the fixture rather than on the caption
+		const doc = m.toJSON();
+		doc.meta.id = 'diagram-aa0001';
+		doc.meta.name = 'round-trip';
+		return { ok: r.ok, error: r.error, doc };
+	};
+
+	/*
+	THE ROUND TRIP. At the limit exactly: the commit must accept it AND the document must reload.
+	This is the assertion the defect violated -- it passed the first half and failed the second.
+	*/
+	const atLimit = withCaption('x'.repeat(CAPTION_MAX));
+	assert.equal(atLimit.ok, true, `a caption of exactly ${CAPTION_MAX} must commit`);
+	assert.equal(validateDoc(atLimit.doc), null,
+		'and the document it produced must LOAD -- a value one door accepts and the other refuses loses the diagram');
+
+	// the real caption that exposed this, 105 characters of ordinary prose
+	const real = withCaption('Optus Target State Architecture: Hybrid Multi-Tenant NCC Core with Centralized Security & On-Prem Transit');
+	assert.equal(real.ok, true, 'a 105-character narration is not an unreasonable caption');
+	assert.equal(validateDoc(real.doc), null, 'and it must reload');
+
+	/*
+	Past the limit it is REFUSED AT THE COMMIT, not truncated. A silently shortened caption is a
+	narration the author did not write, and they find out by reading it back later.
+	*/
+	const over = withCaption('x'.repeat(CAPTION_MAX + 1));
+	assert.equal(over.ok, false, 'past the limit the commit must refuse');
+	assert.match(over.error, /caption is \d+ characters/, 'and say what was wrong with it');
+});

@@ -34,6 +34,7 @@ import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { STD } from '../kernel/index.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { violations, isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';
+import { CAPTION_MAX } from '../model/limits.mjs';
 import { resolveAnchor } from './anchor.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
@@ -492,7 +493,27 @@ export function commit(model, log, request, by = 'client', actor = null) {
 		const ids = planned.ops.filter((o) => o.op === 'put').map((o) => o.entity.id);
 		if (ids.length) {
 			const beat = { interval: request.pace, ids };
-			if (request.caption) beat.caption = String(request.caption);
+			/*
+			B220 -- REFUSED here, not truncated and not stored unchecked.
+
+			This was `String(request.caption)` with no length test, while `validateDoc` checked the
+			stored file against a limit at boot. So a long caption was accepted, persisted, served
+			all session, and then refused when the server next read the file -- the diagram vanished
+			from its owner's list with nothing said, and the only trace was a skip line in the boot
+			log. A document the system produced could not be reloaded by the system.
+
+			Refusing is right rather than truncating: a caption silently shortened is a narration the
+			author did not write, and they would find out by reading it later. The limit is stated
+			once in `model/limits.mjs` and both doors read it, which is the property that was missing
+			-- not the value of the limit.
+			*/
+			if (request.caption !== undefined) {
+				const caption = String(request.caption);
+				if (caption.length > CAPTION_MAX) {
+					return { ok: false, error: `caption is ${caption.length} characters; the limit is ${CAPTION_MAX}` };
+				}
+				if (caption) beat.caption = caption;
+			}
 			/*
 			B193 -- a beat joins a schedule that is still playing, and STARTS one that has drained.
 

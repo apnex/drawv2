@@ -7,7 +7,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 import { NODE_EXT, ZONE_EXT, SELECTABLE_KINDS } from '../model/index.mjs';
 import { OPTIONAL } from '../model/shape.mjs';
 import { linkReferential, groupReferential, waypointOwners } from '../model/referential.mjs';
-import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
+import { NAME_MAX, CAPTION_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
 import { collectionCap } from '../engine/policy.mjs';
 
@@ -476,7 +476,9 @@ export function validateDoc(doc) {
 				if (!['interval', 'caption', 'ids'].includes(key)) return `unknown beat key: ${key}`;
 			}
 			if (!Number.isInteger(beat.interval) || beat.interval < 0) return 'invalid beat.interval';
-			if ('caption' in beat && !str(beat.caption, NAME_MAX)) return 'invalid beat.caption';
+			// B220 -- a caption is prose, not an identifier. NAME_MAX is 64, which refused a
+			// 105-character narration the commit path had already accepted and stored.
+			if ('caption' in beat && !str(beat.caption, CAPTION_MAX)) return 'invalid beat.caption';
 			if (!Array.isArray(beat.ids)) return 'invalid beat.ids';
 			for (const id of beat.ids) if (!ID.test(id || '')) return `invalid beat id: ${id}`;
 		}
