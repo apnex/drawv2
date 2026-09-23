@@ -14,7 +14,7 @@ const FE = L_STD.frame.ext;            // node frame half-extent (20)
 const SOCKET = STD.socket;             // glyph box (26)
 const LINK_W = STD.linkW;              // link/path stroke width (6)
 const ZONE_R = L_STD.zone.r;           // zone corner radius (14)
-const NODE_LABEL_Y = FE + 18;          // label baseline below the frame
+const NODE_LABEL_Y = FE + STD.labelDy; // label baseline below the frame -- B236, the spec owns the offset
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
 const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // unknown glyph → host fit-box (no crash)
 // a node's multi-cell footprint (W1): px extent beyond a 1×1 frame (+x/+y from the origin cell), and a
@@ -282,8 +282,8 @@ export class Renderer {
 			el('path', { class: 'select-box', d: sig ? selBox(L_STD, sw, sh) : SELECT_BOX }, g);
 			if (!csig) {   // a content node (text box / panel) is self-labelled by its content — no name sub-title
 				const pw = pillWidth(entity.name);
-				el('rect', { class: 'label-pill', rx: 4, x: sw / 2 - pw / 2, y: NODE_LABEL_Y - 13 + sh, width: pw, height: 17 }, g);
-				el('text', { class: 'label', x: sw / 2, y: NODE_LABEL_Y + sh }, g).textContent = entity.name || '';
+				el('rect', { class: 'label-pill', rx: 4, x: sw / 2 - pw / 2, y: NODE_LABEL_Y - 13 + sh, width: pw, height: STD.labelH }, g);
+				el('text', { class: 'label', x: sw / 2, y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize }, g).textContent = entity.name || '';
 			}
 		}
 		if (kind === 'link') {
@@ -297,8 +297,8 @@ export class Renderer {
 		if (kind === 'zone') {
 			const g = el('g', { id: entity.id, class: 'zone' }, this.layers.zones);
 			el('rect', { class: 'zone-rect', rx: ZONE_R, x: entity.x, y: entity.y, width: entity.w, height: entity.h }, g);
-			el('rect', { class: 'label-pill', rx: 4, x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name), height: 17 }, g);
-			el('text', { class: 'label zone-label', x: entity.x + 10, y: entity.y + 22 }, g).textContent = entity.name || '';
+			el('rect', { class: 'label-pill', rx: 4, x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name), height: STD.labelH }, g);
+			el('text', { class: 'label zone-label', x: entity.x + STD.zoneDx, y: entity.y + STD.zoneDy, 'font-size': STD.fontSize }, g).textContent = entity.name || '';
 		}
 		if (kind === 'group') {
 			const b = this.groupBox(entity);

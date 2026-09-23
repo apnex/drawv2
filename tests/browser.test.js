@@ -1089,3 +1089,41 @@ test('B235: the panel frame the browser DRAWS is the derived one', { skip: SKIP 
 	assert.ok(seen.plainDrawn > seen.panelDrawn,
 		`a plain node must stay heavier than a panel -- plain ${seen.plainDrawn}, panel ${seen.panelDrawn}`);
 });
+
+/*
+B236: a LABEL is one size, on the canvas and in the export alike.
+
+B234 gave the kernel a label path and sized it from `STD.fontSize`. The canvas had been drawing
+labels all along, sized by `.label { font-size: 15px }` in the client stylesheet -- a rule the
+kernel has never seen. So the two pictures disagreed the moment the export learned to draw labels,
+and my own fix an hour earlier introduced it.
+
+The same shape as B235 in the opposite direction: canvas heavier, export lighter, one size with two
+authorities. Asserted on the COMPUTED style, because B235 was missed by checking an attribute.
+*/
+test('B236: a node label is the ruled size, and the browser draws that size', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	const seen = await tab.eval(`(() => {
+		const lbl = document.querySelector('#nodes .label');
+		if (!lbl) return { err: 'no label in the fixture' };
+		return { drawn: parseFloat(getComputedStyle(lbl).fontSize), attr: lbl.getAttribute('font-size') };
+	})()`);
+	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
+
+	const { STD } = await import('../kernel/index.mjs');
+	assert.equal(seen.drawn, STD.fontSize,
+		`the canvas must draw a label at the ruled size -- it drew ${seen.drawn}, the kernel exports ${STD.fontSize}`);
+
+	/*
+	THE ATTRIBUTE IS ASSERTED SEPARATELY, and the reason is worth recording.
+
+	Removing the CSS rule alone happens to leave the browser default at 13px -- the same number the
+	spec rules -- so a mutation that stops the client emitting the size is INVISIBLE to the computed
+	check. Measured, not assumed: attribute null, computed 13px.
+
+	That coincidence is not a rule. It would break the moment `fontSize` changed, and the canvas
+	would drift back from the export silently. So the size must be emitted, not merely observed.
+	*/
+	assert.equal(Number(seen.attr), STD.fontSize,
+		'the client must EMIT the size -- relying on a browser default that happens to match is not an authority');
+});

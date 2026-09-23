@@ -382,7 +382,10 @@ A text box that genuinely needs selectable content opts back in, and will have a
 #container, #container text { user-select: none; -webkit-user-select: none; }
 
 /* ---- labels (UI-owned) ---- */
-.label { font-family: monospace; font-size: 15px; fill: #ddddff; user-select: none; text-anchor: middle; }
+/* B236 -- no font-size. A label's size is RULED (kernel STD.fontSize) and emitted as an
+   attribute, and a CSS rule silently beats one -- which is how the canvas drew 15 while the
+   export drew 13, from the moment B234 taught the export to draw labels at all. */
+.label { font-family: monospace; fill: #ddddff; user-select: none; text-anchor: middle; }
 .label.zone-label { text-anchor: start; }
 .label-pill { fill: #101010; }
 
