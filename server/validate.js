@@ -240,7 +240,10 @@ const FIELDS = {
 		closed: (v) => typeof v === 'boolean',            // a routed link looped dst → src (render-only)
 		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; true means the
 		// flow follows the stored order, false that it runs against it. See `facing` in model/invariants.mjs.
-		flow: (v) => typeof v === 'boolean'
+		flow: (v) => typeof v === 'boolean',
+		// H15.15 -- a CONTROL-PLANE link carries no data-plane packets. Absent is an ordinary data
+		// link, so every document written before this field reads exactly as it did.
+		control: (v) => typeof v === 'boolean'
 	},
 	zone: {
 		id: (v) => id(v, 'zone'),

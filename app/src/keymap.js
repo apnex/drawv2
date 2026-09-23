@@ -98,6 +98,7 @@ export const KEYMAP = [
 	{ id: 'wrap',      mutates: true, when: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
 	{ id: 'close',     mutates: true, when: (e) => is(e, 'c') && plain(e),                      run: 'onCloseKey' },
 	{ id: 'flow',      mutates: true, when: (e) => is(e, 'f') && plain(e),                      run: 'onFlowKey' },
+	{ id: 'plane',     mutates: true, when: (e) => is(e, 'k') && plain(e),                      run: 'onPlaneKey' },
 	{ id: 'chain',     mutates: true, when: (e) => is(e, 'l') && plain(e) && !e.shiftKey,       run: 'onChainKey' },
 	{ id: 'star',      mutates: true, when: (e) => is(e, 'l') && plain(e) && e.shiftKey,        run: 'onStarKey' },
 	{ id: 'rename',    mutates: true, when: (e) => e.key === 'F2',                              run: 'onRenameKey' },

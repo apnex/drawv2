@@ -145,7 +145,10 @@ export class Readout {
 				*/
 				const head = linkMarker(entity);
 				const bar = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';
-				return `${nameOf(entity.src)} ${bar} ${nameOf(entity.dst)}`;
+				// H15.15 -- the PLANE is state too, so it sits on the selection line rather than
+				// flashing once. A data link says nothing, because it is the ordinary case.
+				const plane = entity.control ? ' [control]' : '';
+				return `${nameOf(entity.src)} ${bar} ${nameOf(entity.dst)}${plane}`;
 			}
 			return id;
 		}

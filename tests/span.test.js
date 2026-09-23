@@ -1045,3 +1045,44 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	const back = k.schemaToDoc(k.docToSchema(mk(false)));
 	assert.equal(back.links[0].flow, false, 'the adapter must not lose the declaration in either direction');
 });
+
+/*
+H15.15: the dash must reach the EXPORT and survive an UPDATE.
+
+Both halves are here because both were defects for the arrowhead, one rung ago. B225: the marker
+was defined in the export and referenced by nothing, because `docToSchema` dropped the field.
+B228: the marker was set on create and not on update, so the first press worked and none after it.
+
+The plane is the same shape of field travelling the same five doors, so it is guarded at the two
+that failed rather than trusted because the code looks right.
+*/
+test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
+	const k = await import('../kernel/index.mjs');
+	const mk = (control) => ({
+		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
+		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(control ? { control: true } : {}) }],
+		waypoints: [], zones: [], groups: [],
+	});
+
+	assert.match(k.render(k.docToSchema(mk(true))), /stroke-dasharray="6 6"/,
+		'a control link must reach the exported path dashed, not merely be marked in the document');
+	assert.doesNotMatch(k.render(k.docToSchema(mk(false))), /stroke-dasharray/,
+		'and an ordinary data link must carry no dash attribute at all');
+	assert.equal(k.schemaToDoc(k.docToSchema(mk(true))).links[0].control, true,
+		'the adapter must not lose the plane in either direction -- that was B225');
+
+	// the dash is DERIVED, by one rule, and scales with the stroke rather than carrying its own number
+	assert.equal(k.linkDash({ id: 'l', control: true }, 6), '6 6');
+	assert.equal(k.linkDash({ id: 'l' }, 6), null, 'absence of the field is absence of the dash');
+	assert.equal(k.linkDash({ id: 'l', control: true }, 10), '10 10', 'the pattern follows the stroke width');
+
+	// both renderers must consult it, or the canvas and the export disagree about the plane
+	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	assert.match(kernelRenderer, /linkDash\(/, 'the SVG export must consult the same rule');
+	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(kind, entity)'));
+	assert.match(updateBranch, /linkDash\(/,
+		'the UPDATE path must re-derive it -- setting only on create is what B228 was');
+	assert.match(updateBranch, /removeAttribute\('stroke-dasharray'\)/,
+		'and it must REMOVE the dash, or a link turned back to data keeps the last one');
+});

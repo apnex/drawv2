@@ -2,7 +2,7 @@
 // decisions live here; the engine has already placed everything. Sovereign: glyph defs, glyph
 // metrics, colours and the scene CSS all come from theme.mjs (no client/ coupling).
 import { STD, L_STD } from './spec.mjs';
-import { bboxOf, waypointLayers, linkMarker } from './geometry.mjs';
+import { bboxOf, waypointLayers, linkMarker, linkDash } from './geometry.mjs';
 import { roundedPath } from './router.mjs';
 import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 
@@ -131,7 +131,10 @@ function renderEl(el, V, L, opts = {}) {
 		// H15.6 -- the head is DERIVED, by the one rule the canvas also reads
 		const head = linkMarker(el);
 		const marker = head === 'end' ? ' marker-end="url(#flow-end)"' : head === 'start' ? ' marker-start="url(#flow-start)"' : '';
-		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"${marker}/>`;
+		// H15.15 -- a control-plane link is dashed, by the one rule the canvas also reads
+		const d = linkDash(el, V.linkW);
+		const dash = d ? ` stroke-dasharray="${d}"` : '';
+		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-width="${V.linkW}" stroke-linecap="round" stroke-linejoin="round"${marker}${dash}/>`;
 	}
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is

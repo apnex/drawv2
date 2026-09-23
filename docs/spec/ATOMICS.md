@@ -284,6 +284,25 @@ Having no direction, they cannot oppose one another, so only the count matters.
 This **revises the built rule** that more than two terminations makes a junction (B214).\
 Two can now be a junction as well, so `waypointRoles` takes direction as an input where today it only counts.
 
+### The control plane
+
+`control`, an optional boolean on a link.\
+Absent is the ordinary DATA plane, so every document written before the field reads exactly as it did; `true` marks a link that carries no data-plane packets.
+
+It is drawn DASHED, at a pattern derived from the stroke width rather than a number of its own -- the same reasoning the arrowhead uses for `markerUnits`.
+
+**A bend requires BOTH**: the directions agree AND the planes match.
+
+| two links at a waypoint | reads as |
+|---|---|
+| directions agree, same plane | bend |
+| directions oppose, same plane | junction |
+| planes differ, either direction | junction |
+
+This extends the matrix rather than adding a mechanism.\
+A bend means flow passes through UNCHANGED, so a waypoint where anything differs is a place where something happens -- which is what a junction is.\
+When more link types arrive after unification the question stays "does anything differ?" rather than needing a rule for each.
+
 ### Propagation
 
 Declared direction **inherits** along a run of bends.\

@@ -127,5 +127,6 @@ function resolveRoute(rt, byId, V) {
 	// from the same field the model reads. Absent stays absent: an undeclared route has no head.
 	const el = path(gridSnap(pts, V.pitch / 2), { radius: rt.radius ?? BEND_R, closed: !!rt.closed });
 	if (typeof rt.flow === 'boolean') el.flow = rt.flow;
+	if (rt.control) el.control = true;              // H15.15 -- the plane travels with the route too
 	return el;
 }

@@ -175,6 +175,15 @@ export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	*/
 	const fa = facing(a, waypointId), fb = facing(b, waypointId);
 	if (fa && fb && fa === fb) return null;                     // both arriving or both leaving
+	/*
+	H15.15 -- A CONTROL LINK AND A DATA LINK DO NOT MERGE.
+
+	A bend requires the planes to match as well as the directions, because a bend means flow passes
+	through unchanged and these two carry different things. The twin of `samePlane` in
+	kernel/geometry.mjs, held to it by the test that asserts both rules over the same pairs -- one
+	place implementing the matrix while another disagreed is exactly what B232 was.
+	*/
+	if (!!a.control !== !!b.control) return null;
 	const flow = fa ? a.flow : (fb ? b.flow : undefined);
 	const via = [...(a.via || []), waypointId, ...(b.via || [])];
 	const merged = { ...a, src: a.src, dst: b.dst, via };

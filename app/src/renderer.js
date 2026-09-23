@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRoles, waypointLayers, linkMarker, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRoles, waypointLayers, linkMarker, linkDash, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -291,7 +291,9 @@ export class Renderer {
 			if (!d) return;
 			// H15.6 -- the arrowhead is derived by the kernel, so the canvas and the export agree
 			const head = linkMarker(entity);
+			const dash = linkDash(entity, LINK_W);   // H15.15 -- control plane reads as dashed
 			el('path', { id: entity.id, class: 'link', 'stroke-width': LINK_W, fill: 'none', d,
+				...(dash ? { 'stroke-dasharray': dash } : {}),
 				...(head === 'end' ? { 'marker-end': 'url(#flow-end)' } : head === 'start' ? { 'marker-start': 'url(#flow-start)' } : {}) }, this.layers.links);
 			this.refreshWaypointsOf(entity);
 		}
@@ -429,6 +431,11 @@ export class Renderer {
 				if (head === want) dom.setAttribute(attr, `url(#flow-${want})`);
 				else dom.removeAttribute(attr);
 			}
+			// H15.15 -- the dash too, set-or-REMOVE. B228 was this exact omission for the marker:
+			// an update that only ever adds strands the last value on a link the author has changed.
+			const dash = linkDash(entity, LINK_W);
+			if (dash) dom.setAttribute('stroke-dasharray', dash);
+			else dom.removeAttribute('stroke-dasharray');
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {

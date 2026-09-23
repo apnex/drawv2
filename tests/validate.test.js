@@ -911,3 +911,52 @@ test('H15.4: `facing` and `waypointRoles` read a declaration identically', async
 	assert.deepEqual(waypointRoles(w, [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w, flow: true }]),
 		['junction'], 'the kernel branch under test is the one deciding');
 });
+
+/*
+H15.15: a bend requires BOTH -- directions agree AND planes match.
+
+`control: true` marks a link as control plane: it carries no data-plane packets. Ruled by the
+director as a real distinction rather than a style flag, so it belongs in the matrix beside
+direction rather than beside colour.
+
+The rule generalises rather than adding a case. A bend means flow passes through UNCHANGED, so a
+waypoint where anything differs -- the direction, or the plane -- is a place where something
+happens, which is a junction. When more link types arrive after unification the question stays "does
+anything differ?" rather than needing a rule per type.
+
+ASSERTED TOGETHER WITH THE COLLAPSE, deliberately. `waypointRoles` and `collapseAtWaypoint` must
+agree about every pair, and B232 shipped precisely because the matrix was implemented in one place
+and the guard was written from the code rather than from the ruled table. Two rules, one test.
+*/
+test('H15.15: a control link and a data link meeting is a junction, not a bend', async () => {
+	const { waypointRoles } = await import('../kernel/index.mjs');
+	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
+	const w = 'w';
+
+	// the four combinations of (directions agree?) x (planes match?)
+	const cases = [
+		{ why: 'agree, same plane', a: { flow: true }, b: { flow: true }, bend: true },
+		{ why: 'oppose, same plane', a: { flow: true }, b: { flow: false }, bend: false },
+		{ why: 'agree, planes differ', a: { flow: true, control: true }, b: { flow: true }, bend: false },
+		{ why: 'oppose, planes differ', a: { flow: true, control: true }, b: { flow: false }, bend: false },
+		{ why: 'agree, both control', a: { flow: true, control: true }, b: { flow: true, control: true }, bend: true },
+	];
+	for (const { why, a, b, bend } of cases) {
+		const la = { id: 'la', src: 'x', dst: w, ...a };
+		const lb = { id: 'lb', src: w, dst: 'y', ...b };
+		assert.deepEqual(waypointRoles(w, [la, lb]), bend ? [] : ['junction'],
+			`${why}: the role must follow the ruled table`);
+		assert.equal(collapseAtWaypoint(la, lb, w) === null, !bend,
+			`${why}: and the collapse must reach the SAME verdict -- two rules that disagree is B232`);
+	}
+
+	/*
+	AN UNDECLARED PLANE IS DATA, not a third state. `control` absent means an ordinary link, so two
+	undeclared links match one another -- which keeps every document written before this field
+	reading exactly as it did.
+	*/
+	const plain = [{ id: 'la', src: 'x', dst: w, flow: true }, { id: 'lb', src: w, dst: 'y', flow: true }];
+	const bothData = [{ id: 'la', src: 'x', dst: w, flow: true, control: false }, { id: 'lb', src: w, dst: 'y', flow: true }];
+	assert.deepEqual(waypointRoles(w, plain), waypointRoles(w, bothData),
+		'absent and false are the same plane -- absence must not read as a third kind of link');
+});

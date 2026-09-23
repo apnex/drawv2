@@ -825,6 +825,22 @@ export class Input {
 		this.readout.render();
 	}
 
+	/*
+	H15.15 -- K toggles the selected link between the control plane and the data plane.
+
+	Single selection only, the same shape as `f` and `toggleClosePath` above: a plane is a statement
+	about ONE link, and a multi-selection would have to guess whether the author meant to set them
+	all control or to flip each independently.
+	*/
+	toggleLinkPlane() {
+		const ids = this.selection.list();
+		if (ids.length !== 1 || kindOf(ids[0]) !== 'link') return;
+		const link = this.model.get('link', ids[0]);
+		if (!link) return;
+		this.history.commit(commands.toggleControl(link));
+		this.readout.render();   // the selection line carries the plane, as it carries the direction
+	}
+
 	// L / Shift+L — the wiring itself is commands.linkNodes'; what stays is selecting the result
 	// and saying how many landed.
 	linkSelectedNodes(star) {
@@ -1481,6 +1497,7 @@ export class Input {
 	onWrapKey() { this.wrapInZone(); }
 	onCloseKey() { this.toggleClosePath(); }
 	onFlowKey() { this.cycleLinkFlow(); }
+	onPlaneKey() { this.toggleLinkPlane(); }
 	onChainKey() { this.linkSelectedNodes(false); }
 	onStarKey()  { this.linkSelectedNodes(true); }
 

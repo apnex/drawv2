@@ -972,3 +972,78 @@ test('B226: a declared link paints an arrowhead the user can see', { skip: SKIP 
 	assert.ok(painted.lit2 > 0, 'control: a literal fill must paint, or this test measures nothing');
 	assert.ok(painted.lit > 0, 'the arrowhead must PAINT -- an attribute that resolves to nothing is not a picture');
 });
+
+/*
+H15.15 / B226's lesson: the dash must PAINT, and the gesture must reach it.
+
+The arrowhead passed every attribute check while painting nothing, so a plane flag that merely
+appears in the DOM is not evidence of anything. This drives the real gesture -- select, press k --
+and then rasterises the link to count lit pixels against a solid control.
+
+A dashed line paints STRICTLY FEWER pixels than the same line solid. That is the measurement: not
+that an attribute is present, but that the ink changed.
+*/
+test('H15.15: pressing k dashes the selected link, visibly', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	const seen = await tab.eval(`(async () => {
+		const app = window.draw;
+		const link = app.model.all('link')[0];
+		if (!link) return { err: 'no link' };
+		app.selection.set([link.id]);
+
+		const lit = async () => {
+			const el = document.getElementById(link.id);
+			const box = el.getBBox();
+			// the canvas strokes .link from the STYLESHEET, so a serialised path carries no colour
+			// and rasterises to nothing. Inline the computed stroke, or the readback measures the
+			// absence of CSS rather than the presence of a dash.
+			const cs = getComputedStyle(el);
+			const clone = el.cloneNode(true);
+			clone.setAttribute('stroke', cs.stroke);
+			const one = '<svg xmlns="http://www.w3.org/2000/svg" width="' + Math.ceil(box.width + 40) + '" height="' + Math.ceil(box.height + 40) + '">'
+				+ '<g transform="translate(' + (20 - box.x) + ',' + (20 - box.y) + ')">' + new XMLSerializer().serializeToString(clone) + '</g></svg>';
+			const img = new Image();
+			await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(one))); });
+			const c = document.createElement('canvas');
+			c.width = img.width; c.height = img.height;
+			c.getContext('2d').drawImage(img, 0, 0);
+			const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+			let n = 0;
+			for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) n += 1;
+			return n;
+		};
+
+		const before = { attr: document.getElementById(link.id).getAttribute('stroke-dasharray'), px: await lit() };
+		app.input.onPlaneKey();
+		const dashed = { attr: document.getElementById(link.id).getAttribute('stroke-dasharray'), px: await lit(), control: app.model.get('link', link.id).control, said: document.getElementById('readout-bottom').textContent };
+		app.input.onPlaneKey();
+		const back = { attr: document.getElementById(link.id).getAttribute('stroke-dasharray'), px: await lit(), control: app.model.get('link', link.id).control };
+		return { before, dashed, back, saidAfter: document.getElementById('readout-bottom').textContent };
+	})()`);
+	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
+
+	assert.equal(seen.before.attr, null, 'an ordinary link starts solid');
+	assert.equal(seen.dashed.control, true, 'k marks the link control plane in the document');
+	assert.ok(seen.dashed.px > 0 && seen.before.px > 0, 'control: both states must paint SOMETHING, or this measures nothing');
+	assert.ok(seen.dashed.px < seen.before.px,
+		`a dashed line must paint fewer pixels than a solid one -- solid ${seen.before.px}, dashed ${seen.dashed.px}`);
+
+	/*
+	NOTE ON WHAT THIS DOES AND DOES NOT REACH. Clearing goes through a `put`, because removing a key
+	needs a whole-entity op -- so the second press re-renders and never exercises the UPDATE branch.
+	Deleting `removeAttribute('stroke-dasharray')` therefore leaves this test green.
+
+	That branch is guarded at source level in tests/span.test.js instead, which does catch it. Said
+	plainly here because a pixel test that looks like it covers the removal path and does not is
+	worse than no test: it is the shape B226 and B230 both had.
+	*/
+	// pressing again must REMOVE the dash, not strand it (B228)
+	assert.equal(seen.back.control, undefined, 'the second press returns the link to the data plane');
+	assert.equal(seen.back.attr, null, 'and the attribute is removed rather than left behind');
+	assert.equal(seen.back.px, seen.before.px, 'so the ink returns to exactly what it was');
+
+	// the readout is STATE, so it must say [control] WHILE the link is control plane and stop
+	// saying it the moment it is not -- measured at both instants rather than at the end
+	assert.match(seen.dashed.said, /\[control\]/, 'the readout names the plane while the link is on it');
+	assert.doesNotMatch(seen.saidAfter, /\[control\]/, 'and stops naming it the moment the link returns to data');
+});

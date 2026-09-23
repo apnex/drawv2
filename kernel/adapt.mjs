@@ -47,7 +47,7 @@ export function docToSchema(doc, opts = {}) {
 	// H15.6 -- `flow` travels with the route, or the exported SVG loses the arrowhead the canvas
 	// draws. The adapter is a THIRD door on this field, after the commit and the boot, and it was
 	// the one that silently dropped it: markers were defined in the export and used by nothing.
-	(doc.links || []).forEach((l) => relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed, ...(typeof l.flow === 'boolean' ? { flow: l.flow } : {}) } }));
+	(doc.links || []).forEach((l) => relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed, ...(typeof l.flow === 'boolean' ? { flow: l.flow } : {}), ...(l.control ? { control: true } : {}) } }));
 	return { variant: 'standard', entities, relations };
 }
 
@@ -69,6 +69,6 @@ export function schemaToDoc(schema, meta = {}) {
 			zones.push({ id: e.id, name: e.name || '', x: c0 * P - P / 2, y: r0 * P - P / 2, w: (c1 - c0 + 1) * P, h: (r1 - r0 + 1) * P });
 		} else if (e.kind === 'group') groups.push({ id: e.id, name: e.name || '', members: [...(e.members || [])] });
 	});
-	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.src, dst: r.route.dst, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.closed ? { closed: true } : {}), ...(typeof r.route.flow === 'boolean' ? { flow: r.route.flow } : {}) }); });
+	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.src, dst: r.route.dst, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.closed ? { closed: true } : {}), ...(typeof r.route.flow === 'boolean' ? { flow: r.route.flow } : {}), ...(r.route.control ? { control: true } : {}) }); });
 	return { meta: { id: '', name: 'untitled', version: 0, schema: 1, ...meta }, nodes, waypoints, links, zones, groups };
 }

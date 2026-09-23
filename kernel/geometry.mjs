@@ -338,6 +338,25 @@ depends on no `model/` and the reverse, an independence worth more than one bool
 Exported so the agreement between the twins is driven against THIS function rather than a copy
 re-typed in a test, which would pass while the real one drifted.
 */
+/*
+H15.15 -- WHICH PLANE a link belongs to. `control: true` is the control plane; absent or false is
+the ordinary data plane, so every document written before the field reads unchanged.
+
+A predicate rather than a raw field read, because two rules consult it -- the role derivation here
+and the collapse in model/invariants.mjs -- and B232 shipped because one place implemented the
+matrix and another disagreed about it.
+*/
+export const samePlane = (a, b) => !!a.control === !!b.control;
+
+/*
+The dash a link is drawn with, DERIVED from its plane. Null for an ordinary data link, which is
+solid, so absence of the field means absence of the attribute rather than a default written out.
+
+The pattern is a multiple of the stroke so it scales with the line rather than carrying its own
+number -- the same reasoning `markerUnits="strokeWidth"` uses for the arrowhead.
+*/
+export const linkDash = (link, w = STD.linkW) => (link.control ? `${w} ${w}` : null);
+
 export const linkFacing = (link, pointId) => {
 	if (typeof link.flow !== 'boolean') return null;
 	const head = link.flow ? link.dst : link.src;
@@ -422,7 +441,19 @@ export const waypointRoles = (id, touching) => {
 		Declaring ONE of two links leaves `dirs.length === 1`: an undeclared link asserts nothing
 		and cannot make a path through by itself, so that case still falls through to `endpoint`.
 		*/
-		if (dirs.length === 2) return dirs[0] === dirs[1] ? ['junction'] : [];
+		/*
+		H15.15 -- A BEND REQUIRES BOTH: the directions agree AND the planes match.
+
+		A bend means flow passes through UNCHANGED, so a waypoint where anything differs is a place
+		where something happens -- which is what a junction is. A control link meeting a data link
+		is therefore a junction exactly as a convergence is, and the rule generalises: when more
+		link types arrive the question stays "does anything differ?" rather than needing a case.
+		*/
+		if (dirs.length === 2) {
+			const two = (touching || []).filter((t) => !t.closed && linkFacing(t, id));
+			const through = dirs[0] !== dirs[1] && samePlane(two[0], two[1]);
+			return through ? [] : ['junction'];
+		}
 	}
 
 	if (endpoint) roles.push('endpoint');

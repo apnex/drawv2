@@ -266,6 +266,23 @@ export function cycleFlow(link) {
 }
 
 /*
+H15.15 -- TOGGLE a link between the control plane and the data plane.
+
+`control: true` means the link carries no data-plane packets. Two states rather than three, so this
+toggles where `cycleFlow` cycles -- and turning it OFF removes the key rather than writing `false`,
+for the reason cycleFlow clears with a put: `after: { control: undefined }` sets an own property
+holding undefined, which is invisible to JSON, visible to `in`, and refused by a schema asking for a
+boolean. Absent is the ordinary data link and what every older document carries.
+*/
+export function toggleControl(link) {
+	if (link.control) {
+		const { control, ...without } = link;
+		return { label: 'data plane', entries: [{ op: 'put', kind: 'link', entity: without }] };
+	}
+	return { label: 'control plane', entries: [{ op: 'set', kind: 'link', id: link.id, after: { control: true } }] };
+}
+
+/*
 L / Shift+L — wire the selected nodes with no pointer travel. L chains them in selection order;
 Shift+L stars the first to every other. Existing pairs are skipped.
 
