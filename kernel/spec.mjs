@@ -17,7 +17,13 @@ export const STD = Object.freeze({
 	linkW: 6,     // link / path stroke width
 	frameW: 2.1,  // node frame stroke -- was a literal in BOTH stylesheets, which is how two copies drift
 	panelW: 1,    // a TEXT PANEL frame, lighter: a caption on the drawing rather than a component in it
-	fontSize: 13  // content text. Was 15, written independently into both renderers (H15.18)
+	fontSize: 13, // content text. Was 15, written independently into both renderers (H15.18)
+	// B234 -- where a NAME sits. The client held these as literals and the kernel had no label at
+	// all, so the canvas and the export disagreed about whether a diagram has labels.
+	labelDy: 18,  // node name baseline, below the frame extent
+	labelH: 17,   // the pill behind a name
+	zoneDx: 10,   // zone name, in from the corner
+	zoneDy: 22
 });
 
 // the LOCKED bend radius (docs/spec/ATOMICS.md): a path corner radius = the node radius (20), so a 40px

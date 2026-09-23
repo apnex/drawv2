@@ -111,6 +111,19 @@ export function contentLayout(r, V = STD, L = L_STD) {
 	}
 	return { x0, y0, w, h, cx, cy, cols, rows, tx, anchor, fill, lines, size };
 }
+/*
+B234 -- a NAME, drawn where the canvas draws it.
+
+Empty or absent emits NOTHING rather than an empty `<text>`: an unnamed entity has no label, and a
+blank element is a thing a reader has to rule out. Escaped, because a diagram is user content and a
+bare `<` or `&` breaks the document.
+
+The offsets come from the spec rather than from here, so the canvas and the export cannot disagree
+about where a label sits -- which is exactly what they did while the export had no labels at all.
+*/
+const label = (name, x, y, opts = {}) =>
+	(name ? TXT(x, y, String(name), { fill: TOKENS.label || '#e6e9ee', ...opts }) : '');
+
 const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = STD.fontSize } = {}) =>
 	`<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="ui-monospace,monospace" font-size="${size}" fill="${fill}">${escText(s)}</text>`;
 
@@ -149,7 +162,11 @@ function socketGridSvg(cols, rows, V) {
 }
 
 function renderEl(el, V, L, opts = {}) {
-	if (el.kind === 'zone') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${TOKENS.zoneFill}" fill-opacity="${TOKENS.zoneFillOp}" stroke="${TOKENS.zoneStroke}" stroke-opacity="${TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
+	if (el.kind === 'zone') {
+		const rect = `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${TOKENS.zoneFill}" fill-opacity="${TOKENS.zoneFillOp}" stroke="${TOKENS.zoneStroke}" stroke-opacity="${TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
+		// B234 -- the NAME, at the offsets the canvas uses, so the two pictures agree
+		return rect + label(el.name, el.x + V.zoneDx, el.y + V.zoneDy, { anchor: 'start' });
+	}
 	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${TOKENS.group}" stroke-width="1.1"/>`;
 	if (el.kind === 'path') {
 		// H15.6 -- the head is DERIVED, by the one rule the canvas also reads
@@ -230,10 +247,13 @@ function renderEl(el, V, L, opts = {}) {
 		  ${el.sel ? `<path class="select-box" style="display:block" d="${selBox(L, sw, sh)}"/>` : ''}
 		</g>`;
 		}
+		// B234 -- the NAME, below the frame, at the offset the canvas uses. Only on the plain path:
+		// a PANEL's text is its content regions, and a name would be a second caption on the same box.
 		return `<g class="node ${el.sel ? 'selected' : ''}" transform="translate(${el.cx},${el.cy})">
 		  ${frame}
 		  ${showsSockets(opts) ? `<rect class="socket" x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" fill="none" stroke="${TOKENS.socket}" stroke-width="0.6" stroke-dasharray="2 2"/>` : ''}
 		  <svg x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-${el.glyph}"/></svg>
+		  ${label(el.name, sw / 2, L.frame.ext + V.labelDy + sh)}
 		  ${el.sel ? `<path class="select-box" style="display:block" d="${selBox(L, sw, sh)}"/>` : ''}
 		</g>`;
 	}

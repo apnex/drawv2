@@ -30,7 +30,9 @@ export function docToSchema(doc, opts = {}) {
 	const entities = [], relations = [];
 	(doc.nodes || []).forEach((n) => {
 		const c0 = cell(n.x), r0 = cell(n.y);
-		const e = { id: n.id, kind: 'node', cell: [c0, r0], frame: n.shape || 'circle', glyph: n.type, sel: selected.has(n.id) };
+		// B234 -- the NAME travels. It was dropped here, so no renderer downstream could draw a
+		// label however much it wanted to, and every exported SVG came out unlabelled.
+		const e = { id: n.id, kind: 'node', cell: [c0, r0], frame: n.shape || 'circle', glyph: n.type, sel: selected.has(n.id), name: n.name };
 		// a multi-cell node: counts (doc) → absolute cell ranges (kernel), anchored at the node cell (+col/+row).
 		if (n.span && (n.span.cols > 1 || n.span.rows > 1)) e.span = { cols: [c0, c0 + n.span.cols - 1], rows: [r0, r0 + n.span.rows - 1] };
 		if (n.content && n.content.length) e.content = n.content;   // W2 content regions are node-local (offset + counts) → pass through
@@ -40,7 +42,7 @@ export function docToSchema(doc, opts = {}) {
 		// clamp to ≥1 cell: a sub-pitch / degenerate zone must not invert (c1<c0 → empty range → NaN hull)
 		const c0 = cell(z.x + P / 2), c1 = Math.max(c0, cell(z.x + z.w - P / 2));
 		const r0 = cell(z.y + P / 2), r1 = Math.max(r0, cell(z.y + z.h - P / 2));
-		entities.push({ id: z.id, kind: 'zone', span: { cols: [c0, c1], rows: [r0, r1] } });
+		entities.push({ id: z.id, kind: 'zone', span: { cols: [c0, c1], rows: [r0, r1] }, name: z.name });
 	});
 	(doc.waypoints || []).forEach((w) => entities.push({ id: w.id, kind: 'waypoint', cell: [cell(w.x), cell(w.y)] }));
 	(doc.groups || []).forEach((g) => entities.push({ id: g.id, kind: 'group', members: [...(g.members || [])] }));

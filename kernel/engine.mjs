@@ -47,6 +47,7 @@ export function resolve(schema) {
 		if (e.span) { o.spanW = (e.span.cols[1] - e.span.cols[0]) * V.pitch; o.spanH = (e.span.rows[1] - e.span.rows[0]) * V.pitch; }
 		const el = node(cx, cy, o);
 		if (e.content) el.content = e.content;   // W2 content regions (text/glyph in the socket grid) — pass through to the renderer
+		if (e.name) el.name = e.name;            // B234 -- the label. Dropped here as well as in the adapter
 		el.id = e.id;
 		byId[e.id] = { e, el, cx, cy, kind: 'node' };
 		scene.push(el);
@@ -85,6 +86,7 @@ export function resolve(schema) {
 		const left = cols[0] - ze, right = cols[cols.length - 1] + ze, top = rows[0] - ze, bot = rows[rows.length - 1] + ze;
 		const el = zone(left, top, right - left, bot - top);
 		el.id = e.id;
+		if (e.name) el.name = e.name;            // B234 -- the zone label, dropped here too
 		byId[e.id] = { e, el, kind: 'zone', cx: (left + right) / 2, cy: (top + bot) / 2 };
 		scene.push(el);
 	}

@@ -1206,3 +1206,56 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 	assert.match(k.render(k.docToSchema(doc)), /stroke-width="1"/,
 		'the exported panel frame must be thin too -- CSS alone would leave the export heavy');
 });
+
+/*
+B234: the exported SVG must carry node and zone LABELS.
+
+Adding `.svg` to a diagram URL returned a picture with no text at all, however many named nodes and
+zones the document held. Two causes in series, and either alone would have been enough:
+
+  `docToSchema` dropped `name`, so the label never reached the scene
+  the kernel renderer had no label branch, so it could not have drawn one that did
+
+The old "kernel defers labels" decision was reversed at W2 for CONTENT REGIONS and never extended to
+the names a node or a zone carries. So the reversal was half-done, and the export has been silently
+unlabelled since -- invisible because the canvas draws its own labels from app/src/renderer.js.
+
+A picture that disagrees with the canvas is the class B225 and B226 both were, which is why this
+asserts the rendered OUTPUT rather than that a function is called.
+*/
+test('B234: an exported node and zone carry their names', async () => {
+	const k = await import('../kernel/index.mjs');
+	const doc = {
+		nodes: [{ id: 'node-aa0001', name: 'spine1', type: 'router', x: 0, y: 0 }],
+		zones: [{ id: 'zone-aa0001', name: 'core', x: -120, y: -120, w: 240, h: 240 }],
+		links: [], waypoints: [], groups: [],
+	};
+
+	// the ADAPTER must carry the name, or nothing downstream can draw it
+	const schema = k.docToSchema(doc);
+	const node = schema.entities.find((e) => e.kind === 'node');
+	const zone = schema.entities.find((e) => e.kind === 'zone');
+	assert.equal(node.name, 'spine1', 'the adapter must carry a node name into the scene');
+	assert.equal(zone.name, 'core', 'and a zone name');
+
+	// and the RENDERER must draw it
+	const svg = k.render(schema);
+	assert.match(svg, />spine1</, 'the exported node must show its name');
+	assert.match(svg, />core</, 'and the exported zone must show its name');
+
+	// an UNNAMED entity draws nothing rather than an empty text element
+	const bare = k.render(k.docToSchema({
+		nodes: [{ id: 'node-aa0002', type: 'router', x: 0, y: 0 }],
+		zones: [], links: [], waypoints: [], groups: [],
+	}));
+	assert.doesNotMatch(bare, /<text/, 'an unnamed node emits no text element at all');
+
+	// the name is ESCAPED -- it reaches an attribute-free text node, but a bare & or < would still
+	// break the document, and a diagram is user content
+	const nasty = k.render(k.docToSchema({
+		nodes: [{ id: 'node-aa0003', name: 'a<b&c', type: 'router', x: 0, y: 0 }],
+		zones: [], links: [], waypoints: [], groups: [],
+	}));
+	assert.doesNotMatch(nasty, /a<b&c/, 'a name carrying markup must be escaped, not emitted raw');
+	assert.match(nasty, /a&lt;b&amp;c/, 'and escaped correctly');
+});
