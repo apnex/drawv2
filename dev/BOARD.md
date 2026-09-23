@@ -825,6 +825,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.17 | Plane and direction are independent, so a plane difference alone makes a junction | **B233** | **S2** | `DONE` |
 | H15.18 | A text panel is drawn lighter -- a 1-unit frame and 13-unit text, with a per-region size and a CLI verb | feature | S3 | `DONE` |
 | H15.19 | The export carries node and zone LABELS -- the half of "kernel defers labels" that was never reversed | **B234** | **S2** | `DONE` |
+| H15.20 | A derived weight is not overridden by a stylesheet -- one authority for a frame, not two | **B235** | **S2** | `DONE` |
 | H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out | feature | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 

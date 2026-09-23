@@ -1047,3 +1047,45 @@ test('H15.15: pressing k dashes the selected link, visibly', { skip: SKIP }, asy
 	assert.match(seen.dashed.said, /\[control\]/, 'the readout names the plane while the link is on it');
 	assert.doesNotMatch(seen.saidAfter, /\[control\]/, 'and stops naming it the moment the link returns to data');
 });
+
+/*
+B235: a DERIVED weight must be what the browser draws, not what CSS overrides.
+
+`frameWidth` set stroke-width as a presentation attribute; `.frame` set it as a CSS rule. CSS wins,
+so the canvas drew 2.1 while the exported SVG -- which carries no stylesheet -- drew 1. The thin
+panel frame was live in the export and invisible on screen.
+
+The agent verified the EXPORT, found 1, and reported the change as live. That is the failure this
+test exists to prevent: an attribute is not ink, and a presentation attribute in particular is only
+a DEFAULT that any matching rule silently beats.
+
+So this asserts getComputedStyle -- what the browser resolved -- rather than what the DOM was told.
+*/
+test('B235: the panel frame the browser DRAWS is the derived one', { skip: SKIP }, async () => {
+	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
+	const seen = await tab.eval(`(() => {
+		const app = window.draw;
+		const tb = app.model.makeTextBox({ x: 300, y: 300 }, { cols: 3, rows: 1 });
+		tb.content[0].value = 'panel';
+		app.model.put('node', tb);
+		app.renderer.handle('put', 'node', tb);
+		const panel = document.getElementById(tb.id).querySelector('.frame');
+		// a plain 1x1 node draws its frame as a <use> of a shared def -- the THIRD route a frame
+		// reaches the screen by, and the one that took its weight from the stylesheet that is gone
+		const use = document.querySelector('#nodes .node:not([data-content]) [data-layer="frame"]');
+		const plain = use && (use.tagName === 'use' ? document.querySelector(use.getAttribute('href')) : use);
+		return {
+			panelAttr: panel.getAttribute('stroke-width'),
+			panelDrawn: parseFloat(getComputedStyle(panel).strokeWidth),
+			plainDrawn: plain ? parseFloat(getComputedStyle(plain).strokeWidth) : null,
+		};
+	})()`);
+
+	assert.equal(seen.panelAttr, '1', 'precondition: the renderer derived a 1-unit frame');
+	assert.equal(seen.panelDrawn, 1,
+		`the BROWSER must draw what was derived -- it drew ${seen.panelDrawn}, so something overrides the attribute`);
+
+	// and a plain node is unchanged, so the fix did not simply delete the weight for everything
+	assert.ok(seen.plainDrawn > seen.panelDrawn,
+		`a plain node must stay heavier than a panel -- plain ${seen.plainDrawn}, panel ${seen.panelDrawn}`);
+});

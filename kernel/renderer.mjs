@@ -326,11 +326,19 @@ function arrowDefs() {
 		+ `<marker id="flow-start" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto-start-reverse">${head}</marker>`;
 }
 
+/*
+B235 -- the shared frame defs carry the WEIGHT too.
+
+They took it from the `.frame` stylesheet rule, which is gone: a CSS rule silently beat the derived
+attribute a panel emitted, so the canvas drew 2.1 where the export drew 1. With one authority for
+the weight, a def that omits it would draw hairline instead -- these are the plain 1x1 frames, and
+they are the THIRD route a frame reaches the screen by, after the panel rect and the span rect.
+*/
 export function sharedDefs(V = STD, L = L_STD) {
 	return `<svg width="0" height="0" style="position:absolute">${GLYPH_DEFS}
 	  <defs>
-	    <circle id="m-circle" class="frame" r="${L.frame.ext}"/>
-	    <rect id="m-square" class="frame" x="${-L.frame.ext}" y="${-L.frame.ext}" width="${2 * L.frame.ext}" height="${2 * L.frame.ext}" rx="${L.frame.r}"/>
+	    <circle id="m-circle" class="frame" r="${L.frame.ext}" stroke-width="${V.frameW}"/>
+	    <rect id="m-square" class="frame" x="${-L.frame.ext}" y="${-L.frame.ext}" width="${2 * L.frame.ext}" height="${2 * L.frame.ext}" rx="${L.frame.r}" stroke-width="${V.frameW}"/>
 	    ${arrowDefs()}
 	  </defs>
 	</svg>`;

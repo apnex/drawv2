@@ -33,7 +33,7 @@ export const GLYPH_BB = {
 export const KERNEL_CSS = `
 .hollow { fill: var(--fill, #ffffff); stroke: var(--icon, #aed581); stroke-width: 2; }
 .solid  { fill: var(--icon, #aed581); stroke: var(--icon, #aed581); stroke-width: 0.2; }
-.frame  { fill: var(--fill, #101010); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, #aed581); stroke-width: 2.1; }
+.frame  { fill: var(--fill, #101010); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, #aed581); }
 .icon   { transform: scale(0.3); }
 .node   { --icon:#aed581; --fill:#101010; --outer:#aed581; }
 .node .select-box { display:none; fill:none; stroke:#4fc3f7; stroke-width:2; pointer-events:none; }

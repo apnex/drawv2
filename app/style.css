@@ -349,7 +349,7 @@ of one-pixel drift that cost an evening.
 .hollow { fill: var(--fill, #ffffff); stroke: var(--icon, #aed581); stroke-width: 2; }
 .solid  { fill: var(--icon, #aed581); stroke: var(--icon, #aed581); stroke-width: 0.2; }
 .icon   { transform: scale(0.3); }
-.frame  { fill: var(--fill, #101010); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, #aed581); stroke-width: 2.1; }
+.frame  { fill: var(--fill, #101010); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, #aed581); }
 .socket { fill: none; stroke: #e0a85a; stroke-width: 0.6; stroke-dasharray: 2 2; }
 
 /* ---- node state (compose via CSS vars) ---- */
