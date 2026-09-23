@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRoles, waypointLayers, linkMarker, linkDash, linkWidth, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/index.mjs';
+import { waypointRoles, waypointLayers, linkAppearance, APPEARANCE_KEYS, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -289,13 +289,9 @@ export class Renderer {
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
 			if (!d) return;
-			// H15.6 -- the arrowhead is derived by the kernel, so the canvas and the export agree
-			const head = linkMarker(entity);
-			const lw = linkWidth(entity, LINK_W);    // H15.16 -- control plane reads thinner
-			const dash = linkDash(entity, lw);       // H15.15 -- and dashed
-			el('path', { id: entity.id, class: 'link', 'stroke-width': lw, fill: 'none', d,
-				...(dash ? { 'stroke-dasharray': dash } : {}),
-				...(head === 'end' ? { 'marker-end': 'url(#flow-end)' } : head === 'start' ? { 'marker-start': 'url(#flow-start)' } : {}) }, this.layers.links);
+			// H15.9 -- ONE derivation, emitted as given. The marker, the weight and the dash were
+			// three calls assembled by hand here and again in `update`, which is how B228 shipped.
+			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...linkAppearance(entity, LINK_W) }, this.layers.links);
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
@@ -427,18 +423,16 @@ export class Renderer {
 			B218 was this shape one branch over -- create and update refreshed a waypoint's role and
 			delete did not. A rule wired into one branch of `handle` is wired into none of the others.
 			*/
-			const head = linkMarker(entity);
-			for (const [attr, want] of [['marker-end', 'end'], ['marker-start', 'start']]) {
-				if (head === want) dom.setAttribute(attr, `url(#flow-${want})`);
+			/*
+			H15.9 -- the SAME derivation create uses, applied as set-or-remove over the declared
+			key set. B228 was an update that set some of these and forgot others; there is now no
+			list to forget, because `APPEARANCE_KEYS` is what the derivation itself declares.
+			*/
+			const want = linkAppearance(entity, LINK_W);
+			for (const attr of APPEARANCE_KEYS) {
+				if (attr in want) dom.setAttribute(attr, want[attr]);
 				else dom.removeAttribute(attr);
 			}
-			// H15.15 -- the dash too, set-or-REMOVE. B228 was this exact omission for the marker:
-			// an update that only ever adds strands the last value on a link the author has changed.
-			const lw = linkWidth(entity, LINK_W);
-			dom.setAttribute('stroke-width', lw);    // H15.16 -- the weight follows the plane too
-			const dash = linkDash(entity, lw);
-			if (dash) dom.setAttribute('stroke-dasharray', dash);
-			else dom.removeAttribute('stroke-dasharray');
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {

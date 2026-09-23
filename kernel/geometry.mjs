@@ -411,6 +411,43 @@ rather than deciding again.
 direction to point. The head sits where the flow ARRIVES, which is the same fact `linkFacing`
 reports as `in`, and a test holds the two to agreement.
 */
+/*
+H15.9 -- THE APPEARANCE PIPELINE, for a link.
+
+Everything a renderer needs to draw one, derived in a single call and returned as ATTRIBUTES rather
+than as advice. A caller emits what it is given; it decides nothing.
+
+WHY THIS SHAPE, stated plainly because it is a response to a ledger rather than a preference. Every
+appearance defect in H15 lived in the gap between a derivation and the renderer that consumed it:
+
+  B225  the adapter dropped a field, so one renderer had nothing to derive from
+  B226  an attribute was emitted that resolved to no paint
+  B228  create set the marker and update did not -- the same assembly, written twice
+  B232  a rule implemented in one place and guarded from another
+  B234  the name reached no renderer at all, through four doors
+
+Sub-questions answered separately and assembled at each call site is what made all of those
+possible. One answer, assembled once, removes the second place to forget.
+
+ABSENT IS ABSENT. A key that does not apply is missing from the object rather than present and
+undefined, because a caller that sets attributes blindly would otherwise write "undefined" into the
+DOM. `APPEARANCE_KEYS` names every key this can produce, so an UPDATE can remove what a previous
+state set -- which is the half B228 got wrong and could not have got right without it.
+*/
+export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'marker-end', 'marker-start'];
+
+export const linkAppearance = (link, w = STD.linkW) => {
+	const width = linkWidth(link, w);
+	const dash = linkDash(link, width);
+	const head = linkMarker(link);
+	return {
+		'stroke-width': width,
+		...(dash ? { 'stroke-dasharray': dash } : {}),
+		...(head === 'end' ? { 'marker-end': 'url(#flow-end)' } : {}),
+		...(head === 'start' ? { 'marker-start': 'url(#flow-start)' } : {}),
+	};
+};
+
 export const linkMarker = (link) => {
 	if (typeof link.flow !== 'boolean') return null;
 	return link.flow ? 'end' : 'start';

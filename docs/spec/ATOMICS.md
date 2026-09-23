@@ -362,3 +362,27 @@ Two defects prompted this and share one cause: the collapse reads stored order a
 The experiment that isolated it held topology, counts and waypoint identical and varied only the direction of the drag -- one order collapsed, the other did not.
 
 Recorded as B221 and B222.
+
+---
+## The appearance pipeline [PARTIAL 2026-09-22 -- links only]
+
+Everything a renderer needs to draw an entity is derived in ONE call and returned as ATTRIBUTES.\
+A caller emits what it is given and decides nothing.
+
+`linkAppearance(link, w)` is the first, and the only one so far.\
+It answers the weight, the dash and the head together, where those were three questions assembled by hand at four call sites.
+
+**`APPEARANCE_KEYS` declares every key the derivation can produce**, which is what makes an UPDATE possible to write correctly.\
+An update applies the derivation over the declared set, setting what is present and REMOVING what is not -- so a key a previous state set cannot strand on an element whose state has changed.
+
+Absent is absent.\
+A key that does not apply is missing from the object rather than present and undefined, because a caller that emits blindly would otherwise write the string "undefined" into the DOM.
+
+**Why this shape.**\
+It is a response to a ledger rather than a preference.\
+B225, B226, B228, B232 and B234 were all a derivation and a renderer disagreeing, and all five lived in the gap that separate sub-questions and hand assembly create.\
+One answer, assembled once, removes the second place to forget.
+
+**What it does NOT yet cover.**\
+Nodes, waypoints, zones and groups still assemble their own attributes, and the waypoint layer list remains its own shape -- a list of layers rather than a set of attributes, because a waypoint draws several circles rather than one element.\
+Bringing those in is the rest of the rung.

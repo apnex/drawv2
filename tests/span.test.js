@@ -1019,11 +1019,18 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 			'the head must sit where the flow arrives, or the picture contradicts the model');
 	}
 
-	// both renderers must define the marker, or the canvas and the export disagree about direction
+	/*
+	H15.9 -- these asserted that each renderer CALLS `linkMarker`. They now go through
+	`linkAppearance`, which answers the whole question at once, so the sub-call is gone from both.
+
+	The property was never "this function is called" -- it was that the two renderers cannot
+	disagree. The pipeline enforces that more strongly than a call check did, because there is now
+	one answer rather than two call sites that happen to ask the same thing.
+	*/
 	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
-	assert.match(kernelRenderer, /linkMarker\(/, 'the SVG export must consult the same rule');
+	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
-	assert.match(clientRenderer, /linkMarker\(/, 'and so must the canvas');
+	assert.match(clientRenderer, /linkAppearance\(/, 'and so must the canvas');
 
 	/*
 	AND IT MUST SURVIVE EVERY DOOR TO THE EXPORT, which is where this first shipped broken.
@@ -1113,15 +1120,19 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	assert.ok(on6 > off6, 'the dash is longer than the gap, or the line reads as separate marks');
 	assert.ok(off6 >= on6 / 2, 'and the gap is at least half the dash, or the dashes crowd together');
 
-	// both renderers must consult it, or the canvas and the export disagree about the plane
+	/*
+	H15.9 -- the dash is no longer set by name in either renderer; it arrives inside the appearance
+	object. So what must be true has changed shape: the UPDATE path must apply the SAME derivation
+	create uses, over the DECLARED key set, so a key a previous state set is removed rather than
+	stranded. That is B228's property, now enforced by the key set instead of by remembering.
+	*/
 	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
-	assert.match(kernelRenderer, /linkDash\(/, 'the SVG export must consult the same rule');
+	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(kind, entity)'));
-	assert.match(updateBranch, /linkDash\(/,
-		'the UPDATE path must re-derive it -- setting only on create is what B228 was');
-	assert.match(updateBranch, /removeAttribute\('stroke-dasharray'\)/,
-		'and it must REMOVE the dash, or a link turned back to data keeps the last one');
+	assert.match(updateBranch, /linkAppearance\(/, 'the UPDATE path must re-derive, not patch by hand');
+	assert.match(updateBranch, /APPEARANCE_KEYS/,
+		'and iterate the DECLARED keys, so a key it no longer sets is removed rather than stranded');
 });
 
 /*
@@ -1258,4 +1269,59 @@ test('B234: an exported node and zone carry their names', async () => {
 	}));
 	assert.doesNotMatch(nasty, /a<b&c/, 'a name carrying markup must be escaped, not emitted raw');
 	assert.match(nasty, /a&lt;b&amp;c/, 'and escaped correctly');
+});
+
+/*
+H15.9: ONE derivation per entity, and both renderers emit what it returns.
+
+The appearance of a link was four separate questions -- marker, width, dash, and the attribute
+assembly that turns them into a path -- each answered independently and each assembled twice, once
+on create and once on update. Every defect in the H15 ledger lived in that gap:
+
+  B225  the adapter dropped a field, so one renderer had nothing to derive from
+  B226  an attribute was emitted that resolved to no paint
+  B228  create set the marker and update did not
+  B234  the name never reached the scene, and no renderer could have drawn it
+
+`linkAppearance` answers the whole question at once and returns ATTRIBUTES, not advice. A caller
+emits them; it does not decide anything. That is what makes create and update the same code, and
+what makes the canvas and the export unable to disagree.
+
+The defence is structural rather than a new guard: there is no longer a second place to forget.
+*/
+test('H15.9: linkAppearance is the whole answer, and it is attributes rather than advice', async () => {
+	const k = await import('../kernel/index.mjs');
+
+	const plain = k.linkAppearance({ id: 'l', src: 'a', dst: 'b' });
+	assert.equal(plain['stroke-width'], k.STD.linkW, 'a data link takes the ruled width');
+	assert.ok(!('stroke-dasharray' in plain), 'and carries NO dash key -- absent, not null');
+	assert.ok(!('marker-end' in plain) && !('marker-start' in plain), 'and no head');
+
+	const ctrl = k.linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, flow: true });
+	assert.ok(ctrl['stroke-width'] < plain['stroke-width'], 'a control link is thinner');
+	assert.match(ctrl['stroke-dasharray'], /^[\d.]+ [\d.]+$/, 'and dashed, as a ready attribute value');
+	assert.equal(ctrl['marker-end'], 'url(#flow-end)', 'and its head is a ready url(), not a hint');
+
+	assert.equal(k.linkAppearance({ id: 'l', flow: false })['marker-start'], 'url(#flow-start)',
+		'a reversed flow points the other way');
+
+	/*
+	THE KEY SET IS THE WHOLE ANSWER. An update must be able to remove what a previous state set,
+	and it can only do that if it knows every key this function could ever produce. Returning
+	`undefined` for an absent value would make that impossible to distinguish from "unchanged".
+	*/
+	assert.ok(Array.isArray(k.APPEARANCE_KEYS) && k.APPEARANCE_KEYS.length > 0,
+		'the caller must be able to ask which keys to clear');
+	for (const key of Object.keys(ctrl)) {
+		assert.ok(k.APPEARANCE_KEYS.includes(key), `${key} is emitted but not declared -- an update could not remove it`);
+	}
+
+	// both renderers must go through it, or the pipeline is advisory
+	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['app/src/renderer.js', clientRenderer]]) {
+		assert.match(src, /linkAppearance\(/, `${name} must derive a link's appearance in one call`);
+		assert.doesNotMatch(src, /linkMarker\(|linkDash\(|linkWidth\(/,
+			`${name} still asks the sub-questions directly, so there are two ways to draw a link`);
+	}
 });

@@ -2,7 +2,7 @@
 // decisions live here; the engine has already placed everything. Sovereign: glyph defs, glyph
 // metrics, colours and the scene CSS all come from theme.mjs (no client/ coupling).
 import { STD, L_STD } from './spec.mjs';
-import { bboxOf, waypointLayers, linkMarker, linkDash, linkWidth } from './geometry.mjs';
+import { bboxOf, waypointLayers, linkAppearance } from './geometry.mjs';
 import { roundedPath } from './router.mjs';
 import { GLYPH_DEFS, GLYPH_BB, TOKENS } from './theme.mjs';
 
@@ -169,14 +169,10 @@ function renderEl(el, V, L, opts = {}) {
 	}
 	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${TOKENS.group}" stroke-width="1.1"/>`;
 	if (el.kind === 'path') {
-		// H15.6 -- the head is DERIVED, by the one rule the canvas also reads
-		const head = linkMarker(el);
-		const marker = head === 'end' ? ' marker-end="url(#flow-end)"' : head === 'start' ? ' marker-start="url(#flow-start)"' : '';
-		// H15.15 -- a control-plane link is dashed, by the one rule the canvas also reads
-		const w = linkWidth(el, V.linkW);            // H15.16 -- control plane reads thinner
-		const d = linkDash(el, w);
-		const dash = d ? ` stroke-dasharray="${d}"` : '';
-		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${marker}${dash}/>`;
+		// H15.9 -- ONE derivation, serialised as given. The export and the canvas read the same
+		// answer, so neither can carry a weight or a head the other does not.
+		const attrs = Object.entries(linkAppearance(el, V.linkW)).map(([k, v]) => ` ${k}="${v}"`).join('');
+		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${TOKENS.link}" stroke-linecap="round" stroke-linejoin="round"${attrs}/>`;
 	}
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is
