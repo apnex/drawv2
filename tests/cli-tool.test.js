@@ -1621,3 +1621,28 @@ test('B231: every field an entity carries is a column, for every kind', async ()
 	assert.ok(!columnsFor('waypoints', [{ id: 'waypoint-aa0001', x: 0, y: 0 }]).includes('name'),
 		'an unnamed set of waypoints must not print an empty NAME column');
 });
+
+/*
+H15.18: the CLI's font bounds are a MESSAGE, and they must still match the gate.
+
+`cli/verbs.mjs` restates FONT_MIN and FONT_MAX rather than importing them, because the tool ships
+standalone -- B138 installs it by symlink into a directory holding nothing else, so importing a
+sibling breaks it for those users. That is a deliberate copy, which makes it a drift risk, which
+makes it this test's job.
+
+The server is the authority either way: it refuses an out-of-range size whatever the CLI says. What
+would be wrong is the CLI promising a range the server will not honour.
+*/
+test('H15.18: the CLI states the same font bounds the validator enforces', async () => {
+	const { FONT_MIN, FONT_MAX } = await import('../model/limits.mjs');
+	const src = fs.readFileSync(new URL('../cli/verbs.mjs', import.meta.url), 'utf8');
+
+	const decl = src.match(/const FONT_MIN = (\d+), FONT_MAX = (\d+);/);
+	assert.ok(decl, 'the CLI must state its bounds where this test can find them');
+	assert.equal(Number(decl[1]), FONT_MIN, 'the CLI floor must match the validator');
+	assert.equal(Number(decl[2]), FONT_MAX, 'and so must the ceiling');
+
+	// the help text an author reads must say the same numbers
+	assert.match(src, new RegExp(`grid units, ${FONT_MIN}-${FONT_MAX}`),
+		'the flag description must quote the real range, or it promises what the server refuses');
+});

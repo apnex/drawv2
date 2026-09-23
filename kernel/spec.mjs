@@ -14,7 +14,10 @@ export const STD = Object.freeze({
 	socket: 26,   // glyph box — every glyph normalises into it
 	frameR: 5,    // node-frame corner radius (square frames)
 	selArm: 10,   // selection-bracket arm length
-	linkW: 6      // link / path stroke width
+	linkW: 6,     // link / path stroke width
+	frameW: 2.1,  // node frame stroke -- was a literal in BOTH stylesheets, which is how two copies drift
+	panelW: 1,    // a TEXT PANEL frame, lighter: a caption on the drawing rather than a component in it
+	fontSize: 13  // content text. Was 15, written independently into both renderers (H15.18)
 });
 
 // the LOCKED bend radius (docs/spec/ATOMICS.md): a path corner radius = the node radius (20), so a 40px

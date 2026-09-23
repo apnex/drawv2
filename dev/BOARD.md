@@ -823,6 +823,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.15 | The control plane: a link that carries no data-plane packets, dashed, and a junction wherever the planes differ | feature | S3 | `DONE` |
 | H15.16 | The plane reads in the WEIGHT too -- a thinner link and a thinner endpoint ring | feature | S4 | `DONE` |
 | H15.17 | Plane and direction are independent, so a plane difference alone makes a junction | **B233** | **S2** | `DONE` |
+| H15.18 | A text panel is drawn lighter -- a 1-unit frame and 13-unit text, with a per-region size and a CLI verb | feature | S3 | `DONE` |
 | H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out | feature | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 

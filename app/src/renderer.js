@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRoles, waypointLayers, linkMarker, linkDash, linkWidth, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, showsSockets } from '../../kernel/index.mjs';
+import { waypointRoles, waypointLayers, linkMarker, linkDash, linkWidth, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/index.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
@@ -30,7 +30,7 @@ function contentDom(r, parent, idx = 0) {
 	// LAYOUT is the kernel's (contentLayout); EMISSION is ours. The two renderers have different
 	// duties — live addressable elements here, a complete document there — but shared arithmetic was
 	// a copy waiting to drift (B40).
-	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines } = contentLayout(r);
+	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines, size } = contentLayout(r);
 	const S = SOCKET;
 	// W5/W6 — an interactive region gets a transparent hit rect on top; CSS gives it pointer-events +
 	// cursor ONLY in run mode, so view/edit clicks pass through to the node. Appended LAST.
@@ -46,7 +46,7 @@ function contentDom(r, parent, idx = 0) {
 	}
 	if (r.outline) el('rect', { class: 'content-box', x: x0, y: y0, width: w, height: h, rx: (typeof r.rx === 'number' ? r.rx : 3), fill: hexColor(r.bg) || '#0a0a0a', stroke: hexColor(r.accent) || TOKENS.port, 'stroke-width': 1.3 }, parent);
 	for (const ln of lines) {
-		const t = el('text', { class: 'content-text', x: tx, y: ln.y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-family': 'ui-monospace,monospace', 'font-size': 15, fill }, parent);
+		const t = el('text', { class: 'content-text', x: tx, y: ln.y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-family': 'ui-monospace,monospace', 'font-size': size, fill }, parent);
 		t.textContent = ln.text;
 	}
 	addHit();
@@ -255,7 +255,7 @@ export class Renderer {
 				if (sig) g.setAttribute('data-span', sig);
 				// a panel's corner FOLLOWS its shape (like a 1×1 node, toggled by 's'): circle → the circle radius
 				// (frame.ext=20; a 1×1 panel == the circle, a row → a pill), square → the sharp frame radius (5)
-				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh, rx: frameRadius(entity, L_STD) }, g);
+				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh, rx: frameRadius(entity, L_STD), 'stroke-width': frameWidth(entity) }, g);
 			} else {
 				el('use', { 'data-layer': 'frame', href: `#m-${entity.shape || 'circle'}` }, g);
 			}

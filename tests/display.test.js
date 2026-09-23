@@ -104,7 +104,18 @@ test('B40: the wrap is deterministic and centred on the box', () => {
 	const ys = l.lines.map((x) => x.y);
 	const mid = (ys[0] + ys[ys.length - 1]) / 2;
 	assert.equal(mid, l.cy, 'the block is centred on the region, however many lines it has');
-	assert.deepEqual(ys.map((y, i) => (i ? y - ys[i - 1] : 18)), ys.map(() => 18), 'uniform line height');
+	/*
+	UNIFORM, not 18. The line height was pinned at the value it had for size 15, so H15.18 making
+	it a ratio of the size broke this for a change that was correct. What B40 protects is that the
+	lines are evenly spaced and the block is centred -- the spacing is whatever the size implies.
+	*/
+	const gaps = ys.slice(1).map((y, i) => y - ys[i]);
+	assert.ok(gaps.length > 0, 'it wrapped, so there are gaps to compare');
+	// compared with a tolerance: the spacing is now DERIVED from the size, so the gaps differ in
+	// the last floating-point place. An exact comparison would fail on arithmetic rather than on
+	// the property, which is that the lines are evenly spaced.
+	for (const g of gaps) assert.ok(Math.abs(g - gaps[0]) < 1e-9, 'uniform line height, whatever the size sets it to');
+	assert.ok(gaps[0] > l.size, 'and the lines are spaced wider than the glyphs are tall');
 });
 
 test('B40: an empty region still yields one placed line, so no caller re-implements rows<=1', () => {

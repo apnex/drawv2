@@ -37,7 +37,13 @@ test('renderElement: 1×1 keeps the <use> frame; a span draws a sized rect frame
 	const svgOne = renderElement(one), svgSpan = renderElement(span);
 	assert.match(svgOne, /<use href="#m-circle"\/>/);
 	assert.ok(!svgOne.includes('<rect class="frame"'), '1×1 uses the frame def, not a rect');
-	assert.match(svgSpan, /<rect class="frame" x="-20" y="-20" width="160" height="100" rx="5"\/>/);   // 3×2 footprint
+	/*
+	The GEOMETRY is pinned, not the whole tag. This matched the element byte-for-byte including its
+	self-close, so H15.18 adding a derived `stroke-width` broke it for a change that was correct --
+	the same failure as the dash literals. What this test protects is that a span draws a sized rect
+	at the right extent, and that is what it now asserts.
+	*/
+	assert.match(svgSpan, /<rect class="frame" x="-20" y="-20" width="160" height="100" rx="5"/);   // 3×2 footprint
 	assert.ok(!svgSpan.includes('#m-'), 'a span node does not reference the 1-cell frame def');
 });
 
@@ -1155,4 +1161,48 @@ test('H15.16: a control link and its endpoint ring are thinner than a data one',
 	// the default keeps every existing caller correct: no links passed means the data weight
 	assert.equal(k.waypointLayers(['endpoint'], ext).find((l) => l.cls === 'wp-ring').width, data.width,
 		'omitting the links must not change what a waypoint has always drawn');
+});
+
+/*
+H15.18: a text panel is drawn LIGHTER -- a 1-unit frame and smaller text.
+
+Director's adjustment. A text panel is a caption on the drawing rather than a component in it, so it
+should not carry the same weight as a node. Both numbers are DERIVED and live in the spec, for the
+same reason the link weight does: they were literals in two renderers, and a value written twice
+disagrees the moment one is changed.
+
+Units are the SVG user space the whole spec uses -- the same unit as `linkW: 6` and `pitch: 60` --
+not pixels or points. A stroke stays proportional to the drawing under zoom, which is correct.
+*/
+test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source', async () => {
+	const k = await import('../kernel/index.mjs');
+
+	const panel = { id: 'node-aa0001', type: 'text', content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' }] };
+	const plain = { id: 'node-aa0002', type: 'host' };
+
+	assert.equal(k.frameWidth(panel), 1, 'a text panel frame is ONE unit -- lighter than a component');
+	assert.equal(k.frameWidth(plain), k.STD.frameW, 'and a plain node keeps the ruled weight');
+	assert.ok(k.frameWidth(panel) < k.frameWidth(plain), 'the panel is the lighter of the two');
+
+	assert.equal(k.STD.fontSize, 13, 'the ruled default text size');
+
+	/*
+	BOTH RENDERERS READ THE RULE, not a literal of their own. Font size 15 was written into
+	kernel/renderer.mjs and app/src/renderer.js independently, and the frame weight into two
+	stylesheets -- which is the B121 and B200 shape, and why this is derived at all.
+	*/
+	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['app/src/renderer.js', clientRenderer]]) {
+		assert.match(src, /frameWidth\(/, `${name} must derive the frame weight rather than hardcode it`);
+		assert.doesNotMatch(src, /'font-size':\s*15|font-size="15"/, `${name} still carries a literal font size`);
+	}
+
+	// and the EXPORT carries the thin frame, or a saved diagram disagrees with the canvas
+	const doc = {
+		nodes: [{ ...panel, name: 't', x: 0, y: 0, span: { cols: 2, rows: 1 } }],
+		links: [], waypoints: [], zones: [], groups: [],
+	};
+	assert.match(k.render(k.docToSchema(doc)), /stroke-width="1"/,
+		'the exported panel frame must be thin too -- CSS alone would leave the export heavy');
 });

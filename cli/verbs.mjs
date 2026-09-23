@@ -2053,6 +2053,62 @@ VERBS.push(
 				(r) => ({ json: { id: eid, name, version: r.version }, text: `${eid} is now ${name}  v${r.version}` }));
 		},
 	},
+	/*
+	H15.18 -- adjust the text size of a panel's regions.
+
+	The size lives PER REGION, so two captions in one diagram can differ and the choice travels with
+	the document rather than being a setting on somebody's client. Absent is the ruled default in
+	kernel/spec.mjs, which is what every document written before this field carries.
+
+	Sets EVERY region of the node rather than asking which: a panel is usually one caption, and the
+	author who wants two sizes in one node can reach for `commit --ops`. Naming a region index would
+	be a second addressing scheme for a case nobody has yet.
+	*/
+	/*
+	The bounds are RESTATED here rather than imported from model/limits.mjs, and that is deliberate.
+	The CLI ships as a standalone file -- B138 installs it by symlink into a directory holding
+	nothing else -- so importing a sibling breaks the tool for every user who installed it that way.
+	The server is the authority and refuses out-of-range values whatever this says; these two are a
+	message, not a gate, and a test holds them to the real limits.
+	*/
+	{
+		name: 'textsize', group: 'Writing', usage: 'draw textsize <ref> <size>',
+		route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams/<id>'],
+		summary: 'set the text size of a panel, in grid units',
+		example: 'draw textsize node-019130 11',
+		args: [{ name: 'ref', about: 'a text panel, by id or name' },
+			{ name: 'size', about: 'grid units, 6-48; omit to restore the default' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+		async run(ctx, args) {
+			const FONT_MIN = 6, FONT_MAX = 48;   // see the note above: a message, not the gate
+			const [ref, raw] = args;
+			if (!ref) die('usage: draw textsize <ref> <size>');
+			const id = await activeId(ctx, ctx.flags);
+			const eid = await resolveId(ctx, id, ref);
+			if (!eid.startsWith('node-')) die(`only a node carries text -- ${eid} is not one`);
+			const doc = ok(await request(ctx, `/diagrams/${id}`), 'textsize');
+			const node = (doc.nodes || []).find((n) => n.id === eid);
+			if (!node) die(`no such node: ${eid}`);
+			if (!node.content || !node.content.length) die(`${eid} has no text regions -- it is not a panel`);
+
+			// omitting the size RESTORES the default by removing the key, rather than writing the
+			// current default as a value that would then not follow a change to the ruled one
+			const clear = raw === undefined;
+			const size = clear ? null : Number(raw);
+			if (!clear && !(Number.isFinite(size) && size >= FONT_MIN && size <= FONT_MAX)) {
+				die(`size must be ${FONT_MIN}-${FONT_MAX}, or omitted to restore the default`);
+			}
+			const content = node.content.map((r) => {
+				const { size: _drop, ...rest } = r;
+				return clear ? rest : { ...rest, size };
+			});
+			return submit(ctx, id, [{ op: 'set', kind: 'node', id: eid, patch: { content } }], 'textsize', 'textsize',
+				(r) => ({ json: { id: eid, size: clear ? null : size, version: r.version },
+					text: `${eid} text ${clear ? 'restored to the default' : `is ${size}`}  v${r.version}` }));
+		},
+	},
 );
 
 /*

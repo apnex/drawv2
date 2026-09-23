@@ -7,7 +7,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 import { NODE_EXT, ZONE_EXT, SELECTABLE_KINDS } from '../model/index.mjs';
 import { OPTIONAL } from '../model/shape.mjs';
 import { linkReferential, groupReferential, waypointOwners } from '../model/referential.mjs';
-import { NAME_MAX, CAPTION_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
+import { NAME_MAX, CAPTION_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
 import { collectionCap } from '../engine/policy.mjs';
 
@@ -128,6 +128,10 @@ const REGION = {
 	outline: (v) => typeof v === 'boolean',
 	bg: color, accent: color, fill: color,
 	rx: (v) => num(v, 0, 30),
+	// H15.18 -- per-region text size, so one caption can differ from another. Absent is the ruled
+	// default in kernel/spec.mjs. Bounded because it feeds layout arithmetic: a wild value asks the
+	// wrapper for a line count nobody wanted.
+	size: (v) => num(v, FONT_MIN, FONT_MAX),
 	action: (v) => str(v, 32) && /^[a-z0-9-]+$/.test(v),   // W5 — a clickable button: a safe action identifier
 	input: (v) => typeof v === 'boolean'   // W6 — an editable input region (type into it, in run mode)
 };

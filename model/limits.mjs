@@ -78,3 +78,14 @@ and cannot be reasoned about without knowing it. 20 cells/s crosses the whole ca
 seconds, which is the point past which motion stops reading as motion.
 */
 export const SPAWN_SPEED_MAX = 20;
+
+/*
+H15.18 -- the bounds a region's text size may take.
+
+Bounded because the size feeds layout arithmetic: `contentLayout` divides a region's box by the line
+height to decide how many lines fit, so an absurd value asks the wrapper for a line count nobody
+wanted. The floor is legibility rather than arithmetic -- below about 6 the glyphs stop resolving on
+a normal display, and a caption nobody can read is not a caption.
+*/
+export const FONT_MIN = 6;
+export const FONT_MAX = 48;

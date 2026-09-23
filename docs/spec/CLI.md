@@ -137,6 +137,7 @@ Writing
   rename <ref> <name>                                             change what something is called
   rm <ref> [ref...]                                               remove entities, and say what the cascade took with them
   set <ref> <field> <value>                                       change one property of one entity
+  textsize <ref> <size>                                           set the text size of a panel, in grid units
   region <panel> at <col>,<row> [--text s | --glyph g] [flags]    add one content region to a panel, in place
 
 Placement

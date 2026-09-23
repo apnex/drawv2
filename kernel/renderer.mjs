@@ -25,6 +25,19 @@ was duplicated is which element exists and when, which is structure rather than 
 */
 export const isPanel = (e) => !!(e && e.content && e.content.length);
 
+/*
+H15.18 -- how heavily a node's frame is drawn, DERIVED from what it is.
+
+A text panel is a caption on the drawing rather than a component in it, so it carries a lighter
+frame. Derived rather than styled by CSS because the EXPORT must match the canvas: a stylesheet rule
+would thin the panel on screen and leave every saved diagram heavy, which is the disagreement class
+this tree keeps paying for.
+
+Units are the SVG user space the rest of the spec uses, not pixels -- so the weight stays
+proportional to the drawing under zoom.
+*/
+export const frameWidth = (e, V = STD) => (isPanel(e) ? V.panelW : V.frameW);
+
 // a panel's corner follows its shape ('s' swaps it): circle -> the frame extent reads as a pill,
 // square -> the sharp frame radius. A plain node always takes the sharp radius.
 export const frameRadius = (e, L = L_STD) =>
@@ -71,10 +84,21 @@ export function contentLayout(r, V = STD, L = L_STD) {
 	const fill = hexColor(r.fill) || '#e6e9ee';
 	const value = r.value == null ? '' : String(r.value);
 
+	/*
+	H15.18 -- the size is PER REGION, defaulting to the ruled one, and the WRAPPING follows it.
+
+	The advance-per-character and the line height were literals tuned for size 15. They are ratios
+	of the size now, so a smaller caption wraps at more characters and stacks more tightly rather
+	than wrapping as though it were still 15 -- which would leave short lines and wide gaps.
+
+	0.6 is the advance of ui-monospace as a fraction of its size; 1.2 is ordinary leading.
+	*/
+	const size = typeof r.size === 'number' ? r.size : V.fontSize;
+
 	let lines;
 	if (rows <= 1) lines = [{ text: value, y: cy }];
 	else {
-		const cpl = Math.max(1, Math.floor((w - 2 * pad) / 9)), lh = 18;
+		const cpl = Math.max(1, Math.floor((w - 2 * pad) / (size * 0.6))), lh = size * 1.2;
 		const wrapped = [];
 		let curr = '';
 		for (const wd of value.split(/\s+/)) {
@@ -85,9 +109,9 @@ export function contentLayout(r, V = STD, L = L_STD) {
 		const yTop = cy - (wrapped.length - 1) * lh / 2;
 		lines = wrapped.map((text, i) => ({ text, y: yTop + i * lh }));
 	}
-	return { x0, y0, w, h, cx, cy, cols, rows, tx, anchor, fill, lines };
+	return { x0, y0, w, h, cx, cy, cols, rows, tx, anchor, fill, lines, size };
 }
-const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = 15 } = {}) =>
+const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = STD.fontSize } = {}) =>
 	`<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="ui-monospace,monospace" font-size="${size}" fill="${fill}">${escText(s)}</text>`;
 
 // a CONTENT region inside a node, in node-LOCAL px (origin cell centre = 0,0). A region occupies a merged
@@ -96,7 +120,7 @@ const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = 15 } = {}) =
 // (dev/design/widgets/render.mjs renderContent). label/input/button/pill are all text + optional outline/fill.
 export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 	const P = V.pitch, SE = L.socket.ext, S = V.socket;
-	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines } = contentLayout(r, V, L);
+	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines, size } = contentLayout(r, V, L);
 	// W5/W6 — an interactive region gets a transparent hit rect on top, CSS-gated to capture only in run
 	// mode: a button (action → data-action, fires draw:action) or an editable input (input → data-input +
 	// the region index, opens the inline editor). action sanitized for the attribute.
@@ -110,7 +134,7 @@ export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 	// text: optional outline (box ON the socket border, never beyond); lines arrive already placed
 	let out = '';
 	if (r.outline) out += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="${typeof r.rx === 'number' ? r.rx : 3}" fill="${hexColor(r.bg) || '#0a0a0a'}" stroke="${hexColor(r.accent) || TOKENS.port}" stroke-width="1.3"/>`;
-	for (const ln of lines) out += TXT(tx, ln.y, ln.text, { anchor, fill });
+	for (const ln of lines) out += TXT(tx, ln.y, ln.text, { anchor, fill, size });
 	return out + hit;
 }
 
@@ -190,8 +214,10 @@ function renderEl(el, V, L, opts = {}) {
 		const panel = isPanel(el);
 		// 1×1 plain → the fixed frame def (<use>); a panel or multi-cell footprint → a sized rect (same .frame class).
 		// A panel's rx FOLLOWS shape, like a 1×1 node: 'circle' → fe (round; 1×1 == the circle, row → pill), 'square' → fr.
+		// H15.18 -- the frame WEIGHT is derived, so the export matches the canvas. Only emitted on
+		// the rect path: a 1x1 plain node is a <use> of a shared def and takes the stylesheet weight.
 		const frame = (sw || sh || panel)
-			? `<rect class="frame" x="${-fe}" y="${-fe}" width="${2 * fe + sw}" height="${2 * fe + sh}" rx="${frameRadius(el, L)}"/>`
+			? `<rect class="frame" x="${-fe}" y="${-fe}" width="${2 * fe + sw}" height="${2 * fe + sh}" rx="${frameRadius(el, L)}" stroke-width="${frameWidth(el, V)}"/>`
 			: `<use href="#m-${el.frame}"/>`;
 		if (panel) {
 			// a content node (W2): frame + content regions (text/glyph in the socket grid); the regions ARE
