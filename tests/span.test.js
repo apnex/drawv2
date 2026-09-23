@@ -1089,12 +1089,23 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	change that was entirely correct. A literal here tests the value; the ratio tests the rule.
 	*/
 	assert.equal(k.linkDash({ id: 'l' }, 6), null, 'absence of the field is absence of the dash');
-	for (const w of [6, 10]) {
-		const [on, off] = k.linkDash({ id: 'l', control: true }, w).split(' ').map(Number);
-		assert.equal(off, w, 'the GAP is one stroke width, whatever the stroke is');
-		assert.equal(on, Math.round(w * k.DASH_ON * 10) / 10, 'and the dash is DASH_ON stroke widths');
-		assert.ok(on > off, 'the dash is longer than the gap, or the line reads as a row of squares');
-	}
+	/*
+	ASSERTED AGAINST THE RULING, not against the constants.
+
+	The first version computed its expectation from `DASH_ON` and `DASH_OFF`, so it agreed with
+	whatever those happened to say -- halving the gap passed. That is the shape of B232 and B233,
+	where a guard read the code instead of the rule and the defect shipped green.
+
+	What is RULED is the relationship: the pattern scales with the stroke, the dash is longer than
+	the gap, and the gap is wide enough to read as a gap. The numbers may move within that.
+	*/
+	const at = (w) => k.linkDash({ id: 'l', control: true }, w).split(' ').map(Number);
+	const [on6, off6] = at(6);
+	const [on12, off12] = at(12);
+	assert.equal(on12, on6 * 2, 'the dash SCALES with the stroke, so it is a ratio rather than a size');
+	assert.equal(off12, off6 * 2, 'and so does the gap');
+	assert.ok(on6 > off6, 'the dash is longer than the gap, or the line reads as separate marks');
+	assert.ok(off6 >= on6 / 2, 'and the gap is at least half the dash, or the dashes crowd together');
 
 	// both renderers must consult it, or the canvas and the export disagree about the plane
 	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');

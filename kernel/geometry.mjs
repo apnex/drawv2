@@ -363,9 +363,18 @@ number -- the same reasoning `markerUnits="strokeWidth"` uses for the arrowhead.
 */
 const round1 = (n) => Math.round(n * 10) / 10;
 
-export const DASH_ON = 2;   // dash length, in stroke widths -- the GAP stays one, so the line
-                            // reads as a dashed line rather than a row of squares
-export const linkDash = (link, w = STD.linkW) => (link.control ? `${round1(w * DASH_ON)} ${w}` : null);
+/*
+The dash pattern of a control link, in STROKE WIDTHS rather than pixels, so it scales with the line
+and stays in proportion if `linkW` or the control weight is ever changed.
+
+Both halves are named. The gap was hardcoded at one width while the dash was a constant, which made
+one of the two adjustable and the other invisible -- and the ratio between them is the whole of how
+a dashed line reads.
+*/
+export const DASH_ON = 2;      // dash length
+export const DASH_OFF = 1.5;   // gap -- shorter than the dash, or the line reads as separate marks
+export const linkDash = (link, w = STD.linkW) =>
+	(link.control ? `${round1(w * DASH_ON)} ${round1(w * DASH_OFF)}` : null);
 
 /*
 H15.16 -- the control plane reads THINNER, so the plane is legible without reading the dash.
