@@ -1070,8 +1070,11 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	failed for a change that was entirely correct, and the property was never the number.
 	*/
 	const ctrlW = k.linkWidth({ id: 'l', control: true });
-	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-dasharray="${ctrlW} ${ctrlW}"`),
+	const pattern = k.linkDash({ id: 'l', control: true }, ctrlW);
+	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-dasharray="${pattern}"`),
 		'a control link must reach the exported path dashed, at the pattern its own width derives');
+	assert.notEqual(pattern.split(' ')[0], pattern.split(' ')[1],
+		'the dash is LONGER than the gap -- equal parts read as a row of squares rather than a dashed line');
 	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-width="${ctrlW}"`),
 		'and thinner than a data link, by the same rule the canvas reads');
 	assert.doesNotMatch(k.render(k.docToSchema(mk(false))), /stroke-dasharray/,
@@ -1080,9 +1083,18 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 		'the adapter must not lose the plane in either direction -- that was B225');
 
 	// the dash is DERIVED, by one rule, and scales with the stroke rather than carrying its own number
-	assert.equal(k.linkDash({ id: 'l', control: true }, 6), '6 6');   // the dash follows whatever width it is given
+	/*
+	The pattern SCALES with the stroke, so it is asserted as a ratio rather than as two numbers.
+	These were literals -- '6 6' and '10 10' -- and both broke when the dash was lengthened, for a
+	change that was entirely correct. A literal here tests the value; the ratio tests the rule.
+	*/
 	assert.equal(k.linkDash({ id: 'l' }, 6), null, 'absence of the field is absence of the dash');
-	assert.equal(k.linkDash({ id: 'l', control: true }, 10), '10 10', 'the pattern follows the stroke width');
+	for (const w of [6, 10]) {
+		const [on, off] = k.linkDash({ id: 'l', control: true }, w).split(' ').map(Number);
+		assert.equal(off, w, 'the GAP is one stroke width, whatever the stroke is');
+		assert.equal(on, Math.round(w * k.DASH_ON * 10) / 10, 'and the dash is DASH_ON stroke widths');
+		assert.ok(on > off, 'the dash is longer than the gap, or the line reads as a row of squares');
+	}
 
 	// both renderers must consult it, or the canvas and the export disagree about the plane
 	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');

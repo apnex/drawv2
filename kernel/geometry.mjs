@@ -361,7 +361,11 @@ solid, so absence of the field means absence of the attribute rather than a defa
 The pattern is a multiple of the stroke so it scales with the line rather than carrying its own
 number -- the same reasoning `markerUnits="strokeWidth"` uses for the arrowhead.
 */
-export const linkDash = (link, w = STD.linkW) => (link.control ? `${w} ${w}` : null);
+const round1 = (n) => Math.round(n * 10) / 10;
+
+export const DASH_ON = 2;   // dash length, in stroke widths -- the GAP stays one, so the line
+                            // reads as a dashed line rather than a row of squares
+export const linkDash = (link, w = STD.linkW) => (link.control ? `${round1(w * DASH_ON)} ${w}` : null);
 
 /*
 H15.16 -- the control plane reads THINNER, so the plane is legible without reading the dash.
@@ -373,7 +377,6 @@ stay in proportion if either is ever changed.
 */
 export const CONTROL_WEIGHT = 0.6;
 export const linkWidth = (link, w = STD.linkW) => (link.control ? round1(w * CONTROL_WEIGHT) : w);
-const round1 = (n) => Math.round(n * 10) / 10;
 
 // every link terminating here is control plane. MIXED IS DATA: a terminus serving both is not
 // half control, and thinning it would claim something the graph does not say.
