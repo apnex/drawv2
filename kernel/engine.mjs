@@ -69,6 +69,10 @@ export function resolve(schema) {
 		// B209 -- the SET reaches the renderer; `waypoint()` keeps `role` as its projection for hit tests
 		const el = waypoint(cx, cy, waypointRoles(e.id, routes));
 		el.id = e.id;
+		// H15.16 -- the layer list needs the links to weight the ring by plane, which a role set
+		// alone cannot say. Terminating links only: a route merely threading the point is not its
+		// terminus and has no bearing on what the endpoint ring means.
+		el.links = routes.filter((r) => r.src === e.id || r.dst === e.id);
 		byId[e.id] = { e, el, cx, cy, kind: 'waypoint' };
 		scene.push(el);
 	}

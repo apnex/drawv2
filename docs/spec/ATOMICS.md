@@ -299,6 +299,12 @@ It is drawn DASHED, at a pattern derived from the stroke width rather than a num
 | directions oppose, same plane | junction |
 | planes differ, either direction | junction |
 
+It is drawn slightly THINNER as well as dashed, at one ratio applied to the link stroke and to the endpoint ring alike, so the plane is legible without reading the dash.\
+A terminus serving BOTH planes reads as data: it is not half control, and thinning it would claim something the graph does not say.
+
+The plane and the direction are INDEPENDENT tests.\
+Planes differing makes a junction whether or not anyone declared which way things move -- a bend means flow passes through unchanged, and two different planes do not pass through one another.
+
 This extends the matrix rather than adding a mechanism.\
 A bend means flow passes through UNCHANGED, so a waypoint where anything differs is a place where something happens -- which is what a junction is.\
 When more link types arrive after unification the question stays "does anything differ?" rather than needing a rule for each.

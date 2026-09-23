@@ -951,6 +951,26 @@ test('H15.15: a control link and a data link meeting is a junction, not a bend',
 	}
 
 	/*
+	B233 -- PLANE AND DIRECTION ARE INDEPENDENT, and the first version nested one inside the other.
+
+	The plane check sat inside the branch that runs only when BOTH links declare a direction, so two
+	links with no flow at all fell through to `endpoint` however their planes differed. Every case
+	above declares `flow`, which is why the test agreed with the code.
+
+	A control link meeting a data link is a junction whether or not anyone declared which way things
+	move: the planes differing is enough, because a bend means flow passes through UNCHANGED.
+	*/
+	const noFlow = [{ id: 'la', src: 'x', dst: w, control: true }, { id: 'lb', src: w, dst: 'y' }];
+	assert.deepEqual(waypointRoles(w, noFlow), ['junction'],
+		'planes differing makes a junction with no direction declared at all');
+	assert.equal(collapseAtWaypoint(noFlow[0], noFlow[1], w), null,
+		'and the collapse must refuse it too, for the same reason');
+
+	const oneSided = [{ id: 'la', src: 'x', dst: w, control: true, flow: true }, { id: 'lb', src: w, dst: 'y' }];
+	assert.deepEqual(waypointRoles(w, oneSided), ['junction'],
+		'one declared and one not still differs in PLANE, which is enough');
+
+	/*
 	AN UNDECLARED PLANE IS DATA, not a third state. `control` absent means an ordinary link, so two
 	undeclared links match one another -- which keeps every document written before this field
 	reading exactly as it did.

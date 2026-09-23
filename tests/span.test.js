@@ -1064,15 +1064,23 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 		waypoints: [], zones: [], groups: [],
 	});
 
-	assert.match(k.render(k.docToSchema(mk(true))), /stroke-dasharray="6 6"/,
-		'a control link must reach the exported path dashed, not merely be marked in the document');
+	/*
+	The pattern is asserted as a RELATIONSHIP, not as a literal. H15.16 made a control link thinner
+	and the dash scales with the stroke, so `6 6` became `3.6 3.6` -- a pinned number would have
+	failed for a change that was entirely correct, and the property was never the number.
+	*/
+	const ctrlW = k.linkWidth({ id: 'l', control: true });
+	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-dasharray="${ctrlW} ${ctrlW}"`),
+		'a control link must reach the exported path dashed, at the pattern its own width derives');
+	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-width="${ctrlW}"`),
+		'and thinner than a data link, by the same rule the canvas reads');
 	assert.doesNotMatch(k.render(k.docToSchema(mk(false))), /stroke-dasharray/,
 		'and an ordinary data link must carry no dash attribute at all');
 	assert.equal(k.schemaToDoc(k.docToSchema(mk(true))).links[0].control, true,
 		'the adapter must not lose the plane in either direction -- that was B225');
 
 	// the dash is DERIVED, by one rule, and scales with the stroke rather than carrying its own number
-	assert.equal(k.linkDash({ id: 'l', control: true }, 6), '6 6');
+	assert.equal(k.linkDash({ id: 'l', control: true }, 6), '6 6');   // the dash follows whatever width it is given
 	assert.equal(k.linkDash({ id: 'l' }, 6), null, 'absence of the field is absence of the dash');
 	assert.equal(k.linkDash({ id: 'l', control: true }, 10), '10 10', 'the pattern follows the stroke width');
 
@@ -1085,4 +1093,43 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 		'the UPDATE path must re-derive it -- setting only on create is what B228 was');
 	assert.match(updateBranch, /removeAttribute\('stroke-dasharray'\)/,
 		'and it must REMOVE the dash, or a link turned back to data keeps the last one');
+});
+
+/*
+H15.16: the control plane reads THINNER -- the link and the endpoint ring alike.
+
+Director's adjustment. A control-plane link is dashed and slightly thinner than a data link, and an
+endpoint where control-plane links terminate carries a thinner ring for the same reason: the plane
+should be legible at a glance without reading the dash pattern.
+
+The width is DERIVED from the plane, exactly as the dash is, so one rule answers both and neither
+renderer decides for itself. The ring needs the links to know which plane it serves, which is why
+`waypointLayers` takes them -- a role set alone cannot say.
+*/
+test('H15.16: a control link and its endpoint ring are thinner than a data one', async () => {
+	const k = await import('../kernel/index.mjs');
+
+	// the LINK
+	assert.ok(k.linkWidth({ id: 'l', control: true }) < k.linkWidth({ id: 'l' }),
+		'a control link must be thinner than a data link');
+	assert.equal(k.linkWidth({ id: 'l' }), k.STD.linkW, 'and a data link is unchanged -- the default is the baseline');
+
+	// the ENDPOINT RING, derived from what terminates there
+	const ext = k.L_STD.frame.ext;
+	const ringOf = (links) => k.waypointLayers(['endpoint'], ext, links).find((l) => l.cls === 'wp-ring');
+	const data = ringOf([{ id: 'a', src: 'x', dst: 'w' }]);
+	const ctrl = ringOf([{ id: 'a', src: 'x', dst: 'w', control: true }]);
+	assert.ok(ctrl.width < data.width, 'a control endpoint ring must be thinner than a data one');
+	assert.equal(ctrl.radius, data.radius, 'and the SAME size -- only the weight carries the plane');
+
+	/*
+	MIXED IS DATA. An endpoint where both planes terminate is not "half control", and thinning it
+	would claim something the graph does not say. Only an all-control terminus reads as control.
+	*/
+	const mixed = ringOf([{ id: 'a', src: 'x', dst: 'w', control: true }, { id: 'b', src: 'w', dst: 'y' }]);
+	assert.equal(mixed.width, data.width, 'a mixed terminus reads as data -- it is not partly control');
+
+	// the default keeps every existing caller correct: no links passed means the data weight
+	assert.equal(k.waypointLayers(['endpoint'], ext).find((l) => l.cls === 'wp-ring').width, data.width,
+		'omitting the links must not change what a waypoint has always drawn');
 });

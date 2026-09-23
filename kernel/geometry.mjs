@@ -294,9 +294,15 @@ it. The anchor is the floor and is always present; the rest are the sub-types `w
 derived. One list, walked by both renderers, so the canvas and the export cannot disagree about
 what a role looks like.
 */
-export const waypointLayers = (roles, ext) => {
+export const waypointLayers = (roles, ext, links = null) => {
 	const out = [{ cls: 'wp-anchor', ...waypointAnchor(ext) }];
-	if (roles.includes('endpoint')) out.push({ cls: 'wp-ring', ...waypointStyle('endpoint', ext) });
+	if (roles.includes('endpoint')) {
+		// H15.16 -- the ring carries the plane in its WEIGHT, at the same ratio the link uses. The
+		// links are needed because a role set alone cannot say which plane a terminus serves.
+		const ring = waypointStyle('endpoint', ext);
+		if (allControl(links)) ring.width = round1(ring.width * CONTROL_WEIGHT);
+		out.push({ cls: 'wp-ring', ...ring });
+	}
 	if (roles.includes('junction')) out.push({ cls: 'wp-junction', ...waypointJunction() });
 	out.push({ cls: 'wp-dot', radius: gridDot().radius, fill: 'solid' });
 	return out;
@@ -356,6 +362,22 @@ The pattern is a multiple of the stroke so it scales with the line rather than c
 number -- the same reasoning `markerUnits="strokeWidth"` uses for the arrowhead.
 */
 export const linkDash = (link, w = STD.linkW) => (link.control ? `${w} ${w}` : null);
+
+/*
+H15.16 -- the control plane reads THINNER, so the plane is legible without reading the dash.
+
+One ratio, applied to the link stroke and to the endpoint ring alike, so the two cannot drift into
+different ideas of "slightly thinner". A fraction rather than a second constant because the widths
+it scales are already ruled numbers -- `linkW` and the endpoint ladder -- and a control link should
+stay in proportion if either is ever changed.
+*/
+export const CONTROL_WEIGHT = 0.6;
+export const linkWidth = (link, w = STD.linkW) => (link.control ? round1(w * CONTROL_WEIGHT) : w);
+const round1 = (n) => Math.round(n * 10) / 10;
+
+// every link terminating here is control plane. MIXED IS DATA: a terminus serving both is not
+// half control, and thinning it would claim something the graph does not say.
+const allControl = (links) => Array.isArray(links) && links.length > 0 && links.every((l) => !!l.control);
 
 export const linkFacing = (link, pointId) => {
 	if (typeof link.flow !== 'boolean') return null;
@@ -424,38 +446,31 @@ export const waypointRoles = (id, touching) => {
 	written before this field reading exactly as it did.
 	*/
 	if (terminations === 2) {
-		const dirs = [];
-		for (const t of touching || []) {
-			if (t.closed) continue;
-			const d = linkFacing(t, id);
-			if (d) dirs.push(d);
-		}
+		const two = (touching || []).filter((t) => !t.closed && (t.src === id || t.dst === id));
+
 		/*
-		B232 -- BOTH declared cases are decided here, and the second one was missing.
+		THE TWO-LINK MATRIX. A bend means flow passes through UNCHANGED, so a waypoint where
+		anything differs is a place where something happens -- which is what a junction is.
 
-		This returned `['junction']` when the two directions opposed and FELL THROUGH otherwise, so
-		a genuine pass-through -- one in, one out -- landed on the `endpoint` line below and read as
-		a terminus. The ruled table has always said two that agree is a BEND, and a bend is the
-		absence of a sub-type (B199), so the answer is the empty set rather than another role.
+		B232 -- the direction half decided only ONE of its two cases. It returned `['junction']`
+		when the directions opposed and fell through otherwise, so a genuine pass-through landed on
+		the `endpoint` line below and read as a terminus. A bend is the absence of a sub-type
+		(B199), so the answer is the empty set rather than another role.
 
-		Declaring ONE of two links leaves `dirs.length === 1`: an undeclared link asserts nothing
-		and cannot make a path through by itself, so that case still falls through to `endpoint`.
+		B233 -- the PLANE and the DIRECTION are independent, and the first version nested one inside
+		the other. The plane check ran only when both links declared a flow, so a control link
+		meeting a data link with no direction at all fell through to `endpoint`. Planes differing is
+		enough on its own; it does not need anyone to have said which way things move.
+
+		Both defects are the same mistake: a case the code never decided, in a matrix that was
+		ruled whole. The rule generalises -- when more link types arrive the question stays "does
+		anything differ?" rather than needing a branch for each.
 		*/
-		/*
-		H15.15 -- A BEND REQUIRES BOTH: the directions agree AND the planes match.
+		if (two.length === 2 && !samePlane(two[0], two[1])) return ['junction'];
 
-		A bend means flow passes through UNCHANGED, so a waypoint where anything differs is a place
-		where something happens -- which is what a junction is. A control link meeting a data link
-		is therefore a junction exactly as a convergence is, and the rule generalises: when more
-		link types arrive the question stays "does anything differ?" rather than needing a case.
-		*/
-		if (dirs.length === 2) {
-			const two = (touching || []).filter((t) => !t.closed && linkFacing(t, id));
-			const through = dirs[0] !== dirs[1] && samePlane(two[0], two[1]);
-			return through ? [] : ['junction'];
-		}
+		const dirs = two.map((t) => linkFacing(t, id)).filter(Boolean);
+		if (dirs.length === 2) return dirs[0] !== dirs[1] ? [] : ['junction'];
 	}
-
 	if (endpoint) roles.push('endpoint');
 	return roles;
 };
