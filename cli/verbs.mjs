@@ -326,6 +326,44 @@ const ok = (res, what) => {
 };
 
 /*
+B237 -- WHAT `set` CAN WRITE, per kind, and how a word becomes a stored value.
+
+One entry per settable field. `words` maps what an agent types to what is stored; `CLEAR` is the
+sentinel for "remove the key", which is a state a `set` patch cannot express (see `run`). A field
+with no `words` takes its value verbatim and validates with `check`.
+
+Restated from `OPTIONAL`/the validator rather than imported, because B138 ships this file alone.
+Held to the taxonomy by a test that SWEEPS it, so a kind gaining an optional scalar is caught here
+with no edit to the test -- a list that names its kinds goes stale, which is B224.
+*/
+const CLEAR = Symbol('clear');
+
+const ONOFF = { on: true, off: CLEAR };
+const FLOW = { forward: true, reverse: false, none: CLEAR };
+
+export const SETTABLE = {
+	node: {
+		name: { about: 'the label it draws' },
+		type: { about: 'the glyph it draws' },
+		shape: { about: 'circle or square', check: (v) => ['circle', 'square'].includes(v) || 'shape is circle or square' },
+		cols: { about: 'width in cells', span: true },
+		rows: { about: 'height in cells', span: true },
+	},
+	// `via` and `closed` are the ROUTE, minted and shaped by `draw link`, not scalar properties
+	link: {
+		name: { about: 'the label it draws' },
+		flow: { about: 'forward, reverse or none -- the declared direction', words: FLOW },
+		control: { about: 'on or off -- the control plane, drawn dashed and thinner', words: ONOFF },
+	},
+	waypoint: {
+		name: { about: 'the label it draws' },
+		pinned: { about: 'on or off -- placed deliberately, not derived from a link', words: ONOFF },
+	},
+	zone: { name: { about: 'the label it draws' } },
+	group: { name: { about: 'the label it draws' } },
+};
+
+/*
 `route` is the verb's PRIMARY reach -- the one printed in help, because it is the request that does
 the thing. `also` lists the others a composite verb makes on the way.
 
@@ -1831,7 +1869,7 @@ async function cellToPx(ctx, id, layout, { cx, cy }, what) {
 
 VERBS.push(
 	{
-		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed]',
+		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--flow forward|reverse] [--control]',
 		route: '/diagrams/<id>/commit', method: 'POST',
 		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'join two things that already exist, bending the route through cells you name',
@@ -1840,6 +1878,8 @@ VERBS.push(
 			{ name: 'dst', about: 'a node id or name. Omit it with --closed to loop back to src' }],
 		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
 			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
+			{ name: '--flow', about: 'declare a direction: forward (the default if bare) or reverse' },
+			{ name: '--control', about: 'the control plane -- drawn dashed and thinner' },
 			{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
 			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
@@ -1883,10 +1923,32 @@ VERBS.push(
 			const entity = { id: lid, name: lid, src: a, dst: b };
 			if (via.length) entity.via = via;
 			if (ctx.flags.closed) entity.closed = true;
+
+			/*
+			B237 -- a link can be DECLARED as it is drawn, rather than created and then amended.
+
+			The words come from `SETTABLE.link` so the two verbs cannot drift: whatever
+			`draw set <link> flow` accepts is what `--flow` accepts. A bare `--flow` means forward,
+			because that is the only reading of a direction flag with no argument, and `--control`
+			is a plain switch. An ABSENT flag declares nothing -- it must not write a default, or
+			every link the tool draws would claim a direction its author never chose.
+			*/
+			for (const f of ['flow', 'control']) {
+				const given = ctx.flags[f];
+				if (given === undefined) continue;
+				const words = SETTABLE.link[f].words;
+				const word = given === true ? (f === 'flow' ? 'forward' : 'on') : given;
+				if (!(word in words)) die(`--${f} takes ${Object.keys(words).join(', ')} -- not ${word}`);
+				const stored = words[word];
+				// `none`/`off` at creation is simply an absent key -- there is nothing to clear yet
+				if (stored !== CLEAR) entity[f] = stored;
+			}
 			ops.push({ op: 'put', kind: 'link', entity });
 			return submit(ctx, id, ops, 'link', 'link', (r) => ({
-				json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed, version: r.version },
-				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}  v${r.version}`,
+				json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed,
+					...(entity.flow === undefined ? {} : { flow: entity.flow }),
+					...(entity.control === undefined ? {} : { control: entity.control }), version: r.version },
+				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}${entity.control ? ' (control)' : ''}  v${r.version}`,
 			}));
 		},
 	},
@@ -2392,6 +2454,20 @@ VERBS.push(
 	a node meant hand-writing a `set` op. The field list is CLOSED and checked here: the server
 	would refuse an unknown one, but a round trip to learn a name the tool already knows teaches
 	nobody anything, and the refusal can name the alternatives.
+
+	B237 -- the list is now a TABLE, per kind, and every entry declares how a word becomes a value.
+
+	A flat closed array was B231's defect in the write direction: `flow` and `control` reached the
+	document, the canvas, the matrix and the export, and `set` refused them, so the tool could SEE a
+	declaration it could not MAKE. The table below restates `OPTIONAL` from `model/shape.mjs`
+	because the CLI ships standalone (B138 installs it by symlink into a directory holding nothing
+	else, so importing a sibling breaks it), and a restated table is a drift risk, which is a test's
+	job -- the same arrangement FONT_MIN/FONT_MAX already have.
+
+	Each entry maps the AGENT'S WORD to a stored value. `flow` is a relation and `true` does not say
+	which way, so the words are the ones the canvas readout already uses -- forward, reverse, none.
+	`CLEAR` is the third state and it is not a value: absent means undeclared, and no `set` patch
+	can express it. See the clear path in `run` below.
 	*/
 	{
 		name: 'set', group: 'Writing', usage: 'draw set <ref> <field> <value>',
@@ -2399,22 +2475,71 @@ VERBS.push(
 		summary: 'change one property of one entity',
 		example: 'draw set a-fw shape square',
 		args: [{ name: 'ref', about: 'the entity, by id or name' },
-			{ name: 'field', about: 'name, type, shape, cols or rows' },
+			{ name: 'field', about: 'a property of that kind -- `draw set <ref>` with no field lists them' },
 			{ name: 'value', about: 'the new value' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
 			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
 		async run(ctx, args) {
 			const [ref, field, value] = args;
-			if (!ref || !field || value === undefined) die('usage: draw set <ref> <field> <value>');
-			const FIELDS = ['name', 'type', 'shape', 'cols', 'rows'];
-			if (!FIELDS.includes(field)) die(`set takes ${FIELDS.join(', ')} -- not ${field}. Position is \`draw move\`.`);
-			if (field === 'shape' && !['circle', 'square'].includes(value)) die(`shape is circle or square, not ${value}`);
+			if (!ref) die('usage: draw set <ref> <field> <value>');
 			const id = await activeId(ctx, ctx.flags);
 			const eid = await resolveId(ctx, id, ref);
 			const kind = eid.split('-')[0];
+			const table = SETTABLE[kind] || {};
+			const names = Object.keys(table);
+
+			/*
+			THE REFUSAL IS THE DOCUMENTATION. An agent that guesses a field name gets the list for
+			the kind it actually named -- not a flat list spanning every kind, which is what sent
+			`draw set <link> flow` to a message about `shape` and `cols`.
+			*/
+			const listing = names.map((n) => `  ${n}  -- ${table[n].about}`).join('\n');
+			if (!field) die(`${eid} takes:\n${listing}`);
+			if (!(field in table)) die(`a ${kind} has no '${field}'. It takes:\n${listing}\n\nPosition is \`draw move\`.`);
+
+			const spec = table[field];
+			if (value === undefined) {
+				const opts = spec.words ? Object.keys(spec.words).join(', ') : 'a value';
+				die(`usage: draw set ${ref} ${field} <${opts}>`);
+			}
+
+			// a word field takes ONLY its words; anything else is a typo worth naming as one
+			let stored = value;
+			if (spec.words) {
+				if (!(value in spec.words)) die(`${field} takes ${Object.keys(spec.words).join(', ')} -- not ${value}`);
+				stored = spec.words[value];
+			} else if (spec.check) {
+				const verdict = spec.check(value);
+				if (verdict !== true) die(typeof verdict === 'string' ? verdict : `${value} is not a valid ${field}`);
+			}
+
+			/*
+			CLEARING IS A WHOLE-ENTITY PUT, not a set carrying undefined.
+
+			`inverseOfSet` in server/txn.mjs reaches for the same move for the same reason, and
+			`cycleFlow` in app/src/commands.js learned it the hard way: `{flow: undefined}` sets an
+			own property holding undefined, which vanishes from JSON, survives `in`, and is refused
+			by a schema asking for a boolean -- so the clear is dropped in memory and silently
+			repaired by the next reload. That is B220's shape, two doors disagreeing with a restart
+			hiding the evidence. The entity is rebuilt WITHOUT the key instead.
+			*/
+			if (stored === CLEAR) {
+				const doc = ok(await request(ctx, `/diagrams/${id}`), 'set');
+				const before = (doc[`${kind}s`] || []).find((e) => e.id === eid);
+				if (!before) die(`${ref} is not in this diagram`);
+				if (!(field in before)) {
+					return { json: { id: eid, field, value, version: doc.version, changed: false },
+						text: `${eid} ${field} already undeclared` };
+				}
+				const { [field]: _gone, ...without } = before;
+				return submit(ctx, id, [{ op: 'put', kind, entity: without }], `clear ${field}`, 'set',
+					(r) => ({ json: { id: eid, field, value, version: r.version },
+						text: `${eid} ${field} cleared  v${r.version}` }));
+			}
+
 			let patch;
-			if (field === 'cols' || field === 'rows') {
+			if (spec.span) {
 				// span is one field, so changing half of it needs the other half read first
 				const doc = ok(await request(ctx, `/diagrams/${id}`), 'set');
 				const node = (doc.nodes || []).find((n) => n.id === eid);
@@ -2423,7 +2548,7 @@ VERBS.push(
 				const n = Number(value);
 				if (!Number.isInteger(n) || n < 1) die(`${field} is a whole number of cells, at least 1`);
 				patch = { span: { ...span, [field]: n } };
-			} else patch = { [field]: value };
+			} else patch = { [field]: stored };
 			return submit(ctx, id, [{ op: 'set', kind, id: eid, patch }], `set ${field}`, 'set',
 				(r) => ({ json: { id: eid, field, value, version: r.version }, text: `${eid} ${field} = ${value}  v${r.version}` }));
 		},

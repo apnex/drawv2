@@ -827,6 +827,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.19 | The export carries node and zone LABELS -- the half of "kernel defers labels" that was never reversed | **B234** | **S2** | `DONE` |
 | H15.20 | A derived weight is not overridden by a stylesheet -- one authority for a frame, not two | **B235** | **S2** | `DONE` |
 | H15.21 | A label is one size and one offset, canvas and export alike | **B236** | S3 | `DONE` |
+| H15.22 | Every optional field a link carries is writable from the CLI, clearing included, from one declared table | **B237** | S3 | `DONE` |
 | H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out | feature | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 

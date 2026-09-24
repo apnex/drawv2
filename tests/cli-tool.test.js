@@ -1646,3 +1646,135 @@ test('H15.18: the CLI states the same font bounds the validator enforces', async
 	assert.match(src, new RegExp(`grid units, ${FONT_MIN}-${FONT_MAX}`),
 		'the flag description must quote the real range, or it promises what the server refuses');
 });
+
+/*
+B237 -- the CLI must be able to WRITE every optional field a link carries, clearing included.
+
+`flow` and `control` reached the document, the canvas, the matrix and the export, and were
+unreachable from the tool: `draw set` refused them from a flat closed list. B231 fixed the READ half
+by deriving columns from the data, so the tool could SEE a declaration it could not MAKE.
+
+The table this asserts against is `OPTIONAL` in `model/shape.mjs`, which is already the one
+authority for what a kind may carry. The CLI restates it -- B138 ships the tool standalone, so it
+cannot import a sibling -- and a restated table is a drift risk, which is what the first test is
+for. `via` is excluded deliberately: it is a route, minted by `draw link --via`, not a scalar
+property, and `closed` likewise belongs to the shape of the route.
+*/
+test('B237: the CLI can set every scalar optional field a link carries', async () => {
+	const { OPTIONAL } = await import('../model/shape.mjs');
+	const { SETTABLE } = await import('../cli/verbs.mjs');
+
+	// the route fields are the route verb's business; every other optional field must be settable
+	const ROUTE = new Set(['via', 'closed']);
+	const scalars = [...OPTIONAL.link].filter((f) => !ROUTE.has(f));
+	assert.ok(scalars.length > 0, 'if this is empty the test proves nothing -- the taxonomy moved');
+
+	for (const field of scalars) {
+		assert.ok(SETTABLE.link && field in SETTABLE.link,
+			`a link carries '${field}' and the CLI cannot write it -- an agent must leave the tool to declare it`);
+	}
+});
+
+test('B237: flow is three states and the CLI can reach all three, clearing with a put', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'flowcli', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-6,0', '--name', 'left');
+		await run('add', 'router', 'at', '6,0', '--name', 'right');
+		const lid = JSON.parse(await run('link', 'left', 'right', '--json')).id;
+
+		const linkNow = async () => {
+			const doc = JSON.parse(await run('show', '--json'));
+			return doc.links.find((l) => l.id === lid);
+		};
+
+		// absent is the starting state, and it is a real state -- undeclared, not "false"
+		assert.ok(!('flow' in await linkNow()), 'a new link declares no direction');
+
+		await run('set', lid, 'flow', 'forward');
+		assert.equal((await linkNow()).flow, true, 'forward follows the stored order');
+
+		await run('set', lid, 'flow', 'reverse');
+		assert.equal((await linkNow()).flow, false, 'reverse runs against it');
+
+		/*
+		CLEARING IS THE ONE THAT BREAKS. A `set` patch cannot remove a key -- `inverseOfSet` in
+		server/txn.mjs says so, and `cycleFlow` in app/src/commands.js learned it the hard way:
+		`{flow: undefined}` is an own property that vanishes from JSON, survives `in`, and is
+		refused by a schema asking for a boolean. The canvas clears with a whole-entity put and so
+		must the CLI, or the clear reports success and the field is still there on reload.
+		*/
+		await run('set', lid, 'flow', 'none');
+		const cleared = await linkNow();
+		assert.ok(!('flow' in cleared), 'none REMOVES the key -- an undefined left behind is not absence');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B237: control is on or off, and off is absence, matching the canvas', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'planecli', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-6,0', '--name', 'a');
+		await run('add', 'router', 'at', '6,0', '--name', 'b');
+		const lid = JSON.parse(await run('link', 'a', 'b', '--json')).id;
+
+		const linkNow = async () => {
+			const doc = JSON.parse(await run('show', '--json'));
+			return doc.links.find((l) => l.id === lid);
+		};
+
+		await run('set', lid, 'control', 'on');
+		assert.equal((await linkNow()).control, true, 'on declares the control plane');
+
+		// off matches toggleControl: the key goes, because `false` would be a second way to say absent
+		await run('set', lid, 'control', 'off');
+		assert.ok(!('control' in await linkNow()), 'off REMOVES the key, as the canvas does');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B237: a link can be declared at creation, in one call', async () => {
+	await boot();
+	try {
+		const id = JSON.parse(await run('create', 'declare', '--json')).id;
+		await run('context', id);
+		await run('lock');
+		await run('add', 'router', 'at', '-6,0', '--name', 'a');
+		await run('add', 'router', 'at', '6,0', '--name', 'b');
+
+		const r = JSON.parse(await run('link', 'a', 'b', '--flow', 'forward', '--control', '--json'));
+		const doc = JSON.parse(await run('show', '--json'));
+		const l = doc.links.find((x) => x.id === r.id);
+		assert.equal(l.flow, true, 'a direction declared at creation is stored');
+		assert.equal(l.control, true, 'and so is the plane -- no create-then-amend');
+
+		// and an undeclared link stays undeclared; a flag absent must not write a default
+		const plain = JSON.parse(await run('link', 'a', 'b', '--via', '0,4', '--json'));
+		const p = JSON.parse(await run('show', '--json')).links.find((x) => x.id === plain.id);
+		assert.ok(!('flow' in p) && !('control' in p), 'absent flags declare nothing');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('B237: the settable table matches the taxonomy for every kind, not just links', async () => {
+	const { OPTIONAL } = await import('../model/shape.mjs');
+	const { SETTABLE } = await import('../cli/verbs.mjs');
+
+	/*
+	A LIST THAT NAMES ITS KINDS GOES STALE -- B224. This sweeps the taxonomy instead, so a kind
+	gaining an optional scalar field is caught here with no edit to this test.
+	*/
+	const NOT_SCALAR = new Set(['via', 'closed', 'span', 'content', 'members', 'spawn']);
+	let checked = 0;
+	for (const [kind, fields] of Object.entries(OPTIONAL)) {
+		for (const f of fields) {
+			if (NOT_SCALAR.has(f)) continue;
+			checked++;
+			assert.ok(SETTABLE[kind] && f in SETTABLE[kind],
+				`${kind}.${f} is an optional scalar the tool cannot write`);
+		}
+	}
+	assert.ok(checked >= 3, `the sweep must actually find fields -- it checked ${checked}`);
+});
