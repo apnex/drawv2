@@ -36,6 +36,15 @@ Under anchor-as-core both are the same omission: two compositions built separate
 `node-` remains the id prefix, the validator kind, the CLI noun and the field in every stored document.\
 Renaming before the model is proven is how it gets done twice, and the id-grammar change is the irreversible step.
 
+**Amended by the director 2026-09-24: `node-` is probably CORRECT, not merely tolerated.**\
+The earlier framing treated the prefix as debt to be paid once the model was proven.\
+It is not: `node` names an anchor AND the entirety of its composition, which is exactly what an identifier in a stored document refers to -- the whole entity, not its core.\
+So the prefix is not lagging the ontology, it is naming the right thing in it.
+
+What IS still owed is naming the other parts of the stack.\
+`anchor`, `pack` and `composition` are ruled as concepts and have no identifiers, no field names and no place in the id grammar, and some of them will need one.\
+That is design work, deliberately not settled here -- the point recorded is only that it is a naming question about the REST of the stack rather than a rename of `node-`.
+
 ---
 
 ## Where to start
@@ -130,11 +139,70 @@ Not designed, not ruled, and not to be assumed.
 
 **How does a pack contribute a WRITE?**
 
-Every pack designed so far is a pure derivation -- role sets, layer lists, attributes.\
-The split is the first capability that MUTATES the document, and nothing in the capability model says how a pack does that.
+This is the hardest question in the programme, it is still open, and it is worth building up rather than stating.\
+What follows is the explanation given to the director on 2026-09-24, recorded because the shape of the question is most of the work.
 
-This is the hardest question in the programme and it is still open.\
-Do not build a pack mechanism that assumes every pack is pure.
+**What a pack is today.**\
+Every pack designed so far ANSWERS QUESTIONS, and never changes anything.\
+Ask `routable` about an anchor and it says "you are a junction".\
+Ask `glyph` about a node and it says "draw the router symbol".\
+Ask `framed` and it says "stroke-width 2.1, square".
+
+Ask the same question twice and the answer is the same.\
+Ask it on two machines and the answer is the same.\
+Nothing is stored and nothing is remembered.
+
+That property is why the system works without peers talking to each other: two browsers holding the same document agree without exchanging anything, because each derives the same answer independently.
+
+**The operation that breaks it.**\
+Take a link bent through a waypoint, click the waypoint, and SPLIT -- one link becomes two.\
+`splitAtBend` in `model/invariants.mjs` returns two halves, which is not an answer about the document but a CHANGE to it: one link destroyed, two created.
+
+**Why that is a different kind of thing.**
+
+| | a derivation | a write |
+|---|---|---|
+| what it does | reads the document | changes the document |
+| run it twice | the same answer | a DIFFERENT result |
+| needs a lock | no | yes |
+| needs the server | no | yes |
+| can be undone | nothing to undo | must be undoable |
+| two peers | agree automatically | must be ordered |
+
+Every row is a new problem.\
+Running a derivation twice is harmless; running a split twice leaves three links.
+
+**The actual question.**\
+Splitting is a `routable` concern -- it is about the route, the bend and the anchor -- so if `routable` is a pack, the split belongs to it.\
+But every mechanism designed for packs assumes the pure shape, that a pack is asked a question and returns an answer.
+
+Concretely unanswered: what does a pack RETURN, an op list or a whole document or a request?\
+Who APPLIES it, the pack or the server's planner or something between?\
+Where does VALIDATION happen, before or after the pack has spoken?\
+If two packs both want to write, who goes first?\
+How does the result reach undo history?
+
+**Why it cannot be deferred.**\
+Build the pack mechanism now and it will be built for pure functions, because those are the only packs that exist -- then the split arrives and does not fit, and the mechanism is redesigned, which is precisely what the staged approach exists to avoid.\
+It is also the first real test of the model: two derivations composing proves little, since both are just functions, whereas a derivation and a write composing proves the claim the director's scope discipline says must be EARNED.
+
+**The blunt version.**\
+Packs are read-only.\
+The first genuinely useful capability, the split, is read-write.\
+Nobody has designed how a pack writes, so building the pack system today means building the wrong one and finding out later.
+
+**A frame worth challenging before accepting it.**\
+The above assumes the pack needs to write.\
+The alternative is that a pack never writes, it PROPOSES: `routable` returns "this is a legal split, here are the two halves", still a pure function and still deterministic, and the server's planner decides whether to apply it.\
+Packs would then stay read-only forever and the write would stay where writes already live.
+
+If that holds the question dissolves rather than gets answered.
+
+It is not settled, but the code leans that way and the lean is worth reading before designing.\
+`splitAtBend` is already pure: it RETURNS two halves and applies nothing, and it is `app/src/input.js` that decides identity, re-cuts pieces and emits the ops.\
+So the split is today a pure derivation plus a caller that writes, which is exactly the shape the alternative proposes -- the pack reasons, the planner writes.\
+What that does NOT settle is whether the derivation can stay pure once it must know which half keeps the original id, which is the decision `input.js:992` makes and the one a pack would have to make too.\
+Test it in design rather than assume it either way.
 
 A second, smaller one: **priority as a bare integer is where the `composes` shape rots.**\
 Two packs land on the same value, or one is inserted at 50 and silently reorders another.\
