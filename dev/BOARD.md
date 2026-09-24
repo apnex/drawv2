@@ -809,7 +809,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H15.1 | A collapse reads the COUNT, not the stored order -- orient the pair rather than refuse it | **B222** | **S2** | `DONE` |
-| H15.2 | Share `collapseAtWaypoint` so the client predicts the collapse it cannot currently see coming -- FOLDED INTO H15.4, which rewrites the rule the projection would carry | **B221** | S4 | `BLOCKED` |
+| H15.2 | Share `collapseAtWaypoint` so the client predicts the collapse it cannot currently see coming -- UNBLOCKED: H15.4 landed, so the rule the projection waited for is now written | **B221** | S4 | `TODO` |
 | H15.3 | `flow`, the declared direction: an optional boolean, validated, surviving a collapse that flips the link | feature | S3 | `DONE` |
 | H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` reads direction | feature | S3 | `DONE` |
 | H15.6 | The gesture and the arrowhead -- declaring a direction from the canvas, and seeing it | feature | S3 | `DONE` |
@@ -828,7 +828,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.20 | A derived weight is not overridden by a stylesheet -- one authority for a frame, not two | **B235** | **S2** | `DONE` |
 | H15.21 | A label is one size and one offset, canvas and export alike | **B236** | S3 | `DONE` |
 | H15.22 | Every optional field a link carries is writable from the CLI, clearing included, from one declared table | **B237** | S3 | `DONE` |
-| H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out | feature | S3 | `TODO` |
+| H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out -- LINKS DONE; nodes, waypoints, zones and groups still assemble their own attributes | feature | S3 | `WIP` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
 **Ruled 2026-09-22 by the director: FRAGMENT.**\
