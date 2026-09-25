@@ -938,3 +938,86 @@ test('B240: a declared convergence is judged against the link the earlier collap
 	assert.equal(c.src, 'node-aa0002');
 	assert.equal(loadsAtBoot(m), null);
 });
+
+
+/*
+B241 -- the orphan sweep keeps group membership true, exactly as a requested delete does.
+
+A waypoint can be a group member. Deleting one ON REQUEST trims it from its group, or dissolves a
+group it leaves below two members. The sweep deletes a bend nobody named and never touched groups,
+so the group went on listing a waypoint that no longer existed -- invisible to `violations()`, which
+counts listed members, and refused by `validateDoc` when the store next booted.
+*/
+// CONTENT, not order: undo re-creates a deleted entity at the END of its collection, so a byte-for-byte
+// compare fails whenever what was deleted was not last -- the reality map's D43, a separate defect this
+// block does not claim to fix. Each collection is compared as a set; a group's member list keeps its order.
+const contentOf = (mm) => {
+	const d = mm.toJSON();
+	delete d.meta.version;
+	for (const k of Object.keys(d)) if (k !== 'selection' && Array.isArray(d[k])) d[k] = d[k].map((e) => JSON.stringify(e)).sort();
+	return JSON.stringify(d);
+};
+
+function groupedBend(members) {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)),
+		put('node', node('node-aa0003', 120, { y: 240 })), put('node', node('node-aa0004', 240, { y: 240 })),
+		put('waypoint', wpAt('waypoint-aa0011', 300)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0011'] }),
+		put('group', { id: 'group-aa0001', name: 'g', members }),
+	] }, 'server', 't');
+	return { m, log };
+}
+
+test('B241: sweeping a grouped bend dissolves a group it leaves below two members', () => {
+	const { m, log } = groupedBend(['waypoint-aa0011', 'node-aa0003']);
+	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+	const before = contentOf(m);
+
+	commit(m, log, { ops: [delOp('link', 'link-aa0001')] }, 'server', 't');
+	assert.equal(m.get('waypoint', 'waypoint-aa0011'), undefined, 'precondition: the bend was swept');
+	assert.equal(m.get('group', 'group-aa0001'), undefined, 'a group left with one member dissolves, as it would on a requested delete');
+	assert.equal(loadsAtBoot(m), null, 'the committed document is one the store will load');
+
+	undo(m, log);
+	assert.equal(contentOf(m), before, 'one undo restores the link, the bend and the group');
+});
+
+test('B241: sweeping a grouped bend trims it from a group that keeps two members', () => {
+	const { m, log } = groupedBend(['waypoint-aa0011', 'node-aa0003', 'node-aa0004']);
+	commit(m, log, { ops: [delOp('link', 'link-aa0001')] }, 'server', 't');
+	assert.deepEqual(m.get('group', 'group-aa0001')?.members, ['node-aa0003', 'node-aa0004']);
+	assert.equal(loadsAtBoot(m), null);
+});
+
+test('B241: two swept bends in one group compose, member by member', () => {
+	// both bends leave in one transaction: trimmed one at a time against the group as the previous
+	// trim left it, or the second trim would restore the first -- the B240 shape, one layer over
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)),
+		put('node', node('node-aa0003', 120, { y: 240 })), put('node', node('node-aa0004', 240, { y: 240 })),
+		put('waypoint', wpAt('waypoint-aa0011', 240)), put('waypoint', wpAt('waypoint-aa0012', 360)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0011', 'waypoint-aa0012'] }),
+		put('group', { id: 'group-aa0001', name: 'g', members: ['waypoint-aa0011', 'waypoint-aa0012', 'node-aa0003', 'node-aa0004'] }),
+	] }, 'server', 't');
+	const before = contentOf(m);
+	commit(m, log, { ops: [delOp('link', 'link-aa0001')] }, 'server', 't');
+	assert.deepEqual(m.get('group', 'group-aa0001')?.members, ['node-aa0003', 'node-aa0004']);
+	assert.equal(loadsAtBoot(m), null);
+	undo(m, log);
+	assert.equal(contentOf(m), before, 'and one undo restores both bends and the whole membership');
+});
+
+
+test('B241: a re-route that drops a grouped bend reaches the same sweep, and keeps the group true', () => {
+	// not a delete at all: `set via []` straightens the link, the bend becomes debris, and the sweep
+	// takes it. The reality map found six request shapes that reach the sweep; the fix lives in the
+	// sweep itself rather than at any one of them, and this is the one that deletes nothing by name.
+	const { m, log } = groupedBend(['waypoint-aa0011', 'node-aa0003']);
+	commit(m, log, { ops: [{ op: 'set', kind: 'link', id: 'link-aa0001', patch: { via: [] } }] }, 'server', 't');
+	assert.equal(m.get('waypoint', 'waypoint-aa0011'), undefined, 'precondition: the bend was swept');
+	assert.equal(m.get('group', 'group-aa0001'), undefined, 'and its group, left with one member, dissolved');
+	assert.equal(loadsAtBoot(m), null);
+});

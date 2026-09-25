@@ -160,20 +160,27 @@ export function plan(model, ops) {
 	*/
 	const wasReferenced = refs(model);
 	const nowReferenced = refs(proj);
-	const swept = [];
 	const sweepable = wasBendOnly(model);
-	for (const w of proj.all('waypoint')) {
-		if (nowReferenced.has(w.id) || w.pinned) continue;
-		if (!wasReferenced.has(w.id)) continue;          // it arrived unreferenced; not ours to remove
-		if (!sweepable.has(w.id)) continue;              // B216 -- it was a terminus, not debris
-		swept.push({ op: 'del', kind: 'waypoint', id: w.id });
-		inv.unshift({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) });
-	}
-	// applied to the projection so the invariant check below sees the state that will actually be
-	// stored, rather than one still carrying the debris this just removed
-	if (swept.length) {
-		out.push(...swept);
-		applyOps(proj, swept);
+	const debris = proj.all('waypoint').filter((w) => !nowReferenced.has(w.id) && !w.pinned
+		&& wasReferenced.has(w.id)                       // it arrived unreferenced; not ours to remove
+		&& sweepable.has(w.id));                          // B216 -- it was a terminus, not debris
+	/*
+	B241 -- a swept waypoint leaves its group exactly as a requested delete's does: trimmed, or the
+	group dissolved when it falls below two.
+
+	ONE AT A TIME, applied to the projection as each goes. Two swept bends in one group must trim
+	against the membership the previous trim left, or the second would restore the first -- the
+	stale-read shape B240 removed from the collapse. Applied, too, so the invariant check below sees
+	the state that will actually be stored rather than one still carrying the debris.
+	*/
+	for (const w of debris) {
+		const step = [], undoStep = [];
+		trimGroupsHolding(proj, w.id, step, undoStep);
+		step.push({ op: 'del', kind: 'waypoint', id: w.id });
+		undoStep.unshift({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) });
+		out.push(...step);
+		inv.unshift(...undoStep);
+		applyOps(proj, step);
 	}
 
 	/*
@@ -430,32 +437,42 @@ function planSet(model, { kind, id, patch }) {
 	};
 }
 
+/*
+A group loses a member: trimmed, or dissolved when it falls below two. The ops and their inverses are
+appended to the caller's lists, read against `model` as it stands.
+
+ONE FUNCTION FOR EVERY PATH THAT REMOVES A MEMBER (B241). It lived as a closure inside `planDel`, so a
+requested delete maintained membership and the orphan sweep -- the other path that deletes a
+waypoint -- did not. The sweep left a group listing a waypoint that no longer existed, which
+`violations()` cannot see and `validateDoc` refuses at the next boot. Two paths holding one duty is
+how one of them forgets it.
+*/
+function trimGroupsHolding(model, memberId, ops, inverse) {
+	for (const group of model.all('group')) {
+		if (!group.members.includes(memberId)) continue;
+		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => m === memberId);
+		if (dissolve) {
+			ops.push({ op: 'del', kind: 'group', id: group.id });
+			inverse.unshift({ op: 'put', kind: 'group', entity: clone('group', group) });
+		} else {
+			ops.push({ op: 'set', kind: 'group', id: group.id, patch: { members: remaining } });
+			inverse.unshift({ op: 'set', kind: 'group', id: group.id, patch: { members: [...group.members] } });
+		}
+	}
+}
+
 function planDel(model, { kind, id }) {
 	const before = model.get(kind, id);
 	if (!before) return { ok: true, ops: [], inverse: [] };   // already gone — accepted, no-op
 	const ops = [];
 	const inverse = [];
 
-	const trimGroupsHolding = (memberId) => {
-		for (const group of model.all('group')) {
-			if (!group.members.includes(memberId)) continue;
-			const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => m === memberId);
-			if (dissolve) {
-				ops.push({ op: 'del', kind: 'group', id: group.id });
-				inverse.unshift({ op: 'put', kind: 'group', entity: clone('group', group) });
-			} else {
-				ops.push({ op: 'set', kind: 'group', id: group.id, patch: { members: remaining } });
-				inverse.unshift({ op: 'set', kind: 'group', id: group.id, patch: { members: [...group.members] } });
-			}
-		}
-	};
-
 	if (kind === 'node') {
 		for (const link of model.linksOf(id)) {
 			ops.push({ op: 'del', kind: 'link', id: link.id });
 			inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
 		}
-		trimGroupsHolding(id);
+		trimGroupsHolding(model, id, ops, inverse);
 	}
 	if (kind === 'waypoint') {
 		/*
@@ -502,7 +519,7 @@ function planDel(model, { kind, id }) {
 			ops.push({ op: 'set', kind: 'link', id: link.id, patch: { via: remaining } });
 			inverse.unshift({ op: 'set', kind: 'link', id: link.id, patch: { via: [...link.via] } });
 		}
-		trimGroupsHolding(id);
+		trimGroupsHolding(model, id, ops, inverse);
 	}
 	ops.push({ op: 'del', kind, id });
 	inverse.unshift({ op: 'put', kind, entity: clone(kind, before) });
