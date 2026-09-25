@@ -495,3 +495,11 @@ Carried to design, not ruled:
 - how "cut it where it is" (above) reads here. A proposer reading: the cut point becomes an end of both pieces, and each piece keeps the pins on its side;
 - what a link's route does when it passes a point where another link ends without being pinned or ending there (connect or cross). The director leaned "connects", while this definition was still open;
 - what pipe cost is (hops, length, or a per-pipe weight), and how ties break.
+
+**On its routed stretch a link crosses the points it passes; it connects only at its ends and its pins -- ruled 2026-09-26.**\
+Asked "Between two of its pins, a link's cheapest route runs through a point where another link ends. That point is not one of its pins or ends. Do they connect there?", the director chose "No, it crosses" (the proposer's recommendation) over "Yes, cut it there" and "Route around link ends".\
+The director had leaned "connects" (S22) on the question this replaces, before link intent was defined as ends plus pinned vias. The proposer gave the reason for recommending otherwise: if a link connects wherever its route happens to run, deleting and redrawing an unrelated pipe could leave a link cut in two for good.\
+So routing never changes which links exist or where they meet. A link connects only where an author placed it: at its ends, at its pins, and where an author's act cuts it (the landing rulings above, including "cut it where it is" on a detour).\
+The question set aside earlier, a landing on the old route of a detoured link, then reads this way (proposer reading, not asked):
+- a pinned point is always on the link's route, so a landing there cuts it;
+- an unpinned point the link no longer passes is not touched, and if the link's route later runs through it again, it crosses.
