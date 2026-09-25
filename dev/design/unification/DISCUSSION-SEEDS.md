@@ -180,6 +180,7 @@ Merged into the register when the reality map lands. Every entry is UNDECIDED.
 - DIRECTOR, verbatim: "I'm thinking 1 - but should we define "drawn there?" - links are either [src,dst] or [src,dst,[via..]] definitions. via would "pin" that anchor as a required hop and fail if it can't dynamic route across pipes to get there. [src,dst] can take any shortest path via pipes - so returning would be a matter of pipe cost and not "drawn" unless [via] was pinned? I'm just making sure I'm not confused"
 - The "1" refers to "Returns, connects at P" in the question that prompted it (hedged "I'm thinking"; NOT a ruling). That question is set aside, because this definition changes what it asks.
 - RULED 2026-09-26 as a result (see DECISIONS.md, "A link's intent is its ends plus its pinned vias").
+- DIRECTOR, verbatim, after the ruling: "pressing "w" while dragging a link automatically creates an anchors and pins the link to that anchor (same behaviour as today)". This confirms that a bend dropped while drawing is a pin.
 - Proposer observations given to the director before the ruling (INFERRED, not measured):
   - For a hand-drawn link every bend is a via and each leg lays a direct pipe, which is the cheapest route between its two pins, so hand-drawn links behave as under the 09-25 "return to drawn route" ruling.
   - A detour becomes local to the broken leg and still passes every pin.

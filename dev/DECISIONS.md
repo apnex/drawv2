@@ -487,7 +487,8 @@ Raised by the director (`dev/design/unification/DISCUSSION-SEEDS.md`, S22): "lin
 Asked "Should a link's intent be its two ends plus its pinned vias, with everything between the pins routed by pipe cost?", the director chose "Yes, ends + pinned vias" over "No, the whole drawn line".\
 A link stores its two ends and an ordered list of pinned vias. Between consecutive pins, its route is the cheapest path over the pipes. If a pin cannot be reached, the link is down and heals, as ruled above.\
 What this does to the rulings above:
-- "Returns to its drawn route" is no longer stored route memory. For a hand-drawn link, every bend dropped while drawing is a pin, and each leg lays a direct pipe, which is the cheapest way between its two pins; the link returns because of pipe cost (proposer reading, INFERRED).
+- "Returns to its drawn route" is no longer stored route memory. For a hand-drawn link, every bend dropped while drawing is a pin, and each leg lays a direct pipe, which is the cheapest way between its two pins; the link returns because of pipe cost (proposer reading, INFERRED).\
+  CONFIRMED by the director the same day, for the pin half: "pressing "w" while dragging a link automatically creates an anchors and pins the link to that anchor (same behaviour as today)". The cost half is still the proposer's reading.
 - A detour re-routes only the broken leg and still passes every pin. The FR3-v3 prototype instead re-routed the whole link and could skip its own bends.
 - A link may be declared by its two ends alone and routed over the pipes. This is the same shape as a flow declared over links.
 
