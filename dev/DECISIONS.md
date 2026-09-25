@@ -410,3 +410,35 @@ The rewrite cleans up one incident; the ignore stops the next.
 Verified by `K1`'s three checks -- zero occurrences across every ref, tip tree hash unchanged at `d2b99b8`, commit count unchanged at 431.\
 The unchanged tree hash is the strongest of the three: it proves the rewrite touched history and nothing else.\
 Pre-scrub tip `c03826b`, backup retained on the filesystem until the push is confirmed good.
+
+---
+
+## What a link does at a junction, and when a pipe under it goes -- ruled 2026-09-25
+
+**Ruled by the director**, in the unification programme's design phase, after a bake-off of three candidate models for what a link is (`dev/design/unification/BAKEOFF-LINK.md`).\
+These rule BEHAVIOUR -- what an author sees happen -- and not yet which model delivers it: the model is decided separately, after the leading candidate has been re-tested against these rulings.
+
+**Drawing a new link to a point another link passes through cuts the passing link there.**\
+Asked "When a new link ends where another link passes through, should that connect them?", the director chose "Yes, cut it there" over "Only if asked": the passing link is split at that point, and the three meet at a junction.\
+This keeps today's behaviour and the director's earlier statement that drawing a new link to a bend converts it to a junction.
+
+**Deleting one of three links at a junction joins the two that remain into one link.**\
+Asked "After deleting one of three links at a junction, what happens to the two that remain?", the director chose "Join into one link" over "Keep as two links": the point becomes a bend.\
+This re-affirms the 2026-09-22 reading at "The universal node, staged" -- deleting one makes it a bend -- and pairs with the ruling above: cut on landing, join on removal.
+
+**When a pipe under a link is deleted and another route exists, the link re-paths.**\
+Asked "When a pipe under a link is deleted and another route exists, what does the link do?", the director chose "Link re-paths" over "Link goes down": the link finds another way through the pipes and keeps its name and identity, so a link behaves as a logical circuit rather than a fixed physical cable.\
+This answers the check question the director asked with survey Round 2 Q4 ("delete a pipe and watch a link between 2 nodes re-path?"), which had no recorded answer.
+
+**What these do not rule.**\
+Which model realises them (the bake-off's leading candidate, a link as a declared cable routed over pipes, failed exactly the first two behaviours as built, and is being re-tested with them); which half of a cut link keeps the original identity, and which name survives a join; and whether a link that cannot re-path goes down or is removed.
+
+**Pipes are a visible layer -- ruled 2026-09-25.**\
+After the re-test (`dev/design/unification/BAKEOFF-LINK.md`, addendum), asked "Are pipes something the author sees and works with directly?", the director chose "Yes, a visible layer" over "No, hidden plumbing": an author can see pipes, select them, draw and delete them, and links visibly run through them.\
+It is consistent with the director's Round-1 survey pick that a noun earns a place when an author can see, name, select and act on it.\
+The re-test's second judge made this the condition on which the leading model stays ahead of today's; the model itself is still decided separately.
+
+**The link model: FR3 adopted as the model to design toward -- ruled 2026-09-25.**\
+Asked "Adopt FR3 (links as cables routed through visible pipes) as the model to design toward?", the director chose "Adopt" over "More evidence first".\
+A PIPE is a visible adjacency between two anchors, drawn, selected and deleted by an author. A LINK is a cable with its own identity, routed through pipes, which re-paths when a pipe under it is removed and is cut and joined as the rulings above describe. A FLOW is declared over links, and its path is derived.\
+This adopts a DIRECTION for design and changes no code. The bake-off's measured costs of FR3 -- a link's memory of the route it was drawn along, which can make identical-looking states diverge; the number of records one edit rewrites; the cost of re-deriving routes at scale; and the round-trip cases where removing a landing does not restore the passing links -- are carried as the next design questions, not accepted as settled.
