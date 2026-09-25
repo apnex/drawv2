@@ -28,6 +28,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { teardown } from './fixtures/teardown.mjs';
 
 const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
 	.find((c) => { try { execFileSync('which', [c], { stdio: 'pipe' }); return true; } catch { return false; } });
@@ -162,11 +163,9 @@ before(async () => {
 	booted = { inRun: !!inRun, loaded: !!loaded, movers: Number(movers) || 0 };
 });
 
-after(() => {
-	try { chrome?.kill(); } catch { /* already gone */ }
-	try { srv?.kill(); } catch { /* already gone */ }
-	if (dir) fs.rmSync(dir, { recursive: true, force: true });
-});
+// B238 -- both processes write into `dir` as they shut down (Chrome its profile, the server its
+// debounced diagram flush), so the directory is removed only once both have exited.
+after(() => teardown([chrome, srv], dir));
 
 test('H13.8/B170: real key input reaches the app -- run mode entered by pressing r', { skip: SKIP }, () => {
 	// the B170 discharge, stated as its own test. A synthetic KeyboardEvent does not do this.

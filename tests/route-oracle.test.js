@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
+import { teardown } from './fixtures/teardown.mjs';
 
 const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
 	.find((b) => { try { execFileSync('which', [b], { stdio: 'ignore' }); return true; } catch { return false; } });
@@ -79,10 +80,8 @@ before(async () => {
 	ws.close();
 });
 
-after(() => {
-	if (chrome) chrome.kill();
-	if (dir) fs.rmSync(dir, { recursive: true, force: true });
-});
+// B238 -- Chrome writes its profile while it shuts down, so the profile is removed only after it exits.
+after(() => teardown([chrome], dir));
 
 test('H12.2: kernel route length agrees with the length the browser measures', { skip: !CHROME && 'no chrome on PATH' }, () => {
 	let worst = 0;
