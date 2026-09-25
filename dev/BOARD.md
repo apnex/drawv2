@@ -852,6 +852,30 @@ The SHAPE of that pack is now ruled rather than open -- an intrinsic anchor on e
 Recorded as an amendment to the staged universal node in [`DECISIONS.md`](DECISIONS.md), which shrinks the pack from five responsibilities to three: the table, the derivation, and the write.\
 Each is large enough to deserve its own design pass, and the pack boundary should be drawn around rules we have watched behave rather than ones we have only reasoned about (**AG-5**).
 
+
+---
+
+## H16 -- integrity: what the planner derives, and what the gate reports - `TODO`
+
+Opened 2026-09-25 by a verification of `dev/HANDOVER.md` and the reality map written for the unification programme.\
+Both found defects that are independent of how the programme is eventually designed: every candidate design still has a planner that derives writes, and a gate that has to go green to mean anything.\
+The director ruled them fixed first, before the programme's survey resumes.
+
+Three of them share one shape.\
+A write the author did not request -- the orphan sweep, the collapse -- is checked less than one they did, or composes against a stale view of the document.\
+The result is a document that validates as it is committed and is refused when the store next boots, which skips the whole diagram; or a link lost with nothing reporting it.
+
+Ordered so that no commit leaves the planner worse than it found it.\
+Advancing the collapse's projection (H16.3) turns some silent link losses into merges the referential rules refuse, which the store would then skip at boot -- so the guard against an invalid merge (H16.2) lands first.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H16.1 | The browser harnesses remove their scratch directory only after the processes writing into it have exited | **B238** | S4 | `TODO` |
+| H16.2 | A collapse is taken only when the link it produces passes the same referential rules a requested write does | **B239** | **S1** | `TODO` |
+| H16.3 | Collapses in one transaction compose against the document as each one leaves it | **B240** | **S1** | `TODO` |
+| H16.4 | The orphan sweep keeps group membership true, exactly as a requested delete does | **B241** | **S1** | `TODO` |
+
+**Exit:** the gate job is green on CI, and no derived write can commit a document that `validateDoc` refuses or silently drop a link the author did not delete.
 ---
 
 ## Held -- on the record, not on the board
