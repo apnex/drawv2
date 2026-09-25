@@ -211,7 +211,6 @@ export function plan(model, ops) {
 		if (!e) continue;
 		for (const end of [e.src, e.dst]) if (proj.get('waypoint', end)) touched.add(end);
 	}
-	const merges = [];
 	for (const w of touched) {
 		const at = proj.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 		if (at.length !== 2) continue;
@@ -262,21 +261,37 @@ export function plan(model, ops) {
 		const trial = projection(proj);
 		applyOps(trial, [{ op: 'del', kind: 'link', id: outbound.id }]);
 		if (validateMutation(trial, { action: 'set', kind: 'link', entity: { ...patch, id: inbound.id } })) continue;
-		merges.push({ op: 'del', kind: 'link', id: outbound.id },
-			{ op: 'set', kind: 'link', id: inbound.id, patch });
 		/*
 		`inverseOfSet` rather than a hand-rolled patch, because it already solves the case that bit
 		here: a collapse INTRODUCES `via` on a link that had none, and restoring it with
 		`patch: { via: [] }` leaves an empty array where there was no key. An undone collapse must
 		be byte-identical to what stood before it, or a document drifts a little on every undo --
 		so when a patch introduces a key, the inverse is a `put` of the whole prior entity.
+
+		Taken BEFORE the merge is applied: `inbound` and `outbound` are the projection's live
+		entities, and applying the set rewrites `inbound` in place.
 		*/
 		inv.unshift(inverseOfSet('link', inbound, patch),
 			{ op: 'put', kind: 'link', entity: clone('link', outbound) });
-	}
-	if (merges.length) {
-		out.push(...merges);
-		applyOps(proj, merges);
+		/*
+		B240 -- APPLIED AS IT IS DECIDED, so the next merge reads the document this one left.
+
+		The merges used to be collected and applied once, after the loop. Every merge after the first
+		therefore read its pair as the links stood before ANY merge. Delete the one link that made two
+		neighbouring waypoints junctions and both collapse: the second then rewrote a link the first had
+		already deleted, the set landed on nothing, and the far node was left with no link -- while the
+		transaction reported success and the document validated. Declared flow was judged against the
+		same stale links, so a convergence the matrix calls a junction was merged away.
+
+		This is the shape the planner already uses between requested ops: advance the projection, then
+		read it. The set of waypoints to consider is still fixed before the loop, so a merge's own
+		delete never becomes a trigger -- a valid merge carries both halves' references and cannot
+		leave a new candidate behind.
+		*/
+		const step = [{ op: 'del', kind: 'link', id: outbound.id },
+			{ op: 'set', kind: 'link', id: inbound.id, patch }];
+		out.push(...step);
+		applyOps(proj, step);
 	}
 
 	/*

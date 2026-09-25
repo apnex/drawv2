@@ -872,7 +872,7 @@ Advancing the collapse's projection (H16.3) turns some silent link losses into m
 |---|---|---|---|---|
 | H16.1 | The browser harnesses remove their scratch directory only after the processes writing into it have exited | **B238** | S4 | `DONE` |
 | H16.2 | A collapse is taken only when the link it produces passes the same referential rules a requested write does | **B239** | **S1** | `DONE` |
-| H16.3 | Collapses in one transaction compose against the document as each one leaves it | **B240** | **S1** | `TODO` |
+| H16.3 | Collapses in one transaction compose against the document as each one leaves it | **B240** | **S1** | `DONE` |
 | H16.4 | The orphan sweep keeps group membership true, exactly as a requested delete does | **B241** | **S1** | `TODO` |
 
 **Exit:** the gate job is green on CI, and no derived write can commit a document that `validateDoc` refuses or silently drop a link the author did not delete.

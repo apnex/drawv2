@@ -881,3 +881,60 @@ test('B239: a merge that passes the referential rules is still taken', () => {
 	assert.equal(m.all('link').length, 1, 'a legal merge still rejoins the two links into one');
 	assert.equal(loadsAtBoot(m), null);
 });
+
+
+/*
+B240 -- collapses in ONE transaction compose against the document as each one leaves it.
+
+Deleting the one link that made two neighbouring waypoints junctions leaves BOTH one-in one-out, so
+both collapse. Each merge used to read its pair from the projection as it stood before ANY merge, and
+all of them were applied at the end -- so the second merge rewrote a link the first had already
+deleted, the set landed on nothing, and the far node was left with no link. The transaction reported
+success and the document validated: the loss was visible only as a node nobody connected.
+*/
+function twoJunctions(extra = {}) {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)),
+		put('waypoint', wpAt('waypoint-aa0011', 180)), put('waypoint', wpAt('waypoint-aa0012', 360)),
+		put('waypoint', wpAt('waypoint-aa0013', 300, 240)),
+		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011', extra.a || {}),
+		linkPut('link-aa0002', 'waypoint-aa0011', 'waypoint-aa0012'),
+		linkPut('link-aa0003', extra.cSrc || 'waypoint-aa0012', extra.cDst || 'node-aa0002', extra.c || {}),
+		// the parallel route: deleting it is what leaves both waypoints one-in one-out
+		linkPut('link-aa0009', 'waypoint-aa0011', 'waypoint-aa0012', { via: ['waypoint-aa0013'] }),
+	] }, 'server', 't');
+	return { m, log };
+}
+
+test('B240: two collapses that share a link rejoin the chain end to end, and lose nothing', () => {
+	const { m, log } = twoJunctions();
+	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+	const before = new Set(m.all('link').map((l) => JSON.stringify(l)));
+
+	commit(m, log, { ops: [delOp('link', 'link-aa0009')] }, 'server', 't');
+	const links = m.all('link');
+	assert.equal(links.length, 1, 'both waypoints are left one-in one-out, so the chain rejoins into ONE link');
+	assert.equal(links[0].src, 'node-aa0001');
+	assert.equal(links[0].dst, 'node-aa0002', 'the far node is still connected -- no link was silently lost');
+	assert.deepEqual(links[0].via, ['waypoint-aa0011', 'waypoint-aa0012']);
+	assert.equal(loadsAtBoot(m), null);
+
+	undo(m, log);
+	// compared as a SET: undo restores content, and collection order is a separate matter (the map's D43)
+	assert.deepEqual(new Set(m.all('link').map((l) => JSON.stringify(l))), before, 'one undo restores every link exactly');
+});
+
+test('B240: a declared convergence is judged against the link the earlier collapse produced', () => {
+	// node-1 -> w1 declared, w1 - w2 undeclared, node-2 -> w2 declared. After the first merge the link
+	// reaching w2 is DECLARED arriving, and so is node-2's: two arrivals are a junction, which does not
+	// collapse. Read stale, w2 paired the undeclared link with node-2's and merged node-2's away.
+	const { m, log } = twoJunctions({ a: { flow: true }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { flow: true } });
+	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+
+	commit(m, log, { ops: [delOp('link', 'link-aa0009')] }, 'server', 't');
+	const c = m.get('link', 'link-aa0003');
+	assert.ok(c, "node-2's declared link survives: two arrivals at w2 are a junction, not a bend");
+	assert.equal(c.src, 'node-aa0002');
+	assert.equal(loadsAtBoot(m), null);
+});
