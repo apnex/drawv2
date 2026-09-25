@@ -473,3 +473,11 @@ This settles the register's PS205 (meeting against passing through) for links. T
 Asked "Can a link pass through a device (host, firewall, load balancer, VXLAN), or does every device end the links that reach it?", the director answered in their own words: "Depends on the capability pack that restricts anchor routables. Most existing nodes will only support either endpoint or junction (or both)".\
 So the capability pack in a node's composition restricts which routable roles its anchor may take -- endpoint, junction, bend -- as the director's earlier leaning described for routers; and most existing node types permit endpoint and/or junction but not bend, meaning a link reaching them ends there.\
 Carried to design: the per-type table itself (which existing types permit which roles), and whether any type permits bend.
+
+**A landing on a link that is on a detour cuts it where it is -- ruled 2026-09-26.**\
+The FR3-v3 prototype (`dev/design/unification/BAKEOFF-LINK.md`, Addendum 2) applied the landing rule to a link's DRAWN route, so a new link ending on a visible detour left the detoured link passing through uncut.\
+Asked "A link is on a detour because a pipe under it was deleted. You draw a new link that ends on that detour. Should it cut the link there?", the director chose "Yes, cut it where it is" over "No, cut the drawn route" (the proposer's recommendation) and "Detours avoid link ends".\
+The option as worded by the proposer: the landing cuts the link on its detour, and the detour becomes its new drawn route, so the link forgets its old route and does not return to it when the pipe comes back.\
+Not ruled here:
+- whether a landing on the unused drawn route of a detoured link cuts it (the prototype does);
+- whether deleting such a landing restores the old drawn route, under "draw-then-delete leaves no trace" above.
