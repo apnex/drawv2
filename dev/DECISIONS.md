@@ -455,3 +455,21 @@ Asked "When a link has no route left at all, what happens to it?", the director 
 Asked, for two links passing through one point that a new link lands on and cuts, "After deleting the new link, should the two passing links be whole again?", the director chose "Yes, rejoin both" over "No, stay cut": deleting the landing rejoins each passing link into one, as before the landing.\
 This generalises the join-on-removal ruling beyond three links meeting, and closes the round-trip failures the bake-off re-test measured (a landing on a point two links pass, then its removal, left four ends).\
 Carried to design, not ruled: how the rejoin pairs the pieces -- which ends belong to which link when several were cut at one point.
+
+**A new link passing through a point where another link ends connects to it -- ruled 2026-09-25.**\
+Asked "When a new link passes through a point where another link ends, should they connect?", the director chose "Yes, connect" over "No, pass by": the new link is cut at that point and the three meet at a junction.\
+This is the mirror of the landing ruling above, so the order in which two links are drawn no longer decides whether they meet -- the re-test measured that it did, for the adopted model and today's.
+
+**A server may have several links -- ruled 2026-09-25, amending the permission table of 2026-09-22.**\
+Asked "Should a server be allowed more than one link?", the director chose "Yes, several links" over "Only an aggregate" and "No, one only": a server can have several independent links, such as redundant uplinks.\
+The 2026-09-22 ruling that "a compute or server glyph permits endpoint alone" said that if a second link were ever legitimate, "the TABLE changes rather than the rule bending"; this is that change, and it lets a server take part in all four link relations.\
+Not ruled here: whether a flow may pass THROUGH a server (forwarding), as against only starting or ending there.
+
+**Two links passing through one point cross without connecting -- ruled 2026-09-25.**\
+Asked "When two links both pass through the same point, do they connect there?", the director chose "No, they just cross" over "Yes, both are cut": both pass through untouched, like a crossover on a schematic, and links connect at a point only where one of them ENDS there (the landing and pass-through rulings above).\
+This settles the register's PS205 (meeting against passing through) for links. The pipes at that point still meet as pipes -- two cables can share a conduit junction without being connected -- which is consistent with pipes and links being separate layers.
+
+**Whether a link may pass through a device is decided by the device's capability pack -- ruled 2026-09-25.**\
+Asked "Can a link pass through a device (host, firewall, load balancer, VXLAN), or does every device end the links that reach it?", the director answered in their own words: "Depends on the capability pack that restricts anchor routables. Most existing nodes will only support either endpoint or junction (or both)".\
+So the capability pack in a node's composition restricts which routable roles its anchor may take -- endpoint, junction, bend -- as the director's earlier leaning described for routers; and most existing node types permit endpoint and/or junction but not bend, meaning a link reaching them ends there.\
+Carried to design: the per-type table itself (which existing types permit which roles), and whether any type permits bend.
