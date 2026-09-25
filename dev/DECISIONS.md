@@ -442,3 +442,16 @@ The re-test's second judge made this the condition on which the leading model st
 Asked "Adopt FR3 (links as cables routed through visible pipes) as the model to design toward?", the director chose "Adopt" over "More evidence first".\
 A PIPE is a visible adjacency between two anchors, drawn, selected and deleted by an author. A LINK is a cable with its own identity, routed through pipes, which re-paths when a pipe under it is removed and is cut and joined as the rulings above describe. A FLOW is declared over links, and its path is derived.\
 This adopts a DIRECTION for design and changes no code. The bake-off's measured costs of FR3 -- a link's memory of the route it was drawn along, which can make identical-looking states diverge; the number of records one edit rewrites; the cost of re-deriving routes at scale; and the round-trip cases where removing a landing does not restore the passing links -- are carried as the next design questions, not accepted as settled.
+
+**A link returns to its drawn route -- ruled 2026-09-25.**\
+Asked "When the deleted pipe is redrawn, where should the re-pathed link go?", the director was first unsure; after the proposer set out the three options and recommended one, the director chose "Back to drawn route" over "Stay where it is" and "Always the best route".\
+The route an author draws is stored as the link's INTENT; the route it currently takes is derived from it -- the drawn route while all of its pipes exist, a detour while they do not -- and the link returns to the drawn route when it can.\
+This makes explicit the route memory the bake-off measured as hidden state in FR3, and the detour can be shown to the author.
+
+**A link with no route stays, shown as down, and heals -- ruled 2026-09-25.**\
+Asked "When a link has no route left at all, what happens to it?", the director chose "Down, and heals" over "Removed": the link stays, keeps its name and drawn route, shows as down, and comes back when a route returns -- the same behaviour the director gave for a declared flow with no route in survey Round 2 Q4.
+
+**Draw-then-delete leaves no trace -- ruled 2026-09-25.**\
+Asked, for two links passing through one point that a new link lands on and cuts, "After deleting the new link, should the two passing links be whole again?", the director chose "Yes, rejoin both" over "No, stay cut": deleting the landing rejoins each passing link into one, as before the landing.\
+This generalises the join-on-removal ruling beyond three links meeting, and closes the round-trip failures the bake-off re-test measured (a landing on a point two links pass, then its removal, left four ends).\
+Carried to design, not ruled: how the rejoin pairs the pieces -- which ends belong to which link when several were cut at one point.
