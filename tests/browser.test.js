@@ -28,7 +28,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { teardown } from './fixtures/teardown.mjs';
+import { teardown, spawnGroup } from './fixtures/teardown.mjs';
 
 const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
 	.find((c) => { try { execFileSync('which', [c], { stdio: 'pipe' }); return true; } catch { return false; } });
@@ -139,7 +139,7 @@ before(async () => {
 		await sleep(250);
 	}
 
-	chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${cdp}`, '--no-sandbox',
+	chrome = spawnGroup(CHROME, ['--headless=new', `--remote-debugging-port=${cdp}`, '--no-sandbox',
 		'--disable-gpu', '--window-size=1600,1000', `--user-data-dir=${dir}/cdp`], { stdio: 'ignore' });
 	tab = await attach(`http://127.0.0.1:${port}/?diagram=${DIAGRAM}`);
 	await sleep(4000);

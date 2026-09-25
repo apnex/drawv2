@@ -23,11 +23,54 @@ tick as 'error' and never as 'exit', and a process with no pid cannot be signall
 exit would never settle (found at review).
 */
 import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 
 const exited = (p) => p.exitCode !== null || p.signalCode !== null;
 
+/*
+B238, CORRECTED 2026-09-25 -- waiting for Chrome's MAIN process was not enough.
+
+The first green CI run after the fix was one sample. The next push failed the same way: ENOTEMPTY on
+`profile/Default` after the main process had exited AND the removal had retried for 5.5 seconds. A
+Chrome child -- its network service writes `Network Persistent State` there -- outlived the parent and
+kept writing, which is the descendant case the review had named and this file had recorded as not
+observed.
+
+Measured locally before this was written: started as the leader of its own process group, headless
+Chrome puts 12 of its 14 processes in that group, including every process that writes the profile. The
+two crash handlers detach into sessions of their own and exited within a second of the group dying.
+
+So a browser is spawned as a GROUP (`spawnGroup`), and stopping it signals every member and waits until
+none is left before the directory is touched. Not portable to Windows, which this suite does not run on.
+*/
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const groupAlive = (pgid) => {
+	try { process.kill(-pgid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+};
+
+export function spawnGroup(cmd, args, opts = {}) {
+	const child = spawn(cmd, args, { ...opts, detached: true });
+	child.drawGroup = true;
+	return child;
+}
+
+async function stopGroup(proc, graceMs) {
+	const pgid = proc.pid;
+	if (!groupAlive(pgid)) return;
+	try { process.kill(-pgid, 'SIGTERM'); } catch { /* already gone */ }
+	const soft = Date.now() + graceMs;
+	while (groupAlive(pgid) && Date.now() < soft) await sleep(50);
+	if (!groupAlive(pgid)) return;
+	try { process.kill(-pgid, 'SIGKILL'); } catch { /* already gone */ }
+	// bounded even after SIGKILL: a member the kernel has not yet reaped still answers kill(0)
+	const hard = Date.now() + 2000;
+	while (groupAlive(pgid) && Date.now() < hard) await sleep(50);
+}
+
 export async function stopProcess(proc, graceMs = 5000) {
-	if (!proc || proc.pid === undefined || exited(proc)) return;
+	if (!proc || proc.pid === undefined) return;
+	if (proc.drawGroup) return stopGroup(proc, graceMs);
+	if (exited(proc)) return;
 	const done = new Promise((resolve) => { proc.once('exit', resolve); proc.once('error', resolve); });
 	try { proc.kill('SIGTERM'); } catch { /* already gone */ }
 	const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch { /* already gone */ } }, graceMs);

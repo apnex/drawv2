@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { teardown } from './fixtures/teardown.mjs';
+import { teardown, spawnGroup } from './fixtures/teardown.mjs';
 
 const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
 	.find((b) => { try { execFileSync('which', [b], { stdio: 'ignore' }); return true; } catch { return false; } });
@@ -50,7 +50,7 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, 'p.html'), svg);
 
 	const port = 9400 + (process.pid % 400);
-	chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, '--no-sandbox',
+	chrome = spawnGroup(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, '--no-sandbox',
 		'--disable-gpu', `--user-data-dir=${dir}/profile`, 'about:blank'], { stdio: 'ignore' });
 
 	const { default: WebSocket } = await import('ws');
