@@ -927,9 +927,13 @@ function twoJunctions(extra = {}) {
 		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011', extra.a || {}),
 		linkPut('link-aa0002', 'waypoint-aa0011', 'waypoint-aa0012'),
 		linkPut('link-aa0003', extra.cSrc || 'waypoint-aa0012', extra.cDst || 'node-aa0002', extra.c || {}),
-		// the parallel route: deleting it is what leaves both waypoints one-in one-out
-		linkPut('link-aa0009', 'waypoint-aa0011', 'waypoint-aa0012', { via: ['waypoint-aa0013'] }),
+		// the parallel route: deleting it is what leaves both waypoints one-in one-out. Its STORED
+		// orientation decides which waypoint the planner visits first, so tests can flip it.
+		extra.flipParallel
+			? linkPut('link-aa0009', 'waypoint-aa0012', 'waypoint-aa0011', { via: ['waypoint-aa0013'] })
+			: linkPut('link-aa0009', 'waypoint-aa0011', 'waypoint-aa0012', { via: ['waypoint-aa0013'] }),
 	] }, 'server', 't');
+	assert.equal(m.all('link').length, 4, 'precondition: the seed committed all four links');
 	return { m, log };
 }
 
@@ -951,18 +955,32 @@ test('B240: two collapses that share a link rejoin the chain end to end, and los
 	assert.deepEqual(new Set(m.all('link').map((l) => JSON.stringify(l))), before, 'one undo restores every link exactly');
 });
 
-test('B240: a declared convergence is judged against the link the earlier collapse produced', () => {
-	// node-1 -> w1 declared, w1 - w2 undeclared, node-2 -> w2 declared. After the first merge the link
-	// reaching w2 is DECLARED arriving, and so is node-2's: two arrivals are a junction, which does not
-	// collapse. Read stale, w2 paired the undeclared link with node-2's and merged node-2's away.
-	const { m, log } = twoJunctions({ a: { flow: true }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { flow: true } });
-	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+test('B240: a declared convergence is judged against the link the earlier collapse produced', async () => {
+	// node-1 -> w1 declared, w1 - w2 undeclared, node-2 -> w2 declared. Each waypoint alone is a bend,
+	// so the planner merges whichever it visits FIRST -- and that merge turns the other into two
+	// declared arrivals, a convergence the matrix calls a junction, which must not collapse. Read
+	// stale, the second waypoint paired against the pre-merge undeclared link and merged the
+	// convergence away. Which waypoint merges follows the deleted link's stored order, so the
+	// property is asserted in BOTH orientations rather than naming the survivor (H16 review).
+	const { linkFacing } = await import('../kernel/index.mjs');
+	for (const flipParallel of [false, true]) {
+		const { m, log } = twoJunctions({ flipParallel, a: { flow: true }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { flow: true } });
+		assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 
-	commit(m, log, { ops: [delOp('link', 'link-aa0009')] }, 'server', 't');
-	const c = m.get('link', 'link-aa0003');
-	assert.ok(c, "node-2's declared link survives: two arrivals at w2 are a junction, not a bend");
-	assert.equal(c.src, 'node-aa0002');
-	assert.equal(loadsAtBoot(m), null);
+		commit(m, log, { ops: [delOp('link', 'link-aa0009')] }, 'server', 't');
+		const links = m.all('link');
+		assert.equal(links.length, 2, `exactly one waypoint merges (flipped: ${flipParallel})`);
+		for (const n of ['node-aa0001', 'node-aa0002']) {
+			assert.ok(links.some((l) => l.src === n || l.dst === n), `${n} keeps its link (flipped: ${flipParallel})`);
+		}
+		const ends = (l) => [l.src, l.dst].filter((e) => e.startsWith('waypoint-'));
+		const meet = ends(links[0]).filter((e) => ends(links[1]).includes(e));
+		assert.equal(meet.length, 1, `the two survivors meet at one waypoint (flipped: ${flipParallel})`);
+		for (const l of links) {
+			assert.equal(linkFacing(l, meet[0]), 'in', `and both ARRIVE there -- a convergence, not a bend (flipped: ${flipParallel})`);
+		}
+		assert.equal(loadsAtBoot(m), null);
+	}
 });
 
 
@@ -993,6 +1011,10 @@ function groupedBend(members) {
 		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0011'] }),
 		put('group', { id: 'group-aa0001', name: 'g', members }),
 	] }, 'server', 't');
+	// without these, a refused seed would leave an empty document on which the dissolve and re-route
+	// tests pass with the defect present -- their bend is "swept" because it never existed (H16 review)
+	assert.ok(m.get('waypoint', 'waypoint-aa0011'), 'precondition: the grouped bend exists');
+	assert.deepEqual(m.get('group', 'group-aa0001')?.members, members, 'precondition: the group holds it');
 	return { m, log };
 }
 
