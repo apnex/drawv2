@@ -63,6 +63,22 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
 	/*
+	The link-model bake-off of 2026-09-25 ran in a session scratch directory, not in the repository:
+	its models, suite, judge probes and measurement harness were throwaway instruments, and only their
+	RESULTS were landed, in `dev/design/unification/BAKEOFF-LINK.md`, which says so in its header. The
+	document names those files as the provenance of each measured figure; they were never repository
+	paths, so there is nothing to repoint them at.
+	*/
+	'dev/design/unification/BAKEOFF-LINK.md:judge1/probe.mjs': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:judge1/probe2.mjs': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:judge2/probe.mjs': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:judge2/probe2.mjs': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:judge3/migrate.mjs': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:judge3/migrate.out.json': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:measure/measure.mjs': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+	'dev/design/unification/BAKEOFF-LINK.md:measure/MEASUREMENTS.md': 'bake-off scratch instrument, not preserved; its results are recorded in the document',
+
+	/*
 	COMMIT.md was SPLIT on 2026-09-19 into `docs/spec/TRANSACTIONS.md` (the contract) and
 	`dev/COMMIT-DELIVERY.md` (the plan that delivered it). The audit is preserved verbatim -- it
 	records what was audited under the name it had -- so its citations are kept rather than
