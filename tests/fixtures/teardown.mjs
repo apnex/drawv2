@@ -12,16 +12,23 @@ again. One that ignores SIGTERM is escalated to SIGKILL after `graceMs`, so a we
 hang the suite -- A7's Blocked Actor, one layer down.
 
 `maxRetries` stays as a backstop, not as the fix: Node retries ENOTEMPTY with a linear backoff, which
-covers a grandchild process still closing a file after its parent exited. On its own it would only
-have made the race rarer.
+covers an entry CREATED while the removal is walking the tree. It does not cover a descendant that
+outlives its parent and keeps writing -- that recreates the directory after the removal has finished,
+silently. None was observed for Chrome; covering it would mean spawning detached and signalling the
+process group. (Corrected at review: this first said the retries cover a grandchild "still closing a
+file", which on Linux never blocks a removal.)
+
+A process that never STARTED is not waited on. A spawn failure (ENOENT, EACCES) arrives on the next
+tick as 'error' and never as 'exit', and a process with no pid cannot be signalled, so waiting for its
+exit would never settle (found at review).
 */
 import fs from 'node:fs';
 
 const exited = (p) => p.exitCode !== null || p.signalCode !== null;
 
 export async function stopProcess(proc, graceMs = 5000) {
-	if (!proc || exited(proc)) return;
-	const done = new Promise((resolve) => proc.once('exit', resolve));
+	if (!proc || proc.pid === undefined || exited(proc)) return;
+	const done = new Promise((resolve) => { proc.once('exit', resolve); proc.once('error', resolve); });
 	try { proc.kill('SIGTERM'); } catch { /* already gone */ }
 	const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch { /* already gone */ } }, graceMs);
 	await done;

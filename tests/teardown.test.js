@@ -94,3 +94,13 @@ test('B238: an already-exited process is not an error', { timeout: 10000 }, asyn
 	await teardown([child, null], dir);
 	assert.equal(fs.existsSync(dir), false);
 });
+
+test('B238: a process that never started is not waited on', { timeout: 10000 }, async () => {
+	// a spawn failure has no pid and delivers 'error', never 'exit' -- and it arrives on the NEXT
+	// tick, so tearing down in the same tick used to wait on an exit that could not come
+	const dir = scratch();
+	const ghost = spawn('/nonexistent/draw-no-such-binary', [], { stdio: 'ignore' });
+	ghost.on('error', () => {});             // the spawn error is expected; unhandled, it would crash the file
+	await teardown([ghost], dir);
+	assert.equal(fs.existsSync(dir), false);
+});
