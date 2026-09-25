@@ -855,7 +855,7 @@ Each is large enough to deserve its own design pass, and the pack boundary shoul
 
 ---
 
-## H16 -- integrity: what the planner derives, and what the gate reports - `WIP`
+## H16 -- integrity: what the planner derives, and what the gate reports - `DONE`
 
 Opened 2026-09-25 by a verification of `dev/HANDOVER.md` and the reality map written for the unification programme.\
 Both found defects that are independent of how the programme is eventually designed: every candidate design still has a planner that derives writes, and a gate that has to go green to mean anything.\
@@ -870,12 +870,13 @@ Advancing the collapse's projection (H16.3) turns some silent link losses into m
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H16.1 | The browser harnesses remove their scratch directory only after the processes writing into it have exited | **B238** | S4 | `WIP` |
+| H16.1 | The browser harnesses remove their scratch directory only after the processes writing into it have exited | **B238** | S4 | `DONE` |
 | H16.2 | A collapse is taken only when the link it produces passes the same referential rules a requested write does | **B239** | **S1** | `DONE` |
 | H16.3 | Collapses in one transaction compose against the document as each one leaves it | **B240** | **S1** | `DONE` |
 | H16.4 | The orphan sweep keeps group membership true, exactly as a requested delete does | **B241** | **S1** | `DONE` |
 
-**Exit:** the gate job is green on CI, and no derived write can commit a document that `validateDoc` refuses or silently drop a link the author did not delete.
+**Exit:** the gate job is green on CI, and no derived write can commit a document that `validateDoc` refuses or silently drop a link the author did not delete.\
+Met 2026-09-25: CI run 36089220400 is green on both jobs, and the collapse and sweep fixes are held by the tests and mutants recorded in B239-B241. The review's one held finding is B242.
 ---
 
 ## Held -- on the record, not on the board
