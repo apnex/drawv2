@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/index.mjs';
 import { plan, commit, undo, redo, MAX_OPS } from '../server/txn.mjs';
 import { Log } from '../server/log.mjs';
+import { validateDoc } from '../server/validate.js';
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -806,4 +807,77 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 		'a flip must invert `flow` too, or the collapse silently reverses what the author declared');
 	assert.equal(facing(merged, 'node-cc0002'), 'in', 'and the merged path still ends where the flow was going');
 	assert.equal(validateDoc(loadable()), null, 'and the merged document still loads');
+});
+
+
+/*
+H16 -- a write the author did not request must leave a document the store will load.
+
+The collapse and the orphan sweep are DERIVED writes: the planner computes them, and they reached the
+document checked only by `violations()`. The referential rules live outside it by design, so a derived
+write could commit a document `validateDoc` refuses -- and the store skips a refused file at its next
+boot, which loses the whole diagram rather than one link. Every test below asserts the property that
+matters, `loadsAtBoot`, rather than a hypothesised cause of its absence.
+*/
+const wpAt = (id, x, y = 120) => ({ id, name: id, x, y });
+const delOp = (kind, id) => ({ op: 'del', kind, id });
+const linkPut = (id, src, dst, extra = {}) => put('link', { id, name: id, src, dst, ...extra });
+// the document the store would write, checked the way the store checks it when it next boots
+const loadsAtBoot = (mm) => {
+	const d = mm.toJSON();
+	d.meta = { ...d.meta, id: 'diagram-aa0000', name: 'd' };
+	return validateDoc(d);
+};
+
+test('B239: a collapse whose merge would name a waypoint twice is not taken', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0002', 300)), put('node', node('node-aa0003', 600)),
+		put('waypoint', wpAt('waypoint-aa0010', 120)), put('waypoint', wpAt('waypoint-aa0011', 240)),
+		linkPut('link-aa0001', 'waypoint-aa0010', 'waypoint-aa0011'),
+		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002', { via: ['waypoint-aa0010'] }),
+		linkPut('link-aa0003', 'node-aa0003', 'waypoint-aa0011'),
+	] }, 'server', 't');
+	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+
+	commit(m, log, { ops: [delOp('link', 'link-aa0003')] }, 'server', 't');
+	assert.equal(m.get('link', 'link-aa0003'), undefined, 'the requested delete happened');
+	assert.equal(loadsAtBoot(m), null,
+		'merging these two would give x->y via [w, x], naming x twice -- the store would skip the whole diagram');
+	assert.equal(m.all('link').length, 2, 'so the two links stay as a two-link terminus, which is legal (B217)');
+});
+
+test('B239: a collapse whose merge would duplicate a link bending through the same waypoint is not taken', () => {
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 480)), put('node', node('node-aa0003', 600)),
+		put('waypoint', wpAt('waypoint-aa0010', 120)), put('waypoint', wpAt('waypoint-aa0011', 240)),
+		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011', { via: ['waypoint-aa0010'] }),
+		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002'),
+		linkPut('link-aa0003', 'node-aa0003', 'waypoint-aa0011'),
+		linkPut('link-aa0004', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0010'] }),
+	] }, 'server', 't');
+	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+
+	commit(m, log, { ops: [delOp('link', 'link-aa0003')] }, 'server', 't');
+	assert.equal(m.get('link', 'link-aa0003'), undefined, 'the requested delete happened');
+	assert.equal(loadsAtBoot(m), null,
+		'the merge would bend a second node-1/node-2 link through the waypoint the first already bends through');
+	assert.ok(m.get('link', 'link-aa0002'), 'the half that would have been absorbed is still there');
+});
+
+test('B239: a merge that passes the referential rules is still taken', () => {
+	// the foil: the guard must refuse only what the rules refuse, or it would quietly switch the
+	// collapse off and every B215 test above would still pass on a document that never rejoins
+	const { m, log } = fresh();
+	commit(m, log, { ops: [
+		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 480)), put('node', node('node-aa0003', 600)),
+		put('waypoint', wpAt('waypoint-aa0011', 240)),
+		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011'),
+		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002'),
+		linkPut('link-aa0003', 'node-aa0003', 'waypoint-aa0011'),
+	] }, 'server', 't');
+	commit(m, log, { ops: [delOp('link', 'link-aa0003')] }, 'server', 't');
+	assert.equal(m.all('link').length, 1, 'a legal merge still rejoins the two links into one');
+	assert.equal(loadsAtBoot(m), null);
 });

@@ -244,6 +244,24 @@ export function plan(model, ops) {
 		// every other field looks right. Omitted only when the link was undeclared.
 		const patch = { src: merged.src, dst: merged.dst, via: merged.via,
 			...(typeof merged.flow === 'boolean' ? { flow: merged.flow } : {}) };
+		/*
+		B239 -- a merge is TAKEN only if the link it produces passes the rules a requested write does.
+
+		The merged link is built from two valid halves, and that is not enough. Joining x->w to
+		w->y via [x] names x twice, and joining two halves can produce an endpoint pair another link
+		already bends through at a shared waypoint. The referential rules refuse both, and they are
+		deliberately outside `violations()` -- which was this write's only check. So the collapse
+		committed documents that `validateDoc` refuses, and the store skips a refused file at its next
+		boot: the whole diagram lost, from a delete the author made legally.
+
+		The SAME check a requested set receives, rather than a second copy of the rules, run against
+		the document with the absorbed half already gone. Declining is safe: two links left meeting at
+		the waypoint is a two-link terminus, which is a legal state (B217) and exactly what the author
+		would have had without the collapse.
+		*/
+		const trial = projection(proj);
+		applyOps(trial, [{ op: 'del', kind: 'link', id: outbound.id }]);
+		if (validateMutation(trial, { action: 'set', kind: 'link', entity: { ...patch, id: inbound.id } })) continue;
 		merges.push({ op: 'del', kind: 'link', id: outbound.id },
 			{ op: 'set', kind: 'link', id: inbound.id, patch });
 		/*
