@@ -11,7 +11,8 @@
   2. The discussion seeds S1-S21, including S6a, S6b and S6c (`DISCUSSION-SEEDS.md`, landed beside this file): director leanings and questions from a live design conversation on 2026-09-25, recorded verbatim. Seeds S17-S21 were appended after the four parts below were drafted. S17 and S18 are carried by PS125 and PS126, written at assembly; S19, S20 and S21 by PS127, PS128 and PS129, written at audit. A paragraph appended to S21 after the audit (the director's "We can weigh up whether the concept of pipes is a plugin or core") is carried by PS130, also written at audit.
   3. `dev/surveys/unification-survey.md` (the survey envelope): the Round-1 picks, their interpretations, and the director's verbatim clarifications, including the requirement to model, construct and visualise series, parallel/LAG, multiplex/VLAN and parallel links. The envelope is untracked at `a986fb3`.
 - **How it was built.** Four parts (frame, Track B, seam, Track A) were drafted separately against the same three sources. At assembly: every dependency reference was converted to register ids with the source id kept; two duplicated entries were merged (PS119 into PS314, PS210 into PS117), and their ids are kept as pointers; entries that overlap without duplicating were cross-referenced; the programme entries (PS5xx), PS125, PS126 and sections 1-4 and 6-9 were written. At audit, PS127-PS130 were written from seeds S19-S21, and the auditors' findings were applied in place.
-- **Size.** 114 question entries (PS1xx: 29; PS2xx: 27; PS3xx: 28; PS4xx: 28; PS5xx: 2), plus one cross-reference (PS502) and two merge pointers (PS119, PS210); 96 map defects and contradictions and 4 further verification findings indexed as evidence (section 7); 21 intent-silent entries listed as Round-2 candidates (section 8.2).
+- **Size.** 114 question entries (PS1xx: 29; PS2xx: 27; PS3xx: 28; PS4xx: 28; PS5xx: 2), plus one cross-reference (PS502) and two merge pointers (PS119, PS210); 96 map defects and contradictions and 4 further verification findings indexed as evidence (section 7); 16 intent-silent entries after Round 2, listed in section 8.2 (21 after Round 1).
+- **Round 2 folded in 2026-09-25.** The envelope's Round-2 picks (Q4-Q6) and anti-goal AG-3 are read into the Intent bearing fields and sections 8 and 9; the Round-2 marks are the proposer's reading of each entry's question [I], and decide nothing. An independent neutrality audit of the fold and the envelope (2026-09-25, 19 findings) was applied in place.
 
 ## 2. How to read
 
@@ -28,7 +29,7 @@
 | Recorded positions | Each position with its standing (section 2.2), or "none". |
 | Under each frame | How the question reads under FR0-FR3 (section 3), and under the stages axis where that matters. These readings are inferred [I] unless marked. |
 | What would separate the alternatives | An observation, test or question for the design phase whose answer would discriminate between alternatives. It is not answered here. |
-| Intent bearing | Which Round-1 picks and which verbatim director statements bear on the question, or INTENT-SILENT if none bears on the choice. INTENT-SILENT entries are Round-2 candidates (section 8.2). |
+| Intent bearing | Which survey picks (Round 1, and Round 2 as folded in on 2026-09-25) and which verbatim director statements bear on the question, or INTENT-SILENT if none bears on the choice. INTENT-SILENT entries are listed in section 8.2 as needing the director in the design phase. |
 | Depends on / blocks | Register ids, each followed by the source id it came from in parentheses. "PSa-PSb" means every entry in that range. "Related (overlapping, not merged)" names entries that share part of a question without duplicating it. |
 | Evidence (defects/contradictions) | Map defects (D#) and contradictions (C#) that are symptoms of the question, or "none". Section 7 indexes them. |
 
@@ -38,7 +39,7 @@
 | --- | --- |
 | RULED | A ruling in the repository record, with its date and source line (for example DECISIONS.md:251). [LOCKED] marks a line the record itself tags as locked. Where a line entered the record with no reason or date given, the entry says so. |
 | Record | A statement in the repository record (a spec, a backlog disposition, a code comment) that is not tagged as a ruling. |
-| DIRECTOR LEANING / STATEMENT / REQUIREMENT / QUESTION / ANALOGY / CONTEXT / CLARIFICATION / SCOPE | Director text of 2026-09-25, verbatim, carrying the label its source gives it. A leaning is never presented as decided. Some passages carry two labels in two sources (for example DS7 is a "requirement" in the envelope and "leanings" in the seeds); entries state both. Where the source gives no label (seeds S4, S5, and the pipe paragraph of S21), the entry writes "DIRECTOR" and says that the source gives none. |
+| DIRECTOR LEANING / STATEMENT / REQUIREMENT / QUESTION / ANALOGY / CONTEXT / CLARIFICATION / SCOPE | Director text of 2026-09-25, verbatim, carrying the label its source gives it. A leaning is never presented as decided. Some passages carried two labels in two sources (for example DS7: the envelope headed the whole a "requirement" until corrected on 2026-09-25, while seeds S15 labels its first three sentences "leanings" and its last a "requirement"); entries state the standing each source gives. Where the source gives no label (seeds S4, S5, and the pipe paragraph of S21), the entry writes "DIRECTOR" and says that the source gives none. |
 | AGREED | The seeds' naming note records one line as "AGREED (director, 2026-09-25)": two routing layers, links through pipes and paths over links. It is not in DECISIONS.md, and the seeds file's header reads "Every entry is UNDECIDED". Entries record it with that standing. |
 | HYPOTHESIS | A candidate written by the proposer (Claude) in the seeds or the envelope, or a hypothesis the record itself labels as such. |
 | Envelope reading | The proposer's interpretation in the envelope; HYPOTHESIS class. |
@@ -72,7 +73,7 @@ Concordance between the map's readers is not independence: they ran the same rep
 - **Readers.** R1-R7 and CR in evidence marks are the map's readers (map section 0).
 - **DS1-DS16.** The director statement key in section 2.5. Part 2 cites director statements by DS id; the other parts quote them inline.
 - **VF1-VF4.** Verification findings of 2026-09-25 that are not in the map's defect list, minted in this register (section 7.3).
-- **Envelope flags.** The survey envelope's flags F1-F5 (its section S6) share labels with map forks F1-F5. The register always writes them as "envelope flag F#" (PS103, PS106, PS220, PS223, PS409, PS419), and a bare F# means a map fork.
+- **Envelope flags.** The survey envelope's flags F1-F9 (its section S6) share labels with map forks F1-F9. The register always writes them as "envelope flag F#" (PS103, PS106, PS220, PS223, PS409, PS419, and sections 8.2 and 8.3), and a bare F# means a map fork.
 - **Dependency cycles.** The Depends-on edges are not acyclic. Three groups depend on each other in a cycle: {PS109, PS110}; {PS409, PS410, PS411, PS413, PS415, PS417}; and {PS104, PS108, PS111, PS117, PS207, PS209, PS211, PS212, PS213, PS215, PS216, PS217, PS218, PS223, PS306, PS307, PS308, PS312, PS313, PS404, PS405, PS407, PS408} (for example PS117 -> PS211 -> PS209 -> PS207 -> PS308 -> PS117). The map's forks were ordered without cycles. Removing the Depends-on edges tagged only with seed ids leaves the graph acyclic (checked at audit), so every cycle passes through at least one edge carried from the seeds, several of them marked [I] by their drafters. Within a cycle, register order is not an order in which each entry's dependencies are answered first. Pairs that depend on each other directly are marked "mutual" on both sides. (Computed at audit by Tarjan's algorithm over every Depends-on line, after PS127-PS130 were added; they join no cycle.)
 - **Edges are one-sided.** A Blocks line lists the edges its drafter carried from the map and the seeds. It is not the reciprocal of every Depends-on line elsewhere: 410 edges appear on one side only (counted at audit, after PS127-PS130 were added with reciprocal edges). For example, PS402 lists PS327 under Blocks, but PS327 does not list PS402 under Depends on. To find what an answer unblocks, search the Depends-on lines for the entry's id.
 
@@ -86,7 +87,7 @@ Written by the Track B drafter and moved here unchanged so that the whole regist
 - **DS4** (envelope, clarification): "I keen using flow/path and wire/link interchangeably for now, because I am not completely sure if these are mechanically the same primitive or slightly different ones, and I'd like to explore that split."
 - **DS5** (envelope, clarification): "Its possible that Links exist, but are derived on top of Wires, and possible that Paths are persistent entities, derived on top of Links, and maybe only some of these items have direction etc."
 - **DS6** (envelope, statement): "We are building a full fidelity network system"
-- **DS7** (labelled "Director requirement" in the envelope and "DIRECTOR LEANINGS" in seeds S15): "links are only ever between endpoints or junctions (or one to the other). drawing a new link to a bend converts it to a junction (current behaviour). parallelism lives above/abstracted over wires. I think we need to be able to model, construct and visualise all 4 of those in the table." (The four: series, parallel/LAG, multiplex/VLAN, parallel links.)
+- **DS7** (no label in the source; seeds S15 labels the first three sentences "DIRECTOR LEANINGS" and the last a "DIRECTOR REQUIREMENT"; the envelope headed the whole a "Director requirement" until corrected on 2026-09-25): "links are only ever between endpoints or junctions (or one to the other). drawing a new link to a bend converts it to a junction (current behaviour). parallelism lives above/abstracted over wires. I think we need to be able to model, construct and visualise all 4 of those in the table." (The four: series, parallel/LAG, multiplex/VLAN, parallel links.)
 - **DS8** (seeds S6, DIRECTOR LEANING, "for now", not a ruling): "if wires are between anchors, then a link can only occur between endpoints and junctions in this model. For now I would think wires meeting at an anchor join there - however - a junction is actually links meeting, rather than wires."
 - **DS9** (seeds S6c, DIRECTOR LEANING): "A router never bends - this would be a capability/behaviour restriction applied by the 'router node' pack to the anchor system on that node."
 - **DS10** (seeds S12, DIRECTOR LEANING): "packs can extend anchor behaviour too, not just restrict." (DIRECTOR QUESTION): "So links, paths, flows are themselves modular decoupled capabilities injected onto our wire primitives with anchors?" (DIRECTOR ANALOGY): "B is more akin to the Kubernetes model I think, where the analogy is that pods are primitives, and deployments extend them etc."
@@ -176,7 +177,7 @@ Every entry, in register order. "Intent-silent" is yes where the entry's Intent 
 | PS218 | Does a path across several links exist, and what is it derived from? | B ; path | no | PS201, PS117, PS211, PS213 |
 | PS219 | When more than one route satisfies a derivation, how does every viewer arrive at the same one? | B ; path, flow | no | PS218 |
 | PS220 | Is a persisted src:dst pair a selection, a declaration, or neither? | B / seam ; flow, writes | no | PS213, PS218, PS122, PS226, PS227 |
-| PS221 | What happens to a declaration whose inputs can no longer satisfy it? | B / seam ; flow, path, writes, behaviour | yes | PS103, PS220, PS218, PS219, PS217 |
+| PS221 | What happens to a declaration whose inputs can no longer satisfy it? | B / seam ; flow, path, writes, behaviour | no | PS103, PS220, PS218, PS219, PS217 |
 | PS222 | How do many flows sharing one connection stay distinguishable to a viewer? | B ; flow, appearance | no | PS220, PS215, PS110 |
 | PS223 | Which layers carry direction, and what is today's `flow` boolean in a layered model? | B / frame ; pipe, link, path, flow | no | PS208, PS213, PS218 |
 | PS224 | Does the FRAGMENT ruling apply once direction can live somewhere other than links? | B / frame ; link, flow | no | PS205, PS207, PS223 |
@@ -207,8 +208,8 @@ Every entry, in register order. "Intent-silent" is yes where the entry's Intent 
 | PS321 | How does the originating client reconcile its local state with the server's planned result? | seam ; writes | no | PS314, PS315, PS317, PS316, PS320 |
 | PS322 | Is `pinned` stored intent that a write must clear, something derived, or permanent intent? | seam ; anchor, writes | no | PS313, PS314 |
 | PS323 | Where does a rule that both kernel/ and model/ need live: a shared module, test-held twins, or one owner? | seam ; anchor, link, writes | no | PS117, PS211, PS313 |
-| PS324 | What does a type change do to an anchor's existing links and permission? | seam ; anchor, link, writes | yes | PS401, PS402, PS306, PS307, PS308, PS309, PS313, PS318 |
-| PS325 | Does a recomposition take effect from an instant, or does the behaviour fold reread the whole window? | seam / A ; behaviour | yes | PS409, PS418, PS419, PS420, PS421, PS324 |
+| PS324 | What does a type change do to an anchor's existing links and permission? | seam ; anchor, link, writes | no | PS401, PS402, PS306, PS307, PS308, PS309, PS313, PS318 |
+| PS325 | Does a recomposition take effect from an instant, or does the behaviour fold reread the whole window? | seam / A ; behaviour | no | PS409, PS418, PS419, PS420, PS421, PS324 |
 | PS326 | Can an entity change between the waypoint and node kinds in place, keeping its identity? | seam ; anchor, vocabulary | no | PS401, PS402, PS303, PS324 |
 | PS327 | When a stored shape changes, what happens to the log's stored inverses, and when is the migration code deleted? | seam / programme ; writes | yes | PS303, PS305, PS319, PS128 |
 | PS328 | Which derived connection state must an agent be able to read through REST and the CLI, and computed where? | seam ; anchor, link, path | no | PS117, PS211, PS213, PS218, PS306, PS217 |
@@ -230,9 +231,9 @@ Every entry, in register order. "Intent-silent" is yes where the entry's Intent 
 | PS416 | What governs removing a behaviour whose host no longer qualifies for it? | seam ; behaviour, writes | yes | PS414, PS415, PS417, PS315, PS221 |
 | PS417 | What does a spawn configuration belong to? | seam ; behaviour, anchor, link, flow | no | PS403, PS404, PS405, PS414, PS415, PS409 |
 | PS418 | Where do a behaviour's tuning numbers live? | A ; behaviour, vocabulary | no | PS401, PS402, PS417, PS114 |
-| PS419 | What instant does a behaviour's time count from? | A ; behaviour | yes | PS409, PS418 |
+| PS419 | What instant does a behaviour's time count from? | A ; behaviour | no | PS409, PS418 |
 | PS420 | Which clock stamps a behaviour's instant, and which clock does each simulating door read? | A / seam ; behaviour, writes | no | PS419 |
-| PS421 | Does a change to the board change what the simulation has already shown? | A ; behaviour | yes | PS409, PS418, PS419 |
+| PS421 | Does a change to the board change what the simulation has already shown? | A ; behaviour | no | PS409, PS418, PS419 |
 | PS422 | What is a rule, and may it write? | A ; behaviour, writes, vocabulary | no | PS313, PS105 |
 | PS423 | What is an event in the substrate? | A ; behaviour, vocabulary | no | PS422, PS221 |
 | PS424 | What shape does appearance derivation take across kinds, and how do competing contributions resolve? | A ; appearance | no | PS403, PS404, PS405, PS406, PS407, PS408, PS222, PS110 |
@@ -350,7 +351,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - RULED 2026-09-22 (DECISIONS.md:278-302): a pack is "one capability, composable onto an anchor"; two families are in scope, appearance and routing, "Both are DERIVED and stateless"; policy is out of scope.
   - DIRECTOR ANALOGY, 2026-09-25 (seeds S12), quoted above; the seeds do not label it a leaning, and seeds S20 (Claude's note) records that S12 "stays open".
   - DIRECTOR LEANING, 2026-09-25 (seeds S21): "plugin is the distribution unit, contributing packs and stages" (PS129). Seeds S20 (Claude) [I]: extensible physics "remains an ARCHITECTURAL property ... so S12 (stages fixed vs as capabilities) stays open."
-  - Side by side, not resolved: the ruled pack is "composable onto an anchor" (DECISIONS.md:299), while alternative 3 needs attachment scopes beyond the anchor (pipe, whole graph, declaration) per seeds S12. Survey Q2 c also widens the ruled two families to writes, behaviour and events, which DECISIONS.md does not yet record (envelope flag F1).
+  - Side by side, not resolved: the ruled pack is "composable onto an anchor" (DECISIONS.md:299), while alternative 3 needs attachment scopes beyond the anchor (pipe, whole graph, declaration) per seeds S12. Survey Q2 c also widens the substrate's reach beyond the ruled two families to writes, behaviour and events, which DECISIONS.md does not yet record (envelope flag F1).
 - **Under each frame:**
   - FR0: no stages exist to fix or register; the axis applies to whatever is added.
   - FR1: path and flow are the candidate registered stages over a fixed stored link.
@@ -430,6 +431,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - Stages axis: AS CAPABILITIES with derive-up only matches a view-maintenance model (seeds lineage: Datalog/RETE/IVM); with materialize-down it matches controllers.
 - **What would separate the alternatives:** For each stage: do two peers holding the same document compute the same value without exchanging it (derive up), or does the value have to be written (materialize)? Does any stage's result have to survive a change in code revision? Only a stored value survives one; a derivation follows the code. Does an author ever edit a lower primitive that a higher stage produced?
 - **Intent bearing:** Q3 c (derived, with persisted inputs); Q1 a (AX2: "no rule lives at one door"); the VISION north star anchored in Round 1 (derived physics that everyone watching computes identically); the director's S14 statement quoted above.
+  - Round 2 Q4 (2026-09-25): repair automatically; with no route, "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (director, verbatim). Retraction and healing come without the author acting. The envelope carries whether repair ever changes stored state or only derived state as undecided (S2.Q4), which is this entry's question for that case; the pick chooses no direction and no store.
 - **Depends on / blocks:** Depends on: PS103 (S12), PS101 (S2). Blocks: PS118 (S5), PS221 (S13), PS114 (S14), PS313 (F17), PS314 (F18), PS315 (F19), PS316 (F40), PS127 (S19).
 - **Evidence (defects/contradictions):** D1, D2, D41, D42, D44; C24, C25, C37, C47.
 
@@ -466,6 +468,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - Stages axis: under stages FIXED this entry is the engine's stack; under AS CAPABILITIES it is the first set of registered stages, and a later addition does not reopen it.
 - **What would separate the alternatives:** Per boundary, seeds S1: "wire vs link -- does anything attach to a unit smaller than a run? path vs flow -- can two flows share a path, can a path change under a stable flow?". Seeds S15: is any of parallel, multiplex or parallel links required? (The director requirement names all four.) Seeds S16: do aggregation and multiplex carry attachments of their own (the Q3 noun test)?
 - **Intent bearing:** Q3 abc (a stage is a noun: admitted when something attaches to it and it is visible; derived, with persisted inputs); Q1 b (AX3) and Q1 c (AX5) may pull in opposite directions on the count [I]; the director's statements, leanings and requirement quoted above.
+  - Round 2 Q5 (2026-09-25), bearing on scope only: the director picked "declare a flow" as the first working version: build a small network, declare a flow between two leaves, and see it routed with a visual flow along it, the same in browser, CLI and export (envelope S2.Q5, option wording by the proposer). The envelope carries how much of the stack the first slice needs ("which layers must exist for one flow to be declared and routed") as undecided, which is this entry's question for the first slice. The pick does not bear on which stages exist.
 - **Depends on / blocks:** Depends on: PS101 (S2), PS102 (S1, organizing principle), PS103 (S12). Blocks: PS117 (S3), PS116 (S4), PS118 (S5), PS217 (S7), PS223 (S8), PS114 (S14), PS110 (S15), PS109 (S16), PS213, PS218 (F9), PS122 (F10), PS220 (F36). Related (overlapping, not merged): PS126.
 - **Evidence (defects/contradictions):** C12 (the LOCKED taxonomy's shapes against code).
 
@@ -556,12 +559,13 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - DIRECTOR STATEMENT, 2026-09-25 (seeds S16, the FR3 description): "'links' are probably equivalent to 'cables' in the real world networking".
   - DIRECTOR CLARIFICATION, 2026-09-25 (envelope, DS5), worded as a possibility: "Its possible that Links exist, but are derived on top of Wires" (the FR2 shape).
   - DIRECTOR LEANING, 2026-09-25, "for now" (seeds S6): "if wires are between anchors, then a link can only occur between endpoints and junctions in this model. For now I would think wires meeting at an anchor join there - however - a junction is actually links meeting, rather than wires."
-  - DS7 (2026-09-25; "Director requirement" in the envelope, "DIRECTOR LEANINGS" in seeds S15): "links are only ever between endpoints or junctions (or one to the other)."
+  - DS7 (2026-09-25; "DIRECTOR LEANINGS" in seeds S15; the envelope headed it "Director requirement" until corrected on 2026-09-25): "links are only ever between endpoints or junctions (or one to the other)."
   - HYPOTHESIS (seeds S3, Claude): the link as a derived chain, as S16 qualifies it.
 - **Under each frame:** FR0, FR1, FR2 and FR3 are alternatives 1, 1, 2 and 3. Under FR2 a link cannot pass an anchor where a third pipe meets without the chain being cut there [I, from the S6 leaning's reading]; under FR3 it can, since a pass-through is a cable that does not end there (seeds S16).
   - Stages axis: under AS CAPABILITIES an FR2 link is a registered derivation, and an FR3 cable is a stored kind with a registered router.
 - **What would separate the alternatives:** (a) Does anything need a link identity that survives a topology change (a name, a flow binding)? A derived chain changes identity when a pipe is added at a mid-point (seeds S7 hard case). (b) Must a link pass an anchor where others meet without joining them? (c) Is any of parallel, multiplex or parallel links required? (The director requirement names all four.) (d) How many of the 38 live diagrams change stored shape under each alternative?
 - **Intent bearing:** The director's statements and leanings quoted above; the director requirement ("model, construct and visualise all 4"); Q3 abc (a link is a noun something attaches to and people see; derived with persisted inputs); Q1 a (AX2); AX6.
+  - Round 2 Q4 (2026-09-25): repair automatically, which the director checked with the example "You mean like - delete a pipe and watch a link between 2 nodes re-path?" (verbatim; a director question, with no reply recorded as text in the session transcript before the next question). If repair applied at the link layer, what re-forms when a pipe under a link is removed, and whether a write is needed, would differ between the alternatives [I]; the only link-layer content is this director question, so Q4 is noted here and not counted. The envelope carries as undecided whether repair applies at the link layer (S2.Q4); no alternative is chosen.
 - **Depends on / blocks:** Depends on: PS106 (S1), PS110 (S15; mutual, see PS110; a forward reference within Part 1), PS102 (S16). Blocks: PS117 (S3, F7), PS211 (F7), PS116 (S4), PS118 (S5), PS205 (S6, F8), PS212 (F8), PS217 (S7), PS221 (S13), PS213, PS218 (F9).
 - **Evidence (defects/contradictions):** C25; C5, C6; D2, D4 (the split loses the link's name and fields).
 
@@ -664,6 +668,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - Stages axis: under AS CAPABILITIES a flow stage and a path stage can register separately.
 - **What would separate the alternatives:** Seeds S1's two questions. Also: is a path ever authored without a flow (pinning a route)? Does anything attach to a path that is not a flow (a visual element, a constraint)? Does traffic follow a flow's path, or is a flow the traffic?
 - **Intent bearing:** The director's clarification and S16 statement quoted above; Q3 abc (the rationale describes a persisted pair and a derived path); Q2 c (behaviour and events, i.e. traffic); anti-goal AG-1 keeps permit/deny over flows out.
+  - Round 2 Q5 (2026-09-25), bearing on scope only: the first working version declares a flow and shows it routed (envelope S2.Q5), so this entry is on the first proof's path. The option's label, "declare a flow", does not say whether path and flow are one stage or two, or whether a path is ever declared on its own.
 - **Depends on / blocks:** Depends on: PS106 (S1), PS102 (S16). Blocks: PS223 (S8), PS220 (S9, F36), PS227 (S9), PS219, PS222 (S10), PS221 (S13), PS213, PS218 (F9), PS225 (F25), PS411-PS413 (F27), PS427 (F37). Related (overlapping, not merged): PS218.
 - **Evidence (defects/contradictions):** D9, D10 (traffic ignores the declared plane and flow); C19.
 
@@ -697,6 +702,8 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - Stages axis: alternative 4 is the seeds' test of AS CAPABILITIES; under FIXED, alternatives 4 and 5 both remain available as internal choices.
 - **What would separate the alternatives:** Write down the inputs each layer's routing needs (graph, cost, tie-break, constraints such as forwarding by composition), and check whether one signature covers both. Is a cable's route ever computed (FR3 routed from its ends), or only authored?
 - **Intent bearing:** The AGREED line above (seeds naming note); the director clarification "multihop across routed junctions/nodes"; Q1 d (AX4) and Q1 c (AX5: one mechanism); Q1 a (AX2: every viewer derives the same route).
+  - Round 2 Q4 (2026-09-25): repair automatically, with the director's example "You mean like - delete a pipe and watch a link between 2 nodes re-path?" (verbatim; a director question, with no reply recorded as text in the session transcript before the next question; the proposer's gloss that a declared flow re-routes across links at its own layer "in the same way" was not put to the director and bears on no alternative, alternatives 4 and 5 especially; envelope S2.Q4). Repair needs something to route at whichever layer repairs; whether repair applies at every layer is carried undecided (S2.Q4).
+  - Round 2 Q5 (2026-09-25): the first working version shows a declared flow routed across a small network (envelope S2.Q5), so the first proof routes the flow; which layer or layers route, and by one mechanism or two, stays open.
 - **Depends on / blocks:** Depends on: PS103 (S12), PS109 (S16), PS112 (S1, path and flow). Blocks: PS116 (S4), PS219 (S10), PS202 (F15), PS411-PS413 (F27). Related (overlapping, not merged): PS125.
 - **Evidence (defects/contradictions):** D11; C44.
 
@@ -795,6 +802,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - Stages axis: no difference.
 - **What would separate the alternatives:** Does an author ever need a bend that no router would produce (a deliberate detour)? If so, via is stored or intent. Must two viewers holding the same document see the same bends without those bends being stored? If so, routing has to be deterministic (seeds S10). How many live diagrams would change stored via?
 - **Intent bearing:** The director's S4 statement quoted above; Q3 c (derived, with persisted inputs); Q1 a (AX2: five sites admit five sets today); AX6 (seeds S3: "Costs: derived-link identity, via retires, 38 live diagrams change stored shape").
+  - Round 2 Q4 (2026-09-25): repair automatically, with the director's example "You mean like - delete a pipe and watch a link between 2 nodes re-path?" (verbatim; a director question, with no reply recorded as text in the session transcript before the next question). If repair applied at the link layer, a via that re-forms without the author acting would bear on whether via is stored, authoring intent, or derived; the only link-layer content is the director's question, so Q4 is noted here and not counted. The envelope carries as undecided whether repair applies at the link layer, and whether repair ever changes stored state or only derived state (S2.Q4); no alternative is chosen.
 - **Depends on / blocks:** Depends on: PS114 (S14), PS109 (S16). Blocks: PS117 (S3), PS118 (S5), PS204 (F11), PS322 (F22).
 - **Evidence (defects/contradictions):** D5, D19 (links that only thread a waypoint are misdescribed); C12, C13 (the stale waypoint-exclusivity claim).
 
@@ -821,7 +829,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
 - **Recorded positions:**
   - RULED 2026-09-22 (DECISIONS.md:233): "deleting one makes it a bend with nothing reconfigured". The shipped collapse reconfigures the document (C25).
   - Record [BUILT] (ATOMICS.md:159-167; B213, B215, B217, B222): the collapse is "the split's inverse", "One rule, one place, every door". (The frame drafter recorded this line as RULED and the Track B drafter as record; PS312 carries it as Record [BUILT].) It stands in tension with DECISIONS.md:233 (C25).
-  - DS7 (2026-09-25; "Director requirement" in the envelope, "DIRECTOR LEANINGS" in seeds S15): "drawing a new link to a bend converts it to a junction (current behaviour)". Measured nuance (seeds S15): this holds at the browser door only; the CLI and REST land a link on a bend unsplit (C3) [M-run R1 P13b, R3].
+  - DS7 (2026-09-25; "DIRECTOR LEANINGS" in seeds S15; the envelope headed it "Director requirement" until corrected on 2026-09-25): "drawing a new link to a bend converts it to a junction (current behaviour)". Measured nuance (seeds S15): this holds at the browser door only; the CLI and REST land a link on a bend unsplit (C3) [M-run R1 P13b, R3].
   - DS16 (seeds S5): "Using the w key to create a link with bends might also construct wires between the anchors under the hood mechanically." DS15 (seeds S4): "This could potentially allow via to be entirely derived."
   - HYPOTHESIS (seeds S3, Claude), as S16 qualifies it, quoted above.
 - **Under each frame:**
@@ -1106,6 +1114,7 @@ Assembly notes: PS119 is merged into PS314 (Part 3), and PS210 (Part 2) is merge
   - Stages axis: under AS CAPABILITIES each registered stage is, in the director's analogy, a controller that runs wherever this entry places it; under FIXED the engine's stack runs there.
 - **What would separate the alternatives:** Does any derived value differ between two peers holding the same document and code revision (D11 and D15 say one does today)? Does any stage's output have to be available at a peer that does not import its code (the CLI "takes no dependency on `model/`", WRITES.md:259)? Does any derivation have to write, and if so, at how many peers? For each derivation, does the planner need its output in order to refuse a write?
 - **Intent bearing:** The director's S19 statement quoted above; Q1 a (AX2: "Browser, server, CLI and REST compute the same thing; no rule lives at one door"); Q1 d (AX4); DS1 ("so that a path can be derived across all viewers"); the Round-1 anchor, the VISION north star ("derived physics that everyone watching computes identically").
+  - Round 2 Q5 (2026-09-25): the first working version is judged, in the envelope's reading, on parity across browser, CLI and export as well as on the new capability: a declared flow, routed and shown "the same in browser, CLI and export" (envelope S2.Q5, option wording by the proposer). That bears on where the flow's derivation runs, since each of those doors must show the same result; it does not choose between the alternatives, and the envelope carries what "the same in browser, CLI and export" is measured by as undecided.
 - **Depends on / blocks:** Depends on: PS103 (S12), PS105 (S12, S14). Blocks: PS128 (S20, raised by S19). Related (overlapping, not merged): PS227 (F26), PS320, PS321 (F21), PS323 (F24, the shared-code location S19 cites), PS328 (G1).
 - **Evidence (defects/contradictions):** D2, D3, D11, D15, D44; C16, C37.
 
@@ -1563,7 +1572,7 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   5. (status quo) The browser's commitRoute splits; chainHop and every other door leave a T.
   6. other.
 - **Recorded positions:**
-  - DS7, labelled "Director requirement" in the envelope and "DIRECTOR LEANINGS" in seeds S15 (2026-09-25): "drawing a new link to a bend converts it to a junction (current behaviour)."
+  - DS7, labelled "DIRECTOR LEANINGS" in seeds S15 (2026-09-25; the envelope headed it "Director requirement" until corrected on 2026-09-25): "drawing a new link to a bend converts it to a junction (current behaviour)."
   - Seeds S15 measured nuance: "current behaviour" holds at the browser door only (C3).
   - Seeds S16: under the cable model it "becomes a behavioural question ... does the passing cable terminate there? (Round-2 candidate.)"
   - Record: ATOMICS.md:141 "cannot arise", contradicted (C3).
@@ -1729,6 +1738,7 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   - Stages axis: stages as capabilities demand "stable addresses for derived entities" (seeds S12).
 - **What would separate the alternatives:** The mid-point cut case: a named, one-way link "uplink" receives a new connection at an interior anchor. Under each binding, which part is "uplink", and does the answer match what the author expects? And whether any configuration must survive re-formation, or may be dropped visibly.
 - **Intent bearing:** Q3 (attachment and visibility; inputs may be persisted); DS11; Q1 a (AX2: the split loses fields at one door); AX1 (a Round-1 primary axis); DS7.
+  - Round 2 Q4 (2026-09-25): repair automatically; with no route, "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (director, verbatim). The declared thing outlives a retraction and a re-route, which bears on what holds its identity, name and configured fields while it re-forms; the pick does not say where they live.
 - **Depends on / blocks:** Depends on: PS114 (S14), PS110 (S15); PS213, PS218 (F9; PS218 is a forward reference: Part 2 places the Path group after the Link group), PS209 (S6a) [I]. Blocks: PS221 (S13), PS220 (F36) [I].
 - **Evidence (defects/contradictions):** C5, C6, D2, D4, D6.
 
@@ -1765,6 +1775,8 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   - Stages axis: fixed (path is an engine stage) vs a registered capability; seeds S12's separating test: "will a second, different set of stages ever run over the same wires (pilot pathing by other rules, another domain)?"
 - **What would separate the alternatives:** Whether a path is ever needed without a flow (a pinned route with no traffic); seeds S1's discriminators: "can two flows share a path, can a path change under a stable flow?"; and whether the pilot's movers use the same path derivation (seeds S2).
 - **Intent bearing:** DS1; DS2; DS3; DS4; DS5; DS14; Q3; Q1 (AX3); Q2 (behaviour: movers travel along paths).
+  - Round 2 Q4 (2026-09-25): with no route, "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (director, verbatim). A flow that heals without the author acting bears on whether the path is stored or derived; the director did not say whether the flow or only its path is retracted (envelope S2.Q4), and the pick chooses neither.
+  - Round 2 Q5 (2026-09-25): the director picked "declare a flow" as the first working version: build a small network, declare a flow between two leaves, and see it routed with a visual flow along it, the same in browser, CLI and export (envelope S2.Q5, option wording by the proposer). The first proof is the multi-hop use case of DS2, so it needs a path across several links; what that path is derived from, and whether it is stored, stay open.
 - **Depends on / blocks:** Depends on: PS201 (F6), PS117, PS211 (F7); PS213 (F9, run) [I]. Blocks: PS122 (F10), PS214 (F12), PS225 (F25), PS226, PS227 (F26), PS411-PS413 (F27), PS220 (F36) (map, via F9); PS219, PS222 (S10), PS221 (S13) [I]. Related (overlapping, not merged): PS112.
 - **Evidence (defects/contradictions):** none (the absence is measured, map 3.4).
 
@@ -1795,6 +1807,7 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   - FR3: the tie-break question appears twice (cable through pipes when routed; path over cables); one routing capability used at two layers is a direct test of stages as capabilities (seeds S16, S12).
 - **What would separate the alternatives:** Whether any candidate tie-break input changes across undo or redo, reload, or door (collection order does: D11, D43). A test: one document loaded at two doors with different insertion histories must yield the same path.
 - **Intent bearing:** DS1 ("so that a path can be derived across all viewers"); Q1 (AX2); the envelope's Round-1 anchor (VISION north star: derived physics that everyone watching computes identically); DS11.
+  - Round 2 Q5 (2026-09-25): the first proof shows a declared flow routed "the same in browser, CLI and export" (envelope S2.Q5), so its route choice must come out identical at those doors, including where routes tie; how ties are broken stays open.
 - **Depends on / blocks:** Depends on: PS218 (F9 path; seeds S10) [I]. Blocks: PS221 (S13, its reroute alternative), PS411-PS413 (F27) [I].
 - **Evidence (defects/contradictions):** C17, D11, D43.
 
@@ -1832,6 +1845,7 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   - Stages axis: under the k8s analogy, flow is the most k8s-shaped stage: src:dst as spec, path as status (seeds S12).
 - **What would separate the alternatives:** Does undo revert a flow declaration? Does another viewer see it? Does it survive reload and export? Is more than one flow per pair meaningful? The envelope lists this as a Round-2 disambiguation.
 - **Intent bearing:** Q3 (inputs may be persisted); DS1; DS2; DS3; Q2 (policy out, AG-1); DS13.
+  - Round 2 Q5 (2026-09-25), bearing on scope only: the first working version declares a flow between two leaves, the same in browser, CLI and export (envelope S2.Q5), so whatever carries the src:dst pair is on the first proof's path. The option's label, "declare a flow", does not rule on selection versus declaration; Round 2 did not ask this entry's question (envelope S2 composite read; envelope flag F7).
 - **Depends on / blocks:** Depends on: PS213, PS218 (F9), PS122 (F10), PS226, PS227 (F26; forward references: Part 2 places the Direction and plane group after the Flow group, while the map orders F26 before F36). Blocks: PS427 (F37); PS221 (S13) [I].
 - **Evidence (defects/contradictions):** D23.
 
@@ -1859,7 +1873,8 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   - FR3: deleting a pipe leaves cables routed through it without a conduit, so the question arises one layer down as well (a cable whose declared route loses a pipe; a LAG or VLAN construct losing a member cable) [I].
   - Stages axis: under capabilities, every stage's declarations need the same condition model (seeds S12).
 - **What would separate the alternatives:** Round-2 behavioural answers for each case: src deleted; a piece on the path deleted with an alternate route available; the same with none available. And whether undoing the delete must restore the declaration's prior status exactly.
-- **Intent bearing:** INTENT-SILENT. No Round-1 pick or director statement speaks to it; seeds S13 names it a Round-2 candidate.
+- **Intent bearing:** Round 1: no pick or director statement spoke to it (intent-silent after Round 1); seeds S13 named it a Round-2 candidate.
+  - Round 2 Q4 (2026-09-25): asked "When a change would break something declared, what should happen?", the director picked repair automatically, checked with the example "You mean like - delete a pipe and watch a link between 2 nodes re-path?"; for the case with no route to repair onto: "I'm thinking a hybrid between 1/3 - a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (both verbatim). The envelope records the no-route answer as a hybrid of "show it broken" and "remove it" (Scontradictory), and names this entry as one the answer bears on (S2.Q4). It bears on two of the three cases the separating test names (a piece on the path deleted, with and without an alternate route); it does not name the case of a deleted src or dst, or say whether undoing the delete must restore the prior status exactly (the picked option's description, proposer wording, read "visibly and undoably", which concerns the repair, not the retraction). The envelope carries as undecided what counts as "visibly retracted", whether repair ever changes stored state or only derived state, what happens to a link that cannot re-path when no route exists, and whether the flow answer extends to other declared things; no alternative is chosen.
 - **Depends on / blocks:** Depends on: PS103 (S12, which raised it); PS220 (F36), PS218 (F9 path), PS219 (S10), PS217 (S7) [I]. Blocks: none recorded.
 - **Evidence (defects/contradictions):** D12, D42.
 
@@ -1925,6 +1940,7 @@ Assembly note: PS210 (F7, the encoding half) is merged into PS117 (Part 1).
   - FR3: a cable may or may not be one-way [I]; flows are directed; paths take direction from flows.
 - **What would separate the alternatives:** Whether any network case needs a one-way connection independent of any flow (a simplex link). If yes, a link-level constraint exists alongside flows; if no, direction can live on flows alone. And which current readers of `link.flow` (arrowhead, role matrix, collapse) keep a meaning if it moves.
 - **Intent bearing:** DS5; DS6; DS13; the H15 exit (BOARD.md:847).
+  - Round 2 Q5 (2026-09-25), bearing on scope only: the first working version declares a flow (envelope S2.Q5), and envelope flag F5 records that the answer to what today's `flow` boolean is "changes what 'declare a flow' means". The entry is on the first proof's path; the pick does not bear on which layers carry direction.
 - **Depends on / blocks:** Depends on: PS208 (G2); PS213 (F9; mutual, see PS213), PS218 (F9) [I]. Blocks: PS209 (S6a), PS224 (S6b); PS225 (F25), PS226, PS227 (F26) [I].
 - **Evidence (defects/contradictions):** C1, D10.
 
@@ -2778,7 +2794,8 @@ Assembly note: PS314 also carries the frame drafter's entry on where a compile s
   - FR2: retyping a router to a server changes the cuts at that anchor, and derived links re-form.
   - FR3: cables through the anchor stay declared, and a new restriction may make a declared cable's route forbidden.
 - **What would separate the alternatives:** The case "router with three links -> server": does the author expect accept, refuse, cascade, or a visible condition (a behaviour question)? Is retype offered as deliberate recomposition, or only as the fast-replace convenience?
-- **Intent bearing:** INTENT-SILENT. Q1a (door parity) bears only on reach, since retype exists at every door; no pick or verbatim director statement addresses what a recomposition does to links.
+- **Intent bearing:** Round 1: intent-silent. Q1a (door parity) bears only on reach, since retype exists at every door; no Round-1 pick or verbatim director statement addressed what a recomposition does to links.
+  - Round 2 Q4 (2026-09-25): asked "When a change would break something declared, what should happen?", with the options refuse the change, allow it and show it broken, or repair automatically, the director picked repair automatically; for the case with no route: "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (verbatim). This is the kind of behaviour question the separating test asks (accept, refuse, cascade, or a visible condition). The director's elaboration named a deleted pipe or link, not a retype, and what repair would mean for links a new type does not permit is not stated. "Refuse the change" was offered and not picked; RULED 2026-09-22 (DECISIONS.md:251-253), "A violation is REFUSED, in the validator", is stated beside it and not reconciled here. No alternative is chosen.
 - **Depends on / blocks:** Depends on: PS401, PS402 (F2), PS306-PS309 (F16, S6c), PS313 (F17), PS318 (F20). Blocks: none in the map; PS325 and PS326 list it as a dependency (the F41 links half).
 - **Evidence (defects/contradictions):** D34, D46, D48.
 
@@ -2802,7 +2819,8 @@ Assembly note: PS314 also carries the frame drafter's entry on where a compile s
 - **Recorded positions:** none (map D13, D45: no ruling found).
 - **Under each frame:** The question reads the same under all frames. Where behaviour attaches is open (envelope S1.Q2 correction: "packs on anchors, attachments to flows or paths, or something else"); behaviour attached to a flow or path rather than an anchor changes which writes trigger a re-fold.
 - **What would separate the alternatives:** In the pilot (tower defence), is a tower placed or retyped mid-wave expected to act only from that moment onward? The answer is observable on the canvas.
-- **Intent bearing:** INTENT-SILENT on whether a recomposition is retroactive. Q2c bears on reach only (the envelope reads it: "behaviour brings time and a clock into the substrate").
+- **Intent bearing:** Round 1: intent-silent on whether a recomposition is retroactive. Q2c bears on reach only (the envelope reads it: "behaviour brings time and a clock into the substrate").
+  - Round 2 Q6 (2026-09-25): asked "When the network changes while things are moving on it, should the change apply from that moment, or as if it had always been so?", the director picked as if always, "for now": "I'm thinking 2 for now - making a game in "read mode" is currently out of scope - we might need to extend history and state for a real tower defense game in future" (verbatim). A recomposition is a change to the board, and the separating test asks this of a tower placed or retyped mid-wave; the envelope names this entry among those Q6 bears on for the current scope (S2.Q6) and reads the pick as "a scoping choice". Every alternative stays carried; anti-goal AG-3 (section 9) names when the question reopens.
 - **Depends on / blocks:** Depends on: PS409, PS418 (F30), PS419-PS421 (F31), PS324 (F41, links half). Blocks: none.
 - **Evidence (defects/contradictions):** D13, D35, D45.
 
@@ -2884,6 +2902,7 @@ Assembly note: PS314 also carries the frame drafter's entry on where a compile s
   - Stages axis: under stages as capabilities, every registered stage's output meets this requirement; seeds S12 lists "stable addresses for derived entities" among what that option demands.
 - **What would separate the alternatives:** Using only `draw`, can an agent answer "is W a junction?" or "what path does flow F take?". For each fact it cannot answer, which ruling (GR18, A5) does the gap touch, under the director's reading of GR18?
 - **Intent bearing:** Q1a bears (AX2: "Browser, server, CLI and REST compute the same thing"). Q3b bears: the envelope reads the pick as "a noun is admitted when ... an AUTHOR OR AGENT CAN SEE IT". Round-1 anchor A5 perceptual parity. Director Q3 rationale: "so that a path can be derived across all viewers".
+  - Round 2 Q5 (2026-09-25): the first working version shows a declared flow routed "the same in browser, CLI and export" (envelope S2.Q5), so the flow's derived path is among the state the CLI door has to show identically; whether the CLI computes it or reads it from another peer stays open, as do which further derived state an agent must read and from which computation.
 - **Depends on / blocks:** Depends on: PS117, PS211 (F7), PS213, PS218 (F9), PS306 (F16), PS217 (S7). Blocks: PS501 (F39). Cross-referenced by PS502. Related (overlapping, not merged): PS127, PS128.
 - **Evidence (defects/contradictions):** D16, D17, D19.
 
@@ -3190,6 +3209,7 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
   - (b) Is an automatic anchor delete, the sweep, retained under the frame the design phase takes?
   - (c) Does a group need to survive losing members below its minimum?
 - **Intent bearing:** INTENT-SILENT. Both deleting paths are server-side, so Q1 a (door parity) does not discriminate between the alternatives. Nothing captured names containers.
+  - Round 2 Q4 (2026-09-25), noted and not counted as bearing on the choice: Q4 asked "When a change would break something declared, what should happen?", and the director picked repair automatically, with a no-route case of "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (verbatim). The elaboration named pipes, links and flows. Nothing captured names containers, and what repair or a visible retraction would mean for a member removed by a derived delete is not stated, so the entry stays intent-silent.
 - **Depends on / blocks:** Depends on: PS406, PS407 (F4); PS313 (F17). Blocks: PS317 (F20; the map's F4 -> F20 edge is this defect).
 - **Evidence (defects/contradictions):** D42; C46; D40 (a later waypoint minted with the dead id would silently join the group [I]).
 
@@ -3284,6 +3304,7 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
 - **Intent bearing:**
   - The director's clarification (2026-09-25, verbatim): "One of the things I want to be able to do is "declare a path or flow" and have that path/flow - multihop across routed junctions/nodes - have a visual flow element along them." and "Use case here is that we construct a geomtric network of wires or links, and then just declare or reason with lots of permutations of flows between the leaves/endpoints."
   - Q2 c (behaviour in reach). Q3 b (visibility).
+  - Round 2 Q5 (2026-09-25): the director picked "declare a flow" as the first working version, whose option reads: see the declared flow routed "with a visual flow along it, the same in browser, CLI and export" (envelope S2.Q5, option wording by the proposer). The element is part of the first proof and must be the same at those doors; which construct it is stays open.
 - **Depends on / blocks:** Depends on: PS409 (S11); PS109 (S16); PS213, PS218 (F9); PS122 (F10); PS220 (F36). Blocks: PS411-PS413 (F27); PS222 (S10) [I].
 - **Evidence (defects/contradictions):** none.
 
@@ -3497,7 +3518,8 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
 - **What would separate the alternatives:**
   - (a) After each write that changes a role, is the author expected to see the stranded behaviour, keep it, or lose it?
   - (b) Under each alternative, does undoing the stranding write restore emission?
-- **Intent bearing:** INTENT-SILENT; a Round-2 candidate, since it asks how a behaviour behaves when its anchor stops qualifying. Q1 a (door parity) bears only on the fact that REST can clear what the browser and CLI cannot; nothing captured bears on the alternatives.
+- **Intent bearing:** INTENT-SILENT. Round 1: the entry was a Round-2 candidate, since it asks how a behaviour behaves when its anchor stops qualifying. Q1 a (door parity) bears only on the fact that REST can clear what the browser and CLI cannot.
+  - Round 2 Q4 (2026-09-25), noted and not counted as bearing on the choice: asked "When a change would break something declared, what should happen?", the director picked repair automatically; for the case with no route: "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (verbatim). A stored spawn stranded by a collapse is something declared that a change has broken, and separating tests (a) (whether the author sees, keeps or loses the stranded behaviour) and (b) (whether it comes back) ask the same kind of question. The director's elaboration named pipes, links and flows, not behaviours; what repair or a visible retraction would mean for a stranded behaviour is not stated, and whether the flow answer extends to other declared things (a spawn, a group member) is carried undecided (envelope S2.Q4). So the entry stays intent-silent, as PS408 does. No alternative is chosen.
 - **Depends on / blocks:** Depends on: PS414, PS415 (F28); PS417 (F29; forward reference: Part 4 takes arming and disarming before spawn attachment, and critic gap 3 reads both); PS315 (F19); PS221 (S13). Blocks: none.
 - **Evidence (defects/contradictions):** D12; D8.
 
@@ -3599,7 +3621,8 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
   - (a) Does any behaviour need to know when it began? Towers do not, today.
   - (b) Does undoing a behaviour's creation need to restore the simulation as it was before?
   - (c) Does any behaviour need to restart (reset its instant) without being deleted and re-created?
-- **Intent bearing:** INTENT-SILENT. Q2 c and the envelope's consequence place time in scope only, and nothing captured bears on which instant.
+- **Intent bearing:** Round 1: intent-silent. Q2 c and the envelope's consequence placed time in scope only, and nothing captured in Round 1 bore on which instant.
+  - Round 2 Q6 (2026-09-25): asked "When the network changes while things are moving on it, should the change apply from that moment, or as if it had always been so?", the director picked as if always, "for now": "I'm thinking 2 for now - making a game in "read mode" is currently out of scope - we might need to extend history and state for a real tower defense game in future" (verbatim). For the current scope this bears on whether a board change needs an instant of its own (a placement or recomposition instant). No example accompanied the question as text (envelope S2.Q6); how the answer reads for the instants that exist today (spawn.since per entity, reveal.origin per document) is not stated. The envelope names this entry among those Q6 bears on (S2.Q6) and reads the pick as "a scoping choice"; every alternative stays carried, and anti-goal AG-3 (section 9) names when the question reopens.
 - **Depends on / blocks:** Depends on: PS409 (F30, S11), PS418 (F30) (as F31). Blocks: PS324-PS326 (F41) (as F31).
 - **Evidence (defects/contradictions):** D13 and D45 (towers have no instant; see PS421); D21 (peers do not receive the per-document instant after an undo).
 
@@ -3655,7 +3678,8 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
   - (a) Does an author or spectator expect a newly placed tower to have fired before it existed?
   - (b) Would an instant per entity (PS419) remove D13 and D45 without storing consequences?
   - (c) How far back can a change reach, and is the window bounded?
-- **Intent bearing:** INTENT-SILENT; a Round-2 candidate, since it asks how the simulation behaves.
+- **Intent bearing:** Round 1: intent-silent; the entry was a Round-2 candidate, since it asks how the simulation behaves.
+  - Round 2 Q6 (2026-09-25): asked, in this entry's terms, "When the network changes while things are moving on it, should the change apply from that moment, or as if it had always been so?", with "As if always" described as "Everything is recomputed from the new network, including what was already shown (today's behaviour)" (no example was shown as text), the director picked as if always, "for now": "I'm thinking 2 for now - making a game in "read mode" is currently out of scope - we might need to extend history and state for a real tower defense game in future" (verbatim). The envelope reads the pick as "a scoping choice rather than a statement that retroactive recomputation is right for a game" (S2.Q6). It bears for the current scope; every alternative stays carried, and anti-goal AG-3 (section 9) names when the question reopens. The map lists this behaviour as D13 ("Whether this is intended is NOT-CLAIMED") and D45; for the current scope the pick keeps it. D45's resurrection direction (a retype away brings killed movers back) was not named in the question as shown, so whether "as if always" covers it is carried.
 - **Depends on / blocks:** Depends on: PS409, PS418 (F30), PS419 (F31). Blocks: PS325 (F41, its behaviour option: "anchor it to a recomposition instant, or keep the origin-free fold").
 - **Evidence (defects/contradictions):** D13; D45.
 
@@ -3727,6 +3751,7 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
   - (b) Can every such need be met by a fact derived at tick t?
   - (c) What does an agent at the CLI need to observe? GR18 requires pack-derived state to reach the CLI (TRANSACTIONS.md:620).
 - **Intent bearing:** Q2 c names events explicitly. That bears on whether an alternative with no event construct meets the pick; it does not choose a form.
+  - Round 2 Q6 (2026-09-25), bearing on scope only: anti-goal AG-3 places a playable game in read mode, and the history and state it might need, out of scope for now ("we might need to extend history and state for a real tower defense game in future", director, verbatim). AG-3 is about a playable game; it does not put alternative 4 (events as stored records) out of scope, and does not choose what an event is.
 - **Depends on / blocks:** Depends on: PS422 (F32, as F33); PS221 (S13). Blocks: none.
 - **Evidence (defects/contradictions):** none.
 
@@ -3834,6 +3859,7 @@ In Covers lines, "G3" means critic gap 3 of map section 10.1. Inside evidence ma
   - (b) Does a theme (light and dark, or user CSS) need to override derived looks?
   - (c) How many elements are styled by both today?
 - **Intent bearing:** Q1 a (door parity: the canvas and the export render one document). The Round-1 anchor A5 perceptual parity also bears.
+  - Round 2 Q5 (2026-09-25): the first working version shows a declared flow routed with a visual flow along it, "the same in browser, CLI and export" (envelope S2.Q5), which bears on separating test (a), whether the export must match the canvas, for the first proof's elements. Who owns a look stays open, and the envelope carries what "the same in browser, CLI and export" is measured by as undecided.
 - **Depends on / blocks:** Depends on: PS424, PS425 (F34) (as F35). Blocks: none.
 - **Evidence (defects/contradictions):** D16; D27; D28; D29; D30; D31; D33; C30; C31.
 
@@ -3937,6 +3963,7 @@ These entries were written at assembly. They carry three programme-level questio
   - Stages axis: under stages AS CAPABILITIES the registration mechanism precedes every stage built on it; under FIXED the stack precedes the contributions into it [I].
 - **What would separate the alternatives:** For each ordering, list which open entries must be answered before its first increment can land, and which one-way doors it crosses and when (PS303, PS305, PS327, and any stored-shape change of FR2 or FR3). Does the first increment demonstrate one of the four Q1 payoffs end to end, and which? Would a pack extracted under FR0 survive a change of frame (PS312)?
 - **Intent bearing:** Q1 abcd (all four payoffs are required, and the envelope leaves "which one the FIRST increment has to demonstrate" to Round 2); AX6 ("few, named, and last"); the director's instruction quoted above, which places design after the survey.
+  - Round 2 Q5 (2026-09-25): asked "What should the first working version demonstrate end to end?", against four options written by the proposer (none represented Q1 c, fewer concepts), the director picked "declare a flow", the bare label, whose option description read: build a small network, declare a flow between two leaves, and see it routed with a visual flow along it, the same in browser, CLI and export (envelope S2.Q5, option wording by the proposer). This bears directly on the separating test's question of which payoff the first increment demonstrates end to end (the envelope reads it as the new capability and door parity together, and records that this reading restates the proposer's own lean given earlier the same day), and the envelope records that nothing unpicked is dropped (extensible physics and fewer concepts required by Q1, the four relations by the director's requirement, self-repair by Q4) and that all are "later proofs rather than lesser ones". It does not choose the order in which the programme's questions are taken, and the envelope carries how much of the stack the first slice needs as undecided.
 - **Depends on / blocks:** Depends on: PS103 (S12), PS313 (F17), PS328 (G1). Blocks: PS503.
 - **Evidence (defects/contradictions):** C10 (the capability probe cited as evidence for the staged order was paper-only), C22, C37.
 
@@ -4111,169 +4138,174 @@ What each entry's Intent bearing field says bears on it. Columns:
 - **Declare-a-flow use case:** the director's clarification (DS2, DS3) or the Q3 example of a persisted src:dst pair from which a path is derived for every viewer (DS1).
 - **"full fidelity network system":** DS6.
 - **Four relations:** the requirement to model, construct and visualise series, parallel/LAG, multiplex/VLAN and parallel links (DS7). "s" marks an entry citing another sentence of the same DS7 statement (links only between endpoints or junctions; a new link to a bend converts it to a junction; parallelism above pipes).
+- **Q4 breakage (c):** Round 2, "When a change would break something declared, what should happen?": repair automatically; with no route, "a flow that cant route gets visible retracted. If the pipe/link is repaired - the flow automatically heals" (director, verbatim; the envelope's Scontradictory records it as a hybrid of "show it broken" and "remove it").
+- **Q5 first proof (a):** Round 2, "What should the first working version demonstrate end to end?": declare a flow (build a small network, declare a flow between two leaves, and see it routed with a visual flow along it, the same in browser, CLI and export).
+- **Q6 time (b):** Round 2, whether a change applies from that moment or as if it had always been so: as if always, "for now"; a real game with the history and state it might need is anti-goal AG-3 (section 9).
 
-"x" means the entry cites it without naming an option. A value in parentheses means the entry says the pick places the question inside the reach, or bears only on the status quo, and does not bear on the choice. "-" means nothing cited. Marks were read from each entry's Intent bearing field at assembly, so they inherit each drafter's reading.
+"x" means the entry cites it without naming an option. A value in parentheses means the entry says the pick places the question inside the reach, or bears only on the status quo, and does not bear on the choice. In the three Round-2 columns a value in parentheses means the pick bears on scope only (for Q5, the entry is on the first proof's path) or is noted by analogy and not counted; such a mark leaves an entry intent-silent. "-" means nothing cited. The Round-1 marks were read from each entry's Intent bearing field at assembly, so they inherit each drafter's reading. The Round-2 marks were read from each entry's question and alternatives when Round 2 was folded in (2026-09-25), and are the proposer's reading [I]; each is stated in the entry's Intent bearing field.
 
-| Id | Q1 payoff | Q2 reach | Q3 nouns | Declare-a-flow | Full fidelity | Four relations | Intent-silent |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| PS101 | c, d | c | - | - | x | - | no |
-| PS102 | b, c | - | a, b, c | - | x | - | no |
-| PS103 | c, d | c | - | - | - | - | no |
-| PS104 | b, d | c | - | - | - | - | no |
-| PS105 | a | - | c | - | - | - | no |
-| PS106 | b, c | - | a, b, c | - | - | x | no |
-| PS107 | c | - | a, b | - | - | - | no |
-| PS108 | - | - | - | - | x | - | no |
-| PS109 | a | - | a, b, c | - | - | x | no |
-| PS110 | a, b | - | b | - | - | x | no |
-| PS111 | - | - | - | - | - | x | no |
-| PS112 | - | c | a, b, c | x | - | - | no |
-| PS113 | a, c, d | - | - | x | - | - | no |
-| PS114 | - | - | c, AX1 | - | - | - | no |
-| PS115 | - | - | c, AX1 | - | - | - | no |
-| PS116 | a | - | c | - | - | - | no |
-| PS117 | a, c | - | AX1 | - | - | s | no |
-| PS118 | a, c | - | - | - | - | - | no |
-| PS120 | - | c | b | x | - | - | no |
-| PS121 | c | - | - | - | - | - | no |
-| PS122 | c | - | a, b | - | - | - | no |
-| PS123 | c | - | a, b, c | - | - | - | no |
-| PS124 | - | - | - | - | - | - | yes |
-| PS125 | c, d | c | - | x | x | - | no |
-| PS126 | b, d | - | - | - | x | - | no |
-| PS127 | a, d | - | - | x | - | - | no |
-| PS128 | a, d | - | - | - | - | - | no |
-| PS129 | c, d | - | - | - | - | - | no |
-| PS130 | c, d | c | - | - | - | - | no |
-| PS201 | a | - | b | - | - | s | no |
-| PS202 | - | - | - | - | - | - | yes |
-| PS203 | (a) | - | - | - | - | - | yes |
-| PS204 | a, c | - | - | - | - | s | no |
-| PS205 | - | - | a, b | - | x | s | no |
-| PS206 | - | - | b | - | x | x | no |
-| PS207 | a, c | - | b | - | x | s | no |
-| PS208 | - | - | - | - | x | - | no |
-| PS209 | d | - | AX1 | - | - | - | no |
-| PS211 | a | - | - | - | - | s | no |
-| PS212 | a | - | - | - | x | s | no |
-| PS213 | - | - | AX1 | x | - | - | no |
-| PS214 | - | - | - | - | - | - | yes |
-| PS215 | b | - | - | - | x | x | no |
-| PS216 | d | - | - | - | - | x | no |
-| PS217 | a | - | a, b, c, AX1 | - | - | s | no |
-| PS218 | b | c | x | x | - | - | no |
-| PS219 | a | - | - | x | - | - | no |
-| PS220 | - | c | c | x | - | - | no |
-| PS221 | - | - | - | - | - | - | yes |
-| PS222 | - | - | b | x | - | x | no |
-| PS223 | - | - | - | - | x | - | no |
-| PS224 | - | - | - | - | x | - | no |
-| PS225 | - | c | - | x | - | - | no |
-| PS226 | - | c | - | - | x | - | no |
-| PS227 | - | c | x | x | - | - | no |
-| PS228 | (c) | - | - | - | - | - | yes |
-| PS301 | c | - | a | - | - | - | no |
-| PS302 | - | - | a, b | - | - | - | no |
-| PS303 | c | - | - | - | - | - | no |
-| PS304 | - | - | c | - | - | - | no |
-| PS305 | - | - | - | - | - | - | yes |
-| PS306 | a, c | c | - | x | - | s | no |
-| PS307 | b | - | a, b, c | - | - | x | no |
-| PS308 | a, d | c | - | - | x | - | no |
-| PS309 | b, d | - | - | - | x | - | no |
-| PS310 | d | c | - | x | x | - | no |
-| PS311 | c, d | - | - | - | - | - | no |
-| PS312 | a, c | - | c | - | - | s | no |
-| PS313 | a, d | c | - | - | - | - | no |
-| PS314 | a | c | c | - | - | s | no |
-| PS315 | (a) | - | - | - | - | - | yes |
-| PS316 | a, d | - | - | - | - | - | no |
-| PS317 | (a) | - | - | - | - | - | yes |
-| PS318 | a | - | - | - | - | - | no |
-| PS319 | (a) | - | - | - | - | - | yes |
-| PS320 | a | - | - | x | - | - | no |
-| PS321 | a | - | - | - | - | - | no |
-| PS322 | - | - | c | - | - | - | no |
-| PS323 | a, c | - | - | - | - | - | no |
-| PS324 | (a) | - | - | - | - | - | yes |
-| PS325 | - | (c) | - | - | - | - | yes |
-| PS326 | b, c | - | - | x | - | - | no |
-| PS327 | - | - | - | - | - | - | yes |
-| PS328 | a | - | b | x | - | - | no |
-| PS401 | a, c, d | c | - | - | - | - | no |
-| PS402 | a, d | - | - | - | - | - | no |
-| PS403 | c, d | - | - | - | - | - | no |
-| PS404 | a | - | b | - | - | - | no |
-| PS405 | b | - | - | - | - | s | no |
-| PS406 | (b) | - | - | - | - | - | yes |
-| PS407 | - | - | a, b | - | - | x | no |
-| PS408 | (a) | - | - | - | - | - | yes |
-| PS409 | d | c | - | x | - | - | no |
-| PS410 | - | c | b | x | - | - | no |
-| PS411 | - | c | - | x | - | - | no |
-| PS412 | - | c | - | x | x | - | no |
-| PS413 | a | - | - | - | - | - | no |
-| PS414 | - | - | - | - | - | - | yes |
-| PS415 | a | - | - | - | - | - | no |
-| PS416 | (a) | - | - | - | - | - | yes |
-| PS417 | - | c | - | x | - | - | no |
-| PS418 | d | - | c | - | - | - | no |
-| PS419 | - | (c) | - | - | - | - | yes |
-| PS420 | a | - | - | - | - | - | no |
-| PS421 | - | - | - | - | - | - | yes |
-| PS422 | c | c | - | - | - | - | no |
-| PS423 | - | c | - | - | - | - | no |
-| PS424 | a, c | c | b | - | - | x | no |
-| PS425 | - | - | c | x | - | - | no |
-| PS426 | a | - | - | - | - | - | no |
-| PS427 | - | c | - | - | - | - | no |
-| PS428 | - | (c) | - | - | - | - | yes |
-| PS501 | a, b, c, d | - | - | - | - | - | no |
-| PS503 | (a) | - | - | - | - | - | yes |
+| Id | Q1 payoff | Q2 reach | Q3 nouns | Declare-a-flow | Full fidelity | Four relations | Q4 breakage | Q5 first proof | Q6 time | Intent-silent |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PS101 | c, d | c | - | - | x | - | - | - | - | no |
+| PS102 | b, c | - | a, b, c | - | x | - | - | - | - | no |
+| PS103 | c, d | c | - | - | - | - | - | - | - | no |
+| PS104 | b, d | c | - | - | - | - | - | - | - | no |
+| PS105 | a | - | c | - | - | - | c | - | - | no |
+| PS106 | b, c | - | a, b, c | - | - | x | - | (a) | - | no |
+| PS107 | c | - | a, b | - | - | - | - | - | - | no |
+| PS108 | - | - | - | - | x | - | - | - | - | no |
+| PS109 | a | - | a, b, c | - | - | x | (c) | - | - | no |
+| PS110 | a, b | - | b | - | - | x | - | - | - | no |
+| PS111 | - | - | - | - | - | x | - | - | - | no |
+| PS112 | - | c | a, b, c | x | - | - | - | (a) | - | no |
+| PS113 | a, c, d | - | - | x | - | - | c | a | - | no |
+| PS114 | - | - | c, AX1 | - | - | - | - | - | - | no |
+| PS115 | - | - | c, AX1 | - | - | - | - | - | - | no |
+| PS116 | a | - | c | - | - | - | (c) | - | - | no |
+| PS117 | a, c | - | AX1 | - | - | s | - | - | - | no |
+| PS118 | a, c | - | - | - | - | - | - | - | - | no |
+| PS120 | - | c | b | x | - | - | - | - | - | no |
+| PS121 | c | - | - | - | - | - | - | - | - | no |
+| PS122 | c | - | a, b | - | - | - | - | - | - | no |
+| PS123 | c | - | a, b, c | - | - | - | - | - | - | no |
+| PS124 | - | - | - | - | - | - | - | - | - | yes |
+| PS125 | c, d | c | - | x | x | - | - | - | - | no |
+| PS126 | b, d | - | - | - | x | - | - | - | - | no |
+| PS127 | a, d | - | - | x | - | - | - | a | - | no |
+| PS128 | a, d | - | - | - | - | - | - | - | - | no |
+| PS129 | c, d | - | - | - | - | - | - | - | - | no |
+| PS130 | c, d | c | - | - | - | - | - | - | - | no |
+| PS201 | a | - | b | - | - | s | - | - | - | no |
+| PS202 | - | - | - | - | - | - | - | - | - | yes |
+| PS203 | (a) | - | - | - | - | - | - | - | - | yes |
+| PS204 | a, c | - | - | - | - | s | - | - | - | no |
+| PS205 | - | - | a, b | - | x | s | - | - | - | no |
+| PS206 | - | - | b | - | x | x | - | - | - | no |
+| PS207 | a, c | - | b | - | x | s | - | - | - | no |
+| PS208 | - | - | - | - | x | - | - | - | - | no |
+| PS209 | d | - | AX1 | - | - | - | - | - | - | no |
+| PS211 | a | - | - | - | - | s | - | - | - | no |
+| PS212 | a | - | - | - | x | s | - | - | - | no |
+| PS213 | - | - | AX1 | x | - | - | - | - | - | no |
+| PS214 | - | - | - | - | - | - | - | - | - | yes |
+| PS215 | b | - | - | - | x | x | - | - | - | no |
+| PS216 | d | - | - | - | - | x | - | - | - | no |
+| PS217 | a | - | a, b, c, AX1 | - | - | s | c | - | - | no |
+| PS218 | b | c | x | x | - | - | c | a | - | no |
+| PS219 | a | - | - | x | - | - | - | a | - | no |
+| PS220 | - | c | c | x | - | - | - | (a) | - | no |
+| PS221 | - | - | - | - | - | - | c | - | - | no |
+| PS222 | - | - | b | x | - | x | - | - | - | no |
+| PS223 | - | - | - | - | x | - | - | (a) | - | no |
+| PS224 | - | - | - | - | x | - | - | - | - | no |
+| PS225 | - | c | - | x | - | - | - | - | - | no |
+| PS226 | - | c | - | - | x | - | - | - | - | no |
+| PS227 | - | c | x | x | - | - | - | - | - | no |
+| PS228 | (c) | - | - | - | - | - | - | - | - | yes |
+| PS301 | c | - | a | - | - | - | - | - | - | no |
+| PS302 | - | - | a, b | - | - | - | - | - | - | no |
+| PS303 | c | - | - | - | - | - | - | - | - | no |
+| PS304 | - | - | c | - | - | - | - | - | - | no |
+| PS305 | - | - | - | - | - | - | - | - | - | yes |
+| PS306 | a, c | c | - | x | - | s | - | - | - | no |
+| PS307 | b | - | a, b, c | - | - | x | - | - | - | no |
+| PS308 | a, d | c | - | - | x | - | - | - | - | no |
+| PS309 | b, d | - | - | - | x | - | - | - | - | no |
+| PS310 | d | c | - | x | x | - | - | - | - | no |
+| PS311 | c, d | - | - | - | - | - | - | - | - | no |
+| PS312 | a, c | - | c | - | - | s | - | - | - | no |
+| PS313 | a, d | c | - | - | - | - | - | - | - | no |
+| PS314 | a | c | c | - | - | s | - | - | - | no |
+| PS315 | (a) | - | - | - | - | - | - | - | - | yes |
+| PS316 | a, d | - | - | - | - | - | - | - | - | no |
+| PS317 | (a) | - | - | - | - | - | - | - | - | yes |
+| PS318 | a | - | - | - | - | - | - | - | - | no |
+| PS319 | (a) | - | - | - | - | - | - | - | - | yes |
+| PS320 | a | - | - | x | - | - | - | - | - | no |
+| PS321 | a | - | - | - | - | - | - | - | - | no |
+| PS322 | - | - | c | - | - | - | - | - | - | no |
+| PS323 | a, c | - | - | - | - | - | - | - | - | no |
+| PS324 | (a) | - | - | - | - | - | c | - | - | no |
+| PS325 | - | (c) | - | - | - | - | - | - | b | no |
+| PS326 | b, c | - | - | x | - | - | - | - | - | no |
+| PS327 | - | - | - | - | - | - | - | - | - | yes |
+| PS328 | a | - | b | x | - | - | - | a | - | no |
+| PS401 | a, c, d | c | - | - | - | - | - | - | - | no |
+| PS402 | a, d | - | - | - | - | - | - | - | - | no |
+| PS403 | c, d | - | - | - | - | - | - | - | - | no |
+| PS404 | a | - | b | - | - | - | - | - | - | no |
+| PS405 | b | - | - | - | - | s | - | - | - | no |
+| PS406 | (b) | - | - | - | - | - | - | - | - | yes |
+| PS407 | - | - | a, b | - | - | x | - | - | - | no |
+| PS408 | (a) | - | - | - | - | - | (c) | - | - | yes |
+| PS409 | d | c | - | x | - | - | - | - | - | no |
+| PS410 | - | c | b | x | - | - | - | a | - | no |
+| PS411 | - | c | - | x | - | - | - | - | - | no |
+| PS412 | - | c | - | x | x | - | - | - | - | no |
+| PS413 | a | - | - | - | - | - | - | - | - | no |
+| PS414 | - | - | - | - | - | - | - | - | - | yes |
+| PS415 | a | - | - | - | - | - | - | - | - | no |
+| PS416 | (a) | - | - | - | - | - | (c) | - | - | yes |
+| PS417 | - | c | - | x | - | - | - | - | - | no |
+| PS418 | d | - | c | - | - | - | - | - | - | no |
+| PS419 | - | (c) | - | - | - | - | - | - | b | no |
+| PS420 | a | - | - | - | - | - | - | - | - | no |
+| PS421 | - | - | - | - | - | - | - | - | b | no |
+| PS422 | c | c | - | - | - | - | - | - | - | no |
+| PS423 | - | c | - | - | - | - | - | - | (b) | no |
+| PS424 | a, c | c | b | - | - | x | - | - | - | no |
+| PS425 | - | - | c | x | - | - | - | - | - | no |
+| PS426 | a | - | - | - | - | - | - | a | - | no |
+| PS427 | - | c | - | - | - | - | - | - | - | no |
+| PS428 | - | (c) | - | - | - | - | - | - | - | yes |
+| PS501 | a, b, c, d | - | - | - | - | - | - | a | - | no |
+| PS503 | (a) | - | - | - | - | - | - | - | - | yes |
 
-### 8.2 Round-2 candidates (intent the design phase will need from the director)
+### 8.2 Intent-silent after Round 2: entries the design phase will need the director for
 
-Every INTENT-SILENT entry: no Round-1 pick and no recorded director statement bears on the choice between its alternatives. Each is listed with its question; the entry holds the separating test.
+Every entry whose Intent bearing field still reads INTENT-SILENT after Round 2: no pick of either round and no recorded director statement bears on the choice between its alternatives. Each is listed with its question; the entry holds the separating test. Round 2 moved five entries out of this list: PS221 and PS324 (Q4), and PS325, PS419 and PS421 (Q6). PS416 stays: Round 2 Q4 is noted in it and not counted, as in PS408 (the director's no-route answer named a flow, and whether it extends to other declared things is carried undecided, envelope S2.Q4).
 
 - **PS124.** What standing does prior art have for the connection layers?
 - **PS202.** Must connection geometry be orthogonal, and if so where is orthogonality produced or checked?
 - **PS203.** Which cells does a multi-cell entity occupy, for placement and for connections?
 - **PS214.** Is `closed` a drawing flag or a fact about topology?
-- **PS221.** What happens to a declaration whose inputs can no longer satisfy it?
 - **PS228.** What does "projection" name?
 - **PS305.** Is an id-grammar change delivered in place on `/api/v1`, or behind a new API version?
 - **PS315.** What triggers the collapse: a link-delete op, the resulting state, a genuine loss, or nothing?
 - **PS317.** What validation does a derived write receive?
 - **PS319.** Are undo and redo validated, and what does "restored" mean for an undo?
-- **PS324.** What does a type change do to an anchor's existing links and permission?
-- **PS325.** Does a recomposition take effect from an instant, or does the behaviour fold reread the whole window?
 - **PS327.** When a stored shape changes, what happens to the log's stored inverses, and when is the migration code deleted?
 - **PS406.** Are containers (zone, group) part of the anchor model, and can connections reach them?
-- **PS408.** What keeps a container's membership true when a write the author did not request removes a member?
+- **PS408.** What keeps a container's membership true when a write the author did not request removes a member? (Round 2 Q4 is noted in the entry, as not bearing on the choice.)
 - **PS414.** Do drawing and behaviour predicates read one derived role set?
-- **PS416.** What governs removing a behaviour whose host no longer qualifies for it?
-- **PS419.** What instant does a behaviour's time count from?
-- **PS421.** Does a change to the board change what the simulation has already shown?
+- **PS416.** What governs removing a behaviour whose host no longer qualifies for it? (Round 2 Q4 is noted in the entry, as not bearing on the choice; what repair or a visible retraction would mean for a stranded behaviour is not stated, envelope flag F9.)
 - **PS428.** What is the cursor-addressed story step, and what is it called?
 - **PS503.** How do the defects surfaced by the map and by verification relate to the programme: fixed independently, held as evidence for the design phase, or both?
 
-### 8.3 Further Round-2 items named inside entries that are not intent-silent
+### 8.3 Further director points: named inside entries that are not intent-silent, or flagged by the envelope
 
-These entries have intent that bears on them, and also name a point only the director can settle. They are listed so Round 2 can see them; listing them decides nothing.
+These entries have intent that bears on them, and also name a point only the director can settle. They were listed before Round 2 so that Round 2 could see them. Round 2 asked only the PS501 point (as Q5); the rest are carried to the design phase for the director. When Round 2 was folded in (2026-09-25), the three Round-1 tensions Round 2 did not ask (envelope flag F7) were already listed here and are marked, and the AX6 item at the end was added (envelope flag F6). After the neutrality audit (2026-09-25), the points that Round 2's answers leave open in the entries they bear on were added before the AX6 item (envelope flag F9), and the PS117, PS212 row was marked as not asked (envelope flag F7). Listing them decides nothing.
 
 - **PS108.** What the director's "a wire's spec is just its two anchors" covered: the generative spec only, or no configuring spec at all (seeds S15, "To clarify later").
-- **PS117, PS212.** Under FR3, whether a passing cable terminates where a new link is drawn to it (seeds S16: a Round-2 candidate).
-- **PS220.** Whether a persisted src:dst pair is a selection or a declaration (envelope, Round-1 tensions).
+- **PS117, PS212.** Under FR3, whether a passing cable terminates where a new link is drawn to it (seeds S16: a Round-2 candidate). Not asked in Round 2.
+- **PS220.** Whether a persisted src:dst pair is a selection or a declaration (envelope, Round-1 tensions). Not asked in Round 2 (envelope flag F7).
 - **PS224.** Whether the layered model reopens the FRAGMENT ruling (seeds S6b: "only the director can").
-- **PS227.** What "the control plane" means in DS1 (envelope, Round-1 tensions).
+- **PS227.** What "the control plane" means in DS1 (envelope, Round-1 tensions). Not asked in Round 2 (envelope flag F7).
 - **PS307.** Which multi-link server cases the permission table admits: a two-member aggregate to one switch, or two redundant uplinks (the entry names "a question for the director").
 - **PS126.** Whether overlays and tunnels are in scope: DS6 bears in general, and no pick or statement names them.
-- **PS501.** Which Q1 payoff the first increment must demonstrate end to end (the envelope's Round-1 interpretation names it a Round-2 disambiguation candidate).
+- **PS501.** Which Q1 payoff the first increment must demonstrate end to end (the envelope's Round-1 interpretation names it a Round-2 disambiguation candidate). Asked in Round 2 as Q5: the director picked "declare a flow", recorded in PS501's Intent bearing field. The order in which the programme's questions are taken stays open.
 - **PS111.** What "links meeting" counts at a junction once links can be parallel or aggregated (seeds S15 consequence C): DS7 and DS8 bear, and neither says what is counted (moved here from section 8.2 at audit).
-- **PS123 (and PS106).** Whether "fewer concepts" (Q1 c, AX5) is a payoff the programme has to demonstrate while the Q3 noun test does not require a noun to delete special-case code (envelope S1, the third of the Round-1 tensions: "'fewer concepts' as a payoff alongside a noun test that does not require deletion").
+- **PS123 (and PS106).** Whether "fewer concepts" (Q1 c, AX5) is a payoff the programme has to demonstrate while the Q3 noun test does not require a noun to delete special-case code (envelope S1, the third of the Round-1 tensions: "'fewer concepts' as a payoff alongside a noun test that does not require deletion"). Not asked in Round 2 (envelope flag F7).
 - **PS127.** Whether "reconciliation + derivation can occur client-side" (seeds S19) covers writes as well as derivations, and whether the server and the CLI count as the edge.
 - **PS128.** Whether a change to a document's declared pack set is a write (locked, versioned, undoable) (seeds S20, open sub-question 1).
 - **PS129.** Whether a distribution unit also contributes declaration kinds, and whether the core is itself a declared unit (seeds S21, open items 1 and 3).
+- **PS221.** The deleted src or dst case; whether undoing the delete restores the prior status exactly; what "visibly retracted" means; whether the flow answer extends to a link that cannot re-path (envelope S2.Q4, envelope flag F9).
+- **PS324.** What "repair automatically" means for links a retype no longer permits, and how the Q4 pick ("refuse the change" offered, not picked) stands beside RULED 2026-09-22, DECISIONS.md:251-253, "A violation is REFUSED, in the validator" (envelope flag F9).
+- **PS419, PS325.** How "as if always" reads for the instants that exist today (spawn.since, reveal.origin), and by which mechanism (envelope S2.Q6, envelope flag F9).
+- **PS106, PS426.** How much of the stack the first slice needs; what "the same in browser, CLI and export" is measured by (envelope S2.Q5, envelope flag F9).
+- **PS109, PS113, PS116.** Whether "repair automatically" applies at the link layer, a link re-pathing through pipes when a pipe under it is deleted (the director asked "You mean like - delete a pipe and watch a link between 2 nodes re-path?", and no reply was given as text), and at the flow layer (envelope S2.Q4, envelope flag F9).
+- **PS105.** Whether repair or retraction ever changes stored state or only derived state (envelope S2.Q4, envelope flag F9).
+- **AX6 (envelope flag F6).** How much one-way-door risk the programme may spend. AX6 was touched by no pick in either round (envelope S4, drift check), and the envelope recommends asking the director before the design phase places the irreversible steps. The register carries the one-way doors in PS303 (the `waypoint-` prefix), PS305 (in-place or versioned API delivery) and PS327 (stored inverses and migration code), the last two intent-silent (section 8.2); AX6 is also cited in the Intent bearing fields of PS107, PS109, PS116, PS117, PS501 and PS503.
 
 
 ## 9. Anti-goals carried
@@ -4282,6 +4314,7 @@ These entries have intent that bears on them, and also name a point only the dir
 | --- | --- | --- | --- | --- | --- |
 | AG-1 | Policy: permit or deny over packets and flows. Out of scope for this programme. | Survey envelope S5 (2026-09-25): "Policy: permit/deny over flows (Q2 stopped at behaviour and events)". DECISIONS.md:281-284 (2026-09-22): "A third was raised and deliberately left out of scope: policy, meaning permit or deny over packets and flows. It is named here only so the pack model is not designed in a way that excludes it." [M-read at assembly] | The director's, recorded at DECISIONS.md:283 (2026-09-22), verbatim: "policy may be DERIVABLE the way routing is -- declare flow pairs on a control-plane graph and let the permissions follow deterministically -- which would keep it stateless rather than making it the first pack to carry per-instance configuration." The record's standing for it: "Not designed, not ruled, and not to be assumed by anything built before it." (DECISIONS.md:284) | Envelope S5, composes-with target: "The director's preserved hypothesis in `DECISIONS.md` 2026-09-22; revisit once declared flow pairs and derived paths exist." | PS427 (what the design phase carries about policy while AG-1 holds); PS220 and PS227 (the src:dst pair and "control plane", both close to the hypothesis's wording); PS112 and PS218 (flows and paths, the hypothesis's inputs). |
 | AG-2 | An admin portal for managing packs at runtime. Out of scope for this programme. | Survey envelope S5 (2026-09-25), director, verbatim: "For now, packs/mods will be fixed server-side, and distributed to clients. A later 'admin portal' for managing packs can be worked on - but out of scope". The same text is seeds S20's DIRECTOR SCOPE. The envelope row adds, in the proposer's wording: "In scope: a document declares its required packs, from a fixed server-side set delivered to clients and kept in sync per document." | none recorded | Envelope S5, composes-with target: "Runtime pack management and publishing; revisit when a pack must change without a server release." | PS128 (whether and how a document declares its required packs); PS129 (the distribution unit and its name). Seeds S20 (Claude's reading) records that extensible physics (Q1 d) stays an architectural property, so AG-2 leaves PS103 open. |
+| AG-3 | A playable tower-defence game in read mode, and the extended history and state it might need. Out of scope for this programme. | Survey envelope S5 (2026-09-25), director, verbatim (Round 2 Q6): "making a game in "read mode" is currently out of scope - we might need to extend history and state for a real tower defense game in future". The full Q6 rationale, verbatim: "I'm thinking 2 for now - making a game in "read mode" is currently out of scope - we might need to extend history and state for a real tower defense game in future". The envelope row adds, in the proposer's wording: "Behaviour keeps recompute-from-the-current-board semantics until then." | none recorded | Envelope S5, composes-with target: "Revisit when a real game is in scope; the register's time entries (PS419, PS421, PS325) carry the open questions." | PS419, PS421 and PS325 (the time entries the envelope names; each carries Round 2 Q6 in its Intent bearing field and keeps every alternative); PS423 (AG-3 noted; it does not put alternative 4, events as stored records, out of scope). |
 
 Notes carried with AG-1, none of them a decision:
 
@@ -4289,3 +4322,8 @@ Notes carried with AG-1, none of them a decision:
 - The word `policy` already names an unrelated module, engine/policy.mjs (groupAfterRemoval, collectionCap), and sign-in and soft-delete policies (map 1.4) [M-read]. PS427 carries whether that sense is renamed or kept.
 - The hypothesis frames statelessness as avoiding "the first pack to carry per-instance configuration", while `spawn` already stores configuration per instance (map F29, F37) [M-read]; PS417 carries where spawn belongs.
 - Whether any flow or path shape the design phase weighs would make deriving policy from flow pairs impossible later is PS427's separating question.
+
+Notes carried with AG-3, none of them a decision:
+
+- Round 1 Q2 c keeps the pilot's physics (spawners, movers, combat, reveal) inside the reach, while AG-3 defers a playable game and the history and state it might need; the two are stated side by side. The envelope reads Q6 as "a scoping choice rather than a statement that retroactive recomputation is right for a game" (envelope S2.Q6).
+- "read mode" is the director's term, and the register does not define it. Searched at the fold, case-insensitive, for `read mode`, `read-mode` and `readmode`: every .md file in the repository outside node_modules/, and the .js and .mjs files under app/, model/, kernel/, engine/, server/ and cli/. Apart from this register's own Round-2 text, the only hits were the envelope's quotations. What "read mode" names is NOT-CLAIMED.
