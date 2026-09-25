@@ -175,6 +175,16 @@ Merged into the register when the reality map lands. Every entry is UNDECIDED.
 - Separating question: is there a world the engine should run that has no adjacency between anchors, or adjacency with rules a pipe cannot express?
 - DIRECTOR TENTATIVE LEANING 2026-09-25: "Yep, perhaps pipes cost nothing as core" (hedged; recorded as tentative, the question stays open).
 
+## S22 What "drawn" means: a link as ends plus pinned vias (director, 2026-09-26)
+- Raised while answering a question about a detoured link's way back. The FR3-v3 prototype stored a link's WHOLE drawn route as intent, and on a broken pipe re-routed the whole link, which could skip the link's own bends.
+- DIRECTOR, verbatim: "I'm thinking 1 - but should we define "drawn there?" - links are either [src,dst] or [src,dst,[via..]] definitions. via would "pin" that anchor as a required hop and fail if it can't dynamic route across pipes to get there. [src,dst] can take any shortest path via pipes - so returning would be a matter of pipe cost and not "drawn" unless [via] was pinned? I'm just making sure I'm not confused"
+- The "1" refers to "Returns, connects at P" in the question that prompted it (hedged "I'm thinking"; NOT a ruling). That question is set aside, because this definition changes what it asks.
+- RULED 2026-09-26 as a result (see DECISIONS.md, "A link's intent is its ends plus its pinned vias").
+- Proposer observations given to the director before the ruling (INFERRED, not measured):
+  - For a hand-drawn link every bend is a via and each leg lays a direct pipe, which is the cheapest route between its two pins, so hand-drawn links behave as under the 09-25 "return to drawn route" ruling.
+  - A detour becomes local to the broken leg and still passes every pin.
+  - A link declared by its ends alone is new. It has the same shape as a declared flow over links, and resembles an explicit route with loose hops.
+
 ## Prior art (evidence, not starting designs)
 - prism (github.com/apnex/prism): the geometry/line-routing system; paths/routes as derived entities.
 - prismv2: a separate kernel/core engine concept; derived relations over observed primitives (EDB/IDB); firewall/route-map/conntrack/k8s lineage. engine/ here is its banked substrate.

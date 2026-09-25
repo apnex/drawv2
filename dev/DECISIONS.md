@@ -481,3 +481,17 @@ The option as worded by the proposer: the landing cuts the link on its detour, a
 Not ruled here:
 - whether a landing on the unused drawn route of a detoured link cuts it (the prototype does);
 - whether deleting such a landing restores the old drawn route, under "draw-then-delete leaves no trace" above.
+
+**A link's intent is its ends plus its pinned vias -- ruled 2026-09-26, refining "a link returns to its drawn route" above.**\
+Raised by the director (`dev/design/unification/DISCUSSION-SEEDS.md`, S22): "links are either [src,dst] or [src,dst,[via..]] definitions. via would "pin" that anchor as a required hop and fail if it can't dynamic route across pipes to get there. [src,dst] can take any shortest path via pipes".\
+Asked "Should a link's intent be its two ends plus its pinned vias, with everything between the pins routed by pipe cost?", the director chose "Yes, ends + pinned vias" over "No, the whole drawn line".\
+A link stores its two ends and an ordered list of pinned vias. Between consecutive pins, its route is the cheapest path over the pipes. If a pin cannot be reached, the link is down and heals, as ruled above.\
+What this does to the rulings above:
+- "Returns to its drawn route" is no longer stored route memory. For a hand-drawn link, every bend dropped while drawing is a pin, and each leg lays a direct pipe, which is the cheapest way between its two pins; the link returns because of pipe cost (proposer reading, INFERRED).
+- A detour re-routes only the broken leg and still passes every pin. The FR3-v3 prototype instead re-routed the whole link and could skip its own bends.
+- A link may be declared by its two ends alone and routed over the pipes. This is the same shape as a flow declared over links.
+
+Carried to design, not ruled:
+- how "cut it where it is" (above) reads here. A proposer reading: the cut point becomes an end of both pieces, and each piece keeps the pins on its side;
+- what a link's route does when it passes a point where another link ends without being pinned or ending there (connect or cross). The director leaned "connects", while this definition was still open;
+- what pipe cost is (hops, length, or a per-pipe weight), and how ties break.
