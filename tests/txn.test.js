@@ -866,6 +866,32 @@ test('B239: a collapse whose merge would duplicate a link bending through the sa
 	assert.ok(m.get('link', 'link-aa0002'), 'the half that would have been absorbed is still there');
 });
 
+test('B239: the guard judges each merge against the document the EARLIER merge left', () => {
+	// Two touched waypoints whose merges would EACH produce an n1->n2 link bending at the shared w13.
+	// Either one alone is legal; the second is illegal only because the first has already happened.
+	// A guard that reads the document as the transaction started -- or as it stood before the loop --
+	// takes both, and the store refuses the result (H16 review: mutants M3 and M17 survived without this).
+	const { m, log } = fresh();
+	const seeded = commit(m, log, { ops: [
+		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)), put('node', node('node-aa0003', 300, { y: 240 })),
+		put('waypoint', wpAt('waypoint-aa0011', 180)), put('waypoint', wpAt('waypoint-aa0012', 180, 240)),
+		put('waypoint', wpAt('waypoint-aa0013', 420)),
+		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011'),
+		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002', { via: ['waypoint-aa0013'] }),
+		linkPut('link-aa0003', 'node-aa0001', 'waypoint-aa0012'),
+		linkPut('link-aa0004', 'waypoint-aa0012', 'node-aa0002', { via: ['waypoint-aa0013'] }),
+		linkPut('link-aa0005', 'node-aa0003', 'waypoint-aa0011'),
+		linkPut('link-aa0006', 'node-aa0003', 'waypoint-aa0012'),
+	] }, 'server', 't');
+	assert.ok(seeded.ok !== false, 'precondition: the seed commits');
+	assert.equal(m.all('link').length, 6, 'precondition: all six links exist');
+	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
+
+	commit(m, log, { ops: [delOp('link', 'link-aa0005'), delOp('link', 'link-aa0006')] }, 'server', 't');
+	assert.equal(loadsAtBoot(m), null, 'the second merge would duplicate the first through w13 -- the store would skip the diagram');
+	assert.equal(m.all('link').length, 3, 'exactly ONE of the two merges is taken; the other waypoint stays a two-link terminus');
+});
+
 test('B239: a merge that passes the referential rules is still taken', () => {
 	// the foil: the guard must refuse only what the rules refuse, or it would quietly switch the
 	// collapse off and every B215 test above would still pass on a document that never rejoins

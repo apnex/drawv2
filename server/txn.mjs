@@ -261,13 +261,19 @@ export function plan(model, ops) {
 		boot: the whole diagram lost, from a delete the author made legally.
 
 		The SAME check a requested set receives, rather than a second copy of the rules, run against
-		the document with the absorbed half already gone. Declining is safe: two links left meeting at
-		the waypoint is a two-link terminus, which is a legal state (B217) and exactly what the author
-		would have had without the collapse.
+		the projection AS THE EARLIER MERGES LEFT IT (B240) -- a merge can be legal on the document
+		the transaction started from and illegal once a neighbouring merge has already produced the
+		link it would duplicate. Declining is safe: two links left meeting at the waypoint is a
+		two-link terminus, which is a legal state (B217) and exactly what the author would have had
+		without the collapse.
+
+		Checked with the absorbed half still present, because it cannot change the verdict: it always
+		ends at this waypoint and the merged link never does, so it never shares the merged link's
+		endpoint pair. The first version removed it from a whole-document copy per candidate, which
+		made a large delete about four times slower and produced byte-identical plans over 39,858
+		randomized transactions (H16 review).
 		*/
-		const trial = projection(proj);
-		applyOps(trial, [{ op: 'del', kind: 'link', id: outbound.id }]);
-		if (validateMutation(trial, { action: 'set', kind: 'link', entity: { ...patch, id: inbound.id } })) continue;
+		if (validateMutation(proj, { action: 'set', kind: 'link', entity: { ...patch, id: inbound.id } })) continue;
 		/*
 		`inverseOfSet` rather than a hand-rolled patch, because it already solves the case that bit
 		here: a collapse INTRODUCES `via` on a link that had none, and restoring it with
