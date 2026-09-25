@@ -690,3 +690,203 @@ FR3 survives only narrowly: re-judge 1 calls FR3 and FR1 effectively tied, and r
 Cut and join made FR3's role partition identical to FR1's, dropped FR3's round trips from 5/5 to 1/5, and made writes about 2x FR1's per connect (mean 5.40, max 54).
 FR1 is limited by its landing refusals (32.4%) and its false retraction, both untried possible local fixes. FR2 fails R3 in 584 of 693 fuzz checks, mostly at junctions.
 The next director rulings that could decide adoption: whether a link that cannot re-path goes down or is removed, R2 on revisiting links, the mirror-order T, and the pipe verb (open item 8). Also unmeasured: scale at equal workloads, and migration on v2.
+---
+
+# Addendum 2: FR3-v3, the engineering prototype (2026-09-26)
+
+FR3 was adopted on 2026-09-25 (`dev/DECISIONS.md`). This addendum records one prototype of it, FR3-v3, built against the rulings R1-R8 to price what the rulings cost in engineering. It is not the product design, and it adds no recommendation.
+
+**R numbering used here:**
+- R1: cut on landing.
+- R2: join on removal.
+- R3: re-path.
+- R4: pipes are visible.
+- R5: FR3 adopted.
+- R6: a link returns to its drawn route.
+- R7: a link with no route is down and heals.
+- R8: draw-then-delete leaves no trace.
+
+The four edge-case rulings committed in `e9d7bc3` are called "the later rulings".
+
+**The brief's premises.** These were set by the orchestrator. Nothing ran them.
+- A link stores its drawn route as intent.
+- Its current route and its drawn, detour or down state are derived and never stored.
+- Derivation is memoised once per document version.
+- The rejoin pairing rule was left to the builder.
+
+**Four roles, each with its own instruments:**
+- A spec author wrote suite 1.3.0.
+- A builder wrote the model, `model.mjs`.
+- A neutral measurer read the builder's files only after its own runs.
+- An adversarial reviewer used its own fuzz, probes and an independent BFS derivation.
+
+Everything ran in the session scratch directory (`bakeoff/` under the scratchpad) and is not preserved. Directory names below are relative to it.
+
+**The brief predates three of the later rulings.** The brief was written before the later rulings were asked, so it called the mirror-order T "not ruled". The builder, measurer and reviewer each found the ruling at `dev/DECISIONS.md:459-461` and reported the mismatch.
+- The builder implemented "connect", which the ruling asks for.
+- Suite 1.3.0 still asserts the old refusal of a second link to a server, which `dev/DECISIONS.md:463-466` has since amended.
+
+**What the reporter checked (MEASURED, 2026-09-26):**
+- I re-ran suite 1.3.0 on `model.mjs` in `FR3-v3/`, into `reporter-v3/`. Result: 38 pass, 0 fail, 10 observed, 0 not-expressible. Model sha256 prefix `d1283fee283b0265`, matching all three roles' provenance.
+- I read these outputs directly and the figures below match them:
+  - measurer: `scale-summary.quiet.stdout`, `writeamp-table.stdout`, `fixed-points.stdout`;
+  - reviewer: `flow-blowup.stdout`, `probes.stdout` (D1, D2, E1, E2).
+- Not re-run by me: every fuzz, the probes, the mutants, and the scale runs. Their figures are as their authors MEASURED them.
+- Product repo: status clean at `e9d7bc3` before this addendum.
+
+---
+
+## B.1 Suite 1.3.0
+
+Counts: 48 scenarios, 38 ASSERT and 10 OBSERVE. The suite sha prefix is `e6bcb676056f9416`. The harness is unchanged since 1.1.0.
+
+**Carried over (MEASURED by the spec author).** All 39 scenarios from 1.2.0 keep their status for each v2 model. Two basis texts gained CORRECTED banners, because they said "NOT RULED" for what R7 now rules.
+
+**New ASSERT scenarios:**
+
+| Scenario | Ruling | Needs a new verb |
+| --- | --- | --- |
+| `link-returns-to-drawn-route` | R6 | `addPipe` |
+| `link-detour-shown` | R6 | `addPipe`, `routeOf` |
+| `link-down-stays-and-heals` | R7 | none |
+| `link-down-shown` | R7 | `addPipe`, `routeOf` |
+| `derived-detour-and-down-not-stored` | R6 and R7: a pipe delete changes only the pipe in stored form | `storedLayout` |
+| `landing-removed-rejoins-two`, `landing-removed-rejoins-one` | R8 | none |
+| `landing-removed-stored-links-two`, `landing-removed-stored-links-one` | R8, stored form | `storedLayout` |
+
+- **Rejoin pairing.** Only a landing followed at once by its removal is asserted. How a model pairs the pieces is never asserted.
+- **Power (MEASURED by the spec author).**
+  - Eight shimmed variants of FR3-v2, six of them deliberate defects, gave 72 predicted statuses and 0 mismatches.
+  - Each new ASSERT passes on at least one variant and fails on at least one.
+  - Limit: the pass side of the two-link rejoin is shown only by a satisfiability aid, which is an undo in disguise.
+- **Baseline (MEASURED; pass / fail / observed / not-expressible):**
+  - FR1-v2: 30/2/10/6.
+  - FR2-v2: 30/1/10/7.
+  - FR3-v2: 31/1/10/6.
+  - The v2 models cannot express the six scenarios that need a new verb.
+- **Not run:** `selftest/` under 1.3.0.
+
+---
+
+## B.2 How FR3-v3 meets each ruling
+
+The builder's own fuzz is the same family as the model, so each row is checked against the measurer and the reviewer.
+
+| Ruling | Builder | Measurer | Reviewer | Status |
+| --- | --- | --- | --- | --- |
+| R1 | Cut rule reads the DRAWN route. 0 violations in 2236 checks on drawn routes | Fixed-point fuzz: 9,298 states with a link passing a point where another ends, **all on a derived detour**, none on a drawn route | Same finding: 5,721 (300x40) and 24,733 (100x120) states, all on detours. Two probes, below | **Met on drawn routes. Open on detours (B.6 item 1)** |
+| R2 | 0 unexplained failures in 1263. The rest are declared exceptions: revisit 138, a join at the far end 4, both multiplexed 1 | Ruled case, 11 violations in 605: 2 multiplex, 2 revisit, 7 "joined but the result detours away" | 565 of 664 joined. The other 99: 97 revisit, 2 both multiplexed | **Met except the declared exceptions, which are not ruled** |
+| R3 | 0 of 2602 pipe deletions lost an id or name | (not separately reported) | 6,924 pipe operations wrote nothing outside the pipes. Independent BFS matched `routeOf` in 426,817 of 426,817 checks | **Met** |
+| R4 | `addPipe`; `remove({segment})` deletes any pipe; `pipes()` lists them | n/a | Functional. `pipes()` is quadratic: 6.1 s at 1602 anchors and 1000 links | **Met, with a cost defect** |
+| R6 | Pipe operations wrote only the pipe list, 0 exceptions in 2559 | 0 violations | Met for pipe edits. Deleting an anchor rewrites the drawn route (D6) | **Met, except anchor deletion** |
+| R7 | Both scenarios pass | 0 violations | Met in the same 426,817 checks | **Met** |
+| R8 | 989 landings restored; 10 not, where R2 fires at the landing's far end | 10,718 of 10,792 restored. All 74 failures start with exactly two links already ending at the landing point | Pure landings restored: 771/771 cutting 1 link, 179/179 cutting 2, 51/51 cutting 3 or more. Composed cases fail (D2, D3, D5) | **Met for the ruled case. Composed cases open (B.6 items 2-4)** |
+| Later: mirror-order T connects | Implemented | Recorded in a class of its own | Honoured | **Met** |
+| Later: a server may have several links | Not implemented | n/a | Refused: "server srv does not permit junction" (D7) | **Not met** |
+| Later: passing links cross | Honoured on drawn routes | n/a | READ at `model.mjs:41-46` | **Met** |
+| Later: device pass-through by capability pack | Only the suite's fixed table | n/a | n/a | **Not built** |
+
+**The two instruments disagree on one R2 class, as stated.** When a join happens but the joined link then detours away from the point, the point reads `none` rather than `bend`. The builder counts that as meeting R2 (106 cases) and the measurer counts it as a violation (7). Both readings are recorded here.
+
+**R1 probes (MEASURED by the reviewer, `probes.stdout`):**
+- **D4a.** The uplink visibly runs r1-u1-u2-u3-r2 on a detour. A new link lands on u2. The uplink is not cut and still passes u2.
+- **D4b.** Link X is on a detour A-h-B. Its unused drawn route A-P-Q-B passes P. A landing on P cuts X into A-P and P-A-h-B, although nothing visibly passed P.
+
+**The measured alternative.** The builder's variant `detour-avoids-ends.mjs` forbids a detour to pass a point where a link ends. On the builder's instrument:
+- R1 failures fall to 0 of 2,770.
+- R3 fails 635 of 742 (630 links go down).
+
+---
+
+## B.3 Cost
+
+**Writes per verb** (MEASURED; mean / p95 / max):
+- **Connect:**
+  - measurer, with the re-test's fuzz: FR3-v3 5.70 / 12 / 29, against FR3-v2 5.40 / 12 / 54 (reproduced) and FR1-v2 2.62 / 7 / 16;
+  - measurer, with relations, flows and pipe edits added: FR3-v3 5.76 / 12 / 28;
+  - reviewer, counting a modified record as 2: 6.55 / 15 / 30. That breaks down as cables 3.02, pipes 2.18 and splices 1.34.
+- **Remove a connection:**
+  - measurer: 5.69 / 10 / 22, against FR3-v2 3.47 / 6 / 10;
+  - reviewer: 4.42 / 10 / 19.
+- **Delete or add a pipe:** 1 record (measurer, and 1.00 / 1 / 1 on the reviewer's fuzz).
+- **The splice records.** They hold the cut lineage that R8 needs, at about one record per connect or removal (reviewer).
+
+**Speed** (MEASURED by the measurer; median of 7 runs; 460 anchors, 901 pipes, 150 links, 40 flows):
+
+| Workload | FR1-v2 | FR3-v2 | FR3-v3 |
+| --- | --- | --- | --- |
+| Equal workload: pipe removal plus refresh | 59.7 ms | 209.4 ms | 11.2 ms |
+| Re-judge 2's instrument: refresh only | 2.7 ms | 2223 ms | 1.2 ms |
+
+- FR3-v2's 2223 ms reproduces the ~2.1 s of A.7 risk 3.
+- The routing work moved into the write, and reads use the cache.
+
+**Speed at larger sizes, and memory** (MEASURED by the reviewer, one machine):
+- **Every edit costs in proportion to the whole document**, because each one clones, re-derives and freezes it (READ at `model.mjs:410-426`).
+  - setName: 2.3 ms at 44 KiB, 32.4 ms at 534 KiB.
+  - connect: 2.3 ms at 402 anchors, 19.5 ms at 1602 anchors and 1000 links.
+- **Trunk failure** (one pipe under 1000 links): the delete takes 2.77 s at 1602 anchors. It runs one route search per distinct pair of ends (INFERRED).
+- **Undo** keeps every version whole, plus a derivation of each:
+  - about 1.24 MiB per edit on a 190 KiB document;
+  - 1431 MiB after 1000 edits;
+  - there is no cap.
+- **Size:** 434 lines of code against v2's 300 (builder; code means non-comment, non-blank).
+
+**Determinism** (MEASURED):
+- A network built in 7 orders gives identical normalised connections, roles and flow paths in FR3-v3. FR1-v2 and FR3-v2 each give 2 or 3 different results (measurer).
+- Replay is identical in 400 of 400 seeds (reviewer).
+- A fresh load agrees with the live model in 24,000 of 24,000 checks (reviewer).
+- Undo is exact in 300 of 300 seeds for all three models (measurer).
+
+---
+
+## B.4 Defects for engineering, not for the director (MEASURED by the reviewer)
+
+| # | Defect | Mechanism |
+| --- | --- | --- |
+| D1 | A flow read can take exponential time. In a full mesh of K routers plus two links crossing at a bare point: 0.8 ms at K=5, 1,712 ms at K=8, 142,082 ms at K=9. Random use: 13.1 s for one read. Inherited from FR3-v2; FR1-v2 stays under 0.4 ms | When the cheapest path revisits an anchor, which crossing links cause, the search falls back to listing every simple path (READ at `model.mjs:104`, `:119-130`) |
+| D2 | Draw-then-delete brings back a pipe the author deleted, and can bring a DOWN link up | A link-laid pipe lives while ANY drawn route runs along it, including one broken at exactly that pipe |
+| D3 | Deleting a landing that was itself mirror-cut leaves a trace, and the outcome depends on deletion order. 351 of 835 in the fuzz; 46 of 835 when all the pieces are deleted in one step | The pieces are separate links with no one-step removal |
+| D5 | Aggregate member order is reversed after a rejoin ([c1,c2] becomes [c2,c1]) | Rejoin re-inserts in cut order, not reverse order |
+| D6 | Deleting an anchor rewrites the drawn route, which R6 treats as intent | `removeAnchor` writes `via` (READ at `:369`) |
+| D7 | The later server ruling is not implemented | The fixed permission table |
+| D8 | `resolve(ref)` returns only the first piece of a drawing that became several | Contract deviation from the suite's own contract document |
+| D9 | Input hardening: key separator collision on U+0000; `load()` accepts duplicates and a seq below a minted id | Low severity |
+
+**Hidden memory that remains** (MEASURED by the measurer and reviewer). States that look identical to the author diverge on the same edit through:
+- the splice lineage;
+- which pipes the author drew and which a link laid;
+- the mirror-cut pieces.
+
+Redrawing a healed stretch as a link still turns 4 listed links into 7. Redrawing it as a pipe restores 4.
+
+---
+
+## B.5 A.7's risks after FR3-v3
+
+| A.7 # | Risk | Now |
+| --- | --- | --- |
+| 1 | A landing on a point two links pass does not round-trip | Pure landings round-trip (B.2, R8). Composed cases remain |
+| 2 | Hidden route memory | The drawn route is now ruled intent. The hyst probe now gives identical results, and RJ5's landing-and-removal variant matches the original. New memory: splices and pipe authorship (B.4) |
+| 3 | Write cascades and scale | Measured at equal workloads (B.3). The refresh is fast; the per-edit whole-document cost, undo memory, `pipes()` and D1 are open |
+| 4 | R1 not a fixed point | Explained: every violation is a link on a detour (B.2) |
+| 7 | R2 exceptions not ruled | Still not ruled: revisit and both-multiplexed |
+| 8 | Mirror-order T not ruled | Ruled "connect" in the later rulings; implemented |
+| 9 | Not-ruled items | "Cannot re-path" is ruled DOWN (R7). Which piece keeps the identity, and which name survives a join, are still open |
+| 10 | Migration not re-run | Still not run |
+| 11 | Routing coupled to persistence | Not re-measured on v3 |
+| 13 | Evidence quality | Improved: an independent adversary used its own instruments and an independent derivation. `selftest/` is still not run under 1.3.0 |
+
+---
+
+## B.6 Open for the director (collected from the builder and reviewer; none ruled, and the order is not a ranking)
+
+1. **R1 on a link that is on a detour.** Does a landing on the visible detour cut it (D4a)? Does a landing on the unused drawn route cut it (D4b)?
+2. **R2 against R8 on one history.** Draw A-P, draw P-B, draw E-P, delete E-P. R2 joins A-P-B; "no trace" leaves A-P and P-B as two links. This is the source of all 74 of the measurer's R8 failures.
+3. Whether deleting a mirror-cut landing means deleting all its pieces in one act (D3).
+4. How pieces pair on rejoin when lineage and geometry disagree, for example after a piece was replaced while cut.
+5. The R2 exceptions: revisit, about 15% on the reviewer's stream, and both-multiplexed.
+6. What a link keeps as intent when an anchor on its drawn route is deleted (D6).
+7. What an aggregate shows while its members are cut. It empties and reads down.
+8. Whether a flow may pass the same point twice along two crossing links. This decides D1's fix.
+9. Which piece keeps identity when a link is cut, and which name survives a join (open since `dev/DECISIONS.md:434`).
