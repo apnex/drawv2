@@ -556,6 +556,7 @@ Each link keeps its own VLAN and name, and P stays a point where two links end. 
 The two rulings pull apart when A-P ('red') and P-B ('blue') are drawn as separate links, and E-P is then drawn and deleted. The join ruling was asked about exactly this shape: one of three links at a junction is deleted. The draw-then-delete ruling was asked about a landing that cut passing links; only its headline wording reaches this case.\
 Asked "Should red and blue end up as one link A-P-B, or stay as two?", the director chose "Join into one" (the proposer's recommendation) over "Stay as two".\
 When a removal leaves exactly two links ending at a bare point, they join, subject to the loop and VLAN exceptions above. Today's product does the same: `server/txn.mjs` collapses at a waypoint whenever a removal leaves exactly two links there, and never when a link is created (READ).\
+> **CORRECTION 2026-09-27.** The description of today's product in the sentence above is incomplete. The FR3-v5 audit found this, and the proposer re-read the code. `collapseAtWaypoint` (`model/invariants.mjs`, around lines 152-190) also refuses a pair that would make a self-link (a loop), a pair whose declared directions both arrive or both leave, a pair mixing a control link with a data link, and a closed link. The B239 guard in `server/txn.mjs` refuses a merge whose result would be invalid. The ruling was made on the shorter description. Whether the plane and direction refusals also apply under this ruling was then put to the director as a separate question.\
 The cost shown with it: here, draw-then-delete is not traceless. Whenever the join happens, the two drawn links become one and one name is lost; the exceptions block the join in about 1 in 5 of these cases (MEASURED, options-join).
 
 **How pieces pair on rejoin: settled by the rulings above, not asked (proposer reading, 2026-09-26).**\
@@ -596,3 +597,64 @@ The measurements shown with it (MEASURED, options-pins):
 
 Today's product also drops a deleted point from a link (`server/txn.mjs`, READ). It also deletes the link if that would duplicate an existing straight link; that case is not ruled here.\
 The proposer noted that "Stay, shown down" is the literal reading of the director's "fail if it can't dynamic route across pipes to get there" (S22). The director ruled that an author deleting the point is removing the stop, which is a different case from a stop that cannot be reached.
+
+**A cut link stays cut while another link ends at the cut point, even when that link was there first -- ruled 2026-09-27, settling "a cut link stays cut while another link still ends at the cut point" above.**\
+That ruling's heading ("stays cut") and its gloss ("the same as if that landing had never been drawn") agree when the other link lands after the cut. They disagree when the other link, Z, already ended at w and the cut link, X, only crossed Z there by routing. FR3-v5 had built the gloss.\
+Asked "Z already ends at point w. X's route passes through w and just crosses Z there. Now Y is drawn to w, so X is cut there and X, Y and Z all meet. Then Y is deleted. What happens to X?", the director chose "Stays cut, meeting Z" (the proposer's recommendation, revised after the FR3-v5 audit) over "Joins back up, crossing Z again".\
+So what happens to X depends only on what is on the page now. It does not depend on whether Z was drawn before or after X's route came through w, and the model keeps no per-cut list of the links that already ended there.\
+The costs shown with the option:
+- here, drawing and deleting Y leaves a trace: X and Z now meet where before they only crossed. It changed the result in about 15% of measured round trips: 1,507 of 10,677 in stream A and 1,880 of 10,326 in stream B (MEASURED, measure-v5).
+- the answer not chosen kept a hidden list for each cut: 7,269 KiB where 1,000 links cross a point and 1,000 end there.
+
+The gloss "as if never drawn" therefore holds only when no other link ends at the cut point.
+
+**Deleting a point a landing cut a link at keeps the cut link: the cut is undone first -- ruled 2026-09-27.**\
+Asked, for X on A-w-B with another way A-k-B, cut at w by Y, "Now you delete the point w itself. What happens to X?", the director chose "X survives, rerouted" (the proposer's recommendation) over "X's pieces go too" (FR3-v5 and today's product).\
+Y goes, because it ended at w. X is joined back up, and then loses w as any link passing through it would: it reroutes by cost, or drops w if w was one of its pins (the delete-bend ruling above). Deleting Y and then w, or deleting w directly, gives the same result.\
+Links that simply ended at w still go with it, as today. This differs from today's product, which deletes every link ending at a deleted waypoint (`server/txn.mjs`, READ).\
+Not built yet. The rate (119 of 1,055 point deletions touched a cut link) comes from the brief writer's unsaved run and is UNVERIFIED.
+
+**Pipes laid automatically with a link live only while links use them; only pipes placed by hand remain without links -- ruled 2026-09-27, completing "pipes a deleted link laid stay while another link uses them" above.**\
+Asked, for pipes A-u and u-B laid by L1, kept after L1's deletion because the declared link L2 runs over them, "Now delete L2. What happens to those pipes?", the director answered in their own words: "They go - any pipes laid automatically with a link, will be removed when there are no links remaining. Only pipes manually placed remain without links."\
+So there are two kinds of pipe:
+- a pipe laid automatically by drawing a link is removed once no link remains on it;
+- a pipe the author placed by hand stays until the author deletes it.
+
+FR3-v5 had instead handed a kept pipe to the author once no living drawing claimed it.\
+Proposer reading, not asked: a DOWN link whose intent runs along a pipe counts as a link remaining on it, so its own legs are kept and it heals onto them. FR3-v5 already keeps those pipes: 52 of 2,934 and 96 of 2,644 candidate pipes in measure-v5.
+
+**"Longer" means longer on screen -- ruled 2026-09-27, refining "when a link is cut in two, the longer piece keeps its name and identity" above.**\
+Asked, for 'trunk' A-W-u1-u2-B, where A-W is one 20-unit pipe and W-u1-u2-B is three pipes totalling 6 units, cut by E at W, "Should 'longer' mean longer on screen, or more pipes?", the director chose "Longer on screen" (the proposer's recommendation) over "More pipes" (FR3-v5's choice).\
+A-W keeps 'trunk'. On a tie, the piece at the link's first end keeps it, as before.\
+The costs shown with it:
+- not built;
+- compared with FR3-v5, a different piece keeps the name in about a third of cuts: 724 of 2,186 (stream A) and 637 of 1,932 (stream B), MEASURED on the fuzz's evenly spaced grid;
+- route cost still counts pipes, so the two measures can disagree.
+
+The figure shown on 2026-09-26 (704 of 704) was counted in pipes.\
+Not ruled here: whether route cost should move to on-screen length too. It is still an open engineering choice.
+
+**A link carrying a VLAN does not join a link carrying none -- ruled 2026-09-27, widening "a join of two links carrying different channels does not happen" above.**\
+Asked, for 'red' A-P carrying VLAN 10 and 'blue' P-B carrying no VLAN, where E-P is drawn and then deleted, "Should red and blue join into one link carrying VLAN 10 all the way?", the director chose "Don't join" (the proposer's recommendation) over "Join, and VLAN 10 covers it" (FR3-v5's behaviour).\
+Each link keeps its own name and what it carries, and no VLAN spreads because a different link was deleted.\
+The consequence shown with it: a link carrying any VLAN never joins another link under the join ruling, and only the pieces of its own cut rejoin. That needs its own rule, because while such a link is cut only its longer piece carries the VLAN.\
+It differs from today's product's treatment of a link with no declared direction, which takes the other link's direction when two links merge (`model/invariants.mjs`, READ).
+
+**Control and data links, and links whose directions meet head-on or split, do not join -- ruled 2026-09-27, keeping today's refusals under the join ruling.**\
+Asked "Should they still join if one is a control link and the other a data link, or if their declared directions both point into the point (or both out of it)?", the director chose "Don't join, as today" (the proposer's recommendation) over "Join them anyway".\
+These are the refusals `collapseAtWaypoint` already makes (see the correction under the join ruling above). The point stays a junction, as today's two-link matrix reads it (`kernel/geometry.mjs`, READ).\
+The cost shown with it: two more exceptions to the join rule, and their rate is unmeasured, because no bench model has planes or directions.\
+So the exceptions to "two links left alone at a point join" are:
+- a join that would make a loop;
+- two links carrying different channels, or one carrying a VLAN and one carrying none;
+- a control link with a data link;
+- directions that both arrive or both leave.
+
+**A bundle goes with a deleted end point -- ruled 2026-09-27.**\
+Asked, for a bundle (LAG) between A and B whose members end at A, "You delete point A ... What happens to the bundle?", the director chose "It goes too" (the proposer's recommendation) over "It stays, empty and down" (FR3-v5's behaviour, where nothing could refill it).\
+This is the same as a link ending at a deleted point, which goes in FR3-v5 and in today's product. Not built and not measured.
+
+**After a partial rejoin, the longer piece on screen carries the name -- ruled 2026-09-27.**\
+Asked, for 'trunk' cut at n2 and n3 by two new links, where the link at n2 is deleted and the pieces either side of n2 join back up, "Now there are two pieces, split at n3. Which one should carry 'trunk'?", the director chose "The longer one on screen" (the proposer's recommendation) over "Wherever it already is" (FR3-v5's behaviour).\
+The name goes where it would be if the deleted landing had never been drawn: the pieces on the page now decide, by the "longer on screen" rule.\
+The cost shown with it: the name can move to the other piece at n3, a point the author did not touch. Under FR3-v5's behaviour, the same picture showed the name on a different piece depending on the order of cuts: 190 of 4,915 (stream A) and 152 of 4,558 (stream B) two-cut round trips (MEASURED, measure-v5). Not built.
