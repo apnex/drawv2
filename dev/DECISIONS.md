@@ -504,3 +504,50 @@ So routing never changes which links exist or where they meet. A link connects o
 The question set aside earlier, a landing on the old route of a detoured link, then reads this way (proposer reading, not asked):
 - a pinned point is always on the link's route, so a landing there cuts it;
 - an unpinned point the link no longer passes is not touched, and if the link's route later runs through it again, it crosses.
+
+**Pipes a deleted link laid stay while another link uses them -- ruled 2026-09-26.**\
+The FR3-v4 prototype (bench `link-bakeoff`, recorded in `dev/design/unification/BAKEOFF-LINK.md`) measured three answers.\
+Asked "Drawing a link lays pipes along its way. When you later delete that link, what happens to the pipes it laid?", the director chose "Stay while another link uses them" over "They go with it" (the proposer's recommendation) and "They stay as ordinary pipes".\
+When a link is deleted, the pipes its drawing laid are removed, except those another link is currently routed over, which stay.\
+The costs shown with the option (MEASURED, options-acts): another link moves in 1.8% of deletions, against 4.0% under "they go" and 0.2% under "they stay". A pipe the author deleted comes back if a link is drawn along it and then deleted, in 94% of that construction (5,161 of 5,468).\
+Not ruled here: whether a pipe kept this way then belongs to the author (deleted only by hand) or is removed once the last link using it goes.
+
+**Under pins, a cut on a detour keeps only the original bends -- ruled 2026-09-26, refining "a landing on a link that is on a detour cuts it where it is" above.**\
+With link intent defined as ends plus pinned vias, "the detour becomes its route" could mean either that the whole detour is pinned or that each piece keeps only the original bends on its side.\
+Asked, for the uplink r1-p1-p2-r2 detouring p1-q1-q2-q3-p2 and cut by a landing at q3, "What should the cut pieces keep as their route?", the director chose "Only the original bends" (the proposer's recommendation) over "The whole detour, pinned".\
+The cut point becomes an end of both pieces, and each piece keeps the pins on its side. So:
+- deleting the landing returns the link fully to its drawn route;
+- a detour never becomes a set of bends, so a detour cannot decide where links meet.
+
+The cost shown with the option (MEASURED, FR3-v4 probe E6 and measure-v4 construction cutPins-C1): when the missing pipe returns, a piece may move back towards its old route and share a pipe with its sibling. With the landing at q3 it moves; at q2 it stays.\
+This supersedes the phrase in the earlier ruling's option text that the link "does not return to it when the pipe comes back": a piece returns as far as its own bends and new end allow.
+
+**A cut link stays cut while another link still ends at the cut point -- ruled 2026-09-26.**\
+The FR3-v4 adversary found this case (its defect 3), and the fix pass left it to the director. The literal draw-then-delete ruling says a deleted landing's cut rejoins. The mirror ruling says the order of drawing must not decide whether links meet.\
+Asked "Link X is detouring through point w (no bend there). Y is drawn to w and cuts X. Then Z is also drawn to w. Now Y is deleted. Should X join back up at w, even though Z still ends there?", the director chose "No, stay cut while Z ends there" (the proposer's recommendation) over "Yes, join back up".\
+The result of deleting a landing is the same as if that landing had never been drawn: Z's own landing cuts X at w, and Z meets X.\
+The prototype already did this where w is one of X's pins. At a plain routed point, as built, it rejoined (959 times in the default fuzz, MEASURED), and that is now to be changed.
+
+**A flow's path may pass through the same point twice -- ruled 2026-09-26.**\
+Asked "A flow is routed over links. May its path pass through the same point twice? For example, S-X-M and M-X-T cross at X and meet at M. May the flow from S to T run S, X, M, X, T?", the director chose "Allow it" (the proposer's recommendation) over "Forbid it".\
+The measurements shown with it (MEASURED, options-pins and measure-v4):
+- allowing agreed with a full search on every flow the search could finish, and routed 90-96% of flows on random networks, against 81-94% if forbidden;
+- 8-27% of flow paths then pass some point twice: through crossings, through junctions, and along a link that crosses itself;
+- under "forbid", nothing built so far was both correct and fast. The exact search did not finish one flow in 240 s, and the fast search missed a real route in 1-5% of flows.
+
+This also settles how the prototype's exponential flow search (v3 defect D1) is fixed: by a search that allows revisiting.
+
+**A link's route may pass through a point it already passes, even its own end -- ruled 2026-09-26.**\
+The FR3-v4 adversary found this case (its defect 4). It follows literally from "ends plus pins, with the cheapest way between them", because each leg is routed on its own.\
+Asked, for link A-B bent at w whose cheapest way from A to w after pipe A-w is deleted runs through B (A-u-B-w-B), "is that allowed?", the director chose "Allow it" (the proposer's recommendation) over "No, the link shows down" and "Route around its own points".\
+The cost shown with it (MEASURED, FR3-v4 adversary fuzz): a new link landing on a point such a link passes twice cuts only one of the two passes (140 landings). Flows along such a link work because flows may revisit (ruled above).
+
+**A join that would make a loop does not happen -- ruled 2026-09-26, an exception to "deleting one of three links at a junction joins the two that remain".**\
+Asked, for 'top' A-u-P and 'bottom' A-v-P, where E is drawn to P and then deleted, "Should they still join?" (joining would make one loop, A-u-P-v-A), the director chose "Don't join; keep both" (the proposer's recommendation) over "Join anyway".\
+Both links keep their names, a flow from A to P keeps running, and P stays a point where two links end.\
+The measurements shown with it (MEASURED, options-join, under the reading where R2 joins): this came up in 47 of every 1,000 deletions. "Join anyway" made 84 loop links and lowered the draw-then-delete no-trace rate from 84% to 80%.\
+The earlier prototypes' wider exception, "a join whose route would revisit an anchor", is narrowed by this ruling and the link-revisit ruling above. A join is refused when it would make a loop of the link's own stops. It is not refused because a routed stretch passes a point twice. That reading is the proposer's (INFERRED): the question asked was only the loop case.
+
+**A join of two links carrying different channels (VLANs) does not happen -- ruled 2026-09-26, a second exception to the join-on-removal ruling.**\
+Asked, for A-P 'red' carrying VLAN 10 and P-B 'blue' carrying VLAN 20, where E is drawn to P and then deleted, "Should they join into one link that carries both?", the director chose "Don't join; keep both" (the proposer's recommendation) over "Merge into one".\
+Each link keeps its own VLAN and name, and P stays a point where two links end. This came up in about 3 of every 1,000 deletions (MEASURED, options-join). Two links carrying the same VLAN were already never joined.
