@@ -890,3 +890,142 @@ Redrawing a healed stretch as a link still turns 4 listed links into 7. Redrawin
 7. What an aggregate shows while its members are cut. It empties and reads down.
 8. Whether a flow may pass the same point twice along two crossing links. This decides D1's fix.
 9. Which piece keeps identity when a link is cut, and which name survives a join (open since `dev/DECISIONS.md:434`).
+
+---
+
+# Addendum 3: FR3-v4, pinned vias, and the options behind thirteen rulings (2026-09-26)
+
+On 2026-09-26 the director ruled three things that changed what a link is:
+- a landing on a detoured link cuts it where it is;
+- a link's intent is its ends plus pinned vias, routed by cost between them;
+- a routed stretch crosses the points it passes.
+
+FR3-v4 was built on those rulings. Every question the rulings left open was then given switchable options, and each option was measured, so the director could rule with the consequences in hand. Thirteen further rulings followed the same day (`dev/DECISIONS.md`, entries dated 2026-09-26).\
+Labels are as in the main report.
+
+**Where the evidence lives.** A reboot on 2026-09-26 wiped the session scratch directory that held the bench. The bench was rebuilt from the session transcripts: all 669 paths accounted for, none lost, and all seven earlier models EXACT by sha256. It now lives durably at `~/taceng/drawv2-archive/link-bakeoff/`, outside this repository, with a README and recovery manifests. Directory names below are relative to it. The workflow's full reports are in its `RESULTS-v4` directory.
+
+**Roles** (workflow run wf_1b876d5c-fb2; each role had its own instruments):
+- a suite author wrote suite 1.4.0;
+- a builder wrote FR3-v4;
+- an independent adversary attacked it;
+- a fix pass fixed what it could;
+- a neutral cost measurer and three option measurers followed;
+- a brief writer drafted the questions;
+- an independent auditor checked the drafts against the measurement files.
+
+**What the reporter checked (MEASURED, 2026-09-26):**
+- **Suite 1.4.0**, re-run into `reporter-v4/`:
+  - FR3-v4 passes 47, fails 0, observes 14, with 0 not-expressible;
+  - FR3-v3 passes 40, fails 5, observes 14, with 2 not-expressible;
+  - model sha256 prefix `b12d4839af866273`, suite `ed63396d4aee82f2`, harness `92a4ec5a60d6f773` (unchanged).
+- **Timings.** The measurers ran concurrently on an 8-thread machine at load 16-27, so the cost measurer repeated its timing runs once the machine was quiet. The reporter then re-ran the three FR3-v4 timings that were still contended, at load 0.1-0.2 (`measure-v4/quiet2/`, `run-quiet2.sh`). The contended figures had overstated FR3-v4's costs by up to 9x.
+- **Read against the files:** the options-acts pipe-deletion and round-trip tables, the cut-under-pins construction and probe E6, and the collapse rule in `server/txn.mjs`.
+- **Not re-run by me:** every fuzz, the option sweeps, and the builder's and adversary's probes.
+
+## C.1 Suite 1.4.0
+
+- **Size:** 61 scenarios, 47 ASSERT and 14 OBSERVE. 9 ASSERTs are new, for the 09-26 rulings:
+  - leg-local detours pass every pin;
+  - an unreachable pin makes a link down, and it heals;
+  - a link returns to its legs;
+  - a link can be declared by its ends and routed;
+  - a routed stretch crosses, and so does a declared one;
+  - a pin at a link end connects;
+  - a detour landing cuts where it is, and deleting it rejoins.
+- **Re-based with CORRECTED banners (8 scenarios):**
+  - 6 scenarios assumed a whole-route detour that skips bends;
+  - 2 assumed the old server refusal.
+- **Power:** 238 predicted status cells, 0 mismatches.
+  - Limit: for several new ASSERTs, the pass side comes only from the suite author's own instrument, the same family as the suite.
+- **Contract:** one new verb, `declareLink(a,b)`. `routeOf(ref).drawn` is now read as the intent: end, pins, end.
+
+## C.2 FR3-v4: cost (MEASURED, measure-v4; quiet runs)
+
+| Measure | FR1-v2 | FR3-v3 | FR3-v4 |
+| --- | --- | --- | --- |
+| 460 anchors: 150 connects | 512 ms | 487 ms | 49 ms |
+| 460 anchors: pipe removal + refresh | 58.9 ms | 9.99 ms | 4.52 ms |
+| 1,600 anchors / 1,000 links: pipe removal + refresh | 3,906 ms (load ~2) | 1,256 ms | 29-37 ms (reporter re-run) |
+| 1,600 anchors: `pipes()` | not expressible | 17,470 ms | 11-16 ms |
+| setName per edit at 290 links | 288 ms | 32.8 ms | 0.5 ms |
+| Undo heap over 1,000 setName edits | 86 -> 203 MiB | 193 -> 1,431 MiB | 25 -> 26 MiB |
+| Stored size, 460-anchor network | 40,703 B | 76,438 B | 101,467 B |
+| One undo step, 100 -> 1,000 links | not measured quiet | 0.02 -> 0.15 ms | 1.83 -> 13.02 ms |
+| Fresh `load()`, 460 anchors | 4 ms | 6 ms | 15 ms |
+
+- **Distinct legs** (1,000 detoured links; delete the grid pipe that carries the most of them), reporter re-run on a quiet machine:
+  - delete plus first read: 99.6 ms;
+  - re-add the pipe plus read: 859 ms.
+  - The contended run had given 743 ms and 7.6 s.
+- **Writes per connect:**
+  - FR1-v2: mean 2.62, p95 7, max 16;
+  - FR3-v3: mean 5.70, p95 12, max 29;
+  - FR3-v4: mean 7.08, p95 16, max 70 (rules-fuzz, unchanged instrument).
+  - `parallel` writes 4.15 against 1.12, because of pipe-credit rewrites.
+- **Determinism:** FR3-v4 gives one visible result across 7 build orders. One stored-form split remains: a T drawn landing-first records a splice by the landing; mirror-first records a group.
+
+## C.3 FR3-v4: defects, and what became of them (MEASURED by the adversary, then the fix pass)
+
+The adversary confirmed ten defects. The fix pass fixed five of them. For each, it showed the failure before the fix, the pass after it, the failure again on reverting it, and the failure on a build with only that fix removed:
+- 1: a refused rejoin stayed armed;
+- 6: cubic hub rejoin (18.0 s down to 0.69 s at K=1,000);
+- 8: non-default bundle options changed flows;
+- 9: every addPipe re-searched every leg;
+- 10: input hardening.
+
+Four defects went to the director, and each is now ruled:
+- 2: how a cut on a detour reads under pins (ruled: only the original bends);
+- 3: a rejoin across a link that landed later (ruled: stay cut while another link ends there);
+- 4: a link route that passes a point twice (ruled: allowed);
+- 5: an incomplete flow search when revisits are forbidden (ruled: flows may revisit).
+
+One defect is not fixed. **Defect 7:** when two routes tie, an undirected link's route depends on which end was named first. A symmetric tie-break is INFERRED to fix it and was not built. The "how ties break" question is carried to design.
+
+## C.4 The option measurements and the rulings they informed
+
+| Open item | Options measured | Ruled (DECISIONS.md 2026-09-26) | The deciding measurements |
+| --- | --- | --- | --- |
+| Pipes a deleted link laid (I10) | go / stay / stay while used | Stay while another link uses them (against the proposer's lean) | another link moves in 1.8% / 4.0% / 0.2% of deletions; an author-deleted pipe returns via draw-then-delete in 94% of that construction |
+| Cut on a detour under pins (defect 2) | original bends / whole detour pinned | Original bends | whole-detour pinning left 784 fuzz states with a bend where another link ends, and a landing-then-delete left the link on its detour for good |
+| Rejoin across a later landing (defect 3) | rejoin / stay cut | Stay cut | rejoining happened 959 times and stopped the later link's flow |
+| Flow revisits (I8) | allow / forbid | Allow | allow routed 90-96% of random flows, against 81-94%; no forbid search built was both exact and bounded |
+| Link route passes a point twice (defect 4) | allow / down / route around | Allow | 1,920 of 50,111 fuzz states; a landing cuts only one of the two passes (140 landings) |
+| Join would make a loop (I5) | no join / join | No join | 47 per 1,000 deletions; joining made 84 loop links |
+| Join of different VLANs (I5) | no join / merge | No join | about 3 per 1,000 deletions |
+| Two separately drawn links left at a point (I2) | join / stay two / merge on arrival | Join (today's product also collapses) | stay-two was traceless (5,665 of 5,665) but failed the suite's join test; join loses one name whenever it fires |
+| Pairing on rejoin (I4) | lineage / geometry / none | Settled by existing rulings (proposer reading) | geometry restored turning links in 1.9% |
+| Join name (I9) | earlier / later | Earlier-drawn | 39 of 3,270 named links at risk lost their name |
+| Cut name (I9) | first end / longer / neither | Longer piece | the name stayed visible in 704 of 704 cuts |
+| Delete one piece of a cut drawing (I3) | that piece / whole line | That piece | the old page came back in 58% against 90% (builder's own fuzz) |
+| Bundle while members are cut (I7) | nothing / pieces / originals | Nothing, shown down | a member without both of the bundle's ends was listed in 0% / 29.5% / 23.8% of bundle states |
+| Delete a pinned point (I6) | forget the bend / down / cut | Forget the bend | stayed up in 95-98%; 81% of later edits then differ from a link that never lost the pin |
+
+**The audit, before any question was asked.** The independent auditor found 19 problems in the drafted questions:
+- numbers that did not match their files;
+- recommendations contradicted by the bench's own measurements;
+- an order that would let later answers reopen earlier figures;
+- recommended options described with fewer costs than the others.
+
+Each question was revised against the findings before it was put to the director. The order was changed so that pipe lifetime and the detour and rejoin cases came first. The full audit is saved as `audit.json` in the `RESULTS-v4` directory on the bench.
+
+## C.5 What the prototype does not yet match, and what is still open
+
+**FR3-v4's defaults now differ from the rulings in five places**, the next build's inputs:
+- flows forbid revisits (ruled allow);
+- the cut name goes to the first end (ruled longer piece);
+- a deleted pin makes the link down (ruled forget the bend);
+- laid pipes follow the drawing's credit (ruled stay while used);
+- a transit cut rejoins across a later landing (ruled stay cut; not built).
+
+**Not built at all:**
+- planes and declared directions, so today's two-link matrix is not modelled;
+- per-type capability packs;
+- any drawing on screen.
+
+**Open and not ruled:**
+- how route ties break (defect 7);
+- whether "longer" counts pipes or grid length;
+- whether a "delete the whole drawing" command exists;
+- whether a pipe kept because another link uses it then belongs to the author;
+- whether a pipe drawn by a link counts as author-drawn once the link is gone.
