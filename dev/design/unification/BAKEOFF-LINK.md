@@ -1029,3 +1029,89 @@ Each question was revised against the findings before it was put to the director
 - whether a "delete the whole drawing" command exists;
 - whether a pipe kept because another link uses it then belongs to the author;
 - whether a pipe drawn by a link counts as author-drawn once the link is gone.
+
+---
+
+# Addendum 4: FR3-v5, conformance to the rulings, and eight more (2026-09-27)
+
+FR3-v5 was built to conform to every link ruling through 2026-09-26. Every option for an answer the director had ruled out was purged, and FR3-v4's route tie-break was fixed. The workflow ran one stage at a time, so the timing runs had the machine to themselves:
+- suite 1.5.0;
+- build;
+- independent adversary;
+- fix pass;
+- neutral measurer;
+- brief;
+- independent audit.
+
+That was workflow run wf_170c3ef9-27c. Its reports are in the bench's `RESULTS-v5` directory (`~/taceng/drawv2-archive/link-bakeoff/`).\
+A second reboot on 2026-09-27 wiped the session scratch again. This time the bench was already durable and nothing was lost; only the scratch symlink had to be recreated.
+
+**What the reporter checked (MEASURED, 2026-09-27):**
+- I re-ran suite 1.5.0 on the final model into `reporter-v5/`: 64 pass, 0 fail, 14 observe, 0 not-expressible. Model sha256 prefix `53c902bc858a041d`, suite `f827d67fa1cd101d`, harness unchanged.
+- I read `collapseAtWaypoint` in `model/invariants.mjs` to check the audit's finding that the join ruling's description of today's product was incomplete. It was, and a correction now sits under that ruling.
+- **Not re-run by me:** the fuzzes, sweeps and probes. Their figures are as their authors MEASURED them.
+
+## D.1 Suite 1.5.0 and conformance
+
+- **Suite:** 78 scenarios, 64 ASSERT and 14 OBSERVE. 17 ASSERTs are new or promoted, one per behaviour ruled on 2026-09-26. Power: 347 predictions and 0 mismatches.
+- **Limit (the suite author's own):** the rulings were chosen from FR3-v4's option menu, so FR3-v3 is the only fully independent check. It passes 10 of the 17. Suite 1.5.0 also caught none of the builder's five defects.
+- **Conformance (brief, as corrected by the audit):** most rulings MET. PARTLY:
+  - **R2:** deletion order decided a join in 6 of 4,931 two-landing cases.
+  - **R8:** fix 2 of the fix pass introduced a rare missed rejoin: 2 failures and 9 stale states in one stream (seed 226), none on the pre-fix model.
+  - **The pipe-lifetime ruling:** pipes under DOWN links are kept (52 and 96 cases). The ruling of 2026-09-27 now decides this.
+  - **The stay-cut ruling:** "as if never drawn" failed for two landings at two points of one link in about 47% of checks, mostly in which piece holds the identity. Two rulings of 2026-09-27 now decide this.
+  - **The join-identity ruling:** a later cut moving the name.
+  - **Capability packs:** not built.
+- **Classifier corrections:** the measurer's zero counts for R1-act, R2v5, J and D-go are zero only after 11 classifier corrections shaped by FR3-v5's own states. In run 1 they were 1/3, 38/47, 12/17 and 4/1.
+
+## D.2 Cost (MEASURED by measure-v5; every timing run at a 1-minute load of 1.16-1.44; FR3-v4 re-run in the same session)
+
+| Measure | FR3-v4 | FR3-v5 |
+| --- | --- | --- |
+| 1,600 anchors: pipe removal + refresh | 29.46 ms | 21.73 ms |
+| 1,600 anchors: all 40 flows (routed) | 12.1 ms (37) | 4.8 ms (40) |
+| K-mesh flow, K up to 64 | null at every K | revisiting path, at most 3.5 ms |
+| Equal workloads: flows with a path left unrouted | 5/40 and 3/40 | 0 and 0 |
+| Per edit at 1,000 links: remove connection / setName | 15.75 / 1.37 ms | 20.6 / 1.02 ms |
+| Hub rejoin, K=1,000 (single run, fix pass) | 764 ms | 87 ms |
+| Stored size where 1,000 links cross a point and 1,000 end there, after one landing | 526 KiB | 7,269 KiB |
+| Code lines (FR3-v3: 434) | 1,001 | 884 |
+
+- Tie symmetry: naming a link's ends the other way round changes 0 of 965 routes, against 8 for FR3-v4.
+- Relabelling anchor ids, which an author cannot do through the contract, still moves 564 of 1,800 tied routes.
+
+## D.3 The eight rulings of 2026-09-27
+
+| Question | Ruled | Informing measurement |
+| --- | --- | --- |
+| Stay cut when the other link was there first | Stays cut; the page alone decides | changed the result in about 15% of round trips (1,507 of 10,677; 1,880 of 10,326); the answer not chosen needed a 7,269 KiB hidden list at 1,000 x 1,000 |
+| Delete a point a landing cut a link at | Undo the cut first; the link survives, rerouted | brief writer's unsaved run: 119 of 1,055 point deletions (UNVERIFIED) |
+| Pipes laid with a link | Removed once no link remains; only hand-placed pipes stay (the director's own words) | FR3-v5 handed kept pipes to the author instead |
+| What "longer" means | Longer on screen | a different piece keeps the name in about a third of cuts, against pipe count |
+| VLAN link and plain link | Do not join | a VLAN link then never joins another link |
+| Control and data links; head-on directions | Do not join, as today | today's collapse already refuses them (READ); unmeasured on the bench |
+| Bundle whose end point is deleted | Goes with it | not measured |
+| Name after a partial rejoin | Longer piece on screen | 190 of 4,915 and 152 of 4,558 two-cut round trips put the name on a different piece |
+
+**The audit before any question was asked.** It found 14 problems in the drafted brief:
+- **The biggest:** the draft recommended "join back up" for the first question, but the audit measured that this answer lets drawing order decide whether links meet, against the premise of the director's own stay-cut ruling. The recommendation was flipped before the question was asked, and the director chose it.
+- **Status errors:** it caught R2 marked MET when it was PARTLY.
+- **Unverifiable rates:** it caught rates from unsaved runs. These are marked UNVERIFIED where they are quoted.
+
+## D.4 What the next build must do
+
+- **Build the 2026-09-27 rulings:**
+  - stay cut against an earlier link, which also drops the per-cut crossed list;
+  - undo the cut before deleting a cut point;
+  - two pipe kinds;
+  - "longer" on screen, re-applied after a partial rejoin;
+  - the VLAN, plane and direction join refusals. This needs planes and directions on the bench.
+  - a bundle goes with its end point.
+- **Fix:**
+  - the missed rejoin from fix 2 (seed 226);
+  - the deletion-order join case (6 of 4,931), by re-judging joins on the page as it now is;
+  - the +31% per-edit cost of removing a connection.
+- **Still open for engineering:**
+  - the route cost unit (pipes or on-screen length) and its tie-break;
+  - a whole-drawing delete command;
+  - how a cut VLAN link's pieces rejoin, given that VLAN links no longer join others.
