@@ -551,3 +551,48 @@ The earlier prototypes' wider exception, "a join whose route would revisit an an
 **A join of two links carrying different channels (VLANs) does not happen -- ruled 2026-09-26, a second exception to the join-on-removal ruling.**\
 Asked, for A-P 'red' carrying VLAN 10 and P-B 'blue' carrying VLAN 20, where E is drawn to P and then deleted, "Should they join into one link that carries both?", the director chose "Don't join; keep both" (the proposer's recommendation) over "Merge into one".\
 Each link keeps its own VLAN and name, and P stays a point where two links end. This came up in about 3 of every 1,000 deletions (MEASURED, options-join). Two links carrying the same VLAN were already never joined.
+
+**Two separately drawn links left alone at a point join into one -- ruled 2026-09-26, keeping the join-on-removal ruling ahead of "draw-then-delete leaves no trace" in this case.**\
+The two rulings pull apart when A-P ('red') and P-B ('blue') are drawn as separate links, and E-P is then drawn and deleted. The join ruling was asked about exactly this shape: one of three links at a junction is deleted. The draw-then-delete ruling was asked about a landing that cut passing links; only its headline wording reaches this case.\
+Asked "Should red and blue end up as one link A-P-B, or stay as two?", the director chose "Join into one" (the proposer's recommendation) over "Stay as two".\
+When a removal leaves exactly two links ending at a bare point, they join, subject to the loop and VLAN exceptions above. Today's product does the same: `server/txn.mjs` collapses at a waypoint whenever a removal leaves exactly two links there, and never when a link is created (READ).\
+The cost shown with it: here, draw-then-delete is not traceless. Whenever the join happens, the two drawn links become one and one name is lost; the exceptions block the join in about 1 in 5 of these cases (MEASURED, options-join).
+
+**How pieces pair on rejoin: settled by the rulings above, not asked (proposer reading, 2026-09-26).**\
+This was the prototype's open item I4. It is recorded as settled by existing rulings, and the director may reopen it.
+- When a landing that cut several passing links is deleted, the draw-then-delete ruling says each passing link is whole again "as before the landing". So the pieces pair as they were cut (lineage). Pairing straight-through by geometry restored the originals in only 1.9% of turning cases (MEASURED, options-join).
+- When other links still end at the cut point, the stay-cut ruling above keeps the pieces cut. That covers a piece deleted and redrawn while cut.
+- The join ruling fires only when a removal leaves exactly two links at a point. So four or more ends that did not come from one cut are not paired at all.
+
+**A join keeps the earlier-drawn link's name and identity -- ruled 2026-09-26.**\
+Asked, for 'left' A-P and 'right' P-B joining into A-P-B when E-P is deleted, "When two separately drawn links join into one, whose name does the joined link keep?", the director chose "The earlier-drawn link's" (the proposer's recommendation) over "The later-drawn link's".\
+The joined link is 'left', and 'right' is lost. Across the options-join fuzz, 39 of 3,270 named links at risk lost their name this way (MEASURED).\
+A rejoin of pieces that one cut split is separate: it restores the original link's name and identity, under the draw-then-delete ruling.
+
+**When a link is cut in two, the longer piece keeps its name and identity -- ruled 2026-09-26.**\
+Asked, for 'trunk' A-W-u-B cut at W into A-W and W-u-B, "When a link is cut in two, which piece keeps the link's name?", the director chose "The longer piece" (the proposer's recommendation) over "The piece at the first end" (the prototype's behaviour) and "Neither; both pieces are new".\
+On a tie, the piece at the link's first end keeps it. The proposer's reason: the author can see which piece is longer, but not which end the link was drawn from.\
+All three answers give 'trunk' back whole if the landing is deleted, as the draw-then-delete ruling requires. In the options-acts fuzz, the name stayed visible in every cut under this answer (704 of 704, MEASURED).\
+Not ruled here: whether "longer" is counted in pipes or in grid length. The prototype counted route length.
+
+**Deleting one piece of a cut drawing deletes only that piece -- ruled 2026-09-26.**\
+A line drawn through a point where another link ends is cut there (the pass-through ruling), so one drawing can become several links.\
+Asked, for a spur W-C and a line A..B drawn with a bend at W (cut into A-W and W-B), "Later you select A-W and delete it. What goes?", the director chose "Only that piece" (the proposer's recommendation) over "The whole line you drew".\
+The author deletes what they selected. A-W goes, and W-B then joins the spur into one link B-W-C under the join ruling.\
+The costs shown with it (MEASURED, the FR3-v4 builder's fuzz, which the model's author wrote): deleting each piece in turn gave the old page back in 58% of cases, against 90% for the whole line. The drawing's returned reference then names B-W-C.\
+Not ruled here: whether a "delete the whole drawing" command exists alongside, and what it removes once a piece has joined another link.
+
+**While its members are cut, a bundle lists nothing and shows down -- ruled 2026-09-26.**\
+Asked, for a LAG of two links A-X-B that a new link E cuts at X, "While they're cut, what should the bundle list as its members?", the director chose "Nothing; shown down" (the proposer's recommendation) over "All the pieces" and "The original links by name".\
+A bundle never lists a member that does not run end to end between its ends, so what it shows is always true. When the landing is deleted, the bundle gets its members back, as the draw-then-delete ruling requires.\
+The cost shown with it (MEASURED, options-acts): bundles were empty in 35% of states, against 10-12% for the other two answers.
+
+**Deleting a point a link bends at removes that bend from the link -- ruled 2026-09-26.**\
+Asked, for link A-w-B with another way A-x-B open, "You delete the point w itself. What happens to the link A-w-B?", the director chose "Forget that bend" (the proposer's recommendation) over "Stay, shown down" and "Cut the link at w".\
+The pin is dropped from the link's intent, and the leg routes directly between its neighbouring stops by cost.\
+The measurements shown with it (MEASURED, options-pins):
+- the link stayed up in 95-98% of cases;
+- its intent changes for good, so if w comes back the link does not return to it, and it behaves differently from a link that never lost w in 81% of later edits.
+
+Today's product also drops a deleted point from a link (`server/txn.mjs`, READ). It also deletes the link if that would duplicate an existing straight link; that case is not ruled here.\
+The proposer noted that "Stay, shown down" is the literal reading of the director's "fail if it can't dynamic route across pipes to get there" (S22). The director ruled that an author deleting the point is removing the stop, which is a different case from a stop that cannot be reached.
