@@ -87,6 +87,14 @@ const ALLOW = {
 	*/
 	'dev/history/COMMIT-AUDIT.md:docs/spec/COMMIT.md': 'split 2026-09-19; the audit names the file as it was, and is not edited',
 
+	/*
+	The handover was REMOVED from the repository on 2026-09-28 by the director: it now carries operational
+	detail and is kept private, outside the public repository, and an old copy left here would mislead an
+	incoming agent. These rows cite it as PROVENANCE -- the document a verification or a survey was run
+	against -- which is the same footing as the SCOPE.md entries below. It stays in git history at a986fb3.
+	*/
+	'dev/BOARD.md:dev/HANDOVER.md': 'removed 2026-09-28 and kept private; H16 names it as the document its verification was run against',
+	'dev/surveys/unification-survey.md:dev/HANDOVER.md': 'removed 2026-09-28 and kept private; the survey names it as the input it was run against (at a986fb3)',
 	'dev/COMMIT-DELIVERY.md:docs/spec/SCOPE.md': 'SCOPE.md was split and removed 2026-09-03; this names it as provenance for what moved or what was amended, not as a live path',
 	'dev/COMMIT-DELIVERY.md:cli/draw.sh': 'rulings that cite line numbers true of the shell CLI while it existed. M4 forbids repointing them at draw.mjs -- those lines were never true of that file.',
 	'dev/COMMIT-DELIVERY.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',

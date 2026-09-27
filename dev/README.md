@@ -36,7 +36,7 @@ Live indexes of how the work is decided.
 **Handover.**\
 Where to stand before reading the ledgers.
 
-- **`HANDOVER.md`** -- the on-ramp to the unification programme, for an agent resuming it. States the ontology, what is ruled and must not be re-litigated, the open questions, and how this codebase fails -- each failure mode carrying the defect numbers that measured it. It is the on-ramp and not the record: the ledgers above stay authoritative.
+- **The handover is not in this repository.** Removed 2026-09-28 by the director, so that there is no stale on-ramp to confuse an incoming agent. The handover now carries operational detail and is kept private, outside the public repository. The old version stays in git history (last at `a986fb3`). The ledgers above are the record.
 
 **Delivery records.**\
 How something was made, as against what it is.
