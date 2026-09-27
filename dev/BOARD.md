@@ -892,7 +892,8 @@ Opened 2026-09-27 by the director (DECISIONS.md, "The lab canvas").A single fixe
 | H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `TODO` |
 | H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `TODO` |
 
-**Exit:** the lab runs the real link gestures on one fixed canvas. Its import graph holds only core, plugin and canvas modules, and a scanner enforces that. Its load is measured against today's app.
+**Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
+AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
 
 ## Held -- on the record, not on the board
 

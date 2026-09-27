@@ -801,3 +801,48 @@ So the lab:
 - its gains are carried back into the production app, which is later rebuilt on the same composition.
 
 The work is milestone H17 on `dev/BOARD.md`. It begins with a measured baseline of what the app loads, and an axiom alignment audit (mission-kit M7) of the module boundaries.
+
+**H17 lab decisions -- ruled from 2026-09-27.** These were prepared by the H17 audit and design workflow (run wf_a40c7406-192), whose measured baseline, seam map, axiom audit (M7), design, independent review and brief are kept in the lab-design bench outside the repository. The cut ids (K0-K18) refer to that brief.
+
+**H17-D1: the lab lives in a `lab/` folder in this repository.** The director chose "A lab/ folder in the repo" (the proposer's recommendation) over "Outside the repository" and "Inside the product, at /lab". The gate scans it and runs its tests on every push. It is never deployed, because the Dockerfile copies named folders only.
+
+**H17-D2: each finished cut ships to production as it lands.** The director chose "Ship each cut as it lands" (the proposer's recommendation) over "Hold on a branch until the rebuild". Production gets lighter step by step, each step behind its own tests. 23 of the 26 planned cuts land on main as they are made. The exceptions are the lab itself (K10, never deployed) and the two cuts that wait for the rebuild (K13d, K18b). The five that change what a user sees are each a registered defect or a ruling: K1 (B242), K14a (B244), K14b (B245), K15 (B246) and K18a (B243, SD2).
+
+**H17-D3: the tab takes the server's full answer, then replays its own unanswered edits on top (the fix for B242).** The director chose "Take answer, replay yours" (the proposer's recommendation) over "Take additions except your fields" and "Take additions as they arrive" (the fix `dev/BACKLOG.md` first named for B242). In the brief's four real-code cases (MEASURED on the real Model, commit, deleteSelection and renameEntity), it converged in all four with no flicker. Today's filter diverged in three, and taking additions as they arrive diverged in one and briefly showed an older value. It needs only the tab's own list of unacknowledged ops. This settles the register's PS321, which B242 was held for.
+
+**H17-D4: the three barrel files go.** The director chose "Delete them" (the proposer's recommendation) over "Keep them, split per use" and "Keep them as they are". `kernel/index.mjs`, `engine/index.mjs` and `model/index.mjs` are deleted, every import names the module that defines it, and the layer manifest (K0) declares what is public. The planner falls from 31 modules to 15, and the page from 50 to 44 (MEASURED arithmetic over the import graph). The cost shown: 125 import sites change (83 static, 42 dynamic). This reverses the barrels' own "import from HERE only" (`kernel/index.mjs:1-2`), which was already bypassed at 24 of 58 sites. The mount check in `server/app.js`, which serves a folder only if its `index.mjs` exists, changes to "the folder exists" in the same cut (review finding 1).
+
+**H17-D5: two new served folders, `planner/` and `network/`.** The director chose "New planner/ and network/" (the proposer's recommendation) over "Serve parts of server/" and "Move both into engine/".
+- **`planner/`** holds the planner. `txn.mjs`, `log.mjs` and `validate.js` move whole, with `policy.mjs`. It loads in a browser, as SD2's preview requires; after the planned cuts that is 14 modules and 168,489 bytes (MEASURED).
+- **`network/`** holds the network plugin's rules, roles, appearance and device table (SD11).
+- **Serving:** each folder is served whole or not at all, and `server/` is never served. A test checks that `server/store.js`, `server/identity.mjs` and `server/anchor.mjs` still return 404.
+
+The costs shown:
+- files move, so 73 import sites change (58 planner, 15 network);
+- 230 citations in tracked Markdown change;
+- five folder lists in four scanners move to the layer manifest;
+- the Dockerfile gains two COPY lines and the server two mounts.
+
+**H17-D6: the one device-type table is imported by its users, a deviation from the M7 audit's guardrail G8, accepted by the director.** The director chose "Import it" (the proposer's recommendation) over "Hand it in", the guardrail as written. Under M7 step 4 a guardrail deviation needs the director's acceptance, and this records it. The reason given: injection was needed only because the table's users sat in `kernel/` and `model/`, which may not import each other (C9). After the planned moves no file in either folder needs the table. The table is `network/devices.mjs`, pinned to the palette's order (host, server, loadbalancer, firewall, vxlan, router), because the digit keys index it.
+
+**H17-D7: the lab uses the whole key table, shared with the product.** The director chose "The whole key table" (the proposer's recommendation) over "All but text and naming" and "Link keys only". There is one key table (`app/src/keymap.js`), and the lab carries the label editor (6,738 bytes). Three bindings do nothing in the lab because their features are absent: `r` (run mode) and the `draw:action` event, since the lab passes no run-mode rules (K5), and `/`, since there is no help panel.
+
+**H17-D8: the lab runs the real planner in the page from its first version.** The director chose "Yes, planner in the page" (the proposer's recommendation) over "No, first lab is tab-only" and "Talk to a local server".
+- **The door:** the lab holds a tab Model and a local authority Model, with the real `commit`, `undo`, `redo` and `Log`. So a delete shows the planner's own cascade and sweep, and undo works. Today undo and redo are round trips to the server (`app/src/changes.js`).
+- **Cost:** 4 more modules and 78,915 bytes (MEASURED): `referential`, `log`, `txn` and `validate`.
+- **Exit amended:** H17's exit wording on `dev/BOARD.md` now reads "core, plugin, planner and canvas modules".
+- **The recorder's bullet confirmed:** this confirms, with the director, the bullet "the real planner running locally" recorded under "The lab canvas" above.
+
+**H17-D9: "loads nothing unneeded" is checked at export level.** The director chose "Export level" (the proposer's recommendation) over "File level". The layer scanner's rule L10 fails when any module in an entry's closure exports something that nothing inside that closure imports. What must wait for the rebuild is listed by name, as a ratchet that may only shrink.\
+The cost shown: it cannot reach zero within H17. The Model's link methods move only at the rebuild (K13d), and some exports serve server doors only. At the measured start the hypothetical lab root had 106 of 314 exports imported by nothing in its closure, and the planner entry 153 of 241 (MEASURED).
+
+**H17-D10: the ids of a cut's pieces are derived from the cut.** The director chose "Derived from the cut" (the proposer's recommendation) over "Random, then replaced" and "Browser mints and sends". A piece's id is a deterministic function of the cut link's id and the cut point, so a browser preview and the server's planner mint the same ids by construction, and GR5's frozen differential of `plan()` stays reproducible.\
+The costs shown:
+- a rule for collisions must be specified;
+- two peers holding different documents can still mint differently, which must show as a typed correction.
+
+**H17-D11: SD2's browser preview reaches the product at the rebuild, not before.** The director chose "At the rebuild" (the proposer's recommendation) over "Before the rebuild". Until then the product's browser keeps its copies of three rules: the delete cascade and group steal in `app/src/commands.js`, and `splitsFor` in `app/src/input.js`. The layer scanner's restatement count (L9) and the design's criterion 5 stay at 2 through H17. The lab does not need the preview cut, because it runs the planner in the same page (H17-D8). Shipping it earlier would have added 5 modules and about 72 KB to the live page (MEASURED arithmetic). The rule half of SD2 (K18a: every door cuts a landing, fixing B243) still lands during H17.
+
+**H17-D12: no build step for now; the lab serves its source as written, revisited at the rebuild.** The director chose "Not now; revisit at rebuild" (the proposer's recommendation) over "Yes, add a build step". The built, compressed size is still reported on every run: a similar lab set was 415,516 bytes as source and 31,233 bytes built and compressed (MEASURED by the H17 baseline). The reason: the repository has no build step, and built code would be a derived artifact that A2 and the code-revision parity input would then have to cover (the M7 audit's tension T3). Comments are 56-57% of the lab's source bytes.
+
+**Before H17.3 starts:** the M7 audit's flag H1 requires a second M7 pass over the revised plan (the brief with all review findings applied and these twelve decisions), not over the first design.
