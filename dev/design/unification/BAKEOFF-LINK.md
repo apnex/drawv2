@@ -1115,3 +1115,75 @@ A second reboot on 2026-09-27 wiped the session scratch again. This time the ben
   - the route cost unit (pipes or on-screen length) and its tie-break;
   - a whole-drawing delete command;
   - how a cut VLAN link's pieces rejoin, given that VLAN links no longer join others.
+
+---
+
+# Addendum 5: FR3-v6, the 2026-09-27 rulings built, and whether the link model is settled (2026-09-27)
+
+FR3-v6 builds every ruling through 2026-09-27 and fixes FR3-v5's known defects. It was produced by workflow run wf_0184672e-9e6, one stage at a time:
+- suite 1.6.0;
+- build;
+- independent adversary;
+- fix pass;
+- neutral measurer, whose timing runs were gated at a 1-minute load of 0.15-1.38;
+- brief;
+- independent audit.
+
+Reports are in the bench's `RESULTS-v6` directory.\
+**Reporter checks (MEASURED, 2026-09-27):** I read the fix pass's, measurer's, brief's and audit's reports in full. The measurer reproduced suite 1.6.0 at 75/0/17/0 twice on model `d500f7dfd52060d3`, equal scenario by scenario to the fix pass's run. I re-ran nothing myself this round.
+
+## E.1 What changed
+
+- **Suite 1.6.0:** 92 scenarios, 75 ASSERT. It adds one optional verb, `setKind(ref, {plane, from})`, so that planes and flow direction can be expressed.
+  - Every new ASSERT has power: 299 predictions, 0 mismatches.
+  - Independent pass sides are thin: seven new ASSERTs pass only on the suite author's own instrument.
+- **The rulings of 2026-09-27, all built:**
+  - stay cut against an earlier link, with no per-cut list: 435 KiB at a 1,000 x 1,000 busy point, against 7,269 KiB in FR3-v5;
+  - undo the cut before deleting a cut point;
+  - two pipe kinds;
+  - "longer" on screen, and re-applied after a partial rejoin;
+  - the VLAN, plane and direction join refusals;
+  - a bundle goes with its end point.
+- **FR3-v5's defects:**
+  - the seed-226 missed rejoin: the fix-2 check now passes;
+  - deletion-order joins: 0 of 4,722 on adversary-v5's two-landing fuzz. But measure-v6's order pairs still end differently in 5 cases (2 in A, 3 in B), and every one involves a link passing its own end under the self-crossing ruling;
+  - remove-connection cost: 1.36 ms, against 20.65 ms in FR3-v5 and 15.52 ms in FR3-v4.
+
+## E.2 Cost (MEASURED by measure-v6; FR3-v5 and FR3-v4 re-run in the same session)
+
+| Measure | FR3-v4 | FR3-v5 | FR3-v6 |
+| --- | --- | --- | --- |
+| 1,600 anchors: pipe removal + refresh | 29.49 ms | 20.09 ms | 10.33 ms |
+| Per edit at 1,000 links: connect / remove connection / undo | 4.25 / 15.52 / 12.90 ms | 4.51 / 20.65 / 13.22 ms | 1.55 / 1.36 / 2.70 ms |
+| Trunk (1,000 links over one pipe): delete + first read | 6.2 ms | 5.7 ms | 13.0 ms |
+| Trunk: redraw the pipe + first read | 5.74 ms | 5.28 ms | 8.92 ms |
+| 1,000 own-pipe deletions, no reads between | 1,867 ms | 1,237 ms | 8,896 ms |
+| Point deletion at a 1,000-link star (fix pass) | not run | 4.4 ms | 7.2 ms |
+| Stored bytes, 460-anchor network | 101,467 | 101,467 | 76,588 |
+| Code lines | 1,001 | 884 | 1,083 |
+
+The work moved from reads into edits, which is INFERRED from the splits. So edits that touch many links at once got slower.
+
+## E.3 Rulings taken on FR3-v6's evidence
+
+Both are in `dev/DECISIONS.md`, dated 2026-09-27:
+- **A piece made different while its link is cut stays a separate link.** The page decides. The cost shown: deleting the cut point later removes both pieces, and X survived in only 1 of 392 such cases (the brief auditor's measurement).
+- **A down link keeps the laid pipes along its own drawn legs.** The cost shown: a declared link has no drawn legs and may not heal (10 of 615).
+
+## E.4 Is the link model settled? The audit's verdict, adopted
+
+The brief said "settled enough, under conditions". The independent audit found that this rounded away contrary evidence:
+- the deletion-order pairs above;
+- rulings counted MET on readings they do not settle: the stay-cut ruling, R8 and R2;
+- two supporting claims contradicted by the draft's own rows.
+
+**The verdict adopted is "not yet".** The behaviour is converging: 13 rulings after FR3-v4, 8 after FR3-v5, and 2 after FR3-v6. Before this model shapes the product, three conditions hold:
+1. an independent adversary attacks the fix pass's changes, which nothing independent has done;
+2. the residual departures are ruled or fixed:
+   - E18, where a piece of the same cut link does not hold the cut: 5 in 299,310;
+   - the self-crossing deletion-order cases: 5;
+   - two landings with the first deleted: 15 and 1;
+   - fix 3a's hidden refusal of a plain piece of a cut VLAN link;
+3. the pipe-geometry and route-cost units are decided with the stack interface. The renderer's orthogonal paths point to grid length, not the Euclidean length FR3-v6 uses (READ `kernel/router.mjs`, `kernel/grc.mjs`).
+
+**The recurring source of the corners (the proposer's observation, INFERRED from four rounds):** every round's residual cases come from the tension between rejoin by lineage, which remembers which pieces were once one link, and the director's repeated principle that the page alone decides. The draw-then-delete ruling needs lineage to rejoin what a landing cut. The stay-cut and edited-piece rulings take the page's side. Whatever implements this in the product must hold that lineage at the single writer.
