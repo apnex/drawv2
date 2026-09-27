@@ -85,7 +85,7 @@ Every cut ships with a test proven RED plus a mutant, and ships to production as
 | Cut | What | Conditions and notes |
 |---|---|---|
 | K0 | The layer manifest and scanner (section 3) | C1, C2 and C3 met first (section 5). DONE 2026-09-27: 40 tests, 36 fixture trees, 43 mutants, 11 attack defects fixed |
-| K1 | B242: the tab applies the server's planned ops that are not identical to what it sent, then replays its unanswered ops (H17-D3) | C4: tests assert convergence AND that no own edit regresses (the mutant "full answer, no replay" is killed only by the second); add the live-drag case; state whether undo and redo acks replay pending |
+| K1 | B242: the tab applies the server's planned ops that are not identical to what it sent, then replays its unanswered ops (H17-D3) | C4: tests assert convergence AND that no own edit regresses (the mutant "full answer, no replay" is killed only by the second); add the live-drag case; state whether undo and redo acks replay pending | DONE 2026-09-28: `derivedToApply`, one rule for acks and other writers' changes; ten further reconcile defects fixed (B242's CLOSED note); the replay is narrowed to the entities the answer wrote, which gives the same document outside a gesture and no snapback during one (the fix pass's reading of C4, INFERRED equivalent; see DECISIONS H17-D3). Open: B251-B254 |
 | K2a | The planner imports each name from its defining module | |
 | K2b | Canvas, server, CLI and test files import from defining modules (125 sites) | |
 | K2c | Delete the three barrels (H17-D4); the mount check becomes "the folder exists"; `render` moves to `server/svg.mjs` | RED: GET one module per mounted folder |

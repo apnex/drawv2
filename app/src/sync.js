@@ -30,6 +30,7 @@ to sustain a loop. Losing an undeliverable change is the lesser harm, and the us
 */
 const MAX_REPLAYS = 5;
 import * as commands from './commands.js';
+import { derivedToApply } from './changes.js';
 import { NAME_MAX } from '../../model/limits.mjs';
 import { Clock } from './clock.js';
 
@@ -71,6 +72,14 @@ visibly absent.
 export function bindGestureDefer(input, sync) {
 	sync.deferInbound = () => input.isGesturing();
 	input.onGestureEnd = () => sync.releaseDeferred();
+	/*
+	A snapshot that loads mid-gesture ends the gesture FIRST, on the document it was drawn on.
+	Input's own load handler ends it after the swap, and a cancelled move writes its drag-start
+	positions back -- into the document just loaded, over what the server holds. That went unseen
+	while the queue's older changes were released onto the new document afterwards and happened to
+	move the same node back; they are dropped now, because the snapshot already holds them.
+	*/
+	sync.cancelGesture = () => { if (input.isGesturing()) input.cancelDrag(); };
 	return sync;
 }
 
@@ -141,8 +150,14 @@ export class Sync {
 		this.unlockTimer = null; // pending return-to-green after the min dwell
 		this.selectionDirty = false; // a selection (model-state) change pending forward to the server (R2)
 		this.outbox = [];            // submitted, not yet known durable; persisted (D30)
-		this.deferred = [];          // inbound changes held while a gesture is live (D12)
-		this.deferredSnapshot = null; // an unsolicited snapshot held the same way (B71)
+		/*
+		Inbound messages held while a gesture is live, IN THE ORDER THEY ARRIVED: others' changes
+		(D12), an unsolicited snapshot (B71), and any answer to this tab's own request that arrives
+		behind one of those. The server sent them in its order and the tab must apply them in it --
+		an ack applied ahead of a held change moved `appliedVersion` past it, and the change was then
+		discarded as already seen; an ack applied ahead of a held snapshot was loaded over.
+		*/
+		this.deferred = [];
 		this.diagramId = null;       // the loaded diagram; what a resync and the outbox belong to
 		/*
 		B184 -- a commit's identity is minted ONCE and never changes.
@@ -232,7 +247,14 @@ export class Sync {
 		try {
 			// B183 -- `tries` rides along, or a reload resets the bound and the loop survives it. The
 			// outbox is durable by design (D30); its give-up counter has to be just as durable.
-			const pending = this.outbox.filter((m) => !m.verb).map(({ ops, label, txnId, tries }) => ({ ops, label, txnId, tries: tries || 0 }));
+			/*
+			B242 -- and so does `answered`, with the version it was answered at. The last request the
+			server answered waits here until a later ack says it is durable, so a reload restored it
+			as unanswered and re-applied what the tab had sent over a snapshot that already held
+			what the server made of it: the swept waypoint back in its group, on every reload.
+			*/
+			const pending = this.outbox.filter((m) => !m.verb).map(({ ops, label, txnId, tries, answered, version }) =>
+				({ ops, label, txnId, tries: tries || 0, ...(answered ? { answered, version } : {}) }));
 			if (!pending.length) localStorage.removeItem(OUTBOX_KEY);
 			else localStorage.setItem(OUTBOX_KEY, JSON.stringify({ diagram: this.model.state.meta.id, msgs: pending }));
 		} catch { /* private mode: the outbox is still correct in memory */ }
@@ -251,7 +273,16 @@ export class Sync {
 		The id is RESTORED, not re-minted. Renumbering here is what made a replay indistinguishable
 		from a new command: the server saw a fresh name and applied it again, every time.
 		*/
+		/*
+		A request already in the outbox is not restored again. Every snapshot that keeps the diagram
+		comes here -- a resync, a reconnect that finds the server ahead -- and the disk holds a copy of
+		the live outbox, so pushing it on top doubled the outbox at every one. The copy was never
+		answered (the ack finds the first entry with its id), so it counted as the tab's own unanswered
+		work for good, and every later ack replayed its stale ops over newer ones (B242's replay).
+		*/
+		const have = new Set(this.outbox.map((m) => m.txnId));
 		for (const m of msgs) {
+			if (m.txnId && have.has(m.txnId)) continue;
 			/*
 			A record written before B184 carries no id, and one is minted for it here rather than
 			the record being dropped. Discarding a well-formed pending change would trade a loop for
@@ -261,19 +292,29 @@ export class Sync {
 			never existed -- and from then on it has a stable identity like any other.
 			*/
 			const txnId = m.txnId || `${this.txnPrefix}-r${++this.txn}`;
-			this.outbox.push({ ops: m.ops, label: m.label, txnId, tries: Number(m.tries) || 0 });
+			const answered = m.answered === true ? { answered: true, version: Number.isInteger(m.version) ? m.version : undefined } : {};
+			this.outbox.push({ ops: m.ops, label: m.label, txnId, tries: Number(m.tries) || 0, ...answered });
 		}
 	}
 
 	/*
 	Re-send what the server has not confirmed durable.
 
-	`reapply` says the local document was just replaced by an authoritative one, which does not
-	carry these changes — so they are applied locally as well as re-sent, the same order
-	Changes.commit uses. Replay is safe either way: every op is idempotent, so a change the server
-	DID receive plans zero ops and is accepted as a no-op rather than applied twice.
+	`reapply` says the local document was just replaced by an authoritative one, so what is still the
+	tab's own is applied locally as well as re-sent, before it is sent, the same order Changes.commit
+	uses. Replay is safe either way: the server recognises an id it has applied and answers
+	`replayed` rather than applying it twice.
+
+	B242 / H17-D3 -- "still the tab's own" is `pendingOps`, not the whole outbox. A request the
+	server has ANSWERED is in the snapshot, which was sent after that answer, together with whatever
+	the server made of it and whatever happened since: re-applying what the tab sent put a swept
+	waypoint back in its group, and put back a move an undo had reversed, and the resend's `replayed`
+	answer carries nothing to correct it. And the open burst window IS the tab's own, applied and not
+	yet submitted -- the load had dropped it, and its later answer was then skipped as an echo of
+	something the tab no longer showed. `window` is false when the snapshot is of another diagram:
+	a window belongs to the document it was made on.
 	*/
-	replayOutbox({ reapply }) {
+	replayOutbox({ reapply, window: withWindow = true } = {}) {
 		/*
 		B183 -- a replay is an ATTEMPT, and an attempt that never lands must eventually be given up.
 
@@ -297,7 +338,6 @@ export class Sync {
 			if (m.tries > MAX_REPLAYS) continue;      // given up on: dropped below, with a word to the user
 			kept.push(m);
 			m.sent = false;
-			if (reapply && Array.isArray(m.ops)) applyOps(this.model, m.ops);
 		}
 		const abandoned = this.outbox.length - kept.length;
 		if (abandoned) {
@@ -305,7 +345,20 @@ export class Sync {
 			this.persistOutbox();
 			this.say(`${abandoned} unsent change${abandoned > 1 ? 's' : ''} could not be delivered and ${abandoned > 1 ? 'were' : 'was'} discarded`, { err: true });
 		}
+		if (reapply) applyOps(this.model, this.pendingOps({ window: withWindow }));
 		this.drain();
+	}
+
+	/*
+	B242 / H17-D3 -- every op applied to this tab that the server has not answered yet, oldest first.
+
+	The outbox requests not yet answered -- sent or not -- and then the burst window Changes still
+	holds, which is applied here and not yet submitted. An answered request is excluded even while it
+	waits in the outbox to be confirmed durable: it is the server's now. Undo and redo carry no ops.
+	*/
+	pendingOps({ window: withWindow = true } = {}) {
+		const unanswered = this.outbox.filter((m) => !m.answered && Array.isArray(m.ops)).flatMap((m) => m.ops);
+		return withWindow ? [...unanswered, ...this.changes.openWindowOps()] : unanswered;
 	}
 
 	// a selection (model-state) change is coalesced to a dirty flag and forwarded on the pulse, AFTER
@@ -346,8 +399,7 @@ export class Sync {
 			that would make the app feel stuck rather than safe.
 			*/
 			if (!this.expectLoad && this.deferInbound && this.deferInbound()) {
-				// last one wins: a snapshot is whole state, so an older one has nothing left to say
-				this.deferredSnapshot = msg;
+				this.deferred.push(msg);    // releaseDeferred applies the last one held, in its place
 				return;
 			}
 			return this.applySnapshot(msg);
@@ -371,51 +423,9 @@ export class Sync {
 		}
 		// our own request came back: reflect the server's authority, prune what is now durable
 		if (msg.cmd === 'ack') {
-			// B74 -- the ordinary case has to speak too, or a blank channel means both "fine" and
-			// "not listening". A version number is the smallest true thing the server just said.
-			this.say(`accepted v${msg.body?.version ?? '?'}`);
-			const b = msg.body || {};
-			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version, undoLabel: b.label,
-				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
-			this.appliedVersion = b.version || 0;          // our own ops are already in the model
-			const sent = this.outbox.find((m) => m.txnId === b.acked);
-			if (sent) sent.version = b.version;
-			/*
-			B184 -- a replay is acknowledged, and that acknowledgement RETIRES the entry.
-
-			Without this the client keeps an entry the server has already applied, replays it on the
-			next snapshot, is told again that it is a replay, and keeps it again. Recognising the
-			replay server-side only helps if the client acts on being told.
-			*/
-			if (b.replayed && sent) sent.sent = true;
-			this.pruneOutbox(b.durableVersion);
-			/*
-			B162 / I7 -- the server EXPANDED this transaction, and the expansion must reach us too.
-
-			Our own ops are already in the model, applied optimistically, which is why this used to
-			apply the server's list only for undo and redo. But `plan()` now adds ops we never sent:
-			a waypoint the transaction orphaned is swept in the same step. Those deletions arrived in
-			`b.ops`, were skipped, and the bends stayed on the canvas -- correct on the server, stale
-			in the browser, which is precisely the divergence I7 forbids.
-
-			ONLY WHAT WE DID NOT SEND. Re-applying the whole list would replay our own ops on a model
-			that may have moved on -- a later local edit clobbered by an older ack. The outbox holds
-			exactly what we submitted, so the difference is the server's contribution and nothing
-			else.
-
-			Undo and redo still take the whole list: their ops are the server's by definition, and
-			nothing of ours is in flight to be overwritten.
-			*/
-			if (Array.isArray(b.ops)) {
-				if (b.label === 'undo' || b.label === 'redo') applyOps(this.model, b.ops);
-				else {
-					const mine = new Set((sent?.ops || []).map((o) => `${o.op}:${o.kind}:${o.id ?? o.entity?.id}`));
-					const added = b.ops.filter((o) => !mine.has(`${o.op}:${o.kind}:${o.id ?? o.entity?.id}`));
-					if (added.length) applyOps(this.model, added);
-				}
-			}
-			this.emitState({});
-			return;
+			// held behind anything already held, so the server's order survives the gesture (D12)
+			if (this.deferred.length) { this.deferred.push(msg); return; }
+			return this.applyAck(msg.body || {});
 		}
 		// someone else's change. Apply it, unless a gesture is mid-flight — a model.load or a
 		// competing write landing under a live drag fights the preview (D12).
@@ -468,7 +478,7 @@ export class Sync {
 			const b = msg.body || {};
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
 				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman });
-			if (this.deferInbound && this.deferInbound()) { this.deferred.push(b); return; }
+			if (this.deferInbound && this.deferInbound()) { this.deferred.push(msg); return; }
 			this.applyChange(b);
 			this.emitState({});
 			return;
@@ -489,6 +499,35 @@ export class Sync {
 			// B3/I16: a rejection is surfaced against the request that caused it, never dropped
 			const b = msg.body || {};
 			const dropped = this.outbox.findIndex((m) => m.txnId === b.txnId);
+			/*
+			B181 -- a rate limit means SLOW DOWN, and must not be answered with a resync.
+
+			Every refusal used to ask for a full snapshot. During the incident a client was
+			attempting roughly 300 commits a second and being refused every time, so it also
+			demanded 300 snapshots a second -- each one reloading the model and re-rendering the
+			whole diagram. That is a feedback loop, and it is what the director saw as stuttering.
+
+			A resync is the right answer to a REJECTED command, because the tab holds a change
+			the server will never accept and cannot converge alone. It is exactly the wrong
+			answer to a THROTTLED one: the command was not wrong, there was merely too much of
+			it, and answering with the most expensive request available amplifies the flood it
+			is meant to damp.
+
+			So a throttled command STAYS in the outbox, unsent, and goes out again when the window
+			has passed -- which is what `drain` already promised ("the outbox is untouched, so
+			nothing is lost"). It used to be spliced out first, like a refusal, and never resent,
+			while the tab went on showing it: the tab ended on a change the server never had.
+			*/
+			if (dropped >= 0 && b.code === 'rate-limited') {
+				this.outbox[dropped].sent = false;
+				this.throttledUntil = Date.now() + THROTTLE_BACKOFF_MS;
+				if (!this.throttleTimer) {
+					this.throttleTimer = setTimeout(() => { this.throttleTimer = null; this.drain(); }, THROTTLE_BACKOFF_MS);
+					this.throttleTimer.unref?.();
+				}
+				this.say(b.message, { code: b.code, err: true });
+				return;
+			}
 			if (dropped >= 0) {
 				this.outbox.splice(dropped, 1);
 				/*
@@ -505,25 +544,6 @@ export class Sync {
 				was the only place that forgot to say so.
 				*/
 				this.persistOutbox();
-				/*
-				B181 -- a rate limit means SLOW DOWN, and must not be answered with a resync.
-
-				Every refusal used to ask for a full snapshot. During the incident a client was
-				attempting roughly 300 commits a second and being refused every time, so it also
-				demanded 300 snapshots a second -- each one reloading the model and re-rendering the
-				whole diagram. That is a feedback loop, and it is what the director saw as stuttering.
-
-				A resync is the right answer to a REJECTED command, because the tab holds a change
-				the server will never accept and cannot converge alone. It is exactly the wrong
-				answer to a THROTTLED one: the command was not wrong, there was merely too much of
-				it, and answering with the most expensive request available amplifies the flood it
-				is meant to damp.
-				*/
-				if (b.code === 'rate-limited') {
-					this.say(b.message, { code: b.code, err: true });
-					this.throttledUntil = Date.now() + THROTTLE_BACKOFF_MS;
-					return;
-				}
 				// The commit was applied LOCALLY before it was submitted — that is what makes a
 				// gesture feel instant. A rejection therefore leaves this tab holding a change the
 				// server refused, and it will never converge on its own. Ask for authoritative
@@ -540,9 +560,68 @@ export class Sync {
 		}
 	}
 
+	/*
+	The answer to this tab's own request: reflect the server's authority, prune what is now durable,
+	and take what the server made of it.
+	*/
+	applyAck(b) {
+		// B74 -- the ordinary case has to speak too, or a blank channel means both "fine" and
+		// "not listening". A version number is the smallest true thing the server just said.
+		this.say(`accepted v${b.version ?? '?'}`);
+		/*
+		B184 / B106 -- the version an ack carries is where the document now is, EXCEPT on a
+		replay: that carries the version the request first produced, which is history. Taking it
+		moved `appliedVersion` backwards, so the next change in order looked like one from a
+		future the tab had missed and was answered with a resync; and it moved the undo counter's
+		version backwards, so the next Ctrl+Z expected a stale version and was refused. A no-op
+		ack carries no version at all, and `|| 0` used to reset the model's version to zero.
+		*/
+		const version = b.replayed ? undefined : b.version;
+		this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version, undoLabel: b.label,
+			undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
+		if (typeof version === 'number') this.appliedVersion = version;   // our own ops are already in the model
+		const sent = this.outbox.find((m) => m.txnId === b.acked);
+		/*
+		`answered` rather than `version`: a no-op ack carries no version, and a request the server
+		has answered is the server's now -- it must never be replayed as one of ours (pendingOps).
+		*/
+		if (sent) { sent.version = b.version; sent.answered = true; }
+		/*
+		B184 -- a replay is acknowledged, and that acknowledgement RETIRES the entry.
+
+		Without this the client keeps an entry the server has already applied, replays it on the
+		next snapshot, is told again that it is a replay, and keeps it again. Recognising the
+		replay server-side only helps if the client acts on being told.
+		*/
+		if (b.replayed && sent) sent.sent = true;
+		this.pruneOutbox(b.durableVersion);
+		/*
+		B162 / I7, then B242 / H17-D3 -- take the server's answer, then replay what is still ours.
+
+		Our own ops are already in the model, applied optimistically. The answer can hold more than
+		we sent -- `plan()` sweeps an orphaned bend, trims its group, collapses a two-link waypoint --
+		and it can hold a DIFFERENT body under a key we sent: our own group trim and the sweep's
+		corrected one are both a `set` on one group. The filter this replaces skipped every planned
+		op whose op:kind:id we had sent, so the corrected trim never arrived and the tab kept a group
+		listing a waypoint that no longer existed (B242).
+
+		`derivedToApply` is the one rule (changes.js): the planned ops that are not our own echoed
+		back, then our ops still unanswered on the entities those wrote, because the server applies
+		ours after this answer and the first step has overwritten them there. Undo and redo take the
+		same path with nothing sent. Their ops are the server's, but a commit made after Ctrl+Z and
+		before its answer IS ours and in flight, and taking their whole list used to revert it.
+		*/
+		if (Array.isArray(b.ops)) {
+			const apply = derivedToApply(sent?.ops || [], b.ops, this.pendingOps());
+			if (apply.length) applyOps(this.model, apply);
+		}
+		this.emitState({});
+	}
+
 	// Load a snapshot. Split out of `onMessage` so B71's deferral has somewhere to send a held
 	// message when the gesture ends, instead of re-entering the handler past its own guard.
-	applySnapshot(msg) {
+	// `older` is what releaseDeferred held before it; otherwise whatever is still held is older.
+	applySnapshot(msg, older = null) {
 			/*
 			H12.4 -- take the server's clock BEFORE anything else in this method can return early.
 
@@ -586,6 +665,16 @@ export class Sync {
 				this.net.send('create', { name: local.meta.name, doc: local });
 				return;
 			}
+			/*
+			Everything still held arrived BEFORE this snapshot, so the snapshot already holds it: a held
+			change or an older snapshot is dropped (B71). A held answer to this tab's own request is
+			still taken -- what it writes lands on the document about to be replaced, but the request
+			then counts as answered, and is not re-applied over the snapshot as the tab's own. Taken
+			before the load, because ending the gesture releases whatever is still held.
+			*/
+			for (const held of older ?? this.deferred.splice(0)) if (held.cmd === 'ack') this.applyAck(held.body || {});
+			this.cancelGesture?.();                         // on the old document (bindGestureDefer)
+			const same = this.diagramId === doc.meta.id;   // before it is reassigned below
 			this.loading = true;
 			this.model.load(doc); // model.load now restores the authoritative selection from doc.selection (R2) — no clear
 			this.loading = false;
@@ -613,7 +702,14 @@ export class Sync {
 			// is re-applied locally as well as re-sent (D30).
 			if (switched) { this.outbox = []; this.persistOutbox(); }
 			else this.restoreOutbox(doc.meta.id);
-			this.replayOutbox({ reapply: true });
+			/*
+			D29 -- an answered request the snapshot has not reached was LOST by the server (a restart
+			before its flush), so it is the tab's own again: re-applied below and re-sent, and its
+			fresh answer is then read against what the tab sent, like any other.
+			*/
+			const at = msg.body.version || 0;
+			for (const m of this.outbox) if (m.answered && typeof m.version === 'number' && m.version > at) m.answered = false;
+			this.replayOutbox({ reapply: true, window: same });
 			this.emitState({ diagrams: msg.body.diagrams, rewound: msg.body.rewound });
 	}
 
@@ -657,27 +753,36 @@ export class Sync {
 		removed a beat sends exactly that.
 		*/
 		if ('reveal' in body) this.model.state.reveal = body.reveal ? structuredClone(body.reveal) : null;
-		if (Array.isArray(body.ops)) applyOps(this.model, body.ops);
+		/*
+		B242 / H17-D3 -- the same rule as the answer to this tab's own request, with nothing sent.
+
+		The server applied this change BEFORE this tab's unanswered ops, which it has not reached
+		yet, and it will apply those on top of it. So what this tab still owns goes back on top of
+		what the change wrote. Applied bare, a change that set a field the tab has a pending edit of
+		overwrote the edit, and the edit's own answer was then skipped as an echo of something the
+		tab no longer showed: the tab kept the other writer's value, the server the tab's.
+		*/
+		if (Array.isArray(body.ops)) applyOps(this.model, derivedToApply([], body.ops, this.pendingOps()));
 		if (typeof body.version === 'number') this.appliedVersion = body.version;
 	}
 
-	// replay whatever landed while a gesture was in flight
-	releaseDeferred() {
-		const pending = this.deferred;
-		this.deferred = [];
-		/*
-		B71 -- a held snapshot supersedes held changes and is applied instead of them.
+	/*
+	Replay whatever landed while a gesture was in flight, in the order it arrived.
 
-		A snapshot is whole state, so replaying deltas that predate it would be applying history on
-		top of the present. Draining the queue first and then loading would reach the same document
-		by a longer route, but only if every queued change is older than the snapshot, and nothing
-		available here establishes that. Dropping them is the claim that can be justified.
-		*/
-		const snap = this.deferredSnapshot;
-		this.deferredSnapshot = null;
-		if (snap) return this.applySnapshot(snap);
-		pending.forEach((b) => this.applyChange(b));
-		if (pending.length) this.emitState({});
+	B71 -- a held snapshot supersedes whatever was held BEFORE it, because it is whole state and was
+	sent after them: an older change is dropped, and an older answer to this tab's own request is taken
+	before the load (applySnapshot). What was held AFTER the last snapshot is newer than it and is
+	applied on top, in order. Arrival order is what establishes "older": the queue keeps it.
+	*/
+	releaseDeferred() {
+		const held = this.deferred.splice(0);
+		const last = held.findLastIndex((m) => m.cmd === 'snapshot');
+		if (last >= 0) this.applySnapshot(held[last], held.slice(0, last));
+		for (const m of held.slice(last + 1)) {
+			if (m.cmd === 'ack') this.applyAck(m.body || {});
+			else this.applyChange(m.body || {});
+		}
+		if (held.length) this.emitState({});
 	}
 
 	/*
@@ -737,6 +842,14 @@ export class Sync {
 				// `sync`, a snapshot, or a snapshot marked `rewound`. The outbox is NOT dropped:
 				// what it holds is precisely the work the server has not confirmed durable, and
 				// dropping it here is what made the old client-authoritative push necessary.
+				/*
+				Nothing has gone out on THIS socket yet. A request sent on the one that dropped, and
+				not answered, may never have arrived, so it goes out again ahead of anything newer:
+				left marked sent, a commit made while `resume` was in flight reached the server
+				first, and the older one, re-sent at the answer, was applied over it -- the user's
+				later edit lost. The server answers a request it did receive `replayed`.
+				*/
+				for (const m of this.outbox) if (!m.answered) m.sent = false;
 				this.requestSentAt = Date.now();   // H12.4 -- same on reconnect
 				this.net.send('resume', {
 					diagram: this.model.state.meta.id,

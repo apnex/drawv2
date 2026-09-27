@@ -15,7 +15,8 @@ function harness() {
 	// a Changes-shaped stub: Sync reflects the server's authority through it, so a bare
 	// { clear() {} } no longer models the collaborator. There is no pulse to clear any more —
 	// commits go out on submit; only selection keeps a trailing flush.
-	const history = { clear() {}, setCounts() {}, state: { version: 0 } };
+	// `openWindowOps`: an ack replays the tab's unanswered ops, the open burst window among them (B242)
+	const history = { clear() {}, setCounts() {}, openWindowOps: () => [], state: { version: 0 } };
 	const sync = new Sync({ model, net, history, selection });
 	assert.equal(sync.pulse, undefined, 'there is no interval to stop: a commit is not polled');
 	sync.hydrated = true;        // forwarding requires hydration
@@ -156,12 +157,12 @@ test('B71: a snapshot arriving mid-gesture is held, not applied under the previe
 	t.gesture(true);
 	t.recv(snap('diagram-bbb002', 2));
 	assert.equal(t.sync.diagramId, 'diagram-aaa001', 'the document did NOT change under the gesture');
-	assert.ok(t.sync.deferredSnapshot, 'it is held');
+	assert.deepEqual(t.sync.deferred.map((m) => m.cmd), ['snapshot'], 'it is held');
 
 	t.gesture(false);
 	t.sync.releaseDeferred();
 	assert.equal(t.sync.diagramId, 'diagram-bbb002', 'and lands the moment the gesture ends');
-	assert.equal(t.sync.deferredSnapshot, null, 'the hold is cleared');
+	assert.equal(t.sync.deferred.length, 0, 'the hold is cleared');
 });
 
 test('B71: a held snapshot supersedes held changes, because it is whole state', () => {
@@ -170,8 +171,8 @@ test('B71: a held snapshot supersedes held changes, because it is whole state', 
 	t.gesture(true);
 	t.recv({ cmd: 'change', body: { version: 2, ops: [] } });
 	t.recv(snap('diagram-ccc003', 9));
-	assert.equal(t.sync.deferred.length, 1, 'the change queued');
-	assert.ok(t.sync.deferredSnapshot, 'and so did the snapshot');
+	// one queue, in arrival order: the order is what says the change is older than the snapshot
+	assert.deepEqual(t.sync.deferred.map((m) => m.cmd), ['change', 'snapshot'], 'the change queued, and so did the snapshot');
 
 	t.gesture(false);
 	t.sync.releaseDeferred();
@@ -186,7 +187,7 @@ test('B71: a snapshot the user ASKED for is not held — that would feel stuck, 
 	t.sync.expectLoad = true;             // set by openDiagram / createDiagram
 	t.recv(snap('diagram-ddd004', 3));
 	assert.equal(t.sync.diagramId, 'diagram-ddd004', 'a deliberate open lands immediately');
-	assert.equal(t.sync.deferredSnapshot, null, 'nothing was held');
+	assert.equal(t.sync.deferred.length, 0, 'nothing was held');
 });
 
 test('B76: the client holds its own principal and hands it to the UI', () => {
@@ -224,7 +225,8 @@ function inbound() {
 	};
 	const model = new Model();
 	const selection = new Selection(model);
-	const history = { clear() {}, setCounts() {}, state: { version: 0 } };
+	// `openWindowOps`: a change is followed by the tab's own unanswered ops, the burst window among them
+	const history = { clear() {}, setCounts() {}, openWindowOps: () => [], state: { version: 0 } };
 	const sync = new Sync({ model, net, history, selection });
 	return { sync, model, sent, send: (m) => onMsg(m) };
 }

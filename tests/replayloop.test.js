@@ -115,7 +115,7 @@ test('B183: the count survives persistence, so a reload cannot reset the bound',
 	`restoreOutbox` still mentioned the word further down the file -- a mutation that survived is
 	how that was found.
 	*/
-	assert.match(body, /\{ ops, label, txnId, tries \}/,
+	assert.match(body, /\{ ops, label, txnId, tries, answered, version \}/,
 		'the persisted shape omits tries, so a reload resets the bound');
 	assert.match(body, /tries: tries \|\| 0/, 'tries is not written with a default, so undefined persists');
 

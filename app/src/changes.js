@@ -27,6 +27,75 @@ function toOp(entry) {
 	throw new Error(`toOp: unknown entry op '${entry.op}'`);
 }
 
+/*
+B242 / H17-D3 -- reconcile the tab that made a change with the server's answer to it. The ONE rule:
+Sync's ack calls it, and so will the lab's local door (dev/design/h17/PLAN.md K1, guardrail G3), so
+there is no second copy of a filter to drift.
+
+`sent` is what this tab submitted for the request being answered -- nothing, for undo and redo, whose
+ops are the server's by definition, and nothing for another writer's change (Sync.applyChange uses
+this rule too). `planned` is what the planner committed for it. `pending` is every op already applied
+to this tab and not yet answered, oldest first. The result, applied in order:
+
+  1. the planned ops that are not the tab's own sent ops echoed back -- what the server added or
+     changed: a sweep, a group trim, a collapse;
+  2. then the ops in `pending` on the entities step 1 wrote, because the server applies those AFTER
+     this answer and step 1 has overwritten them (a collapse rewriting a link the tab has since
+     replugged).
+
+An echo is skipped rather than re-applied because the tab already holds it, and re-applying it would
+pull back a live drag that has moved the entity since, which no request carries. Re-applying the whole
+answer is exactly the reading H17-D3's CORRECTED banner rules out.
+
+Step 2 replays only where step 1 wrote for the same reason. On any other entity the tab already shows
+its pending ops -- it applied them last, and nothing in this answer has written there since -- so
+re-applying them changes nothing, except under a live drag, which writes the model and is in no
+request. Replaying every pending op put a node being dragged back where its own unanswered nudge had
+left it, whenever the answer to an EARLIER request arrived: C4's "the tab must not snap back",
+broken by the replay itself.
+
+"Echoed back" is read as the real planner echoes, where a byte comparison of op bodies is wrong three
+ways (tests/b242-reconcile.test.js has a case for each):
+- a set comes back NARROWED to the fields that changed (server/txn.mjs narrow), so a planned set is an
+  echo when every field it carries has the value a sent set gave it;
+- each sent op vouches for at most ONE planned op, so a coalesced burst that sets one field three times
+  is three echoes -- keyed by op:kind:id alone, the last sent value would stand for all three;
+- once a derived op has written an entity, a later echo on that entity is applied: the tab applied its
+  op before the derived one existed, so on the tab it is no longer on top.
+*/
+export function derivedToApply(sent, planned, pending) {
+	const mine = new Map();          // entity -> the tab's sent ops on it, not yet matched, in order
+	for (const op of sent) {
+		const at = entityOf(op);
+		if (!mine.has(at)) mine.set(at, []);
+		mine.get(at).push(op);
+	}
+	const written = new Set();       // entities a derived op has written in this answer
+	const derived = [];
+	for (const op of planned) {
+		const at = entityOf(op);
+		const own = written.has(at) ? null : mine.get(at);
+		const echo = own ? own.findIndex((o) => echoes(o, op)) : -1;
+		if (echo >= 0) { own.splice(echo, 1); continue; }
+		derived.push(op);
+		written.add(at);
+	}
+	return [...derived, ...pending.filter((op) => written.has(entityOf(op)))];
+}
+
+// a meta op carries neither kind nor id, so every meta op keys as one entity of its own
+const entityOf = (op) => `${op.kind}:${op.id ?? op.entity?.id}`;
+const sameValue = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// is `planned` the planner's echo of `own`, an op the tab sent on the same entity?
+function echoes(own, planned) {
+	if (own.op !== planned.op) return false;
+	if (planned.op === 'put') return sameValue(own.entity, planned.entity);
+	// set and meta: narrowed, each field with the value the tab sent. A del has no patch, so it echoes.
+	const patch = own.patch || {};
+	return Object.entries(planned.patch || {}).every(([f, v]) => Object.hasOwn(patch, f) && sameValue(patch[f], v));
+}
+
 // A burst of same-shape edits (arrow-key nudges, Shift+arrow resizes) should be ONE undo step, not
 // one per keystroke. The window is client-side because only the client knows a burst is in
 // progress; the server sees whatever the window emits.
@@ -88,6 +157,13 @@ export class Changes {
 	window it moved into gets the same seam.
 	*/
 	flush() { this.#flushWindow(); }
+
+	/*
+	B242 -- the ops in the open burst window: applied to this tab already (commit applies first), not
+	yet submitted, so in no outbox. They are among the tab's unanswered ops that an answer to an earlier
+	request must replay (derivedToApply), or an undo answered mid-burst would revert the nudge.
+	*/
+	openWindowOps() { return this.window ? [...this.window.ops] : []; }
 
 	#flushWindow() {
 		if (!this.window) return;
