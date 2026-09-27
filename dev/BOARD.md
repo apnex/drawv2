@@ -918,7 +918,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | K15 lands, or a stacking difference between peers is reported |
 | **B250** | S4 | CI does not fail when tests are skipped (F-SKIP) | K10's browser tests land |
-| **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; a director question | the director rules on the lost-answer behaviour |
+| **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag | a user reports a node jumping during a drag |
