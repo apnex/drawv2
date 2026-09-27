@@ -879,6 +879,18 @@ Advancing the collapse's projection (H16.3) turns some silent link losses into m
 CORRECTED 2026-09-25: first recorded as met on CI run 36089220400; the next push failed the same teardown (run 36109819709), so B238 and this milestone were reopened. Met on the second fix: five consecutive green CI runs (36e7ecc, run 36110330861, attempts 1-5). The collapse and sweep fixes stand, held by the tests and mutants recorded in B239-B241. The review's one held finding is B242.
 ---
 
+## H17 -- the lab canvas: a minimal client composition over real code - `TODO`
+
+Opened 2026-09-27 by the director (DECISIONS.md, "The lab canvas").A single fixed canvas built from the real modules, with no storage, sync, menus or sign-in. It is for visual validation of the anchor and link rules with the real gestures (w, f, k, l), and for cutting the module seams so that nothing loads that is not needed.It is also the proving ground for three stack rulings: derivation shared by browsers and the server (SD1), the browser previewing the server's rules with the same code (SD2), and the network as a separable plugin (SD11).Its gains are carried back into the production app, which is later rebuilt on the same composition.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H17.1 | Measure what the browser loads today, map the module seams, and audit them against the axioms (M7) | feature | S3 | `WIP` |
+| H17.2 | Design the minimal composition, its enforced boundaries and an ordered cut plan, and put its decisions to the director | feature | S3 | `TODO` |
+| H17.3 | Build the lab entry on the real modules, cut by cut, each with its test (rows registered before code) | feature | S3 | `TODO` |
+
+**Exit:** the lab runs the real link gestures on one fixed canvas. Its import graph holds only core, plugin and canvas modules, and a scanner enforces that. Its load is measured against today's app.
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\

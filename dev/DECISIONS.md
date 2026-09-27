@@ -789,3 +789,15 @@ The rulings above change how every diagram is stored:
 Asked how those irreversible changes to the 38 live diagrams should be spent, the director chose "One named batch, last" (the proposer's recommendation) over "Each with its feature" and "Trim the list first".\
 All stored-format changes go into a single listed conversion, applied once, after the new behaviour is proven on the bench and in tests. This is AX6's "few, named, and last" (`dev/surveys/unification-survey.md`). Under the standing rule, the conversion itself is deleted after it runs ("transform once, then delete the transform").\
 The cost shown with it: the new behaviour cannot reach live diagrams until the batch lands.
+
+**The lab canvas: a minimal client composition over real code modules -- directed 2026-09-27.**\
+The director proposed "a sovereign cut-down version of our app purely for anchor+routing pack validation": a single fixed canvas, with no multiple documents, no storage, and none of the menu icons, bars, status or SSO. It would be "a minimal kernel of a visual canvas to use 'w', 'f', 'k' and other related visual testing", which "might also be helpful at cutting decoupled modular boundaries of the real packs using real code".\
+Asked what the lab should run first, the director chose real code, in their own words:\
+"one thing I'm keen to do is properly cut the seams/boundaries such that we don't load any code that is unnecessary. This work will allow us to re-architect the real production app and backport and gains we develop. One goal will be - just how minimal / efficient with proper soveriegn / deduped boundaries can we make this? Perform a full axiom audit if it would help. This then essentially becomes a "minimal" client system composition over real code modules - and we will re-build and re-integrate into the production service when we are ready".\
+So the lab:
+- is built from the real modules, mounted rather than forked, with an in-memory document and the real planner running locally;
+- loads nothing it does not need;
+- has sovereign, deduplicated boundaries, enforced by scanners;
+- its gains are carried back into the production app, which is later rebuilt on the same composition.
+
+The work is milestone H17 on `dev/BOARD.md`. It begins with a measured baseline of what the app loads, and an axiom alignment audit (mission-kit M7) of the module boundaries.
