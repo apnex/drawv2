@@ -658,3 +658,21 @@ This is the same as a link ending at a deleted point, which goes in FR3-v5 and i
 Asked, for 'trunk' cut at n2 and n3 by two new links, where the link at n2 is deleted and the pieces either side of n2 join back up, "Now there are two pieces, split at n3. Which one should carry 'trunk'?", the director chose "The longer one on screen" (the proposer's recommendation) over "Wherever it already is" (FR3-v5's behaviour).\
 The name goes where it would be if the deleted landing had never been drawn: the pieces on the page now decide, by the "longer on screen" rule.\
 The cost shown with it: the name can move to the other piece at n3, a point the author did not touch. Under FR3-v5's behaviour, the same picture showed the name on a different piece depending on the order of cuts: 190 of 4,915 (stream A) and 152 of 4,558 (stream B) two-cut round trips (MEASURED, measure-v5). Not built.
+
+**A piece made different while its link is cut stays a separate link -- ruled 2026-09-27.**\
+Asked "Y has cut link X in two at w. While it's cut, you make one piece different: you give it its own VLAN, or make it a control link. Then you delete Y. Should the two pieces join back into X?", the director chose "No, they stay two links" (the proposer's recommendation) over "Yes, and the change covers all of X" (FR3-v6's behaviour for a VLAN) and "Yes, as the original X; change dropped".\
+The page decides: two links that differ in VLAN, plane or direction do not join, as for any two links (the VLAN, plane and direction rulings above). What the author set stays where it was set.\
+The costs shown with it (MEASURED, adversary fuzz on FR3-v6 and the FR3-v6 brief audit):
+- deleting Y leaves two links where there was one;
+- deleting the point w later removes both pieces rather than keeping X. X survived in only 1 of 392 such cut points.
+- not yet built for a VLAN on one piece, where 550 fuzz cases would change.
+
+Carried to design: a plain piece of a cut VLAN link must still rejoin its own sibling (:640). Telling that apart from a piece given its own VLAN needs the pieces' state at the cut, which is lineage.
+
+**A down link keeps the laid pipes along its own drawn legs -- ruled 2026-09-27, confirming the proposer's reading of "removed when there are no links remaining".**\
+Asked, for L2 declared from A to B over another link's laid pipes and down after pipe A-u is deleted, "While L2 is down, do its other laid pipes count as having a link remaining, so that redrawing A-u brings L2 back?", the director chose "Keep a down link's own drawn legs" (the proposer's recommendation) over "Keep nothing for a down link" and "Keep the pipes it last ran over".\
+A down link counts as remaining on the laid pipes along its own drawn legs, so a hand-drawn link heals when the deleted pipe is redrawn. No last route is remembered.\
+The costs shown with it (MEASURED, one instrument on one small grid):
+- a link declared by its ends has no drawn legs, so the laid pipes it ran over go while it is down, and it may not come back when the deleted pipe is redrawn (10 of 615);
+- a declared link and a drawn link on the same route therefore behave differently once down;
+- the answer not chosen that kept everything needed stored last-route memory, which the pin ruling had removed.
