@@ -257,7 +257,7 @@ Role derivation, visual layers, picking and validation consume those rather than
 The boundary is smaller than the five-part version above BECAUSE the permission table absorbed the special cases.
 
 **Still not designed**: how a pack contributes a write.\
-That question is unchanged by this amendment -- the collapse is still the first one, and it is now gated by permission as well.\
+That question is unchanged by this amendment -- the collapse is still the first one, and it is now gated by permission as well.
 > **AMENDED 2026-09-27 by the director (stack interface, SD4): a pack is ONLY its table.** The routing pack no longer owns the role derivation or the write. The derivation belongs to the link layer (shared by browsers and the server, SD1). The write rules belong to the server's planner (SD2). Both read the pack's table. So "how a pack contributes a write" is answered: it does not. See "A device's capability pack is only a table" under the stack interface rulings below.
 
 **Amended again 2026-09-22, ruled by the director: a node is a CORE plus packs, and a type is a composition.**
@@ -444,8 +444,11 @@ The re-test's second judge made this the condition on which the leading model st
 
 **The link model: FR3 adopted as the model to design toward -- ruled 2026-09-25.**\
 Asked "Adopt FR3 (links as cables routed through visible pipes) as the model to design toward?", the director chose "Adopt" over "More evidence first".\
-A PIPE is a visible adjacency between two anchors, drawn, selected and deleted by an author. A LINK is a cable with its own identity, routed through pipes, which re-paths when a pipe under it is removed and is cut and joined as the rulings above describe. A FLOW is declared over links, and its path is derived.\
-This adopts a DIRECTION for design and changes no code. The bake-off's measured costs of FR3 -- a link's memory of the route it was drawn along, which can make identical-looking states diverge; the number of records one edit rewrites; the cost of re-deriving routes at scale; and the round-trip cases where removing a landing does not restore the passing links -- are carried as the next design questions, not accepted as settled.
+A PIPE is a visible adjacency between two anchors, drawn, selected and deleted by an author.\
+A LINK is a cable with its own identity, routed through pipes, which re-paths when a pipe under it is removed and is cut and joined as the rulings above describe.\
+A FLOW is declared over links, and its path is derived.\
+This adopts a DIRECTION for design and changes no code.\
+The bake-off's measured costs of FR3 -- a link's memory of the route it was drawn along, which can make identical-looking states diverge; the number of records one edit rewrites; the cost of re-deriving routes at scale; and the round-trip cases where removing a landing does not restore the passing links -- are carried as the next design questions, not accepted as settled.
 
 **A link returns to its drawn route -- ruled 2026-09-25.**\
 Asked "When the deleted pipe is redrawn, where should the re-pathed link go?", the director was first unsure; after the proposer set out the three options and recommended one, the director chose "Back to drawn route" over "Stay where it is" and "Always the best route".\
@@ -471,25 +474,32 @@ Not ruled here: whether a flow may pass THROUGH a server (forwarding), as agains
 
 **Two links passing through one point cross without connecting -- ruled 2026-09-25.**\
 Asked "When two links both pass through the same point, do they connect there?", the director chose "No, they just cross" over "Yes, both are cut": both pass through untouched, like a crossover on a schematic, and links connect at a point only where one of them ENDS there (the landing and pass-through rulings above).\
-This settles the register's PS205 (meeting against passing through) for links. The pipes at that point still meet as pipes -- two cables can share a conduit junction without being connected -- which is consistent with pipes and links being separate layers.
+This settles the register's PS205 (meeting against passing through) for links.\
+The pipes at that point still meet as pipes -- two cables can share a conduit junction without being connected -- which is consistent with pipes and links being separate layers.
 
 **Whether a link may pass through a device is decided by the device's capability pack -- ruled 2026-09-25.**\
-Asked "Can a link pass through a device (host, firewall, load balancer, VXLAN), or does every device end the links that reach it?", the director answered in their own words: "Depends on the capability pack that restricts anchor routables. Most existing nodes will only support either endpoint or junction (or both)".\
+Asked "Can a link pass through a device (host, firewall, load balancer, VXLAN), or does every device end the links that reach it?", the director answered in their own words: "Depends on the capability pack that restricts anchor routables.\
+Most existing nodes will only support either endpoint or junction (or both)".\
 So the capability pack in a node's composition restricts which routable roles its anchor may take -- endpoint, junction, bend -- as the director's earlier leaning described for routers; and most existing node types permit endpoint and/or junction but not bend, meaning a link reaching them ends there.\
 Carried to design: the per-type table itself (which existing types permit which roles), and whether any type permits bend.
 
 **A landing on a link that is on a detour cuts it where it is -- ruled 2026-09-26.**\
 The FR3-v3 prototype (`dev/design/unification/BAKEOFF-LINK.md`, Addendum 2) applied the landing rule to a link's DRAWN route, so a new link ending on a visible detour left the detoured link passing through uncut.\
-Asked "A link is on a detour because a pipe under it was deleted. You draw a new link that ends on that detour. Should it cut the link there?", the director chose "Yes, cut it where it is" over "No, cut the drawn route" (the proposer's recommendation) and "Detours avoid link ends".\
+Asked "A link is on a detour because a pipe under it was deleted.\
+You draw a new link that ends on that detour.\
+Should it cut the link there?", the director chose "Yes, cut it where it is" over "No, cut the drawn route" (the proposer's recommendation) and "Detours avoid link ends".\
 The option as worded by the proposer: the landing cuts the link on its detour, and the detour becomes its new drawn route, so the link forgets its old route and does not return to it when the pipe comes back.\
 Not ruled here:
 - whether a landing on the unused drawn route of a detoured link cuts it (the prototype does);
 - whether deleting such a landing restores the old drawn route, under "draw-then-delete leaves no trace" above.
 
 **A link's intent is its ends plus its pinned vias -- ruled 2026-09-26, refining "a link returns to its drawn route" above.**\
-Raised by the director (`dev/design/unification/DISCUSSION-SEEDS.md`, S22): "links are either [src,dst] or [src,dst,[via..]] definitions. via would "pin" that anchor as a required hop and fail if it can't dynamic route across pipes to get there. [src,dst] can take any shortest path via pipes".\
+Raised by the director (`dev/design/unification/DISCUSSION-SEEDS.md`, S22): "links are either [src,dst] or [src,dst,[via..]] definitions. via would "pin" that anchor as a required hop and fail if it can't dynamic route across pipes to get there.\
+[src,dst] can take any shortest path via pipes".\
 Asked "Should a link's intent be its two ends plus its pinned vias, with everything between the pins routed by pipe cost?", the director chose "Yes, ends + pinned vias" over "No, the whole drawn line".\
-A link stores its two ends and an ordered list of pinned vias. Between consecutive pins, its route is the cheapest path over the pipes. If a pin cannot be reached, the link is down and heals, as ruled above.\
+A link stores its two ends and an ordered list of pinned vias.\
+Between consecutive pins, its route is the cheapest path over the pipes.\
+If a pin cannot be reached, the link is down and heals, as ruled above.\
 What this does to the rulings above:
 - "Returns to its drawn route" is no longer stored route memory. For a hand-drawn link, every bend dropped while drawing is a pin, and each leg lays a direct pipe, which is the cheapest way between its two pins; the link returns because of pipe cost (proposer reading, INFERRED).\
   CONFIRMED by the director the same day, for the pin half: "pressing "w" while dragging a link automatically creates an anchors and pins the link to that anchor (same behaviour as today)". The cost half is still the proposer's reading.
@@ -502,38 +512,53 @@ Carried to design, not ruled:
 - what pipe cost is (hops, length, or a per-pipe weight), and how ties break.
 
 **On its routed stretch a link crosses the points it passes; it connects only at its ends and its pins -- ruled 2026-09-26.**\
-Asked "Between two of its pins, a link's cheapest route runs through a point where another link ends. That point is not one of its pins or ends. Do they connect there?", the director chose "No, it crosses" (the proposer's recommendation) over "Yes, cut it there" and "Route around link ends".\
-The director had leaned "connects" (S22) on the question this replaces, before link intent was defined as ends plus pinned vias. The proposer gave the reason for recommending otherwise: if a link connects wherever its route happens to run, deleting and redrawing an unrelated pipe could leave a link cut in two for good.\
-So routing never changes which links exist or where they meet. A link connects only where an author placed it: at its ends, at its pins, and where an author's act cuts it (the landing rulings above, including "cut it where it is" on a detour).\
+Asked "Between two of its pins, a link's cheapest route runs through a point where another link ends.\
+That point is not one of its pins or ends.\
+Do they connect there?", the director chose "No, it crosses" (the proposer's recommendation) over "Yes, cut it there" and "Route around link ends".\
+The director had leaned "connects" (S22) on the question this replaces, before link intent was defined as ends plus pinned vias.\
+The proposer gave the reason for recommending otherwise: if a link connects wherever its route happens to run, deleting and redrawing an unrelated pipe could leave a link cut in two for good.\
+So routing never changes which links exist or where they meet.\
+A link connects only where an author placed it: at its ends, at its pins, and where an author's act cuts it (the landing rulings above, including "cut it where it is" on a detour).\
 The question set aside earlier, a landing on the old route of a detoured link, then reads this way (proposer reading, not asked):
 - a pinned point is always on the link's route, so a landing there cuts it;
 - an unpinned point the link no longer passes is not touched, and if the link's route later runs through it again, it crosses.
 
 **Pipes a deleted link laid stay while another link uses them -- ruled 2026-09-26.**\
 The FR3-v4 prototype (bench `link-bakeoff`, recorded in `dev/design/unification/BAKEOFF-LINK.md`) measured three answers.\
-Asked "Drawing a link lays pipes along its way. When you later delete that link, what happens to the pipes it laid?", the director chose "Stay while another link uses them" over "They go with it" (the proposer's recommendation) and "They stay as ordinary pipes".\
+Asked "Drawing a link lays pipes along its way.\
+When you later delete that link, what happens to the pipes it laid?", the director chose "Stay while another link uses them" over "They go with it" (the proposer's recommendation) and "They stay as ordinary pipes".\
 When a link is deleted, the pipes its drawing laid are removed, except those another link is currently routed over, which stay.\
-The costs shown with the option (MEASURED, options-acts): another link moves in 1.8% of deletions, against 4.0% under "they go" and 0.2% under "they stay". A pipe the author deleted comes back if a link is drawn along it and then deleted, in 94% of that construction (5,161 of 5,468).\
+The costs shown with the option (MEASURED, options-acts): another link moves in 1.8% of deletions, against 4.0% under "they go" and 0.2% under "they stay".\
+A pipe the author deleted comes back if a link is drawn along it and then deleted, in 94% of that construction (5,161 of 5,468).\
 Not ruled here: whether a pipe kept this way then belongs to the author (deleted only by hand) or is removed once the last link using it goes.
 
 **Under pins, a cut on a detour keeps only the original bends -- ruled 2026-09-26, refining "a landing on a link that is on a detour cuts it where it is" above.**\
 With link intent defined as ends plus pinned vias, "the detour becomes its route" could mean either that the whole detour is pinned or that each piece keeps only the original bends on its side.\
 Asked, for the uplink r1-p1-p2-r2 detouring p1-q1-q2-q3-p2 and cut by a landing at q3, "What should the cut pieces keep as their route?", the director chose "Only the original bends" (the proposer's recommendation) over "The whole detour, pinned".\
-The cut point becomes an end of both pieces, and each piece keeps the pins on its side. So:
+The cut point becomes an end of both pieces, and each piece keeps the pins on its side.\
+So:
 - deleting the landing returns the link fully to its drawn route;
 - a detour never becomes a set of bends, so a detour cannot decide where links meet.
 
-The cost shown with the option (MEASURED, FR3-v4 probe E6 and measure-v4 construction cutPins-C1): when the missing pipe returns, a piece may move back towards its old route and share a pipe with its sibling. With the landing at q3 it moves; at q2 it stays.\
+The cost shown with the option (MEASURED, FR3-v4 probe E6 and measure-v4 construction cutPins-C1): when the missing pipe returns, a piece may move back towards its old route and share a pipe with its sibling.\
+With the landing at q3 it moves; at q2 it stays.\
 This supersedes the phrase in the earlier ruling's option text that the link "does not return to it when the pipe comes back": a piece returns as far as its own bends and new end allow.
 
 **A cut link stays cut while another link still ends at the cut point -- ruled 2026-09-26.**\
-The FR3-v4 adversary found this case (its defect 3), and the fix pass left it to the director. The literal draw-then-delete ruling says a deleted landing's cut rejoins. The mirror ruling says the order of drawing must not decide whether links meet.\
-Asked "Link X is detouring through point w (no bend there). Y is drawn to w and cuts X. Then Z is also drawn to w. Now Y is deleted. Should X join back up at w, even though Z still ends there?", the director chose "No, stay cut while Z ends there" (the proposer's recommendation) over "Yes, join back up".\
-The result of deleting a landing is the same as if that landing had never been drawn: Z's own landing cuts X at w, and Z meets X.\
-The prototype already did this where w is one of X's pins. At a plain routed point, as built, it rejoined (959 times in the default fuzz, MEASURED), and that is now to be changed.
+The FR3-v4 adversary found this case (its defect 3), and the fix pass left it to the director.\
+The literal draw-then-delete ruling says a deleted landing's cut rejoins.\
+The mirror ruling says the order of drawing must not decide whether links meet.\
+Asked "Link X is detouring through point w (no bend there).\
+Y is drawn to w and cuts X. Then Z is also drawn to w.\
+Now Y is deleted.\
+Should X join back up at w, even though Z still ends there?", the director chose "No, stay cut while Z ends there" (the proposer's recommendation) over "Yes, join back up".\
+The result of deleting a landing is the same as if that landing had never been drawn: Z's own landing cuts X at w, and Z meets X. The prototype already did this where w is one of X's pins.\
+At a plain routed point, as built, it rejoined (959 times in the default fuzz, MEASURED), and that is now to be changed.
 
 **A flow's path may pass through the same point twice -- ruled 2026-09-26.**\
-Asked "A flow is routed over links. May its path pass through the same point twice? For example, S-X-M and M-X-T cross at X and meet at M. May the flow from S to T run S, X, M, X, T?", the director chose "Allow it" (the proposer's recommendation) over "Forbid it".\
+Asked "A flow is routed over links.\
+May its path pass through the same point twice?\
+For example, S-X-M and M-X-T cross at X and meet at M. May the flow from S to T run S, X, M, X, T?", the director chose "Allow it" (the proposer's recommendation) over "Forbid it".\
 The measurements shown with it (MEASURED, options-pins and measure-v4):
 - allowing agreed with a full search on every flow the search could finish, and routed 90-96% of flows on random networks, against 81-94% if forbidden;
 - 8-27% of flow paths then pass some point twice: through crossings, through junctions, and along a link that crosses itself;
@@ -542,70 +567,102 @@ The measurements shown with it (MEASURED, options-pins and measure-v4):
 This also settles how the prototype's exponential flow search (v3 defect D1) is fixed: by a search that allows revisiting.
 
 **A link's route may pass through a point it already passes, even its own end -- ruled 2026-09-26.**\
-The FR3-v4 adversary found this case (its defect 4). It follows literally from "ends plus pins, with the cheapest way between them", because each leg is routed on its own.\
+The FR3-v4 adversary found this case (its defect 4).\
+It follows literally from "ends plus pins, with the cheapest way between them", because each leg is routed on its own.\
 Asked, for link A-B bent at w whose cheapest way from A to w after pipe A-w is deleted runs through B (A-u-B-w-B), "is that allowed?", the director chose "Allow it" (the proposer's recommendation) over "No, the link shows down" and "Route around its own points".\
-The cost shown with it (MEASURED, FR3-v4 adversary fuzz): a new link landing on a point such a link passes twice cuts only one of the two passes (140 landings). Flows along such a link work because flows may revisit (ruled above).
+The cost shown with it (MEASURED, FR3-v4 adversary fuzz): a new link landing on a point such a link passes twice cuts only one of the two passes (140 landings).\
+Flows along such a link work because flows may revisit (ruled above).
 
 **A join that would make a loop does not happen -- ruled 2026-09-26, an exception to "deleting one of three links at a junction joins the two that remain".**\
-Asked, for 'top' A-u-P and 'bottom' A-v-P, where E is drawn to P and then deleted, "Should they still join?" (joining would make one loop, A-u-P-v-A), the director chose "Don't join; keep both" (the proposer's recommendation) over "Join anyway".\
+Asked, for 'top' A-u-P and 'bottom' A-v-P, where E is drawn to P and then deleted, "Should they still join?"\
+(joining would make one loop, A-u-P-v-A), the director chose "Don't join; keep both" (the proposer's recommendation) over "Join anyway".\
 Both links keep their names, a flow from A to P keeps running, and P stays a point where two links end.\
-The measurements shown with it (MEASURED, options-join, under the reading where R2 joins): this came up in 47 of every 1,000 deletions. "Join anyway" made 84 loop links and lowered the draw-then-delete no-trace rate from 84% to 80%.\
-The earlier prototypes' wider exception, "a join whose route would revisit an anchor", is narrowed by this ruling and the link-revisit ruling above. A join is refused when it would make a loop of the link's own stops. It is not refused because a routed stretch passes a point twice. That reading is the proposer's (INFERRED): the question asked was only the loop case.
+The measurements shown with it (MEASURED, options-join, under the reading where R2 joins): this came up in 47 of every 1,000 deletions.\
+"Join anyway" made 84 loop links and lowered the draw-then-delete no-trace rate from 84% to 80%.\
+The earlier prototypes' wider exception, "a join whose route would revisit an anchor", is narrowed by this ruling and the link-revisit ruling above.\
+A join is refused when it would make a loop of the link's own stops.\
+It is not refused because a routed stretch passes a point twice.\
+That reading is the proposer's (INFERRED): the question asked was only the loop case.
 
 **A join of two links carrying different channels (VLANs) does not happen -- ruled 2026-09-26, a second exception to the join-on-removal ruling.**\
 Asked, for A-P 'red' carrying VLAN 10 and P-B 'blue' carrying VLAN 20, where E is drawn to P and then deleted, "Should they join into one link that carries both?", the director chose "Don't join; keep both" (the proposer's recommendation) over "Merge into one".\
-Each link keeps its own VLAN and name, and P stays a point where two links end. This came up in about 3 of every 1,000 deletions (MEASURED, options-join). Two links carrying the same VLAN were already never joined.
+Each link keeps its own VLAN and name, and P stays a point where two links end.\
+This came up in about 3 of every 1,000 deletions (MEASURED, options-join).\
+Two links carrying the same VLAN were already never joined.
 
 **Two separately drawn links left alone at a point join into one -- ruled 2026-09-26, keeping the join-on-removal ruling ahead of "draw-then-delete leaves no trace" in this case.**\
-The two rulings pull apart when A-P ('red') and P-B ('blue') are drawn as separate links, and E-P is then drawn and deleted. The join ruling was asked about exactly this shape: one of three links at a junction is deleted. The draw-then-delete ruling was asked about a landing that cut passing links; only its headline wording reaches this case.\
+The two rulings pull apart when A-P ('red') and P-B ('blue') are drawn as separate links, and E-P is then drawn and deleted.\
+The join ruling was asked about exactly this shape: one of three links at a junction is deleted.\
+The draw-then-delete ruling was asked about a landing that cut passing links; only its headline wording reaches this case.\
 Asked "Should red and blue end up as one link A-P-B, or stay as two?", the director chose "Join into one" (the proposer's recommendation) over "Stay as two".\
-When a removal leaves exactly two links ending at a bare point, they join, subject to the loop and VLAN exceptions above. Today's product does the same: `server/txn.mjs` collapses at a waypoint whenever a removal leaves exactly two links there, and never when a link is created (READ).\
+When a removal leaves exactly two links ending at a bare point, they join, subject to the loop and VLAN exceptions above.\
+Today's product does the same: `server/txn.mjs` collapses at a waypoint whenever a removal leaves exactly two links there, and never when a link is created (READ).
 > **CORRECTION 2026-09-27.** The description of today's product in the sentence above is incomplete. The FR3-v5 audit found this, and the proposer re-read the code. `collapseAtWaypoint` (`model/invariants.mjs`, around lines 152-190) also refuses a pair that would make a self-link (a loop), a pair whose declared directions both arrive or both leave, a pair mixing a control link with a data link, and a closed link. The B239 guard in `server/txn.mjs` refuses a merge whose result would be invalid. The ruling was made on the shorter description. Whether the plane and direction refusals also apply under this ruling was then put to the director as a separate question.\
-The cost shown with it: here, draw-then-delete is not traceless. Whenever the join happens, the two drawn links become one and one name is lost; the exceptions block the join in about 1 in 5 of these cases (MEASURED, options-join).
+The cost shown with it: here, draw-then-delete is not traceless.\
+Whenever the join happens, the two drawn links become one and one name is lost; the exceptions block the join in about 1 in 5 of these cases (MEASURED, options-join).
 
 **How pieces pair on rejoin: settled by the rulings above, not asked (proposer reading, 2026-09-26).**\
-This was the prototype's open item I4. It is recorded as settled by existing rulings, and the director may reopen it.
+This was the prototype's open item I4.\
+It is recorded as settled by existing rulings, and the director may reopen it.
 - When a landing that cut several passing links is deleted, the draw-then-delete ruling says each passing link is whole again "as before the landing". So the pieces pair as they were cut (lineage). Pairing straight-through by geometry restored the originals in only 1.9% of turning cases (MEASURED, options-join).
 - When other links still end at the cut point, the stay-cut ruling above keeps the pieces cut. That covers a piece deleted and redrawn while cut.
 - The join ruling fires only when a removal leaves exactly two links at a point. So four or more ends that did not come from one cut are not paired at all.
 
 **A join keeps the earlier-drawn link's name and identity -- ruled 2026-09-26.**\
 Asked, for 'left' A-P and 'right' P-B joining into A-P-B when E-P is deleted, "When two separately drawn links join into one, whose name does the joined link keep?", the director chose "The earlier-drawn link's" (the proposer's recommendation) over "The later-drawn link's".\
-The joined link is 'left', and 'right' is lost. Across the options-join fuzz, 39 of 3,270 named links at risk lost their name this way (MEASURED).\
+The joined link is 'left', and 'right' is lost.\
+Across the options-join fuzz, 39 of 3,270 named links at risk lost their name this way (MEASURED).\
 A rejoin of pieces that one cut split is separate: it restores the original link's name and identity, under the draw-then-delete ruling.
 
 **When a link is cut in two, the longer piece keeps its name and identity -- ruled 2026-09-26.**\
 Asked, for 'trunk' A-W-u-B cut at W into A-W and W-u-B, "When a link is cut in two, which piece keeps the link's name?", the director chose "The longer piece" (the proposer's recommendation) over "The piece at the first end" (the prototype's behaviour) and "Neither; both pieces are new".\
-On a tie, the piece at the link's first end keeps it. The proposer's reason: the author can see which piece is longer, but not which end the link was drawn from.\
-All three answers give 'trunk' back whole if the landing is deleted, as the draw-then-delete ruling requires. In the options-acts fuzz, the name stayed visible in every cut under this answer (704 of 704, MEASURED).\
-Not ruled here: whether "longer" is counted in pipes or in grid length. The prototype counted route length.
+On a tie, the piece at the link's first end keeps it.\
+The proposer's reason: the author can see which piece is longer, but not which end the link was drawn from.\
+All three answers give 'trunk' back whole if the landing is deleted, as the draw-then-delete ruling requires.\
+In the options-acts fuzz, the name stayed visible in every cut under this answer (704 of 704, MEASURED).\
+Not ruled here: whether "longer" is counted in pipes or in grid length.\
+The prototype counted route length.
 
 **Deleting one piece of a cut drawing deletes only that piece -- ruled 2026-09-26.**\
 A line drawn through a point where another link ends is cut there (the pass-through ruling), so one drawing can become several links.\
-Asked, for a spur W-C and a line A..B drawn with a bend at W (cut into A-W and W-B), "Later you select A-W and delete it. What goes?", the director chose "Only that piece" (the proposer's recommendation) over "The whole line you drew".\
-The author deletes what they selected. A-W goes, and W-B then joins the spur into one link B-W-C under the join ruling.\
-The costs shown with it (MEASURED, the FR3-v4 builder's fuzz, which the model's author wrote): deleting each piece in turn gave the old page back in 58% of cases, against 90% for the whole line. The drawing's returned reference then names B-W-C.\
+Asked, for a spur W-C and a line A..B drawn with a bend at W (cut into A-W and W-B), "Later you select A-W and delete it.\
+What goes?", the director chose "Only that piece" (the proposer's recommendation) over "The whole line you drew".\
+The author deletes what they selected.\
+A-W goes, and W-B then joins the spur into one link B-W-C under the join ruling.\
+The costs shown with it (MEASURED, the FR3-v4 builder's fuzz, which the model's author wrote): deleting each piece in turn gave the old page back in 58% of cases, against 90% for the whole line.\
+The drawing's returned reference then names B-W-C.\
 Not ruled here: whether a "delete the whole drawing" command exists alongside, and what it removes once a piece has joined another link.
 
 **While its members are cut, a bundle lists nothing and shows down -- ruled 2026-09-26.**\
 Asked, for a LAG of two links A-X-B that a new link E cuts at X, "While they're cut, what should the bundle list as its members?", the director chose "Nothing; shown down" (the proposer's recommendation) over "All the pieces" and "The original links by name".\
-A bundle never lists a member that does not run end to end between its ends, so what it shows is always true. When the landing is deleted, the bundle gets its members back, as the draw-then-delete ruling requires.\
+A bundle never lists a member that does not run end to end between its ends, so what it shows is always true.\
+When the landing is deleted, the bundle gets its members back, as the draw-then-delete ruling requires.\
 The cost shown with it (MEASURED, options-acts): bundles were empty in 35% of states, against 10-12% for the other two answers.
 
 **Deleting a point a link bends at removes that bend from the link -- ruled 2026-09-26.**\
-Asked, for link A-w-B with another way A-x-B open, "You delete the point w itself. What happens to the link A-w-B?", the director chose "Forget that bend" (the proposer's recommendation) over "Stay, shown down" and "Cut the link at w".\
+Asked, for link A-w-B with another way A-x-B open, "You delete the point w itself.\
+What happens to the link A-w-B?", the director chose "Forget that bend" (the proposer's recommendation) over "Stay, shown down" and "Cut the link at w".\
 The pin is dropped from the link's intent, and the leg routes directly between its neighbouring stops by cost.\
 The measurements shown with it (MEASURED, options-pins):
 - the link stayed up in 95-98% of cases;
 - its intent changes for good, so if w comes back the link does not return to it, and it behaves differently from a link that never lost w in 81% of later edits.
 
-Today's product also drops a deleted point from a link (`server/txn.mjs`, READ). It also deletes the link if that would duplicate an existing straight link; that case is not ruled here.\
-The proposer noted that "Stay, shown down" is the literal reading of the director's "fail if it can't dynamic route across pipes to get there" (S22). The director ruled that an author deleting the point is removing the stop, which is a different case from a stop that cannot be reached.
+Today's product also drops a deleted point from a link (`server/txn.mjs`, READ).\
+It also deletes the link if that would duplicate an existing straight link; that case is not ruled here.\
+The proposer noted that "Stay, shown down" is the literal reading of the director's "fail if it can't dynamic route across pipes to get there" (S22).\
+The director ruled that an author deleting the point is removing the stop, which is a different case from a stop that cannot be reached.
 
 **A cut link stays cut while another link ends at the cut point, even when that link was there first -- ruled 2026-09-27, settling "a cut link stays cut while another link still ends at the cut point" above.**\
-That ruling's heading ("stays cut") and its gloss ("the same as if that landing had never been drawn") agree when the other link lands after the cut. They disagree when the other link, Z, already ended at w and the cut link, X, only crossed Z there by routing. FR3-v5 had built the gloss.\
-Asked "Z already ends at point w. X's route passes through w and just crosses Z there. Now Y is drawn to w, so X is cut there and X, Y and Z all meet. Then Y is deleted. What happens to X?", the director chose "Stays cut, meeting Z" (the proposer's recommendation, revised after the FR3-v5 audit) over "Joins back up, crossing Z again".\
-So what happens to X depends only on what is on the page now. It does not depend on whether Z was drawn before or after X's route came through w, and the model keeps no per-cut list of the links that already ended there.\
+That ruling's heading ("stays cut") and its gloss ("the same as if that landing had never been drawn") agree when the other link lands after the cut.\
+They disagree when the other link, Z, already ended at w and the cut link, X, only crossed Z there by routing.\
+FR3-v5 had built the gloss.\
+Asked "Z already ends at point w.\
+X's route passes through w and just crosses Z there.\
+Now Y is drawn to w, so X is cut there and X, Y and Z all meet.\
+Then Y is deleted.\
+What happens to X?", the director chose "Stays cut, meeting Z" (the proposer's recommendation, revised after the FR3-v5 audit) over "Joins back up, crossing Z again".\
+So what happens to X depends only on what is on the page now.\
+It does not depend on whether Z was drawn before or after X's route came through w, and the model keeps no per-cut list of the links that already ended there.\
 The costs shown with the option:
 - here, drawing and deleting Y leaves a trace: X and Z now meet where before they only crossed. It changed the result in about 15% of measured round trips: 1,507 of 10,677 in stream A and 1,880 of 10,326 in stream B (MEASURED, measure-v5).
 - the answer not chosen kept a hidden list for each cut: 7,269 KiB where 1,000 links cross a point and 1,000 end there.
@@ -613,40 +670,52 @@ The costs shown with the option:
 The gloss "as if never drawn" therefore holds only when no other link ends at the cut point.
 
 **Deleting a point a landing cut a link at keeps the cut link: the cut is undone first -- ruled 2026-09-27.**\
-Asked, for X on A-w-B with another way A-k-B, cut at w by Y, "Now you delete the point w itself. What happens to X?", the director chose "X survives, rerouted" (the proposer's recommendation) over "X's pieces go too" (FR3-v5 and today's product).\
-Y goes, because it ended at w. X is joined back up, and then loses w as any link passing through it would: it reroutes by cost, or drops w if w was one of its pins (the delete-bend ruling above). Deleting Y and then w, or deleting w directly, gives the same result.\
-Links that simply ended at w still go with it, as today. This differs from today's product, which deletes every link ending at a deleted waypoint (`server/txn.mjs`, READ).\
-Not built yet. The rate (119 of 1,055 point deletions touched a cut link) comes from the brief writer's unsaved run and is UNVERIFIED.
+Asked, for X on A-w-B with another way A-k-B, cut at w by Y, "Now you delete the point w itself.\
+What happens to X?", the director chose "X survives, rerouted" (the proposer's recommendation) over "X's pieces go too" (FR3-v5 and today's product).\
+Y goes, because it ended at w.\
+X is joined back up, and then loses w as any link passing through it would: it reroutes by cost, or drops w if w was one of its pins (the delete-bend ruling above).\
+Deleting Y and then w, or deleting w directly, gives the same result.\
+Links that simply ended at w still go with it, as today.\
+This differs from today's product, which deletes every link ending at a deleted waypoint (`server/txn.mjs`, READ).\
+Not built yet.\
+The rate (119 of 1,055 point deletions touched a cut link) comes from the brief writer's unsaved run and is UNVERIFIED.
 
 **Pipes laid automatically with a link live only while links use them; only pipes placed by hand remain without links -- ruled 2026-09-27, completing "pipes a deleted link laid stay while another link uses them" above.**\
-Asked, for pipes A-u and u-B laid by L1, kept after L1's deletion because the declared link L2 runs over them, "Now delete L2. What happens to those pipes?", the director answered in their own words: "They go - any pipes laid automatically with a link, will be removed when there are no links remaining. Only pipes manually placed remain without links."\
+Asked, for pipes A-u and u-B laid by L1, kept after L1's deletion because the declared link L2 runs over them, "Now delete L2.\
+What happens to those pipes?", the director answered in their own words: "They go - any pipes laid automatically with a link, will be removed when there are no links remaining.\
+Only pipes manually placed remain without links."\
 So there are two kinds of pipe:
 - a pipe laid automatically by drawing a link is removed once no link remains on it;
 - a pipe the author placed by hand stays until the author deletes it.
 
 FR3-v5 had instead handed a kept pipe to the author once no living drawing claimed it.\
-Proposer reading, not asked: a DOWN link whose intent runs along a pipe counts as a link remaining on it, so its own legs are kept and it heals onto them. FR3-v5 already keeps those pipes: 52 of 2,934 and 96 of 2,644 candidate pipes in measure-v5.
+Proposer reading, not asked: a DOWN link whose intent runs along a pipe counts as a link remaining on it, so its own legs are kept and it heals onto them.\
+FR3-v5 already keeps those pipes: 52 of 2,934 and 96 of 2,644 candidate pipes in measure-v5.
 
 **"Longer" means longer on screen -- ruled 2026-09-27, refining "when a link is cut in two, the longer piece keeps its name and identity" above.**\
 Asked, for 'trunk' A-W-u1-u2-B, where A-W is one 20-unit pipe and W-u1-u2-B is three pipes totalling 6 units, cut by E at W, "Should 'longer' mean longer on screen, or more pipes?", the director chose "Longer on screen" (the proposer's recommendation) over "More pipes" (FR3-v5's choice).\
-A-W keeps 'trunk'. On a tie, the piece at the link's first end keeps it, as before.\
+A-W keeps 'trunk'.\
+On a tie, the piece at the link's first end keeps it, as before.\
 The costs shown with it:
 - not built;
 - compared with FR3-v5, a different piece keeps the name in about a third of cuts: 724 of 2,186 (stream A) and 637 of 1,932 (stream B), MEASURED on the fuzz's evenly spaced grid;
 - route cost still counts pipes, so the two measures can disagree.
 
 The figure shown on 2026-09-26 (704 of 704) was counted in pipes.\
-Not ruled here: whether route cost should move to on-screen length too. It is still an open engineering choice.
+Not ruled here: whether route cost should move to on-screen length too.\
+It is still an open engineering choice.
 
 **A link carrying a VLAN does not join a link carrying none -- ruled 2026-09-27, widening "a join of two links carrying different channels does not happen" above.**\
 Asked, for 'red' A-P carrying VLAN 10 and 'blue' P-B carrying no VLAN, where E-P is drawn and then deleted, "Should red and blue join into one link carrying VLAN 10 all the way?", the director chose "Don't join" (the proposer's recommendation) over "Join, and VLAN 10 covers it" (FR3-v5's behaviour).\
 Each link keeps its own name and what it carries, and no VLAN spreads because a different link was deleted.\
-The consequence shown with it: a link carrying any VLAN never joins another link under the join ruling, and only the pieces of its own cut rejoin. That needs its own rule, because while such a link is cut only its longer piece carries the VLAN.\
+The consequence shown with it: a link carrying any VLAN never joins another link under the join ruling, and only the pieces of its own cut rejoin.\
+That needs its own rule, because while such a link is cut only its longer piece carries the VLAN.\
 It differs from today's product's treatment of a link with no declared direction, which takes the other link's direction when two links merge (`model/invariants.mjs`, READ).
 
 **Control and data links, and links whose directions meet head-on or split, do not join -- ruled 2026-09-27, keeping today's refusals under the join ruling.**\
 Asked "Should they still join if one is a control link and the other a data link, or if their declared directions both point into the point (or both out of it)?", the director chose "Don't join, as today" (the proposer's recommendation) over "Join them anyway".\
-These are the refusals `collapseAtWaypoint` already makes (see the correction under the join ruling above). The point stays a junction, as today's two-link matrix reads it (`kernel/geometry.mjs`, READ).\
+These are the refusals `collapseAtWaypoint` already makes (see the correction under the join ruling above).\
+The point stays a junction, as today's two-link matrix reads it (`kernel/geometry.mjs`, READ).\
 The cost shown with it: two more exceptions to the join rule, and their rate is unmeasured, because no bench model has planes or directions.\
 So the exceptions to "two links left alone at a point join" are:
 - a join that would make a loop;
@@ -656,26 +725,35 @@ So the exceptions to "two links left alone at a point join" are:
 
 **A bundle goes with a deleted end point -- ruled 2026-09-27.**\
 Asked, for a bundle (LAG) between A and B whose members end at A, "You delete point A ... What happens to the bundle?", the director chose "It goes too" (the proposer's recommendation) over "It stays, empty and down" (FR3-v5's behaviour, where nothing could refill it).\
-This is the same as a link ending at a deleted point, which goes in FR3-v5 and in today's product. Not built and not measured.
+This is the same as a link ending at a deleted point, which goes in FR3-v5 and in today's product.\
+Not built and not measured.
 
 **After a partial rejoin, the longer piece on screen carries the name -- ruled 2026-09-27.**\
-Asked, for 'trunk' cut at n2 and n3 by two new links, where the link at n2 is deleted and the pieces either side of n2 join back up, "Now there are two pieces, split at n3. Which one should carry 'trunk'?", the director chose "The longer one on screen" (the proposer's recommendation) over "Wherever it already is" (FR3-v5's behaviour).\
+Asked, for 'trunk' cut at n2 and n3 by two new links, where the link at n2 is deleted and the pieces either side of n2 join back up, "Now there are two pieces, split at n3.\
+Which one should carry 'trunk'?", the director chose "The longer one on screen" (the proposer's recommendation) over "Wherever it already is" (FR3-v5's behaviour).\
 The name goes where it would be if the deleted landing had never been drawn: the pieces on the page now decide, by the "longer on screen" rule.\
-The cost shown with it: the name can move to the other piece at n3, a point the author did not touch. Under FR3-v5's behaviour, the same picture showed the name on a different piece depending on the order of cuts: 190 of 4,915 (stream A) and 152 of 4,558 (stream B) two-cut round trips (MEASURED, measure-v5). Not built.
+The cost shown with it: the name can move to the other piece at n3, a point the author did not touch.\
+Under FR3-v5's behaviour, the same picture showed the name on a different piece depending on the order of cuts: 190 of 4,915 (stream A) and 152 of 4,558 (stream B) two-cut round trips (MEASURED, measure-v5).\
+Not built.
 
 **A piece made different while its link is cut stays a separate link -- ruled 2026-09-27.**\
-Asked "Y has cut link X in two at w. While it's cut, you make one piece different: you give it its own VLAN, or make it a control link. Then you delete Y. Should the two pieces join back into X?", the director chose "No, they stay two links" (the proposer's recommendation) over "Yes, and the change covers all of X" (FR3-v6's behaviour for a VLAN) and "Yes, as the original X; change dropped".\
-The page decides: two links that differ in VLAN, plane or direction do not join, as for any two links (the VLAN, plane and direction rulings above). What the author set stays where it was set.\
+Asked "Y has cut link X in two at w.\
+While it's cut, you make one piece different: you give it its own VLAN, or make it a control link.\
+Then you delete Y. Should the two pieces join back into X?", the director chose "No, they stay two links" (the proposer's recommendation) over "Yes, and the change covers all of X" (FR3-v6's behaviour for a VLAN) and "Yes, as the original X; change dropped".\
+The page decides: two links that differ in VLAN, plane or direction do not join, as for any two links (the VLAN, plane and direction rulings above).\
+What the author set stays where it was set.\
 The costs shown with it (MEASURED, adversary fuzz on FR3-v6 and the FR3-v6 brief audit):
 - deleting Y leaves two links where there was one;
 - deleting the point w later removes both pieces rather than keeping X. X survived in only 1 of 392 such cut points.
 - not yet built for a VLAN on one piece, where 550 fuzz cases would change.
 
-Carried to design: a plain piece of a cut VLAN link must still rejoin its own sibling (:640). Telling that apart from a piece given its own VLAN needs the pieces' state at the cut, which is lineage.
+Carried to design: a plain piece of a cut VLAN link must still rejoin its own sibling (:640).\
+Telling that apart from a piece given its own VLAN needs the pieces' state at the cut, which is lineage.
 
 **A down link keeps the laid pipes along its own drawn legs -- ruled 2026-09-27, confirming the proposer's reading of "removed when there are no links remaining".**\
 Asked, for L2 declared from A to B over another link's laid pipes and down after pipe A-u is deleted, "While L2 is down, do its other laid pipes count as having a link remaining, so that redrawing A-u brings L2 back?", the director chose "Keep a down link's own drawn legs" (the proposer's recommendation) over "Keep nothing for a down link" and "Keep the pipes it last ran over".\
-A down link counts as remaining on the laid pipes along its own drawn legs, so a hand-drawn link heals when the deleted pipe is redrawn. No last route is remembered.\
+A down link counts as remaining on the laid pipes along its own drawn legs, so a hand-drawn link heals when the deleted pipe is redrawn.\
+No last route is remembered.\
 The costs shown with it (MEASURED, one instrument on one small grid):
 - a link declared by its ends has no drawn legs, so the laid pipes it ran over go while it is down, and it may not come back when the deleted pipe is redrawn (10 of 615);
 - a declared link and a drawn link on the same route therefore behave differently once down;
@@ -683,7 +761,10 @@ The costs shown with it (MEASURED, one instrument on one small grid):
 
 ## The stack interface -- ruled from 2026-09-27
 
-**Ruled by the director**, in the design phase that follows the link model. The questions were prepared from the problem-space register, the rulings and a map of today's code. An independent audit checked them before they were asked (workflow run wf_61107120-ccf; the prepared sequence and its audit are kept outside the repository in the stack-design bench). Each question is asked on its own, in the prepared order.
+**Ruled by the director**, in the design phase that follows the link model.\
+The questions were prepared from the problem-space register, the rulings and a map of today's code.\
+An independent audit checked them before they were asked (workflow run wf_61107120-ccf; the prepared sequence and its audit are kept outside the repository in the stack-design bench).\
+Each question is asked on its own, in the prepared order.
 
 **Browsers and the server work out what the document implies; the CLI asks the server -- ruled 2026-09-27 (SD1).**\
 Asked "Who works out what the document implies: a link's current route, whether it's down, each point's role, a flow's path?", the director chose "Browsers + server; CLI asks" (the proposer's recommendation) over:
@@ -691,7 +772,8 @@ Asked "Who works out what the document implies: a link's current route, whether 
 - "Every peer; CLI ships the code";
 - "Only the server; it sends results".
 
-The browsers and the server run one shared body of derivation code. The CLI stays a plain HTTP client, which it was built to be (`dev/design/unification/DISCUSSION-SEEDS.md` S20, sub-question 3), and reports what the server worked out.\
+The browsers and the server run one shared body of derivation code.\
+The CLI stays a plain HTTP client, which it was built to be (`dev/design/unification/DISCUSSION-SEEDS.md` S20, sub-question 3), and reports what the server worked out.\
 The costs shown with it:
 - the server needs new read endpoints for derived state (today REST returns no roles);
 - the CLI cannot derive offline;
@@ -702,16 +784,20 @@ It reads the director's S19 ("derivation can occur client-side ... pushed out to
 
 **The rules that react to an edit run at the server for every door, and the browser previews them with the same code -- ruled 2026-09-27 (SD2).**\
 Asked "Where do the rules that react to an edit run: cutting a link another link lands on, joining two links left alone, rejoining, clearing laid pipes, deciding which piece keeps a name?", the director chose "Server, with browser preview" (the proposer's recommendation) over "Server only" and "Today's split".\
-The server's planner applies the rules for every door (browser, CLI, REST), so an act gives the same document whichever door made it. The browser runs the same rule code to show the result at once, then takes the server's answer.\
+The server's planner applies the rules for every door (browser, CLI, REST), so an act gives the same document whichever door made it.\
+The browser runs the same rule code to show the result at once, then takes the server's answer.\
 The costs shown with it:
 - a preview that differs from the server's answer, for example on minted ids, is corrected;
 - the tab must accept server results that share a key with its own ops, so B242 must be fixed first.
 
-This answers B243 (a landing through REST or the CLI is not cut) and the register's PS314 and PS320. It keeps the direction of BOARD H15.2 ("share, not mirror").
+This answers B243 (a landing through REST or the CLI is not cut) and the register's PS314 and PS320.\
+It keeps the direction of BOARD H15.2 ("share, not mirror").
 
 **A device's capability pack is only a table -- ruled 2026-09-27 (SD4), amending "What `routable` therefore owns" (2026-09-22) in place.**\
-Asked "The 2026-09-22 ruling gives a device's routing pack three things: its table of allowed roles, working out the roles, and writing the changes. Should a pack instead be only the table, with the link layer and the server's rules reading it?", the director chose "Only a table" (the proposer's recommendation) over "Table + rules, as ruled" and "Table + proposals".\
-A pack is data: which routable roles (endpoint, junction, bend) a device type allows. The link layer's derivations and the planner's rules exist once and read every device's table.\
+Asked "The 2026-09-22 ruling gives a device's routing pack three things: its table of allowed roles, working out the roles, and writing the changes.\
+Should a pack instead be only the table, with the link layer and the server's rules reading it?", the director chose "Only a table" (the proposer's recommendation) over "Table + rules, as ruled" and "Table + proposals".\
+A pack is data: which routable roles (endpoint, junction, bend) a device type allows.\
+The link layer's derivations and the planner's rules exist once and read every device's table.\
 The costs shown with it:
 - a device can add new behaviour only as a new column in the table plus code that reads it, so the director's leaning that "packs can extend anchor behaviour too" (S12) waits for that route;
 - a load balancer's fan-out may force a further amendment;
@@ -719,40 +805,51 @@ The costs shown with it:
 
 **Whether a flow may pass through a device is set by the device's table -- ruled 2026-09-27 (SD6), answering "Not ruled here: whether a flow may pass THROUGH a server" (2026-09-25).**\
 Asked "May a declared flow pass through a device where links meet?", for a flow H1 to H3 whose only way runs through server X (with two uplinks) and switch S, the director chose "Device table decides" (the proposer's recommendation) over "Any meeting point passes" and "Not yet; bare points only".\
-Each device type's table gains a yes/no column for letting flows pass through; a flow's derived path reads it. The contents are left to the per-type table, still carried to design; the illustration offered was routers and switches yes, servers and hosts no.\
-The costs shown with it:
+Each device type's table gains a yes/no column for letting flows pass through; a flow's derived path reads it.\
+The contents are left to the per-type table, still carried to design; the illustration offered was routers and switches yes, servers and hosts no. The costs shown with it:
 - every type needs this second setting;
 - fan-out such as load balancing cannot be a yes/no, and waits for the behaviour design;
 - a server where several links meet is a junction at the link layer yet passes no traffic, so link roles and forwarding separate (register PS207).
 
 **At most one pipe joins any two anchors -- ruled 2026-09-27 (SD7).**\
 Asked "Can two pipes join the same two anchors?", for switch S and router R joined by two physically separate conduits, the director chose "No: one pipe per pair" (the proposer's recommendation) over "Yes: pipes get their own ids".\
-A pipe is named by its two anchors, and parallel cables share it. This confirms the director's leanings "a wire's spec is just its two anchors" and "parallelism lives above/abstracted over wires" (S15). A pipe's stored form is its pair plus how it was laid (by hand or with a link).\
+A pipe is named by its two anchors, and parallel cables share it.\
+This confirms the director's leanings "a wire's spec is just its two anchors" and "parallelism lives above/abstracted over wires" (S15).\
+A pipe's stored form is its pair plus how it was laid (by hand or with a link).\
 The costs shown with it:
 - two diverse conduits need an extra anchor;
 - links sharing a pipe draw on top of each other until a parallel renderer exists (`kernel/engine.mjs`, the deferred parallel realizer).
 
 **A pipe may join any two anchors as a straight line, diagonals included -- ruled 2026-09-27 (SD8).**\
 Asked "Must a pipe run straight along a grid row or column?", for anchors at (0,0) and (3,4), the director chose "Any two anchors, straight" over "Row or column only" (the proposer's recommendation) and "Any two, with an auto corner".\
-This keeps today's actual behaviour. The store accepts diagonal segments (stack-design code map, probe P1), and nothing calls the GRC `ortho` check. `docs/spec/ATOMICS.md`'s "manual links are orthogonal" does not describe the product, and is to be corrected with this ruling.\
+This keeps today's actual behaviour.\
+The store accepts diagonal segments (stack-design code map, probe P1), and nothing calls the GRC `ortho` check.\
+`docs/spec/ATOMICS.md`'s "manual links are orthogonal" does not describe the product, and is to be corrected with this ruling.\
 So "longer on screen" (above) is Euclidean length, computed with `Math.sqrt` (B176), not grid length.\
-The cost shown with it: lengths are square roots, so two routes of equal true length may not compare equal. `Math.sqrt` and the four operators are exact IEEE 754, so every peer computes the same comparison (INFERRED from B176's note in `kernel/router.mjs`), provided sums are formed in one fixed order.
+The cost shown with it: lengths are square roots, so two routes of equal true length may not compare equal.\
+`Math.sqrt` and the four operators are exact IEEE 754, so every peer computes the same comparison (INFERRED from B176's note in `kernel/router.mjs`), provided sums are formed in one fixed order.
 
 **Route cost is the number of pipes -- ruled 2026-09-27 (SD9), answering "what pipe cost is" (carried to design 2026-09-26).**\
 Asked "When a link or flow is routed over pipes, what makes one route cheaper?", for a detour of 3 short pipes (10 units on screen) against 2 long pipes (30 units), the director chose "Fewest pipes" over "Shortest on screen" (the proposer's recommendation) and "A weight you set per pipe".\
-A route takes the fewest pipes. Ties still go to one fixed order that every peer computes, as the prototypes' symmetric tie-break does (FR3-v5 onward: naming the ends the other way round changes 0 of 965 routes, MEASURED).\
-The cost shown with it: routes count pipes while "which piece keeps the name" counts on-screen length, so the two can disagree. The prototypes' measurements already use this unit.
+A route takes the fewest pipes.\
+Ties still go to one fixed order that every peer computes, as the prototypes' symmetric tie-break does (FR3-v5 onward: naming the ends the other way round changes 0 of 965 routes, MEASURED).\
+The cost shown with it: routes count pipes while "which piece keeps the name" counts on-screen length, so the two can disagree.\
+The prototypes' measurements already use this unit.
 
 **A declared flow is part of the document -- ruled 2026-09-27 (SD10).**\
 Asked "Is a declared flow part of the document, which every viewer sees, which is exported, and which undo removes like any edit?", the director chose "Part of the document" (the proposer's recommendation) over "A saved selection" and "Session only".\
-A flow is stored as its two ends, versioned and undoable like any edit; its path is derived (SD1). Every door and every export sees it. This confirms the director's S14: "a link, path or flow config would need to have some entity persisted into the document (minimal entity/spec) such that the derivation can actually occur".\
+A flow is stored as its two ends, versioned and undoable like any edit; its path is derived (SD1).\
+Every door and every export sees it.\
+This confirms the director's S14: "a link, path or flow config would need to have some entity persisted into the document (minimal entity/spec) such that the derivation can actually occur".\
 The costs shown with it:
 - a new stored kind across every closed kind list and the id grammar, a lasting change to the document format that spends the one-way-door budget (AX6) the director has not yet set;
 - `link.flow`, today a link's declared direction, must be renamed to end the collision (naming deferred).
 
 **The network is built as a plugin now -- ruled 2026-09-27 (SD11).**\
 Asked "In this phase, should any of the network (pipes, links, flows and their rules) be built outside the engine as a plugin, or all inside it, with the plugin line drawn later when a second, different kind of world needs one?", the director chose "Yes: a network plugin now" over "Not yet: inside, as layers" (the proposer's recommendation).\
-Links, flows, their rules and the device tables form a network plugin now. This follows the director's leanings: "plugin is the distribution unit, contributing packs and stages" (S21), and the Kubernetes analogy for stages as capabilities (S12). Under the director's rule of 2026-09-01 (`dev/BOARD.md`), "no premature abstraction, unless the work IS the abstraction", this makes the plugin surface part of the work.\
+Links, flows, their rules and the device tables form a network plugin now.\
+This follows the director's leanings: "plugin is the distribution unit, contributing packs and stages" (S21), and the Kubernetes analogy for stages as capabilities (S12).\
+Under the director's rule of 2026-09-01 (`dev/BOARD.md`), "no premature abstraction, unless the work IS the abstraction", this makes the plugin surface part of the work.\
 The costs shown with it:
 - the plugin contract is designed around a single plugin;
 - every closed kind list and the id grammar must read from the plugin (stack-design code map, C1);
@@ -761,7 +858,9 @@ The costs shown with it:
 
 **Pipes belong to the network plugin; the core is anchors in space -- ruled 2026-09-27 (SD11b), amending the anchor definition in place.**\
 Asked "With the network as a plugin: are pipes part of the engine's core, or part of the network plugin?", the director chose "In the network plugin" (the proposer's recommendation) over "Pipes in the core", their own earlier tentative leaning ("perhaps pipes cost nothing as core", S21).\
-The core is anchors: identity and position. The network plugin contributes pipes, links, flows, the rules that react to edits, and the device tables. A world without connections, such as towers that act by range (S21's separating question), carries no pipes.\
+The core is anchors: identity and position.\
+The network plugin contributes pipes, links, flows, the rules that react to edits, and the device tables.\
+A world without connections, such as towers that act by range (S21's separating question), carries no pipes.\
 The costs shown with it:
 - the core has no notion of connection at all;
 - the anchor's core definition is amended in place (above);
@@ -769,7 +868,11 @@ The costs shown with it:
 
 **Each document lists the plugins it needs -- ruled 2026-09-27 (SD12).**\
 Asked "Should each document list the plugins it needs?", the director chose "Yes, listed now" (the proposer's recommendation) over "Not until a second plugin" and "Listed, fixed at creation".\
-Each document lists its plugins. A peer lacking a listed plugin refuses the document, following GR8's "a document that cannot be told apart from a valid one must be REJECTED" (INFERRED that it applies). Changing the list is an undoable edit. This confirms the director's S20: "a document should declare its required packs. Delivered via the server and in sync per document".\
+Each document lists its plugins.\
+A peer lacking a listed plugin refuses the document, following GR8's "a document that cannot be told apart from a valid one must be REJECTED" (INFERRED that it applies).\
+Changing the list is an undoable edit.\
+This confirms the director's S20: "a document should declare its required packs.\
+Delivered via the server and in sync per document".\
 The costs shown with it:
 - a new field in every document, a lasting format change (AX6);
 - with one fixed plugin set, no peer can differ yet, so the refusal path has no real case to test.
@@ -787,35 +890,63 @@ The rulings above change how every diagram is stored:
 - the rename of `link.flow`.
 
 Asked how those irreversible changes to the 38 live diagrams should be spent, the director chose "One named batch, last" (the proposer's recommendation) over "Each with its feature" and "Trim the list first".\
-All stored-format changes go into a single listed conversion, applied once, after the new behaviour is proven on the bench and in tests. This is AX6's "few, named, and last" (`dev/surveys/unification-survey.md`). Under the standing rule, the conversion itself is deleted after it runs ("transform once, then delete the transform").\
+All stored-format changes go into a single listed conversion, applied once, after the new behaviour is proven on the bench and in tests.\
+This is AX6's "few, named, and last" (`dev/surveys/unification-survey.md`).\
+Under the standing rule, the conversion itself is deleted after it runs ("transform once, then delete the transform").\
 The cost shown with it: the new behaviour cannot reach live diagrams until the batch lands.
 
 **The lab canvas: a minimal client composition over real code modules -- directed 2026-09-27.**\
-The director proposed "a sovereign cut-down version of our app purely for anchor+routing pack validation": a single fixed canvas, with no multiple documents, no storage, and none of the menu icons, bars, status or SSO. It would be "a minimal kernel of a visual canvas to use 'w', 'f', 'k' and other related visual testing", which "might also be helpful at cutting decoupled modular boundaries of the real packs using real code".\
-Asked what the lab should run first, the director chose real code, in their own words:\
-"one thing I'm keen to do is properly cut the seams/boundaries such that we don't load any code that is unnecessary. This work will allow us to re-architect the real production app and backport and gains we develop. One goal will be - just how minimal / efficient with proper soveriegn / deduped boundaries can we make this? Perform a full axiom audit if it would help. This then essentially becomes a "minimal" client system composition over real code modules - and we will re-build and re-integrate into the production service when we are ready".\
+The director proposed "a sovereign cut-down version of our app purely for anchor+routing pack validation": a single fixed canvas, with no multiple documents, no storage, and none of the menu icons, bars, status or SSO.\
+It would be "a minimal kernel of a visual canvas to use 'w', 'f', 'k' and other related visual testing", which "might also be helpful at cutting decoupled modular boundaries of the real packs using real code".\
+Asked what the lab should run first, the director chose real code, in their own words: "one thing I'm keen to do is properly cut the seams/boundaries such that we don't load any code that is unnecessary.\
+This work will allow us to re-architect the real production app and backport and gains we develop.\
+One goal will be - just how minimal / efficient with proper soveriegn / deduped boundaries can we make this?\
+Perform a full axiom audit if it would help.\
+This then essentially becomes a "minimal" client system composition over real code modules - and we will re-build and re-integrate into the production service when we are ready".\
 So the lab:
 - is built from the real modules, mounted rather than forked, with an in-memory document and the real planner running locally;
 - loads nothing it does not need;
 - has sovereign, deduplicated boundaries, enforced by scanners;
 - its gains are carried back into the production app, which is later rebuilt on the same composition.
 
-The work is milestone H17 on `dev/BOARD.md`. It begins with a measured baseline of what the app loads, and an axiom alignment audit (mission-kit M7) of the module boundaries.
+The work is milestone H17 on `dev/BOARD.md`.\
+It begins with a measured baseline of what the app loads, and an axiom alignment audit (mission-kit M7) of the module boundaries.
 
-**H17 lab decisions -- ruled from 2026-09-27.** These were prepared by the H17 audit and design workflow (run wf_a40c7406-192), whose measured baseline, seam map, axiom audit (M7), design, independent review and brief are kept in the lab-design bench outside the repository. The cut ids (K0-K18) refer to that brief.
+**H17 lab decisions -- ruled from 2026-09-27.**\
+These were prepared by the H17 audit and design workflow (run wf_a40c7406-192), whose measured baseline, seam map, axiom audit (M7), design, independent review and brief are kept in the lab-design bench outside the repository.\
+The cut ids (K0-K18) refer to that brief.
 
-**H17-D1: the lab lives in a `lab/` folder in this repository.** The director chose "A lab/ folder in the repo" (the proposer's recommendation) over "Outside the repository" and "Inside the product, at /lab". The gate scans it and runs its tests on every push. It is never deployed, because the Dockerfile copies named folders only.
+**H17-D1: the lab lives in a `lab/` folder in this repository.**\
+The director chose "A lab/ folder in the repo" (the proposer's recommendation) over "Outside the repository" and "Inside the product, at /lab".\
+The gate scans it and runs its tests on every push.\
+It is never deployed, because the Dockerfile copies named folders only.
 
-**H17-D2: each finished cut ships to production as it lands.** The director chose "Ship each cut as it lands" (the proposer's recommendation) over "Hold on a branch until the rebuild". Production gets lighter step by step, each step behind its own tests. 23 of the 26 planned cuts land on main as they are made. The exceptions are the lab itself (K10, never deployed) and the two cuts that wait for the rebuild (K13d, K18b). The five that change what a user sees are each a registered defect or a ruling: K1 (B242), K14a (B244), K14b (B245), K15 (B246) and K18a (B243, SD2).
+**H17-D2: each finished cut ships to production as it lands.**\
+The director chose "Ship each cut as it lands" (the proposer's recommendation) over "Hold on a branch until the rebuild".\
+Production gets lighter step by step, each step behind its own tests. 23 of the 26 planned cuts land on main as they are made.\
+The exceptions are the lab itself (K10, never deployed) and the two cuts that wait for the rebuild (K13d, K18b).\
+The five that change what a user sees are each a registered defect or a ruling: K1 (B242), K14a (B244), K14b (B245), K15 (B246) and K18a (B243, SD2).
 > **CORRECTED 2026-09-27 (second M7 pass, C10).** K10, the lab, also lands on main, because H17-D1 puts `lab/` in this repository; it is the one cut never deployed. So 24 of the 26 cuts land on main as they are made, and 23 of them reach production. Only K13d and K18b wait for the rebuild.
 
-**H17-D3: the tab takes the server's full answer, then replays its own unanswered edits on top (the fix for B242).** The director chose "Take answer, replay yours" (the proposer's recommendation) over "Take additions except your fields" and "Take additions as they arrive" (the fix `dev/BACKLOG.md` first named for B242). In the brief's four real-code cases (MEASURED on the real Model, commit, deleteSelection and renameEntity), it converged in all four with no flicker. Today's filter diverged in three, and taking additions as they arrive diverged in one and briefly showed an older value. It needs only the tab's own list of unacknowledged ops. This settles the register's PS321, which B242 was held for.
+**H17-D3: the tab takes the server's full answer, then replays its own unanswered edits on top (the fix for B242).**\
+The director chose "Take answer, replay yours" (the proposer's recommendation) over "Take additions except your fields" and "Take additions as they arrive" (the fix `dev/BACKLOG.md` first named for B242).\
+In the brief's four real-code cases (MEASURED on the real Model, commit, deleteSelection and renameEntity), it converged in all four with no flicker.\
+Today's filter diverged in three, and taking additions as they arrive diverged in one and briefly showed an older value.\
+It needs only the tab's own list of unacknowledged ops.\
+This settles the register's PS321, which B242 was held for.
 > **CORRECTED 2026-09-27 (second M7 pass, C4).** "The server's full answer" is the recorder's gloss, and it is wrong. The rule measured, and the one the director's option "Take answer, replay yours" names, applies the server's planned ops that are NOT identical to what the tab itself sent, then replays the tab's unacknowledged ops. Re-applying the full answer would re-apply the tab's own sent ops, and during a live drag would briefly revert it, the flicker the chosen option was shown not to have (the second pass's live-gesture probe). The director's choice is unchanged. K1's tests assert both convergence and that no own edit regresses (`dev/design/h17/PLAN.md`).\
 > **As built, K1 (2026-09-28), the proposer's reading.** The replay step replays the tab's pending ops only on the entities the server's answer wrote. Everywhere else the tab already shows them, so replaying them there changes nothing, except during a live drag, which is in no request and would snap back. It gives the same document as replaying everything outside a gesture (INFERRED), and meets C4's "the tab must not snap back" during one (MEASURED, `tests/b242-reconcile.test.js`).
 
-**H17-D4: the three barrel files go.** The director chose "Delete them" (the proposer's recommendation) over "Keep them, split per use" and "Keep them as they are". `kernel/index.mjs`, `engine/index.mjs` and `model/index.mjs` are deleted, every import names the module that defines it, and the layer manifest (K0) declares what is public. The planner falls from 31 modules to 15, and the page from 50 to 44 (MEASURED arithmetic over the import graph). The cost shown: 125 import sites change (83 static, 42 dynamic). This reverses the barrels' own "import from HERE only" (`kernel/index.mjs:1-2`), which was already bypassed at 24 of 58 sites. The mount check in `server/app.js`, which serves a folder only if its `index.mjs` exists, changes to "the folder exists" in the same cut (review finding 1).
+**H17-D4: the three barrel files go.**\
+The director chose "Delete them" (the proposer's recommendation) over "Keep them, split per use" and "Keep them as they are".\
+`kernel/index.mjs`, `engine/index.mjs` and `model/index.mjs` are deleted, every import names the module that defines it, and the layer manifest (K0) declares what is public.\
+The planner falls from 31 modules to 15, and the page from 50 to 44 (MEASURED arithmetic over the import graph).\
+The cost shown: 125 import sites change (83 static, 42 dynamic).\
+This reverses the barrels' own "import from HERE only" (`kernel/index.mjs:1-2`), which was already bypassed at 24 of 58 sites.\
+The mount check in `server/app.js`, which serves a folder only if its `index.mjs` exists, changes to "the folder exists" in the same cut (review finding 1).
 
-**H17-D5: two new served folders, `planner/` and `network/`.** The director chose "New planner/ and network/" (the proposer's recommendation) over "Serve parts of server/" and "Move both into engine/".
+**H17-D5: two new served folders, `planner/` and `network/`.**\
+The director chose "New planner/ and network/" (the proposer's recommendation) over "Serve parts of server/" and "Move both into engine/".
 - **`planner/`** holds the planner. `txn.mjs`, `log.mjs` and `validate.js` move whole, with `policy.mjs`. It loads in a browser, as SD2's preview requires; after the planned cuts that is 14 modules and 168,489 bytes (MEASURED).
 - **`network/`** holds the network plugin's rules, roles, appearance and device table (SD11).
 - **Serving:** each folder is served whole or not at all, and `server/` is never served. A test checks that `server/store.js`, `server/identity.mjs` and `server/anchor.mjs` still return 404.
@@ -827,33 +958,80 @@ The costs shown:
 - five folder lists in four scanners move to the layer manifest;
 - the Dockerfile gains two COPY lines and the server two mounts.
 
-**H17-D6: the one device-type table is imported by its users, a deviation from the M7 audit's guardrail G8, accepted by the director.** The director chose "Import it" (the proposer's recommendation) over "Hand it in", the guardrail as written. Under M7 step 4 a guardrail deviation needs the director's acceptance, and this records it. The reason given: injection was needed only because the table's users sat in `kernel/` and `model/`, which may not import each other (C9). After the planned moves no file in either folder needs the table. The table will be a devices module in the new network folder, pinned to the palette's order (host, server, loadbalancer, firewall, vxlan, router), because the digit keys index it.
+**H17-D6: the one device-type table is imported by its users, a deviation from the M7 audit's guardrail G8, accepted by the director.**\
+The director chose "Import it" (the proposer's recommendation) over "Hand it in", the guardrail as written.\
+Under M7 step 4 a guardrail deviation needs the director's acceptance, and this records it.\
+The reason given: injection was needed only because the table's users sat in `kernel/` and `model/`, which may not import each other (C9).\
+After the planned moves no file in either folder needs the table.\
+The table will be a devices module in the new network folder, pinned to the palette's order (host, server, loadbalancer, firewall, vxlan, router), because the digit keys index it.
 > **CORRECTED 2026-09-27 (second M7 pass, C10).** The reason given ("after the planned moves no file in either folder needs the table") was INFERRED in the brief, not measured. It is recorded here as the proposer's inference.
 
-**H17-D7: the lab uses the whole key table, shared with the product.** The director chose "The whole key table" (the proposer's recommendation) over "All but text and naming" and "Link keys only". There is one key table (`app/src/keymap.js`), and the lab carries the label editor (6,738 bytes). Three bindings do nothing in the lab because their features are absent: `r` (run mode) and the `draw:action` event, since the lab passes no run-mode rules (K5), and `/`, since there is no help panel.
+**H17-D7: the lab uses the whole key table, shared with the product.**\
+The director chose "The whole key table" (the proposer's recommendation) over "All but text and naming" and "Link keys only".\
+There is one key table (`app/src/keymap.js`), and the lab carries the label editor (6,738 bytes).\
+Three bindings do nothing in the lab because their features are absent: `r` (run mode) and the `draw:action` event, since the lab passes no run-mode rules (K5), and `/`, since there is no help panel.
 
-**H17-D8: the lab runs the real planner in the page from its first version.** The director chose "Yes, planner in the page" (the proposer's recommendation) over "No, first lab is tab-only" and "Talk to a local server".
+**H17-D8: the lab runs the real planner in the page from its first version.**\
+The director chose "Yes, planner in the page" (the proposer's recommendation) over "No, first lab is tab-only" and "Talk to a local server".
 - **The door:** the lab holds a tab Model and a local authority Model, with the real `commit`, `undo`, `redo` and `Log`. So a delete shows the planner's own cascade and sweep, and undo works. Today undo and redo are round trips to the server (`app/src/changes.js`).
 - **Cost:** 4 more modules and 78,915 bytes (MEASURED): `referential`, `log`, `txn` and `validate`.
 - **Exit amended:** H17's exit wording on `dev/BOARD.md` now reads "core, plugin, planner and canvas modules".
 - **The recorder's bullet confirmed:** this confirms, with the director, the bullet "the real planner running locally" recorded under "The lab canvas" above.
 
-**H17-D9: "loads nothing unneeded" is checked at export level.** The director chose "Export level" (the proposer's recommendation) over "File level". The layer scanner's rule L10 fails when any module in an entry's closure exports something that nothing inside that closure imports. What must wait for the rebuild is listed by name, as a ratchet that may only shrink.\
-The cost shown: it cannot reach zero within H17. The Model's link methods move only at the rebuild (K13d), and some exports serve server doors only. At the measured start the hypothetical lab root had 106 of 314 exports imported by nothing in its closure, and the planner entry 153 of 241 (MEASURED).
+**H17-D9: "loads nothing unneeded" is checked at export level.**\
+The director chose "Export level" (the proposer's recommendation) over "File level".\
+The layer scanner's rule L10 fails when any module in an entry's closure exports something that nothing inside that closure imports.\
+What must wait for the rebuild is listed by name, as a ratchet that may only shrink.\
+The cost shown: it cannot reach zero within H17.\
+The Model's link methods move only at the rebuild (K13d), and some exports serve server doors only.\
+At the measured start the hypothetical lab root had 106 of 314 exports imported by nothing in its closure, and the planner entry 153 of 241 (MEASURED).
 
-**H17-D10: the ids of a cut's pieces are derived from the cut.** The director chose "Derived from the cut" (the proposer's recommendation) over "Random, then replaced" and "Browser mints and sends". A piece's id is a deterministic function of the cut link's id and the cut point, so a browser preview and the server's planner mint the same ids by construction, and GR5's frozen differential of `plan()` stays reproducible.\
+**H17-D10: the ids of a cut's pieces are derived from the cut.**\
+The director chose "Derived from the cut" (the proposer's recommendation) over "Random, then replaced" and "Browser mints and sends".\
+A piece's id is a deterministic function of the cut link's id and the cut point, so a browser preview and the server's planner mint the same ids by construction, and GR5's frozen differential of `plan()` stays reproducible.\
 The costs shown:
 - a rule for collisions must be specified;
 - two peers holding different documents can still mint differently, which must show as a typed correction.
 
-**H17-D11: SD2's browser preview reaches the product at the rebuild, not before.** The director chose "At the rebuild" (the proposer's recommendation) over "Before the rebuild". Until then the product's browser keeps its copies of three rules: the delete cascade and group steal in `app/src/commands.js`, and `splitsFor` in `app/src/input.js`. The layer scanner's restatement count (L9) and the design's criterion 5 stay at 2 through H17. The lab does not need the preview cut, because it runs the planner in the same page (H17-D8). Shipping it earlier would have added 5 modules and about 72 KB to the live page (MEASURED arithmetic). The rule half of SD2 (K18a: every door cuts a landing, fixing B243) still lands during H17.
+**H17-D11: SD2's browser preview reaches the product at the rebuild, not before.**\
+The director chose "At the rebuild" (the proposer's recommendation) over "Before the rebuild".\
+Until then the product's browser keeps its copies of three rules: the delete cascade and group steal in `app/src/commands.js`, and `splitsFor` in `app/src/input.js`.\
+The layer scanner's restatement count (L9) and the design's criterion 5 stay at 2 through H17.\
+The lab does not need the preview cut, because it runs the planner in the same page (H17-D8).\
+Shipping it earlier would have added 5 modules and about 72 KB to the live page (MEASURED arithmetic).\
+The rule half of SD2 (K18a: every door cuts a landing, fixing B243) still lands during H17.
 > **CORRECTED 2026-09-27 (second M7 pass, C10).** The design's criterion 5 (zero browser restatements of planner rules) ends H17 at 3 copies, the cascade, the group steal and the split, not 2. The scanner rule L9 is a proxy for it that reads 2.
 
-**H17-D12: no build step for now; the lab serves its source as written, revisited at the rebuild.** The director chose "Not now; revisit at rebuild" (the proposer's recommendation) over "Yes, add a build step". The built, compressed size is still reported on every run: a similar lab set was 415,516 bytes as source and 31,233 bytes built and compressed (MEASURED by the H17 baseline). The reason: the repository has no build step, and built code would be a derived artifact that A2 and the code-revision parity input would then have to cover (the M7 audit's tension T3). Comments are 56-57% of the lab's source bytes.
+**H17-D12: no build step for now; the lab serves its source as written, revisited at the rebuild.**\
+The director chose "Not now; revisit at rebuild" (the proposer's recommendation) over "Yes, add a build step".\
+The built, compressed size is still reported on every run: a similar lab set was 415,516 bytes as source and 31,233 bytes built and compressed (MEASURED by the H17 baseline).\
+The reason: the repository has no build step, and built code would be a derived artifact that A2 and the code-revision parity input would then have to cover (the M7 audit's tension T3).\
+Comments are 56-57% of the lab's source bytes.
 
 **Before H17.3 starts:** the M7 audit's flag H1 requires a second M7 pass over the revised plan (the brief with all review findings applied and these twelve decisions), not over the first design.
 
 **H17-B251: after a reconnect, a request whose answer was lost stays shown, and a `replayed` answer triggers one fresh snapshot -- ruled 2026-09-28.**\
-The K1 fix pass left one reconcile case the rulings did not answer. After a reconnect the tab cannot tell whether a request whose answer was lost with the socket reached the server. If it did, the fresh snapshot already holds it, the tab re-applies it as its own, and the server's `replayed` answer carries nothing to correct it. In the K1 fuzz these were all 3 remaining divergences, and none occur without reconnects (MEASURED).\
+The K1 fix pass left one reconcile case the rulings did not answer.\
+After a reconnect the tab cannot tell whether a request whose answer was lost with the socket reached the server.\
+If it did, the fresh snapshot already holds it, the tab re-applies it as its own, and the server's `replayed` answer carries nothing to correct it.\
+In the K1 fuzz these were all 3 remaining divergences, and none occur without reconnects (MEASURED).\
 Asked "What should the tab do with that edit meanwhile?", the director chose "Keep showing it, re-check" (the proposer's recommendation) over "Hide it until the server answers".\
-The edit stays on screen. When the server's answer says `replayed`, the tab fetches the document once more, so it converges and the author's edit never flickers away (C4). The cost shown: one extra snapshot after such a drop. Not built yet; B251 records the work.
+The edit stays on screen.\
+When the server's answer says `replayed`, the tab fetches the document once more, so it converges and the author's edit never flickers away (C4).\
+The cost shown: one extra snapshot after such a drop.\
+Not built yet; B251 records the work.
+
+**H17-C2(c) EXTENDED: a consumer leaving the closure also vacates -- ruled 2026-09-28.**\
+K2a shrank the planner closure from 31 modules to 15, and seven exports became unused for a reason C2(c) did not anticipate: the modules that CALLED them left, while the modules that EXPORT them stayed.\
+`kernel/geometry.mjs:node` is the shape -- still exported, still used by 49 product files, unused only WITHIN the planner entry now that `kernel/engine.mjs` and the `engine/` modules are outside it.\
+Asked how the rule should handle it, the director chose "Extend C2(c): a consumer leaving also vacates" (the proposer's recommendation) over "Keep C2(c) strict and stop exporting the seven", which would have pulled cut K13a forward out of PLAN order, and over "Record them as a one-off K2a exception", whose cost is that the next cut hits the same wall and the exception list becomes the growth path C2(c) forbids.\
+The cost shown and accepted: the L10 list can now GROW as cuts land, which is the thing C2(c) was written to stop.\
+It is bounded two ways -- a departed module must actually import the name from that module, and the departure is judged against a frozen record rather than a claim.
+
+**The frozen K0 closure, and why the first four attempts were wrong.**\
+"A consumer left the closure" compares two states and the manifest holds one.\
+Four implementations judged it from the current tree and each failed: two refused names the ruling admits, one admitted mutant A14's borrowed spelling by testing the MODULE rather than the name, and one passed by reading the entry's own post-cut module list -- which asks the manifest whether the manifest is right, the B108/H11.4 shape.\
+So `UNUSED_EXPORTS.planner.k0closure` freezes the 31 modules as `f01772c` recorded them, written once and never edited, with its sha256 pinned in `tests/scan-layers.test.js` exactly as `RATCHET_CEILING` is.\
+`departed` is then derivable at every later cut as the frozen list minus today's closure.\
+This supports a WEAKER claim than the ruling's wording suggests: it says "left since K0", not "left at cut K7".\
+That is the honest limit of one frozen artifact, and it is recorded rather than glossed because a later cut may want the stronger one.

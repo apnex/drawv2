@@ -22,7 +22,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
-import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING } from '../tools/layers.mjs';
+import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES } from '../tools/layers.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const SCANNER = path.join(root, 'tools/scan-layers.mjs');
@@ -156,7 +156,7 @@ test('K0 L10: a listed name that gained a consumer fails until it leaves the lis
 });
 
 test('K0 L10: a name that was never in the baseline may not join the list (C2c)', () => {
-	fails('L10-join', 'L10', /planner\/txn\.mjs:MAX is listed but is not in the frozen K0 baseline, and no baseline symbol of that name left its module for it \(0 vacated, 1 claimed\)/);
+	fails('L10-join', 'L10', /planner\/txn\.mjs:MAX is listed but is not in the frozen K0 baseline, no baseline symbol of that name left its module for it \(0 vacated, 1 claimed\), and its module is not one the closure dropped/);
 });
 
 test('K0 L10: every listed name carries one of the two tags, and serves-a-server-door is checked (C2d)', () => {
@@ -245,7 +245,7 @@ test('K0 L6: a page loads exactly its entry\'s roots, and carries no inline code
 });
 
 test('K0 L10: a new export that only shares a baseline name may not join the list (C2c, A14)', () => {
-	const out = fails('L10-borrow', 'L10', /planner\/log\.mjs:LIMIT is listed but is not in the frozen K0 baseline, and no baseline symbol of that name left its module for it \(0 vacated, 1 claimed\)/);
+	const out = fails('L10-borrow', 'L10', /planner\/log\.mjs:LIMIT is listed but is not in the frozen K0 baseline, no baseline symbol of that name left its module for it \(0 vacated, 1 claimed\), and its module is not one the closure dropped/);
 	assert.doesNotMatch(out, /planner\/txn\.mjs:LIMIT/, 'the baseline entry itself stays listable');
 });
 
@@ -318,10 +318,15 @@ const MUTANTS = [
 	{ id: 'A6c', rule: 'L7k', edits: [{ file: 'server/validate.js', replace: ['const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;', 'const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$|^pipe-[0-9a-f]{6}$/;'] }] },
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	{ id: 'A5', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { violations } from './invariants.mjs';\n" },
-		{ file: 'server/txn.mjs', replace: ["import { projection } from '../model/index.mjs';", "import { projection, violations } from '../model/index.mjs';"] },
+		{ file: 'server/txn.mjs', replace: ["import { projection } from '../model/model.mjs';", "import { projection } from '../model/model.mjs';\nimport { violations } from '../model/index.mjs';"] },
 		{ file: 'server/txn.mjs', replace: ["import { violations, isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';", "import { isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';"] }] },
-	{ id: 'A5b', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { situationOf } from '../engine/situation.mjs';\n" },
-		{ file: MAN, replace: ["'rebuild-debt': ['CONTENT_VALUE_MAX', 'SPAN_MAX', 'SURFACE', 'kindOf'],", "'rebuild-debt': ['CONTENT_VALUE_MAX', 'SPAN_MAX', 'SURFACE', 'kindOf', 'situationOf'],"] }] },
+	/*
+	K2a: the second edit is gone. It existed only to keep L10 quiet -- `model/index.mjs` was in the
+	planner's unused list, so a new re-export there needed listing too, or the mutant would have
+	failed two rules and `fails` asserts exactly one. K2a took every barrel out of the planner
+	closure, so the barrel is no longer listed and the re-export alone is the mutant.
+	*/
+	{ id: 'A5b', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { situationOf } from '../engine/situation.mjs';\n" }] },
 	// a rule primitive taken from a namespace, and from import(), by destructuring
 	{ id: 'A12a', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nimport * as __inv from '../../model/invariants.mjs';\nconst { collapseAtWaypoint: __cw } = __inv;\n" }] },
 	{ id: 'A12c', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nexport async function __a12() { const m = await import('../../model/invariants.mjs'); const { collapseAtWaypoint } = m; return collapseAtWaypoint; }\n" }] },
@@ -418,5 +423,123 @@ test('K0: the gate runs scan-layers, and the four scanners read their folders fr
 		}
 		// a folder list re-typed in the scanner is the drift this move exists to end
 		assert.doesNotMatch(src, /^const \w+ = \[\s*'(?:kernel|server|model|engine|app\/src)'/m, `${scanner} still hard-codes a folder list`);
+	}
+});
+
+/*
+H17 K2a -- THE PLANNER IMPORTS EACH NAME FROM THE MODULE THAT DEFINES IT.
+
+A barrel is not a layer violation: `scan-layers` judges an import through one at the module that
+defines each name (L2), so the planner reaching `STD` through `kernel/index.mjs` was always legal.
+What it is instead is a LOAD: the barrel is a module, it imports everything it re-exports, and the
+planner's closure therefore carries the whole of `kernel/`, `model/` and `engine/` to reach ten
+names. That is what K2c deletes and what K2a stops depending on.
+
+This asserts the RULE rather than a count, for the reason the previous session's five literal-pinned
+tests broke: a closure size is a measurement and it will move at every later cut, but "no barrel is
+in the planner's closure" is the property K2a establishes and K2c makes permanent.
+
+The closure is walked here rather than read from the manifest. The manifest's `modules` list is a
+DECLARATION checked by L6, so reading it would ask the manifest whether the manifest is right --
+the same shape as a test that reimplements its subject (B108, H11.4). This reads the imports.
+*/
+const BARRELS = ['model/index.mjs', 'engine/index.mjs', 'kernel/index.mjs'];
+
+// every relative specifier a module imports, `import()` included, resolved against the repo root
+function importsOf(file) {
+	const src = fs.readFileSync(path.join(root, file), 'utf8');
+	const out = [];
+	for (const re of [/(?:^|\n)\s*(?:import|export)[^'"\n]*?from\s*['"]([^'"]+)['"]/g, /import\(\s*['"]([^'"]+)['"]\s*\)/g]) {
+		for (const m of src.matchAll(re)) if (m[1].startsWith('.')) out.push(path.relative(root, path.resolve(path.dirname(path.join(root, file)), m[1])));
+	}
+	return out;
+}
+function closureOf(roots) {
+	const seen = new Set(), q = [...roots];
+	while (q.length) {
+		const f = q.shift();
+		if (seen.has(f) || !fs.existsSync(path.join(root, f))) continue;
+		seen.add(f);
+		q.push(...importsOf(f));
+	}
+	return seen;
+}
+
+test('H17 K2a: no barrel is in the planner closure, so the planner loads what it uses', () => {
+	const closure = closureOf(['server/txn.mjs', 'server/log.mjs']);
+
+	// the walk must have found the planner, or an empty closure would pass vacuously
+	assert.ok(closure.has('server/txn.mjs') && closure.size > 10, `the closure walk found only ${closure.size} module(s)`);
+
+	const reached = BARRELS.filter((b) => closure.has(b));
+	assert.deepEqual(reached, [],
+		`the planner still loads ${reached.join(', ')} -- a barrel pulls in everything it re-exports, so the planner carries modules it never calls`);
+});
+
+/*
+The same property stated at the SOURCE, because the closure test alone has a blind spot: a barrel
+that no longer re-exports anything the planner wants would leave the closure while the import line
+stayed. The cut is about where a name is taken FROM, so that is what this asserts.
+
+Sweeps the planner's own files rather than naming the three that had barrel imports at K2a -- a
+guard with a file list goes stale (B224), and the next planner module to reach for a barrel must
+fail here without an edit.
+*/
+test('H17 K2a: no planner module takes a name from a barrel, however the closure looks', () => {
+	const planner = [...closureOf(['server/txn.mjs', 'server/log.mjs'])].filter((f) => !BARRELS.includes(f));
+	assert.ok(planner.length > 10, `the sweep must find the planner's modules, not ${planner.length}`);
+
+	const offenders = [];
+	for (const f of planner) for (const spec of importsOf(f)) if (BARRELS.includes(spec)) offenders.push(`${f} -> ${spec}`);
+	assert.deepEqual(offenders, [],
+		`each of these must import from the module that DEFINES the name:\n  ${offenders.join('\n  ')}`);
+});
+
+/*
+H17 K2a -- C2(c) EXTENDED: a consumer leaving the closure also vacates.
+
+The director ruled the extension when K2a shrank the planner closure and seven exports became
+unused because their CALLERS left, not their modules. The frozen K0 closure is what makes that
+judgeable after the fact: "a consumer left" compares two states, and the manifest holds one, so the
+before-state is frozen once and `departed` is derived from it at every later cut.
+
+Pinned the same way as RATCHET_CEILING and the L10 baseline: editing the frozen list means editing
+this line in the same diff, where a reviewer sees it.
+*/
+test('H17 K2a: the K0 closure is frozen, and it is the one K0 recorded', () => {
+	const k0 = UNUSED_EXPORTS.planner.k0closure;
+	assert.equal(k0.length, 31, 'the planner loaded 31 modules at K0');
+	assert.equal(crypto.createHash('sha256').update(JSON.stringify(k0)).digest('hex'),
+		'e33332244fa80fbb00c6eded142da974cd148458d4c9102510134b2a1c4502e1');
+
+	// it is a FROZEN BEFORE-state, so it must be a superset of what the entry loads now
+	const now = new Set(ENTRIES.planner.modules);
+	const missing = [...now].filter((m) => !k0.includes(m));
+	assert.deepEqual(missing, [], 'a module the entry loads today was not in the K0 closure -- the frozen list is wrong, not stale');
+});
+
+/*
+The extension must ADMIT the departure case and still REFUSE a borrowed spelling, which is the
+whole of C2(c)'s original purpose. Both halves are asserted here over the real tree, because the
+fixtures cover the rule's shape and this covers the ruling's boundary.
+*/
+test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not merely because its module was baselined', () => {
+	const rec = UNUSED_EXPORTS.planner;
+	const k0 = new Set(rec.k0closure);
+	const now = new Set(ENTRIES.planner.modules);
+	const departed = [...k0].filter((m) => !now.has(m));
+	assert.ok(departed.length > 0, 'K2a must have dropped modules, or this proves nothing');
+
+	// every listed name outside the frozen baseline must be importable from a departed module
+	const baseline = new Set(Object.entries(rec.baseline).flatMap(([m, ns]) => ns.map((n) => `${m}:${n}`)));
+	const listed = Object.entries(rec.list).flatMap(([m, byTag]) => Object.values(byTag).flat().map((n) => `${m}:${n}`));
+	const arrivals = listed.filter((k) => !baseline.has(k));
+	assert.ok(arrivals.length > 0, `K2a admitted names by departure; found ${arrivals.length}`);
+
+	for (const k of arrivals) {
+		const mod = k.slice(0, k.lastIndexOf(':')), name = k.slice(k.lastIndexOf(':') + 1);
+		const src = departed.map((m) => fs.readFileSync(path.join(root, m), 'utf8')).join('\n');
+		assert.match(src, new RegExp(`\\b${name}\\b`),
+			`${k} joined the list, and no module the closure dropped mentions ${name} -- it is a borrowed spelling, which C2(c) refuses`);
 	}
 });

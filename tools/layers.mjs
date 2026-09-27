@@ -155,10 +155,8 @@ export const ENTRIES = {
 		roots: ['server/txn.mjs', 'server/log.mjs'],
 		surface: { 'server/txn.mjs': ['plan', 'commit', 'undo', 'redo'], 'server/log.mjs': ['Log'] },
 		modules: [
-			'engine/index.mjs', 'engine/ivm.mjs', 'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs',
-			'engine/relations.mjs', 'engine/rules.mjs', 'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs',
-			'kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs',
-			'kernel/renderer.mjs', 'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs',
+			'engine/policy.mjs',
+			'kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs',
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
 		],
@@ -293,21 +291,14 @@ export const RATCHETS = {
 		'cli/verbs.mjs -> model/index.mjs': 2,
 		'engine/situation.mjs -> kernel/index.mjs': 1,
 		'engine/spawners.mjs -> kernel/index.mjs': 1,
-		'server/anchor.mjs -> kernel/index.mjs': 1,
-		'server/anchor.mjs -> model/index.mjs': 1,
-		'server/rest.js -> kernel/index.mjs': 1,
+						'server/rest.js -> kernel/index.mjs': 1,
 		'server/rest.js -> model/index.mjs': 1,
 		'server/seed.js -> model/index.mjs': 1,
 		'server/store.js -> engine/index.mjs': 1,
 		'server/store.js -> kernel/index.mjs': 1,
 		'server/store.js -> model/index.mjs': 1,
 		'server/svg.mjs -> kernel/index.mjs': 1,
-		'server/txn.mjs -> engine/index.mjs': 1,
-		'server/txn.mjs -> kernel/index.mjs': 1,
-		'server/txn.mjs -> model/index.mjs': 2,
-		'server/validate.js -> kernel/index.mjs': 1,
-		'server/validate.js -> model/index.mjs': 1,
-		'tests/access.test.js -> model/index.mjs': 1,
+												'tests/access.test.js -> model/index.mjs': 1,
 		'tests/affordance.test.js -> model/index.mjs': 1,
 		'tests/anchor-resolve.test.js -> model/index.mjs': 1,
 		'tests/boundary.test.js -> model/index.mjs': 1,
@@ -601,67 +592,46 @@ it -- the same 153, name for name, as the brief's export-demand measurement.
 */
 export const UNUSED_EXPORTS = {
 	planner: {
+		/*
+		The planner's closure AS K0 FROZE IT, taken from `tools/layers.mjs` at f01772c. Written once and
+		never edited: C2(c)'s "a consumer left the closure" is a claim about a transition, and the entry's
+		`modules` list above holds only the CURRENT state, so judging a departure from it would ask the
+		manifest whether the manifest is right. Frozen here, `departed` stays derivable at every later
+		cut -- this list minus today's closure -- for the same reason RATCHET_CEILING is frozen rather
+		than recomputed. Its sha256 is pinned in tests/scan-layers.test.js.
+		*/
+		k0closure: [
+			'engine/index.mjs', 'engine/ivm.mjs', 'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs',
+			'engine/relations.mjs', 'engine/rules.mjs', 'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs',
+			'kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs',
+			'kernel/renderer.mjs', 'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs',
+			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs',
+			'model/shape.mjs', 'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
+		],
 		list: {
-			'engine/index.mjs': {
-				'rebuild-debt': ['DERIVATIONS', 'MAX_MOVERS_PER_SPAWNER', 'MOVERS', 'TICK_MS', 'TOWERS', 'aimAt',
-					'attachRelations', 'combatAt', 'factsAt', 'inReadView', 'makeRelations', 'moverFor', 'moversAt', 'onEndpoint',
-					'onOpenGround', 'onSpawner', 'oneSelected', 'positionOf', 'prepareSpawner', 'situationOf', 'spawnersOf',
-					'tickAt', 'towerFor', 'worldOf'],
-			},
-			'engine/kinds.mjs': {
-				'rebuild-debt': ['MOVERS', 'TOWERS'],
-			},
-			'engine/movers.mjs': {
-				'rebuild-debt': ['MAX_MOVERS_PER_SPAWNER', 'positionOf'],
-			},
-			'engine/rules.mjs': {
-				'rebuild-debt': ['DERIVATIONS', 'aimAt', 'combatAt', 'factsAt', 'worldOf'],
-			},
-			'engine/situation.mjs': {
-				'rebuild-debt': ['inReadView', 'onEndpoint', 'onOpenGround', 'onSpawner', 'oneSelected', 'situationOf'],
-			},
-			'engine/store.mjs': {
-				'rebuild-debt': ['attachRelations'],
-			},
-			'kernel/adapt.mjs': {
-				'rebuild-debt': ['docToSchema', 'schemaToDoc'],
-			},
 			'kernel/geometry.mjs': {
-				'rebuild-debt': ['APPEARANCE_KEYS', 'CONTROL_WEIGHT', 'DASH_OFF', 'DASH_ON', 'cellCenter', 'cellOn', 'gridDot',
-					'junction', 'layoutOf', 'linkDash', 'linkFacing', 'linkMarker', 'linkWidth', 'port', 'px', 'pxOn', 'samePlane',
-					'snapLayout', 'spanExtent', 'waypointAnchor', 'waypointJunction', 'waypointRole', 'waypointStyle'],
+				'rebuild-debt': [
+					'APPEARANCE_KEYS', 'CONTROL_WEIGHT', 'DASH_OFF', 'DASH_ON', 'bboxOf', 'cellCenter', 'cellOf', 'cellOn',
+					'cellPx', 'gridDot', 'group', 'groupHull', 'junction', 'layoutOf', 'linkAppearance', 'linkDash', 'linkFacing',
+					'linkMarker', 'linkWidth', 'node', 'path', 'port', 'px', 'pxOn', 'samePlane', 'snapLayout', 'spanExtent',
+					'waypoint', 'waypointAnchor', 'waypointJunction', 'waypointLayers', 'waypointRole', 'waypointRoles',
+					'waypointStyle', 'zone'
+				],
 				'serves-a-server-door': ['nearestAnchor'],
 			},
-			'kernel/grc.mjs': {
-				'rebuild-debt': ['RULES', 'crossings'],
-			},
-			'kernel/index.mjs': {
-				'rebuild-debt': ['APPEARANCE_KEYS', 'CONTROL_WEIGHT', 'DASH_OFF', 'DASH_ON', 'DRAW_ORDER', 'GLYPH_BB', 'L_STD',
-					'RULES', 'bboxOf', 'cellCenter', 'cellOf', 'cellOn', 'cellPx', 'check', 'contentLayout', 'crossings', 'derive',
-					'docToSchema', 'frameRadius', 'frameWidth', 'grc', 'gridDot', 'gridSnap', 'groupHull', 'hexColor', 'isPanel',
-					'layoutOf', 'linkAppearance', 'linkDash', 'linkFacing', 'linkMarker', 'linkWidth', 'px', 'pxOn', 'render',
-					'renderContentRegion', 'renderElement', 'renderScene', 'resolve', 'roundedPath', 'samePlane', 'schemaToDoc',
-					'selBox', 'sharedDefs', 'showsSockets', 'snapLayout', 'spanExtent', 'waypointAnchor', 'waypointJunction',
-					'waypointLayers', 'waypointRole', 'waypointStyle'],
-				'serves-a-server-door': ['nearestAnchor'],
-			},
-			'kernel/renderer.mjs': {
-				'rebuild-debt': ['DRAW_ORDER', 'contentLayout', 'frameRadius', 'frameWidth', 'hexColor', 'isPanel',
-					'renderContentRegion', 'renderElement', 'selBox', 'sharedDefs', 'showsSockets'],
+			'kernel/spec.mjs': {
+				'rebuild-debt': ['derive'],
 			},
 			'kernel/theme.mjs': {
-				'rebuild-debt': ['KERNEL_CSS'],
+				'rebuild-debt': ['GLYPH_BB', 'GLYPH_DEFS', 'KERNEL_CSS'],
 				'serves-a-server-door': ['faviconSvg'],
-			},
-			'model/index.mjs': {
-				'rebuild-debt': ['CONTENT_VALUE_MAX', 'SPAN_MAX', 'SURFACE', 'kindOf'],
-				'serves-a-server-door': ['Model', 'NAME_MAX', 'newId'],
 			},
 			'model/invariants.mjs': {
 				'rebuild-debt': ['splitAtBend'],
 			},
 			'model/model.mjs': {
 				'serves-a-server-door': ['Model', 'newId'],
+				'rebuild-debt': ['kindOf'],
 			},
 			'model/surface.mjs': {
 				'rebuild-debt': ['SURFACE'],

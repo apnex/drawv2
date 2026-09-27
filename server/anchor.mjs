@@ -26,8 +26,8 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 `model/` is a sovereign sibling of `kernel/` that imports it nowhere (`model/limits.mjs`).
 */
 
-import { LAYOUTS, anchorAt } from '../kernel/index.mjs';
-import { NODE_EXT } from '../model/index.mjs';
+import { LAYOUTS, anchorAt } from '../kernel/geometry.mjs';
+import { NODE_EXT } from '../model/surface.mjs';
 
 // The four directions a caller may ask for, as unit steps on the grid. Screen coordinates, so `up`
 // is negative y -- the same mapping `cli/verbs.mjs` shipped, kept identical so moving the rule

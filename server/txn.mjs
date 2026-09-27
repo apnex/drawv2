@@ -26,12 +26,12 @@ transaction shape the ports were dead weight. The substitution seam it offered r
 out, as the Store's injected {flushMs, writeDoc, now}.
 */
 
-import { projection } from '../model/index.mjs';
+import { projection } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE } from '../model/shape.mjs';   // OPTIONAL was imported here and never used (B86)
-import { groupAfterRemoval, collectionCap } from '../engine/index.mjs';
-import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
-import { STD } from '../kernel/index.mjs';
+import { groupAfterRemoval, collectionCap } from '../engine/policy.mjs';
+import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
+import { STD } from '../kernel/spec.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { violations, isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';
 import { CAPTION_MAX } from '../model/limits.mjs';

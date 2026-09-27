@@ -887,16 +887,47 @@ const rules = {
 			const vacated = new Map(), claimed = new Map();
 			for (const k of baseline) if (!exportsOf(modOf(k)).has(nameOf(k))) vacated.set(nameOf(k), (vacated.get(nameOf(k)) ?? 0) + 1);
 			for (const k of listed.keys()) if (!baseline.has(k)) claimed.set(nameOf(k), (claimed.get(nameOf(k)) ?? 0) + 1);
+			/*
+			C2(c) EXTENDED, ruled by the director at K2a: A CONSUMER LEAVING THE CLOSURE ALSO VACATES.
+
+			The original wording admitted a name two ways -- it was in the frozen baseline, or it moved
+			with its symbol. K2a found a third. Seven names became unused because the modules that
+			CALLED them left the planner closure while the modules that EXPORT them stayed. The name did
+			not drift in; the cut removed its user. Every cut from K2b to K18 shrinks a closure, so this
+			recurs by construction and is ruled once rather than excepted each time.
+
+			WHY THIS NEEDS A FROZEN CLOSURE. "A consumer left" is a statement about a TRANSITION, and
+			the manifest holds one state. Four attempts to judge it from the current tree all failed the
+			same way: once the cut lands there is no record that `engine/` was ever in this closure, so
+			the justification cannot be re-derived on the next run. Two of those attempts passed the
+			scan while proving nothing -- one by reading the entry's own post-cut module list, which
+			asks the manifest whether the manifest is right.
+
+			So `k0closure` is frozen beside the baseline, written once at K0 and never edited, exactly
+			as RATCHET_CEILING is. DEPARTED is then derivable forever: the K0 closure minus the current
+			one. It is a weaker claim than "left at cut K7" -- it only says "left since K0" -- and that
+			is the honest limit of what one frozen artifact can support.
+
+			The clause is narrow on purpose. A departed module must IMPORT THIS NAME FROM THIS MODULE,
+			which is checkable rather than inferred: the departed module is still on disk and its import
+			is still readable. That is what refuses mutant A14, whose `check` is a new export no
+			departed module ever imported -- a module-level test ("its module was in the baseline") let
+			A14 through, which is the borrowed-spelling hole C2(c) exists to close.
+			*/
+			const k0 = new Set(rec.k0closure ?? []);
+			const departed = [...k0].filter((m) => !C.has(m));
+			const byDeparture = (k) => departed.some((m) => (A[m]?.edges ?? []).some((e) =>
+				e.kind !== 'reexport' && e.to === modOf(k) && (e.names === null || e.names.includes(nameOf(k)))));
 			const tags = R.L10?.tags ?? [];
 			for (const k of [...unused].sort()) {
 				if (listed.has(k)) continue;
-				const may = baseline.has(k) || (vacated.get(nameOf(k)) ?? 0) > (claimed.get(nameOf(k)) ?? 0);
-				fail('L10', `entry ${id}: ${k} is exported and unused inside the entry -- ${may ? 'list it (it is in the frozen K0 baseline, or a baseline symbol of that name left its module), or give it a consumer' : 'give it a consumer or stop exporting it; it may not join the list, which grows only from the frozen K0 baseline (C2)'}`);
+				const may = baseline.has(k) || (vacated.get(nameOf(k)) ?? 0) > (claimed.get(nameOf(k)) ?? 0) || byDeparture(k);
+				fail('L10', `entry ${id}: ${k} is exported and unused inside the entry -- ${may ? 'list it (it is in the frozen K0 baseline, or a baseline symbol of that name left its module, or a baseline consumer left the closure), or give it a consumer' : 'give it a consumer or stop exporting it; it may not join the list, which grows only from the frozen K0 baseline (C2)'}`);
 			}
 			for (const [k, tag] of [...listed].sort()) {
 				if (!unused.has(k)) fail('L10', `entry ${id}: ${k} is listed as unused and is not any more -- remove it from the list in this commit (C2)`);
 				const n = nameOf(k), free = vacated.get(n) ?? 0, taken = claimed.get(n) ?? 0;
-				if (!baseline.has(k) && taken > free) fail('L10', `entry ${id}: ${k} is listed but is not in the frozen K0 baseline, and no baseline symbol of that name left its module for it (${free} vacated, ${taken} claimed) (C2)`);
+				if (!baseline.has(k) && taken > free && !byDeparture(k)) fail('L10', `entry ${id}: ${k} is listed but is not in the frozen K0 baseline, no baseline symbol of that name left its module for it (${free} vacated, ${taken} claimed), and its module is not one the closure dropped (C2)`);
 				if (!tags.includes(tag)) fail('L10', `entry ${id}: ${k} is tagged '${tag}', not one of ${tags.join(', ')} (C2)`);
 				if (tag === 'serves-a-server-door' && !servesDoor(modOf(k), nameOf(k))) fail('L10', `entry ${id}: ${k} is tagged serves-a-server-door and no ${(R.L10?.doors ?? []).join('/')} module imports it`);
 			}

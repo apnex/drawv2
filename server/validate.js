@@ -4,11 +4,13 @@ radically narrowed). The server never trusts the wire: every mutation and every
 pushed document is validated for shape, ranges, and referential integrity.
 */
 
-import { NODE_EXT, ZONE_EXT, SELECTABLE_KINDS } from '../model/index.mjs';
+import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
+import { SELECTABLE_KINDS } from '../model/model.mjs';
 import { OPTIONAL } from '../model/shape.mjs';
 import { linkReferential, groupReferential, waypointOwners } from '../model/referential.mjs';
 import { NAME_MAX, CAPTION_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
-import { LAYOUTS, onLayout, STD } from '../kernel/index.mjs';
+import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
+import { STD } from '../kernel/spec.mjs';
 import { collectionCap } from '../engine/policy.mjs';
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
