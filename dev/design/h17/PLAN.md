@@ -1,9 +1,12 @@
 # H17 plan: the lab canvas, and the cuts that make it minimal
 
 **Status:** the plan of record for milestone H17 on `dev/BOARD.md`. It takes the place of the unversioned bench as the source a cut is built from.\
-The director's direction and the twelve H17 rulings are in `dev/DECISIONS.md` ("The lab canvas" and "H17 lab decisions"). This file carries the cut plan, the guardrails and the conditions those rulings were made on, so that nothing a cut depends on lives only outside the repository.
+The director's direction and the twelve H17 rulings are in `dev/DECISIONS.md` ("The lab canvas" and "H17 lab decisions").\
+This file carries the cut plan, the guardrails and the conditions those rulings were made on, so that nothing a cut depends on lives only outside the repository.
 
-**Where the evidence lives.** The measurements, the design, the independent review and both axiom alignment passes are in the lab-design bench, outside this repository. Its path is `/home/apnex/taceng/drawv2-archive/lab-design`, and the bench is durable but unversioned.
+**Where the evidence lives.**\
+The measurements, the design, the independent review and both axiom alignment passes are in the lab-design bench, outside this repository.\
+Its path is `/home/apnex/taceng/drawv2-archive/lab-design`, and the bench is durable but unversioned.
 - The first M7 pass is the bench file named measure2.
 - The second M7 pass is the report under m7-pass2/audit, with its sha256.
 - The independent check of the second pass is the file named m7-check.
@@ -63,7 +66,9 @@ These are the rules of the layer manifest and its scanner, which K0 adds to the 
 
 `scan-dead`, `scan-docrefs`, `scan-twins`, `scan-writers` and the B176 guard read their folder lists from the manifest.
 
-**As built at K0 (2026-09-27), where the scanner goes beyond the wording above.** The K0 attack found 11 holes in the first build, and the fix pass closed them. So the rules now also:
+**As built at K0 (2026-09-27), where the scanner goes beyond the wording above.**\
+The K0 attack found 11 holes in the first build, and the fix pass closed them.\
+So the rules now also:
 - **L2:** judges re-export edges. It refuses absolute, URL and out-of-repo specifiers, undeclared bare packages, and code loaders (`require`, `createRequire`, `eval`, `Function`, `node:vm`, `node:module`, and import-shaped string literals). A `?` or `#` suffix is dropped before resolving.
 - **L4:** counts barrels per re-exported name as well as per import site.
 - **L6:** also reads every HTML page: a page's script tags must equal its entry's roots, and inline scripts and `javascript:` URLs are refused.
@@ -76,7 +81,9 @@ The known proxy gaps are labelled in the manifest:
 - L10 knows a moved symbol only by its name;
 - code built from a string at run time (a Worker, a script element made in the DOM) cannot be seen by a static scan.
 
-The K0 counts on the real tree: L2 4 edges; L4 123 sites and 94 re-exported names; L5 19; L5p 15; L7k 17 recorded consumers; L9 2; L10 153 listed; L11 canvas 3. The rest are 0. The entry closures match section 1: page 50 modules, planner 31.
+The K0 counts on the real tree: L2 4 edges; L4 123 sites and 94 re-exported names; L5 19; L5p 15; L7k 17 recorded consumers; L9 2; L10 153 listed; L11 canvas 3.\
+The rest are 0.\
+The entry closures match section 1: page 50 modules, planner 31.
 
 ## 4. The cuts, in order
 
@@ -85,7 +92,7 @@ Every cut ships with a test proven RED plus a mutant, and ships to production as
 | Cut | What | Conditions and notes |
 |---|---|---|
 | K0 | The layer manifest and scanner (section 3) | C1, C2 and C3 met first (section 5). DONE 2026-09-27: 40 tests, 36 fixture trees, 43 mutants, 11 attack defects fixed |
-| K1 | B242: the tab applies the server's planned ops that are not identical to what it sent, then replays its unanswered ops (H17-D3) | C4: tests assert convergence AND that no own edit regresses (the mutant "full answer, no replay" is killed only by the second); add the live-drag case; state whether undo and redo acks replay pending | DONE 2026-09-28: `derivedToApply`, one rule for acks and other writers' changes; ten further reconcile defects fixed (B242's CLOSED note); the replay is narrowed to the entities the answer wrote, which gives the same document outside a gesture and no snapback during one (the fix pass's reading of C4, INFERRED equivalent; see DECISIONS H17-D3). Open: B251-B254 |
+| K1 | B242: the tab applies the server's planned ops that are not identical to what it sent, then replays its unanswered ops (H17-D3) | C4: tests assert convergence AND that no own edit regresses (the mutant "full answer, no replay" is killed only by the second); add the live-drag case; state whether undo and redo acks replay pending | DONE 2026-09-28: `derivedToApply`, one rule for acks and other writers' changes; ten further reconcile defects fixed (B242's CLOSED note); the replay is narrowed to the entities the answer wrote, which gives the same document outside a gesture and no snapback during one (the fix pass's reading of C4, INFERRED equivalent; see DECISIONS H17-D3). DEPLOYED 2026-09-28 in `draw-00153-4sj` (image tag `2814d8d`), with B239-B241. The SERVER half is verified live: a cascading delete answers with the derived ops (`rm x1` reports the sweep taking the waypoint and the link), A5 parity holds, and 23 of 23 diagrams survive a forced cold boot -- the check that matters, since B239 and B241 destroy a document at `validateDoc` on the next read, not at commit. The BROWSER half is NOT verified live: `/ws` has no agent-door entry (`AGENT_DOOR` in `server/app.js` maps two prefixes and websockets are deliberately not one), so a two-tab convergence probe cannot reach the deployed service without an IAP session. It rests on the K1 fuzz -- 91 of 300 runs diverged before, 3 after -- and those 3 are reconnect-only, ruled as B251. Open: B251-B254 |
 | K2a | The planner imports each name from its defining module | DONE 2026-09-28: nine import lines in `server/txn.mjs`, `server/validate.js` and `server/anchor.mjs`; the planner closure falls 31 modules / 275,933 bytes to 15 / 175,116, the module count the plan predicted. C2(c) EXTENDED by the director: a consumer leaving the closure also vacates, judged against a frozen `k0closure` whose sha256 is pinned |
 | K2b | Canvas, server, CLI and test files import from defining modules (125 sites) | |
 | K2c | Delete the three barrels (H17-D4); the mount check becomes "the folder exists"; `render` moves to `server/svg.mjs` | RED: GET one module per mounted folder |
@@ -113,7 +120,8 @@ Every cut ships with a test proven RED plus a mutant, and ships to production as
 
 ## 5. Conditions of the second M7 pass, with their gates
 
-The second pass's verdict is PASS WITH CONDITIONS (pass-with-guardrails). The independent check confirms that verdict, with amendments that are included here.
+The second pass's verdict is PASS WITH CONDITIONS (pass-with-guardrails).\
+The independent check confirms that verdict, with amendments that are included here.
 - **C1 (before K0):** carry the guardrails and conditions into the repo. That is this file. The follow-ups below are filed in `dev/BACKLOG.md`.
 - **C2 (before K0):** specify L10 fully (section 3).
 - **C3 (before K0):** L7k covers the id grammar; the other kind literals are recorded as consumers; criterion 6's end-of-H17 value is stated honestly, not as "one literal".
