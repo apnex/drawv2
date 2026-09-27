@@ -777,3 +777,15 @@ The costs shown with it:
 **Held, not asked yet (2026-09-27):**
 - **SD3, whether the document keeps the history the rejoin and naming rules read** (which pieces one cut made; which link was drawn first). Held for the FR3-v7 round's measurement of a rejoin with no memory.
 - **SD5, whether an act that would make a device take a forbidden role is refused or cut.** It can arise only once a pin may name a device, which is the id-prefix one-way door (the universal node rulings above), so it is held until that door.
+
+**Every change to the stored document format lands as one named batch, last -- ruled 2026-09-27, answering survey flag F6 (AX6, the one-way-door budget).**\
+The rulings above change how every diagram is stored:
+- pipes as a stored kind (the adoption of FR3);
+- stored flows (SD10);
+- a plugin list in every document (SD12);
+- possibly lineage records and a creation order (SD3, held);
+- the rename of `link.flow`.
+
+Asked how those irreversible changes to the 38 live diagrams should be spent, the director chose "One named batch, last" (the proposer's recommendation) over "Each with its feature" and "Trim the list first".\
+All stored-format changes go into a single listed conversion, applied once, after the new behaviour is proven on the bench and in tests. This is AX6's "few, named, and last" (`dev/surveys/unification-survey.md`). Under the standing rule, the conversion itself is deleted after it runs ("transform once, then delete the transform").\
+The cost shown with it: the new behaviour cannot reach live diagrams until the batch lands.
