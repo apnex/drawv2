@@ -257,7 +257,8 @@ Role derivation, visual layers, picking and validation consume those rather than
 The boundary is smaller than the five-part version above BECAUSE the permission table absorbed the special cases.
 
 **Still not designed**: how a pack contributes a write.\
-That question is unchanged by this amendment -- the collapse is still the first one, and it is now gated by permission as well.
+That question is unchanged by this amendment -- the collapse is still the first one, and it is now gated by permission as well.\
+> **AMENDED 2026-09-27 by the director (stack interface, SD4): a pack is ONLY its table.** The routing pack no longer owns the role derivation or the write. The derivation belongs to the link layer (shared by browsers and the server, SD1). The write rules belong to the server's planner (SD2). Both read the pack's table. So "how a pack contributes a write" is answered: it does not. See "A device's capability pack is only a table" under the stack interface rulings below.
 
 **Amended again 2026-09-22, ruled by the director: a node is a CORE plus packs, and a type is a composition.**
 
@@ -296,6 +297,9 @@ So "node" was doing exactly what "waypoint" had been doing: naming both the subs
 | term | what it is |
 |---|---|
 | **anchor** | the CORE. Identity, position, and the fact that links can reach it. Nothing else. |
+
+> **AMENDED 2026-09-27 by the director (stack interface, SD11 and SD11b):** the core anchor is identity and position only. "The fact that links can reach it" moves into the network plugin, which contributes pipes, links, flows, their rules and the device tables. See "Pipes belong to the network plugin" under the stack interface rulings below.
+
 | **pack** | one capability, composable onto an anchor -- `routable`, `glyph`, `framed`, `named`, `content`. |
 | **composition** | a named set of packs, and what an author actually picks: `server`, `router`, `load-balancer`. |
 | **node** | an anchor AND the entirety of its composition. A precise term, not a loose one -- what it is not is a LAYER: nothing sits between the anchor and its packs. |
@@ -676,3 +680,100 @@ The costs shown with it (MEASURED, one instrument on one small grid):
 - a link declared by its ends has no drawn legs, so the laid pipes it ran over go while it is down, and it may not come back when the deleted pipe is redrawn (10 of 615);
 - a declared link and a drawn link on the same route therefore behave differently once down;
 - the answer not chosen that kept everything needed stored last-route memory, which the pin ruling had removed.
+
+## The stack interface -- ruled from 2026-09-27
+
+**Ruled by the director**, in the design phase that follows the link model. The questions were prepared from the problem-space register, the rulings and a map of today's code. An independent audit checked them before they were asked (workflow run wf_61107120-ccf; the prepared sequence and its audit are kept outside the repository in the stack-design bench). Each question is asked on its own, in the prepared order.
+
+**Browsers and the server work out what the document implies; the CLI asks the server -- ruled 2026-09-27 (SD1).**\
+Asked "Who works out what the document implies: a link's current route, whether it's down, each point's role, a flow's path?", the director chose "Browsers + server; CLI asks" (the proposer's recommendation) over:
+- "Every peer; CLI downloads the code";
+- "Every peer; CLI ships the code";
+- "Only the server; it sends results".
+
+The browsers and the server run one shared body of derivation code. The CLI stays a plain HTTP client, which it was built to be (`dev/design/unification/DISCUSSION-SEEDS.md` S20, sub-question 3), and reports what the server worked out.\
+The costs shown with it:
+- the server needs new read endpoints for derived state (today REST returns no roles);
+- the CLI cannot derive offline;
+- derived results travel to agents, which VISION's "a consequence is never sent" does not foresee.
+
+Today the answer is mixed: browsers derive waypoint roles, and the CLI reports none (the stack-design code map, probe P5).\
+It reads the director's S19 ("derivation can occur client-side ... pushed out to the edge/browser") as covering browsers and the server, not the agent's CLI.
+
+**The rules that react to an edit run at the server for every door, and the browser previews them with the same code -- ruled 2026-09-27 (SD2).**\
+Asked "Where do the rules that react to an edit run: cutting a link another link lands on, joining two links left alone, rejoining, clearing laid pipes, deciding which piece keeps a name?", the director chose "Server, with browser preview" (the proposer's recommendation) over "Server only" and "Today's split".\
+The server's planner applies the rules for every door (browser, CLI, REST), so an act gives the same document whichever door made it. The browser runs the same rule code to show the result at once, then takes the server's answer.\
+The costs shown with it:
+- a preview that differs from the server's answer, for example on minted ids, is corrected;
+- the tab must accept server results that share a key with its own ops, so B242 must be fixed first.
+
+This answers B243 (a landing through REST or the CLI is not cut) and the register's PS314 and PS320. It keeps the direction of BOARD H15.2 ("share, not mirror").
+
+**A device's capability pack is only a table -- ruled 2026-09-27 (SD4), amending "What `routable` therefore owns" (2026-09-22) in place.**\
+Asked "The 2026-09-22 ruling gives a device's routing pack three things: its table of allowed roles, working out the roles, and writing the changes. Should a pack instead be only the table, with the link layer and the server's rules reading it?", the director chose "Only a table" (the proposer's recommendation) over "Table + rules, as ruled" and "Table + proposals".\
+A pack is data: which routable roles (endpoint, junction, bend) a device type allows. The link layer's derivations and the planner's rules exist once and read every device's table.\
+The costs shown with it:
+- a device can add new behaviour only as a new column in the table plus code that reads it, so the director's leaning that "packs can extend anchor behaviour too" (S12) waits for that route;
+- a load balancer's fan-out may force a further amendment;
+- the table must be passed into `kernel/`, `model/` and `server/`, which import nothing from each other (the stack-design code map, constraint C9).
+
+**Whether a flow may pass through a device is set by the device's table -- ruled 2026-09-27 (SD6), answering "Not ruled here: whether a flow may pass THROUGH a server" (2026-09-25).**\
+Asked "May a declared flow pass through a device where links meet?", for a flow H1 to H3 whose only way runs through server X (with two uplinks) and switch S, the director chose "Device table decides" (the proposer's recommendation) over "Any meeting point passes" and "Not yet; bare points only".\
+Each device type's table gains a yes/no column for letting flows pass through; a flow's derived path reads it. The contents are left to the per-type table, still carried to design; the illustration offered was routers and switches yes, servers and hosts no.\
+The costs shown with it:
+- every type needs this second setting;
+- fan-out such as load balancing cannot be a yes/no, and waits for the behaviour design;
+- a server where several links meet is a junction at the link layer yet passes no traffic, so link roles and forwarding separate (register PS207).
+
+**At most one pipe joins any two anchors -- ruled 2026-09-27 (SD7).**\
+Asked "Can two pipes join the same two anchors?", for switch S and router R joined by two physically separate conduits, the director chose "No: one pipe per pair" (the proposer's recommendation) over "Yes: pipes get their own ids".\
+A pipe is named by its two anchors, and parallel cables share it. This confirms the director's leanings "a wire's spec is just its two anchors" and "parallelism lives above/abstracted over wires" (S15). A pipe's stored form is its pair plus how it was laid (by hand or with a link).\
+The costs shown with it:
+- two diverse conduits need an extra anchor;
+- links sharing a pipe draw on top of each other until a parallel renderer exists (`kernel/engine.mjs`, the deferred parallel realizer).
+
+**A pipe may join any two anchors as a straight line, diagonals included -- ruled 2026-09-27 (SD8).**\
+Asked "Must a pipe run straight along a grid row or column?", for anchors at (0,0) and (3,4), the director chose "Any two anchors, straight" over "Row or column only" (the proposer's recommendation) and "Any two, with an auto corner".\
+This keeps today's actual behaviour. The store accepts diagonal segments (stack-design code map, probe P1), and nothing calls the GRC `ortho` check. `docs/spec/ATOMICS.md`'s "manual links are orthogonal" does not describe the product, and is to be corrected with this ruling.\
+So "longer on screen" (above) is Euclidean length, computed with `Math.sqrt` (B176), not grid length.\
+The cost shown with it: lengths are square roots, so two routes of equal true length may not compare equal. `Math.sqrt` and the four operators are exact IEEE 754, so every peer computes the same comparison (INFERRED from B176's note in `kernel/router.mjs`), provided sums are formed in one fixed order.
+
+**Route cost is the number of pipes -- ruled 2026-09-27 (SD9), answering "what pipe cost is" (carried to design 2026-09-26).**\
+Asked "When a link or flow is routed over pipes, what makes one route cheaper?", for a detour of 3 short pipes (10 units on screen) against 2 long pipes (30 units), the director chose "Fewest pipes" over "Shortest on screen" (the proposer's recommendation) and "A weight you set per pipe".\
+A route takes the fewest pipes. Ties still go to one fixed order that every peer computes, as the prototypes' symmetric tie-break does (FR3-v5 onward: naming the ends the other way round changes 0 of 965 routes, MEASURED).\
+The cost shown with it: routes count pipes while "which piece keeps the name" counts on-screen length, so the two can disagree. The prototypes' measurements already use this unit.
+
+**A declared flow is part of the document -- ruled 2026-09-27 (SD10).**\
+Asked "Is a declared flow part of the document, which every viewer sees, which is exported, and which undo removes like any edit?", the director chose "Part of the document" (the proposer's recommendation) over "A saved selection" and "Session only".\
+A flow is stored as its two ends, versioned and undoable like any edit; its path is derived (SD1). Every door and every export sees it. This confirms the director's S14: "a link, path or flow config would need to have some entity persisted into the document (minimal entity/spec) such that the derivation can actually occur".\
+The costs shown with it:
+- a new stored kind across every closed kind list and the id grammar, a lasting change to the document format that spends the one-way-door budget (AX6) the director has not yet set;
+- `link.flow`, today a link's declared direction, must be renamed to end the collision (naming deferred).
+
+**The network is built as a plugin now -- ruled 2026-09-27 (SD11).**\
+Asked "In this phase, should any of the network (pipes, links, flows and their rules) be built outside the engine as a plugin, or all inside it, with the plugin line drawn later when a second, different kind of world needs one?", the director chose "Yes: a network plugin now" over "Not yet: inside, as layers" (the proposer's recommendation).\
+Links, flows, their rules and the device tables form a network plugin now. This follows the director's leanings: "plugin is the distribution unit, contributing packs and stages" (S21), and the Kubernetes analogy for stages as capabilities (S12). Under the director's rule of 2026-09-01 (`dev/BOARD.md`), "no premature abstraction, unless the work IS the abstraction", this makes the plugin surface part of the work.\
+The costs shown with it:
+- the plugin contract is designed around a single plugin;
+- every closed kind list and the id grammar must read from the plugin (stack-design code map, C1);
+- the single-writer scan must cover the plugin's rules (C2);
+- the anchor's core definition, "the fact that links can reach it" (above, "a node is a CORE plus packs"), holds only while the network plugin is present, and is amended by the next ruling.
+
+**Pipes belong to the network plugin; the core is anchors in space -- ruled 2026-09-27 (SD11b), amending the anchor definition in place.**\
+Asked "With the network as a plugin: are pipes part of the engine's core, or part of the network plugin?", the director chose "In the network plugin" (the proposer's recommendation) over "Pipes in the core", their own earlier tentative leaning ("perhaps pipes cost nothing as core", S21).\
+The core is anchors: identity and position. The network plugin contributes pipes, links, flows, the rules that react to edits, and the device tables. A world without connections, such as towers that act by range (S21's separating question), carries no pipes.\
+The costs shown with it:
+- the core has no notion of connection at all;
+- the anchor's core definition is amended in place (above);
+- today's movers, which ride links, depend on the network plugin (INFERRED from `dev/design/unification/DISCUSSION-SEEDS.md` S21).
+
+**Each document lists the plugins it needs -- ruled 2026-09-27 (SD12).**\
+Asked "Should each document list the plugins it needs?", the director chose "Yes, listed now" (the proposer's recommendation) over "Not until a second plugin" and "Listed, fixed at creation".\
+Each document lists its plugins. A peer lacking a listed plugin refuses the document, following GR8's "a document that cannot be told apart from a valid one must be REJECTED" (INFERRED that it applies). Changing the list is an undoable edit. This confirms the director's S20: "a document should declare its required packs. Delivered via the server and in sync per document".\
+The costs shown with it:
+- a new field in every document, a lasting format change (AX6);
+- with one fixed plugin set, no peer can differ yet, so the refusal path has no real case to test.
+
+**Held, not asked yet (2026-09-27):**
+- **SD3, whether the document keeps the history the rejoin and naming rules read** (which pieces one cut made; which link was drawn first). Held for the FR3-v7 round's measurement of a rejoin with no memory.
+- **SD5, whether an act that would make a device take a forbidden role is refused or cut.** It can arise only once a pin may name a device, which is the id-prefix one-way door (the universal node rulings above), so it is held until that door.
