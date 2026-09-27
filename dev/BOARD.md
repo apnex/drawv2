@@ -888,6 +888,9 @@ Opened 2026-09-27 by the director (DECISIONS.md, "The lab canvas").A single fixe
 | H17.1 | Measure what the browser loads today, map the module seams, and audit them against the axioms (M7) | feature | S3 | `WIP` |
 | H17.2 | Design the minimal composition, its enforced boundaries and an ordered cut plan, and put its decisions to the director | feature | S3 | `TODO` |
 | H17.3 | Build the lab entry on the real modules, cut by cut, each with its test (rows registered before code) | feature | S3 | `TODO` |
+| H17.4 | Deleting a closed ring sweeps its end waypoints too, by reading the role derivation rather than a restated rule | **B244** | S3 | `TODO` |
+| H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `TODO` |
+| H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `TODO` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas. Its import graph holds only core, plugin and canvas modules, and a scanner enforces that. Its load is measured against today's app.
 
