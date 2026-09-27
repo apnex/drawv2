@@ -20,8 +20,9 @@ Usage: node tools/scan-twins.mjs [--verbose]
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SCANNER_ROOTS } from './layers.mjs';
 
-const ROOTS = ['kernel', 'engine', 'model', 'app/src', 'server'];
+const ROOTS = SCANNER_ROOTS.twins;   // the layer manifest holds the folder lists (H17 K0)
 const EXT = /\.(js|mjs)$/;
 const THRESHOLD = 0.25;      // Jaccard over normalised, comment-free lines
 const MIN_LINES = 6;         // below this, similarity is noise

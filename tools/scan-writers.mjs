@@ -32,6 +32,7 @@ Usage: node tools/scan-writers.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SCANNER_ROOTS } from './layers.mjs';
 
 /*
 `--root <dir>` so the rules can be driven over FIXTURES.
@@ -45,7 +46,7 @@ const rootArg = process.argv.indexOf('--root');
 const DIR = rootArg > -1 ? `${process.argv[rootArg + 1]}/` : '';
 const at = (p) => `${DIR}${p}`;
 
-const ROOTS = ['server', 'model'];
+const ROOTS = SCANNER_ROOTS.writers;   // the layer manifest holds the folder lists (H17 K0)
 const EXT = /\.(js|mjs)$/;
 
 // Receivers that are Models in this tree. `del` is Model-only (a Map deletes with `delete`), so it

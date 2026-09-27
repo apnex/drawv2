@@ -20,6 +20,7 @@ Usage: node tools/scan-docrefs.mjs [--verbose]
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
+import { SCANNER_ROOTS } from './layers.mjs';
 
 /*
 Files skipped WHOLE, and the bar for being one is now proportionality.
@@ -229,7 +230,7 @@ reader somewhere with the same authority a doc does. Scanning only .md missed ni
 including two `see dev/history/PRISMV2-DESIGN.md` pointers to a file deleted long ago. Found by
 running the audit, not by designing it.
 */
-const CODE_ROOTS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli'];
+const CODE_ROOTS = SCANNER_ROOTS.docrefs;   // the layer manifest holds the folder lists (H17 K0)
 const CODE_EXT = /\.(js|mjs)$/;
 
 const docs = [];

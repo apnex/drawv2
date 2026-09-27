@@ -1,0 +1,116 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "kernel"
+		},
+		{
+			"dir": "app"
+		}
+	],
+	"LAYER": {
+		"core": [
+			"kernel/grid.mjs",
+			"kernel/all.mjs",
+			"kernel/old.mjs"
+		],
+		"canvas": [
+			"app/snap.js",
+			"app/ruler.js"
+		]
+	},
+	"RATCHETS": {
+		"L4": {
+			"barrel kernel/old.mjs": 1
+		}
+	},
+	"RATCHET_CEILING": {
+		"L4": {
+			"barrel kernel/old.mjs": 1
+		}
+	}
+}

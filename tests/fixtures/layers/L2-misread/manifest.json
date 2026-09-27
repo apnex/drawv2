@@ -1,0 +1,121 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "app"
+		},
+		{
+			"dir": "sim"
+		}
+	],
+	"LAYER": {
+		"canvas": [
+			"app/input.js"
+		],
+		"simulation": [
+			"sim/situation.mjs",
+			"sim/kinds.mjs",
+			"sim/spawn.mjs"
+		]
+	},
+	"RULES": {
+		"L2": {
+			"plain": [
+				"core",
+				"network",
+				"planner",
+				"canvas",
+				"chrome",
+				"simulation",
+				"export",
+				"server-only",
+				"cli",
+				"lab"
+			]
+		}
+	}
+}

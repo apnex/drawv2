@@ -1,0 +1,137 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "kernel"
+		},
+		{
+			"dir": "app"
+		},
+		{
+			"dir": "lab"
+		}
+	],
+	"LAYER": {
+		"core": [
+			"kernel/grid.mjs"
+		],
+		"canvas": [
+			"app/canvas.js"
+		],
+		"chrome": [
+			"app/main.js"
+		],
+		"lab": [
+			"lab/lab.js"
+		]
+	},
+	"ENTRIES": {
+		"page": {
+			"roots": [
+				"app/main.js"
+			],
+			"modules": [
+				"app/main.js",
+				"app/gone.js"
+			]
+		},
+		"lab": {
+			"roots": [
+				"lab/lab.js"
+			],
+			"layers": [
+				"canvas",
+				"lab"
+			],
+			"modules": [
+				"app/canvas.js",
+				"kernel/grid.mjs",
+				"lab/lab.js"
+			]
+		}
+	}
+}

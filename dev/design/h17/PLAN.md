@@ -63,13 +63,28 @@ These are the rules of the layer manifest and its scanner, which K0 adds to the 
 
 `scan-dead`, `scan-docrefs`, `scan-twins`, `scan-writers` and the B176 guard read their folder lists from the manifest.
 
+**As built at K0 (2026-09-27), where the scanner goes beyond the wording above.** The K0 attack found 11 holes in the first build, and the fix pass closed them. So the rules now also:
+- **L2:** judges re-export edges. It refuses absolute, URL and out-of-repo specifiers, undeclared bare packages, and code loaders (`require`, `createRequire`, `eval`, `Function`, `node:vm`, `node:module`, and import-shaped string literals). A `?` or `#` suffix is dropped before resolving.
+- **L4:** counts barrels per re-exported name as well as per import site.
+- **L6:** also reads every HTML page: a page's script tags must equal its entry's roots, and inline scripts and `javascript:` URLs are refused.
+- **L7k:** fixes the whole shape of the id grammar.
+- **L11:** also reads `self` and `global`, with identifier escapes decoded.
+- **Ratchets:** they have a frozen ceiling, whose sha256 is pinned in `tests/scan-layers.test.js`. A key that moves with its module needs the ceiling and its pinned hash edited in the same commit.
+
+The known proxy gaps are labelled in the manifest:
+- L11 does not resolve scopes, so `top`, `parent` and `frames` are not read;
+- L10 knows a moved symbol only by its name;
+- code built from a string at run time (a Worker, a script element made in the DOM) cannot be seen by a static scan.
+
+The K0 counts on the real tree: L2 4 edges; L4 123 sites and 94 re-exported names; L5 19; L5p 15; L7k 17 recorded consumers; L9 2; L10 153 listed; L11 canvas 3. The rest are 0. The entry closures match section 1: page 50 modules, planner 31.
+
 ## 4. The cuts, in order
 
 Every cut ships with a test proven RED plus a mutant, and ships to production as it lands (H17-D2), unless marked otherwise.
 
 | Cut | What | Conditions and notes |
 |---|---|---|
-| K0 | The layer manifest and scanner (section 3) | C1, C2 and C3 met first (section 5) |
+| K0 | The layer manifest and scanner (section 3) | C1, C2 and C3 met first (section 5). DONE 2026-09-27: 40 tests, 36 fixture trees, 43 mutants, 11 attack defects fixed |
 | K1 | B242: the tab applies the server's planned ops that are not identical to what it sent, then replays its unanswered ops (H17-D3) | C4: tests assert convergence AND that no own edit regresses (the mutant "full answer, no replay" is killed only by the second); add the live-drag case; state whether undo and redo acks replay pending |
 | K2a | The planner imports each name from its defining module | |
 | K2b | Canvas, server, CLI and test files import from defining modules (125 sites) | |

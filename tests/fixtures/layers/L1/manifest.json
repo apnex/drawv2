@@ -1,0 +1,137 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"toolz"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "kernel"
+		},
+		{
+			"dir": "model"
+		},
+		{
+			"dir": "tools",
+			"layer": "tools"
+		}
+	],
+	"LAYER": {
+		"core": [
+			"kernel/a.mjs",
+			"kernel/gone.mjs",
+			"kernel/twice.mjs"
+		],
+		"nolayer": [
+			"model/m.mjs"
+		],
+		"tools": [
+			"tools/t.mjs"
+		],
+		"network": [
+			"kernel/twice.mjs"
+		]
+	},
+	"SCANNER_ROOTS": {
+		"dead": [
+			"kernel",
+			"tools",
+			"nowhere"
+		]
+	},
+	"RULES": {
+		"L11": {
+			"hard": [
+				"cor"
+			],
+			"ratchet": []
+		}
+	},
+	"RATCHETS": {
+		"L12": {}
+	},
+	"RATCHET_CEILING": {
+		"L12": {}
+	}
+}

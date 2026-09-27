@@ -1,0 +1,149 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "planner"
+		},
+		{
+			"dir": "server"
+		}
+	],
+	"LAYER": {
+		"planner": [
+			"planner/txn.mjs"
+		],
+		"server-only": [
+			"server/door.mjs"
+		]
+	},
+	"ENTRIES": {
+		"planner": {
+			"roots": [
+				"planner/txn.mjs"
+			],
+			"surface": {
+				"planner/txn.mjs": [
+					"commit"
+				]
+			},
+			"modules": [
+				"planner/txn.mjs"
+			]
+		}
+	},
+	"RULES": {
+		"L10": {
+			"tags": [
+				"rebuild-debt",
+				"serves-a-server-door"
+			],
+			"doors": [
+				"server-only"
+			]
+		}
+	},
+	"UNUSED_EXPORTS": {
+		"planner": {
+			"list": {
+				"planner/txn.mjs": {
+					"serves-a-server-door": [
+						"MAX"
+					],
+					"someday": [
+						"LIMIT"
+					]
+				}
+			},
+			"baseline": {
+				"planner/txn.mjs": [
+					"MAX",
+					"LIMIT"
+				]
+			}
+		}
+	}
+}

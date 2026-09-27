@@ -1,0 +1,7 @@
+{
+	"name": "clean",
+	"type": "module",
+	"dependencies": {
+		"ws": "^8"
+	}
+}

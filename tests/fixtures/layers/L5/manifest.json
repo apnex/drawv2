@@ -1,0 +1,145 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "kernel"
+		}
+	],
+	"LAYER": {
+		"core": [
+			"kernel/geometry.mjs",
+			"kernel/index.mjs"
+		]
+	},
+	"RULES": {
+		"L5": {
+			"layers": [
+				"core"
+			],
+			"names": [
+				"waypointRole",
+				"waypointRoles",
+				"linkFacing",
+				"linkMarker",
+				"linkAppearance",
+				"APPEARANCE_KEYS",
+				"samePlane",
+				"linkDash",
+				"linkWidth",
+				"CONTROL_WEIGHT",
+				"DASH_ON",
+				"DASH_OFF",
+				"waypointStyle",
+				"waypointAnchor",
+				"waypointJunction",
+				"waypointLayers",
+				"linksOf",
+				"linksAt",
+				"linkBetween",
+				"linksBetween",
+				"endpointOf",
+				"pathOf",
+				"makeLink",
+				"makeWaypoint",
+				"junction",
+				"port",
+				"path"
+			],
+			"pattern": "link|waypoint|route|facing|marker|plane|pipe|flow|junction|via"
+		}
+	},
+	"RATCHETS": {
+		"L4": {
+			"barrel kernel/index.mjs": 1
+		}
+	},
+	"RATCHET_CEILING": {
+		"L4": {
+			"barrel kernel/index.mjs": 1
+		}
+	}
+}

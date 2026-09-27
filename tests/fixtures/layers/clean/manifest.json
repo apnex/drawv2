@@ -1,0 +1,407 @@
+{
+	"ALLOWED": {
+		"core": [
+			"core"
+		],
+		"network": [
+			"core",
+			"network"
+		],
+		"planner": [
+			"core",
+			"network",
+			"planner"
+		],
+		"canvas": [
+			"core",
+			"network",
+			"planner",
+			"canvas"
+		],
+		"chrome": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"simulation",
+			"export",
+			"chrome"
+		],
+		"simulation": [
+			"core",
+			"network",
+			"simulation"
+		],
+		"export": [
+			"core",
+			"network",
+			"export"
+		],
+		"server-only": [
+			"core",
+			"network",
+			"planner",
+			"simulation",
+			"export",
+			"server-only"
+		],
+		"cli": [
+			"core",
+			"network",
+			"simulation",
+			"cli"
+		],
+		"lab": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"lab"
+		],
+		"tools": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools"
+		],
+		"tests": [
+			"core",
+			"network",
+			"planner",
+			"canvas",
+			"chrome",
+			"simulation",
+			"export",
+			"server-only",
+			"cli",
+			"tools",
+			"tests"
+		]
+	},
+	"FOLDERS": [
+		{
+			"dir": "kernel"
+		},
+		{
+			"dir": "model"
+		},
+		{
+			"dir": "network"
+		},
+		{
+			"dir": "planner"
+		},
+		{
+			"dir": "app"
+		},
+		{
+			"dir": "server"
+		},
+		{
+			"dir": "lab"
+		},
+		{
+			"dir": "batch"
+		},
+		{
+			"dir": "tests",
+			"layer": "tests"
+		}
+	],
+	"LAYER": {
+		"core": [
+			"kernel/grid.mjs",
+			"kernel/index.mjs",
+			"model/model.mjs",
+			"batch/extra.mjs"
+		],
+		"network": [
+			"network/links.mjs"
+		],
+		"planner": [
+			"planner/txn.mjs",
+			"planner/validate.js"
+		],
+		"canvas": [
+			"app/canvas.js"
+		],
+		"chrome": [
+			"app/palette.js",
+			"app/main.js"
+		],
+		"server-only": [
+			"server/door.mjs"
+		],
+		"lab": [
+			"lab/lab.js"
+		]
+	},
+	"PRODUCT_LAYERS": [
+		"core",
+		"network",
+		"planner",
+		"canvas",
+		"chrome",
+		"simulation",
+		"export",
+		"server-only",
+		"cli"
+	],
+	"ENTRIES": {
+		"page": {
+			"roots": [
+				"app/main.js"
+			],
+			"modules": [
+				"app/canvas.js",
+				"app/main.js",
+				"app/palette.js",
+				"kernel/grid.mjs",
+				"kernel/index.mjs",
+				"model/model.mjs",
+				"network/links.mjs",
+				"planner/txn.mjs",
+				"planner/validate.js"
+			]
+		},
+		"planner": {
+			"roots": [
+				"planner/txn.mjs"
+			],
+			"surface": {
+				"planner/txn.mjs": [
+					"commit"
+				]
+			},
+			"modules": [
+				"kernel/grid.mjs",
+				"model/model.mjs",
+				"network/links.mjs",
+				"planner/txn.mjs",
+				"planner/validate.js"
+			]
+		},
+		"lab": {
+			"roots": [
+				"lab/lab.js"
+			],
+			"layers": [
+				"core",
+				"network",
+				"planner",
+				"canvas",
+				"lab"
+			],
+			"modules": [
+				"app/canvas.js",
+				"kernel/grid.mjs",
+				"kernel/index.mjs",
+				"lab/lab.js",
+				"model/model.mjs",
+				"network/links.mjs",
+				"planner/txn.mjs",
+				"planner/validate.js"
+			]
+		}
+	},
+	"PAGES": {
+		"app/index.html": {
+			"base": "app",
+			"entry": "page",
+			"scripts": [
+				"/main.js"
+			]
+		}
+	},
+	"RULES": {
+		"L2": {
+			"plain": [
+				"core",
+				"network",
+				"planner",
+				"canvas",
+				"chrome",
+				"simulation",
+				"export",
+				"server-only",
+				"cli",
+				"lab"
+			]
+		},
+		"L3": {
+			"folders": [
+				"kernel",
+				"model"
+			]
+		},
+		"L5": {
+			"layers": [
+				"core"
+			],
+			"names": [
+				"waypointRole",
+				"waypointRoles",
+				"linkFacing",
+				"linkMarker",
+				"linkAppearance",
+				"APPEARANCE_KEYS",
+				"samePlane",
+				"linkDash",
+				"linkWidth",
+				"CONTROL_WEIGHT",
+				"DASH_ON",
+				"DASH_OFF",
+				"waypointStyle",
+				"waypointAnchor",
+				"waypointJunction",
+				"waypointLayers",
+				"linksOf",
+				"linksAt",
+				"linkBetween",
+				"linksBetween",
+				"endpointOf",
+				"pathOf",
+				"makeLink",
+				"makeWaypoint",
+				"junction",
+				"port",
+				"path"
+			],
+			"pattern": "link|waypoint|route|facing|marker|plane|pipe|flow|junction|via"
+		},
+		"L7": {
+			"roots": [
+				"app/main.js",
+				"server/door.mjs"
+			],
+			"batch": [
+				"batch/extra.mjs"
+			]
+		},
+		"L7k": {
+			"kinds": [
+				"node",
+				"waypoint",
+				"link",
+				"zone",
+				"group"
+			],
+			"grammar": [
+				{
+					"file": "planner/validate.js",
+					"name": "ID",
+					"others": [
+						"diagram",
+						"template"
+					],
+					"rest": "-[0-9a-f]{6}$"
+				}
+			]
+		},
+		"L8": {
+			"dir": "lab",
+			"budget": 4
+		},
+		"L9": {
+			"layers": [
+				"canvas",
+				"chrome",
+				"lab"
+			],
+			"primitives": {
+				"splitAtBend": "network/links.mjs"
+			}
+		},
+		"L10": {
+			"tags": [
+				"rebuild-debt",
+				"serves-a-server-door"
+			],
+			"doors": [
+				"server-only"
+			]
+		},
+		"L11": {
+			"hard": [
+				"core",
+				"network",
+				"planner"
+			],
+			"ratchet": [
+				"canvas"
+			]
+		}
+	},
+	"RATCHETS": {
+		"L4": {
+			"barrel kernel/index.mjs": 2,
+			"app/canvas.js -> kernel/index.mjs": 1
+		},
+		"L7k": {
+			"server/door.mjs": 1
+		},
+		"L11": {
+			"app/canvas.js": 1
+		}
+	},
+	"UNUSED_EXPORTS": {
+		"planner": {
+			"list": {
+				"kernel/grid.mjs": {
+					"rebuild-debt": [
+						"STD"
+					]
+				},
+				"planner/txn.mjs": {
+					"rebuild-debt": [
+						"MAX_OPS"
+					],
+					"serves-a-server-door": [
+						"LIMIT"
+					]
+				}
+			},
+			"baseline": {
+				"kernel/grid.mjs": [
+					"STD"
+				],
+				"planner/old-txn.mjs": [
+					"MAX_OPS"
+				],
+				"planner/txn.mjs": [
+					"LIMIT"
+				]
+			}
+		}
+	},
+	"SCANNER_ROOTS": {
+		"dead": [
+			"kernel",
+			"model",
+			"network",
+			"planner",
+			"app",
+			"server",
+			"lab",
+			"batch"
+		]
+	},
+	"RATCHET_CEILING": {
+		"L4": {
+			"barrel kernel/index.mjs": 2,
+			"app/canvas.js -> kernel/index.mjs": 1
+		},
+		"L7k": {
+			"server/door.mjs": 1
+		},
+		"L11": {
+			"app/canvas.js": 1
+		}
+	}
+}

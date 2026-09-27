@@ -34,8 +34,10 @@ Usage: node tools/scan-dead.mjs [--verbose]
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SCANNER_ROOTS } from './layers.mjs';
 
-const PROD = ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli'];
+// the folder lists live in the layer manifest (H17 K0), so a new folder is added in one place
+const PROD = SCANNER_ROOTS.dead;
 const TESTS = ['tests'];
 const EXT = /\.(js|mjs)$/;
 
@@ -144,7 +146,7 @@ that prose naming a symbol is not a dependency on it. A call-graph built from te
 dispatch-by-name, so a check that included the client would report thirty-two live handlers as
 dead. Better to hold a smaller surface truthfully.
 */
-const METHOD_SCOPE = ['server', 'model', 'engine', 'kernel'];
+const METHOD_SCOPE = SCANNER_ROOTS.deadMethods;
 const methods = [];
 for (const f of METHOD_SCOPE.flatMap((r) => walk(r))) {
 	const t = strip(read(f));
