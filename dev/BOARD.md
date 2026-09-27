@@ -879,15 +879,19 @@ Advancing the collapse's projection (H16.3) turns some silent link losses into m
 CORRECTED 2026-09-25: first recorded as met on CI run 36089220400; the next push failed the same teardown (run 36109819709), so B238 and this milestone were reopened. Met on the second fix: five consecutive green CI runs (36e7ecc, run 36110330861, attempts 1-5). The collapse and sweep fixes stand, held by the tests and mutants recorded in B239-B241. The review's one held finding is B242.
 ---
 
-## H17 -- the lab canvas: a minimal client composition over real code - `TODO`
+## H17 -- the lab canvas: a minimal client composition over real code - `WIP`
 
-Opened 2026-09-27 by the director (DECISIONS.md, "The lab canvas").A single fixed canvas built from the real modules, with no storage, sync, menus or sign-in. It is for visual validation of the anchor and link rules with the real gestures (w, f, k, l), and for cutting the module seams so that nothing loads that is not needed.It is also the proving ground for three stack rulings: derivation shared by browsers and the server (SD1), the browser previewing the server's rules with the same code (SD2), and the network as a separable plugin (SD11).Its gains are carried back into the production app, which is later rebuilt on the same composition.
+Opened 2026-09-27 by the director (DECISIONS.md, "The lab canvas").\
+A single fixed canvas built from the real modules, with no storage, sync, menus or sign-in. It is for visual validation of the anchor and link rules with the real gestures (w, f, k, l), and for cutting the module seams so that nothing loads that is not needed.\
+It is also the proving ground for three stack rulings: derivation shared by browsers and the server (SD1), the browser previewing the server's rules with the same code (SD2), and the network as a separable plugin (SD11).\
+Its gains are carried back into the production app, which is later rebuilt on the same composition.\
+CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table, not only w, f, k and l (H17-D7). The lab runs the real planner in the page, so it demonstrates SD2's rule half; SD2's browser PREVIEW reaches the product only at the rebuild (H17-D11), not in H17. The plan of record is `dev/design/h17/PLAN.md`, and the corrected record lines are in `dev/DECISIONS.md` under "H17 lab decisions".
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H17.1 | Measure what the browser loads today, map the module seams, and audit them against the axioms (M7) | feature | S3 | `WIP` |
-| H17.2 | Design the minimal composition, its enforced boundaries and an ordered cut plan, and put its decisions to the director | feature | S3 | `TODO` |
-| H17.3 | Build the lab entry on the real modules, cut by cut, each with its test (rows registered before code) | feature | S3 | `TODO` |
+| H17.1 | Measure what the browser loads today, map the module seams, and audit them against the axioms (M7) | feature | S3 | `DONE` |
+| H17.2 | Design the minimal composition, its enforced boundaries and an ordered cut plan, and put its decisions to the director | feature | S3 | `DONE` |
+| H17.3 | Build the lab entry on the real modules, cut by cut (K0-K18a in `dev/design/h17/PLAN.md`), each with its test (rows registered before code) | feature | S3 | `WIP` |
 | H17.4 | Deleting a closed ring sweeps its end waypoints too, by reading the role derivation rather than a restated rule | **B244** | S3 | `TODO` |
 | H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `TODO` |
 | H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `TODO` |
@@ -911,6 +915,10 @@ Scored so the comparison is a judgement, not an omission.\
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
 | **B242** | S4 | The tab that made a change drops a server-derived op sharing a key with one it sent, so it keeps a stale group until an edit is refused and a snapshot resyncs it. Held by the director 2026-09-25 for the design phase | the design phase settles how a client reconciles derived writes (unification register PS321), or a user reports an edit refused for this reason |
 | **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | SD2 is ruled, or an agent's landing is reported uncut |
+| **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
+| **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
+| **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | K15 lands, or a stacking difference between peers is reported |
+| **B250** | S4 | CI does not fail when tests are skipped (F-SKIP) | K10's browser tests land |
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
