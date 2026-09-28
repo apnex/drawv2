@@ -1035,3 +1035,44 @@ So `UNUSED_EXPORTS.planner.k0closure` freezes the 31 modules as `f01772c` record
 `departed` is then derivable at every later cut as the frozen list minus today's closure.\
 This supports a WEAKER claim than the ruling's wording suggests: it says "left since K0", not "left at cut K7".\
 That is the honest limit of one frozen artifact, and it is recorded rather than glossed because a later cut may want the stronger one.
+
+**No history of a link is kept -- a rejoin is DERIVED from the page -- ruled 2026-09-28.\
+This answers SD3.**\
+The director ruled: "No history of a link is kept - it should be derived.\
+If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined.\
+This allows for visual determinism, and we can introduce some key-press on a selected anchor to 'cut' a bend into 2 endpoints, then 'toggle' back to a joined path."\
+So the document stores no cut records and no creation order.\
+A join is decided entirely by what the page holds: two links left on an anchor after any mutation, compatible in plane and direction, join into one.\
+The stated reason is VISUAL DETERMINISM -- the same page always behaves the same way, because there is nothing behind it that could differ.
+
+**What this answers, and what it overturns.**\
+SD3 is answered: the document does NOT keep lineage.\
+The question was held for the FR3-v7 round's measurement, that measurement is now in, and the director ruled against lineage with the cost in front of them.\
+The FR3-v7 and FR3-v8 name-placement rules (`placePartials`, `earlierOf`, the merged cut records of fix pass D3) are all lineage readers and are therefore RETIRED, not fixed.\
+Three attempts to make a lineage-based placement consistent each moved the inconsistency somewhere else rather than removing it, which is the evidence that produced this ruling:
+
+| rule | two-cut twins | three-cut twins | name placed by when it was typed |
+|---|---|---|---|
+| builder's, pre-D1 | 474 and 824 diverge | 3,148 of 10,437 | clean |
+| FR3-v7 (fix1d, branch on name) | 0 | 488 | 1,276 of 11,982 DIVERGE |
+| FR3-v8 (one rule, named or not) | 0 | 488 | worse: 1,009 of 2,100, 48% |
+| page-only, no lineage | 0 | 0 | clean |
+
+MEASURED: `audit-v7/twin3.summary.txt`, `adversary-v7-indep/` F1, `adversary-v8/` G1.\
+Page-only is the only variant with no divergence in any column, which is the ruling's "visual determinism" stated as a number.
+
+**The cost, shown and accepted.**\
+Draw-then-delete is traceless in 46.50% of round trips (9,626 of 20,701) without lineage, against 98.33% (20,418 of 20,764) with it (MEASURED, the page-only report in the link bake-off bench, which lives outside this repository).\
+So R8, "draw-then-delete leaves no trace" (:455), is no longer met by the model in most round trips: deleting a landing often leaves two links where one was drawn.\
+Removing lineage also fails 12 more suite ASSERTs (74/13 against 86/1), of which 10 encode rulings, 1 a proposer reading and 1 the suite's own; and it cuts code by 18%.
+
+**What replaces the trace: an explicit gesture.**\
+The director's ruling supplies the remedy in the same sentence -- a key-press on a selected anchor cuts a bend into two endpoints, and toggles back to a joined path.\
+The trace is therefore not derived from history but ASKED FOR by the author, which is consistent with `flow` and `control`: a declaration is stored only when the author makes one.\
+Not designed here.\
+It needs its own ruling on the gesture, on whether the cut state is stored on the anchor, and on what a cut anchor does when a further link lands on it.
+
+**Consequences to carry into design.**
+- The 2026-09-26 ruling "two separately drawn links left alone at a point join into one" (:593) is CONFIRMED by this, not overturned: it was already the page-derived answer.
+- Naming rules that read which piece was drawn first, or which cut made which piece, have no input left. "The longer piece on screen keeps the name" survives, because length is on the page; "the earlier-drawn name wins a join" does not.
+- SD4's per-type capability table gains force: a join must also be refused where the anchor's table forbids `bend`. NOT BUILT in any prototype, so every measurement above assumes no device refuses anything.
