@@ -132,19 +132,48 @@ One verb, qualified by position.
 
 ---
 
-## 8. Open -- not settled by this document
+## 8. The gesture, ruled 2026-09-28
 
-1. **The keybind.** Which key toggles transit on a selected anchor. Free plain letters today: `a b d g h i j m n o p u v x y` (`app/src/keymap.js`).
-2. **Absent or explicit.** Whether `transit` is stored only when the author sets it, as `flow` and `control` are, with absent meaning the type's permitted default. The proposer's reading is yes, for consistency with every other optional declaration.
-3. **Where the field sits against SD11b.** SD11b puts the core anchor at identity and position only, with everything else in the network plugin. `transit` belongs to the plugin, not the core -- proposer's reading, not ruled.
-4. **The format batch.** This is a stored-format change, so under survey F6 it lands as part of the ONE named batch, last, after the behaviour is proven.
-5. **The larger ring.** The director named a larger ring for a non-transiting junction. Its appearance is a derived state and is unspecified here; it belongs with the appearance pipeline (H15.9).
-6. **SD5 is untouched.** Whether an act that would make a device take a forbidden role is refused or cut stays held behind the id-prefix one-way door. This proposal needs no refusal machinery, which is why it does not disturb that hold.
-7. **The table's contents.** Section 6 is illustrative. Each row is a decision the director has not made.
+**The key is `x`.**\
+Chosen by the director for ERGONOMICS rather than mnemonics: it sits by the `wasd` cluster, under the left hand, on a key that will be pressed often.\
+That departs from the pattern of the other declaration keys, which name their property (`f` flow, `s` shape, `w` waypoint), and the departure is deliberate and recorded rather than accidental.\
+`p` was offered and not taken; it named the property but sits under the right hand.\
+`x` is free in every modifier combination (`app/src/keymap.js`), and the application binds no clipboard cut, so a plain `x` cannot be mistaken for one.
+
+**Two states, not three.**\
+`transit` is on or off.\
+There is no third undeclared state, unlike `flow`, because no case was found where "undeclared" is distinguishable on the page from "the type's permitted default".\
+A third state that nothing can see is ceremony.
+
+**It applies wherever it is legal, including where it does nothing yet.**\
+An anchor with fewer than two links has no visible bend or junction to change, and the toggle is still ALLOWED AND STORED.\
+The reason is pre-declaration: an author may place an anchor, mark it non-transiting, and then draw two links that STAY apart.\
+Refusing here would force the author to draw the links, watch them join, and separate them afterwards -- so the join would flicker on screen every time, which is a worse gesture for the same result.
+
+**Many anchors at once, each flipped independently.**\
+The key acts on every selected anchor.\
+A mixed selection therefore does not converge: two on and one off become two off and one on, and pressing twice returns to the start.\
+This follows the one multi-select precedent the application already has -- `reshapeNodes` (`app/src/commands.js:163`) flips each node's shape independently -- so an author learns one rule for both keys rather than two rules for two keys.\
+The cost, shown and accepted: making a mixed selection uniform takes either two presses with a look between them, or selecting alike in the first place.
+
+**Refused only by the type's table.**\
+The one refusal is a type that offers no choice: a host whose table holds `[false]` cannot be toggled, because there is nothing to choose.\
+The readout says so rather than failing silently.
 
 ---
 
-## 9. What this would amend
+## 9. Open -- not settled by this document
+
+1. **Absent or explicit.** Whether `transit` is stored only when the author sets it, as `flow` and `control` are, with absent meaning the type's permitted default. The proposer's reading is yes, for consistency with every other optional declaration.
+2. **Where the field sits against SD11b.** SD11b puts the core anchor at identity and position only, with everything else in the network plugin. `transit` belongs to the plugin, not the core -- proposer's reading, not ruled.
+3. **The format batch.** This is a stored-format change, so under survey F6 it lands as part of the ONE named batch, last, after the behaviour is proven.
+4. **The larger ring.** The director named a larger ring for a non-transiting junction. Its appearance is a derived state and is unspecified here; it belongs with the appearance pipeline (H15.9).
+5. **SD5 is untouched.** Whether an act that would make a device take a forbidden role is refused or cut stays held behind the id-prefix one-way door. This proposal needs no refusal machinery, which is why it does not disturb that hold.
+6. **The table's contents.** Section 6 is illustrative. Each row is a decision the director has not made.
+
+---
+
+## 10. What this would amend
 
 - **SD6** ruled a per-type yes/no column for whether a flow may pass through a device. This does not change that rule; it renames the column to `routable.flows.transit` so it sits beside its link-layer sibling under one verb. Naming only, but it is an amendment to a ruling eight days old and is flagged as one rather than folded in silently.
 - **The 2026-09-26 ruling** that two separately drawn links left alone at a point join into one (`:593`) is CONFIRMED, not overturned. It is the page-derived answer, and `transit: false` is how an author departs from it deliberately.

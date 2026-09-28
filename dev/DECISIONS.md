@@ -1076,3 +1076,14 @@ It needs its own ruling on the gesture, on whether the cut state is stored on th
 - The 2026-09-26 ruling "two separately drawn links left alone at a point join into one" (:593) is CONFIRMED by this, not overturned: it was already the page-derived answer.
 - Naming rules that read which piece was drawn first, or which cut made which piece, have no input left. "The longer piece on screen keeps the name" survives, because length is on the page; "the earlier-drawn name wins a join" does not.
 - SD4's per-type capability table gains force: a join must also be refused where the anchor's table forbids `bend`. NOT BUILT in any prototype, so every measurement above assumes no device refuses anything.
+
+**The transit gesture: `x`, two states, many anchors, each flipped independently -- ruled 2026-09-28.**\
+Specifying the key-press the 2026-09-28 no-history ruling called for.\
+The proposal is `dev/design/unification/TRANSIT.md`, which decides nothing; this ruling settles its gesture.\
+Four decisions, each with what was not chosen:
+- **The key is `x`**, chosen for ERGONOMICS: "its close to the wasd keys and my left hand will be pressing it a lot". `p` was offered as the proposer's recommendation and not taken -- it named the property, as `f`, `s` and `w` do, but sits under the right hand. The departure from the name-the-property pattern is deliberate. `x` is free in every modifier combination and the application binds no clipboard cut, so a plain `x` cannot be mistaken for one.
+- **Two states, not three.** On or off. No undeclared third state, unlike `flow`, because nothing distinguishes "undeclared" from "the type's permitted default" on the page, and a state nothing can see is ceremony.
+- **Allowed and stored even where it does nothing yet**, chosen over refusing at an anchor with fewer than two links. This buys PRE-DECLARATION: place an anchor, mark it non-transiting, then draw two links that stay apart. Refusing would force the author to draw, watch the links join, and separate them after, so the join would flicker every time.
+- **Many anchors at once, each flipped independently**, chosen over driving a mixed selection to one value and over refusing one. It follows the application's one multi-select precedent, `reshapeNodes` (`app/src/commands.js:163`), so an author learns one rule for two keys rather than two rules. The cost shown and accepted: a mixed selection does not converge, so making one uniform takes two presses with a look between them, or selecting alike first.
+
+The only refusal is a type whose table offers no choice, and the readout says so rather than failing silently.
