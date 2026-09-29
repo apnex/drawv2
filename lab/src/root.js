@@ -27,7 +27,7 @@ import { cellOf, gridDot } from '../../kernel/geometry.mjs';
 import { el, crosshair } from '../../app/src/painter.js';
 import { nodePoints, zonePoints, CANVAS, GAP } from '../../app/src/snap.js';
 import { Model } from '../../model/model.mjs';
-import { attachRelations } from '../../engine/relations.mjs';
+import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
 import { Changes } from '../../app/src/changes.js';
 import { Renderer } from '../../app/src/renderer.js';

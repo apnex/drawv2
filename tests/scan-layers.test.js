@@ -608,3 +608,35 @@ test('H17 K10: the lab serves exactly the planner files, derived from the manife
 	// and the store is the file the probe caught, so name it explicitly rather than trusting the set
 	assert.ok(!served.includes('server/store.js'), 'server/store.js must never be reachable from the lab');
 });
+
+/*
+H17 K10 -- every name the lab imports is actually exported by the module it names.
+
+Written because the first build got this wrong: `attachRelations` was imported from
+`engine/relations.mjs` on the reasonable-looking guess that a relations function lives in a
+relations module. It lives in `engine/store.mjs`. Nothing in the gate saw it -- `scan-layers`
+judges the EDGE and the layer direction, not whether the name exists -- and the page failed at
+run time with a SyntaxError, found only by dumping the DOM from a real browser.
+
+That is the shape K2a and K2b create: moving from a barrel to a definer is a guess about where a
+name lives, repeated at every site, and a wrong guess is invisible until something executes. The
+product has tests that import it; the lab is loaded by a browser the gate never opens.
+*/
+test('H17 K10: every name the lab imports is exported by the module it names', () => {
+	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+	const checked = [];
+	for (const m of src.matchAll(/import \{([^}]+)\} from '([^']+)'/g)) {
+		const target = path.resolve(path.join(root, 'lab/src'), m[2]);
+		const body = fs.readFileSync(target, 'utf8');
+		for (const raw of m[1].split(',')) {
+			const name = raw.trim().split(/\s+as\s+/)[0];
+			if (!name) continue;
+			checked.push(name);
+			const declared = new RegExp(`export (?:async )?(?:function|const|class|let|var) ${name}\\b`).test(body);
+			const forwarded = new RegExp(`export \\{[^}]*\\b${name}\\b`).test(body);
+			assert.ok(declared || forwarded,
+				`lab imports { ${name} } from ${m[2]}, which does not export it -- the page would fail at run time, and no other check sees this`);
+		}
+	}
+	assert.ok(checked.length > 10, `the sweep must find the lab's imports, not ${checked.length}`);
+});
