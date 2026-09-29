@@ -29,13 +29,13 @@ import { nodePoints, zonePoints, CANVAS, GAP } from '../../app/src/snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
-import { Changes } from '../../app/src/changes.js';
+import { Changes, derivedToApply } from '../../app/src/changes.js';
 import { Renderer } from '../../app/src/renderer.js';
 import { Selection } from '../../app/src/selection.js';
 import { Input } from '../../app/src/input.js';
 import { Readout } from '../../app/src/readout.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
-import { commit } from '../../server/txn.mjs';
+import { commit, undo, redo } from '../../server/txn.mjs';
 import { Log } from '../../server/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
 // proven. Production does not import network/ until then, and a test holds that boundary.
@@ -139,18 +139,37 @@ refusal would teach the opposite of what the planner does, which is the one thin
 exists to show.
 */
 history.onCommit((request) => {
-	const answer = commit(authority, log, request, 'lab', 'lab');
+	/*
+	UNDO AND REDO ARE VERBS, and they go to the real `undo()` and `redo()` -- not to `commit()`.
+
+	`Changes` emits `{ verb: 'undo', expect }` for Ctrl+Z. The first build sent every request to
+	`commit()`, which answered "version conflict" -- so Ctrl+Z was refused in the lab while H17-D8
+	promises it works. Found by driving the planner, not by reading the ruling.
+
+	`expect` is deliberately not checked here. It guards the server against a concurrent writer; the
+	lab is one writer in one page, and its Changes never learns a server version to send.
+	*/
+	const answer = request.verb === 'undo' ? undo(authority, log, request.to ?? null)
+		: request.verb === 'redo' ? redo(authority, log)
+		: commit(authority, log, request, 'lab', 'lab');
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
 	/*
-	THE PLANNER'S OWN OPS, at `answer.change.ops` -- not `answer.ops`.
+	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE.
 
-	`commit()` returns { ok, change, version }, and the change carries the ops it actually applied,
-	which include everything it DERIVED: the cascade, the orphan sweep, the collapse. Reading
-	`answer.ops` finds undefined, applies nothing, and leaves a canvas that never updates while the
-	notice cheerfully reports a new version. The first build of this file did exactly that.
+	Two shapes: `commit()` returns its applied ops at `change.ops` -- reading `answer.ops` there
+	applied nothing, the first build's defect -- and `undo()`/`redo()` return them at `ops`.
+
+	They are not applied wholesale. The tab already applied its own ops optimistically, and the
+	answer can arrive after a coalescing timer, when the author has moved on; re-applying older ops
+	over a newer live edit is the snapback K1 fixed. `derivedToApply` is K1's one rule for exactly
+	this -- the planned ops that are not our own echoed back -- so the lab MOUNTS it (G1) rather than
+	forking a simpler rule. Undo and redo take the same path with nothing sent, as they do in sync.js.
+	Nothing is in flight in the lab, because the planner answers in the same page.
 	*/
-	applyOps(model, answer.change?.ops ?? []);
-	say(`v${answer.version} ${request.label ?? ''}`.trim());
+	const planned = answer.change?.ops ?? answer.ops ?? [];
+	const apply = derivedToApply(request.ops ?? [], planned, []);
+	if (apply.length) applyOps(model, apply);
+	say(`v${answer.version} ${request.verb ?? request.label ?? ''}`.trim());
 });
 
 say('lab -- nothing is stored, nothing is shared');
@@ -244,3 +263,17 @@ if (wanted) {
 		}
 	}
 }
+
+/*
+A TEST HANDLE, and nothing else uses it.
+
+`tests/lab-browser.test.js` drives this page in real Chrome and needs to reach the models and the
+commit seam. The alternative -- asserting the lab's wiring by reading this file as source -- let
+four defects through in one session: the door read `answer.ops`, an import named the wrong module,
+the image lacked `network/`, and Ctrl+Z was refused. Each passed every source check. Only running
+the page showed them, so the page is what the test runs.
+
+The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
+reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
+*/
+window.lab = { model, authority, pipes, history, log };

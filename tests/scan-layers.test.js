@@ -560,7 +560,7 @@ test('H17 K10: the lab composes the real planner and makes its refusals visible'
 	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
 
 	// G1 -- mount, never fork: the door is the product's own commit, not a lab copy of it
-	assert.match(src, /import \{ commit \} from '\.\.\/\.\.\/server\/txn\.mjs'/,
+	assert.match(src, /import \{[^}]*\bcommit\b[^}]*\} from '\.\.\/\.\.\/server\/txn\.mjs'/,
 		'the lab must call the REAL planner; a lab that reimplements a rule proves nothing about the product');
 	assert.match(src, /history\.onCommit\(/, 'the lab must take the same commit seam the product takes');
 
@@ -688,25 +688,25 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 });
 
 /*
-H17 K10 -- the lab reads the planner's answer at the key the planner uses.
+H17 K10, guardrail G3 -- the lab reconciles the planner's answer by the product's ONE rule.
 
-`commit()` returns `{ ok, change, version }` and the ops it applied are at `change.ops`. The first
-build of the lab read `answer.ops`, found undefined, applied nothing, and left a canvas that never
-updated while the notice cheerfully reported a new version -- a silent failure that every
-structural check passed and that the seed test above could not see, because that test calls the
-planner directly and never looks at how the lab reads it.
+G3 reads "one apply path per Model, and no copied key filter", and `app/src/changes.js` says of
+`derivedToApply`: "Sync's ack calls it, and so will the lab's local door". The first build of the lab
+applied the answer wholesale instead -- a second, simpler apply rule -- which risks snapback when an
+answer lands after the author has moved on, the defect class K1 fixed.
 
-Asserted as SOURCE because the alternative needs a browser. Narrow on purpose: it holds the one
-key whose absence is invisible.
+This holds the STRUCTURE. The BEHAVIOUR -- that the planner's cascade and sweep reach the tab, and
+that undo and redo work -- is proven in real Chrome by tests/lab-browser.test.js, which replaced the
+source check that stood here: that check pinned a key name and could not see whether anything was
+applied, which is how a door that applied nothing passed it the first time.
 */
-test('H17 K10: the lab applies answer.change.ops, the key commit() actually returns', () => {
+test('H17 K10 (G3): the lab reconciles through derivedToApply, the product\'s one apply rule', () => {
 	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
-	const applies = [...src.matchAll(/applyOps\(model,\s*([^)]+)\)/g)].map((m) => m[1].trim());
-	assert.ok(applies.length >= 2, `the lab must apply the planner's answer, found ${applies.length} call(s)`);
-	for (const arg of applies) {
-		assert.match(arg, /answer\.change/,
-			`the lab applies \`${arg}\` -- commit() returns { ok, change, version }, so this applies nothing and fails silently`);
-	}
+	assert.match(src, /import \{[^}]*\bderivedToApply\b[^}]*\} from '\.\.\/\.\.\/app\/src\/changes\.js'/,
+		'the lab must mount K1\'s reconcile rule, not write its own (G3)');
+	assert.match(src, /derivedToApply\(request\.ops/, 'and pass it what the tab SENT, or every echo is re-applied');
+	assert.match(src, /answer\.change\?\.ops \?\? answer\.ops/,
+		'commit() answers at change.ops and undo()/redo() at ops; reading one shape drops the other');
 });
 
 /*
