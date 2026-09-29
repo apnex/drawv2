@@ -59,6 +59,13 @@ export const FOLDERS = [
 	{ dir: 'app/src' },
 	{ dir: 'server' },
 	{ dir: 'cli' },
+	/*
+	The network plugin INCUBATES here (ruled 2026-09-28). Its layer is `network`, and production is
+	allowed to import that layer -- correctly, permanently -- because today the layer also names code
+	inside kernel/, model/ and engine/. So the layer table cannot keep production out of THIS folder
+	before promotion; `tests/scan-layers.test.js` holds that as a separate folder rule.
+	*/
+	{ dir: 'network', layer: 'network' },
 	{ dir: 'lab', layer: 'lab' },   // K10: composition only, held to that by L8
 	{ dir: 'tools', layer: 'tools' },
 	// the fixture trees are synthetic repositories that break these rules on purpose
@@ -163,6 +170,7 @@ export const ENTRIES = {
 		*/
 		modules: [
 			'lab/src/root.js',
+			'network/pipes.mjs',   // the incubating plugin (ruled 2026-09-28)
 			'app/src/changes.js', 'app/src/commands.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'engine/index.mjs',
@@ -745,7 +753,7 @@ keeps the order it had in its scanner. L1 checks that every entry is a folder in
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli', 'lab'],   // scan-dead PROD: where a consumer counts as production
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli', 'lab', 'network'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'model', 'engine', 'kernel'],                        // scan-dead METHOD_SCOPE: where a public method must have a caller
 	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'cli'],         // scan-docrefs CODE_ROOTS: code whose comments cite paths
 	twins: ['kernel', 'engine', 'model', 'app/src', 'server'],                  // scan-twins ROOTS: where shared arithmetic is compared

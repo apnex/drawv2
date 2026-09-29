@@ -144,6 +144,8 @@ Then we refine gestures, behaviour and keybinds further."\
 So the following are taken as WORKING ANSWERS, chosen to be cheap to reverse, and every one of them is reopenable once the lab can show the gesture.\
 They are recorded here rather than in `dev/DECISIONS.md` precisely because they are not rulings.
 
+> **CORRECTED 2026-09-28.** T1 below is true of the RULED link model and false of the PRODUCT. Building `g` found that the product has no pipes -- its kinds are node, waypoint, link, zone and group, and `pathOf` draws a link as a straight polyline through `via` with no routing -- so there is no router for a guide anchor to steer. The proposal was reasoned against a model that is ruled but not built. Resolved by the director's ruling the same day: the lab incubates the network plugin in `network/`, and `g` is built there. The line is kept as written below, per the frozen-history rule.
+
 **T1.\
 `g` needs NO stored-format change, which is why this can be built before the format batch.**\
 A pin is a `via` entry; a guide anchor is simply not in the intent.\

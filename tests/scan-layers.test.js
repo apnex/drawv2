@@ -708,3 +708,55 @@ test('H17 K10: the lab applies answer.change.ops, the key commit() actually retu
 			`the lab applies \`${arg}\` -- commit() returns { ok, change, version }, so this applies nothing and fails silently`);
 	}
 });
+
+/*
+The network plugin INCUBATES in `network/`, and production must not reach it until promotion.
+
+Ruled 2026-09-28: the lab is the prototype of the unification and routing subsystem, and production
+takes it by promotion once it is proven. The layer table cannot hold that on its own -- it already
+lets planner, canvas, chrome and the CLI import the `network` LAYER, correctly and permanently,
+because today that layer names code living inside kernel/, model/ and engine/. The incubator is a
+FOLDER, and the rule is about the folder.
+
+So this is a separate check: only the incubator itself, the lab and the tests may import from
+`network/`. Widening that list IS the promotion, and it has to be done here, in a diff a reviewer
+sees -- never as a side effect of somebody adding a convenient import.
+
+It sweeps every scanned module rather than naming the product's folders, because a guard with a
+file list goes stale (B224).
+*/
+const INCUBATOR = 'network/';
+const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/'];
+
+test('the network incubator is reachable only from itself, the lab and the tests', () => {
+	const offenders = [];
+	let scanned = 0;
+	const walk = (dir) => {
+		for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+			const rel = path.join(dir, e.name);
+			if (e.isDirectory()) {
+				if (['node_modules', '.git', 'tests/fixtures'].some((x) => rel === x || rel.startsWith(`${x}/`))) continue;
+				walk(rel);
+			} else if (/\.(m?js)$/.test(e.name)) {
+				scanned++;
+				if (MAY_REACH_THE_INCUBATOR.some((ok) => rel.startsWith(ok))) continue;
+				const src = fs.readFileSync(path.join(root, rel), 'utf8');
+				for (const m of src.matchAll(/(?:from|import\()\s*['"]([^'"]+)['"]/g)) {
+					if (!m[1].startsWith('.')) continue;
+					const target = path.relative(root, path.resolve(path.dirname(path.join(root, rel)), m[1]));
+					if (target.startsWith(INCUBATOR)) offenders.push(`${rel} -> ${target}`);
+				}
+			}
+		}
+	};
+	walk('.');
+	assert.ok(scanned > 100, `the sweep must actually find modules, found ${scanned}`);
+	assert.deepEqual(offenders, [],
+		`production reaches the incubator before promotion -- nothing incubating may reach draw.apnex.io:\n  ${offenders.join('\n  ')}`);
+});
+
+test('the incubator exists and the lab composes it', () => {
+	assert.ok(fs.existsSync(path.join(root, INCUBATOR)), 'network/ is where the plugin incubates (SD11b, ruled 2026-09-28)');
+	const lab = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+	assert.match(lab, /from '\.\.\/\.\.\/network\//, 'the lab must compose the incubator, or nothing is being tested');
+});

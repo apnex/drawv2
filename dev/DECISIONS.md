@@ -1112,3 +1112,44 @@ One endpoint ring is drawn, not three: `roles` is a SET (B208), so `endpoint` co
 The director has noted a future adjustment to the endpoint visual for the several-terminations case, out of scope here and not designed.\
 Carried forward, not settled: dash already means the control plane on a link, and is also used for sockets, the marquee and previews, so it reads as a general "provisional" idiom rather than one owned by control.\
 Whether a dashed ring on an anchor whose links are themselves dashed reads ambiguously is a judgement only the eye settles, and it is recorded rather than assumed.
+
+**The lab incubates the network plugin, in `network/`, and production takes it by promotion -- ruled 2026-09-28.**\
+The director's framing: "We can use the lab as the 'next' prototype of the unification and routing subsystem.\
+Once we have validated it there we can promote to prod."\
+And: "We are essentially building towards modular pluggable net-new functionality as part of the unification core now - and testing it in the lab."
+
+**What forced it.**\
+Building the `g` gesture found that the product has no pipes.\
+Its entity kinds are node, waypoint, link, zone and group; `model/model.mjs` mentions `pipe` zero times; and `pathOf` draws a link as a straight polyline through its `via` list, with no routing at all.\
+Pipes, cheapest-path routing and links routed over pipes exist only in the bake-off prototype, which mentions `pipe` 108 times.\
+So `g` -- a gesture whose whole meaning is steering a router -- had nothing to steer in the product, and building it there would have tested nothing.\
+That also corrects a claim recorded earlier the same day: GUIDE-ANCHORS.md T1 said `g` needs no stored-format change.\
+That is true of the ruled link model and FALSE of the product, which has no pipes to route over.\
+The proposals were reasoned against a model that is ruled but not built.
+
+**The shape.**\
+The lab holds two kinds of code, and they obey different rules:
+
+| kind | examples | rule |
+|---|---|---|
+| mounted | kernel, model, planner, canvas | G1 holds: used unchanged, every change lands in the real module |
+| incubated | pipes, routing, `transit`, the `g` gesture | built lab-first in `network/`, promoted when proven |
+
+**Where incubated code lives.**\
+Chosen: `network/` at the repository root, now -- over an incubator in the bake-off bench, copied in at promotion.\
+It is the folder SD11b and the layer manifest already name ("the plugin of connection ... gets its own folder at K13"), arriving early rather than invented.\
+`lab/` cannot hold it, because L8 forbids the lab from exporting anything.\
+What it buys, in the director's terms: sovereign boundaries enforced by `scan-layers` from the first line, pluggable interfaces drawn where they will live permanently, and promotion as production STARTING TO IMPORT `network/` rather than a port that must be de-duplicated afterwards.\
+The bench option was rejected on exactly that cost: no gate, no layer rules, and promotion as a migration.
+
+**G1 is amended, not suspended.**\
+It holds for mounted code as written.\
+For incubated code the direction of travel reverses -- lab first, production by promotion -- and that is the ruled exception rather than a lapse.
+
+**The rule that makes this safe: production must not import `network/` until promotion is deliberate.**\
+Until then the product runs exactly as it does today, and nothing incubating can reach a user of `draw.apnex.io`.\
+This is held by `scan-layers`, not by convention.
+
+**Carried to design.**\
+The mounted modules the incubated code needs to extend -- the Model's link methods, the planner's rules, `pathOf` -- are the pluggable interfaces this work must draw.\
+Each is a place where production and the incubator currently cannot both be satisfied, and naming them is part of the work rather than a surprise at promotion.

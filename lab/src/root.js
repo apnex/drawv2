@@ -37,6 +37,9 @@ import { Readout } from '../../app/src/readout.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { commit } from '../../server/txn.mjs';
 import { Log } from '../../server/log.mjs';
+// INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
+// proven. Production does not import network/ until then, and a test holds that boundary.
+import { routeLink } from '../../network/pipes.mjs';
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -116,6 +119,13 @@ history.onCommit((request) => {
 });
 
 say('lab -- nothing is stored, nothing is shared');
+/*
+Proof the incubator is composed and running, not merely imported. A trivial route through the
+network plugin, reported on the notice: if `network/` fails to load, the module graph fails before
+this line and the notice never reads it, so its presence is the evidence.
+*/
+const probe = routeLink([{ a: 'A', b: 'B' }, { a: 'B', b: 'C' }], { src: 'A', dst: 'C' });
+say(`lab -- nothing is stored, nothing is shared -- network plugin ${probe ? 'loaded' : 'FAILED'}`);
 
 /*
 FIXED BOARDS -- the seed half of K10.

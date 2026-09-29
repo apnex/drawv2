@@ -39,6 +39,7 @@ const MOUNTS = {
 	'/kernel/': 'kernel',
 	'/model/': 'model',
 	'/engine/': 'engine',
+	'/network/': 'network',   // the incubating plugin (ruled 2026-09-28)
 };
 
 /*
