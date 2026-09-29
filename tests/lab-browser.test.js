@@ -450,6 +450,13 @@ test('deleting a w-chain link sweeps its pins: its own pipes no longer shelter t
 		const left = await p.run(`${JSON.stringify(pins)}.filter((id) => lab.authority.get('waypoint', id))`);
 		assert.deepEqual(left, [], "the link's pins must be swept with it -- its own pipes, dying with it, must not shelter them");
 		assert.equal(await p.run(`lab.pipes.list().length`), 0, 'and the pipes laid with the link go too');
+		/*
+		RULED 2026-09-29: in the network model "deliberate" means held by pipes laid with g, and anchors made
+		with w go when their last link goes -- the director confirmed endpoints too. So the END anchor and the
+		start anchor placed with w go as well: every anchor this test made is gone.
+		*/
+		assert.equal(await p.run(`lab.authority.all('waypoint').length`), 0,
+			'the w-made start and end go with their last link: only links and hand-laid pipes keep an anchor');
 	} finally { await p.close(); }
 });
 

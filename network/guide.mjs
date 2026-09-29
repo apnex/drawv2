@@ -131,3 +131,19 @@ export function keptOnRefusal(verdict, { guides = [], placed = [] }) {
 	const legs = (verdict.legs ?? []).filter((l) => l.laid === 'hand' && !discarded.has(l.a) && !discarded.has(l.b));
 	return { keep: guides, legs, placedKept: placed.filter((id) => guided.has(id)) };
 }
+
+/*
+Which orphaned anchors the network model keeps beyond what references them: NONE -- ruled 2026-09-29.
+
+Handed to the planner as `keepsOrphan`. Production keeps an orphaned anchor if the author pinned it
+(B162) or it was a link's end (B216). The director ruled that in the network model "deliberate" means
+HELD BY THE PIPES LAID WITH g, so anchors made with w go when their last link goes -- ends included, the
+director confirming: "No - it goes just as ruled." A g anchor survives because its hand pipes reference
+it, which reaches the sweep through `alsoReferenced`; nothing else needs to shelter anything.
+
+The sweep reads only waypoints, so nodes are never orphans at all -- a KIND distinction. The director's
+proposal, recorded and not yet built: "survives last link deleted" is a capability injected to an anchor,
+carried by servers, hosts and routers and not by a bare anchor, which would unify how every anchor
+behaves under one rule. When the device table lands (SD4), this function is where it reads that column.
+*/
+export const keepsOrphan = () => false;

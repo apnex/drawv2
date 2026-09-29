@@ -42,7 +42,7 @@ import { Log } from '../../server/log.mjs';
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { pipeResolver, pipeDependents } from '../../network/resolve.mjs';
-import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal } from '../../network/guide.mjs';
+import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal, keepsOrphan } from '../../network/guide.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -187,6 +187,7 @@ history.onCommit((request) => {
 		// -- or its orphan sweep removes an anchor that pins one link and guides another (measured)
 		: commit(authority, log, request, 'lab', 'lab', {
 			alsoReferenced: (m) => pipeAnchors(pipes.list(), m),   // only pipes that survive the edit being judged
+			keepsOrphan,   // the network model's rule: only links and hand-laid pipes keep an anchor (2026-09-29)
 		});
 	const legs = pendingLegs; pendingLegs = null;
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }

@@ -59,3 +59,47 @@ test('the extra references are asked of the model, and an unrelated anchor is st
 	assert.ok(seen.length > 0 && seen.every((x) => typeof x.all === 'function'), 'the provider must be handed a model to read');
 	assert.equal(b.m.get('waypoint', W), undefined, 'naming a DIFFERENT anchor must not shelter this one');
 });
+
+/*
+WHICH ORPHANS SURVIVE is the plugin's to say -- ruled 2026-09-29.
+
+Production keeps an orphaned anchor if the author pinned it (B162) or it was a link's END (B216). The
+director ruled that in the network model "deliberate" means HELD BY THE PIPES LAID WITH g: anchors made
+with w go when their last link goes -- ends and a pinned start included -- unless a pipe laid by hand
+holds them. In the lab's plugin now; production at promotion, since production has no pipes and no g,
+and there B162 and B216 are the only protection an author's anchor has.
+
+So the planner takes the rule by injection, `keepsOrphan(waypoint, { wasBendOnly })`, defaulting to
+production's. The first test is the one that matters most: absent, production sweeps exactly as ruled.
+*/
+function ended() {
+	// a link from a PINNED anchor, through a bend, to an unpinned END anchor
+	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const ok = commit(m, log, { label: 'setup', ops: [
+		{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-0000a1', name: 's', x: -360, y: 0, pinned: true } },
+		wp('waypoint-0000b2', 0, -2), wp('waypoint-0000c3', 6, 0),
+		lk('link-0000d4', 'waypoint-0000a1', 'waypoint-0000c3', ['waypoint-0000b2'])] }, 'lab', 'lab');
+	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
+	return { m, log };
+}
+const deleteIt = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'link', id: 'link-0000d4' }] }, 'lab', 'lab', opts);
+const left = (m) => m.all('waypoint').map((w) => w.id).sort();
+
+test('production is unchanged: the bend goes, and the pinned start and the end stay (B162, B216)', () => {
+	const b = ended();
+	assert.equal(deleteIt(b).ok, true);
+	assert.deepEqual(left(b.m), ['waypoint-0000a1', 'waypoint-0000c3']);
+});
+
+test('the network plugin\'s rule: with nothing but references keeping an anchor, all three go', () => {
+	const b = ended();
+	assert.equal(deleteIt(b, { keepsOrphan: () => false }).ok, true);
+	assert.deepEqual(left(b.m), [], 'the pinned start and the end go with the link: only links and hand pipes keep an anchor');
+});
+
+test('the rule is told whether the orphan was only ever a bend, and sees the waypoint itself', () => {
+	const b = ended();
+	const asked = [];
+	deleteIt(b, { keepsOrphan: (w, info) => { asked.push([w.id, info.wasBendOnly]); return false; } });
+	assert.deepEqual(asked.sort(), [['waypoint-0000a1', false], ['waypoint-0000b2', true], ['waypoint-0000c3', false]]);
+});

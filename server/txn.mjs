@@ -83,7 +83,21 @@ Optional, absent in production, and held by tests/sweep-references.test.js to sw
 before when absent. After promotion pipes are stored, and this provider reads them from the
 document instead of a session -- the seam stays, only its source moves.
 */
-export function plan(model, ops, { alsoReferenced = null } = {}) {
+/*
+`keepsOrphan` -- the third interface the network incubator forces into a product module: WHICH orphaned
+anchors survive beyond what references them.
+
+Production's rule, and the default: an anchor this transaction orphaned is kept if the author pinned it
+(B162, "the author meant this to exist") or if it was a link's END (B216, "a terminus is a place the
+author put something"). In the network model the director ruled otherwise (2026-09-29): "deliberate"
+means HELD BY THE PIPES LAID WITH g, and anchors made with w go when their last link goes -- so the
+plugin passes a rule that keeps nothing beyond references, and its pipes reach the sweep through
+`alsoReferenced`. Production keeps its rule until promotion: it has no pipes and no g, and there these
+two protections are the only ones an author's anchor has. Held by tests/sweep-references.test.js.
+*/
+const KEEPS_ORPHAN_AS_RULED = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly;
+
+export function plan(model, ops, { alsoReferenced = null, keepsOrphan = KEEPS_ORPHAN_AS_RULED } = {}) {
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -173,10 +187,10 @@ export function plan(model, ops, { alsoReferenced = null } = {}) {
 	*/
 	const wasReferenced = refs(model);
 	const nowReferenced = refs(proj);
-	const sweepable = wasBendOnly(model);
-	const debris = proj.all('waypoint').filter((w) => !nowReferenced.has(w.id) && !w.pinned
+	const bendOnly = wasBendOnly(model);
+	const debris = proj.all('waypoint').filter((w) => !nowReferenced.has(w.id)
 		&& wasReferenced.has(w.id)                       // it arrived unreferenced; not ours to remove
-		&& sweepable.has(w.id));                          // B216 -- it was a terminus, not debris
+		&& !keepsOrphan(w, { wasBendOnly: bendOnly.has(w.id) }));   // pinned or a terminus, in production (B162, B216)
 	/*
 	B241 -- a swept waypoint leaves its group exactly as a requested delete's does: trimmed, or the
 	group dissolved when it falls below two.
@@ -547,7 +561,7 @@ function planDel(model, { kind, id }) {
 
 // ---- the one write ----
 
-export function commit(model, log, request, by = 'client', actor = null, { alsoReferenced = null } = {}) {
+export function commit(model, log, request, by = 'client', actor = null, { alsoReferenced = null, keepsOrphan } = {}) {
 	if (!request || typeof request !== 'object') return { ok: false, error: 'invalid request', version: log.version };
 	if (request.label !== undefined && !LABEL.test(String(request.label))) {
 		return { ok: false, error: 'invalid label', version: log.version };
@@ -556,7 +570,7 @@ export function commit(model, log, request, by = 'client', actor = null, { alsoR
 		return { ok: false, error: 'version conflict', version: log.version };
 	}
 
-	const planned = plan(model, request.ops, { alsoReferenced });
+	const planned = plan(model, request.ops, { alsoReferenced, ...(keepsOrphan ? { keepsOrphan } : {}) });
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 

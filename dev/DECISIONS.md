@@ -1153,3 +1153,29 @@ This is held by `scan-layers`, not by convention.
 **Carried to design.**\
 The mounted modules the incubated code needs to extend -- the Model's link methods, the planner's rules, `pathOf` -- are the pluggable interfaces this work must draw.\
 Each is a place where production and the incubator currently cannot both be satisfied, and naming them is part of the work rather than a surprise at promotion.
+
+**A refused `g` drag keeps its anchors and pipes -- ruled 2026-09-29.**\
+The director, after a `g` drag was refused by the whole-route check and its anchor and pipes vanished: "which is correct, however if then deletes the anchor and pipes I deliberately placed - I think G is supposed to keep the pipe/anchors even if the link fails?"\
+So refusal refuses the LINK, not the geometry.\
+The `g` anchors and the pipes laid by hand to them are kept; what the drag placed for the link alone -- its `w` anchors, and any pipe that would end at one -- goes with it.\
+This extends GUIDE-ANCHORS T4 (a `g` pipe outlives its link) to a link that never existed.\
+The refusal that prompted it was also FALSE: it said "a shorter way already exists" where the ways tied, two pipes against two, lost to the router's fixed tie order.\
+It now says which; not a ruling, a correction.
+
+**In the network model, "deliberate" means held by the pipes laid with `g` -- ruled 2026-09-29, in the lab's plugin now and in production at promotion.**\
+A link built as a chain of `w` anchors was deleted and left anchors behind.\
+Fixing a regression (the link's own dying pipes sheltered its pins) left two, kept by existing rulings: its end (B216, "a terminus is a place the author put something") and a start placed with `w` while nothing was in hand (B162, `pinned`).\
+Asked what should happen to them, the director reframed the question: "In this case 'deliberately' would be anchors placed with 'g' ?"\
+Then asked where that rule should apply, the director chose "The lab's network plugin now; production at promotion" (the proposer's recommendation) over "Everywhere now, production included" and "Both count: g-held or w-pinned".\
+The cost shown and accepted: until promotion the lab and production sweep differently, deliberately; production has no pipes and no `g`, so there B162 and B216 remain the only protection an author's anchor has.\
+Then asked directly whether a `w`-made ENDPOINT should survive its last link, the director chose "No - it goes just as ruled" (the proposer's recommendation) over "Yes -- endpoints survive; only w bends go".\
+So in the lab only links and pipes laid by hand keep an anchor: `w` anchors go with their last link -- pins, ends and a pinned start alike -- and `g` anchors stay, held by their pipes.\
+Nodes are never swept either way.\
+Built as a third planner interface, `keepsOrphan`, defaulting to production's rule and held to it by tests.
+
+**PROPOSAL, recorded and not built: "survives its last link" as a capability -- the director, 2026-09-29.**\
+Verbatim: "I thought I'd add that 'survives last link deleted' sounds like a property/capability that can be injected to an anchor - this could unify then how servers, hosts, routers etc behave by never auto-deleting".\
+Today the sweep spares every node because it is a NODE -- a kind distinction with no recorded reason, the same residue that questioned node against waypoint.\
+As a column in a type's table (SD4), devices would carry it and a bare anchor would not, and one rule would cover every anchor.\
+The seam exists: `keepsOrphan` is where the planner would read it.\
+Proposer's reading, not ruled: build it when the device table lands (H17 K6), since the capability belongs in that table.
