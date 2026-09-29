@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+The lab canvas (H17, cut K10).
+
+A minimal client composition over the REAL modules: the same kernel, model, planner and canvas the
+product loads, mounted rather than forked (G1). What is absent is everything that is not the
+canvas -- no menus, no palette chrome, no diagram list, no access panel, no sign-in, no websocket,
+no storage. The planner runs in this page (H17-D8), so a delete shows its own cascade and sweep and
+undo works, with no server in the loop.
+
+It stores nothing. That is why it is safe to deploy at lab.apnex.io with no IAP (H17-D1, amended
+2026-09-28): there is no Store, no Hub, no Locks, no principal and no agent door behind it.
+
+G12 STILL HOLDS: evidence gathered here is never cited as production proof.
+
+The element ids below are a CONTRACT, not decoration. `app/src/renderer.js`, `overlay.js` and
+`input.js` query exactly these seven layers plus the container; the product's own page declares the
+same ones. A missing layer is a silent null, so the lab's boot check asserts each one is present
+before composing.
+-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>draw lab</title>
+		<link rel="stylesheet" href="/style.css">
+		<link rel="stylesheet" href="/lab.css">
+	</head>
+	<body>
+		<div id="kdefs"></div>
+		<div id="content">
+			<main id="stage">
+				<svg id="container" viewBox="-960 -540 1920 1080" xmlns="http://www.w3.org/2000/svg">
+					<rect id="canvas" x="-960" y="-540" width="1920" height="1080"/>
+					<g id="grid-nodes"></g>
+					<g id="grid-zones"></g>
+					<g id="snaplayer"></g>
+					<g id="zones"></g>
+					<g id="groups"></g>
+					<g id="links"></g>
+					<g id="waypoints"></g>
+					<g id="nodes"></g>
+					<g id="movers"></g>
+					<g id="overlay"></g>
+				</svg>
+			</main>
+		</div>
+		<footer id="status">
+			<span id="readout-bottom" class="readout"></span>
+			<span id="lab-notice" class="readout"></span>
+		</footer>
+		<script type="module" src="/src/root.js"></script>
+	</body>
+</html>

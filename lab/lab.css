@@ -1,0 +1,18 @@
+/*
+The lab's own styling: only what the product's stylesheet assumes exists and the lab does not have.
+
+`style.css` is loaded first and unchanged (G1: mount, never fork), so every canvas rule comes from
+the product. What is here undoes the layout the product's chrome would otherwise occupy -- the lab
+has no header, no palette and no sidebar, so #content must not reserve room for them.
+
+No colour is declared here. B255 records that the canvas already has two authorities for every
+colour it draws, and adding a third while that row is open would be the same defect knowingly.
+*/
+
+#content { grid-template-columns: 1fr; }
+#stage { width: 100vw; }
+
+#status { display: flex; gap: 2rem; }
+
+/* the notice sink the planner's refusals reach (G11); the product shows these in its own chrome */
+#lab-notice { opacity: 0.75; }

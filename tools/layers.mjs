@@ -59,6 +59,7 @@ export const FOLDERS = [
 	{ dir: 'app/src' },
 	{ dir: 'server' },
 	{ dir: 'cli' },
+	{ dir: 'lab', layer: 'lab' },   // K10: composition only, held to that by L8
 	{ dir: 'tools', layer: 'tools' },
 	// the fixture trees are synthetic repositories that break these rules on purpose
 	{ dir: 'tests', layer: 'tests', skip: ['tests/fixtures/layers'] },
@@ -151,6 +152,28 @@ export const ENTRIES = {
 			'model/model.mjs', 'model/ops.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
 	},
+	lab: {
+		roots: ['lab/src/root.js'],
+		/*
+		K10. The lab's closure is 46 modules, barely under the product page's 50, and that is the
+		HONEST starting number rather than a disappointing one: the cuts that shrink it (K2b, K2c,
+		K5, K7, K8, K11, K12) have not landed, so the canvas modules it mounts still reach the three
+		barrels transitively. The lab's own imports name definers; its dependencies' do not yet.
+		The plan's end state is 38 modules, and this list falls as each cut lands.
+		*/
+		modules: [
+			'lab/src/root.js',
+			'app/src/changes.js', 'app/src/commands.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
+			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
+			'app/src/recognize.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'engine/index.mjs',
+			'engine/ivm.mjs', 'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs', 'engine/relations.mjs',
+			'engine/rules.mjs', 'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 'kernel/adapt.mjs',
+			'kernel/engine.mjs', 'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'kernel/renderer.mjs',
+			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs', 'model/invariants.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs', 'model/shape.mjs',
+			'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
+		],
+	},
 	planner: {
 		roots: ['server/txn.mjs', 'server/log.mjs'],
 		surface: { 'server/txn.mjs': ['plan', 'commit', 'undo', 'redo'], 'server/log.mjs': ['Log'] },
@@ -172,6 +195,7 @@ the client from app/), must be exactly its entry's roots. An inline script, an i
 */
 export const PAGES = {
 	'app/index.html': { base: 'app', entry: 'page', scripts: ['/src/main.js'] },
+	'lab/index.html': { base: 'lab', entry: 'lab', scripts: ['/src/root.js'] },
 };
 
 /*
@@ -215,7 +239,16 @@ export const RULES = {
 		grammar: [{ file: 'server/validate.js', name: 'ID', others: ['diagram', 'template'], rest: '-[0-9a-f]{6}$' }],
 	},
 	// `lab/` is composition only. The line budget is declared by K10 with the lab; until then there is no lab to hold to it
-	L8: { dir: 'lab', budget: null },
+	/*
+	K10 declared the budget with the lab. MEASURED at 107 code lines across the root and the static
+	server, and set at 120 -- the measurement plus a little, not a round number chosen in advance.
+	The first guess was 60, which the lab exceeded before it did anything, and that is worth keeping:
+	a budget invented before the thing exists measures the guesser rather than the code.
+
+	It is a CEILING on composition, so it should fall as cuts land, not rise. A cut that needs more
+	than this is a cut putting logic in the lab, which L8 also bars by refusing an export or a class.
+	*/
+	L8: { dir: 'lab', budget: 120 },
 	/*
 	A PROXY for criterion 5 (browser restatements of planner rules): it sees a browser module reach
 	for a rule's code, and misses a rule re-typed by hand. It reads 2 while the three restated rules
@@ -262,6 +295,7 @@ export const RATCHETS = {
 		'app/src/input.js -> app/src/palette.js': 1,
 		'app/src/input.js -> engine/situation.mjs': 1,
 		'engine/index.mjs -> engine/policy.mjs': 1,
+		'lab/src/root.js -> app/src/readout.js': 1,
 		'server/txn.mjs -> server/anchor.mjs': 1,
 	},
 	L4: {
@@ -413,11 +447,24 @@ pinned in tests/scan-layers.test.js, so widening it means editing that test in t
 a reviewer sees it. A violation that moves with its module (K4 moves server/ files to planner/) has
 a new key, and that commit edits this list and the pinned hash together, deliberately.
 */
+/*
+K10 ADDED ONE KEY TO THE FROZEN CEILING, and that needs saying rather than slipping through.
+
+The ceiling was frozen at K0 so a ratchet can only fall. The PLAN allows a key to MOVE with its
+module; this is not that -- `lab/` did not exist at K0, so its one legal edge (lab -> canvas, for
+the readout) has no frozen entry to inherit. A new folder cannot be expressed as a fall.
+
+The guarantee is kept where it matters: no EXISTING key rose, the new key is at 1, and the lab
+cannot reach anything the layer direction forbids because L2 still judges every edge. The pinned
+sha256 in tests/scan-layers.test.js is updated in this same commit, which is what puts the change
+in front of a reviewer.
+*/
 export const RATCHET_CEILING = {
 	L2: {
 		'app/src/input.js -> app/src/palette.js': 1,
 		'app/src/input.js -> engine/situation.mjs': 1,
 		'engine/index.mjs -> engine/policy.mjs': 1,
+		'lab/src/root.js -> app/src/readout.js': 1,
 		'server/txn.mjs -> server/anchor.mjs': 1,
 	},
 	L4: {
@@ -690,7 +737,7 @@ keeps the order it had in its scanner. L1 checks that every entry is a folder in
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli'],   // scan-dead PROD: where a consumer counts as production
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli', 'lab'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'model', 'engine', 'kernel'],                        // scan-dead METHOD_SCOPE: where a public method must have a caller
 	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'cli'],         // scan-docrefs CODE_ROOTS: code whose comments cite paths
 	twins: ['kernel', 'engine', 'model', 'app/src', 'server'],                  // scan-twins ROOTS: where shared arithmetic is compared

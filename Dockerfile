@@ -26,6 +26,12 @@ COPY engine/ engine/
 # the model substrate ESM (served at /model; imported by server/store.js + seed.js at boot)
 COPY model/ model/
 
+# the LAB canvas (H17 K10): a minimal client composition over the same modules, deployed to its own
+# service at lab.apnex.io with no IAP, because it stores nothing -- no Store, no Hub, no Locks, no
+# principal and no agent door sit behind it (H17-D1, amended 2026-09-28). One image serves both;
+# which one a container IS depends on the service it runs as, not on what it carries.
+COPY lab/ lab/
+
 # the shipped TEMPLATE set (H9.9). Read straight from the image and never written: a template is
 # listed to everyone, owned by nobody, and forks into a real diagram on first write. It replaced the
 # example corpus, which was COPIED into $DATA_DIR on first boot and became shared mutable state that

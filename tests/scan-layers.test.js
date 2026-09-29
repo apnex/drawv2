@@ -405,7 +405,7 @@ L5p names, 17 L7k consumer lines, 2 L9 sites and 3 canvas host reads.
 */
 test('K0 ratchet: the frozen ceiling is the one K0 recorded, and every record sits at or below it', () => {
 	assert.equal(crypto.createHash('sha256').update(JSON.stringify(RATCHET_CEILING)).digest('hex'),
-		'6995b30f6a3297c025ae2f289906fb602f141987252ce2555b5dd06bb085870f');
+		'0d61e2617bc2339d720ecec03e4b73ad690b197d2ed967b64015fd7f53447d2d');
 	for (const [rule, rec] of Object.entries(RATCHETS)) {
 		for (const [key, n] of Object.entries(rec)) assert.ok(n <= (RATCHET_CEILING[rule]?.[key] ?? -1), `RATCHETS.${rule}['${key}'] = ${n} is above its ceiling`);
 	}
@@ -542,4 +542,69 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 		assert.match(src, new RegExp(`\\b${name}\\b`),
 			`${k} joined the list, and no module the closure dropped mentions ${name} -- it is a borrowed spelling, which C2(c) refuses`);
 	}
+});
+
+/*
+H17 K10 -- the lab is composition only, and the door it composes is the real planner.
+
+L8 already bars an export or a class in `lab/`, over fixtures. What those cannot see is whether the
+lab WIRES THE RIGHT THING: a lab that quietly reimplemented a rule, or that swallowed a refusal,
+would pass every structural check and teach the opposite of what the planner does.
+
+So this reads the composition root as source. That is a weaker instrument than driving the page,
+and it is chosen deliberately: the page needs a browser, this runs in the gate on every push, and
+the property it holds -- the lab calls the planner and shows what it answers -- is the one that
+makes the lab worth trusting at all (G1, G11).
+*/
+test('H17 K10: the lab composes the real planner and makes its refusals visible', () => {
+	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+
+	// G1 -- mount, never fork: the door is the product's own commit, not a lab copy of it
+	assert.match(src, /import \{ commit \} from '\.\.\/\.\.\/server\/txn\.mjs'/,
+		'the lab must call the REAL planner; a lab that reimplements a rule proves nothing about the product');
+	assert.match(src, /history\.onCommit\(/, 'the lab must take the same commit seam the product takes');
+
+	// G11 -- a refusal reaches the author. A lab that drops it teaches the opposite of the planner
+	const refusal = src.match(/if \(!answer\.ok\)[^\n]*\n?/);
+	assert.ok(refusal, 'the lab must branch on a refused answer');
+	assert.match(refusal[0], /say\(|notice/, 'a refusal must reach the notice sink, not be swallowed');
+
+	// H17-D8 -- two models, or the lab shows the tab's optimism and never the planner's rules
+	assert.match(src, /const authority = new Model\(\)/,
+		'the lab needs an AUTHORITY model; with one model the cascade and sweep are never exercised');
+});
+
+test('H17 K10: the lab takes every name from the module that defines it', () => {
+	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+	for (const barrel of ['model/index.mjs', 'engine/index.mjs', 'kernel/index.mjs']) {
+		assert.doesNotMatch(src, new RegExp(barrel.replace('/', '\\/')),
+			`the lab imports ${barrel} -- new code must follow K2a rather than add to what K2b has to undo`);
+	}
+});
+
+/*
+H17 K10 -- the lab's static server exposes the planner and nothing else of `server/`.
+
+This is the one way a service with no API can still be dangerous. The first build mounted the whole
+`server/` directory and a probe found `GET /server/store.js` returning 200 -- the GCS-backed store.
+Nothing leaked, because credentials live in the environment rather than in a served file, but a
+folder mount is a standing promise about every file that directory will EVER hold, and it grows.
+
+So the list is held to the PLANNER'S OWN CLOSURE, which `tools/layers.mjs` already computes for a
+different purpose. A fifth file joining the planner then fails here rather than quietly becoming
+public, and a file leaving it stops being served without anyone remembering to look.
+*/
+test('H17 K10: the lab serves exactly the planner files, derived from the manifest', () => {
+	const src = fs.readFileSync(path.join(root, 'lab/server.mjs'), 'utf8');
+
+	const served = [...src.matchAll(/'(server\/[\w.-]+)'/g)].map((m) => m[1]).sort();
+	assert.ok(served.length, 'the lab must name the server files it serves, not mount the folder');
+	assert.doesNotMatch(src, /'\/server\/':/, 'the lab must not MOUNT server/ -- a folder mount promises every file it will ever hold');
+
+	const planner = ENTRIES.planner.modules.filter((m) => m.startsWith('server/')).sort();
+	assert.deepEqual(served, planner,
+		'the lab serves a different set from the planner closure the manifest declares; one of the two moved');
+
+	// and the store is the file the probe caught, so name it explicitly rather than trusting the set
+	assert.ok(!served.includes('server/store.js'), 'server/store.js must never be reachable from the lab');
 });
