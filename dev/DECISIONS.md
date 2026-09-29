@@ -921,6 +921,16 @@ The director chose "A lab/ folder in the repo" (the proposer's recommendation) o
 The gate scans it and runs its tests on every push.\
 It is never deployed, because the Dockerfile copies named folders only.
 
+> **AMENDED 2026-09-28 by the director: the lab IS deployed, to its own hostname.**\
+> The original three options were about WHERE THE FOLDER LIVES. "Never deployed" was recorded as a consequence of the Dockerfile copying named folders, not as a decision that was weighed -- deploying the lab was never put to the director, so this amends a by-product rather than reopening a ruling.\
+> The director's reasoning: a minimal app with no menus, icons, logins or IAP is safe to expose because it stores nothing and everything is client-side.\
+> That is stronger than it first appears, because H17-D8 already rules the planner runs IN THE PAGE. A deployed lab therefore carries no `Store`, no `Hub`, no `Locks`, no principals and no agent door -- there is no API behind it to reach and nothing to authorize. It is static files and a page, which is a different risk surface rather than a smaller copy of the product's.\
+> **Two conditions attached, and both were the proposer's.**\
+> First, a SEPARATE SERVICE at **`lab.apnex.io`** (the director's choice over `draw-lab.apnex.io` and `canvas.apnex.io`), never a `/lab` path on the product. A path would put unauthenticated content inside the IAP perimeter and give the application a second door, which is the "footgun wearing a door's clothes" that `AGENT_DOOR` in `server/app.js` already warns against. A sibling hostname needs no new certificate, because the deployment holds a wildcard -- recorded in the deploy runbook, which is kept outside this repository.\
+> Second, **G12 still holds** -- lab evidence is never cited as production proof. Deploying makes the lab more visible and more tempting to cite, so the guardrail matters more rather than less.\
+> What it buys, beyond convenience: A5 perceptual parity. The director and the agent currently cannot look at the same canvas, because `/ws` is IAP-only and the agent holds a CLI key -- which is exactly why K1's browser half could not be verified live earlier the same day. A deployed lab is a surface both can reach.\
+> Cost: `COPY lab/` in the Dockerfile, a second service and its own build. Small, and H17 cut K9 already anticipates one static responder serving both.
+
 **H17-D2: each finished cut ships to production as it lands.**\
 The director chose "Ship each cut as it lands" (the proposer's recommendation) over "Hold on a branch until the rebuild".\
 Production gets lighter step by step, each step behind its own tests. 23 of the 26 planned cuts land on main as they are made.\
