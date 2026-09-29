@@ -1179,3 +1179,4 @@ Today the sweep spares every node because it is a NODE -- a kind distinction wit
 As a column in a type's table (SD4), devices would carry it and a bare anchor would not, and one rule would cover every anchor.\
 The seam exists: `keepsOrphan` is where the planner would read it.\
 Proposer's reading, not ruled: build it when the device table lands (H17 K6), since the capability belongs in that table.
+**Named by the director, 2026-09-29:** "keepsOrphan is a better name". The capability, when built, is the table column `keepsOrphan` -- the same word as the planner interface that reads it, so the capability and its seam are one name end to end rather than two words for one idea.
