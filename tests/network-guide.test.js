@@ -41,9 +41,7 @@ test('the check is PURE: it lays nothing in the pipes it was given', () => {
 	assert.equal(JSON.stringify(existing), before);
 });
 
-test('pipeAnchors names every anchor a pipe touches', () => {
-	assert.deepEqual([...pipeAnchors(pipes(['A', 'B'], ['B', 'C']))].sort(), ['A', 'B', 'C']);
-});
+
 
 test('a DOWN link keeps its own drawn legs when pipes are swept, so it can heal onto them', () => {
 	// with no pipes at all the link has no route; its intent legs must still count as in use
@@ -51,9 +49,50 @@ test('a DOWN link keeps its own drawn legs when pipes are swept, so it can heal 
 	assert.deepEqual(r, [['A', 'P', 'B']]);
 });
 
+// a minimal model: which anchors exist, and which links it holds
+const model = (anchors, links = []) => ({
+	get: (kind, id) => (anchors.includes(id) ? { id } : undefined),
+	all: (kind) => (kind === 'link' ? links : []),
+});
+
+test('a HAND pipe references its anchors while both exist, with or without a link', () => {
+	assert.deepEqual([...pipeAnchors(pipes(['A', 'B'], ['B', 'C']), model(['A', 'B', 'C']))].sort(), ['A', 'B', 'C']);
+});
+
 test('a pipe references its anchors only while both ends exist', () => {
-	// judged against the model the planner hands the provider: a pipe whose other end this very
-	// transaction deletes must not shelter the survivor from the sweep
-	const ids = pipeAnchors(pipes(['A', 'B'], ['B', 'C']), (id) => id !== 'A');
-	assert.deepEqual([...ids].sort(), ['B', 'C']);
+	// judged against the model the planner hands over: a pipe whose other end this transaction deletes
+	// must not shelter the survivor from the sweep
+	assert.deepEqual([...pipeAnchors(pipes(['A', 'B'], ['B', 'C']), model(['B', 'C']))].sort(), ['B', 'C']);
+});
+
+test('a pipe laid WITH A LINK references its anchors only while a link in that model runs over it', () => {
+	// the director's defect: deleting a w-chain link left its pins, sheltered by its own dying pipes
+	const laidWithLink = [{ a: 'A', b: 'P', laid: 'link' }, { a: 'P', b: 'B', laid: 'link' }];
+	const link = { src: 'A', dst: 'B', via: ['P'] };
+	assert.ok(pipeAnchors(laidWithLink, model(['A', 'P', 'B'], [link])).has('P'), 'before the delete, the link runs over them');
+	assert.ok(!pipeAnchors(laidWithLink, model(['A', 'P', 'B'], [])).has('P'), 'after it, they carry no link and shelter nothing');
+});
+
+test('a refusal on a TIE says it is a tie, not that a shorter way exists', () => {
+	// A-X-B already exists (two pipes); the drawn A-G-B is two pipes too, and the router's tie order picks X
+	const v = checkGuidedRoute(pipes(['A', 'X'], ['X', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['Z'], stops: ['A', 'Z', 'B'] });
+	assert.equal(v.ok, false);
+	assert.match(v.reason, /just as short/);
+	assert.doesNotMatch(v.reason, /shorter way/);
+});
+
+test('a refusal on a genuinely shorter way says so, with both lengths', () => {
+	const v = checkGuidedRoute(pipes(['A', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
+	assert.match(v.reason, /a shorter way exists \(1 pipe, against the 2 drawn\)/);
+});
+
+test('a refused drag keeps its guides and their hand pipes, and drops what existed only for the link', async () => {
+	const { keptOnRefusal } = await import('../network/guide.mjs');
+	// A -> P (w, placed) -> G (g, placed) -> B, refused
+	const verdict = { ok: false, legs: [{ a: 'A', b: 'P', laid: 'link' }, { a: 'P', b: 'G', laid: 'hand' }, { a: 'G', b: 'B', laid: 'hand' }] };
+	const k = keptOnRefusal(verdict, { guides: ['G'], placed: ['P', 'G'] });
+	assert.deepEqual(k.keep, ['G'], 'the guide survives');
+	assert.deepEqual(k.legs.map((l) => `${l.a}-${l.b}`), ['G-B'],
+		'its hand pipe to B survives; P-G does not, because P -- placed only for the refused link -- is going');
+	assert.deepEqual(k.placedKept, ['G'], 'and G is new, so its pipe waits for the planner to accept it');
 });

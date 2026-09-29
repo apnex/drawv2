@@ -99,3 +99,20 @@ test('a refusing route hook commits nothing, and the anchors the drag placed are
 		assert.equal(h.commits.length, 0);
 	} finally { h.restore(); }
 });
+
+test('a refusal may name anchors to KEEP: those are committed, the rest are cleaned up, no link is made', () => {
+	// the director's report: a refused g drag threw away the g anchor -- geometry placed deliberately.
+	// The hook decides what survives; Input only honours it.
+	let asked = null;
+	const h = makeInput({ routeHook: (r) => { asked = r; return { ok: false, reason: 'test refusal', keep: r.guides }; } });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		drag(h, a, b, [['w', 120, 120], ['g', 240, 120]]);
+		assert.deepEqual(asked.placed.length, 2, 'the hook is told which anchors this drag placed, so it can reason about what survives');
+		assert.equal(h.model.all('link').length, 0, 'the link is still refused');
+		const left = h.model.all('waypoint').map((w) => w.id);
+		assert.deepEqual(left, asked.guides, 'the g anchor is kept, and the w anchor -- which existed only for the refused link -- is not');
+		assert.equal(h.commits.length, 1, 'the kept anchor reaches the planner in exactly one commit');
+		assert.deepEqual(h.commits[0].ops.map((o) => `${o.op}:${o.kind}`), ['put:waypoint']);
+	} finally { h.restore(); }
+});

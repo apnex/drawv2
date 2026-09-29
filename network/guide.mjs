@@ -50,28 +50,52 @@ export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stop
 	const would = [...pipes, ...legs.filter((l) => !seen.has(pipeKey(l.a, l.b)))];
 
 	const route = routeLink(would, { src, dst, via: pins });
-	if (!route) return { ok: false, reason: 'no route between the ends over the pipes' };
+	if (!route) return { ok: false, legs, reason: 'no route between the ends over the pipes' };
 
+	/*
+	SAY WHAT IS TRUE about why a guide is skipped. The drawn way is one pipe per leg; the fewest-pipes route
+	can be SHORTER, or merely EQUAL and chosen by the router's fixed tie order (sorted ids, so two peers
+	agree). The first version said "a shorter way already exists" in both cases -- the director met it on
+	a tie, two pipes against two, which the author cannot fix by drawing a shorter guide route, because
+	theirs was already as short as it gets.
+	*/
 	const missed = guides.filter((g) => !route.includes(g));
 	if (missed.length) {
-		return { ok: false, reason: `the fewest-pipes route skips ${missed.join(', ')} -- a shorter way already exists, so a guide there would be ignored` };
+		const drawn = legs.length, best = route.length - 1;
+		const pipes_ = (n) => `${n} pipe${n === 1 ? '' : 's'}`;
+		const why = drawn === best
+			? `another way is just as short (${pipes_(best)}) and wins the tie, which the router breaks in a fixed order`
+			: `a shorter way exists (${pipes_(best)}, against the ${drawn} drawn)`;
+		return { ok: false, legs, reason: `the route over the pipes does not pass ${missed.join(', ')}: ${why}` };
 	}
 	return { ok: true, legs, route };
 }
 
 /*
-Every anchor a pipe touches -- what the planner's orphan sweep must count as referenced.
+The anchors the pipes reference IN A GIVEN MODEL -- what the planner's orphan sweep must count.
 
-Handed to `commit(..., { alsoReferenced })`. Without it the planner, which cannot see session pipes,
-sweeps an anchor that pins one link and guides another the moment the pinning link is deleted, and
-the guided route breaks (measured; tests/sweep-references.test.js).
+Handed to `commit(..., { alsoReferenced })`, which asks it of the document before the edit and after.
+A pipe references its anchors only while it SURVIVES in that model:
+
+  - both of its ends exist there, since a pipe is its pair (SD7); and
+  - it was laid by hand, or some link in that model still runs over it -- a pipe laid with a link goes
+    once no link remains on it (ruled 2026-09-27).
+
+The first version counted every pipe in the session, and that was wrong in a way the director found by
+hand: delete a link built as a chain of `w` anchors, and its own pipes -- which are swept a moment later,
+because they die with it -- were still standing when the planner judged the edit, and sheltered the very
+pins that should have gone. Judged against the model the planner hands over, those pipes carry no link
+after the delete, so they shelter nothing, and the pins are swept as the product always swept a deleted
+link's bends.
 */
-export function pipeAnchors(pipes, alive = null) {
+export function pipeAnchors(pipes, model) {
+	const alive = (id) => !!(model.get('node', id) || model.get('waypoint', id));
+	const carried = new Set();
+	for (const r of routesOf(pipes, model.all('link'))) for (let i = 0; i < r.length - 1; i++) carried.add(pipeKey(r[i], r[i + 1]));
 	const ids = new Set();
-	for (const { a, b } of pipes) {
-		// a pipe references its anchors only while BOTH exist -- judged against the model the planner
-		// hands the provider, so a pipe whose other end this very transaction deletes shelters nothing
-		if (alive && (!alive(a) || !alive(b))) continue;
+	for (const { a, b, laid } of pipes) {
+		if (!alive(a) || !alive(b)) continue;
+		if (laid !== 'hand' && !carried.has(pipeKey(a, b))) continue;
 		ids.add(a); ids.add(b);
 	}
 	return ids;
@@ -87,4 +111,23 @@ the very pipes it needs to come back.
 */
 export function routesOf(pipes, links) {
 	return links.map((l) => routeLink(pipes, { src: l.src, dst: l.dst, via: l.via ?? [] }) ?? [l.src, ...(l.via ?? []), l.dst]);
+}
+
+/*
+What a REFUSED drag keeps -- the director's report (2026-09-29): a refused `g` drag threw away the `g`
+anchor and its pipes, geometry the author placed deliberately.
+
+Refusal refuses the LINK. The `g` anchors survive, and so do the pipes laid by hand to them (T4: the
+author chose that geometry), so the author keeps what they drew and can use it -- pin it with `w`, or
+remove the pipe that won the route. What the drag placed for the link alone -- its `w` anchors -- goes
+with the link, and so does any pipe that would end at one of them, since a pipe is its pair (SD7).
+
+`placedKept` says which kept anchors are new: those reach the planner in the commit Input makes next,
+and their pipes are laid once it accepts; if every kept anchor already existed, nothing is waiting.
+*/
+export function keptOnRefusal(verdict, { guides = [], placed = [] }) {
+	const guided = new Set(guides);
+	const discarded = new Set(placed.filter((id) => !guided.has(id)));
+	const legs = (verdict.legs ?? []).filter((l) => l.laid === 'hand' && !discarded.has(l.a) && !discarded.has(l.b));
+	return { keep: guides, legs, placedKept: placed.filter((id) => guided.has(id)) };
 }

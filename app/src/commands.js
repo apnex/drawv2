@@ -31,6 +31,18 @@ export function createEntity(kind, entity) {
 	return { label: `create ${kind}`, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
 }
 
+/*
+The anchors a REFUSED drag keeps -- one undo step, so the kept geometry comes back or goes as one.
+
+A route hook may refuse a link and name anchors to keep (the incubating network plugin keeps the `g`
+anchors of a refused drag: the director, 2026-09-29, "G is supposed to keep the pipe/anchors even if the
+link fails"). They were placed live during the drag and exist only in the tab; this is the commit that
+takes them to the planner. Built here, not in Input, because commands are built in one place.
+*/
+export function keepAnchors(waypoints) {
+	return { label: 'guide anchors', entries: waypoints.map((w) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) })) };
+}
+
 // moves: [{ kind: 'node'|'zone', id, after: {x,y} }]
 export function moveEntities(moves) {
 	return {

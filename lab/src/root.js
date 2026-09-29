@@ -42,7 +42,7 @@ import { Log } from '../../server/log.mjs';
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { pipeResolver, pipeDependents } from '../../network/resolve.mjs';
-import { checkGuidedRoute, pipeAnchors, routesOf } from '../../network/guide.mjs';
+import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal } from '../../network/guide.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -143,10 +143,18 @@ planner refuses leaves no pipes behind. That ordering holds because a route comm
 moment it is made: `commands.routeLink` never sets `coalesce`, so the planner's answer follows this
 hook synchronously and consumes exactly these legs.
 */
-let pendingLegs = null;
+let pendingLegs = null, pendingNotice = null;
 const routeHook = (route) => {
 	const verdict = checkGuidedRoute(pipes.list(), route);
-	if (!verdict.ok) { say(`refused: ${verdict.reason}`); return verdict; }
+	if (!verdict.ok) {
+		// refusal refuses the LINK: the g anchors and their hand pipes are kept (network/guide.mjs)
+		const kept = keptOnRefusal(verdict, route);
+		pendingNotice = `refused: ${verdict.reason} -- the link is refused; the g anchors and their pipes are kept`;
+		say(pendingNotice);
+		if (kept.placedKept.length) pendingLegs = kept.legs;   // laid when the planner accepts the kept anchors
+		else { for (const l of kept.legs) pipes.lay(l.a, l.b, l.laid); drawPipes(); pendingNotice = null; }
+		return { ...verdict, keep: kept.keep };
+	}
 	pendingLegs = verdict.legs;
 	return verdict;
 };
@@ -178,7 +186,7 @@ history.onCommit((request) => {
 		// pipes reference anchors too, and live here rather than in the document, so the planner is told
 		// -- or its orphan sweep removes an anchor that pins one link and guides another (measured)
 		: commit(authority, log, request, 'lab', 'lab', {
-			alsoReferenced: (m) => pipeAnchors(pipes.list(), (id) => !!(m.get('node', id) || m.get('waypoint', id))),
+			alsoReferenced: (m) => pipeAnchors(pipes.list(), m),   // only pipes that survive the edit being judged
 		});
 	const legs = pendingLegs; pendingLegs = null;
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
@@ -221,7 +229,9 @@ history.onCommit((request) => {
 	other.
 	*/
 	for (const l of model.all('link')) renderer.update('link', l);
-	say(`v${answer.version} ${request.verb ?? request.label ?? ''}`.trim());
+	// a refusal's reason stays on the notice through the commit that keeps its anchors, or it would flash past
+	say(pendingNotice ?? `v${answer.version} ${request.verb ?? request.label ?? ''}`.trim());
+	pendingNotice = null;
 });
 
 say('lab -- nothing is stored, nothing is shared');

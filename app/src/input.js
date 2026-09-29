@@ -265,8 +265,22 @@ const GESTURES = {
 				production commits as it always has.
 				*/
 				if (i.routeHook) {
-					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, stops: [ctx.src.id, ...route, dst] });
-					if (!verdict?.ok) { i.cleanupRoute(ctx); return; }
+					const placed = ctx.placed.map((w) => w.id);
+					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst] });
+					if (!verdict?.ok) {
+						/*
+						A refusal may name anchors to KEEP. The link is refused; anchors the hook names survive
+						and reach the planner in one commit; everything else this drag placed is cleaned up, as a
+						cancelled drag's is. The director's report: a refused `g` drag threw away the `g` anchor,
+						geometry placed deliberately. Input does not decide what survives -- the hook does, from
+						what it knows about the gesture; Input only honours the list.
+						*/
+						const keep = new Set(verdict?.keep ?? []);
+						const kept = ctx.placed.filter((w) => keep.has(w.id));
+						i.cleanupRoute({ placed: ctx.placed.filter((w) => !keep.has(w.id)) });
+						if (kept.length) i.history.commit(commands.keepAnchors(kept.map((w) => i.model.get('waypoint', w.id) ?? w)));
+						return;
+					}
 				}
 				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
 				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links

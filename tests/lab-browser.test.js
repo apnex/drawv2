@@ -99,6 +99,8 @@ async function theTab() {
 	};
 	await send('Runtime.enable'); await send('Log.enable'); await send('Network.enable');
 	await send('Page.enable'); await send('Page.setLifecycleEventsEnabled', { enabled: true });
+	// a fixed viewport, so canvas coordinates map to the same screen pixels on every run
+	await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false });
 	tab = { ws, send, run, thrown, requests, timeline, clock };
 	return tab;
 }
@@ -125,7 +127,36 @@ async function open(seed, { block = [] } = {}) {
 		fs.writeFileSync(dump, JSON.stringify({ seed, n, state, timeline: t.timeline }, null, 1));
 		throw new Error(`the lab page at ?seed=${seed} never became ready: ${state}; while loading: ${JSON.stringify(t.thrown)}; timeline: ${dump}`);
 	}
-	return { run: t.run, ready, close: async () => {} };
+	/*
+	REAL INPUT, in canvas coordinates. Driving the door through `window.lab` proved the planner and the
+	composition; it could not prove the GESTURE, and the director's reports came from real drags and real
+	key presses. These dispatch genuine mouse and key events through Chrome at the screen pixels the
+	canvas's own transform gives, so a test exercises the product's gesture machine end to end.
+	*/
+	const screen = (x, y) => t.run(`(() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })()`);
+	const mouse = async (type, x, y, buttons = 0) => {
+		const [sx, sy] = await screen(x, y);
+		await t.send('Input.dispatchMouseEvent', { type, x: sx, y: sy, button: 'left', buttons, clickCount: 1 });
+		await sleep(20);
+	};
+	const key = async (k) => {
+		const code = k.length === 1 ? `Key${k.toUpperCase()}` : k;
+		const vk = k === 'Delete' ? 46 : k.toUpperCase().charCodeAt(0);
+		for (const type of ['keyDown', 'keyUp']) {
+			await t.send('Input.dispatchKeyEvent', { type, key: k, code, windowsVirtualKeyCode: vk, ...(type === 'keyDown' && k.length === 1 ? { text: k } : {}) });
+		}
+		await sleep(30);
+	};
+	// a drag from one point to another, pressing a key at each listed stop on the way
+	const drag = async (from, to, hops = []) => {
+		await mouse('mousePressed', from[0], from[1], 1);
+		for (const [k, x, y] of hops) { await mouse('mouseMoved', x, y, 1); await key(k); }
+		await mouse('mouseMoved', to[0], to[1], 1);
+		await mouse('mouseReleased', to[0], to[1], 0);
+		await sleep(150);
+	};
+	const click = async (x, y) => { await mouse('mousePressed', x, y, 1); await mouse('mouseReleased', x, y, 0); await sleep(60); };
+	return { run: t.run, ready, close: async () => {}, mouse, key, drag, click };
 }
 
 /*
@@ -236,17 +267,24 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 /*
 THE ROUTE HOOK -- `g`'s whole-route check and its pipes, in the page.
 */
-test('the route hook refuses a guide the fewest-pipes route would skip, names it, and lays nothing', { skip: SKIP }, async () => {
+test('the route hook refuses a guide the fewest-pipes route would skip, names it, and keeps only the guides\' pipes', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
 		const before = await p.run('lab.pipes.list().length');
-		// A to B through C and D: three pipes, while A-centre-B over the pipes is two. The route
-		// would ignore both guides, so committing it would draw a link that ignores what was drawn.
-		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000002', pins: [],
+		// A to B through C and D: three pipes, while A-centre-B over the pipes is two. The route would ignore
+		// both guides, so the LINK is refused.
+		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000002', pins: [], placed: [],
 			guides: ['node-000003', 'node-000004'], stops: ['node-000001', 'node-000003', 'node-000004', 'node-000002'] })`);
 		assert.equal(v.ok, false);
 		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /node-000003/, 'the refusal names the skipped guide');
-		assert.equal(await p.run('lab.pipes.list().length'), before, 'a refused route lays no pipes');
+		/*
+		RULED 2026-09-29, and this test changed with it. It used to assert that a refused route lays NO
+		pipes. The director: "G is supposed to keep the pipe/anchors even if the link fails" -- refusal
+		refuses the link, not the geometry the author placed with g. So the pipes laid by hand to the guides
+		are kept, and nothing that would have been laid for the link alone.
+		*/
+		const laid = await p.run(`lab.pipes.list().slice(${before}).map((x) => x.laid)`);
+		assert.deepEqual(laid, ['hand', 'hand', 'hand'], "the guides' three pipes are kept, all laid by hand");
 	} finally { await p.close(); }
 });
 
@@ -382,5 +420,61 @@ test('a seed that cannot be fetched is reported, and the lab still works', { ski
 		assert.equal(p.ready, true, 'the page must come up without its board');
 		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /could not be loaded/,
 			'and say why the board is missing');
+	} finally { await p.close(); }
+});
+
+/*
+THE DIRECTOR'S NEXT TWO REPORTS, 2026-09-29, driven with REAL INPUT exactly as found.
+
+A: a link built as a chain of `w` anchors, then selected and deleted, left its anchors behind. The
+link's own pipes still existed when the planner judged references -- they are swept a moment later --
+so they sheltered the very pins that should have gone. (What becomes of the link's two END anchors is a
+separate question, put to the director; it is not asserted here.)
+
+B: a `g` drag the whole-route check refused threw away the `g` anchor and its pipes -- geometry the
+author placed deliberately (GUIDE-ANCHORS T4). And the refusal said "a shorter way already exists" when
+the two ways were equally short and the tie went the other way by id order.
+*/
+test('deleting a w-chain link sweeps its pins: its own pipes no longer shelter them', { skip: SKIP }, async () => {
+	const p = await open('');
+	try {
+		await p.mouse('mouseMoved', -360, 0); await p.key('w');   // the start anchor, placed with w
+		await p.drag([-360, 0], [120, 0], [['w', -240, -120], ['w', -120, 0], ['w', 0, -120], ['w', 120, 0]]);
+		const pins = await p.run(`lab.authority.all('link')[0]?.via ?? []`);
+		assert.equal(pins.length, 3, `the drag must build a link pinned at three anchors, got ${JSON.stringify(pins)}`);
+
+		await p.click(-300, -60);      // on the link's first leg
+		await p.key('Delete');
+		await p.run(`new Promise((r) => setTimeout(r, 200))`);
+		assert.equal(await p.run(`lab.authority.all('link').length`), 0, 'the link is deleted');
+		const left = await p.run(`${JSON.stringify(pins)}.filter((id) => lab.authority.get('waypoint', id))`);
+		assert.deepEqual(left, [], "the link's pins must be swept with it -- its own pipes, dying with it, must not shelter them");
+		assert.equal(await p.run(`lab.pipes.list().length`), 0, 'and the pipes laid with the link go too');
+	} finally { await p.close(); }
+});
+
+test('a refused g drag keeps the g anchor and its pipes; only the link is refused', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		const before = await p.run(`lab.pipes.list().length`);
+		// A to C with a guide off the existing path: the check refuses it (a tie, which goes the other way)
+		await p.drag([-360, 0], [0, -240], [['g', -240, -180]]);
+		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /refused/, 'the link is refused');
+		const guide = await p.run(`lab.authority.all('waypoint').find((w) => w.x === -240 && w.y === -180)?.id ?? null`);
+		assert.ok(guide, 'the g anchor the author placed must survive the refusal');
+		const touching = await p.run(`lab.pipes.list().filter((x) => x.a === '${guide}' || x.b === '${guide}').map((x) => x.laid)`);
+		assert.deepEqual(touching, ['hand', 'hand'], 'and so must its two pipes, laid by hand');
+		assert.equal(await p.run(`lab.pipes.list().length`), before + 2);
+		assert.equal(await p.run(`lab.authority.all('link').length`), 2, 'while no link was added');
+	} finally { await p.close(); }
+});
+
+test('a refusal says TIE when the ways are equally short, not "a shorter way exists"', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		await p.drag([-360, 0], [0, -240], [['g', -240, -180]]);
+		const notice = await p.run(`document.getElementById('lab-notice').textContent`);
+		assert.doesNotMatch(notice, /shorter way/, `A-centre-C and A-guide-C are both two pipes; calling one shorter is false: ${notice}`);
+		assert.match(notice, /just as short|tie/, 'it must say the ways tie, and why the tie went the other way');
 	} finally { await p.close(); }
 });
