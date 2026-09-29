@@ -13,6 +13,10 @@ shows afterwards is what is asserted.
 
 It does not replace looking at the deployed service: the image can still differ from the working
 tree (C5 is the guard for that). It closes the gap between "the source says so" and "the page does".
+
+It also EXECUTES THE BEHAVIOUR MATRIX (dev/design/unification/BEHAVIOUR-MATRIX.json): every lab gesture
+permutation, its intended rule and whether it holds, one row each -- see the section at the end of this
+file. A gesture rule belongs in a row there, not in a new hand-written test here.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -427,224 +431,6 @@ test('a seed that cannot be fetched is reported, and the lab still works', { ski
 });
 
 /*
-THE DIRECTOR'S NEXT TWO REPORTS, 2026-09-29, driven with REAL INPUT exactly as found.
-
-A: a link built as a chain of `w` anchors, then selected and deleted, left its anchors behind. The
-link's own pipes still existed when the planner judged references -- they are swept a moment later --
-so they sheltered the very pins that should have gone. (What becomes of the link's two END anchors is a
-separate question, put to the director; it is not asserted here.)
-
-B: a `g` drag the whole-route check refused threw away the `g` anchor and its pipes -- geometry the
-author placed deliberately (GUIDE-ANCHORS T4). And the refusal said "a shorter way already exists" when
-the two ways were equally short and the tie went the other way by id order.
-*/
-test('deleting a w-chain link sweeps its pins: its own pipes no longer shelter them', { skip: SKIP }, async () => {
-	const p = await open('');
-	try {
-		await p.mouse('mouseMoved', -360, 0); await p.key('w');   // the start anchor, placed with w
-		await p.drag([-360, 0], [120, 0], [['w', -240, -120], ['w', -120, 0], ['w', 0, -120], ['w', 120, 0]]);
-		const pins = await p.run(`lab.authority.all('link')[0]?.via ?? []`);
-		assert.equal(pins.length, 3, `the drag must build a link pinned at three anchors, got ${JSON.stringify(pins)}`);
-
-		await p.click(-300, -60);      // on the link's first leg
-		await p.key('Delete');
-		await p.run(`new Promise((r) => setTimeout(r, 200))`);
-		assert.equal(await p.run(`lab.authority.all('link').length`), 0, 'the link is deleted');
-		const left = await p.run(`${JSON.stringify(pins)}.filter((id) => lab.authority.get('waypoint', id))`);
-		assert.deepEqual(left, [], "the link's pins must be swept with it -- its own pipes, dying with it, must not shelter them");
-		assert.equal(await p.run(`lab.pipes.list().length`), 0, 'and the pipes laid with the link go too');
-		/*
-		RULED 2026-09-29: in the network model "deliberate" means held by pipes laid with g, and anchors made
-		with w go when their last link goes -- the director confirmed endpoints too. So the END anchor and the
-		start anchor placed with w go as well: every anchor this test made is gone.
-		*/
-		assert.equal(await p.run(`lab.authority.all('waypoint').length`), 0,
-			'the w-made start and end go with their last link: only links and hand-laid pipes keep an anchor');
-	} finally { await p.close(); }
-});
-
-test('a refused g drag keeps the g anchor and its pipes; only the link is refused', { skip: SKIP }, async () => {
-	const p = await open('cross');
-	try {
-		const before = await p.run(`lab.pipes.list().length`);
-		// A to C with a guide off the existing path: the check refuses it (a tie, which goes the other way)
-		await p.drag([-360, 0], [0, -240], [['g', -240, -180]]);
-		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /refused/, 'the link is refused');
-		const guide = await p.run(`lab.authority.all('waypoint').find((w) => w.x === -240 && w.y === -180)?.id ?? null`);
-		assert.ok(guide, 'the g anchor the author placed must survive the refusal');
-		const touching = await p.run(`lab.pipes.list().filter((x) => x.a === '${guide}' || x.b === '${guide}').map((x) => x.laid)`);
-		assert.deepEqual(touching, ['hand', 'hand'], 'and so must its two pipes, laid by hand');
-		assert.equal(await p.run(`lab.pipes.list().length`), before + 2);
-		assert.equal(await p.run(`lab.authority.all('link').length`), 2, 'while no link was added');
-	} finally { await p.close(); }
-});
-
-test('a refusal says TIE when the ways are equally short, not "a shorter way exists"', { skip: SKIP }, async () => {
-	const p = await open('cross');
-	try {
-		await p.drag([-360, 0], [0, -240], [['g', -240, -180]]);
-		const notice = await p.run(`document.getElementById('lab-notice').textContent`);
-		assert.doesNotMatch(notice, /shorter way/, `A-centre-C and A-guide-C are both two pipes; calling one shorter is false: ${notice}`);
-		assert.match(notice, /just as short|tie/, 'it must say the ways tie, and why the tie went the other way');
-	} finally { await p.close(); }
-});
-
-/*
-THE DIRECTOR'S REPORT, 2026-09-29: deleting an anchor "snaps" a direct link between two nodes, as if a
-pipe had been created. None was -- MEASURED, the pipe set was empty. The links had lost their route and
-were DOWN, and a down link was drawn as a plain solid line, which is what a live link over a direct
-pipe looks like.
-
-WHAT WAS RULED, the same day, in the director's words and answers:
-  - DOWN IS NOT DELETED. "if a link is dynamic, but has no path - a dotted/control like link directly
-    between the source and dest node would indicate 'ready to heal'". It stays, and heals when a way returns.
-  - "if either source or dest node is deleted, link is gone with it permanently".
-  - A PIN deleted with no other way: asked for a w-chain S-P1-P2-P3-E with P2 deleted, the director chose
-    "Delete the whole link" over "Stay, shown down" -- the link goes with its w anchors and dashed pipes.
-  - With another way open, it re-routes (ruled 2026-09-26, "Forget that bend").
-  - Seed boards give each pipe the lifetime its gesture would have ("Yes, as the gesture would").
-
-DOTS, NOT THE CONTROL DASH: a control link is already dashed, and so is the drag preview, so a dashed
-down link would read as a live control-plane link. Asserted on what is SEEN -- the computed dash and
-line cap, and the drawn `d` -- never on a class or an attribute the eye cannot see.
-*/
-const drawn = (id) => `(() => {
-	const el = document.getElementById('${id}');
-	if (!el) return null;
-	const cs = getComputedStyle(el);
-	const dash = cs.strokeDasharray === 'none' ? [] : cs.strokeDasharray.split(/[ ,]+/).map(parseFloat);
-	// a zero-length dash with a round cap is a DOT; without the round cap it draws nothing at all
-	return { dotted: dash.length >= 2 && dash[0] === 0 && dash[1] > 0 && cs.strokeLinecap === 'round', dash: cs.strokeDasharray, cap: cs.strokeLinecap, d: el.getAttribute('d') };
-})()`;
-const settle = `new Promise((r) => setTimeout(r, 200))`;
-
-test('deleting the anchor two dynamic links route through leaves them DOWN: dotted, straight between their ends, and no pipe is created', { skip: SKIP }, async () => {
-	const p = await open('cross');
-	try {
-		assert.equal((await p.run(drawn('link-000001'))).dotted, false, 'a routed link is drawn solid');
-		await p.click(0, 0); await p.key('Delete');       // select the centre, delete it
-		await p.run(settle);
-		assert.equal(await p.run(`lab.pipes.list().length`), 0, 'no pipe exists -- pipes are only ever laid deliberately');
-		assert.equal(await p.run(`lab.authority.all('link').length`), 2, 'down is not deleted: both links stay');
-		for (const [id, straight] of [['link-000001', 'M-360 0 L360 0'], ['link-000002', 'M0 -240 L0 240']]) {
-			const seen = await p.run(drawn(id));
-			assert.equal(seen.dotted, true, `${id} has no route, so it must LOOK down -- dotted, not a live line: ${JSON.stringify(seen)}`);
-			assert.equal(seen.d, straight, `${id} is drawn directly between its source and destination`);
-		}
-		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /2 links down/, 'and the notice says so');
-	} finally { await p.close(); }
-});
-
-test('a down link HEALS when a way returns: a new link laid beside it gives it a route', { skip: SKIP }, async () => {
-	const p = await open('cross');
-	try {
-		await p.click(0, 0); await p.key('Delete');       // both links go down
-		await p.run(settle);
-		// a new link from n1 to n2, pinned at a w anchor above the old centre: its pipes are a way for link 1
-		await p.mouse('mouseMoved', -360, 0);
-		await p.drag([-360, 0], [360, 0], [['w', 0, -120]]);
-		await p.run(settle);
-		const healed = await p.run(drawn('link-000001'));
-		assert.equal(healed.dotted, false, `link 1 has a route again, so it is drawn live: ${JSON.stringify(healed)}`);
-		assert.match(healed.d, /Q0 -120/, 'along the new pipes, through the new anchor');
-		assert.equal((await p.run(drawn('link-000002'))).dotted, true, 'link 2 still has no way, so it stays down');
-	} finally { await p.close(); }
-});
-
-test('deleting a pinned anchor where another way exists re-routes the link along it, and it stays up', { skip: SKIP }, async () => {
-	const p = await open('detour');
-	try {
-		// uplink runs A-w-B pinned at w; the detour A-w6-w7-B is the other way
-		await p.click(0, 0); await p.key('Delete');       // delete w, the pin
-		await p.run(settle);
-		const l = await p.run(`lab.authority.get('link', 'link-000001')`);
-		assert.ok(l, 'with another way open the link survives the loss of its pin (ruled 2026-09-26)');
-		assert.deepEqual(l.via ?? [], [], 'the pin is dropped from its intent');
-		const seen = await p.run(drawn('link-000001'));
-		assert.match(seen.d, /Q-240 300/, 'the DRAWN link runs the other way, through w6');
-		assert.match(seen.d, /Q240 300/, 'and through w7');
-		assert.equal(seen.dotted, false, 'with a route found, it is up');
-	} finally { await p.close(); }
-});
-
-test('deleting a pin with no other way deletes the WHOLE link: its w anchors and dashed pipes go with it', { skip: SKIP }, async () => {
-	const p = await open('');
-	try {
-		await p.mouse('mouseMoved', -360, 0); await p.key('w');
-		await p.drag([-360, 0], [120, 0], [['w', -240, -120], ['w', -120, 0], ['w', 0, -120], ['w', 120, 0]]);
-		assert.equal((await p.run(`lab.authority.all('link')[0]?.via ?? []`)).length, 3, 'the drag builds a link pinned at three anchors');
-		await p.click(-120, 0); await p.key('Delete');    // P2, the middle pin: P1 to P3 has no pipe
-		await p.run(settle);
-		const left = await p.run(`({ links: lab.authority.all('link').length, anchors: lab.authority.all('waypoint').length,
-			pipes: lab.pipes.list().length, drawn: document.querySelectorAll('#links path').length })`);
-		assert.deepEqual(left, { links: 0, anchors: 0, pipes: 0, drawn: 0 },
-			`ruled 2026-09-29, "Delete the whole link": no section may remain -- ${JSON.stringify(left)}`);
-	} finally { await p.close(); }
-});
-
-test('undo brings a wholly deleted link back with its anchors -- down, because pipes are not stored yet', { skip: SKIP }, async () => {
-	const p = await open('');
-	try {
-		await p.mouse('mouseMoved', -360, 0); await p.key('w');
-		await p.drag([-360, 0], [120, 0], [['w', -240, -120], ['w', -120, 0], ['w', 0, -120], ['w', 120, 0]]);
-		const id = await p.run(`lab.authority.all('link')[0].id`);
-		await p.click(-120, 0); await p.key('Delete');
-		await p.run(settle);
-		await p.run('lab.history.undo()');                 // the path Ctrl+Z takes
-		await p.run(settle);
-		const back = await p.run(`({ via: lab.model.get('link', '${id}')?.via ?? null, anchors: lab.model.all('waypoint').length })`);
-		assert.equal(back.via?.length, 3, `one undo restores the link whole, with its three pins: ${JSON.stringify(back)}`);
-		assert.equal(back.anchors, 5, 'and all five anchors, the swept ones included -- one transaction, one undo');
-		/*
-		A STATED LIMIT, not a rule: pipes are session state outside the planner's log until the format batch
-		stores them (F6), so undo cannot restore them and the link returns with no way -- down, and drawn so.
-		When pipes are stored this flips, and this assertion is the one to change.
-		*/
-		assert.equal((await p.run(drawn(id))).dotted, true, 'with its pipes not restored, it is down -- and must look it');
-	} finally { await p.close(); }
-});
-
-test('a link whose pins all remain but that lost the hop between them is down, dotted THROUGH its pins', { skip: SKIP }, async () => {
-	const p = await open('');
-	try {
-		// S -w- P1 -g- G -w- P2 -w- E: the g anchor is a hop, not part of the link's intent
-		await p.mouse('mouseMoved', -360, 0); await p.key('w');
-		await p.drag([-360, 0], [360, 0], [['w', -240, -120], ['g', 0, -120], ['w', 240, -120], ['w', 360, 0]]);
-		const id = await p.run(`lab.authority.all('link')[0].id`);
-		await p.click(0, -120); await p.key('Delete');    // G: no pin is lost, so this is not the whole-link rule
-		await p.run(settle);
-		assert.equal((await p.run(`lab.authority.get('link', '${id}')?.via ?? []`)).length, 2, 'the link and both its pins remain');
-		const seen = await p.run(drawn(id));
-		assert.equal(seen.dotted, true, `P1 to P2 has no pipe, so it is down: ${JSON.stringify(seen)}`);
-		assert.match(seen.d, /Q-240 -120/, 'drawn through its first pin');
-		assert.match(seen.d, /Q240 -120/, 'and its second -- its intent, which is what it will heal onto');
-	} finally { await p.close(); }
-});
-
-test('on a seed board, deleting a link END leaves no section: seed pipes carry the lifetime their gesture gives', { skip: SKIP }, async () => {
-	const p = await open('bend');
-	try {
-		// n1 -> n2 pinned at w5. Before this ruling the seed laid its pipes by hand, so w5 and n1-w5 stayed
-		await p.click(360, 0); await p.key('Delete');     // n2, the link's end
-		await p.run(settle);
-		const left = await p.run(`({ links: lab.authority.all('link').length, anchors: lab.authority.all('waypoint').length, pipes: lab.pipes.list().length })`);
-		assert.deepEqual(left, { links: 0, anchors: 0, pipes: 0 }, `the link is gone permanently, and nothing of it remains: ${JSON.stringify(left)}`);
-	} finally { await p.close(); }
-});
-
-test('deleting an anchor two links are pinned at deletes both whole, and leaves the rest of the board alone', { skip: SKIP }, async () => {
-	const p = await open('compare');
-	try {
-		await p.click(-480, 0); await p.key('Delete');    // w1: links 1 and 2 are pinned there, with no other way
-		await p.run(settle);
-		const links = await p.run(`lab.authority.all('link').map((l) => l.id).sort()`);
-		assert.deepEqual(links, ['link-000003', 'link-000004'], 'both pinned links go; the two passing w2 stay');
-		for (const id of links) assert.equal((await p.run(drawn(id))).dotted, false, `${id} is untouched and up`);
-		assert.equal(await p.run(`lab.pipes.list().filter((x) => /waypoint-000001/.test(x.a + x.b)).length`), 0, 'no pipe to w1 remains');
-	} finally { await p.close(); }
-});
-
-/*
 THE SEEDS ARE BOARDS A HAND COULD DRAW -- ruled 2026-09-29, "Yes, as the gesture would".
 
 A pipe joining two consecutive stops of a link's intent (its ends and pins, in order) is what `w` lays,
@@ -673,3 +459,181 @@ test('every seed pipe carries the lifetime its gesture would give it', () => {
 	}
 	assert.ok(checked >= 20, `the rule must have checked the pipes, not passed on none (${checked})`);
 });
+
+/*
+THE BEHAVIOUR MATRIX, EXECUTED -- dev/design/unification/BEHAVIOUR-MATRIX.json.
+
+The director, 2026-09-29: "Let's make sure we are durably capturing our intended rules in for each of these
+test permutations in a matrix somewhere, such that we can refine and iterate on behaviours in a deliberate
+fashion". So every lab gesture permutation is a ROW of one data file, and this runs them all. The row is the
+specification and this is the only code that turns it into a verdict (mission-kit A2, P5): changing a
+behaviour is an edit to its row, and nothing here changes. Eleven tests that stated these rules by hand were
+folded into rows when this was built, so each rule is stated once.
+
+HOW A ROW IS JUDGED:
+  - its STATE's board is opened and set up, and the state's own checks must pass first -- so a delete row
+    cannot pass on a board whose setup silently drew nothing
+  - its steps run with REAL INPUT, the way the director's reports were found
+  - the UNIVERSAL INVARIANTS must hold, whatever the row is about
+  - a built row must meet every check; a TODO row must still MISS one, so the day the lab meets it the gate
+    says to promote it, and the matrix's status column can never lag the code
+  - an OPEN row has no checks of its own, since nothing is ruled, but it runs and the invariants hold on it
+
+THE VOCABULARY LIVES HERE AND ONLY HERE. The matrix may use no step or check this file does not implement,
+and must list exactly the invariants this file checks -- asserted against these live maps rather than by
+reading source, and shown to catch planted drift (P5).
+*/
+const MATRIX = JSON.parse(fs.readFileSync(new URL('../dev/design/unification/BEHAVIOUR-MATRIX.json', import.meta.url), 'utf8'));
+const settle = `new Promise((r) => setTimeout(r, 200))`;
+
+// every step a row may take, each performed with real input through the canvas's own transform
+const STEP = {
+	click: (p, x, y) => p.click(x, y),
+	move: (p, x, y) => p.mouse('mouseMoved', x, y),
+	key: (p, k) => p.key(k),
+	drag: (p, from, to, hops) => p.drag(from, to, hops),
+	undo: (p) => p.run('lab.history.undo()'),   // the path Ctrl+Z takes
+	settle: (p) => p.run(settle),
+};
+
+// what the page shows, gathered once: the authority, the tab, the canvas as COMPUTED, and the notice
+const SNAPSHOT = `(() => {
+	const drawn = (el) => {
+		const cs = getComputedStyle(el);
+		const dash = cs.strokeDasharray === 'none' ? [] : cs.strokeDasharray.split(/[ ,]+/).map(parseFloat);
+		// a zero-length dash with a round cap is a DOT; without the round cap it draws nothing at all
+		return { d: el.getAttribute('d') || '', stroke: cs.stroke, dotted: dash.length >= 2 && dash[0] === 0 && dash[1] > 0 && cs.strokeLinecap === 'round' };
+	};
+	const shape = (l) => ({ id: l.id, src: l.src, dst: l.dst, via: l.via ?? [] });
+	return {
+		notice: document.getElementById('lab-notice').textContent,
+		links: lab.authority.all('link').map((l) => ({ ...shape(l), down: lab.model.isLinkDown(l) })),
+		tabLinks: lab.model.all('link').map(shape),
+		anchors: lab.authority.all('waypoint').map((w) => ({ id: w.id, x: w.x, y: w.y })),
+		tabAnchors: lab.model.all('waypoint').map((w) => w.id),
+		alive: [...lab.authority.all('node'), ...lab.authority.all('waypoint')].map((e) => e.id),
+		pipes: lab.pipes.list(),
+		paths: Object.fromEntries([...document.querySelectorAll('#links path.link')].map((el) => [el.id, drawn(el)])),
+	};
+})()`;
+
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const byId = (xs) => [...xs].sort((a, b) => (a.id < b.id ? -1 : 1));
+const ids = (xs) => xs.map((x) => x.id ?? x).join(',') || 'none';
+
+// what must hold after EVERY row, ruled or not -- each true, or a sentence saying what broke
+const INVARIANT = {
+	I1: (s) => (same(byId(s.links.map(({ down, ...l }) => l)), byId(s.tabLinks)) && same([...s.tabAnchors].sort(), s.anchors.map((a) => a.id).sort()))
+		|| `the tab holds links ${ids(s.tabLinks)} and ${s.tabAnchors.length} anchors; the authority holds ${ids(s.links)} and ${s.anchors.length}`,
+	I2: (s) => {
+		const wrong = s.links.filter((l) => s.paths[l.id] && s.paths[l.id].dotted !== l.down);
+		return !wrong.length || wrong.map((l) => `${l.id} is ${l.down ? 'down but drawn solid' : 'up but drawn dotted'}`).join('; ');
+	},
+	I3: (s) => (same(Object.keys(s.paths).sort(), s.links.map((l) => l.id).sort()) && Object.values(s.paths).every((p) => p.d))
+		|| `the canvas draws ${ids(Object.keys(s.paths))} where ${ids(s.links)} exist`,
+	I4: (s) => {
+		const dangling = s.pipes.filter((x) => !s.alive.includes(x.a) || !s.alive.includes(x.b));
+		return !dangling.length || `pipes to missing anchors: ${dangling.map((x) => `${x.a}-${x.b}`).join(', ')}`;
+	},
+	I5: (s, thrown) => !thrown.length || `the page threw: ${thrown.join('; ')}`,
+};
+
+// a link a check names: its id, or "only" when exactly one link exists
+const select = (s, sel) => (sel === 'only' ? (s.links.length === 1 ? s.links[0] : null) : s.links.find((l) => l.id === sel) ?? null);
+const laid = (s, kind) => s.pipes.filter((x) => x.laid === kind).length;
+const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
+// a point in a drawn path, as a whole number pair: "240 300" must not match inside "-240 300"
+const passes = (d, [x, y]) => new RegExp(`(^|[A-Za-z ])${x} ${y}(?![\\d.])`).test(d);
+const fateOf = (s, id) => { const l = s.links.find((x) => x.id === id); return !l ? 'gone' : l.down ? 'down' : 'up'; };
+
+// every check a row or state may make -- each true, or a sentence saying what the page shows instead
+const CHECK = {
+	links: (s, n) => s.links.length === n || `${s.links.length} links, not ${n}`,
+	anchors: (s, n) => s.anchors.length === n || `${s.anchors.length} anchors, not ${n}`,
+	down: (s, n) => s.links.filter((l) => l.down).length === n || `${s.links.filter((l) => l.down).length} links down, not ${n}`,
+	pipes: (s, want) => (typeof want === 'number'
+		? s.pipes.length === want || `${s.pipes.length} pipes, not ${want}`
+		: (laid(s, 'hand') === want.hand && laid(s, 'link') === want.link)
+			|| `${laid(s, 'hand')} pipes by hand and ${laid(s, 'link')} with a link, not ${want.hand} and ${want.link}`),
+	linkState: (s, want) => {
+		const wrong = Object.entries(want).filter(([id, fate]) => fateOf(s, id) !== fate);
+		return !wrong.length || wrong.map(([id, fate]) => `${id} is ${fateOf(s, id)}, not ${fate}`).join('; ');
+	},
+	pins: (s, want) => {
+		const wrong = Object.entries(want).filter(([sel, n]) => select(s, sel)?.via.length !== n);
+		return !wrong.length || wrong.map(([sel, n]) => `${sel} pins ${select(s, sel)?.via.length ?? 'nothing -- no such link'}, not ${n}`).join('; ');
+	},
+	straight: (s, want) => {
+		const wrong = Object.entries(want).filter(([sel, d]) => s.paths[select(s, sel)?.id]?.d !== d);
+		return !wrong.length || wrong.map(([sel, d]) => `${sel} is drawn "${s.paths[select(s, sel)?.id]?.d}", not "${d}"`).join('; ');
+	},
+	through: (s, want) => {
+		const wrong = Object.entries(want).filter(([sel, pts]) => { const d = s.paths[select(s, sel)?.id]?.d ?? ''; return !pts.every((pt) => passes(d, pt)); });
+		return !wrong.length || wrong.map(([sel, pts]) => `${sel} is drawn "${s.paths[select(s, sel)?.id]?.d}", which does not pass ${JSON.stringify(pts)}`).join('; ');
+	},
+	linksBetween: (s, want) => {
+		const n = (a, b) => s.links.filter((l) => (l.src === a && l.dst === b) || (l.src === b && l.dst === a)).length;
+		const wrong = Object.entries(want).filter(([pair, k]) => n(...pair.split('|')) !== k);
+		return !wrong.length || wrong.map(([pair, k]) => `${n(...pair.split('|'))} links join ${pair}, not ${k}`).join('; ');
+	},
+	keptAt: (s, pts) => pts.every(([x, y]) => s.anchors.some((a) => a.x === x && a.y === y))
+		|| `no anchor at ${JSON.stringify(pts.filter(([x, y]) => !s.anchors.some((a) => a.x === x && a.y === y)))}`,
+	notice: (s, re) => new RegExp(re).test(s.notice) || `the notice says "${s.notice}", which does not match /${re}/`,
+	noticeNot: (s, re) => !new RegExp(re).test(s.notice) || `the notice says "${s.notice}", which must not match /${re}/`,
+	refused: (s, want) => /refused/.test(s.notice) === want || `the notice says "${s.notice}", which is ${want ? 'not ' : ''}a refusal`,
+	downStroke: (s, hex) => {
+		const down = s.links.filter((l) => l.down);
+		const wrong = down.filter((l) => s.paths[l.id]?.stroke !== rgb(hex));
+		return (down.length > 0 && !wrong.length) || (down.length ? `down links are stroked ${wrong.map((l) => s.paths[l.id]?.stroke).join(', ')}, not ${hex}` : 'no link is down to show the colour');
+	},
+};
+
+// every step, check and invariant the matrix names that this file does not perform
+function matrixProblems(m) {
+	const out = [];
+	const steps = (where, list) => { for (const [verb] of list ?? []) if (!(verb in STEP)) out.push(`${where}: there is no step "${verb}"`); };
+	const checks = (where, expect) => { for (const key of Object.keys(expect ?? {})) if (!(key in CHECK)) out.push(`${where}: there is no check "${key}"`); };
+	for (const [name, st] of Object.entries(m.states)) { steps(`state ${name}`, st.setup); checks(`state ${name}`, st.expect); }
+	for (const r of m.rows) { steps(r.id, r.steps); checks(r.id, r.expect); }
+	const declared = Object.keys(m.invariants).sort(), checked = Object.keys(INVARIANT).sort();
+	if (!same(declared, checked)) out.push(`the matrix declares invariants ${declared.join(',')}; this file checks ${checked.join(',')}`);
+	return out;
+}
+
+test('the matrix uses only steps and checks this runner performs, and declares exactly the invariants it checks', () => {
+	assert.deepEqual(matrixProblems(MATRIX), [], 'a step, check or invariant the runner does not implement would be silently skipped');
+	// THE GUARD CAN FAIL: drift planted in a copy is caught, not waved through (P5)
+	const planted = structuredClone(MATRIX);
+	planted.rows[0].steps.push(['teleport', 0, 0]);
+	planted.rows[0].expect.colour = 'red';
+	planted.invariants.I9 = 'a promise nothing checks';
+	const found = matrixProblems(planted).join('\n');
+	for (const drift of ['teleport', 'colour', 'I9']) assert.match(found, new RegExp(drift), `planted drift "${drift}" must be reported`);
+});
+
+const judge = (checks, s) => Object.entries(checks).map(([key, want]) => CHECK[key](s, want)).filter((r) => r !== true);
+const perform = async (p, steps) => { for (const [verb, ...args] of steps) await STEP[verb](p, ...args); };
+
+for (const row of MATRIX.rows) {
+	const state = MATRIX.states[row.state];
+	const standing = row.standing === 'open' ? 'OPEN' : row.built === 'yes' ? row.standing : `TODO, ${row.standing}`;
+	test(`matrix ${row.id} [${standing}] ${row.state} x ${row.gesture}: ${row.does}`, { skip: SKIP }, async () => {
+		const p = await open(state.board);
+		const t = await theTab();
+		try {
+			await perform(p, [...state.setup, ['settle']]);
+			const unset = judge(state.expect, await p.run(SNAPSHOT));
+			assert.deepEqual(unset, [], `the board is not in state "${row.state}" after its setup, so ${row.id} would prove nothing: ${unset.join('; ')}`);
+			await perform(p, [...row.steps, ['settle']]);
+			const s = await p.run(SNAPSHOT);
+			const broken = Object.entries(INVARIANT).map(([id, holds]) => { const r = holds(s, t.thrown); return r === true ? null : `${id}: ${r}`; }).filter(Boolean);
+			if (row.standing === 'open') {
+				assert.deepEqual(broken, [], `${row.id} waits for a ruling, but the universal invariants hold on every row`);
+				return;
+			}
+			const missed = [...broken, ...judge(row.expect, s)];
+			if (row.built === 'yes') assert.deepEqual(missed, [], `${row.id} does not do what the matrix intends:\n  ${missed.join('\n  ')}`);
+			else assert.ok(missed.length > 0, `${row.id} now does what the matrix intends -- promote it to "built": "yes" and drop its "today"`);
+		} finally { await p.close(); }
+	});
+}

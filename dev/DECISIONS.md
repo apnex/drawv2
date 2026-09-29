@@ -1220,3 +1220,11 @@ MEASURED on boards drawn by hand: deleting a link's end removes everything.\
 Asked "Should seed pipes get the lifetime their gesture would have given them?", the director chose "Yes, as the gesture would" (the proposer's recommendation) over "No, keep seeds hand-laid".\
 So a pipe joining two consecutive stops of a link's intent -- its ends and pins, in order -- is laid with the link, as `w` lays it, and any other pipe is laid by hand, as `g` lays it.\
 Each seed pipe states its lifetime, and a test holds every board to the rule.
+
+**Lab behaviour is specified in one matrix, which the gate executes -- the director, 2026-09-29.**\
+In their words: "Let's make sure we are durably capturing our intended rules in for each of these test permutations in a matrix somewhere, such that we can refine and iterate on behaviours in a deliberate fashion".\
+So every lab gesture permutation is a row of `dev/design/unification/BEHAVIOUR-MATRIX.json`: a board state, a gesture performed with real input, what should happen in words and as checks, the ruling it follows, and whether the lab does it.\
+Its readable view, `BEHAVIOUR-MATRIX.md`, is generated from it, and the gate fails if the two differ (mission-kit P3).\
+The gate runs every row in real Chrome; a row marked `todo` must still fail, so the matrix cannot claim a behaviour the lab lacks, nor lag one it gains.\
+Rulings stay here; a row cites one, says it is the proposer's reading, or says it is open.\
+Changing a gesture rule is therefore an edit to one row, and eleven hand-written tests that stated these rules were folded into rows so that each is stated once.

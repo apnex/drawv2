@@ -22,6 +22,9 @@ before composing.
 	<head>
 		<meta charset="utf-8">
 		<title>draw lab</title>
+		<!-- no icon, said explicitly: without this Chrome asks for /favicon.ico, the lab answers 404, and every
+		     first page load logs an error -- which the behaviour matrix's invariant I5 caught as a real one -->
+		<link rel="icon" href="data:,">
 		<link rel="stylesheet" href="/style.css">
 		<link rel="stylesheet" href="/lab.css">
 	</head>

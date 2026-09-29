@@ -1,0 +1,1054 @@
+{
+	"_about": [
+		"THE MASTER of the lab behaviour matrix. BEHAVIOUR-MATRIX.md beside it is generated from this file by `node tools/lab-matrix.mjs --write`, and the gate fails if the two differ: edit here, never there.",
+		"tests/lab-browser.test.js runs every row in real Chrome with real input. A state's `setup` builds its board and its `expect` proves the board is what the state claims, before any row acts on it.",
+		"A row: `steps` perform the gesture; `intent` says in words what should happen and `expect` says it as checks; `rule` cites the ruling. `standing` is ruled, reading (the proposer's reading, not ruled) or open. `built` is yes (the gate proves it) or todo (the gate proves it still FAILS, and demands promotion the day it passes).",
+		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb). A selector is a link id, or \"only\" when exactly one link exists."
+	],
+	"invariants": {
+		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, and the same anchors.",
+		"I2": "A link is drawn dotted exactly when it is down.",
+		"I3": "The canvas draws exactly the links that exist, each along a path.",
+		"I4": "No pipe names an anchor that does not exist.",
+		"I5": "Nothing is thrown in the page."
+	},
+	"states": {
+		"routed": {
+			"about": "Two unpinned links routed through one anchor, over pipes laid by hand.",
+			"board": "cross",
+			"setup": [],
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"anchors": 1,
+				"pipes": {
+					"hand": 4,
+					"link": 0
+				}
+			}
+		},
+		"pinned": {
+			"about": "One link pinned at one anchor, with no other way.",
+			"board": "bend",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 1,
+				"pins": {
+					"link-000001": 1
+				},
+				"pipes": {
+					"link": 2,
+					"hand": 0
+				}
+			}
+		},
+		"pinned, another way": {
+			"about": "One link pinned at one anchor, with another way open below it.",
+			"board": "detour",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 3,
+				"pipes": {
+					"link": 2,
+					"hand": 3
+				}
+			}
+		},
+		"pinned and passed": {
+			"about": "Two links pin the left centre; two only pass the right one.",
+			"board": "compare",
+			"setup": [],
+			"expect": {
+				"links": 4,
+				"down": 0,
+				"anchors": 4,
+				"pipes": {
+					"link": 4,
+					"hand": 4
+				}
+			}
+		},
+		"w-chain": {
+			"about": "A link drawn by hand as a chain of w anchors, S-P1-P2-P3-E.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						120,
+						0
+					],
+					[
+						[
+							"w",
+							-240,
+							-120
+						],
+						[
+							"w",
+							-120,
+							0
+						],
+						[
+							"w",
+							0,
+							-120
+						],
+						[
+							"w",
+							120,
+							0
+						]
+					]
+				]
+			],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"only": 3
+				},
+				"anchors": 5,
+				"pipes": {
+					"link": 4,
+					"hand": 0
+				}
+			}
+		},
+		"pins and a g hop": {
+			"about": "A link drawn by hand as S-P1-G-P2-E: two pins with a g anchor between them.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							-240,
+							-120
+						],
+						[
+							"g",
+							0,
+							-120
+						],
+						[
+							"w",
+							240,
+							-120
+						],
+						[
+							"w",
+							360,
+							0
+						]
+					]
+				]
+			],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"only": 2
+				},
+				"anchors": 5,
+				"pipes": {
+					"link": 2,
+					"hand": 2
+				}
+			}
+		},
+		"down": {
+			"about": "The routed board with its centre deleted, so both links are down (DEL-01).",
+			"board": "cross",
+			"setup": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"expect": {
+				"links": 2,
+				"down": 2,
+				"anchors": 0,
+				"pipes": 0
+			}
+		}
+	},
+	"gestures": {
+		"delete pin": "Select an anchor a link is pinned at (a `w` anchor), and press Delete.",
+		"delete `g` hop": "Select an anchor a link passes without pinning, and press Delete.",
+		"delete end": "Select a link's end, a node or an anchor, and press Delete.",
+		"delete link": "Select the link itself, and press Delete.",
+		"draw: mouseup on end": "Drag from one end and release on the other, pressing nothing.",
+		"draw: `g` bend": "Drag, press `g` at a point on the way, and release on the end.",
+		"draw: `g` on end": "Drag to the end, press `g` on it, and release there.",
+		"draw: `w` bend": "Drag, press `w` at a point on the way, and release on the end.",
+		"undo": "Undo the gesture before."
+	},
+	"notApplicable": [
+		[
+			"routed",
+			"delete pin"
+		],
+		[
+			"pinned",
+			"delete `g` hop"
+		],
+		[
+			"pinned, another way",
+			"delete `g` hop"
+		],
+		[
+			"w-chain",
+			"delete `g` hop"
+		],
+		[
+			"down",
+			"delete pin"
+		],
+		[
+			"down",
+			"delete `g` hop"
+		]
+	],
+	"rows": [
+		{
+			"id": "DEL-01",
+			"state": "routed",
+			"gesture": "delete `g` hop",
+			"does": "Select the centre anchor both links pass, and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "Both links stay, DOWN: dotted and straight between their ends. No pipe is created.",
+			"expect": {
+				"links": 2,
+				"down": 2,
+				"anchors": 0,
+				"pipes": 0,
+				"straight": {
+					"link-000001": "M-360 0 L360 0",
+					"link-000002": "M0 -240 L0 240"
+				},
+				"notice": "2 links down"
+			},
+			"rule": "DECISIONS: \"A down link is not a deleted link\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-02",
+			"state": "pinned, another way",
+			"gesture": "delete pin",
+			"does": "Select the anchor the link is pinned at, and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The pin is dropped and the link re-routes the other way, through w6 and w7, and stays up.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"link-000001": 0
+				},
+				"through": {
+					"link-000001": [
+						[
+							-240,
+							300
+						],
+						[
+							240,
+							300
+						]
+					]
+				},
+				"anchors": 2,
+				"pipes": {
+					"hand": 3,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Deleting a point a link bends at removes that bend from the link\" (2026-09-26).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-03",
+			"state": "pinned",
+			"gesture": "delete pin",
+			"does": "Select the anchor the link is pinned at, and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "No other way exists, so the whole link is deleted; its pipes go and both nodes stay.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-04",
+			"state": "w-chain",
+			"gesture": "delete pin",
+			"does": "Select the middle pin, P2, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-120,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "P1 to P3 has no pipe, so the whole link goes, with every w anchor and pipe it laid.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-05",
+			"state": "w-chain",
+			"gesture": "delete pin",
+			"does": "Select the first pin, P1, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The start has no other pipe, so the whole link goes, with every w anchor and pipe it laid.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-06",
+			"state": "w-chain",
+			"gesture": "delete end",
+			"does": "Select the end anchor, E, and press Delete.",
+			"steps": [
+				[
+					"click",
+					120,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The link is gone with its end, permanently, and every w anchor and pipe it laid goes with it.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "The director, 2026-09-29: \"if either source or dest node is deleted, link is gone with it permanently\". DECISIONS: \"deliberate\" means held by the pipes laid with g (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-07",
+			"state": "w-chain",
+			"gesture": "delete end",
+			"does": "Select the start anchor, S, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-360,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The link is gone with its start, permanently, and every w anchor and pipe it laid goes with it.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "The director, 2026-09-29: \"if either source or dest node is deleted, link is gone with it permanently\". DECISIONS: \"deliberate\" means held by the pipes laid with g (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-08",
+			"state": "w-chain",
+			"gesture": "delete link",
+			"does": "Select the link on its first leg, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-300,
+					-60
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The link goes, with every w anchor and pipe it laid; its own dying pipes shelter nothing.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "DECISIONS: \"deliberate\" means held by the pipes laid with g (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-09",
+			"state": "pins and a g hop",
+			"gesture": "delete `g` hop",
+			"does": "Select the g anchor between the two pins, and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "No pin is lost, so the link stays, DOWN: dotted through both its pins, with the pipes on its intent kept for it to heal onto.",
+			"expect": {
+				"links": 1,
+				"down": 1,
+				"pins": {
+					"only": 2
+				},
+				"through": {
+					"only": [
+						[
+							-240,
+							-120
+						],
+						[
+							240,
+							-120
+						]
+					]
+				},
+				"anchors": 4,
+				"pipes": {
+					"link": 2,
+					"hand": 0
+				}
+			},
+			"rule": "The proposer's reading, extending the director's description of a down dynamic link to a pinned one (DECISIONS, 2026-09-29).",
+			"standing": "reading",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-10",
+			"state": "pinned and passed",
+			"gesture": "delete pin",
+			"does": "Select the left centre, which both left links pin, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-480,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "Both pinned links have no other way and are deleted whole; the two links passing the right centre are untouched and up.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"linkState": {
+					"link-000001": "gone",
+					"link-000002": "gone",
+					"link-000003": "up",
+					"link-000004": "up"
+				}
+			},
+			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-11",
+			"state": "pinned",
+			"gesture": "delete end",
+			"does": "Select node B, the link's end, and press Delete.",
+			"steps": [
+				[
+					"click",
+					360,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The link is gone with its end, and nothing of it remains: its pin and its pipes go too.",
+			"expect": {
+				"links": 0,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"rule": "DECISIONS: \"Seed boards give each pipe the lifetime its gesture would\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-12",
+			"state": "routed",
+			"gesture": "delete end",
+			"does": "Select node B, and press Delete.",
+			"steps": [
+				[
+					"click",
+					360,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "A-B is gone with its end; C-D still runs through the centre, and the centre and its hand pipes stay.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"linkState": {
+					"link-000001": "gone",
+					"link-000002": "up"
+				},
+				"anchors": 1,
+				"pipes": {
+					"hand": 3,
+					"link": 0
+				}
+			},
+			"rule": "The director, 2026-09-29, on deleting an end. DECISIONS: pipes laid by hand stay until deleted (2026-09-27).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-13",
+			"state": "pinned and passed",
+			"gesture": "delete `g` hop",
+			"does": "Select the right centre, which the two right links only pass, and press Delete.",
+			"steps": [
+				[
+					"click",
+					480,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "No pin is lost, so both right links stay, DOWN: dotted and straight between their ends. The pinned pair on the left is untouched.",
+			"expect": {
+				"links": 4,
+				"down": 2,
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "up",
+					"link-000003": "down",
+					"link-000004": "down"
+				}
+			},
+			"rule": "DECISIONS: \"A down link is not a deleted link\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-14",
+			"state": "pins and a g hop",
+			"gesture": "delete pin",
+			"does": "Select the first pin, P1, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The start has no other way, so the whole link goes. The g anchor keeps its remaining hand pipe, and that pipe keeps P2.",
+			"expect": {
+				"links": 0,
+				"anchors": 2,
+				"keptAt": [
+					[
+						0,
+						-120
+					],
+					[
+						240,
+						-120
+					]
+				],
+				"pipes": {
+					"hand": 1,
+					"link": 0
+				}
+			},
+			"rule": "The proposer's reading of two rulings together: a link that loses a pin with no other way is deleted whole, and only links and pipes laid by hand keep an anchor (DECISIONS, 2026-09-29).",
+			"standing": "reading",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-15",
+			"state": "down",
+			"gesture": "delete end",
+			"does": "Select node A, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-360,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "A-B is gone with its end, permanently: a down link does not wait to heal once an end is deleted. C-D stays down.",
+			"expect": {
+				"links": 1,
+				"down": 1,
+				"linkState": {
+					"link-000001": "gone",
+					"link-000002": "down"
+				}
+			},
+			"rule": "The director, 2026-09-29: \"if either source or dest node is deleted, link is gone with it permanently\".",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DEL-16",
+			"state": "routed",
+			"gesture": "delete link",
+			"does": "Select link A-B on its left leg, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-180,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "A-B goes. C-D still runs through the centre, which its hand pipes keep, and all four hand pipes stay.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"linkState": {
+					"link-000001": "gone",
+					"link-000002": "up"
+				},
+				"anchors": 1,
+				"pipes": {
+					"hand": 4,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: pipes laid by hand stay until deleted (2026-09-27).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "LOOK-01",
+			"state": "routed",
+			"gesture": "delete `g` hop",
+			"does": "Select the centre anchor both links pass, and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The down links are drawn ORANGE as well as dotted, so down reads apart from a live link at a glance.",
+			"expect": {
+				"downStroke": "#ff9800"
+			},
+			"rule": "The director, 2026-09-29: \"we need to make the dots a different color - orange?\". The shade is the proposer's: #ff9800, apart from the transit ring #ffb74d and the packet placeholder #ffa726.",
+			"standing": "ruled",
+			"built": "todo",
+			"today": "Down links are dotted in the live link blue, #4fc3f7."
+		},
+		{
+			"id": "HEAL-01",
+			"state": "down",
+			"gesture": "draw: `g` bend",
+			"does": "Drag from A, press g above the old centre, and release on B.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"g",
+							0,
+							-120
+						]
+					]
+				]
+			],
+			"intent": "A-B heals: the g anchor and its two hand pipes are laid, A-B is drawn solid through the new anchor, and no second link is made. C-D stays down.",
+			"expect": {
+				"links": 2,
+				"linksBetween": {
+					"node-000001|node-000002": 1
+				},
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "down"
+				},
+				"through": {
+					"link-000001": [
+						[
+							0,
+							-120
+						]
+					]
+				},
+				"anchors": 1,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				}
+			},
+			"rule": "The director's report, 2026-09-29: the g bend \"also fails\". DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29). A pair may carry one straight link (model/invariants.mjs).",
+			"standing": "ruled",
+			"built": "todo",
+			"today": "The planner refuses the new link, \"2 straight links between node-000001 and node-000002, which may carry 1\", and the g anchor and its pipes are thrown away, so nothing heals. The tab keeps the refused link and anchor while the authority has neither, which breaks I1."
+		},
+		{
+			"id": "HEAL-02",
+			"state": "down",
+			"gesture": "draw: `g` on end",
+			"does": "Drag from A to B, press g on B, and release there.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"g",
+							360,
+							0
+						]
+					]
+				]
+			],
+			"standing": "open",
+			"question": "Should g pressed on the end lay the last pipe BY HAND, so that here it heals A-B and outlives it, where a plain mouseup (HEAL-03) lays a pipe that goes with its link?",
+			"proposal": "Yes. The two then differ only in the lifetime of the last pipe, which is the difference g and w already make everywhere else.",
+			"today": "Nothing happens and nothing is said: g on a node is ignored, and the mouseup is dropped as a duplicate straight link.",
+			"rule": "Asked by the director, 2026-09-29: \"do we need to distinguish between plain mouseup on link drag on existing anchor and pressing g on existing anchor then mouseup\"."
+		},
+		{
+			"id": "HEAL-03",
+			"state": "down",
+			"gesture": "draw: mouseup on end",
+			"does": "Drag from A, and release on B.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[]
+				]
+			],
+			"standing": "open",
+			"question": "Should a plain mouseup on the down link's other end lay the pipe that link needs, laid with the link and going when no link remains, and heal it, rather than being dropped?",
+			"proposal": "Yes. The director counts a mouseup onto an anchor as a deliberate way to lay a pipe, and the pipe is exactly what A-B lacks.",
+			"today": "Nothing happens and nothing is said: the drag is dropped as a duplicate straight link.",
+			"rule": "The director, 2026-09-29: \"pipes are deliberate construction actions - either by pressing w/g or mouseup a link drag onto an anchor/node\"."
+		},
+		{
+			"id": "HEAL-04",
+			"state": "down",
+			"gesture": "draw: `w` bend",
+			"does": "Drag from A, press w above the old centre, and release on B.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							0,
+							-120
+						]
+					]
+				]
+			],
+			"intent": "A new link, pinned at the new anchor, is drawn in addition to the down A-B.",
+			"expect": {
+				"links": 3,
+				"linksBetween": {
+					"node-000001|node-000002": 2
+				},
+				"anchors": 1
+			},
+			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\".",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "HEAL-05",
+			"state": "down",
+			"gesture": "draw: `w` bend",
+			"does": "Drag from A, press w above the old centre, release on B, then delete the new link.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							0,
+							-120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"standing": "open",
+			"question": "Should the down A-B heal over the pipes the new w link laid? Today it does, so two links share them, and deleting the new link leaves its anchor and pipes behind, because the healed A-B now carries them.",
+			"proposal": "Two readings, not yet one: (a) yes, a link with no pins takes any way over any pipes (SD9), and the trace is accepted; (b) no, a link heals only over pipes laid by hand or with itself, which needs each pipe to record WHICH link laid it.",
+			"today": "A-B heals over the new link's pipes. After the new link is deleted, its anchor and both pipes remain, and A-B stays up over them.",
+			"rule": "The director, 2026-09-29: \"if I draw a new link with w - this should not be the healed link\". DECISIONS: \"Draw-then-delete leaves no trace\" (2026-09-25)."
+		},
+		{
+			"id": "REF-01",
+			"state": "routed",
+			"gesture": "draw: `g` bend",
+			"does": "Drag from A, press g off the existing way, and release on C.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						]
+					]
+				]
+			],
+			"intent": "The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchor and its two hand pipes are kept.",
+			"expect": {
+				"refused": true,
+				"notice": "just as short|tie",
+				"noticeNot": "shorter way",
+				"links": 2,
+				"keptAt": [
+					[
+						-240,
+						-180
+					]
+				],
+				"pipes": {
+					"hand": 6,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29), with its correction of the tie message.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "UNDO-01",
+			"state": "w-chain",
+			"gesture": "undo",
+			"does": "Delete the middle pin, then undo.",
+			"steps": [
+				[
+					"click",
+					-120,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				],
+				[
+					"settle"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down.",
+			"expect": {
+				"links": 1,
+				"pins": {
+					"only": 3
+				},
+				"anchors": 5,
+				"down": 1
+			},
+			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29), as CORRECTED for undo.",
+			"standing": "ruled",
+			"built": "yes"
+		}
+	]
+}
