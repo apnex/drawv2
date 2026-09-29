@@ -170,6 +170,8 @@ Press `g` before any `w` and the drag is a pipe-laying drag.\
 Press `w` first and it is a link drag, in which later hops may be `w` or `g`.\
 This keeps T2's gain -- pipes without a link, and a clean pipe-lifetime test -- without changing the no-bend case.
 
+> **CORRECTED 2026-09-30.** Taken and widened by the director's ruling "Each drag action does one thing" (`dev/DECISIONS.md`): a drag without any `w` makes no link, whichever key comes first, and a plain drag makes a link that lays no pipes. The text above is kept as written, per the frozen-history rule.
+
 **T4.\
 A `g`-pipe is HAND-PLACED for lifetime purposes.**\
 The 09-27 ruling gives two kinds of pipe: laid automatically with a link (removed once no link remains on it) and placed by hand (stays until deleted).\

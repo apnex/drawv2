@@ -3,39 +3,140 @@ The incubated whole-route check for `g` -- network/guide.mjs.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkGuidedRoute, pipeAnchors, routesOf, isStranded } from '../network/guide.mjs';
+import { judgeDrag, pipeAnchors, routesOf, isStranded } from '../network/guide.mjs';
 import { assignRoutes } from '../network/pipes.mjs';
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
-test('a guided route that passes its guide is accepted, and says which pipes to lay', () => {
-	// A to B through guide G, with no pipes yet: the drag lays A-G and G-B, and the fewest-pipes
-	// route over them runs through G
-	const v = checkGuidedRoute([], { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
-	assert.equal(v.ok, true, v.reason);
-	assert.deepEqual(v.route, ['A', 'G', 'B']);
-	assert.deepEqual(v.legs.map((l) => `${l.a}-${l.b}`), ['A-G', 'G-B']);
+/*
+JUDGING A FINISHED DRAG -- ruled 2026-09-30, "Each drag action does one thing" (dev/DECISIONS.md).
+
+The director: "the very next action decides what it is - a "w", a "g", or a plain "mouse-up" on another anchor".
+  - any w: a link, pinned at each w anchor, routing between pins over the pipes
+  - g and no w: anchors and pipes by hand, and NO link
+  - neither: a link that lays no pipes -- "must use existing infra"
+  - a link with no free way is made DOWN ("Made, but down"), naming what holds its way
+Each action lays at most the pipe INTO its own stop; a plain release lays none (the proposer's reading).
+*/
+const X = (id, src, dst, via) => ({ id, src, dst, ...(via ? { via } : {}) });
+const drag = (o) => ({ pins: [], guides: [], placed: [], pressed: { w: false, g: false }, endPressed: false, ...o });
+const laid = (v) => v.legs.map((l) => `${l.a}-${l.b}:${l.laid}`);
+
+test('a drag with only g lays pipes by hand and makes NO link', () => {
+	const v = judgeDrag([], drag({ src: 'A', dst: 'B', guides: ['G'], placed: ['G'], stops: ['A', 'G', 'B'], pressed: { w: false, g: true }, endPressed: 'g' }));
+	assert.equal(v.ok, false, 'no link is made');
+	assert.deepEqual(laid(v), ['A-G:hand', 'G-B:hand'], 'g on the end laid the last pipe too');
+	assert.deepEqual(v.keep, ['G'], 'the anchors it placed are kept');
+	assert.match(v.notice, /2 pipes laid/);
+	assert.doesNotMatch(v.notice, /refused/, 'nothing was refused: laying pipes is what g does');
 });
 
-
-test('legs touching a guide are laid BY HAND; the rest WITH THE LINK', () => {
-	// T4: a guide's pipes outlive the link, because the author chose that geometry
-	const v = checkGuidedRoute([], { src: 'A', dst: 'B', pins: ['P'], guides: ['G'], stops: ['A', 'P', 'G', 'B'] });
-	assert.equal(v.ok, true, v.reason);
-	const laid = Object.fromEntries(v.legs.map((l) => [`${l.a}-${l.b}`, l.laid]));
-	assert.deepEqual(laid, { 'A-P': 'link', 'P-G': 'hand', 'G-B': 'hand' });
+test('a plain release lays no pipe into the anchor it lands on', () => {
+	const v = judgeDrag([], drag({ src: 'A', dst: 'B', guides: ['G'], placed: ['G'], stops: ['A', 'G', 'B'], pressed: { w: false, g: true }, endPressed: false }));
+	assert.deepEqual(laid(v), ['A-G:hand'], 'only the pipe into the stop g was pressed at');
 });
 
-test('the check is PURE: it lays nothing in the pipes it was given', () => {
-	// the caller lays the legs only after the planner accepts the link, so a refused link leaves no
-	// pipes behind -- which holds only if this function does not lay them itself
-	const existing = pipes(['X', 'Y']);
-	const before = JSON.stringify(existing);
-	checkGuidedRoute(existing, { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
-	assert.equal(JSON.stringify(existing), before);
+test('a plain drag makes a link and lays NO pipes: it runs over the pipes already there', () => {
+	const v = judgeDrag(pipes(['A', 'x'], ['x', 'B']), drag({ src: 'A', dst: 'B', stops: ['A', 'B'] }));
+	assert.equal(v.ok, true);
+	assert.deepEqual(v.legs, []);
+	assert.deepEqual(v.route, ['A', 'x', 'B']);
+	assert.equal(v.notice, undefined, 'a link that runs as expected needs no word');
 });
 
+test('a link with no free way is made DOWN, and the answer names what holds its way', () => {
+	const trunk = pipes(['A', 't1'], ['C', 't1'], ['t1', 't2'], ['t2', 'B'], ['t2', 'D']);
+	const held = judgeDrag(trunk, drag({ src: 'C', dst: 'D', stops: ['C', 'D'] }), { links: [X('link-1', 'A', 'B')] });
+	assert.equal(held.ok, true, 'made -- the director chose "Made, but down"');
+	assert.equal(held.route, null, 'with no way, so it is down');
+	assert.deepEqual(held.blockers, ['link-1']);
+	// no sentence of its own: the new link is selected, and a selected down link says why (resolve.mjs whyDown)
+	assert.equal(held.notice, undefined);
+	const none = judgeDrag([], drag({ src: 'C', dst: 'D', stops: ['C', 'D'] }));
+	assert.equal(none.ok, true);
+	assert.deepEqual(none.blockers, [], 'no way at all: blocked by nobody');
+});
 
+test('a plain drag between a pair an unpinned link already joins makes nothing, and says so', () => {
+	const v = judgeDrag([], drag({ src: 'B', dst: 'A', stops: ['B', 'A'] }), { links: [X('link-1', 'A', 'B')] });
+	assert.equal(v.ok, false);
+	assert.deepEqual(v.legs, []);
+	assert.match(v.notice, /already joins/);
+});
+
+test('w pins the link: legs into pressed stops are laid WITH it, and legs touching a g anchor BY HAND', () => {
+	const mixed = { src: 'A', dst: 'B', pins: ['P'], guides: ['G'], stops: ['A', 'P', 'G', 'B'], pressed: { w: true, g: true } };
+	const ended = judgeDrag([], drag({ ...mixed, endPressed: 'w' }));
+	assert.equal(ended.ok, true);
+	assert.deepEqual(laid(ended), ['A-P:link', 'P-G:hand', 'G-B:hand']);
+	assert.deepEqual(laid(judgeDrag([], drag({ ...mixed, endPressed: false }))), ['A-P:link', 'P-G:hand'], 'released plainly on B: no pipe into B');
+	assert.deepEqual(laid(judgeDrag([], drag({ ...mixed, endPressed: 'g' }))), ['A-P:link', 'P-G:hand', 'G-B:hand'], 'g on the end lays it by hand');
+	const pinned = { src: 'A', dst: 'B', pins: ['P'], stops: ['A', 'P', 'B'], pressed: { w: true, g: true } };
+	assert.deepEqual(laid(judgeDrag([], drag({ ...pinned, endPressed: 'g' }))), ['A-P:link', 'P-B:hand'], 'g on the end of a w link lays that last pipe by hand, to outlive the link');
+	assert.deepEqual(laid(judgeDrag([], drag({ ...pinned, endPressed: 'w' }))), ['A-P:link', 'P-B:link'], 'w on the end lays it with the link');
+});
+
+test('a w link released plainly routes from its last pin to the destination over the pipes there', () => {
+	const v = judgeDrag(pipes(['P', 'x'], ['x', 'B']), drag({ src: 'A', dst: 'B', pins: ['P'], stops: ['A', 'P', 'B'], pressed: { w: true, g: false } }));
+	assert.deepEqual(laid(v), ['A-P:link']);
+	assert.deepEqual(v.route, ['A', 'P', 'x', 'B'], '"dynamically route from that first w pin to ... the destination"');
+});
+
+test('judging is PURE: it lays nothing in the pipes it was given', () => {
+	const existing = pipes(['A', 'X']);
+	const snapshot = JSON.stringify(existing);
+	judgeDrag(existing, drag({ src: 'A', dst: 'B', guides: ['G'], stops: ['A', 'G', 'B'], pressed: { w: true, g: true }, endPressed: 'w' }));
+	assert.equal(JSON.stringify(existing), snapshot);
+});
+
+/*
+ONE LINK PER PIPE (2026-09-30) holds for every drag: the drawn link is the newest, so it routes over what the links
+already there leave free, and a link drag that would move one of them is refused.
+*/
+test('the drawn link is the newest: a way the links already there hold is no way for it', () => {
+	const board = pipes(['A', 'w'], ['w', 'B'], ['C', 'w'], ['w', 'D']);
+	const v = judgeDrag(board, drag({ src: 'A', dst: 'C', guides: ['g'], stops: ['A', 'g', 'C'], pressed: { w: true, g: true }, endPressed: 'w' }), { links: [X('link-1', 'A', 'B'), X('link-2', 'C', 'D')] });
+	assert.equal(v.ok, true, v.notice);
+	assert.deepEqual(v.route, ['A', 'g', 'C'], 'A-w-C is two pipes, but both carry a link');
+});
+
+test('a g drag whose pipes an older DOWN link takes: the link heals, and the notice says so', () => {
+	const v = judgeDrag([], drag({ src: 'A', dst: 'B', guides: ['g'], placed: ['g'], stops: ['A', 'g', 'B'], pressed: { w: false, g: true }, endPressed: 'g' }), { links: [X('link-1', 'A', 'B')] });
+	assert.equal(v.ok, false, 'g makes no link');
+	assert.match(v.notice, /link-1 healed/);
+});
+
+test('a link drag that would MOVE an existing link is refused, and names it', () => {
+	// X runs A-p-q-B by hand. A w link A-r-C through the existing anchor r lays A-r -- with r-B already there, a
+	// shorter way for X, which is older and would take it; the new link would still find A-s-r-C.
+	const board = pipes(['A', 'p'], ['p', 'q'], ['q', 'B'], ['r', 'B'], ['A', 's'], ['s', 'r']);
+	const x = X('link-x', 'A', 'B');
+	assert.deepEqual(assignRoutes(board, [x]).get('link-x'), ['A', 'p', 'q', 'B'], 'before: X runs A-p-q-B');
+	const v = judgeDrag(board, drag({ src: 'A', dst: 'C', guides: ['r'], stops: ['A', 'r', 'C'], pressed: { w: true, g: true }, endPressed: 'w' }), { links: [x] });
+	assert.equal(v.ok, false);
+	assert.match(v.notice, /would move link-x/);
+	assert.deepEqual(v.moves, ['link-x']);
+});
+
+/*
+g HOPS INSIDE A w DRAG the link would not follow (2026-09-30, "Link runs the shorter way"): the link runs the shorter
+way, the path drawn is kept as its alternate, and the notice says which way and why.
+*/
+test('in a w drag, a g hop the link will not pass: it runs the shorter way, names the hop, keeps the path', () => {
+	const v = judgeDrag(pipes(['A', 'B']), drag({ src: 'A', dst: 'B', guides: ['G'], stops: ['A', 'G', 'B'], pressed: { w: true, g: true }, endPressed: 'w' }));
+	assert.equal(v.ok, true, v.notice);
+	assert.deepEqual(v.route, ['A', 'B']);
+	assert.deepEqual(v.skipped, ['G']);
+	assert.match(v.notice, /a shorter way \(1 pipe, against the 2 drawn\)/);
+	assert.match(v.notice, /kept as its alternate/);
+});
+
+test('on a TIE the notice says the way taken is just as short, not shorter', () => {
+	const v = judgeDrag(pipes(['A', 'X'], ['X', 'B']), drag({ src: 'A', dst: 'B', guides: ['Z'], stops: ['A', 'Z', 'B'], pressed: { w: true, g: true }, endPressed: 'w' }));
+	assert.equal(v.ok, true);
+	assert.match(v.notice, /just as short/);
+	assert.doesNotMatch(v.notice, /shorter/);
+});
 
 test('a DOWN link keeps its own drawn legs when pipes are swept, so it can heal onto them', () => {
 	// with no pipes at all the link has no route; its intent legs must still count as in use
@@ -69,16 +170,6 @@ test('a pipe laid WITH A LINK references its anchors only while a link in that m
 
 
 
-test('a refused drag keeps its guides and their hand pipes, and drops what existed only for the link', async () => {
-	const { keptOnRefusal } = await import('../network/guide.mjs');
-	// A -> P (w, placed) -> G (g, placed) -> B, refused
-	const verdict = { ok: false, legs: [{ a: 'A', b: 'P', laid: 'link' }, { a: 'P', b: 'G', laid: 'hand' }, { a: 'G', b: 'B', laid: 'hand' }] };
-	const k = keptOnRefusal(verdict, { guides: ['G'], placed: ['P', 'G'] });
-	assert.deepEqual(k.keep, ['G'], 'the guide survives');
-	assert.deepEqual(k.legs.map((l) => `${l.a}-${l.b}`), ['G-B'],
-		'its hand pipe to B survives; P-G does not, because P -- placed only for the refused link -- is going');
-	assert.deepEqual(k.placedKept, ['G'], 'and G is new, so its pipe waits for the planner to accept it');
-});
 
 /*
 A LINK LEFT WITH NO WAY after losing a pin is deleted whole -- ruled 2026-09-29. Asked, for a w-chain
@@ -112,78 +203,17 @@ test('a way HELD by another link still counts: the link stays, down and blocked,
 	assert.equal(isStranded(trunk, { id: 'link-y', src: 'A', dst: 'B', via: [] }, model(['A', 't', 'B'], [holder])), false);
 });
 
-/*
-THE g CHECK UNDER ONE LINK PER PIPE (2026-09-30). The link being drawn is the NEWEST, so it routes over what
-every existing link leaves free; the refusal names the link holding its way; a drag whose pipes an older DOWN
-link takes says it healed that link; and a drag that would move an existing link is refused.
-*/
-const X = (id, src, dst, via) => ({ id, src, dst, ...(via ? { via } : {}) });
-
-test('a way the existing links hold is no way for the new one: it goes the way drawn', () => {
-	const board = pipes(['A', 'w'], ['w', 'B'], ['C', 'w'], ['w', 'D']);
-	const v = checkGuidedRoute(board, { src: 'A', dst: 'C', guides: ['g'], stops: ['A', 'g', 'C'] }, { links: [X('link-1', 'A', 'B'), X('link-2', 'C', 'D')] });
-	assert.equal(v.ok, true, v.reason);
-	assert.deepEqual(v.route, ['A', 'g', 'C'], 'A-w-C is two pipes, but both carry a link');
-});
-
-test('when the new link\'s way is held, the refusal names the link holding it', () => {
-	const trunk = pipes(['A', 't1'], ['C', 't1'], ['t1', 't2'], ['t2', 'B'], ['t2', 'D']);
-	const v = checkGuidedRoute(trunk, { src: 'A', dst: 'B', pins: ['t1'], stops: ['A', 't1', 'B'] }, { links: [X('link-1', 'A', 'B'), X('link-2', 'C', 'D')], rankOf: (id) => (id === 'link-1' ? 0 : 1) });
-	assert.equal(v.ok, false);
-	assert.match(v.reason, /held by link-1/);
-});
-
-test('a drag whose pipes an older DOWN link takes HEALS it, and says so rather than refusing', () => {
-	const v = checkGuidedRoute([], { src: 'A', dst: 'B', guides: ['g'], stops: ['A', 'g', 'B'] }, { links: [X('link-1', 'A', 'B')] });
-	assert.equal(v.ok, false, 'no second link is made');
-	assert.deepEqual(v.heals, ['link-1'], 'the down link that takes the drawn way is named');
-});
-
-test('a drag that would MOVE an existing link is refused, and names it', () => {
-	// X runs A-p-q-B by hand. A new link A-r-C, guided through the existing anchor r, lays A-r -- with r-B
-	// already there, that is a shorter way for X, which is older and would take it; the new link would still
-	// find A-s-r-C. So the drag is valid on its own terms and moves X: refused (2026-09-30).
-	const board = pipes(['A', 'p'], ['p', 'q'], ['q', 'B'], ['r', 'B'], ['A', 's'], ['s', 'r']);
+test('a refused link drag keeps its g anchors and their hand pipes, and drops what existed only for the link', () => {
+	// X runs A-p-q-B by hand. A w drag A -g G- -w P- then g on B lays a hand path A-G-P-B, three pipes, which ties X's
+	// own way and wins the tie ('G' sorts before 'p'): X would move, so the drag is refused (2026-09-30). What it
+	// placed for the refused link alone -- the w anchor P -- goes, and so does every pipe to it (a pipe is its pair);
+	// the g anchor G and its hand pipe to A are kept (the refused-g ruling of 2026-09-29).
 	const x = X('link-x', 'A', 'B');
-	assert.deepEqual(assignRoutes(board, [x]).get('link-x'), ['A', 'p', 'q', 'B'], 'before: X runs A-p-q-B');
-	const v = checkGuidedRoute(board, { src: 'A', dst: 'C', guides: ['r'], stops: ['A', 'r', 'C'] }, { links: [x] });
+	const v = judgeDrag(pipes(['A', 'p'], ['p', 'q'], ['q', 'B']), drag({ src: 'A', dst: 'B', pins: ['P'], guides: ['G'], placed: ['G', 'P'],
+		stops: ['A', 'G', 'P', 'B'], pressed: { w: true, g: true }, endPressed: 'g' }), { links: [x] });
 	assert.equal(v.ok, false);
-	assert.match(v.reason, /move link-x/);
-	assert.deepEqual(v.moves, ['link-x']);
-});
-
-/*
-A g ROUTE THE LINK WOULD NOT FOLLOW IS ACCEPTED -- ruled 2026-09-30, reversing the refusal the whole-route check
-made. The director drew S to E with g hops to make an alternate path while an older free path was shorter, and
-the link was refused. Asked what should happen, the director chose "Link runs the shorter way": the link is made,
-runs the fewest-pipes way, and the path drawn is kept as its alternate. The notice says which way, and why.
-*/
-test('a g route the link would not follow is ACCEPTED: it runs the shorter way, and names the guides it skips', () => {
-	const v = checkGuidedRoute(pipes(['A', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
-	assert.equal(v.ok, true, v.reason);
-	assert.deepEqual(v.route, ['A', 'B'], 'the link runs the one-pipe way');
-	assert.deepEqual(v.skipped, ['G'], 'and the guide it does not pass is named');
-	assert.match(v.note, /a shorter way \(1 pipe, against the 2 drawn\)/);
-	assert.match(v.note, /kept as its alternate/);
-});
-
-test('on a TIE the note says the way taken is just as short, not shorter', () => {
-	const v = checkGuidedRoute(pipes(['A', 'X'], ['X', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['Z'], stops: ['A', 'Z', 'B'] });
-	assert.equal(v.ok, true);
-	assert.match(v.note, /just as short/);
-	assert.doesNotMatch(v.note, /shorter/);
-});
-
-test('the director\'s case: an alternate path drawn beside a shorter free one makes the link, on the shorter way', () => {
-	const old = pipes(['S', 'G1'], ['G1', 'G2'], ['G2', 'E']);   // what a deleted w,g,g,g link left behind
-	const v = checkGuidedRoute(old, { src: 'S', dst: 'E', guides: ['H1', 'H2', 'H3', 'H4'], stops: ['S', 'H1', 'H2', 'H3', 'H4', 'E'] });
-	assert.equal(v.ok, true, v.reason);
-	assert.deepEqual(v.route, ['S', 'G1', 'G2', 'E'], 'the link runs the old three-pipe path');
-	assert.deepEqual(v.legs.map((l) => l.laid), ['hand', 'hand', 'hand', 'hand', 'hand'], 'and the five pipes drawn are laid by hand, as its alternate');
-});
-
-test('a drawn g route the link DOES follow carries no note', () => {
-	const v = checkGuidedRoute([], { src: 'A', dst: 'B', guides: ['G'], stops: ['A', 'G', 'B'] });
-	assert.equal(v.ok, true);
-	assert.equal(v.note, undefined);
+	assert.deepEqual(v.moves, ['link-x'], 'refused because it would move X');
+	assert.deepEqual(v.keep, ['G'], 'the g anchor survives; the w anchor does not');
+	assert.deepEqual(laid(v), ['A-G:hand'], 'its hand pipe to A survives; the pipes to P go with P');
+	assert.match(v.notice, /g anchors and their pipes are kept/);
 });

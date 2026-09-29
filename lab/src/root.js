@@ -43,7 +43,7 @@ import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers, whyDown, downSummary } from '../../network/resolve.mjs';
 import { createLinkOrder } from '../../network/order.mjs';
-import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal, keepsOrphan, isStranded } from '../../network/guide.mjs';
+import { judgeDrag, pipeAnchors, routesOf, keepsOrphan, isStranded } from '../../network/guide.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -138,11 +138,11 @@ const readout = new Readout({ model, selection, elements: [document.getElementBy
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
 
 /*
-THE ROUTE HOOK -- how `g` exists in the lab and nowhere else.
+THE ROUTE HOOK -- how `g`, and the network's rules for a drag, exist in the lab and nowhere else.
 
-Input asks it once per finished link drag, for the whole drawn route. It checks the route with the
-incubator (network/guide.mjs): a guide the fewest-pipes route would skip is refused and NAMED, rather
-than committed as a link that silently ignores what the author drew.
+Input asks it once per finished drag, telling it which keys were pressed and how the end was reached. The
+incubator (network/guide.mjs `judgeDrag`) answers by the director's rule of 2026-09-30 -- any `w` makes a link,
+`g` alone lays pipes, a plain drag makes a link that lays none -- and says what it did on the notice.
 
 It lays NOTHING. The legs are held until the planner accepts the link, then laid -- so a link the
 planner refuses leaves no pipes behind. That ordering holds because a route commit is emitted the
@@ -150,22 +150,37 @@ moment it is made: `commands.routeLink` never sets `coalesce`, so the planner's 
 hook synchronously and consumes exactly these legs.
 */
 let pendingLegs = null, pendingNotice = null;
-const routeHook = (route) => {
-	// the drawn link is the newest: it routes over what the links already there leave free (2026-09-30)
-	const verdict = checkGuidedRoute(pipes.list(), route, { links: authority.all('link'), rankOf: order.rankOf });
-	if (!verdict.ok) {
-		// refusal refuses the LINK: the g anchors and their hand pipes are kept (network/guide.mjs)
-		const kept = keptOnRefusal(verdict, route);
-		// a drag whose way an older down link takes HEALS it: said as that, not as a refusal (HEAL-01)
-		// and a drag that placed no g anchor -- a w drag onto a held pipe, say -- does not claim one was kept
-		pendingNotice = verdict.heals ? verdict.reason : `refused: ${verdict.reason} -- the link is refused${kept.keep.length ? '; the g anchors and their pipes are kept' : ''}`;
-		say(pendingNotice);
-		if (kept.placedKept.length) pendingLegs = kept.legs;   // laid when the planner accepts the kept anchors
-		else { for (const l of kept.legs) pipes.lay(l.a, l.b, l.laid); drawPipes(); pendingNotice = null; }
-		return { ...verdict, keep: kept.keep };
-	}
-	// an accepted link that runs another way than the one drawn says so (2026-09-30: the path drawn is its alternate)
-	pendingLegs = verdict.legs; pendingNotice = verdict.note ?? null;
+
+/*
+SETTLE THE BOARD after its pipes or links change -- ONE step, so every path that changes them takes all of it.
+
+A link's drawn route depends on the pipe set, and the pipe set lives outside the model, so the model's change events
+never announce that a new pipe made a way or that a swept one broke one: EVERY link is redrawn here. Whole-board is
+right for a lab-sized board; a targeted redraw belongs with the promotion, when pipes are stored and their changes are
+events like any other. Before this was one step, a g drag on existing anchors laid its pipes and redrew only the
+pipes, so a down link that healed over them stayed drawn down until the next edit.
+
+Pipes laid WITH A LINK go once no link remains on them (ruled 2026-09-27) -- swept after ordinary edits only. Pipes are
+session state outside the planner's log until the format batch stores them, so undo and redo cannot move them:
+sweeping after an undo would leave the redone link with no pipes. That is a stated limit of session pipes, not a rule.
+*/
+const settle = (sweep, fallback) => {
+	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));   // a pipe to a gone anchor is not a pipe (SD7)
+	if (sweep) pipes.sweep(routesOf(pipes.list(), authority.all('link')));
+	drawPipes();
+	for (const l of model.all('link')) renderer.update('link', l);
+	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
+	say(pendingNotice ?? `${fallback}${downSummary(model)}`.trim());   // DOWN is said as well as drawn
+	pendingNotice = null;
+};
+
+// Each drag action does one thing (2026-09-30): network/guide.mjs judges the drag -- a link, pipes, or nothing -- and
+// what it lays waits for the planner to accept what it belongs to: the link, or the anchors it keeps.
+const routeHook = (drag) => {
+	const verdict = judgeDrag(pipes.list(), drag, { links: authority.all('link'), rankOf: order.rankOf });
+	pendingNotice = verdict.notice ?? null;
+	if (verdict.ok || verdict.keep.some((id) => drag.placed.includes(id))) pendingLegs = verdict.legs;
+	else { for (const l of verdict.legs) pipes.lay(l.a, l.b, l.laid); settle(true, ''); }   // nothing to commit: lay them now
 	return verdict;
 };
 
@@ -221,34 +236,9 @@ history.onCommit((request) => {
 	const planned = answer.change?.ops ?? answer.ops ?? [];
 	const apply = derivedToApply(request.ops ?? [], planned, []);
 	if (apply.length) applyOps(model, apply);
-	/*
-	Pipes laid WITH A LINK go once no link remains on them (ruled 2026-09-27); pipes laid by hand stay.
-	Swept after ordinary edits only. Pipes are session state OUTSIDE the planner's log until the format
-	batch stores them, so undo and redo cannot move them: sweeping after an undo would leave the redone
-	link with no pipes, drawn down. Leftover pipes after an undo are the smaller lie, and it goes at
-	the next ordinary edit. This is a stated limit of session pipes, not a rule.
-	*/
 	// a link seen for the first time is the newest; one seen before keeps its age, so undo restores its place
 	order.note(authority.all('link').map((l) => l.id).sort());
-	// a pipe to a deleted anchor is not a pipe (SD7) -- after every edit, undo and redo included
-	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));
-	if (!request.verb) pipes.sweep(routesOf(pipes.list(), authority.all('link')));
-	drawPipes();
-	/*
-	EVERY LINK REDRAWN once the pipes have settled. A link's drawn route depends on the pipe set, and
-	the pipe set lives outside the model -- so the model's change events, which drive the renderer,
-	never announce that a new pipe made a shortcut or that a swept one lengthened a route. Found while
-	fixing the director's anchor-move report: the same one-fact-two-authorities defect, reached through
-	the pipes rather than an anchor. Whole-board redraw is right for a lab-sized board; a targeted one
-	belongs with the promotion, when pipes live in the document and their changes are events like any
-	other.
-	*/
-	for (const l of model.all('link')) renderer.update('link', l);
-	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
-	// DOWN IS SAID as well as drawn, and a refusal's reason stays on the notice through the commit that keeps its
-	// anchors, or it would flash past
-	say(pendingNotice ?? `v${answer.version} ${request.verb ?? request.label ?? ''}${downSummary(model)}`.trim());
-	pendingNotice = null;
+	settle(!request.verb, `v${answer.version} ${request.verb ?? request.label ?? ''}`);
 });
 
 say('lab -- nothing is stored, nothing is shared');

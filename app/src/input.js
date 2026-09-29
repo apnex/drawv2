@@ -233,6 +233,8 @@ const GESTURES = {
 			*/
 			const route = [...(ctx.route ?? ctx.via ?? [])];
 			const via = [...(ctx.via || [])];
+			// how the END was reached: released on an anchor (nothing pressed there), or at a stop a key made
+			const endKey = (id) => (validTarget ? false : (ctx.guides ?? []).includes(id) ? 'g' : 'w');
 			if (!dst && route.length) {
 				dst = route.pop();
 				const k = via.indexOf(dst);
@@ -257,7 +259,8 @@ const GESTURES = {
 			// direct link became impossible the moment a routed one was drawn, which made the
 			// order a person happened to draw in decide what they could have.
 			const straightExists = i.model.linksBetween(ctx.src.id, dst).some(isStraight);
-			if (dst && srcAlive && dst !== ctx.src.id && (route.length || !straightExists)) {
+			// with a route hook (the lab) a duplicate reaches it too, so the author is told why nothing is made
+			if (dst && srcAlive && dst !== ctx.src.id && (route.length || !straightExists || (i.routeHook && !evt.shiftKey))) {
 				/*
 				The route hook sees the whole drawn route before anything commits, and may refuse it -- a guide
 				the fewest-pipes route would skip is not a link worth committing. A refusal commits nothing and
@@ -266,7 +269,8 @@ const GESTURES = {
 				*/
 				if (i.routeHook) {
 					const placed = ctx.placed.map((w) => w.id);
-					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst] });
+					const pressed = { w: !!ctx.pressedW, g: !!ctx.pressedG };
+					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst], pressed, endPressed: endKey(dst) });
 					if (!verdict?.ok) {
 						/*
 						A refusal may name anchors to KEEP. The link is refused; anchors the hook names survive
@@ -984,6 +988,7 @@ export class Input {
 			*/
 			if (existing.pinned) this.model.set('waypoint', existing.id, { pinned: false });
 			if (!this.ctx.via.includes(existing.id)) { this.ctx.via.push(existing.id); this.ctx.route.push(existing.id); }
+			this.ctx.pressedW = true;
 		} else {
 			if (occupiedAt(this.model, snapped)) return;        // a node cell — refuse
 			const wp = this.model.makeWaypoint(snapped);
@@ -991,6 +996,7 @@ export class Input {
 			this.ctx.via.push(wp.id);
 			this.ctx.route.push(wp.id);
 			this.ctx.placed.push(wp);
+			this.ctx.pressedW = true;
 		}
 		this.updateLinkPreview(this.lastPos);
 	}
@@ -1011,11 +1017,17 @@ export class Input {
 	dropGuideWaypoint() {
 		if (!this.lastPos) return;
 		const snapped = snapNode(this.lastPos);
-		const existing = this.model.waypointAt(snapped);
+		/*
+		A NODE may be threaded by `g` (2026-09-30, "Each drag action does one thing"): `g` only lays pipes, and a pipe
+		may end at a node, so pressing `g` on the destination node lays the last pipe into it. `w` still refuses a node,
+		because a pin is always a waypoint.
+		*/
+		const existing = this.model.waypointAt(snapped) ?? nodeAt(this.model, this.lastPos);
 		if (existing) {
 			if (existing.id === this.ctx.src.id || this.ctx.route.includes(existing.id)) return;
 			this.ctx.route.push(existing.id);
 			this.ctx.guides.push(existing.id);
+			this.ctx.pressedG = true;
 		} else {
 			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse, as `w` does
 			const wp = this.model.makeWaypoint(snapped);
@@ -1023,6 +1035,7 @@ export class Input {
 			this.ctx.route.push(wp.id);
 			this.ctx.guides.push(wp.id);
 			this.ctx.placed.push(wp);
+			this.ctx.pressedG = true;
 		}
 		this.updateLinkPreview(this.lastPos);
 	}

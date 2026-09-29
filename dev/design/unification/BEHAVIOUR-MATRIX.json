@@ -232,13 +232,22 @@
 				}
 			}
 		},
-		"g path left": {
-			"about": "A link drawn as a w start and three g hops, then deleted: its g anchors and hand pipes remain, and no link is on them.",
+		"two g paths": {
+			"about": "Anchors S and E placed with w, then two g drags between them: a four-pipe path above and a five-pipe path below. No link.",
 			"board": "",
 			"setup": [
 				[
 					"move",
 					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					360,
 					0
 				],
 				[
@@ -252,8 +261,8 @@
 						0
 					],
 					[
-						240,
-						-120
+						360,
+						0
 					],
 					[
 						[
@@ -270,6 +279,11 @@
 							"g",
 							240,
 							-120
+						],
+						[
+							"g",
+							360,
+							0
 						]
 					]
 				],
@@ -277,20 +291,52 @@
 					"settle"
 				],
 				[
-					"click",
-					-300,
-					-60
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"g",
+							-240,
+							120
+						],
+						[
+							"g",
+							-60,
+							120
+						],
+						[
+							"g",
+							60,
+							120
+						],
+						[
+							"g",
+							240,
+							120
+						],
+						[
+							"g",
+							360,
+							0
+						]
+					]
 				],
 				[
-					"key",
-					"Delete"
+					"settle"
 				]
 			],
 			"expect": {
 				"links": 0,
-				"anchors": 4,
+				"anchors": 9,
 				"pipes": {
-					"hand": 3,
+					"hand": 9,
 					"link": 0
 				}
 			}
@@ -869,7 +915,7 @@
 			"id": "HEAL-01",
 			"state": "down",
 			"gesture": "draw: `g` bend",
-			"does": "Drag from A, press g above the old centre, and release on B.",
+			"does": "Drag from A, press g above the old centre, press g on B, and release.",
 			"steps": [
 				[
 					"drag",
@@ -886,16 +932,18 @@
 							"g",
 							0,
 							-120
+						],
+						[
+							"g",
+							360,
+							0
 						]
 					]
 				]
 			],
-			"intent": "A-B heals: the g anchor and its two hand pipes are laid, A-B is drawn solid through the new anchor, and no second link is made. C-D stays down. The notice says the down link healed, not that a link was refused.",
+			"intent": "g lays pipes and makes no link: the g anchor and its two hand pipes are laid, and the down A-B heals over them, drawn through the new anchor. The notice says the pipes were laid and that A-B healed.",
 			"expect": {
 				"links": 2,
-				"linksBetween": {
-					"node-000001|node-000002": 1
-				},
 				"linkState": {
 					"link-000001": "up",
 					"link-000002": "down"
@@ -913,10 +961,10 @@
 					"hand": 2,
 					"link": 0
 				},
-				"notice": "healed link-000001",
+				"notice": "2 pipes laid.*link-000001 healed",
 				"noticeNot": "refused"
 			},
-			"rule": "The director's report, 2026-09-29: the g bend \"also fails\". DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29). A pair may carry one straight link (model/invariants.mjs). DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). The director's report on the g bend, 2026-09-29.",
 			"standing": "ruled",
 			"built": "yes"
 		},
@@ -945,11 +993,22 @@
 					]
 				]
 			],
-			"standing": "open",
-			"question": "Should g pressed on the end lay the last pipe BY HAND, so that here it heals A-B and outlives it, where a plain mouseup (HEAL-03) lays a pipe that goes with its link?",
-			"proposal": "Yes. The two then differ only in the lifetime of the last pipe, which is the difference g and w already make everywhere else.",
-			"today": "Nothing happens and nothing is said: g on a node is ignored, and the mouseup is dropped as a duplicate straight link.",
-			"rule": "Asked by the director, 2026-09-29: \"do we need to distinguish between plain mouseup on link drag on existing anchor and pressing g on existing anchor then mouseup\"."
+			"standing": "ruled",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). The director asked, 2026-09-29, whether g on an existing anchor should differ from a plain mouseup: it does -- g lays a pipe, a mouseup makes a link.",
+			"intent": "g on the end lays the pipe from A to B by hand, and no link is made; the down A-B heals over it.",
+			"expect": {
+				"links": 2,
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "down"
+				},
+				"pipes": {
+					"hand": 1,
+					"link": 0
+				},
+				"notice": "1 pipe laid.*link-000001 healed"
+			},
+			"built": "yes"
 		},
 		{
 			"id": "HEAL-03",
@@ -970,11 +1029,16 @@
 					[]
 				]
 			],
-			"standing": "open",
-			"question": "Should a plain mouseup on the down link's other end lay the pipe that link needs, laid with the link and going when no link remains, and heal it, rather than being dropped?",
-			"proposal": "Yes. The director counts a mouseup onto an anchor as a deliberate way to lay a pipe, and the pipe is exactly what A-B lacks.",
-			"today": "Nothing happens and nothing is said: the drag is dropped as a duplicate straight link.",
-			"rule": "The director, 2026-09-29: \"pipes are deliberate construction actions - either by pressing w/g or mouseup a link drag onto an anchor/node\"."
+			"standing": "reading",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). The proposer's reading that a pair takes one unpinned link here too (B72).",
+			"intent": "Nothing is made, and the notice says why: a plain drag lays no pipes, and A-B already has an unpinned link, which a pair takes one of.",
+			"expect": {
+				"links": 2,
+				"down": 2,
+				"pipes": 0,
+				"notice": "already joins"
+			},
+			"built": "yes"
 		},
 		{
 			"id": "HEAL-04",
@@ -1001,18 +1065,24 @@
 					]
 				]
 			],
-			"intent": "A new link, pinned at the new anchor, is drawn in addition to the down A-B, which stays down: the pipes the new link laid carry only it.",
+			"intent": "A new link, pinned at the new anchor, is made in addition to the down A-B, which stays down. w laid only the pipe into its anchor, and the release on B laid none, so the new link has no way from its pin to B yet: it is made down too. Selected as it is made, it says it has no way yet.",
 			"expect": {
 				"links": 3,
+				"down": 3,
 				"linksBetween": {
 					"node-000001|node-000002": 2
 				},
-				"anchors": 1,
 				"linkState": {
 					"link-000001": "down"
-				}
+				},
+				"anchors": 1,
+				"pipes": {
+					"link": 1,
+					"hand": 0
+				},
+				"notice": "link-\\w+ is down: no way over the pipes it may use"
 			},
-			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30). DECISIONS: \"Each drag action does one thing\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},
@@ -1054,7 +1124,7 @@
 				]
 			],
 			"standing": "ruled",
-			"rule": "The director, 2026-09-29: \"if I draw a new link with w - this should not be the healed link\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"rule": "The director, 2026-09-29: \"if I draw a new link with w - this should not be the healed link\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30). DECISIONS: \"Each drag action does one thing\" (2026-09-30).",
 			"intent": "A-B stays down while the w link exists, and deleting the w link leaves no trace: its anchor and pipes go, and both old links are still down.",
 			"expect": {
 				"links": 2,
@@ -1067,8 +1137,8 @@
 		{
 			"id": "CAP-01",
 			"state": "routed",
-			"gesture": "draw: `g` bend",
-			"does": "Drag from A, press g off the existing way, and release on C.",
+			"gesture": "draw: mouseup on end",
+			"does": "Drag from A, and release on C.",
 			"steps": [
 				[
 					"drag",
@@ -1080,36 +1150,20 @@
 						0,
 						-240
 					],
-					[
-						[
-							"g",
-							-240,
-							-180
-						]
-					]
+					[]
 				]
 			],
-			"intent": "Accepted: the shorter way through the centre is held by the two links already there, so the free way is the one drawn. The new link runs through the g anchor and the old links are untouched.",
+			"intent": "A link from A to C is made and lays no pipes. The only way, through the centre, is held by the two links already there, so it is made down, and, selected as it is made, it says the two links hold its way.",
 			"expect": {
-				"refused": false,
 				"links": 3,
-				"down": 0,
-				"linkState": {
-					"link-000001": "up",
-					"link-000002": "up"
-				},
-				"keptAt": [
-					[
-						-240,
-						-180
-					]
-				],
+				"down": 1,
 				"pipes": {
-					"hand": 6,
+					"hand": 4,
 					"link": 0
-				}
+				},
+				"notice": "link-\\w+ is down: its way is held by link-000001, link-000002"
 			},
-			"rule": "DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},
@@ -1138,14 +1192,15 @@
 					]
 				]
 			],
-			"intent": "Refused: the leg from A to t1 is a pipe the upper link already carries, and a pipe carries one link. The notice names the link that holds it. It places no g anchor, so the notice does not say one was kept.",
+			"intent": "The new link is made, pinned at t1, but the pipe from A to t1 already carries the upper link, and a pipe carries one link: it is made down, and, selected as it is made, it says the upper link holds its way.",
 			"expect": {
-				"refused": true,
-				"notice": "held by link-000001",
-				"links": 2,
+				"refused": false,
+				"links": 3,
+				"down": 2,
+				"notice": "link-\\w+ is down: its way is held by link-000001",
 				"noticeNot": "g anchors"
 			},
-			"rule": "DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},
@@ -1293,10 +1348,10 @@
 			"built": "yes"
 		},
 		{
-			"id": "ALT-01",
-			"state": "g path left",
+			"id": "GST-01",
+			"state": "routed",
 			"gesture": "draw: `g` bend",
-			"does": "From S, drag through four g hops below, and release on the old path's end: an alternate path, longer than the old one.",
+			"does": "Drag from A, press g off the existing way, press g on C, and release.",
 			"steps": [
 				[
 					"drag",
@@ -1305,36 +1360,109 @@
 						0
 					],
 					[
-						240,
-						-120
+						0,
+						-240
 					],
 					[
 						[
 							"g",
 							-240,
-							120
+							-180
 						],
 						[
 							"g",
-							-60,
-							120
-						],
-						[
-							"g",
-							60,
-							120
-						],
-						[
-							"g",
-							240,
-							120
+							0,
+							-240
 						]
 					]
 				]
 			],
-			"intent": "The link is made and runs the old three-pipe path, the shorter way; the five pipes drawn are laid by hand as its alternate. The notice says it runs a shorter way and that the path drawn is kept.",
+			"intent": "g lays pipes and makes no link: the g anchor and two hand pipes are laid, and the links already there are untouched.",
 			"expect": {
 				"refused": false,
+				"links": 2,
+				"down": 0,
+				"keptAt": [
+					[
+						-240,
+						-180
+					]
+				],
+				"pipes": {
+					"hand": 6,
+					"link": 0
+				},
+				"notice": "2 pipes laid"
+			},
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "GST-02",
+			"state": "routed",
+			"gesture": "draw: `g` bend",
+			"does": "Drag from A, press g off the existing way, and release on C without a key.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						]
+					]
+				]
+			],
+			"intent": "Only the pipe into the g anchor is laid: a plain release lays no pipe, and a drag without w makes no link.",
+			"expect": {
+				"links": 2,
+				"keptAt": [
+					[
+						-240,
+						-180
+					]
+				],
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				},
+				"notice": "1 pipe laid"
+			},
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). The proposer's reading that each action lays at most the pipe into its own stop.",
+			"standing": "reading",
+			"built": "yes"
+		},
+		{
+			"id": "ALT-01",
+			"state": "two g paths",
+			"gesture": "draw: mouseup on end",
+			"does": "Drag from S, and release on E.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[]
+				]
+			],
+			"intent": "A link is made and lays no pipes: it runs the shorter path, the four pipes above, and the path below is its alternate.",
+			"expect": {
 				"links": 1,
 				"down": 0,
 				"through": {
@@ -1346,43 +1474,27 @@
 						[
 							0,
 							-120
+						],
+						[
+							240,
+							-120
 						]
 					]
 				},
-				"keptAt": [
-					[
-						-240,
-						120
-					],
-					[
-						-60,
-						120
-					],
-					[
-						60,
-						120
-					],
-					[
-						240,
-						120
-					]
-				],
-				"anchors": 8,
 				"pipes": {
-					"hand": 8,
+					"hand": 9,
 					"link": 0
-				},
-				"notice": "shorter way.*kept as its alternate"
+				}
 			},
-			"rule": "The director's report, 2026-09-30: \"Link fails to establish. There are not links on either path\". DECISIONS: \"A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate\" (2026-09-30).",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). DECISIONS: \"A g drag with a shorter free way makes the link on that way\" (2026-09-30), for the director's alternate-path case.",
 			"standing": "ruled",
 			"built": "yes"
 		},
 		{
 			"id": "ALT-02",
-			"state": "g path left",
+			"state": "two g paths",
 			"gesture": "delete `g` hop",
-			"does": "Draw the alternate as in ALT-01, then delete the middle anchor of the old path.",
+			"does": "Make the link as in ALT-01, then delete the middle anchor of the path above.",
 			"steps": [
 				[
 					"drag",
@@ -1391,31 +1503,10 @@
 						0
 					],
 					[
-						240,
-						-120
+						360,
+						0
 					],
-					[
-						[
-							"g",
-							-240,
-							120
-						],
-						[
-							"g",
-							-60,
-							120
-						],
-						[
-							"g",
-							60,
-							120
-						],
-						[
-							"g",
-							240,
-							120
-						]
-					]
+					[]
 				],
 				[
 					"settle"
@@ -1430,7 +1521,7 @@
 					"Delete"
 				]
 			],
-			"intent": "The link moves onto the alternate path and stays up: that is what the alternate is for.",
+			"intent": "The link moves onto the path below and stays up: that is what the alternate is for.",
 			"expect": {
 				"links": 1,
 				"down": 0,
@@ -1447,63 +1538,7 @@
 					]
 				}
 			},
-			"rule": "DECISIONS: \"A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate\" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26).",
-			"standing": "ruled",
-			"built": "yes"
-		},
-		{
-			"id": "ALT-03",
-			"state": "pinned, another way",
-			"gesture": "draw: `g` bend",
-			"does": "Drag from A with g at two points above, and release on B: three pipes, tying the free way below.",
-			"steps": [
-				[
-					"drag",
-					[
-						-480,
-						0
-					],
-					[
-						480,
-						0
-					],
-					[
-						[
-							"g",
-							-240,
-							-240
-						],
-						[
-							"g",
-							240,
-							-240
-						]
-					]
-				]
-			],
-			"intent": "Accepted: the new link runs the free way below, which is just as short, and the path drawn above is kept as its alternate. The notice says the way taken is just as short.",
-			"expect": {
-				"refused": false,
-				"links": 2,
-				"down": 0,
-				"keptAt": [
-					[
-						-240,
-						-240
-					],
-					[
-						240,
-						-240
-					]
-				],
-				"pipes": {
-					"hand": 6,
-					"link": 2
-				},
-				"notice": "just as short.*kept as its alternate",
-				"noticeNot": "shorter"
-			},
-			"rule": "DECISIONS: \"A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate\" (2026-09-30). Replaces REF-01, which held the tie refusal this ruling reverses.",
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26).",
 			"standing": "ruled",
 			"built": "yes"
 		},

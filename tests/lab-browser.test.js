@@ -282,8 +282,9 @@ test('the route hook accepts a g route the link will not follow, names the guide
 		it, so the shorter way is judged over hand pipes.
 		*/
 		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000002', pins: [], placed: [],
-			guides: ['waypoint-000007', 'waypoint-000006'], stops: ['node-000001', 'waypoint-000007', 'waypoint-000006', 'node-000002'] })`);
-		assert.equal(v.ok, true, v.reason);
+			guides: ['waypoint-000007', 'waypoint-000006'], stops: ['node-000001', 'waypoint-000007', 'waypoint-000006', 'node-000002'],
+			pressed: { w: true, g: true }, endPressed: 'w' })`);   // a w drag with g hops: only w makes a link (2026-09-30)
+		assert.equal(v.ok, true, v.notice);
 		assert.deepEqual(v.skipped, ['waypoint-000007'], 'the guide the link will not pass is named');
 		assert.equal(await p.run('lab.pipes.list().length'), before, 'the check lays nothing: the legs wait for the planner to accept the link');
 	} finally { await p.close(); }
@@ -294,8 +295,9 @@ test('an accepted route lays its pipes only once the planner accepts the link, a
 	try {
 		const before = await p.run('lab.pipes.list().length');
 		// A straight to D: a new one-pipe leg, shorter than A-centre-D, so the route takes it
-		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000004', pins: [], guides: [], stops: ['node-000001', 'node-000004'] })`);
-		assert.equal(v.ok, true, v.reason);
+		// w pressed at D: only w lays a pipe WITH a link, and a key at the end lays the pipe into it (2026-09-30)
+		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000004', pins: [], guides: [], placed: [], stops: ['node-000001', 'node-000004'], pressed: { w: true, g: false }, endPressed: 'w' })`);
+		assert.equal(v.ok, true, v.notice);
 		assert.equal(await p.run('lab.pipes.list().length'), before, 'nothing is laid by the check itself');
 
 		await p.run(`lab.input.commitRoute({ src: lab.model.get('node', 'node-000001'), placed: [] }, 'node-000004', [])`);
@@ -430,7 +432,7 @@ test('a drawn link is given its age when the planner accepts it, and keeps it th
 /*
 THE SEEDS ARE BOARDS A HAND COULD DRAW -- ruled 2026-09-29, "Yes, as the gesture would".
 
-A pipe joining two consecutive stops of a link's intent (its ends and pins, in order) is what `w` lays,
+A pipe joining two consecutive stops of a PINNED link's intent (its ends and pins, in order) is what `w` lays,
 and goes with its link; any other pipe is what `g` or a hand lays, and stays. A seed that loaded every
 pipe as hand-laid behaved as no drawn board can: deleting a link's end left its bend and a pipe standing.
 Checked as a RULE over every board, so a new board is held to it without anyone listing it here.
@@ -441,7 +443,8 @@ test('every seed pipe carries the lifetime its gesture would give it', () => {
 	assert.ok(named.length >= 5, 'the sweep must find the boards');
 	let checked = 0;
 	for (const [name, board] of named) {
-		const links = board.ops.map((o) => o.entity).filter((e) => e && e.id.startsWith('link-'));
+		// only w lays a pipe WITH a link (2026-09-30, "Each drag action does one thing"): a link with no pin laid none
+		const links = board.ops.map((o) => o.entity).filter((e) => e && e.id.startsWith('link-') && (e.via ?? []).length);
 		const legs = new Set();
 		for (const l of links) {
 			const stops = [l.src, ...(l.via ?? []), l.dst];

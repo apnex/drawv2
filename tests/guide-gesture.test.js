@@ -116,3 +116,47 @@ test('a refusal may name anchors to KEEP: those are committed, the rest are clea
 		assert.deepEqual(h.commits[0].ops.map((o) => `${o.op}:${o.kind}`), ['put:waypoint']);
 	} finally { h.restore(); }
 });
+
+/*
+THE HOOK IS TOLD WHAT THE DRAG DID -- ruled 2026-09-30, "Each drag action does one thing": "the very next action
+decides what it is - a "w", a "g", or a plain "mouse-up" on another anchor". Which keys were pressed decides
+whether there is a link at all, and how the END was reached decides whether a pipe is laid into it: a key pressed
+there lays one, a plain release does not. Only Input sees either, so it says both.
+*/
+test('the route hook is told which keys the drag pressed, and how its end was reached', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const [c, d] = seedNodes(h.model, [[0, 240], [360, 240]]);
+		drag(h, a, b, []);                                        // plain: a link that lays no pipe
+		drag(h, c, d, [['g', 180, 360]]);                         // g, then a plain release on d
+		const plain = calls[0], guided = calls[1];
+		assert.deepEqual([plain.pressed, plain.endPressed], [{ w: false, g: false }, false]);
+		assert.deepEqual([guided.pressed, guided.endPressed], [{ w: false, g: true }, false], 'released plainly: no key at the end');
+	} finally { h.restore(); }
+});
+
+test('g pressed ON a node threads the node, and ends the route there with g', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: false, keep: [] }; } });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		drag(h, a, b, [['g', 360, 0]]);                           // g on b itself, then release there
+		assert.equal(calls.length, 1, 'the drag reaches the hook');
+		assert.equal(calls[0].dst, b.id, 'it ends at b');
+		assert.equal(calls[0].endPressed, 'g', 'reached with g, so a pipe is laid into it');
+		assert.deepEqual(calls[0].stops, [a.id, b.id]);
+	} finally { h.restore(); }
+});
+
+test('a plain drag between a pair already linked reaches the hook, so the lab can say why nothing is made', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: false, keep: [] }; } });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		h.model.put('link', { id: 'link-00000e', name: 'l', src: a.id, dst: b.id });
+		drag(h, a, b, []);
+		assert.equal(calls.length, 1, 'before this, Input dropped it without a word (B72) and the hook never heard');
+	} finally { h.restore(); }
+});

@@ -108,7 +108,7 @@ export function whyDown(model, ids) {
 	const by = model.blockersOf(down[0]);
 	return by.length
 		? `${down[0].id} is down: its way is held by ${by.join(', ')} -- a pipe carries one link, and the older link keeps it`
-		: `${down[0].id} is down: no way over the pipes it may use -- it heals when one returns`;
+		: `${down[0].id} is down: no way over the pipes it may use -- it heals when one is laid`;
 }
 
 export function downSummary(model) {

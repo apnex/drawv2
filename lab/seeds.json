@@ -580,17 +580,17 @@
 			[
 				"node-000001",
 				"waypoint-000005",
-				"link"
+				"hand"
 			],
 			[
 				"node-000002",
 				"waypoint-000005",
-				"link"
+				"hand"
 			],
 			[
 				"node-000003",
 				"waypoint-000005",
-				"link"
+				"hand"
 			]
 		]
 	},

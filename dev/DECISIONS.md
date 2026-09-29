@@ -1202,6 +1202,7 @@ Asked whether "visually deleting a link" is the same as "link is down, trying to
 So they are two states:
 - DELETED: gone from the document, drawn nowhere, healing never; only undo restores it. A link is deleted when its source or destination is, and when it loses a pin with no other way (below).
 - DOWN: still in the document with its name and intent, but with no route over the pipes right now. It is drawn DOTTED along its intent -- for a link with no pins, directly between its source and destination -- and heals by itself when a route returns.
+AMENDED 2026-09-30: a mouseup onto an anchor no longer lays a pipe; only `w` and `g` do -- see "Each drag action does one thing" below.
 
 Built as round dots rather than the control dash, the proposer's choice within the director's "dotted/control like": a control link is already dashed, and so is the drag preview, so a dashed down link would read as a live control-plane link.\
 The link keeps its own weight, so a down control link still reads as control plane.\
@@ -1242,7 +1243,8 @@ A single anchor can have multiple links bending and crossing however.\
 When we develop the visual and mechanics of concurrent links over pipes (proper sub-anchors etc..) we can adjust this rule".\
 The proposer measured it before it was ruled, on a scratch copy of the tree with real input, and over 3,000 random gesture sequences of 14 edits replayed under each rule (a model of the lab's gestures that omits landing cuts, joins and anchor sweeps; the scripts are in the private archive, not the repository).\
 One finding set the shape of the ruling: capacity alone is not enough.\
-Without an ownership rule, deleting the `w` link let the down link take over its leftover pipes, and the trace returned (MEASURED).
+Without an ownership rule, deleting the `w` link let the down link take over its leftover pipes, and the trace returned (MEASURED).\
+AMENDED 2026-09-30: a link drag whose way is held is no longer refused; the link is made, drawn down, and names what blocks it -- see "Each drag action does one thing" below.
 
 | measured over 42,000 edits | today | one link per pipe, older link first, strict |
 |---|---|---|
@@ -1285,4 +1287,24 @@ Asked "What should happen?", the director chose "Link runs the shorter way" (the
 The option as worded: the link is created and runs the old path, and the new path is kept as its alternate, so if the old path goes, the link moves onto it; the notice says so; `g` anchors only lay pipes, and a `g` drag is refused only when no free way exists.\
 It reverses the part of the `g` check the director called correct on 2026-09-29, which was shown with the option.\
 "Link runs the drawn path" was shown as needing a new stored kind of anchor, a routing hold that is not a connection (`GUIDE-ANCHORS.md` section 8, item 3).\
-CORRECTED, the option's "refused only when no free way exists": two other refusals from the same day stand, a way held by another link and a drag that would move an existing link, since both rules were ruled on their own.
+CORRECTED, the option's "refused only when no free way exists": two other refusals from the same day stand, a way held by another link and a drag that would move an existing link, since both rules were ruled on their own.\
+AMENDED 2026-09-30: a drag using only `g` now makes no link at all -- see "Each drag action does one thing" below.\
+This ruling still governs `g` hops inside a `w` drag: the link runs the shorter way, and the path drawn is kept.
+
+**Each drag action does one thing: `w` pins a link, `g` lays pipes, a plain mouseup makes a link over existing pipes -- ruled 2026-09-30.**\
+The director, to streamline testing: "w: behaves as it does now - constructs anchors, pipes and pins the link. g: change it such that it only constructs anchors and pipes - but actually no link. plain-left-mouse-drag-between-two-anchors: constructs a link but NO PIPES! must use existing infra".\
+Asked what a drag using both keys does, the director chose the proposer's recommendation and stated the rule in their own words: "A "left-click-drag" from a source anchor is an undefined intent - the very next action decides what it is - a "w", a "g", or a plain "mouse-up" on another anchor.\
+"w" pins a link, and determines it will also produce a link, and dynamically route from that first w pin to either the next w, or the destination".\
+Asked what a plain drag does when no free way exists, the director chose "Made, but down" over "Refused" (the proposer's recommendation): the link is made, drawn down, and heals when pipes are laid or the way frees.\
+So:
+- a drag with any `w` makes a link, pinned at each `w` anchor; between pins, and from the last pin to the destination, it routes over the pipes;
+- a drag with `g` and no `w` lays anchors and pipes by hand, and makes no link;
+- a drag with neither, released on another anchor, makes a link and lays no pipe;
+- a link with no free way is made down, and names the link holding its way when one does.
+
+Proposer's reading, not ruled: each action lays at most the pipe INTO its own stop -- `w` and `g` from the previous stop, a plain release none -- so a `w` link released plainly on its destination routes to it over existing pipes, and to lay that last pipe the author presses `w` or `g` on the destination.\
+It follows the director's "dynamically route from that first w pin to ... the destination", and it keeps every board drawn with a `w` pressed at its end, as the `w`-chain is, unchanged.\
+Proposer's reading, not ruled: `g` may be pressed on an existing node, so a pipe can end at one; `w` still may not, since a pin is always a waypoint.\
+Proposer's reading, not ruled: a plain drag between two anchors that an unpinned link already joins makes nothing, and says so, because a pair takes one unpinned link (B72); before this the drag was dropped without a word.\
+What it replaces: `GUIDE-ANCHORS.md` T3 ("the first bend key decides") is taken and widened -- any drag without `w` makes no link.\
+The "healed" notice for a `g` drag an older down link took (HEAL-01) goes, because a `g` drag makes no link to refuse: its pipes are laid, and the down link heals over them.
