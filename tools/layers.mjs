@@ -171,6 +171,8 @@ export const ENTRIES = {
 		modules: [
 			'lab/src/root.js',
 			'network/pipes.mjs',   // the incubating plugin (ruled 2026-09-28)
+			'network/pipeset.mjs',
+			'network/resolve.mjs',
 			'app/src/changes.js', 'app/src/commands.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'engine/index.mjs',
@@ -264,7 +266,15 @@ export const RULES = {
 	choice was a larger budget or no fixed boards, and a gesture question answered on whatever the
 	author happened to draw is not answered at all.
 	*/
-	L8: { dir: 'lab', budget: 150 },
+	/*
+	RAISED again, 150 to 180, when the lab began composing the network incubator. What grew is the
+	pipe painter (a dozen lines drawing conduit beneath links) and each board's conduit list. The
+	painter is composition -- it reads the pipe set and emits elements, defining no rule -- and the
+	conduit lists are data. The routing itself lives in network/, which is where the budget should
+	NOT be spent: if this ceiling keeps rising, that is the signal something that belongs in the
+	incubator is being written in the lab instead.
+	*/
+	L8: { dir: 'lab', budget: 180 },
 	/*
 	A PROXY for criterion 5 (browser restatements of planner rules): it sees a browser module reach
 	for a rule's code, and misses a rule re-typed by hand. It reads 2 while the three restated rules

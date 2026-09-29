@@ -40,6 +40,8 @@ import { Log } from '../../server/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
+import { createPipeSet } from '../../network/pipeset.mjs';
+import { pipeResolver } from '../../network/resolve.mjs';
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -48,7 +50,7 @@ A missing layer is a silent null: the renderer appends into nothing and the canv
 no error, which is the hardest kind of failure to attribute. The product page and this one declare
 the same ids, so a divergence between them is a real defect and is named here at boot.
 */
-const NEEDED = ['container', 'canvas', 'grid-nodes', 'grid-zones', 'snaplayer', 'zones', 'groups',
+const NEEDED = ['container', 'canvas', 'grid-nodes', 'grid-zones', 'snaplayer', 'zones', 'pipes', 'groups',
 	'links', 'waypoints', 'nodes', 'movers', 'overlay', 'readout-bottom', 'lab-notice', 'kdefs'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
@@ -62,8 +64,18 @@ nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius
 const gridZones = svg.querySelector('#grid-zones');
 zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT }, gridZones));
 
-// the tab's model -- what the author sees and edits
-const model = new Model();
+/*
+The pipe set, for the session. Pipes are not stored yet -- that is the one format batch, last (F6)
+-- so they live here and a reload starts from nothing, which is correct rather than missing.
+*/
+const pipes = createPipeSet();
+
+/*
+The tab's model draws links along their ROUTE over pipes, through the interface declared on Model
+for exactly this (`resolvePath`). Production constructs `new Model()` and draws the straight
+polyline it always has; nothing here reaches production.
+*/
+const model = new Model({ resolvePath: pipeResolver(pipes) });
 attachRelations(model, { cellOf });
 
 /*
@@ -83,6 +95,29 @@ const log = new Log();
 
 const notice = document.getElementById('lab-notice');
 const say = (text) => { notice.textContent = text; };
+
+
+/*
+PIPES ARE DRAWN, beneath the links routed over them.
+
+Redrawn whole on every change. The pipe set is small and redrawing it is cheap, and a painter that
+tried to reconcile incrementally would need to know which pipes changed -- a second index over the
+pipe set, which is exactly the kind of second authority this programme exists to remove.
+
+Colour comes from nothing here: pipes take the stylesheet's class, because B255 records that the
+canvas already has two authorities for every colour and adding a third while that row is open would
+repeat the defect knowingly.
+*/
+const pipeLayer = svg.querySelector('#pipes');
+const drawPipes = () => {
+	pipeLayer.replaceChildren();
+	for (const { a, b, laid } of pipes.list()) {
+		const p = model.endpointOf(a), q = model.endpointOf(b);
+		if (!p || !q) continue;   // an anchor the pipe names has gone; the next sweep removes the pipe
+		el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}` }, pipeLayer);
+	}
+};
+model.onChange(drawPipes);
 
 const history = new Changes(model);
 const renderer = new Renderer(model, svg);
@@ -174,6 +209,22 @@ const BOARDS = {
 };
 
 /*
+THE CONDUIT each board lays. Pipes are the incubator's, not the document's, so they cannot ride in
+the planner's op list -- they are laid into the session's pipe set beside it.
+
+Chosen so each board's links have somewhere to route, and so the boards show what they are FOR:
+`cross` runs both links through the bare centre, and `detour` offers two ways across so that
+deleting one pipe moves the route.
+*/
+const N = (n) => `node-00000${n}`, W = (n) => `waypoint-00000${n}`;
+const CONDUIT = {
+	cross: [[N(1), W(5)], [W(5), N(2)], [N(3), W(5)], [W(5), N(4)]],
+	bend: [[N(1), W(5)], [W(5), N(2)]],
+	detour: [[N(1), W(5)], [W(5), N(2)], [N(1), W(6)], [W(6), W(7)], [W(7), N(2)]],
+	tri: [[N(1), W(5)], [N(2), W(5)], [N(3), W(5)]],
+};
+
+/*
 An unknown name REFUSES and lists what exists, rather than falling back to an empty board. A seed
 that silently gives a different board than the one named makes two runs incomparable, which is the
 whole thing these exist to prevent.
@@ -185,6 +236,11 @@ if (wanted) {
 	else {
 		const answer = commit(authority, log, { ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
-		else { applyOps(model, answer.change?.ops ?? []); say(`seed ${wanted} -- ${ops.length} entities`); }
+		else {
+			// conduit FIRST, so the links are routed over it the moment they are drawn
+			for (const [x, y] of CONDUIT[wanted] ?? []) pipes.lay(x, y, 'hand');
+			applyOps(model, answer.change?.ops ?? []);
+			say(`seed ${wanted} -- ${ops.length} entities, ${pipes.list().length} pipes`);
+		}
 	}
 }

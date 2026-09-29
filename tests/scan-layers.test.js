@@ -788,3 +788,38 @@ test('H17 C5: every folder the lab serves is copied into the image', () => {
 	assert.deepEqual(missing, [],
 		`the lab serves ${missing.join(', ')} but the Dockerfile never copies it -- the deployed page 404s its own modules while the gate passes`);
 });
+
+/*
+Every board's conduit names anchors the board actually creates.
+
+Pipes live in the session rather than the document, so they are not validated by the planner the
+way a seed's ops are. A conduit list naming an anchor the board never creates would lay a pipe to
+nothing: the painter skips it silently, the link has no route over it, and the board looks laid when
+it is not. So each pipe's two ends are checked against the ids the board's own ops put.
+*/
+test('every seeded board lays conduit only between anchors it creates', () => {
+	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+	const boardsBlock = src.match(/const BOARDS = \{[\s\S]*?\n\};/);
+	const conduitBlock = src.match(/const CONDUIT = \{[\s\S]*?\n\};/);
+	assert.ok(boardsBlock && conduitBlock, 'the lab must declare BOARDS and CONDUIT where this test can find them');
+
+	const P = 60;
+	const nd = (n, name, x, y, type = 'router') => ({ op: 'put', kind: 'node', entity: { id: `node-00000${n}`, name, type, x: x * P, y: y * P, shape: 'circle' } });
+	const wp = (n, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id: `waypoint-00000${n}`, name: `w${n}`, x: x * P, y: y * P } });
+	const lk = (n, name, a, b, via) => ({ op: 'put', kind: 'link', entity: { id: `link-00000${n}`, name, src: a, dst: b, ...(via ? { via } : {}) } });
+	const BOARDS = new Function('nd', 'wp', 'lk', `${boardsBlock[0]} return BOARDS;`)(nd, wp, lk);
+	const N = (n) => `node-00000${n}`, W = (n) => `waypoint-00000${n}`;
+	const CONDUIT = new Function('N', 'W', `${conduitBlock[0]} return CONDUIT;`)(N, W);
+
+	let checked = 0;
+	for (const [name, pipes] of Object.entries(CONDUIT)) {
+		assert.ok(BOARDS[name], `CONDUIT names a board '${name}' that BOARDS does not declare`);
+		const made = new Set(BOARDS[name].filter((o) => o.kind !== 'link').map((o) => o.entity.id));
+		for (const [a, b] of pipes) {
+			checked++;
+			assert.ok(made.has(a) && made.has(b),
+				`board '${name}' lays a pipe ${a}-${b}, and the board does not create ${made.has(a) ? b : a} -- a pipe to nothing, skipped silently`);
+		}
+	}
+	assert.ok(checked >= 10, `the sweep must find the boards' pipes, found ${checked}`);
+});

@@ -382,7 +382,14 @@ function analyse(src) {
 		const prev = T[i - 1], next = T[i + 1];
 		const member = isP(prev, '.') || isP(prev, '?.');
 		const key = isP(next, ':') && (isP(prev, '{') || isP(prev, ','));
-		if (t.value === 'class' && !isP(prev, '.')) classes++;
+		/*
+		`class:` as an OBJECT KEY is not a class declaration. The lab's pipe painter builds an SVG
+		element with `{ class: 'pipe' }` -- the attribute, which is how every painter in this repo
+		names a style -- and L8 read it as a class and refused the lab. `key` is computed on the line
+		above precisely to tell `{ window: 1 }` from a read of the host; the class check simply never
+		used it. Same exclusion, same reason.
+		*/
+		if (t.value === 'class' && !member && !key) classes++;
 		// a read of the host, not a property named after it: `x.window`, `{ window: 1 }` are neither
 		if (HOST.has(t.value) && !member && !key) globals.push({ name: t.value, line: t.line });
 		if (LOADER_ANYWHERE.has(t.value) || (LOADER_BINDING.has(t.value) && !member && !key)) loaders.push({ name: t.value, line: t.line });
