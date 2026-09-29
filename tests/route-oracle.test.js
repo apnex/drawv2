@@ -17,15 +17,13 @@ loudly, when no Chrome is present, so a contributor without one is not blocked -
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';
+import { teardown } from './fixtures/teardown.mjs';
+import { CHROME, NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
 
-const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
-	.find((b) => { try { execFileSync('which', [b], { stdio: 'ignore' }); return true; } catch { return false; } });
 
 // the shapes that exercise every branch of the decomposition: no corner, one corner, several, a
 // clamped short run, and a closed ring whose run home is drawn by `Z`
@@ -50,8 +48,7 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, 'p.html'), svg);
 
 	const port = 9400 + (process.pid % 400);
-	chrome = spawnGroup(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, '--no-sandbox',
-		'--disable-gpu', `--user-data-dir=${dir}/profile`, 'about:blank'], { stdio: 'ignore' });
+	chrome = launchChrome({ cdpPort: port, profileDir: `${dir}/profile`, url: 'about:blank' });
 
 	const { default: WebSocket } = await import('ws');
 	const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -83,7 +80,7 @@ before(async () => {
 // B238 -- Chrome writes its profile while it shuts down, so the profile is removed only after it exits.
 after(() => teardown([chrome], dir));
 
-test('H12.2: kernel route length agrees with the length the browser measures', { skip: !CHROME && 'no chrome on PATH' }, () => {
+test('H12.2: kernel route length agrees with the length the browser measures', { skip: NO_CHROME }, () => {
 	let worst = 0;
 	CASES.forEach((c, i) => {
 		const mine = pathLength(routeGeometry(c.pts, 20, c.close));
@@ -94,7 +91,7 @@ test('H12.2: kernel route length agrees with the length the browser measures', {
 	assert.ok(worst < 0.001, `worst relative error ${(worst * 100).toFixed(4)}%`);
 });
 
-test('H12.2: kernel sampling puts a point where the browser puts it', { skip: !CHROME && 'no chrome on PATH' }, () => {
+test('H12.2: kernel sampling puts a point where the browser puts it', { skip: NO_CHROME }, () => {
 	let worst = 0, where = '';
 	CASES.forEach((c, i) => {
 		const geo = routeGeometry(c.pts, 20, c.close), L = pathLength(geo);
@@ -109,7 +106,7 @@ test('H12.2: kernel sampling puts a point where the browser puts it', { skip: !C
 	assert.ok(worst < 0.1, `worst positional deviation ${worst.toFixed(4)}px (${where})`);
 });
 
-test('H12.2: offset-path can carry the kernel path string, and its clock can be SEEDED', { skip: !CHROME && 'no chrome on PATH' }, () => {
+test('H12.2: offset-path can carry the kernel path string, and its clock can be SEEDED', { skip: NO_CHROME }, () => {
 	// the presentation half of the same contract: the browser must accept `roundedPath` output as an
 	// offset-path, and `currentTime` must be settable, or the shared clock cannot drive the drawing
 	assert.ok(browser, 'oracle did not run');

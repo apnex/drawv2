@@ -16,15 +16,13 @@ tree (C5 is the guard for that). It closes the gap between "the source says so" 
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { teardown, spawnGroup } from './fixtures/teardown.mjs';
+import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
 
-const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
-	.find((c) => { try { execFileSync('which', [c], { stdio: 'pipe' }); return true; } catch { return false; } });
-const SKIP = !CHROME && 'no chrome on PATH';
+const SKIP = NO_CHROME;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const root = path.resolve(import.meta.dirname, '..');
 
@@ -40,25 +38,8 @@ before(async () => {
 		try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up yet */ }
 		await sleep(200);
 	}
-	/*
-	--disable-extensions IS THE FIX FOR THIS FILE'S FLAKE, and it was found by measurement, not guessed.
-
-	About one run in four, a page never booted. A full event timeline of a failing load showed the page
-	firing DOMContentLoaded and load at 31ms -- a successful load fires them at about 81ms, after all 56
-	module requests -- and cancelling every request still in flight in that same millisecond. A stopped
-	load, not a slow one. A reproduction with no in-page actions stopped loads too, always at the same
-	ELAPSED time -- 2.31 to 2.34 seconds after launch -- whatever the navigation count.
-
-	Chrome's own log named the candidate: at startup it installs an extension from this machine's system
-	external_extensions.json, in the background. Loading an extension that can observe requests makes
-	Chrome rebuild the request machinery of open pages, and whatever is in flight is cut off. Measured
-	over 20 launches each: 8 stopped loads in 500 with extensions on, 0 in 500 with this flag.
-
-	Two hypotheses were tested and REFUTED first, and are recorded so nobody re-runs them: Node closing
-	idle keep-alive sockets (no change), and opening and closing a tab per test (one tab made it worse).
-	*/
-	chrome = spawnGroup(CHROME, ['--headless=new', `--remote-debugging-port=${cdp}`, '--no-sandbox', '--disable-gpu',
-		'--disable-extensions', `--user-data-dir=${dir}/cdp`, 'about:blank'], { stdio: 'ignore' });
+	// the shared launch config -- including --disable-extensions, and the measurement that found it: tests/fixtures/chrome.mjs
+	chrome = launchChrome({ cdpPort: cdp, profileDir: `${dir}/cdp`, url: 'about:blank' });
 	for (let i = 0; i < 80; i++) {
 		try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); }
 	}

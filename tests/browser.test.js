@@ -24,16 +24,14 @@ the shape the design claims, and that is all this asks.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';
+import { teardown } from './fixtures/teardown.mjs';
+import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
 
-const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
-	.find((c) => { try { execFileSync('which', [c], { stdio: 'pipe' }); return true; } catch { return false; } });
-
-const SKIP = !CHROME && 'no chrome on PATH';
+const SKIP = NO_CHROME;
 const PITCH = 60;
 const DIAGRAM = 'diagram-ba0001';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -139,8 +137,8 @@ before(async () => {
 		await sleep(250);
 	}
 
-	chrome = spawnGroup(CHROME, ['--headless=new', `--remote-debugging-port=${cdp}`, '--no-sandbox',
-		'--disable-gpu', '--window-size=1600,1000', `--user-data-dir=${dir}/cdp`], { stdio: 'ignore' });
+	// the shared launch config (tests/fixtures/chrome.mjs); the window size is this harness's own, because its clicks depend on it
+	chrome = launchChrome({ cdpPort: cdp, profileDir: `${dir}/cdp`, extra: ['--window-size=1600,1000'] });
 	tab = await attach(`http://127.0.0.1:${port}/?diagram=${DIAGRAM}`);
 	await sleep(4000);
 
