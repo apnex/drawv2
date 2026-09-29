@@ -8,7 +8,7 @@ and fails for every wrong one.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pipeKey, route, routeLink } from '../network/pipes.mjs';
+import { pipeKey, route, routeLink, assignRoutes, preferredRoute, blockersOf } from '../network/pipes.mjs';
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b }));
 
@@ -63,4 +63,66 @@ test('a link routes through its pins in order, each leg the fewest pipes', () =>
 	assert.deepEqual(routeLink(net, { src: 'A', dst: 'D' }), ['A', 'D'], 'unpinned: the one-pipe way');
 	const pinned = routeLink(net, { src: 'A', dst: 'D', via: ['C'] });
 	assert.ok(pinned.includes('C'), 'pinned at C: the route must pass C, even though A-D is shorter');
+});
+
+/*
+PIPES CARRY ONE LINK EACH, FOR NOW -- ruled 2026-09-30 (dev/DECISIONS.md, "Pipes carry one link each, for now").
+  1. a pipe carries at most one link, and the limit is one function, `pipeCapacity`
+  2. a pipe laid with a link carries only the link whose ends and pins it joins
+  3. the older link keeps a contested hand-laid pipe
+So a link's route depends on the others, and `assignRoutes` is the one place that shares the pipes out.
+*/
+const hand = (a, b) => ({ a, b, laid: 'hand' });
+const withLink = (a, b) => ({ a, b, laid: 'link' });
+// the trunk board: A and C both reach t1, B and D both leave t2, and t1-t2 is the one trunk
+const TRUNK = [hand('A', 't1'), hand('C', 't1'), hand('t1', 't2'), hand('t2', 'B'), hand('t2', 'D')];
+const UPPER = { id: 'link-u', src: 'A', dst: 'B' }, LOWER = { id: 'link-l', src: 'C', dst: 'D' };
+
+test('a pipe carries one link: the OLDER link keeps a contested hand pipe, and the younger is down', () => {
+	const upperOlder = assignRoutes(TRUNK, [LOWER, UPPER], { rankOf: (id) => (id === 'link-u' ? 0 : 1) });
+	assert.deepEqual(upperOlder.get('link-u'), ['A', 't1', 't2', 'B'], 'the older link runs the trunk');
+	assert.equal(upperOlder.get('link-l'), null, 'the younger has no way left, so it is down');
+	// the same board with the ages swapped: age decides, not id or list order
+	const lowerOlder = assignRoutes(TRUNK, [UPPER, LOWER], { rankOf: (id) => (id === 'link-l' ? 0 : 1) });
+	assert.deepEqual(lowerOlder.get('link-l'), ['C', 't1', 't2', 'D']);
+	assert.equal(lowerOlder.get('link-u'), null);
+});
+
+test('no pipe is ever carried by two links', () => {
+	const routes = assignRoutes(TRUNK, [UPPER, LOWER, { id: 'link-x', src: 'A', dst: 'D' }]);
+	const on = new Map();
+	for (const [id, r] of routes) if (r) for (let i = 0; i < r.length - 1; i++) { const k = pipeKey(r[i], r[i + 1]); on.set(k, [...(on.get(k) ?? []), id]); }
+	assert.ok(on.size > 0, 'something must be routed, or this proves nothing');
+	for (const [k, ids] of on) assert.equal(ids.length, 1, `${k} carries ${ids.join(' and ')}`);
+});
+
+test('the limit is ONE function (pipeCapacity, 1), and raising it is the one change concurrent links need', () => {
+	const one = assignRoutes(TRUNK, [UPPER, LOWER]);
+	assert.equal([one.get('link-u'), one.get('link-l')].filter(Boolean).length, 1, 'by default the limit is one: the trunk carries one of the two links');
+	const shared = assignRoutes(TRUNK, [UPPER, LOWER], { capacity: () => 2 });
+	assert.ok(shared.get('link-u') && shared.get('link-l'), 'at two, both links run the trunk -- the algorithm reads the limit rather than assuming one');
+});
+
+test('a pipe laid WITH a link carries only the link whose ends and pins it joins', () => {
+	const laid = [withLink('A', 'w'), withLink('w', 'B')];
+	const pinned = { id: 'link-p', src: 'A', dst: 'B', via: ['w'] }, free = { id: 'link-f', src: 'A', dst: 'B' };
+	const both = assignRoutes(laid, [free, pinned], { rankOf: (id) => (id === 'link-f' ? 0 : 1) });
+	assert.deepEqual(both.get('link-p'), ['A', 'w', 'B'], 'its own legs carry the pinned link -- even though the other is older');
+	assert.equal(both.get('link-f'), null, 'the unpinned link may not use them: they join none of its stops');
+	// HEAL-05 in miniature: once the pinned link is gone, its leftover pipes carry NOTHING, so nothing heals over them
+	assert.equal(assignRoutes(laid, [free]).get('link-f'), null, 'a deleted link\'s pipes are no way for another link, so they are swept and leave no trace');
+});
+
+test('the preferred route ignores who holds a pipe; the BLOCKERS are the links holding a pipe on it', () => {
+	const rankOf = (id) => (id === 'link-u' ? 0 : 1);
+	assert.deepEqual(preferredRoute(TRUNK, LOWER), ['C', 't1', 't2', 'D'], 'the way the lower link would take if nobody held anything');
+	assert.deepEqual(blockersOf(TRUNK, [UPPER, LOWER], 'link-l', { rankOf }), ['link-u'], 'the upper link holds the trunk the lower one wants');
+	assert.deepEqual(blockersOf(TRUNK, [UPPER, LOWER], 'link-u', { rankOf }), [], 'a link that is up has no blockers');
+	const cut = { id: 'link-c', src: 'C', dst: 'Z' };
+	assert.deepEqual(blockersOf(TRUNK, [UPPER, cut], 'link-c', { rankOf }), [], 'a link down because no way exists at all is blocked by nobody');
+});
+
+test('a link with no rank is the NEWEST, so a link being drawn yields to every link already there', () => {
+	const routes = assignRoutes(TRUNK, [LOWER, UPPER], { rankOf: (id) => (id === 'link-l' ? 0 : Infinity) });
+	assert.ok(routes.get('link-l') && !routes.get('link-u'));
 });

@@ -391,6 +391,11 @@ A text box that genuinely needs selectable content opts back in, and will have a
 
 /* ---- links (kernel colour; width is inline) ---- */
 .link { stroke: #4fc3f7; pointer-events: stroke; cursor: pointer; }
+/* A DOWN link -- no route over the pipes right now -- is orange as well as dotted (2026-09-29), and so is a link
+   blocking the selected down link's way (2026-09-30). #ff9800 is 8.8:1 on the canvas. Only the lab's network
+   plugin ever makes a link down, so neither rule matches in production. Placed BEFORE .selected and .armed, which
+   share its specificity, so selecting or arming a link still shows. */
+.link[data-down], .link.blocking { stroke: #ff9800; }
 .link.selected { stroke: #aed581; }
 .link.armed { stroke: #e57373; cursor: not-allowed; }
 .link.replugging { opacity: 0.15; }

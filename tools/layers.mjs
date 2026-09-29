@@ -175,6 +175,7 @@ export const ENTRIES = {
 			'network/appearance.mjs',
 			'network/guide.mjs',
 			'network/resolve.mjs',
+			'network/order.mjs',   // which link is older: one link per pipe, the older keeps it (ruled 2026-09-30)
 			'app/src/changes.js', 'app/src/commands.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'engine/index.mjs',

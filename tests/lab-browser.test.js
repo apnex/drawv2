@@ -272,15 +272,18 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 THE ROUTE HOOK -- `g`'s whole-route check and its pipes, in the page.
 */
 test('the route hook refuses a guide the fewest-pipes route would skip, names it, and keeps only the guides\' pipes', { skip: SKIP }, async () => {
-	const p = await open('cross');
+	const p = await open('detour');
 	try {
 		const before = await p.run('lab.pipes.list().length');
-		// A to B through C and D: three pipes, while A-centre-B over the pipes is two. The route would ignore
-		// both guides, so the LINK is refused.
+		/*
+		n1 to n2 through w7 then w6: three pipes, while n1-w6-n2 is two once the legs are laid. The route would skip
+		w7, so the LINK is refused. On the detour board because the free way matters: the pinned uplink's own
+		pipes carry only it (ruled 2026-09-30), so they are no shortcut, and the refusal is judged on hand pipes.
+		*/
 		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000002', pins: [], placed: [],
-			guides: ['node-000003', 'node-000004'], stops: ['node-000001', 'node-000003', 'node-000004', 'node-000002'] })`);
+			guides: ['waypoint-000007', 'waypoint-000006'], stops: ['node-000001', 'waypoint-000007', 'waypoint-000006', 'node-000002'] })`);
 		assert.equal(v.ok, false);
-		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /node-000003/, 'the refusal names the skipped guide');
+		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /waypoint-000007/, 'the refusal names the skipped guide');
 		/*
 		RULED 2026-09-29, and this test changed with it. It used to assert that a refused route lays NO
 		pipes. The director: "G is supposed to keep the pipe/anchors even if the link fails" -- refusal
@@ -288,7 +291,7 @@ test('the route hook refuses a guide the fewest-pipes route would skip, names it
 		are kept, and nothing that would have been laid for the link alone.
 		*/
 		const laid = await p.run(`lab.pipes.list().slice(${before}).map((x) => x.laid)`);
-		assert.deepEqual(laid, ['hand', 'hand', 'hand'], "the guides' three pipes are kept, all laid by hand");
+		assert.deepEqual(laid, ['hand', 'hand'], "the guides' two new pipes are kept, both laid by hand; w7-w6 already existed");
 	} finally { await p.close(); }
 });
 
@@ -378,32 +381,11 @@ test('moving an anchor redraws the links ROUTED through it, not only the links t
 });
 
 /*
-The same defect's third face: a link's drawn route also depends on the PIPE SET, which lives outside
-the model -- so a new pipe that makes a shortcut never told the renderer, and existing links kept
-drawing the longer way. Found while fixing the anchor-move report, before the director met it.
+The same defect's third face -- a link's drawn route depends on the PIPE SET, which lives outside the model, so
+a change there must still redraw the links it moves -- is held by matrix row CAP-04: deleting the link that holds
+the trunk frees it, and the blocked link must be DRAWN along it. The test that stood here made its route change by
+letting a link run over two other links' pipes, which a pipe carrying one link forbids (ruled 2026-09-30).
 */
-test('a new pipe that changes an existing link\'s route redraws that link', { skip: SKIP }, async () => {
-	const p = await open('cross');
-	try {
-		const drawn = `document.getElementById('link-000001').getAttribute('d')`;
-		const notice = `document.getElementById('lab-notice').textContent`;
-		assert.match(await p.run(drawn), /Q0 0/, 'before: link-000001 runs A-centre-B');
-		/*
-		Draw A to C, then C to B -- legal links, unlike a second straight A-B, which the planner refuses
-		(B72) and which the first version of this test drew, so it measured a refusal and called it a
-		redraw failure. Their legs lay A-C and C-B, a second two-pipe way from A to B, and the router
-		breaks ties by sorted id (node-000003 before waypoint-000005), so link-000001's route becomes
-		A-C-B without the link itself being touched.
-		*/
-		for (const [a, b] of [['node-000001', 'node-000003'], ['node-000003', 'node-000002']]) {
-			assert.equal((await p.run(`lab.routeHook({ src: '${a}', dst: '${b}', pins: [], guides: [], stops: ['${a}', '${b}'] })`)).ok, true);
-			await p.run(`lab.input.commitRoute({ src: lab.model.get('node', '${a}'), placed: [] }, '${b}', [])`);
-			assert.doesNotMatch(await p.run(notice), /refused/, `the ${a}-${b} link was refused, so this would measure a refusal`);
-		}
-		assert.match(await p.run(drawn), /Q0 -240/, 'after: the existing link must be redrawn along its new route, through C');
-	} finally { await p.close(); }
-});
-
 test('moving a NODE redraws the links routed through it, too', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
@@ -427,6 +409,27 @@ test('a seed that cannot be fetched is reported, and the lab still works', { ski
 		assert.equal(p.ready, true, 'the page must come up without its board');
 		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /could not be loaded/,
 			'and say why the board is missing');
+	} finally { await p.close(); }
+});
+
+/*
+WHICH LINK IS OLDER is recorded, not inferred (ruled 2026-09-30: "the older link keeps a contested hand-laid pipe").
+Link ids are random, so the door notes each link the first time the planner accepts it, and never forgets it --
+so an undone delete gives the link back its place. Asserted on the page, since the noting is the door's wiring.
+*/
+test('a drawn link is given its age when the planner accepts it, and keeps it through delete and undo', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		// the seed's links are aged as they load, in the order listed -- before any edit gives the door a chance
+		assert.deepEqual(await p.run(`[lab.order.rankOf('link-000001'), lab.order.rankOf('link-000002')]`), [0, 1], 'a loaded board is aged in the order it lists its links');
+		await p.drag([-360, 0], [0, 240], [['w', -240, 120]]);   // A to D, pinned below the centre: a new link
+		const id = await p.run(`lab.authority.all('link').find((l) => l.src === 'node-000001' && l.dst === 'node-000004')?.id ?? null`);
+		assert.ok(id, 'the drag must make a link, or this proves nothing');
+		const rank = await p.run(`lab.order.rankOf('${id}')`);
+		assert.ok(Number.isFinite(rank) && rank > (await p.run(`lab.order.rankOf('link-000002')`)), `the new link is ranked, and younger than the seed's links: ${rank}`);
+		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'link', entity: lab.model.get('link', '${id}') }] })`);
+		await p.run('lab.history.undo()');
+		assert.equal(await p.run(`lab.order.rankOf('${id}')`), rank, 'undo gives it back its place');
 	} finally { await p.close(); }
 });
 
@@ -513,6 +516,12 @@ const SNAPSHOT = `(() => {
 		tabAnchors: lab.model.all('waypoint').map((w) => w.id),
 		alive: [...lab.authority.all('node'), ...lab.authority.all('waypoint')].map((e) => e.id),
 		pipes: lab.pipes.list(),
+		selected: lab.input.selection.list(),
+		// every stretch an UP link is drawn along, as the pair of points it joins -- from what is drawn, not from the assignment
+		stretches: lab.model.all('link').filter((l) => !lab.model.isLinkDown(l)).map((l) => {
+			const pts = lab.model.pathOf(l) ?? [];
+			return { id: l.id, keys: pts.slice(1).map((q, i) => [pts[i].join(','), q.join(',')].sort().join('|')) };
+		}),
 		paths: Object.fromEntries([...document.querySelectorAll('#links path.link')].map((el) => [el.id, drawn(el)])),
 	};
 })()`;
@@ -536,6 +545,12 @@ const INVARIANT = {
 		return !dangling.length || `pipes to missing anchors: ${dangling.map((x) => `${x.a}-${x.b}`).join(', ')}`;
 	},
 	I5: (s, thrown) => !thrown.length || `the page threw: ${thrown.join('; ')}`,
+	I6: (s) => {
+		const on = new Map();
+		for (const { id, keys } of s.stretches) for (const k of new Set(keys)) on.set(k, [...(on.get(k) ?? []), id]);
+		const stacked = [...on].filter(([, ids]) => ids.length > 1);
+		return !stacked.length || stacked.map(([k, ids]) => `${ids.join(' and ')} are both drawn along ${k}`).join('; ');
+	},
 };
 
 // a link a check names: its id, or "only" when exactly one link exists
@@ -581,6 +596,11 @@ const CHECK = {
 	notice: (s, re) => new RegExp(re).test(s.notice) || `the notice says "${s.notice}", which does not match /${re}/`,
 	noticeNot: (s, re) => !new RegExp(re).test(s.notice) || `the notice says "${s.notice}", which must not match /${re}/`,
 	refused: (s, want) => /refused/.test(s.notice) === want || `the notice says "${s.notice}", which is ${want ? 'not ' : ''}a refusal`,
+	stroke: (s, want) => {
+		const wrong = Object.entries(want).filter(([id, hex]) => s.paths[id]?.stroke !== rgb(hex));
+		return !wrong.length || wrong.map(([id, hex]) => `${id} is stroked ${s.paths[id]?.stroke ?? '(not drawn)'}, not ${hex}`).join('; ');
+	},
+	selected: (s, ids) => same([...s.selected].sort(), [...ids].sort()) || `the selection is ${ids.length ? s.selected.join(',') || 'empty' : s.selected.join(',')}, not ${ids.join(',')}`,
 	downStroke: (s, hex) => {
 		const down = s.links.filter((l) => l.down);
 		const wrong = down.filter((l) => s.paths[l.id]?.stroke !== rgb(hex));
@@ -623,6 +643,8 @@ for (const row of MATRIX.rows) {
 		try {
 			await perform(p, [...state.setup, ['settle']]);
 			const unset = judge(state.expect, await p.run(SNAPSHOT));
+			// a TODO row may stand on a state the lab cannot reach yet -- that is part of what is still missing
+			if (row.built === 'todo' && unset.length) return;
 			assert.deepEqual(unset, [], `the board is not in state "${row.state}" after its setup, so ${row.id} would prove nothing: ${unset.join('; ')}`);
 			await perform(p, [...row.steps, ['settle']]);
 			const s = await p.run(SNAPSHOT);

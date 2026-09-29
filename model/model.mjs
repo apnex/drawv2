@@ -63,7 +63,7 @@ export class Model {
 	holds that byte for byte. A resolver receives the link, this model, and the DEFAULT as a third
 	argument, so it can route some links and defer the rest without re-implementing the polyline.
 	*/
-	constructor({ resolvePath = null, routedThrough = null, linkDown = null } = {}) {
+	constructor({ resolvePath = null, routedThrough = null, linkDown = null, blockedBy = null } = {}) {
 		this.resolvePath = resolvePath;
 		/*
 		`routedThrough` -- the COMPANION of `resolvePath`, and it must travel with it.
@@ -85,6 +85,13 @@ export class Model {
 		same route it draws. Absent in production, which has no route to lose: `isLinkDown` is false.
 		*/
 		this.linkDown = linkDown;
+		/*
+		`blockedBy` -- the fourth companion: which links BLOCK a down link. Pipes carry one link each (ruled
+		2026-09-30), so a link can be down because another holds its way; the director asked that selecting it
+		"also highlight that blocking link in orange so I can see the path that is blocking". Who holds which
+		pipe is the router's owner's to say. Absent in production, which has no pipes: `blockersOf` is empty.
+		*/
+		this.blockedBy = blockedBy;
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -214,6 +221,11 @@ export class Model {
 	// whether a link has no route right now, and so is drawn as ready to heal -- never, unless injected
 	isLinkDown(link) {
 		return !!(link && this.linkDown && this.linkDown(link, this));
+	}
+
+	// the links holding the way a down link would take -- never any, unless injected
+	blockersOf(link) {
+		return link && this.blockedBy ? this.blockedBy(link, this) : [];
 	}
 
 	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always

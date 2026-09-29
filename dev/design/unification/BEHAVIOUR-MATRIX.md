@@ -62,6 +62,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | I3 | The canvas draws exactly the links that exist, each along a path. |
 | I4 | No pipe names an anchor that does not exist. |
 | I5 | Nothing is thrown in the page. |
+| I6 | No two links that are up are drawn along the same stretch: a pipe carries one link (2026-09-30). |
 <!-- END GENERATED: invariants -->
 
 ---
@@ -69,17 +70,18 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 ## 5. The matrix -- board state by gesture
 
 <!-- BEGIN GENERATED: grid. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
-| state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo |
-|---|---|---|---|---|---|---|---|---|---|
-| routed | n/a | DEL-01, LOOK-01 (todo) | DEL-12 | DEL-16 | . | REF-01 | . | . | . |
-| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | . | . |
-| pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . |
-| pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . |
-| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | . | . | . | . | UNDO-01 |
-| pins and a g hop | DEL-14 (reading) | DEL-09 (reading) | . | . | . | . | . | . | . |
-| down | n/a | n/a | DEL-15 | . | HEAL-03 (open) | HEAL-01 (todo) | HEAL-02 (open) | HEAL-04, HEAL-05 (open) | . |
+| state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link |
+|---|---|---|---|---|---|---|---|---|---|---|
+| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | . | CAP-01 | . | . | . | . |
+| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | . | . | . |
+| pinned, another way | DEL-02 | n/a | . | . | . | REF-01 | . | . | . | . |
+| pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . |
+| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | . | . | . | . | UNDO-01 | . |
+| pins and a g hop | DEL-14 (reading) | DEL-09 (reading) | . | . | . | . | . | . | . | . |
+| down | n/a | n/a | DEL-15 | . | HEAL-03 (open) | HEAL-01 | HEAL-02 (open) | HEAL-04, HEAL-05 | . | . |
+| blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 |
 
-24 rows: 19 built, 2 todo, 3 open.\
+30 rows: 28 built, 0 todo, 2 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -91,6 +93,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | w-chain | blank | A link drawn by hand as a chain of w anchors, S-P1-P2-P3-E. |
 | pins and a g hop | blank | A link drawn by hand as S-P1-G-P2-E: two pins with a g anchor between them. |
 | down | `?seed=cross` | The routed board with its centre deleted, so both links are down (DEL-01). |
+| blocked | `?seed=trunk` | Two links want one hand-laid trunk; the older holds it, so the younger is down, blocked by it. |
 
 | gesture | what the author does |
 |---|---|
@@ -103,6 +106,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | draw: `g` on end | Drag to the end, press `g` on it, and release there. |
 | draw: `w` bend | Drag, press `w` at a point on the way, and release on the end. |
 | undo | Undo the gesture before. |
+| select link | Click a link to select it. |
 <!-- END GENERATED: grid -->
 
 ---
@@ -128,13 +132,19 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | DEL-14 | pins and a g hop x delete pin | Select the first pin, P1, and press Delete. | The start has no other way, so the whole link goes. The g anchor keeps its remaining hand pipe, and that pipe keeps P2. | The proposer's reading of two rulings together: a link that loses a pin with no other way is deleted whole, and only links and pipes laid by hand keep an anchor (DECISIONS, 2026-09-29). | reading, built |
 | DEL-15 | down x delete end | Select node A, and press Delete. | A-B is gone with its end, permanently: a down link does not wait to heal once an end is deleted. C-D stays down. | The director, 2026-09-29: "if either source or dest node is deleted, link is gone with it permanently". | ruled, built |
 | DEL-16 | routed x delete link | Select link A-B on its left leg, and press Delete. | A-B goes. C-D still runs through the centre, which its hand pipes keep, and all four hand pipes stay. | DECISIONS: pipes laid by hand stay until deleted (2026-09-27). | ruled, built |
-| LOOK-01 | routed x delete `g` hop | Select the centre anchor both links pass, and press Delete. | The down links are drawn ORANGE as well as dotted, so down reads apart from a live link at a glance. Today: Down links are dotted in the live link blue, #4fc3f7. | The director, 2026-09-29: "we need to make the dots a different color - orange?". The shade is the proposer's: #ff9800, apart from the transit ring #ffb74d and the packet placeholder #ffa726. | ruled, TODO |
-| HEAL-01 | down x draw: `g` bend | Drag from A, press g above the old centre, and release on B. | A-B heals: the g anchor and its two hand pipes are laid, A-B is drawn solid through the new anchor, and no second link is made. C-D stays down. Today: The planner refuses the new link, "2 straight links between node-000001 and node-000002, which may carry 1", and the g anchor and its pipes are thrown away, so nothing heals. The tab keeps the refused link and anchor while the authority has neither, which breaks I1. | The director's report, 2026-09-29: the g bend "also fails". DECISIONS: "A refused g drag keeps its anchors and pipes" (2026-09-29). A pair may carry one straight link (model/invariants.mjs). | ruled, TODO |
+| LOOK-01 | routed x delete `g` hop | Select the centre anchor both links pass, and press Delete. | The down links are drawn ORANGE as well as dotted, so down reads apart from a live link at a glance. | The director, 2026-09-29: "we need to make the dots a different color - orange?". The shade is the proposer's: #ff9800, apart from the transit ring #ffb74d and the packet placeholder #ffa726. | ruled, built |
+| HEAL-01 | down x draw: `g` bend | Drag from A, press g above the old centre, and release on B. | A-B heals: the g anchor and its two hand pipes are laid, A-B is drawn solid through the new anchor, and no second link is made. C-D stays down. The notice says the down link healed, not that a link was refused. | The director's report, 2026-09-29: the g bend "also fails". DECISIONS: "A refused g drag keeps its anchors and pipes" (2026-09-29). A pair may carry one straight link (model/invariants.mjs). DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
 | HEAL-02 | down x draw: `g` on end | Drag from A to B, press g on B, and release there. | OPEN: Should g pressed on the end lay the last pipe BY HAND, so that here it heals A-B and outlives it, where a plain mouseup (HEAL-03) lays a pipe that goes with its link? Proposed: Yes. The two then differ only in the lifetime of the last pipe, which is the difference g and w already make everywhere else. Today: Nothing happens and nothing is said: g on a node is ignored, and the mouseup is dropped as a duplicate straight link. | Asked by the director, 2026-09-29: "do we need to distinguish between plain mouseup on link drag on existing anchor and pressing g on existing anchor then mouseup". | OPEN |
 | HEAL-03 | down x draw: mouseup on end | Drag from A, and release on B. | OPEN: Should a plain mouseup on the down link's other end lay the pipe that link needs, laid with the link and going when no link remains, and heal it, rather than being dropped? Proposed: Yes. The director counts a mouseup onto an anchor as a deliberate way to lay a pipe, and the pipe is exactly what A-B lacks. Today: Nothing happens and nothing is said: the drag is dropped as a duplicate straight link. | The director, 2026-09-29: "pipes are deliberate construction actions - either by pressing w/g or mouseup a link drag onto an anchor/node". | OPEN |
-| HEAL-04 | down x draw: `w` bend | Drag from A, press w above the old centre, and release on B. | A new link, pinned at the new anchor, is drawn in addition to the down A-B. | The director, 2026-09-29: "w pins and draws an entirely new link in addition to the broken one". | ruled, built |
-| HEAL-05 | down x draw: `w` bend | Drag from A, press w above the old centre, release on B, then delete the new link. | OPEN: Should the down A-B heal over the pipes the new w link laid? Today it does, so two links share them, and deleting the new link leaves its anchor and pipes behind, because the healed A-B now carries them. Proposed: Two readings, not yet one: (a) yes, a link with no pins takes any way over any pipes (SD9), and the trace is accepted; (b) no, a link heals only over pipes laid by hand or with itself, which needs each pipe to record WHICH link laid it. Today: A-B heals over the new link's pipes. After the new link is deleted, its anchor and both pipes remain, and A-B stays up over them. | The director, 2026-09-29: "if I draw a new link with w - this should not be the healed link". DECISIONS: "Draw-then-delete leaves no trace" (2026-09-25). | OPEN |
-| REF-01 | routed x draw: `g` bend | Drag from A, press g off the existing way, and release on C. | The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchor and its two hand pipes are kept. | DECISIONS: "A refused g drag keeps its anchors and pipes" (2026-09-29), with its correction of the tie message. | ruled, built |
+| HEAL-04 | down x draw: `w` bend | Drag from A, press w above the old centre, and release on B. | A new link, pinned at the new anchor, is drawn in addition to the down A-B, which stays down: the pipes the new link laid carry only it. | The director, 2026-09-29: "w pins and draws an entirely new link in addition to the broken one". DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
+| HEAL-05 | down x draw: `w` bend | Drag from A, press w above the old centre, release on B, then delete the new link. | A-B stays down while the w link exists, and deleting the w link leaves no trace: its anchor and pipes go, and both old links are still down. | The director, 2026-09-29: "if I draw a new link with w - this should not be the healed link". DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
+| CAP-01 | routed x draw: `g` bend | Drag from A, press g off the existing way, and release on C. | Accepted: the shorter way through the centre is held by the two links already there, so the free way is the one drawn. The new link runs through the g anchor and the old links are untouched. | DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
+| CAP-02 | blocked x draw: `w` bend | Drag from A, press w on t1, and release on B. | Refused: the leg from A to t1 is a pipe the upper link already carries, and a pipe carries one link. The notice names the link that holds it. | DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
+| CAP-03 | blocked x select link | Click the lower link, which is down. | The lower link is selected, the upper link blocking its way is highlighted orange, and the notice says the lower link is down because the upper one holds its way. | DECISIONS: "Selecting a blocked link highlights the link blocking it" (2026-09-30). | ruled, built |
+| CAP-04 | blocked x delete link | Select the upper link on the trunk, and press Delete. | The trunk is free, so the lower link heals and is drawn along it; the trunk's hand pipes stay. | DECISIONS: "Pipes carry one link each, for now" (2026-09-30). DECISIONS: a down link heals when a way returns (2026-09-25). | ruled, built |
+| CAP-05 | blocked x select link | Click the upper link, which is up. | Selecting a link that is up highlights nothing else: only a down link has blockers to show. | DECISIONS: "Selecting a blocked link highlights the link blocking it" (2026-09-30); the lower link is orange only because it is down (2026-09-29). | ruled, built |
+| CAP-06 | blocked x undo | Delete the upper link, select the lower one (now on the trunk), then undo with it still selected. | Undo restores the upper link with its age, so it takes the trunk back and the lower link is down again. The lower link is still selected, so the upper link is highlighted as its blocker at once. | DECISIONS: "Pipes carry one link each, for now" and "Selecting a blocked link highlights the link blocking it" (2026-09-30). | ruled, built |
+| REF-01 | pinned, another way x draw: `g` bend | Drag from A with g at two points above, and release on B: three pipes, tying the free way below. | The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchors and their three hand pipes are kept. | DECISIONS: "A refused g drag keeps its anchors and pipes" (2026-09-29), with its correction of the tie message. | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
 <!-- END GENERATED: rows -->
 
@@ -147,7 +157,6 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 |---|---|---|---|
 | HEAL-02 | Should g pressed on the end lay the last pipe BY HAND, so that here it heals A-B and outlives it, where a plain mouseup (HEAL-03) lays a pipe that goes with its link? | Yes. The two then differ only in the lifetime of the last pipe, which is the difference g and w already make everywhere else. | Nothing happens and nothing is said: g on a node is ignored, and the mouseup is dropped as a duplicate straight link. |
 | HEAL-03 | Should a plain mouseup on the down link's other end lay the pipe that link needs, laid with the link and going when no link remains, and heal it, rather than being dropped? | Yes. The director counts a mouseup onto an anchor as a deliberate way to lay a pipe, and the pipe is exactly what A-B lacks. | Nothing happens and nothing is said: the drag is dropped as a duplicate straight link. |
-| HEAL-05 | Should the down A-B heal over the pipes the new w link laid? Today it does, so two links share them, and deleting the new link leaves its anchor and pipes behind, because the healed A-B now carries them. | Two readings, not yet one: (a) yes, a link with no pins takes any way over any pipes (SD9), and the trace is accepted; (b) no, a link heals only over pipes laid by hand or with itself, which needs each pipe to record WHICH link laid it. | A-B heals over the new link's pipes. After the new link is deleted, its anchor and both pipes remain, and A-B stays up over them. |
 <!-- END GENERATED: open -->
 
 ---

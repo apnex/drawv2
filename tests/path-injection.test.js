@@ -96,3 +96,20 @@ test('an injected linkDown answers, and is handed the link and the model', () =>
 	assert.equal(asked.link, LINK);
 	assert.equal(asked.model, m);
 });
+
+/*
+The fourth companion: WHICH LINKS BLOCK a down link -- ruled 2026-09-30, "when I select a down/broken link that
+cannot be healed due to another link occupying my preferred path, also highlight that blocking link in orange".
+Who holds which pipe is the router's owner's to say, so it is injected; production has no pipes to hold.
+*/
+test('production: no link is ever blocked', () => {
+	assert.deepEqual(seeded().blockersOf(LINK), []);
+});
+
+test('an injected blockedBy answers, and is handed the link and the model', () => {
+	let asked = null;
+	const m = seeded({ blockedBy: (link, model) => { asked = { link, model }; return ['link-000009']; } });
+	assert.deepEqual(m.blockersOf(LINK), ['link-000009']);
+	assert.equal(asked.link, LINK);
+	assert.equal(asked.model, m);
+});

@@ -593,5 +593,125 @@
 				"link"
 			]
 		]
+	},
+	"trunk": {
+		"about": "Two links that both want one trunk of hand-laid pipes. A pipe carries one link, and the older link keeps it, so the upper link runs the trunk and the lower one is down, blocked by it. Select the lower link to see what blocks it.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -480,
+					"y": -180,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 480,
+					"y": -180,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000003",
+					"name": "C",
+					"type": "router",
+					"x": -480,
+					"y": 180,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000004",
+					"name": "D",
+					"type": "router",
+					"x": 480,
+					"y": 180,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000005",
+					"name": "t1",
+					"x": -240,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000006",
+					"name": "t2",
+					"x": 240,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "upper",
+					"src": "node-000001",
+					"dst": "node-000002"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000002",
+					"name": "lower",
+					"src": "node-000003",
+					"dst": "node-000004"
+				}
+			}
+		],
+		"pipes": [
+			[
+				"node-000001",
+				"waypoint-000005",
+				"hand"
+			],
+			[
+				"node-000003",
+				"waypoint-000005",
+				"hand"
+			],
+			[
+				"waypoint-000005",
+				"waypoint-000006",
+				"hand"
+			],
+			[
+				"waypoint-000006",
+				"node-000002",
+				"hand"
+			],
+			[
+				"waypoint-000006",
+				"node-000004",
+				"hand"
+			]
+		]
 	}
 }

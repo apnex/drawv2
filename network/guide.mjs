@@ -23,7 +23,7 @@ PURE. The check computes over a copy of the pipe list and returns the legs to la
 The caller lays them only after the planner accepts the link, so a refused link leaves no pipes.
 */
 
-import { routeLink, pipeKey } from './pipes.mjs';
+import { pipeKey, assignRoutes, preferredRoute, blockersOf } from './pipes.mjs';
 
 /*
 Check a drawn route, and say which pipes it would lay.
@@ -36,7 +36,14 @@ outlives the link (GUIDE-ANCHORS.md T4: the author chose that geometry, and a pi
 a cheaper route appeared elsewhere would delete it, with no way back). Every other leg is laid WITH
 THE LINK, and goes when no link remains on it (ruled 2026-09-27).
 */
-export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stops }) {
+/*
+UNDER ONE LINK PER PIPE (ruled 2026-09-30). `links` are the links already there and `rankOf` says how old each
+is. The link being drawn is the NEWEST, so it routes over what they leave free, and three outcomes are new:
+  - its way is HELD: refused, naming the link that holds it
+  - an older DOWN link takes the drawn way first: it HEALS, and no second link is made
+  - it would MOVE an existing link: refused, naming it ("a drag that would move an existing link is refused")
+*/
+export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stops }, { links = [], rankOf = () => 0 } = {}) {
 	const guided = new Set(guides);
 	const legs = [];
 	for (let i = 0; i < stops.length - 1; i++) {
@@ -49,8 +56,18 @@ export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stop
 	const seen = new Set(pipes.map((p) => pipeKey(p.a, p.b)));
 	const would = [...pipes, ...legs.filter((l) => !seen.has(pipeKey(l.a, l.b)))];
 
-	const route = routeLink(would, { src, dst, via: pins });
-	if (!route) return { ok: false, legs, reason: 'no route between the ends over the pipes' };
+	// the new link sorts after every link there, unranked ones included: its id falls after any a link can have
+	const drawn = { id: '\uffff drawn', src, dst, via: pins };
+	const opts = { rankOf: (id) => (id === drawn.id ? Infinity : rankOf(id)) };
+	const before = assignRoutes(pipes, links, opts);
+	const after = assignRoutes(would, [...links, drawn], opts);
+	const route = after.get(drawn.id);
+	const heals = links.filter((l) => !before.get(l.id) && after.get(l.id)).map((l) => l.id);
+	if (!route) {
+		if (heals.length) return { ok: false, legs, heals, reason: `healed ${heals.join(', ')}: ${heals.length === 1 ? 'it takes' : 'they take'} the way drawn, so no second link is made` };
+		const by = blockersOf(would, [...links, drawn], drawn.id, opts);
+		return { ok: false, legs, reason: by.length ? `its way is held by ${by.join(', ')}, and a pipe carries one link` : 'no route between the ends over the pipes' };
+	}
 
 	/*
 	SAY WHAT IS TRUE about why a guide is skipped. The drawn way is one pipe per leg; the fewest-pipes route
@@ -68,7 +85,9 @@ export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stop
 			: `a shorter way exists (${pipes_(best)}, against the ${drawn} drawn)`;
 		return { ok: false, legs, reason: `the route over the pipes does not pass ${missed.join(', ')}: ${why}` };
 	}
-	return { ok: true, legs, route };
+	const moves = links.filter((l) => before.get(l.id) && JSON.stringify(before.get(l.id)) !== JSON.stringify(after.get(l.id))).map((l) => l.id);
+	if (moves.length) return { ok: false, legs, moves, reason: `it would move ${moves.join(', ')}, which keeps its way` };
+	return { ok: true, legs, route, ...(heals.length ? { heals } : {}) };
 }
 
 /*
@@ -121,8 +140,12 @@ g anchor it passed deleted, say -- leaves the link DOWN, drawn dotted and ready 
 */
 export function isStranded(pipes, link, model) {
 	const alive = anchorIn(model);
-	const surviving = pipes.filter(({ a, b }) => alive(a) && alive(b));
-	return !routeLink(surviving, { src: link.src, dst: link.dst, via: link.via ?? [] });
+	/*
+	The PREFERRED route, ignoring who holds a pipe -- the proposer's reading, recorded 2026-09-30: a way another
+	link holds is a way that is full, not a way that is gone, so the link stays (down, and blocked) and heals when
+	the holder goes. Only pipes it may use count: a pipe laid with another link carries only that link.
+	*/
+	return !preferredRoute(pipes.filter(({ a, b }) => alive(a) && alive(b)), link);
 }
 
 /*
@@ -134,7 +157,13 @@ legs of its intent (its ends and pins in order) rather than nothing; otherwise s
 the very pipes it needs to come back.
 */
 export function routesOf(pipes, links) {
-	return links.map((l) => routeLink(pipes, { src: l.src, dst: l.dst, via: l.via ?? [] }) ?? [l.src, ...(l.via ?? []), l.dst]);
+	/*
+	The routes as shared out, one link per pipe (2026-09-30). WHICH link is older does not matter here, so no
+	order is taken: a pipe laid with a link is carried by the link whose stops it joins, whatever the order --
+	up, it runs over it; down, its own legs are kept for it -- and a hand-laid pipe is never swept.
+	*/
+	const routes = assignRoutes(pipes, links);
+	return links.map((l) => routes.get(l.id) ?? [l.src, ...(l.via ?? []), l.dst]);
 }
 
 /*

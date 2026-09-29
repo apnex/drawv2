@@ -3,14 +3,15 @@
 		"THE MASTER of the lab behaviour matrix. BEHAVIOUR-MATRIX.md beside it is generated from this file by `node tools/lab-matrix.mjs --write`, and the gate fails if the two differ: edit here, never there.",
 		"tests/lab-browser.test.js runs every row in real Chrome with real input. A state's `setup` builds its board and its `expect` proves the board is what the state claims, before any row acts on it.",
 		"A row: `steps` perform the gesture; `intent` says in words what should happen and `expect` says it as checks; `rule` cites the ruling. `standing` is ruled, reading (the proposer's reading, not ruled) or open. `built` is yes (the gate proves it) or todo (the gate proves it still FAILS, and demands promotion the day it passes).",
-		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb). A selector is a link id, or \"only\" when exactly one link exists."
+		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]. A selector is a link id, or \"only\" when exactly one link exists."
 	],
 	"invariants": {
 		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, and the same anchors.",
 		"I2": "A link is drawn dotted exactly when it is down.",
 		"I3": "The canvas draws exactly the links that exist, each along a path.",
 		"I4": "No pipe names an anchor that does not exist.",
-		"I5": "Nothing is thrown in the page."
+		"I5": "Nothing is thrown in the page.",
+		"I6": "No two links that are up are drawn along the same stretch: a pipe carries one link (2026-09-30)."
 	},
 	"states": {
 		"routed": {
@@ -212,6 +213,24 @@
 				"anchors": 0,
 				"pipes": 0
 			}
+		},
+		"blocked": {
+			"about": "Two links want one hand-laid trunk; the older holds it, so the younger is down, blocked by it.",
+			"board": "trunk",
+			"setup": [],
+			"expect": {
+				"links": 2,
+				"down": 1,
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "down"
+				},
+				"anchors": 2,
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -223,7 +242,8 @@
 		"draw: `g` bend": "Drag, press `g` at a point on the way, and release on the end.",
 		"draw: `g` on end": "Drag to the end, press `g` on it, and release there.",
 		"draw: `w` bend": "Drag, press `w` at a point on the way, and release on the end.",
-		"undo": "Undo the gesture before."
+		"undo": "Undo the gesture before.",
+		"select link": "Click a link to select it."
 	},
 	"notApplicable": [
 		[
@@ -249,6 +269,10 @@
 		[
 			"down",
 			"delete `g` hop"
+		],
+		[
+			"blocked",
+			"delete pin"
 		]
 	],
 	"rows": [
@@ -776,8 +800,7 @@
 			},
 			"rule": "The director, 2026-09-29: \"we need to make the dots a different color - orange?\". The shade is the proposer's: #ff9800, apart from the transit ring #ffb74d and the packet placeholder #ffa726.",
 			"standing": "ruled",
-			"built": "todo",
-			"today": "Down links are dotted in the live link blue, #4fc3f7."
+			"built": "yes"
 		},
 		{
 			"id": "HEAL-01",
@@ -804,7 +827,7 @@
 					]
 				]
 			],
-			"intent": "A-B heals: the g anchor and its two hand pipes are laid, A-B is drawn solid through the new anchor, and no second link is made. C-D stays down.",
+			"intent": "A-B heals: the g anchor and its two hand pipes are laid, A-B is drawn solid through the new anchor, and no second link is made. C-D stays down. The notice says the down link healed, not that a link was refused.",
 			"expect": {
 				"links": 2,
 				"linksBetween": {
@@ -826,12 +849,13 @@
 				"pipes": {
 					"hand": 2,
 					"link": 0
-				}
+				},
+				"notice": "healed link-000001",
+				"noticeNot": "refused"
 			},
-			"rule": "The director's report, 2026-09-29: the g bend \"also fails\". DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29). A pair may carry one straight link (model/invariants.mjs).",
+			"rule": "The director's report, 2026-09-29: the g bend \"also fails\". DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29). A pair may carry one straight link (model/invariants.mjs). DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
 			"standing": "ruled",
-			"built": "todo",
-			"today": "The planner refuses the new link, \"2 straight links between node-000001 and node-000002, which may carry 1\", and the g anchor and its pipes are thrown away, so nothing heals. The tab keeps the refused link and anchor while the authority has neither, which breaks I1."
+			"built": "yes"
 		},
 		{
 			"id": "HEAL-02",
@@ -914,15 +938,18 @@
 					]
 				]
 			],
-			"intent": "A new link, pinned at the new anchor, is drawn in addition to the down A-B.",
+			"intent": "A new link, pinned at the new anchor, is drawn in addition to the down A-B, which stays down: the pipes the new link laid carry only it.",
 			"expect": {
 				"links": 3,
 				"linksBetween": {
 					"node-000001|node-000002": 2
 				},
-				"anchors": 1
+				"anchors": 1,
+				"linkState": {
+					"link-000001": "down"
+				}
 			},
-			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\".",
+			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},
@@ -963,14 +990,19 @@
 					"Delete"
 				]
 			],
-			"standing": "open",
-			"question": "Should the down A-B heal over the pipes the new w link laid? Today it does, so two links share them, and deleting the new link leaves its anchor and pipes behind, because the healed A-B now carries them.",
-			"proposal": "Two readings, not yet one: (a) yes, a link with no pins takes any way over any pipes (SD9), and the trace is accepted; (b) no, a link heals only over pipes laid by hand or with itself, which needs each pipe to record WHICH link laid it.",
-			"today": "A-B heals over the new link's pipes. After the new link is deleted, its anchor and both pipes remain, and A-B stays up over them.",
-			"rule": "The director, 2026-09-29: \"if I draw a new link with w - this should not be the healed link\". DECISIONS: \"Draw-then-delete leaves no trace\" (2026-09-25)."
+			"standing": "ruled",
+			"rule": "The director, 2026-09-29: \"if I draw a new link with w - this should not be the healed link\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"intent": "A-B stays down while the w link exists, and deleting the w link leaves no trace: its anchor and pipes go, and both old links are still down.",
+			"expect": {
+				"links": 2,
+				"down": 2,
+				"anchors": 0,
+				"pipes": 0
+			},
+			"built": "yes"
 		},
 		{
-			"id": "REF-01",
+			"id": "CAP-01",
 			"state": "routed",
 			"gesture": "draw: `g` bend",
 			"does": "Drag from A, press g off the existing way, and release on C.",
@@ -994,12 +1026,15 @@
 					]
 				]
 			],
-			"intent": "The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchor and its two hand pipes are kept.",
+			"intent": "Accepted: the shorter way through the centre is held by the two links already there, so the free way is the one drawn. The new link runs through the g anchor and the old links are untouched.",
 			"expect": {
-				"refused": true,
-				"notice": "just as short|tie",
-				"noticeNot": "shorter way",
-				"links": 2,
+				"refused": false,
+				"links": 3,
+				"down": 0,
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "up"
+				},
 				"keptAt": [
 					[
 						-240,
@@ -1009,6 +1044,239 @@
 				"pipes": {
 					"hand": 6,
 					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "CAP-02",
+			"state": "blocked",
+			"gesture": "draw: `w` bend",
+			"does": "Drag from A, press w on t1, and release on B.",
+			"steps": [
+				[
+					"drag",
+					[
+						-480,
+						-180
+					],
+					[
+						480,
+						-180
+					],
+					[
+						[
+							"w",
+							-240,
+							0
+						]
+					]
+				]
+			],
+			"intent": "Refused: the leg from A to t1 is a pipe the upper link already carries, and a pipe carries one link. The notice names the link that holds it.",
+			"expect": {
+				"refused": true,
+				"notice": "held by link-000001",
+				"links": 2
+			},
+			"rule": "DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "CAP-03",
+			"state": "blocked",
+			"gesture": "select link",
+			"does": "Click the lower link, which is down.",
+			"steps": [
+				[
+					"click",
+					0,
+					180
+				]
+			],
+			"intent": "The lower link is selected, the upper link blocking its way is highlighted orange, and the notice says the lower link is down because the upper one holds its way.",
+			"expect": {
+				"selected": [
+					"link-000002"
+				],
+				"stroke": {
+					"link-000001": "#ff9800"
+				},
+				"notice": "link-000002 is down: its way is held by link-000001"
+			},
+			"rule": "DECISIONS: \"Selecting a blocked link highlights the link blocking it\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "CAP-04",
+			"state": "blocked",
+			"gesture": "delete link",
+			"does": "Select the upper link on the trunk, and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The trunk is free, so the lower link heals and is drawn along it; the trunk's hand pipes stay.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"linkState": {
+					"link-000002": "up"
+				},
+				"through": {
+					"link-000002": [
+						[
+							-240,
+							0
+						],
+						[
+							240,
+							0
+						]
+					]
+				},
+				"anchors": 2,
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30). DECISIONS: a down link heals when a way returns (2026-09-25).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "CAP-05",
+			"state": "blocked",
+			"gesture": "select link",
+			"does": "Click the upper link, which is up.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				]
+			],
+			"intent": "Selecting a link that is up highlights nothing else: only a down link has blockers to show.",
+			"expect": {
+				"selected": [
+					"link-000001"
+				],
+				"stroke": {
+					"link-000002": "#ff9800"
+				}
+			},
+			"rule": "DECISIONS: \"Selecting a blocked link highlights the link blocking it\" (2026-09-30); the lower link is orange only because it is down (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "CAP-06",
+			"state": "blocked",
+			"gesture": "undo",
+			"does": "Delete the upper link, select the lower one (now on the trunk), then undo with it still selected.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"Delete"
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"settle"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "Undo restores the upper link with its age, so it takes the trunk back and the lower link is down again. The lower link is still selected, so the upper link is highlighted as its blocker at once.",
+			"expect": {
+				"selected": [
+					"link-000002"
+				],
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "down"
+				},
+				"stroke": {
+					"link-000001": "#ff9800"
+				}
+			},
+			"rule": "DECISIONS: \"Pipes carry one link each, for now\" and \"Selecting a blocked link highlights the link blocking it\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "REF-01",
+			"state": "pinned, another way",
+			"gesture": "draw: `g` bend",
+			"does": "Drag from A with g at two points above, and release on B: three pipes, tying the free way below.",
+			"steps": [
+				[
+					"drag",
+					[
+						-480,
+						0
+					],
+					[
+						480,
+						0
+					],
+					[
+						[
+							"g",
+							-240,
+							-240
+						],
+						[
+							"g",
+							240,
+							-240
+						]
+					]
+				]
+			],
+			"intent": "The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchors and their three hand pipes are kept.",
+			"expect": {
+				"refused": true,
+				"notice": "just as short|tie",
+				"noticeNot": "shorter way",
+				"links": 1,
+				"keptAt": [
+					[
+						-240,
+						-240
+					],
+					[
+						240,
+						-240
+					]
+				],
+				"pipes": {
+					"hand": 6,
+					"link": 2
 				}
 			},
 			"rule": "DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29), with its correction of the tie message.",

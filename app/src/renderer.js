@@ -156,6 +156,25 @@ export class Renderer {
 		next.forEach((id) => { if (!this.selectedSet.has(id)) this.setState(id, 'selected', true); });
 		this.selectedSet = next;
 		this.reflectPathSelection();
+		this.reflectBlockers();
+	}
+
+	/*
+	The links BLOCKING a selected down link are highlighted -- ruled 2026-09-30: "when I select a down/broken link
+	that cannot be healed due to another link occupying my preferred path, also highlight that blocking link in
+	orange so I can see the path that is blocking".
+
+	The model says who blocks (`blockersOf`, empty in production, which has no pipes). Every link path is visited so
+	a highlight left from an earlier selection -- or an earlier board -- is removed, not stranded: the half B218 and
+	B228 each got wrong once. Called again after an edit, since an edit can change who blocks whom.
+	*/
+	reflectBlockers() {
+		const blocking = new Set();
+		for (const id of this.selectedSet) {
+			const link = this.model.get('link', id);
+			if (link && this.model.isLinkDown(link)) for (const by of this.model.blockersOf(link)) blocking.add(by);
+		}
+		for (const path of this.layers.links.querySelectorAll('path.link')) path.classList.toggle('blocking', blocking.has(path.id));
 	}
 
 	/*

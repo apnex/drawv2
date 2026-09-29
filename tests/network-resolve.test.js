@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
 import { pipeResolver, pipeLinkDown } from '../network/resolve.mjs';
-import { routeLink } from '../network/pipes.mjs';
+import { preferredRoute } from '../network/pipes.mjs';
 
 // A and B are far apart; the only pipes run A -> w -> B, around the straight line
 function board(pipeSet) {
@@ -105,7 +105,9 @@ test('the resolver and the down state agree with the router for every pipe set: 
 		m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 		m.put('waypoint', { id: W, name: 'w', x: 120, y: 120 });
 		for (const link of [LINK, { ...LINK, via: [W] }]) {
-			const route = routeLink(s.list(), { src: link.src, dst: link.dst, via: link.via ?? [] });
+			// a link the model does not hold is routed alone, over the pipes it may use (2026-09-30: a pipe laid
+			// with a link carries only the link whose stops it joins)
+			const route = preferredRoute(s.list(), link);
 			assert.equal(m.isLinkDown(link), route === null, `pipes ${mask.toString(2)}, via ${link.via ?? '-'}: down exactly when the router finds no route`);
 			const want = route ? route.map((id) => at[id]) : [link.src, ...(link.via ?? []), link.dst].map((id) => at[id]);
 			assert.deepEqual(m.pathOf(link), want, 'drawn along the route when there is one, along its intent when down');
@@ -125,4 +127,26 @@ test('down is read LIVE: removing the last way takes a link down, and laying one
 	assert.equal(m.isLinkDown(LINK), true, 'no way left: down');
 	s.lay('waypoint-00000c', 'node-00000b', 'hand');
 	assert.equal(m.isLinkDown(LINK), false, 'a way returns: it heals, with nothing stored to undo');
+});
+
+/*
+ONE LINK PER PIPE (2026-09-30): where a link is drawn, whether it is down, and what blocks it all come from
+the one assignment -- so a link blocked by another is drawn along its intent, called down, and names its blocker.
+*/
+test('the Model\'s companions answer from the one assignment: a blocked link is down and names its blocker', async () => {
+	const { pipeBlockers } = await import('../network/resolve.mjs');
+	const s = createPipeSet();
+	for (const [a, b] of [['node-00000a', 'waypoint-000001'], ['node-00000c', 'waypoint-000001'], ['waypoint-000001', 'waypoint-000002'], ['waypoint-000002', 'node-00000b'], ['waypoint-000002', 'node-00000d']]) s.lay(a, b, 'hand');
+	const rankOf = (id) => (id === 'link-00000u' ? 0 : 1);
+	const m = new Model({ resolvePath: pipeResolver(s, rankOf), linkDown: pipeLinkDown(s, rankOf), blockedBy: pipeBlockers(s, rankOf) });
+	for (const [id, x, y] of [['node-00000a', -480, -180], ['node-00000b', 480, -180], ['node-00000c', -480, 180], ['node-00000d', 480, 180]]) m.put('node', { id, name: id, type: 'router', x, y, shape: 'circle' });
+	m.put('waypoint', { id: 'waypoint-000001', name: 't1', x: -240, y: 0 });
+	m.put('waypoint', { id: 'waypoint-000002', name: 't2', x: 240, y: 0 });
+	const upper = { id: 'link-00000u', name: 'u', src: 'node-00000a', dst: 'node-00000b' }, lower = { id: 'link-00000l', name: 'l', src: 'node-00000c', dst: 'node-00000d' };
+	m.put('link', upper); m.put('link', lower);
+	assert.deepEqual(m.pathOf(upper), [[-480, -180], [-240, 0], [240, 0], [480, -180]], 'the older link runs the trunk');
+	assert.equal(m.isLinkDown(lower), true, 'the younger one is down');
+	assert.deepEqual(m.pathOf(lower), [[-480, 180], [480, 180]], 'and drawn along its intent, straight between its ends');
+	assert.deepEqual(m.blockersOf(lower), ['link-00000u'], 'and it names the link holding its way');
+	assert.deepEqual(m.blockersOf(upper), [], 'a link that is up is blocked by nobody');
 });

@@ -41,7 +41,8 @@ import { Log } from '../../server/log.mjs';
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
-import { pipeResolver, pipeDependents, pipeLinkDown } from '../../network/resolve.mjs';
+import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers, whyDown, downSummary } from '../../network/resolve.mjs';
+import { createLinkOrder } from '../../network/order.mjs';
 import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal, keepsOrphan, isStranded } from '../../network/guide.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
@@ -70,7 +71,9 @@ zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT },
 The pipe set, for the session. Pipes are not stored yet -- that is the one format batch, last (F6)
 -- so they live here and a reload starts from nothing, which is correct rather than missing.
 */
-const pipes = createPipeSet();
+// and the order links were made in, since the older link keeps a contested pipe (ruled 2026-09-30) -- session
+// state too, stored with pipes in the format batch
+const pipes = createPipeSet(), order = createLinkOrder();
 
 /*
 The tab's model draws links along their ROUTE over pipes, through the interface declared on Model
@@ -79,8 +82,9 @@ polyline it always has; nothing here reaches production.
 */
 // where a link runs, which links a moved anchor affects, and whether a link is DOWN -- all from one route,
 // or they disagree: pipes followed a moved anchor while its links stayed behind, and a down link was drawn
-// as a live one, read as a pipe created by itself (the director's reports, 2026-09-29)
-const model = new Model({ resolvePath: pipeResolver(pipes), routedThrough: pipeDependents(pipes), linkDown: pipeLinkDown(pipes) });
+// as a live one, read as a pipe created by itself (the director's reports, 2026-09-29). And what BLOCKS a down
+// link, since a pipe carries one link (2026-09-30): the renderer highlights it when the down link is selected.
+const model = new Model({ resolvePath: pipeResolver(pipes, order.rankOf), routedThrough: pipeDependents(pipes, order.rankOf), linkDown: pipeLinkDown(pipes, order.rankOf), blockedBy: pipeBlockers(pipes, order.rankOf) });
 attachRelations(model, { cellOf });
 
 /*
@@ -127,7 +131,8 @@ model.onChange(drawPipes);
 const history = new Changes(model);
 const renderer = new Renderer(model, svg);
 const selection = new Selection(model);
-selection.subscribe(() => renderer.reflectSelection(selection.list()));
+// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30)
+selection.subscribe(() => { renderer.reflectSelection(selection.list()); const why = whyDown(model, selection.list()); if (why) say(why); });
 const labels = new LabelEditor({ svg, model, history });
 const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
@@ -146,11 +151,13 @@ hook synchronously and consumes exactly these legs.
 */
 let pendingLegs = null, pendingNotice = null;
 const routeHook = (route) => {
-	const verdict = checkGuidedRoute(pipes.list(), route);
+	// the drawn link is the newest: it routes over what the links already there leave free (2026-09-30)
+	const verdict = checkGuidedRoute(pipes.list(), route, { links: authority.all('link'), rankOf: order.rankOf });
 	if (!verdict.ok) {
 		// refusal refuses the LINK: the g anchors and their hand pipes are kept (network/guide.mjs)
 		const kept = keptOnRefusal(verdict, route);
-		pendingNotice = `refused: ${verdict.reason} -- the link is refused; the g anchors and their pipes are kept`;
+		// a drag whose way an older down link takes HEALS it: said as that, not as a refusal (HEAL-01)
+		pendingNotice = verdict.heals ? verdict.reason : `refused: ${verdict.reason} -- the link is refused; the g anchors and their pipes are kept`;
 		say(pendingNotice);
 		if (kept.placedKept.length) pendingLegs = kept.legs;   // laid when the planner accepts the kept anchors
 		else { for (const l of kept.legs) pipes.lay(l.a, l.b, l.laid); drawPipes(); pendingNotice = null; }
@@ -219,6 +226,8 @@ history.onCommit((request) => {
 	link with no pipes, drawn down. Leftover pipes after an undo are the smaller lie, and it goes at
 	the next ordinary edit. This is a stated limit of session pipes, not a rule.
 	*/
+	// a link seen for the first time is the newest; one seen before keeps its age, so undo restores its place
+	order.note(authority.all('link').map((l) => l.id).sort());
 	// a pipe to a deleted anchor is not a pipe (SD7) -- after every edit, undo and redo included
 	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));
 	if (!request.verb) pipes.sweep(routesOf(pipes.list(), authority.all('link')));
@@ -233,11 +242,10 @@ history.onCommit((request) => {
 	other.
 	*/
 	for (const l of model.all('link')) renderer.update('link', l);
-	// DOWN IS SAID as well as drawn: dotted links are "ready to heal", and the count is the whole-board fact
-	const down = model.all('link').filter((l) => model.isLinkDown(l)).length;
-	const downs = down ? ` -- ${down} link${down === 1 ? '' : 's'} down, ready to heal` : '';
-	// a refusal's reason stays on the notice through the commit that keeps its anchors, or it would flash past
-	say(pendingNotice ?? `v${answer.version} ${request.verb ?? request.label ?? ''}${downs}`.trim());
+	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
+	// DOWN IS SAID as well as drawn, and a refusal's reason stays on the notice through the commit that keeps its
+	// anchors, or it would flash past
+	say(pendingNotice ?? `v${answer.version} ${request.verb ?? request.label ?? ''}${downSummary(model)}`.trim());
 	pendingNotice = null;
 });
 
@@ -286,6 +294,7 @@ if (wanted) {
 		else {
 			// each pipe with the lifetime its gesture would give it (2026-09-29): a link's own leg goes with it
 			for (const [x, y, laid] of board.pipes) pipes.lay(x, y, laid);
+			order.note(board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id));   // as old as they are listed
 			applyOps(model, answer.change?.ops ?? []);
 			drawPipes();
 			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);
@@ -305,4 +314,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, pipes, history, log, input, routeHook };
+window.lab = { model, authority, pipes, order, history, log, input, routeHook };

@@ -465,7 +465,7 @@ undefined, because a caller that sets attributes blindly would otherwise write "
 DOM. `APPEARANCE_KEYS` names every key this can produce, so an UPDATE can remove what a previous
 state set -- which is the half B228 got wrong and could not have got right without it.
 */
-export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'stroke-linecap', 'marker-end', 'marker-start'];
+export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'stroke-linecap', 'data-down', 'marker-end', 'marker-start'];
 
 /*
 A DOWN link -- one with no route right now, which heals when a route returns (ruled 2026-09-25) -- is
@@ -490,6 +490,8 @@ export const linkAppearance = (link, w = STD.linkW, { down = false } = {}) => {
 		'stroke-width': width,
 		...(dash ? { 'stroke-dasharray': dash } : {}),
 		...(down ? { 'stroke-linecap': 'round' } : {}),
+		// ORANGE as well (2026-09-29): link colour is the stylesheet's, beside .link.selected, so the state is marked here and coloured there
+		...(down ? { 'data-down': '' } : {}),
 		...(head === 'end' ? { 'marker-end': 'url(#flow-end)' } : {}),
 		...(head === 'start' ? { 'marker-start': 'url(#flow-start)' } : {}),
 	};

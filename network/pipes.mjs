@@ -100,3 +100,84 @@ export function routeLink(pipes, { src, dst, via = [] }) {
 	}
 	return whole;
 }
+
+/*
+PIPES CARRY ONE LINK EACH, FOR NOW -- ruled 2026-09-30 (dev/DECISIONS.md, "Pipes carry one link each, for now").
+
+The director: "only a single link is permitted across a single pipe for now. A single anchor can have multiple
+links bending and crossing however." Two links sharing a pipe are drawn on top of each other -- the cost SD7
+recorded -- and there is no way yet to draw them apart. Three rules, each measured before it was ruled:
+  1. a pipe carries at most one link (`pipeCapacity`)
+  2. a pipe laid with a link carries only the link whose ends and pins it joins -- without this, a deleted
+     link's leftover pipes were taken over by a down link, and draw-then-delete left a trace (MEASURED)
+  3. the older link keeps a contested hand-laid pipe
+So a link's route now depends on the other links, and this is the ONE place the pipes are shared out. Where a
+link is drawn, whether it is down, and what blocks it are all read from it, so they cannot disagree.
+*/
+
+/*
+How many links one pipe may carry. A FUNCTION rather than a constant, for the reason `straightCapacity`
+(model/invariants.mjs) gives: when links can be drawn side by side over one pipe, raising the limit is a change
+to this body and nowhere else. Taking the pipe leaves room for the limit to depend on it.
+*/
+function pipeCapacity(_pipe) {
+	return 1;
+}
+
+/*
+The pipes a link MAY run over, whoever holds them: pipes laid by hand, and pipes laid with a link that join two
+of its own consecutive stops (rule 2). A pipe laid for another link's pins is not a way for this one at all.
+*/
+function usableBy(link) {
+	const stops = [link.src, ...(link.via ?? []), link.dst];
+	const own = new Set();
+	for (let i = 0; i < stops.length - 1; i++) own.add(pipeKey(stops[i], stops[i + 1]));
+	return (p) => p.laid === 'hand' || own.has(pipeKey(p.a, p.b));
+}
+
+// oldest first (rule 3); a link with no rank is the newest, and equal ranks fall back to sorted id so peers agree
+const byAge = (rankOf) => (x, y) => (rankOf(x.id) - rankOf(y.id)) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
+
+/*
+Share the pipes out: oldest link first, each takes its fewest-pipes way over the pipes it may use that are not
+already full, and holds what it takes. A link that finds no way is down and holds nothing.
+*/
+function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity } = {}) {
+	const held = new Map();   // pipe key -> the ids of the links it carries
+	const routes = new Map();
+	for (const link of [...links].sort(byAge(rankOf))) {
+		const may = usableBy(link);
+		const open = pipes.filter((p) => {
+			const on = held.get(pipeKey(p.a, p.b)) ?? [];
+			return may(p) && (on.length < capacity(p) || on.includes(link.id));
+		});
+		const r = routeLink(open, { src: link.src, dst: link.dst, via: link.via ?? [] });
+		routes.set(link.id, r);
+		if (r) for (let i = 0; i < r.length - 1; i++) {
+			const k = pipeKey(r[i], r[i + 1]), on = held.get(k) ?? [];
+			if (!on.includes(link.id)) held.set(k, [...on, link.id]);
+		}
+	}
+	return { routes, held };
+}
+
+// every link's route (null when down), with the pipes shared out as ruled. `rankOf(id)` says how old a link is.
+export const assignRoutes = (pipes, links, opts) => assign(pipes, links, opts).routes;
+
+// the way a link WOULD take if no other link held any pipe -- the "preferred path" a blocked link is kept from
+export const preferredRoute = (pipes, link) => routeLink(pipes.filter(usableBy(link)), { src: link.src, dst: link.dst, via: link.via ?? [] });
+
+/*
+The links blocking a down link: those holding a pipe on its preferred path -- ruled 2026-09-30, "select a
+down/broken link that cannot be healed due to another link occupying my preferred path, also highlight that
+blocking link". Empty for a link that is up, and for one down because no way exists at all.
+*/
+export function blockersOf(pipes, links, id, opts) {
+	const link = links.find((l) => l.id === id);
+	const { routes, held } = assign(pipes, links, opts);
+	const want = link && !routes.get(id) && preferredRoute(pipes, link);
+	if (!want) return [];
+	const by = new Set();
+	for (let i = 0; i < want.length - 1; i++) for (const other of held.get(pipeKey(want[i], want[i + 1])) ?? []) if (other !== id) by.add(other);
+	return [...by].sort();
+}

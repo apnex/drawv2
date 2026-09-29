@@ -22,24 +22,31 @@ empty pipe layer is a board whose routes were REMOVED -- deleting the anchor the
 takes its last four -- and the exception drew those lost links as live. Measured, and removed.
 */
 
-import { routeLink } from './pipes.mjs';
+import { assignRoutes, preferredRoute, blockersOf } from './pipes.mjs';
 
 /*
 The ONE route computation everything here answers from, read from the pipe set on EVERY call.
 
-Where a link is drawn, which anchors its drawing depends on, and whether it is down are three answers to
-one question. Computed three ways they could disagree -- a link drawn along a route while called down --
-which is the one-fact-two-authorities defect this programme exists to end. Read live rather than
-captured, because pipes change with each edit and a snapshot would route over pipes that are gone.
+Where a link is drawn, which anchors its drawing depends on, whether it is down and what blocks it are four
+answers to one question. Computed apart they could disagree -- a link drawn along a route while called down --
+which is the one-fact-two-authorities defect this programme exists to end. Read live rather than captured,
+because pipes change with each edit and a snapshot would route over pipes that are gone.
+
+Since pipes carry one link each (ruled 2026-09-30), a link's route depends on every other link, so a link the
+model holds is routed as part of the whole board (`assignRoutes`), with `rankOf` saying which links are older.
+A link the model does not hold -- the live drag preview -- is routed alone, by the same rule of which pipes it
+may use.
 */
-const routeOf = (pipeSet, link) => routeLink(pipeSet.list(), { src: link.src, dst: link.dst, via: link.via ?? [] });
+const routeOf = (pipeSet, link, model, rankOf) => (link.id && model?.get('link', link.id)
+	? assignRoutes(pipeSet.list(), model.all('link'), { rankOf }).get(link.id) ?? null
+	: preferredRoute(pipeSet.list(), link));
 
 /*
 Build a resolver over a live pipe set -- what the lab hands to `new Model({ resolvePath })`.
 */
-export function pipeResolver(pipeSet) {
+export function pipeResolver(pipeSet, rankOf) {
 	return (link, model, straight) => {
-		const route = routeOf(pipeSet, link);
+		const route = routeOf(pipeSet, link, model, rankOf);
 		if (!route) return straight(link);   // DOWN: drawn along its intent, and `pipeLinkDown` says so
 
 		// ids to positions. An anchor the route names but the model cannot resolve means the pipe
@@ -57,28 +64,54 @@ export function pipeResolver(pipeSet) {
 /*
 Which links are drawn THROUGH an anchor -- the companion the Model takes beside `resolvePath`.
 
-Built from the same route as the resolver above, so the two cannot disagree: if this module draws a
-link through an anchor, it also says so when that anchor moves. Before it existed the renderer asked
-the incidence index, which knows only a link's ends and pins -- and a guided link, which routes through
-an anchor it does not name, stayed put while its pipes followed the moved anchor.
-
-Links the anchor already ENDS or PINS are included too; the renderer redraws those by its own index as
-well, and redrawing a link twice in one change is harmless where missing one is the defect.
+Built from the same routes as the resolver above, so the two cannot disagree: if this module draws a link
+through an anchor, it also says so when that anchor moves. Before it existed the renderer asked the incidence
+index, which knows only a link's ends and pins -- and a guided link, which routes through an anchor it does not
+name, stayed put while its pipes followed the moved anchor.
 */
-export function pipeDependents(pipeSet) {
-	return (anchorId, model) => model.all('link').filter((link) => {
-		const route = routeOf(pipeSet, link);
-		return !!route && route.includes(anchorId);
-	});
+export function pipeDependents(pipeSet, rankOf) {
+	return (anchorId, model) => {
+		const routes = assignRoutes(pipeSet.list(), model.all('link'), { rankOf });
+		return model.all('link').filter((link) => routes.get(link.id)?.includes(anchorId));
+	};
 }
 
 /*
 Whether a link is DOWN -- the third companion, handed to `new Model({ linkDown })`.
 
-Down is exactly "no route", from the same route the resolver draws, so a link is drawn along a route
-precisely when it is not down. It is not stored and nothing clears it: the moment a way returns, the
-next read finds the route and the link is live again -- which is what "heals" means.
+Down is exactly "no route", from the same routes the resolver draws, so a link is drawn along a route precisely
+when it is not down. It is not stored and nothing clears it: the moment a way returns -- or the link holding it
+goes -- the next read finds the route and the link is live again, which is what "heals" means.
 */
-export function pipeLinkDown(pipeSet) {
-	return (link) => !routeOf(pipeSet, link);
+export function pipeLinkDown(pipeSet, rankOf) {
+	return (link, model) => !routeOf(pipeSet, link, model, rankOf);
+}
+
+/*
+Which links BLOCK a down link -- the fourth companion, handed to `new Model({ blockedBy })` (ruled 2026-09-30):
+the links holding a pipe on the way it would take if nobody held anything. The renderer highlights them when
+the down link is selected, so the author can see the path in the way.
+*/
+export function pipeBlockers(pipeSet, rankOf) {
+	return (link, model) => (model?.get('link', link.id) ? blockersOf(pipeSet.list(), model.all('link'), link.id, { rankOf }) : []);
+}
+
+/*
+What the notice says, read from the Model's own answers -- kept here so the lab's composition stays wiring.
+
+`whyDown` explains a SELECTED down link: blocked by a named link, or with no way at all. `downSummary` is the
+count after an edit. A down link is "ready to heal" either way: it comes back when a way returns or frees.
+*/
+export function whyDown(model, ids) {
+	const down = ids.map((id) => model.get('link', id)).filter((l) => l && model.isLinkDown(l));
+	if (down.length !== 1) return null;
+	const by = model.blockersOf(down[0]);
+	return by.length
+		? `${down[0].id} is down: its way is held by ${by.join(', ')} -- a pipe carries one link, and the older link keeps it`
+		: `${down[0].id} is down: no way over the pipes it may use -- it heals when one returns`;
+}
+
+export function downSummary(model) {
+	const n = model.all('link').filter((l) => model.isLinkDown(l)).length;
+	return n ? ` -- ${n} link${n === 1 ? '' : 's'} down, ready to heal` : '';
 }

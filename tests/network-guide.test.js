@@ -4,6 +4,7 @@ The incubated whole-route check for `g` -- network/guide.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkGuidedRoute, pipeAnchors, routesOf, isStranded } from '../network/guide.mjs';
+import { assignRoutes } from '../network/pipes.mjs';
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
@@ -106,17 +107,65 @@ handed: a pipe to an anchor this edit deletes is not a pipe (SD7), so it can giv
 with another link still counts -- a link routed over it would carry it, so the sweep would keep it.
 */
 test('a link is stranded when no route over the SURVIVING pipes runs through its pins to its ends', () => {
-	// S-P1-P2-P3-E with P2 deleted: the link now pins P1 and P3, and the pipes to P2 died with it
-	const chain = [{ a: 'S', b: 'P1', laid: 'link' }, { a: 'P1', b: 'P2', laid: 'link' }, { a: 'P2', b: 'P3', laid: 'link' }, { a: 'P3', b: 'E', laid: 'link' }];
-	const after = model(['S', 'P1', 'P3', 'E']);
-	assert.equal(isStranded(chain, { src: 'S', dst: 'E', via: ['P1', 'P3'] }, after), true,
-		'the only way P1 to P3 ran through P2, which is gone -- its pipes must not count');
-	assert.equal(isStranded(chain, { src: 'S', dst: 'E', via: ['P1', 'P3'] }, model(['S', 'P1', 'P2', 'P3', 'E'])), false,
-		'the same pipes with P2 still standing are a way');
+	// S-P1-P2-P3-E built with g hops, so its pipes are hand-laid; P2 is then deleted, and the link pins P1 and P3
+	const chain = pipes(['S', 'P1'], ['P1', 'P2'], ['P2', 'P3'], ['P3', 'E']);
+	const link = { src: 'S', dst: 'E', via: ['P1', 'P3'] };
+	assert.equal(isStranded(chain, link, model(['S', 'P1', 'P3', 'E'])), true, 'the only way P1 to P3 ran through P2, which is gone -- its pipes must not count');
+	assert.equal(isStranded(chain, link, model(['S', 'P1', 'P2', 'P3', 'E'])), false, 'the same pipes with P2 still standing are a way');
+	// a pipe laid WITH a link carries only the link whose stops it joins (2026-09-30): pipes laid for P2 are no way for a link that no longer pins it
+	const laidForP2 = chain.map((x) => ({ ...x, laid: 'link' }));
+	assert.equal(isStranded(laidForP2, link, model(['S', 'P1', 'P2', 'P3', 'E'])), true, 'P1-P2 and P2-P3 join none of its stops now, so they carry nothing for it');
 });
 
-test('a link with another way over surviving pipes is not stranded -- it re-routes (ruled 2026-09-26)', () => {
-	const detour = [...pipes(['A', 'w'], ['w', 'B']), { a: 'A', b: 'x', laid: 'link' }, { a: 'x', b: 'B', laid: 'link' }];
-	assert.equal(isStranded(detour, { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false,
-		'A-x-B survives, laid with another link or not: routed over it, this link carries it');
+test('another way over hand pipes re-routes the link (2026-09-26); a way laid with another link is no way (2026-09-30)', () => {
+	assert.equal(isStranded(pipes(['A', 'x'], ['x', 'B']), { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false, 'A-x-B by hand is a way');
+	const theirs = [{ a: 'A', b: 'x', laid: 'link' }, { a: 'x', b: 'B', laid: 'link' }];
+	assert.equal(isStranded(theirs, { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), true, 'pipes laid with another link carry only it');
+});
+
+test('a way HELD by another link still counts: the link stays, down and blocked, rather than being deleted whole', () => {
+	// the proposer's reading, recorded 2026-09-30: a held way is a way that is full, not a way that is gone
+	const trunk = pipes(['A', 't'], ['t', 'B']);
+	const holder = { id: 'link-h', src: 'A', dst: 'B' };
+	assert.equal(isStranded(trunk, { id: 'link-y', src: 'A', dst: 'B', via: [] }, model(['A', 't', 'B'], [holder])), false);
+});
+
+/*
+THE g CHECK UNDER ONE LINK PER PIPE (2026-09-30). The link being drawn is the NEWEST, so it routes over what
+every existing link leaves free; the refusal names the link holding its way; a drag whose pipes an older DOWN
+link takes says it healed that link; and a drag that would move an existing link is refused.
+*/
+const X = (id, src, dst, via) => ({ id, src, dst, ...(via ? { via } : {}) });
+
+test('a way the existing links hold is no way for the new one: it goes the way drawn', () => {
+	const board = pipes(['A', 'w'], ['w', 'B'], ['C', 'w'], ['w', 'D']);
+	const v = checkGuidedRoute(board, { src: 'A', dst: 'C', guides: ['g'], stops: ['A', 'g', 'C'] }, { links: [X('link-1', 'A', 'B'), X('link-2', 'C', 'D')] });
+	assert.equal(v.ok, true, v.reason);
+	assert.deepEqual(v.route, ['A', 'g', 'C'], 'A-w-C is two pipes, but both carry a link');
+});
+
+test('when the new link\'s way is held, the refusal names the link holding it', () => {
+	const trunk = pipes(['A', 't1'], ['C', 't1'], ['t1', 't2'], ['t2', 'B'], ['t2', 'D']);
+	const v = checkGuidedRoute(trunk, { src: 'A', dst: 'B', pins: ['t1'], stops: ['A', 't1', 'B'] }, { links: [X('link-1', 'A', 'B'), X('link-2', 'C', 'D')], rankOf: (id) => (id === 'link-1' ? 0 : 1) });
+	assert.equal(v.ok, false);
+	assert.match(v.reason, /held by link-1/);
+});
+
+test('a drag whose pipes an older DOWN link takes HEALS it, and says so rather than refusing', () => {
+	const v = checkGuidedRoute([], { src: 'A', dst: 'B', guides: ['g'], stops: ['A', 'g', 'B'] }, { links: [X('link-1', 'A', 'B')] });
+	assert.equal(v.ok, false, 'no second link is made');
+	assert.deepEqual(v.heals, ['link-1'], 'the down link that takes the drawn way is named');
+});
+
+test('a drag that would MOVE an existing link is refused, and names it', () => {
+	// X runs A-p-q-B by hand. A new link A-r-C, guided through the existing anchor r, lays A-r -- with r-B
+	// already there, that is a shorter way for X, which is older and would take it; the new link would still
+	// find A-s-r-C. So the drag is valid on its own terms and moves X: refused (2026-09-30).
+	const board = pipes(['A', 'p'], ['p', 'q'], ['q', 'B'], ['r', 'B'], ['A', 's'], ['s', 'r']);
+	const x = X('link-x', 'A', 'B');
+	assert.deepEqual(assignRoutes(board, [x]).get('link-x'), ['A', 'p', 'q', 'B'], 'before: X runs A-p-q-B');
+	const v = checkGuidedRoute(board, { src: 'A', dst: 'C', guides: ['r'], stops: ['A', 'r', 'C'] }, { links: [x] });
+	assert.equal(v.ok, false);
+	assert.match(v.reason, /move link-x/);
+	assert.deepEqual(v.moves, ['link-x']);
 });

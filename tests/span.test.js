@@ -1364,8 +1364,13 @@ test('a DOWN link is dotted: round dots spaced in stroke widths, never the contr
 	assert.equal(ctrlDown['stroke-width'], k.linkAppearance(ctrl, 6)['stroke-width'], 'a down control link keeps its thinner weight');
 	assert.notEqual(ctrlDown['stroke-dasharray'], k.linkAppearance(ctrl, 6)['stroke-dasharray'], 'and is dotted, not dashed');
 
+	/*
+	ORANGE, as well as dotted (2026-09-29). Link colour lives in the stylesheet beside .link.selected and .link.armed,
+	and a stylesheet cannot read the model -- so the derivation marks the state, and the stylesheet colours it.
+	*/
+	assert.equal(down['data-down'], '', 'a down link carries the mark the stylesheet colours');
 	const up = k.linkAppearance(plain, 6);
-	assert.ok(!('stroke-linecap' in up) && !('stroke-dasharray' in up), 'a live link carries neither key -- absent, not null');
+	assert.ok(!('stroke-linecap' in up) && !('stroke-dasharray' in up) && !('data-down' in up), 'a live link carries none of the down keys -- absent, not null');
 	assert.deepEqual(k.linkAppearance(plain, 6, { down: false }), up, 'and "not down" is exactly the live look');
 	for (const key of Object.keys(ctrlDown)) {
 		assert.ok(k.APPEARANCE_KEYS.includes(key), `${key} is emitted when down but not declared -- healing could not remove it`);

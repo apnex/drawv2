@@ -58,6 +58,8 @@ What the author is saying differs, and the difference is worth stating in their 
 Every pin is in the link's intent, each leg lays a direct pipe between consecutive pins, and a direct pipe is by construction the cheapest way between them.\
 So the route the author drew IS the derived route, leg by leg, and nothing at the end can contradict it.
 
+> **CORRECTED 2026-09-30.** Once pipes carry one link each (`dev/DECISIONS.md`, "Pipes carry one link each, for now"), a `w` leg can land on a pipe another link already holds, so a `w` drag can be refused at mouse-up after all. The lab runs the whole-route check for every drag, `w` included, so the check needs no new place. The paragraph above is kept as written, per the frozen-history rule.
+
 **`g` needs a whole-route check at mouse-up.**\
 A guide anchor is NOT in the intent -- intent is ends plus pinned vias (`DECISIONS.md:496`) -- so the route through it is derived, and between two pins the route is the cheapest path over the pipes (`DECISIONS.md:501`, SD9).\
 Whether the cheapest path actually runs through the guide anchors the author dropped cannot be known leg by leg; it is a property of the whole route.

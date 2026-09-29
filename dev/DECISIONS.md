@@ -535,6 +535,8 @@ The costs shown with the option (MEASURED, options-acts): another link moves in 
 A pipe the author deleted comes back if a link is drawn along it and then deleted, in 94% of that construction (5,161 of 5,468).\
 Not ruled here: whether a pipe kept this way then belongs to the author (deleted only by hand) or is removed once the last link using it goes.
 
+AMENDED 2026-09-30: with pipes carrying one link each, no other link can be routed over a link's pipes while it exists, so the exception above cannot arise, and a deleted link's pipes go with it -- see "Pipes carry one link each, for now" below.
+
 **Under pins, a cut on a detour keeps only the original bends -- ruled 2026-09-26, refining "a landing on a link that is on a detour cuts it where it is" above.**\
 With link intent defined as ends plus pinned vias, "the detour becomes its route" could mean either that the whole detour is pinned or that each piece keeps only the original bends on its side.\
 Asked, for the uplink r1-p1-p2-r2 detouring p1-q1-q2-q3-p2 and cut by a landing at q3, "What should the cut pieces keep as their route?", the director chose "Only the original bends" (the proposer's recommendation) over "The whole detour, pinned".\
@@ -825,6 +827,9 @@ A pipe's stored form is its pair plus how it was laid (by hand or with a link).\
 The costs shown with it:
 - two diverse conduits need an extra anchor;
 - links sharing a pipe draw on top of each other until a parallel renderer exists (`kernel/engine.mjs`, the deferred parallel realizer).
+
+AMENDED 2026-09-30: "parallel cables share it" is suspended until concurrent links can be drawn -- see "Pipes carry one link each, for now" below.\
+The cost listed above is what that ruling removes.
 
 **A pipe may join any two anchors as a straight line, diagonals included -- ruled 2026-09-27 (SD8).**\
 Asked "Must a pipe run straight along a grid row or column?", for anchors at (0,0) and (3,4), the director chose "Any two anchors, straight" over "Row or column only" (the proposer's recommendation) and "Any two, with an auto corner".\
@@ -1228,3 +1233,41 @@ Its readable view, `BEHAVIOUR-MATRIX.md`, is generated from it, and the gate fai
 The gate runs every row in real Chrome; a row marked `todo` must still fail, so the matrix cannot claim a behaviour the lab lacks, nor lag one it gains.\
 Rulings stay here; a row cites one, says it is the proposer's reading, or says it is open.\
 Changing a gesture rule is therefore an edit to one row, and eleven hand-written tests that stated these rules were folded into rows so that each is stated once.
+
+**Pipes carry one link each, for now -- ruled 2026-09-30, suspending SD7's "parallel cables share it" until concurrent links can be drawn.**\
+The director, on HEAL-05, where a down link healed over the pipes a new `w` link laid, and deleting that link left its anchor and pipes behind: "because we don't have a concurrency mechanism - is it worth declaring that our pipes are concurrency=1 for now - that is, only a single link is permitted across a single pipe for now.\
+A single anchor can have multiple links bending and crossing however.\
+When we develop the visual and mechanics of concurrent links over pipes (proper sub-anchors etc..) we can adjust this rule".\
+The proposer measured it before it was ruled, on a scratch copy of the tree with real input, and over 3,000 random gesture sequences of 14 edits replayed under each rule (a model of the lab's gestures that omits landing cuts, joins and anchor sweeps; the scripts are in the private archive, not the repository).\
+One finding set the shape of the ruling: capacity alone is not enough.\
+Without an ownership rule, deleting the `w` link let the down link take over its leftover pipes, and the trace returned (MEASURED).
+
+| measured over 42,000 edits | today | one link per pipe, older link first, strict |
+|---|---|---|
+| states with links stacked on one pipe | 31% | 0% |
+| plain or `w` draw-then-delete leaves no trace | 90% | 100% |
+| drags that move an unrelated link | 8% | 0% |
+| deletes that move an unrelated link | 0% | 0.7% |
+| drags refused | 17.0% | 17.5% |
+
+With the older link first but no strict refusal, and with a fixed order by random id, the same runs moved or downed unrelated links on 2.8% to 4.4% of accepted drags; the id order also drew 2.8% of accepted drags differently after commit than their check showed.\
+The director chose the proposer's three rules: "Yes, a good refinement".
+1. A pipe carries at most one link. The limit is one function, `pipeCapacity` in `network/pipes.mjs`, as `straightCapacity` already caps straight links per pair, so raising it when concurrent links can be drawn is a change to its body.
+2. A pipe laid with a link carries only the link whose ends and pins it joins. This is read from the page; nothing is stored.
+3. The older link keeps a contested hand-laid pipe, and a drag that would move an existing link is refused. "Older" is creation order: session state in the lab, as pipes are, and stored at promotion in the format batch (F6).
+
+The cost shown and accepted: a refused `g` drag still keeps its pipes, and those can re-route other links -- 13% of refused drags against 6% today -- occasionally sending one down (81 links in 42,000 edits), because pipes are shared out one link at a time.\
+What it changes:
+- a link can be down because another link holds its way, as well as because no way exists;
+- a `w` drag can be refused, when one of its legs is held (`GUIDE-ANCHORS.md` section 4, corrected);
+- the `g` drag in matrix row REF-01 is now accepted, because the tying way is held, so the refusal it tested moves to a board where the other way is free.
+
+Proposer's reading, not ruled: a link that loses a pin, where another way exists but another link holds it, stays -- down, and blocked -- rather than being deleted whole.\
+It is deleted whole only when no way exists at all, which is the case the 2026-09-29 ruling was asked about ("no pipe from P1 to P3").\
+A held way is a way that is full, not a way that is gone.
+
+**Selecting a blocked link highlights the link blocking it -- ruled 2026-09-30.**\
+The director: "when I select a down/broken link that cannot be healed due to another link occupying my preferred path, also highlight that blocking link in orange so I can see the path that is blocking".\
+A down link's preferred path is the way it would take if no other link held any pipe; the links blocking it are those holding a pipe on that path.\
+A link down because no way exists at all has no blocker, and the notice says which of the two it is.\
+The orange is the one the down link is drawn in (2026-09-29), `#ff9800`, which measures 8.8:1 on the canvas.
