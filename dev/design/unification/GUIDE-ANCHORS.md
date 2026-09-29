@@ -134,3 +134,46 @@ Recorded as considered and not needed, rather than rejected.
 - **Nothing is overturned.** The 09-26 crossing ruling is unchanged; this makes it reachable by an author.
 - **`TRANSIT.md` is unaffected.** Transit governs terminations; a crossing is not one.
 - **The per-leg commit becomes per-leg for `w` and whole-route for `g`**, which is new behaviour rather than an amendment, since no gesture produces an unpinned bend today.
+
+---
+
+## 10. Tentative decisions, to reach lab validation
+
+The director's instruction on 2026-09-28: "I dont mind making tentative decisions now to progress to lab validation.\
+Then we refine gestures, behaviour and keybinds further."\
+So the following are taken as WORKING ANSWERS, chosen to be cheap to reverse, and every one of them is reopenable once the lab can show the gesture.\
+They are recorded here rather than in `dev/DECISIONS.md` precisely because they are not rulings.
+
+**T1.\
+`g` needs NO stored-format change, which is why this can be built before the format batch.**\
+A pin is a `via` entry; a guide anchor is simply not in the intent.\
+So `g` does not ADD a field, it OMITS one: `w` at an anchor appends it to `link.via`, `g` at an anchor does not, while both create the anchor and its pipes.\
+Every document either gesture produces is one today's validator already accepts (`model/shape.mjs:25,34` -- `via` is both composite and optional).\
+Survey F6 holds every stored-format change to one batch landing last; this proposal is outside that constraint, and that is what makes it testable now rather than after the batch.
+
+**T2.\
+The leading-`w` mandate is NOT taken.**\
+`mousedown` still starts a link, as today.\
+The alternative considered was requiring a `w` before a drag counts as a link, so that a drag with no `w` lays pipes only.\
+It buys a clean answer to pipe lifetime and gives conduit-building its own gesture, but it changes the meaning of the most-used gesture in the application: `mousedown A ... mouseup B` would silently produce pipes and no link.\
+Deferred rather than rejected, because the lab is the place to feel that rather than argue it.
+
+**T3.\
+A `g`-only drag lays pipes and no link -- the FIRST bend key decides.**\
+Press `g` before any `w` and the drag is a pipe-laying drag.\
+Press `w` first and it is a link drag, in which later hops may be `w` or `g`.\
+This keeps T2's gain -- conduit without cable, and a clean pipe-lifetime test -- without changing the no-bend case.
+
+**T4.\
+A `g`-pipe is HAND-PLACED for lifetime purposes.**\
+The 09-27 ruling gives two kinds of pipe: laid automatically with a link (removed once no link remains on it) and placed by hand (stays until deleted).\
+A `g`-pipe fits neither cleanly, and reading it as automatic is unstable: a guide anchor holds the route only while it stays cheapest, so a cheaper path appearing elsewhere would delete routing geometry the author deliberately placed, and deleting the shortcut would not bring it back.\
+Taken tentatively as hand-placed, on the reading that "by hand" means THE AUTHOR CHOSE THIS GEOMETRY rather than the author used the pipe tool.\
+This reinterprets a ruling and must be put to the director properly once the lab shows the behaviour.
+
+**T5.\
+Unresolved and deliberately left so: does a link CROSSING a pipe count as a link remaining on it.**\
+The lifetime rule says a pipe goes when no link remains on it.\
+With guide anchors that is ambiguous between a link crossing the pipe and a link pinned at both its ends.\
+It is the crossing-versus-connecting distinction again, at the pipe layer, and nothing has ruled it.\
+No working answer is taken because the lab will produce the case directly.
