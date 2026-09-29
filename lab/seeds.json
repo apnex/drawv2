@@ -1,6 +1,6 @@
 {
 	"cross": {
-		"about": "Two routes through one bare anchor, crossing. Neither link pins the centre; the conduit runs through it.",
+		"about": "Two routes through one bare anchor, crossing. Neither link pins the centre; the pipes run through it.",
 		"ops": [
 			{
 				"op": "put",
@@ -81,7 +81,7 @@
 				}
 			}
 		],
-		"conduit": [
+		"pipes": [
 			[
 				"node-000001",
 				"waypoint-000005"
@@ -151,7 +151,7 @@
 				}
 			}
 		],
-		"conduit": [
+		"pipes": [
 			[
 				"node-000001",
 				"waypoint-000005"
@@ -233,7 +233,7 @@
 				}
 			}
 		],
-		"conduit": [
+		"pipes": [
 			[
 				"node-000001",
 				"waypoint-000005"
@@ -442,7 +442,7 @@
 				}
 			}
 		],
-		"conduit": [
+		"pipes": [
 			[
 				"node-000001",
 				"waypoint-000001"
@@ -557,7 +557,7 @@
 				}
 			}
 		],
-		"conduit": [
+		"pipes": [
 			[
 				"node-000001",
 				"waypoint-000005"

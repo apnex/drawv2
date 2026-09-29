@@ -62,14 +62,14 @@ test('with a route hook, `g` drops an anchor the link passes but does NOT pin', 
 		assert.equal(links.length, 1, 'the link commits');
 		assert.equal(links[0].via, undefined, 'and pins nothing -- a guide is not in the link\'s intent');
 		const guide = h.model.all('waypoint');
-		assert.equal(guide.length, 1, 'the guide anchor itself is committed, so the conduit has somewhere to go');
+		assert.equal(guide.length, 1, 'the guide anchor itself is committed, so its pipes have somewhere to go');
 
 		assert.equal(calls.length, 1, 'the hook is asked once, for the whole route');
 		const r = calls[0];
 		assert.deepEqual([r.src, r.dst], [a.id, b.id]);
 		assert.deepEqual(r.pins, []);
 		assert.deepEqual(r.guides, [guide[0].id]);
-		assert.deepEqual(r.stops, [a.id, guide[0].id, b.id], 'every stop in drawn order, for the conduit');
+		assert.deepEqual(r.stops, [a.id, guide[0].id, b.id], 'every stop in drawn order, for its pipes');
 	} finally { h.restore(); }
 });
 

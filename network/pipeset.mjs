@@ -52,7 +52,7 @@ export function createPipeSet() {
 		/*
 		Remove every pipe with an end that no longer exists. A pipe IS its pair (SD7), so a pipe to a
 		deleted anchor is not a pipe -- and left in place it would keep sheltering its surviving end from
-		the orphan sweep forever. Hand pipes included: an author's conduit outlives links, not anchors.
+		the orphan sweep forever. Hand pipes included: an author's pipes outlive links, not anchors.
 		`alive(id)` says whether an anchor exists. Returns the keys removed.
 		*/
 		prune(alive) {
@@ -72,7 +72,7 @@ export function createPipeSet() {
 		is in use when some route steps across it, in either direction. Hand pipes are never swept.
 
 		Returns the keys it removed, so a caller can say what went rather than leaving the author to
-		notice conduit disappearing.
+		notice pipes disappearing.
 		*/
 		sweep(routes) {
 			const used = new Set();

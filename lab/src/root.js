@@ -136,7 +136,7 @@ incubator (network/guide.mjs): a guide the fewest-pipes route would skip is refu
 than committed as a link that silently ignores what the author drew.
 
 It lays NOTHING. The legs are held until the planner accepts the link, then laid -- so a link the
-planner refuses leaves no conduit behind. That ordering holds because a route commit is emitted the
+planner refuses leaves no pipes behind. That ordering holds because a route commit is emitted the
 moment it is made: `commands.routeLink` never sets `coalesce`, so the planner's answer follows this
 hook synchronously and consumes exactly these legs.
 */
@@ -179,7 +179,7 @@ history.onCommit((request) => {
 		});
 	const legs = pendingLegs; pendingLegs = null;
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
-	// conduit BEFORE the tab applies the link, so the link is drawn along it from its first frame
+	// pipes BEFORE the tab applies the link, so the link is drawn along them from its first frame
 	for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid);
 	/*
 	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE.
@@ -201,7 +201,7 @@ history.onCommit((request) => {
 	Pipes laid WITH A LINK go once no link remains on them (ruled 2026-09-27); pipes laid by hand stay.
 	Swept after ordinary edits only. Pipes are session state OUTSIDE the planner's log until the format
 	batch stores them, so undo and redo cannot move them: sweeping after an undo would leave the redone
-	link with no conduit, drawn down. Leftover conduit after an undo is the smaller lie, and it goes at
+	link with no pipes, drawn down. Leftover pipes after an undo are the smaller lie, and it goes at
 	the next ordinary edit. This is a stated limit of session pipes, not a rule.
 	*/
 	// a pipe to a deleted anchor is not a pipe (SD7) -- after every edit, undo and redo included
@@ -233,7 +233,7 @@ place. It was: boards are data, not composition. Moving them out also retired a 
 tests had been extracting the literals from this source and evaluating them.
 
 Every board is applied THROUGH THE PLANNER, as an author's edit is, so a board the product could not
-reach is refused rather than shown. Its conduit is laid into the session's pipe set first, so the
+reach is refused rather than shown. Its pipes are laid into the session's pipe set first, so the
 links are routed over it the moment they are drawn. An unknown name refuses and lists what exists,
 rather than silently giving a different board.
 */
@@ -246,7 +246,7 @@ if (wanted) {
 		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else {
-			for (const [x, y] of board.conduit) pipes.lay(x, y, 'hand');
+			for (const [x, y] of board.pipes) pipes.lay(x, y, 'hand');
 			applyOps(model, answer.change?.ops ?? []);
 			drawPipes();
 			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);

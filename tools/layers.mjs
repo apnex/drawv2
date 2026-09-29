@@ -269,9 +269,9 @@ export const RULES = {
 	*/
 	/*
 	RAISED again, 150 to 180, when the lab began composing the network incubator. What grew is the
-	pipe painter (a dozen lines drawing conduit beneath links) and each board's conduit list. The
+	pipe painter (a dozen lines drawing pipes beneath links) and each board's pipe list. The
 	painter is composition -- it reads the pipe set and emits elements, defining no rule -- and the
-	conduit lists are data. The routing itself lives in network/, which is where the budget should
+	pipe lists are data. The routing itself lives in network/, which is where the budget should
 	NOT be spent: if this ceiling keeps rising, that is the signal something that belongs in the
 	incubator is being written in the lab instead.
 	*/

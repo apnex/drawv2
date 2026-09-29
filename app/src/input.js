@@ -985,7 +985,7 @@ export class Input {
 	`g` mid-drag -- a GUIDE: the route passes this anchor, and the link does not pin it.
 
 	Everything `w` does except the pin. The anchor is placed (or an existing one threaded) and joins
-	the drawn route, so the preview bends through it and the route hook lays conduit to it; but it does
+	the drawn route, so the preview bends through it and the route hook lays pipes to it; but it does
 	not join `via`, so the link's intent is unchanged. What that means shows later, when another link
 	LANDS here: a landing cuts a link that pins the point and crosses one that only passes it (ruled
 	2026-09-26, "connects only at its ends and its pins").

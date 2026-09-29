@@ -68,12 +68,12 @@ async function open(seed) {
 }
 
 /*
-The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's conduit
+The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one
 hide a failure in the other.
 */
-const CLEAR_CONDUIT = `lab.pipes.list().forEach((x) => lab.pipes.remove(x.a, x.b))`;
+const CLEAR_PIPES = `lab.pipes.list().forEach((x) => lab.pipes.remove(x.a, x.b))`;
 
 // the tab's document, counted -- the thing the author actually sees
 const COUNTS = `({ nodes: Object.keys(lab.model.state.nodes).length, waypoints: Object.keys(lab.model.state.waypoints).length,
@@ -92,7 +92,7 @@ test('the lab boots, and a seeded board arrives through the planner', { skip: SK
 test('a delete through the door shows the planner\'s cascade and sweep in the tab', { skip: SKIP }, async () => {
 	const p = await open('bend');
 	try {
-		await p.run(CLEAR_CONDUIT);
+		await p.run(CLEAR_PIPES);
 		// A `del` entry carries the whole ENTITY, not its id -- Changes needs it to build the undo.
 		// delete node A. The tab alone would remove A and nothing else; the PLANNER also takes the link
 		// whose end A was, and sweeps the bend that link left orphaned. Seeing those two in the tab is
@@ -108,7 +108,7 @@ test('a delete through the door shows the planner\'s cascade and sweep in the ta
 test('undo and redo work in the lab, as H17-D8 promises', { skip: SKIP }, async () => {
 	const p = await open('bend');
 	try {
-		await p.run(CLEAR_CONDUIT);
+		await p.run(CLEAR_PIPES);
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'node', entity: lab.model.get('node', 'node-000001') }] })`);
 		await p.run('lab.history.undo()');
 		let c = await p.run(COUNTS);
@@ -124,7 +124,7 @@ test('undo and redo work in the lab, as H17-D8 promises', { skip: SKIP }, async 
 test('on the cross board, an unpinned link is drawn along its route through the bare centre', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
-		// neither link pins the centre, yet the only conduit runs through it -- so each is drawn as
+		// neither link pins the centre, yet the only pipes run through it -- so each is drawn as
 		// three points bending there, where a straight link would be two. This is what `g` stands on.
 		const path_ = await p.run(`lab.model.pathOf(lab.model.get('link', 'link-000001'))`);
 		assert.equal(path_.length, 3, `the link was drawn straight, not routed over the pipes: ${JSON.stringify(path_)}`);
@@ -136,7 +136,7 @@ test('on the cross board, an unpinned link is drawn along its route through the 
 /*
 THE COMPARE BOARD -- what the gesture actually decides, shown by a landing.
 
-Left, both links PIN the centre (the `w` shape); right, both only PASS it over the conduit (the `g`
+Left, both links PIN the centre (the `w` shape); right, both only PASS it over the pipes (the `g`
 shape). Drawn, the two look alike: a pin is a bend, not a termination -- the lab's first seeds claimed
 otherwise and were corrected after measuring waypointRoles. The difference appears when a link LANDS
 on a centre: the landing cuts the pinned pair, making a junction, and crosses the guided pair.
@@ -167,29 +167,29 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 			const l = await p.run(`lab.authority.get('link', '${id}')`);
 			assert.ok(l, `${id} was cut -- a link that only passes a point is not connected to a landing there`);
 			const path_ = await p.run(`lab.model.pathOf(lab.model.get('link', '${id}'))`);
-			assert.deepEqual(path_[1], [480, 0], `${id} still runs through the centre over the conduit`);
+			assert.deepEqual(path_[1], [480, 0], `${id} still runs through the centre over the pipes`);
 		}
 	} finally { p.close(); }
 });
 
 /*
-THE ROUTE HOOK -- `g`'s whole-route check and its conduit, in the page.
+THE ROUTE HOOK -- `g`'s whole-route check and its pipes, in the page.
 */
 test('the route hook refuses a guide the fewest-pipes route would skip, names it, and lays nothing', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
 		const before = await p.run('lab.pipes.list().length');
-		// A to B through C and D: three pipes, while A-centre-B over the conduit is two. The route
+		// A to B through C and D: three pipes, while A-centre-B over the pipes is two. The route
 		// would ignore both guides, so committing it would draw a link that ignores what was drawn.
 		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000002', pins: [],
 			guides: ['node-000003', 'node-000004'], stops: ['node-000001', 'node-000003', 'node-000004', 'node-000002'] })`);
 		assert.equal(v.ok, false);
 		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /node-000003/, 'the refusal names the skipped guide');
-		assert.equal(await p.run('lab.pipes.list().length'), before, 'a refused route lays no conduit');
+		assert.equal(await p.run('lab.pipes.list().length'), before, 'a refused route lays no pipes');
 	} finally { p.close(); }
 });
 
-test('an accepted route lays its conduit only once the planner accepts the link, and the sweep takes it back', { skip: SKIP }, async () => {
+test('an accepted route lays its pipes only once the planner accepts the link, and the sweep takes it back', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
 		const before = await p.run('lab.pipes.list().length');
@@ -209,17 +209,17 @@ test('an accepted route lays its conduit only once the planner accepts the link,
 	} finally { p.close(); }
 });
 
-test('conduit an author laid holds an anchor the sweep would take, and a pipe to a deleted anchor goes', { skip: SKIP }, async () => {
+test('pipes an author laid hold an anchor the sweep would take, and a pipe to a deleted anchor goes', { skip: SKIP }, async () => {
 	const p = await open('bend');
 	try {
-		// bend: A -- w -- B, the link pinned at w, hand conduit A-w and w-B. Delete A: the planner takes
-		// the link, and would sweep w as the bend it left -- but w still has hand conduit to B, so it is
+		// bend: A -- w -- B, the link pinned at w, hand pipes A-w and w-B. Delete A: the planner takes
+		// the link, and would sweep w as the bend it left -- but w still has a hand pipe to B, so it is
 		// structure, not debris (pipes count as references). The pipe A-w has lost an end, so it goes.
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'node', entity: lab.model.get('node', 'node-000001') }] })`);
 		const c = await p.run(COUNTS);
 		assert.equal(c.links, 0, 'the link went with its end');
-		assert.equal(c.waypoints, 1, 'w survives: its hand conduit to B still references it');
+		assert.equal(c.waypoints, 1, 'w survives: its hand pipe to B still references it');
 		assert.deepEqual(await p.run(`lab.pipes.list().map((x) => [x.a, x.b].join('-'))`), ['node-000002-waypoint-000005'],
-			'the pipe to the deleted node is pruned; the author\'s conduit to B remains');
+			'the pipe to the deleted node is pruned; the author\'s pipe to B remains');
 	} finally { p.close(); }
 });

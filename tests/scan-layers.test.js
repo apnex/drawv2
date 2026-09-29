@@ -778,19 +778,19 @@ test('H17 C5: every folder the lab serves is copied into the image', () => {
 });
 
 /*
-Every board's conduit names anchors the board actually creates.
+Every board's pipes name anchors the board actually creates.
 
 Pipes live in the session rather than the document, so they are not validated by the planner the
-way a seed's ops are. A conduit list naming an anchor the board never creates would lay a pipe to
+way a seed's ops are. A pipe list naming an anchor the board never creates would lay a pipe to
 nothing: the painter skips it silently, the link has no route over it, and the board looks laid when
 it is not. So each pipe's two ends are checked against the ids the board's own ops put.
 */
-test('every seeded board lays conduit only between anchors it creates', () => {
+test('every seeded board lays pipes only between anchors it creates', () => {
 	const boards = JSON.parse(fs.readFileSync(path.join(root, 'lab/seeds.json'), 'utf8'));
 	let checked = 0;
 	for (const [name, board] of Object.entries(boards)) {
 		const made = new Set(board.ops.filter((o) => o.kind !== 'link').map((o) => o.entity.id));
-		for (const [a, b] of board.conduit) {
+		for (const [a, b] of board.pipes) {
 			checked++;
 			assert.ok(made.has(a) && made.has(b),
 				`board '${name}' lays a pipe ${a}-${b}, and the board does not create ${made.has(a) ? b : a} -- a pipe to nothing, skipped silently`);

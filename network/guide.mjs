@@ -5,8 +5,8 @@ INCUBATING (ruled 2026-09-28). The lab hands this to the canvas as its route hoo
 constructs no hook, so the `g` key is inert there and nothing here can reach draw.apnex.io.
 
 WHAT A GUIDE IS. `w` during a link drag drops an anchor and PINS the link to it: the anchor joins the
-link's intent (its ends plus pinned vias, ruled 2026-09-26). `g` drops an anchor and lays conduit to
-it WITHOUT pinning. The link passes it only because the conduit runs that way, which is the ruled
+link's intent (its ends plus pinned vias, ruled 2026-09-26). `g` drops an anchor and lays a pipe to
+it WITHOUT pinning. The link passes it only because the pipes run that way, which is the ruled
 meaning of a routed stretch: a link crosses the points its route passes and connects only at its
 ends and its pins. The difference shows later, when another link LANDS on the anchor -- a landing
 cuts a link that pins the point and crosses one that merely passes it.
@@ -15,12 +15,12 @@ WHY THE CHECK IS WHOLE-ROUTE (the director's distinction, dev/design/unification
 section 4). A `w` drag needs no end-to-end check: every hop is pinned by hand, each leg lays a direct
 pipe, and a direct pipe is by construction the fewest-pipes way between its two pins -- so the drawn
 route IS the derived route, leg by leg. A guide is not in the intent, so whether the route actually
-passes it is a property of the whole route over all the conduit, and cannot be known leg by leg.
+passes it is a property of the whole route over all the pipes, and cannot be known leg by leg.
 A guide the fewest-pipes route would skip -- because a shorter way already exists -- is refused, with
 the guide named, rather than committed as a link that silently ignores what the author drew.
 
 PURE. The check computes over a copy of the pipe list and returns the legs to lay; it lays nothing.
-The caller lays them only after the planner accepts the link, so a refused link leaves no conduit.
+The caller lays them only after the planner accepts the link, so a refused link leaves no pipes.
 */
 
 import { routeLink, pipeKey } from './pipes.mjs';
@@ -45,12 +45,12 @@ export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stop
 		legs.push({ a, b, laid: guided.has(a) || guided.has(b) ? 'hand' : 'link' });
 	}
 
-	// the conduit as it WOULD be, without touching the caller's set
+	// the pipes as they WOULD be, without touching the caller's set
 	const seen = new Set(pipes.map((p) => pipeKey(p.a, p.b)));
 	const would = [...pipes, ...legs.filter((l) => !seen.has(pipeKey(l.a, l.b)))];
 
 	const route = routeLink(would, { src, dst, via: pins });
-	if (!route) return { ok: false, reason: 'no route between the ends over the conduit' };
+	if (!route) return { ok: false, reason: 'no route between the ends over the pipes' };
 
 	const missed = guides.filter((g) => !route.includes(g));
 	if (missed.length) {
@@ -83,7 +83,7 @@ The route every link takes, for sweeping the pipes laid with links.
 A link with no route is DOWN, and a down link keeps its own drawn legs so it can heal onto them --
 the proposer reading recorded under the 2026-09-27 lifetime ruling. So a down link contributes the
 legs of its intent (its ends and pins in order) rather than nothing; otherwise sweeping would remove
-the very conduit it needs to come back.
+the very pipes it needs to come back.
 */
 export function routesOf(pipes, links) {
 	return links.map((l) => routeLink(pipes, { src: l.src, dst: l.dst, via: l.via ?? [] }) ?? [l.src, ...(l.via ?? []), l.dst]);

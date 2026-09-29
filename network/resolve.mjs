@@ -11,7 +11,7 @@ THE RULE, from the rulings rather than invented here:
   - a leg with no route leaves the link DOWN, not partial (2026-09-25, "down, and heals")
 
 TWO PLACES IT DEFERS TO THE STRAIGHT POLYLINE, and both are deliberate:
-  - when there are NO PIPES at all. A board with no conduit is a board the author has not laid
+  - when there are NO PIPES at all. A board with no pipes is a board the author has not laid
     yet, and drawing every link as unroutable would make the lab useless until the first pipe.
     Deferring keeps the canvas meaningful while the pipe layer is empty.
   - when a link is DOWN. Production has no notion of a down link to draw, and inventing an
@@ -25,7 +25,7 @@ import { routeLink } from './pipes.mjs';
 Build a resolver over a live pipe set.
 
 It reads the set on EVERY call rather than capturing its contents, because pipes change with each
-edit and a resolver holding a snapshot would draw links along conduit that no longer exists -- a
+edit and a resolver holding a snapshot would draw links along pipes that no longer exist -- a
 second authority for the pipe set, which is the defect family this whole programme exists to end.
 */
 export function pipeResolver(pipeSet) {

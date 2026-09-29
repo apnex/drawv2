@@ -106,7 +106,7 @@ This is the missing gesture rather than a new concept.
 ## 7. Why the alternatives were not taken
 
 **Pipes are the wrong layer.**\
-SD7's "parallel cables share it" is about two links using one conduit, which is adjacency.\
+SD7's "parallel cables share it" is about two links sharing one pipe, which is adjacency.\
 Crossing is about whether a link CONNECTS at a point, which is settled a layer up, at the link's intent.
 
 **A second junction per anchor (a VRF-like construct)** would let one anchor hold two independent meeting points.\
@@ -157,14 +157,14 @@ Survey F6 holds every stored-format change to one batch landing last; this propo
 The leading-`w` mandate is NOT taken.**\
 `mousedown` still starts a link, as today.\
 The alternative considered was requiring a `w` before a drag counts as a link, so that a drag with no `w` lays pipes only.\
-It buys a clean answer to pipe lifetime and gives conduit-building its own gesture, but it changes the meaning of the most-used gesture in the application: `mousedown A ... mouseup B` would silently produce pipes and no link.\
+It buys a clean answer to pipe lifetime and gives laying pipes without a link its own gesture, but it changes the meaning of the most-used gesture in the application: `mousedown A ... mouseup B` would silently produce pipes and no link.\
 Deferred rather than rejected, because the lab is the place to feel that rather than argue it.
 
 **T3.\
 A `g`-only drag lays pipes and no link -- the FIRST bend key decides.**\
 Press `g` before any `w` and the drag is a pipe-laying drag.\
 Press `w` first and it is a link drag, in which later hops may be `w` or `g`.\
-This keeps T2's gain -- conduit without cable, and a clean pipe-lifetime test -- without changing the no-bend case.
+This keeps T2's gain -- pipes without a link, and a clean pipe-lifetime test -- without changing the no-bend case.
 
 **T4.\
 A `g`-pipe is HAND-PLACED for lifetime purposes.**\

@@ -18,7 +18,7 @@ colour it draws, and adding a third while that row is open would be the same def
 #lab-notice { opacity: 0.75; }
 
 /*
-Pipes: the conduit layer of the incubating network plugin, beneath the links routed over it.
+Pipes: the bottom layer of the incubating network plugin, beneath the links routed over it.
 
 Stroke weight and dash carry the meaning, and colour does not -- B255 is open, so no new colour is
 introduced here. A hand-laid pipe is solid because the author placed it and it stays; one laid with a
