@@ -70,7 +70,20 @@ function narrow(kind, before, patch) {
 	return out;
 }
 
-export function plan(model, ops) {
+/*
+`alsoReferenced` -- the second interface the network incubator forced into a product module.
+
+The orphan sweep below removes a waypoint that a link referenced before this transaction and none
+references after. In today's document only links reference anchors, so that is complete. The
+incubating network plugin adds PIPES, which reference anchors too, and they live in the lab's
+session rather than the document -- so without this the planner sweeps an anchor a pipe still needs.
+Measured: an anchor that pins one link and guides another is swept when the pinning link goes.
+
+Optional, absent in production, and held by tests/sweep-references.test.js to sweep exactly as
+before when absent. After promotion pipes are stored, and this provider reads them from the
+document instead of a session -- the seam stays, only its source moves.
+*/
+export function plan(model, ops, { alsoReferenced = null } = {}) {
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -114,7 +127,7 @@ export function plan(model, ops) {
 	deliberately with no link has no structure to read an intention off.
 	*/
 	const refs = (m) => {
-		const set = new Set();
+		const set = new Set(alsoReferenced ? alsoReferenced(m) : []);
 		for (const l of m.all('link')) {
 			set.add(l.src);
 			set.add(l.dst);
@@ -534,7 +547,7 @@ function planDel(model, { kind, id }) {
 
 // ---- the one write ----
 
-export function commit(model, log, request, by = 'client', actor = null) {
+export function commit(model, log, request, by = 'client', actor = null, { alsoReferenced = null } = {}) {
 	if (!request || typeof request !== 'object') return { ok: false, error: 'invalid request', version: log.version };
 	if (request.label !== undefined && !LABEL.test(String(request.label))) {
 		return { ok: false, error: 'invalid label', version: log.version };
@@ -543,7 +556,7 @@ export function commit(model, log, request, by = 'client', actor = null) {
 		return { ok: false, error: 'version conflict', version: log.version };
 	}
 
-	const planned = plan(model, request.ops);
+	const planned = plan(model, request.ops, { alsoReferenced });
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 
