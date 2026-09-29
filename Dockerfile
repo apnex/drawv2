@@ -31,6 +31,12 @@ COPY model/ model/
 # principal and no agent door sit behind it (H17-D1, amended 2026-09-28). One image serves both;
 # which one a container IS depends on the service it runs as, not on what it carries.
 COPY lab/ lab/
+# the NETWORK plugin, incubating (ruled 2026-09-28): built lab-first and promoted to production once
+# proven. It is in the image because the lab serves it; production's own server imports nothing from
+# it until promotion, and tests/scan-layers.test.js holds that boundary. Named rather than globbed, as
+# every folder here is -- which is exactly why forgetting this line shipped a lab that 404'd its own
+# plugin while every check in the gate passed.
+COPY network/ network/
 
 # the shipped TEMPLATE set (H9.9). Read straight from the image and never written: a template is
 # listed to everyone, owned by nobody, and forks into a real diagram on first write. It replaced the

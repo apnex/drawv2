@@ -760,3 +760,31 @@ test('the incubator exists and the lab composes it', () => {
 	const lab = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
 	assert.match(lab, /from '\.\.\/\.\.\/network\//, 'the lab must compose the incubator, or nothing is being tested');
 });
+
+/*
+Every folder the lab serves is in the image -- H17 condition C5, which the first incubation missed.
+
+The Dockerfile copies named folders, never the whole tree, and that is right: it keeps deploy/,
+tests and secrets out of the image by construction. The cost is that a new folder is ABSENT unless
+somebody remembers the line. `network/` was added to the repo, mounted by the lab server, composed by
+the lab page and passed every check in the gate -- and the deployed lab 404'd it, so the page failed
+to load its own plugin. Found only by requesting the file from the live service.
+
+So the lab server's mounts are read as SOURCE and each is checked against a COPY line. This is the
+one place the image and the code can disagree silently, because the gate runs against the working
+tree, which always has every folder.
+*/
+test('H17 C5: every folder the lab serves is copied into the image', () => {
+	const server = fs.readFileSync(path.join(root, 'lab/server.mjs'), 'utf8');
+	const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
+	const copied = new Set([...docker.matchAll(/^COPY\s+([\w/.-]+?)\/?\s/gm)].map((m) => m[1].replace(/\/$/, '')));
+
+	// the mounted folders, plus the lab itself and the one server file set it names
+	const mounts = [...server.matchAll(/'\/[\w-]+\/':\s*'([\w/-]+)'/g)].map((m) => m[1].split('/')[0]);
+	const needed = [...new Set([...mounts, 'lab', 'server'])];
+	assert.ok(needed.length >= 5, `the sweep must find the lab's mounts, found ${needed.length}`);
+
+	const missing = needed.filter((d) => !copied.has(d));
+	assert.deepEqual(missing, [],
+		`the lab serves ${missing.join(', ')} but the Dockerfile never copies it -- the deployed page 404s its own modules while the gate passes`);
+});
