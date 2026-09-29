@@ -63,8 +63,18 @@ export class Model {
 	holds that byte for byte. A resolver receives the link, this model, and the DEFAULT as a third
 	argument, so it can route some links and defer the rest without re-implementing the polyline.
 	*/
-	constructor({ resolvePath = null } = {}) {
+	constructor({ resolvePath = null, routedThrough = null } = {}) {
 		this.resolvePath = resolvePath;
+		/*
+		`routedThrough` -- the COMPANION of `resolvePath`, and it must travel with it.
+
+		Where a link runs comes from the resolver; which links a moved anchor affects must come from the
+		same authority, or the two disagree. Under routing a link can be drawn through an anchor it does
+		not name, and the incidence index (ends and pins) never sees it -- the renderer then left such a
+		link standing when its anchor moved (the director's report, 2026-09-29). The resolver's owner
+		answers both questions. Absent in production: `linksRoutedThrough` is empty and nothing changes.
+		*/
+		this.routedThrough = routedThrough;
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -184,6 +194,11 @@ export class Model {
 		if (!link) return null;
 		if (this.resolvePath) return this.resolvePath(link, this, (l) => this.straightPath(l));
 		return this.straightPath(link);
+	}
+
+	// the links drawn THROUGH an anchor they do not name -- empty unless a routing resolver is injected
+	linksRoutedThrough(id) {
+		return this.routedThrough ? this.routedThrough(id, this) : [];
 	}
 
 	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always

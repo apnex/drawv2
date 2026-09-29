@@ -17,13 +17,6 @@ colour it draws, and adding a third while that row is open would be the same def
 /* the notice sink the planner's refusals reach (G11); the product shows these in its own chrome */
 #lab-notice { opacity: 0.75; }
 
-/*
-Pipes: the bottom layer of the incubating network plugin, beneath the links routed over it.
-
-Stroke weight and dash carry the meaning, and colour does not -- B255 is open, so no new colour is
-introduced here. A hand-laid pipe is solid because the author placed it and it stays; one laid with a
-link is dashed because it lasts only while a link uses it (the 2026-09-27 lifetime ruling). The
-difference is therefore visible on the canvas rather than something the author must remember.
-*/
-#pipes .pipe { stroke: currentColor; opacity: 0.35; stroke-width: 3; fill: none; }
-#pipes .pipe-link { stroke-dasharray: 6 4; }
+/* Pipes take their look from network/appearance.mjs, as attributes. There is deliberately no pipe rule
+   here: the first one used currentColor, which inherited black, and two authorities for one colour is
+   the defect family B255 records. */

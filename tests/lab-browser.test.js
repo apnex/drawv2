@@ -303,3 +303,103 @@ test('pipes an author laid hold an anchor the sweep would take, and a pipe to a 
 			'the pipe to the deleted node is pruned; the author\'s pipe to B remains');
 	} finally { await p.close(); }
 });
+
+/*
+THE DIRECTOR'S TWO REPORTS, 2026-09-29, asserted on what is SEEN.
+
+Pipes looked black. The gate had checked that pipes were drawn -- eight of them -- and never what
+colour they came out: `currentColor` inherited black, 1.1:1 on the canvas. So this reads the COMPUTED
+stroke, and asserts two rules rather than a hex literal: it is the plugin's one colour, and it is
+visible against the canvas it is drawn on.
+
+Moving a centre anchor moved its pipes and left the links routed through it behind. The model's path
+was right all along -- asking `pathOf` would have passed -- so this reads the DRAWN path, the `d` the
+author actually sees.
+*/
+test('pipes are drawn in the plugin\'s one colour, and it is visible on the canvas', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		const seen = await p.run(`(async () => {
+			const { pipeAttributes } = await import('/network/appearance.mjs');
+			const PIPE_STROKE = pipeAttributes('hand').stroke;   // through the painter's own door
+			const line = document.querySelector('#pipes line');
+			const cs = getComputedStyle(line);
+			const rgb = (s) => s.match(/\\d+/g).slice(0, 3).map(Number);
+			const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+			const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+				return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+			const canvas = rgb(getComputedStyle(document.getElementById('canvas')).fill);
+			const stroke = rgb(cs.stroke);
+			const [hi, lo] = [lum(stroke), lum(canvas)].sort((x, y) => y - x);
+			return { stroke, token: hex(PIPE_STROKE), opacity: Number(cs.opacity), contrast: (hi + 0.05) / (lo + 0.05) };
+		})()`);
+		assert.deepEqual(seen.stroke, seen.token, "the pipe must be drawn in the plugin's colour -- one authority, not a stylesheet's currentColor");
+		assert.equal(seen.opacity, 1, 'solid, so the contrast on screen is the contrast measured');
+		assert.ok(seen.contrast >= 4.5, `a pipe must be visible on the canvas: ${seen.contrast.toFixed(1)}:1 (the defect was 1.1:1)`);
+	} finally { await p.close(); }
+});
+
+test('moving an anchor redraws the links ROUTED through it, not only the links that name it', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		const drawn = `document.getElementById('link-000001').getAttribute('d')`;
+		assert.match(await p.run(drawn), /Q0 0/, 'before: the link bends at the centre, where it is');
+		// move the centre, which link-000001 routes through without naming it
+		await p.run(`lab.history.commit({ label: 'move', entries: [{ op: 'set', kind: 'waypoint', id: 'waypoint-000005', after: { x: 120, y: 60 } }] })`);
+		assert.match(await p.run(drawn), /Q120 60/,
+			"after: the DRAWN link must bend at the centre's new place -- the pipes followed, and the link must too");
+	} finally { await p.close(); }
+});
+
+/*
+The same defect's third face: a link's drawn route also depends on the PIPE SET, which lives outside
+the model -- so a new pipe that makes a shortcut never told the renderer, and existing links kept
+drawing the longer way. Found while fixing the anchor-move report, before the director met it.
+*/
+test('a new pipe that changes an existing link\'s route redraws that link', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		const drawn = `document.getElementById('link-000001').getAttribute('d')`;
+		const notice = `document.getElementById('lab-notice').textContent`;
+		assert.match(await p.run(drawn), /Q0 0/, 'before: link-000001 runs A-centre-B');
+		/*
+		Draw A to C, then C to B -- legal links, unlike a second straight A-B, which the planner refuses
+		(B72) and which the first version of this test drew, so it measured a refusal and called it a
+		redraw failure. Their legs lay A-C and C-B, a second two-pipe way from A to B, and the router
+		breaks ties by sorted id (node-000003 before waypoint-000005), so link-000001's route becomes
+		A-C-B without the link itself being touched.
+		*/
+		for (const [a, b] of [['node-000001', 'node-000003'], ['node-000003', 'node-000002']]) {
+			assert.equal((await p.run(`lab.routeHook({ src: '${a}', dst: '${b}', pins: [], guides: [], stops: ['${a}', '${b}'] })`)).ok, true);
+			await p.run(`lab.input.commitRoute({ src: lab.model.get('node', '${a}'), placed: [] }, '${b}', [])`);
+			assert.doesNotMatch(await p.run(notice), /refused/, `the ${a}-${b} link was refused, so this would measure a refusal`);
+		}
+		assert.match(await p.run(drawn), /Q0 -240/, 'after: the existing link must be redrawn along its new route, through C');
+	} finally { await p.close(); }
+});
+
+test('moving a NODE redraws the links routed through it, too', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		// re-lay the pipes so link-000001 (A to B) routes through node C, which it does not name
+		await p.run(`lab.pipes.list().forEach((x) => lab.pipes.remove(x.a, x.b)); lab.pipes.lay('node-000001', 'node-000003', 'hand'); lab.pipes.lay('node-000003', 'node-000002', 'hand')`);
+		await p.run(`lab.history.commit({ label: 'move', entries: [{ op: 'set', kind: 'node', id: 'node-000003', after: { x: 60, y: -300 } }] })`);
+		assert.match(await p.run(`document.getElementById('link-000001').getAttribute('d')`), /Q60 -300/,
+			"the drawn link must follow the node it routes through, not only the nodes it names");
+	} finally { await p.close(); }
+});
+
+/*
+A failed seed fetch must not kill the page. The gate met this as a flake -- `fetch('/seeds.json')` failing
+about one page in 130 -- and because the fetch was a top-level await, one failure rejected the whole
+module and left the lab dead. Here the failure is produced ON PURPOSE by blocking the URL, so the
+robustness is tested every run instead of once in a hundred and thirty.
+*/
+test('a seed that cannot be fetched is reported, and the lab still works', { skip: SKIP }, async () => {
+	const p = await open('cross', { block: ['*seeds.json'] });
+	try {
+		assert.equal(p.ready, true, 'the page must come up without its board');
+		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /could not be loaded/,
+			'and say why the board is missing');
+	} finally { await p.close(); }
+});

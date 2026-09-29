@@ -41,8 +41,9 @@ import { Log } from '../../server/log.mjs';
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
-import { pipeResolver } from '../../network/resolve.mjs';
+import { pipeResolver, pipeDependents } from '../../network/resolve.mjs';
 import { checkGuidedRoute, pipeAnchors, routesOf } from '../../network/guide.mjs';
+import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -76,7 +77,9 @@ The tab's model draws links along their ROUTE over pipes, through the interface 
 for exactly this (`resolvePath`). Production constructs `new Model()` and draws the straight
 polyline it always has; nothing here reaches production.
 */
-const model = new Model({ resolvePath: pipeResolver(pipes) });
+// where a link runs, AND which links a moved anchor affects, from one authority -- or the pipes follow
+// a moved anchor while the links routed through it stay behind (the director's report, 2026-09-29)
+const model = new Model({ resolvePath: pipeResolver(pipes), routedThrough: pipeDependents(pipes) });
 attachRelations(model, { cellOf });
 
 /*
@@ -105,9 +108,9 @@ Redrawn whole on every change. The pipe set is small and redrawing it is cheap, 
 tried to reconcile incrementally would need to know which pipes changed -- a second index over the
 pipe set, which is exactly the kind of second authority this programme exists to remove.
 
-Colour comes from nothing here: pipes take the stylesheet's class, because B255 records that the
-canvas already has two authorities for every colour and adding a third while that row is open would
-repeat the defect knowingly.
+How a pipe LOOKS is the network plugin's (network/appearance.mjs), applied here as attributes. The
+first painter left colour to the stylesheet's `currentColor`, which inherited black and made pipes
+invisible; one measured authority in the plugin replaces it.
 */
 const pipeLayer = svg.querySelector('#pipes');
 const drawPipes = () => {
@@ -115,7 +118,7 @@ const drawPipes = () => {
 	for (const { a, b, laid } of pipes.list()) {
 		const p = model.endpointOf(a), q = model.endpointOf(b);
 		if (!p || !q) continue;   // an anchor the pipe names has gone; the next sweep removes the pipe
-		el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}` }, pipeLayer);
+		el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}`, ...pipeAttributes(laid) }, pipeLayer);
 	}
 };
 model.onChange(drawPipes);
@@ -208,6 +211,16 @@ history.onCommit((request) => {
 	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));
 	if (!request.verb) pipes.sweep(routesOf(pipes.list(), authority.all('link')));
 	drawPipes();
+	/*
+	EVERY LINK REDRAWN once the pipes have settled. A link's drawn route depends on the pipe set, and
+	the pipe set lives outside the model -- so the model's change events, which drive the renderer,
+	never announce that a new pipe made a shortcut or that a swept one lengthened a route. Found while
+	fixing the director's anchor-move report: the same one-fact-two-authorities defect, reached through
+	the pipes rather than an anchor. Whole-board redraw is right for a lab-sized board; a targeted one
+	belongs with the promotion, when pipes live in the document and their changes are events like any
+	other.
+	*/
+	for (const l of model.all('link')) renderer.update('link', l);
 	say(`v${answer.version} ${request.verb ?? request.label ?? ''}`.trim());
 });
 
@@ -239,9 +252,17 @@ rather than silently giving a different board.
 */
 const wanted = new URLSearchParams(location.search).get('seed');
 if (wanted) {
-	const boards = await (await fetch('/seeds.json')).json();
+	/*
+	A FAILED FETCH MUST NOT KILL THE PAGE. This is a top-level await, so an unhandled rejection here
+	fails the whole module: `window.lab` is never set and the canvas that loaded above is left dead. The
+	gate caught it as a flake -- about one page in 130 -- and a real reload could meet it the same way.
+	So the failure is caught and SAID, and the lab stays usable without its board.
+	*/
+	let boards = {};
+	try { boards = await (await fetch('/seeds.json')).json(); }
+	catch (e) { say(`seed ${wanted} could not be loaded (${e.message}) -- the canvas still works; reload to try again`); }
 	const board = boards[wanted];
-	if (!board) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`);
+	if (!board) { if (Object.keys(boards).length) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`); }
 	else {
 		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);

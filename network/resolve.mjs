@@ -47,3 +47,25 @@ export function pipeResolver(pipeSet) {
 		return points;
 	};
 }
+
+/*
+Which links are drawn THROUGH an anchor -- the companion the Model takes beside `resolvePath`.
+
+Built from the same route as the resolver above, so the two cannot disagree: if this module draws a
+link through an anchor, it also says so when that anchor moves. Before it existed the renderer asked
+the incidence index, which knows only a link's ends and pins -- and a guided link, which routes through
+an anchor it does not name, stayed put while its pipes followed the moved anchor.
+
+Links the anchor already ENDS or PINS are included too; the renderer redraws those by its own index as
+well, and redrawing a link twice in one change is harmless where missing one is the defect.
+*/
+export function pipeDependents(pipeSet) {
+	return (anchorId, model) => {
+		const pipes = pipeSet.list();
+		if (!pipes.length) return [];
+		return model.all('link').filter((link) => {
+			const route = routeLink(pipes, { src: link.src, dst: link.dst, via: link.via ?? [] });
+			return !!route && route.includes(anchorId);
+		});
+	};
+}

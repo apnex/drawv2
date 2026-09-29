@@ -54,3 +54,21 @@ test('the resolver reads the pipe set LIVE, so removing a pipe changes the drawn
 	s.remove('waypoint-00000c', 'node-00000b');
 	assert.deepEqual(m.pathOf(LINK), [[0, 0], [240, 0]], 'with the route broken, the link is down and drawn straight');
 });
+
+test('pipeDependents names a link routed THROUGH an anchor it does not name', async () => {
+	// the director's defect: moving the centre moved its pipes but not the links routed through it,
+	// because only the incidence index (ends and pins) was asked
+	const { pipeDependents } = await import('../network/resolve.mjs');
+	const s = createPipeSet();
+	s.lay('node-00000a', 'waypoint-00000c');
+	s.lay('waypoint-00000c', 'node-00000b');
+	const m = new Model({ resolvePath: pipeResolver(s), routedThrough: pipeDependents(s) });
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: 120 });
+	m.put('link', LINK);
+	assert.deepEqual(m.linksRoutedThrough('waypoint-00000c').map((l) => l.id), [LINK.id],
+		'the link has no via, yet its route passes w -- so moving w affects it');
+	s.remove('waypoint-00000c', 'node-00000b');
+	assert.deepEqual(m.linksRoutedThrough('waypoint-00000c'), [], 'with the route broken it no longer passes w');
+});

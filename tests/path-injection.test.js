@@ -50,3 +50,28 @@ test('the resolver can defer to the default, so an incubator can route some link
 	const m = seeded({ resolvePath: (link, model, fallback) => fallback(link) });
 	assert.deepEqual(m.pathOf(LINK), [[0, 0], [120, -60], [240, 0]]);
 });
+
+/*
+The companion interface: WHICH LINKS a moved anchor affects.
+
+Where a link runs now comes from the injected resolver, and which links depend on an anchor came from
+the incidence index (links naming it as an end or a pin). Under routing those disagree: a link routed
+through an anchor it does not name is drawn through it, yet moving the anchor did not redraw it -- the
+director moved a centre anchor, watched its pipes follow, and the links stayed where they were until an
+END was grabbed. One fact, two authorities, the B234-B236 family.
+
+So the thing that knows the route also answers who depends on it: `routedThrough(anchorId, model)`.
+Absent in production, where `linksRoutedThrough` is empty and the renderer redraws exactly what it
+always has.
+*/
+test('production: linksRoutedThrough is empty, so nothing extra is redrawn', () => {
+	assert.deepEqual(seeded().linksRoutedThrough('waypoint-00000c'), []);
+});
+
+test('an injected routedThrough answers which links a moved anchor affects', () => {
+	let asked = null;
+	const m = seeded({ routedThrough: (id, model) => { asked = { id, model }; return [LINK]; } });
+	assert.deepEqual(m.linksRoutedThrough('waypoint-00000c'), [LINK]);
+	assert.equal(asked.id, 'waypoint-00000c');
+	assert.equal(asked.model, m, 'handed the model, like resolvePath, so it can read the routes');
+});

@@ -363,6 +363,19 @@ export class Renderer {
 	Re-rendered rather than patched: the role decides fill, radius, stroke width and class together,
 	and setting those four from here would be a second copy of the drawing.
 	*/
+	/*
+	Redraw the links drawn THROUGH an anchor that does not appear in them -- a routed link passing it.
+
+	The branches above redraw the links the incidence index names (ends and pins). Under an injected
+	routing resolver a link can also run through an anchor it does not name, and moving that anchor must
+	redraw it too, or the pipes follow the anchor and the link stays behind -- the director's report. The
+	model answers from the same authority that draws the path (`routedThrough`, beside `resolvePath`).
+	In production it answers nothing, so nothing extra is redrawn.
+	*/
+	refreshRoutedThrough(anchorId) {
+		for (const link of this.model.linksRoutedThrough?.(anchorId) ?? []) this.update('link', link);
+	}
+
 	refreshWaypointsOf(link) {
 		for (const id of [link.src, link.dst, ...(link.via || [])]) {
 			const w = this.model.get('waypoint', id);
@@ -403,6 +416,7 @@ export class Renderer {
 				setAttrs(dom.querySelector('.label-pill'), { x: sw / 2 - pw / 2, width: pw });
 			}
 			this.model.linksOf(entity.id).forEach((link) => this.update('link', link));
+			this.refreshRoutedThrough(entity.id);
 			const grp = this.model.groupOf(entity.id);
 			if (grp) this.update('group', grp);   // the hull hugs its members → follow the move
 		}
@@ -452,6 +466,7 @@ export class Renderer {
 		if (kind === 'waypoint') {
 			dom.setAttribute('transform', `translate(${entity.x},${entity.y})`);
 			this.model.linksAt(entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
+			this.refreshRoutedThrough(entity.id);
 			const grp = this.model.groupOf(entity.id);
 			if (grp) this.update('group', grp);                                      // reflow a group it belongs to
 		}
