@@ -1075,11 +1075,12 @@
 					]
 				]
 			],
-			"intent": "Refused: the leg from A to t1 is a pipe the upper link already carries, and a pipe carries one link. The notice names the link that holds it.",
+			"intent": "Refused: the leg from A to t1 is a pipe the upper link already carries, and a pipe carries one link. The notice names the link that holds it. It places no g anchor, so the notice does not say one was kept.",
 			"expect": {
 				"refused": true,
 				"notice": "held by link-000001",
-				"links": 2
+				"links": 2,
+				"noticeNot": "g anchors"
 			},
 			"rule": "DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30).",
 			"standing": "ruled",
@@ -1261,7 +1262,7 @@
 			"intent": "The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchors and their three hand pipes are kept.",
 			"expect": {
 				"refused": true,
-				"notice": "just as short|tie",
+				"notice": "(just as short|tie).*g anchors and their pipes are kept",
 				"noticeNot": "shorter way",
 				"links": 1,
 				"keptAt": [

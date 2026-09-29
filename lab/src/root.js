@@ -157,7 +157,8 @@ const routeHook = (route) => {
 		// refusal refuses the LINK: the g anchors and their hand pipes are kept (network/guide.mjs)
 		const kept = keptOnRefusal(verdict, route);
 		// a drag whose way an older down link takes HEALS it: said as that, not as a refusal (HEAL-01)
-		pendingNotice = verdict.heals ? verdict.reason : `refused: ${verdict.reason} -- the link is refused; the g anchors and their pipes are kept`;
+		// and a drag that placed no g anchor -- a w drag onto a held pipe, say -- does not claim one was kept
+		pendingNotice = verdict.heals ? verdict.reason : `refused: ${verdict.reason} -- the link is refused${kept.keep.length ? '; the g anchors and their pipes are kept' : ''}`;
 		say(pendingNotice);
 		if (kept.placedKept.length) pendingLegs = kept.legs;   // laid when the planner accepts the kept anchors
 		else { for (const l of kept.legs) pipes.lay(l.a, l.b, l.laid); drawPipes(); pendingNotice = null; }
