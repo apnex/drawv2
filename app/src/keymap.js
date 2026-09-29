@@ -86,6 +86,11 @@ export const KEYMAP = [
 	// `w` is the one mutating verb that belongs DURING a gesture: dropping a bend mid-route is the
 	// whole point of it, and the mouse button is still held.
 	{ id: 'waypoint',  prevent: false, mutates: true, duringGesture: true, when: (e) => is(e, 'w') && plain(e), run: 'onWaypointKey' },
+	// `g` is `w` without the pin: an anchor the route passes but the link does not connect at. INCUBATING
+	// with the network plugin (ruled 2026-09-28), so it acts only when the composition hands Input a route
+	// hook -- the lab does, production does not. prevent: false for the same reason as `w`: the key is
+	// claimed only on the path that acts, and in production that path never runs.
+	{ id: 'guide',     prevent: false, mutates: true, duringGesture: true, when: (e) => is(e, 'g') && plain(e), run: 'onGuideKey' },
 	{ id: 'text-tool', mutates: true, when: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
 	{ id: 'reshape',   mutates: true, when: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
 		// B147: meaningful mid-drag now -- a digit places that node and carries the link run through

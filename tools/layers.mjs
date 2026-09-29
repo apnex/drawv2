@@ -172,6 +172,7 @@ export const ENTRIES = {
 			'lab/src/root.js',
 			'network/pipes.mjs',   // the incubating plugin (ruled 2026-09-28)
 			'network/pipeset.mjs',
+			'network/guide.mjs',
 			'network/resolve.mjs',
 			'app/src/changes.js', 'app/src/commands.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',

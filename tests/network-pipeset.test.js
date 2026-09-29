@@ -56,3 +56,12 @@ test('a route using a pipe in EITHER direction counts as using it', () => {
 	s.lay('A', 'B', 'link');
 	assert.deepEqual(s.sweep([['B', 'A']]), [], 'traversed B to A is still A-B in use');
 });
+
+test('SD7: a pipe with a deleted end is pruned, hand pipes included', () => {
+	// a pipe IS its pair; a pipe to nothing would shelter its surviving end from the sweep forever
+	const s = createPipeSet();
+	s.lay('A', 'B', 'hand'); s.lay('B', 'C', 'hand');
+	const removed = s.prune((id) => id !== 'A');   // A was deleted
+	assert.equal(removed.length, 1);
+	assert.ok(!s.has('A', 'B') && s.has('B', 'C'));
+});

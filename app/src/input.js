@@ -219,14 +219,26 @@ const GESTURES = {
 			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
 			const target = endpointAt(i.model, pos);
 			const srcAlive = i.model.endpointOf(ctx.src.id);
-			const hasVia = !!(ctx.via && ctx.via.length);
+			const hasVia = !!((ctx.route ?? ctx.via)?.length);   // a guided link is no more a plain link than a pinned one
 			// a valid endpoint under the cursor: a node / free waypoint, distinct from src, not a via bend
-			const validTarget = srcAlive && target && target.id !== ctx.src.id && !(ctx.via || []).includes(target.id);
+			const validTarget = srcAlive && target && target.id !== ctx.src.id && !(ctx.route ?? ctx.via ?? []).includes(target.id);
 			// resolve the destination: the endpoint under the cursor, ELSE end at the LAST dropped
 			// waypoint — so releasing after `w` commits the route, terminating at that waypoint
 			let dst = validTarget ? target.id : null;
+			/*
+			`route` is every stop drawn, pins and guides, in order; `via` is the pins alone, which is what the
+			link stores. Released on empty ground, the link ends at the LAST STOP -- pin or guide alike, since
+			a link cannot end without ending somewhere and its end is always a termination. With no route
+			hook there are no guides, `route` equals `via`, and this is exactly the old `dst = via.pop()`.
+			*/
+			const route = [...(ctx.route ?? ctx.via ?? [])];
 			const via = [...(ctx.via || [])];
-			if (!dst && via.length) dst = via.pop();
+			if (!dst && route.length) {
+				dst = route.pop();
+				const k = via.indexOf(dst);
+				if (k !== -1) via.splice(k, 1);
+			}
+			const guides = (ctx.guides ?? []).filter((g) => g !== dst);
 			/*
 			B72 -- a ROUTED link may duplicate an existing pair; a straight one may not.
 
@@ -245,7 +257,17 @@ const GESTURES = {
 			// direct link became impossible the moment a routed one was drawn, which made the
 			// order a person happened to draw in decide what they could have.
 			const straightExists = i.model.linksBetween(ctx.src.id, dst).some(isStraight);
-			if (dst && srcAlive && dst !== ctx.src.id && (via.length || !straightExists)) {
+			if (dst && srcAlive && dst !== ctx.src.id && (route.length || !straightExists)) {
+				/*
+				The route hook sees the whole drawn route before anything commits, and may refuse it -- a guide
+				the fewest-pipes route would skip is not a link worth committing. A refusal commits nothing and
+				removes the anchors this drag placed, exactly as a cancelled drag does. No hook, no question:
+				production commits as it always has.
+				*/
+				if (i.routeHook) {
+					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, stops: [ctx.src.id, ...route, dst] });
+					if (!verdict?.ok) { i.cleanupRoute(ctx); return; }
+				}
 				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
 				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links
 				return;
@@ -288,7 +310,10 @@ const GESTURES = {
 			const src = i.model.get(hit.kind, hit.id);
 			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
 			i.overlayUi.clearHover();
-			i.ctx = { src, path: previewPath(i.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [] };
+			// `via` is what the link will STORE (its pins); `route` is every stop in drawn order, pins and
+			// guides, for the preview and the route hook; `guides` are the stops that are not pins. With no
+			// route hook there are no guides, so `route` is exactly `via` and nothing downstream changes.
+			i.ctx = { src, path: previewPath(i.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [], route: [], guides: [] };
 			i.updateLinkPreview(pos);
 			return i.ctx;
 		}
@@ -381,8 +406,16 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now, routeHook = null }) {
 		this.svg = svg;
+		/*
+		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
+		before it commits. The lab passes one; production passes none, and then `g` is inert and every
+		drag commits exactly as it always has (tests/guide-gesture.test.js holds that byte for byte).
+		The hook is asked once per drag, for the WHOLE route: a guide is not in the link's intent, so
+		whether the route passes it is a property of the whole route, not of any one leg.
+		*/
+		this.routeHook = routeHook;
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
@@ -936,12 +969,45 @@ export class Input {
 			is the debris the sweep exists to prevent.
 			*/
 			if (existing.pinned) this.model.set('waypoint', existing.id, { pinned: false });
-			if (!this.ctx.via.includes(existing.id)) this.ctx.via.push(existing.id);
+			if (!this.ctx.via.includes(existing.id)) { this.ctx.via.push(existing.id); this.ctx.route.push(existing.id); }
 		} else {
 			if (occupiedAt(this.model, snapped)) return;        // a node cell — refuse
 			const wp = this.model.makeWaypoint(snapped);
 			this.model.put('waypoint', wp);            // live (visible); committed on release
 			this.ctx.via.push(wp.id);
+			this.ctx.route.push(wp.id);
+			this.ctx.placed.push(wp);
+		}
+		this.updateLinkPreview(this.lastPos);
+	}
+
+	/*
+	`g` mid-drag -- a GUIDE: the route passes this anchor, and the link does not pin it.
+
+	Everything `w` does except the pin. The anchor is placed (or an existing one threaded) and joins
+	the drawn route, so the preview bends through it and the route hook lays conduit to it; but it does
+	not join `via`, so the link's intent is unchanged. What that means shows later, when another link
+	LANDS here: a landing cuts a link that pins the point and crosses one that only passes it (ruled
+	2026-09-26, "connects only at its ends and its pins").
+
+	Unlike `w` it leaves a `pinned` flag alone. B162 clears the flag when a link threads a waypoint,
+	because the link then becomes the waypoint's structure; a guide does not, so the author's
+	"placed deliberately" is still true.
+	*/
+	dropGuideWaypoint() {
+		if (!this.lastPos) return;
+		const snapped = snapNode(this.lastPos);
+		const existing = this.model.waypointAt(snapped);
+		if (existing) {
+			if (existing.id === this.ctx.src.id || this.ctx.route.includes(existing.id)) return;
+			this.ctx.route.push(existing.id);
+			this.ctx.guides.push(existing.id);
+		} else {
+			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse, as `w` does
+			const wp = this.model.makeWaypoint(snapped);
+			this.model.put('waypoint', wp);            // live (visible); committed on release
+			this.ctx.route.push(wp.id);
+			this.ctx.guides.push(wp.id);
 			this.ctx.placed.push(wp);
 		}
 		this.updateLinkPreview(this.lastPos);
@@ -952,7 +1018,8 @@ export class Input {
 		const target = endpointAt(this.model, pos);
 		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
 		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
-		const path = this.model.pathOf({ src: this.ctx.src, via: this.ctx.via, dst: end });
+		// through every stop drawn so far, guides included, so the author sees the route they are drawing
+		const path = this.model.pathOf({ src: this.ctx.src, via: this.ctx.route ?? this.ctx.via, dst: end });
 		if (path) this.ctx.path.update(roundedPath(path, BEND_R));
 	}
 
@@ -1377,6 +1444,13 @@ export class Input {
 	onWaypointKey(evt) {
 		if (this.mode === 'link') { evt.preventDefault(); return this.dropRouteWaypoint(); }
 		if (!this.mode) { evt.preventDefault(); this.placeWaypoint(); }
+	}
+
+	// `g` acts only mid-link-drag AND only when a route hook exists -- the lab, never production. It
+	// claims the key only on that path (prevent: false in the key table), so in production the key
+	// stays the browser's, which is what a key the product does nothing with must do.
+	onGuideKey(evt) {
+		if (this.mode === 'link' && this.routeHook) { evt.preventDefault(); return this.dropGuideWaypoint(); }
 	}
 
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.

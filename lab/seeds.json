@@ -1,0 +1,575 @@
+{
+	"cross": {
+		"about": "Two routes through one bare anchor, crossing. Neither link pins the centre; the conduit runs through it.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000003",
+					"name": "C",
+					"type": "router",
+					"x": 0,
+					"y": -240,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000004",
+					"name": "D",
+					"type": "router",
+					"x": 0,
+					"y": 240,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000005",
+					"name": "w5",
+					"x": 0,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "east-west",
+					"src": "node-000001",
+					"dst": "node-000002"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000002",
+					"name": "north-south",
+					"src": "node-000003",
+					"dst": "node-000004"
+				}
+			}
+		],
+		"conduit": [
+			[
+				"node-000001",
+				"waypoint-000005"
+			],
+			[
+				"waypoint-000005",
+				"node-000002"
+			],
+			[
+				"node-000003",
+				"waypoint-000005"
+			],
+			[
+				"waypoint-000005",
+				"node-000004"
+			]
+		]
+	},
+	"bend": {
+		"about": "One link pinned at one anchor: w there is a bend; g would leave the anchor unpinned.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000005",
+					"name": "w5",
+					"x": 0,
+					"y": -120
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "trunk",
+					"src": "node-000001",
+					"dst": "node-000002",
+					"via": [
+						"waypoint-000005"
+					]
+				}
+			}
+		],
+		"conduit": [
+			[
+				"node-000001",
+				"waypoint-000005"
+			],
+			[
+				"waypoint-000005",
+				"node-000002"
+			]
+		]
+	},
+	"detour": {
+		"about": "Two ways across. Shows the cost of g: deleting a pipe can move a route off an anchor the author placed.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -480,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 480,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000005",
+					"name": "w5",
+					"x": 0,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000006",
+					"name": "w6",
+					"x": -240,
+					"y": 300
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000007",
+					"name": "w7",
+					"x": 240,
+					"y": 300
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "uplink",
+					"src": "node-000001",
+					"dst": "node-000002",
+					"via": [
+						"waypoint-000005"
+					]
+				}
+			}
+		],
+		"conduit": [
+			[
+				"node-000001",
+				"waypoint-000005"
+			],
+			[
+				"waypoint-000005",
+				"node-000002"
+			],
+			[
+				"node-000001",
+				"waypoint-000006"
+			],
+			[
+				"waypoint-000006",
+				"waypoint-000007"
+			],
+			[
+				"waypoint-000007",
+				"node-000002"
+			]
+		]
+	},
+	"compare": {
+		"about": "Left, both links PIN the centre (the w shape); right, both only PASS it (the g shape). They look alike until a link LANDS on a centre: a landing cuts the pinned pair into a junction and crosses the guided pair. Land from the spare anchor below each centre.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A1",
+					"type": "router",
+					"x": -720,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B1",
+					"type": "router",
+					"x": -240,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000003",
+					"name": "C1",
+					"type": "router",
+					"x": -480,
+					"y": -300,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000004",
+					"name": "D1",
+					"type": "router",
+					"x": -480,
+					"y": 300,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000005",
+					"name": "A2",
+					"type": "router",
+					"x": 240,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000006",
+					"name": "B2",
+					"type": "router",
+					"x": 720,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000007",
+					"name": "C2",
+					"type": "router",
+					"x": 480,
+					"y": -300,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000008",
+					"name": "D2",
+					"type": "router",
+					"x": 480,
+					"y": 300,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000001",
+					"name": "w1",
+					"x": -480,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000002",
+					"name": "w2",
+					"x": 480,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000003",
+					"name": "w3",
+					"x": -480,
+					"y": 480
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000004",
+					"name": "w4",
+					"x": 480,
+					"y": 480
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "pinned-h",
+					"src": "node-000001",
+					"dst": "node-000002",
+					"via": [
+						"waypoint-000001"
+					]
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000002",
+					"name": "pinned-v",
+					"src": "node-000003",
+					"dst": "node-000004",
+					"via": [
+						"waypoint-000001"
+					]
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000003",
+					"name": "guided-h",
+					"src": "node-000005",
+					"dst": "node-000006"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000004",
+					"name": "guided-v",
+					"src": "node-000007",
+					"dst": "node-000008"
+				}
+			}
+		],
+		"conduit": [
+			[
+				"node-000001",
+				"waypoint-000001"
+			],
+			[
+				"waypoint-000001",
+				"node-000002"
+			],
+			[
+				"node-000003",
+				"waypoint-000001"
+			],
+			[
+				"waypoint-000001",
+				"node-000004"
+			],
+			[
+				"node-000005",
+				"waypoint-000002"
+			],
+			[
+				"waypoint-000002",
+				"node-000006"
+			],
+			[
+				"node-000007",
+				"waypoint-000002"
+			],
+			[
+				"waypoint-000002",
+				"node-000008"
+			]
+		]
+	},
+	"tri": {
+		"about": "Three links at one anchor: a junction at any direction. The board for x (transit).",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -360,
+					"y": -180,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 360,
+					"y": -180,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000003",
+					"name": "C",
+					"type": "router",
+					"x": 0,
+					"y": 300,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000005",
+					"name": "w5",
+					"x": 0,
+					"y": 0
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "a",
+					"src": "node-000001",
+					"dst": "waypoint-000005"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000002",
+					"name": "b",
+					"src": "node-000002",
+					"dst": "waypoint-000005"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000003",
+					"name": "c",
+					"src": "node-000003",
+					"dst": "waypoint-000005"
+				}
+			}
+		],
+		"conduit": [
+			[
+				"node-000001",
+				"waypoint-000005"
+			],
+			[
+				"node-000002",
+				"waypoint-000005"
+			],
+			[
+				"node-000003",
+				"waypoint-000005"
+			]
+		]
+	}
+}

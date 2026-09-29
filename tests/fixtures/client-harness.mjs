@@ -132,7 +132,7 @@ A real Model, a real Changes, a real Selection, a real Input. The collaborators 
 stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
 can show a gesture did not, say, open the label editor, without asserting on pixels.
 */
-export function makeInput({ readOnly = false, bare = false, host: hostOverride = null } = {}) {
+export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null } = {}) {
 	const restore = installDom();
 
 	const model = new Model();
@@ -210,7 +210,10 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	// `bare` omits the optional collaborators entirely, exercising Input's own null-object defaults.
 	const input = bare
 		? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
-		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap });
+		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap,
+			// the incubating network plugin's route hook (ruled 2026-09-28). Absent unless a test asks for it,
+			// exactly as production constructs Input without one -- so every existing test runs as production does.
+			...(routeHook ? { routeHook } : {}) });
 	if (readOnly) input.setReadOnly(true);
 
 	return {

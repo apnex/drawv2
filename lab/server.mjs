@@ -87,6 +87,7 @@ encoded separator, while one that resolves first cannot.
 function resolveFile(pathname) {
 	if (pathname === '/' || pathname === '/index.html') return path.join(ROOT, 'lab/index.html');
 	if (pathname === '/lab.css') return path.join(ROOT, 'lab/lab.css');
+	if (pathname === '/seeds.json') return path.join(ROOT, 'lab/seeds.json');   // the fixed boards (data, not code)
 	if (pathname === '/style.css') return path.join(ROOT, 'app/style.css');
 	if (pathname.startsWith('/server/')) {
 		const rel = path.normalize(pathname).slice(1);

@@ -880,6 +880,7 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 		['z',         { ctrlKey: true },             'undo'],
 		['z',         { ctrlKey: true, shiftKey: true }, 'redo'],
 		['y',         { ctrlKey: true },             'redo'],
+		['g',         {},                            'guide'],
 		['g',         { ctrlKey: true },             'group'],
 		['g',         { ctrlKey: true, shiftKey: true }, 'ungroup'],
 	];
@@ -975,7 +976,14 @@ test('B47: a conditional claimer prevents only on the path that acts', () => {
 
 test('B47: every entry declares prevent, or inherits the safe default', () => {
 	const optOut = KEYMAP.filter((r) => r.prevent === false).map((r) => r.id).sort();
-	assert.deepEqual(optOut, ['alt', 'control', 'delete', 'escape', 'labels', 'stamp', 'waypoint'],
+	/*
+	`guide` joins the set, argued 2026-09-28. It is `w` without the pin and opts out for `w`'s reason:
+	the key is claimed only on the path that acts. It has a second reason `w` lacks. `g` is INCUBATING
+	with the network plugin and acts only when the composition supplies a route hook -- the lab does,
+	production does not -- so in production the acting path never runs, and claiming the key would
+	swallow a keystroke the product does nothing with. tests/guide-gesture.test.js holds both halves.
+	*/
+	assert.deepEqual(optOut, ['alt', 'control', 'delete', 'escape', 'guide', 'labels', 'stamp', 'waypoint'],
 		'the opt-outs are a closed, reviewed set — a new one has to be argued for here');
 	for (const r of KEYMAP) {
 		assert.ok(r.prevent === undefined || r.prevent === false,

@@ -42,6 +42,7 @@ import { Log } from '../../server/log.mjs';
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { pipeResolver } from '../../network/resolve.mjs';
+import { checkGuidedRoute, pipeAnchors, routesOf } from '../../network/guide.mjs';
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -127,8 +128,28 @@ const labels = new LabelEditor({ svg, model, history });
 const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
 
+/*
+THE ROUTE HOOK -- how `g` exists in the lab and nowhere else.
+
+Input asks it once per finished link drag, for the whole drawn route. It checks the route with the
+incubator (network/guide.mjs): a guide the fewest-pipes route would skip is refused and NAMED, rather
+than committed as a link that silently ignores what the author drew.
+
+It lays NOTHING. The legs are held until the planner accepts the link, then laid -- so a link the
+planner refuses leaves no conduit behind. That ordering holds because a route commit is emitted the
+moment it is made: `commands.routeLink` never sets `coalesce`, so the planner's answer follows this
+hook synchronously and consumes exactly these legs.
+*/
+let pendingLegs = null;
+const routeHook = (route) => {
+	const verdict = checkGuidedRoute(pipes.list(), route);
+	if (!verdict.ok) { say(`refused: ${verdict.reason}`); return verdict; }
+	pendingLegs = verdict.legs;
+	return verdict;
+};
+
 const input = new Input({ svg, model, history, selection, renderer, labels, readout,
-	palette: null, host: window, help: null, now: () => Date.now(), snap });
+	palette: null, host: window, help: null, now: () => Date.now(), snap, routeHook });
 
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.
@@ -151,8 +172,15 @@ history.onCommit((request) => {
 	*/
 	const answer = request.verb === 'undo' ? undo(authority, log, request.to ?? null)
 		: request.verb === 'redo' ? redo(authority, log)
-		: commit(authority, log, request, 'lab', 'lab');
+		// pipes reference anchors too, and live here rather than in the document, so the planner is told
+		// -- or its orphan sweep removes an anchor that pins one link and guides another (measured)
+		: commit(authority, log, request, 'lab', 'lab', {
+			alsoReferenced: (m) => pipeAnchors(pipes.list(), (id) => !!(m.get('node', id) || m.get('waypoint', id))),
+		});
+	const legs = pendingLegs; pendingLegs = null;
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
+	// conduit BEFORE the tab applies the link, so the link is drawn along it from its first frame
+	for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid);
 	/*
 	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE.
 
@@ -169,6 +197,17 @@ history.onCommit((request) => {
 	const planned = answer.change?.ops ?? answer.ops ?? [];
 	const apply = derivedToApply(request.ops ?? [], planned, []);
 	if (apply.length) applyOps(model, apply);
+	/*
+	Pipes laid WITH A LINK go once no link remains on them (ruled 2026-09-27); pipes laid by hand stay.
+	Swept after ordinary edits only. Pipes are session state OUTSIDE the planner's log until the format
+	batch stores them, so undo and redo cannot move them: sweeping after an undo would leave the redone
+	link with no conduit, drawn down. Leftover conduit after an undo is the smaller lie, and it goes at
+	the next ordinary edit. This is a stated limit of session pipes, not a rule.
+	*/
+	// a pipe to a deleted anchor is not a pipe (SD7) -- after every edit, undo and redo included
+	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));
+	if (!request.verb) pipes.sweep(routesOf(pipes.list(), authority.all('link')));
+	drawPipes();
 	say(`v${answer.version} ${request.verb ?? request.label ?? ''}`.trim());
 });
 
@@ -182,84 +221,35 @@ const probe = routeLink([{ a: 'A', b: 'B' }, { a: 'B', b: 'C' }], { src: 'A', ds
 say(`lab -- nothing is stored, nothing is shared -- network plugin ${probe ? 'loaded' : 'FAILED'}`);
 
 /*
-FIXED BOARDS -- the seed half of K10.
+FIXED BOARDS -- `?seed=<name>`, read from lab/seeds.json.
 
-A gesture question cannot be answered on whatever the author happened to draw. `w` and `g` differ
-only in particular shapes, and those take deliberate setup to reach, so an empty canvas turns the
-comparison into a memory test. These are the boards where the two produce DIFFERENT pages, each
-reachable by `?seed=<name>` so the same board survives a reload and two runs can be compared.
+A gesture question cannot be answered on whatever the author happened to draw: `w` and `g` differ only
+in particular shapes, and those take deliberate setup, so every board here is one where the gestures
+decide something. The same board comes back after a reload, so two runs can be compared.
 
-They live in this file rather than beside it because L8 bars a lab module from importing another
-lab module -- the lab is ONE composition, not a small application, and the rule is right.
+DATA, IN A DATA FILE. The boards began as literals in this file and grew until the L8 budget said
+so -- and the budget's own comment names a rising ceiling as the sign that something is in the wrong
+place. It was: boards are data, not composition. Moving them out also retired a hack, since the
+tests had been extracting the literals from this source and evaluating them.
 
-Every seed is applied THROUGH THE PLANNER, exactly as an author's edit is. A seed that could
-bypass the rules would let the lab show a page the product cannot reach, which is worse than
-having no seed. Ids are literal so a board is byte-identical on every load.
-*/
-const P = 60;   // kernel/spec.mjs STD.pitch
-const nd = (n, name, x, y, type = 'router') => ({ op: 'put', kind: 'node',
-	entity: { id: `node-00000${n}`, name, type, x: x * P, y: y * P, shape: 'circle' } });
-const wp = (n, x, y) => ({ op: 'put', kind: 'waypoint',
-	entity: { id: `waypoint-00000${n}`, name: `w${n}`, x: x * P, y: y * P } });
-const lk = (n, name, src, dst, via) => ({ op: 'put', kind: 'link',
-	entity: { id: `link-00000${n}`, name, src, dst, ...(via ? { via } : {}) } });
-
-const BOARDS = {
-	// two routes through one BARE anchor. Pin it with `w` and you get four terminations and a
-	// junction; leave it bare and they cross. This is the case the director asked for.
-	cross: [nd(1, 'A', -6, 0), nd(2, 'B', 6, 0), nd(3, 'C', 0, -4), nd(4, 'D', 0, 4), wp(5, 0, 0),
-		lk(1, 'east-west', 'node-000001', 'node-000002'), lk(2, 'north-south', 'node-000003', 'node-000004')],
-
-	// one link through one anchor: `w` there is a bend (two terminations that agree), `g` is nothing
-	bend: [nd(1, 'A', -6, 0), nd(2, 'B', 6, 0), wp(5, 0, -2),
-		lk(1, 'trunk', 'node-000001', 'node-000002', ['waypoint-000005'])],
-
-	// the board that shows g's COST rather than its benefit: two ways across, so deleting a pipe can
-	// move a route off an anchor the author placed. A `w` pin holds; a guide anchor does not, because
-	// it is not in the link's intent (GUIDE-ANCHORS.md open item 3).
-	detour: [nd(1, 'A', -8, 0), nd(2, 'B', 8, 0), wp(5, 0, 0), wp(6, -4, 5), wp(7, 4, 5),
-		lk(1, 'uplink', 'node-000001', 'node-000002', ['waypoint-000005'])],
-
-	// three links at one anchor -- a junction at any direction. The board for `x` (transit):
-	// toggling it off must leave three endpoints rather than a junction.
-	tri: [nd(1, 'A', -6, -3), nd(2, 'B', 6, -3), nd(3, 'C', 0, 5), wp(5, 0, 0),
-		lk(1, 'a', 'node-000001', 'waypoint-000005'), lk(2, 'b', 'node-000002', 'waypoint-000005'),
-		lk(3, 'c', 'node-000003', 'waypoint-000005')],
-};
-
-/*
-THE CONDUIT each board lays. Pipes are the incubator's, not the document's, so they cannot ride in
-the planner's op list -- they are laid into the session's pipe set beside it.
-
-Chosen so each board's links have somewhere to route, and so the boards show what they are FOR:
-`cross` runs both links through the bare centre, and `detour` offers two ways across so that
-deleting one pipe moves the route.
-*/
-const N = (n) => `node-00000${n}`, W = (n) => `waypoint-00000${n}`;
-const CONDUIT = {
-	cross: [[N(1), W(5)], [W(5), N(2)], [N(3), W(5)], [W(5), N(4)]],
-	bend: [[N(1), W(5)], [W(5), N(2)]],
-	detour: [[N(1), W(5)], [W(5), N(2)], [N(1), W(6)], [W(6), W(7)], [W(7), N(2)]],
-	tri: [[N(1), W(5)], [N(2), W(5)], [N(3), W(5)]],
-};
-
-/*
-An unknown name REFUSES and lists what exists, rather than falling back to an empty board. A seed
-that silently gives a different board than the one named makes two runs incomparable, which is the
-whole thing these exist to prevent.
+Every board is applied THROUGH THE PLANNER, as an author's edit is, so a board the product could not
+reach is refused rather than shown. Its conduit is laid into the session's pipe set first, so the
+links are routed over it the moment they are drawn. An unknown name refuses and lists what exists,
+rather than silently giving a different board.
 */
 const wanted = new URLSearchParams(location.search).get('seed');
 if (wanted) {
-	const ops = BOARDS[wanted];
-	if (!ops) say(`no seed '${wanted}' -- try: ${Object.keys(BOARDS).join(', ')}`);
+	const boards = await (await fetch('/seeds.json')).json();
+	const board = boards[wanted];
+	if (!board) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`);
 	else {
-		const answer = commit(authority, log, { ops, label: `seed ${wanted}` }, 'lab', 'lab');
+		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else {
-			// conduit FIRST, so the links are routed over it the moment they are drawn
-			for (const [x, y] of CONDUIT[wanted] ?? []) pipes.lay(x, y, 'hand');
+			for (const [x, y] of board.conduit) pipes.lay(x, y, 'hand');
 			applyOps(model, answer.change?.ops ?? []);
-			say(`seed ${wanted} -- ${ops.length} entities, ${pipes.list().length} pipes`);
+			drawPipes();
+			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);
 		}
 	}
 }
@@ -276,4 +266,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, pipes, history, log };
+window.lab = { model, authority, pipes, history, log, input, routeHook };

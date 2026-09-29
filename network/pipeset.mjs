@@ -48,6 +48,18 @@ export function createPipeSet() {
 		},
 
 		remove(a, b) { return pipes.delete(pipeKey(a, b)); },
+
+		/*
+		Remove every pipe with an end that no longer exists. A pipe IS its pair (SD7), so a pipe to a
+		deleted anchor is not a pipe -- and left in place it would keep sheltering its surviving end from
+		the orphan sweep forever. Hand pipes included: an author's conduit outlives links, not anchors.
+		`alive(id)` says whether an anchor exists. Returns the keys removed.
+		*/
+		prune(alive) {
+			const removed = [];
+			for (const [key, p] of pipes) if (!alive(p.a) || !alive(p.b)) { pipes.delete(key); removed.push(key); }
+			return removed;
+		},
 		has(a, b) { return pipes.has(pipeKey(a, b)); },
 		list() { return [...pipes.values()]; },
 

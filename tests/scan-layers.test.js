@@ -660,30 +660,18 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	const { commit } = await import('../server/txn.mjs');
 	const { Log } = await import('../server/log.mjs');
 
-	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
-	const block = src.match(/const BOARDS = \{[\s\S]*?\n\};/);
-	assert.ok(block, 'the lab must declare its boards where this test can find them');
-
-	// the helpers the board literals call, rebuilt here rather than imported: lab/ exports nothing
-	const P = 60;
-	const nd = (n, name, x, y, type = 'router') => ({ op: 'put', kind: 'node',
-		entity: { id: `node-00000${n}`, name, type, x: x * P, y: y * P, shape: 'circle' } });
-	const wp = (n, x, y) => ({ op: 'put', kind: 'waypoint',
-		entity: { id: `waypoint-00000${n}`, name: `w${n}`, x: x * P, y: y * P } });
-	const lk = (n, name, src_, dst, via) => ({ op: 'put', kind: 'link',
-		entity: { id: `link-00000${n}`, name, src: src_, dst, ...(via ? { via } : {}) } });
-	const BOARDS = new Function('nd', 'wp', 'lk', `${block[0]} return BOARDS;`)(nd, wp, lk);
-
-	const names = Object.keys(BOARDS);
-	assert.ok(names.length >= 4, `the lab must carry its boards, found ${names.length}`);
+	// read as DATA -- the boards moved out of the lab's source into lab/seeds.json
+	const boards = JSON.parse(fs.readFileSync(path.join(root, 'lab/seeds.json'), 'utf8'));
+	const names = Object.keys(boards);
+	assert.ok(names.length >= 5, `the lab must carry its boards, found ${names.length}`);
 
 	for (const name of names) {
 		const model = new Model();
 		attachRelations(model, { cellOf });
-		const answer = commit(model, new Log(), { ops: BOARDS[name], label: `seed ${name}` }, 'lab', 'lab');
+		const answer = commit(model, new Log(), { ops: boards[name].ops, label: `seed ${name}` }, 'lab', 'lab');
 		assert.equal(answer.ok, true, `seed '${name}' is refused by the planner: ${answer.error} -- it would fail silently in the browser`);
-		assert.ok((answer.change?.ops ?? []).length >= BOARDS[name].length,
-			`seed '${name}' committed fewer ops than it asked for`);
+		assert.ok((answer.change?.ops ?? []).length >= boards[name].ops.length, `seed '${name}' committed fewer ops than it asked for`);
+		assert.ok(boards[name].about, `seed '${name}' must say what it is for`);
 	}
 });
 
@@ -798,28 +786,15 @@ nothing: the painter skips it silently, the link has no route over it, and the b
 it is not. So each pipe's two ends are checked against the ids the board's own ops put.
 */
 test('every seeded board lays conduit only between anchors it creates', () => {
-	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
-	const boardsBlock = src.match(/const BOARDS = \{[\s\S]*?\n\};/);
-	const conduitBlock = src.match(/const CONDUIT = \{[\s\S]*?\n\};/);
-	assert.ok(boardsBlock && conduitBlock, 'the lab must declare BOARDS and CONDUIT where this test can find them');
-
-	const P = 60;
-	const nd = (n, name, x, y, type = 'router') => ({ op: 'put', kind: 'node', entity: { id: `node-00000${n}`, name, type, x: x * P, y: y * P, shape: 'circle' } });
-	const wp = (n, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id: `waypoint-00000${n}`, name: `w${n}`, x: x * P, y: y * P } });
-	const lk = (n, name, a, b, via) => ({ op: 'put', kind: 'link', entity: { id: `link-00000${n}`, name, src: a, dst: b, ...(via ? { via } : {}) } });
-	const BOARDS = new Function('nd', 'wp', 'lk', `${boardsBlock[0]} return BOARDS;`)(nd, wp, lk);
-	const N = (n) => `node-00000${n}`, W = (n) => `waypoint-00000${n}`;
-	const CONDUIT = new Function('N', 'W', `${conduitBlock[0]} return CONDUIT;`)(N, W);
-
+	const boards = JSON.parse(fs.readFileSync(path.join(root, 'lab/seeds.json'), 'utf8'));
 	let checked = 0;
-	for (const [name, pipes] of Object.entries(CONDUIT)) {
-		assert.ok(BOARDS[name], `CONDUIT names a board '${name}' that BOARDS does not declare`);
-		const made = new Set(BOARDS[name].filter((o) => o.kind !== 'link').map((o) => o.entity.id));
-		for (const [a, b] of pipes) {
+	for (const [name, board] of Object.entries(boards)) {
+		const made = new Set(board.ops.filter((o) => o.kind !== 'link').map((o) => o.entity.id));
+		for (const [a, b] of board.conduit) {
 			checked++;
 			assert.ok(made.has(a) && made.has(b),
 				`board '${name}' lays a pipe ${a}-${b}, and the board does not create ${made.has(a) ? b : a} -- a pipe to nothing, skipped silently`);
 		}
 	}
-	assert.ok(checked >= 10, `the sweep must find the boards' pipes, found ${checked}`);
+	assert.ok(checked >= 15, `the sweep must find the boards' pipes, found ${checked}`);
 });
