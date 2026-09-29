@@ -40,21 +40,75 @@ before(async () => {
 		try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up yet */ }
 		await sleep(200);
 	}
+	/*
+	--disable-extensions IS THE FIX FOR THIS FILE'S FLAKE, and it was found by measurement, not guessed.
+
+	About one run in four, a page never booted. A full event timeline of a failing load showed the page
+	firing DOMContentLoaded and load at 31ms -- a successful load fires them at about 81ms, after all 56
+	module requests -- and cancelling every request still in flight in that same millisecond. A stopped
+	load, not a slow one. A reproduction with no in-page actions stopped loads too, always at the same
+	ELAPSED time -- 2.31 to 2.34 seconds after launch -- whatever the navigation count.
+
+	Chrome's own log named the candidate: at startup it installs an extension from this machine's system
+	external_extensions.json, in the background. Loading an extension that can observe requests makes
+	Chrome rebuild the request machinery of open pages, and whatever is in flight is cut off. Measured
+	over 20 launches each: 8 stopped loads in 500 with extensions on, 0 in 500 with this flag.
+
+	Two hypotheses were tested and REFUTED first, and are recorded so nobody re-runs them: Node closing
+	idle keep-alive sockets (no change), and opening and closing a tab per test (one tab made it worse).
+	*/
 	chrome = spawnGroup(CHROME, ['--headless=new', `--remote-debugging-port=${cdp}`, '--no-sandbox', '--disable-gpu',
-		`--user-data-dir=${dir}/cdp`, 'about:blank'], { stdio: 'ignore' });
+		'--disable-extensions', `--user-data-dir=${dir}/cdp`, 'about:blank'], { stdio: 'ignore' });
 	for (let i = 0; i < 80; i++) {
 		try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); }
 	}
 });
 after(() => teardown([chrome, srv], dir));
 
-// open a page on a seeded board and hand back an evaluator that runs in it
-async function open(seed) {
-	const t = await (await fetch(`http://127.0.0.1:${cdp}/json/new?${encodeURIComponent(`http://127.0.0.1:${port}/?seed=${seed}`)}`, { method: 'PUT' })).json();
+/*
+ONE TAB for the whole file, navigated per test -- the product harness's pattern (tests/browser.test.js),
+which this file should have copied from the start (M6, author from exemplar).
+
+The first version opened a tab per test and closed it after. That was flaky: about one run in five, a
+page never booted, and the recorded evidence was a single module request ABORTED with no failed
+response and no exception -- a request cancelled, not a request failed. Closing a tab and opening the
+next within milliseconds lets Chrome reuse the dying tab's renderer; cutting that lifecycle out removes
+the cause instead of widening a wait around it.
+
+Each navigation carries a NONCE, and readiness requires it: without it the check could read the
+previous test's page, still current for an instant after the navigation is issued, and pass on it.
+*/
+let tab = null, nonce = 0;
+async function theTab() {
+	if (tab) return tab;
+	const t = await (await fetch(`http://127.0.0.1:${cdp}/json/new?about:blank`, { method: 'PUT' })).json();
 	const { default: WebSocket } = await import('ws');
 	const ws = new WebSocket(t.webSocketDebuggerUrl);
-	let id = 0; const pending = new Map();
-	ws.on('message', (raw) => { const m = JSON.parse(raw.toString()); if (pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+	let id = 0; const pending = new Map(); const thrown = []; const requests = new Map(); const timeline = []; const clock = { t0: Date.now() };
+	const PATH = (u) => String(u ?? '').replace(/^https?:\/\/[^/]+/, '');
+	ws.on('message', (raw) => {
+		const m = JSON.parse(raw.toString());
+		// FULL TIMELINE of the current navigation, for diagnosing a load that fails (dumped only then)
+		if (m.method) {
+			const at = Date.now() - clock.t0, p = m.params ?? {};
+			if (m.method === 'Network.requestWillBeSent') timeline.push({ at, ev: 'request', id: p.requestId, url: PATH(p.request.url), type: p.type });
+			else if (m.method === 'Network.responseReceived') timeline.push({ at, ev: 'response', id: p.requestId, status: p.response.status });
+			else if (m.method === 'Network.loadingFinished') timeline.push({ at, ev: 'finished', id: p.requestId });
+			else if (m.method === 'Network.loadingFailed') timeline.push({ at, ev: 'FAILED', id: p.requestId, url: requests.get(p.requestId), error: p.errorText, canceled: p.canceled, blocked: p.blockedReason ?? null });
+			else if (m.method.startsWith('Page.') || m.method.startsWith('Target.') || m.method.startsWith('Inspector.')
+				|| m.method === 'Runtime.executionContextCreated' || m.method === 'Runtime.executionContextDestroyed' || m.method === 'Runtime.exceptionThrown') {
+				timeline.push({ at, ev: m.method, detail: JSON.stringify(p).slice(0, 180) });
+			}
+		}
+		if (m.method === 'Runtime.exceptionThrown') thrown.push(String(m.params?.exceptionDetails?.exception?.description ?? m.params?.exceptionDetails?.text).slice(0, 200));
+		if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error') thrown.push(`console: ${m.params.entry.text.slice(0, 200)}`);
+		if (m.method === 'Network.requestWillBeSent') requests.set(m.params.requestId, m.params.request.url.replace(/^https?:\/\/[^/]+/, ''));
+		if (m.method === 'Network.loadingFailed' && !m.params.blockedReason) thrown.push(`request failed: ${m.params.errorText} (${requests.get(m.params.requestId) ?? '?'})`);
+		if (m.method === 'Network.responseReceived' && m.params.response.status !== 200 && m.params.type !== 'Document') {
+			thrown.push(`response ${m.params.response.status} (${m.params.response.url.replace(/^https?:\/\/[^/]+/, '')})`);
+		}
+		if (pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+	});
 	await new Promise((r) => ws.on('open', r));
 	const send = (method, params = {}) => new Promise((r) => { const n = ++id; pending.set(n, r); ws.send(JSON.stringify({ id: n, method, params })); });
 	const run = async (expression) => {
@@ -62,9 +116,35 @@ async function open(seed) {
 		if (res.result?.exceptionDetails) throw new Error(String(res.result.exceptionDetails.exception?.description).slice(0, 300));
 		return res.result?.result?.value;
 	};
-	for (let i = 0; i < 60; i++) { if (await run('!!window.lab').catch(() => false)) break; await sleep(150); }
-	const ready = await run('!!window.lab');
-	return { run, ready, close: () => ws.close() };
+	await send('Runtime.enable'); await send('Log.enable'); await send('Network.enable');
+	await send('Page.enable'); await send('Page.setLifecycleEventsEnabled', { enabled: true });
+	tab = { ws, send, run, thrown, requests, timeline, clock };
+	return tab;
+}
+
+// navigate the one tab to a seeded board and hand back an evaluator that runs in it
+async function open(seed, { block = [] } = {}) {
+	const t = await theTab();
+	t.thrown.length = 0; t.requests.clear(); t.timeline.length = 0; t.clock.t0 = Date.now();
+	await t.send('Network.setBlockedURLs', { urls: block });
+	const n = ++nonce;
+	await t.send('Page.navigate', { url: `http://127.0.0.1:${port}/?seed=${seed}&n=${n}` });
+	const isReady = `location.search.includes('n=${n}') && !!window.lab`;
+	for (let i = 0; i < 100; i++) { if (await t.run(isReady).catch(() => false)) break; await sleep(150); }
+	const ready = !!(await t.run(isReady).catch(() => false));
+	/*
+	A page that never became ready is reported AS THAT, with its state and everything that failed while
+	it loaded -- not left for a later assertion to fail on, which is how this first surfaced: as
+	"getComputedStyle: parameter 1 is not an Element", fifteen seconds in, naming a symptom.
+	*/
+	if (!ready && !block.length) {
+		const state = await t.run(`JSON.stringify({ readyState: document.readyState, href: location.href,
+			notice: document.getElementById('lab-notice')?.textContent ?? null })`).catch((e) => String(e));
+		const dump = path.join(os.tmpdir(), `lab-flake-${process.pid}-${n}.json`);
+		fs.writeFileSync(dump, JSON.stringify({ seed, n, state, timeline: t.timeline }, null, 1));
+		throw new Error(`the lab page at ?seed=${seed} never became ready: ${state}; while loading: ${JSON.stringify(t.thrown)}; timeline: ${dump}`);
+	}
+	return { run: t.run, ready, close: async () => {} };
 }
 
 /*
@@ -86,7 +166,7 @@ test('the lab boots, and a seeded board arrives through the planner', { skip: SK
 		const c = await p.run(COUNTS);
 		assert.deepEqual([c.nodes, c.waypoints, c.links], [2, 1, 1], `the bend board did not arrive: ${JSON.stringify(c)}`);
 		assert.equal(await p.run('lab.authority.all("link").length'), 1, 'the AUTHORITY model must hold the board too -- the planner is what put it there');
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 test('a delete through the door shows the planner\'s cascade and sweep in the tab', { skip: SKIP }, async () => {
@@ -102,7 +182,7 @@ test('a delete through the door shows the planner\'s cascade and sweep in the ta
 		assert.equal(c.links, 0, `the planner's cascade never reached the tab: ${JSON.stringify(c)}`);
 		assert.equal(c.waypoints, 0, `the planner's sweep never reached the tab: ${JSON.stringify(c)}`);
 		assert.doesNotMatch(c.notice, /refused/, `the delete was refused: ${c.notice}`);
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 test('undo and redo work in the lab, as H17-D8 promises', { skip: SKIP }, async () => {
@@ -118,7 +198,7 @@ test('undo and redo work in the lab, as H17-D8 promises', { skip: SKIP }, async 
 		await p.run('lab.history.redo()');
 		c = await p.run(COUNTS);
 		assert.deepEqual([c.nodes, c.waypoints, c.links], [1, 0, 0], `redo did not re-apply the delete and its cascade: ${JSON.stringify(c)}`);
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 test('on the cross board, an unpinned link is drawn along its route through the bare centre', { skip: SKIP }, async () => {
@@ -130,7 +210,7 @@ test('on the cross board, an unpinned link is drawn along its route through the 
 		assert.equal(path_.length, 3, `the link was drawn straight, not routed over the pipes: ${JSON.stringify(path_)}`);
 		assert.deepEqual(path_[1], [0, 0], 'and its middle point is the centre anchor');
 		assert.equal(await p.run(`lab.model.get('link', 'link-000001').via`), undefined, 'while the link itself pins nothing');
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 /*
@@ -155,7 +235,7 @@ test('compare: a landing CUTS the links that pin the centre, and the centre beco
 		assert.ok((await p.run(roleOf('waypoint-000001'))).includes('junction'), 'after it, the pinned pair was cut there: a junction');
 		const ending = await p.run(`lab.authority.all('link').filter((l) => l.src === 'waypoint-000001' || l.dst === 'waypoint-000001').length`);
 		assert.equal(ending, 5, 'two pinned links cut in two, plus the landing: five links end at the centre');
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 test('compare: a landing CROSSES the links that only pass the centre, and they stay whole', { skip: SKIP }, async () => {
@@ -169,7 +249,7 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 			const path_ = await p.run(`lab.model.pathOf(lab.model.get('link', '${id}'))`);
 			assert.deepEqual(path_[1], [480, 0], `${id} still runs through the centre over the pipes`);
 		}
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 /*
@@ -186,7 +266,7 @@ test('the route hook refuses a guide the fewest-pipes route would skip, names it
 		assert.equal(v.ok, false);
 		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /node-000003/, 'the refusal names the skipped guide');
 		assert.equal(await p.run('lab.pipes.list().length'), before, 'a refused route lays no pipes');
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 test('an accepted route lays its pipes only once the planner accepts the link, and the sweep takes it back', { skip: SKIP }, async () => {
@@ -206,7 +286,7 @@ test('an accepted route lays its pipes only once the planner accepts the link, a
 		const id = await p.run(`lab.authority.all('link').find((l) => l.src === 'node-000001' && l.dst === 'node-000004').id`);
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'link', entity: lab.model.get('link', '${id}') }] })`);
 		assert.equal(await p.run('lab.pipes.list().length'), before, 'a pipe laid with a link goes once no link remains on it');
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
 
 test('pipes an author laid hold an anchor the sweep would take, and a pipe to a deleted anchor goes', { skip: SKIP }, async () => {
@@ -221,5 +301,5 @@ test('pipes an author laid hold an anchor the sweep would take, and a pipe to a 
 		assert.equal(c.waypoints, 1, 'w survives: its hand pipe to B still references it');
 		assert.deepEqual(await p.run(`lab.pipes.list().map((x) => [x.a, x.b].join('-'))`), ['node-000002-waypoint-000005'],
 			'the pipe to the deleted node is pruned; the author\'s pipe to B remains');
-	} finally { p.close(); }
+	} finally { await p.close(); }
 });
