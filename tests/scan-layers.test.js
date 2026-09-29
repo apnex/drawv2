@@ -640,3 +640,71 @@ test('H17 K10: every name the lab imports is exported by the module it names', (
 	}
 	assert.ok(checked.length > 10, `the sweep must find the lab's imports, not ${checked.length}`);
 });
+
+/*
+H17 K10 -- every seeded board is one the planner accepts.
+
+The lab applies its boards through `commit()` so a seed cannot show a page the product could not
+reach. That property is worth nothing unless the boards actually pass, and a refused seed fails
+QUIETLY in the browser -- the notice says "refused" and the canvas stays empty, which looks like a
+board that simply has nothing in it.
+
+So the ops are lifted out of the source and run through the real planner here, in the gate. A
+board that stops validating -- because a rule tightened, or an id grammar moved -- fails on the
+push that broke it rather than the next time somebody opens the page.
+*/
+test('H17 K10: every seeded board is accepted by the real planner', async () => {
+	const { Model } = await import('../model/model.mjs');
+	const { attachRelations } = await import('../engine/store.mjs');
+	const { cellOf } = await import('../kernel/geometry.mjs');
+	const { commit } = await import('../server/txn.mjs');
+	const { Log } = await import('../server/log.mjs');
+
+	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+	const block = src.match(/const BOARDS = \{[\s\S]*?\n\};/);
+	assert.ok(block, 'the lab must declare its boards where this test can find them');
+
+	// the helpers the board literals call, rebuilt here rather than imported: lab/ exports nothing
+	const P = 60;
+	const nd = (n, name, x, y, type = 'router') => ({ op: 'put', kind: 'node',
+		entity: { id: `node-00000${n}`, name, type, x: x * P, y: y * P, shape: 'circle' } });
+	const wp = (n, x, y) => ({ op: 'put', kind: 'waypoint',
+		entity: { id: `waypoint-00000${n}`, name: `w${n}`, x: x * P, y: y * P } });
+	const lk = (n, name, src_, dst, via) => ({ op: 'put', kind: 'link',
+		entity: { id: `link-00000${n}`, name, src: src_, dst, ...(via ? { via } : {}) } });
+	const BOARDS = new Function('nd', 'wp', 'lk', `${block[0]} return BOARDS;`)(nd, wp, lk);
+
+	const names = Object.keys(BOARDS);
+	assert.ok(names.length >= 4, `the lab must carry its boards, found ${names.length}`);
+
+	for (const name of names) {
+		const model = new Model();
+		attachRelations(model, { cellOf });
+		const answer = commit(model, new Log(), { ops: BOARDS[name], label: `seed ${name}` }, 'lab', 'lab');
+		assert.equal(answer.ok, true, `seed '${name}' is refused by the planner: ${answer.error} -- it would fail silently in the browser`);
+		assert.ok((answer.change?.ops ?? []).length >= BOARDS[name].length,
+			`seed '${name}' committed fewer ops than it asked for`);
+	}
+});
+
+/*
+H17 K10 -- the lab reads the planner's answer at the key the planner uses.
+
+`commit()` returns `{ ok, change, version }` and the ops it applied are at `change.ops`. The first
+build of the lab read `answer.ops`, found undefined, applied nothing, and left a canvas that never
+updated while the notice cheerfully reported a new version -- a silent failure that every
+structural check passed and that the seed test above could not see, because that test calls the
+planner directly and never looks at how the lab reads it.
+
+Asserted as SOURCE because the alternative needs a browser. Narrow on purpose: it holds the one
+key whose absence is invisible.
+*/
+test('H17 K10: the lab applies answer.change.ops, the key commit() actually returns', () => {
+	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
+	const applies = [...src.matchAll(/applyOps\(model,\s*([^)]+)\)/g)].map((m) => m[1].trim());
+	assert.ok(applies.length >= 2, `the lab must apply the planner's answer, found ${applies.length} call(s)`);
+	for (const arg of applies) {
+		assert.match(arg, /answer\.change/,
+			`the lab applies \`${arg}\` -- commit() returns { ok, change, version }, so this applies nothing and fails silently`);
+	}
+});

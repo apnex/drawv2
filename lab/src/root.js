@@ -103,9 +103,78 @@ exists to show.
 history.onCommit((request) => {
 	const answer = commit(authority, log, request, 'lab', 'lab');
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
-	// the planner's OWN ops, which include what it derived: the cascade, the sweep, the collapse
-	applyOps(model, answer.ops ?? []);
+	/*
+	THE PLANNER'S OWN OPS, at `answer.change.ops` -- not `answer.ops`.
+
+	`commit()` returns { ok, change, version }, and the change carries the ops it actually applied,
+	which include everything it DERIVED: the cascade, the orphan sweep, the collapse. Reading
+	`answer.ops` finds undefined, applies nothing, and leaves a canvas that never updates while the
+	notice cheerfully reports a new version. The first build of this file did exactly that.
+	*/
+	applyOps(model, answer.change?.ops ?? []);
 	say(`v${answer.version} ${request.label ?? ''}`.trim());
 });
 
 say('lab -- nothing is stored, nothing is shared');
+
+/*
+FIXED BOARDS -- the seed half of K10.
+
+A gesture question cannot be answered on whatever the author happened to draw. `w` and `g` differ
+only in particular shapes, and those take deliberate setup to reach, so an empty canvas turns the
+comparison into a memory test. These are the boards where the two produce DIFFERENT pages, each
+reachable by `?seed=<name>` so the same board survives a reload and two runs can be compared.
+
+They live in this file rather than beside it because L8 bars a lab module from importing another
+lab module -- the lab is ONE composition, not a small application, and the rule is right.
+
+Every seed is applied THROUGH THE PLANNER, exactly as an author's edit is. A seed that could
+bypass the rules would let the lab show a page the product cannot reach, which is worse than
+having no seed. Ids are literal so a board is byte-identical on every load.
+*/
+const P = 60;   // kernel/spec.mjs STD.pitch
+const nd = (n, name, x, y, type = 'router') => ({ op: 'put', kind: 'node',
+	entity: { id: `node-00000${n}`, name, type, x: x * P, y: y * P, shape: 'circle' } });
+const wp = (n, x, y) => ({ op: 'put', kind: 'waypoint',
+	entity: { id: `waypoint-00000${n}`, name: `w${n}`, x: x * P, y: y * P } });
+const lk = (n, name, src, dst, via) => ({ op: 'put', kind: 'link',
+	entity: { id: `link-00000${n}`, name, src, dst, ...(via ? { via } : {}) } });
+
+const BOARDS = {
+	// two routes through one BARE anchor. Pin it with `w` and you get four terminations and a
+	// junction; leave it bare and they cross. This is the case the director asked for.
+	cross: [nd(1, 'A', -6, 0), nd(2, 'B', 6, 0), nd(3, 'C', 0, -4), nd(4, 'D', 0, 4), wp(5, 0, 0),
+		lk(1, 'east-west', 'node-000001', 'node-000002'), lk(2, 'north-south', 'node-000003', 'node-000004')],
+
+	// one link through one anchor: `w` there is a bend (two terminations that agree), `g` is nothing
+	bend: [nd(1, 'A', -6, 0), nd(2, 'B', 6, 0), wp(5, 0, -2),
+		lk(1, 'trunk', 'node-000001', 'node-000002', ['waypoint-000005'])],
+
+	// the board that shows g's COST rather than its benefit: two ways across, so deleting a pipe can
+	// move a route off an anchor the author placed. A `w` pin holds; a guide anchor does not, because
+	// it is not in the link's intent (GUIDE-ANCHORS.md open item 3).
+	detour: [nd(1, 'A', -8, 0), nd(2, 'B', 8, 0), wp(5, 0, 0), wp(6, -4, 5), wp(7, 4, 5),
+		lk(1, 'uplink', 'node-000001', 'node-000002', ['waypoint-000005'])],
+
+	// three links at one anchor -- a junction at any direction. The board for `x` (transit):
+	// toggling it off must leave three endpoints rather than a junction.
+	tri: [nd(1, 'A', -6, -3), nd(2, 'B', 6, -3), nd(3, 'C', 0, 5), wp(5, 0, 0),
+		lk(1, 'a', 'node-000001', 'waypoint-000005'), lk(2, 'b', 'node-000002', 'waypoint-000005'),
+		lk(3, 'c', 'node-000003', 'waypoint-000005')],
+};
+
+/*
+An unknown name REFUSES and lists what exists, rather than falling back to an empty board. A seed
+that silently gives a different board than the one named makes two runs incomparable, which is the
+whole thing these exist to prevent.
+*/
+const wanted = new URLSearchParams(location.search).get('seed');
+if (wanted) {
+	const ops = BOARDS[wanted];
+	if (!ops) say(`no seed '${wanted}' -- try: ${Object.keys(BOARDS).join(', ')}`);
+	else {
+		const answer = commit(authority, log, { ops, label: `seed ${wanted}` }, 'lab', 'lab');
+		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
+		else { applyOps(model, answer.change?.ops ?? []); say(`seed ${wanted} -- ${ops.length} entities`); }
+	}
+}

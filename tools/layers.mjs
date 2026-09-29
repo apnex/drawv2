@@ -247,8 +247,16 @@ export const RULES = {
 
 	It is a CEILING on composition, so it should fall as cuts land, not rise. A cut that needs more
 	than this is a cut putting logic in the lab, which L8 also bars by refusing an export or a class.
+
+	RAISED to 150 when the fixed boards landed, and the raise is argued rather than assumed. The
+	boards are DATA -- four literal op lists -- not logic: they define no rule, and every one is
+	applied through the planner, so a board that would not validate is refused exactly as a bad
+	edit is. They also cannot be split into a second file, because L8 bars a lab module from
+	importing another lab module; the lab is one composition, and that rule is right. So the
+	choice was a larger budget or no fixed boards, and a gesture question answered on whatever the
+	author happened to draw is not answered at all.
 	*/
-	L8: { dir: 'lab', budget: 120 },
+	L8: { dir: 'lab', budget: 150 },
 	/*
 	A PROXY for criterion 5 (browser restatements of planner rules): it sees a browser module reach
 	for a rule's code, and misses a rule re-typed by hand. It reads 2 while the three restated rules
