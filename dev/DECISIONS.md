@@ -1087,3 +1087,18 @@ Four decisions, each with what was not chosen:
 - **Many anchors at once, each flipped independently**, chosen over driving a mixed selection to one value and over refusing one. It follows the application's one multi-select precedent, `reshapeNodes` (`app/src/commands.js:163`), so an author learns one rule for two keys rather than two rules. The cost shown and accepted: a mixed selection does not converge, so making one uniform takes two presses with a look between them, or selecting alike first.
 
 The only refusal is a type whose table offers no choice, and the readout says so rather than failing silently.
+
+**The transit mark: a thin dashed ring at radius 10, width 1 -- ruled 2026-09-28.**\
+Drawn inside the endpoint ring and outside the junction ring, where a three-unit clear gap already exists (junction spans 5.5 to 8.5, endpoint 11.5 to 16.5; `kernel/geometry.mjs:179-185`).\
+A one-unit ring centres in it with a unit of clearance either side, so nothing existing moves.\
+The weight carries the meaning: endpoint 5, junction 3, this 1.\
+Thin and dashed reads as "a rule, not a thing", which is right -- it is the only one of the three that is not a derived role but the author's declaration about what may happen at this anchor.\
+**It draws whenever `transit` is false**, in the director's words "a function of actual anchor behaviour not node type".\
+Not conditioned on the anchor currently having links to keep apart, so an anchor marked before its links are drawn SHOWS the mark -- which is what makes the pre-declaration ruled above visible rather than silent.\
+A type that offers no choice draws nothing, because the author declared nothing.\
+**It composes rather than replaces.**\
+`waypointLayers` is additive, so a non-transiting anchor with three links draws the endpoint ring AND this ring inside it.\
+One endpoint ring is drawn, not three: `roles` is a SET (B208), so `endpoint` contributes exactly one ring however many links terminate.\
+The director has noted a future adjustment to the endpoint visual for the several-terminations case, out of scope here and not designed.\
+Carried forward, not settled: dash already means the control plane on a link, and is also used for sockets, the marquee and previews, so it reads as a general "provisional" idiom rather than one owned by control.\
+Whether a dashed ring on an anchor whose links are themselves dashed reads ambiguously is a judgement only the eye settles, and it is recorded rather than assumed.

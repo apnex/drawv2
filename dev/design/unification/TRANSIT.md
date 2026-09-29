@@ -162,18 +162,56 @@ The readout says so rather than failing silently.
 
 ---
 
-## 9. Open -- not settled by this document
+## 9. The mark, ruled 2026-09-28
+
+**A thin dashed ring, radius 10, width 1**, drawn inside the endpoint ring and outside the junction ring.
+
+The geometry has room without moving anything (`kernel/geometry.mjs:179-185`):
+
+| ring | radius | width | spans |
+|---|---|---|---|
+| junction | 7 | 3 | 5.5 to 8.5 |
+| **transit off** | **10** | **1** | **9.5 to 10.5** |
+| endpoint | 14 | 5 | 11.5 to 16.5 |
+
+A three-unit clear gap sits between the junction and endpoint rings, and a one-unit ring centres in it with a full unit of clearance either side.
+
+**The weight carries the meaning.**\
+Endpoint is heaviest at 5, junction is 3, and this is 1.\
+Thin and dashed says "a rule, not a thing", which is right: it is the only one of the three that is not a derived role.\
+It is the author's declaration about what may happen at this anchor, and the other two are what the page then derives.
+
+**It draws whenever `transit` is false**, including at an anchor with no links or one.\
+The director's words: "a function of actual anchor behaviour not node type".\
+So it is not conditioned on the anchor currently having something to keep apart -- an anchor marked before its links are drawn SHOWS the mark, which is what makes the pre-declaration ruled in section 8 visible rather than silent.\
+A type whose table offers no choice draws nothing, because the author declared nothing.
+
+**It composes; it does not replace.**\
+`waypointLayers` is additive -- an anchor's dot, its anchor circle, and one layer per derived role -- and this is one more layer.\
+So a non-transiting anchor with three links draws the endpoint ring AND this ring inside it.
+
+**One endpoint ring, not three.**\
+`roles` is a SET (`kernel/geometry.mjs:297-309`, B208), so `endpoint` contributes exactly one ring however many links terminate.\
+Nothing is stacked or hidden.\
+The director has noted a future adjustment to the endpoint visual for the several-terminations case; that is out of scope here and is not designed.
+
+**Carried forward, not settled:** dash already means the control plane on a link (`DASH_ON` 2, `DASH_OFF` 1.5), and is also used for sockets, the marquee and previews, so it reads as a general "provisional" idiom rather than one owned by control.
+A dashed ring on an anchor whose links are themselves dashed for control may read ambiguously.\
+Different element and different scale, so probably not -- but that is a judgement only the eye settles, and it is recorded rather than assumed.
+
+---
+
+## 10. Open -- not settled by this document
 
 1. **Absent or explicit.** Whether `transit` is stored only when the author sets it, as `flow` and `control` are, with absent meaning the type's permitted default. The proposer's reading is yes, for consistency with every other optional declaration.
 2. **Where the field sits against SD11b.** SD11b puts the core anchor at identity and position only, with everything else in the network plugin. `transit` belongs to the plugin, not the core -- proposer's reading, not ruled.
 3. **The format batch.** This is a stored-format change, so under survey F6 it lands as part of the ONE named batch, last, after the behaviour is proven.
-4. **The larger ring.** The director named a larger ring for a non-transiting junction. Its appearance is a derived state and is unspecified here; it belongs with the appearance pipeline (H15.9).
-5. **SD5 is untouched.** Whether an act that would make a device take a forbidden role is refused or cut stays held behind the id-prefix one-way door. This proposal needs no refusal machinery, which is why it does not disturb that hold.
-6. **The table's contents.** Section 6 is illustrative. Each row is a decision the director has not made.
+4. **SD5 is untouched.** Whether an act that would make a device take a forbidden role is refused or cut stays held behind the id-prefix one-way door. This proposal needs no refusal machinery, which is why it does not disturb that hold.
+5. **The table's contents.** Section 6 is illustrative. Each row is a decision the director has not made.
 
 ---
 
-## 10. What this would amend
+## 11. What this would amend
 
 - **SD6** ruled a per-type yes/no column for whether a flow may pass through a device. This does not change that rule; it renames the column to `routable.flows.transit` so it sits beside its link-layer sibling under one verb. Naming only, but it is an amendment to a ruling eight days old and is flagged as one rather than folded in silently.
 - **The 2026-09-26 ruling** that two separately drawn links left alone at a point join into one (`:593`) is CONFIRMED, not overturned. It is the page-derived answer, and `transit: false` is how an author departs from it deliberately.
