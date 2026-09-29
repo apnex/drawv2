@@ -18,6 +18,21 @@ export const TOKENS = {
 	port: '#aed581',         // port square / entity port
 	junction: '#4fc3f7',     // connection-pad outline
 	waypoint: '#4fc3f7',     // routing-pivot ring (link colour — it IS the bend)
+	/*
+	The transit ring: the author's declaration that this anchor keeps what reaches it apart.
+
+	Named for its ROLE, not its appearance, so re-colouring it is one line here and nothing
+	else moves. Light orange rather than the link blue of the endpoint and junction rings
+	because it is the only one of the three that is not a derived role -- the page derives
+	those, and an author declares this.
+
+	A CONSTRAINT ON A LATER CHOICE: `socket` above is #e0a85a, dashed and thin, and it draws
+	on anchors in edit mode -- the same element, at the same moment an author presses `x`.
+	Three of four attributes would have matched. The director ruled the socket and packet
+	ambers placeholders rather than locked, so whoever re-colours them must keep clear of
+	this ring rather than the other way round.
+	*/
+	transitRing: '#ffb74d',  // 11.0:1 on the canvas; separated from today's socket amber
 	bendR: 20                // = spec BEND_R; the locked corner radius
 };
 

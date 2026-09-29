@@ -829,6 +829,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.21 | A label is one size and one offset, canvas and export alike | **B236** | S3 | `DONE` |
 | H15.22 | Every optional field a link carries is writable from the CLI, clearing included, from one declared table | **B237** | S3 | `DONE` |
 | H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out -- LINKS DONE; nodes, waypoints, zones and groups still assemble their own attributes | feature | S3 | `WIP` |
+| H15.23 | One registry for every colour the canvas draws: tokens named by role, consumed by the stylesheet, and a scanner that fails a hex literal | **B255** | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
 **Ruled 2026-09-22 by the director: FRAGMENT.**\

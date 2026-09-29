@@ -1325,3 +1325,63 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 			`${name} still asks the sub-questions directly, so there are two ways to draw a link`);
 	}
 });
+
+/*
+The transit ring -- ruled 2026-09-28. An anchor whose author declared `transit: false` keeps apart
+what reaches it, and says so with a thin dashed ring between the junction and endpoint rings.
+
+Asserted as GEOMETRY RELATIONSHIPS rather than as the three literals. Five tests in one session
+broke on a correct change because they pinned a value the spec was free to move, and the rule here
+is not "radius is 10" -- it is "this ring fits in the gap the other two leave, and never touches
+either". A later change to any of the three radii must keep that true or fail here.
+*/
+test('the transit ring fits between the junction and endpoint rings, touching neither', async () => {
+	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const ext = 12;
+
+	const all = waypointLayers(['endpoint', 'junction'], ext, null, { transit: false });
+	const ring = all.find((l) => l.cls === 'wp-transit');
+	assert.ok(ring, 'an anchor declared non-transiting must draw a ring');
+
+	const junction = all.find((l) => l.cls === 'wp-junction');
+	const endpoint = all.find((l) => l.cls === 'wp-ring');
+	const span = (l) => [l.radius - l.width / 2, l.radius + l.width / 2];
+	const [, jOut] = span(junction);
+	const [tIn, tOut] = span(ring);
+	const [eIn] = span(endpoint);
+
+	assert.ok(tIn > jOut, `the transit ring (from ${tIn}) must clear the junction ring (to ${jOut})`);
+	assert.ok(tOut < eIn, `the transit ring (to ${tOut}) must clear the endpoint ring (from ${eIn})`);
+
+	// the weight is the grammar: a rule is drawn lighter than the things it constrains
+	assert.ok(ring.width < junction.width && ring.width < endpoint.width,
+		'the transit ring must be the lightest of the three, or it reads as a thing rather than a rule');
+	assert.ok(ring.dash, 'the ring is dashed -- solid would read as another derived role');
+});
+
+test('the transit ring draws only when the author declared it, at any link count', async () => {
+	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const has = (roles, opts) => waypointLayers(roles, 12, null, opts).some((l) => l.cls === 'wp-transit');
+
+	assert.equal(has(['endpoint'], { transit: false }), true, 'declared, one link: the mark shows');
+	assert.equal(has([], { transit: false }), true,
+		'declared with NO links: the mark still shows -- pre-declaration must be visible, or allowing it buys nothing');
+	assert.equal(has(['junction'], { transit: false }), true, 'declared, many links');
+
+	assert.equal(has(['endpoint'], { transit: true }), false, 'transiting: nothing to say');
+	assert.equal(has(['endpoint'], {}), false, 'undeclared: the author declared nothing, so nothing draws');
+});
+
+test('the transit ring takes its colour from the token table, not a literal', async () => {
+	const { TOKENS } = await import('../kernel/theme.mjs');
+	assert.ok(TOKENS.transitRing, 'the ring colour must be a NAMED token -- B255 is 73 uses of a colour with two authorities');
+	/*
+	CODE, not prose. The first version of this read the whole file and failed on two hex values
+	inside a comment describing the grid dot -- a guard that cannot tell documentation from an
+	instruction will be switched off rather than obeyed. Comments are stripped first, so the
+	assertion is about what the module DOES.
+	*/
+	const src = fs.readFileSync(new URL('../kernel/geometry.mjs', import.meta.url), 'utf8')
+		.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+	assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'geometry must carry no colour literal in code; the token table is the authority (B255)');
+});

@@ -164,7 +164,8 @@ The readout says so rather than failing silently.
 
 ## 9. The mark, ruled 2026-09-28
 
-**A thin dashed ring, radius 10, width 1**, drawn inside the endpoint ring and outside the junction ring.
+**A thin dashed ring in light orange, radius 10, width 1**, drawn inside the endpoint ring and outside the junction ring.\
+The colour is `#ffb74d`, carried as a named token beside the others in `kernel/theme.mjs`, never as a literal in a stylesheet -- B235 and B236 were both one value with two authorities, and a colour introduced as a literal is the same trap set again.
 
 The geometry has room without moving anything (`kernel/geometry.mjs:179-185`):
 
@@ -195,10 +196,20 @@ So a non-transiting anchor with three links draws the endpoint ring AND this rin
 Nothing is stacked or hidden.\
 The director has noted a future adjustment to the endpoint visual for the several-terminations case; that is out of scope here and is not designed.
 
-**Carried forward, not settled:** dash already means the control plane on a link (`DASH_ON` 2, `DASH_OFF` 1.5), and is also used for sockets, the marquee and previews, so it reads as a general "provisional" idiom rather than one owned by control.
-A dashed ring on an anchor whose links are themselves dashed for control may read ambiguously.\
-Different element and different scale, so probably not -- but that is a judgement only the eye settles, and it is recorded rather than assumed.
+**The dash reads unambiguously, ruled 2026-09-28.**\
+Dash already means the control plane on a link (`DASH_ON` 2, `DASH_OFF` 1.5), and is also used for sockets, the marquee and previews, so it is a general "provisional" idiom rather than one owned by control.\
+The director settled the control-link case directly: the control links DO NOT CONNECT to the transit ring visually.\
+The geometry agrees, and recording it is what makes the reading safe rather than lucky.\
+A terminating link's stroke stops at the endpoint ring, whose inner edge is 11.5, while the transit ring's outer edge is 10.5.\
+A full unit of empty space separates them, the endpoint ring sits between the link and the transit ring, and the two dashed things differ in weight by a factor of five.\
+This holds only while the transit ring stays INSIDE the endpoint ring, so a later change to either radius must re-check the clearance.
 
+**The socket collision, and why the colour moved.**\
+A second dashed mark was found on the same element and it is a closer call than the control link: `.socket` is `#e0a85a`, width 0.6, dasharray 2 2 -- amber, dashed and thin, drawn on anchors in EDIT MODE, which is exactly where and when an author presses `x`.\
+Three of four attributes would have matched.\
+The director ruled that the socket and packet ambers are PLACEHOLDERS rather than locked tokens, so the clash is resolved by moving them later rather than by avoiding orange here.\
+`#ffb74d` was chosen for the ring: 11.0:1 against the canvas, and separated from today's socket amber.\
+Recorded so that whoever re-colours the socket knows this ring is a constraint on that choice rather than a free variable.
 ---
 
 ## 10. Open -- not settled by this document

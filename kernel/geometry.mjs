@@ -183,6 +183,22 @@ const JUNCTION_RADIUS = 7;
 const JUNCTION_WIDTH = 3;
 const ENDPOINT_RADIUS = 14;
 const ENDPOINT_WIDTH = 5;
+/*
+The transit ring (ruled 2026-09-28): the author declared that this anchor keeps apart what
+reaches it, so no bend and no junction form here.
+
+It sits in the gap the other two rings already leave: junction spans 5.5 to 8.5, endpoint
+11.5 to 16.5, so a one-unit ring at radius 10 centres in three clear units with a full unit
+either side. Nothing existing moves, and that clearance is also what keeps the dash readable
+-- a terminating link's stroke stops at the endpoint ring, a unit outside this one.
+
+THE WEIGHT CARRIES THE MEANING: endpoint 5, junction 3, this 1. Thin and dashed reads as a
+rule rather than a thing, which is right, because it is the only one of the three that is not
+derived from the page.
+*/
+const TRANSIT_RADIUS = 10;
+const TRANSIT_WIDTH = 1;
+const TRANSIT_DASH = '2 2';
 
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';
@@ -294,8 +310,23 @@ it. The anchor is the floor and is always present; the rest are the sub-types `w
 derived. One list, walked by both renderers, so the canvas and the export cannot disagree about
 what a role looks like.
 */
-export const waypointLayers = (roles, ext, links = null) => {
+export const waypointLayers = (roles, ext, links = null, anchor = null) => {
 	const out = [{ cls: 'wp-anchor', ...waypointAnchor(ext) }];
+	/*
+	The transit ring is the one layer here that is NOT derived from the role set.
+
+	Every other layer answers "what did the page turn out to be": one termination is an endpoint,
+	three is a junction. This answers "what did the author declare", which is why it reads the
+	anchor rather than the roles, and why it draws at any link count including none -- an anchor
+	marked before its links exist must SHOW the mark, or allowing that pre-declaration buys
+	nothing (ruled 2026-09-28).
+
+	It composes rather than replaces: a non-transiting anchor with three links draws the endpoint
+	ring and this one inside it.
+	*/
+	if (anchor && anchor.transit === false) {
+		out.push({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, dash: TRANSIT_DASH, stroke: TOKENS.transitRing });
+	}
 	if (roles.includes('endpoint')) {
 		// H15.16 -- the ring carries the plane in its WEIGHT, at the same ratio the link uses. The
 		// links are needed because a role set alone cannot say which plane a terminus serves.
