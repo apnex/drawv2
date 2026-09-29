@@ -51,7 +51,20 @@ export function newId(kind, taken = {}) {
 export const kindOf = (id) => id.split('-')[0];
 
 export class Model {
-	constructor() {
+	/*
+	`resolvePath` -- the first pluggable interface the network incubator forced into a product module.
+
+	`pathOf` is read by four canvas modules. Production draws a link as the straight polyline through
+	its `via`; the lab, incubating the network plugin (ruled 2026-09-28), draws it along its ROUTE
+	over pipes. Rather than patch `pathOf` in the lab -- a fork wearing a patch, which G1 forbids --
+	the seam is declared here.
+
+	Optional, and absent in production: `new Model()` behaves exactly as it always has, and a test
+	holds that byte for byte. A resolver receives the link, this model, and the DEFAULT as a third
+	argument, so it can route some links and defer the rest without re-implementing the polyline.
+	*/
+	constructor({ resolvePath = null } = {}) {
+		this.resolvePath = resolvePath;
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -168,6 +181,14 @@ export class Model {
 	placed on the straight src→dst line (B29).
 	*/
 	pathOf(link) {
+		if (!link) return null;
+		if (this.resolvePath) return this.resolvePath(link, this, (l) => this.straightPath(l));
+		return this.straightPath(link);
+	}
+
+	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always
+	// drawn. Named so an injected resolver can defer to it (see `resolvePath` in the constructor).
+	straightPath(link) {
 		if (!link) return null;
 		// An anchor is an entity REFERENCE or a bare position. The kernel's resolveRoute already
 		// admits both (an entity id, or a cell coord as a free anchor); admitting the same here is
