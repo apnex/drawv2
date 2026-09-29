@@ -271,27 +271,21 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 /*
 THE ROUTE HOOK -- `g`'s whole-route check and its pipes, in the page.
 */
-test('the route hook refuses a guide the fewest-pipes route would skip, names it, and keeps only the guides\' pipes', { skip: SKIP }, async () => {
+test('the route hook accepts a g route the link will not follow, names the guides skipped, and lays nothing itself', { skip: SKIP }, async () => {
 	const p = await open('detour');
 	try {
 		const before = await p.run('lab.pipes.list().length');
 		/*
-		n1 to n2 through w7 then w6: three pipes, while n1-w6-n2 is two once the legs are laid. The route would skip
-		w7, so the LINK is refused. On the detour board because the free way matters: the pinned uplink's own
-		pipes carry only it (ruled 2026-09-30), so they are no shortcut, and the refusal is judged on hand pipes.
+		n1 to n2 through w7 then w6: three pipes, while n1-w6-n2 is two once the legs are laid, so the link will not
+		pass w7. This was a refusal until 2026-09-30, when the director ruled "Link runs the shorter way": the link is
+		made on the shorter way and the path drawn is kept as its alternate. The pinned uplink's own pipes carry only
+		it, so the shorter way is judged over hand pipes.
 		*/
 		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000002', pins: [], placed: [],
 			guides: ['waypoint-000007', 'waypoint-000006'], stops: ['node-000001', 'waypoint-000007', 'waypoint-000006', 'node-000002'] })`);
-		assert.equal(v.ok, false);
-		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /waypoint-000007/, 'the refusal names the skipped guide');
-		/*
-		RULED 2026-09-29, and this test changed with it. It used to assert that a refused route lays NO
-		pipes. The director: "G is supposed to keep the pipe/anchors even if the link fails" -- refusal
-		refuses the link, not the geometry the author placed with g. So the pipes laid by hand to the guides
-		are kept, and nothing that would have been laid for the link alone.
-		*/
-		const laid = await p.run(`lab.pipes.list().slice(${before}).map((x) => x.laid)`);
-		assert.deepEqual(laid, ['hand', 'hand'], "the guides' two new pipes are kept, both laid by hand; w7-w6 already existed");
+		assert.equal(v.ok, true, v.reason);
+		assert.deepEqual(v.skipped, ['waypoint-000007'], 'the guide the link will not pass is named');
+		assert.equal(await p.run('lab.pipes.list().length'), before, 'the check lays nothing: the legs wait for the planner to accept the link');
 	} finally { await p.close(); }
 });
 

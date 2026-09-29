@@ -1171,7 +1171,9 @@ So refusal refuses the LINK, not the geometry.\
 The `g` anchors and the pipes laid by hand to them are kept; what the drag placed for the link alone -- its `w` anchors, and any pipe that would end at one -- goes with it.\
 This extends GUIDE-ANCHORS T4 (a `g` pipe outlives its link) to a link that never existed.\
 The refusal that prompted it was also FALSE: it said "a shorter way already exists" where the ways tied, two pipes against two, lost to the router's fixed tie order.\
-It now says which; not a ruling, a correction.
+It now says which; not a ruling, a correction.\
+AMENDED 2026-09-30: a `g` drag is no longer refused because a shorter or equally short free way exists -- see "A `g` drag with a shorter free way makes the link on that way" below.\
+This ruling still governs the refusals that remain: a way held by another link, no way at all, and a drag that would move an existing link.
 
 **In the network model, "deliberate" means held by the pipes laid with `g` -- ruled 2026-09-29, in the lab's plugin now and in production at promotion.**\
 A link built as a chain of `w` anchors was deleted and left anchors behind.\
@@ -1271,3 +1273,16 @@ The director: "when I select a down/broken link that cannot be healed due to ano
 A down link's preferred path is the way it would take if no other link held any pipe; the links blocking it are those holding a pipe on that path.\
 A link down because no way exists at all has no blocker, and the notice says which of the two it is.\
 The orange is the one the down link is drawn in (2026-09-29), `#ff9800`, which measures 8.8:1 on the canvas.
+
+**A `g` drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate -- ruled 2026-09-30.**\
+The director's report: "I draw w,g,g,g - then delete the link pipes remain.\
+I draw another w,g,g,g,g (between the same two anchors) to make an alternate pipe path.\
+Link fails to establish.\
+There are not links on either path".\
+MEASURED with real input: the second drag was refused, "a shorter way exists (3 pipes, against the 5 drawn)".\
+The whole-route check refused any `g` route the link would not follow, because the first path was still there, free, and shorter.\
+Asked "What should happen?", the director chose "Link runs the shorter way" (the proposer's recommendation) over "Keep refusing" and "Link runs the drawn path".\
+The option as worded: the link is created and runs the old path, and the new path is kept as its alternate, so if the old path goes, the link moves onto it; the notice says so; `g` anchors only lay pipes, and a `g` drag is refused only when no free way exists.\
+It reverses the part of the `g` check the director called correct on 2026-09-29, which was shown with the option.\
+"Link runs the drawn path" was shown as needing a new stored kind of anchor, a routing hold that is not a connection (`GUIDE-ANCHORS.md` section 8, item 3).\
+CORRECTED, the option's "refused only when no free way exists": two other refusals from the same day stand, a way held by another link and a drag that would move an existing link, since both rules were ruled on their own.

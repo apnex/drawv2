@@ -74,14 +74,15 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 |---|---|---|---|---|---|---|---|---|---|---|
 | routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | . | CAP-01 | . | . | . | . |
 | pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | . | . | . |
-| pinned, another way | DEL-02 | n/a | . | . | . | REF-01 | . | . | . | . |
+| pinned, another way | DEL-02 | n/a | . | . | . | ALT-03 | . | . | . | . |
 | pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . |
 | w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | . | . | . | . | UNDO-01 | . |
 | pins and a g hop | DEL-14 (reading) | DEL-09 (reading) | . | . | . | . | . | . | . | . |
 | down | n/a | n/a | DEL-15 | . | HEAL-03 (open) | HEAL-01 | HEAL-02 (open) | HEAL-04, HEAL-05 | . | . |
 | blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 |
+| g path left | . | ALT-02 | . | . | . | ALT-01 | . | . | . | . |
 
-30 rows: 28 built, 0 todo, 2 open.\
+32 rows: 30 built, 0 todo, 2 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -94,6 +95,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | pins and a g hop | blank | A link drawn by hand as S-P1-G-P2-E: two pins with a g anchor between them. |
 | down | `?seed=cross` | The routed board with its centre deleted, so both links are down (DEL-01). |
 | blocked | `?seed=trunk` | Two links want one hand-laid trunk; the older holds it, so the younger is down, blocked by it. |
+| g path left | blank | A link drawn as a w start and three g hops, then deleted: its g anchors and hand pipes remain, and no link is on them. |
 
 | gesture | what the author does |
 |---|---|
@@ -144,7 +146,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | CAP-04 | blocked x delete link | Select the upper link on the trunk, and press Delete. | The trunk is free, so the lower link heals and is drawn along it; the trunk's hand pipes stay. | DECISIONS: "Pipes carry one link each, for now" (2026-09-30). DECISIONS: a down link heals when a way returns (2026-09-25). | ruled, built |
 | CAP-05 | blocked x select link | Click the upper link, which is up. | Selecting a link that is up highlights nothing else: only a down link has blockers to show. | DECISIONS: "Selecting a blocked link highlights the link blocking it" (2026-09-30); the lower link is orange only because it is down (2026-09-29). | ruled, built |
 | CAP-06 | blocked x undo | Delete the upper link, select the lower one (now on the trunk), then undo with it still selected. | Undo restores the upper link with its age, so it takes the trunk back and the lower link is down again. The lower link is still selected, so the upper link is highlighted as its blocker at once. | DECISIONS: "Pipes carry one link each, for now" and "Selecting a blocked link highlights the link blocking it" (2026-09-30). | ruled, built |
-| REF-01 | pinned, another way x draw: `g` bend | Drag from A with g at two points above, and release on B: three pipes, tying the free way below. | The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchors and their three hand pipes are kept. | DECISIONS: "A refused g drag keeps its anchors and pipes" (2026-09-29), with its correction of the tie message. | ruled, built |
+| ALT-01 | g path left x draw: `g` bend | From S, drag through four g hops below, and release on the old path's end: an alternate path, longer than the old one. | The link is made and runs the old three-pipe path, the shorter way; the five pipes drawn are laid by hand as its alternate. The notice says it runs a shorter way and that the path drawn is kept. | The director's report, 2026-09-30: "Link fails to establish. There are not links on either path". DECISIONS: "A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate" (2026-09-30). | ruled, built |
+| ALT-02 | g path left x delete `g` hop | Draw the alternate as in ALT-01, then delete the middle anchor of the old path. | The link moves onto the alternate path and stays up: that is what the alternate is for. | DECISIONS: "A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26). | ruled, built |
+| ALT-03 | pinned, another way x draw: `g` bend | Drag from A with g at two points above, and release on B: three pipes, tying the free way below. | Accepted: the new link runs the free way below, which is just as short, and the path drawn above is kept as its alternate. The notice says the way taken is just as short. | DECISIONS: "A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate" (2026-09-30). Replaces REF-01, which held the tie refusal this ruling reverses. | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
 <!-- END GENERATED: rows -->
 

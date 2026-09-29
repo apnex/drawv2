@@ -67,6 +67,8 @@ Whether the cheapest path actually runs through the guide anchors the author dro
 So on mouse-up the drag is resolved as one transaction: route from the originating anchor to the final anchor over all pipes, honouring every `w` pin, and check that the result passes through the `g` anchors as drawn.\
 The link is then committed or refused as a whole.
 
+> **CORRECTED 2026-09-30.** A `g` route the link would not follow is no longer refused: the director ruled "Link runs the shorter way" (`dev/DECISIONS.md`). The link is committed on the fewest-pipes way, the pipes drawn are kept as its alternate, and the notice names the guides it skips. The whole-route check still runs, and still refuses a way that is held or missing. The text above is kept as written, per the frozen-history rule.
+
 This is a departure from today's per-leg validation and is the main cost of the proposal.
 
 ---

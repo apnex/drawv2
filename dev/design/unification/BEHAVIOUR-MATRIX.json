@@ -231,6 +231,69 @@
 					"link": 0
 				}
 			}
+		},
+		"g path left": {
+			"about": "A link drawn as a w start and three g hops, then deleted: its g anchors and hand pipes remain, and no link is on them.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						240,
+						-120
+					],
+					[
+						[
+							"g",
+							-240,
+							-120
+						],
+						[
+							"g",
+							0,
+							-120
+						],
+						[
+							"g",
+							240,
+							-120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-300,
+					-60
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"expect": {
+				"links": 0,
+				"anchors": 4,
+				"pipes": {
+					"hand": 3,
+					"link": 0
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -1230,7 +1293,166 @@
 			"built": "yes"
 		},
 		{
-			"id": "REF-01",
+			"id": "ALT-01",
+			"state": "g path left",
+			"gesture": "draw: `g` bend",
+			"does": "From S, drag through four g hops below, and release on the old path's end: an alternate path, longer than the old one.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						240,
+						-120
+					],
+					[
+						[
+							"g",
+							-240,
+							120
+						],
+						[
+							"g",
+							-60,
+							120
+						],
+						[
+							"g",
+							60,
+							120
+						],
+						[
+							"g",
+							240,
+							120
+						]
+					]
+				]
+			],
+			"intent": "The link is made and runs the old three-pipe path, the shorter way; the five pipes drawn are laid by hand as its alternate. The notice says it runs a shorter way and that the path drawn is kept.",
+			"expect": {
+				"refused": false,
+				"links": 1,
+				"down": 0,
+				"through": {
+					"only": [
+						[
+							-240,
+							-120
+						],
+						[
+							0,
+							-120
+						]
+					]
+				},
+				"keptAt": [
+					[
+						-240,
+						120
+					],
+					[
+						-60,
+						120
+					],
+					[
+						60,
+						120
+					],
+					[
+						240,
+						120
+					]
+				],
+				"anchors": 8,
+				"pipes": {
+					"hand": 8,
+					"link": 0
+				},
+				"notice": "shorter way.*kept as its alternate"
+			},
+			"rule": "The director's report, 2026-09-30: \"Link fails to establish. There are not links on either path\". DECISIONS: \"A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "ALT-02",
+			"state": "g path left",
+			"gesture": "delete `g` hop",
+			"does": "Draw the alternate as in ALT-01, then delete the middle anchor of the old path.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						240,
+						-120
+					],
+					[
+						[
+							"g",
+							-240,
+							120
+						],
+						[
+							"g",
+							-60,
+							120
+						],
+						[
+							"g",
+							60,
+							120
+						],
+						[
+							"g",
+							240,
+							120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The link moves onto the alternate path and stays up: that is what the alternate is for.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"through": {
+					"only": [
+						[
+							-240,
+							120
+						],
+						[
+							240,
+							120
+						]
+					]
+				}
+			},
+			"rule": "DECISIONS: \"A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate\" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "ALT-03",
 			"state": "pinned, another way",
 			"gesture": "draw: `g` bend",
 			"does": "Drag from A with g at two points above, and release on B: three pipes, tying the free way below.",
@@ -1259,12 +1481,11 @@
 					]
 				]
 			],
-			"intent": "The whole-route check refuses the link and says the two ways TIE, rather than that one is shorter. The g anchors and their three hand pipes are kept.",
+			"intent": "Accepted: the new link runs the free way below, which is just as short, and the path drawn above is kept as its alternate. The notice says the way taken is just as short.",
 			"expect": {
-				"refused": true,
-				"notice": "(just as short|tie).*g anchors and their pipes are kept",
-				"noticeNot": "shorter way",
-				"links": 1,
+				"refused": false,
+				"links": 2,
+				"down": 0,
 				"keptAt": [
 					[
 						-240,
@@ -1278,9 +1499,11 @@
 				"pipes": {
 					"hand": 6,
 					"link": 2
-				}
+				},
+				"notice": "just as short.*kept as its alternate",
+				"noticeNot": "shorter"
 			},
-			"rule": "DECISIONS: \"A refused g drag keeps its anchors and pipes\" (2026-09-29), with its correction of the tie message.",
+			"rule": "DECISIONS: \"A g drag with a shorter free way makes the link on that way; the path drawn is kept as its alternate\" (2026-09-30). Replaces REF-01, which held the tie refusal this ruling reverses.",
 			"standing": "ruled",
 			"built": "yes"
 		},

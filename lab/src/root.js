@@ -164,7 +164,8 @@ const routeHook = (route) => {
 		else { for (const l of kept.legs) pipes.lay(l.a, l.b, l.laid); drawPipes(); pendingNotice = null; }
 		return { ...verdict, keep: kept.keep };
 	}
-	pendingLegs = verdict.legs;
+	// an accepted link that runs another way than the one drawn says so (2026-09-30: the path drawn is its alternate)
+	pendingLegs = verdict.legs; pendingNotice = verdict.note ?? null;
 	return verdict;
 };
 

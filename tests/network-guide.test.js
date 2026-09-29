@@ -17,13 +17,6 @@ test('a guided route that passes its guide is accepted, and says which pipes to 
 	assert.deepEqual(v.legs.map((l) => `${l.a}-${l.b}`), ['A-G', 'G-B']);
 });
 
-test('a guide the fewest-pipes route would skip is REFUSED, and the refusal names it', () => {
-	// an A-B pipe already exists, so the route A->B is one pipe and never visits G. Committing would
-	// make a link that ignores what the author drew; the director's whole-route commit refuses it.
-	const v = checkGuidedRoute(pipes(['A', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
-	assert.equal(v.ok, false);
-	assert.match(v.reason, /\bG\b/, 'the refusal must name the guide it skipped, or the author cannot see why');
-});
 
 test('legs touching a guide are laid BY HAND; the rest WITH THE LINK', () => {
 	// T4: a guide's pipes outlive the link, because the author chose that geometry
@@ -74,18 +67,7 @@ test('a pipe laid WITH A LINK references its anchors only while a link in that m
 	assert.ok(!pipeAnchors(laidWithLink, model(['A', 'P', 'B'], [])).has('P'), 'after it, they carry no link and shelter nothing');
 });
 
-test('a refusal on a TIE says it is a tie, not that a shorter way exists', () => {
-	// A-X-B already exists (two pipes); the drawn A-G-B is two pipes too, and the router's tie order picks X
-	const v = checkGuidedRoute(pipes(['A', 'X'], ['X', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['Z'], stops: ['A', 'Z', 'B'] });
-	assert.equal(v.ok, false);
-	assert.match(v.reason, /just as short/);
-	assert.doesNotMatch(v.reason, /shorter way/);
-});
 
-test('a refusal on a genuinely shorter way says so, with both lengths', () => {
-	const v = checkGuidedRoute(pipes(['A', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
-	assert.match(v.reason, /a shorter way exists \(1 pipe, against the 2 drawn\)/);
-});
 
 test('a refused drag keeps its guides and their hand pipes, and drops what existed only for the link', async () => {
 	const { keptOnRefusal } = await import('../network/guide.mjs');
@@ -168,4 +150,40 @@ test('a drag that would MOVE an existing link is refused, and names it', () => {
 	assert.equal(v.ok, false);
 	assert.match(v.reason, /move link-x/);
 	assert.deepEqual(v.moves, ['link-x']);
+});
+
+/*
+A g ROUTE THE LINK WOULD NOT FOLLOW IS ACCEPTED -- ruled 2026-09-30, reversing the refusal the whole-route check
+made. The director drew S to E with g hops to make an alternate path while an older free path was shorter, and
+the link was refused. Asked what should happen, the director chose "Link runs the shorter way": the link is made,
+runs the fewest-pipes way, and the path drawn is kept as its alternate. The notice says which way, and why.
+*/
+test('a g route the link would not follow is ACCEPTED: it runs the shorter way, and names the guides it skips', () => {
+	const v = checkGuidedRoute(pipes(['A', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['G'], stops: ['A', 'G', 'B'] });
+	assert.equal(v.ok, true, v.reason);
+	assert.deepEqual(v.route, ['A', 'B'], 'the link runs the one-pipe way');
+	assert.deepEqual(v.skipped, ['G'], 'and the guide it does not pass is named');
+	assert.match(v.note, /a shorter way \(1 pipe, against the 2 drawn\)/);
+	assert.match(v.note, /kept as its alternate/);
+});
+
+test('on a TIE the note says the way taken is just as short, not shorter', () => {
+	const v = checkGuidedRoute(pipes(['A', 'X'], ['X', 'B']), { src: 'A', dst: 'B', pins: [], guides: ['Z'], stops: ['A', 'Z', 'B'] });
+	assert.equal(v.ok, true);
+	assert.match(v.note, /just as short/);
+	assert.doesNotMatch(v.note, /shorter/);
+});
+
+test('the director\'s case: an alternate path drawn beside a shorter free one makes the link, on the shorter way', () => {
+	const old = pipes(['S', 'G1'], ['G1', 'G2'], ['G2', 'E']);   // what a deleted w,g,g,g link left behind
+	const v = checkGuidedRoute(old, { src: 'S', dst: 'E', guides: ['H1', 'H2', 'H3', 'H4'], stops: ['S', 'H1', 'H2', 'H3', 'H4', 'E'] });
+	assert.equal(v.ok, true, v.reason);
+	assert.deepEqual(v.route, ['S', 'G1', 'G2', 'E'], 'the link runs the old three-pipe path');
+	assert.deepEqual(v.legs.map((l) => l.laid), ['hand', 'hand', 'hand', 'hand', 'hand'], 'and the five pipes drawn are laid by hand, as its alternate');
+});
+
+test('a drawn g route the link DOES follow carries no note', () => {
+	const v = checkGuidedRoute([], { src: 'A', dst: 'B', guides: ['G'], stops: ['A', 'G', 'B'] });
+	assert.equal(v.ok, true);
+	assert.equal(v.note, undefined);
 });

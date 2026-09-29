@@ -18,6 +18,8 @@ route IS the derived route, leg by leg. A guide is not in the intent, so whether
 passes it is a property of the whole route over all the pipes, and cannot be known leg by leg.
 A guide the fewest-pipes route would skip -- because a shorter way already exists -- is refused, with
 the guide named, rather than committed as a link that silently ignores what the author drew.
+CORRECTED 2026-09-30: no longer refused. The director ruled "Link runs the shorter way": the link is made on
+the fewest-pipes way, the path drawn is kept as its alternate, and the notice names the guides it skips.
 
 PURE. The check computes over a copy of the pipe list and returns the legs to lay; it lays nothing.
 The caller lays them only after the planner accepts the link, so a refused link leaves no pipes.
@@ -70,24 +72,25 @@ export function checkGuidedRoute(pipes, { src, dst, pins = [], guides = [], stop
 	}
 
 	/*
-	SAY WHAT IS TRUE about why a guide is skipped. The drawn way is one pipe per leg; the fewest-pipes route
-	can be SHORTER, or merely EQUAL and chosen by the router's fixed tie order (sorted ids, so two peers
-	agree). The first version said "a shorter way already exists" in both cases -- the director met it on
-	a tie, two pipes against two, which the author cannot fix by drawing a shorter guide route, because
-	theirs was already as short as it gets.
+	A GUIDE THE ROUTE SKIPS NO LONGER REFUSES -- ruled 2026-09-30. The director drew S to E with g hops to make an
+	alternate path beside a shorter free one, and the link was refused; asked what should happen, the director
+	chose "Link runs the shorter way". So the link is made on the fewest-pipes way, the pipes drawn are laid by hand
+	as its alternate, and the note says which way it took and why -- the author is told, not refused.
+
+	SAY WHAT IS TRUE about why: the way taken can be SHORTER than the one drawn, EQUAL to it and chosen by the
+	router's fixed tie order, or LONGER because part of the way drawn is held by another link. (The first wording
+	said "a shorter way" for a tie, and the director met it on two pipes against two.)
 	*/
-	const missed = guides.filter((g) => !route.includes(g));
-	if (missed.length) {
-		const drawn = legs.length, best = route.length - 1;
-		const pipes_ = (n) => `${n} pipe${n === 1 ? '' : 's'}`;
-		const why = drawn === best
-			? `another way is just as short (${pipes_(best)}) and wins the tie, which the router breaks in a fixed order`
-			: `a shorter way exists (${pipes_(best)}, against the ${drawn} drawn)`;
-		return { ok: false, legs, reason: `the route over the pipes does not pass ${missed.join(', ')}: ${why}` };
-	}
 	const moves = links.filter((l) => before.get(l.id) && JSON.stringify(before.get(l.id)) !== JSON.stringify(after.get(l.id))).map((l) => l.id);
 	if (moves.length) return { ok: false, legs, moves, reason: `it would move ${moves.join(', ')}, which keeps its way` };
-	return { ok: true, legs, route, ...(heals.length ? { heals } : {}) };
+	const skipped = guides.filter((g) => !route.includes(g));
+	if (!skipped.length) return { ok: true, legs, route, ...(heals.length ? { heals } : {}) };
+	const asDrawn = legs.length, best = route.length - 1;
+	const pipes_ = (n) => `${n} pipe${n === 1 ? '' : 's'}`;
+	const why = best < asDrawn ? `a shorter way (${pipes_(best)}, against the ${asDrawn} drawn)`
+		: best === asDrawn ? `another way just as short (${pipes_(best)}), which the router's fixed tie order picks`
+		: `another way (${pipes_(best)}), because part of the way drawn is held by another link`;
+	return { ok: true, legs, route, skipped, note: `the link runs ${why}, not through ${skipped.join(', ')}; the g path drawn is kept as its alternate`, ...(heals.length ? { heals } : {}) };
 }
 
 /*
