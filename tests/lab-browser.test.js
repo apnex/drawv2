@@ -311,9 +311,12 @@ test('an accepted route lays its pipes only once the planner accepts the link, a
 test('pipes an author laid hold an anchor the sweep would take, and a pipe to a deleted anchor goes', { skip: SKIP }, async () => {
 	const p = await open('bend');
 	try {
-		// bend: A -- w -- B, the link pinned at w, hand pipes A-w and w-B. Delete A: the planner takes
-		// the link, and would sweep w as the bend it left -- but w still has a hand pipe to B, so it is
-		// structure, not debris (pipes count as references). The pipe A-w has lost an end, so it goes.
+		// bend: A -- w -- B, the link pinned at w. Its seed pipes are the link's own legs, laid WITH it (seeds
+		// carry the lifetime their gesture gives, ruled 2026-09-29), so the author lays w-B again BY HAND --
+		// which promotes it (network/pipeset.mjs). Delete A: the planner takes the link, and would sweep w as
+		// the bend it left -- but w still has a hand pipe to B, so it is structure, not debris (pipes count as
+		// references). The pipe A-w has lost an end, so it goes.
+		await p.run(`lab.pipes.lay('waypoint-000005', 'node-000002', 'hand')`);
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'node', entity: lab.model.get('node', 'node-000001') }] })`);
 		const c = await p.run(COUNTS);
 		assert.equal(c.links, 0, 'the link went with its end');
@@ -484,4 +487,189 @@ test('a refusal says TIE when the ways are equally short, not "a shorter way exi
 		assert.doesNotMatch(notice, /shorter way/, `A-centre-C and A-guide-C are both two pipes; calling one shorter is false: ${notice}`);
 		assert.match(notice, /just as short|tie/, 'it must say the ways tie, and why the tie went the other way');
 	} finally { await p.close(); }
+});
+
+/*
+THE DIRECTOR'S REPORT, 2026-09-29: deleting an anchor "snaps" a direct link between two nodes, as if a
+pipe had been created. None was -- MEASURED, the pipe set was empty. The links had lost their route and
+were DOWN, and a down link was drawn as a plain solid line, which is what a live link over a direct
+pipe looks like.
+
+WHAT WAS RULED, the same day, in the director's words and answers:
+  - DOWN IS NOT DELETED. "if a link is dynamic, but has no path - a dotted/control like link directly
+    between the source and dest node would indicate 'ready to heal'". It stays, and heals when a way returns.
+  - "if either source or dest node is deleted, link is gone with it permanently".
+  - A PIN deleted with no other way: asked for a w-chain S-P1-P2-P3-E with P2 deleted, the director chose
+    "Delete the whole link" over "Stay, shown down" -- the link goes with its w anchors and dashed pipes.
+  - With another way open, it re-routes (ruled 2026-09-26, "Forget that bend").
+  - Seed boards give each pipe the lifetime its gesture would have ("Yes, as the gesture would").
+
+DOTS, NOT THE CONTROL DASH: a control link is already dashed, and so is the drag preview, so a dashed
+down link would read as a live control-plane link. Asserted on what is SEEN -- the computed dash and
+line cap, and the drawn `d` -- never on a class or an attribute the eye cannot see.
+*/
+const drawn = (id) => `(() => {
+	const el = document.getElementById('${id}');
+	if (!el) return null;
+	const cs = getComputedStyle(el);
+	const dash = cs.strokeDasharray === 'none' ? [] : cs.strokeDasharray.split(/[ ,]+/).map(parseFloat);
+	// a zero-length dash with a round cap is a DOT; without the round cap it draws nothing at all
+	return { dotted: dash.length >= 2 && dash[0] === 0 && dash[1] > 0 && cs.strokeLinecap === 'round', dash: cs.strokeDasharray, cap: cs.strokeLinecap, d: el.getAttribute('d') };
+})()`;
+const settle = `new Promise((r) => setTimeout(r, 200))`;
+
+test('deleting the anchor two dynamic links route through leaves them DOWN: dotted, straight between their ends, and no pipe is created', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		assert.equal((await p.run(drawn('link-000001'))).dotted, false, 'a routed link is drawn solid');
+		await p.click(0, 0); await p.key('Delete');       // select the centre, delete it
+		await p.run(settle);
+		assert.equal(await p.run(`lab.pipes.list().length`), 0, 'no pipe exists -- pipes are only ever laid deliberately');
+		assert.equal(await p.run(`lab.authority.all('link').length`), 2, 'down is not deleted: both links stay');
+		for (const [id, straight] of [['link-000001', 'M-360 0 L360 0'], ['link-000002', 'M0 -240 L0 240']]) {
+			const seen = await p.run(drawn(id));
+			assert.equal(seen.dotted, true, `${id} has no route, so it must LOOK down -- dotted, not a live line: ${JSON.stringify(seen)}`);
+			assert.equal(seen.d, straight, `${id} is drawn directly between its source and destination`);
+		}
+		assert.match(await p.run(`document.getElementById('lab-notice').textContent`), /2 links down/, 'and the notice says so');
+	} finally { await p.close(); }
+});
+
+test('a down link HEALS when a way returns: a new link laid beside it gives it a route', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		await p.click(0, 0); await p.key('Delete');       // both links go down
+		await p.run(settle);
+		// a new link from n1 to n2, pinned at a w anchor above the old centre: its pipes are a way for link 1
+		await p.mouse('mouseMoved', -360, 0);
+		await p.drag([-360, 0], [360, 0], [['w', 0, -120]]);
+		await p.run(settle);
+		const healed = await p.run(drawn('link-000001'));
+		assert.equal(healed.dotted, false, `link 1 has a route again, so it is drawn live: ${JSON.stringify(healed)}`);
+		assert.match(healed.d, /Q0 -120/, 'along the new pipes, through the new anchor');
+		assert.equal((await p.run(drawn('link-000002'))).dotted, true, 'link 2 still has no way, so it stays down');
+	} finally { await p.close(); }
+});
+
+test('deleting a pinned anchor where another way exists re-routes the link along it, and it stays up', { skip: SKIP }, async () => {
+	const p = await open('detour');
+	try {
+		// uplink runs A-w-B pinned at w; the detour A-w6-w7-B is the other way
+		await p.click(0, 0); await p.key('Delete');       // delete w, the pin
+		await p.run(settle);
+		const l = await p.run(`lab.authority.get('link', 'link-000001')`);
+		assert.ok(l, 'with another way open the link survives the loss of its pin (ruled 2026-09-26)');
+		assert.deepEqual(l.via ?? [], [], 'the pin is dropped from its intent');
+		const seen = await p.run(drawn('link-000001'));
+		assert.match(seen.d, /Q-240 300/, 'the DRAWN link runs the other way, through w6');
+		assert.match(seen.d, /Q240 300/, 'and through w7');
+		assert.equal(seen.dotted, false, 'with a route found, it is up');
+	} finally { await p.close(); }
+});
+
+test('deleting a pin with no other way deletes the WHOLE link: its w anchors and dashed pipes go with it', { skip: SKIP }, async () => {
+	const p = await open('');
+	try {
+		await p.mouse('mouseMoved', -360, 0); await p.key('w');
+		await p.drag([-360, 0], [120, 0], [['w', -240, -120], ['w', -120, 0], ['w', 0, -120], ['w', 120, 0]]);
+		assert.equal((await p.run(`lab.authority.all('link')[0]?.via ?? []`)).length, 3, 'the drag builds a link pinned at three anchors');
+		await p.click(-120, 0); await p.key('Delete');    // P2, the middle pin: P1 to P3 has no pipe
+		await p.run(settle);
+		const left = await p.run(`({ links: lab.authority.all('link').length, anchors: lab.authority.all('waypoint').length,
+			pipes: lab.pipes.list().length, drawn: document.querySelectorAll('#links path').length })`);
+		assert.deepEqual(left, { links: 0, anchors: 0, pipes: 0, drawn: 0 },
+			`ruled 2026-09-29, "Delete the whole link": no section may remain -- ${JSON.stringify(left)}`);
+	} finally { await p.close(); }
+});
+
+test('undo brings a wholly deleted link back with its anchors -- down, because pipes are not stored yet', { skip: SKIP }, async () => {
+	const p = await open('');
+	try {
+		await p.mouse('mouseMoved', -360, 0); await p.key('w');
+		await p.drag([-360, 0], [120, 0], [['w', -240, -120], ['w', -120, 0], ['w', 0, -120], ['w', 120, 0]]);
+		const id = await p.run(`lab.authority.all('link')[0].id`);
+		await p.click(-120, 0); await p.key('Delete');
+		await p.run(settle);
+		await p.run('lab.history.undo()');                 // the path Ctrl+Z takes
+		await p.run(settle);
+		const back = await p.run(`({ via: lab.model.get('link', '${id}')?.via ?? null, anchors: lab.model.all('waypoint').length })`);
+		assert.equal(back.via?.length, 3, `one undo restores the link whole, with its three pins: ${JSON.stringify(back)}`);
+		assert.equal(back.anchors, 5, 'and all five anchors, the swept ones included -- one transaction, one undo');
+		/*
+		A STATED LIMIT, not a rule: pipes are session state outside the planner's log until the format batch
+		stores them (F6), so undo cannot restore them and the link returns with no way -- down, and drawn so.
+		When pipes are stored this flips, and this assertion is the one to change.
+		*/
+		assert.equal((await p.run(drawn(id))).dotted, true, 'with its pipes not restored, it is down -- and must look it');
+	} finally { await p.close(); }
+});
+
+test('a link whose pins all remain but that lost the hop between them is down, dotted THROUGH its pins', { skip: SKIP }, async () => {
+	const p = await open('');
+	try {
+		// S -w- P1 -g- G -w- P2 -w- E: the g anchor is a hop, not part of the link's intent
+		await p.mouse('mouseMoved', -360, 0); await p.key('w');
+		await p.drag([-360, 0], [360, 0], [['w', -240, -120], ['g', 0, -120], ['w', 240, -120], ['w', 360, 0]]);
+		const id = await p.run(`lab.authority.all('link')[0].id`);
+		await p.click(0, -120); await p.key('Delete');    // G: no pin is lost, so this is not the whole-link rule
+		await p.run(settle);
+		assert.equal((await p.run(`lab.authority.get('link', '${id}')?.via ?? []`)).length, 2, 'the link and both its pins remain');
+		const seen = await p.run(drawn(id));
+		assert.equal(seen.dotted, true, `P1 to P2 has no pipe, so it is down: ${JSON.stringify(seen)}`);
+		assert.match(seen.d, /Q-240 -120/, 'drawn through its first pin');
+		assert.match(seen.d, /Q240 -120/, 'and its second -- its intent, which is what it will heal onto');
+	} finally { await p.close(); }
+});
+
+test('on a seed board, deleting a link END leaves no section: seed pipes carry the lifetime their gesture gives', { skip: SKIP }, async () => {
+	const p = await open('bend');
+	try {
+		// n1 -> n2 pinned at w5. Before this ruling the seed laid its pipes by hand, so w5 and n1-w5 stayed
+		await p.click(360, 0); await p.key('Delete');     // n2, the link's end
+		await p.run(settle);
+		const left = await p.run(`({ links: lab.authority.all('link').length, anchors: lab.authority.all('waypoint').length, pipes: lab.pipes.list().length })`);
+		assert.deepEqual(left, { links: 0, anchors: 0, pipes: 0 }, `the link is gone permanently, and nothing of it remains: ${JSON.stringify(left)}`);
+	} finally { await p.close(); }
+});
+
+test('deleting an anchor two links are pinned at deletes both whole, and leaves the rest of the board alone', { skip: SKIP }, async () => {
+	const p = await open('compare');
+	try {
+		await p.click(-480, 0); await p.key('Delete');    // w1: links 1 and 2 are pinned there, with no other way
+		await p.run(settle);
+		const links = await p.run(`lab.authority.all('link').map((l) => l.id).sort()`);
+		assert.deepEqual(links, ['link-000003', 'link-000004'], 'both pinned links go; the two passing w2 stay');
+		for (const id of links) assert.equal((await p.run(drawn(id))).dotted, false, `${id} is untouched and up`);
+		assert.equal(await p.run(`lab.pipes.list().filter((x) => /waypoint-000001/.test(x.a + x.b)).length`), 0, 'no pipe to w1 remains');
+	} finally { await p.close(); }
+});
+
+/*
+THE SEEDS ARE BOARDS A HAND COULD DRAW -- ruled 2026-09-29, "Yes, as the gesture would".
+
+A pipe joining two consecutive stops of a link's intent (its ends and pins, in order) is what `w` lays,
+and goes with its link; any other pipe is what `g` or a hand lays, and stays. A seed that loaded every
+pipe as hand-laid behaved as no drawn board can: deleting a link's end left its bend and a pipe standing.
+Checked as a RULE over every board, so a new board is held to it without anyone listing it here.
+*/
+test('every seed pipe carries the lifetime its gesture would give it', () => {
+	const boards = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));
+	const named = Object.entries(boards).filter(([name]) => !name.startsWith('_'));
+	assert.ok(named.length >= 5, 'the sweep must find the boards');
+	let checked = 0;
+	for (const [name, board] of named) {
+		const links = board.ops.map((o) => o.entity).filter((e) => e && e.id.startsWith('link-'));
+		const legs = new Set();
+		for (const l of links) {
+			const stops = [l.src, ...(l.via ?? []), l.dst];
+			for (let i = 0; i < stops.length - 1; i++) legs.add([stops[i], stops[i + 1]].sort().join('|'));
+		}
+		for (const pipe of board.pipes) {
+			assert.equal(pipe.length, 3, `${name}: ${JSON.stringify(pipe)} must state its lifetime, not default to one`);
+			const want = legs.has([pipe[0], pipe[1]].sort().join('|')) ? 'link' : 'hand';
+			assert.equal(pipe[2], want, `${name}: ${pipe[0]}-${pipe[1]} is ${want === 'link' ? 'a leg of a link, laid with it' : 'no leg of any link, laid by hand'}`);
+			checked++;
+		}
+	}
+	assert.ok(checked >= 20, `the rule must have checked the pipes, not passed on none (${checked})`);
 });

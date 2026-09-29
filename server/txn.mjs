@@ -96,8 +96,19 @@ plugin passes a rule that keeps nothing beyond references, and its pipes reach t
 two protections are the only ones an author's anchor has. Held by tests/sweep-references.test.js.
 */
 const KEEPS_ORPHAN_AS_RULED = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly;
+/*
+`isStranded` -- the fourth interface the network incubator forces into a product module: whether a link
+that LOST A PIN to this transaction is left with no way, and so is removed whole.
 
-export function plan(model, ops, { alsoReferenced = null, keepsOrphan = KEEPS_ORPHAN_AS_RULED } = {}) {
+Ruled 2026-09-29: asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no other way, the director chose
+"Delete the whole link" over "Stay, shown down". "No way" means no route over the PIPES, which only the
+network plugin can see, so it is asked by injection. Production's default is never: it has no routes,
+and a link that loses a pin keeps the rest of its intent exactly as it always has. Held by
+tests/sweep-references.test.js.
+*/
+const NEVER_STRANDED = () => false;
+
+export function plan(model, ops, { alsoReferenced = null, keepsOrphan = KEEPS_ORPHAN_AS_RULED, isStranded = NEVER_STRANDED } = {}) {
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -118,6 +129,24 @@ export function plan(model, ops, { alsoReferenced = null, keepsOrphan = KEEPS_OR
 		applyOps(proj, step.ops);              // advance the projection for op i+1
 		out.push(...step.ops);
 		inv.unshift(...step.inverse);          // pre-reversed: undo replays inv in order
+	}
+	/*
+	A LINK LEFT WITH NO WAY AFTER LOSING A PIN goes whole (ruled 2026-09-29, see `isStranded` above).
+
+	ON THE RESULT, like the sweep below and for the same reason: a batch may strip a pin and lay the way
+	back in a later op. Only a pin DELETED here counts -- one that existed before and is gone now -- so a
+	link that loses its route any other way is left to be down, and one ending at the deleted anchor was
+	already removed by the cascade. Removed exactly as a requested delete would be (`planDel`), and BEFORE
+	the sweep, so the sweep then takes the anchors that existed only for it: one transaction, one undo.
+	*/
+	for (const before of model.all('link')) {
+		if (!(before.via || []).some((w) => model.get('waypoint', w) && !proj.get('waypoint', w))) continue;
+		const now = proj.get('link', before.id);
+		if (!now || !isStranded(now, proj)) continue;
+		const step = planDel(proj, { kind: 'link', id: now.id });
+		applyOps(proj, step.ops);
+		out.push(...step.ops);
+		inv.unshift(...step.inverse);
 	}
 	/*
 	B162 -- a waypoint that has lost every link self-destructs, in the same transaction.
@@ -561,7 +590,7 @@ function planDel(model, { kind, id }) {
 
 // ---- the one write ----
 
-export function commit(model, log, request, by = 'client', actor = null, { alsoReferenced = null, keepsOrphan } = {}) {
+export function commit(model, log, request, by = 'client', actor = null, { alsoReferenced = null, keepsOrphan, isStranded } = {}) {
 	if (!request || typeof request !== 'object') return { ok: false, error: 'invalid request', version: log.version };
 	if (request.label !== undefined && !LABEL.test(String(request.label))) {
 		return { ok: false, error: 'invalid label', version: log.version };
@@ -570,7 +599,7 @@ export function commit(model, log, request, by = 'client', actor = null, { alsoR
 		return { ok: false, error: 'version conflict', version: log.version };
 	}
 
-	const planned = plan(model, request.ops, { alsoReferenced, ...(keepsOrphan ? { keepsOrphan } : {}) });
+	const planned = plan(model, request.ops, { alsoReferenced, ...(keepsOrphan ? { keepsOrphan } : {}), ...(isStranded ? { isStranded } : {}) });
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 

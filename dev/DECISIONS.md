@@ -458,6 +458,9 @@ This makes explicit the route memory the bake-off measured as hidden state in FR
 **A link with no route stays, shown as down, and heals -- ruled 2026-09-25.**\
 Asked "When a link has no route left at all, what happens to it?", the director chose "Down, and heals" over "Removed": the link stays, keeps its name and drawn route, shows as down, and comes back when a route returns -- the same behaviour the director gave for a declared flow with no route in survey Round 2 Q4.
 
+AMENDED 2026-09-29, for a deleted pin: a link that loses a pin with no other way is deleted whole, not left down -- see "A link that loses a pin with no other way is deleted whole" below.\
+A link that loses its route any other way is still down, and heals; how it looks was ruled the same day -- dotted, "ready to heal".
+
 **Draw-then-delete leaves no trace -- ruled 2026-09-25.**\
 Asked, for two links passing through one point that a new link lands on and cuts, "After deleting the new link, should the two passing links be whole again?", the director chose "Yes, rejoin both" over "No, stay cut": deleting the landing rejoins each passing link into one, as before the landing.\
 This generalises the join-on-removal ruling beyond three links meeting, and closes the round-trip failures the bake-off re-test measured (a landing on a point two links pass, then its removal, left four ends).\
@@ -651,6 +654,9 @@ Today's product also drops a deleted point from a link (`server/txn.mjs`, READ).
 It also deletes the link if that would duplicate an existing straight link; that case is not ruled here.\
 The proposer noted that "Stay, shown down" is the literal reading of the director's "fail if it can't dynamic route across pipes to get there" (S22).\
 The director ruled that an author deleting the point is removing the stop, which is a different case from a stop that cannot be reached.
+
+AMENDED 2026-09-29, where no other way exists: the link is deleted whole rather than routed "by cost" over nothing -- see "A link that loses a pin with no other way is deleted whole" below.\
+With another way open this ruling stands unchanged.
 
 **A cut link stays cut while another link ends at the cut point, even when that link was there first -- ruled 2026-09-27, settling "a cut link stays cut while another link still ends at the cut point" above.**\
 That ruling's heading ("stays cut") and its gloss ("the same as if that landing had never been drawn") agree when the other link lands after the cut.\
@@ -1180,3 +1186,37 @@ As a column in a type's table (SD4), devices would carry it and a bare anchor wo
 The seam exists: `keepsOrphan` is where the planner would read it.\
 Proposer's reading, not ruled: build it when the device table lands (H17 K6), since the capability belongs in that table.
 **Named by the director, 2026-09-29:** "keepsOrphan is a better name". The capability, when built, is the table column `keepsOrphan` -- the same word as the planner interface that reads it, so the capability and its seam are one name end to end rather than two words for one idea.
+
+**A down link is not a deleted link: it stays, drawn dotted, "ready to heal" -- ruled 2026-09-29.**\
+The director's report: deleting an anchor "snaps" a direct link between two nodes, "automatically creating a pipe? this is wrong, pipes are deliberate construction actions - either by pressing w/g or mouseup a link drag onto an anchor/node".\
+No pipe was created: MEASURED, the pipe set was empty.\
+The links had lost their route and were down, and a down link was drawn as a plain solid line, which is how a live link over a direct pipe looks.\
+Asked whether "visually deleting a link" is the same as "link is down, trying to connect", the director answered in their own words: "if a link is dynamic, but has no path - a dotted/control like link directly between the source and dest node would indicate 'ready to heal' - if either source or dest node is deleted, link is gone with it permanently".\
+So they are two states:
+- DELETED: gone from the document, drawn nowhere, healing never; only undo restores it. A link is deleted when its source or destination is, and when it loses a pin with no other way (below).
+- DOWN: still in the document with its name and intent, but with no route over the pipes right now. It is drawn DOTTED along its intent -- for a link with no pins, directly between its source and destination -- and heals by itself when a route returns.
+
+Built as round dots rather than the control dash, the proposer's choice within the director's "dotted/control like": a control link is already dashed, and so is the drag preview, so a dashed down link would read as a live control-plane link.\
+The link keeps its own weight, so a down control link still reads as control plane.\
+The lab's notice states the count as well ("2 links down, ready to heal").\
+Proposer's reading, NOT RULED: a link whose pins all remain but which lost the way between two of them -- the `g` anchor it passed was deleted -- is down, dotted THROUGH its pins, since its pins are its intent and what it heals onto.\
+The director spoke of the dynamic case, and this extends it by the same rule.\
+This retires the resolver's earlier stance that inventing an appearance for a down link "would be designing in the wrong place": the appearance is now ruled, and lives in the appearance pipeline, where that comment said it belonged.\
+It also removes the resolver's second exception, which drew every link as live when no pipes existed at all; in the lab every link is laid with its pipes, so no pipes means the routes were removed.
+
+**A link that loses a pin with no other way is deleted whole -- ruled 2026-09-29, amending "Down, and heals" (2026-09-25) and "Forget that bend" (2026-09-26) for that case.**\
+The director's report: "if I delete an anchor that has pinned points, the entire end to end link does not delete - a section remains".\
+Asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no pipe from P1 to P3, "What should happen to the link?", the director chose "Delete the whole link" over "Stay, shown down".\
+The option as worded: the link goes, with its `w` anchors and dashed pipes; `g` anchors and solid pipes stay; undo brings it back.\
+With another way open the link still re-routes, as ruled 2026-09-26; measured working on the `detour` board.\
+Built as a fourth planner interface, `isStranded(link, model)`, which is asked only about a link whose pin the transaction deleted, is judged over the pipes that survive the edit, and is never asked in production.\
+The removal is in the same transaction, so the orphan sweep takes the link's `w` anchors and one undo restores all of it.\
+CORRECTED, the option's "undo brings it back": undo restores the link and every anchor, but not its pipes, which are session state outside the planner's log until the format batch stores them (F6).\
+So the link returns DOWN, drawn dotted, rather than routed -- the stated limit every lab undo already has, held by a test so the change shows when pipes are stored.
+
+**Seed boards give each pipe the lifetime its gesture would -- ruled 2026-09-29.**\
+The lab's seeds loaded every pipe as laid by hand, so on `?seed=bend` deleting the link's end left its bend anchor and a pipe standing: a board no gesture could have made.\
+MEASURED on boards drawn by hand: deleting a link's end removes everything.\
+Asked "Should seed pipes get the lifetime their gesture would have given them?", the director chose "Yes, as the gesture would" (the proposer's recommendation) over "No, keep seeds hand-laid".\
+So a pipe joining two consecutive stops of a link's intent -- its ends and pins, in order -- is laid with the link, as `w` lays it, and any other pipe is laid by hand, as `g` lays it.\
+Each seed pipe states its lifetime, and a test holds every board to the rule.

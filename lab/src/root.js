@@ -41,8 +41,8 @@ import { Log } from '../../server/log.mjs';
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
-import { pipeResolver, pipeDependents } from '../../network/resolve.mjs';
-import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal, keepsOrphan } from '../../network/guide.mjs';
+import { pipeResolver, pipeDependents, pipeLinkDown } from '../../network/resolve.mjs';
+import { checkGuidedRoute, pipeAnchors, routesOf, keptOnRefusal, keepsOrphan, isStranded } from '../../network/guide.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -77,9 +77,10 @@ The tab's model draws links along their ROUTE over pipes, through the interface 
 for exactly this (`resolvePath`). Production constructs `new Model()` and draws the straight
 polyline it always has; nothing here reaches production.
 */
-// where a link runs, AND which links a moved anchor affects, from one authority -- or the pipes follow
-// a moved anchor while the links routed through it stay behind (the director's report, 2026-09-29)
-const model = new Model({ resolvePath: pipeResolver(pipes), routedThrough: pipeDependents(pipes) });
+// where a link runs, which links a moved anchor affects, and whether a link is DOWN -- all from one route,
+// or they disagree: pipes followed a moved anchor while its links stayed behind, and a down link was drawn
+// as a live one, read as a pipe created by itself (the director's reports, 2026-09-29)
+const model = new Model({ resolvePath: pipeResolver(pipes), routedThrough: pipeDependents(pipes), linkDown: pipeLinkDown(pipes) });
 attachRelations(model, { cellOf });
 
 /*
@@ -188,6 +189,8 @@ history.onCommit((request) => {
 		: commit(authority, log, request, 'lab', 'lab', {
 			alsoReferenced: (m) => pipeAnchors(pipes.list(), m),   // only pipes that survive the edit being judged
 			keepsOrphan,   // the network model's rule: only links and hand-laid pipes keep an anchor (2026-09-29)
+			// a link that loses a pin with no other way is deleted whole (2026-09-29), judged over surviving pipes
+			isStranded: (link, m) => isStranded(pipes.list(), link, m),
 		});
 	const legs = pendingLegs; pendingLegs = null;
 	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
@@ -230,8 +233,11 @@ history.onCommit((request) => {
 	other.
 	*/
 	for (const l of model.all('link')) renderer.update('link', l);
+	// DOWN IS SAID as well as drawn: dotted links are "ready to heal", and the count is the whole-board fact
+	const down = model.all('link').filter((l) => model.isLinkDown(l)).length;
+	const downs = down ? ` -- ${down} link${down === 1 ? '' : 's'} down, ready to heal` : '';
 	// a refusal's reason stays on the notice through the commit that keeps its anchors, or it would flash past
-	say(pendingNotice ?? `v${answer.version} ${request.verb ?? request.label ?? ''}`.trim());
+	say(pendingNotice ?? `v${answer.version} ${request.verb ?? request.label ?? ''}${downs}`.trim());
 	pendingNotice = null;
 });
 
@@ -278,7 +284,8 @@ if (wanted) {
 		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else {
-			for (const [x, y] of board.pipes) pipes.lay(x, y, 'hand');
+			// each pipe with the lifetime its gesture would give it (2026-09-29): a link's own leg goes with it
+			for (const [x, y, laid] of board.pipes) pipes.lay(x, y, laid);
 			applyOps(model, answer.change?.ops ?? []);
 			drawPipes();
 			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);

@@ -465,15 +465,31 @@ undefined, because a caller that sets attributes blindly would otherwise write "
 DOM. `APPEARANCE_KEYS` names every key this can produce, so an UPDATE can remove what a previous
 state set -- which is the half B228 got wrong and could not have got right without it.
 */
-export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'marker-end', 'marker-start'];
+export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'stroke-linecap', 'marker-end', 'marker-start'];
 
-export const linkAppearance = (link, w = STD.linkW) => {
+/*
+A DOWN link -- one with no route right now, which heals when a route returns (ruled 2026-09-25) -- is
+drawn DOTTED, as the director described it (2026-09-29): "a dotted/control like link directly between
+the source and dest node would indicate 'ready to heal'".
+
+DOTS, NOT THE CONTROL DASH. A control link is already dashed, and so is the live drag preview; a dashed
+down link would read as a live control-plane link. A dot is a zero-length dash with a ROUND cap -- without
+the cap it draws nothing -- spaced in stroke widths like the dash, so it scales with the line. The link
+keeps its own weight, so a down control link is still visibly control plane.
+
+`down` is DERIVED state the link does not carry (no route over the pipes), passed in by whoever knows
+it. Production never passes it: it has no routes to lose.
+*/
+const DOT_GAP = 2;   // centre to centre, in stroke widths: one dot's width of gap between dots
+
+export const linkAppearance = (link, w = STD.linkW, { down = false } = {}) => {
 	const width = linkWidth(link, w);
-	const dash = linkDash(link, width);
+	const dash = down ? `0 ${round1(width * DOT_GAP)}` : linkDash(link, width);
 	const head = linkMarker(link);
 	return {
 		'stroke-width': width,
 		...(dash ? { 'stroke-dasharray': dash } : {}),
+		...(down ? { 'stroke-linecap': 'round' } : {}),
 		...(head === 'end' ? { 'marker-end': 'url(#flow-end)' } : {}),
 		...(head === 'start' ? { 'marker-start': 'url(#flow-start)' } : {}),
 	};

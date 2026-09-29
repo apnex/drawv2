@@ -21,7 +21,7 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
-import { commit } from '../server/txn.mjs';
+import { commit, undo } from '../server/txn.mjs';
 import { Log } from '../server/log.mjs';
 
 const P = 60;
@@ -102,4 +102,66 @@ test('the rule is told whether the orphan was only ever a bend, and sees the way
 	const asked = [];
 	deleteIt(b, { keepsOrphan: (w, info) => { asked.push([w.id, info.wasBendOnly]); return false; } });
 	assert.deepEqual(asked.sort(), [['waypoint-0000a1', false], ['waypoint-0000b2', true], ['waypoint-0000c3', false]]);
+});
+
+/*
+A LINK LEFT WITH NO WAY AFTER LOSING A PIN is removed whole -- ruled 2026-09-29. Asked, for a w-chain
+S-P1-P2-P3-E with P2 deleted and no other way, the director chose "Delete the whole link" over "Stay,
+shown down"; with another way open it re-routes, as ruled 2026-09-26.
+
+"No way" is a question about ROUTES OVER PIPES, which the planner cannot see -- so it is asked by
+injection, `isStranded(link, model)`, the fourth interface the network incubator forces into a product
+module. Production passes nothing: a link that loses a pin keeps the rest of its intent, exactly as
+before, and the first test below holds that.
+
+IN THE SAME TRANSACTION, so the orphan sweep then takes the link's w anchors, and one undo restores the
+link, its pin and its anchors together.
+*/
+const [NA, NB, NC, ND] = ['node-0000e1', 'node-0000e2', 'node-0000e3', 'node-0000e4'];
+const [WQ, WP] = ['waypoint-0000e5', 'waypoint-0000e6'];
+const [PINNED, APART] = ['link-0000e7', 'link-0000e8'];
+function pinned() {
+	// A -> B pinned at Q then P; and C -> D, which touches neither
+	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const ok = commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), nd(NB, 6, 0), nd(NC, 0, -4), nd(ND, 0, 4),
+		wp(WQ, -3, -2), wp(WP, 3, -2), lk(PINNED, NA, NB, [WQ, WP]), lk(APART, NC, ND)] }, 'lab', 'lab');
+	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
+	return { m, log };
+}
+const deleteP = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', opts);
+
+test('production is unchanged: a link that loses a pin keeps the rest of its intent', () => {
+	const b = pinned();
+	assert.equal(deleteP(b).ok, true);
+	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ], 'the pin is dropped and the link stays, as it always has');
+});
+
+test('an injected isStranded removes the link WHOLE in the same transaction, and one undo restores it', () => {
+	const b = pinned();
+	const r = deleteP(b, { isStranded: () => true, keepsOrphan: () => false });
+	assert.equal(r.ok, true);
+	assert.equal(b.m.get('link', PINNED), undefined, 'a link with no way after losing its pin is deleted');
+	assert.equal(b.m.get('waypoint', WQ), undefined, 'and its remaining pin, made for it alone, is swept with it');
+	assert.ok(b.m.get('link', APART), 'a link the edit never touched is left alone');
+	assert.equal(undo(b.m, b.log).ok, true);
+	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ, WP], 'one undo restores the link with both pins');
+	assert.ok(b.m.get('waypoint', WP) && b.m.get('waypoint', WQ), 'and both anchors');
+});
+
+test('isStranded is asked only about a link that lost a pin, and sees it as it is AFTER the edit', () => {
+	const b = pinned();
+	const asked = [];
+	deleteP(b, { isStranded: (link, model) => { asked.push({ id: link.id, via: link.via, pGone: !model.get('waypoint', WP) }); return false; } });
+	assert.deepEqual(asked, [{ id: PINNED, via: [WQ], pGone: true }],
+		'one question, about the pinned link, with P already stripped and gone from the model it is judged in');
+	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ], 'answered "not stranded", the link re-routes on its remaining intent');
+});
+
+test('a link that ENDS at the deleted anchor is not asked: it goes with its end regardless', () => {
+	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	assert.equal(commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), wp(WP, 3, -2), lk(PINNED, NA, WP)] }, 'lab', 'lab').ok, true);
+	const asked = [];
+	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', { isStranded: (l) => { asked.push(l.id); return false; } });
+	assert.deepEqual(asked, [], '"if either source or dest node is deleted, link is gone with it permanently"');
+	assert.equal(m.get('link', PINNED), undefined);
 });

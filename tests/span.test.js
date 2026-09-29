@@ -1130,7 +1130,18 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(kind, entity)'));
-	assert.match(updateBranch, /linkAppearance\(/, 'the UPDATE path must re-derive, not patch by hand');
+	/*
+	2026-09-29 -- a DOWN link's look depends on state the link does not carry, so the renderer feeds it in.
+	It does so in ONE method both branches call, rather than passing it at each call site: two sites
+	assembling the same arguments is the shape B228 shipped as. So the property is now that update calls
+	the same assembly create calls, and that the assembly is the one derivation.
+	*/
+	assert.match(updateBranch, /this\.linkAppearanceOf\(entity\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
+	const createBranch = clientRenderer.slice(0, clientRenderer.indexOf('\tupdate(kind, entity)'));
+	assert.match(createBranch, /class: 'link'[^\n]*\.\.\.this\.linkAppearanceOf\(entity\)/, 'and CREATE must use it too, or the two can disagree');
+	const assembly = clientRenderer.slice(clientRenderer.indexOf('\tlinkAppearanceOf(entity)'));
+	assert.match(assembly.slice(0, assembly.indexOf('\n\t}')), /linkAppearance\(entity, LINK_W, \{ down: this\.model\.isLinkDown\(entity\) \}\)/,
+		'the assembly is the one derivation, fed the down state');
 	assert.match(updateBranch, /APPEARANCE_KEYS/,
 		'and iterate the DECLARED keys, so a key it no longer sets is removed rather than stranded');
 });
@@ -1323,6 +1334,41 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 		assert.match(src, /linkAppearance\(/, `${name} must derive a link's appearance in one call`);
 		assert.doesNotMatch(src, /linkMarker\(|linkDash\(|linkWidth\(/,
 			`${name} still asks the sub-questions directly, so there are two ways to draw a link`);
+	}
+});
+
+/*
+A DOWN link -- one with no route right now, which heals when a route returns (ruled 2026-09-25) -- is
+drawn DOTTED, as the director described it (2026-09-29): "a dotted/control like link directly between
+the source and dest node would indicate 'ready to heal'".
+
+What is RULED is the relationship, so that is what is asserted: a DOT is a zero-length dash with a round
+cap (without the cap it draws nothing), spaced in stroke widths so it scales with the line, and it is
+not the control dash -- which a down link must not be mistaken for. A down control link keeps its
+thinner weight, so its plane stays legible while it is down.
+*/
+test('a DOWN link is dotted: round dots spaced in stroke widths, never the control dash', async () => {
+	const k = await import('../kernel/geometry.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
+	const dots = (link, w, extra) => k.linkAppearance(link, w, { down: true, ...extra });
+	const plain = { id: 'l', src: 'a', dst: 'b' };
+
+	const down = dots(plain, 6);
+	const [on, gap] = down['stroke-dasharray'].split(' ').map(Number);
+	assert.equal(on, 0, 'a dot is a zero-length dash');
+	assert.ok(gap > 6, `spaced wider than the dot, or the dots touch and read as a solid line (${gap})`);
+	assert.equal(down['stroke-linecap'], 'round', 'and a ROUND cap, without which a zero-length dash draws nothing');
+	assert.equal(Number(dots(plain, 12)['stroke-dasharray'].split(' ')[1]), gap * 2, 'the spacing scales with the stroke');
+
+	const ctrl = { ...plain, control: true };
+	const ctrlDown = dots(ctrl, 6);
+	assert.equal(ctrlDown['stroke-width'], k.linkAppearance(ctrl, 6)['stroke-width'], 'a down control link keeps its thinner weight');
+	assert.notEqual(ctrlDown['stroke-dasharray'], k.linkAppearance(ctrl, 6)['stroke-dasharray'], 'and is dotted, not dashed');
+
+	const up = k.linkAppearance(plain, 6);
+	assert.ok(!('stroke-linecap' in up) && !('stroke-dasharray' in up), 'a live link carries neither key -- absent, not null');
+	assert.deepEqual(k.linkAppearance(plain, 6, { down: false }), up, 'and "not down" is exactly the live look');
+	for (const key of Object.keys(ctrlDown)) {
+		assert.ok(k.APPEARANCE_KEYS.includes(key), `${key} is emitted when down but not declared -- healing could not remove it`);
 	}
 });
 

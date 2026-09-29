@@ -3,7 +3,7 @@ The incubated whole-route check for `g` -- network/guide.mjs.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkGuidedRoute, pipeAnchors, routesOf } from '../network/guide.mjs';
+import { checkGuidedRoute, pipeAnchors, routesOf, isStranded } from '../network/guide.mjs';
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
@@ -95,4 +95,28 @@ test('a refused drag keeps its guides and their hand pipes, and drops what exist
 	assert.deepEqual(k.legs.map((l) => `${l.a}-${l.b}`), ['G-B'],
 		'its hand pipe to B survives; P-G does not, because P -- placed only for the refused link -- is going');
 	assert.deepEqual(k.placedKept, ['G'], 'and G is new, so its pipe waits for the planner to accept it');
+});
+
+/*
+A LINK LEFT WITH NO WAY after losing a pin is deleted whole -- ruled 2026-09-29. Asked, for a w-chain
+S-P1-P2-P3-E with P2 deleted, the director chose "Delete the whole link" over "Stay, shown down".
+
+`isStranded` answers "no way" for the planner, judged over the pipes that SURVIVE in the model it is
+handed: a pipe to an anchor this edit deletes is not a pipe (SD7), so it can give no way. A pipe laid
+with another link still counts -- a link routed over it would carry it, so the sweep would keep it.
+*/
+test('a link is stranded when no route over the SURVIVING pipes runs through its pins to its ends', () => {
+	// S-P1-P2-P3-E with P2 deleted: the link now pins P1 and P3, and the pipes to P2 died with it
+	const chain = [{ a: 'S', b: 'P1', laid: 'link' }, { a: 'P1', b: 'P2', laid: 'link' }, { a: 'P2', b: 'P3', laid: 'link' }, { a: 'P3', b: 'E', laid: 'link' }];
+	const after = model(['S', 'P1', 'P3', 'E']);
+	assert.equal(isStranded(chain, { src: 'S', dst: 'E', via: ['P1', 'P3'] }, after), true,
+		'the only way P1 to P3 ran through P2, which is gone -- its pipes must not count');
+	assert.equal(isStranded(chain, { src: 'S', dst: 'E', via: ['P1', 'P3'] }, model(['S', 'P1', 'P2', 'P3', 'E'])), false,
+		'the same pipes with P2 still standing are a way');
+});
+
+test('a link with another way over surviving pipes is not stranded -- it re-routes (ruled 2026-09-26)', () => {
+	const detour = [...pipes(['A', 'w'], ['w', 'B']), { a: 'A', b: 'x', laid: 'link' }, { a: 'x', b: 'B', laid: 'link' }];
+	assert.equal(isStranded(detour, { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false,
+		'A-x-B survives, laid with another link or not: routed over it, this link carries it');
 });

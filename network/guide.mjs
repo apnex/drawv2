@@ -88,8 +88,11 @@ pins that should have gone. Judged against the model the planner hands over, tho
 after the delete, so they shelter nothing, and the pins are swept as the product always swept a deleted
 link's bends.
 */
+// whether an anchor exists in a model -- a pipe survives an edit only while both of its ends do (SD7)
+const anchorIn = (model) => (id) => !!(model.get('node', id) || model.get('waypoint', id));
+
 export function pipeAnchors(pipes, model) {
-	const alive = (id) => !!(model.get('node', id) || model.get('waypoint', id));
+	const alive = anchorIn(model);
 	const carried = new Set();
 	for (const r of routesOf(pipes, model.all('link'))) for (let i = 0; i < r.length - 1; i++) carried.add(pipeKey(r[i], r[i + 1]));
 	const ids = new Set();
@@ -99,6 +102,27 @@ export function pipeAnchors(pipes, model) {
 		ids.add(a); ids.add(b);
 	}
 	return ids;
+}
+
+/*
+Whether a link that LOST A PIN is left with no way -- the planner's `isStranded`, ruled 2026-09-29.
+
+Asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no other way, the director chose "Delete the
+whole link" over "Stay, shown down": the link goes, and with it its w anchors and the pipes laid with
+it, while g anchors and hand pipes stay. With another way open it re-routes (ruled 2026-09-26).
+
+Judged over the pipes that SURVIVE in the model the planner hands over -- both ends standing -- because
+a pipe to an anchor the edit deletes is not a pipe. A pipe laid with some other link counts: routed over
+it, this link would carry it, and the sweep keeps what a link carries. Sweeping only ever removes pipes,
+so no route here means none after the sweep either.
+
+The planner asks only about a link whose pin the edit deleted. Losing a route any other way -- the
+g anchor it passed deleted, say -- leaves the link DOWN, drawn dotted and ready to heal.
+*/
+export function isStranded(pipes, link, model) {
+	const alive = anchorIn(model);
+	const surviving = pipes.filter(({ a, b }) => alive(a) && alive(b));
+	return !routeLink(surviving, { src: link.src, dst: link.dst, via: link.via ?? [] });
 }
 
 /*

@@ -237,6 +237,16 @@ export class Renderer {
 		return path && roundedPath(path, BEND_R, !!entity.closed);
 	}
 
+	/*
+	How a link looks: the ONE derivation (H15.9), fed the derived state the link itself does not carry --
+	whether it is DOWN, which only the model's router knows (always false in production). Create and
+	update both call this, rather than each passing the state to `linkAppearance`: two call sites
+	assembling the same arguments is exactly how B228 shipped, one of them forgetting what the other set.
+	*/
+	linkAppearanceOf(entity) {
+		return linkAppearance(entity, LINK_W, { down: this.model.isLinkDown(entity) });
+	}
+
 	// group hull = the bbox of member node centres, padded to ±group.ext (the kernel spec).
 	// null when no member resolves (avoids ±Infinity), matching the kernel's empty-group guard.
 	groupBox(entity) {
@@ -291,7 +301,7 @@ export class Renderer {
 			if (!d) return;
 			// H15.9 -- ONE derivation, emitted as given. The marker, the weight and the dash were
 			// three calls assembled by hand here and again in `update`, which is how B228 shipped.
-			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...linkAppearance(entity, LINK_W) }, this.layers.links);
+			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...this.linkAppearanceOf(entity) }, this.layers.links);
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
@@ -442,7 +452,7 @@ export class Renderer {
 			key set. B228 was an update that set some of these and forgot others; there is now no
 			list to forget, because `APPEARANCE_KEYS` is what the derivation itself declares.
 			*/
-			const want = linkAppearance(entity, LINK_W);
+			const want = this.linkAppearanceOf(entity);
 			for (const attr of APPEARANCE_KEYS) {
 				if (attr in want) dom.setAttribute(attr, want[attr]);
 				else dom.removeAttribute(attr);

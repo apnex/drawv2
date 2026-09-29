@@ -9,7 +9,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
-import { pipeResolver } from '../network/resolve.mjs';
+import { pipeResolver, pipeLinkDown } from '../network/resolve.mjs';
+import { routeLink } from '../network/pipes.mjs';
 
 // A and B are far apart; the only pipes run A -> w -> B, around the straight line
 function board(pipeSet) {
@@ -31,9 +32,20 @@ test('with pipes, an UNPINNED link is drawn along its route over them, not strai
 	assert.deepEqual(path, [[0, 0], [120, 120], [240, 0]]);
 });
 
-test('with NO pipes, the resolver defers to the straight polyline', () => {
-	// an empty pipe layer is a board not yet laid, not a board of unroutable links
-	assert.deepEqual(board(createPipeSet()).pathOf(LINK), [[0, 0], [240, 0]]);
+test('with NO pipes a link has no route: it is DOWN, drawn straight between its ends', () => {
+	/*
+	This test used to hold the opposite -- "an empty pipe layer is a board not yet laid, not a board of
+	unroutable links" -- and the director's report is why it changed (2026-09-29). Deleting the anchor the
+	cross board's links ran through removed its last four pipes; the links had LOST their route, and the
+	no-pipes exception drew them as live. In the lab every link is laid with its pipes, so an empty pipe
+	layer is never a board not yet laid. No pipes is simply no route.
+	*/
+	const s = createPipeSet();
+	const m = new Model({ resolvePath: pipeResolver(s), linkDown: pipeLinkDown(s) });
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	assert.deepEqual(m.pathOf(LINK), [[0, 0], [240, 0]], 'drawn directly between its source and destination');
+	assert.equal(m.isLinkDown(LINK), true, 'and DOWN, so it is drawn as ready to heal rather than as live');
 });
 
 test('a DOWN link (a leg with no route) defers rather than drawing half a path', () => {
@@ -71,4 +83,46 @@ test('pipeDependents names a link routed THROUGH an anchor it does not name', as
 		'the link has no via, yet its route passes w -- so moving w affects it');
 	s.remove('waypoint-00000c', 'node-00000b');
 	assert.deepEqual(m.linksRoutedThrough('waypoint-00000c'), [], 'with the route broken it no longer passes w');
+});
+
+/*
+WHERE A LINK IS DRAWN AND WHETHER IT IS DOWN come from ONE route, so they cannot disagree.
+
+A link drawn along a route while its down state says it has none -- or drawn straight and called up --
+is two authorities for one fact, the defect family this programme exists to end. Checked against the
+router itself, over every subset of a small pipe universe, rather than against cases picked by hand.
+*/
+test('the resolver and the down state agree with the router for every pipe set: routed exactly when not down', () => {
+	const A = 'node-00000a', B = 'node-00000b', W = 'waypoint-00000c';
+	const universe = [[A, W], [W, B], [A, B]];
+	const at = { [A]: [0, 0], [B]: [240, 0], [W]: [120, 120] };
+	let checked = 0;
+	for (let mask = 0; mask < 1 << universe.length; mask++) {
+		const s = createPipeSet();
+		universe.forEach(([a, b], i) => { if (mask & (1 << i)) s.lay(a, b, 'link'); });
+		const m = new Model({ resolvePath: pipeResolver(s), linkDown: pipeLinkDown(s) });
+		m.put('node', { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+		m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+		m.put('waypoint', { id: W, name: 'w', x: 120, y: 120 });
+		for (const link of [LINK, { ...LINK, via: [W] }]) {
+			const route = routeLink(s.list(), { src: link.src, dst: link.dst, via: link.via ?? [] });
+			assert.equal(m.isLinkDown(link), route === null, `pipes ${mask.toString(2)}, via ${link.via ?? '-'}: down exactly when the router finds no route`);
+			const want = route ? route.map((id) => at[id]) : [link.src, ...(link.via ?? []), link.dst].map((id) => at[id]);
+			assert.deepEqual(m.pathOf(link), want, 'drawn along the route when there is one, along its intent when down');
+			checked++;
+		}
+	}
+	assert.equal(checked, 16, 'every subset, both links');
+});
+
+test('down is read LIVE: removing the last way takes a link down, and laying one back heals it', () => {
+	const s = createPipeSet();
+	s.lay('node-00000a', 'waypoint-00000c');
+	s.lay('waypoint-00000c', 'node-00000b');
+	const m = new Model({ resolvePath: pipeResolver(s), linkDown: pipeLinkDown(s) });
+	assert.equal(m.isLinkDown(LINK), false);
+	s.remove('waypoint-00000c', 'node-00000b');
+	assert.equal(m.isLinkDown(LINK), true, 'no way left: down');
+	s.lay('waypoint-00000c', 'node-00000b', 'hand');
+	assert.equal(m.isLinkDown(LINK), false, 'a way returns: it heals, with nothing stored to undo');
 });

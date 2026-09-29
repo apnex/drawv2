@@ -84,19 +84,23 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005"
+				"waypoint-000005",
+				"hand"
 			],
 			[
 				"waypoint-000005",
-				"node-000002"
+				"node-000002",
+				"hand"
 			],
 			[
 				"node-000003",
-				"waypoint-000005"
+				"waypoint-000005",
+				"hand"
 			],
 			[
 				"waypoint-000005",
-				"node-000004"
+				"node-000004",
+				"hand"
 			]
 		]
 	},
@@ -154,11 +158,13 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005"
+				"waypoint-000005",
+				"link"
 			],
 			[
 				"waypoint-000005",
-				"node-000002"
+				"node-000002",
+				"link"
 			]
 		]
 	},
@@ -236,23 +242,28 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005"
+				"waypoint-000005",
+				"link"
 			],
 			[
 				"waypoint-000005",
-				"node-000002"
+				"node-000002",
+				"link"
 			],
 			[
 				"node-000001",
-				"waypoint-000006"
+				"waypoint-000006",
+				"hand"
 			],
 			[
 				"waypoint-000006",
-				"waypoint-000007"
+				"waypoint-000007",
+				"hand"
 			],
 			[
 				"waypoint-000007",
-				"node-000002"
+				"node-000002",
+				"hand"
 			]
 		]
 	},
@@ -445,35 +456,43 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000001"
+				"waypoint-000001",
+				"link"
 			],
 			[
 				"waypoint-000001",
-				"node-000002"
+				"node-000002",
+				"link"
 			],
 			[
 				"node-000003",
-				"waypoint-000001"
+				"waypoint-000001",
+				"link"
 			],
 			[
 				"waypoint-000001",
-				"node-000004"
+				"node-000004",
+				"link"
 			],
 			[
 				"node-000005",
-				"waypoint-000002"
+				"waypoint-000002",
+				"hand"
 			],
 			[
 				"waypoint-000002",
-				"node-000006"
+				"node-000006",
+				"hand"
 			],
 			[
 				"node-000007",
-				"waypoint-000002"
+				"waypoint-000002",
+				"hand"
 			],
 			[
 				"waypoint-000002",
-				"node-000008"
+				"node-000008",
+				"hand"
 			]
 		]
 	},
@@ -560,15 +579,18 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005"
+				"waypoint-000005",
+				"link"
 			],
 			[
 				"node-000002",
-				"waypoint-000005"
+				"waypoint-000005",
+				"link"
 			],
 			[
 				"node-000003",
-				"waypoint-000005"
+				"waypoint-000005",
+				"link"
 			]
 		]
 	}

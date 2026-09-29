@@ -75,3 +75,24 @@ test('an injected routedThrough answers which links a moved anchor affects', () 
 	assert.equal(asked.id, 'waypoint-00000c');
 	assert.equal(asked.model, m, 'handed the model, like resolvePath, so it can read the routes');
 });
+
+/*
+The third companion: WHETHER A LINK IS DOWN -- ruled 2026-09-25, "the link stays, keeps its name and
+drawn route, shows as down, and comes back when a route returns".
+
+The lab drew a down link as a plain straight line between its ends, which looked exactly like a new
+direct connection -- the director read it as a pipe created on its own. Down is DERIVED state (no route
+over the pipes), known only to whatever routes; so the router's owner answers it, beside the path and
+the dependents. Absent in production, which has no notion of a route to lose.
+*/
+test('production: no link is ever down', () => {
+	assert.equal(seeded().isLinkDown(LINK), false);
+});
+
+test('an injected linkDown answers, and is handed the link and the model', () => {
+	let asked = null;
+	const m = seeded({ linkDown: (link, model) => { asked = { link, model }; return true; } });
+	assert.equal(m.isLinkDown(LINK), true);
+	assert.equal(asked.link, LINK);
+	assert.equal(asked.model, m);
+});

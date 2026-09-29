@@ -63,7 +63,7 @@ export class Model {
 	holds that byte for byte. A resolver receives the link, this model, and the DEFAULT as a third
 	argument, so it can route some links and defer the rest without re-implementing the polyline.
 	*/
-	constructor({ resolvePath = null, routedThrough = null } = {}) {
+	constructor({ resolvePath = null, routedThrough = null, linkDown = null } = {}) {
 		this.resolvePath = resolvePath;
 		/*
 		`routedThrough` -- the COMPANION of `resolvePath`, and it must travel with it.
@@ -75,6 +75,16 @@ export class Model {
 		answers both questions. Absent in production: `linksRoutedThrough` is empty and nothing changes.
 		*/
 		this.routedThrough = routedThrough;
+		/*
+		`linkDown` -- the third companion: WHETHER a link is down. A link with no route stays and heals
+		(ruled 2026-09-25), and the director described how it must look (2026-09-29): "a dotted/control
+		like link directly between the source and dest node would indicate 'ready to heal'". Drawn solid,
+		a down link read as a live one -- as a pipe created by itself, in the director's report.
+
+		Down is DERIVED -- no route over the pipes -- so only the router's owner can answer it, from the
+		same route it draws. Absent in production, which has no route to lose: `isLinkDown` is false.
+		*/
+		this.linkDown = linkDown;
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -199,6 +209,11 @@ export class Model {
 	// the links drawn THROUGH an anchor they do not name -- empty unless a routing resolver is injected
 	linksRoutedThrough(id) {
 		return this.routedThrough ? this.routedThrough(id, this) : [];
+	}
+
+	// whether a link has no route right now, and so is drawn as ready to heal -- never, unless injected
+	isLinkDown(link) {
+		return !!(link && this.linkDown && this.linkDown(link, this));
 	}
 
 	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always
