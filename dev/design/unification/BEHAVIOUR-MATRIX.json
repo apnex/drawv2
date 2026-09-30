@@ -640,6 +640,186 @@
 					"hand": 4
 				}
 			}
+		},
+		"older beside a younger route": {
+			"about": "An older link A-B on a g path through x above, and a younger link C-D on a middle g path through m1 and m2; A and B also reach the middle path, a longer way.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					-120
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					360,
+					-120
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					-360,
+					240
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					360,
+					240
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						-120
+					],
+					[
+						360,
+						-120
+					],
+					[
+						[
+							"g",
+							0,
+							-240
+						],
+						[
+							"g",
+							360,
+							-120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						240
+					],
+					[
+						360,
+						240
+					],
+					[
+						[
+							"g",
+							-120,
+							120
+						],
+						[
+							"g",
+							120,
+							120
+						],
+						[
+							"g",
+							360,
+							240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						-120
+					],
+					[
+						-120,
+						120
+					],
+					[
+						[
+							"g",
+							-120,
+							120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						120,
+						120
+					],
+					[
+						360,
+						-120
+					],
+					[
+						[
+							"g",
+							360,
+							-120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						-120
+					],
+					[
+						360,
+						-120
+					],
+					[]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						240
+					],
+					[
+						360,
+						240
+					],
+					[]
+				],
+				[
+					"settle"
+				]
+			],
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"anchors": 7,
+				"pipes": {
+					"hand": 7,
+					"link": 0
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -1974,6 +2154,45 @@
 				}
 			},
 			"rule": "DECISIONS: \"A link never runs the same pipe twice\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "SUP-01",
+			"state": "older beside a younger route",
+			"gesture": "delete `g` hop",
+			"does": "Delete x, the g anchor the older link A-B passes, then click the younger link C-D.",
+			"steps": [
+				[
+					"click",
+					0,
+					-240
+				],
+				[
+					"key",
+					"Delete"
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					0,
+					240
+				]
+			],
+			"intent": "A-B loses its way and, being older, takes the middle path C-D is routed over; C-D is down, and says A-B holds its way.",
+			"expect": {
+				"links": 2,
+				"down": 1,
+				"anchors": 6,
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				},
+				"notice": "is down: its way is held by link-"
+			},
+			"rule": "DECISIONS: \"An older link may supplant a younger link's route\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},

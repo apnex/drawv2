@@ -1245,7 +1245,8 @@ The proposer measured it before it was ruled, on a scratch copy of the tree with
 One finding set the shape of the ruling: capacity alone is not enough.\
 Without an ownership rule, deleting the `w` link let the down link take over its leftover pipes, and the trace returned (MEASURED).\
 AMENDED 2026-09-30: a link drag whose way is held is no longer refused; the link is made, drawn down, and names what blocks it -- see "Each drag action does one thing" below.\
-AMENDED 2026-09-30, rule 2: a pipe laid with a link is no longer carried only by that link; the link has first call on it, and any link may use it when free -- see "A w pipe goes when no link is on it or resolves onto it" below.
+AMENDED 2026-09-30, rule 2: a pipe laid with a link is no longer carried only by that link; the link has first call on it, and any link may use it when free -- see "A w pipe goes when no link is on it or resolves onto it" below.\
+CORRECTED 2026-09-30, rule 3: "the older link keeps a contested hand-laid pipe" understated what was built and measured -- the older link has first pick every time routes are worked out, so it can take a pipe a younger link is routed over; see "An older link may supplant a younger link's route" below.
 
 | measured over 42,000 edits | today | one link per pipe, older link first, strict |
 |---|---|---|
@@ -1351,3 +1352,10 @@ Asked "Should a link be allowed to run the same pipe twice?", the director chose
 So a way that would double back is no way: the link is down, drawn through its pins, and heals when a way through appears; and a link that just lost a pin with nothing else left is deleted whole (2026-09-29), since a hairpin no longer counts as another way.\
 Held with concurrent links on a pipe, as B256.\
 Asked in the same exchange, and confirmed by the director as correct: a link that loses a `w` anchor and has another way re-routes over it, stays the older link, and keeps blocking a younger link that wants those pipes -- a delete re-routes the link whose pin went, and the protection against moving an existing link belongs to drags.
+
+**An older link may supplant a younger link's route: age decides every time routes are worked out -- ruled 2026-09-30.**\
+The director asked: "Are you saying that an older path can supplant an already routed new one?"\
+MEASURED at the router: an older link O on A-x-B and a younger link Y on a middle path; x is deleted, O's own way is gone, O takes the middle path, and Y is down, blocked by O. The proposer had described rule 3 as "the older link keeps a contested hand-laid pipe", which hid this: routes are worked out from the page and the link ages after every edit, oldest first, so the older link has first pick every time.\
+What can trigger it: deleting an anchor or `g` hop an older link passed, or a pin when it has another way; undo bringing an older link back (matrix row CAP-06); new hand pipes from a `g` drag that give an older link a better way.\
+What cannot: drawing a new link, since a drag that would move an existing link is refused; and a younger link's own `w` pipes, since it has first call on them.\
+Asked whether an older link that loses its way may take hand-laid pipes a younger link is routed over, the director chose "Yes: age decides every time (as built)" over "No: a routed link keeps its route", which was shown as needing each pipe to remember the link on it.
