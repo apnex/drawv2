@@ -1244,7 +1244,8 @@ When we develop the visual and mechanics of concurrent links over pipes (proper 
 The proposer measured it before it was ruled, on a scratch copy of the tree with real input, and over 3,000 random gesture sequences of 14 edits replayed under each rule (a model of the lab's gestures that omits landing cuts, joins and anchor sweeps; the scripts are in the private archive, not the repository).\
 One finding set the shape of the ruling: capacity alone is not enough.\
 Without an ownership rule, deleting the `w` link let the down link take over its leftover pipes, and the trace returned (MEASURED).\
-AMENDED 2026-09-30: a link drag whose way is held is no longer refused; the link is made, drawn down, and names what blocks it -- see "Each drag action does one thing" below.
+AMENDED 2026-09-30: a link drag whose way is held is no longer refused; the link is made, drawn down, and names what blocks it -- see "Each drag action does one thing" below.\
+AMENDED 2026-09-30, rule 2: a pipe laid with a link is no longer carried only by that link; the link has first call on it, and any link may use it when free -- see "A w pipe goes when no link is on it or resolves onto it" below.
 
 | measured over 42,000 edits | today | one link per pipe, older link first, strict |
 |---|---|---|
@@ -1325,3 +1326,19 @@ Direct links without a key lay no pipe.\
 A "g" only path has no link - a link is "activated for this current drag" after a "w" is pressed".\
 So a release on an anchor lays the pipe into it from the last stop -- with the link after `w`, by hand after `g` -- and only a drag that pressed no key, a plain drag, lays no pipe.\
 It replaces the proposer's reading, recorded under "Each drag action does one thing", that a plain release lays no pipe; and it changes HEAL-04, where a `w` bend released on B now draws the new link up over its own two pipes.
+
+**A `w` pipe goes when no link is on it or resolves onto it; a link has first call on the `w` pipes joining its own pins -- ruled 2026-09-30, amending rule 2 of "Pipes carry one link each".**\
+The director's report: A has a multi-hop `w` path to B; C has a `g` path joining one of its `w` anchors; with links A-B and C-B, C-B is blocked and down, "If I delete link A-B - I would expect C-B to route over the top of the now-free path.\
+But link deletion of a w node destroys it prematurely".\
+MEASURED with real input: rule 2 made A-B's pipes usable by A-B alone, so C-B was reported as having no way at all rather than being blocked, and A-B's pipes were swept with it.\
+Asked whether a deleted link's `w` pipes may be taken over, the director chose younger links waiting and inheriting, then simplified it: "why do we need to record "who laid the pipe" - cant we just have the rule "if pipe was laid by w, and no current or waiting links occupying - destroy?""; and, asked whether an older down link may also land on them, chose "Yes: nothing recorded": "W pipes dont remember who laid them - only that they are marked for destruction if the pipe is empty.\
+Another pending link can use that pipe and hold it alive".\
+So nothing is recorded: a link has first call on the `w` pipes joining its own consecutive stops, ahead of older links; any link may use a `w` pipe no link has called; and after every edit a `w` pipe no link is routed over is swept.\
+The cost shown and accepted: in HEAL-05, deleting the `w` link drawn beside a down A-B leaves that link's anchor and pipes, with A-B healed over them.
+
+**`w` may be pressed on a node as the last hop -- ruled 2026-09-30.**\
+The director: "We have no way to construct a direct link between two anchors now - I guess we need to enable the "w" key on the final anchor before we mouse up to activate pipes?"\
+MEASURED: `w` on a final waypoint already made a direct link with its pipe; on a node it did nothing, by the proposer's reading that `w` may not be pressed on a node because a pin is always a waypoint.\
+So `w` on a node makes the drag a link drag and a hop into that node, laid with the link; released there, the node is the link's destination and nothing is pinned on it.\
+Proposer's reading, not ruled: `w` on a node the drag then continues past is a hop the link routes over but does not pin, since a node cannot be a pin.\
+Only with a route hook -- the lab -- so production's `w` is unchanged.

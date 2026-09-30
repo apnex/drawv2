@@ -340,6 +340,120 @@
 					"link": 0
 				}
 			}
+		},
+		"w path fed by g": {
+			"about": "The director's case: anchors A, B, C; a w path A-P1-P2-B; a g path from C joining P1; links A-B and C-B. A-B has first call on its w pipes, so C-B waits, blocked by it.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					-360,
+					300
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							-120,
+							-120
+						],
+						[
+							"w",
+							120,
+							-120
+						],
+						[
+							"w",
+							360,
+							0
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						300
+					],
+					[
+						-120,
+						-120
+					],
+					[
+						[
+							"g",
+							-240,
+							120
+						],
+						[
+							"g",
+							-120,
+							-120
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						300
+					],
+					[
+						360,
+						0
+					],
+					[]
+				],
+				[
+					"settle"
+				]
+			],
+			"expect": {
+				"links": 2,
+				"down": 1,
+				"anchors": 6,
+				"pipes": {
+					"link": 3,
+					"hand": 2
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -1124,13 +1238,20 @@
 				]
 			],
 			"standing": "ruled",
-			"rule": "The director, 2026-09-29: \"if I draw a new link with w - this should not be the healed link\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30). DECISIONS: \"Each drag action does one thing\" (2026-09-30).",
-			"intent": "A-B stays down while the w link exists, and deleting the w link leaves no trace: its anchor and pipes go, and both old links are still down.",
+			"rule": "DECISIONS: \"A w pipe goes when no link is on it or resolves onto it\" (2026-09-30). The director accepted that this case leaves a trace (\"Yes: nothing recorded\"), amending \"Draw-then-delete leaves no trace\" (2026-09-25) for it.",
+			"intent": "A-B stays down while the w link exists, which has first call on its pipes. Deleting the w link frees them, and A-B, waiting on that way, takes them and heals: the w anchor and both pipes stay, now carrying A-B.",
 			"expect": {
 				"links": 2,
-				"down": 2,
-				"anchors": 0,
-				"pipes": 0
+				"down": 1,
+				"linkState": {
+					"link-000001": "up",
+					"link-000002": "down"
+				},
+				"anchors": 1,
+				"pipes": {
+					"link": 2,
+					"hand": 0
+				}
 			},
 			"built": "yes"
 		},
@@ -1540,6 +1661,106 @@
 				}
 			},
 			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "WP-01",
+			"state": "w path fed by g",
+			"gesture": "select link",
+			"does": "Click C-B, which is down.",
+			"steps": [
+				[
+					"click",
+					0,
+					150
+				]
+			],
+			"intent": "C-B is blocked, not wayless: its way runs over A-B's w pipes, which A-B has first call on. The notice says A-B holds its way.",
+			"expect": {
+				"notice": "is down: its way is held by link-"
+			},
+			"rule": "DECISIONS: \"A w pipe goes when no link is on it or resolves onto it\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "WP-02",
+			"state": "w path fed by g",
+			"gesture": "delete link",
+			"does": "Select A-B on its first leg, and press Delete.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-60
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "C-B takes over the freed w path and comes up, drawn through P1 and P2. The pipes it runs over, and P2, stay; A's lone pipe, which no link is on, goes with A.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"through": {
+					"only": [
+						[
+							-120,
+							-120
+						],
+						[
+							120,
+							-120
+						]
+					]
+				},
+				"anchors": 5,
+				"pipes": {
+					"link": 2,
+					"hand": 2
+				}
+			},
+			"rule": "The director's report, 2026-09-30: \"If I delete link A-B - I would expect C-B to route over the top of the now-free path\". DECISIONS: \"A w pipe goes when no link is on it or resolves onto it\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "DIR-01",
+			"state": "routed",
+			"gesture": "draw: `w` bend",
+			"does": "Drag from A, press w on node C, and release there.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"w",
+							0,
+							-240
+						]
+					]
+				]
+			],
+			"intent": "A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"pipes": {
+					"hand": 4,
+					"link": 1
+				}
+			},
+			"rule": "DECISIONS: \"w may be pressed on a node as the last hop\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},

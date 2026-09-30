@@ -990,6 +990,20 @@ export class Input {
 			if (!this.ctx.via.includes(existing.id)) { this.ctx.via.push(existing.id); this.ctx.route.push(existing.id); }
 			this.ctx.pressedW = true;
 		} else {
+			/*
+			w ON A NODE, with a route hook only -- ruled 2026-09-30: "We have no way to construct a direct link between two
+			anchors now - I guess we need to enable the "w" key on the final anchor before we mouse up". A node is never a
+			pin, so it joins the ROUTE and not `via`: released on it, it is the link's destination, reached with w; if the drag
+			carries on, it is a hop the link routes over (the proposer's reading). Production has no hook, and refuses as before.
+			*/
+			const node = this.routeHook && nodeAt(this.model, this.lastPos);
+			if (node) {
+				if (node.id === this.ctx.src.id || this.ctx.route.includes(node.id)) return;
+				this.ctx.route.push(node.id);
+				this.ctx.pressedW = true;
+				this.updateLinkPreview(this.lastPos);
+				return;
+			}
 			if (occupiedAt(this.model, snapped)) return;        // a node cell — refuse
 			const wp = this.model.makeWaypoint(snapped);
 			this.model.put('waypoint', wp);            // live (visible); committed on release

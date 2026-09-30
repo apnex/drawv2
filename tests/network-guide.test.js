@@ -195,15 +195,15 @@ test('a link is stranded when no route over the SURVIVING pipes runs through its
 	const link = { src: 'S', dst: 'E', via: ['P1', 'P3'] };
 	assert.equal(isStranded(chain, link, model(['S', 'P1', 'P3', 'E'])), true, 'the only way P1 to P3 ran through P2, which is gone -- its pipes must not count');
 	assert.equal(isStranded(chain, link, model(['S', 'P1', 'P2', 'P3', 'E'])), false, 'the same pipes with P2 still standing are a way');
-	// a pipe laid WITH a link carries only the link whose stops it joins (2026-09-30): pipes laid for P2 are no way for a link that no longer pins it
+	// a w pipe nobody has first call on is a way for any link (2026-09-30): pipes laid for P2 still count
 	const laidForP2 = chain.map((x) => ({ ...x, laid: 'link' }));
-	assert.equal(isStranded(laidForP2, link, model(['S', 'P1', 'P2', 'P3', 'E'])), true, 'P1-P2 and P2-P3 join none of its stops now, so they carry nothing for it');
+	assert.equal(isStranded(laidForP2, link, model(['S', 'P1', 'P2', 'P3', 'E'])), false, 'P1-P2-P3 are free w pipes, so they are a way');
 });
 
-test('another way over hand pipes re-routes the link (2026-09-26); a way laid with another link is no way (2026-09-30)', () => {
+test('another way re-routes the link (2026-09-26), over hand pipes or w pipes alike (2026-09-30)', () => {
 	assert.equal(isStranded(pipes(['A', 'x'], ['x', 'B']), { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false, 'A-x-B by hand is a way');
-	const theirs = [{ a: 'A', b: 'x', laid: 'link' }, { a: 'x', b: 'B', laid: 'link' }];
-	assert.equal(isStranded(theirs, { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), true, 'pipes laid with another link carry only it');
+	const laidWithLink = [{ a: 'A', b: 'x', laid: 'link' }, { a: 'x', b: 'B', laid: 'link' }];
+	assert.equal(isStranded(laidWithLink, { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false, 'w pipes are a way too: held, the link waits; free, it takes them');
 });
 
 test('a way HELD by another link still counts: the link stays, down and blocked, rather than being deleted whole', () => {

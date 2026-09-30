@@ -103,14 +103,23 @@ test('the limit is ONE function (pipeCapacity, 1), and raising it is the one cha
 	assert.ok(shared.get('link-u') && shared.get('link-l'), 'at two, both links run the trunk -- the algorithm reads the limit rather than assuming one');
 });
 
-test('a pipe laid WITH a link carries only the link whose ends and pins it joins', () => {
+test('a link has FIRST CALL on the w pipes joining its own pins -- ahead of older links -- and others may use them when free', () => {
+	// ruled 2026-09-30: "W pipes dont remember who laid them - only that they are marked for destruction if the pipe is
+	// empty. Another pending link can use that pipe and hold it alive"
 	const laid = [withLink('A', 'w'), withLink('w', 'B')];
 	const pinned = { id: 'link-p', src: 'A', dst: 'B', via: ['w'] }, free = { id: 'link-f', src: 'A', dst: 'B' };
 	const both = assignRoutes(laid, [free, pinned], { rankOf: (id) => (id === 'link-f' ? 0 : 1) });
 	assert.deepEqual(both.get('link-p'), ['A', 'w', 'B'], 'its own legs carry the pinned link -- even though the other is older');
-	assert.equal(both.get('link-f'), null, 'the unpinned link may not use them: they join none of its stops');
-	// HEAL-05 in miniature: once the pinned link is gone, its leftover pipes carry NOTHING, so nothing heals over them
-	assert.equal(assignRoutes(laid, [free]).get('link-f'), null, 'a deleted link\'s pipes are no way for another link, so they are swept and leave no trace');
+	assert.equal(both.get('link-f'), null, 'so the older unpinned link waits');
+	assert.deepEqual(blockersOf(laid, [free, pinned], 'link-f', { rankOf: (id) => (id === 'link-f' ? 0 : 1) }), ['link-p'], 'blocked by it, not wayless');
+	// once the pinned link is gone its pipes are free, and the waiting link takes them (HEAL-05 leaves a trace: accepted)
+	assert.deepEqual(assignRoutes(laid, [free]).get('link-f'), ['A', 'w', 'B']);
+	// first call holds even while the caller is DOWN: its own legs wait for it to heal, and it blocks the link that wants them
+	const owner = { id: 'link-o', src: 'A', dst: 'B', via: ['w'] }, wants = { id: 'link-x', src: 'A', dst: 'w' };
+	const half = [withLink('A', 'w')];   // the owner's leg w-B is gone, so it is down
+	assert.equal(assignRoutes(half, [owner, wants]).get('link-o'), null, 'the owner is down');
+	assert.equal(assignRoutes(half, [owner, wants]).get('link-x'), null, 'and still has first call on A-w');
+	assert.deepEqual(blockersOf(half, [owner, wants], 'link-x'), ['link-o'], 'so it is what blocks the other link');
 });
 
 test('the preferred route ignores who holds a pipe; the BLOCKERS are the links holding a pipe on it', () => {

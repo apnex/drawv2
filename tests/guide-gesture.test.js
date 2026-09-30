@@ -160,3 +160,52 @@ test('a plain drag between a pair already linked reaches the hook, so the lab ca
 		assert.equal(calls.length, 1, 'before this, Input dropped it without a word (B72) and the hook never heard');
 	} finally { h.restore(); }
 });
+
+/*
+w ON A NODE -- ruled 2026-09-30: "We have no way to construct a direct link between two anchors now - I guess we need to
+enable the "w" key on the final anchor before we mouse up to activate pipes?" A node is never a pin, so it joins the
+route and not `via`: released there, it is the destination, reached with w, and its pipe is laid with the link.
+Only with a route hook -- the lab -- so production's `w` is unchanged.
+*/
+test('with a route hook, w pressed ON the destination node makes a direct link, reached with w', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		drag(h, a, b, [['w', 360, 0]]);
+		assert.equal(calls.length, 1);
+		assert.deepEqual([calls[0].stops, calls[0].pins, calls[0].endPressed, calls[0].pressed.w], [[a.id, b.id], [], 'w', true],
+			'a direct link, nothing pinned, its end reached with w');
+	} finally { h.restore(); }
+});
+
+test('with a route hook, w on a node the drag continues past is a hop the link routes over, never a pin', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [360, 240]]);
+		drag(h, a, c, [['w', 360, 0]]);
+		assert.deepEqual([calls[0].stops, calls[0].pins], [[a.id, b.id, c.id], []], 'b is a stop, not a pin');
+	} finally { h.restore(); }
+});
+
+test('PRODUCTION: w on a node still does nothing', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		h.input.onDown(over(a.id, 0, 0));
+		h.input.onMove(empty(360, 0));
+		h.input.onKeyDown(key('w'));
+		// mid-drag, the cursor moved on: had the node joined the route, the live preview would stop following the cursor
+		// (MEASURED: it froze at the node) -- read from what is drawn, since tests assert at the boundary, not on Input's
+		// internals (scan-writers)
+		h.input.onMove(empty(360, 240));
+		const live = h.drawn('#overlay', 'link-live')[0]?.attrs.d;
+		assert.ok(live, 'a live preview is drawn');
+		assert.equal(live, 'M0 0 L360 240', 'production\'s preview still runs straight from the source to the cursor');
+		h.input.onMove(over(b.id, 360, 0));
+		h.input.onUp(over(b.id, 360, 0));
+		assert.equal(h.model.all('link').length, 1, 'the drag still makes its link');
+		assert.equal(h.model.all('link')[0].via, undefined, 'and nothing is pinned on a node');
+	} finally { h.restore(); }
+});

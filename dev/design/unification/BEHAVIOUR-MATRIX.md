@@ -72,7 +72,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 <!-- BEGIN GENERATED: grid. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
 | state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link |
 |---|---|---|---|---|---|---|---|---|---|---|
-| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | . | . | . |
+| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | . | . |
 | pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | . | . | . |
 | pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . |
 | pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . |
@@ -81,8 +81,9 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | down | n/a | n/a | DEL-15 | . | HEAL-03 (reading) | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . |
 | blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 |
 | two g paths | . | ALT-02 | . | . | ALT-01 | . | . | . | . | . |
+| w path fed by g | . | . | . | WP-02 | . | . | . | . | . | WP-01 |
 
-33 rows: 33 built, 0 todo, 0 open.\
+36 rows: 36 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -96,6 +97,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | down | `?seed=cross` | The routed board with its centre deleted, so both links are down (DEL-01). |
 | blocked | `?seed=trunk` | Two links want one hand-laid trunk; the older holds it, so the younger is down, blocked by it. |
 | two g paths | blank | Anchors S and E placed with w, then two g drags between them: a four-pipe path above and a five-pipe path below. No link. |
+| w path fed by g | blank | The director's case: anchors A, B, C; a w path A-P1-P2-B; a g path from C joining P1; links A-B and C-B. A-B has first call on its w pipes, so C-B waits, blocked by it. |
 
 | gesture | what the author does |
 |---|---|
@@ -139,7 +141,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | HEAL-02 | down x draw: `g` on end | Drag from A to B, press g on B, and release there. | g on the end lays the pipe from A to B by hand, and no link is made; the down A-B heals over it. | DECISIONS: "Each drag action does one thing" (2026-09-30). The director asked, 2026-09-29, whether g on an existing anchor should differ from a plain mouseup: it does -- g lays a pipe, a mouseup makes a link. | ruled, built |
 | HEAL-03 | down x draw: mouseup on end | Drag from A, and release on B. | Nothing is made, and the notice says why: a plain drag lays no pipes, and A-B already has an unpinned link, which a pair takes one of. | DECISIONS: "Each drag action does one thing" (2026-09-30). The proposer's reading that a pair takes one unpinned link here too (B72). | reading, built |
 | HEAL-04 | down x draw: `w` bend | Drag from A, press w above the old centre, and release on B. | A new link, pinned at the new anchor, is made in addition to the down A-B, which stays down. w laid the pipe into its anchor and the release on B, after a key, laid the last one -- both with the new link and carrying only it -- so the new link is up. | The director, 2026-09-29: "w pins and draws an entirely new link in addition to the broken one". DECISIONS: "A release lays the final pipe whenever a key was pressed before it" (2026-09-30). | ruled, built |
-| HEAL-05 | down x draw: `w` bend | Drag from A, press w above the old centre, release on B, then delete the new link. | A-B stays down while the w link exists, and deleting the w link leaves no trace: its anchor and pipes go, and both old links are still down. | The director, 2026-09-29: "if I draw a new link with w - this should not be the healed link". DECISIONS: "Pipes carry one link each, for now" (2026-09-30). DECISIONS: "Each drag action does one thing" (2026-09-30). | ruled, built |
+| HEAL-05 | down x draw: `w` bend | Drag from A, press w above the old centre, release on B, then delete the new link. | A-B stays down while the w link exists, which has first call on its pipes. Deleting the w link frees them, and A-B, waiting on that way, takes them and heals: the w anchor and both pipes stay, now carrying A-B. | DECISIONS: "A w pipe goes when no link is on it or resolves onto it" (2026-09-30). The director accepted that this case leaves a trace ("Yes: nothing recorded"), amending "Draw-then-delete leaves no trace" (2026-09-25) for it. | ruled, built |
 | CAP-01 | routed x draw: mouseup on end | Drag from A, and release on C. | A link from A to C is made and lays no pipes. The only way, through the centre, is held by the two links already there, so it is made down, and, selected as it is made, it says the two links hold its way. | DECISIONS: "Each drag action does one thing" (2026-09-30). DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
 | CAP-02 | blocked x draw: `w` bend | Drag from A, press w on t1, and release on B. | The new link is made, pinned at t1, but the pipe from A to t1 already carries the upper link, and a pipe carries one link: it is made down, and, selected as it is made, it says the upper link holds its way. | DECISIONS: "Each drag action does one thing" (2026-09-30). DECISIONS: "Pipes carry one link each, for now" (2026-09-30). | ruled, built |
 | CAP-03 | blocked x select link | Click the lower link, which is down. | The lower link is selected, the upper link blocking its way is highlighted orange, and the notice says the lower link is down because the upper one holds its way. | DECISIONS: "Selecting a blocked link highlights the link blocking it" (2026-09-30). | ruled, built |
@@ -150,6 +152,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | GST-02 | routed x draw: `g` bend | Drag from A, press g off the existing way, and release on C without a key. | The drag lays only pipes, so the release on C lays the last pipe into it: the g anchor and two hand pipes, and no link. | DECISIONS: "In a drag that lays only pipes, a release on an anchor lays the last pipe into it" (2026-09-30). | ruled, built |
 | ALT-01 | two g paths x draw: mouseup on end | Drag from S, and release on E. | A link is made and lays no pipes: it runs the shorter path, the four pipes above, and the path below is its alternate. | DECISIONS: "Each drag action does one thing" (2026-09-30). DECISIONS: "A g drag with a shorter free way makes the link on that way" (2026-09-30), for the director's alternate-path case. | ruled, built |
 | ALT-02 | two g paths x delete `g` hop | Make the link as in ALT-01, then delete the middle anchor of the path above. | The link moves onto the path below and stays up: that is what the alternate is for. | DECISIONS: "Each drag action does one thing" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26). | ruled, built |
+| WP-01 | w path fed by g x select link | Click C-B, which is down. | C-B is blocked, not wayless: its way runs over A-B's w pipes, which A-B has first call on. The notice says A-B holds its way. | DECISIONS: "A w pipe goes when no link is on it or resolves onto it" (2026-09-30). | ruled, built |
+| WP-02 | w path fed by g x delete link | Select A-B on its first leg, and press Delete. | C-B takes over the freed w path and comes up, drawn through P1 and P2. The pipes it runs over, and P2, stay; A's lone pipe, which no link is on, goes with A. | The director's report, 2026-09-30: "If I delete link A-B - I would expect C-B to route over the top of the now-free path". DECISIONS: "A w pipe goes when no link is on it or resolves onto it" (2026-09-30). | ruled, built |
+| DIR-01 | routed x draw: `w` bend | Drag from A, press w on node C, and release there. | A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop. | DECISIONS: "w may be pressed on a node as the last hop" (2026-09-30). | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
 <!-- END GENERATED: rows -->
 
