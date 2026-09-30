@@ -577,7 +577,8 @@ The FR3-v4 adversary found this case (its defect 4).\
 It follows literally from "ends plus pins, with the cheapest way between them", because each leg is routed on its own.\
 Asked, for link A-B bent at w whose cheapest way from A to w after pipe A-w is deleted runs through B (A-u-B-w-B), "is that allowed?", the director chose "Allow it" (the proposer's recommendation) over "No, the link shows down" and "Route around its own points".\
 The cost shown with it (MEASURED, FR3-v4 adversary fuzz): a new link landing on a point such a link passes twice cuts only one of the two passes (140 landings).\
-Flows along such a link work because flows may revisit (ruled above).
+Flows along such a link work because flows may revisit (ruled above).\
+AMENDED 2026-09-30: for a route that would run the SAME PIPE twice -- out and back, as B-w-B here -- the later ruling "A link never runs the same pipe twice" replaces this one, confirmed by the director (RULESET-AUDIT D2); passing a point twice along different pipes stays allowed.
 
 **A join that would make a loop does not happen -- ruled 2026-09-26, an exception to "deleting one of three links at a junction joins the two that remain".**\
 Asked, for 'top' A-u-P and 'bottom' A-v-P, where E is drawn to P and then deleted, "Should they still join?"\
@@ -1218,6 +1219,7 @@ The director's report: "if I delete an anchor that has pinned points, the entire
 Asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no pipe from P1 to P3, "What should happen to the link?", the director chose "Delete the whole link" over "Stay, shown down".\
 The option as worded: the link goes, with its `w` anchors and dashed pipes; `g` anchors and solid pipes stay; undo brings it back.\
 With another way open the link still re-routes, as ruled 2026-09-26; measured working on the `detour` board.\
+AMENDED 2026-09-30: no longer -- a pinned link lives and dies with its pins, so deleting a pin deletes the link whatever ways are left ("A pinned link lives and dies with its pins", below).\
 Built as a fourth planner interface, `isStranded(link, model)`, which is asked only about a link whose pin the transaction deleted, is judged over the pipes that survive the edit, and is never asked in production.\
 The removal is in the same transaction, so the orphan sweep takes the link's `w` anchors and one undo restores all of it.\
 CORRECTED, the option's "undo brings it back": undo restores the link and every anchor, but not its pipes, which are session state outside the planner's log until the format batch stores them (F6).\
@@ -1306,9 +1308,12 @@ So:
 - a link with no free way is made down, and names the link holding its way when one does.
 
 Proposer's reading, not ruled: each action lays at most the pipe INTO its own stop -- `w` and `g` from the previous stop, a plain release none -- so a `w` link released plainly on its destination routes to it over existing pipes, and to lay that last pipe the author presses `w` or `g` on the destination.\
+CONFIRMED 2026-09-30 for the keys: each `w` or `g` lays the pipe from the previous stop to its own; the release's part was replaced the same day ("A release lays the final pipe whenever a key was pressed before it").\
 It follows the director's "dynamically route from that first w pin to ... the destination", and it keeps every board drawn with a `w` pressed at its end, as the `w`-chain is, unchanged.\
 Proposer's reading, not ruled: `g` may be pressed on an existing node, so a pipe can end at one; `w` still may not, since a pin is always a waypoint.\
+CONFIRMED 2026-09-30 for `g`: pressed on a node, the node is a stop and the hand pipe ends there; `w` on a node was ruled a stop, never a pin, the same day.\
 Proposer's reading, not ruled: a plain drag between two anchors that an unpinned link already joins makes nothing, and says so, because a pair takes one unpinned link (B72); before this the drag was dropped without a word.\
+CONFIRMED 2026-09-30 by the director (matrix row HEAL-03): nothing is made, and the notice says why.\
 What it replaces: `GUIDE-ANCHORS.md` T3 ("the first bend key decides") is taken and widened -- any drag without `w` makes no link.\
 The "healed" notice for a `g` drag an older down link took (HEAL-01) goes, because a `g` drag makes no link to refuse: its pipes are laid, and the down link heals over them.
 
@@ -1343,6 +1348,7 @@ The director: "We have no way to construct a direct link between two anchors now
 MEASURED: `w` on a final waypoint already made a direct link with its pipe; on a node it did nothing, by the proposer's reading that `w` may not be pressed on a node because a pin is always a waypoint.\
 So `w` on a node makes the drag a link drag and a hop into that node, laid with the link; released there, the node is the link's destination and nothing is pinned on it.\
 Proposer's reading, not ruled: `w` on a node the drag then continues past is a hop the link routes over but does not pin, since a node cannot be a pin.\
+CONFIRMED 2026-09-30 by the director: one link A-C through N, which it passes but does not pin -- not two links chained there, as a digit key makes.\
 Only with a route hook -- the lab -- so production's `w` is unchanged.
 
 **A link never runs the same pipe twice; hairpins wait for concurrent links on pipes -- ruled 2026-09-30.**\
@@ -1352,7 +1358,8 @@ MEASURED at the router: only a pin left on a spur produces one -- the one way on
 Asked "Should a link be allowed to run the same pipe twice?", the director chose "No: never the same pipe twice" (the proposer's recommendation): "I reliased that hairpinning is something we should bundle with parallel concurrency at a later stage on pipes".\
 So a way that would double back is no way: the link is down, drawn through its pins, and heals when a way through appears; and a link that just lost a pin with nothing else left is deleted whole (2026-09-29), since a hairpin no longer counts as another way.\
 Held with concurrent links on a pipe, as B256.\
-Asked in the same exchange, and confirmed by the director as correct: a link that loses a `w` anchor and has another way re-routes over it, stays the older link, and keeps blocking a younger link that wants those pipes -- a delete re-routes the link whose pin went, and the protection against moving an existing link belongs to drags.
+Asked in the same exchange, and confirmed by the director as correct: a link that loses a `w` anchor and has another way re-routes over it, stays the older link, and keeps blocking a younger link that wants those pipes -- a delete re-routes the link whose pin went, and the protection against moving an existing link belongs to drags.\
+AMENDED 2026-09-30: reversed -- a link that loses a pin is deleted whole, whatever ways remain ("A pinned link lives and dies with its pins", below).
 
 **An older link may supplant a younger link's route: age decides every time routes are worked out -- ruled 2026-09-30.**\
 The director asked: "Are you saying that an older path can supplant an already routed new one?"\
@@ -1434,4 +1441,17 @@ Asked how a menu should open (DG4), the director: "What I was thinking with a co
 So DG4 is withdrawn -- a fixed panel is not opened by a gesture -- and stage 7 of `dev/design/input/GESTURE-SYSTEM.md` is not built now.\
 What it would read is already in place: the bindings, their conditions over the situation, and the action labels (stages 4 to 6).\
 Parked as B265, with the director opening that design as its revival trigger.
+
+**A pinned link lives and dies with its pins -- ruled 2026-09-30, reversing re-routing when a pin is deleted.**\
+Asked, for a link whose pin is deleted and whose only remaining way an older link is using, whether it stays down or is deleted, the director answered: "I'm thinking it should be deleted - a deliberate pin is a link's intent, and if that intent is removed, the link no longer serves its purpose - does this make sense?".\
+The proposer pointed out that the reason reaches further -- a free way used to save such a link (matrix row DEL-02, and the director's confirmation of 2026-09-30 that it re-routes) -- and asked whether it applies only when the way left is taken, or whenever a pin is deleted; the director chose "Whenever a pin is deleted" (the proposer's recommendation).\
+So deleting any pin of a link deletes the link, whatever ways are left; its `w` anchors go with it unless a hand pipe still uses them, and one undo restores it.\
+It amends the 2026-09-29 ruling "A link that loses a pin with no other way is deleted whole" (which kept re-routing when another way was open) and reverses matrix row DEL-02.\
+Losing an anchor that is not a pin -- a `g` guide -- does not delete the link: it stays, shown down, and heals (below).
+
+**Three readings of the delete and drag rules, confirmed -- 2026-09-30.**\
+Asked one at a time, the director confirmed the proposer's readings:
+- matrix row DEL-09: deleting a `g` guide a pinned link runs through leaves the link, shown down through its pins, keeping the pipes on its path to heal onto -- "Stays, shown down";
+- matrix row DEL-14: when deleting pin P1 deletes the link, its other pin P2 survives as a plain anchor if a hand pipe still joins it to a guide -- "P2 stays";
+- RULESET-AUDIT D2: the later "never the same pipe twice" replaces the earlier "may pass a point twice" for going out and back along one pipe -- "Yes, 30 Sept replaces it".
 

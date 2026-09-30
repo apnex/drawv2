@@ -239,3 +239,7 @@ The lab root wires it and goes back to wiring only.
 - **Not in T3.** I4, the generated help overlay, stays with B163 and H10.34; `RECOGNIZE` keeps its own dispatcher.
 - **Findings closed:** F9 (its Input half), F11, F12 and F15.
 
+**D2 settled, and a ruling that followed, 2026-09-30.**
+- **F4 closed:** the director confirmed that ruling #85 ("never the same pipe twice") replaces #20 for a route that would run one pipe out and back; #20 carries the AMENDED line.
+- **A pinned link lives and dies with its pins.** Asked about a proposer's reading -- a link whose pin is deleted, and whose only remaining way an older link holds -- the director ruled that deleting any pin deletes the link, whatever ways remain. The network's `isStranded` now answers yes for every link that lost a pin, and the route search behind the old answer is gone. Matrix row DEL-02 is reversed; DEL-09, DEL-14 and HEAL-03 are confirmed and ruled.
+

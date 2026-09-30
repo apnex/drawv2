@@ -99,3 +99,20 @@ test('the plugin builds ONE object that satisfies both consumers', () => {
 	const { m: authority, log } = board();
 	assert.equal(commit(authority, log, request, 'lab', 'lab', { network }).ok, true, 'and the planner accepts the same object');
 });
+
+/*
+A PINNED LINK LIVES AND DIES WITH ITS PINS -- ruled 2026-09-30, widening "a link that loses a pin with no other way is
+deleted whole" (2026-09-29): "a deliberate pin is a link's intent, and if that intent is removed, the link no longer
+serves its purpose". The planner asks the network only about a link whose pin the edit deleted, and the answer is yes
+whatever ways remain -- a free one, one another link holds, or none.
+*/
+test('the network strands every link that lost a pin, whatever ways remain', () => {
+	const pipes = createPipeSet();
+	pipes.lay('node-00000a', 'node-00000b', 'hand');   // a way, and a free one
+	const network = createNetwork(pipes, () => 0);
+	const m = new Model();
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	assert.equal(network.isStranded({ id: 'link-000001', src: 'node-00000a', dst: 'node-00000b', via: [] }, m), true);
+});
+

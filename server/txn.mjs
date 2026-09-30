@@ -87,10 +87,9 @@ production's, and tests/sweep-references.test.js holds that.
                                  PIPES LAID WITH g, so w anchors go with their last link, and hand pipes reach the sweep
                                  through `alsoReferenced`. Production keeps its rule until promotion: it has no pipes
                                  and no g, and there these two protections are the only ones an author's anchor has.
-  isStranded(link, model)        whether a link that LOST A PIN to this transaction is left with no way, and so goes
-                                 whole. Ruled 2026-09-29: for a w-chain S-P1-P2-P3-E with P2 deleted and no other way,
-                                 the director chose "Delete the whole link" over "Stay, shown down". "No way" means no
-                                 route over the pipes, which only the network can see. Production: never.
+  isStranded(link, model)        whether a link that LOST A PIN to this transaction goes whole. Ruled 2026-09-29 for a
+                                 link left with no way; widened 2026-09-30 -- a pinned link lives and dies with its
+                                 pins, so the network answers yes whatever ways remain. Production: never.
 */
 const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded'];
 const KEEPS_ORPHAN_AS_RULED = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly;

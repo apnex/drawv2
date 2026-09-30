@@ -913,32 +913,17 @@
 					"Delete"
 				]
 			],
-			"intent": "The pin is dropped and the link re-routes the other way, through w6 and w7, and stays up.",
+			"intent": "The pin goes, and the link with it: a pinned link lives and dies with its pins. The hand-laid way below, and its anchors, stay.",
 			"expect": {
-				"links": 1,
+				"links": 0,
 				"down": 0,
-				"pins": {
-					"link-000001": 0
-				},
-				"through": {
-					"link-000001": [
-						[
-							-240,
-							300
-						],
-						[
-							240,
-							300
-						]
-					]
-				},
 				"anchors": 2,
 				"pipes": {
 					"hand": 3,
 					"link": 0
 				}
 			},
-			"rule": "DECISIONS: \"Deleting a point a link bends at removes that bend from the link\" (2026-09-26).",
+			"rule": "DECISIONS: \"A pinned link lives and dies with its pins\" (2026-09-30), which reversed re-routing when a pin is deleted.",
 			"standing": "ruled",
 			"built": "yes"
 		},
@@ -1139,8 +1124,8 @@
 					"hand": 0
 				}
 			},
-			"rule": "The proposer's reading, extending the director's description of a down dynamic link to a pinned one (DECISIONS, 2026-09-29).",
-			"standing": "reading",
+			"rule": "DECISIONS: \"Three readings of the delete and drag rules, confirmed\" (2026-09-30) -- \"Stays, shown down\".",
+			"standing": "ruled",
 			"built": "yes"
 		},
 		{
@@ -1300,8 +1285,8 @@
 					"link": 0
 				}
 			},
-			"rule": "The proposer's reading of two rulings together: a link that loses a pin with no other way is deleted whole, and only links and pipes laid by hand keep an anchor (DECISIONS, 2026-09-29).",
-			"standing": "reading",
+			"rule": "DECISIONS: \"A pinned link lives and dies with its pins\" and \"Three readings of the delete and drag rules, confirmed\" (2026-09-30) -- \"P2 stays\".",
+			"standing": "ruled",
 			"built": "yes"
 		},
 		{
@@ -1509,8 +1494,8 @@
 					[]
 				]
 			],
-			"standing": "reading",
-			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). The proposer's reading that a pair takes one unpinned link here too (B72).",
+			"standing": "ruled",
+			"rule": "DECISIONS: the reading under \"Each drag action does one thing\", CONFIRMED 2026-09-30 -- nothing is made, and the notice says why.",
 			"intent": "Nothing is made, and the notice says why: a plain drag lays no pipes, and A-B already has an unpinned link, which a pair takes one of.",
 			"expect": {
 				"links": 2,

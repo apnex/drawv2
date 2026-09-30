@@ -25,7 +25,7 @@ PURE. The check computes over a copy of the pipe list and returns the legs to la
 The caller lays them only after the planner accepts the link, so a refused link leaves no pipes.
 */
 
-import { pipeKey, assignRoutes, preferredRoute, blockersOf } from './pipes.mjs';
+import { pipeKey, assignRoutes, blockersOf } from './pipes.mjs';
 import { pairHolders } from '../model/invariants.mjs';
 import { kindOf, pipeFor } from './grammar.mjs';
 
@@ -136,8 +136,6 @@ pins that should have gone. Judged against the model the planner hands over, tho
 after the delete, so they shelter nothing, and the pins are swept as the product always swept a deleted
 link's bends.
 */
-// whether an anchor exists in a model -- a pipe survives an edit only while both of its ends do (SD7)
-const anchorIn = (model) => (id) => !!(model.get('node', id) || model.get('waypoint', id));
 
 export function pipeAnchors(net, model) {
 	// read from the network view, as drawing and the sweep are (RULESET-AUDIT T2): the pipes this model can see, and
@@ -153,30 +151,6 @@ export function pipeAnchors(net, model) {
 	return ids;
 }
 
-/*
-Whether a link that LOST A PIN is left with no way -- the network's `isStranded`, asked by the planner, ruled 2026-09-29.
-
-Asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no other way, the director chose "Delete the
-whole link" over "Stay, shown down": the link goes, and with it its w anchors and the pipes laid with
-it, while g anchors and hand pipes stay. With another way open it re-routes (ruled 2026-09-26).
-
-Judged over the pipes that SURVIVE in the model the planner hands over -- both ends standing -- because
-a pipe to an anchor the edit deletes is not a pipe. A pipe laid with some other link counts: routed over
-it, this link would carry it, and the sweep keeps what a link carries. Sweeping only ever removes pipes,
-so no route here means none after the sweep either.
-
-The planner asks only about a link whose pin the edit deleted. Losing a route any other way -- the
-g anchor it passed deleted, say -- leaves the link DOWN, drawn dotted and ready to heal.
-*/
-export function isStranded(pipes, link, model) {
-	const alive = anchorIn(model);
-	/*
-	The PREFERRED route, ignoring who holds a pipe -- the proposer's reading, recorded 2026-09-30: a way another
-	link holds is a way that is full, not a way that is gone, so the link stays (down, and blocked) and heals when
-	the holder goes. Only pipes it may use count: a pipe laid with another link carries only that link.
-	*/
-	return !preferredRoute(pipes.filter(({ a, b }) => alive(a) && alive(b)), link);
-}
 
 /*
 What a REFUSED drag keeps -- the director's report (2026-09-29): a refused `g` drag threw away the `g`

@@ -3,7 +3,7 @@ The incubated whole-route check for `g` -- network/guide.mjs.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { judgeDrag, pipeAnchors, isStranded } from '../network/guide.mjs';
+import { judgeDrag, pipeAnchors } from '../network/guide.mjs';
 import { assignRoutes, deriveNetwork } from '../network/pipes.mjs';
 import { createNetworkView } from '../network/view.mjs';
 
@@ -185,38 +185,6 @@ test('a pipe laid WITH A LINK references its anchors only while a link in that m
 
 
 
-/*
-A LINK LEFT WITH NO WAY after losing a pin is deleted whole -- ruled 2026-09-29. Asked, for a w-chain
-S-P1-P2-P3-E with P2 deleted, the director chose "Delete the whole link" over "Stay, shown down".
-
-`isStranded` answers "no way" for the planner, judged over the pipes that SURVIVE in the model it is
-handed: a pipe to an anchor this edit deletes is not a pipe (SD7), so it can give no way. A pipe laid
-with another link still counts -- a link routed over it would carry it, so the sweep would keep it.
-*/
-test('a link is stranded when no route over the SURVIVING pipes runs through its pins to its ends', () => {
-	// S-P1-P2-P3-E built with g hops, so its pipes are hand-laid; P2 is then deleted, and the link pins P1 and P3
-	const chain = pipes(['S', 'P1'], ['P1', 'P2'], ['P2', 'P3'], ['P3', 'E']);
-	const link = { src: 'S', dst: 'E', via: ['P1', 'P3'] };
-	assert.equal(isStranded(chain, link, model(['S', 'P1', 'P3', 'E'])), true, 'the only way P1 to P3 ran through P2, which is gone -- its pipes must not count');
-	assert.equal(isStranded(chain, link, model(['S', 'P1', 'P2', 'P3', 'E'])), false, 'the same pipes with P2 still standing are a way');
-	// a w pipe nobody has first call on is a way for any link (2026-09-30): pipes laid for P2 still count
-	const laidForP2 = chain.map((x) => ({ ...x, laid: 'link' }));
-	assert.equal(isStranded(laidForP2, link, model(['S', 'P1', 'P2', 'P3', 'E'])), false, 'P1-P2-P3 are free w pipes, so they are a way');
-});
-
-test('another way re-routes the link (2026-09-26), over hand pipes or w pipes alike (2026-09-30)', () => {
-	assert.equal(isStranded(pipes(['A', 'x'], ['x', 'B']), { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false, 'A-x-B by hand is a way');
-	const laidWithLink = [{ a: 'A', b: 'x', laid: 'link' }, { a: 'x', b: 'B', laid: 'link' }];
-	assert.equal(isStranded(laidWithLink, { src: 'A', dst: 'B', via: [] }, model(['A', 'B', 'x'])), false, 'w pipes are a way too: held, the link waits; free, it takes them');
-});
-
-test('a way HELD by another link still counts: the link stays, down and blocked, rather than being deleted whole', () => {
-	// the proposer's reading, recorded 2026-09-30: a held way is a way that is full, not a way that is gone
-	const trunk = pipes(['A', 't'], ['t', 'B']);
-	const holder = { id: 'link-h', src: 'A', dst: 'B' };
-	assert.equal(isStranded(trunk, { id: 'link-y', src: 'A', dst: 'B', via: [] }, model(['A', 't', 'B'], [holder])), false);
-});
-
 test('a refused link drag keeps its g anchors and their hand pipes, and drops what existed only for the link', () => {
 	// X runs A-p-q-B by hand. A w drag A -g G- -w P- then g on B lays a hand path A-G-P-B, three pipes, which ties X's
 	// own way and wins the tie ('G' sorts before 'p'): X would move, so the drag is refused (2026-09-30). What it
@@ -230,12 +198,6 @@ test('a refused link drag keeps its g anchors and their hand pipes, and drops wh
 	assert.deepEqual(v.keep, ['G'], 'the g anchor survives; the w anchor does not');
 	assert.deepEqual(laid(v), ['A-G:hand'], 'its hand pipe to A survives; the pipes to P go with P');
 	assert.match(v.notice, /g anchors and their pipes are kept/);
-});
-
-test('a link that lost a pin, whose only way left would double back, is stranded (2026-09-30)', () => {
-	// S-P was its own leg; with Q gone, the only way from P to E runs back over S-P, then S-X-E
-	const left = [{ a: 'S', b: 'P', laid: 'link' }, ...pipes(['S', 'X'], ['X', 'E'])];
-	assert.equal(isStranded(left, { src: 'S', dst: 'E', via: ['P'] }, model(['S', 'P', 'X', 'E'])), true, 'a hairpin is not another way');
 });
 
 test('the w that placed the source lays the final pipe WITH the link; a g in the drag cancels it (2026-09-30)', () => {

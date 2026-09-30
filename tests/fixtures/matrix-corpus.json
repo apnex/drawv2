@@ -57,23 +57,8 @@
 	},
 	"DEL-02": {
 		"notice": "v2 delete",
-		"links": [
-			{
-				"id": "link#1",
-				"src": "node#1",
-				"dst": "node#2",
-				"via": [],
-				"down": false
-			}
-		],
-		"tabLinks": [
-			{
-				"id": "link#1",
-				"src": "node#1",
-				"dst": "node#2",
-				"via": []
-			}
-		],
+		"links": [],
+		"tabLinks": [],
 		"anchors": [
 			{
 				"id": "waypoint#1",
@@ -114,23 +99,8 @@
 			}
 		],
 		"selected": [],
-		"stretches": [
-			{
-				"id": "link#1",
-				"keys": [
-					"-240,300|-480,0",
-					"-240,300|240,300",
-					"240,300|480,0"
-				]
-			}
-		],
-		"paths": {
-			"link#1": {
-				"d": "M-480 0 L-252.494 284.383 Q-240 300 -220 300 L220 300 Q240 300 252.494 284.383 L480 0",
-				"stroke": "rgb(79, 195, 247)",
-				"dotted": false
-			}
-		}
+		"stretches": [],
+		"paths": {}
 	},
 	"DEL-03": {
 		"notice": "v2 delete",
