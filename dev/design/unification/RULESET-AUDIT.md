@@ -187,3 +187,23 @@ The lab root wires it and goes back to wiring only.
   One mutation test's needle was re-pointed, because its instructions name the planner's import line and T1 changed it.
 - **Side effect.** The lab root fell from 178 to 174 of its 180 code lines (F14 eased, not closed).
 - **Findings closed:** F9 in its injection half; the route-hook branches and drag flags in Input remain, for T3.
+
+**T4 landed, 2026-09-30 -- approved by the director ("approved for T4").**
+- **What changed.** One question decides B72 before a link exists: `pairHolders(link, among, model)` in `model/invariants.mjs`, beside the invariant and the capacity it reads.
+  It returns the straight links holding the pair against a link, and is empty when there is room.
+  Input's release and replug gates, `judgeDrag`, and the two cascades that strip a link's last bend (`server/txn.mjs`, `app/src/commands.js`) all ask it.
+  Before, only the invariant read `straightCapacity`; the other five each assumed a capacity of one in their own way.
+- **The three definitions of unpinned.** They reduce to one predicate asked of the link each site proposes.
+  The planner and `judgeDrag` propose the link as it is stored, whose `via` is its pins.
+  Input proposes every stop drawn, which is the same link in production; in the lab the route hook judges by pins itself, so behaviour is unchanged.
+- **Guard.** `tests/pair-capacity.test.js` copies the tree, raises `straightCapacity` to 2 in the copy, and drives all six sites; each must then admit a second straight link.
+  Before T4 it failed on five of the six, and only the invariant followed.
+- **Mutation proof.** Each of the six sites put back on its own capacity-1 rule is caught by the guard, which names that site.
+  The predicate made off by one fails 9 behaviour tests.
+- **Coverage added.** The replug gate had no test that drove it; three now do, through the real gesture.
+- **Behaviour.** The gate passes 1285 of 1285, with the matrix file untouched and no expected outcome edited.
+  The B72, B80 and B81 tests of each site pass unedited.
+- **Vocabulary.** `isStraight` and `pairKey` are private again: every caller used them to decide the pair rule, and scan-layers L10 refused them as exports the planner no longer uses.
+  The undo label in `commands.js` tests `via` itself, because it names the entry rather than deciding the rule.
+- **Remaining.** `model/referential.mjs` keeps its own pair key for the duplicate-bend check (RULESET section 5, "the pair key"); it compares pairs for equality only, and is outside T4.
+- **Findings closed:** F7.

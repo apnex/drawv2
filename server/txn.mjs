@@ -33,7 +33,7 @@ import { groupAfterRemoval, collectionCap } from '../engine/policy.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
-import { violations, isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';
+import { violations, collapseAtWaypoint, pairHolders } from '../model/invariants.mjs';
 import { CAPTION_MAX } from '../model/limits.mjs';
 import { resolveAnchor } from './anchor.mjs';
 
@@ -556,11 +556,9 @@ function planDel(model, { kind, id }) {
 			if (link.src === id || link.dst === id) dying.add(link.id);
 			else stripped.push(link);
 		}
-		const straightPairs = new Set();
-		for (const l of model.all('link')) {
-			if (dying.has(l.id) || !isStraight(l)) continue;
-			straightPairs.add(pairKey(l));
-		}
+		// the document as the strip leaves it, judged by the one predicate (RULESET-AUDIT T4): a stripped link replaces
+		// itself here, and a deleted one leaves, so each strip is judged after the ones before it
+		let standing = model.all('link').filter((l) => !dying.has(l.id));
 
 		for (const link of model.linksAt(id)) {
 			if (dying.has(link.id)) {
@@ -570,12 +568,14 @@ function planDel(model, { kind, id }) {
 		}
 		for (const link of stripped) {
 			const remaining = link.via.filter((w) => w !== id);
-			if (remaining.length === 0 && straightPairs.has(pairKey(link))) {
+			const after = { ...link, via: remaining };
+			if (pairHolders(after, standing, model).length) {
 				ops.push({ op: 'del', kind: 'link', id: link.id });
 				inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
+				standing = standing.filter((l) => l.id !== link.id);
 				continue;
 			}
-			if (remaining.length === 0) straightPairs.add(pairKey(link));
+			standing = standing.map((l) => (l.id === link.id ? after : l));
 			ops.push({ op: 'set', kind: 'link', id: link.id, patch: { via: remaining } });
 			inverse.unshift({ op: 'set', kind: 'link', id: link.id, patch: { via: [...link.via] } });
 		}

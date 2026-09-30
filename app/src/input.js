@@ -40,7 +40,7 @@ import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, 
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
-import { isStraight, splitAtBend } from '../../model/invariants.mjs';
+import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/index.mjs';
@@ -172,11 +172,9 @@ const GESTURES = {
 				const newDst = ctx.end === 'dst' ? target.id : link.dst;
 				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
 				// commit a genuine retarget. A routed link may join a pair that already has links;
-				// a straight one may only join a pair that has no straight link yet (B72, B80).
-				const routed = !isStraight(link);
-				const straightExists = i.model.linksBetween(newSrc, newDst)
-					.some((l) => l.id !== ctx.linkId && isStraight(l));
-				if (target.id !== wasAt && (routed || !straightExists)) {
+				// a straight one only a pair with room for it (B72, B80) -- the one predicate (RULESET-AUDIT T4)
+				const admitted = !pairHolders({ ...link, src: newSrc, dst: newDst }, i.model.linksBetween(newSrc, newDst), i.model).length;
+				if (target.id !== wasAt && admitted) {
 					i.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
 				}
 			}
@@ -258,9 +256,11 @@ const GESTURES = {
 			// one already exists -- not whether anything does. Keying it on `linkBetween` meant a
 			// direct link became impossible the moment a routed one was drawn, which made the
 			// order a person happened to draw in decide what they could have.
-			const straightExists = i.model.linksBetween(ctx.src.id, dst).some(isStraight);
+			// judged on every stop DRAWN, pins and guides: with no route hook they are the same, and with one the hook
+			// judges by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
+			const admitted = !pairHolders({ src: ctx.src.id, dst, via: route }, i.model.linksBetween(ctx.src.id, dst), i.model).length;
 			// with a route hook (the lab) a duplicate reaches it too, so the author is told why nothing is made
-			if (dst && srcAlive && dst !== ctx.src.id && (route.length || !straightExists || (i.routeHook && !evt.shiftKey))) {
+			if (dst && srcAlive && dst !== ctx.src.id && (admitted || (i.routeHook && !evt.shiftKey))) {
 				/*
 				The route hook sees the whole drawn route before anything commits, and may refuse it -- a guide
 				the fewest-pipes route would skip is not a link worth committing. A refusal commits nothing and

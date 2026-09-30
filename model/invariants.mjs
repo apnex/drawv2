@@ -51,9 +51,37 @@ filed for, so the module that owns the rule owns the words it is written in.
 
 `pairKey` orders the endpoints because a link from a to b joins the same pair as one from b to a;
 callers that key a Map on a pair need that and would otherwise each remember to sort.
+
+PRIVATE AGAIN since T4 (RULESET-AUDIT): every caller that used these words used them to decide the pair rule, and now
+asks `pairHolders` instead, so the words went back to the one module that writes the rule.
 */
-export const isStraight = (l) => !l.via || l.via.length === 0;
-export const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
+const isStraight = (l) => !l.via || l.via.length === 0;
+const pairKey = (l) => (l.src < l.dst ? `${l.src}|${l.dst}` : `${l.dst}|${l.src}`);
+
+/*
+B72, ASKED -- the straight links holding a pair against this link: EMPTY when the pair has room for it. ONE HOME for
+pair capacity (RULESET-AUDIT T4, F7).
+
+The invariant below REPORTS a pair over its capacity; every place that must decide BEFORE a link exists asks this:
+Input's release and replug gates, the network's `judgeDrag`, and the two cascades that strip a link's last bend
+(server/txn.mjs, app/src/commands.js). Before T4 those five each assumed a capacity of one in their own way, and only the
+invariant read `straightCapacity` -- so configuring the limit would have changed what the planner accepts and nothing
+else. tests/pair-capacity.test.js raises it in a copy of the tree and drives all six.
+
+It answers WHO rather than yes or no, because the network's notice names the link already there ("link-000001 already
+joins these two"); the gates and the cascades ask whether the answer is empty.
+
+`among` is the links to judge against -- a caller that holds a narrower or a projected set passes it (the cascades
+judge the document as their strip leaves it). A link never counts against itself, so a replug is judged on the
+others. `model` is handed to the capacity, which will read the endpoints' kinds once it is configurable.
+*/
+export function pairHolders(link, among, model = null) {
+	if (!isStraight(link)) return [];
+	const key = pairKey(link);
+	const holders = among.filter((l) => l.id !== link.id && isStraight(l) && pairKey(l) === key);
+	const [a, b] = key.split('|');
+	return holders.length < straightCapacity(model, a, b) ? [] : holders;
+}
 
 /*
 B210 -- SPLIT a link at one of its bends, so that linking to a bend makes a junction.

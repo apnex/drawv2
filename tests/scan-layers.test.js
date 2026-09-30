@@ -319,7 +319,7 @@ const MUTANTS = [
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	{ id: 'A5', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { violations } from './invariants.mjs';\n" },
 		{ file: 'server/txn.mjs', replace: ["import { projection, requireNetwork, refuseStrayOptions } from '../model/model.mjs';", "import { projection, requireNetwork, refuseStrayOptions } from '../model/model.mjs';\nimport { violations } from '../model/index.mjs';"] },
-		{ file: 'server/txn.mjs', replace: ["import { violations, isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';", "import { isStraight, pairKey, collapseAtWaypoint } from '../model/invariants.mjs';"] }] },
+		{ file: 'server/txn.mjs', replace: ["import { violations, collapseAtWaypoint, pairHolders } from '../model/invariants.mjs';", "import { collapseAtWaypoint, pairHolders } from '../model/invariants.mjs';"] }] },
 	/*
 	K2a: the second edit is gone. It existed only to keep L10 quiet -- `model/index.mjs` was in the
 	planner's unused list, so a new re-export there needed listing too, or the mutant would have

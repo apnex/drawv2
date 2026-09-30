@@ -26,6 +26,7 @@ The caller lays them only after the planner accepts the link, so a refused link 
 */
 
 import { pipeKey, assignRoutes, preferredRoute, blockersOf } from './pipes.mjs';
+import { pairHolders } from '../model/invariants.mjs';
 
 /*
 JUDGE A FINISHED DRAG -- ruled 2026-09-30, "Each drag action does one thing" (dev/DECISIONS.md).
@@ -81,8 +82,9 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 			notice: `${pipes_(fresh.length)} laid by hand -- g lays pipes, not links${heals.length ? `; ${heals.join(', ')} healed` : ''}` };
 	}
 
-	// a pair takes one unpinned link (B72); say so, rather than let the planner refuse it unexplained
-	const twin = !pins.length && links.find((l) => !(l.via ?? []).length && ((l.src === src && l.dst === dst) || (l.src === dst && l.dst === src)));
+	// a pair takes one unpinned link (B72); say so, rather than let the planner refuse it unexplained -- the drawn link
+	// stores its pins as its via, so it is judged as that link, by the one predicate (RULESET-AUDIT T4)
+	const [twin] = pairHolders({ src, dst, via: pins }, links);
 	if (twin) return { ok: false, legs: [], keep: [], notice: `${twin.id} already joins these two, and a pair takes one unpinned link -- pin a bend with w to draw another` };
 
 	// the drawn link is the NEWEST: it sorts after every link there, unranked ones included

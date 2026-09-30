@@ -19,7 +19,7 @@ inverse-building, not the closure.
 import { groupAfterRemoval } from '../../engine/index.mjs';
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/index.mjs';
-import { isStraight, pairKey } from '../../model/invariants.mjs';
+import { pairHolders } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
 
@@ -91,20 +91,19 @@ export function deleteSelection(model, ids) {
 		authoritative and its planner refuses the state outright, so a client that guessed wrong
 		would see its optimistic view corrected rather than a wrong document persisted.
 		*/
-		const straightPairs = new Set();
-		model.all('link').forEach((l) => {
-			if (deletedLinks.has(l.id) || !isStraight(l)) return;
-			straightPairs.add(pairKey(l));
-		});
+		// the document as the strip leaves it, judged by the one predicate (RULESET-AUDIT T4)
+		let standing = model.all('link').filter((l) => !deletedLinks.has(l.id));
 		model.all('link').forEach((link) => {
 			if (deletedLinks.has(link.id) || !Array.isArray(link.via)) return;
 			const remaining = link.via.filter((w) => !deletedWaypoints.has(w));
 			if (remaining.length === link.via.length) return;
-			if (remaining.length === 0 && straightPairs.has(pairKey(link))) {
+			const after = { ...link, via: remaining };
+			if (pairHolders(after, standing, model).length) {
 				entries.push({ op: 'del', kind: 'link', entity: clone('link', link) });
+				standing = standing.filter((l) => l.id !== link.id);
 				return;
 			}
-			if (remaining.length === 0) straightPairs.add(pairKey(link));
+			standing = standing.map((l) => (l.id === link.id ? after : l));
 			entries.push({ op: 'set', kind: 'link', id: link.id, after: { via: remaining } });
 		});
 	}
@@ -339,7 +338,7 @@ export function routeLink(placed, link, splits = []) {
 		...halves.map((h) => ({ op: 'put', kind: 'link', entity: clone('link', h) })),
 	]);
 	return {
-		label: isStraight(link) ? 'link' : 'route',
+		label: link.via?.length ? 'route' : 'link',   // a NAME for the undo entry, not the pair rule (that is `pairHolders`)
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
 			...splitEntries,
