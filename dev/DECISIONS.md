@@ -1399,3 +1399,8 @@ The proposer had offered "a closed link selected plus `f` fills it" (the worked 
 Asked what the second example should be, the director chose "Use `c` close instead" over building fill as a new feature, or both.\
 So the example is behaviour-preserving: one link with a bend selected plus `c` closes or opens it; one link without a bend selected plus `c` says "close needs a multi-hop route"; anything else, nothing.
 
+**The input system is to be a programmable, context-aware mapping from inputs to actions -- stated 2026-09-30.**\
+Approving a design for separating input capture, gesture lifecycle and meaning, the director added: "One thing I want to consider with the input/gesture updates - is context awareness - much like we did for the rules engine - having a progressive, modular, layered "gesture system" that tracks current inputs, keys and gestures - both ordering and concurrent - can be bound to an action and trigger it.\
+Essentially a programmable mapping - this will allow us to have "context aware menus" so the same action can have different meaning depending on what was pressed or selected etc".\
+Recorded as the director's intent; the design that answers it is `dev/design/input/GESTURE-SYSTEM.md`, awaiting approval.
+
