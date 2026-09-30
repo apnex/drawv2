@@ -530,6 +530,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |
 | H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `dev/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `TODO` |
+| H10.35 | Alt+right-click delete works on a board that holds links -- it threw before any commit | **B258** | S2 - S | `TODO` |
 
 ---
 
@@ -896,6 +897,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.4 | Deleting a closed ring sweeps its end waypoints too, by reading the role derivation rather than a restated rule | **B244** | S3 | `TODO` |
 | H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `TODO` |
 | H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `TODO` |
+| H17.7 | The lab's pipe sweep works routes out in the same order as drawing, so it never removes a pipe a link is drawn on | **B257** | S2 | `TODO` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
@@ -924,6 +926,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag | a user reports a node jumping during a drag |
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors |
+| **B259** | S3 | Link ages are session state in the lab; storing them is untracked | the stored-format batch is built, alongside storing pipes |
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |

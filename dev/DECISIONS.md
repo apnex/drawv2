@@ -464,7 +464,8 @@ A link that loses its route any other way is still down, and heals; how it looks
 **Draw-then-delete leaves no trace -- ruled 2026-09-25.**\
 Asked, for two links passing through one point that a new link lands on and cuts, "After deleting the new link, should the two passing links be whole again?", the director chose "Yes, rejoin both" over "No, stay cut": deleting the landing rejoins each passing link into one, as before the landing.\
 This generalises the join-on-removal ruling beyond three links meeting, and closes the round-trip failures the bake-off re-test measured (a landing on a point two links pass, then its removal, left four ends).\
-Carried to design, not ruled: how the rejoin pairs the pieces -- which ends belong to which link when several were cut at one point.
+Carried to design, not ruled: how the rejoin pairs the pieces -- which ends belong to which link when several were cut at one point.\
+AMENDED 2026-09-30, for one case: a `w` link drawn beside a down link and then deleted leaves its anchor and pipes, with the down link healed over them -- the cost shown and accepted with "A w pipe goes when no link is on it or resolves onto it" below.
 
 **A new link passing through a point where another link ends connects to it -- ruled 2026-09-25.**\
 Asked "When a new link passes through a point where another link ends, should they connect?", the director chose "Yes, connect" over "No, pass by": the new link is cut at that point and the three meet at a junction.\
@@ -1371,3 +1372,11 @@ So Yes if that same anchor remains the sole selected anchor, and the next gestur
 This eliminates the case where you click off the anchor to unselect it - then the drag would follow normal link commit rules".\
 Asked what happens when that drag then presses `g`, the director chose "A g in the drag cancels it" (the proposer's recommendation), so a pipe-only path from a fresh anchor stays pipe-only.\
 So: `w`, drag, release makes a link with its final pipe; `w`, drag, `g`..., release lays pipes and no link; a click, or any other press, between placing the anchor and dragging from it clears the `w`.
+
+**Recorded late: four statements from the lab review of 2026-09-29 that matrix rows cite -- recorded 2026-09-30.**\
+The ruleset audit (`dev/design/unification/RULESET-AUDIT.md`, F6) found five matrix rows citing director statements this file did not hold.\
+They are recorded here verbatim, with the rows that rely on them; nothing is newly ruled.
+- LOOK-01 and CAP-05, the down look: "Ok, we need to make the dots a different color - orange?"
+- HEAL-01, a `g` bend onto a down pair: "if I draw the new link with a bend using "g" (not w! - that would pin a new link) and let go on the end node - it also fails (2 straight links between node A/B etc.. which may carry one)".
+- HEAL-02, `g` against a plain mouseup: "do we need to distringuish between plain "mouseup on link drag on existing anchor" and "pressing g on existing anchor then mouseup"".
+- HEAL-04, a `w` bend beside a down link: "if I draw a new link with "w" - this should not be the healed link (w pins and draws an entirely new link in addition to the broken one?)".

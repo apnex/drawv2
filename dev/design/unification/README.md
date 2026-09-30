@@ -12,6 +12,8 @@ Nothing here is decided: these documents carry the problem space into the design
 | `TRANSIT.md` | Transit: what an anchor does with what passes through it. | Proposed; the director's rulings on it are in `dev/DECISIONS.md`. |
 | `GUIDE-ANCHORS.md` | Guide anchors: how an author routes a link through a point without connecting to it (`g`). | Proposed, with tentative working answers taken for lab validation. |
 | `BEHAVIOUR-MATRIX.md` | Every lab gesture permutation, the rule it follows, and whether the lab does it -- generated from `BEHAVIOUR-MATRIX.json`, which the gate executes. | Living. Records rulings; makes none. |
+| `RULESET.md` | Every network and gesture rule once: its ruling, its code, its matrix rows, the seams, the cost per edit, and the decisions made in more than one place. | Descriptive, pinned at a commit. Judges nothing. |
+| `RULESET-AUDIT.md` | The audit of that ruleset: defects, duplication, cost, a consolidation design and its axiom audit. | Analytical. Proposes; the director decides. |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\
