@@ -1065,24 +1065,24 @@
 					]
 				]
 			],
-			"intent": "A new link, pinned at the new anchor, is made in addition to the down A-B, which stays down. w laid only the pipe into its anchor, and the release on B laid none, so the new link has no way from its pin to B yet: it is made down too. Selected as it is made, it says it has no way yet.",
+			"intent": "A new link, pinned at the new anchor, is made in addition to the down A-B, which stays down. w laid the pipe into its anchor and the release on B, after a key, laid the last one -- both with the new link and carrying only it -- so the new link is up.",
 			"expect": {
 				"links": 3,
-				"down": 3,
+				"down": 2,
 				"linksBetween": {
 					"node-000001|node-000002": 2
 				},
 				"linkState": {
-					"link-000001": "down"
+					"link-000001": "down",
+					"link-000002": "down"
 				},
 				"anchors": 1,
 				"pipes": {
-					"link": 1,
+					"link": 2,
 					"hand": 0
-				},
-				"notice": "link-\\w+ is down: no way over the pipes it may use"
+				}
 			},
-			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\". DECISIONS: \"Pipes carry one link each, for now\" (2026-09-30). DECISIONS: \"Each drag action does one thing\" (2026-09-30).",
+			"rule": "The director, 2026-09-29: \"w pins and draws an entirely new link in addition to the broken one\". DECISIONS: \"A release lays the final pipe whenever a key was pressed before it\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},

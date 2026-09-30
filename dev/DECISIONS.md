@@ -1314,4 +1314,14 @@ The director: "Given we have established that the "w" or "g" key determines if t
 It conflicts with no ruling: once a `g` is pressed the drag makes no link, so the ruling that a plain drag makes a link with no pipes, which concerns a drag whose first action is the release, is not reached.\
 It replaces the proposer's reading that a plain release lays no pipe, for this case.\
 Asked whether it also applies in a link drag whose last key was `g`, the director chose "Only in g-only drags" over "Yes, after any g" (the proposer's recommendation).\
-So in a drag with any `w` the release still lays nothing, and the link routes to its end over existing pipes, as ruled.
+So in a drag with any `w` the release still lays nothing, and the link routes to its end over existing pipes, as ruled.\
+AMENDED 2026-09-30, the same day: the director reversed the "Only in g-only drags" answer -- a release lays the last pipe after any key; see "A release lays the final pipe whenever a key was pressed before it" below.
+
+**A release lays the final pipe whenever a key was pressed before it -- ruled 2026-09-30, reversing "Only in g-only drags" the same day.**\
+The director: "I may have ruled that wrong.\
+I think if the penultimate hop before a mouse-up is a "w", then the pipe should be added".\
+Asked what then happens in a link drag whose last key was `g`, the director chose "Lay it too: after any key" (the proposer's recommendation) and restated the rule: "If penultimate hop was a key (g or w) - final pipe is laid.\
+Direct links without a key lay no pipe.\
+A "g" only path has no link - a link is "activated for this current drag" after a "w" is pressed".\
+So a release on an anchor lays the pipe into it from the last stop -- with the link after `w`, by hand after `g` -- and only a drag that pressed no key, a plain drag, lays no pipe.\
+It replaces the proposer's reading, recorded under "Each drag action does one thing", that a plain release lays no pipe; and it changes HEAL-04, where a `w` bend released on B now draws the new link up over its own two pipes.

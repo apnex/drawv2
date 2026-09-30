@@ -42,8 +42,8 @@ and a link with no free way is made DOWN ("Made, but down"), naming what holds i
 
 `drag` is what Input saw: the ends, the stops in drawn order, which are pins (w) and which are guides (g), the
 anchors the drag placed, which keys were pressed (`pressed`), and how the end was reached (`endPressed`: 'w', 'g',
-or false for a plain release). Each action lays at most the pipe INTO its own stop -- the proposer's reading -- so a
-plain release lays none, except in a drag that lays only pipes, where it lays the last one (ruled 2026-09-30). A pipe touching a g anchor is laid BY HAND and outlives any link (GUIDE-ANCHORS T4); every
+or false for a release on an anchor with no key). Each key lays the pipe INTO its own stop, and the release lays the
+final pipe whenever a key made a hop before it; only a drag that pressed no key lays no pipe (ruled 2026-09-30). A pipe touching a g anchor is laid BY HAND and outlives any link (GUIDE-ANCHORS T4); every
 other pipe a w drag lays goes with its link (ruled 2026-09-27).
 
 PURE: it lays nothing. The caller lays `legs` once the planner accepts what they belong to. The answer carries
@@ -56,9 +56,10 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 	const legs = [];
 	for (let i = 0; i < stops.length - 1; i++) {
 		const a = stops[i], b = stops[i + 1];
-		// a plain release lays nothing into its stop -- except in a drag that lays only pipes, where it lays the last one
-		// (2026-09-30: "mouse up, after a previous g, on an anchor - also constructs the pipe"; "Only in g-only drags")
-		if (a === b || (b === dst && !endPressed && !pipesOnly)) continue;
+		// the release lays the final pipe whenever a key made a hop before it -- with the link after w, by hand after g --
+		// and only a drag that pressed no key lays none (2026-09-30: "If penultimate hop was a key (g or w) - final pipe
+		// is laid. Direct links without a key lay no pipe.")
+		if (a === b || (b === dst && !endPressed && stops.length === 2)) continue;
 		const byHand = pipesOnly || guided.has(a) || guided.has(b) || (b === dst && endPressed === 'g');
 		legs.push({ a, b, laid: byHand ? 'hand' : 'link' });
 	}

@@ -38,9 +38,11 @@ test('in a drag that lays only pipes, a release on an anchor lays the last pipe 
 	assert.match(v.notice, /2 pipes laid/);
 });
 
-test('in a drag with any w, a release still lays nothing: the link routes to its end over existing pipes', () => {
-	const v = judgeDrag([], drag({ src: 'A', dst: 'B', pins: ['P'], guides: ['G'], stops: ['A', 'P', 'G', 'B'], pressed: { w: true, g: true }, endPressed: false }));
-	assert.deepEqual(laid(v), ['A-P:link', 'P-G:hand'], 'the last key was g, but the drag is a link drag: no pipe into B');
+test('a release lays the final pipe after ANY key; only a drag that pressed no key lays none (2026-09-30)', () => {
+	// "If penultimate hop was a key (g or w) - final pipe is laid. Direct links without a key lay no pipe."
+	const afterG = judgeDrag([], drag({ src: 'A', dst: 'B', pins: ['P'], guides: ['G'], stops: ['A', 'P', 'G', 'B'], pressed: { w: true, g: true }, endPressed: false }));
+	assert.deepEqual(laid(afterG), ['A-P:link', 'P-G:hand', 'G-B:hand'], 'a link drag whose last key was g: laid by hand');
+	assert.deepEqual(judgeDrag([], drag({ src: 'A', dst: 'B', stops: ['A', 'B'] })).legs, [], 'a plain drag: no pipe');
 });
 
 test('a plain drag makes a link and lays NO pipes: it runs over the pipes already there', () => {
@@ -76,17 +78,18 @@ test('w pins the link: legs into pressed stops are laid WITH it, and legs touchi
 	const ended = judgeDrag([], drag({ ...mixed, endPressed: 'w' }));
 	assert.equal(ended.ok, true);
 	assert.deepEqual(laid(ended), ['A-P:link', 'P-G:hand', 'G-B:hand']);
-	assert.deepEqual(laid(judgeDrag([], drag({ ...mixed, endPressed: false }))), ['A-P:link', 'P-G:hand'], 'released plainly on B: no pipe into B');
+	assert.deepEqual(laid(judgeDrag([], drag({ ...mixed, endPressed: false }))), ['A-P:link', 'P-G:hand', 'G-B:hand'], 'released on B after g: the last pipe is laid by hand (2026-09-30)');
 	assert.deepEqual(laid(judgeDrag([], drag({ ...mixed, endPressed: 'g' }))), ['A-P:link', 'P-G:hand', 'G-B:hand'], 'g on the end lays it by hand');
 	const pinned = { src: 'A', dst: 'B', pins: ['P'], stops: ['A', 'P', 'B'], pressed: { w: true, g: true } };
 	assert.deepEqual(laid(judgeDrag([], drag({ ...pinned, endPressed: 'g' }))), ['A-P:link', 'P-B:hand'], 'g on the end of a w link lays that last pipe by hand, to outlive the link');
 	assert.deepEqual(laid(judgeDrag([], drag({ ...pinned, endPressed: 'w' }))), ['A-P:link', 'P-B:link'], 'w on the end lays it with the link');
 });
 
-test('a w link released plainly routes from its last pin to the destination over the pipes there', () => {
+test('a w link released on its destination after w lays the last pipe too, with the link (2026-09-30)', () => {
+	// the director: "if the penultimate hop before a mouse-up is a "w", then the pipe should be added"
 	const v = judgeDrag(pipes(['P', 'x'], ['x', 'B']), drag({ src: 'A', dst: 'B', pins: ['P'], stops: ['A', 'P', 'B'], pressed: { w: true, g: false } }));
-	assert.deepEqual(laid(v), ['A-P:link']);
-	assert.deepEqual(v.route, ['A', 'P', 'x', 'B'], '"dynamically route from that first w pin to ... the destination"');
+	assert.deepEqual(laid(v), ['A-P:link', 'P-B:link']);
+	assert.deepEqual(v.route, ['A', 'P', 'B'], 'and the link runs over the pipe it laid, the fewest-pipes way');
 });
 
 test('judging is PURE: it lays nothing in the pipes it was given', () => {
