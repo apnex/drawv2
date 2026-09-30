@@ -207,3 +207,13 @@ The lab root wires it and goes back to wiring only.
   The undo label in `commands.js` tests `via` itself, because it names the entry rather than deciding the rule.
 - **Remaining.** `model/referential.mjs` keeps its own pair key for the duplicate-bend check (RULESET section 5, "the pair key"); it compares pairs for equality only, and is outside T4.
 - **Findings closed:** F7.
+
+**T5 landed, 2026-09-30 -- approved by the director ("approved for T5").**
+- **What changed.** `createNetworkSession` in `network/session.mjs` owns the network's session state: the pipe set, the link ages, the one network object over both, the legs a drag lays while the planner's answer is awaited, and that drag's notice.
+  It also owns the order one edit changes them in: `judge` for the route hook, `answered` for the planner's answer, `tidy` for the prune and sweep, `takeNotice`, and `seed` for the fixed boards.
+  It knows no DOM; the lab root still draws pipes and links and says the notice.
+- **The lab root is wiring again.** It fell from 174 to 162 of its 180 code lines, and no network state or ordering remains in it.
+- **Held in Node for the first time.** Eight tests hold the session's behaviour, which before could be reached only by driving the page: legs wait for acceptance and are dropped on refusal, legs are laid before the tab applies an answer and ages are noted after, a drag with nothing to commit lays at once, the notice is said once, the prune and the sweep.
+- **Mutation proof.** Seven mutants, each caught: legs laid after the apply, legs kept after a refusal, legs laid before the answer, the notice said twice, the sweep run after undo, ages noted before the apply, and the root skipping the settle after a pipes-only drag (2 browser tests fail).
+- **Behaviour.** The gate passes 1293 of 1293, with the matrix file untouched and no expected outcome edited; the browser suite passes 60 of 60.
+- **Findings closed:** F14.

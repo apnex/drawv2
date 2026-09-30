@@ -40,11 +40,8 @@ import { Log } from '../../server/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
-import { createPipeSet } from '../../network/pipeset.mjs';
 import { whyDown, downSummary } from '../../network/resolve.mjs';
-import { createLinkOrder } from '../../network/order.mjs';
-import { judgeDrag } from '../../network/guide.mjs';
-import { createNetwork } from '../../network/network.mjs';
+import { createNetworkSession } from '../../network/session.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -69,19 +66,14 @@ const gridZones = svg.querySelector('#grid-zones');
 zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT }, gridZones));
 
 /*
-The pipe set, for the session. Pipes are not stored yet -- that is the one format batch, last (F6)
--- so they live here and a reload starts from nothing, which is correct rather than missing.
+THE NETWORK SESSION (RULESET-AUDIT T5): the pipes, the link ages, the legs a drag lays while the planner's answer is
+awaited, and the order one edit changes them in -- network/session.mjs, which knows no DOM. This file draws what it says.
+
+Its network is ONE object (T1), handed to the tab's Model -- where a link runs, which links a moved anchor affects,
+whether it is down, what blocks it -- and to the planner -- what else references an anchor, which orphans survive, which
+links are stranded. Production constructs `new Model()` and commits with no network; nothing here reaches production.
 */
-// and the order links were made in, since the older link keeps a contested pipe (ruled 2026-09-30) -- session
-// state too, stored with pipes in the format batch
-const pipes = createPipeSet(), order = createLinkOrder();
-/*
-THE NETWORK, as ONE object (RULESET-AUDIT T1): the same object is handed to the tab's Model -- where a link runs,
-which links a moved anchor affects, whether it is down, what blocks it -- and to the planner -- what else references
-an anchor, which orphans survive, which links are stranded. All read one derivation per board state (T2), so they
-cannot disagree. Production constructs `new Model()` and commits with no network; nothing here reaches production.
-*/
-const network = createNetwork(pipes, order.rankOf);
+const session = createNetworkSession(), { pipes, order, network } = session;
 const model = new Model({ network });
 attachRelations(model, { cellOf });
 
@@ -136,49 +128,26 @@ const readout = new Readout({ model, selection, elements: [document.getElementBy
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
 
 /*
-THE ROUTE HOOK -- how `g`, and the network's rules for a drag, exist in the lab and nowhere else.
+THE ROUTE HOOK -- how `g`, and the network's rules for a drag, exist in the lab and nowhere else. Input asks it once per
+finished drag; the session judges it (network/session.mjs `judge`) and holds what it lays until the planner answers.
 
-Input asks it once per finished drag, telling it which keys were pressed and how the end was reached. The
-incubator (network/guide.mjs `judgeDrag`) answers by the director's rule of 2026-09-30 -- any `w` makes a link,
-`g` alone lays pipes, a plain drag makes a link that lays none -- and says what it did on the notice.
-
-It lays NOTHING. The legs are held until the planner accepts the link, then laid -- so a link the
-planner refuses leaves no pipes behind. That ordering holds because a route commit is emitted the
-moment it is made: `commands.routeLink` never sets `coalesce`, so the planner's answer follows this
-hook synchronously and consumes exactly these legs.
-*/
-let pendingLegs = null, pendingNotice = null;
-
-/*
-SETTLE THE BOARD after its pipes or links change -- ONE step, so every path that changes them takes all of it.
-
-A link's drawn route depends on the pipe set, and the pipe set lives outside the model, so the model's change events
-never announce that a new pipe made a way or that a swept one broke one: EVERY link is redrawn here. Whole-board is
-right for a lab-sized board; a targeted redraw belongs with the promotion, when pipes are stored and their changes are
-events like any other. Before this was one step, a g drag on existing anchors laid its pipes and redrew only the
-pipes, so a down link that healed over them stayed drawn down until the next edit.
-
-Pipes laid WITH A LINK go once no link remains on them (ruled 2026-09-27) -- swept after ordinary edits only. Pipes are
-session state outside the planner's log until the format batch stores them, so undo and redo cannot move them:
-sweeping after an undo would leave the redone link with no pipes. That is a stated limit of session pipes, not a rule.
+SETTLE THE BOARD after its pipes or links change -- ONE step, so every path that changes them takes all of it. A link's
+drawn route depends on the pipe set, which lives outside the model, so the model's change events never announce that a
+new pipe made a way or that a swept one broke one: EVERY link is redrawn here. Whole-board is right for a lab-sized
+board; a targeted redraw belongs with the promotion, when pipes are stored and their changes are events like any other.
+Before this was one step, a g drag laid its pipes and redrew only the pipes, so a link that healed over them stayed
+drawn down until the next edit. The sweep is skipped after undo and redo (session pipes, network/session.mjs).
 */
 const settle = (sweep, fallback) => {
-	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));   // a pipe to a gone anchor is not a pipe (SD7)
-	if (sweep) pipes.sweep(network.view.of(authority).inUse());   // the routes as drawn: one derivation (B257, T2)
+	session.tidy(authority, { sweep });
 	drawPipes();
 	for (const l of model.all('link')) renderer.update('link', l);
 	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
-	say(pendingNotice ?? `${fallback}${downSummary(model)}`.trim());   // DOWN is said as well as drawn
-	pendingNotice = null;
+	say(session.takeNotice() ?? `${fallback}${downSummary(model)}`.trim());   // DOWN is said as well as drawn
 };
-
-// Each drag action does one thing (2026-09-30): network/guide.mjs judges the drag -- a link, pipes, or nothing -- and
-// what it lays waits for the planner to accept what it belongs to: the link, or the anchors it keeps.
 const routeHook = (drag) => {
-	const verdict = judgeDrag(pipes.list(), drag, { links: authority.all('link'), rankOf: order.rankOf });
-	pendingNotice = verdict.notice ?? null;
-	if (verdict.ok || verdict.keep.some((id) => drag.placed.includes(id))) pendingLegs = verdict.legs;
-	else { for (const l of verdict.legs) pipes.lay(l.a, l.b, l.laid); settle(true, ''); }   // nothing to commit: lay them now
+	const { verdict, commits } = session.judge(drag, authority.all('link'));
+	if (!commits) settle(true, '');   // nothing to commit: its pipes were laid now
 	return verdict;
 };
 
@@ -209,18 +178,9 @@ history.onCommit((request) => {
 		// the same network: pipes reference anchors, only links and hand pipes keep one, and a link that loses a pin with no
 		// other way goes whole (2026-09-29) -- all judged over the pipes that survive the edit
 		: commit(authority, log, request, 'lab', 'lab', { network });
-	const legs = pendingLegs; pendingLegs = null;
 	/*
-	B260 -- A REFUSAL TAKES THE PLANNER'S DOCUMENT BACK. The tab applied the request optimistically, so a refused one
-	left the tab holding what the planner does not -- a link that was never made. Production resynchronises in that case
-	(app/src/sync.js, requestResync); in the lab the planner is in the page, so the tab reloads from it, keeping its
-	selection of whatever still exists.
-	*/
-	if (!answer.ok) { model.load({ ...authority.toJSON(), selection: [...model.state.selection] }); settle(false, ''); say(`refused: ${answer.error}`); return; }
-	// pipes BEFORE the tab applies the link, so the link is drawn along them from its first frame
-	for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid);
-	/*
-	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE.
+	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE -- applied by the session once it has laid the drag's pipes, so the
+	link is drawn along them from its first frame (network/session.mjs `answered`).
 
 	Two shapes: `commit()` returns its applied ops at `change.ops` -- reading `answer.ops` there
 	applied nothing, the first build's defect -- and `undo()`/`redo()` return them at `ops`.
@@ -232,11 +192,17 @@ history.onCommit((request) => {
 	forking a simpler rule. Undo and redo take the same path with nothing sent, as they do in sync.js.
 	Nothing is in flight in the lab, because the planner answers in the same page.
 	*/
-	const planned = answer.change?.ops ?? answer.ops ?? [];
-	const apply = derivedToApply(request.ops ?? [], planned, []);
-	if (apply.length) applyOps(model, apply);
-	// a link seen for the first time is the newest; one seen before keeps its age, so undo restores its place
-	order.note(authority.all('link').map((l) => l.id).sort());
+	const accepted = session.answered(answer, authority, () => {
+		const apply = derivedToApply(request.ops ?? [], answer.change?.ops ?? answer.ops ?? [], []);
+		if (apply.length) applyOps(model, apply);
+	});
+	/*
+	B260 -- A REFUSAL TAKES THE PLANNER'S DOCUMENT BACK. The tab applied the request optimistically, so a refused one
+	left the tab holding what the planner does not -- a link that was never made. Production resynchronises in that case
+	(app/src/sync.js, requestResync); in the lab the planner is in the page, so the tab reloads from it, keeping its
+	selection of whatever still exists.
+	*/
+	if (!accepted) { model.load({ ...authority.toJSON(), selection: [...model.state.selection] }); settle(false, ''); say(`refused: ${answer.error}`); return; }
 	settle(!request.verb, `v${answer.version} ${request.verb ?? request.label ?? ''}`);
 });
 
@@ -283,9 +249,7 @@ if (wanted) {
 		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else {
-			// each pipe with the lifetime its gesture would give it (2026-09-29): a link's own leg goes with it
-			for (const [x, y, laid] of board.pipes) pipes.lay(x, y, laid);
-			order.note(board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id));   // as old as they are listed
+			session.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id));
 			applyOps(model, answer.change?.ops ?? []);
 			drawPipes();
 			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);
