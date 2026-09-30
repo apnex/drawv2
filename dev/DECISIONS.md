@@ -1423,3 +1423,9 @@ So a drag out and back is a drag, and a release a little over 4px away on the ca
 A chain -- a Shift-release, or a digit mid-drag -- begins a new drag where it happens, so travel is measured from there.\
 A chained run is ended by a press that is not that drag's start; a click still ends the run selecting its anchor only when it lands on that anchor, as before -- the rule decides whether it is a click, and where it landed decides what the click means.
 
+**A double click edits a zone's name without Shift, for now -- ruled 2026-09-30.**\
+Stage 4 found that a press reaches a zone only with Shift held (the zone layer is inert otherwise), while a double click finds a zone without it; the design had listed making them consistent (acceptance test 5), which is an outcome change.\
+The director: "double-click to edit a zone name without shift is fine for now.\
+I'll re-evaluate in the lab later".\
+Parked as B264, with that re-evaluation as its revival trigger; acceptance test 5 is withdrawn until then.
+

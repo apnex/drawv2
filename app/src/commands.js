@@ -320,7 +320,7 @@ export function linkNodes(model, nodeIds, star) {
 
 // a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the
 // link never references a bend that does not exist yet.
-export function routeLink(placed, link, splits = []) {
+export function routeLink(placed, link, splits = [], unpins = []) {
 	/*
 	B210 -- the SPLITS ride in the same entry list, so one drag is one undo.
 
@@ -341,6 +341,7 @@ export function routeLink(placed, link, splits = []) {
 		label: link.via?.length ? 'route' : 'link',   // a NAME for the undo entry, not the pair rule (that is `pairHolders`)
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...unpinEntries(unpins),
 			...splitEntries,
 			{ op: 'put', kind: 'link', entity: clone('link', link) }
 		]
@@ -359,11 +360,19 @@ So the kinds are named rather than assumed. The waypoints threaded into this seg
 segment lands on, and the link, as ONE entry list: undoing a chain should step back one hop, not
 unpick a node from its link.
 */
-export function chainHop(waypoints, node, link) {
+/*
+B245 -- threading a PINNED waypoint clears its pin (B162: the link becomes its structure), and the clearing rides in the
+SAME commit as the link. It used to be written into the tab's model the moment `w` threaded it: the request carried no
+unpin, so the planner kept the pin the tab had dropped, and a cancelled drag left the pin cleared on the tab alone.
+*/
+const unpinEntries = (ids) => (ids || []).map((id) => ({ op: 'set', kind: 'waypoint', id, after: { pinned: false } }));
+
+export function chainHop(waypoints, node, link, unpins = []) {
 	return {
 		label: 'chain',
 		entries: [
 			...(waypoints || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...unpinEntries(unpins),
 			{ op: 'put', kind: 'node', entity: clone('node', node) },
 			{ op: 'put', kind: 'link', entity: clone('link', link) },
 		],

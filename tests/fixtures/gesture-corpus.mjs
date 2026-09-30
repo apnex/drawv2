@@ -179,6 +179,7 @@ export const SCENARIOS = [
 	{ id: 'key-up-shift-alt', board: 'pair', steps: [['key', 'Shift', { shift: true }], ['keyup', 'Shift'], ['key', 'Alt', { alt: true }], ['keyup', 'Alt']] },
 	// ---- read-only and run mode ----
 	{ id: 'read-only-refuses', board: 'straight', steps: [['readOnly'], ...drag([0, 0], [360, 0], 'n0', 'n1'), ['select', ['l0']], ['key', 'c'], ['key', 'Delete'], ['key', 'f'], ['key', 'a', { ctrl: true }]] },
+	{ id: 'read-only-right-drag-does-not-move', board: 'pair', steps: [['readOnly'], ...drag([0, 0], [120, 60], 'n0', 'n0', { button: 2 })] },
 	{ id: 'run-mode-places-tower', board: 'pair', steps: [['mode', 'run'], ['down', 180, 240], ['up', 180, 240, null, { up: true }]] },
 	{ id: 'run-mode-action', board: 'pair', steps: [['mode', 'run'], ['down', 0, 0, { action: 'help' }]] },
 	// ---- the plugin seam: the network's keys, with a recording judge ----

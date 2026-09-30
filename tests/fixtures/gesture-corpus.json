@@ -299,6 +299,14 @@
 			{
 				"ops": [
 					{
+						"op": "set",
+						"kind": "waypoint",
+						"id": "waypoint#1",
+						"patch": {
+							"pinned": false
+						}
+					},
+					{
 						"op": "put",
 						"kind": "link",
 						"entity": {
@@ -405,7 +413,7 @@
 					"name": "waypoint-1",
 					"x": 180,
 					"y": 120,
-					"pinned": false
+					"pinned": true
 				}
 			],
 			"links": [],
@@ -4178,6 +4186,56 @@
 				"node#1",
 				"node#2",
 				"link#1"
+			]
+		}
+	},
+	"read-only-right-drag-does-not-move": {
+		"claims": [
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [
+			[
+				"palette.setHand",
+				null
+			],
+			[
+				"palette.setTextTool",
+				false
+			]
+		],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
 			]
 		}
 	},

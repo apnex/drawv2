@@ -385,3 +385,13 @@ Each is a real fork, with a recommendation.
 - **Two differences, neither observable in use.** A locked run-mode click on an armed endpoint is no longer claimed from the browser; it did nothing before and does nothing now. A double click on a zone still finds it without Shift, unlike a press: acceptance test 5 would change that, which is an outcome change, so it is put to the director rather than made.
 - **Behaviour unchanged by the corpus:** every record byte-identical; nine mutants, each caught.
 
+**Stage 5 -- what a gesture means when it ends, 2026-09-30.**
+- **`app/src/releases.js`: rows for every release decision.** The link release (about twelve decisions: commit, commit and chain, chain on, a click that retypes, toggles, selects or focuses, discard), the marquee (stamp, clear, select, add), the Ctrl+click, the replug, the zone, and what a press becomes when dragged. Each gesture hands over its facts, plain data; the engine picks the one row; a named action on Input does it.
+- **Proven equal, the strong way.** The old decisions are copied into `tests/releases.test.js` as oracles: all 393,216 combinations of the link release's facts and all 32 of the marquee's choose what the old handlers did, and the link table is complete -- every case is one row, as the old handler always did something.
+- **Acceptance 3 holds:** the five release slots commit and select nothing themselves, and the actions they name read no situation. `startMove` and `startClone` keep their own gathering logic, unchanged; the rows decide whether a drag becomes one.
+- **Acceptance 4 holds:** read-only appears in the input layers only as the guard handed to the engine, and as the lock itself. The last check -- a press's escalation -- is the `start-move` row's guard.
+- **Acceptance 6 holds, and B245 is closed (H17.5).** Threading a pinned waypoint no longer unpins it on the tab mid-drag; the drag step records it and the unpin rides in the link's own commit (`routeLink`, `chainHop`). The planner is told, and a cancelled drag keeps the pin. The only corpus records that changed are those two scenarios.
+- **B264 parked:** a double click on a zone without Shift stays, by the director's ruling; acceptance 5 is withdrawn until the director re-evaluates it in the lab.
+- **Not in this stage, by the guardrails:** an action registry with labels. Actions are Input's named methods, which the rows reference; the registry and its labels arrive with their first reader, the generated help overlay (stage 6).
+- **Behaviour otherwise unchanged:** every other corpus record byte-identical; ten mutants, each caught.
+

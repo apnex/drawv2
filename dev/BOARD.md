@@ -896,7 +896,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.2 | Design the minimal composition, its enforced boundaries and an ordered cut plan, and put its decisions to the director | feature | S3 | `DONE` |
 | H17.3 | Build the lab entry on the real modules, cut by cut (K0-K18a in `dev/design/h17/PLAN.md`), each with its test (rows registered before code) | feature | S3 | `WIP` |
 | H17.4 | Deleting a closed ring sweeps its end waypoints too, by reading the role derivation rather than a restated rule | **B244** | S3 | `TODO` |
-| H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `TODO` |
+| H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `DONE` |
 | H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `TODO` |
 | H17.7 | The lab's pipe sweep works routes out in the same order as drawing, so it never removes a pipe a link is drawn on | **B257** | S2 | `DONE` |
 | H17.8 | A request the lab's planner refuses is taken back out of the tab, as production resynchronises | **B260** | S2 | `DONE` |
@@ -931,6 +931,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors |
 | **B259** | S3 | Link ages are session state in the lab; storing them is untracked | the stored-format batch is built, alongside storing pipes |
 | **B262** | S4 | Bindings cannot override one another (Q3, held for now, DG2) | a binding must shadow another and disjoint conditions are measurably worse, or a plugin must replace a product binding |
+| **B264** | S4 | A double click finds a zone without Shift; a press needs Shift (kept for now) | the director re-evaluates it in the lab, or an author double-clicks a zone meaning the node beneath |
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |

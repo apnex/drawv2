@@ -42,6 +42,7 @@ import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
 import { DRAG_THRESHOLD, dragging, releaseTrigger } from './triggers.js';
+import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
@@ -125,9 +126,9 @@ const GESTURES = {
 		fell through to here, and the escalation turned the link button into the move button for
 		exactly the waypoints that are part of a route. That was the defect the director reported.
 		*/
-		update: (i, pos, evt) => i.escalate(pos, evt,
-			i.readOnly || i.ctx.hit.kind === 'link' || (i.ctx.hit.kind === 'waypoint' && i.ctx.leftPress),
-			(x, p) => x.startMove(p), 'move'),
+		// what the drag becomes is a row (app/src/releases.js PRESS_DRAGS): B203, links, and a locked client by the guard
+		update: (i, pos, evt) => i.escalate(pos, evt, 'pressDrag',
+			{ onLink: i.ctx.hit.kind === 'link', onWaypoint: i.ctx.hit.kind === 'waypoint', leftPress: !!i.ctx.leftPress }, 'move'),
 		start: (i, hit, pos, evt) => {
 			i.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');   // for zones Shift is the layer key, not selection-add
 			i.ctx.orthoReady = !evt.shiftKey;
@@ -137,14 +138,9 @@ const GESTURES = {
 	},
 
 	'clone-pending': {
-		commit: (i, ctx) => {
-			// Ctrl+click without drag: toggle selection (draw.io behavior)
-			if (i.model.get(ctx.hit.kind, ctx.hit.id)) {
-				i.selection.toggle(ctx.hit.id);
-				i.labels.setFocus(ctx.hit.id);
-			}
-		},
-		update: (i, pos, evt) => i.escalate(pos, evt, false, (x, p) => x.startClone(p), 'clone'),
+		// Ctrl+click without drag: toggle selection (draw.io behavior) -- app/src/releases.js CTRL_CLICKS
+		commit: (i, ctx, pos, evt) => i.act(i.decide('ctrlClick', evt, { exists: !!i.model.get(ctx.hit.kind, ctx.hit.id) }), ctx),
+		update: (i, pos, evt) => i.escalate(pos, evt, 'cloneDrag', {}, 'clone'),
 		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
 	},
 
@@ -173,23 +169,19 @@ const GESTURES = {
 	},
 
 	replug: {
-		commit: (i, ctx, pos) => {
+		commit: (i, ctx, pos, evt) => {
 			ctx.line.remove();
 			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
 			i.renderer.setState(ctx.linkId, 'replugging', false);
 			const link = i.model.get('link', ctx.linkId);
 			const target = nodeAt(i.model, pos);
-			if (link && target && target.id !== ctx.fixedId) {
-				const newSrc = ctx.end === 'src' ? target.id : link.src;
-				const newDst = ctx.end === 'dst' ? target.id : link.dst;
-				const wasAt = ctx.end === 'src' ? ctx.before.src : ctx.before.dst;
-				// commit a genuine retarget. A routed link may join a pair that already has links;
-				// a straight one only a pair with room for it (B72, B80) -- the one predicate (RULESET-AUDIT T4)
-				const admitted = !pairHolders({ ...link, src: newSrc, dst: newDst }, i.model.linksBetween(newSrc, newDst), i.model).length;
-				if (target.id !== wasAt && admitted) {
-					i.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
-				}
-			}
+			// the facts: a genuine retarget -- onto a node, not the fixed end, not where it already was -- and whether the pair
+			// has room. A routed link may join a pair that already has links; a straight one only a pair with room (B72, B80)
+			const retargets = !!(link && target && target.id !== ctx.fixedId && target.id !== (ctx.end === 'src' ? ctx.before.src : ctx.before.dst));
+			const newSrc = retargets && ctx.end === 'src' ? target.id : link?.src;
+			const newDst = retargets && ctx.end === 'dst' ? target.id : link?.dst;
+			const admitted = retargets && !pairHolders({ ...link, src: newSrc, dst: newDst }, i.model.linksBetween(newSrc, newDst), i.model).length;
+			i.act(i.decide('replug', evt, { retargets, admitted }), { ctx, newSrc, newDst });
 			i.overlayUi.handles();   // handles ride the (possibly new) endpoints
 		},
 		cancel: (i, ctx) => {
@@ -268,64 +260,20 @@ const GESTURES = {
 			// judged on every stop DRAWN, pins and guides: with no drag judge they are the same, and with one the judge
 			// decides by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
 			const admitted = !pairHolders({ src: ctx.src.id, dst, via: route }, i.model.linksBetween(ctx.src.id, dst), i.model).length;
-			// with a drag judge (the lab's network plugin) a duplicate reaches it too, so the author is told why nothing is made
-			if (dst && srcAlive && dst !== ctx.src.id && (admitted || (i.judgeDrag && !evt.shiftKey))) {
-				/*
-				A plugin's drag judge sees the whole drawn route before anything commits, and may refuse it. A
-				refusal commits nothing and removes the anchors this drag placed, exactly as a cancelled drag does.
-				No judge, no question: production commits as it always has.
-				*/
-				if (i.judgeDrag) {
-					/*
-					The RECORD of the drag, as it happened -- what it means is the judge's (network/grammar.mjs reads its
-					facts from this). `release` says whether it was released ON an anchor or ended at the last stop a key
-					made; `route` and `pins` are as the drag leaves them, the destination taken off.
-					*/
-					const verdict = i.judgeDrag({ src: ctx.src.id, dst, pins: via, route, placed: ctx.placed.map((w) => w.id),
-						steps: ctx.steps, release: validTarget ? 'anchor' : 'stop', srcKey: ctx.srcKey ?? false });
-					if (!verdict?.ok) {
-						/*
-						A refusal may name anchors to KEEP. The link is refused; anchors the hook names survive
-						and reach the planner in one commit; everything else this drag placed is cleaned up, as a
-						cancelled drag's is. The director's report: a refused `g` drag threw away the `g` anchor,
-						geometry placed deliberately. Input does not decide what survives -- the hook does, from
-						what it knows about the gesture; Input only honours the list.
-						*/
-						const keep = new Set(verdict?.keep ?? []);
-						const kept = ctx.placed.filter((w) => keep.has(w.id));
-						i.cleanupRoute({ placed: ctx.placed.filter((w) => !keep.has(w.id)) });
-						if (kept.length) i.history.commit(commands.keepAnchors(kept.map((w) => i.model.get('waypoint', w.id) ?? w)));
-						return;
-					}
-				}
-				i.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
-				if (validTarget && evt.shiftKey && !hasVia) i.chainFrom(target, pos);   // chain only plain links
-				return;
-			}
-			if (validTarget && evt.shiftKey && !hasVia) {
-				i.chainFrom(target, pos);   // already-linked target: skip the duplicate but keep the chain run alive
-				return;
-			}
-			// a CLICK (triggers.js: it never travelled past the threshold) AT the drag's own start. For a press the second half
-			// follows from the first; a chained run is ended by a press elsewhere, and only one on its anchor selects it
-			if (srcAlive && !hasVia && evt.trigger === 'click' && dist(pos, ctx.start) <= DRAG_THRESHOLD) {
-				const hand = i.palette.hand;
-				// fast-replace gate mirrors the stamp gate (plain click only) and never fires on a
-				// chain anchor (that click ends the run, selecting)
-				if (i.model.get('node', ctx.src.id) && hand && hand !== 'waypoint' && !i.state.chained
-					&& !evt.shiftKey && !evt.ctrlKey && !evt.altKey && hand !== ctx.src.type) {
-					i.history.commit(commands.retypeNode(ctx.src.id, hand));
-					i.selection.set([ctx.src.id]);
-					i.labels.setFocus(ctx.src.id);
-					return;
-				}
-				// a no-drag press is still a click: select (mirrors beginPress semantics)
-				i.labels.setFocus(ctx.src.id);
-				if (ctx.shift) i.selection.toggle(ctx.src.id);
-				else if (!i.selection.has(ctx.src.id)) i.selection.set([ctx.src.id]);
-				return;
-			}
-			i.cleanupRoute(ctx);   // invalid target, duplicate, or route released off a node: discard placed waypoints
+			/*
+			WHAT THE RELEASE MEANS is a row of app/src/releases.js LINK_RELEASES, chosen from these facts by the Rules engine:
+			commit, commit and chain, chain on, a click that retypes, toggles, selects or focuses, or discard. The actions do
+			what they are named. "A click at the drag's own start": for a press the second half follows from the first; a
+			chained run is ended by a press elsewhere, and only one on its anchor selects it (ruled 2026-09-30).
+			*/
+			const hand = i.palette.hand ?? null;
+			i.act(i.decide('link', evt, {
+				dst: !!dst, dstIsSrc: dst === ctx.src.id, srcAlive: !!srcAlive, validTarget: !!validTarget, hasVia, admitted, judged: !!i.judgeDrag,
+				click: evt.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
+				shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey, pressShift: !!ctx.shift,
+				srcIsNode: !!i.model.get('node', ctx.src.id), hand, handIsSrcType: hand === ctx.src.type, chained: !!i.state.chained,
+				srcSelected: i.selection.has(ctx.src.id),
+			}), { ctx, pos, dst, via, route, target, validTarget });
 		},
 		cancel: (i, ctx) => {
 			if (ctx.path) ctx.path.remove();
@@ -351,14 +299,10 @@ const GESTURES = {
 	},
 
 	zone: {
-		commit: (i, ctx, pos) => {
+		commit: (i, ctx, pos, evt) => {
 			ctx.rect.remove();
 			const box = resolveBox(ctx.p1, snapZone(pos));
-			if (box.w > 0 && box.h > 0) {
-				const zone = i.model.makeZone(box);
-				i.history.commit(commands.createEntity('zone', zone));
-				i.selection.set([zone.id]);
-			}
+			i.act(i.decide('zone', evt, { area: box.w > 0 && box.h > 0 }), box);
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => {
@@ -378,25 +322,8 @@ const GESTURES = {
 		commit: (i, ctx, pos, evt) => {
 			ctx.rect.remove();
 			const box = resolveBox(ctx.p1, pos);
-			if (evt.trigger === 'click') {   // one rule for click and drag (triggers.js), no longer the box's size
-				// a plain click with a held hand stamps at the snapped cell (an occupied-cell refusal
-				// still consumes the click: it meant "stamp", never "deselect")
-				if (i.palette.hand && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
-					i.stampAt(pos);
-					i.refreshHand();   // the cell is occupied now: feedback must say so
-					return;
-				}
-				if (!evt.shiftKey) i.selection.clear();
-				return;
-			}
-			// zones are not marquee-pickable (Shift layer); select them directly
-			const picked = [];
-			i.model.all('node').forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
-			i.model.all('waypoint').forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
-			// a link comes along when BOTH its endpoints (node or waypoint) are inside the box
-			const inBox = new Set(picked);
-			i.model.all('link').forEach((l) => { if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id); });
-			evt.shiftKey ? i.selection.add(picked) : i.selection.set(picked);
+			// a click stamps the held type or clears; a drag selects or adds (app/src/releases.js MARQUEE_RELEASES)
+			i.act(i.decide('marquee', evt, { click: evt.trigger === 'click', hand: !!i.palette.hand, shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey }), { pos, box });
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
@@ -468,6 +395,10 @@ export class Input {
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
 		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
 		this.runRules = composeRules({ owner: 'product', rules: RUN_PRESSES });
+		// what each gesture MEANS when it ends, or when a press becomes a drag (stage 5, app/src/releases.js)
+		this.meaningRules = Object.fromEntries(Object.entries({ link: LINK_RELEASES, marquee: MARQUEE_RELEASES, ctrlClick: CTRL_CLICKS,
+			replug: REPLUG_RELEASES, zone: ZONE_RELEASES, pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
+			.map(([name, rules]) => [name, composeRules({ owner: 'product', rules })]));
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
@@ -947,7 +878,7 @@ export class Input {
 	*/
 	linkDrag(src, pos, { shift = false, srcKey = false } = {}) {
 		return { src, path: previewPath(this.overlay), target: null, start: pos, shift, srcKey,
-			via: [], route: [], placed: [], steps: [] };
+			via: [], route: [], placed: [], steps: [], unpin: [] };
 	}
 
 	/*
@@ -980,7 +911,7 @@ export class Input {
 			the pin would strand it on the canvas forever, the debris the sweep exists to prevent. A stop that is not a pin
 			leaves the flag alone: the link does not become that anchor's structure.
 			*/
-			if (existing.pinned) this.model.set('waypoint', existing.id, { pinned: false });
+			if (existing.pinned && !ctx.unpin.includes(existing.id)) ctx.unpin.push(existing.id);   // sent with the link (B245)
 			if (!ctx.via.includes(existing.id)) { ctx.via.push(existing.id); ctx.route.push(existing.id); }
 		} else if (existing) {
 			if (existing.id === ctx.src.id || ctx.route.includes(existing.id)) return;
@@ -1016,7 +947,7 @@ export class Input {
 	*/
 	commitRoute(ctx, dstId, via) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
-		this.history.commit(commands.routeLink(ctx.placed, link, this.splitsFor(link)));
+		this.history.commit(commands.routeLink(ctx.placed, link, this.splitsFor(link), ctx.unpin));
 		this.selection.set([link.id]);
 	}
 
@@ -1124,10 +1055,11 @@ export class Input {
 		}
 	}
 
-	escalate(pos, evt, threshold, begin, become) {
+	escalate(pos, evt, table, facts, become) {
 		if (!dragging(this.state)) return;   // not a drag yet: the one rule (triggers.js)
-		if (threshold) return;
-		begin(this, pos);
+		const rule = this.decide(table, evt, facts);   // what the drag becomes, if anything (app/src/releases.js)
+		if (!rule) return;
+		this[rule.run](pos);
 		if (this.mode === become) {
 			// re-evaluate the layer indicator and render the first frame NOW, not on the next event
 			this.overlayUi.zoneGrid(evt.shiftKey, true);
@@ -1205,6 +1137,98 @@ export class Input {
 		this.overlayUi.refreshHover(pos);
 		this.overlayUi.zoneGrid(evt.shiftKey, false);   // gesture over: the layer indicator follows Shift again
 		g.commit?.(this, ctx, pos, evt);
+	}
+
+	/*
+	THE ONE ROW a gesture's facts mean, from the named table (app/src/releases.js) -- read-only is the engine's guard, and
+	nothing else here tests it. `act` runs the action the row names on the gesture's data; a release no row means does
+	nothing (I6).
+	*/
+	decide(table, evt, facts) {
+		return resolveInput(this.meaningRules[table], evt, facts, { readOnly: this.readOnly }).rule;
+	}
+
+	act(rule, data) {
+		if (rule) this[rule.run](data);
+	}
+
+	// ---- the actions a release names. Each does what it is named; the row decided that it applies. ----
+
+	/*
+	Commit the drawn link -- subject to the plugin's judge, when a plugin judges drags. The judge is handed the RECORD of
+	the drag, as it happened; what it means is the judge's (network/grammar.mjs reads its facts from it). `release` says
+	whether it was released ON an anchor or ended at the last stop a key made; `route` and `pins` are as the drag leaves
+	them, the destination taken off. A refusal may name anchors to KEEP: they reach the planner in one commit, and
+	everything else the drag placed is cleaned up, as a cancelled drag's is -- the director's report was a refused `g` drag
+	throwing away the `g` anchor, geometry placed deliberately. True when the link was committed.
+	*/
+	commitDrawnLink({ ctx, dst, via, route, validTarget }) {
+		if (this.judgeDrag) {
+			const verdict = this.judgeDrag({ src: ctx.src.id, dst, pins: via, route, placed: ctx.placed.map((w) => w.id),
+				steps: ctx.steps, release: validTarget ? 'anchor' : 'stop', srcKey: ctx.srcKey ?? false });
+			if (!verdict?.ok) {
+				const keep = new Set(verdict?.keep ?? []);
+				const kept = ctx.placed.filter((w) => keep.has(w.id));
+				this.cleanupRoute({ placed: ctx.placed.filter((w) => !keep.has(w.id)) });
+				if (kept.length) this.history.commit(commands.keepAnchors(kept.map((w) => this.model.get('waypoint', w.id) ?? w)));
+				return false;
+			}
+		}
+		this.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
+		return true;
+	}
+
+	// ...and carry the run on from the anchor it landed on, when it was committed (Shift, a plain link)
+	commitDrawnLinkAndChain(d) {
+		if (this.commitDrawnLink(d)) this.chainFrom(d.target, d.pos);
+	}
+
+	chainOnFromTarget({ target, pos }) { this.chainFrom(target, pos); }
+
+	retypeClicked({ ctx }) {
+		this.history.commit(commands.retypeNode(ctx.src.id, this.palette.hand));
+		this.selection.set([ctx.src.id]);
+		this.labels.setFocus(ctx.src.id);
+	}
+
+	toggleClicked({ ctx }) { this.labels.setFocus(ctx.src.id); this.selection.toggle(ctx.src.id); }
+	selectClicked({ ctx }) { this.labels.setFocus(ctx.src.id); this.selection.set([ctx.src.id]); }
+	focusClicked({ ctx }) { this.labels.setFocus(ctx.src.id); }
+	discardDrawnLink({ ctx }) { this.cleanupRoute(ctx); }
+
+	stampClicked({ pos }) {
+		this.stampAt(pos);
+		this.refreshHand();   // the cell is occupied now: feedback must say so
+	}
+
+	clearOnClick() { this.selection.clear(); }
+	selectInBox({ box }) { this.selection.set(this.pickedIn(box)); }
+	addInBox({ box }) { this.selection.add(this.pickedIn(box)); }
+
+	// what a marquee box picks: nodes by footprint, waypoints by position, and a link when BOTH its ends are picked.
+	// Zones are not marquee-pickable (the Shift layer); they are selected directly
+	pickedIn(box) {
+		const picked = [];
+		this.model.all('node').forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
+		this.model.all('waypoint').forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
+		const inBox = new Set(picked);
+		this.model.all('link').forEach((l) => { if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id); });
+		return picked;
+	}
+
+	toggleCtrlClicked(ctx) {
+		this.selection.toggle(ctx.hit.id);
+		this.labels.setFocus(ctx.hit.id);
+	}
+
+	replugTo({ ctx, newSrc, newDst }) {
+		this.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
+	}
+
+	createZoneFrom(box) {
+		const zone = this.model.makeZone(box);
+		this.history.commit(commands.createEntity('zone', zone));
+		this.selection.set([zone.id]);
 	}
 
 	chainFrom(node, pos) {
@@ -1512,7 +1536,7 @@ export class Input {
 		answered `commit rejected - invalid`. B87's shape exactly -- an entry whose kind and payload
 		disagree, accepted by the optimistic apply and refused at the boundary.
 		*/
-		this.history.commit(commands.chainHop(this.ctx.placed, node, link));
+		this.history.commit(commands.chainHop(this.ctx.placed, node, link, this.ctx.unpin));
 		/*
 		Retire THIS hop's preview before starting the next one.
 
