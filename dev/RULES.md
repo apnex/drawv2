@@ -283,6 +283,7 @@ The table and the generated overlay land first; the menu is a later projection o
 **Q1, Q3 and Q4 -- ruled 2026-09-30** (`dev/DECISIONS.md`, "The Rules system's three owed rulings").\
 Q1: selection only, plus what each step of a drag landed on, recorded in the drag; no general hover yet.\
 Q3: an overlapping pair is always a gate failure; no `overrides:`.\
+CLARIFIED 2026-09-30: held for now, not committed to -- overrides may be allowed later if they serve (`dev/DECISIONS.md`, DG2; parked as B262).\
 Q4: binding now -- the situation is model-level, serialisable and DOM-free.
 
 **Owed at the time, kept as asked.**

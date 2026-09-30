@@ -2,13 +2,14 @@
 
 > **Tier 3 -- a design of record, proposed.** Written 2026-09-30 against `6be0bb5`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
-> No code moves until the director approves it, and then one stage at a time (section 9).
+> APPROVED 2026-09-30 with DG1, DG2, DG3 and DG5 as recommended (`dev/DECISIONS.md`); DG4 stays open until stage 7.
+> Built one stage at a time (section 9), each approved, gated and deployed to the lab.
 
 ## 1. Status
 
 - **Asked for:** by the director on 2026-09-30, twice in one exchange (section 2), both recorded in `dev/DECISIONS.md`.
 - **Builds on:** the Rules engine (`kernel/input-rules.mjs`, `dev/RULES.md` section 11) and its rulings Q1, Q3 and Q4; the input spec `dev/INPUT.md`, which this revises where it is out of date (section 3.4).
-- **Proposes; decides nothing.** Section 12 lists what only the director can settle, one decision at a time.
+- **Decided:** DG1, DG2, DG3 and DG5 as recommended, 2026-09-30; DG4 open (section 12).
 
 ---
 
@@ -83,7 +84,8 @@ Five input systems solve this problem, and they agree on more than they differ.
 **One lesson this design refuses.**\
 Every system above layers contexts by PRECEDENCE: a later row, a minor mode, a higher priority wins.\
 Q3 ruled that two rows matching one situation is a failure, never a win by position (2026-09-30).\
-So layers here compose by being disjoint -- a modal tool is a condition in the situation, not a layer that shadows another -- and section 12, decision DG2, asks the director whether that should stay strict.
+So layers here compose by being disjoint -- a modal tool is a condition in the situation, not a layer that shadows another.\
+Ruled for now, not committed to (DG2): overrides may be allowed later if they serve, and are parked as B262 with a revival trigger.
 
 **Why tracking input as events is safe here.**\
 The Rules system chose level-triggered rules over event handlers, because a peer that misses one event diverges (`engine/rules.mjs`).\
@@ -324,8 +326,13 @@ Re-check G1-G9 by their tests; the corpus size and its replay; `overlapsIn` over
 
 Each is a real fork, with a recommendation.
 
-- **DG1 -- scope and order.** Approve stages 1 to 5 (pure restructuring, no outcome changes), then 6 and 7? Recommended.
-- **DG2 -- layering.** Keep Q3 strict for pointer bindings too (contexts compose by disjoint conditions, never by priority), or allow an explicit priority between context layers, as Unreal and Emacs do? Recommended: strict.
-- **DG3 -- what "programmable" means now.** Bindings as data brought by tenants in source -- the product and plugins -- now; runtime editing by users or agents later, as its own decision, since it needs storage and conflict handling? Recommended.
-- **DG4 -- the menu's trigger.** Right press is taken (press and drag, Alt for delete, Ctrl for clone). Candidates: a long press, the keyboard's menu key, or right-click-without-drag on a selection. Needed before stage 7 only.
-- **DG5 -- sequences beyond drags.** Are prefix-key sequences wanted (a key, then another, as VS Code's chords)? Recommended: in the vocabulary's design, built only when a first binding asks.
+- **DG1 -- scope and order.** Approve stages 1 to 5 (pure restructuring, no outcome changes), then 6 and 7? Recommended.\
+  Ruled 2026-09-30: as recommended.
+- **DG2 -- layering.** Keep Q3 strict for pointer bindings too (contexts compose by disjoint conditions, never by priority), or allow an explicit priority between context layers, as Unreal and Emacs do? Recommended: strict.\
+  Ruled 2026-09-30: strict for now, not committed to; overrides parked as B262.
+- **DG3 -- what "programmable" means now.** Bindings as data brought by tenants in source -- the product and plugins -- now; runtime editing by users or agents later, as its own decision, since it needs storage and conflict handling? Recommended.\
+  Ruled 2026-09-30: as recommended.
+- **DG4 -- the menu's trigger.** Right press is taken (press and drag, Alt for delete, Ctrl for clone). Candidates: a long press, the keyboard's menu key, or right-click-without-drag on a selection. Needed before stage 7 only.\
+  Open.
+- **DG5 -- sequences beyond drags.** Are prefix-key sequences wanted (a key, then another, as VS Code's chords)? Recommended: in the vocabulary's design, built only when a first binding asks.\
+  Ruled 2026-09-30: as recommended.

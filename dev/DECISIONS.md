@@ -1386,6 +1386,7 @@ Asked `dev/RULES.md` Q1, Q3 and Q4 as the gate on step T3 of the ruleset audit, 
 The recommendations, as put to the director:
 - Q1: a rule sees the selection, plus what each step of a drag landed on (a node, an anchor, empty ground), recorded in the drag itself; no general hover, which can be added to the closed vocabulary later.
 - Q3: two rules matching the same situation is always a gate failure; no row may declare `overrides:`.
+  CLARIFIED 2026-09-30: held FOR NOW, not committed to -- the director: "We havent committed to that ruling. We may allow for ovverides later if it serves us and has value." Parked as B262, with its revival trigger.
 - Q4: the situation is binding now as model-level, serialisable and DOM-free data.
 
 **The Rules system is foundational to plugins, and a plugin's rules are the plugin's -- stated 2026-09-30.**\
@@ -1403,4 +1404,15 @@ So the example is behaviour-preserving: one link with a bend selected plus `c` c
 Approving a design for separating input capture, gesture lifecycle and meaning, the director added: "One thing I want to consider with the input/gesture updates - is context awareness - much like we did for the rules engine - having a progressive, modular, layered "gesture system" that tracks current inputs, keys and gestures - both ordering and concurrent - can be bound to an action and trigger it.\
 Essentially a programmable mapping - this will allow us to have "context aware menus" so the same action can have different meaning depending on what was pressed or selected etc".\
 Recorded as the director's intent; the design that answers it is `dev/design/input/GESTURE-SYSTEM.md`, awaiting approval.
+
+**The gesture system's scope and first decisions: DG1, DG2, DG3, DG5 as recommended -- ruled 2026-09-30.**\
+Asked the five decisions of `dev/design/input/GESTURE-SYSTEM.md` section 12, the director answered: "We havent committed to that ruling.\
+We may allow for ovverides later if it serves us and has value.\
+Keep it for now.\
+Agree wth your recommendations".
+- DG1: stages 1 to 5 (restructuring, no outcome changes) first, then 6 (generated help) and 7 (context menu).
+- DG2: no binding overrides another, for now -- contexts compose by disjoint conditions. Q3 is held, not committed to; overrides are parked as B262.
+- DG3: "programmable" means bindings are data brought by tenants in source; runtime editing by users or agents is a later, separate decision.
+- DG5: key sequences beyond drags are in the trigger vocabulary's design, built only when a first binding asks for one.
+- DG4, how a menu is opened, stays open; it is needed before stage 7 only.
 
