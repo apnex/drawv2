@@ -358,3 +358,12 @@ Each is a real fork, with a recommendation.
 - **One path changed, and it was unreachable:** a double click on a text box whose element is not drawn used to throw inside the label editor, and now opens nothing. A drawn text box always has its element.
 - **Mutation proof:** seven mutants, each caught -- no claim, no pointer capture, no region, typed keys reaching the canvas, focus on a control unseen, a DOM read back in Input, the context menu always suppressed.
 
+**Stage 2 -- L1 input state, 2026-09-30.**
+- **`app/src/input-state.js`: one value, one pure reducer.** `track(state, event)` folds input events and two notes actions leave for the next gesture -- a `w` placed this anchor; a chain began this drag. Input feeds it every event and reads from it.
+- **What moved into it:** the pointer position (`lastPos`, 26 reads), the armed `w` (`placedByW`, `armedSource`) and the chain flag (`ctx.chained`). Held keys, the press position and the distance travelled are NOT in it yet: nothing reads them until stage 3's triggers, and the guardrails forbid a field with no reader.
+- **G2 is held by tests:** the reducer never changes its arguments, gives the same output for the same input, folds a recorded stream to the same state however it is split, and its source reads no clock, randomness, DOM or instance.
+- **One behaviour changed, to follow a ruling: B263 (H17.9).** Tracked uniformly, every press spends the armed `w`; the old press handler returned for run mode first, so a run-mode click did not. The ruling counts the `w` only "if that same anchor remains the sole selected anchor, and the next gesture is a drag", and a run-mode click is the next gesture. A new corpus scenario records the judge handed `srcKey: 'w'` against the old code and `false` now.
+- **One unobservable difference:** a run-mode press, and a press that continues a chain, now record the pointer position too. In a browser a press lands where the last move was, so nothing reads a different value.
+- **A gap closed:** a mutant that forgot the chain note survived every suite and the corpus -- the retype a chained click must not do was untested before this stage too. A scenario now holds it, and the mutant fails.
+- **Behaviour otherwise unchanged:** every existing corpus record byte-identical; eight mutants, each caught.
+

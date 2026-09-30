@@ -40,6 +40,7 @@ import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHi
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
+import { initialInputState, track } from './input-state.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
@@ -300,7 +301,7 @@ const GESTURES = {
 				const hand = i.palette.hand;
 				// fast-replace gate mirrors the stamp gate (plain click only) and never fires on a
 				// chain anchor (that click ends the run, selecting)
-				if (i.model.get('node', ctx.src.id) && hand && hand !== 'waypoint' && !ctx.chained
+				if (i.model.get('node', ctx.src.id) && hand && hand !== 'waypoint' && !i.state.chained
 					&& !evt.shiftKey && !evt.ctrlKey && !evt.altKey && hand !== ctx.src.type) {
 					i.history.commit(commands.retypeNode(ctx.src.id, hand));
 					i.selection.set([ctx.src.id]);
@@ -331,7 +332,7 @@ const GESTURES = {
 			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
 			i.overlayUi.clearHover();
 			const sole = i.selection.list();
-			const srcKey = i.armedSource === src.id && sole.length === 1 && sole[0] === src.id ? 'w' : false;
+			const srcKey = i.state.armed.source === src.id && sole.length === 1 && sole[0] === src.id ? 'w' : false;
 			i.ctx = i.linkDrag(src, pos, { shift: evt.shiftKey, srcKey });
 			i.updateLinkPreview(pos);
 			return i.ctx;
@@ -475,10 +476,11 @@ export class Input {
 		a trap, and this tree has already paid for one.
 		*/
 		this.now = typeof now === 'function' ? now : () => Date.now();
-		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)
+		// L1: what the input has done, as one value -- the pointer, the armed `w`, a chain (app/src/input-state.js)
+		this.state = initialInputState();
 		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
-		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, lastPos).
+		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
 		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap });
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
@@ -529,7 +531,7 @@ export class Input {
 	leave() {
 		this.readout.setCursor(null);
 		this.palette.hideHand();
-		this.lastPos = null;
+		this.state = track(this.state, { type: 'leave' });
 	}
 
 	// ---- hit helpers ----
@@ -566,26 +568,26 @@ export class Input {
 	surface-mode guard, a live-gesture hook, and an ordered table (app/src/recognize.js).
 	*/
 	press(evt) {
+		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js)
+		this.state = track(this.state, evt);
 		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
 		if (this.renderer.mode === 'run') return this.runModePress(evt);
 
 		// chain wiring: the live gesture CONSUMES this press. Not a rule about starting one.
-		if (this.mode === 'link' && evt.button === 0) { this.ctx.chained = false; return; }
+		if (this.mode === 'link' && evt.button === 0) return;   // the press already ended the chain (input state)
 
 		if (this.labels.isOpen()) this.labels.close(true);
 		this.palette.hideHand();
 
 		/*
 		THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: it counts as the drag's first key "if that same anchor remains
-		the sole selected anchor, and the next gesture is a drag". Every press consumes it, so a click away clears it; the
-		link drag's start keeps it only if it begins on that anchor while it is still the sole selection.
+		the sole selected anchor, and the next gesture is a drag". Every press consumes it -- the input state hands it from
+		`armed.placed` to `armed.source` -- and the link drag's start keeps it only if it begins on that anchor while it is
+		still the sole selection.
 		*/
-		this.armedSource = this.placedByW; this.placedByW = null;
-
 		const hit = evt.on;
 		const pos = evt.at;
-		this.lastPos = pos;
 		const rule = resolveRule(RECOGNIZE, hit, evt, this.ruleCtx());
 		if (!rule) return;
 
@@ -928,8 +930,8 @@ export class Input {
 
 	// 'w' when idle: drop a standalone waypoint at the snapped cursor cell (empty cells only)
 	placeWaypoint() {
-		if (!this.lastPos) return false;
-		const snapped = snapNode(this.lastPos);
+		if (!this.state.pointer.at) return false;
+		const snapped = snapNode(this.state.pointer.at);
 		if (occupiedAnyAt(this.model, snapped)) return false;
 		/*
 		B162: placed deliberately, with no link -- so it carries `pinned`.
@@ -942,7 +944,7 @@ export class Input {
 		*/
 		const wp = { ...this.model.makeWaypoint(snapped), pinned: true };
 		this.history.commit(commands.createEntity('waypoint', wp));
-		this.placedByW = wp.id;   // may count as the next drag's first key (see onDown)
+		this.state = track(this.state, { type: 'armed', id: wp.id });   // may count as the next drag's first key (see press)
 		this.selection.set([wp.id]);
 		this.labels.setFocus(wp.id);
 		return true;
@@ -956,8 +958,8 @@ export class Input {
 	is the drag as it happened: each key that acted, and the stop it made -- what a plugin reads to know how its stops
 	came to be, instead of flags set along the way. With no plugin every stop is a pin, so `route` is `via`.
 	*/
-	linkDrag(src, pos, { shift = false, srcKey = false, chained = false } = {}) {
-		return { src, path: previewPath(this.overlay), target: null, start: pos, shift, srcKey, ...(chained ? { chained } : {}),
+	linkDrag(src, pos, { shift = false, srcKey = false } = {}) {
+		return { src, path: previewPath(this.overlay), target: null, start: pos, shift, srcKey,
 			via: [], route: [], placed: [], steps: [] };
 	}
 
@@ -974,10 +976,10 @@ export class Input {
 	release; a cell a node occupies is refused.
 	*/
 	addStop({ key, pin, nodes = false }) {
-		if (!this.lastPos) return;
+		if (!this.state.pointer.at) return;
 		const ctx = this.ctx;
-		const snapped = snapNode(this.lastPos);
-		const existing = this.model.waypointAt(snapped) ?? (nodes ? nodeAt(this.model, this.lastPos) : null);   // occupancy index (R13)
+		const snapped = snapNode(this.state.pointer.at);
+		const existing = this.model.waypointAt(snapped) ?? (nodes ? nodeAt(this.model, this.state.pointer.at) : null);   // occupancy index (R13)
 		if (existing && pin) {
 			if (existing.id === ctx.src.id) return;        // don't thread the source itself
 			/*
@@ -1005,7 +1007,7 @@ export class Input {
 			ctx.placed.push(wp);
 		}
 		ctx.steps.push({ key, stop: existing ? existing.id : ctx.route[ctx.route.length - 1] });
-		this.updateLinkPreview(this.lastPos);
+		this.updateLinkPreview(this.state.pointer.at);
 	}
 
 	// the live route preview: a rounded polyline through src → threaded waypoints → cursor/target
@@ -1103,10 +1105,10 @@ export class Input {
 	deep; each is now the entry that owns the rest of that gesture's lifecycle.
 	*/
 	move(evt) {
+		this.state = track(this.state, evt);
 		const moving = this.mode === 'move' || this.mode === 'clone';
 		this.overlayUi.zoneGrid(evt.shiftKey, moving);
 		const pos = evt.at;
-		this.lastPos = pos;
 
 		if (!this.mode) {
 			// idle: the stamp ghost rides the snapped cell and the readout states the landing
@@ -1216,7 +1218,8 @@ export class Input {
 
 	chainFrom(node, pos) {
 		this.mode = 'link';
-		this.ctx = this.linkDrag(node, pos, { chained: true });   // B261: the same drag context as any other
+		this.state = track(this.state, { type: 'chained' });   // a chain began this drag, not a press (input state)
+		this.ctx = this.linkDrag(node, pos);   // B261: the same drag context as any other
 		this.updateLinkPreview(pos);
 		this.readout.setLink(node.name || '?', snapNode(pos));
 	}
@@ -1279,8 +1282,8 @@ export class Input {
 
 	// after a hand change at idle: ghost and readout reflect it immediately
 	refreshHand() {
-		if (this.mode || !this.lastPos) return;
-		const snapped = snapNode(this.lastPos);
+		if (this.mode || !this.state.pointer.at) return;
+		const snapped = snapNode(this.state.pointer.at);
 		const blocked = this.handBlocked(snapped);
 		if (this.palette.hand) this.palette.trackHand(snapped, blocked);
 		this.readout.setCursor(snapped, this.palette.hand, blocked);
@@ -1372,9 +1375,9 @@ export class Input {
 	calling that step 'node' changes nothing production does (tests/rules-acceptance.test.js holds the geometry).
 	*/
 	stepUnderPointer() {
-		if (!this.lastPos) return null;
-		if (this.model.waypointAt(snapNode(this.lastPos))) return 'waypoint';
-		return nodeAt(this.model, this.lastPos) ? 'node' : 'ground';
+		if (!this.state.pointer.at) return null;
+		if (this.model.waypointAt(snapNode(this.state.pointer.at))) return 'waypoint';
+		return nodeAt(this.model, this.state.pointer.at) ? 'node' : 'ground';
 	}
 
 	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
@@ -1382,7 +1385,7 @@ export class Input {
 	onShiftDown(evt) {
 		if (this.mode === 'move' || this.mode === 'clone') {
 			// re-render the drag NOW: the commit follows the last rendered frame
-			if (this.lastPos) this.updateMove(this.lastPos, true);
+			if (this.state.pointer.at) this.updateMove(this.state.pointer.at, true);
 		} else {
 			this.overlayUi.zoneGrid(true, false);
 		}
@@ -1417,7 +1420,7 @@ export class Input {
 		else if (this.palette.textTool) this.palette.setTextTool(false);
 		else if (this.palette.hand) {
 			this.palette.setHand(null);
-			this.readout.setCursor(this.lastPos ? snapNode(this.lastPos) : null);
+			this.readout.setCursor(this.state.pointer.at ? snapNode(this.state.pointer.at) : null);
 		} else this.selection.clear();
 	}
 
@@ -1435,8 +1438,8 @@ export class Input {
 	}
 
 	onDatum() {
-		if (!this.lastPos) return;   // pointer off-canvas: nothing to anchor
-		const datum = snapNode(this.lastPos);
+		if (!this.state.pointer.at) return;   // pointer off-canvas: nothing to anchor
+		const datum = snapNode(this.state.pointer.at);
 		this.readout.setDatum(datum);
 		this.overlayUi.datum(datum);
 	}
@@ -1492,8 +1495,8 @@ export class Input {
 	undo halfway along a run they are still drawing.
 	*/
 	chainThroughNode(type) {
-		if (!this.lastPos) return;
-		const snapped = snapNode(this.lastPos);
+		if (!this.state.pointer.at) return;
+		const snapped = snapNode(this.state.pointer.at);
 		// the same refusal `addStop` makes, for the same reason: a taken cell is taken
 		if (occupiedAt(this.model, snapped)) return;
 		// the source can die mid-gesture (a peer deleting it), and committing onto a corpse would
@@ -1527,12 +1530,12 @@ export class Input {
 		links drawn on top of the glyphs -- which is what made a z-order defect out of a leak.
 		*/
 		this.ctx.path.remove();
-		this.chainFrom(node, this.lastPos);
+		this.chainFrom(node, this.state.pointer.at);
 	}
 
 	onPipette() {
 		if (this.mode) return;
-		const over = this.lastPos && nodeAt(this.model, this.lastPos);
+		const over = this.state.pointer.at && nodeAt(this.model, this.state.pointer.at);
 		this.palette.setHand(over ? over.type : null);
 		this.refreshHand();
 	}
@@ -1542,7 +1545,7 @@ export class Input {
 		// mouseless chaining: stamp at the ghost, then re-evaluate the cell — it is occupied now,
 		// and the feedback must say so without a mouse move
 		evt.claimed = true;
-		if (this.lastPos) { this.stampAt(this.lastPos); this.refreshHand(); }
+		if (this.state.pointer.at) { this.stampAt(this.state.pointer.at); this.refreshHand(); }
 	}
 
 	/*
@@ -1620,9 +1623,9 @@ export class Input {
 	keyUp(evt) {
 		if (evt.key === 'Shift') {
 			this.overlayUi.zoneGrid(false, false);
-			if ((this.mode === 'move' || this.mode === 'clone') && this.lastPos) {
+			if ((this.mode === 'move' || this.mode === 'clone') && this.state.pointer.at) {
 				// re-render with the lock released: the commit follows the frame
-				this.updateMove(this.lastPos, false);
+				this.updateMove(this.state.pointer.at, false);
 			}
 			// the zone layer just went inert: a hovered zone must drop its states
 			if (this.overlayUi.hovered && kindOf(this.overlayUi.hovered) === 'zone') {

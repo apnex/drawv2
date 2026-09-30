@@ -1368,7 +1368,7 @@ test('B146: the waypoint is not a palette digit, and `w` still covers both state
 	const h = makeInput();
 	try {
 		// idle: `w` places a standalone waypoint. This is the case the tile duplicated.
-		h.input.lastPos = { x: 0, y: 0 };
+		h.capture.onMove(pointer(0, 0));
 		h.capture.onKeyDown(key('w'));
 		assert.equal(h.model.all('waypoint').length, 1, '`w` places one when idle');
 
@@ -1399,9 +1399,9 @@ test('B147: a digit mid-link-drag places that node, ends the segment on it, and 
 		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
 		h.capture.onMove(pointer(0, 0));
 
-		h.input.lastPos = { x: 0, y: 0 };
+		h.capture.onMove(pointer(0, 0));
 		h.capture.onKeyDown(key('3'));                       // loadbalancer, the third type
-		h.input.lastPos = { x: 120, y: 0 };
+		h.capture.onMove(pointer(120, 0));
 		h.capture.onKeyDown(key('5'));                       // vxlan, the fifth
 
 		const made = h.model.all('node').filter((n) => n.id !== a.id);
@@ -1446,7 +1446,7 @@ test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => 
 		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
 		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
 		h.capture.onMove(pointer(0, 0));
-		h.input.lastPos = { x: 0, y: 0 };                  // sitting on `blocker`
+		h.capture.onMove(pointer(0, 0));                  // sitting on `blocker`
 
 		const before = h.model.all('node').length;
 		h.capture.onKeyDown(key('2'));
@@ -1456,7 +1456,7 @@ test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => 
 
 		// the run is untouched -- shown by it still working from the ORIGINAL source, which is a
 		// fact about the next commit rather than about a field
-		h.input.lastPos = { x: 120, y: 0 };
+		h.capture.onMove(pointer(120, 0));
 		h.capture.onKeyDown(key('2'));
 		const link = h.model.all('link')[0];
 		assert.ok(link, 'a later hop still commits');
@@ -1495,12 +1495,12 @@ test('B147: chaining leaves exactly one live preview, not one per hop', () => {
 		h.capture.onMove(pointer(0, 0));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'one preview while drawing');
 
-		h.input.lastPos = { x: 0, y: 0 };
+		h.capture.onMove(pointer(0, 0));
 		h.capture.onKeyDown(key('3'));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1,
 			'still one after a hop -- the previous hop took its dashed line with it');
 
-		h.input.lastPos = { x: 120, y: 0 };
+		h.capture.onMove(pointer(120, 0));
 		h.capture.onKeyDown(key('5'));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'and after a second');
 

@@ -999,6 +999,96 @@
 			]
 		}
 	},
+	"link-digit-chain-click-keeps-type": {
+		"claims": [
+			false,
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "node",
+						"entity": {
+							"id": "node#1",
+							"name": "server-1",
+							"type": "server",
+							"shape": "circle",
+							"x": 180,
+							"y": 240
+						}
+					},
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#1",
+							"name": "link-1",
+							"src": "node#2",
+							"dst": "node#1"
+						}
+					}
+				],
+				"label": "chain"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [
+			[
+				"palette.setHand",
+				"router"
+			]
+		],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#2",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#3",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				},
+				{
+					"id": "node#1",
+					"name": "server-1",
+					"type": "server",
+					"shape": "circle",
+					"x": 180,
+					"y": 240
+				}
+			],
+			"waypoints": [],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"src": "node#2",
+					"dst": "node#1"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
 	"link-right-button-release-ignored": {
 		"claims": [
 			false,
@@ -4295,6 +4385,115 @@
 			"zones": [],
 			"groups": [],
 			"selection": []
+		}
+	},
+	"plugin-source-w-spent-by-run-press": {
+		"claims": [
+			true,
+			false,
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "waypoint",
+						"entity": {
+							"id": "waypoint#1",
+							"name": "waypoint-1",
+							"x": 180,
+							"y": 240,
+							"pinned": true
+						}
+					}
+				],
+				"label": "create waypoint"
+			},
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#1",
+							"name": "link-1",
+							"src": "waypoint#1",
+							"dst": "node#1"
+						}
+					}
+				],
+				"label": "link"
+			}
+		],
+		"judged": [
+			{
+				"src": "waypoint#1",
+				"dst": "node#1",
+				"pins": [],
+				"placed": [],
+				"srcKey": false,
+				"guides": [],
+				"stops": [
+					"waypoint#1",
+					"node#1"
+				],
+				"pressed": {
+					"w": false,
+					"g": false
+				},
+				"endPressed": false
+			}
+		],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#2",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#1",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [
+				{
+					"id": "waypoint#1",
+					"name": "waypoint-1",
+					"x": 180,
+					"y": 240,
+					"pinned": true
+				}
+			],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"src": "waypoint#1",
+					"dst": "node#1"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"link#1"
+			]
 		}
 	},
 	"plugin-source-w": {

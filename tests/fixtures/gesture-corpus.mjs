@@ -115,6 +115,8 @@ export const SCENARIOS = [
 	{ id: 'link-shift-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 360, 360, 'n2'], ['down', 360, 360, 'n2'], ['up', 360, 360, 'n2', { up: true }]] },
 	{ id: 'link-shift-chain-then-w', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 480, 180], ['key', 'w'], ['move', 360, 360, 'n2'], ['up', 360, 360, 'n2', { up: true }]] },
 	{ id: 'link-digit-chain', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 240], ['key', '2'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
+	// a drag chained through a node by a digit, released without moving: a click, but NOT a retype of the node just placed
+	{ id: 'link-digit-chain-click-keeps-type', board: 'pair', steps: [['hand', 'router'], ['down', 0, 0, 'n0'], ['move', 180, 240], ['key', '2'], ['up', 180, 240, null, { up: true }]] },
 	{ id: 'link-right-button-release-ignored', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { button: 2, up: true }], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'link-to-waypoint-end', board: 'bent', steps: drag([360, 0], [180, 120], 'n1', 'w0') },
 	// ---- clicks through the link gesture ----
@@ -176,6 +178,8 @@ export const SCENARIOS = [
 	{ id: 'plugin-g-refused-keeps', board: 'pair', judge: 'keep-guides', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['w', 120, 120], ['g', 240, 120]]) },
 	{ id: 'plugin-w-on-node', board: 'three', judge: 'accept', steps: drag([0, 0], [360, 360], 'n0', 'n2', {}, [['w', 360, 0, 'n1']]) },
 	{ id: 'plugin-duplicate-reaches-judge', board: 'straight', judge: 'refuse', steps: drag([0, 0], [360, 0], 'n0', 'n1') },
+	// B263: a run-mode click is the next gesture and not a drag, so the w that placed the source no longer counts (ruled 2026-09-30)
+	{ id: 'plugin-source-w-spent-by-run-press', board: 'pair', judge: 'accept', steps: [['at', 180, 240], ['key', 'w'], ['mode', 'run'], ['down', 0, 0, 'n0'], ['up', 0, 0, 'n0', { up: true }], ['mode', 'view'], ['down', 180, 240, 'last'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'plugin-source-w', board: 'pair', judge: 'accept', steps: [['at', 180, 240], ['key', 'w'], ['down', 180, 240, 'last'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
 ];
 
