@@ -7,7 +7,7 @@
 ## 1. Yield
 
 **Audited: 123 rules in code and 87 rulings at `f5c36ca`.**
-- **Confirmed defects: 3.** One lab defect and one production defect, both new (B257, B258). One production defect already registered and now reproduced (B245).
+- **Confirmed defects: 4.** Two lab defects and one production defect, all new (B257, B260, B258). One production defect already registered and now reproduced (B245). B260 was added after publication (F16).
 - **Records conflicts: 2.** Ruling #85 contradicts #20, and an amendment to #8 is claimed but not recorded. Five matrix rows also cite statements `dev/DECISIONS.md` does not hold.
 - **Consolidation findings: 6.** These cover duplicated decisions, route computation (9-15 per edit, where 1 is enough), seams, and dead values.
 - **Candidates rejected: 6** (section 5).
@@ -51,6 +51,7 @@ This is a review, not a verifier's attestation.
 | F13 | S4 | #70 (a refused `g` drag keeps its anchors) is held by a unit test only. | RULESET 6 | accept, as a declared gap (X4) |
 | F14 | S4 | The lab root is at 176 of its 180-line budget, because the settle and pending-legs orchestration live there. | lab/src/root.js:160-185 | T5 |
 | F15 | S3 | The drag grammar (RULESET G2-G13) lives in imperative flags in Input and conditions in `judgeDrag`, outside `RECOGNIZE`, `KEYMAP` and the Rules system. The Rules system's rule table was left unbuilt "because nothing has needed it". | RULESET 7; dev/RULES.md section 3 | T3, gated on the Rules system's owed rulings |
+| F16 | S2 | Added 2026-09-30 after publication, found while writing B257's test: a request the planner refuses stays applied in the tab, because the lab's door returns on a refusal where production resynchronises. The code inventory had recorded the behaviour (its rule 99), and this audit missed it on first writing. | lab/src/root.js (`if (!answer.ok)`); app/src/sync.js (`requestResync`) | **fixed**, B260: the tab reloads from the planner |
 
 ---
 

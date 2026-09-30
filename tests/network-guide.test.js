@@ -243,3 +243,20 @@ test('the w that placed the source lays the final pipe WITH the link; a g in the
 	assert.deepEqual(laid(withG), ['S-G:hand', 'G-E:hand']);
 });
 
+/*
+B257 -- THE SWEEP WORKS ROUTES OUT AS DRAWING DOES. `routesOf` assigned routes in id order while drawing assigned them by
+age; once any link could use a free w pipe (2026-09-30), the two disagreed about which pipes were in use, and the sweep
+deleted pipes a link was drawn on. MEASURED on this board: the id-order sweep removed C-x, x-y and y-D.
+*/
+test('B257: the sweep and the reference check work routes out by age, exactly as drawing does', () => {
+	const l = (a, b) => ({ a, b, laid: 'link' });
+	const board = [l('W1', 'W2'), ...pipes(['A', 'W1'], ['W2', 'B'], ['C', 'W1'], ['W2', 'D']), l('C', 'x'), l('x', 'y'), l('y', 'D')];
+	const older = X('link-z', 'A', 'B'), younger = X('link-a', 'C', 'D');   // the older sorts LAST by id
+	const rankOf = (id) => (id === 'link-z' ? 0 : 1);
+	const drawn = assignRoutes(board, [older, younger], { rankOf });
+	assert.deepEqual(drawn.get('link-a'), ['C', 'x', 'y', 'D'], 'drawn by age, the younger link runs C-x-y-D');
+	const used = new Set(routesOf(board, [older, younger], rankOf).flatMap((r) => r.slice(1).map((b, i) => [r[i], b].sort().join('|'))));
+	for (const k of ['C|x', 'x|y', 'D|y']) assert.ok(used.has(k), `the sweep must count ${k} as in use: a link is drawn on it`);
+	const refs = pipeAnchors(board, model(['A', 'B', 'C', 'D', 'W1', 'W2', 'x', 'y'], [older, younger]), rankOf);
+	assert.ok(refs.has('x') && refs.has('y'), 'and the reference check must hold the anchors it runs through');
+});

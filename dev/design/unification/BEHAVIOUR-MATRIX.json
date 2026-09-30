@@ -2375,6 +2375,49 @@
 			"built": "yes"
 		},
 		{
+			"id": "RFS-01",
+			"state": "pinned",
+			"gesture": "draw: `w` bend",
+			"does": "Draw the pinned link again: drag from A, press w on its pin, press w on B, and release.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							0,
+							-120
+						],
+						[
+							"w",
+							360,
+							0
+						]
+					]
+				]
+			],
+			"intent": "The planner refuses a second link on the same pair bending at the same anchor. The notice says so, and the tab shows nothing of the refused link: it holds exactly what the planner holds.",
+			"expect": {
+				"refused": true,
+				"links": 1,
+				"pipes": {
+					"link": 2,
+					"hand": 0
+				}
+			},
+			"rule": "Production resynchronises a tab whose optimistic change the server refused (app/src/sync.js, requestResync); the lab mounts the same rule (B260).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "UNDO-01",
 			"state": "w-chain",
 			"gesture": "undo",

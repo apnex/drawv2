@@ -140,10 +140,10 @@ link's bends.
 // whether an anchor exists in a model -- a pipe survives an edit only while both of its ends do (SD7)
 const anchorIn = (model) => (id) => !!(model.get('node', id) || model.get('waypoint', id));
 
-export function pipeAnchors(pipes, model) {
+export function pipeAnchors(pipes, model, rankOf) {
 	const alive = anchorIn(model);
 	const carried = new Set();
-	for (const r of routesOf(pipes, model.all('link'))) for (let i = 0; i < r.length - 1; i++) carried.add(pipeKey(r[i], r[i + 1]));
+	for (const r of routesOf(pipes, model.all('link'), rankOf)) for (let i = 0; i < r.length - 1; i++) carried.add(pipeKey(r[i], r[i + 1]));
 	const ids = new Set();
 	for (const { a, b, laid } of pipes) {
 		if (!alive(a) || !alive(b)) continue;
@@ -186,13 +186,15 @@ the proposer reading recorded under the 2026-09-27 lifetime ruling. So a down li
 legs of its intent (its ends and pins in order) rather than nothing; otherwise sweeping would remove
 the very pipes it needs to come back.
 */
-export function routesOf(pipes, links) {
+export function routesOf(pipes, links, rankOf) {
 	/*
-	The routes as shared out, one link per pipe (2026-09-30). WHICH link is older does not matter here, so no
-	order is taken: a pipe laid with a link is carried by the link whose stops it joins, whatever the order --
-	up, it runs over it; down, its own legs are kept for it -- and a hand-laid pipe is never swept.
+	The routes as shared out -- BY AGE, exactly as drawing shares them (B257). This once took no order, on the
+	reading that age could not change which link-laid pipes are in use; that held only while a w pipe carried its
+	own link alone. Once any link may use a free w pipe (2026-09-30), the order decides who is on it, and an
+	id-order sweep deleted pipes a link was drawn on. So the sweep and the reference check work routes out as
+	drawing does -- the same function and the same ages -- until one derivation serves all three (RULESET-AUDIT T2).
 	*/
-	const routes = assignRoutes(pipes, links);
+	const routes = assignRoutes(pipes, links, { rankOf });
 	return links.map((l) => routes.get(l.id) ?? [l.src, ...(l.via ?? []), l.dst]);
 }
 

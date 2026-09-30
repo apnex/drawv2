@@ -430,6 +430,33 @@ test('a drawn link is given its age when the planner accepts it, and keeps it th
 });
 
 /*
+B257 -- the lab's sweep keeps the pipes a link is DRAWN on. The older link sorts last by id, so an id-order sweep and the
+age-order drawing disagree about who runs over the free w pipe W1-W2; the younger link is drawn over C-x-y-D, and an
+id-order sweep deleted those pipes at the next edit. Built through the door with fixed ids, so the orders are known.
+*/
+test('B257: an edit keeps the pipes a link is drawn on, whichever order ids sort in', { skip: SKIP }, async () => {
+	const p = await open('');
+	try {
+		const wp = (id, x, y) => `{ op: 'put', kind: 'waypoint', entity: { id: '${id}', name: '${id}', x: ${x}, y: ${y} } }`;
+		const lk = (id, s, d) => `{ op: 'put', kind: 'link', entity: { id: '${id}', name: '${id}', src: '${s}', dst: '${d}' } }`;
+		const put = (label, entries) => p.run(`lab.history.commit({ label: '${label}', entries: [${entries.join(', ')}] })`);
+		await put('anchors', [wp('waypoint-00000a', -480, -120), wp('waypoint-00000b', 480, -120), wp('waypoint-00000c', -480, 240), wp('waypoint-00000d', 480, 240),
+			wp('waypoint-0000e1', -120, 0), wp('waypoint-0000e2', 120, 0), wp('waypoint-0000f1', -120, 360), wp('waypoint-0000f2', 120, 360)]);
+		await put('older', [lk('link-0000ff', 'waypoint-00000a', 'waypoint-00000b')]);      // aged first, sorts last by id
+		await put('younger', [lk('link-000001', 'waypoint-00000c', 'waypoint-00000d')]);
+		// the pipes, once both links exist -- a link pipe with no link on it is swept, as ruled
+		await p.run(`[['waypoint-0000e1','waypoint-0000e2','link'], ['waypoint-00000a','waypoint-0000e1','hand'], ['waypoint-0000e2','waypoint-00000b','hand'],
+			['waypoint-00000c','waypoint-0000e1','hand'], ['waypoint-0000e2','waypoint-00000d','hand'], ['waypoint-00000c','waypoint-0000f1','link'],
+			['waypoint-0000f1','waypoint-0000f2','link'], ['waypoint-0000f2','waypoint-00000d','link']].forEach(([a, b, laid]) => lab.pipes.lay(a, b, laid))`);
+		await put('unrelated', [wp('waypoint-000099', 600, 420)]);                          // any edit settles, and sweeps
+		assert.equal(await p.run(`['waypoint-00000c|waypoint-0000f1', 'waypoint-0000f1|waypoint-0000f2', 'waypoint-0000f2|waypoint-00000d']
+			.filter((k) => lab.pipes.has(...k.split('|'))).length`), 3, 'the pipes the younger link is drawn on survive the sweep');
+		assert.match(await p.run(`document.getElementById('link-000001').getAttribute('d')`), /Q-120 360/, 'and it is drawn over them, by age');
+		assert.equal(await p.run(`lab.model.isLinkDown(lab.model.get('link', 'link-0000ff'))`), false, 'while the older link keeps the free w pipe');
+	} finally { await p.close(); }
+});
+
+/*
 THE SEEDS ARE BOARDS A HAND COULD DRAW -- ruled 2026-09-29, "Yes, as the gesture would".
 
 A pipe joining two consecutive stops of a PINNED link's intent (its ends and pins, in order) is what `w` lays,

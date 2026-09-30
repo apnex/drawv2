@@ -73,7 +73,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link |
 |---|---|---|---|---|---|---|---|---|---|---|
 | routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | . | . |
-| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | . | . | . |
+| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | . | . |
 | pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . |
 | pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . |
 | w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . |
@@ -86,7 +86,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . |
 | older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . |
 
-42 rows: 42 built, 0 todo, 0 open.\
+43 rows: 43 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -167,6 +167,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | SRC-02 | w-chain x draw: mouseup on end | Press w below to place S, click away, then drag from S to P1, and release. | The click away clears the w, so the drag follows the normal rules: a plain link that lays no pipe, made down; the junction is still made. | DECISIONS: "The w that placed the source counts as the drag's first key" (2026-09-30). "This eliminates the case where you click off the anchor to unselect it". | ruled, built |
 | SRC-03 | w-chain x draw: `g` bend | Press w below to place S, then drag from S with g at a point and g on the end E, and release. | A g in the drag cancels the source w: two hand pipes are laid and no link is made, so the chain is untouched. | DECISIONS: "The w that placed the source counts as the drag's first key" (2026-09-30). Asked whether a g in the drag cancels it, the director chose "A g in the drag cancels it". | ruled, built |
 | DIR-01 | routed x draw: `w` bend | Drag from A, press w on node C, and release there. | A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop. | DECISIONS: "w may be pressed on a node as the last hop" (2026-09-30). | ruled, built |
+| RFS-01 | pinned x draw: `w` bend | Draw the pinned link again: drag from A, press w on its pin, press w on B, and release. | The planner refuses a second link on the same pair bending at the same anchor. The notice says so, and the tab shows nothing of the refused link: it holds exactly what the planner holds. | Production resynchronises a tab whose optimistic change the server refused (app/src/sync.js, requestResync); the lab mounts the same rule (B260). | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
 <!-- END GENERATED: rows -->
 

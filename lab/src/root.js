@@ -166,7 +166,7 @@ sweeping after an undo would leave the redone link with no pipes. That is a stat
 */
 const settle = (sweep, fallback) => {
 	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));   // a pipe to a gone anchor is not a pipe (SD7)
-	if (sweep) pipes.sweep(routesOf(pipes.list(), authority.all('link')));
+	if (sweep) pipes.sweep(routesOf(pipes.list(), authority.all('link'), order.rankOf));   // by age, as drawn (B257)
 	drawPipes();
 	for (const l of model.all('link')) renderer.update('link', l);
 	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
@@ -211,13 +211,19 @@ history.onCommit((request) => {
 		// pipes reference anchors too, and live here rather than in the document, so the planner is told
 		// -- or its orphan sweep removes an anchor that pins one link and guides another (measured)
 		: commit(authority, log, request, 'lab', 'lab', {
-			alsoReferenced: (m) => pipeAnchors(pipes.list(), m),   // only pipes that survive the edit being judged
+			alsoReferenced: (m) => pipeAnchors(pipes.list(), m, order.rankOf),   // only pipes that survive the edit being judged
 			keepsOrphan,   // the network model's rule: only links and hand-laid pipes keep an anchor (2026-09-29)
 			// a link that loses a pin with no other way is deleted whole (2026-09-29), judged over surviving pipes
 			isStranded: (link, m) => isStranded(pipes.list(), link, m),
 		});
 	const legs = pendingLegs; pendingLegs = null;
-	if (!answer.ok) { say(`refused: ${answer.error}`); return; }
+	/*
+	B260 -- A REFUSAL TAKES THE PLANNER'S DOCUMENT BACK. The tab applied the request optimistically, so a refused one
+	left the tab holding what the planner does not -- a link that was never made. Production resynchronises in that case
+	(app/src/sync.js, requestResync); in the lab the planner is in the page, so the tab reloads from it, keeping its
+	selection of whatever still exists.
+	*/
+	if (!answer.ok) { model.load({ ...authority.toJSON(), selection: [...model.state.selection] }); settle(false, ''); say(`refused: ${answer.error}`); return; }
 	// pipes BEFORE the tab applies the link, so the link is drawn along them from its first frame
 	for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid);
 	/*
