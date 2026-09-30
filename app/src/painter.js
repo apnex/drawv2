@@ -110,3 +110,14 @@ export function previewPath(overlay) {
 		remove() { p.remove(); }
 	};
 }
+
+/*
+Small DOM questions the input layers used to ask themselves, asked here instead -- the gesture system keeps every DOM
+read in capture and the view modules (dev/design/input/GESTURE-SYSTEM.md, invariant G1).
+*/
+// whether a panel (the help overlay) is showing, and show or hide it
+export const isShown = (el) => !el.hidden;
+export const setShown = (el, show) => { el.hidden = !show; };
+// a named layer of the canvas, by id
+export const layerOf = (svg, id) => svg.querySelector(`#${id}`);
+

@@ -20,10 +20,10 @@ const empty = (x, y) => pointer(x, y);
 
 // drag from a to b, pressing `keys` at the listed points on the way
 function drag(h, a, b, hops) {
-	h.input.onDown(over(a.id, a.x, a.y));
-	for (const [k, x, y] of hops) { h.input.onMove(empty(x, y)); h.input.onKeyDown(key(k)); }
-	h.input.onMove(over(b.id, b.x, b.y));
-	h.input.onUp(over(b.id, b.x, b.y));
+	h.capture.onDown(over(a.id, a.x, a.y));
+	for (const [k, x, y] of hops) { h.capture.onMove(empty(x, y)); h.capture.onKeyDown(key(k)); }
+	h.capture.onMove(over(b.id, b.x, b.y));
+	h.capture.onUp(over(b.id, b.x, b.y));
 }
 
 test('PRODUCTION: with no route hook, `g` mid-drag changes nothing -- the commit is identical to no `g`', () => {
@@ -43,11 +43,11 @@ test('PRODUCTION: `g` does not claim the key, because it does nothing', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onDown(over(a.id, 0, 0));
-		h.input.onMove(empty(180, 60));
+		h.capture.onDown(over(a.id, 0, 0));
+		h.capture.onMove(empty(180, 60));
 		let prevented = 0;
 		const e = key('g'); e.preventDefault = () => { prevented++; };
-		h.input.onKeyDown(e);
+		h.capture.onKeyDown(e);
 		assert.equal(prevented, 0, 'a key the product does nothing with must stay the browser\'s');
 	} finally { h.restore(); }
 });
@@ -193,18 +193,18 @@ test('PRODUCTION: w on a node still does nothing', () => {
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.input.onDown(over(a.id, 0, 0));
-		h.input.onMove(empty(360, 0));
-		h.input.onKeyDown(key('w'));
+		h.capture.onDown(over(a.id, 0, 0));
+		h.capture.onMove(empty(360, 0));
+		h.capture.onKeyDown(key('w'));
 		// mid-drag, the cursor moved on: had the node joined the route, the live preview would stop following the cursor
 		// (MEASURED: it froze at the node) -- read from what is drawn, since tests assert at the boundary, not on Input's
 		// internals (scan-writers)
-		h.input.onMove(empty(360, 240));
+		h.capture.onMove(empty(360, 240));
 		const live = h.drawn('#overlay', 'link-live')[0]?.attrs.d;
 		assert.ok(live, 'a live preview is drawn');
 		assert.equal(live, 'M0 0 L360 240', 'production\'s preview still runs straight from the source to the cursor');
-		h.input.onMove(over(b.id, 360, 0));
-		h.input.onUp(over(b.id, 360, 0));
+		h.capture.onMove(over(b.id, 360, 0));
+		h.capture.onUp(over(b.id, 360, 0));
 		assert.equal(h.model.all('link').length, 1, 'the drag still makes its link');
 		assert.equal(h.model.all('link')[0].via, undefined, 'and nothing is pinned on a node');
 	} finally { h.restore(); }
@@ -218,9 +218,9 @@ the very next press, and only if that press drags from the anchor while it is st
 */
 const onWp = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id } : null) } });
 function dragFromWp(h, wp, b) {
-	h.input.onDown(onWp(wp.id, wp.x, wp.y));
-	h.input.onMove(over(b.id, b.x, b.y));
-	h.input.onUp(over(b.id, b.x, b.y));
+	h.capture.onDown(onWp(wp.id, wp.x, wp.y));
+	h.capture.onMove(over(b.id, b.x, b.y));
+	h.capture.onUp(over(b.id, b.x, b.y));
 }
 
 test('the w that placed the source counts when the next press drags from it, still the sole selection', () => {
@@ -228,7 +228,7 @@ test('the w that placed the source counts when the next press drags from it, sti
 	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
-		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));        // w with nothing in hand places S
+		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));        // w with nothing in hand places S
 		const wp = h.model.all('waypoint')[0];
 		assert.ok(wp, 'w placed an anchor');
 		dragFromWp(h, wp, b);
@@ -242,15 +242,15 @@ test('a click away between placing S and dragging from it clears that w', () => 
 	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
-		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));
+		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));
 		const wp = h.model.all('waypoint')[0];
-		h.input.onDown(empty(600, 600)); h.input.onUp(empty(600, 600));   // click off it
+		h.capture.onDown(empty(600, 600)); h.capture.onUp(empty(600, 600));   // click off it
 		dragFromWp(h, wp, b);
 		assert.equal(calls[0].srcKey, false, 'the drag follows the normal rules');
 		// and selecting S again does not bring it back: S did not REMAIN the sole selection since the w
-		h.input.onMove(empty(0, 480)); h.input.onKeyDown(key('w'));
+		h.capture.onMove(empty(0, 480)); h.capture.onKeyDown(key('w'));
 		const s2 = h.model.all('waypoint').find((x) => x.y === 480);
-		h.input.onDown(empty(600, 600)); h.input.onUp(empty(600, 600));
+		h.capture.onDown(empty(600, 600)); h.capture.onUp(empty(600, 600));
 		h.selection.set([s2.id]);                                          // reselected, as a click on it would
 		dragFromWp(h, s2, b);
 		assert.equal(calls.at(-1).srcKey, false, 'reselected is not remained');
@@ -262,7 +262,7 @@ test('the source w stops counting once that anchor is no longer the sole selecti
 	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
-		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));
+		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));
 		const wp = h.model.all('waypoint')[0];
 		h.selection.set([wp.id, b.id]);                                    // selection widened without a press
 		dragFromWp(h, wp, b);
@@ -276,7 +276,7 @@ test('the source w counts only for the anchor it placed', () => {
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
 		h.model.put('waypoint', { id: 'waypoint-00000f', name: 't', x: 240, y: 240 });
-		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));
+		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));
 		h.selection.set(['waypoint-00000f']);                              // another anchor, now the sole selection
 		dragFromWp(h, h.model.get('waypoint', 'waypoint-00000f'), b);
 		assert.equal(calls[0].srcKey, false, 'the w placed a different anchor');
@@ -292,13 +292,13 @@ test('B261: w during a chained link drag adds its bend, and the chained link com
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
-		h.input.onDown(over(a.id, a.x, a.y));
-		h.input.onMove(over(b.id, b.x, b.y));
-		h.input.onUp({ ...over(b.id, b.x, b.y), shiftKey: true });
-		h.input.onMove(empty(480, 180));
-		assert.doesNotThrow(() => h.input.onKeyDown(key('w')));
-		h.input.onMove(over(c.id, c.x, c.y));
-		h.input.onUp(over(c.id, c.x, c.y));
+		h.capture.onDown(over(a.id, a.x, a.y));
+		h.capture.onMove(over(b.id, b.x, b.y));
+		h.capture.onUp({ ...over(b.id, b.x, b.y), shiftKey: true });
+		h.capture.onMove(empty(480, 180));
+		assert.doesNotThrow(() => h.capture.onKeyDown(key('w')));
+		h.capture.onMove(over(c.id, c.x, c.y));
+		h.capture.onUp(over(c.id, c.x, c.y));
 		const chained = h.model.all('link').find((l) => l.src === b.id && l.dst === c.id);
 		assert.ok(chained, 'the chained link is made');
 		assert.equal(chained.via?.length, 1, 'through the bend w dropped');

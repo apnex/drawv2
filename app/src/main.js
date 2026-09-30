@@ -15,6 +15,7 @@ import { Selection } from './selection.js';
 import { Clock } from './clock.js';
 import { Movers } from './movers.js';
 import { Input } from './input.js';
+import { Capture } from './capture.js';
 import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
@@ -75,6 +76,7 @@ other two have it without reaching through Sync to get it (A3 Air-Gap), and is t
 */
 const clock = new Clock();
 const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, now: () => clock.now(), snap });
+new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0)
 /*
 H12.8 -- the presentation layer for movers. Started and stopped by MODE, refreshed by CHANGE.
 

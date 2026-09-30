@@ -479,8 +479,8 @@ test('a snapshot the tab asked for, arriving mid-drag, ends the drag first: its 
 			w.serve();
 			const onA = (x) => pointer(x, 0, { button: 2,
 				target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: A } : null) } });
-			h.input.onDown(onA(240));
-			h.input.onMove(onA(420));                          // a real move gesture, from where the tab shows a
+			h.capture.onDown(onA(240));
+			h.capture.onMove(onA(420));                          // a real move gesture, from where the tab shows a
 			assert.equal(h.input.isGesturing(), true, 'a drag is live -- the case under test');
 			w.deliverTo('error');                              // the refusal: the tab asks for a snapshot
 			w.serve();

@@ -28,7 +28,7 @@ function board(bends) {
 	h.model.put('link', link);
 	return { h, link };
 }
-const pressC = (h) => { let claimed = 0; const e = key('c'); e.preventDefault = () => { claimed++; }; h.input.onKeyDown(e); return claimed; };
+const pressC = (h) => { let claimed = 0; const e = key('c'); e.preventDefault = () => { claimed++; }; h.capture.onKeyDown(e); return claimed; };
 const flashes = (h) => h.calls.filter((c) => c.name === 'readout.flash').map((c) => c.args[0]);
 
 test('one link WITH a bend: c closes it, and c again opens it', () => {
@@ -125,7 +125,7 @@ test('a plugin\'s row is handed the host\'s one verb, not Input', () => {
 	let handed = null;
 	const h = makeInput({ plugins: [{ owner: 'probe', keys: [{ id: 'probe', mutates: false, on: (e) => e.key === 'F9', run: (host) => { handed = host; } }] }] });
 	try {
-		h.input.onKeyDown(key('F9'));
+		h.capture.onKeyDown(key('F9'));
 		assert.ok(handed, 'the row ran');
 		assert.deepEqual(Object.keys(handed), ['addStop']);
 		assert.notEqual(handed, h.input);

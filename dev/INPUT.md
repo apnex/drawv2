@@ -281,6 +281,10 @@ It runs before the common teardown, which is why it cannot just be the first lin
 | `keymap.js` [x]| Map a keystroke to **one named verb**, and say whether it mutates. | the table |
 | `recognize.js` [x]| Decide WHICH gesture a press starts, and whether it mutates. | the table |
 
+CORRECTED 2026-09-30: a unit this table did not have, `capture.js`, now owns the DOM wiring: it turns browser events into plain input events, and claims and captures on the input layers' behalf (stage 1 of `dev/design/input/GESTURE-SYSTEM.md`).\
+`input.js` receives only input events; its entry points are `press`, `move`, `release`, `double`, `hover`, `keyDown`, `keyUp` and `leave`.\
+That design supersedes sections 4, 6 and 8 as its stages land.
+
 **Not modules, deliberately:** `readOnly` is a predicate (section 5); `focusId` belongs to label editing (moved there, H6.12); `help` to `main.js`.\
 And there are **no per-gesture files** - ten handlers of 30-60 lines belong beside their table, because splitting them fragments one answer across ten reads.
 

@@ -33,6 +33,7 @@ import { Changes, derivedToApply } from '../../app/src/changes.js';
 import { Renderer } from '../../app/src/renderer.js';
 import { Selection } from '../../app/src/selection.js';
 import { Input } from '../../app/src/input.js';
+import { Capture } from '../../app/src/capture.js';
 import { Readout } from '../../app/src/readout.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { commit, undo, redo } from '../../server/txn.mjs';
@@ -155,6 +156,7 @@ const routeHook = (drag) => {
 const input = new Input({ svg, model, history, selection, renderer, labels, readout,
 	palette: null, host: window, help: null, now: () => Date.now(), snap,
 	plugins: [networkInput(routeHook)] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
+const capture = new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (L0)
 
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.
@@ -271,4 +273,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, pipes, order, network, history, log, input, routeHook };
+window.lab = { model, authority, pipes, order, network, history, log, input, capture, routeHook };

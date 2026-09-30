@@ -98,6 +98,24 @@ export class LabelEditor {
 
 	// W6 — live input editing: edit a content region's value in place. Positioned over the clicked hit rect
 	// (viewport coords); Enter/blur commits the new value into the node's content, Escape cancels.
+	/*
+	The element to anchor the editor on, found HERE -- the label editor owns the DOM it positions against, and the input
+	layers name only what to edit (dev/design/input/GESTURE-SYSTEM.md, invariant G1).
+	  openFrame(id)          a text box: its frame, or its group when it has none
+	  openRegion(id, idx)    a run-mode input region of a node, by its index
+	Neither opens anything when the element is not drawn.
+	*/
+	openFrame(nodeId) {
+		const g = document.getElementById(nodeId);
+		if (g) this.openContent(nodeId, 0, g.querySelector('[data-layer="frame"]') || g);
+	}
+
+	openRegion(nodeId, idx) {
+		const g = document.getElementById(nodeId);
+		const rect = g && g.querySelector(`[data-input][data-idx="${idx}"]`);
+		if (rect) this.openContent(nodeId, idx, rect);
+	}
+
 	openContent(nodeId, idx, rectEl) {
 		if (this.input) this.close(false);
 		const node = this.model.get('node', nodeId);

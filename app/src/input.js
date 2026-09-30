@@ -36,9 +36,10 @@ import { Overlay } from './overlay.js';
 import { RECOGNIZE, resolveRule } from './recognize.js';
 import { KEYMAP } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
-import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
+import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
-import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
+import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
+import { emitToHost } from './capture.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
@@ -399,8 +400,7 @@ const GESTURES = {
 			i.selection.set([tb.id]);
 			i.palette.setTextTool(false);   // one box per arm — re-tap 't' for another
 			// open the inline editor on the text region, positioned over the new box's frame
-			const frameEl = i.svg.ownerDocument.getElementById(tb.id);
-			if (frameEl) i.labels.openContent(tb.id, 0, frameEl.querySelector('[data-layer="frame"]') || frameEl);
+			i.labels.openFrame(tb.id);
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => {
@@ -476,7 +476,7 @@ export class Input {
 		*/
 		this.now = typeof now === 'function' ? now : () => Date.now();
 		this.lastPos = null;   // last pointer position in canvas coords (datum anchor)
-		this.overlay = svg.querySelector('#overlay');
+		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, lastPos).
 		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap });
@@ -521,49 +521,15 @@ export class Input {
 			}
 		});
 
-		svg.addEventListener('pointerleave', () => {
-			this.readout.setCursor(null);
-			this.palette.hideHand();
-			this.lastPos = null; // keys must never act on a stale off-canvas position
-		});
-		svg.addEventListener('pointerdown', (e) => this.onDown(e));
-		svg.addEventListener('pointermove', (e) => this.onMove(e));
-		svg.addEventListener('pointerup', (e) => this.onUp(e));
-		svg.addEventListener('pointercancel', (e) => this.cancelDrag(e));
-		svg.addEventListener('pointerover', (e) => this.onHover(e, true));
-		svg.addEventListener('pointerout', (e) => this.onHover(e, false));
-		svg.addEventListener('dblclick', (e) => this.onDblClick(e));
+		// the DOM listeners are capture's (app/src/capture.js, L0): this receives input events, never DOM events
 		this.host = host;
-		host.addEventListener('keydown', (e) => this.onKeyDown(e));
-		host.addEventListener('keyup', (e) => this.onKeyUp(e));
-		// B75: on the HOST, not the svg. The right button is a first-class gesture button here --
-		// right-drag moves, Ctrl+right-drag clones -- so a hand is already on it when the pointer
-		// crosses onto the palette or the header, which sit immediately against the canvas. Bound to
-		// the canvas alone, the native menu opened everywhere else. `host` is the surface that owns
-		// global events (B45), which is exactly the scope this rule needs.
-		host.addEventListener('contextmenu', (e) => this.onContextMenu(e));
 	}
 
-	/*
-	B75 -- suppress the browser menu everywhere EXCEPT where it is a real affordance.
-
-	A blanket handler would be smaller and wrong. Right-click carries cut, copy, paste and the
-	spell-checker inside a text field, and this application has several: the diagram name and the
-	Slides URL in the header, the label editor that F2 opens, and the two principal fields in the
-	access panel. Taking that away to fix a gesture collision trades one defect for another.
-
-	The test is the target's nearest form field rather than a list of ids, so a field added later is
-	covered without anybody remembering this rule -- which is what went wrong the first time, when
-	the handler named one element and the application grew four more.
-
-	`contenteditable` is matched explicitly rather than by bare attribute presence, because
-	`[contenteditable]` also matches `contenteditable="false"`, which means NOT editable.
-	*/
-	onContextMenu(e) {
-		const t = e && e.target;
-		const editable = t && typeof t.closest === 'function'
-			&& t.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
-		if (!editable) e.preventDefault();
+	// the pointer left the canvas: keys must never act on a stale off-canvas position
+	leave() {
+		this.readout.setCursor(null);
+		this.palette.hideHand();
+		this.lastPos = null;
 	}
 
 	// ---- hit helpers ----
@@ -599,7 +565,7 @@ export class Input {
 	One press → one rule → one gesture. The 167-line nest this replaces is now three things: a
 	surface-mode guard, a live-gesture hook, and an ordered table (app/src/recognize.js).
 	*/
-	onDown(evt) {
+	press(evt) {
 		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
 		if (this.renderer.mode === 'run') return this.runModePress(evt);
@@ -617,15 +583,15 @@ export class Input {
 		*/
 		this.armedSource = this.placedByW; this.placedByW = null;
 
-		const hit = hitOf(evt);
-		const pos = toCanvas(evt, this.svg);
+		const hit = evt.on;
+		const pos = evt.at;
 		this.lastPos = pos;
 		const rule = resolveRule(RECOGNIZE, hit, evt, this.ruleCtx());
 		if (!rule) return;
 
 		if (this.mode) this.cancelDrag(evt);   // a second press never stacks on an active gesture
 		this.overlayUi.zoneGrid(evt.shiftKey, false);
-		try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ }
+		evt.capture = true;   // capture takes the pointer once this returns (app/src/capture.js)
 
 		if (rule.run) return this[rule.run](hit, evt, pos);
 		const handler = GESTURES[rule.gesture];
@@ -673,18 +639,18 @@ export class Input {
 		table here on purpose: the shape of one is owed the prior-art pass (survey flag F3), and
 		inventing it from a single rule is how the last surface was got wrong.
 		*/
-		const wp = evt.target.closest && evt.target.closest('.waypoint');
+		const region = evt.region;   // what capture found under the press; null when the target could not be asked
+		const wp = region && region.waypoint;
 		if (wp) {
-			const s = this.situation(wp.id);
+			const s = this.situation(wp);
 			if (inReadView(s) && onEndpoint(s)) {
-				evt.preventDefault();
+				evt.claimed = true;
 				if (this.readOnly) return;      // reading someone else's diagram arms nothing
-				const cmd = commands.toggleSpawn(this.model, wp.id, s.at);
+				const cmd = commands.toggleSpawn(this.model, wp, s.at);
 				if (cmd) { this.history.commit(cmd); this.afterHistory(); }
 				return;
 			}
 		}
-		const t = evt.target.closest && evt.target.closest('[data-action],[data-input]');
 		/*
 		THE SECOND RULE, and the one that makes the surface a surface:
 
@@ -709,12 +675,12 @@ export class Input {
 		after the entity and control checks below it precisely so a press on a waypoint, a node or a
 		button keeps its existing meaning -- placement is the fallback, never an interception.
 		*/
-		if (!t && !wp && evt.target.closest && !evt.target.closest('.node,.zone,.link,.group')) {
+		if (region && !region.control && !region.overWaypoint && !region.entity) {
 			const s = this.situation(null);
 			if (inReadView(s) && onOpenGround(s) && !this.readOnly) {
-				const snapped = snapNode(toCanvas(evt, this.svg));
+				const snapped = snapNode(evt.at);
 				if (!occupiedAnyAt(this.model, snapped)) {
-					evt.preventDefault();
+					evt.claimed = true;
 					const node = this.model.makeNode('loadbalancer', snapped);
 					this.history.commit(commands.createEntity('node', node));
 					this.afterHistory();
@@ -722,15 +688,14 @@ export class Input {
 				}
 			}
 		}
-		if (t && t.dataset.action) {
-			evt.preventDefault();
-			this.host.dispatchEvent(new CustomEvent('draw:action', { detail: { action: t.dataset.action, id: t.closest('.node') ? t.closest('.node').id : null } }));
-		} else if (t && t.dataset.input !== undefined && !this.readOnly) {
+		if (region && region.action) {
+			evt.claimed = true;
+			emitToHost(this.host, 'draw:action', { action: region.action, id: region.node });
+		} else if (region && region.input !== null && !this.readOnly) {
 			// run mode straddles the gate: firing an action commits nothing and stays live while
 			// locked; opening the inline editor authors a change and does not (B18).
-			evt.preventDefault();
-			const node = t.closest('.node');
-			if (node) this.labels.openContent(node.id, Number(t.dataset.idx), t);
+			evt.claimed = true;
+			if (region.node) this.labels.openRegion(region.node, region.input);
 		}
 	}
 
@@ -1137,10 +1102,10 @@ export class Input {
 	One move → the live gesture's own `update`. The mode switch this replaces was eight branches
 	deep; each is now the entry that owns the rest of that gesture's lifecycle.
 	*/
-	onMove(evt) {
+	move(evt) {
 		const moving = this.mode === 'move' || this.mode === 'clone';
 		this.overlayUi.zoneGrid(evt.shiftKey, moving);
-		const pos = toCanvas(evt, this.svg);
+		const pos = evt.at;
 		this.lastPos = pos;
 
 		if (!this.mode) {
@@ -1208,7 +1173,7 @@ export class Input {
 
 	// crosshair cursor + ring emphasis when idle over a node: left-drag draws a link
 	idleAffordance(evt) {
-		const hit = hitOf(evt);
+		const hit = evt.on;
 		if (hit.kind !== 'node') return;
 		this.renderer.setState(hit.id, 'linkband', !evt.ctrlKey && !evt.altKey);
 	}
@@ -1223,7 +1188,7 @@ export class Input {
 	It fires AFTER dispatch, not before: a deferred remote change must land after this gesture's own
 	commit, or the two arrive out of order.
 	*/
-	onUp(evt) {
+	release(evt) {
 		const wasGesturing = this.isGesturing();
 		try { this.dispatchUp(evt); } finally { if (wasGesturing) this.onGestureEnd(); }
 	}
@@ -1232,13 +1197,14 @@ export class Input {
 	One release → the live gesture's own `commit`. The 168-line mode ladder this replaces ended with
 	a trailing `onGestureEnd()` that only `resize` could reach, because every other branch returned
 	early (B43). `onUp`'s `finally` is now the single owner of that hook, so it fires exactly once per
-	gesture BY CONSTRUCTION rather than by fourteen branches each remembering to return.
+	gesture BY CONSTRUCTION rather than by fourteen branches each remembering to return. (`onUp` is `release` since
+	stage 1 of the gesture system: capture hands it an input event.)
 	*/
 	dispatchUp(evt) {
 		if (!this.mode) return;
 		const g = GESTURES[this.mode];
 		if (g.ignoreUp?.(evt)) return;   // a release this gesture does not accept: stay live
-		const pos = toCanvas(evt, this.svg);
+		const pos = evt.at;
 		const ctx = this.ctx;
 		this.mode = null;
 		this.ctx = {};
@@ -1325,13 +1291,13 @@ export class Input {
 	// ---- handles: zone corners (resize) and link endpoints (re-plug) ----
 
 	// ---- label editing ----
-	onDblClick(evt) {
+	double(evt) {
 		// hit GEOMETRICALLY: pointer capture (taken on every press) retargets the
-		// browser-synthesized dblclick to the svg, so evt.target is useless here.
+		// browser-synthesized dblclick to the svg, so what capture says is under it is useless here.
 		// Icon hits beat label-strip hits; nearest wins; ties go to the topmost
 		// (last-rendered) — the strip is wider than a grid cell, so first-match
 		// would resolve to a NEIGHBOUR for nodes one cell apart
-		const pos = toCanvas(evt, this.svg);
+		const pos = evt.at;
 		if (this.readOnly) return; // no editing while Server-Locked
 		// A1 — a TEXT BOX is hit by its whole FOOTPRINT (not just the origin cell), so double-clicking ANYWHERE
 		// on the box edits its text. (A plain node / panel still routes to the name-edit / icon test below.)
@@ -1342,8 +1308,7 @@ export class Input {
 			if (this.mode) this.cancelDrag(evt);
 			this.selection.set([tb.id]);
 			this.labels.setFocus(tb.id);
-			const g = this.svg.ownerDocument.getElementById(tb.id);
-			return this.labels.openContent(tb.id, 0, (g && g.querySelector('[data-layer="frame"]')) || g);
+			return this.labels.openFrame(tb.id);
 		}
 		const nodes = this.model.all('node');
 		const best = (cands) => cands.sort((p, q) => p.d - q.d || q.i - p.i)[0];
@@ -1374,7 +1339,7 @@ export class Input {
 	// ---- help overlay ----
 	toggleHelp(show) {
 		if (!this.help) return;
-		this.help.hidden = show === undefined ? !this.help.hidden : !show;
+		setShown(this.help, show === undefined ? !isShown(this.help) : show);
 	}
 
 	// ---- keyboard ----
@@ -1384,18 +1349,15 @@ export class Input {
 	sit below (INPUT.md §4). Each entry now declares its own tolerances and the dispatcher applies
 	them uniformly.
 	*/
-	onKeyDown(evt) {
-		// typing contexts (header menu, label editor) never reach canvas shortcuts
-		const tag = evt.target.tagName;
-		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
+	keyDown(evt) {
+		// typing contexts (header menu, label editor) never reach here: capture keeps them (app/src/capture.js)
 		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
 		const { rule, claimed } = resolveInput(this.keyRules, evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly,
-			helpOpen: !!(this.help && !this.help.hidden),
+			helpOpen: !!(this.help && isShown(this.help)),
 			gesturing: this.isGesturing(),
 		});
-		if (claimed) evt.preventDefault();   // B47 — bind a key and you own it
+		if (claimed) evt.claimed = true;   // B47 — bind a key and you own it
 		if (!rule) return;
 		if (typeof rule.run === 'function') rule.run(this.pluginHost, evt);   // a plugin's row acts through the host
 		else this[rule.run](evt);
@@ -1422,12 +1384,12 @@ export class Input {
 			// re-render the drag NOW: the commit follows the last rendered frame
 			if (this.lastPos) this.updateMove(this.lastPos, true);
 		} else {
-			this.svg.classList.add('zonegrid');
+			this.overlayUi.zoneGrid(true, false);
 		}
 	}
 
 	onArmingKey(evt) {
-		if (evt.key === 'Alt') evt.preventDefault();   // keep Firefox's menu bar out of the delete chord
+		if (evt.key === 'Alt') evt.claimed = true;   // keep Firefox's menu bar out of the delete chord
 		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
@@ -1443,15 +1405,14 @@ export class Input {
 		// claim Tab only when the canvas holds focus, so it can still traverse the toolbar. B47
 		// records this as a deliberate opt-out from the dispatcher's default claim, and changing
 		// the verb behind the key is no reason to change what the key does to focus.
-		const t = evt.target;
-		if (t && typeof t.closest === 'function' && t.closest('button, a[href], select, input, textarea, [tabindex]')) return;
-		evt.preventDefault();
+		if (evt.onControl) return;
+		evt.claimed = true;
 		this.renderer.toggleLabels();
 	}
 
 	onEscape(evt) {
 		// priority: close help > cancel gesture > disarm the tool > clear hand > clear selection
-		if (this.help && !this.help.hidden) return this.toggleHelp(false);
+		if (this.help && isShown(this.help)) return this.toggleHelp(false);
 		if (this.mode) this.cancelDrag(evt);
 		else if (this.palette.textTool) this.palette.setTextTool(false);
 		else if (this.palette.hand) {
@@ -1488,8 +1449,8 @@ export class Input {
 	// 'w' drops/threads a waypoint: mid-route it adds a bend (the button is still held), idle it
 	// places a standalone one. The one mutating verb that belongs DURING a gesture.
 	onWaypointKey(evt) {
-		if (this.mode === 'link') { evt.preventDefault(); return this.addStop({ key: 'w', pin: true }); }
-		if (!this.mode) { evt.preventDefault(); this.placeWaypoint(); }
+		if (this.mode === 'link') { evt.claimed = true; return this.addStop({ key: 'w', pin: true }); }
+		if (!this.mode) { evt.claimed = true; this.placeWaypoint(); }
 	}
 
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
@@ -1509,7 +1470,7 @@ export class Input {
 		const type = NODE_TYPES[Number(evt.key) - 1];
 		if (!type) return;
 		// B147: mid-link-drag a digit CREATES that node and carries the run through it
-		if (this.mode === 'link') { evt.preventDefault(); return this.chainThroughNode(type); }
+		if (this.mode === 'link') { evt.claimed = true; return this.chainThroughNode(type); }
 		if (this.mode) return;
 		this.palette.toggleHand(type);
 		this.refreshHand();
@@ -1580,7 +1541,7 @@ export class Input {
 		if (this.mode || !this.palette.hand) return;
 		// mouseless chaining: stamp at the ghost, then re-evaluate the cell — it is occupied now,
 		// and the feedback must say so without a mouse move
-		evt.preventDefault();
+		evt.claimed = true;
 		if (this.lastPos) { this.stampAt(this.lastPos); this.refreshHand(); }
 	}
 
@@ -1637,18 +1598,18 @@ export class Input {
 
 	onDeleteKey(evt) {
 		if (this.selection.size() === 0) return;
-		evt.preventDefault();
+		evt.claimed = true;
 		this.history.commit(commands.deleteSelection(this.model, new Set(this.selection.list())));
 		// selection auto-prunes on the delete's emits (selection.js)
 	}
 
 	/*
-	Event handlers stay HERE and delegate. INPUT.md §8 splits it that way: input owns the wiring to
-	the DOM, overlay owns the state and the drawing. (Deleted twice during H6 by slices that ran to
-	`onKeyUp` — the second time is why they now sit above the key handlers, out of the blast radius.)
+	Hover and key-up stay HERE and delegate to the overlay, which owns the state and the drawing. The DOM wiring is
+	capture's since stage 1 of the gesture system (app/src/capture.js): these receive input events. (Deleted twice
+	during H6 by slices that ran to `onKeyUp` — the second time is why they sit above the key handlers.)
 	*/
-	onHover(evt, on) {
-		this.overlayUi.hover(hitOf(evt), on, evt, this.isGesturing());
+	hover(evt, on) {
+		this.overlayUi.hover(evt.on, on, evt, this.isGesturing());
 		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
@@ -1656,9 +1617,9 @@ export class Input {
 		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
 	}
 
-	onKeyUp(evt) {
+	keyUp(evt) {
 		if (evt.key === 'Shift') {
-			this.svg.classList.remove('zonegrid');
+			this.overlayUi.zoneGrid(false, false);
 			if ((this.mode === 'move' || this.mode === 'clone') && this.lastPos) {
 				// re-render with the lock released: the commit follows the frame
 				this.updateMove(this.lastPos, false);

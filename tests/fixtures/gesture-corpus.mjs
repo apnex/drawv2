@@ -211,20 +211,20 @@ export function record(scenario) {
 				const [x, y, target, mods] = a;
 				const ev = target && target.action ? Object.assign(pointerEvent(ids, x, y, null, mods), { target: actionTarget(target) }) : pointerEvent(ids, x, y, on(target), mods);
 				const method = { down: 'onDown', move: 'onMove', up: 'onUp', dbl: 'onDblClick' }[op];
-				run(() => h.input[method](ev));
+				run(() => h.capture[method](ev));   // through capture, as a browser's events arrive (L0)
 				out.claims.push(ev.claimed > 0);
 			} else if (op === 'key' || op === 'keyup') {
 				const ev = keyEvent(a[0], a[1]);
-				run(() => h.input[op === 'key' ? 'onKeyDown' : 'onKeyUp'](ev));
+				run(() => h.capture[op === 'key' ? 'onKeyDown' : 'onKeyUp'](ev));
 				out.claims.push(ev.claimed > 0);
-			} else if (op === 'cancel') run(() => h.input.cancelDrag({}));
+			} else if (op === 'cancel') run(() => h.capture.onCancel(pointerEvent(ids, 0, 0, null, { up: true })));
 			else if (op === 'select') h.selection.set(a[0].map((x) => ids[x]));
 			else if (op === 'selectLast') h.selection.set([lastLink]);
 			else if (op === 'link') { const l = h.model.makeLink(ids[a[0]], ids[a[1]]); h.model.put('link', l); lastLink = l.id; }
 			else if (op === 'hand') h.palette.setHand(a[0]);
 			else if (op === 'readOnly') h.input.setReadOnly(true);
 			else if (op === 'mode') h.renderer.mode = a[0];
-			else if (op === 'at') run(() => h.input.onMove(pointerEvent(ids, a[0], a[1], null, { up: true })));
+			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(ids, a[0], a[1], null, { up: true })));
 			else throw new Error(`corpus: unknown step ${op}`);
 		});
 		h.history.flush?.();

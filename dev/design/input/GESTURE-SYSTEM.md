@@ -350,3 +350,11 @@ Each is a real fork, with a recommendation.
 - **It records one known defect as it stands:** B245, the pin a cancelled drag loses (`link-w-pinned-cancelled`). That record changes on purpose when stage 5 fixes it.
 - **Found on the way:** the harness renderer stub lacked `toggleLabels`, so Tab threw in the harness; completed, as the harness requires of a stub.
 
+**Stage 1b -- L0 capture, 2026-09-30.**
+- **`app/src/capture.js` is the only code that reads a browser event.** It owns the listeners, turns each event into an input event -- plain data, keeping the DOM's names for button, key and modifiers, adding `at`, `on`, and on a press the run-mode `region` -- and afterwards claims the event and takes the pointer when the input layers asked it to. Keys typed in a field never reach them, and the context menu rule (B75) moved there whole.
+- **Input takes input events only.** Its entry points are `press`, `move`, `release`, `double`, `hover`, `keyDown`, `keyUp` and `leave`, renamed so a stale call handing it a DOM event fails loudly. Its 95 DOM touches are gone: a claim is `evt.claimed`, the help panel and canvas layers are asked through `painter.js`, the zone-grid class through the overlay, and the label editor finds its own anchor element (`openFrame`, `openRegion`).
+- **G1 is a test:** `app/src/input.js`, comments removed, contains no DOM read or DOM API.
+- **Behaviour unchanged, by the corpus.** All 67 gesture scenarios replay byte-identical through capture, and the 43 matrix boards match in real Chrome. 196 test call sites moved from Input to capture; two run-mode tests gained the drawn element the label editor now looks up, which also keeps the locked-client test able to fail.
+- **One path changed, and it was unreachable:** a double click on a text box whose element is not drawn used to throw inside the label editor, and now opens nothing. A drawn text box always has its element.
+- **Mutation proof:** seven mutants, each caught -- no claim, no pointer capture, no region, typed keys reaching the canvas, focus on a control unseen, a DOM read back in Input, the context menu always suppressed.
+

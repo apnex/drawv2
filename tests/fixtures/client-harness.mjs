@@ -37,6 +37,7 @@ import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
+import { Capture } from '../../app/src/capture.js';
 import { networkInput } from '../../network/keys.mjs';
 
 // ---- the smallest DOM the client's constructors actually touch ----
@@ -160,6 +161,10 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		// sink (`open`); the DECISION stays the real one, so breaking it fails these tests.
 		setFocus: LabelEditor.prototype.setFocus,
 		openFocused: LabelEditor.prototype.openFocused,
+		// borrowed too: they find the element and call `openContent`, which is recorded -- so a lookup that finds nothing
+		// records nothing, exactly as the product opens nothing
+		openFrame: LabelEditor.prototype.openFrame,
+		openRegion: LabelEditor.prototype.openRegion,
 	};
 	// Recording collaborators. Asserting that a gesture did or did not REACH one of these is still a
 	// boundary assertion — it is the contract between Input and its peer, not Input's internal state.
@@ -222,9 +227,11 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 				...(plugins ? { plugins } : {}) });   // a composition given whole, for tests of the plugin seam itself
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
+	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
+	const capture = new Capture({ svg, host, sink: input });
 
 	return {
-		input, model, history, selection, svg, commits, calls, restore, renderer, labels, palette, help, snap,
+		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, palette, help, snap,
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
 		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without

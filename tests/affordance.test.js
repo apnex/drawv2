@@ -30,11 +30,11 @@ test('hovering an entity tells the renderer, and leaving clears it', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onHover(over(a.id, 0, 0), true);
+		h.capture.onHover(over(a.id, 0, 0), true);
 		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'hover'),
 			'the hovered entity is marked, so the crosshair ring appears');
 
-		h.input.onHover(over(a.id, 0, 0), false);
+		h.capture.onHover(over(a.id, 0, 0), false);
 		assert.ok(h.stateCalls('renderer.setState').some(([id, cls, on]) => id === a.id && cls === 'hover' && on === false),
 			'and unmarked on leave — the renderer is told, whichever unit is doing the telling');
 	} finally { h.restore(); }
@@ -44,11 +44,11 @@ test('Alt arms the hovered entity red; Ctrl arms it clone-blue', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onHover(over(a.id, 0, 0, { altKey: true }), true);
+		h.capture.onHover(over(a.id, 0, 0, { altKey: true }), true);
 		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'armed'),
 			'Alt is the delete chord — threat may shout (DESIGN U2)');
 
-		h.input.onHover(over(a.id, 0, 0, { ctrlKey: true }), true);
+		h.capture.onHover(over(a.id, 0, 0, { ctrlKey: true }), true);
 		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'armed-clone'),
 			'Ctrl is the clone chord');
 	} finally { h.restore(); }
@@ -58,7 +58,7 @@ test('arming is suppressed while Server-Locked — a locked client must not prom
 	const h = makeInput({ readOnly: true });
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onHover(over(a.id, 0, 0, { altKey: true }), true);
+		h.capture.onHover(over(a.id, 0, 0, { altKey: true }), true);
 		assert.equal(h.stateCalls('renderer.setState').some(([, cls]) => cls === 'armed'), false,
 			'arming red says "this click deletes" — while locked it does not');
 	} finally { h.restore(); }
@@ -92,11 +92,11 @@ test('a selected zone shows four corner resize handles', () => {
 test('Space places a datum marker; Shift+Space removes it', () => {
 	const h = makeInput();
 	try {
-		h.input.onMove(pointer(60, 60));
-		h.input.onKeyDown(key(' '));
+		h.capture.onMove(pointer(60, 60));
+		h.capture.onKeyDown(key(' '));
 		assert.equal(h.drawn('#snaplayer', 'datum').length, 1, 'the local origin is visible, not just numeric');
 
-		h.input.onKeyDown(key(' ', { shiftKey: true }));
+		h.capture.onKeyDown(key(' ', { shiftKey: true }));
 		assert.equal(h.drawn('#snaplayer', 'datum').length, 0, 'and clearing it removes the marker');
 	} finally { h.restore(); }
 });
@@ -104,10 +104,10 @@ test('Space places a datum marker; Shift+Space removes it', () => {
 test('a second datum replaces the first — markers do not accumulate', () => {
 	const h = makeInput();
 	try {
-		h.input.onMove(pointer(60, 60));
-		h.input.onKeyDown(key(' '));
-		h.input.onMove(pointer(180, 180));
-		h.input.onKeyDown(key(' '));
+		h.capture.onMove(pointer(60, 60));
+		h.capture.onKeyDown(key(' '));
+		h.capture.onMove(pointer(180, 180));
+		h.capture.onKeyDown(key(' '));
 		assert.equal(h.drawn('#snaplayer', 'datum').length, 1, 'one datum, wherever it was last set');
 	} finally { h.restore(); }
 });

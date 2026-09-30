@@ -40,7 +40,7 @@ test('Delete emits ONE change deleting the selection', () => {
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
-		h.input.onKeyDown(key('Delete'));
+		h.capture.onKeyDown(key('Delete'));
 
 		const c = h.soleCommit();
 		assert.equal(c.label, 'delete');
@@ -55,7 +55,7 @@ test('deleting a node carries its links in the SAME change — the cascade is on
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
 		h.model.put('link', h.model.makeLink(a.id, b.id));
 		h.selection.set([a.id]);
-		h.input.onKeyDown(key('Delete'));
+		h.capture.onKeyDown(key('Delete'));
 
 		const ops = h.soleCommit().ops;
 		assert.deepEqual(opKinds(ops), ['del/link', 'del/node'], 'the link goes first: undo replays reversed, and the server validates referentially');
@@ -67,7 +67,7 @@ test('Ctrl+G groups the selection in one change', () => {
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('g', { ctrlKey: true }));
+		h.capture.onKeyDown(key('g', { ctrlKey: true }));
 
 		const c = h.soleCommit();
 		assert.deepEqual(opKinds(c.ops), ['put/group']);
@@ -80,7 +80,7 @@ test('Z wraps the selection in one fitted zone', () => {
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('z'));
+		h.capture.onKeyDown(key('z'));
 
 		const c = h.soleCommit();
 		assert.deepEqual(opKinds(c.ops), ['put/zone']);
@@ -94,7 +94,7 @@ test('L chains the selected nodes pairwise in one change', () => {
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [60, 0], [120, 0]]);
 		h.selection.set([a.id, b.id, c.id]);
-		h.input.onKeyDown(key('l'));
+		h.capture.onKeyDown(key('l'));
 
 		const ops = h.soleCommit().ops;
 		assert.deepEqual(opKinds(ops), ['put/link', 'put/link'], 'a 3-node chain is 2 links, one change');
@@ -107,7 +107,7 @@ test('L skips a pair that is already linked — no duplicate', () => {
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
 		h.model.put('link', h.model.makeLink(a.id, b.id));
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('l'));
+		h.capture.onKeyDown(key('l'));
 		assert.equal(h.commits.length, 0, 'nothing to do is not a change');
 	} finally { h.restore(); }
 });
@@ -117,7 +117,7 @@ test('Ctrl+D duplicates the selection at the remembered pitch', () => {
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
-		h.input.onKeyDown(key('d', { ctrlKey: true }));
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
 
 		const c = h.soleCommit();
 		assert.deepEqual(opKinds(c.ops), ['put/node']);
@@ -130,7 +130,7 @@ test('Ctrl+A selects without committing — selection is not a change', () => {
 	const h = makeInput();
 	try {
 		seedNodes(h.model, [[0, 0], [60, 0]]);
-		h.input.onKeyDown(key('a', { ctrlKey: true }));
+		h.capture.onKeyDown(key('a', { ctrlKey: true }));
 		assert.equal(h.selection.size(), 2);
 		assert.equal(h.commits.length, 0);
 	} finally { h.restore(); }
@@ -144,7 +144,7 @@ test('while Server-Locked, mutation keys emit nothing', () => {
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
 		h.selection.set([a.id, b.id]);
 		for (const k of [key('Delete'), key('Backspace'), key('z'), key('l'), key('g', { ctrlKey: true }), key('d', { ctrlKey: true })]) {
-			h.input.onKeyDown(k);
+			h.capture.onKeyDown(k);
 		}
 		assert.equal(h.commits.length, 0, 'a read-only client must not apply locally what it cannot send');
 	} finally { h.restore(); }
@@ -154,7 +154,7 @@ test('while Server-Locked, selection still works — inspection is not mutation'
 	const h = makeInput({ readOnly: true });
 	try {
 		seedNodes(h.model, [[0, 0], [60, 0]]);
-		h.input.onKeyDown(key('a', { ctrlKey: true }));
+		h.capture.onKeyDown(key('a', { ctrlKey: true }));
 		assert.equal(h.selection.size(), 2);
 		assert.equal(h.commits.length, 0);
 	} finally { h.restore(); }
@@ -167,7 +167,7 @@ test('B14: an arrow nudge emits one move change', () => {
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
-		h.input.onKeyDown(key('ArrowRight'));
+		h.capture.onKeyDown(key('ArrowRight'));
 		h.history.flush();   // D11's window is open until it closes; nothing reaches the wire before
 
 		const c = h.soleCommit();
@@ -181,7 +181,7 @@ test('B14: a burst of nudges coalesces into ONE change', () => {
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
-		for (let i = 0; i < 5; i++) h.input.onKeyDown(key('ArrowRight'));
+		for (let i = 0; i < 5; i++) h.capture.onKeyDown(key('ArrowRight'));
 		assert.equal(h.commits.length, 0, 'mid-burst, nothing has gone out yet');
 		h.history.flush();
 
@@ -197,7 +197,7 @@ test('B14: Shift+arrow resizes the lone selected zone', () => {
 		const z = h.model.makeZone({ x: -30, y: -30, w: 120, h: 120 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
-		h.input.onKeyDown(key('ArrowRight', { shiftKey: true }));
+		h.capture.onKeyDown(key('ArrowRight', { shiftKey: true }));
 		h.history.flush();
 
 		const c = h.soleCommit();
@@ -230,8 +230,10 @@ test('B18: while Server-Locked, a run-mode click must not reach the label editor
 	try {
 		h.renderer.mode = 'run';
 		const hitEl = { dataset: { input: '', idx: '0' }, closest: () => ({ id: 'node-aa0001' }), querySelector: () => null };
+		// drawn, as a page has it: the label editor finds the region by its node and index (app/src/labeledit.js openRegion)
+		globalThis.__domIds.set('node-aa0001', { querySelector: (sel) => (sel === '[data-input][data-idx="0"]' ? hitEl : null) });
 		const target = { tagName: 'rect', closest: () => hitEl };
-		h.input.onDown(pointer(100, 100, { target }));
+		h.capture.onDown(pointer(100, 100, { target }));
 		assert.equal(h.called('labels.openContent'), false, 'a locked client must not open an editor whose commit it cannot send');
 	} finally { h.restore(); }
 });
@@ -239,9 +241,9 @@ test('B18: while Server-Locked, a run-mode click must not reach the label editor
 test('B18: while Server-Locked, the text tool cannot be armed', () => {
 	const h = makeInput({ readOnly: true });
 	try {
-		h.input.onKeyDown(key('t'));
-		h.input.onDown(pointer(0, 0));
-		h.input.onUp(pointer(0, 0));
+		h.capture.onKeyDown(key('t'));
+		h.capture.onDown(pointer(0, 0));
+		h.capture.onUp(pointer(0, 0));
 		assert.equal(h.commits.length, 0, 'a locked client must not author a text box');
 		assert.equal(h.model.all('node').length, 0, 'and must not apply one locally either');
 	} finally { h.restore(); }
@@ -250,8 +252,8 @@ test('B18: while Server-Locked, the text tool cannot be armed', () => {
 test('B37: while Server-Locked, Space still sets a datum — the readout is not a mutation', () => {
 	const h = makeInput({ readOnly: true });
 	try {
-		h.input.onMove(pointer(60, 60));
-		h.input.onKeyDown(key(' '));
+		h.capture.onMove(pointer(60, 60));
+		h.capture.onKeyDown(key(' '));
 		assert.equal(h.called('readout.setDatum'), true, 'SCOPE decision 5: the readout still works while locked');
 		assert.equal(h.commits.length, 0, 'and it commits nothing, because a datum is not a change');
 	} finally { h.restore(); }
@@ -264,7 +266,7 @@ test('Input constructs with no readout/palette — the null objects are TOTAL', 
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
-		assert.doesNotThrow(() => h.input.onKeyDown(key('d', { ctrlKey: true })));
+		assert.doesNotThrow(() => h.capture.onKeyDown(key('d', { ctrlKey: true })));
 		assert.equal(h.commits.length, 1);
 	} finally { h.restore(); }
 });
@@ -278,7 +280,7 @@ test('while Server-Locked, a run-mode ACTION still fires — it commits nothing'
 		h.renderer.mode = 'run';
 		const hitEl = { dataset: { action: 'ping' }, closest: () => ({ id: 'node-aa0001' }) };
 		const target = { tagName: 'rect', closest: () => hitEl };
-		h.input.onDown(pointer(100, 100, { target }));
+		h.capture.onDown(pointer(100, 100, { target }));
 
 		// B45 — the host is injected now, so this reads the real outbound boundary instead of
 		// monkey-patching globalThis mid-test
@@ -297,16 +299,18 @@ test('unlocked, the same three paths still work — the gate is a gate, not a wa
 		try {
 			h.renderer.mode = 'run';
 			const hitEl = { dataset: { input: '', idx: '0' }, closest: () => ({ id: 'node-aa0001' }), querySelector: () => null };
-			h.input.onDown(pointer(100, 100, { target: { tagName: 'rect', closest: () => hitEl } }));
+		// drawn, as a page has it: the label editor finds the region by its node and index (app/src/labeledit.js openRegion)
+		globalThis.__domIds.set('node-aa0001', { querySelector: (sel) => (sel === '[data-input][data-idx="0"]' ? hitEl : null) });
+			h.capture.onDown(pointer(100, 100, { target: { tagName: 'rect', closest: () => hitEl } }));
 			assert.equal(h.called('labels.openContent'), true, 'run-mode editing works when unlocked');
 		} finally { h.restore(); }
 	}
 	{	// the text tool arms and authors a box
 		const h = makeInput();
 		try {
-			h.input.onKeyDown(key('t'));
-			h.input.onDown(pointer(0, 0));
-			h.input.onUp(pointer(0, 0));
+			h.capture.onKeyDown(key('t'));
+			h.capture.onDown(pointer(0, 0));
+			h.capture.onUp(pointer(0, 0));
 			assert.equal(h.commits.length, 1, 'the text tool authors when unlocked');
 			assert.deepEqual(opKinds(h.soleCommit().ops), ['put/node']);
 		} finally { h.restore(); }
@@ -318,8 +322,8 @@ test('B14: Shift+arrow grows the lone selected node span — the W1 authoring ge
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([n.id]);
-		h.input.onKeyDown(key('ArrowRight', { shiftKey: true }));
-		h.input.onKeyDown(key('ArrowDown', { shiftKey: true }));
+		h.capture.onKeyDown(key('ArrowRight', { shiftKey: true }));
+		h.capture.onKeyDown(key('ArrowDown', { shiftKey: true }));
 		h.history.flush();
 
 		const c = h.soleCommit();
@@ -336,9 +340,9 @@ test('D11: a burst does NOT span a selection change', () => {
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [0, 60]]);
 		h.selection.set([a.id]);
-		h.input.onKeyDown(key('ArrowRight'));
+		h.capture.onKeyDown(key('ArrowRight'));
 		h.selection.set([b.id]);          // closes the window
-		h.input.onKeyDown(key('ArrowRight'));
+		h.capture.onKeyDown(key('ArrowRight'));
 		h.history.flush();
 
 		assert.equal(h.commits.length, 2, 'two entities nudged across a selection change is two undo steps');
@@ -374,7 +378,7 @@ test('B30: duplicating a routed link keeps its route', () => {
 	try {
 		const { a, b, w } = routed(h);
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('d', { ctrlKey: true }));
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
 
 		const ops = h.soleCommit().ops;
 		const link = ops.find((o) => o.kind === 'link')?.entity;
@@ -404,7 +408,7 @@ test('B30: a closed route stays closed when duplicated', () => {
 		const link = h.model.all('link')[0];
 		h.model.set('link', link.id, { closed: true });
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('d', { ctrlKey: true }));
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
 
 		const clone = h.soleCommit().ops.find((o) => o.kind === 'link')?.entity;
 		assert.equal(clone.closed, true, '`closed` is authored state and travels with the clone');
@@ -416,7 +420,7 @@ test('B30: an explicitly selected waypoint is cloned', () => {
 	try {
 		const { w } = routed(h);
 		h.selection.set([w.id]);
-		h.input.onKeyDown(key('d', { ctrlKey: true }));
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
 
 		const ops = h.soleCommit().ops;
 		assert.equal(ops.length, 1);
@@ -435,7 +439,7 @@ test('B30: every entity a clone emits passes the SERVER validator', () => {
 		const { a, b } = routed(h);
 		h.model.set('link', h.model.all('link')[0].id, { closed: true });
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('d', { ctrlKey: true }));
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
 
 		for (const op of h.soleCommit().ops) {
 			assert.equal(op.op, 'put');
@@ -466,12 +470,12 @@ test('B19: bindGestureDefer connects a live gesture to the inbound queue, both d
 		assert.equal(fakeSync.deferInbound(), false, 'idle: nothing to defer');
 
 		seedNodes(h.model, [[0, 0]]);
-		h.input.onDown(pointer(0, 0));                       // marquee — a real in-flight gesture
-		h.input.onMove(pointer(120, 120));
+		h.capture.onDown(pointer(0, 0));                       // marquee — a real in-flight gesture
+		h.capture.onMove(pointer(120, 120));
 		assert.equal(fakeSync.deferInbound(), true, 'mid-gesture: inbound must queue');
 		assert.equal(released.length, 0, 'and nothing has been released yet');
 
-		h.input.onUp(pointer(120, 120));
+		h.capture.onUp(pointer(120, 120));
 		assert.equal(fakeSync.deferInbound(), false, 'the gesture is over');
 		assert.ok(released.length >= 1, 'and the queue was released — the other direction of the binding');
 	} finally { h.restore(); }
@@ -483,7 +487,7 @@ test('B19: a cancelled gesture releases the queue too — Escape must not strand
 		const released = [];
 		bindGestureDefer(h.input, { deferInbound: null, releaseDeferred: () => released.push(1) });
 		seedNodes(h.model, [[0, 0]]);
-		h.input.onDown(pointer(0, 0));
+		h.capture.onDown(pointer(0, 0));
 		h.input.cancelDrag();
 		assert.ok(released.length >= 1, 'however a gesture ends, the deferred changes must land');
 	} finally { h.restore(); }
@@ -508,10 +512,10 @@ The positional fix was incomplete in precisely the way positional fixes always a
 test('B42: a text tool armed before the lock does not survive it', () => {
 	const h = makeInput();
 	try {
-		h.input.onKeyDown(key('t'));       // armed while editable
+		h.capture.onKeyDown(key('t'));       // armed while editable
 		h.input.setReadOnly(true);         // an agent takes the lock
-		h.input.onDown(pointer(0, 0));
-		h.input.onUp(pointer(0, 0));
+		h.capture.onDown(pointer(0, 0));
+		h.capture.onUp(pointer(0, 0));
 
 		assert.equal(h.commits.length, 0, 'a locked client must not author a text box');
 		assert.equal(h.model.all('node').length, 0, 'and must not apply one locally either');
@@ -521,12 +525,12 @@ test('B42: a text tool armed before the lock does not survive it', () => {
 test('B42: the tool is still armable, and still works, once control is reclaimed', () => {
 	const h = makeInput();
 	try {
-		h.input.onKeyDown(key('t'));
+		h.capture.onKeyDown(key('t'));
 		h.input.setReadOnly(true);
 		h.input.setReadOnly(false);        // the human reclaims
-		h.input.onKeyDown(key('t'));       // re-arm — the lock disarmed it, so this is a fresh arm
-		h.input.onDown(pointer(0, 0));
-		h.input.onUp(pointer(0, 0));
+		h.capture.onKeyDown(key('t'));       // re-arm — the lock disarmed it, so this is a fresh arm
+		h.capture.onDown(pointer(0, 0));
+		h.capture.onUp(pointer(0, 0));
 		assert.equal(h.commits.length, 1, 'a gate is a gate, not a wall');
 	} finally { h.restore(); }
 });
@@ -550,9 +554,9 @@ test('H6.4: a right-drag escalates pending → move and commits the transition',
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onDown(onEntity(a.id, 0, 0, { button: 2 }));
-		h.input.onMove(onEntity(a.id, 180, 0, { button: 2 }));
-		h.input.onUp(onEntity(a.id, 180, 0, { button: 2 }));
+		h.capture.onDown(onEntity(a.id, 0, 0, { button: 2 }));
+		h.capture.onMove(onEntity(a.id, 180, 0, { button: 2 }));
+		h.capture.onUp(onEntity(a.id, 180, 0, { button: 2 }));
 
 		assert.equal(h.commits.length, 1, 'one drag is one change');
 		assert.equal(h.model.get('node', a.id).x, 180, 'and it landed on the grid');
@@ -563,9 +567,9 @@ test('H6.4: Ctrl+right-drag escalates clone-pending → clone', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onDown(onEntity(a.id, 0, 0, { button: 2, ctrlKey: true }));
-		h.input.onMove(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
-		h.input.onUp(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
+		h.capture.onDown(onEntity(a.id, 0, 0, { button: 2, ctrlKey: true }));
+		h.capture.onMove(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
+		h.capture.onUp(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
 
 		assert.equal(h.commits.length, 1);
 		assert.equal(h.model.all('node').length, 2, 'the original stayed, the copy landed');
@@ -576,11 +580,11 @@ test('H6.4: while Server-Locked a press still selects, but the drag never escala
 	const h = makeInput({ readOnly: true });
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.input.onDown(onEntity(a.id, 0, 0));
+		h.capture.onDown(onEntity(a.id, 0, 0));
 		assert.ok(h.selection.has(a.id), 'click-select survives the gate — SCOPE decision 5');
 
-		h.input.onMove(onEntity(a.id, 180, 0));
-		h.input.onUp(onEntity(a.id, 180, 0));
+		h.capture.onMove(onEntity(a.id, 180, 0));
+		h.capture.onUp(onEntity(a.id, 180, 0));
 		assert.equal(h.commits.length, 0, 'but the escalation is refused');
 		assert.equal(h.model.get('node', a.id).x, 0, 'and nothing moved, even locally');
 	} finally { h.restore(); }
@@ -604,13 +608,13 @@ test('B43: a resize commit fires the gesture-end hook exactly once', () => {
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
-		h.input.onDown(handle('se', 300, 300));
+		h.capture.onDown(handle('se', 300, 300));
 		let fired = 0;
 		h.input.onGestureEnd = () => fired++;
-		h.input.onMove(handle('se', 480, 480));
+		h.capture.onMove(handle('se', 480, 480));
 		// the live preview moved, so the handle genuinely armed a resize — this test is not vacuous
 		assert.equal(h.model.get('zone', z.id).w, 510, 'the grabbed handle is dragging the zone');
-		h.input.onUp(handle('se', 480, 480));
+		h.capture.onUp(handle('se', 480, 480));
 
 		assert.equal(fired, 1, 'D12 fires once per gesture — a double replay is the latent bug');
 		assert.equal(h.model.get('zone', z.id).w, 510, 'and the resize committed');
@@ -625,8 +629,8 @@ test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
-		h.input.onDown(handle('se', 300, 300));
-		h.input.onMove(handle('se', 480, 480));
+		h.capture.onDown(handle('se', 300, 300));
+		h.capture.onMove(handle('se', 480, 480));
 		assert.equal(h.model.get('zone', z.id).w, 510, 'the live preview writes the shared Model (B7)');
 
 		h.input.cancelDrag();
@@ -634,7 +638,7 @@ test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 		assert.equal(h.commits.length, 0, 'with nothing in history');
 
 		// the gesture is really over, not merely rewound: further movement must not resize
-		h.input.onMove(handle('se', 600, 600));
+		h.capture.onMove(handle('se', 600, 600));
 		assert.equal(h.model.get('zone', z.id).w, 300, 'a dead gesture does not track the pointer');
 	} finally { h.restore(); }
 });
@@ -643,13 +647,13 @@ test('H6.4: a right-button release during link mode does not commit a segment', 
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
-		h.input.onDown(onEntity(a.id, 0, 0));
-		h.input.onMove(onEntity(b.id, 180, 0));
-		h.input.onUp(onEntity(b.id, 180, 0, { button: 2 }));
+		h.capture.onDown(onEntity(a.id, 0, 0));
+		h.capture.onMove(onEntity(b.id, 180, 0));
+		h.capture.onUp(onEntity(b.id, 180, 0, { button: 2 }));
 		assert.equal(h.model.all('link').length, 0, 'a stray right-release commits no segment');
 
 		// and the gesture is still LIVE, not silently dead: the real release still lands the link
-		h.input.onUp(onEntity(b.id, 180, 0, { button: 0 }));
+		h.capture.onUp(onEntity(b.id, 180, 0, { button: 0 }));
 		assert.equal(h.model.all('link').length, 1, 'the left release ends the link normally');
 		assert.equal(h.model.linkBetween(a.id, b.id) ? 1 : 0, 1, 'between the two nodes dragged');
 	} finally { h.restore(); }
@@ -748,7 +752,7 @@ test('B45: the help element is the injected one — not a second lookup of the s
 	const h = makeInput();
 	try {
 		assert.equal(h.input.help, h.help, 'one owner of #help, and it is the composition root');
-		h.input.onKeyDown(key('?', { shiftKey: true }));
+		h.capture.onKeyDown(key('?', { shiftKey: true }));
 		assert.equal(h.help.hidden, false, 'and toggling help acts on that very element');
 	} finally { h.restore(); }
 });
@@ -795,9 +799,9 @@ test('B36: a zone resize pins the corner opposite the grabbed handle', () => {
 		h.selection.set([z.id]);
 
 		// grab NW and drag it outward past the origin; SE must not move
-		h.input.onDown(handle('nw', 0, 0));
-		h.input.onMove(handle('nw', -180, -180));
-		h.input.onUp(handle('nw', -180, -180));
+		h.capture.onDown(handle('nw', 0, 0));
+		h.capture.onMove(handle('nw', -180, -180));
+		h.capture.onUp(handle('nw', -180, -180));
 
 		const after = h.model.get('zone', z.id);
 		assert.equal(after.x + after.w, 300, 'the SE corner stayed put in x');
@@ -821,15 +825,15 @@ Shift variant to its own verb so the split cannot silently re-merge.
 test('B48: Ctrl+Shift+Z redoes — the table no longer says it undoes', () => {
 	const h = makeInput();
 	try {
-		h.input.onKeyDown(key('z', { ctrlKey: true, shiftKey: true }));
+		h.capture.onKeyDown(key('z', { ctrlKey: true, shiftKey: true }));
 		assert.deepEqual(h.commits.map((c) => c.verb), ['redo']);
 
 		h.reset();
-		h.input.onKeyDown(key('z', { ctrlKey: true }));
+		h.capture.onKeyDown(key('z', { ctrlKey: true }));
 		assert.deepEqual(h.commits.map((c) => c.verb), ['undo'], 'and plain Ctrl+Z still undoes');
 
 		h.reset();
-		h.input.onKeyDown(key('y', { ctrlKey: true }));
+		h.capture.onKeyDown(key('y', { ctrlKey: true }));
 		assert.deepEqual(h.commits.map((c) => c.verb), ['redo'], 'Ctrl+Y remains the other route to redo');
 	} finally { h.restore(); }
 });
@@ -840,7 +844,7 @@ test('B48: Shift+L stars from the first selection; plain L chains', () => {
 		try {
 			const [a, b, c] = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
 			h.selection.set([a.id, b.id, c.id]);
-			h.input.onKeyDown(key('l', { shiftKey: star }));
+			h.capture.onKeyDown(key('l', { shiftKey: star }));
 
 			assert.equal(h.soleCommit().label, expected);
 			assert.equal(h.model.all('link').length, 2, 'two links either way');
@@ -857,13 +861,13 @@ test('B48: Ctrl+Shift+G ungroups; Ctrl+G groups', () => {
 		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
 		h.selection.set([a.id, b.id]);
 
-		h.input.onKeyDown(key('g', { ctrlKey: true }));
+		h.capture.onKeyDown(key('g', { ctrlKey: true }));
 		assert.equal(h.soleCommit().label, 'group');
 		assert.equal(h.model.all('group').length, 1);
 
 		h.reset();
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('g', { ctrlKey: true, shiftKey: true }));
+		h.capture.onKeyDown(key('g', { ctrlKey: true, shiftKey: true }));
 		assert.equal(h.soleCommit().label, 'ungroup');
 		assert.equal(h.model.all('group').length, 0, 'the group is gone, not re-made');
 	} finally { h.restore(); }
@@ -973,7 +977,7 @@ test('B47: the dispatcher claims a bound key by default', () => {
 		const press = (k, mod = {}) => {
 			const e = key(k, mod);
 			e.preventDefault = () => { prevented++; };
-			h.input.onKeyDown(e);
+			h.capture.onKeyDown(e);
 			return prevented;
 		};
 		prevented = 0; press('z', { ctrlKey: true });
@@ -991,7 +995,7 @@ test('B47: Escape stays the browser\'s — the one binding that must not be clai
 		let prevented = 0;
 		const e = key('Escape');
 		e.preventDefault = () => { prevented++; };
-		h.input.onKeyDown(e);
+		h.capture.onKeyDown(e);
 		assert.equal(prevented, 0, 'exiting fullscreen and cancelling an IME composition are the browser\'s');
 	} finally { h.restore(); }
 });
@@ -1003,7 +1007,7 @@ test('B47: a conditional claimer prevents only on the path that acts', () => {
 			let n = 0;
 			const e = key('Delete');
 			e.preventDefault = () => { n++; };
-			h.input.onKeyDown(e);
+			h.capture.onKeyDown(e);
 			return n;
 		};
 		h.selection.clear();
@@ -1156,11 +1160,11 @@ test('B46: a routed link commits once, with its bend, and lands selected', () =>
 		const at = (id, x, y) => pointer(x, y, {
 			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
 		});
-		h.input.onDown(at(a.id, 0, 0));
-		h.input.onMove(at(a.id, 180, 60));
-		h.input.onKeyDown(key('w'));            // drop a bend mid-route
-		h.input.onMove(at(b.id, 360, 0));
-		h.input.onUp(at(b.id, 360, 0));
+		h.capture.onDown(at(a.id, 0, 0));
+		h.capture.onMove(at(a.id, 180, 60));
+		h.capture.onKeyDown(key('w'));            // drop a bend mid-route
+		h.capture.onMove(at(b.id, 360, 0));
+		h.capture.onUp(at(b.id, 360, 0));
 
 		assert.equal(h.commits.length, 1, 'waypoint + link are ONE undo step');
 		assert.equal(h.soleCommit().label, 'route');
@@ -1192,9 +1196,9 @@ test('H6.12: F2 renames the entity you actually clicked, not an arbitrary one of
 		const at = (id, x, y) => pointer(x, y, {
 			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
 		});
-		h.input.onDown(at(b.id, 180, 0, { shiftKey: true }));
-		h.input.onUp(at(b.id, 180, 0, { shiftKey: true }));
-		h.input.onKeyDown(key('F2'));
+		h.capture.onDown(at(b.id, 180, 0, { shiftKey: true }));
+		h.capture.onUp(at(b.id, 180, 0, { shiftKey: true }));
+		h.capture.onKeyDown(key('F2'));
 
 		const opened = h.stateCalls('labels.open');
 		assert.equal(opened.length, 1, 'exactly one editor opened');
@@ -1209,12 +1213,12 @@ test('H6.12: a stale focus is ignored — the selection decides', () => {
 		h.labels.setFocus('node-deadbeef');   // an entity that never existed / has since died
 
 		h.selection.set([a.id]);
-		h.input.onKeyDown(key('F2'));
+		h.capture.onKeyDown(key('F2'));
 		assert.equal(h.stateCalls('labels.open')[0][1], a.id, 'a lone selection is unambiguous');
 
 		h.reset();
 		h.selection.set([a.id, b.id]);
-		h.input.onKeyDown(key('F2'));
+		h.capture.onKeyDown(key('F2'));
 		assert.equal(h.stateCalls('labels.open').length, 0, 'but an ambiguous one with no live focus opens nothing');
 	} finally { h.restore(); }
 });
@@ -1238,13 +1242,13 @@ test('B72: a second link between the same pair is allowed when it carries a bend
 		const at = (id, x, y) => pointer(x, y, {
 			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s2) => (s2.includes('node') ? { id } : null) },
 		});
-		const plain = () => { h.input.onDown(at(a.id, 0, 0)); h.input.onMove(at(b.id, 360, 0)); h.input.onUp(at(b.id, 360, 0)); };
+		const plain = () => { h.capture.onDown(at(a.id, 0, 0)); h.capture.onMove(at(b.id, 360, 0)); h.capture.onUp(at(b.id, 360, 0)); };
 		const routed = () => {
-			h.input.onDown(at(a.id, 0, 0));
-			h.input.onMove(at(a.id, 180, 60));
-			h.input.onKeyDown(key('w'));
-			h.input.onMove(at(b.id, 360, 0));
-			h.input.onUp(at(b.id, 360, 0));
+			h.capture.onDown(at(a.id, 0, 0));
+			h.capture.onMove(at(a.id, 180, 60));
+			h.capture.onKeyDown(key('w'));
+			h.capture.onMove(at(b.id, 360, 0));
+			h.capture.onUp(at(b.id, 360, 0));
 		};
 
 		plain();
@@ -1280,11 +1284,11 @@ test('B80: routed first then straight — the direct link is still permitted', (
 			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s2) => (s2.includes('node') ? { id } : null) },
 		});
 		const routed = () => {
-			h.input.onDown(at(a.id, 0, 0)); h.input.onMove(at(a.id, 180, 60));
-			h.input.onKeyDown(key('w'));
-			h.input.onMove(at(b.id, 360, 0)); h.input.onUp(at(b.id, 360, 0));
+			h.capture.onDown(at(a.id, 0, 0)); h.capture.onMove(at(a.id, 180, 60));
+			h.capture.onKeyDown(key('w'));
+			h.capture.onMove(at(b.id, 360, 0)); h.capture.onUp(at(b.id, 360, 0));
 		};
-		const plain = () => { h.input.onDown(at(a.id, 0, 0)); h.input.onMove(at(b.id, 360, 0)); h.input.onUp(at(b.id, 360, 0)); };
+		const plain = () => { h.capture.onDown(at(a.id, 0, 0)); h.capture.onMove(at(b.id, 360, 0)); h.capture.onUp(at(b.id, 360, 0)); };
 
 		routed();
 		assert.equal(h.model.all('link').length, 1, 'the routed path commits');
@@ -1335,7 +1339,7 @@ test('B75: right-click is suppressed on panels, and left alone in a text field',
 	const target = (kind) => ({ closest: (sel) => (kind && sel.includes(kind) ? { kind } : null) });
 	const fire = (t) => {
 		let prevented = false;
-		h.input.onContextMenu({ target: t, preventDefault: () => { prevented = true; } });
+		h.capture.onContextMenu({ target: t, preventDefault: () => { prevented = true; } });
 		return prevented;
 	};
 	try {
@@ -1365,7 +1369,7 @@ test('B146: the waypoint is not a palette digit, and `w` still covers both state
 	try {
 		// idle: `w` places a standalone waypoint. This is the case the tile duplicated.
 		h.input.lastPos = { x: 0, y: 0 };
-		h.input.onKeyDown(key('w'));
+		h.capture.onKeyDown(key('w'));
 		assert.equal(h.model.all('waypoint').length, 1, '`w` places one when idle');
 
 		// `7` is no longer a hand digit at all
@@ -1392,13 +1396,13 @@ test('B147: a digit mid-link-drag places that node, ends the segment on it, and 
 		person means by one gesture.
 		*/
 		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
-		h.input.onDown(pointer(-120, 0, { target, shiftKey: true }));
-		h.input.onMove(pointer(0, 0));
+		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
+		h.capture.onMove(pointer(0, 0));
 
 		h.input.lastPos = { x: 0, y: 0 };
-		h.input.onKeyDown(key('3'));                       // loadbalancer, the third type
+		h.capture.onKeyDown(key('3'));                       // loadbalancer, the third type
 		h.input.lastPos = { x: 120, y: 0 };
-		h.input.onKeyDown(key('5'));                       // vxlan, the fifth
+		h.capture.onKeyDown(key('5'));                       // vxlan, the fifth
 
 		const made = h.model.all('node').filter((n) => n.id !== a.id);
 		assert.equal(made.length, 2, 'each digit CREATED a node');
@@ -1440,12 +1444,12 @@ test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => 
 	const [a, blocker] = seedNodes(h.model, [[-120, 0, 'router'], [0, 0, 'host']]);
 	try {
 		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
-		h.input.onDown(pointer(-120, 0, { target, shiftKey: true }));
-		h.input.onMove(pointer(0, 0));
+		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
+		h.capture.onMove(pointer(0, 0));
 		h.input.lastPos = { x: 0, y: 0 };                  // sitting on `blocker`
 
 		const before = h.model.all('node').length;
-		h.input.onKeyDown(key('2'));
+		h.capture.onKeyDown(key('2'));
 		assert.equal(h.model.all('node').length, before, 'nothing was stacked on the occupied cell');
 		assert.equal(h.model.all('link').length, 0, 'and no segment was committed to a node that was not made');
 		assert.ok(blocker, 'the occupant is still there');
@@ -1453,7 +1457,7 @@ test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => 
 		// the run is untouched -- shown by it still working from the ORIGINAL source, which is a
 		// fact about the next commit rather than about a field
 		h.input.lastPos = { x: 120, y: 0 };
-		h.input.onKeyDown(key('2'));
+		h.capture.onKeyDown(key('2'));
 		const link = h.model.all('link')[0];
 		assert.ok(link, 'a later hop still commits');
 		assert.equal(link.src, a.id, 'from the source the refused keystroke did not move');
@@ -1463,7 +1467,7 @@ test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => 
 test('B147: a digit while idle still picks up the stamp hand', () => {
 	const h = makeInput();
 	try {
-		h.input.onKeyDown(key('2'));
+		h.capture.onKeyDown(key('2'));
 		assert.equal(h.called('palette.toggleHand'), true, 'idle behaviour is unchanged');
 		assert.equal(h.model.all('node').length, 0, 'and picking up a stamp places nothing by itself');
 	} finally { h.restore(); }
@@ -1487,21 +1491,21 @@ test('B147: chaining leaves exactly one live preview, not one per hop', () => {
 	const [a] = seedNodes(h.model, [[-120, 0, 'router']]);
 	try {
 		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
-		h.input.onDown(pointer(-120, 0, { target, shiftKey: true }));
-		h.input.onMove(pointer(0, 0));
+		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
+		h.capture.onMove(pointer(0, 0));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'one preview while drawing');
 
 		h.input.lastPos = { x: 0, y: 0 };
-		h.input.onKeyDown(key('3'));
+		h.capture.onKeyDown(key('3'));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1,
 			'still one after a hop -- the previous hop took its dashed line with it');
 
 		h.input.lastPos = { x: 120, y: 0 };
-		h.input.onKeyDown(key('5'));
+		h.capture.onKeyDown(key('5'));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'and after a second');
 
 		// and the run still ends cleanly, leaving nothing behind
-		h.input.onUp(pointer(240, 0));
+		h.capture.onUp(pointer(240, 0));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 0, 'releasing clears the last one');
 	} finally { h.restore(); }
 });
@@ -1528,9 +1532,9 @@ test('B202: a press in run mode starts no gesture, on a waypoint or a node', () 
 			const el = { id: kind, closest: () => el, querySelector: () => null, dataset: {} };
 			const target = { tagName: 'circle', closest: () => el };
 
-			h.input.onDown(pointer(100, 100, { target }));
-			h.input.onMove(pointer(160, 160, { target }));
-			h.input.onUp(pointer(160, 160, { target }));
+			h.capture.onDown(pointer(100, 100, { target }));
+			h.capture.onMove(pointer(160, 160, { target }));
+			h.capture.onUp(pointer(160, 160, { target }));
 
 			assert.equal(h.called('startMove'), false, `${kind}: run mode started a move gesture`);
 			assert.equal(h.commits.length, 0, `${kind}: a drag in run mode committed something`);
@@ -1576,8 +1580,8 @@ test('B211: a left CLICK on a linked waypoint selects it', () => {
 		});
 
 		// press and release on the spot -- no drag
-		h.input.onDown(at(0, 0));
-		h.input.onUp(at(0, 0));
+		h.capture.onDown(at(0, 0));
+		h.capture.onUp(at(0, 0));
 
 		assert.ok(h.selection.list().includes('waypoint-aa0001'),
 			'a click with no drag must select, exactly as it does on a node');
@@ -1596,9 +1600,9 @@ test('B203: a left drag never MOVES a waypoint', () => {
 			...mod,
 		});
 
-		h.input.onDown(at(0, 0, { button: 0 }));
-		h.input.onMove(at(0, 240, { button: 0 }));
-		h.input.onUp(at(0, 240, { button: 0 }));
+		h.capture.onDown(at(0, 0, { button: 0 }));
+		h.capture.onMove(at(0, 240, { button: 0 }));
+		h.capture.onUp(at(0, 240, { button: 0 }));
 
 		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 0,
 			'a LEFT drag moved the waypoint -- left is the link button, right is the move button');
@@ -1616,9 +1620,9 @@ test('B203: right-drag still moves a waypoint', () => {
 			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
 		});
 
-		h.input.onDown(at(0, 0));
-		h.input.onMove(at(0, 240));
-		h.input.onUp(at(0, 240));
+		h.capture.onDown(at(0, 0));
+		h.capture.onMove(at(0, 240));
+		h.capture.onUp(at(0, 240));
 
 		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 240, 'the RIGHT drag is the move gesture and it did not move');
 		assert.equal(h.commits.length, 1, 'one drag is one change');
@@ -1650,9 +1654,9 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 			button: 0,
 			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) },
 		});
-		h.input.onDown(at(0, 120, 'node-aa0003'));
-		h.input.onMove(at(0, 60, null));
-		h.input.onUp(at(0, 0, 'waypoint-aa0001'));
+		h.capture.onDown(at(0, 120, 'node-aa0003'));
+		h.capture.onMove(at(0, 60, null));
+		h.capture.onUp(at(0, 0, 'waypoint-aa0001'));
 
 		assert.equal(m.all('link').length, 3, 'the bend split, and the new link joined it');
 		const srcHalf = m.get('link', 'link-aa0001');
@@ -1672,7 +1676,7 @@ test('B258: Alt+right-click deletes the node under the cursor on a board that ho
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 240]]);
 		h.model.put('link', { id: 'link-00000e', name: 'l', src: a.id, dst: b.id });
-		h.input.onDown(onEntity(c.id, 0, 240, { button: 2, altKey: true }));
+		h.capture.onDown(onEntity(c.id, 0, 240, { button: 2, altKey: true }));
 		assert.equal(h.model.get('node', c.id), undefined, 'the chord deletes the node under the cursor');
 		assert.ok(h.model.get('link', 'link-00000e'), 'and leaves the unrelated link alone');
 	} finally { h.restore(); }
