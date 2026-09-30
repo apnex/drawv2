@@ -720,7 +720,8 @@ export class Input {
 
 	deleteUnderCursor(hit) {
 		if (this.isGesturing()) return;
-		this.history.commit(commands.deleteSelection(this.model, [hit.id]));
+		// B258: `deleteSelection` takes a Set -- an Array threw on `ids.has` whenever the board held a link
+		this.history.commit(commands.deleteSelection(this.model, new Set([hit.id])));
 		this.afterHistory();
 	}
 

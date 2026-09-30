@@ -1622,3 +1622,19 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 		assert.equal(srcHalf.dst, 'waypoint-aa0001', 'and ends at the waypoint');
 	} finally { h.restore(); }
 });
+
+/*
+B258 -- Alt+right-click deletes the entity under the cursor, on a board that holds links. `deleteUnderCursor` passed an
+Array to `deleteSelection`, which asks `ids.has` of every link, so the gesture threw before any commit whenever a link
+existed. Found by the ruleset audit's code inventory (dev/design/unification/RULESET-AUDIT.md, F2).
+*/
+test('B258: Alt+right-click deletes the node under the cursor on a board that holds links', () => {
+	const h = makeInput();
+	try {
+		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 240]]);
+		h.model.put('link', { id: 'link-00000e', name: 'l', src: a.id, dst: b.id });
+		h.input.onDown(onEntity(c.id, 0, 240, { button: 2, altKey: true }));
+		assert.equal(h.model.get('node', c.id), undefined, 'the chord deletes the node under the cursor');
+		assert.ok(h.model.get('link', 'link-00000e'), 'and leaves the unrelated link alone');
+	} finally { h.restore(); }
+});
