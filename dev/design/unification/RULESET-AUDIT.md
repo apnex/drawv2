@@ -158,3 +158,15 @@ The lab root wires it and goes back to wiring only.
 | D2 | confirm that #85 reverses #20 for a route running a pipe twice | #20 was ruled "Allow it"; #85 was ruled without it in view |
 | D3 | the Rules system's Q1, Q3 and Q4 | T3 depends on them, and they are already owed (dev/RULES.md section 10) |
 | D4 | register storing link ages in the format batch as a held row | #77 says ages are stored at promotion, but nothing tracks it |
+
+---
+
+## 9. Progress
+
+**T2 landed, 2026-09-30 -- approved by the director ("Approved for T2").**
+- **What changed.** `deriveNetwork` in `network/pipes.mjs` works a board out once, and `createNetworkView` in `network/view.mjs` keeps one derivation per board state. The key is built from every input the derivation reads, so a stale answer cannot survive a change. Drawing, down, blockers, dependents, the sweep and the planner's reference check all read it, and `routesOf` is retired.
+- **Closeout hook 1 -- re-measured.** One anchor deleted costs 1 whole-board assignment on each board, against 9, 15 and 6 before (the cross, compare and trunk boards). Selecting an anchor costs 0, against 3. A drag judged still costs 2, as designed.
+- **Closeout hook 2 -- duplicates.** The "whole-board assignment" and "down = no route" rows of RULESET section 5 are gone: one derivation answers both, and it reads only pipes whose ends the model holds.
+- **Guardrails.** Behaviour is unchanged: 60 of 60 browser tests pass, and the matrix file is untouched. The derivation follows every change -- a pipe laid, removed or re-laid, an anchor gone, a link added, re-pinned or re-ended, an age noted -- and each property is held by a test that six mutants each fail.
+- **Findings closed:** F1 (structurally, beyond B257's fix), F8 and F10.
+- **One test changed its setup, not its expectation.** It routed over pipes between anchors its model did not hold; under F10 such pipes are no way, so the anchors were added to the model.

@@ -177,20 +177,43 @@ export const assignRoutes = (pipes, links, opts) => assign(pipes, links, opts).r
 export const preferredRoute = (pipes, link) => routeLink(pipes, { src: link.src, dst: link.dst, via: link.via ?? [] });
 
 /*
-The links blocking a down link: those holding a pipe on its preferred path -- ruled 2026-09-30, "select a
-down/broken link that cannot be healed due to another link occupying my preferred path, also highlight that
-blocking link". Empty for a link that is up, and for one down because no way exists at all.
+EVERYTHING THE NETWORK KNOWS ABOUT ONE BOARD, derived once -- step T2 of the ruleset audit
+(dev/design/unification/RULESET-AUDIT.md). Where each link runs, whether it is down, what blocks it, which links pass
+an anchor, and which pipes are in use are one question; answered apart, they were worked out 9 to 15 times per edit and
+two of the answers disagreed (B257). `network/view.mjs` keeps one of these per board state, and every consumer reads it.
+
+Answers are ids and routes, never link objects, so a caller always reads the link itself from its own model.
 */
-export function blockersOf(pipes, links, id, opts) {
-	const link = links.find((l) => l.id === id);
+export function deriveNetwork(pipes, links, opts) {
 	const { routes, held, called } = assign(pipes, links, opts);
-	const want = link && !routes.get(id) && preferredRoute(pipes, link);
-	if (!want) return [];
-	// a link holding a pipe on the way blocks it -- and so does one with first call on it, even while that one is down
-	const by = new Set();
-	for (let i = 0; i < want.length - 1; i++) {
-		const k = pipeKey(want[i], want[i + 1]);
-		for (const other of [...(held.get(k) ?? []), called.get(k)]) if (other && other !== id) by.add(other);
-	}
-	return [...by].sort();
+	const byId = new Map(links.map((l) => [l.id, l]));
+	return {
+		pipes,
+		route: (id) => routes.get(id) ?? null,
+		isDown: (id) => byId.has(id) && !routes.get(id),
+		/*
+		The links blocking a down link: those holding a pipe on its preferred path -- ruled 2026-09-30, "select a
+		down/broken link that cannot be healed due to another link occupying my preferred path, also highlight that
+		blocking link". Empty for a link that is up, and for one down because no way exists at all. A link holding a pipe
+		on the way blocks it -- and so does one with first call on it, even while that one is down.
+		*/
+		blockers(id) {
+			const link = byId.get(id);
+			const want = link && !routes.get(id) && preferredRoute(pipes, link);
+			if (!want) return [];
+			const by = new Set();
+			for (let i = 0; i < want.length - 1; i++) {
+				const k = pipeKey(want[i], want[i + 1]);
+				for (const other of [...(held.get(k) ?? []), called.get(k)]) if (other && other !== id) by.add(other);
+			}
+			return [...by].sort();
+		},
+		// the ids of the links routed through an anchor -- what a moved anchor must redraw
+		through: (anchorId) => links.filter((l) => routes.get(l.id)?.includes(anchorId)).map((l) => l.id),
+		// what the sweep keeps: each link's route, or a down link's own legs, which it heals onto (ruled 2026-09-27)
+		inUse: () => links.map((l) => routes.get(l.id) ?? [l.src, ...(l.via ?? []), l.dst]),
+	};
 }
+
+// the links blocking a down link, for a board not held in a view (the drag judge's hypothetical board)
+export const blockersOf = (pipes, links, id, opts) => deriveNetwork(pipes, links, opts).blockers(id);

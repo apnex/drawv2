@@ -22,35 +22,28 @@ empty pipe layer is a board whose routes were REMOVED -- deleting the anchor the
 takes its last four -- and the exception drew those lost links as live. Measured, and removed.
 */
 
-import { assignRoutes, preferredRoute, blockersOf } from './pipes.mjs';
+import { preferredRoute } from './pipes.mjs';
 
 /*
-The ONE route computation everything here answers from, read from the pipe set on EVERY call.
-
-Where a link is drawn, which anchors its drawing depends on, whether it is down and what blocks it are four
-answers to one question. Computed apart they could disagree -- a link drawn along a route while called down --
-which is the one-fact-two-authorities defect this programme exists to end. Read live rather than captured,
-because pipes change with each edit and a snapshot would route over pipes that are gone.
-
-Since pipes carry one link each (ruled 2026-09-30), a link's route depends on every other link, so a link the
-model holds is routed as part of the whole board (`assignRoutes`), with `rankOf` saying which links are older.
-A link the model does not hold -- the live drag preview -- is routed alone, by the same rule of which pipes it
-may use.
+EVERY ANSWER HERE READS ONE DERIVATION: the network view (network/view.mjs), which works each board state out once
+(RULESET-AUDIT T2). Where a link is drawn, which anchors its drawing depends on, whether it is down and what blocks it
+are four answers to one question; before T2 each worked the board out afresh -- MEASURED 9 to 15 times per edit.
+A link the model does not hold -- the live drag preview -- is routed alone, over the pipes that model can see.
 */
-const routeOf = (pipeSet, link, model, rankOf) => (link.id && model?.get('link', link.id)
-	? assignRoutes(pipeSet.list(), model.all('link'), { rankOf }).get(link.id) ?? null
-	: preferredRoute(pipeSet.list(), link));
+const routeOf = (net, link, model) => (link.id && model?.get('link', link.id)
+	? net.of(model).route(link.id)
+	: preferredRoute(net.of(model).pipes, link));
 
 /*
-Build a resolver over a live pipe set -- what the lab hands to `new Model({ resolvePath })`.
+Build a resolver over the network view -- what the lab hands to `new Model({ resolvePath })`.
 */
-export function pipeResolver(pipeSet, rankOf) {
+export function pipeResolver(net) {
 	return (link, model, straight) => {
-		const route = routeOf(pipeSet, link, model, rankOf);
+		const route = routeOf(net, link, model);
 		if (!route) return straight(link);   // DOWN: drawn along its intent, and `pipeLinkDown` says so
 
-		// ids to positions. An anchor the route names but the model cannot resolve means the pipe
-		// set and the document disagree, and a half-drawn path would hide that -- so defer instead.
+		// ids to positions. The view routes only over pipes whose ends the model holds, so every id resolves;
+		// deferring when one does not is a guard, not a path.
 		const points = [];
 		for (const id of route) {
 			const at = model.endpointOf(id);
@@ -62,38 +55,28 @@ export function pipeResolver(pipeSet, rankOf) {
 }
 
 /*
-Which links are drawn THROUGH an anchor -- the companion the Model takes beside `resolvePath`.
-
-Built from the same routes as the resolver above, so the two cannot disagree: if this module draws a link
-through an anchor, it also says so when that anchor moves. Before it existed the renderer asked the incidence
-index, which knows only a link's ends and pins -- and a guided link, which routes through an anchor it does not
-name, stayed put while its pipes followed the moved anchor.
+Which links are drawn THROUGH an anchor -- the companion the Model takes beside `resolvePath`. The view answers ids;
+the links are read from the model asking, so a caller never redraws a link object older than its own.
 */
-export function pipeDependents(pipeSet, rankOf) {
-	return (anchorId, model) => {
-		const routes = assignRoutes(pipeSet.list(), model.all('link'), { rankOf });
-		return model.all('link').filter((link) => routes.get(link.id)?.includes(anchorId));
-	};
+export function pipeDependents(net) {
+	return (anchorId, model) => net.of(model).through(anchorId).map((id) => model.get('link', id)).filter(Boolean);
 }
 
 /*
-Whether a link is DOWN -- the third companion, handed to `new Model({ linkDown })`.
-
-Down is exactly "no route", from the same routes the resolver draws, so a link is drawn along a route precisely
-when it is not down. It is not stored and nothing clears it: the moment a way returns -- or the link holding it
-goes -- the next read finds the route and the link is live again, which is what "heals" means.
+Whether a link is DOWN -- the third companion, handed to `new Model({ linkDown })`. Down is exactly "no route", from
+the same derivation the resolver draws from, so a link is drawn along a route precisely when it is not down. Nothing
+is stored and nothing clears it: the moment a way returns -- or the link holding it goes -- the next board state is
+worked out, the route is found, and the link is live again, which is what "heals" means.
 */
-export function pipeLinkDown(pipeSet, rankOf) {
-	return (link, model) => !routeOf(pipeSet, link, model, rankOf);
+export function pipeLinkDown(net) {
+	return (link, model) => !routeOf(net, link, model);
 }
 
 /*
-Which links BLOCK a down link -- the fourth companion, handed to `new Model({ blockedBy })` (ruled 2026-09-30):
-the links holding a pipe on the way it would take if nobody held anything. The renderer highlights them when
-the down link is selected, so the author can see the path in the way.
+Which links BLOCK a down link -- the fourth companion, handed to `new Model({ blockedBy })` (ruled 2026-09-30).
 */
-export function pipeBlockers(pipeSet, rankOf) {
-	return (link, model) => (model?.get('link', link.id) ? blockersOf(pipeSet.list(), model.all('link'), link.id, { rankOf }) : []);
+export function pipeBlockers(net) {
+	return (link, model) => (model?.get('link', link.id) ? net.of(model).blockers(link.id) : []);
 }
 
 /*

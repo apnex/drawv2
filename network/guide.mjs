@@ -140,13 +140,14 @@ link's bends.
 // whether an anchor exists in a model -- a pipe survives an edit only while both of its ends do (SD7)
 const anchorIn = (model) => (id) => !!(model.get('node', id) || model.get('waypoint', id));
 
-export function pipeAnchors(pipes, model, rankOf) {
-	const alive = anchorIn(model);
+export function pipeAnchors(net, model) {
+	// read from the network view, as drawing and the sweep are (RULESET-AUDIT T2): the pipes this model can see, and
+	// the routes over them -- one derivation, so what shelters an anchor is what is drawn
+	const view = net.of(model);
 	const carried = new Set();
-	for (const r of routesOf(pipes, model.all('link'), rankOf)) for (let i = 0; i < r.length - 1; i++) carried.add(pipeKey(r[i], r[i + 1]));
+	for (const r of view.inUse()) for (let i = 0; i < r.length - 1; i++) carried.add(pipeKey(r[i], r[i + 1]));
 	const ids = new Set();
-	for (const { a, b, laid } of pipes) {
-		if (!alive(a) || !alive(b)) continue;
+	for (const { a, b, laid } of view.pipes) {
 		if (laid !== 'hand' && !carried.has(pipeKey(a, b))) continue;
 		ids.add(a); ids.add(b);
 	}
@@ -176,26 +177,6 @@ export function isStranded(pipes, link, model) {
 	the holder goes. Only pipes it may use count: a pipe laid with another link carries only that link.
 	*/
 	return !preferredRoute(pipes.filter(({ a, b }) => alive(a) && alive(b)), link);
-}
-
-/*
-The route every link takes, for sweeping the pipes laid with links.
-
-A link with no route is DOWN, and a down link keeps its own drawn legs so it can heal onto them --
-the proposer reading recorded under the 2026-09-27 lifetime ruling. So a down link contributes the
-legs of its intent (its ends and pins in order) rather than nothing; otherwise sweeping would remove
-the very pipes it needs to come back.
-*/
-export function routesOf(pipes, links, rankOf) {
-	/*
-	The routes as shared out -- BY AGE, exactly as drawing shares them (B257). This once took no order, on the
-	reading that age could not change which link-laid pipes are in use; that held only while a w pipe carried its
-	own link alone. Once any link may use a free w pipe (2026-09-30), the order decides who is on it, and an
-	id-order sweep deleted pipes a link was drawn on. So the sweep and the reference check work routes out as
-	drawing does -- the same function and the same ages -- until one derivation serves all three (RULESET-AUDIT T2).
-	*/
-	const routes = assignRoutes(pipes, links, { rankOf });
-	return links.map((l) => routes.get(l.id) ?? [l.src, ...(l.via ?? []), l.dst]);
 }
 
 /*

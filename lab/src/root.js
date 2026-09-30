@@ -43,7 +43,8 @@ import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers, whyDown, downSummary } from '../../network/resolve.mjs';
 import { createLinkOrder } from '../../network/order.mjs';
-import { judgeDrag, pipeAnchors, routesOf, keepsOrphan, isStranded } from '../../network/guide.mjs';
+import { judgeDrag, pipeAnchors, keepsOrphan, isStranded } from '../../network/guide.mjs';
+import { createNetworkView } from '../../network/view.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -74,6 +75,8 @@ The pipe set, for the session. Pipes are not stored yet -- that is the one forma
 // and the order links were made in, since the older link keeps a contested pipe (ruled 2026-09-30) -- session
 // state too, stored with pipes in the format batch
 const pipes = createPipeSet(), order = createLinkOrder();
+// ONE derivation per board state, read by drawing, down, blockers, dependents, the sweep and the planner (RULESET-AUDIT T2)
+const net = createNetworkView(pipes, order.rankOf);
 
 /*
 The tab's model draws links along their ROUTE over pipes, through the interface declared on Model
@@ -84,7 +87,7 @@ polyline it always has; nothing here reaches production.
 // or they disagree: pipes followed a moved anchor while its links stayed behind, and a down link was drawn
 // as a live one, read as a pipe created by itself (the director's reports, 2026-09-29). And what BLOCKS a down
 // link, since a pipe carries one link (2026-09-30): the renderer highlights it when the down link is selected.
-const model = new Model({ resolvePath: pipeResolver(pipes, order.rankOf), routedThrough: pipeDependents(pipes, order.rankOf), linkDown: pipeLinkDown(pipes, order.rankOf), blockedBy: pipeBlockers(pipes, order.rankOf) });
+const model = new Model({ resolvePath: pipeResolver(net), routedThrough: pipeDependents(net), linkDown: pipeLinkDown(net), blockedBy: pipeBlockers(net) });
 attachRelations(model, { cellOf });
 
 /*
@@ -166,7 +169,7 @@ sweeping after an undo would leave the redone link with no pipes. That is a stat
 */
 const settle = (sweep, fallback) => {
 	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));   // a pipe to a gone anchor is not a pipe (SD7)
-	if (sweep) pipes.sweep(routesOf(pipes.list(), authority.all('link'), order.rankOf));   // by age, as drawn (B257)
+	if (sweep) pipes.sweep(net.of(authority).inUse());   // the routes as drawn: one derivation (B257, T2)
 	drawPipes();
 	for (const l of model.all('link')) renderer.update('link', l);
 	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
@@ -211,7 +214,7 @@ history.onCommit((request) => {
 		// pipes reference anchors too, and live here rather than in the document, so the planner is told
 		// -- or its orphan sweep removes an anchor that pins one link and guides another (measured)
 		: commit(authority, log, request, 'lab', 'lab', {
-			alsoReferenced: (m) => pipeAnchors(pipes.list(), m, order.rankOf),   // only pipes that survive the edit being judged
+			alsoReferenced: (m) => pipeAnchors(net, m),   // only pipes that survive the edit being judged
 			keepsOrphan,   // the network model's rule: only links and hand-laid pipes keep an anchor (2026-09-29)
 			// a link that loses a pin with no other way is deleted whole (2026-09-29), judged over surviving pipes
 			isStranded: (link, m) => isStranded(pipes.list(), link, m),

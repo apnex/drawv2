@@ -3,8 +3,12 @@ The incubated whole-route check for `g` -- network/guide.mjs.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { judgeDrag, pipeAnchors, routesOf, isStranded } from '../network/guide.mjs';
-import { assignRoutes } from '../network/pipes.mjs';
+import { judgeDrag, pipeAnchors, isStranded } from '../network/guide.mjs';
+import { assignRoutes, deriveNetwork } from '../network/pipes.mjs';
+import { createNetworkView } from '../network/view.mjs';
+
+// a network view over a plain pipe list, as the lab builds one over its pipe set
+const viewOver = (list, rankOf) => createNetworkView({ list: () => list }, rankOf);
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
@@ -150,7 +154,7 @@ test('on a TIE the notice says the way taken is just as short, not shorter', () 
 
 test('a DOWN link keeps its own drawn legs when pipes are swept, so it can heal onto them', () => {
 	// with no pipes at all the link has no route; its intent legs must still count as in use
-	const r = routesOf([], [{ src: 'A', dst: 'B', via: ['P'] }]);
+	const r = deriveNetwork([], [{ id: 'link-k', src: 'A', dst: 'B', via: ['P'] }]).inUse();
 	assert.deepEqual(r, [['A', 'P', 'B']]);
 });
 
@@ -161,21 +165,21 @@ const model = (anchors, links = []) => ({
 });
 
 test('a HAND pipe references its anchors while both exist, with or without a link', () => {
-	assert.deepEqual([...pipeAnchors(pipes(['A', 'B'], ['B', 'C']), model(['A', 'B', 'C']))].sort(), ['A', 'B', 'C']);
+	assert.deepEqual([...pipeAnchors(viewOver(pipes(['A', 'B'], ['B', 'C'])), model(['A', 'B', 'C']))].sort(), ['A', 'B', 'C']);
 });
 
 test('a pipe references its anchors only while both ends exist', () => {
 	// judged against the model the planner hands over: a pipe whose other end this transaction deletes
 	// must not shelter the survivor from the sweep
-	assert.deepEqual([...pipeAnchors(pipes(['A', 'B'], ['B', 'C']), model(['B', 'C']))].sort(), ['B', 'C']);
+	assert.deepEqual([...pipeAnchors(viewOver(pipes(['A', 'B'], ['B', 'C'])), model(['B', 'C']))].sort(), ['B', 'C']);
 });
 
 test('a pipe laid WITH A LINK references its anchors only while a link in that model runs over it', () => {
 	// the director's defect: deleting a w-chain link left its pins, sheltered by its own dying pipes
 	const laidWithLink = [{ a: 'A', b: 'P', laid: 'link' }, { a: 'P', b: 'B', laid: 'link' }];
 	const link = { src: 'A', dst: 'B', via: ['P'] };
-	assert.ok(pipeAnchors(laidWithLink, model(['A', 'P', 'B'], [link])).has('P'), 'before the delete, the link runs over them');
-	assert.ok(!pipeAnchors(laidWithLink, model(['A', 'P', 'B'], [])).has('P'), 'after it, they carry no link and shelter nothing');
+	assert.ok(pipeAnchors(viewOver(laidWithLink), model(['A', 'P', 'B'], [link])).has('P'), 'before the delete, the link runs over them');
+	assert.ok(!pipeAnchors(viewOver(laidWithLink), model(['A', 'P', 'B'], [])).has('P'), 'after it, they carry no link and shelter nothing');
 });
 
 
@@ -255,8 +259,9 @@ test('B257: the sweep and the reference check work routes out by age, exactly as
 	const rankOf = (id) => (id === 'link-z' ? 0 : 1);
 	const drawn = assignRoutes(board, [older, younger], { rankOf });
 	assert.deepEqual(drawn.get('link-a'), ['C', 'x', 'y', 'D'], 'drawn by age, the younger link runs C-x-y-D');
-	const used = new Set(routesOf(board, [older, younger], rankOf).flatMap((r) => r.slice(1).map((b, i) => [r[i], b].sort().join('|'))));
+	const net = viewOver(board, rankOf), everything = model(['A', 'B', 'C', 'D', 'W1', 'W2', 'x', 'y'], [older, younger]);
+	const used = new Set(net.of(everything).inUse().flatMap((r) => r.slice(1).map((b, i) => [r[i], b].sort().join('|'))));
 	for (const k of ['C|x', 'x|y', 'D|y']) assert.ok(used.has(k), `the sweep must count ${k} as in use: a link is drawn on it`);
-	const refs = pipeAnchors(board, model(['A', 'B', 'C', 'D', 'W1', 'W2', 'x', 'y'], [older, younger]), rankOf);
+	const refs = pipeAnchors(net, everything);
 	assert.ok(refs.has('x') && refs.has('y'), 'and the reference check must hold the anchors it runs through');
 });
