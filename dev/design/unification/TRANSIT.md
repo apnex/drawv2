@@ -241,6 +241,7 @@ Tracked as H17.10 / B267.
 ### 12.1 What exists -- measured at `a2b8b81`
 
 - **The mark is drawn, and nothing can set it.** `waypointLayers` draws the ring when `anchor.transit === false` (`kernel/geometry.mjs:310-330`); no key, command, field, validator or rule sets or reads `transit`.
+- **And the drawing never receives the anchor.** Both callers pass `waypointLayers` the roles, the extent and the links but not the waypoint (`app/src/renderer.js:365`, `kernel/renderer.mjs:211`), so even a set `transit` would draw no ring; X1 passes it.
 - **Routes pass through any anchor a pipe reaches, nodes included.** The router walks pipes with no regard to what an anchor is (`network/pipes.mjs:37-72`); `w` and `g` may stop on a node.
 - **On every lab board, routes pass only through bare waypoints, and every node is a router.** Measured over the six seeds: a table that lets routers and bare anchors transit by default changes no existing matrix row.
 - **Joining is the planner's.** Two links left at a waypoint join by `collapseAtWaypoint` (`server/txn.mjs:291`); roles are derived by `waypointRoles` (`kernel/geometry.mjs:505`).
@@ -265,6 +266,7 @@ So `links.transit: false` reads, uniformly, "what arrives here stops":
 - **TR-6 -- the type table.** Its contents (section 6 is illustrative), and what an anchor with no setting takes: recommended, the table's first value, with bare anchors, routers, firewalls and vxlans offering both and defaulting to transit, and load balancers, servers and hosts offering only `false`.
 - **TR-7 -- where the value lives in the lab.** Recommended: session state in the network session, keyed by anchor, as pipes are -- the stored-format change lands in promotion's format batch (PROMOTION.md, P2), as section 10.3 and survey F6 require. The cost, as with pipes: undo cannot move it until then. The alternative: a stored optional field now, which the production validator would accept and ignore.
 - **TR-8 -- the mark on a node.** Section 9 designed the ring for waypoints; a node's glyph fills the space it would take. Recommended: the same dashed ring, drawn just outside the node's frame -- to be seen in the lab and adjusted by eye before it is settled.
+  WITHDRAWN 2026-09-30: the ring is already ruled (section 9) -- radius 10, between the junction and endpoint rings -- and the director confirmed it is settled. On a node, which draws neither of those rings, it is drawn at the same radius and judged by eye in the lab at X1, raised again only if it does not read.
 
 ### 12.4 Build order -- each stage matrix-first, gated, and deployed to the lab
 
@@ -272,7 +274,7 @@ Each stage adds its rows to the behaviour matrix before the code, with their RED
 
 | stage | what lands | decisions | exit criterion |
 |---|---|---|---|
-| **X1** | **The value and the mark.** `x` as a network key row, flipping each selected anchor independently (section 8); refused, with a readout, where the type offers no choice; the ring drawn on waypoints and nodes | TR-6, TR-7, TR-8 | pressing `x` on a real anchor in Chrome draws the ring, and again removes it; a host refuses and says why; nothing else on any board changes |
+| **X1** | **The value and the mark.** `x` as a network key row, flipping each selected anchor independently (section 8); refused, with a readout, where the type offers no choice; the ring drawn on waypoints and nodes | TR-6, TR-7 | pressing `x` on a real anchor in Chrome draws the ring, and again removes it; a host refuses and says why; nothing else on any board changes |
 | **X2** | **Routing stops there.** The router treats a non-transiting anchor as a dead end except for a link's own ends; the network view keys on transit; a down link blocked by it says so | TR-1, TR-4 | a link whose shortest way passed through the anchor takes another way or goes down, and heals when `x` is pressed again |
 | **X3** | **Pins and guides.** A pin there cuts the link in two, which rejoin when transit returns; `g` there is refused | TR-2, TR-3 | the cut and the rejoin are one undo step each, through the planner |
 | **X4** | **Joining.** The planner's join leaves links apart at a non-transiting anchor -- a new method of the network interface, answered only by the plugin, so production's join is unchanged | TR-5 | two links left there stay two; with transit on they join, as today |
