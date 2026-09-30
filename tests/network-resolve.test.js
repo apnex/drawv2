@@ -1,7 +1,7 @@
 /*
 The incubated path resolver -- network/resolve.mjs -- through the real Model interface.
 
-Driven through `new Model({ resolvePath })` rather than by calling the resolver directly, because the
+Driven through `new Model({ network: createNetwork(...) })` -- the one object the lab composes (RULESET-AUDIT T1) -- rather than by calling the resolver directly, because the
 interface is the thing being proven: a resolver that works in isolation but receives the wrong
 arguments from the Model would pass a direct test and fail in the lab.
 */
@@ -9,13 +9,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
-import { pipeResolver, pipeLinkDown } from '../network/resolve.mjs';
-import { createNetworkView } from '../network/view.mjs';
+import { createNetwork } from '../network/network.mjs';
 import { preferredRoute } from '../network/pipes.mjs';
 
 // A and B are far apart; the only pipes run A -> w -> B, around the straight line
 function board(pipeSet) {
-	const m = new Model({ resolvePath: pipeResolver(createNetworkView(pipeSet)) });
+	const m = new Model({ network: createNetwork(pipeSet) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: 120 });
@@ -42,7 +41,7 @@ test('with NO pipes a link has no route: it is DOWN, drawn straight between its 
 	layer is never a board not yet laid. No pipes is simply no route.
 	*/
 	const s = createPipeSet();
-	const m = new Model({ resolvePath: pipeResolver(createNetworkView(s)), linkDown: pipeLinkDown(createNetworkView(s)) });
+	const m = new Model({ network: createNetwork(s) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	assert.deepEqual(m.pathOf(LINK), [[0, 0], [240, 0]], 'drawn directly between its source and destination');
@@ -68,14 +67,13 @@ test('the resolver reads the pipe set LIVE, so removing a pipe changes the drawn
 	assert.deepEqual(m.pathOf(LINK), [[0, 0], [240, 0]], 'with the route broken, the link is down and drawn straight');
 });
 
-test('pipeDependents names a link routed THROUGH an anchor it does not name', async () => {
+test('the network\'s linksRoutedThrough names a link routed THROUGH an anchor it does not name', async () => {
 	// the director's defect: moving the centre moved its pipes but not the links routed through it,
 	// because only the incidence index (ends and pins) was asked
-	const { pipeDependents } = await import('../network/resolve.mjs');
 	const s = createPipeSet();
 	s.lay('node-00000a', 'waypoint-00000c');
 	s.lay('waypoint-00000c', 'node-00000b');
-	const m = new Model({ resolvePath: pipeResolver(createNetworkView(s)), routedThrough: pipeDependents(createNetworkView(s)) });
+	const m = new Model({ network: createNetwork(s) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: 120 });
@@ -101,7 +99,7 @@ test('the resolver and the down state agree with the router for every pipe set: 
 	for (let mask = 0; mask < 1 << universe.length; mask++) {
 		const s = createPipeSet();
 		universe.forEach(([a, b], i) => { if (mask & (1 << i)) s.lay(a, b, 'link'); });
-		const m = new Model({ resolvePath: pipeResolver(createNetworkView(s)), linkDown: pipeLinkDown(createNetworkView(s)) });
+		const m = new Model({ network: createNetwork(s) });
 		m.put('node', { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 		m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 		m.put('waypoint', { id: W, name: 'w', x: 120, y: 120 });
@@ -122,7 +120,7 @@ test('down is read LIVE: removing the last way takes a link down, and laying one
 	const s = createPipeSet();
 	s.lay('node-00000a', 'waypoint-00000c');
 	s.lay('waypoint-00000c', 'node-00000b');
-	const m = new Model({ resolvePath: pipeResolver(createNetworkView(s)), linkDown: pipeLinkDown(createNetworkView(s)) });
+	const m = new Model({ network: createNetwork(s) });
 	// the anchors the pipes join are in the model: a pipe to an anchor the model lacks is no way (RULESET-AUDIT F10)
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
@@ -139,11 +137,10 @@ ONE LINK PER PIPE (2026-09-30): where a link is drawn, whether it is down, and w
 the one assignment -- so a link blocked by another is drawn along its intent, called down, and names its blocker.
 */
 test('the Model\'s companions answer from the one assignment: a blocked link is down and names its blocker', async () => {
-	const { pipeBlockers } = await import('../network/resolve.mjs');
 	const s = createPipeSet();
 	for (const [a, b] of [['node-00000a', 'waypoint-000001'], ['node-00000c', 'waypoint-000001'], ['waypoint-000001', 'waypoint-000002'], ['waypoint-000002', 'node-00000b'], ['waypoint-000002', 'node-00000d']]) s.lay(a, b, 'hand');
 	const rankOf = (id) => (id === 'link-00000u' ? 0 : 1);
-	const m = new Model({ resolvePath: pipeResolver(createNetworkView(s, rankOf)), linkDown: pipeLinkDown(createNetworkView(s, rankOf)), blockedBy: pipeBlockers(createNetworkView(s, rankOf)) });
+	const m = new Model({ network: createNetwork(s, rankOf) });
 	for (const [id, x, y] of [['node-00000a', -480, -180], ['node-00000b', 480, -180], ['node-00000c', -480, 180], ['node-00000d', 480, 180]]) m.put('node', { id, name: id, type: 'router', x, y, shape: 'circle' });
 	m.put('waypoint', { id: 'waypoint-000001', name: 't1', x: -240, y: 0 });
 	m.put('waypoint', { id: 'waypoint-000002', name: 't2', x: 240, y: 0 });

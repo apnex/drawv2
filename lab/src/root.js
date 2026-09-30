@@ -41,10 +41,10 @@ import { Log } from '../../server/log.mjs';
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
 import { createPipeSet } from '../../network/pipeset.mjs';
-import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers, whyDown, downSummary } from '../../network/resolve.mjs';
+import { whyDown, downSummary } from '../../network/resolve.mjs';
 import { createLinkOrder } from '../../network/order.mjs';
-import { judgeDrag, pipeAnchors, keepsOrphan, isStranded } from '../../network/guide.mjs';
-import { createNetworkView } from '../../network/view.mjs';
+import { judgeDrag } from '../../network/guide.mjs';
+import { createNetwork } from '../../network/network.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -75,19 +75,14 @@ The pipe set, for the session. Pipes are not stored yet -- that is the one forma
 // and the order links were made in, since the older link keeps a contested pipe (ruled 2026-09-30) -- session
 // state too, stored with pipes in the format batch
 const pipes = createPipeSet(), order = createLinkOrder();
-// ONE derivation per board state, read by drawing, down, blockers, dependents, the sweep and the planner (RULESET-AUDIT T2)
-const net = createNetworkView(pipes, order.rankOf);
-
 /*
-The tab's model draws links along their ROUTE over pipes, through the interface declared on Model
-for exactly this (`resolvePath`). Production constructs `new Model()` and draws the straight
-polyline it always has; nothing here reaches production.
+THE NETWORK, as ONE object (RULESET-AUDIT T1): the same object is handed to the tab's Model -- where a link runs,
+which links a moved anchor affects, whether it is down, what blocks it -- and to the planner -- what else references
+an anchor, which orphans survive, which links are stranded. All read one derivation per board state (T2), so they
+cannot disagree. Production constructs `new Model()` and commits with no network; nothing here reaches production.
 */
-// where a link runs, which links a moved anchor affects, and whether a link is DOWN -- all from one route,
-// or they disagree: pipes followed a moved anchor while its links stayed behind, and a down link was drawn
-// as a live one, read as a pipe created by itself (the director's reports, 2026-09-29). And what BLOCKS a down
-// link, since a pipe carries one link (2026-09-30): the renderer highlights it when the down link is selected.
-const model = new Model({ resolvePath: pipeResolver(net), routedThrough: pipeDependents(net), linkDown: pipeLinkDown(net), blockedBy: pipeBlockers(net) });
+const network = createNetwork(pipes, order.rankOf);
+const model = new Model({ network });
 attachRelations(model, { cellOf });
 
 /*
@@ -169,7 +164,7 @@ sweeping after an undo would leave the redone link with no pipes. That is a stat
 */
 const settle = (sweep, fallback) => {
 	pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));   // a pipe to a gone anchor is not a pipe (SD7)
-	if (sweep) pipes.sweep(net.of(authority).inUse());   // the routes as drawn: one derivation (B257, T2)
+	if (sweep) pipes.sweep(network.view.of(authority).inUse());   // the routes as drawn: one derivation (B257, T2)
 	drawPipes();
 	for (const l of model.all('link')) renderer.update('link', l);
 	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
@@ -211,14 +206,9 @@ history.onCommit((request) => {
 	*/
 	const answer = request.verb === 'undo' ? undo(authority, log, request.to ?? null)
 		: request.verb === 'redo' ? redo(authority, log)
-		// pipes reference anchors too, and live here rather than in the document, so the planner is told
-		// -- or its orphan sweep removes an anchor that pins one link and guides another (measured)
-		: commit(authority, log, request, 'lab', 'lab', {
-			alsoReferenced: (m) => pipeAnchors(net, m),   // only pipes that survive the edit being judged
-			keepsOrphan,   // the network model's rule: only links and hand-laid pipes keep an anchor (2026-09-29)
-			// a link that loses a pin with no other way is deleted whole (2026-09-29), judged over surviving pipes
-			isStranded: (link, m) => isStranded(pipes.list(), link, m),
-		});
+		// the same network: pipes reference anchors, only links and hand pipes keep one, and a link that loses a pin with no
+		// other way goes whole (2026-09-29) -- all judged over the pipes that survive the edit
+		: commit(authority, log, request, 'lab', 'lab', { network });
 	const legs = pendingLegs; pendingLegs = null;
 	/*
 	B260 -- A REFUSAL TAKES THE PLANNER'S DOCUMENT BACK. The tab applied the request optimistically, so a refused one
@@ -315,4 +305,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, pipes, order, history, log, input, routeHook };
+window.lab = { model, authority, pipes, order, network, history, log, input, routeHook };

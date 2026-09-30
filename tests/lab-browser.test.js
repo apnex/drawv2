@@ -182,6 +182,10 @@ test('the lab boots, and a seeded board arrives through the planner', { skip: SK
 		const c = await p.run(COUNTS);
 		assert.deepEqual([c.nodes, c.waypoints, c.links], [2, 1, 1], `the bend board did not arrive: ${JSON.stringify(c)}`);
 		assert.equal(await p.run('lab.authority.all("link").length'), 1, 'the AUTHORITY model must hold the board too -- the planner is what put it there');
+		// ONE network (RULESET-AUDIT T1): the tab's Model holds the very object the planner is handed, and the authority
+		// model holds none -- it only stores what the planner rules, and draws nothing
+		assert.equal(await p.run('lab.model.network === lab.network && typeof lab.network.isStranded === "function"'), true, 'the tab must draw from the network the planner judges with');
+		assert.equal(await p.run('lab.authority.network'), null);
 	} finally { await p.close(); }
 });
 

@@ -8,7 +8,8 @@ over pipes rather than as a straight polyline through `via`. Patching `pathOf` i
 would work in one line and would be a fork wearing a patch: production code behaving differently
 under the lab with no seam declaring it, which is exactly what G1 exists to stop.
 
-So the seam is declared: a Model may be constructed with a `resolvePath`. The default is today's
+So the seam is declared: a Model may be constructed with a `network` -- ONE object whose methods carry the
+Model's own names (RULESET-AUDIT T1; it began as four separate hooks). The default is today's
 behaviour. Production constructs `new Model()` and must be unchanged BYTE FOR BYTE in what it draws
 -- that is the property these tests exist to hold, and it is the one most likely to be broken
 casually, by someone "improving" the default while wiring the lab.
@@ -24,6 +25,8 @@ const seeded = (opts) => {
 	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: -60 });
 	return m;
 };
+// a complete network whose answers are production's, so each test overrides only the method it is about
+const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], ...over } });
 const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] };
 
 test('production is unchanged: new Model() still draws the straight polyline through via', () => {
@@ -38,7 +41,7 @@ test('a Model constructed with no options is identical to one constructed with a
 
 test('an injected resolver replaces the path, and receives the link and the model', () => {
 	let saw = null;
-	const m = seeded({ resolvePath: (link, model) => { saw = { link, model }; return [[1, 2], [3, 4]]; } });
+	const m = seeded(net({ pathOf: (link, model) => { saw = { link, model }; return [[1, 2], [3, 4]]; } }));
 	assert.deepEqual(m.pathOf(LINK), [[1, 2], [3, 4]]);
 	assert.equal(saw.link, LINK, 'the resolver must be handed the link it is resolving');
 	assert.equal(saw.model, m, 'and the model, so it can resolve anchors without reaching for a global');
@@ -47,7 +50,7 @@ test('an injected resolver replaces the path, and receives the link and the mode
 test('the resolver can defer to the default, so an incubator can route some links and not others', () => {
 	// the lab routes a link over pipes when pipes exist and falls back otherwise; the default must
 	// be reachable from inside an injected resolver, or every resolver has to re-implement it
-	const m = seeded({ resolvePath: (link, model, fallback) => fallback(link) });
+	const m = seeded(net({ pathOf: (link, model, fallback) => fallback(link) }));
 	assert.deepEqual(m.pathOf(LINK), [[0, 0], [120, -60], [240, 0]]);
 });
 
@@ -60,7 +63,7 @@ through an anchor it does not name is drawn through it, yet moving the anchor di
 director moved a centre anchor, watched its pipes follow, and the links stayed where they were until an
 END was grabbed. One fact, two authorities, the B234-B236 family.
 
-So the thing that knows the route also answers who depends on it: `routedThrough(anchorId, model)`.
+So the thing that knows the route also answers who depends on it: `network.linksRoutedThrough(anchorId, model)`.
 Absent in production, where `linksRoutedThrough` is empty and the renderer redraws exactly what it
 always has.
 */
@@ -68,12 +71,12 @@ test('production: linksRoutedThrough is empty, so nothing extra is redrawn', () 
 	assert.deepEqual(seeded().linksRoutedThrough('waypoint-00000c'), []);
 });
 
-test('an injected routedThrough answers which links a moved anchor affects', () => {
+test('an injected linksRoutedThrough answers which links a moved anchor affects', () => {
 	let asked = null;
-	const m = seeded({ routedThrough: (id, model) => { asked = { id, model }; return [LINK]; } });
+	const m = seeded(net({ linksRoutedThrough: (id, model) => { asked = { id, model }; return [LINK]; } }));
 	assert.deepEqual(m.linksRoutedThrough('waypoint-00000c'), [LINK]);
 	assert.equal(asked.id, 'waypoint-00000c');
-	assert.equal(asked.model, m, 'handed the model, like resolvePath, so it can read the routes');
+	assert.equal(asked.model, m, 'handed the model, like pathOf, so it can read the routes');
 });
 
 /*
@@ -89,9 +92,9 @@ test('production: no link is ever down', () => {
 	assert.equal(seeded().isLinkDown(LINK), false);
 });
 
-test('an injected linkDown answers, and is handed the link and the model', () => {
+test('an injected isLinkDown answers, and is handed the link and the model', () => {
 	let asked = null;
-	const m = seeded({ linkDown: (link, model) => { asked = { link, model }; return true; } });
+	const m = seeded(net({ isLinkDown: (link, model) => { asked = { link, model }; return true; } }));
 	assert.equal(m.isLinkDown(LINK), true);
 	assert.equal(asked.link, LINK);
 	assert.equal(asked.model, m);
@@ -106,9 +109,9 @@ test('production: no link is ever blocked', () => {
 	assert.deepEqual(seeded().blockersOf(LINK), []);
 });
 
-test('an injected blockedBy answers, and is handed the link and the model', () => {
+test('an injected blockersOf answers, and is handed the link and the model', () => {
 	let asked = null;
-	const m = seeded({ blockedBy: (link, model) => { asked = { link, model }; return ['link-000009']; } });
+	const m = seeded(net({ blockersOf: (link, model) => { asked = { link, model }; return ['link-000009']; } }));
 	assert.deepEqual(m.blockersOf(LINK), ['link-000009']);
 	assert.equal(asked.link, LINK);
 	assert.equal(asked.model, m);

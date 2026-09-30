@@ -1,9 +1,9 @@
 /*
 A path resolver for the Model -- routes a link over pipes, for the incubating network plugin.
 
-This is what the lab hands to `new Model({ resolvePath })`, the interface declared in
-`model/model.mjs` so the incubator could change how links are drawn without patching a product
-module (G1). Production constructs `new Model()` and never meets this.
+These are the Model's four methods of the network interface, composed into one object by
+`network/network.mjs` and declared in `model/model.mjs` so the incubator could change how links are
+drawn without patching a product module (G1). Production constructs `new Model()` and never meets this.
 
 THE RULE, from the rulings rather than invented here:
   - a link's intent is its ends plus its pinned vias (2026-09-26)
@@ -35,7 +35,7 @@ const routeOf = (net, link, model) => (link.id && model?.get('link', link.id)
 	: preferredRoute(net.of(model).pipes, link));
 
 /*
-Build a resolver over the network view -- what the lab hands to `new Model({ resolvePath })`.
+Build a resolver over the network view -- the network's `pathOf`.
 */
 export function pipeResolver(net) {
 	return (link, model, straight) => {
@@ -55,7 +55,7 @@ export function pipeResolver(net) {
 }
 
 /*
-Which links are drawn THROUGH an anchor -- the companion the Model takes beside `resolvePath`. The view answers ids;
+Which links are drawn THROUGH an anchor -- the network's `linksRoutedThrough`, beside `pathOf`. The view answers ids;
 the links are read from the model asking, so a caller never redraws a link object older than its own.
 */
 export function pipeDependents(net) {
@@ -63,7 +63,7 @@ export function pipeDependents(net) {
 }
 
 /*
-Whether a link is DOWN -- the third companion, handed to `new Model({ linkDown })`. Down is exactly "no route", from
+Whether a link is DOWN -- the network's `isLinkDown`. Down is exactly "no route", from
 the same derivation the resolver draws from, so a link is drawn along a route precisely when it is not down. Nothing
 is stored and nothing clears it: the moment a way returns -- or the link holding it goes -- the next board state is
 worked out, the route is found, and the link is live again, which is what "heals" means.
@@ -73,7 +73,7 @@ export function pipeLinkDown(net) {
 }
 
 /*
-Which links BLOCK a down link -- the fourth companion, handed to `new Model({ blockedBy })` (ruled 2026-09-30).
+Which links BLOCK a down link -- the network's `blockersOf` (ruled 2026-09-30).
 */
 export function pipeBlockers(net) {
 	return (link, model) => (model?.get('link', link.id) ? net.of(model).blockers(link.id) : []);

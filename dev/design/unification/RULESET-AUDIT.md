@@ -170,3 +170,20 @@ The lab root wires it and goes back to wiring only.
 - **Guardrails.** Behaviour is unchanged: 60 of 60 browser tests pass, and the matrix file is untouched. The derivation follows every change -- a pipe laid, removed or re-laid, an anchor gone, a link added, re-pinned or re-ended, an age noted -- and each property is held by a test that six mutants each fail.
 - **Findings closed:** F1 (structurally, beyond B257's fix), F8 and F10.
 - **One test changed its setup, not its expectation.** It routed over pipes between anchors its model did not hold; under F10 such pipes are no way, so the anchors were added to the model.
+
+**T1 landed, 2026-09-30 -- approved by the director ("Approved for T1").**
+- **What changed.** The seven hooks are one `network` object.
+  The Model reads four of its methods, each under the Model's own method name: `pathOf`, `linksRoutedThrough`, `isLinkDown` and `blockersOf`.
+  The planner reads three: `alsoReferenced`, `keepsOrphan` and `isStranded`.
+  Each consumer declares what it reads, beside where it asks (`model/model.mjs`, `server/txn.mjs`).
+  `createNetwork` in `network/network.mjs` builds the one object, and the lab hands the same object to its Model and to the planner.
+- **Guardrail 1 -- production unchanged.** With no network, the Model and the planner answer exactly as before; the production tests beside each interface pass unedited.
+- **Guardrail 2 -- no silent half-plugin.** A network missing a method its consumer reads is refused at construction, naming the method.
+  So is a retired hook name, or any option a consumer does not read.
+  `commit()` checks its network before it judges the request, so a refusal cannot hide a composition error.
+- **Mutation proof.** Seven mutants, each caught: the method check removed, stray options ignored, `commit()` not checking first, `pathOf` ignoring the network, the planner ignoring `isStranded`, the factory dropping `keepsOrphan`, and the lab's planner handed no network (12 browser tests fail).
+- **Behaviour.** The gate passes 1276 of 1276, with the matrix file untouched and no expected outcome edited.
+  Four test files changed their setup to pass one object in place of separate hooks, not their expectations.
+  One mutation test's needle was re-pointed, because its instructions name the planner's import line and T1 changed it.
+- **Side effect.** The lab root fell from 178 to 174 of its 180 code lines (F14 eased, not closed).
+- **Findings closed:** F9 in its injection half; the route-hook branches and drag flags in Input remain, for T3.

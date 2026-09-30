@@ -50,48 +50,58 @@ export function newId(kind, taken = {}) {
 // derive-only — never stamped onto an entity (a stored field would fail the server's unknown-field gate).
 export const kindOf = (id) => id.split('-')[0];
 
+/*
+THE NETWORK INTERFACE -- one object the network plugin plugs in through (RULESET-AUDIT T1, F9).
+
+The incubating network plugin (ruled 2026-09-28) needs the product to ask it seven questions: four the Model asks while
+drawing, and three the planner asks while judging an edit. They began as seven separate hooks, added one at a time, and
+nothing said they belonged together -- so a composition could pass some and forget others, drawing links along routes
+while saying none was down. Declared as ONE object, a plugin is either composed whole or refused.
+
+Each consumer names what it reads and checks only that; the plugin builds one object carrying all of it
+(network/network.mjs), and the lab hands the same object to both. Absent -- `network` null -- is production, and every
+answer is exactly what it always was.
+
+A HALF-PLUGIN IS AN ERROR, never a quiet fall-back: a network missing a method its consumer reads throws at
+construction, naming it, and so does an option under a retired hook name, which would otherwise be ignored.
+*/
+export function requireNetwork(network, reads, who) {
+	if (network == null) return null;
+	const missing = reads.filter((name) => typeof network[name] !== 'function');
+	if (missing.length) throw new Error(`${who}: the network does not provide ${missing.join(', ')} -- a network is composed whole or not at all (RULESET-AUDIT T1)`);
+	return network;
+}
+
+// every option a consumer does not read is refused -- a retired hook name above all, which would leave the plugin half-composed
+export function refuseStrayOptions(rest, who) {
+	const stray = Object.keys(rest);
+	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- the network plugs in as one object, { network } (RULESET-AUDIT T1)`);
+}
+
+/*
+What the MODEL asks the network -- each under the Model's own method name, so `model.isLinkDown(link)` is answered by
+`network.isLinkDown(link, model)`:
+
+  pathOf(link, model, straight)   where a link is DRAWN. Production draws the straight polyline through `via`; the lab
+                                  draws along the link's ROUTE over pipes. Rather than patch `pathOf` in the lab -- a
+                                  fork wearing a patch, which G1 forbids -- the seam is declared here. Handed the
+                                  default as `straight`, so it can route some links and defer the rest.
+  linksRoutedThrough(id, model)   which links a moved anchor affects, from the same authority that draws them. Under
+                                  routing a link is drawn through an anchor it does not name, and the incidence index
+                                  never sees it -- the renderer left such a link standing when its anchor moved (the
+                                  director's report, 2026-09-29).
+  isLinkDown(link, model)         whether a link has no route, and so is drawn dotted and ready to heal (ruled
+                                  2026-09-25; the look, 2026-09-29). Down is derived, so only the router can say it.
+  blockersOf(link, model)         which links hold the way a down link would take -- pipes carry one link each (ruled
+                                  2026-09-30), and selecting a blocked link highlights its blockers.
+*/
+const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf'];
+
 export class Model {
-	/*
-	`resolvePath` -- the first pluggable interface the network incubator forced into a product module.
-
-	`pathOf` is read by four canvas modules. Production draws a link as the straight polyline through
-	its `via`; the lab, incubating the network plugin (ruled 2026-09-28), draws it along its ROUTE
-	over pipes. Rather than patch `pathOf` in the lab -- a fork wearing a patch, which G1 forbids --
-	the seam is declared here.
-
-	Optional, and absent in production: `new Model()` behaves exactly as it always has, and a test
-	holds that byte for byte. A resolver receives the link, this model, and the DEFAULT as a third
-	argument, so it can route some links and defer the rest without re-implementing the polyline.
-	*/
-	constructor({ resolvePath = null, routedThrough = null, linkDown = null, blockedBy = null } = {}) {
-		this.resolvePath = resolvePath;
-		/*
-		`routedThrough` -- the COMPANION of `resolvePath`, and it must travel with it.
-
-		Where a link runs comes from the resolver; which links a moved anchor affects must come from the
-		same authority, or the two disagree. Under routing a link can be drawn through an anchor it does
-		not name, and the incidence index (ends and pins) never sees it -- the renderer then left such a
-		link standing when its anchor moved (the director's report, 2026-09-29). The resolver's owner
-		answers both questions. Absent in production: `linksRoutedThrough` is empty and nothing changes.
-		*/
-		this.routedThrough = routedThrough;
-		/*
-		`linkDown` -- the third companion: WHETHER a link is down. A link with no route stays and heals
-		(ruled 2026-09-25), and the director described how it must look (2026-09-29): "a dotted/control
-		like link directly between the source and dest node would indicate 'ready to heal'". Drawn solid,
-		a down link read as a live one -- as a pipe created by itself, in the director's report.
-
-		Down is DERIVED -- no route over the pipes -- so only the router's owner can answer it, from the
-		same route it draws. Absent in production, which has no route to lose: `isLinkDown` is false.
-		*/
-		this.linkDown = linkDown;
-		/*
-		`blockedBy` -- the fourth companion: which links BLOCK a down link. Pipes carry one link each (ruled
-		2026-09-30), so a link can be down because another holds its way; the director asked that selecting it
-		"also highlight that blocking link in orange so I can see the path that is blocking". Who holds which
-		pipe is the router's owner's to say. Absent in production, which has no pipes: `blockersOf` is empty.
-		*/
-		this.blockedBy = blockedBy;
+	constructor({ network = null, ...rest } = {}) {
+		refuseStrayOptions(rest, 'Model');
+		// null in production, which draws, depends and never goes down exactly as it always has -- a test holds it byte for byte
+		this.network = requireNetwork(network, MODEL_READS, 'Model');
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -209,27 +219,27 @@ export class Model {
 	*/
 	pathOf(link) {
 		if (!link) return null;
-		if (this.resolvePath) return this.resolvePath(link, this, (l) => this.straightPath(l));
+		if (this.network) return this.network.pathOf(link, this, (l) => this.straightPath(l));
 		return this.straightPath(link);
 	}
 
-	// the links drawn THROUGH an anchor they do not name -- empty unless a routing resolver is injected
+	// the links drawn THROUGH an anchor they do not name -- empty unless a network is plugged in
 	linksRoutedThrough(id) {
-		return this.routedThrough ? this.routedThrough(id, this) : [];
+		return this.network ? this.network.linksRoutedThrough(id, this) : [];
 	}
 
-	// whether a link has no route right now, and so is drawn as ready to heal -- never, unless injected
+	// whether a link has no route right now, and so is drawn as ready to heal -- never, without a network
 	isLinkDown(link) {
-		return !!(link && this.linkDown && this.linkDown(link, this));
+		return !!(link && this.network && this.network.isLinkDown(link, this));
 	}
 
-	// the links holding the way a down link would take -- never any, unless injected
+	// the links holding the way a down link would take -- never any, without a network
 	blockersOf(link) {
-		return link && this.blockedBy ? this.blockedBy(link, this) : [];
+		return link && this.network ? this.network.blockersOf(link, this) : [];
 	}
 
 	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always
-	// drawn. Named so an injected resolver can defer to it (see `resolvePath` in the constructor).
+	// drawn. Named so a network can defer to it (see MODEL_READS above the class).
 	straightPath(link) {
 		if (!link) return null;
 		// An anchor is an entity REFERENCE or a bare position. The kernel's resolveRoute already

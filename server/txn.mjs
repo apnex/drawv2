@@ -26,7 +26,7 @@ transaction shape the ports were dead weight. The substitution seam it offered r
 out, as the Store's injected {flushMs, writeDoc, now}.
 */
 
-import { projection } from '../model/model.mjs';
+import { projection, requireNetwork, refuseStrayOptions } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE } from '../model/shape.mjs';   // OPTIONAL was imported here and never used (B86)
 import { groupAfterRemoval, collectionCap } from '../engine/policy.mjs';
@@ -71,44 +71,42 @@ function narrow(kind, before, patch) {
 }
 
 /*
-`alsoReferenced` -- the second interface the network incubator forced into a product module.
+What the PLANNER asks the network -- three of the seven questions of the one network interface (declared beside the
+Model in model/model.mjs, RULESET-AUDIT T1). They began as three separate hooks; with no network every answer is
+production's, and tests/sweep-references.test.js holds that.
 
-The orphan sweep below removes a waypoint that a link referenced before this transaction and none
-references after. In today's document only links reference anchors, so that is complete. The
-incubating network plugin adds PIPES, which reference anchors too, and they live in the lab's
-session rather than the document -- so without this the planner sweeps an anchor a pipe still needs.
-Measured: an anchor that pins one link and guides another is swept when the pinning link goes.
-
-Optional, absent in production, and held by tests/sweep-references.test.js to sweep exactly as
-before when absent. After promotion pipes are stored, and this provider reads them from the
-document instead of a session -- the seam stays, only its source moves.
+  alsoReferenced(model) -> ids   what ELSE references an anchor. The orphan sweep below removes a waypoint a link
+                                 referenced before this transaction and none references after; in today's document only
+                                 links reference anchors, so that is complete. The network adds PIPES, which reference
+                                 anchors too and live in the lab's session rather than the document -- measured: an
+                                 anchor that pins one link and guides another was swept when the pinning link went.
+                                 After promotion pipes are stored and this reads them from the document; the seam stays.
+  keepsOrphan(w, { wasBendOnly }) WHICH orphaned anchors survive beyond what references them. Production's rule, the
+                                 default: kept if the author pinned it (B162) or it was a link's END (B216). In the
+                                 network model the director ruled otherwise (2026-09-29): "deliberate" means HELD BY THE
+                                 PIPES LAID WITH g, so w anchors go with their last link, and hand pipes reach the sweep
+                                 through `alsoReferenced`. Production keeps its rule until promotion: it has no pipes
+                                 and no g, and there these two protections are the only ones an author's anchor has.
+  isStranded(link, model)        whether a link that LOST A PIN to this transaction is left with no way, and so goes
+                                 whole. Ruled 2026-09-29: for a w-chain S-P1-P2-P3-E with P2 deleted and no other way,
+                                 the director chose "Delete the whole link" over "Stay, shown down". "No way" means no
+                                 route over the pipes, which only the network can see. Production: never.
 */
-/*
-`keepsOrphan` -- the third interface the network incubator forces into a product module: WHICH orphaned
-anchors survive beyond what references them.
-
-Production's rule, and the default: an anchor this transaction orphaned is kept if the author pinned it
-(B162, "the author meant this to exist") or if it was a link's END (B216, "a terminus is a place the
-author put something"). In the network model the director ruled otherwise (2026-09-29): "deliberate"
-means HELD BY THE PIPES LAID WITH g, and anchors made with w go when their last link goes -- so the
-plugin passes a rule that keeps nothing beyond references, and its pipes reach the sweep through
-`alsoReferenced`. Production keeps its rule until promotion: it has no pipes and no g, and there these
-two protections are the only ones an author's anchor has. Held by tests/sweep-references.test.js.
-*/
+const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded'];
 const KEEPS_ORPHAN_AS_RULED = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly;
-/*
-`isStranded` -- the fourth interface the network incubator forces into a product module: whether a link
-that LOST A PIN to this transaction is left with no way, and so is removed whole.
-
-Ruled 2026-09-29: asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no other way, the director chose
-"Delete the whole link" over "Stay, shown down". "No way" means no route over the PIPES, which only the
-network plugin can see, so it is asked by injection. Production's default is never: it has no routes,
-and a link that loses a pin keeps the rest of its intent exactly as it always has. Held by
-tests/sweep-references.test.js.
-*/
 const NEVER_STRANDED = () => false;
 
-export function plan(model, ops, { alsoReferenced = null, keepsOrphan = KEEPS_ORPHAN_AS_RULED, isStranded = NEVER_STRANDED } = {}) {
+// the planner's view of its options: a whole network or none, and nothing else (a retired hook name is refused)
+function plannerNetwork({ network = null, ...rest } = {}, who) {
+	refuseStrayOptions(rest, who);
+	return requireNetwork(network, PLANNER_READS, who);
+}
+
+export function plan(model, ops, options = {}) {
+	const network = plannerNetwork(options, 'plan');
+	const alsoReferenced = network ? (m) => network.alsoReferenced(m) : null;
+	const keepsOrphan = network ? (w, info) => network.keepsOrphan(w, info) : KEEPS_ORPHAN_AS_RULED;
+	const isStranded = network ? (link, m) => network.isStranded(link, m) : NEVER_STRANDED;
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -590,7 +588,9 @@ function planDel(model, { kind, id }) {
 
 // ---- the one write ----
 
-export function commit(model, log, request, by = 'client', actor = null, { alsoReferenced = null, keepsOrphan, isStranded } = {}) {
+export function commit(model, log, request, by = 'client', actor = null, options = {}) {
+	// a composition error is checked FIRST, so a refused request can never hide a half-plugged network
+	const network = plannerNetwork(options, 'commit');
 	if (!request || typeof request !== 'object') return { ok: false, error: 'invalid request', version: log.version };
 	if (request.label !== undefined && !LABEL.test(String(request.label))) {
 		return { ok: false, error: 'invalid label', version: log.version };
@@ -599,7 +599,7 @@ export function commit(model, log, request, by = 'client', actor = null, { alsoR
 		return { ok: false, error: 'version conflict', version: log.version };
 	}
 
-	const planned = plan(model, request.ops, { alsoReferenced, ...(keepsOrphan ? { keepsOrphan } : {}), ...(isStranded ? { isStranded } : {}) });
+	const planned = plan(model, request.ops, { network });
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 

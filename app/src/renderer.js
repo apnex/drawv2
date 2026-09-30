@@ -395,10 +395,10 @@ export class Renderer {
 	/*
 	Redraw the links drawn THROUGH an anchor that does not appear in them -- a routed link passing it.
 
-	The branches above redraw the links the incidence index names (ends and pins). Under an injected
-	routing resolver a link can also run through an anchor it does not name, and moving that anchor must
+	The branches above redraw the links the incidence index names (ends and pins). Under a plugged-in
+	network a link can also run through an anchor it does not name, and moving that anchor must
 	redraw it too, or the pipes follow the anchor and the link stays behind -- the director's report. The
-	model answers from the same authority that draws the path (`routedThrough`, beside `resolvePath`).
+	model answers from the same authority that draws the path (the network's `linksRoutedThrough`, beside `pathOf`).
 	In production it answers nothing, so nothing extra is redrawn.
 	*/
 	refreshRoutedThrough(anchorId) {

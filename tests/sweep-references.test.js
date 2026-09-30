@@ -12,7 +12,8 @@ GUIDE for another is swept when the pinning link is deleted, and the guided link
 guide-only anchor is safe, because it was never referenced and the sweep leaves what arrived
 unreferenced alone.
 
-So `commit()` and `plan()` accept `alsoReferenced(model) -> ids`. Production passes nothing and must
+So `commit()` and `plan()` accept a `network` whose `alsoReferenced(model) -> ids` names them -- one object carrying
+all three of the planner's questions (RULESET-AUDIT T1; they began as three hooks). Production passes nothing and must
 sweep exactly as before -- the first test holds that, because the sweep is where a casual change does
 the most damage: it deletes.
 */
@@ -29,6 +30,9 @@ const nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, typ
 const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
 const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...(via ? { via } : {}) } });
 const W = 'waypoint-00000f';
+// a complete network whose answers are production's -- the rule B162/B216 stated here, since the planner keeps its own
+// private -- so each test overrides only the question it is about
+const net = (over = {}) => ({ network: { alsoReferenced: () => [], keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, isStranded: () => false, ...over } });
 
 // the SHARED anchor: a pin of link-a, and (in the lab) a guide for link-b over pipes
 function shared() {
@@ -48,14 +52,14 @@ test('production is unchanged: with no extra references, the orphaned pin is swe
 
 test('an anchor something else references survives the sweep', () => {
 	const b = shared();
-	assert.equal(deletePin(b, { alsoReferenced: () => [W] }).ok, true);
+	assert.equal(deletePin(b, net({ alsoReferenced: () => [W] })).ok, true);
 	assert.ok(b.m.get('waypoint', W), 'the pipes still reference it, so it is structure, not debris');
 });
 
 test('the extra references are asked of the model, and an unrelated anchor is still swept', () => {
 	const b = shared();
 	const seen = [];
-	deletePin(b, { alsoReferenced: (model) => { seen.push(model); return ['waypoint-000999']; } });
+	deletePin(b, net({ alsoReferenced: (model) => { seen.push(model); return ['waypoint-000999']; } }));
 	assert.ok(seen.length > 0 && seen.every((x) => typeof x.all === 'function'), 'the provider must be handed a model to read');
 	assert.equal(b.m.get('waypoint', W), undefined, 'naming a DIFFERENT anchor must not shelter this one');
 });
@@ -69,7 +73,7 @@ with w go when their last link goes -- ends and a pinned start included -- unles
 holds them. In the lab's plugin now; production at promotion, since production has no pipes and no g,
 and there B162 and B216 are the only protection an author's anchor has.
 
-So the planner takes the rule by injection, `keepsOrphan(waypoint, { wasBendOnly })`, defaulting to
+So the planner takes the rule by injection, `network.keepsOrphan(waypoint, { wasBendOnly })`, defaulting to
 production's. The first test is the one that matters most: absent, production sweeps exactly as ruled.
 */
 function ended() {
@@ -93,14 +97,14 @@ test('production is unchanged: the bend goes, and the pinned start and the end s
 
 test('the network plugin\'s rule: with nothing but references keeping an anchor, all three go', () => {
 	const b = ended();
-	assert.equal(deleteIt(b, { keepsOrphan: () => false }).ok, true);
+	assert.equal(deleteIt(b, net({ keepsOrphan: () => false })).ok, true);
 	assert.deepEqual(left(b.m), [], 'the pinned start and the end go with the link: only links and hand pipes keep an anchor');
 });
 
 test('the rule is told whether the orphan was only ever a bend, and sees the waypoint itself', () => {
 	const b = ended();
 	const asked = [];
-	deleteIt(b, { keepsOrphan: (w, info) => { asked.push([w.id, info.wasBendOnly]); return false; } });
+	deleteIt(b, net({ keepsOrphan: (w, info) => { asked.push([w.id, info.wasBendOnly]); return false; } }));
 	assert.deepEqual(asked.sort(), [['waypoint-0000a1', false], ['waypoint-0000b2', true], ['waypoint-0000c3', false]]);
 });
 
@@ -110,7 +114,7 @@ S-P1-P2-P3-E with P2 deleted and no other way, the director chose "Delete the wh
 shown down"; with another way open it re-routes, as ruled 2026-09-26.
 
 "No way" is a question about ROUTES OVER PIPES, which the planner cannot see -- so it is asked by
-injection, `isStranded(link, model)`, the fourth interface the network incubator forces into a product
+injection, `network.isStranded(link, model)`, the fourth interface the network incubator forces into a product
 module. Production passes nothing: a link that loses a pin keeps the rest of its intent, exactly as
 before, and the first test below holds that.
 
@@ -138,7 +142,7 @@ test('production is unchanged: a link that loses a pin keeps the rest of its int
 
 test('an injected isStranded removes the link WHOLE in the same transaction, and one undo restores it', () => {
 	const b = pinned();
-	const r = deleteP(b, { isStranded: () => true, keepsOrphan: () => false });
+	const r = deleteP(b, net({ isStranded: () => true, keepsOrphan: () => false }));
 	assert.equal(r.ok, true);
 	assert.equal(b.m.get('link', PINNED), undefined, 'a link with no way after losing its pin is deleted');
 	assert.equal(b.m.get('waypoint', WQ), undefined, 'and its remaining pin, made for it alone, is swept with it');
@@ -151,7 +155,7 @@ test('an injected isStranded removes the link WHOLE in the same transaction, and
 test('isStranded is asked only about a link that lost a pin, and sees it as it is AFTER the edit', () => {
 	const b = pinned();
 	const asked = [];
-	deleteP(b, { isStranded: (link, model) => { asked.push({ id: link.id, via: link.via, pGone: !model.get('waypoint', WP) }); return false; } });
+	deleteP(b, net({ isStranded: (link, model) => { asked.push({ id: link.id, via: link.via, pGone: !model.get('waypoint', WP) }); return false; } }));
 	assert.deepEqual(asked, [{ id: PINNED, via: [WQ], pGone: true }],
 		'one question, about the pinned link, with P already stripped and gone from the model it is judged in');
 	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ], 'answered "not stranded", the link re-routes on its remaining intent');
@@ -161,7 +165,7 @@ test('a link that ENDS at the deleted anchor is not asked: it goes with its end 
 	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 	assert.equal(commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), wp(WP, 3, -2), lk(PINNED, NA, WP)] }, 'lab', 'lab').ok, true);
 	const asked = [];
-	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', { isStranded: (l) => { asked.push(l.id); return false; } });
+	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', net({ isStranded: (l) => { asked.push(l.id); return false; } }));
 	assert.deepEqual(asked, [], '"if either source or dest node is deleted, link is gone with it permanently"');
 	assert.equal(m.get('link', PINNED), undefined);
 });

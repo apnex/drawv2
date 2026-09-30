@@ -155,7 +155,7 @@ export function pipeAnchors(net, model) {
 }
 
 /*
-Whether a link that LOST A PIN is left with no way -- the planner's `isStranded`, ruled 2026-09-29.
+Whether a link that LOST A PIN is left with no way -- the network's `isStranded`, asked by the planner, ruled 2026-09-29.
 
 Asked, for a w-chain S-P1-P2-P3-E with P2 deleted and no other way, the director chose "Delete the
 whole link" over "Stay, shown down": the link goes, and with it its w anchors and the pipes laid with
@@ -201,7 +201,7 @@ function keptOnRefusal(verdict, { guides = [], placed = [] }) {
 /*
 Which orphaned anchors the network model keeps beyond what references them: NONE -- ruled 2026-09-29.
 
-Handed to the planner as `keepsOrphan`. Production keeps an orphaned anchor if the author pinned it
+The network's `keepsOrphan`, asked by the planner. Production keeps an orphaned anchor if the author pinned it
 (B162) or it was a link's end (B216). The director ruled that in the network model "deliberate" means
 HELD BY THE PIPES LAID WITH g, so anchors made with w go when their last link goes -- ends included, the
 director confirming: "No - it goes just as ruled." A g anchor survives because its hand pipes reference
