@@ -454,6 +454,192 @@
 					"hand": 2
 				}
 			}
+		},
+		"two pins beside a g path": {
+			"about": "Anchors S and E, a g path below them through X, and a link S to E pinned at P and Q above, on its own w pipes.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"g",
+							0,
+							240
+						],
+						[
+							"g",
+							360,
+							0
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							-120,
+							-120
+						],
+						[
+							"w",
+							120,
+							-120
+						],
+						[
+							"w",
+							360,
+							0
+						]
+					]
+				],
+				[
+					"settle"
+				]
+			],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"only": 2
+				},
+				"anchors": 5,
+				"pipes": {
+					"link": 3,
+					"hand": 2
+				}
+			}
+		},
+		"a pin and a g hop beside a g path": {
+			"about": "Anchors S and E, a g path below them through X, and a link S to E pinned at P, passing the g anchor Y above.",
+			"board": "",
+			"setup": [
+				[
+					"move",
+					-360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"move",
+					360,
+					0
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"g",
+							0,
+							240
+						],
+						[
+							"g",
+							360,
+							0
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						360,
+						0
+					],
+					[
+						[
+							"w",
+							-120,
+							-120
+						],
+						[
+							"g",
+							120,
+							-120
+						],
+						[
+							"w",
+							360,
+							0
+						]
+					]
+				],
+				[
+					"settle"
+				]
+			],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"only": 1
+				},
+				"anchors": 5,
+				"pipes": {
+					"link": 1,
+					"hand": 4
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -1723,6 +1909,71 @@
 				}
 			},
 			"rule": "The director's report, 2026-09-30: \"If I delete link A-B - I would expect C-B to route over the top of the now-free path\". DECISIONS: \"A w pipe goes when no link is on it or resolves onto it\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "HP-01",
+			"state": "two pins beside a g path",
+			"gesture": "delete pin",
+			"does": "Select Q, the second pin, and press Delete.",
+			"steps": [
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The link loses Q, and the only way left from P to E runs back over S-P and round the g path below: a hairpin, which is no way. So it has no other way and is deleted whole, with P and its w pipes; the g path stays.",
+			"expect": {
+				"links": 0,
+				"anchors": 3,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"A link never runs the same pipe twice\" (2026-09-30). DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "HP-02",
+			"state": "a pin and a g hop beside a g path",
+			"gesture": "delete `g` hop",
+			"does": "Select Y, the g anchor the link passes, and press Delete.",
+			"steps": [
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "No pin is lost, and the only way left from P to E would double back over S-P: no way, so the link is down, drawn dotted through its pin P.",
+			"expect": {
+				"links": 1,
+				"down": 1,
+				"pins": {
+					"only": 1
+				},
+				"through": {
+					"only": [
+						[
+							-120,
+							-120
+						]
+					]
+				}
+			},
+			"rule": "DECISIONS: \"A link never runs the same pipe twice\" (2026-09-30).",
 			"standing": "ruled",
 			"built": "yes"
 		},

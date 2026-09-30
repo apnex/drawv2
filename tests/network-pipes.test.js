@@ -135,3 +135,16 @@ test('a link with no rank is the NEWEST, so a link being drawn yields to every l
 	const routes = assignRoutes(TRUNK, [LOWER, UPPER], { rankOf: (id) => (id === 'link-l' ? 0 : Infinity) });
 	assert.ok(routes.get('link-l') && !routes.get('link-u'));
 });
+
+/*
+A LINK NEVER RUNS THE SAME PIPE TWICE -- ruled 2026-09-30. A pin left on a spur could only be reached out and back over
+one pipe (A-X-P-X-B): two runs in a pipe that carries one link, drawn on top of each other. Held with concurrent links
+on a pipe (B256). Only a join between two pins can repeat a pipe -- each leg alone is a shortest path -- so each leg is
+routed without the pipes the link's earlier legs used.
+*/
+test('a link never runs the same pipe twice: a pin left on a spur is no way', () => {
+	const spur = [hand('A', 'X'), hand('X', 'P'), hand('X', 'B')];
+	assert.equal(routeLink(spur, { src: 'A', dst: 'B', via: ['P'] }), null, 'A-X-P-X-B would double back over X-P');
+	assert.equal(assignRoutes(spur, [{ id: 'k', src: 'A', dst: 'B', via: ['P'] }]).get('k'), null, 'so the link is down');
+	assert.deepEqual(routeLink([...spur, hand('P', 'B')], { src: 'A', dst: 'B', via: ['P'] }), ['A', 'X', 'P', 'B'], 'with a way on from P, it takes it');
+});

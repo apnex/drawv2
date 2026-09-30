@@ -1342,3 +1342,12 @@ MEASURED: `w` on a final waypoint already made a direct link with its pipe; on a
 So `w` on a node makes the drag a link drag and a hop into that node, laid with the link; released there, the node is the link's destination and nothing is pinned on it.\
 Proposer's reading, not ruled: `w` on a node the drag then continues past is a hop the link routes over but does not pin, since a node cannot be a pin.\
 Only with a route hook -- the lab -- so production's `w` is unchanged.
+
+**A link never runs the same pipe twice; hairpins wait for concurrent links on pipes -- ruled 2026-09-30.**\
+The director: "should we reason about "split horizon" across pipes that have a pinned w for a link?\
+Today if I delete an anchor and one of the remaining anchors has a link pinned - it is permitted to trace back across the same pipe it came in on "hairpin" - visually strange but possibly correct".\
+MEASURED at the router: only a pin left on a spur produces one -- the one way on from the pin is back the way it came, `A-X-P-X-B` -- and it was allowed because the capacity check counted links, not runs.\
+Asked "Should a link be allowed to run the same pipe twice?", the director chose "No: never the same pipe twice" (the proposer's recommendation): "I reliased that hairpinning is something we should bundle with parallel concurrency at a later stage on pipes".\
+So a way that would double back is no way: the link is down, drawn through its pins, and heals when a way through appears; and a link that just lost a pin with nothing else left is deleted whole (2026-09-29), since a hairpin no longer counts as another way.\
+Held with concurrent links on a pipe, as B256.\
+Asked in the same exchange, and confirmed by the director as correct: a link that loses a `w` anchor and has another way re-routes over it, stays the older link, and keeps blocking a younger link that wants those pipes -- a delete re-routes the link whose pin went, and the protection against moving an existing link belongs to drags.

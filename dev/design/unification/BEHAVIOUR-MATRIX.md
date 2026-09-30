@@ -82,8 +82,10 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 |
 | two g paths | . | ALT-02 | . | . | ALT-01 | . | . | . | . | . |
 | w path fed by g | . | . | . | WP-02 | . | . | . | . | . | WP-01 |
+| two pins beside a g path | HP-01 | . | . | . | . | . | . | . | . | . |
+| a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . |
 
-36 rows: 36 built, 0 todo, 0 open.\
+38 rows: 38 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -98,6 +100,8 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | blocked | `?seed=trunk` | Two links want one hand-laid trunk; the older holds it, so the younger is down, blocked by it. |
 | two g paths | blank | Anchors S and E placed with w, then two g drags between them: a four-pipe path above and a five-pipe path below. No link. |
 | w path fed by g | blank | The director's case: anchors A, B, C; a w path A-P1-P2-B; a g path from C joining P1; links A-B and C-B. A-B has first call on its w pipes, so C-B waits, blocked by it. |
+| two pins beside a g path | blank | Anchors S and E, a g path below them through X, and a link S to E pinned at P and Q above, on its own w pipes. |
+| a pin and a g hop beside a g path | blank | Anchors S and E, a g path below them through X, and a link S to E pinned at P, passing the g anchor Y above. |
 
 | gesture | what the author does |
 |---|---|
@@ -154,6 +158,8 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | ALT-02 | two g paths x delete `g` hop | Make the link as in ALT-01, then delete the middle anchor of the path above. | The link moves onto the path below and stays up: that is what the alternate is for. | DECISIONS: "Each drag action does one thing" (2026-09-30). DECISIONS: a link routes on by the fewest pipes when its way breaks (2026-09-26). | ruled, built |
 | WP-01 | w path fed by g x select link | Click C-B, which is down. | C-B is blocked, not wayless: its way runs over A-B's w pipes, which A-B has first call on. The notice says A-B holds its way. | DECISIONS: "A w pipe goes when no link is on it or resolves onto it" (2026-09-30). | ruled, built |
 | WP-02 | w path fed by g x delete link | Select A-B on its first leg, and press Delete. | C-B takes over the freed w path and comes up, drawn through P1 and P2. The pipes it runs over, and P2, stay; A's lone pipe, which no link is on, goes with A. | The director's report, 2026-09-30: "If I delete link A-B - I would expect C-B to route over the top of the now-free path". DECISIONS: "A w pipe goes when no link is on it or resolves onto it" (2026-09-30). | ruled, built |
+| HP-01 | two pins beside a g path x delete pin | Select Q, the second pin, and press Delete. | The link loses Q, and the only way left from P to E runs back over S-P and round the g path below: a hairpin, which is no way. So it has no other way and is deleted whole, with P and its w pipes; the g path stays. | DECISIONS: "A link never runs the same pipe twice" (2026-09-30). DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29). | ruled, built |
+| HP-02 | a pin and a g hop beside a g path x delete `g` hop | Select Y, the g anchor the link passes, and press Delete. | No pin is lost, and the only way left from P to E would double back over S-P: no way, so the link is down, drawn dotted through its pin P. | DECISIONS: "A link never runs the same pipe twice" (2026-09-30). | ruled, built |
 | DIR-01 | routed x draw: `w` bend | Drag from A, press w on node C, and release there. | A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop. | DECISIONS: "w may be pressed on a node as the last hop" (2026-09-30). | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
 <!-- END GENERATED: rows -->

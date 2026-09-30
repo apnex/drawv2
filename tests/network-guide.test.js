@@ -227,3 +227,9 @@ test('a refused link drag keeps its g anchors and their hand pipes, and drops wh
 	assert.deepEqual(laid(v), ['A-G:hand'], 'its hand pipe to A survives; the pipes to P go with P');
 	assert.match(v.notice, /g anchors and their pipes are kept/);
 });
+
+test('a link that lost a pin, whose only way left would double back, is stranded (2026-09-30)', () => {
+	// S-P was its own leg; with Q gone, the only way from P to E runs back over S-P, then S-X-E
+	const left = [{ a: 'S', b: 'P', laid: 'link' }, ...pipes(['S', 'X'], ['X', 'E'])];
+	assert.equal(isStranded(left, { src: 'S', dst: 'E', via: ['P'] }, model(['S', 'P', 'X', 'E'])), true, 'a hairpin is not another way');
+});

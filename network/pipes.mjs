@@ -93,9 +93,17 @@ path, because a route that stops halfway is not a smaller route, it is no route.
 export function routeLink(pipes, { src, dst, via = [] }) {
 	const stops = [src, ...via, dst];
 	const whole = [src];
+	/*
+	NEVER THE SAME PIPE TWICE -- ruled 2026-09-30. A pin left on a spur could only be reached out and back over one pipe
+	(A-X-P-X-B): two runs in a pipe that carries one link. Each leg alone is a shortest path and cannot repeat a pipe, so
+	only a later leg can repeat an earlier one's: each is routed without the pipes before it. A hairpin waits for
+	concurrent links on a pipe (B256).
+	*/
+	const used = new Set();
 	for (let i = 0; i < stops.length - 1; i++) {
-		const leg = route(pipes, stops[i], stops[i + 1]);
+		const leg = route(pipes.filter((p) => !used.has(pipeKey(p.a, p.b))), stops[i], stops[i + 1]);
 		if (!leg) return null;
+		for (let j = 0; j < leg.length - 1; j++) used.add(pipeKey(leg[j], leg[j + 1]));
 		whole.push(...leg.slice(1));
 	}
 	return whole;
