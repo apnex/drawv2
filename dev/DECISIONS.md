@@ -1429,3 +1429,9 @@ The director: "double-click to edit a zone name without shift is fine for now.\
 I'll re-evaluate in the lab later".\
 Parked as B264, with that re-evaluation as its revival trigger; acceptance test 5 is withdrawn until then.
 
+**The context menu is a fixed panel, to be designed separately later; stage 7 is parked -- stated 2026-09-30.**\
+Asked how a menu should open (DG4), the director: "What I was thinking with a context menu was actually a small fixed panel somewhere on the screen - that dynamically changes depending on the context rule - however I think I want to design that properly, separately at a later stage and not now".\
+So DG4 is withdrawn -- a fixed panel is not opened by a gesture -- and stage 7 of `dev/design/input/GESTURE-SYSTEM.md` is not built now.\
+What it would read is already in place: the bindings, their conditions over the situation, and the action labels (stages 4 to 6).\
+Parked as B265, with the director opening that design as its revival trigger.
+

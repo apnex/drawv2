@@ -264,7 +264,7 @@ The input layers of the product -- capture, input state, gestures, bindings, act
 | 4 | **Pointer bindings on the engine.** `RECOGNIZE` becomes bindings with disjoint conditions; key releases and double click join | no first match anywhere | acceptance tests 1, 4, 5; `resolveRule` deleted |
 | 5 | **Actions, and release meaning as bindings.** Handlers become named actions; the drop and click decisions become bindings | meaning out of the lifecycle | acceptance tests 3 and 6; the corpus replays identically |
 | 6 | **Help overlay generated.** | RULES I4 | acceptance test 7; the hand-written rows are gone |
-| 7 | **Context menu.** Only after DG4 is ruled | R8 | acceptance test 8 |
+| 7 | **Context menu.** PARKED 2026-09-30: the director's intent is a fixed context panel, to be designed separately (B265) | R8 | acceptance test 8 |
 
 Stages 1 to 5 are restructuring and change no outcome.\
 Stages 6 and 7 add what the director asked for, on top of a table that already means what the keys and gestures do.\
@@ -333,7 +333,7 @@ Each is a real fork, with a recommendation.
 - **DG3 -- what "programmable" means now.** Bindings as data brought by tenants in source -- the product and plugins -- now; runtime editing by users or agents later, as its own decision, since it needs storage and conflict handling? Recommended.\
   Ruled 2026-09-30: as recommended.
 - **DG4 -- the menu's trigger.** Right press is taken (press and drag, Alt for delete, Ctrl for clone). Candidates: a long press, the keyboard's menu key, or right-click-without-drag on a selection. Needed before stage 7 only.\
-  Open.
+  Withdrawn 2026-09-30: the director's context menu is a small fixed panel that follows the situation, not something a gesture opens; designed separately later (B265).
 - **DG5 -- sequences beyond drags.** Are prefix-key sequences wanted (a key, then another, as VS Code's chords)? Recommended: in the vocabulary's design, built only when a first binding asks.\
   Ruled 2026-09-30: as recommended.
 
@@ -402,4 +402,9 @@ Each is a real fork, with a recommendation.
 - **The overlay can be no more wrong than the tables.** A test turns every documented input back into an event and checks that its row matches it; every row a person performs is documented; every label is an action some row names; deleting a binding removes its line and nothing else (acceptance 7); and the page holds no hand-written row (RULES I4). The real product page is checked in Chrome.
 - **Seven mutants, each caught:** a key the row does not bind, an undocumented row, a stale label, a hand-written row returning, a section dropped, the page drawing no help, a plugin row without its sentence.
 - **Behaviour unchanged:** the overlay is the only thing that changed, and the corpus replays byte-identical.
+
+**Stage 7 -- parked, 2026-09-30.**
+- **The director's intent is a panel, not a menu:** "a small fixed panel somewhere on the screen - that dynamically changes depending on the context rule", to be designed properly and separately. DG4 is withdrawn and stage 7 is not built; B265 holds it, revived when the director opens that design.
+- **What such a panel would read is in place.** The bindings and their conditions over the situation (stages 4 and 5), and the label of every action (stage 6): a panel is the tables filtered by the situation, exactly the projection section 5.6 describes, so it can never disagree with what the keys and gestures do.
+- **The restructuring the design set out -- stages 1 to 5 -- and the generated help of stage 6 are complete.** R1 to R7 are met; R8 waits for the panel.
 
