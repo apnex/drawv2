@@ -217,3 +217,25 @@ The lab root wires it and goes back to wiring only.
 - **Mutation proof.** Seven mutants, each caught: legs laid after the apply, legs kept after a refusal, legs laid before the answer, the notice said twice, the sweep run after undo, ages noted before the apply, and the root skipping the settle after a pipes-only drag (2 browser tests fail).
 - **Behaviour.** The gate passes 1293 of 1293, with the matrix file untouched and no expected outcome edited; the browser suite passes 60 of 60.
 - **Findings closed:** F14.
+
+**T3 landed, 2026-09-30, in three commits -- approved by the director ("Proceed as recommended").**
+- **The rulings it rests on.** Q1, Q3 and Q4 of `dev/RULES.md`, as recommended; the director's statement that a plugin's rules are the plugin's; and `c` in place of fill as the second example, since fill does not exist. All are recorded in `dev/DECISIONS.md`, and the design in `dev/RULES.md` section 11.
+- **T3.1 -- the engine.** `kernel/input-rules.mjs` is a neutral core: it joins tenants' rows, applies the guards uniformly, and returns the one row an input means, or none.
+  Two rows matching one situation is never resolved by position; `overlapsIn` is the gate's instrument, and a test reads the engine's whole text for tenant words.
+  The product's key table runs on it: the one overlap the old table resolved by order, Ctrl+Shift+Backspace, is disjoint now, and `c` is two rows over the situation, with handlers that ask nothing.
+- **T3.2 -- the plugin's keys.** `network/keys.mjs` brings `g` during a link drag and `w` on a node during one; the product's table names neither, and production composes no plugin.
+  Input takes `plugins` in place of `routeHook`, refuses a malformed plugin or a second judge, and hands a plugin's row one declared verb, `addStop`.
+  The drag is recorded as steps, so `pressedW`, `pressedG`, the separate guide list, `dropGuideWaypoint`, the node branch and `onGuideKey` are gone from Input.
+- **T3.3 -- the grammar as data.** `network/grammar.mjs` holds what a finished drag makes and which pipe each hop lays, as rows the engine reads; `judgeDrag` asks them.
+  `dragFacts` reads the facts from Input's record in the plugin, so routing notions left the product module.
+  The pre-T3 formula is kept in a test as an oracle, and the rows give its answer for all 720 hops enumerated.
+  `dev/design/unification/GESTURES.md` is generated from the rows by `tools/gesture-table.mjs`, whose `--check` is in the gate (P3).
+- **F11 fixed.** After `w` on a node mid-drag the preview froze: the network resolves a preview's stops as anchors when it has no way, and production's straight polyline is untouched. Held in Node and in real Chrome, each failing without the fix.
+- **F12 fixed.** `heals` left every verdict, since nothing read it; a test holds that a verdict carries only what a consumer reads. `placedKept` never left `keptOnRefusal`, so no test could observe it; it was removed without one.
+- **B261 found and fixed (H10.36).** `w` during a chained link drag threw, leaving an uncommitted waypoint in the tab, since `845b18b`. Production (`2814d8d`) predates it, but the pending B258 deploy would have shipped it.
+- **Mutation proof.** 28 mutants across the three commits, each caught.
+- **Behaviour.** The gate passes 1328 of 1328, with the matrix file untouched and every matrix row passing in real Chrome.
+  Test expectations changed only where a row changed owner or the Q3 ruling changed what is asserted: `g` no longer resolves in the product table, the opt-out list lost `guide`, and the overlap test now asserts none where it asserted one.
+- **Not in T3.** I4, the generated help overlay, stays with B163 and H10.34; `RECOGNIZE` keeps its own dispatcher.
+- **Findings closed:** F9 (its Input half), F11, F12 and F15.
+

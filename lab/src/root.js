@@ -42,7 +42,7 @@ import { Log } from '../../server/log.mjs';
 import { routeLink } from '../../network/pipes.mjs';
 import { whyDown, downSummary } from '../../network/resolve.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
-import { NETWORK_KEYS } from '../../network/keys.mjs';
+import { networkInput } from '../../network/keys.mjs';
 import { pipeAttributes } from '../../network/appearance.mjs';
 
 /*
@@ -154,7 +154,7 @@ const routeHook = (drag) => {
 
 const input = new Input({ svg, model, history, selection, renderer, labels, readout,
 	palette: null, host: window, help: null, now: () => Date.now(), snap,
-	plugins: [{ owner: 'network', keys: NETWORK_KEYS, judgeDrag: routeHook }] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
+	plugins: [networkInput(routeHook)] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

@@ -21,16 +21,30 @@ claims it there.
 THE SITUATION TERMS are the plugin's own, over the fields the host's situation documents (engine/situation.mjs):
 `gesture` and `step`. The plugin cannot import the product's predicates, and should not -- it names what it asks.
 */
+import { dragFacts } from './grammar.mjs';
+
 const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;
 const is = (e, k) => e.key.toLowerCase() === k;
 const drawingALink = (s) => s.gesture === 'link';
 const overANode = (s) => s.step === 'node';
 
-export const NETWORK_KEYS = [
-	{ id: 'guide', prevent: false, mutates: true, duringGesture: true,
+const NETWORK_KEYS = [
+	{ id: 'guide', doc: 'g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it',
+		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'g') && plain(e), when: drawingALink,
 		run: (host, evt) => { evt.preventDefault(); host.addStop({ key: 'g', pin: false, nodes: true }); } },
-	{ id: 'stop-on-node', prevent: false, mutates: true, duringGesture: true,
+	{ id: 'stop-on-node', doc: 'w on a node during a link drag: a stop the link routes over, never a pin; released on it, the node is the destination',
+		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'w') && plain(e), when: (s) => drawingALink(s) && overANode(s),
 		run: (host, evt) => { evt.preventDefault(); host.addStop({ key: 'w', pin: false, nodes: true }); } },
 ];
+
+/*
+THE NETWORK, AS INPUT'S PLUGIN -- the one way to compose it into the product's Input: its keys above, and `judge` as its
+judge of a finished link drag. Input hands over its record of the drag; the judge is handed the FACTS the grammar reads
+(network/grammar.mjs `dragFacts`), so no composition -- the lab, or a test -- can hand it anything else.
+*/
+export function networkInput(judge) {
+	return { owner: 'network', keys: NETWORK_KEYS, judgeDrag: (record) => judge(dragFacts(record)) };
+}
+

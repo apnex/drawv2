@@ -21,7 +21,7 @@ import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
-import { NETWORK_KEYS } from '../network/keys.mjs';
+import { networkInput } from '../network/keys.mjs';
 
 // the product's key table through the Rules engine (dev/RULES.md section 11), and the row a key resolves to
 const PRODUCT_KEYS = composeRules({ owner: 'product', rules: KEYMAP });
@@ -931,7 +931,7 @@ A PLUGIN'S ROWS ARE THE PLUGIN'S (the director, 2026-09-30). The network brings 
 the product's rows -- as the lab composes them -- no keystroke matches two rows in any situation either, which is what
 Q3 asks of every composition, not only of the product alone.
 */
-const LAB_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: NETWORK_KEYS });
+const LAB_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: networkInput(() => ({})).keys });
 
 test('Q3: composed with the network plugin, still no keystroke matches two rows', () => {
 	const found = overlapsIn(LAB_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);

@@ -37,7 +37,7 @@ import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
-import { NETWORK_KEYS } from '../../network/keys.mjs';
+import { networkInput } from '../../network/keys.mjs';
 
 // ---- the smallest DOM the client's constructors actually touch ----
 
@@ -214,10 +214,10 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		input = bare
 			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
 			: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap,
-				// `routeHook` composes the incubating network plugin as the lab does (lab/src/root.js): its own keys
-				// (network/keys.mjs) and this function as its drag judge (dev/RULES.md section 11). Absent unless a test
-				// asks for it, exactly as production composes no plugin -- so every other test runs as production does.
-				...(routeHook ? { plugins: [{ owner: 'network', keys: NETWORK_KEYS, judgeDrag: routeHook }] } : {}),
+				// `routeHook` composes the incubating network plugin as the lab does (lab/src/root.js): its own keys, and
+				// this function as its drag judge, handed the drag's facts (network/keys.mjs `networkInput`). Absent unless a
+				// test asks for it, exactly as production composes no plugin -- so every other test runs as production does.
+				...(routeHook ? { plugins: [networkInput(routeHook)] } : {}),
 				...(plugins ? { plugins } : {}) });   // a composition given whole, for tests of the plugin seam itself
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);

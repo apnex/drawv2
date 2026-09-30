@@ -714,7 +714,9 @@ It sweeps every scanned module rather than naming the product's folders, because
 file list goes stale (B224).
 */
 const INCUBATOR = 'network/';
-const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/'];
+// `tools/gesture-table.mjs` by exact path, added with T3: it generates the network's gesture table in the design docs
+// from the plugin's own rows (P3), and nothing served imports it -- a reader of the incubator, not a promotion of it
+const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

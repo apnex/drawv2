@@ -27,6 +27,7 @@ The caller lays them only after the planner accepts the link, so a refused link 
 
 import { pipeKey, assignRoutes, preferredRoute, blockersOf } from './pipes.mjs';
 import { pairHolders } from '../model/invariants.mjs';
+import { kindOf, pipeFor } from './grammar.mjs';
 
 /*
 JUDGE A FINISHED DRAG -- ruled 2026-09-30, "Each drag action does one thing" (dev/DECISIONS.md).
@@ -59,16 +60,13 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 	turns a g drag into a link. It adds only the final pipe, with the link, when nothing else was pressed.
 	*/
 	const srcW = srcKey === 'w';
-	const pipesOnly = !pressed.w && pressed.g;
+	// what the drag makes, and which pipe each hop lays, are the grammar's -- data, read by the Rules engine (network/grammar.mjs)
+	const pipesOnly = kindOf({ pressed }).makes === 'pipes';
 	const legs = [];
 	for (let i = 0; i < stops.length - 1; i++) {
 		const a = stops[i], b = stops[i + 1];
-		// the release lays the final pipe whenever a key made a hop before it -- with the link after w, by hand after g --
-		// and only a drag that pressed no key lays none (2026-09-30: "If penultimate hop was a key (g or w) - final pipe
-		// is laid. Direct links without a key lay no pipe.")
-		if (a === b || (b === dst && !endPressed && stops.length === 2 && !srcW)) continue;
-		const byHand = pipesOnly || guided.has(a) || guided.has(b) || (b === dst && endPressed === 'g');
-		legs.push({ a, b, laid: byHand ? 'hand' : 'link' });
+		const laid = pipeFor({ a, b, dst, endPressed, count: stops.length, srcW, pipesOnly, guidedA: guided.has(a), guidedB: guided.has(b) });
+		if (laid) legs.push({ a, b, laid });
 	}
 	const seen = new Set(pipes.map((p) => pipeKey(p.a, p.b)));
 	const fresh = legs.filter((l) => !seen.has(pipeKey(l.a, l.b)));
@@ -78,7 +76,7 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 
 	if (pipesOnly) {
 		const heals = healed(assignRoutes(pipes, links, { rankOf }), assignRoutes(would, links, { rankOf }));
-		return { ok: false, legs, keep: placed, heals,
+		return { ok: false, legs, keep: placed,
 			notice: `${pipes_(fresh.length)} laid by hand -- g lays pipes, not links${heals.length ? `; ${heals.join(', ')} healed` : ''}` };
 	}
 
@@ -93,7 +91,6 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 	const before = assignRoutes(pipes, links, opts);
 	const after = assignRoutes(would, [...links, drawn], opts);
 	const route = after.get(drawn.id) ?? null;
-	const heals = healed(before, after);
 
 	// ruled 2026-09-30: "a drag that would move an existing link is refused" -- the g geometry is still kept
 	const moves = links.filter((l) => before.get(l.id) && JSON.stringify(before.get(l.id)) !== JSON.stringify(after.get(l.id))).map((l) => l.id);
@@ -107,19 +104,19 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 	already says why it is down (network/resolve.mjs `whyDown`). Two sentences for one fact would drift apart, so this
 	returns the facts -- no route, and who holds its way -- and the one sentence stays where the author reads it.
 	*/
-	if (!route) return { ok: true, legs, route, heals, blockers: blockersOf(would, [...links, drawn], drawn.id, opts) };
+	if (!route) return { ok: true, legs, route, blockers: blockersOf(would, [...links, drawn], drawn.id, opts) };
 	/*
 	A g HOP THE LINK SKIPS does not refuse (2026-09-30, "Link runs the shorter way"): the link runs the fewest-pipes way,
 	the path drawn is kept as its alternate, and the notice says why -- the way taken is SHORTER than the one drawn,
 	EQUAL and picked by the router's fixed tie order, or LONGER because part of the way drawn is held.
 	*/
 	const skipped = guides.filter((g) => !route.includes(g));
-	if (!skipped.length) return { ok: true, legs, route, heals };
+	if (!skipped.length) return { ok: true, legs, route };
 	const asDrawn = legs.length, best = route.length - 1;
 	const why = best < asDrawn ? `a shorter way (${pipes_(best)}, against the ${asDrawn} drawn)`
 		: best === asDrawn ? `another way just as short (${pipes_(best)}), which the router's fixed tie order picks`
 		: `another way (${pipes_(best)}), because part of the way drawn is held by another link`;
-	return { ok: true, legs, route, heals, skipped, notice: `the link runs ${why}, not through ${skipped.join(', ')}; the g path drawn is kept as its alternate` };
+	return { ok: true, legs, route, skipped, notice: `the link runs ${why}, not through ${skipped.join(', ')}; the g path drawn is kept as its alternate` };
 }
 
 /*
@@ -189,15 +186,12 @@ Refusal refuses the LINK. The `g` anchors survive, and so do the pipes laid by h
 author chose that geometry), so the author keeps what they drew and can use it -- pin it with `w`, or
 remove the pipe that won the route. What the drag placed for the link alone -- its `w` anchors -- goes
 with the link, and so does any pipe that would end at one of them, since a pipe is its pair (SD7).
-
-`placedKept` says which kept anchors are new: those reach the planner in the commit Input makes next,
-and their pipes are laid once it accepts; if every kept anchor already existed, nothing is waiting.
 */
 function keptOnRefusal(verdict, { guides = [], placed = [] }) {
 	const guided = new Set(guides);
 	const discarded = new Set(placed.filter((id) => !guided.has(id)));
 	const legs = (verdict.legs ?? []).filter((l) => l.laid === 'hand' && !discarded.has(l.a) && !discarded.has(l.b));
-	return { keep: guides, legs, placedKept: placed.filter((id) => guided.has(id)) };
+	return { keep: guides, legs };
 }
 
 /*

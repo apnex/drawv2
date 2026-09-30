@@ -30,9 +30,22 @@ EVERY ANSWER HERE READS ONE DERIVATION: the network view (network/view.mjs), whi
 are four answers to one question; before T2 each worked the board out afresh -- MEASURED 9 to 15 times per edit.
 A link the model does not hold -- the live drag preview -- is routed alone, over the pipes that model can see.
 */
-const routeOf = (net, link, model) => (link.id && model?.get('link', link.id)
+const held = (link, model) => !!(link.id && model?.get('link', link.id));
+const routeOf = (net, link, model) => (held(link, model)
 	? net.of(model).route(link.id)
 	: preferredRoute(net.of(model).pipes, link));
+
+/*
+F11 (RULESET-AUDIT) -- the LIVE PREVIEW through its stops, when it has no way over the pipes. The preview is a link the
+model does not hold, whose stops may be nodes: the network's `w` on a node adds one (network/keys.mjs). The straight
+polyline admits only waypoints as bends -- rightly, since a stored link's bends always are -- so a node stop made it
+null and the preview froze where the node was pressed. Here every stop is an anchor, node or waypoint, or a position.
+*/
+function throughStops(link, model) {
+	const at = (ref) => (ref && typeof ref === 'object' ? ref : model.endpointOf(ref));
+	const points = [link.src, ...(link.via ?? []), link.dst].map(at);
+	return points.every(Boolean) ? points.map((p) => [p.x, p.y]) : null;
+}
 
 /*
 Build a resolver over the network view -- the network's `pathOf`.
@@ -40,7 +53,7 @@ Build a resolver over the network view -- the network's `pathOf`.
 export function pipeResolver(net) {
 	return (link, model, straight) => {
 		const route = routeOf(net, link, model);
-		if (!route) return straight(link);   // DOWN: drawn along its intent, and `pipeLinkDown` says so
+		if (!route) return straight(link) ?? (held(link, model) ? null : throughStops(link, model));   // DOWN: drawn along its intent, and `pipeLinkDown` says so
 
 		// ids to positions. The view routes only over pipes whose ends the model holds, so every id resolves;
 		// deferring when one does not is a guard, not a path.

@@ -227,21 +227,16 @@ const GESTURES = {
 			/*
 			`route` is every stop drawn, pins and guides, in order; `via` is the pins alone, which is what the
 			link stores. Released on empty ground, the link ends at the LAST STOP -- pin or guide alike, since
-			a link cannot end without ending somewhere and its end is always a termination. With no route
-			hook there are no guides, `route` equals `via`, and this is exactly the old `dst = via.pop()`.
+			a link cannot end without ending somewhere and its end is always a termination. With no plugin
+			every stop is a pin, `route` equals `via`, and this is exactly the old `dst = via.pop()`.
 			*/
 			const route = [...(ctx.route ?? ctx.via ?? [])];
 			const via = [...(ctx.via || [])];
-			// how the END was reached: released on an anchor (nothing pressed there), or at a stop a key made
-			// the stops a `g` made, in drawn order -- read from the drag's steps, not kept as a second list
-			const guided = new Set(ctx.steps.filter((t) => t.key === 'g').map((t) => t.stop));
-			const endKey = (id) => (validTarget ? false : guided.has(id) ? 'g' : 'w');
 			if (!dst && route.length) {
 				dst = route.pop();
 				const k = via.indexOf(dst);
 				if (k !== -1) via.splice(k, 1);
 			}
-			const guides = [...guided].filter((g) => g !== dst);
 			/*
 			B72 -- a ROUTED link may duplicate an existing pair; a straight one may not.
 
@@ -270,9 +265,13 @@ const GESTURES = {
 				No judge, no question: production commits as it always has.
 				*/
 				if (i.judgeDrag) {
-					const placed = ctx.placed.map((w) => w.id);
-					const pressed = { w: ctx.steps.some((t) => t.key === 'w'), g: ctx.steps.some((t) => t.key === 'g') };
-					const verdict = i.judgeDrag({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst], pressed, endPressed: endKey(dst), srcKey: ctx.srcKey ?? false });
+					/*
+					The RECORD of the drag, as it happened -- what it means is the judge's (network/grammar.mjs reads its
+					facts from this). `release` says whether it was released ON an anchor or ended at the last stop a key
+					made; `route` and `pins` are as the drag leaves them, the destination taken off.
+					*/
+					const verdict = i.judgeDrag({ src: ctx.src.id, dst, pins: via, route, placed: ctx.placed.map((w) => w.id),
+						steps: ctx.steps, release: validTarget ? 'anchor' : 'stop', srcKey: ctx.srcKey ?? false });
 					if (!verdict?.ok) {
 						/*
 						A refusal may name anchors to KEEP. The link is refused; anchors the hook names survive

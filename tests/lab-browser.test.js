@@ -468,6 +468,27 @@ and goes with its link; any other pipe is what `g` or a hand lays, and stays. A 
 pipe as hand-laid behaved as no drawn board can: deleting a link's end left its bend and a pipe standing.
 Checked as a RULE over every board, so a new board is held to it without anyone listing it here.
 */
+/*
+F11 (RULESET-AUDIT) -- after `w` on a node mid-drag the live preview stopped following the cursor: a node stop made the
+straight polyline null, so the preview froze where the node was pressed. Real Chrome, real input, the drawn `d` read.
+*/
+test('F11: after w on a node mid-drag, the live preview still follows the cursor', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		const live = `document.querySelector('#overlay path.link-live')?.getAttribute('d') ?? null`;
+		await p.mouse('mousePressed', -360, 0, 1);
+		await p.mouse('mouseMoved', 0, -240, 1);
+		await p.key('w');                                  // on node-000003: a stop, never a pin (network/keys.mjs)
+		await p.mouse('mouseMoved', 240, -240, 1);
+		const first = await p.run(live);
+		await p.mouse('mouseMoved', 240, -120, 1);
+		const second = await p.run(live);
+		await p.mouse('mouseReleased', 240, -120, 0);
+		assert.match(first ?? '', /240[ ,]-240$/, `the preview ends at the cursor: ${first}`);
+		assert.match(second ?? '', /240[ ,]-120$/, `and follows it: ${second}`);
+	} finally { await p.close(); }
+});
+
 test('every seed pipe carries the lifetime its gesture would give it', () => {
 	const boards = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));
 	const named = Object.entries(boards).filter(([name]) => !name.startsWith('_'));

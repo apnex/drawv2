@@ -265,3 +265,25 @@ test('B257: the sweep and the reference check work routes out by age, exactly as
 	const refs = pipeAnchors(net, everything);
 	assert.ok(refs.has('x') && refs.has('y'), 'and the reference check must hold the anchors it runs through');
 });
+
+/*
+F12 (RULESET-AUDIT) -- a verdict carries only what something reads. `heals` rode on every verdict and nothing read it:
+the one place a heal matters, a pipes-only drag, says it in the notice. A field nobody reads is a second answer
+waiting to disagree with the first.
+*/
+test('F12: a verdict carries only what a consumer reads', () => {
+	const READ = new Set(['ok', 'legs', 'keep', 'route', 'blockers', 'moves', 'skipped', 'notice']);
+	const board = pipes(['A', 'p'], ['p', 'q'], ['q', 'B'], ['r', 'B'], ['A', 's'], ['s', 'r']);
+	const verdicts = [
+		judgeDrag([], drag({ src: 'A', dst: 'B', guides: ['g'], placed: ['g'], stops: ['A', 'g', 'B'], pressed: { w: false, g: true }, endPressed: 'g' }), { links: [X('link-1', 'A', 'B')] }),
+		judgeDrag([], drag({ src: 'B', dst: 'A', stops: ['B', 'A'] }), { links: [X('link-1', 'A', 'B')] }),
+		judgeDrag(board, drag({ src: 'A', dst: 'C', guides: ['r'], stops: ['A', 'r', 'C'], pressed: { w: true, g: true }, endPressed: 'w' }), { links: [X('link-x', 'A', 'B')] }),
+		judgeDrag([], drag({ src: 'C', dst: 'D', stops: ['C', 'D'] })),
+		judgeDrag(pipes(['A', 'x'], ['x', 'B']), drag({ src: 'A', dst: 'B', stops: ['A', 'B'] })),
+		judgeDrag(pipes(['A', 'x'], ['x', 'B'], ['A', 'g'], ['g', 'y'], ['y', 'z'], ['z', 'B']), drag({ src: 'A', dst: 'B', guides: ['g'], stops: ['A', 'g', 'B'], pressed: { w: false, g: true }, endPressed: false })),
+	];
+	for (const v of verdicts) {
+		const unread = Object.keys(v).filter((k) => !READ.has(k));
+		assert.deepEqual(unread, [], `a verdict carries ${unread.join(', ')}, which nothing reads`);
+	}
+});

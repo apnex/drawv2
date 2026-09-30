@@ -152,3 +152,20 @@ test('the Model\'s companions answer from the one assignment: a blocked link is 
 	assert.deepEqual(m.blockersOf(lower), ['link-00000u'], 'and it names the link holding its way');
 	assert.deepEqual(m.blockersOf(upper), [], 'a link that is up is blocked by nobody');
 });
+
+/*
+F11 (RULESET-AUDIT) -- after `w` on a node mid-drag, the live preview stopped following the cursor. The preview is a link
+the model does not hold, whose stops may be nodes (the network's `stop-on-node`, network/keys.mjs). With no way over
+the pipes the network fell back to the straight polyline, which admits only waypoints as bends -- a node stop made it
+null, and the preview froze where it was. Production's straight polyline is untouched: its bends are always waypoints.
+*/
+test('F11: a preview whose stops include a node is drawn through it, with no way over the pipes', () => {
+	const s = createPipeSet();
+	const m = new Model({ network: createNetwork(s) });
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	// as Input draws it: the source entity, every stop drawn so far, and the cursor as a free position
+	const preview = { src: m.get('node', 'node-00000a'), via: ['node-00000b'], dst: { x: 240, y: 120 } };
+	assert.deepEqual(m.pathOf(preview), [[0, 0], [240, 0], [240, 120]], 'through the node stop, on to the cursor');
+	assert.equal(m.pathOf({ ...preview, via: ['node-00000z'] }), null, 'a stop that does not exist is still no path');
+});
