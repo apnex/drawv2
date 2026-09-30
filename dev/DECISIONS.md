@@ -1308,3 +1308,10 @@ Proposer's reading, not ruled: `g` may be pressed on an existing node, so a pipe
 Proposer's reading, not ruled: a plain drag between two anchors that an unpinned link already joins makes nothing, and says so, because a pair takes one unpinned link (B72); before this the drag was dropped without a word.\
 What it replaces: `GUIDE-ANCHORS.md` T3 ("the first bend key decides") is taken and widened -- any drag without `w` makes no link.\
 The "healed" notice for a `g` drag an older down link took (HEAL-01) goes, because a `g` drag makes no link to refuse: its pipes are laid, and the down link heals over them.
+
+**In a drag that lays only pipes, a release on an anchor lays the last pipe into it -- ruled 2026-09-30.**\
+The director: "Given we have established that the "w" or "g" key determines if the current drag includes a link or not - can we enable "mouse up, after a previous g, on an anchor - also constructs the pipe" ? allows a pipe to end at a node without having to press g on the final hop".\
+It conflicts with no ruling: once a `g` is pressed the drag makes no link, so the ruling that a plain drag makes a link with no pipes, which concerns a drag whose first action is the release, is not reached.\
+It replaces the proposer's reading that a plain release lays no pipe, for this case.\
+Asked whether it also applies in a link drag whose last key was `g`, the director chose "Only in g-only drags" over "Yes, after any g" (the proposer's recommendation).\
+So in a drag with any `w` the release still lays nothing, and the link routes to its end over existing pipes, as ruled.

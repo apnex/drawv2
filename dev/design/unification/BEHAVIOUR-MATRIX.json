@@ -1423,8 +1423,9 @@
 					]
 				]
 			],
-			"intent": "Only the pipe into the g anchor is laid: a plain release lays no pipe, and a drag without w makes no link.",
+			"intent": "The drag lays only pipes, so the release on C lays the last pipe into it: the g anchor and two hand pipes, and no link.",
 			"expect": {
+				"refused": false,
 				"links": 2,
 				"keptAt": [
 					[
@@ -1433,13 +1434,13 @@
 					]
 				],
 				"pipes": {
-					"hand": 5,
+					"hand": 6,
 					"link": 0
 				},
-				"notice": "1 pipe laid"
+				"notice": "2 pipes laid"
 			},
-			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30). The proposer's reading that each action lays at most the pipe into its own stop.",
-			"standing": "reading",
+			"rule": "DECISIONS: \"In a drag that lays only pipes, a release on an anchor lays the last pipe into it\" (2026-09-30).",
+			"standing": "ruled",
 			"built": "yes"
 		},
 		{

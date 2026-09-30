@@ -31,9 +31,16 @@ test('a drag with only g lays pipes by hand and makes NO link', () => {
 	assert.doesNotMatch(v.notice, /refused/, 'nothing was refused: laying pipes is what g does');
 });
 
-test('a plain release lays no pipe into the anchor it lands on', () => {
+test('in a drag that lays only pipes, a release on an anchor lays the last pipe into it (2026-09-30)', () => {
+	// the director: "mouse up, after a previous g, on an anchor - also constructs the pipe" -- "Only in g-only drags"
 	const v = judgeDrag([], drag({ src: 'A', dst: 'B', guides: ['G'], placed: ['G'], stops: ['A', 'G', 'B'], pressed: { w: false, g: true }, endPressed: false }));
-	assert.deepEqual(laid(v), ['A-G:hand'], 'only the pipe into the stop g was pressed at');
+	assert.deepEqual(laid(v), ['A-G:hand', 'G-B:hand'], 'a pipe can end at a node without g on the final hop');
+	assert.match(v.notice, /2 pipes laid/);
+});
+
+test('in a drag with any w, a release still lays nothing: the link routes to its end over existing pipes', () => {
+	const v = judgeDrag([], drag({ src: 'A', dst: 'B', pins: ['P'], guides: ['G'], stops: ['A', 'P', 'G', 'B'], pressed: { w: true, g: true }, endPressed: false }));
+	assert.deepEqual(laid(v), ['A-P:link', 'P-G:hand'], 'the last key was g, but the drag is a link drag: no pipe into B');
 });
 
 test('a plain drag makes a link and lays NO pipes: it runs over the pipes already there', () => {
