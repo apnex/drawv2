@@ -117,6 +117,12 @@ export const SCENARIOS = [
 	{ id: 'link-digit-chain', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 240], ['key', '2'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
 	// a drag chained through a node by a digit, released without moving: a click, but NOT a retype of the node just placed
 	{ id: 'link-digit-chain-click-keeps-type', board: 'pair', steps: [['hand', 'router'], ['down', 0, 0, 'n0'], ['move', 180, 240], ['key', '2'], ['up', 180, 240, null, { up: true }]] },
+	// a click is a release that never travelled more than 4px from its press (ruled 2026-09-30)
+	{ id: 'link-out-and-back-is-a-drag', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 200, 150], ['move', 2, 1, 'n0'], ['up', 2, 1, 'n0', { up: true }]] },
+	{ id: 'marquee-diagonal-over-4px-no-stamp', board: 'empty', steps: [['hand', 'router'], ['down', 120, 120], ['move', 123, 123], ['up', 123, 123, null, { up: true }]] },
+	// a chained run is ended by a press that is not the drag's start: on its anchor it selects, elsewhere it ends the run -- unchanged
+	{ id: 'link-chain-ended-on-anchor', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 200, 200], ['move', 360, 0, 'n1'], ['down', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
+	{ id: 'link-chain-ended-elsewhere', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 600, 300], ['down', 600, 300], ['up', 600, 300, null, { up: true }]] },
 	{ id: 'link-right-button-release-ignored', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { button: 2, up: true }], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'link-to-waypoint-end', board: 'bent', steps: drag([360, 0], [180, 120], 'n1', 'w0') },
 	// ---- clicks through the link gesture ----
@@ -131,6 +137,8 @@ export const SCENARIOS = [
 	{ id: 'move-shift-held-ortho', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 20, 'n0', { button: 2 }], ['key', 'Shift', { shift: true }], ['move', 120, 20, 'n0', { button: 2, shift: true }], ['up', 120, 20, 'n0', { button: 2, shift: true, up: true }]] },
 	{ id: 'clone-ctrl-drag', board: 'pair', steps: drag([0, 0], [120, 120], 'n0', 'n0', { ctrl: true }) },
 	{ id: 'clone-ctrl-click-toggles', board: 'pair', steps: [['down', 0, 0, 'n0', { ctrl: true }], ['up', 0, 0, 'n0', { ctrl: true, up: true }]] },
+	// a click with a little jitter is still a click: a Ctrl+click toggles, it does not clone
+	{ id: 'clone-ctrl-click-with-jitter-toggles', board: 'pair', steps: [['down', 0, 0, 'n0', { ctrl: true }], ['move', 2, 2, 'n0', { ctrl: true }], ['up', 2, 2, 'n0', { ctrl: true, up: true }]] },
 	{ id: 'clone-ctrl-right-drag', board: 'pair', steps: drag([0, 0], [120, 120], 'n0', 'n0', { ctrl: true, button: 2 }) },
 	{ id: 'delete-chord-alt-right', board: 'straight', steps: [['down', 0, 0, 'n0', { alt: true, button: 2 }], ['up', 0, 0, 'n0', { alt: true, button: 2, up: true }]] },
 	// ---- canvas: marquee, zone, stamp ----

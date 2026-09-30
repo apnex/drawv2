@@ -1416,3 +1416,10 @@ Agree wth your recommendations".
 - DG5: key sequences beyond drags are in the trigger vocabulary's design, built only when a first binding asks for one.
 - DG4, how a menu is opened, stays open; it is needed before stage 7 only.
 
+**A click is a release that never travelled more than 4px from its press -- ruled 2026-09-30.**\
+Stage 3 of the gesture system makes "click or drag" one rule, and the proposer measured that it was decided three ways that disagree at the edges: a link drag out 250px and back to within 2px counted as a click and selected its node; a 3px diagonal release was a click on empty canvas, stamping the held type, but a drag on a node.\
+Asked which one rule, the director chose "Never travelled >4px" (the proposer's recommendation) over "Within 4px at release" and keeping all three.\
+So a drag out and back is a drag, and a release a little over 4px away on the canvas no longer stamps.\
+A chain -- a Shift-release, or a digit mid-drag -- begins a new drag where it happens, so travel is measured from there.\
+A chained run is ended by a press that is not that drag's start; a click still ends the run selecting its anchor only when it lands on that anchor, as before -- the rule decides whether it is a click, and where it landed decides what the click means.
+

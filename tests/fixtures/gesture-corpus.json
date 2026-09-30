@@ -1089,6 +1089,224 @@
 			]
 		}
 	},
+	"link-out-and-back-is-a-drag": {
+		"claims": [
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"marquee-diagonal-over-4px-no-stamp": {
+		"claims": [
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [
+			[
+				"palette.setHand",
+				"router"
+			]
+		],
+		"host": [],
+		"final": {
+			"nodes": [],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"link-chain-ended-on-anchor": {
+		"claims": [
+			false,
+			false,
+			false,
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#1",
+							"name": "link-1",
+							"src": "node#1",
+							"dst": "node#2"
+						}
+					}
+				],
+				"label": "link"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				},
+				{
+					"id": "node#3",
+					"name": "host-3",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 360
+				}
+			],
+			"waypoints": [],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"src": "node#1",
+					"dst": "node#2"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#2"
+			]
+		}
+	},
+	"link-chain-ended-elsewhere": {
+		"claims": [
+			false,
+			false,
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#1",
+							"name": "link-1",
+							"src": "node#1",
+							"dst": "node#2"
+						}
+					}
+				],
+				"label": "link"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				},
+				{
+					"id": "node#3",
+					"name": "host-3",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 360
+				}
+			],
+			"waypoints": [],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"src": "node#1",
+					"dst": "node#2"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"link#1"
+			]
+		}
+	},
 	"link-right-button-release-ignored": {
 		"claims": [
 			false,
@@ -1755,6 +1973,47 @@
 	},
 	"clone-ctrl-click-toggles": {
 		"claims": [
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
+	"clone-ctrl-click-with-jitter-toggles": {
+		"claims": [
+			false,
 			false,
 			false
 		],

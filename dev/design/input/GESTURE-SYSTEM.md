@@ -367,3 +367,12 @@ Each is a real fork, with a recommendation.
 - **A gap closed:** a mutant that forgot the chain note survived every suite and the corpus -- the retype a chained click must not do was untested before this stage too. A scenario now holds it, and the mutant fails.
 - **Behaviour otherwise unchanged:** every existing corpus record byte-identical; eight mutants, each caught.
 
+**Stage 3 -- L2 triggers, one click rule, 2026-09-30.**
+- **The rule was the director's to make.** Measured first: "click or drag" was decided three ways -- distance at each move for a press's escalation, distance at release for a link, the box's size for a marquee -- and they disagreed at the edges. The design had promised both one rule and no outcome change, which cannot both hold; asked, the director ruled that a click is a release that never travelled more than 4px from its press (`dev/DECISIONS.md`).
+- **`app/src/triggers.js` holds the threshold and the rule;** the input state gains the press -- where it began, and the furthest it has travelled. Escalation, the link release and the marquee release all ask the one rule. A test holds that no gesture in `input.js` measures a click itself.
+- **Two behaviours changed, as ruled, each pinned:** a link drag out and back no longer selects its node, and a 3-4px diagonal release on the canvas no longer stamps the held type. Recorded against the code before the change and after it.
+- **What was kept, and why.** A chain -- a Shift-release, or a digit mid-drag -- begins a new drag where it happens, so its travel starts there; and a chained run ended by a click selects its anchor only when the click lands on it. Both kept today's behaviour exactly: four scenarios recorded before the change are identical after it, and one existing record that briefly differed (a digit-chained click) is identical again.
+- **A gap closed:** a mutant that let any movement escalate a press survived every suite -- a jittered Ctrl+click would have cloned. A scenario now holds it.
+- **Not built yet, by the guardrails:** the rest of the trigger vocabulary -- a step, a key release, a double click, a hold -- arrives with the bindings that read them.
+- **Behaviour otherwise unchanged:** every existing corpus record byte-identical; seven mutants, each caught.
+

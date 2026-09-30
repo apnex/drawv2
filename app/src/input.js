@@ -41,6 +41,7 @@ import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, 
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
+import { DRAG_THRESHOLD, dragging, releaseTrigger } from './triggers.js';
 import { roundedPath, BEND_R } from '../../kernel/index.mjs';
 import { newId, kindOf } from '../../model/index.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
@@ -48,7 +49,6 @@ import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/index.mjs';
 
-const DRAG_THRESHOLD = 4;   // canvas units before a press becomes a drag
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
@@ -297,7 +297,9 @@ const GESTURES = {
 				i.chainFrom(target, pos);   // already-linked target: skip the duplicate but keep the chain run alive
 				return;
 			}
-			if (srcAlive && !hasVia && dist(pos, ctx.start) <= DRAG_THRESHOLD) {
+			// a CLICK (triggers.js: it never travelled past the threshold) AT the drag's own start. For a press the second half
+			// follows from the first; a chained run is ended by a press elsewhere, and only one on its anchor selects it
+			if (srcAlive && !hasVia && evt.trigger === 'click' && dist(pos, ctx.start) <= DRAG_THRESHOLD) {
 				const hand = i.palette.hand;
 				// fast-replace gate mirrors the stamp gate (plain click only) and never fires on a
 				// chain anchor (that click ends the run, selecting)
@@ -367,7 +369,7 @@ const GESTURES = {
 		commit: (i, ctx, pos, evt) => {
 			ctx.rect.remove();
 			const box = resolveBox(ctx.p1, pos);
-			if (box.w < DRAG_THRESHOLD && box.h < DRAG_THRESHOLD) {
+			if (evt.trigger === 'click') {   // one rule for click and drag (triggers.js), no longer the box's size
 				// a plain click with a held hand stamps at the snapped cell (an occupied-cell refusal
 				// still consumes the click: it meant "stamp", never "deselect")
 				if (i.palette.hand && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
@@ -1138,7 +1140,7 @@ export class Input {
 	}
 
 	escalate(pos, evt, threshold, begin, become) {
-		if (dist(pos, this.ctx.start) <= DRAG_THRESHOLD) return;
+		if (!dragging(this.state)) return;   // not a drag yet: the one rule (triggers.js)
 		if (threshold) return;
 		begin(this, pos);
 		if (this.mode === become) {
@@ -1192,7 +1194,11 @@ export class Input {
 	*/
 	release(evt) {
 		const wasGesturing = this.isGesturing();
-		try { this.dispatchUp(evt); } finally { if (wasGesturing) this.onGestureEnd(); }
+		evt.trigger = releaseTrigger(this.state);   // L2: a click or a drop, from the press the input state tracked
+		try { this.dispatchUp(evt); } finally {
+			this.state = track(this.state, evt);   // the press is over
+			if (wasGesturing) this.onGestureEnd();
+		}
 	}
 
 	/*
@@ -1218,7 +1224,7 @@ export class Input {
 
 	chainFrom(node, pos) {
 		this.mode = 'link';
-		this.state = track(this.state, { type: 'chained' });   // a chain began this drag, not a press (input state)
+		this.state = track(this.state, { type: 'chained', at: pos });   // a chain began this drag, not a press (input state)
 		this.ctx = this.linkDrag(node, pos);   // B261: the same drag context as any other
 		this.updateLinkPreview(pos);
 		this.readout.setLink(node.name || '?', snapNode(pos));
@@ -1264,6 +1270,7 @@ export class Input {
 	// pointercancel, Escape, and a document swap mid-gesture (a chain has no held button, so the
 	// header menu is live during one).
 	cancelDrag(evt) {
+		if (evt && evt.type === 'cancel') this.state = track(this.state, evt);   // the browser took the pointer: no press
 		GESTURES[this.mode]?.cancel?.(this, this.ctx);
 		this.mode = null;
 		this.ctx = {};
