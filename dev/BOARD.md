@@ -901,6 +901,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.7 | The lab's pipe sweep works routes out in the same order as drawing, so it never removes a pipe a link is drawn on | **B257** | S2 | `DONE` |
 | H17.8 | A request the lab's planner refuses is taken back out of the tab, as production resynchronises | **B260** | S2 | `DONE` |
 | H17.9 | A run-mode click spends the `w` that placed an anchor, as every press does | **B263** | S4 | `DONE` |
+| H17.10 | Implement and visualise transit in the lab: `x` toggles it, the ring shows it, links stop at a non-transiting anchor, node types offer it by table, and routing over pipes respects it -- its open questions ruled first | **B267** | S3 | `TODO` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
