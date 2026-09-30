@@ -227,3 +227,59 @@ Recorded so that whoever re-colours the socket knows this ring is a constraint o
 - **SD6** ruled a per-type yes/no column for whether a flow may pass through a device. This does not change that rule; it renames the column to `routable.flows.transit` so it sits beside its link-layer sibling under one verb. Naming only, but it is an amendment to a ruling eight days old and is flagged as one rather than folded in silently.
 - **The 2026-09-26 ruling** that two separately drawn links left alone at a point join into one (`:593`) is CONFIRMED, not overturned. It is the page-derived answer, and `transit: false` is how an author departs from it deliberately.
 - **Nothing in the 2026-09-28 no-history ruling changes.** This is the gesture that ruling called for.
+
+---
+
+## 12. Transit with pipes -- the approach for the lab (2026-09-30)
+
+**Why now.**The director, 2026-09-30: "We actually began down the rabbit hole of pipe infrastructure as a result of the initial transit discussion.\
+Now that we have pipes - we can revisit Transit and implement it in the lab".\
+This document was written on 2026-09-28, before pipes, routing over them, guides, one link per pipe, down links, or the ruling that a pinned link lives and dies with its pins.\
+Sections 3 to 9 still stand; this section says what pipes change, what must be ruled first, and the order the work goes in.\
+Tracked as H17.10 / B267.
+
+### 12.1 What exists -- measured at `a2b8b81`
+
+- **The mark is drawn, and nothing can set it.** `waypointLayers` draws the ring when `anchor.transit === false` (`kernel/geometry.mjs:310-330`); no key, command, field, validator or rule sets or reads `transit`.
+- **Routes pass through any anchor a pipe reaches, nodes included.** The router walks pipes with no regard to what an anchor is (`network/pipes.mjs:37-72`); `w` and `g` may stop on a node.
+- **On every lab board, routes pass only through bare waypoints, and every node is a router.** Measured over the six seeds: a table that lets routers and bare anchors transit by default changes no existing matrix row.
+- **Joining is the planner's.** Two links left at a waypoint join by `collapseAtWaypoint` (`server/txn.mjs:291`); roles are derived by `waypointRoles` (`kernel/geometry.mjs:505`).
+- **Node types are the palette's list** (`app/src/palette.js:14`); the per-type table section 5 places in `network/` (cut K6) is not built.
+
+### 12.2 What pipes change
+
+Before pipes, transit had one job: whether links meeting at an anchor JOIN (a bend) or stay apart (endpoints) -- section 4.With pipes it gains a second, and it is the one the director's words on nodes point at: whether a link's ROUTE may pass THROUGH the anchor.A router passes traffic on; a host does not.Without transit, a host with pipes to two switches is a shortcut every route between them may take -- which the per-type table (section 6) exists to forbid.
+
+So `links.transit: false` reads, uniformly, "what arrives here stops":
+- a route may not pass through it -- it may only begin or end there;
+- links meeting there do not join;
+- a link cannot bend there, so a pin there is two links ending there.
+
+### 12.3 Decisions to rule first -- one at a time, each with a recommendation
+
+- **TR-1 -- routing.** A route may not pass through a non-transiting anchor; it may only end there. A link whose only way passed through one is down, and says so. Recommended.
+- **TR-2 -- a pin there.** A link pinned at a non-transiting anchor is cut there into two links that both end at it, as a junction cuts (B210); turning transit back on joins them again by the join ruling of 2026-09-26. Recommended -- it is exactly the "cut a bend into 2 endpoints, then toggle back to a joined path" the no-history ruling asked for. The alternatives: refuse `w` there, or let a pin pass regardless.
+- **TR-3 -- a guide there.** `g` on a non-transiting anchor is refused with a notice, since a guide exists to be passed through. Recommended.
+- **TR-4 -- turning it off under live links.** Links routed through the anchor re-route or go down, and heal when it is turned back on. It is a declaration, not a drag, so "a drag that would move an existing link is refused" does not apply. Recommended.
+- **TR-5 -- joining.** Two links left ending at a non-transiting anchor stay two -- section 4's table, confirmed under pipes. Recommended.
+- **TR-6 -- the type table.** Its contents (section 6 is illustrative), and what an anchor with no setting takes: recommended, the table's first value, with bare anchors, routers, firewalls and vxlans offering both and defaulting to transit, and load balancers, servers and hosts offering only `false`.
+- **TR-7 -- where the value lives in the lab.** Recommended: session state in the network session, keyed by anchor, as pipes are -- the stored-format change lands in promotion's format batch (PROMOTION.md, P2), as section 10.3 and survey F6 require. The cost, as with pipes: undo cannot move it until then. The alternative: a stored optional field now, which the production validator would accept and ignore.
+- **TR-8 -- the mark on a node.** Section 9 designed the ring for waypoints; a node's glyph fills the space it would take. Recommended: the same dashed ring, drawn just outside the node's frame -- to be seen in the lab and adjusted by eye before it is settled.
+
+### 12.4 Build order -- each stage matrix-first, gated, and deployed to the lab
+
+Each stage adds its rows to the behaviour matrix before the code, with their RED shown, as the network work did; the gesture corpus is unaffected, because `x` is bound only by the network plugin.
+
+| stage | what lands | decisions | exit criterion |
+|---|---|---|---|
+| **X1** | **The value and the mark.** `x` as a network key row, flipping each selected anchor independently (section 8); refused, with a readout, where the type offers no choice; the ring drawn on waypoints and nodes | TR-6, TR-7, TR-8 | pressing `x` on a real anchor in Chrome draws the ring, and again removes it; a host refuses and says why; nothing else on any board changes |
+| **X2** | **Routing stops there.** The router treats a non-transiting anchor as a dead end except for a link's own ends; the network view keys on transit; a down link blocked by it says so | TR-1, TR-4 | a link whose shortest way passed through the anchor takes another way or goes down, and heals when `x` is pressed again |
+| **X3** | **Pins and guides.** A pin there cuts the link in two, which rejoin when transit returns; `g` there is refused | TR-2, TR-3 | the cut and the rejoin are one undo step each, through the planner |
+| **X4** | **Joining.** The planner's join leaves links apart at a non-transiting anchor -- a new method of the network interface, answered only by the plugin, so production's join is unchanged | TR-5 | two links left there stay two; with transit on they join, as today |
+| **X5** | **Node types.** The per-type table in `network/` (a slice of cut K6), read by the key's refusal, the router and the mark | TR-6 | a host never passes a route and cannot be toggled; a router passes by default and can be |
+
+**Out of scope here:** `flows.transit` (flows are not built); storing the value (promotion's format batch); production.
+
+**What it proves.**\
+The original reason for this document, now with the pipes it led to: an author can decide, per anchor and within what each device type allows, whether links pass through or stop -- and see it.
+

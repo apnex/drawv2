@@ -1462,3 +1462,9 @@ No legacy".\
 So when promotion happens, production composes the network plugin always; every stored diagram is migrated to carry pipes and link ages; and the product's pre-network behaviours -- straight polylines through `via`, the B162/B216 orphan rules, never stranding a link -- are retired rather than kept beside the new ones.\
 The plan is `dev/design/unification/PROMOTION.md`; it is held as B266 until the director says the work may start.
 
+**Transit is revisited now that pipes exist -- stated 2026-09-30.**\
+The director: "We actually began down the rabbit hole of pipe infrastructure as a result of the initial transit discussion.\
+Now that we have pipes - we can revisit Transit and implement it in the lab.\
+Prepare an approach to progress this programme".\
+Recorded as intent; the approach is `dev/design/unification/TRANSIT.md` section 12, with eight decisions (TR-1 to TR-8) for the director before any code.
+
