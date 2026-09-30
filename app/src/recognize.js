@@ -1,7 +1,8 @@
 /*
 RECOGNIZE — which gesture is starting?
 
-An ORDERED table, because the order IS the specification (dev/INPUT.md §3–§4). It replaces a
+An ORDERED table once, because the order was the specification (dev/INPUT.md §3–§4) -- since stage 4 of the gesture
+system it is rows of the Rules engine, disjoint, and the order is decoration (see THE ROWS below). It replaces a
 167-line nest in which the ordering was load-bearing and entirely invisible — and invisible ordering
 is not a stylistic complaint here, it is the measured cause of three defects:
 
@@ -36,45 +37,63 @@ const entity = (h) => h.kind === 'node' || h.kind === 'zone' || h.kind === 'link
 // selection to a non-entity, which Selection rejects, silently CLEARING the selection and hiding
 // the very handles being grabbed. Found by exercising the table against a locked client.
 const selectable = (h) => entity(h) || h.kind === 'waypoint';
+// the right button presses these; a link is not one of them
+const rightKinds = (h) => h.kind === 'node' || h.kind === 'zone' || h.kind === 'waypoint';
+// the situation terms: whether a tool is held (the text tool, today)
+const held = (s) => !!s.tool;
+const free = (s) => !s.tool;
 
 /*
-Each rule: `when(hit, evt, ctx) → bool`, `mutates`, and an outcome that is either a GESTURE to start
-or an immediate `run`. `ctx` carries only what a predicate may ask — the model and the held tool —
-never Input itself.
+THE ROWS -- stage 4 of the gesture system (dev/design/input/GESTURE-SYSTEM.md): rows of the Rules engine
+(kernel/input-rules.mjs), resolved exactly as the keys are.
+
+`on(e)` reads the press -- its button, its modifiers, and what is under it (`e.on`, from capture); `when(s)` reads the
+situation -- whether a tool is held. The outcome is a GESTURE to start or an immediate `run`.
+
+NO ROW WINS BY POSITION (Q3). This table was ordered, and 14 pairs of its rows could match one press; each row now says
+what it does NOT mean -- a held tool takes every left press, the Alt chord takes a right press before clone and press,
+Ctrl+left clones an entity before it links or selects, a node or waypoint links before it selects, Shift on the canvas
+draws a zone rather than a marquee.
+
+THE LOCKED FALLBACKS. The old table was FILTERED by read-only, not halted, and that was the design: a locked click on a
+node fell past `link` (it mutates) to `press`, and still selected. Here that is three rows admitted only while writes
+are refused (`whileReadOnly`) -- a GUARD, applied by the engine, since a condition never tests authority (RULES I5).
+They cover exactly what a locked client used to reach by falling through, and a writer never sees them.
+
+tests/pointer-bindings.test.js holds the old table and its resolver as an oracle: for every press, tool and lock, these
+rows start the same gesture.
 */
 export const RECOGNIZE = [
 	// a held tool places on the next click, whatever is under it
-	{ id: 'tool',      mutates: true,  when: (h, e, c) => L(e) && !!c.tool,                        gesture: 'textbox' },
+	{ id: 'tool',      mutates: true,  on: (e) => L(e), when: held,                                             gesture: 'textbox' },
 
-	// right button: the delete chord, then move/clone
-	{ id: 'chord',     mutates: true,  when: (h, e) => R(e) && e.altKey && h.id && h.kind !== 'handle', run: 'deleteUnderCursor' },
-	{ id: 'r-clone',   mutates: true,  when: (h, e) => R(e) && e.ctrlKey && (h.kind === 'node' || h.kind === 'zone' || h.kind === 'waypoint'), gesture: 'clone-pending' },
-	{ id: 'r-press',   mutates: false, when: (h, e) => R(e) && (h.kind === 'node' || h.kind === 'zone' || h.kind === 'waypoint'), gesture: 'pending' },
+	// right button: the delete chord, then clone, then press
+	{ id: 'chord',     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && e.on.kind !== 'handle',      run: 'deleteUnderCursor' },
+	{ id: 'r-clone',   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && rightKinds(e.on),           gesture: 'clone-pending' },
+	{ id: 'r-press',   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && rightKinds(e.on),          gesture: 'pending' },
 
-	// left button, most specific first: handles are drawn ON TOP, so they win over what is beneath
-	{ id: 'resize',    mutates: true,  when: (h, e) => L(e) && h.kind === 'handle',                gesture: 'resize' },
-	{ id: 'replug',    mutates: true,  when: (h, e) => L(e) && h.kind === 'lhandle',               gesture: 'replug' },
-	{ id: 'l-clone',   mutates: true,  when: (h, e) => L(e) && e.ctrlKey && entity(h),             gesture: 'clone-pending' },
-	{ id: 'link',      mutates: true,  when: (h, e, c) => L(e) && (h.kind === 'node' || h.kind === 'waypoint'), gesture: 'link' },
-	{ id: 'zone-draw', mutates: true,  when: (h, e) => L(e) && h.kind === 'canvas' && e.shiftKey, gesture: 'zone' },
+	// left button, most specific first in reading, and disjoint in fact: handles are drawn ON TOP, so they win over what is beneath
+	{ id: 'resize',    mutates: true,  on: (e) => L(e) && e.on.kind === 'handle', when: free,                   gesture: 'resize' },
+	{ id: 'replug',    mutates: true,  on: (e) => L(e) && e.on.kind === 'lhandle', when: free,                  gesture: 'replug' },
+	{ id: 'l-clone',   mutates: true,  on: (e) => L(e) && e.ctrlKey && entity(e.on), when: free,                gesture: 'clone-pending' },
+	{ id: 'link',      mutates: true,  on: (e) => L(e) && (e.on.kind === 'waypoint' || (e.on.kind === 'node' && !e.ctrlKey)), when: free, gesture: 'link' },
+	{ id: 'zone-draw', mutates: true,  on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, when: free,     gesture: 'zone' },
 
 	// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
 	// promises exactly them: "selection, the data view, and the readout still work".
-	{ id: 'press',     mutates: false, when: (h, e) => L(e) && selectable(h),                     gesture: 'pending' },
-	{ id: 'marquee',   mutates: false, when: (h, e) => L(e) && h.kind === 'canvas',                gesture: 'marquee' },
+	{ id: 'press',     mutates: false, on: (e) => L(e) && (e.on.kind === 'zone' || e.on.kind === 'link') && !e.ctrlKey, when: free, gesture: 'pending' },
+	{ id: 'marquee',   mutates: false, on: (e) => L(e) && e.on.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
+
+	// ...and what a locked client reached by falling past the authoring rows above, which a writer never sees
+	{ id: 'press-locked',   mutates: false, whileReadOnly: true, on: (e) => L(e) && selectable(e.on) && (e.on.kind === 'node' || e.on.kind === 'waypoint' || e.ctrlKey), gesture: 'pending' },
+	{ id: 'marquee-locked', mutates: false, whileReadOnly: true, on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, gesture: 'marquee' },
+	{ id: 'r-press-locked', mutates: false, whileReadOnly: true, on: (e) => R(e) && (e.ctrlKey || e.altKey) && rightKinds(e.on), gesture: 'pending' },
 ];
 
 /*
-The first rule that matches, skipping any that mutate while read-only. Returns the rule, or null.
-
-One function so the gate cannot be applied two ways — which is how it drifted before. The keymap
-uses this same dispatcher over its own table; the tables are separate because ordering only has
-meaning within a domain, and a key rule can never compete with a pointer rule.
+A DOUBLE CLICK is a binding too: it edits the label under the pointer. It authors a change, so a locked client is refused
+by the engine's guard -- the handler used to check read-only itself, twice.
 */
-export function resolveRule(rules, hit, evt, ctx) {
-	for (const r of rules) {
-		if (r.mutates && ctx.readOnly) continue;   // FILTER, never halt — see the header
-		if (r.when(hit, evt, ctx)) return r;
-	}
-	return null;
-}
+export const DOUBLE_CLICKS = [
+	{ id: 'edit-label', mutates: true, on: (e) => e.type === 'double', run: 'editUnderPointer' },
+];

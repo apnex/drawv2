@@ -49,7 +49,7 @@ or null; `step` is what the pointer is over during it -- 'node', 'waypoint' or '
 Both are words, never elements or positions, so the value still crosses a boundary intact.
 */
 export function situationOf(access, ctx = {}, t = null) {
-	const { mode = 'view', readOnly = false, targetId = null, selection = [], gesture = null, step = null } = ctx;
+	const { mode = 'view', readOnly = false, targetId = null, selection = [], gesture = null, step = null, tool = false } = ctx;
 	return {
 		at: t,                                  // the agreed instant, or null when time is irrelevant
 		mode,                                   // 'view' | 'edit' | 'run'
@@ -58,6 +58,7 @@ export function situationOf(access, ctx = {}, t = null) {
 		selection: describeSelection(access, selection),
 		gesture: gesture ?? null,
 		step: gesture ? step ?? null : null,
+		tool: !!tool,   // a tool is held -- the text tool, today -- and takes every left press (app/src/recognize.js)
 	};
 }
 

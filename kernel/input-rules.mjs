@@ -17,6 +17,8 @@ A ROW is plain data:
 	mutates         does it author a change? inert while writes are refused. Defaults TRUE, the safe side
 	duringHelp      meaningful while help is open? defaults false
 	duringGesture   meaningful mid-gesture? defaults false
+	whileReadOnly   admitted ONLY while writes are refused -- a fallback a locked client gets where a writer gets an
+	                authoring row. Defaults false
 	prevent         false when the host must not claim the input on the row's behalf
 
 GUARD AGAINST CONDITION, the distinction the whole design rests on (dev/RULES.md section 3). A guard is about
@@ -35,7 +37,7 @@ THE SITUATION IS OPAQUE HERE. It is plain data (Q4), built by the host, read onl
 through and never looks inside.
 */
 
-const DEFAULTS = { mutates: true, duringHelp: false, duringGesture: false };
+const DEFAULTS = { mutates: true, duringHelp: false, duringGesture: false, whileReadOnly: false };
 
 // join tenants' rows into one table; an id taken twice is refused, naming both owners
 export function composeRules(...tenants) {
@@ -52,7 +54,7 @@ export function composeRules(...tenants) {
 
 // may this row run at all, given the guard state -- the same test for every row
 const admitted = (r, { readOnly = false, helpOpen = false, gesturing = false } = {}) =>
-	!(r.mutates && readOnly) && !(helpOpen && !r.duringHelp) && !(gesturing && !r.duringGesture);
+	!(r.mutates && readOnly) && !(r.whileReadOnly && !readOnly) && !(helpOpen && !r.duringHelp) && !(gesturing && !r.duringGesture);
 
 // every row the input means in this situation -- one is an answer, two are an overlap, none is nothing
 function matching(table, input, situation, guards) {

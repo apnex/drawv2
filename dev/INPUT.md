@@ -116,6 +116,10 @@ Deliberate, but nowhere stated, so it reads as an accident of position rather th
 
 ## 4. The recognizer, as designed
 
+CORRECTED 2026-09-30: the ordered table this section designs, and its first-match resolver, are gone.\
+Stage 4 of `dev/design/input/GESTURE-SYSTEM.md` made them rows of the Rules engine (`kernel/input-rules.mjs`), disjoint, with the read-only fallthrough kept as three rows admitted only while writes are refused; double clicks, key releases and run mode's presses resolve through the same engine.\
+The resolved matrix below still describes which gesture each press starts -- `tests/pointer-bindings.test.js` proves the rows start the same ones.
+
 An **ordered table**, because the order is the specification:
 ```js
 RECOGNIZE = [

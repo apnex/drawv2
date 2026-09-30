@@ -100,3 +100,10 @@ test('the engine names no tenant: no product or plugin vocabulary anywhere in it
 	assert.deepEqual(found, [], `tenant words in the core: ${found.join(', ')}`);
 	assert.doesNotMatch(src, /from '\.\.\/(app|network|engine|server|model|lab)\//, 'and it imports no tenant');
 });
+
+test('a row admitted only while writes are refused: the locked fallback a writer never gets', () => {
+	const table = composeRules({ owner: 'a', rules: [row('author', 'k'), row('look', 'k', { mutates: false, whileReadOnly: true })] });
+	assert.equal(resolveInput(table, ev('k'), {}, free).rule.id, 'author', 'a writer gets the authoring row, and the fallback is not admitted');
+	assert.equal(resolveInput(table, ev('k'), {}, { ...free, readOnly: true }).rule.id, 'look', 'a locked client gets the fallback');
+	assert.deepEqual(overlapsIn(table, [ev('k')], [{}], [free, { ...free, readOnly: true }]), [], 'disjoint by the guard, in both states');
+});

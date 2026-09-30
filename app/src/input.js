@@ -33,8 +33,8 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 */
 
 import { Overlay } from './overlay.js';
-import { RECOGNIZE, resolveRule } from './recognize.js';
-import { KEYMAP } from './keymap.js';
+import { RECOGNIZE, DOUBLE_CLICKS } from './recognize.js';
+import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
 import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
@@ -48,6 +48,15 @@ import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
 import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/index.mjs';
+
+// run mode's presses as rows of the Rules engine -- see `runModePress` for what each means and why they live here
+export const RUN_PRESSES = [
+	{ id: 'toggle-spawn', mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region?.waypoint, when: (s) => inReadView(s) && onEndpoint(s), run: 'toggleSpawnHere' },
+	{ id: 'place-tower',  mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overWaypoint && !e.region.entity,
+		when: (s) => inReadView(s) && onOpenGround(s), run: 'placeTowerHere' },
+	{ id: 'fire-action',  mutates: false, prevent: false, on: (e) => e.button === 0 && !!e.region?.action, run: 'fireActionHere' },
+	{ id: 'open-input',   mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action, run: 'openInputHere' },
+];
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
@@ -454,6 +463,11 @@ export class Input {
 		// the key table: the product's rows and each plugin's, through the Rules engine
 		this.keyRules = composeRules({ owner: 'product', rules: KEYMAP }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })));
 		this.pluginHost = { addStop: (step) => this.addStop(step) };
+		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
+		this.pressRules = composeRules({ owner: 'product', rules: RECOGNIZE });
+		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
+		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
+		this.runRules = composeRules({ owner: 'product', rules: RUN_PRESSES });
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
@@ -590,7 +604,8 @@ export class Input {
 		*/
 		const hit = evt.on;
 		const pos = evt.at;
-		const rule = resolveRule(RECOGNIZE, hit, evt, this.ruleCtx());
+		// the ONE row this press means (Rules engine): read-only is the engine's guard, and a held tool is the situation's
+		const { rule } = resolveInput(this.pressRules, evt, this.situation(), { readOnly: this.readOnly });
 		if (!rule) return;
 
 		if (this.mode) this.cancelDrag(evt);   // a second press never stacks on an active gesture
@@ -603,13 +618,6 @@ export class Input {
 		this.ctx = handler.start(this, hit, pos, evt) || {};
 	}
 
-	// what a rule predicate may ask about the world — never Input itself
-	ruleCtx() {
-		return {
-			readOnly: this.readOnly,
-			tool: this.palette.textTool,
-		};
-	}
 
 	/*
 	H12.7 -- the situation this surface is in, as a VALUE.
@@ -627,81 +635,58 @@ export class Input {
 			readOnly: this.readOnly,
 			targetId,
 			selection: this.selection.list(),
+			tool: !!this.palette.textTool,
 			...(gesture ? { gesture, step: this.stepUnderPointer() } : {}),
 		}, this.now());
 	}
 
+	/*
+	RUN MODE -- the diagram acting as UI (W5): a press means what the situation says, through the Rules engine (stage 4).
+
+	  toggle-spawn   in read view, on an endpoint waypoint: arm or disarm it. The PILOT rule -- the same click selects that
+	                 waypoint in author view, which is B163 stated as a feature
+	  place-tower    in read view, on open ground: place a tower, where the cell is free. The SECOND rule, the same shape --
+	                 two instances are what made a pattern of it. Placement is intent and rides the document; a tower
+	                 FIRING is derived by every peer from the board and the clock, so it never travels
+	  fire-action    on a `data-action` region: hand the host `draw:action` (W5). It commits nothing, so it stays live on a
+	                 locked client -- run mode straddles the gate
+	  open-input     on a `data-input` region: open the inline editor. It authors, so a locked client does not (B18)
+
+	Each authoring row is refused on a locked client by the engine's guard; each handler claims the press only on the path
+	that acts. Defined here, beside their handlers, because they ask the situation's own terms (engine/situation.mjs),
+	which the canvas tables cannot import until the situation leaves the simulation layer (cut K5).
+	*/
 	runModePress(evt) {
-		if (evt.button !== 0) return;
-		/*
-		THE PILOT RULE, and the only one. One predicate over the situation:
-
-			in read view + on an endpoint waypoint  ->  toggle whether it spawns
-
-		The SAME click selects that waypoint in author view, which is exactly the situation-dependent
-		meaning `KEYMAP` cannot currently express -- B163 stated as a feature. There is no dispatch
-		table here on purpose: the shape of one is owed the prior-art pass (survey flag F3), and
-		inventing it from a single rule is how the last surface was got wrong.
-		*/
-		const region = evt.region;   // what capture found under the press; null when the target could not be asked
-		const wp = region && region.waypoint;
-		if (wp) {
-			const s = this.situation(wp);
-			if (inReadView(s) && onEndpoint(s)) {
-				evt.claimed = true;
-				if (this.readOnly) return;      // reading someone else's diagram arms nothing
-				const cmd = commands.toggleSpawn(this.model, wp, s.at);
-				if (cmd) { this.history.commit(cmd); this.afterHistory(); }
-				return;
-			}
-		}
-		/*
-		THE SECOND RULE, and the one that makes the surface a surface:
-
-			in read view + on open ground  ->  place a tower
-
-		It is deliberately the same shape as the pilot rule above -- a named predicate over a
-		situation -- because two instances are what distinguish a pattern from a single design. The
-		first rule was the only evidence the shape worked; this is the second, and it needed no new
-		mechanism to express.
-
-		PLACEMENT IS THE ONLY THING THAT TRAVELS. A tower firing is derived by every peer from the
-		board and the clock, so it is never sent; a tower being PLACED is intent, cannot be derived
-		from anything, and therefore rides the ordinary document machinery that already orders and
-		broadcasts it.
-
-		Stated precisely, because a looser version of this claim was repeated for a while: a joining
-		client receives the DOCUMENT as a snapshot, not a history to replay. What it never receives,
-		and derives instead, is the battle -- movers, beams, kills. That is where the derivation
-		earns its keep, and it is why a third client costs nothing.
-
-		Guarded to open ground rather than to a modifier, so play stays a one-button surface. It runs
-		after the entity and control checks below it precisely so a press on a waypoint, a node or a
-		button keeps its existing meaning -- placement is the fallback, never an interception.
-		*/
-		if (region && !region.control && !region.overWaypoint && !region.entity) {
-			const s = this.situation(null);
-			if (inReadView(s) && onOpenGround(s) && !this.readOnly) {
-				const snapped = snapNode(evt.at);
-				if (!occupiedAnyAt(this.model, snapped)) {
-					evt.claimed = true;
-					const node = this.model.makeNode('loadbalancer', snapped);
-					this.history.commit(commands.createEntity('node', node));
-					this.afterHistory();
-					return;
-				}
-			}
-		}
-		if (region && region.action) {
-			evt.claimed = true;
-			emitToHost(this.host, 'draw:action', { action: region.action, id: region.node });
-		} else if (region && region.input !== null && !this.readOnly) {
-			// run mode straddles the gate: firing an action commits nothing and stays live while
-			// locked; opening the inline editor authors a change and does not (B18).
-			evt.claimed = true;
-			if (region.node) this.labels.openRegion(region.node, region.input);
-		}
+		const { rule } = resolveInput(this.runRules, evt, this.situation(evt.region?.waypoint ?? null), { readOnly: this.readOnly });
+		if (rule) this[rule.run](evt);
 	}
+
+	toggleSpawnHere(evt) {
+		evt.claimed = true;
+		const wp = evt.region.waypoint;
+		const cmd = commands.toggleSpawn(this.model, wp, this.situation(wp).at);
+		if (cmd) { this.history.commit(cmd); this.afterHistory(); }
+	}
+
+	placeTowerHere(evt) {
+		const snapped = snapNode(evt.at);
+		if (occupiedAnyAt(this.model, snapped)) return;   // a taken cell places nothing
+		evt.claimed = true;
+		const node = this.model.makeNode('loadbalancer', snapped);
+		this.history.commit(commands.createEntity('node', node));
+		this.afterHistory();
+	}
+
+	fireActionHere(evt) {
+		evt.claimed = true;
+		emitToHost(this.host, 'draw:action', { action: evt.region.action, id: evt.region.node });
+	}
+
+	openInputHere(evt) {
+		evt.claimed = true;
+		if (evt.region.node) this.labels.openRegion(evt.region.node, evt.region.input);
+	}
+
 
 	deleteUnderCursor(hit) {
 		if (this.isGesturing()) return;
@@ -1302,13 +1287,18 @@ export class Input {
 
 	// ---- label editing ----
 	double(evt) {
+		const { rule } = resolveInput(this.doubleRules, evt, this.situation(), { readOnly: this.readOnly });
+		if (rule) this[rule.run](evt);
+	}
+
+	// the `edit-label` binding: a locked client never reaches here -- the engine's guard refuses it (app/src/recognize.js)
+	editUnderPointer(evt) {
 		// hit GEOMETRICALLY: pointer capture (taken on every press) retargets the
 		// browser-synthesized dblclick to the svg, so what capture says is under it is useless here.
 		// Icon hits beat label-strip hits; nearest wins; ties go to the topmost
 		// (last-rendered) — the strip is wider than a grid cell, so first-match
 		// would resolve to a NEIGHBOUR for nodes one cell apart
 		const pos = evt.at;
-		if (this.readOnly) return; // no editing while Server-Locked
 		// A1 — a TEXT BOX is hit by its whole FOOTPRINT (not just the origin cell), so double-clicking ANYWHERE
 		// on the box edits its text. (A plain node / panel still routes to the name-edit / icon test below.)
 		const tbs = this.model.all('node').filter((n) => Array.isArray(n.content) && n.content.length === 1 && n.content[0].content === 'text'
@@ -1335,7 +1325,6 @@ export class Input {
 			if (zone) target = { kind: 'zone', id: zone.id };
 		}
 		if (!target) return;
-		if (this.readOnly) return; // no rename while Server-Locked
 		if (this.mode) this.cancelDrag(evt);
 		// rename implies selection: handles/readout/F2 follow the edited entity
 		this.selection.set([target.id]);
@@ -1627,21 +1616,31 @@ export class Input {
 		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
 	}
 
+	// a key release: the ONE row it means (app/src/keymap.js KEY_RELEASES), through the same engine as a key press
 	keyUp(evt) {
-		if (evt.key === 'Shift') {
-			this.overlayUi.zoneGrid(false, false);
-			if ((this.mode === 'move' || this.mode === 'clone') && this.state.pointer.at) {
-				// re-render with the lock released: the commit follows the frame
-				this.updateMove(this.state.pointer.at, false);
-			}
-			// the zone layer just went inert: a hovered zone must drop its states
-			if (this.overlayUi.hovered && kindOf(this.overlayUi.hovered) === 'zone') {
-				this.renderer.clearState(this.overlayUi.hovered, 'hover');
-		
-				this.overlayUi.disarm();
-			}
+		const { rule } = resolveInput(this.releaseRules, evt, this.situation(null, this.mode), {
+			readOnly: this.readOnly, helpOpen: !!(this.help && isShown(this.help)), gesturing: this.isGesturing(),
+		});
+		if (rule) this[rule.run](evt);
+	}
+
+	// Shift released: the zone grid goes, a move redraws with the axis lock off, and a hovered zone drops its states
+	onShiftUp() {
+		this.overlayUi.zoneGrid(false, false);
+		if ((this.mode === 'move' || this.mode === 'clone') && this.state.pointer.at) {
+			// re-render with the lock released: the commit follows the frame
+			this.updateMove(this.state.pointer.at, false);
 		}
-		if (evt.key === 'Alt' || evt.key === 'Control') this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
+		// the zone layer just went inert: a hovered zone must drop its states
+		if (this.overlayUi.hovered && kindOf(this.overlayUi.hovered) === 'zone') {
+			this.renderer.clearState(this.overlayUi.hovered, 'hover');
+			this.overlayUi.disarm();
+		}
+	}
+
+	// Alt or Control released: the armed affordance follows what is still held
+	onArmingUp(evt) {
+		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
 	afterHistory() {

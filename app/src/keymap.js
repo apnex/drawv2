@@ -135,3 +135,14 @@ export const KEYMAP = [
 	{ id: 'ungroup',  mutates: true, on: (e) => meta(e) && is(e, 'g') && e.shiftKey,             run: 'onUngroupKey' },
 	{ id: 'delete',   prevent: false, mutates: true, on: (e) => (e.key === 'Delete' || e.key === 'Backspace') && !(meta(e) && e.shiftKey && e.key === 'Backspace'), run: 'onDeleteKey' },
 ];
+
+/*
+KEY RELEASES -- bindings on the `key-up` trigger (stage 4 of the gesture system). They were an `if` ladder in Input's
+handler; now they resolve through the Rules engine like every other input. Meaningful in every state, since a release
+only undoes what the press armed -- the zone grid Shift showed, the arming Alt or Control lit -- and never authors.
+*/
+export const KEY_RELEASES = [
+	{ id: 'shift-up',  prevent: false, mutates: false, duringHelp: true, duringGesture: true, on: (e) => e.key === 'Shift', run: 'onShiftUp' },
+	{ id: 'arming-up', prevent: false, mutates: false, duringHelp: true, duringGesture: true, on: (e) => e.key === 'Alt' || e.key === 'Control', run: 'onArmingUp' },
+];
+

@@ -376,3 +376,12 @@ Each is a real fork, with a recommendation.
 - **Not built yet, by the guardrails:** the rest of the trigger vocabulary -- a step, a key release, a double click, a hold -- arrives with the bindings that read them.
 - **Behaviour otherwise unchanged:** every existing corpus record byte-identical; seven mutants, each caught.
 
+**Stage 4 -- pointer bindings on the engine, 2026-09-30.**
+- **`RECOGNIZE` is rows of the Rules engine.** Each row says what it does not mean, so the 14 pairs that could match one press are disjoint, and `resolveRule` -- first match -- is deleted. The old table and resolver are kept in `tests/pointer-bindings.test.js` as an oracle: for all 504 reachable combinations of hit, button, modifiers, held tool and lock, the rows start the same gesture.
+- **The read-only fallthrough is a guard.** The old table skipped authoring rows on a locked client and fell through to `press`, `marquee` and `r-press` -- load-bearing, since a locked click on a node still selects. A condition may not test authority (RULES I5), so the engine gained one guard, `whileReadOnly`, and the locked fallbacks are three rows admitted only while writes are refused. The overlap check covers both states.
+- **One unreachable state has no rows:** a tool held on a locked client. Locking releases the tool and a locked client cannot arm one; a test drives both, beside the exclusion.
+- **Double clicks, key releases and run mode's presses joined the engine.** Double click is the `edit-label` binding, refused on a locked client by the guard -- two read-only checks gone. Key releases are two rows. Run mode's four presses are rows beside their handlers in `input.js`, since they ask the situation's own terms, which the canvas tables cannot import before cut K5; three read-only checks gone.
+- **Read-only checks left in `input.js`:** the press escalation's bar (a drag's meaning, which stage 5 makes a binding), the lock itself (`setReadOnly`), and the guard state handed to the engine and the overlay. Acceptance test 4 therefore completes at stage 5.
+- **Two differences, neither observable in use.** A locked run-mode click on an armed endpoint is no longer claimed from the browser; it did nothing before and does nothing now. A double click on a zone still finds it without Shift, unlike a press: acceptance test 5 would change that, which is an outcome change, so it is put to the director rather than made.
+- **Behaviour unchanged by the corpus:** every record byte-identical; nine mutants, each caught.
+
