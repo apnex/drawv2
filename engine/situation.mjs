@@ -42,15 +42,22 @@ become the other. It is the same shape `model/referential.mjs` already uses for 
 `ctx` is the transient part -- the things that are true of this moment rather than of the document:
 which mode the surface is in, whether it is refusing writes, what the gesture is on, what is
 selected.
+
+THE GESTURE AND ITS STEP -- added for the input rules (dev/RULES.md section 11, ruled 2026-09-30 Q1: a rule sees the
+selection, plus what the current step of a gesture is on). `gesture` names the one in progress ('link', 'move', ...)
+or null; `step` is what the pointer is over during it -- 'node', 'waypoint' or 'ground' -- or null when no gesture is.
+Both are words, never elements or positions, so the value still crosses a boundary intact.
 */
 export function situationOf(access, ctx = {}, t = null) {
-	const { mode = 'view', readOnly = false, targetId = null, selection = [] } = ctx;
+	const { mode = 'view', readOnly = false, targetId = null, selection = [], gesture = null, step = null } = ctx;
 	return {
 		at: t,                                  // the agreed instant, or null when time is irrelevant
 		mode,                                   // 'view' | 'edit' | 'run'
 		readOnly: !!readOnly,
 		target: describeTarget(access, targetId),
-		selection: describeSelection(selection),
+		selection: describeSelection(access, selection),
+		gesture: gesture ?? null,
+		step: gesture ? step ?? null : null,
 	};
 }
 
@@ -93,9 +100,13 @@ function describeTarget(access, id) {
 
 // The selection, described rather than handed over. Kinds are deduplicated and sorted so two equal
 // selections produce equal situations -- a value that compares unstably is not a value.
-function describeSelection(ids) {
+// `bends` is how many waypoints the ONE selected link bends through, and null otherwise: `c` means close on a link with
+// a bend and a refusal on one without (ruled 2026-09-30), and a rule reads that here rather than from the model.
+function describeSelection(access, ids) {
 	const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
-	return { size: list.length, ids: [...list], kinds: [...new Set(list.map(kindOf))].sort() };
+	const one = list.length === 1 && kindOf(list[0]) === 'link' && access.get ? access.get('link', list[0]) : null;
+	return { size: list.length, ids: [...list], kinds: [...new Set(list.map(kindOf))].sort(),
+		bends: one ? (Array.isArray(one.via) ? one.via.length : 0) : null };
 }
 
 /*

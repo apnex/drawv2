@@ -1394,3 +1394,8 @@ Are the rules that relate to our "routing" plugin part of the plugin itself? it 
 This reminds me of game mods injecting behaviour into a general game engine, such as a lua surface".\
 Recorded as the director's intent; the design that answers it is proposed separately and awaits the director's approval.
 
+**The Rules engine's second example is `c`, not fill -- ruled 2026-09-30.**\
+The proposer had offered "a closed link selected plus `f` fills it" (the worked example in `dev/RULES.md` section 9) as the engine's second, non-routing user, and found on surveying that fill does not exist: `f` sets a link's flow direction (H15.6), and links carry no fill.\
+Asked what the second example should be, the director chose "Use `c` close instead" over building fill as a new feature, or both.\
+So the example is behaviour-preserving: one link with a bend selected plus `c` closes or opens it; one link without a bend selected plus `c` says "close needs a multi-hop route"; anything else, nothing.
+

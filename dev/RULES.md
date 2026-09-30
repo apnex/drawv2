@@ -264,7 +264,8 @@ Each invariant has a test that can fail, and each is proven by mutation before i
 | I5 | a condition mentioning `readOnly` fails the scanner |
 | I6 | an unmatched situation commits nothing, asserted at the commit boundary |
 
-The worked example is the director's own, and it is the acceptance case for the whole document.
+The worked example is the director's own, and it is the acceptance case for the whole document.\
+CORRECTED 2026-09-30: fill does not exist -- `f` sets a link's flow direction (H15.6) -- so the acceptance case built is `c`, ruled in `dev/DECISIONS.md` ("The Rules engine's second example is `c`, not fill"); section 11 states it.
 
 A closed link selected plus `f` fills it.\
 An open link selected plus `f` does nothing.\
@@ -291,3 +292,39 @@ Q4: binding now -- the situation is model-level, serialisable and DOM-free.
 | Q1 | Does the situation include HOVER, or selection only? | With the menu deferred, the case for hover is now section 7 rather than the menu, and that is a weaker and more speculative reason. Selection-only is the cheaper start and hover can be added to a closed vocabulary later. |
 | Q3 | Is an overlapping pair always a gate failure, or may a row declare `overrides:`? | A hard failure is simpler and will occasionally be inconvenient. An escape hatch is the exact mechanism by which the last ladder rotted. |
 | Q4 | Is the section 7 requirement binding now -- the situation model-level, serialisable and DOM-free? | It costs a little discipline in this slice and it is the one thing that cannot be retrofitted without rewriting every predicate. Declining it is legitimate and should be a decision rather than a drift. |
+
+---
+
+## 11. The design as built -- step T3 of the ruleset audit, approved 2026-09-30
+
+The director's intent (`dev/DECISIONS.md`, 2026-09-30): the Rules system is foundational to the plugin and capability system, and a plugin's rules are the plugin's.\
+The shape is P4, a neutral core with tenants: the core owns the mechanism, and each tenant owns its semantics.
+
+**The core -- `kernel/input-rules.mjs`.**\
+It names no tenant's vocabulary, and a test scans its whole text, comments included, for tenant words.\
+A rule is a row: `id`, `owner`, `on` (which input), `when` (a predicate over the situation, or absent), `run` (a verb name), and the three guards `mutates`, `duringHelp` and `duringGesture`.\
+`composeRules` joins tenants' rows into one table and refuses a duplicate id.\
+`resolveInput` applies the guards uniformly, then returns the ONE row whose `on` and `when` both match, or none (I6).\
+Two rows matching is never resolved by position (Q3): `overlapsIn` enumerates inputs against situations, and the gate fails on any pair.\
+A key is CLAIMED when a row's `on` matches and its guards pass, whatever the situation: bind a key and you own it (B47), and what it means is the condition's to say.
+
+**The situation -- `engine/situation.mjs`, plain data (Q4).**\
+Selection only, plus what the current step of a gesture is on (Q1).\
+It grows two fields: the gesture in progress, and, during one, what the pointer is over -- a node, a waypoint or open ground.
+
+**The product tenant -- `app/src/keymap.js`.**\
+Its rows move onto the core unchanged in meaning.\
+The one overlap the old table resolved by order, Ctrl+Shift+Backspace matching both `undo-run` and `delete`, becomes disjoint: `delete` excludes it.\
+`c` becomes two rows, as ruled: close on one link with a bend, the refusal on one link without.
+
+**The network tenant -- `network/`.**\
+It brings its own rows and keys: `g` during a link drag, and `w` on a node during one.\
+Production composes no network tenant, so neither key means anything there, exactly as today.\
+Input keeps one generic verb for a drag step -- add a stop, pinned or not -- and records the drag as a sequence: the source and whether its `w` counts, each key with the stop it made and what that stop is, and the release.\
+The network's drag grammar is data in `network/`: what each step makes and which pipe it lays, and what the release makes.\
+One interpreter reads it, and the gesture table in the design docs is generated from it (P3).
+
+**Not in T3.**\
+I4, the generated help overlay, stays with B163 and H10.34.\
+The pointer table `RECOGNIZE` keeps its own dispatcher; nothing in T3 needs it moved.
+

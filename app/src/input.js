@@ -34,7 +34,8 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 
 import { Overlay } from './overlay.js';
 import { RECOGNIZE, resolveRule } from './recognize.js';
-import { resolveKey } from './keymap.js';
+import { KEYMAP } from './keymap.js';
+import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
 import { hitOf, nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
 import { el, toCanvas, crosshair, previewRect, previewLine, previewPath } from './painter.js';
@@ -436,6 +437,8 @@ export class Input {
 		whether the route passes it is a property of the whole route, not of any one leg.
 		*/
 		this.routeHook = routeHook;
+		// the key table: the product's rows through the Rules engine (dev/RULES.md section 11)
+		this.keyRules = composeRules({ owner: 'product', rules: KEYMAP });
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
@@ -633,7 +636,7 @@ export class Input {
 	lets a decision be a predicate rather than a walk through `this`: `engine/situation.mjs` owns the
 	description, the rule reads it, and neither can see a DOM.
 	*/
-	situation(targetId = null) {
+	situation(targetId = null, gesture = null) {
 		return situationOf({
 			get: (kind, id) => this.model.get(kind, id),
 			linksTouching: (id) => this.model.linksAt?.(id) || [],
@@ -642,6 +645,7 @@ export class Input {
 			readOnly: this.readOnly,
 			targetId,
 			selection: this.selection.list(),
+			...(gesture ? { gesture, step: this.stepUnderPointer() } : {}),
 		}, this.now());
 	}
 
@@ -840,15 +844,9 @@ export class Input {
 	(≥1 waypoint) can close — a plain 2-point link would just double back on itself. Toggles,
 	as one undoable set on the link's `closed` flag.
 	*/
+	// reached only through the `close` row -- ONE link with a bend is selected -- so it asks nothing (dev/RULES.md section 11)
 	toggleClosePath() {
-		const ids = this.selection.list();
-		if (ids.length !== 1 || kindOf(ids[0]) !== 'link') return;
-		const link = this.model.get('link', ids[0]);
-		if (!link) return;
-		if (!Array.isArray(link.via) || link.via.length < 1) {
-			this.readout.flash('✗ close needs a multi-hop route');
-			return;
-		}
+		const link = this.model.get('link', this.selection.list()[0]);
 		const closed = !link.closed;
 		this.history.commit(commands.toggleClosed(link));
 		this.readout.flash(closed ? 'path closed' : 'path open');
@@ -1411,14 +1409,29 @@ export class Input {
 		const tag = evt.target.tagName;
 		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-		const rule = resolveKey(evt, {
+		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
+		const { rule, claimed } = resolveInput(this.keyRules, evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly,
 			helpOpen: !!(this.help && !this.help.hidden),
 			gesturing: this.isGesturing(),
 		});
+		if (claimed) evt.preventDefault();   // B47 — bind a key and you own it
 		if (!rule) return;
-		if (rule.prevent !== false) evt.preventDefault();   // B47 — bind a key and you own it
 		this[rule.run](evt);
+	}
+
+	/*
+	What the pointer is over during a gesture, as the situation's `step` -- a word, never an element.
+
+	The order is production's own for a `w` mid-drag (dropRouteWaypoint): a waypoint at the snapped cell first, then a
+	node under the pointer. A node's footprint runs between grid points with a margin under half the pitch, so a pointer
+	over a node always snaps to a cell that node occupies -- the cell where production's `w` already refuses -- and
+	calling that step 'node' changes nothing production does (tests/rules-acceptance.test.js holds the geometry).
+	*/
+	stepUnderPointer() {
+		if (!this.lastPos) return null;
+		if (this.model.waypointAt(snapNode(this.lastPos))) return 'waypoint';
+		return nodeAt(this.model, this.lastPos) ? 'node' : 'ground';
 	}
 
 	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
@@ -1622,6 +1635,7 @@ export class Input {
 
 	onWrapKey() { this.wrapInZone(); }
 	onCloseKey() { this.toggleClosePath(); }
+	onCloseRefused() { this.readout.flash('✗ close needs a multi-hop route'); }   // the `close-refused` row: ONE link, no bend
 	onFlowKey() { this.cycleLinkFlow(); }
 	onPlaneKey() { this.toggleLinkPlane(); }
 	onChainKey() { this.linkSelectedNodes(false); }

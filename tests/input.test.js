@@ -19,7 +19,13 @@ import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mj
 import { validateEntity } from '../server/validate.js';
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
-import { KEYMAP, resolveKey } from '../app/src/keymap.js';
+import { KEYMAP } from '../app/src/keymap.js';
+import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
+
+// the product's key table through the Rules engine (dev/RULES.md section 11), and the row a key resolves to
+const PRODUCT_KEYS = composeRules({ owner: 'product', rules: KEYMAP });
+const sit = (selection = { size: 0, ids: [], kinds: [], bends: null }, gesture = null, step = null) => ({ selection, gesture, step });
+const resolveKey = (e, guards, s = sit()) => resolveInput(PRODUCT_KEYS, e, s, guards).rule;
 import { GAP, NODE_EXT } from '../app/src/snap.js';
 import { Palette } from '../app/src/palette.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
@@ -892,26 +898,37 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 	}
 });
 
-test('B48: splitting kept the table unambiguous — still exactly one overlapping pair', () => {
-	// The ordering claim in keymap.js is that Ctrl+Shift+Backspace is the ONLY keystroke matching
-	// more than one entry. Four new entries could have broken that, so it is re-enumerated rather
-	// than assumed — the same discipline that found the claim was wrong the first time.
-	const keys = [' ', 'Escape', 'Tab', 'Enter', 'Delete', 'Backspace', 'F2', '/', '?', 'Shift', 'Alt', 'Control',
-		...'abcdefghijklmnopqrstuvwxyz', ...'1234567',
-		'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-	const mods = [{}, { shiftKey: true }, { ctrlKey: true }, { ctrlKey: true, shiftKey: true },
-		{ altKey: true }, { metaKey: true }];
-	const overlaps = [];
-	for (const k of keys) {
-		for (const m of mods) {
-			const e = key(k, m);
-			const hits = KEYMAP.filter((r) => r.when(e, {}));
-			if (hits.length > 1) overlaps.push(`${JSON.stringify(m)}+${k} -> ${hits.map((h) => h.id).join('/')}`);
-		}
-	}
-	assert.deepEqual(overlaps, [
-		'{"ctrlKey":true,"shiftKey":true}+Backspace -> undo-run/delete',
-	], 'exactly one ordered pair, and it is the D21 one keymap.js documents');
+/*
+NO KEYSTROKE MATCHES TWO ROWS, in any situation or guard state -- ruled 2026-09-30 (Q3): order decides nothing.
+
+This test once held that exactly ONE pair overlapped, Ctrl+Shift+Backspace matching `undo-run` and `delete`, resolved by
+listing `undo-run` first. `delete` now states the chord it does not mean, and the enumeration is over situations too,
+because a row with a condition is disjoint from its neighbour only in the situations its condition separates.
+*/
+const KEYS = [' ', 'Escape', 'Tab', 'Enter', 'Delete', 'Backspace', 'F2', '/', '?', 'Shift', 'Alt', 'Control',
+	...'abcdefghijklmnopqrstuvwxyz', ...'1234567', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+const MODS = [{}, { shiftKey: true }, { ctrlKey: true }, { ctrlKey: true, shiftKey: true }, { altKey: true }, { metaKey: true }];
+const KEY_INPUTS = KEYS.flatMap((k) => MODS.map((m) => key(k, m)));
+const SITUATIONS = [
+	sit(),
+	sit({ size: 1, ids: ['link-000001'], kinds: ['link'], bends: 0 }),
+	sit({ size: 1, ids: ['link-000001'], kinds: ['link'], bends: 2 }),
+	sit({ size: 1, ids: ['node-000001'], kinds: ['node'], bends: null }),
+	sit({ size: 2, ids: ['link-000001', 'node-000001'], kinds: ['link', 'node'], bends: null }),
+	...['node', 'waypoint', 'ground'].map((step) => sit(undefined, 'link', step)),
+	sit(undefined, 'move', 'ground'),
+];
+const GUARD_STATES = [{}, { readOnly: true }, { helpOpen: true }, { gesturing: true }];
+
+test('Q3: no keystroke matches two rows of the product table, in any situation or guard state', () => {
+	const found = overlapsIn(PRODUCT_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES)
+		.map((o) => `${JSON.stringify(o.guards)} ${o.situation.gesture ?? ''}/${o.situation.step ?? ''} ${JSON.stringify(o.input.key)} -> ${o.ids.join('/')}`);
+	assert.deepEqual(found, []);
+});
+
+test('Q3: Ctrl+Shift+Backspace means undo-run alone -- it no longer wins by being listed first', () => {
+	assert.equal(resolveKey(key('Backspace', { ctrlKey: true, shiftKey: true }), {}).id, 'undo-run');
+	assert.equal(resolveKey(key('Backspace'), {}).id, 'delete', 'while a plain Backspace still deletes');
 });
 
 /*
@@ -1334,7 +1351,7 @@ test('B146: the waypoint is not a palette digit, and `w` still covers both state
 		assert.ok(resolveKey(key('6'), { gesturing: false }), 'while 6 is still the sixth type');
 
 		// and no rule anywhere mentions the waypoint as a stamp type
-		assert.equal(KEYMAP.some((r) => /waypoint/.test(String(r.when))), false,
+		assert.equal(KEYMAP.some((r) => /waypoint/.test(String(r.on))), false,
 			'no keymap rule reaches for a waypoint hand');
 	} finally { h.restore(); }
 });

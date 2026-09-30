@@ -86,6 +86,7 @@ export const LAYER = {
 	core: [
 		'kernel/spec.mjs', 'kernel/theme.mjs',
 		'kernel/router.mjs',     // path geometry on the grid (rounded turns, snap); its `routeGeometry` name is L5p debt
+		'kernel/input-rules.mjs', // the Rules engine: tenants' rows, uniform guards, one match or none (dev/RULES.md section 11); names no tenant
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance are network code until K13a splits it (L5, L5p)
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half leaves at K11
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
@@ -154,7 +155,7 @@ export const ENTRIES = {
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/index.mjs', 'engine/ivm.mjs',
 			'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 'kernel/adapt.mjs', 'kernel/engine.mjs',
-			'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
+			'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs', 'model/invariants.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/ops.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
@@ -184,7 +185,7 @@ export const ENTRIES = {
 			'app/src/recognize.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'engine/index.mjs',
 			'engine/ivm.mjs', 'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs', 'engine/relations.mjs',
 			'engine/rules.mjs', 'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 'kernel/adapt.mjs',
-			'kernel/engine.mjs', 'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'kernel/renderer.mjs',
+			'kernel/engine.mjs', 'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs', 'model/invariants.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',

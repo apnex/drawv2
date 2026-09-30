@@ -166,3 +166,28 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 	assert.equal(onEndpoint(t), true,
 		'a terminus must arm -- if this is false, onEndpoint is reading a string and arming is dead everywhere');
 });
+
+/*
+T3 (dev/RULES.md section 11) -- the fields the input rules read. Ruled 2026-09-30: a rule sees the selection and what
+the current step of a gesture is on (Q1), and the situation stays plain data (Q4).
+*/
+test('T3: the gesture and its step are words, absent when no gesture is in progress', () => {
+	const idle = situationOf(accessOf(entities), {});
+	assert.equal(idle.gesture, null);
+	assert.equal(idle.step, null);
+	assert.equal(situationOf(accessOf(entities), { step: 'node' }).step, null, 'a step belongs to a gesture: none without one');
+	const drawing = situationOf(accessOf(entities), { gesture: 'link', step: 'node' });
+	assert.equal(drawing.gesture, 'link');
+	assert.equal(drawing.step, 'node');
+	assert.deepEqual(JSON.parse(JSON.stringify(drawing)), drawing, 'and it still crosses a boundary intact');
+});
+
+test('T3: the selection says how many waypoints the ONE selected link bends through', () => {
+	const bent = { id: 'link-eeeeee', name: 'b', src: WP, dst: ND, via: [WP2] };
+	const straight = { id: 'link-ffffff', name: 's', src: WP, dst: ND };
+	const all = { ...entities, [bent.id]: bent, [straight.id]: straight };
+	assert.equal(situationOf(accessOf(all), { selection: [bent.id] }).selection.bends, 1);
+	assert.equal(situationOf(accessOf(all), { selection: [straight.id] }).selection.bends, 0, 'no via at all is no bends');
+	assert.equal(situationOf(accessOf(all), { selection: [ND] }).selection.bends, null, 'not a link: no answer');
+	assert.equal(situationOf(accessOf(all), { selection: [bent.id, straight.id] }).selection.bends, null, 'not ONE link: no answer');
+});
