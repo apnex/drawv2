@@ -65,24 +65,24 @@ rows start the same gesture.
 */
 export const RECOGNIZE = [
 	// a held tool places on the next click, whatever is under it
-	{ id: 'tool',      mutates: true,  on: (e) => L(e), when: held,                                             gesture: 'textbox' },
+	{ id: 'tool', input: ['left on canvas|node|waypoint|zone|link'], context: 'the text tool held',      mutates: true,  on: (e) => L(e), when: held,                                             gesture: 'textbox' },
 
 	// right button: the delete chord, then clone, then press
-	{ id: 'chord',     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && e.on.kind !== 'handle',      run: 'deleteUnderCursor' },
-	{ id: 'r-clone',   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && rightKinds(e.on),           gesture: 'clone-pending' },
-	{ id: 'r-press',   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && rightKinds(e.on),          gesture: 'pending' },
+	{ id: 'chord', input: ['Alt+right on node|waypoint|zone|link'],     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && e.on.kind !== 'handle',      run: 'deleteUnderCursor' },
+	{ id: 'r-clone', input: ['Ctrl+right on node|waypoint|zone'],   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && rightKinds(e.on),           gesture: 'clone-pending' },
+	{ id: 'r-press', input: ['right on node|waypoint|zone'],   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && rightKinds(e.on),          gesture: 'pending' },
 
 	// left button, most specific first in reading, and disjoint in fact: handles are drawn ON TOP, so they win over what is beneath
-	{ id: 'resize',    mutates: true,  on: (e) => L(e) && e.on.kind === 'handle', when: free,                   gesture: 'resize' },
-	{ id: 'replug',    mutates: true,  on: (e) => L(e) && e.on.kind === 'lhandle', when: free,                  gesture: 'replug' },
-	{ id: 'l-clone',   mutates: true,  on: (e) => L(e) && e.ctrlKey && entity(e.on), when: free,                gesture: 'clone-pending' },
-	{ id: 'link',      mutates: true,  on: (e) => L(e) && (e.on.kind === 'waypoint' || (e.on.kind === 'node' && !e.ctrlKey)), when: free, gesture: 'link' },
-	{ id: 'zone-draw', mutates: true,  on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, when: free,     gesture: 'zone' },
+	{ id: 'resize', input: ['left on handle'], context: 'a zone selected',    mutates: true,  on: (e) => L(e) && e.on.kind === 'handle', when: free,                   gesture: 'resize' },
+	{ id: 'replug', input: ['left on lhandle'], context: 'a link selected',    mutates: true,  on: (e) => L(e) && e.on.kind === 'lhandle', when: free,                  gesture: 'replug' },
+	{ id: 'l-clone', input: ['Ctrl+left on node|zone|link'],   mutates: true,  on: (e) => L(e) && e.ctrlKey && entity(e.on), when: free,                gesture: 'clone-pending' },
+	{ id: 'link', input: ['left on node|waypoint'],      mutates: true,  on: (e) => L(e) && (e.on.kind === 'waypoint' || (e.on.kind === 'node' && !e.ctrlKey)), when: free, gesture: 'link' },
+	{ id: 'zone-draw', input: ['Shift+left on canvas'], mutates: true,  on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, when: free,     gesture: 'zone' },
 
 	// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
 	// promises exactly them: "selection, the data view, and the readout still work".
-	{ id: 'press',     mutates: false, on: (e) => L(e) && (e.on.kind === 'zone' || e.on.kind === 'link') && !e.ctrlKey, when: free, gesture: 'pending' },
-	{ id: 'marquee',   mutates: false, on: (e) => L(e) && e.on.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
+	{ id: 'press', input: ['Shift+left on zone', 'left on link'],     mutates: false, on: (e) => L(e) && (e.on.kind === 'zone' || e.on.kind === 'link') && !e.ctrlKey, when: free, gesture: 'pending' },
+	{ id: 'marquee', input: ['left on canvas'],   mutates: false, on: (e) => L(e) && e.on.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
 
 	// ...and what a locked client reached by falling past the authoring rows above, which a writer never sees
 	{ id: 'press-locked',   mutates: false, whileReadOnly: true, on: (e) => L(e) && selectable(e.on) && (e.on.kind === 'node' || e.on.kind === 'waypoint' || e.ctrlKey), gesture: 'pending' },
@@ -95,5 +95,5 @@ A DOUBLE CLICK is a binding too: it edits the label under the pointer. It author
 by the engine's guard -- the handler used to check read-only itself, twice.
 */
 export const DOUBLE_CLICKS = [
-	{ id: 'edit-label', mutates: true, on: (e) => e.type === 'double', run: 'editUnderPointer' },
+	{ id: 'edit-label', input: ['double'], mutates: true, on: (e) => e.type === 'double', run: 'editUnderPointer' },
 ];

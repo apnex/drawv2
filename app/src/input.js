@@ -52,11 +52,11 @@ import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/
 
 // run mode's presses as rows of the Rules engine -- see `runModePress` for what each means and why they live here
 export const RUN_PRESSES = [
-	{ id: 'toggle-spawn', mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region?.waypoint, when: (s) => inReadView(s) && onEndpoint(s), run: 'toggleSpawnHere' },
-	{ id: 'place-tower',  mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overWaypoint && !e.region.entity,
+	{ id: 'toggle-spawn', input: ['left on region:waypoint'], context: 'in run mode, on an endpoint', mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region?.waypoint, when: (s) => inReadView(s) && onEndpoint(s), run: 'toggleSpawnHere' },
+	{ id: 'place-tower', input: ['left on region:ground'], context: 'in run mode, where the cell is free',  mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overWaypoint && !e.region.entity,
 		when: (s) => inReadView(s) && onOpenGround(s), run: 'placeTowerHere' },
-	{ id: 'fire-action',  mutates: false, prevent: false, on: (e) => e.button === 0 && !!e.region?.action, run: 'fireActionHere' },
-	{ id: 'open-input',   mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action, run: 'openInputHere' },
+	{ id: 'fire-action', input: ['left on region:action'],  mutates: false, prevent: false, on: (e) => e.button === 0 && !!e.region?.action, run: 'fireActionHere' },
+	{ id: 'open-input', input: ['left on region:input'],   mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action, run: 'openInputHere' },
 ];
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -1144,6 +1144,14 @@ export class Input {
 	nothing else here tests it. `act` runs the action the row names on the gesture's data; a release no row means does
 	nothing (I6).
 	*/
+	// the composed tables, for what documents them (app/src/help.js): keys, presses, double clicks, run mode, and the
+	// release outcomes that are controls of their own -- the help overlay is generated from exactly what is resolved
+	bindings() {
+		const m = this.meaningRules;
+		return { keys: this.keyRules, presses: this.pressRules, double: this.doubleRules, run: this.runRules,
+			releases: [...m.link, ...m.marquee, ...m.ctrlClick] };
+	}
+
 	decide(table, evt, facts) {
 		return resolveInput(this.meaningRules[table], evt, facts, { readOnly: this.readOnly }).rule;
 	}

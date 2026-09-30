@@ -72,23 +72,23 @@ split; nothing re-reads Shift after the match.
 
 export const KEYMAP = [
 	// ---- modifier feedback: not verbs, and they must reach a live drag (ortho arms mid-gesture) ----
-	{ id: 'shift',   mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Shift',   run: 'onShiftDown' },
-	{ id: 'alt',     prevent: false, mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Alt',     run: 'onArmingKey' },
-	{ id: 'control', prevent: false, mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Control', run: 'onArmingKey' },
+	{ id: 'shift', input: ['Shift'],   mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Shift',   run: 'onShiftDown' },
+	{ id: 'alt', input: ['Alt'],     prevent: false, mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Alt',     run: 'onArmingKey' },
+	{ id: 'control', input: ['Control'], prevent: false, mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Control', run: 'onArmingKey' },
 
 	// ---- modal + always-available ----
-	{ id: 'escape',  prevent: false, mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Escape', run: 'onEscape' },
-	{ id: 'help',    mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === '/' || e.key === '?', run: 'onHelpKey' },
+	{ id: 'escape', input: ['Escape'],  prevent: false, mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === 'Escape', run: 'onEscape' },
+	{ id: 'help', input: ['/', '?'],    mutates: false, duringGesture: true, duringHelp: true, on: (e) => e.key === '/' || e.key === '?', run: 'onHelpKey' },
 
 	// ---- view state: no model change, so live while Server-Locked ----
-	{ id: 'edit-mode', mutates: false, on: (e) => is(e, 'e') && plain(e), run: 'onEditMode' },
-	{ id: 'run-mode',  mutates: false, on: (e) => is(e, 'r') && plain(e), run: 'onRunMode' },
-	{ id: 'labels',    prevent: false, mutates: false, on: (e) => e.key === 'Tab',        run: 'onLabels' },
+	{ id: 'edit-mode', input: ['e'], mutates: false, on: (e) => is(e, 'e') && plain(e), run: 'onEditMode' },
+	{ id: 'run-mode', input: ['r'],  mutates: false, on: (e) => is(e, 'r') && plain(e), run: 'onRunMode' },
+	{ id: 'labels', input: ['Tab'],    prevent: false, mutates: false, on: (e) => e.key === 'Tab',        run: 'onLabels' },
 
 	// ---- inspection: SCOPE decision 5 promises these keep working while locked ----
-	{ id: 'select-all', mutates: false, on: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll' },
-	{ id: 'datum',       mutates: false, on: (e) => e.key === ' ' && !e.shiftKey, run: 'onDatum' },
-	{ id: 'datum-clear', mutates: false, on: (e) => e.key === ' ' && e.shiftKey,  run: 'onDatumClear' },
+	{ id: 'select-all', input: ['Ctrl+A'], mutates: false, on: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll' },
+	{ id: 'datum', input: ['Space'],       mutates: false, on: (e) => e.key === ' ' && !e.shiftKey, run: 'onDatum' },
+	{ id: 'datum-clear', input: ['Shift+Space'], mutates: false, on: (e) => e.key === ' ' && e.shiftKey,  run: 'onDatumClear' },
 
 	// ---- authoring ----
 	// `w` is the one mutating verb that belongs DURING a gesture: dropping a bend mid-route is the
@@ -96,26 +96,26 @@ export const KEYMAP = [
 	// here -- a bend cannot sit on a node -- which is what leaves that situation free for a plugin to
 	// mean something by (the network's `stop-on-node`, network/keys.mjs). `g` is not the product's
 	// at all any more: it is the network plugin's, and production composes none (dev/RULES.md section 11).
-	{ id: 'waypoint',  prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'w') && plain(e), when: (s) => !linkStepOnNode(s), run: 'onWaypointKey' },
-	{ id: 'text-tool', mutates: true, on: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
-	{ id: 'reshape',   mutates: true, on: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
+	{ id: 'waypoint', input: ['w'],  prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'w') && plain(e), when: (s) => !linkStepOnNode(s), run: 'onWaypointKey' },
+	{ id: 'text-tool', input: ['t'], mutates: true, on: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
+	{ id: 'reshape', input: ['s'],   mutates: true, on: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
 		// B147: meaningful mid-drag now -- a digit places that node and carries the link run through
 	// it, which is the same argument `w` already makes for a bend
-	{ id: 'hand',      mutates: true, duringGesture: true, on: (e) => /^[1-6]$/.test(e.key) && plain(e), run: 'onHandDigit' },
-	{ id: 'pipette',   mutates: true, on: (e) => is(e, 'q') && plain(e),                      run: 'onPipette' },
-	{ id: 'stamp',     prevent: false, mutates: true, on: (e) => e.key === 'Enter',                           run: 'onStampKey' },
-	{ id: 'nudge',       mutates: true, on: (e) => arrow(e) && !e.shiftKey,                   run: 'onArrowKey' },
-	{ id: 'resize-step', mutates: true, on: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep' },
-	{ id: 'wrap',      mutates: true, on: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
+	{ id: 'hand', input: ['1-6'],      mutates: true, duringGesture: true, on: (e) => /^[1-6]$/.test(e.key) && plain(e), run: 'onHandDigit' },
+	{ id: 'pipette', input: ['q'],   mutates: true, on: (e) => is(e, 'q') && plain(e),                      run: 'onPipette' },
+	{ id: 'stamp', input: ['Enter'],     prevent: false, mutates: true, on: (e) => e.key === 'Enter',                           run: 'onStampKey' },
+	{ id: 'nudge', input: ['Arrows'],       mutates: true, on: (e) => arrow(e) && !e.shiftKey,                   run: 'onArrowKey' },
+	{ id: 'resize-step', input: ['Shift+Arrows'], mutates: true, on: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep' },
+	{ id: 'wrap', input: ['z'],      mutates: true, on: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
 	// `c` means two things by situation -- the acceptance case of the Rules system, ruled 2026-09-30: close (or open) ONE
 	// link with a bend, refuse ONE link without, and anything else means nothing. Two rows, and no handler asks.
-	{ id: 'close',         mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneBentLink,     run: 'onCloseKey' },
-	{ id: 'close-refused', mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneStraightLink, run: 'onCloseRefused' },
-	{ id: 'flow',      mutates: true, on: (e) => is(e, 'f') && plain(e),                      run: 'onFlowKey' },
-	{ id: 'plane',     mutates: true, on: (e) => is(e, 'k') && plain(e),                      run: 'onPlaneKey' },
-	{ id: 'chain',     mutates: true, on: (e) => is(e, 'l') && plain(e) && !e.shiftKey,       run: 'onChainKey' },
-	{ id: 'star',      mutates: true, on: (e) => is(e, 'l') && plain(e) && e.shiftKey,        run: 'onStarKey' },
-	{ id: 'rename',    mutates: true, on: (e) => e.key === 'F2',                              run: 'onRenameKey' },
+	{ id: 'close', input: ['c'], context: 'one link with a bend selected',         mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneBentLink,     run: 'onCloseKey' },
+	{ id: 'close-refused', input: ['c'], context: 'one link without a bend selected', mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneStraightLink, run: 'onCloseRefused' },
+	{ id: 'flow', input: ['f'],      mutates: true, on: (e) => is(e, 'f') && plain(e),                      run: 'onFlowKey' },
+	{ id: 'plane', input: ['k'],     mutates: true, on: (e) => is(e, 'k') && plain(e),                      run: 'onPlaneKey' },
+	{ id: 'chain', input: ['l'],     mutates: true, on: (e) => is(e, 'l') && plain(e) && !e.shiftKey,       run: 'onChainKey' },
+	{ id: 'star', input: ['Shift+L'],      mutates: true, on: (e) => is(e, 'l') && plain(e) && e.shiftKey,        run: 'onStarKey' },
+	{ id: 'rename', input: ['F2'],    mutates: true, on: (e) => e.key === 'F2',                              run: 'onRenameKey' },
 
 	/*
 	History. Ctrl+Shift+Backspace means "reverse another writer's whole run" (D21), which is
@@ -127,13 +127,13 @@ export const KEYMAP = [
 	`delete` states the chord it does not mean -- and the test now asserts that NO keystroke, in any
 	situation, matches two rows (`tests/input.test.js`).
 	*/
-	{ id: 'undo-run', mutates: true, on: (e) => meta(e) && e.shiftKey && e.key === 'Backspace', run: 'onUndoRun' },
-	{ id: 'undo',     mutates: true, on: (e) => meta(e) && is(e, 'z') && !e.shiftKey,            run: 'onUndoKey' },
-	{ id: 'redo',     mutates: true, on: (e) => meta(e) && (is(e, 'y') || (is(e, 'z') && e.shiftKey)), run: 'onRedoKey' },
-	{ id: 'dup',      mutates: true, on: (e) => meta(e) && is(e, 'd'),                          run: 'onDuplicate' },
-	{ id: 'group',    mutates: true, on: (e) => meta(e) && is(e, 'g') && !e.shiftKey,            run: 'onGroupKey' },
-	{ id: 'ungroup',  mutates: true, on: (e) => meta(e) && is(e, 'g') && e.shiftKey,             run: 'onUngroupKey' },
-	{ id: 'delete',   prevent: false, mutates: true, on: (e) => (e.key === 'Delete' || e.key === 'Backspace') && !(meta(e) && e.shiftKey && e.key === 'Backspace'), run: 'onDeleteKey' },
+	{ id: 'undo-run', input: ['Ctrl+Shift+Backspace'], mutates: true, on: (e) => meta(e) && e.shiftKey && e.key === 'Backspace', run: 'onUndoRun' },
+	{ id: 'undo', input: ['Ctrl+Z'],     mutates: true, on: (e) => meta(e) && is(e, 'z') && !e.shiftKey,            run: 'onUndoKey' },
+	{ id: 'redo', input: ['Ctrl+Shift+Z', 'Ctrl+Y'],     mutates: true, on: (e) => meta(e) && (is(e, 'y') || (is(e, 'z') && e.shiftKey)), run: 'onRedoKey' },
+	{ id: 'dup', input: ['Ctrl+D'],      mutates: true, on: (e) => meta(e) && is(e, 'd'),                          run: 'onDuplicate' },
+	{ id: 'group', input: ['Ctrl+G'],    mutates: true, on: (e) => meta(e) && is(e, 'g') && !e.shiftKey,            run: 'onGroupKey' },
+	{ id: 'ungroup', input: ['Ctrl+Shift+G'],  mutates: true, on: (e) => meta(e) && is(e, 'g') && e.shiftKey,             run: 'onUngroupKey' },
+	{ id: 'delete', input: ['Delete', 'Backspace'],   prevent: false, mutates: true, on: (e) => (e.key === 'Delete' || e.key === 'Backspace') && !(meta(e) && e.shiftKey && e.key === 'Backspace'), run: 'onDeleteKey' },
 ];
 
 /*

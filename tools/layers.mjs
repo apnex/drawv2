@@ -107,10 +107,12 @@ export const LAYER = {
 		'app/src/labeledit.js',  // the label editor Input drives for t, F2 and double-click; the lab loads it, and its window reads are L11's canvas ratchet
 		'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js',
 		'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js',
+		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 	],
 	chrome: [
 		'app/src/main.js',       // the production composition root; nothing imports it
 		'app/src/clock.js', 'app/src/net.js', 'app/src/readout.js', 'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js',
+		'app/src/help.js',       // the generated help overlay (gesture system stage 6): draws what the bindings document
 		'app/src/palette.js',    // the device palette widget; input.js reaching into it is L2 debt that K6 removes
 		'app/src/movers.js', 'app/src/reveal.js', 'app/src/paintloop.js',   // the simulation's painters: production-only, outside the lab
 	],
@@ -149,7 +151,7 @@ export const ENTRIES = {
 		roots: ['app/src/main.js'],
 		modules: [
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/clock.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
-			'app/src/labeledit.js', 'app/src/main.js', 'app/src/movers.js', 'app/src/net.js', 'app/src/overlay.js',
+			'app/src/actions.js', 'app/src/help.js', 'app/src/labeledit.js', 'app/src/main.js', 'app/src/movers.js', 'app/src/net.js', 'app/src/overlay.js',
 			'app/src/painter.js', 'app/src/paintloop.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/reveal.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/index.mjs', 'engine/ivm.mjs',

@@ -29,11 +29,11 @@ const drawingALink = (s) => s.gesture === 'link';
 const overANode = (s) => s.step === 'node';
 
 const NETWORK_KEYS = [
-	{ id: 'guide', doc: 'g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it',
+	{ id: 'guide', input: ['g'], context: 'while drawing a link', doc: 'g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'g') && plain(e), when: drawingALink,
 		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'g', pin: false, nodes: true }); } },
-	{ id: 'stop-on-node', doc: 'w on a node during a link drag: a stop the link routes over, never a pin; released on it, the node is the destination',
+	{ id: 'stop-on-node', input: ['w'], context: 'over a node while drawing a link', doc: 'w on a node during a link drag: a stop the link routes over, never a pin; released on it, the node is the destination',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'w') && plain(e), when: (s) => drawingALink(s) && overANode(s),
 		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'w', pin: false, nodes: true }); } },

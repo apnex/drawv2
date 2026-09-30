@@ -395,3 +395,11 @@ Each is a real fork, with a recommendation.
 - **Not in this stage, by the guardrails:** an action registry with labels. Actions are Input's named methods, which the rows reference; the registry and its labels arrive with their first reader, the generated help overlay (stage 6).
 - **Behaviour otherwise unchanged:** every other corpus record byte-identical; ten mutants, each caught.
 
+**Stage 6 -- the help overlay, generated, 2026-09-30.**
+- **`app/src/actions.js` names every action once, with the label a person reads:** the key verbs, the gestures a press starts, the release outcomes that are controls of their own, and run mode's actions. A plugin's rows bring their own sentence.
+- **Every row a person performs carries its `input`**, in a small grammar (`Ctrl+Shift+G`, `right on node|waypoint|zone`, `left on region:ground`, `double`), and a `context` where the situation decides. Release outcomes are described in words, since what reaches them is a whole gesture.
+- **`app/src/help.js` generates the overlay from Input's own composed tables;** `app/index.html` lost its 41 hand-written rows, which had drifted -- they offered `7` as the waypoint (B146 removed it) and a Tab "data view" that had been deleted.
+- **The overlay can be no more wrong than the tables.** A test turns every documented input back into an event and checks that its row matches it; every row a person performs is documented; every label is an action some row names; deleting a binding removes its line and nothing else (acceptance 7); and the page holds no hand-written row (RULES I4). The real product page is checked in Chrome.
+- **Seven mutants, each caught:** a key the row does not bind, an undocumented row, a stale label, a hand-written row returning, a section dropped, the page drawing no help, a plugin row without its sentence.
+- **Behaviour unchanged:** the overlay is the only thing that changed, and the corpus replays byte-identical.
+

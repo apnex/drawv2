@@ -1124,3 +1124,24 @@ test('B236: a node label is the ruled size, and the browser draws that size', { 
 	assert.equal(Number(seen.attr), STD.fontSize,
 		'the client must EMIT the size -- relying on a browser default that happens to match is not an authority');
 });
+
+/*
+STAGE 6 of the gesture system -- the help overlay is GENERATED from the bindings (RULES I4). Asserted on the real page:
+the hand-written table is gone, and what is drawn is what the tables document, including the drift the hand-written rows
+had (they offered `7` as the waypoint, and a Tab "data view").
+*/
+test('the help overlay is generated from the bindings, in the real page', { skip: SKIP }, async () => {
+	const seen = await tab.eval(`(() => {
+		const card = document.getElementById('help-card');
+		const cells = [...card.querySelectorAll('#help-rows td:first-child')].map((td) => td.textContent);
+		return { sections: [...card.querySelectorAll('#help-rows h3')].map((h) => h.textContent), rows: cells.length,
+			undo: cells.includes('Ctrl+Z'), tab: [...card.querySelectorAll('#help-rows tr')].find((tr) => tr.firstChild.textContent === 'Tab')?.lastChild.textContent ?? null,
+			seven: cells.some((c) => /\\b7\\b/.test(c)), outside: document.querySelectorAll('#help-card > table').length };
+	})()`);
+	assert.deepEqual(seen.sections, ['keys', 'pointer', 'when a gesture ends', 'run mode']);
+	assert.ok(seen.rows > 50, `every documented binding is a line: ${seen.rows}`);
+	assert.equal(seen.undo, true);
+	assert.equal(seen.tab, 'show or hide names', 'Tab says what it does now, not the deleted data view');
+	assert.equal(seen.seven, false, 'no `7`: B146 took the waypoint off the digits');
+	assert.equal(seen.outside, 0, 'no hand-written table left in the card');
+});

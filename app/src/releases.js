@@ -45,13 +45,13 @@ const retypes = (r) => clickHere(r) && r.srcIsNode && !!r.hand && r.hand !== 'wa
 const clicks = (r) => !commits(r) && !chainsOn(r) && clickHere(r) && !retypes(r);
 
 export const LINK_RELEASES = [
-	{ id: 'link-commit-and-chain', mutates: true, on: released, when: (r) => commits(r) && chainsOn(r), run: 'commitDrawnLinkAndChain' },
+	{ id: 'link-commit-and-chain', said: 'Shift + release a link on a node', mutates: true, on: released, when: (r) => commits(r) && chainsOn(r), run: 'commitDrawnLinkAndChain' },
 	{ id: 'link-commit', mutates: true, on: released, when: (r) => commits(r) && !chainsOn(r), run: 'commitDrawnLink' },
 	// an already-linked target with Shift: skip the duplicate, and keep the chain run alive
-	{ id: 'link-chain-on', mutates: false, on: released, when: (r) => !commits(r) && chainsOn(r), run: 'chainOnFromTarget' },
-	{ id: 'link-retype', mutates: true, on: released, when: (r) => !commits(r) && !chainsOn(r) && retypes(r), run: 'retypeClicked' },
+	{ id: 'link-chain-on', said: 'Shift + release a link on a node it already joins', mutates: false, on: released, when: (r) => !commits(r) && chainsOn(r), run: 'chainOnFromTarget' },
+	{ id: 'link-retype', said: 'click a node with a different type held', mutates: true, on: released, when: (r) => !commits(r) && !chainsOn(r) && retypes(r), run: 'retypeClicked' },
 	// a no-drag press is still a click: select, as a press elsewhere does
-	{ id: 'link-toggle', mutates: false, on: released, when: (r) => clicks(r) && r.pressShift, run: 'toggleClicked' },
+	{ id: 'link-toggle', said: 'Shift + click a node or waypoint', mutates: false, on: released, when: (r) => clicks(r) && r.pressShift, run: 'toggleClicked' },
 	{ id: 'link-select', mutates: false, on: released, when: (r) => clicks(r) && !r.pressShift && !r.srcSelected, run: 'selectClicked' },
 	{ id: 'link-focus', mutates: false, on: released, when: (r) => clicks(r) && !r.pressShift && r.srcSelected, run: 'focusClicked' },
 	// an invalid target, a duplicate, or a route released off an anchor: the anchors the drag placed go
@@ -64,15 +64,15 @@ export const LINK_RELEASES = [
 const stamps = (r) => r.click && !!r.hand && !r.shift && !r.ctrl && !r.alt;
 
 export const MARQUEE_RELEASES = [
-	{ id: 'marquee-stamp', mutates: true, on: released, when: stamps, run: 'stampClicked' },
+	{ id: 'marquee-stamp', said: 'click the canvas with a type held', mutates: true, on: released, when: stamps, run: 'stampClicked' },
 	{ id: 'marquee-clear', mutates: false, on: released, when: (r) => r.click && !stamps(r) && !r.shift, run: 'clearOnClick' },
 	{ id: 'marquee-select', mutates: false, on: released, when: (r) => !r.click && !r.shift, run: 'selectInBox' },
-	{ id: 'marquee-add', mutates: false, on: released, when: (r) => !r.click && r.shift, run: 'addInBox' },
+	{ id: 'marquee-add', said: 'hold Shift as a marquee is released', mutates: false, on: released, when: (r) => !r.click && r.shift, run: 'addInBox' },
 ];
 
 // ---- Ctrl+click with no drag: toggle what was pressed ----
 export const CTRL_CLICKS = [
-	{ id: 'ctrl-click-toggle', mutates: false, on: released, when: (r) => r.exists, run: 'toggleCtrlClicked' },
+	{ id: 'ctrl-click-toggle', said: 'Ctrl + click a node, zone or link', mutates: false, on: released, when: (r) => r.exists, run: 'toggleCtrlClicked' },
 ];
 
 // ---- a replug: retarget one end, where the pair has room ----
