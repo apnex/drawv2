@@ -76,7 +76,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | . | . | . |
 | pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . |
 | pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . |
-| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | . | . | . | . | UNDO-01 | . |
+| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . |
 | pins and a g hop | DEL-14 (reading) | DEL-09 (reading) | . | . | . | . | . | . | . | . |
 | down | n/a | n/a | DEL-15 | . | HEAL-03 (reading) | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . |
 | blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 |
@@ -86,7 +86,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . |
 | older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . |
 
-39 rows: 39 built, 0 todo, 0 open.\
+42 rows: 42 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -163,6 +163,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | HP-01 | two pins beside a g path x delete pin | Select Q, the second pin, and press Delete. | The link loses Q, and the only way left from P to E runs back over S-P and round the g path below: a hairpin, which is no way. So it has no other way and is deleted whole, with P and its w pipes; the g path stays. | DECISIONS: "A link never runs the same pipe twice" (2026-09-30). DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29). | ruled, built |
 | HP-02 | a pin and a g hop beside a g path x delete `g` hop | Select Y, the g anchor the link passes, and press Delete. | No pin is lost, and the only way left from P to E would double back over S-P: no way, so the link is down, drawn dotted through its pin P. | DECISIONS: "A link never runs the same pipe twice" (2026-09-30). | ruled, built |
 | SUP-01 | older beside a younger route x delete `g` hop | Delete x, the g anchor the older link A-B passes, then click the younger link C-D. | A-B loses its way and, being older, takes the middle path C-D is routed over; C-D is down, and says A-B holds its way. | DECISIONS: "An older link may supplant a younger link's route" (2026-09-30). | ruled, built |
+| SRC-01 | w-chain x draw: mouseup on end | Press w below to place S, then drag from S to the pin P1, and release. | S is still the sole selected anchor and the next gesture drags from it, so the w that placed it is the drag's first key: a link from S to P1 with its pipe, up. P1 becomes a junction, cutting the chain there. | The director's report, 2026-09-30: "it becomes a junction (correctly). However it didnt lay the pipes". DECISIONS: "The w that placed the source counts as the drag's first key" (2026-09-30). | ruled, built |
+| SRC-02 | w-chain x draw: mouseup on end | Press w below to place S, click away, then drag from S to P1, and release. | The click away clears the w, so the drag follows the normal rules: a plain link that lays no pipe, made down; the junction is still made. | DECISIONS: "The w that placed the source counts as the drag's first key" (2026-09-30). "This eliminates the case where you click off the anchor to unselect it". | ruled, built |
+| SRC-03 | w-chain x draw: `g` bend | Press w below to place S, then drag from S with g at a point and g on the end E, and release. | A g in the drag cancels the source w: two hand pipes are laid and no link is made, so the chain is untouched. | DECISIONS: "The w that placed the source counts as the drag's first key" (2026-09-30). Asked whether a g in the drag cancels it, the director chose "A g in the drag cancels it". | ruled, built |
 | DIR-01 | routed x draw: `w` bend | Drag from A, press w on node C, and release there. | A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop. | DECISIONS: "w may be pressed on a node as the last hop" (2026-09-30). | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
 <!-- END GENERATED: rows -->

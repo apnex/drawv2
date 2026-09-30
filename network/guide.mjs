@@ -50,8 +50,14 @@ PURE: it lays nothing. The caller lays `legs` once the planner accepts what they
 `ok` (a link is made), `legs`, `keep` (anchors to keep when no link is made), `route` (null when made down), and
 `notice`, the sentence the author sees -- absent when things went as drawn.
 */
-export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = [], stops, pressed = { w: false, g: false }, endPressed = false }, { links = [], rankOf = () => 0 } = {}) {
+export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = [], stops, pressed = { w: false, g: false }, endPressed = false, srcKey = false }, { links = [], rankOf = () => 0 } = {}) {
 	const guided = new Set(guides);
+	/*
+	The w that placed the source is the drag's first key (2026-09-30), and "A g in the drag cancels it": a drag's kind is
+	decided by the keys pressed DURING it -- a w hop makes a link, g without one lays pipes only -- so the source w never
+	turns a g drag into a link. It adds only the final pipe, with the link, when nothing else was pressed.
+	*/
+	const srcW = srcKey === 'w';
 	const pipesOnly = !pressed.w && pressed.g;
 	const legs = [];
 	for (let i = 0; i < stops.length - 1; i++) {
@@ -59,7 +65,7 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 		// the release lays the final pipe whenever a key made a hop before it -- with the link after w, by hand after g --
 		// and only a drag that pressed no key lays none (2026-09-30: "If penultimate hop was a key (g or w) - final pipe
 		// is laid. Direct links without a key lay no pipe.")
-		if (a === b || (b === dst && !endPressed && stops.length === 2)) continue;
+		if (a === b || (b === dst && !endPressed && stops.length === 2 && !srcW)) continue;
 		const byHand = pipesOnly || guided.has(a) || guided.has(b) || (b === dst && endPressed === 'g');
 		legs.push({ a, b, laid: byHand ? 'hand' : 'link' });
 	}

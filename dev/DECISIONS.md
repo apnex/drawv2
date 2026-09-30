@@ -1359,3 +1359,15 @@ MEASURED at the router: an older link O on A-x-B and a younger link Y on a middl
 What can trigger it: deleting an anchor or `g` hop an older link passed, or a pin when it has another way; undo bringing an older link back (matrix row CAP-06); new hand pipes from a `g` drag that give an older link a better way.\
 What cannot: drawing a new link, since a drag that would move an existing link is refused; and a younger link's own `w` pipes, since it has first call on them.\
 Asked whether an older link that loses its way may take hand-laid pipes a younger link is routed over, the director chose "Yes: age decides every time (as built)" over "No: a routed link keeps its route", which was shown as needing each pipe to remember the link on it.
+
+**The w that placed the source counts as the drag's first key, while that anchor is still the sole selection -- ruled 2026-09-30.**\
+The director's report: after a `w`-chain, "start a new link w to an existing anchor - it becomes a junction (correctly).\
+However it didnt lay the pipes.\
+We agreed that a link ending with a "mouseup" that was preceded with a w/g key constructs pipes.\
+Do we need to ensure this includes the case where w is used on the source for a single hop link?"\
+MEASURED with real input: the `w` that places an anchor with nothing in hand happens before the drag starts, so the drag from it was plain -- the junction was made, the new link laid no pipe and was down; pressing `w` on the destination instead laid the pipe.\
+Asked whether that `w` should count, the director chose the proposer's recommendation and refined it: "When you press w, the anchor is "selected".\
+So Yes if that same anchor remains the sole selected anchor, and the next gesture is a drag.\
+This eliminates the case where you click off the anchor to unselect it - then the drag would follow normal link commit rules".\
+Asked what happens when that drag then presses `g`, the director chose "A g in the drag cancels it" (the proposer's recommendation), so a pipe-only path from a fresh anchor stays pipe-only.\
+So: `w`, drag, release makes a link with its final pipe; `w`, drag, `g`..., release lays pipes and no link; a click, or any other press, between placing the anchor and dragging from it clears the `w`.

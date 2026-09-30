@@ -270,7 +270,7 @@ const GESTURES = {
 				if (i.routeHook) {
 					const placed = ctx.placed.map((w) => w.id);
 					const pressed = { w: !!ctx.pressedW, g: !!ctx.pressedG };
-					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst], pressed, endPressed: endKey(dst) });
+					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst], pressed, endPressed: endKey(dst), srcKey: ctx.srcKey ?? false });
 					if (!verdict?.ok) {
 						/*
 						A refusal may name anchors to KEEP. The link is refused; anchors the hook names survive
@@ -331,7 +331,9 @@ const GESTURES = {
 			// `via` is what the link will STORE (its pins); `route` is every stop in drawn order, pins and
 			// guides, for the preview and the route hook; `guides` are the stops that are not pins. With no
 			// route hook there are no guides, so `route` is exactly `via` and nothing downstream changes.
-			i.ctx = { src, path: previewPath(i.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [], route: [], guides: [] };
+			const sole = i.selection.list();
+			const srcKey = i.armedSource === src.id && sole.length === 1 && sole[0] === src.id ? 'w' : false;
+			i.ctx = { src, path: previewPath(i.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [], route: [], guides: [], srcKey };
 			i.updateLinkPreview(pos);
 			return i.ctx;
 		}
@@ -592,6 +594,13 @@ export class Input {
 
 		if (this.labels.isOpen()) this.labels.close(true);
 		this.palette.hideHand();
+
+		/*
+		THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: it counts as the drag's first key "if that same anchor remains
+		the sole selected anchor, and the next gesture is a drag". Every press consumes it, so a click away clears it; the
+		link drag's start keeps it only if it begins on that anchor while it is still the sole selection.
+		*/
+		this.armedSource = this.placedByW; this.placedByW = null;
 
 		const hit = hitOf(evt);
 		const pos = toCanvas(evt, this.svg);
@@ -957,6 +966,7 @@ export class Input {
 		*/
 		const wp = { ...this.model.makeWaypoint(snapped), pinned: true };
 		this.history.commit(commands.createEntity('waypoint', wp));
+		this.placedByW = wp.id;   // may count as the next drag's first key (see onDown)
 		this.selection.set([wp.id]);
 		this.labels.setFocus(wp.id);
 		return true;

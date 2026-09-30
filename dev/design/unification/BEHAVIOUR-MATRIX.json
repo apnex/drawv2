@@ -2197,6 +2197,146 @@
 			"built": "yes"
 		},
 		{
+			"id": "SRC-01",
+			"state": "w-chain",
+			"gesture": "draw: mouseup on end",
+			"does": "Press w below to place S, then drag from S to the pin P1, and release.",
+			"steps": [
+				[
+					"move",
+					-240,
+					240
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-240,
+						240
+					],
+					[
+						-240,
+						-120
+					],
+					[]
+				]
+			],
+			"intent": "S is still the sole selected anchor and the next gesture drags from it, so the w that placed it is the drag's first key: a link from S to P1 with its pipe, up. P1 becomes a junction, cutting the chain there.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"anchors": 6,
+				"pipes": {
+					"link": 5,
+					"hand": 0
+				}
+			},
+			"rule": "The director's report, 2026-09-30: \"it becomes a junction (correctly). However it didnt lay the pipes\". DECISIONS: \"The w that placed the source counts as the drag's first key\" (2026-09-30).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "SRC-02",
+			"state": "w-chain",
+			"gesture": "draw: mouseup on end",
+			"does": "Press w below to place S, click away, then drag from S to P1, and release.",
+			"steps": [
+				[
+					"move",
+					-240,
+					240
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"click",
+					480,
+					360
+				],
+				[
+					"drag",
+					[
+						-240,
+						240
+					],
+					[
+						-240,
+						-120
+					],
+					[]
+				]
+			],
+			"intent": "The click away clears the w, so the drag follows the normal rules: a plain link that lays no pipe, made down; the junction is still made.",
+			"expect": {
+				"links": 3,
+				"down": 1,
+				"pipes": {
+					"link": 4,
+					"hand": 0
+				}
+			},
+			"rule": "DECISIONS: \"The w that placed the source counts as the drag's first key\" (2026-09-30). \"This eliminates the case where you click off the anchor to unselect it\".",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "SRC-03",
+			"state": "w-chain",
+			"gesture": "draw: `g` bend",
+			"does": "Press w below to place S, then drag from S with g at a point and g on the end E, and release.",
+			"steps": [
+				[
+					"move",
+					-240,
+					240
+				],
+				[
+					"key",
+					"w"
+				],
+				[
+					"drag",
+					[
+						-240,
+						240
+					],
+					[
+						120,
+						0
+					],
+					[
+						[
+							"g",
+							0,
+							240
+						],
+						[
+							"g",
+							120,
+							0
+						]
+					]
+				]
+			],
+			"intent": "A g in the drag cancels the source w: two hand pipes are laid and no link is made, so the chain is untouched.",
+			"expect": {
+				"links": 1,
+				"pipes": {
+					"link": 4,
+					"hand": 2
+				},
+				"notice": "2 pipes laid"
+			},
+			"rule": "DECISIONS: \"The w that placed the source counts as the drag's first key\" (2026-09-30). Asked whether a g in the drag cancels it, the director chose \"A g in the drag cancels it\".",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "DIR-01",
 			"state": "routed",
 			"gesture": "draw: `w` bend",

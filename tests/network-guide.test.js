@@ -233,3 +233,13 @@ test('a link that lost a pin, whose only way left would double back, is stranded
 	const left = [{ a: 'S', b: 'P', laid: 'link' }, ...pipes(['S', 'X'], ['X', 'E'])];
 	assert.equal(isStranded(left, { src: 'S', dst: 'E', via: ['P'] }, model(['S', 'P', 'X', 'E'])), true, 'a hairpin is not another way');
 });
+
+test('the w that placed the source lays the final pipe WITH the link; a g in the drag cancels it (2026-09-30)', () => {
+	const single = judgeDrag([], drag({ src: 'S', dst: 'P', stops: ['S', 'P'], srcKey: 'w' }));
+	assert.equal(single.ok, true, 'a link drag');
+	assert.deepEqual(laid(single), ['S-P:link'], '"w, drag, release": the final pipe, with the link');
+	const withG = judgeDrag([], drag({ src: 'S', dst: 'E', guides: ['G'], placed: ['G'], stops: ['S', 'G', 'E'], pressed: { w: false, g: true }, srcKey: 'w' }));
+	assert.equal(withG.ok, false, 'a g in the drag cancels the source w: pipes only');
+	assert.deepEqual(laid(withG), ['S-G:hand', 'G-E:hand']);
+});
+

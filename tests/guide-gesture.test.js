@@ -209,3 +209,76 @@ test('PRODUCTION: w on a node still does nothing', () => {
 		assert.equal(h.model.all('link')[0].via, undefined, 'and nothing is pinned on a node');
 	} finally { h.restore(); }
 });
+
+/*
+THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: "When you press w, the anchor is "selected". So Yes if that same anchor
+remains the sole selected anchor, and the next gesture is a drag. This eliminates the case where you click off the anchor
+to unselect it - then the drag would follow normal link commit rules". Input sees every press, so the w counts only for
+the very next press, and only if that press drags from the anchor while it is still the sole selection.
+*/
+const onWp = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id } : null) } });
+function dragFromWp(h, wp, b) {
+	h.input.onDown(onWp(wp.id, wp.x, wp.y));
+	h.input.onMove(over(b.id, b.x, b.y));
+	h.input.onUp(over(b.id, b.x, b.y));
+}
+
+test('the w that placed the source counts when the next press drags from it, still the sole selection', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [b] = seedNodes(h.model, [[360, 0]]);
+		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));        // w with nothing in hand places S
+		const wp = h.model.all('waypoint')[0];
+		assert.ok(wp, 'w placed an anchor');
+		dragFromWp(h, wp, b);
+		assert.equal(calls.length, 1);
+		assert.equal(calls[0].srcKey, 'w', 'the w that placed S is the drag\'s first key');
+	} finally { h.restore(); }
+});
+
+test('a click away between placing S and dragging from it clears that w', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [b] = seedNodes(h.model, [[360, 0]]);
+		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));
+		const wp = h.model.all('waypoint')[0];
+		h.input.onDown(empty(600, 600)); h.input.onUp(empty(600, 600));   // click off it
+		dragFromWp(h, wp, b);
+		assert.equal(calls[0].srcKey, false, 'the drag follows the normal rules');
+		// and selecting S again does not bring it back: S did not REMAIN the sole selection since the w
+		h.input.onMove(empty(0, 480)); h.input.onKeyDown(key('w'));
+		const s2 = h.model.all('waypoint').find((x) => x.y === 480);
+		h.input.onDown(empty(600, 600)); h.input.onUp(empty(600, 600));
+		h.selection.set([s2.id]);                                          // reselected, as a click on it would
+		dragFromWp(h, s2, b);
+		assert.equal(calls.at(-1).srcKey, false, 'reselected is not remained');
+	} finally { h.restore(); }
+});
+
+test('the source w stops counting once that anchor is no longer the sole selection', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [b] = seedNodes(h.model, [[360, 0]]);
+		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));
+		const wp = h.model.all('waypoint')[0];
+		h.selection.set([wp.id, b.id]);                                    // selection widened without a press
+		dragFromWp(h, wp, b);
+		assert.equal(calls[0].srcKey, false);
+	} finally { h.restore(); }
+});
+
+test('the source w counts only for the anchor it placed', () => {
+	const calls = [];
+	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
+	try {
+		const [b] = seedNodes(h.model, [[360, 0]]);
+		h.model.put('waypoint', { id: 'waypoint-00000f', name: 't', x: 240, y: 240 });
+		h.input.onMove(empty(0, 240)); h.input.onKeyDown(key('w'));
+		h.selection.set(['waypoint-00000f']);                              // another anchor, now the sole selection
+		dragFromWp(h, h.model.get('waypoint', 'waypoint-00000f'), b);
+		assert.equal(calls[0].srcKey, false, 'the w placed a different anchor');
+	} finally { h.restore(); }
+});
