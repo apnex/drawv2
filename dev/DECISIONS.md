@@ -1455,3 +1455,10 @@ Asked one at a time, the director confirmed the proposer's readings:
 - matrix row DEL-14: when deleting pin P1 deletes the link, its other pin P2 survives as a plain anchor if a hand pipe still joins it to a guide -- "P2 stays";
 - RULESET-AUDIT D2: the later "never the same pipe twice" replaces the earlier "may pass a point twice" for going out and back along one pipe -- "Yes, 30 Sept replaces it".
 
+**Promotion is a full cutover: every existing diagram moves to the routing engine, with no legacy mode -- ruled 2026-09-30, and planned, not started.**\
+Asked what promoting the network plugin into production should do to existing diagrams -- opt in per diagram, or switch the whole product -- the director: "I dont want to proceed yet - but let's document the full plan for when we are ready.\
+Full cutover to new routing engine in existing diagrams.\
+No legacy".\
+So when promotion happens, production composes the network plugin always; every stored diagram is migrated to carry pipes and link ages; and the product's pre-network behaviours -- straight polylines through `via`, the B162/B216 orphan rules, never stranding a link -- are retired rather than kept beside the new ones.\
+The plan is `dev/design/unification/PROMOTION.md`; it is held as B266 until the director says the work may start.
+

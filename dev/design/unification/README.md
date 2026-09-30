@@ -15,6 +15,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `RULESET.md` | Every network and gesture rule once: its ruling, its code, its matrix rows, the seams, the cost per edit, and the decisions made in more than one place. | Descriptive, pinned at a commit. Judges nothing. |
 | `RULESET-AUDIT.md` | The audit of that ruleset: defects, duplication, cost, a consolidation design and its axiom audit. | Analytical. Proposes; the director decides. |
 | `GESTURES.md` | The network plugin's keys and drag grammar -- what a finished drag makes and which pipe each hop lays -- generated from the rows the Rules engine reads. | Living. Generated; records, rules nothing. |
+| `PROMOTION.md` | The plan for promoting the network plugin into production as a full cutover of every existing diagram: ten stages, risks, and the decisions to rule at the start. | Plan of record, held (B266). |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\
