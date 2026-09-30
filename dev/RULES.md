@@ -4,7 +4,7 @@ The sovereign spec for how the system decides what an input MEANS, given the sit
 
 > **Status: DRAFT, RULING-OWED, and PARTLY SUPERSEDED by the survey run to validate it.**\
 > Section 0 is FACT -- measured at `7e774a6` and cited in **B163**.\
-> Section 10 lists what cannot be settled without the director.
+> Section 10 lists what cannot be settled without the director; Q1-Q4 are all ruled as of 2026-09-30.
 >
 > **The director's intent was captured on 2026-09-01 and changed three things this spec asserts.**\
 > 
@@ -279,9 +279,14 @@ One row expresses both, and no handler body contains an `if`.
 Ruled by the director.\
 The table and the generated overlay land first; the menu is a later projection of the same table and nothing here depends on it.
 
-**Still owed.**
+**Q1, Q3 and Q4 -- ruled 2026-09-30** (`dev/DECISIONS.md`, "The Rules system's three owed rulings").\
+Q1: selection only, plus what each step of a drag landed on, recorded in the drag; no general hover yet.\
+Q3: an overlapping pair is always a gate failure; no `overrides:`.\
+Q4: binding now -- the situation is model-level, serialisable and DOM-free.
 
-| # | Decision owed | Why it cannot be settled without you |
+**Owed at the time, kept as asked.**
+
+| # | Decision owed | Why it could not be settled without the director |
 |---|---|---|
 | Q1 | Does the situation include HOVER, or selection only? | With the menu deferred, the case for hover is now section 7 rather than the menu, and that is a weaker and more speculative reason. Selection-only is the cheaper start and hover can be added to a closed vocabulary later. |
 | Q3 | Is an overlapping pair always a gate failure, or may a row declare `overrides:`? | A hard failure is simpler and will occasionally be inconvenient. An escape hatch is the exact mechanism by which the last ladder rotted. |

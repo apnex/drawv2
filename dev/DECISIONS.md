@@ -1380,3 +1380,17 @@ They are recorded here verbatim, with the rows that rely on them; nothing is new
 - HEAL-01, a `g` bend onto a down pair: "if I draw the new link with a bend using "g" (not w! - that would pin a new link) and let go on the end node - it also fails (2 straight links between node A/B etc.. which may carry one)".
 - HEAL-02, `g` against a plain mouseup: "do we need to distringuish between plain "mouseup on link drag on existing anchor" and "pressing g on existing anchor then mouseup"".
 - HEAL-04, a `w` bend beside a down link: "if I draw a new link with "w" - this should not be the healed link (w pins and draws an entirely new link in addition to the broken one?)".
+
+**The Rules system's three owed rulings: selection only, no overrides, the situation plain data -- ruled 2026-09-30.**\
+Asked `dev/RULES.md` Q1, Q3 and Q4 as the gate on step T3 of the ruleset audit, the director answered: "Agree with all 3 recommendations".\
+The recommendations, as put to the director:
+- Q1: a rule sees the selection, plus what each step of a drag landed on (a node, an anchor, empty ground), recorded in the drag itself; no general hover, which can be added to the closed vocabulary later.
+- Q3: two rules matching the same situation is always a gate failure; no row may declare `overrides:`.
+- Q4: the situation is binding now as model-level, serialisable and DOM-free data.
+
+**The Rules system is foundational to plugins, and a plugin's rules are the plugin's -- stated 2026-09-30.**\
+The director: "The rules system will be critical in that it is modular, decoupled, programmable, extensible etc as it will be foundational to our plugin/capability system.\
+Are the rules that relate to our "routing" plugin part of the plugin itself? it would have to be, given that it acts on capability that no other plugin would have awareness of?\
+This reminds me of game mods injecting behaviour into a general game engine, such as a lua surface".\
+Recorded as the director's intent; the design that answers it is proposed separately and awaits the director's approval.
+
