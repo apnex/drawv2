@@ -336,3 +336,17 @@ Each is a real fork, with a recommendation.
   Open.
 - **DG5 -- sequences beyond drags.** Are prefix-key sequences wanted (a key, then another, as VS Code's chords)? Recommended: in the vocabulary's design, built only when a first binding asks.\
   Ruled 2026-09-30: as recommended.
+
+---
+
+## 13. Progress
+
+**Stage 1a -- the replay corpus, 2026-09-30.**
+- **Two corpora, frozen from the code at `9a5c944`.** `tests/fixtures/gesture-corpus.json` holds 67 scenarios driven through the product's real Input in the harness: every gesture kind and its release branches, every key verb, read-only, run mode, and the plugin seam. `tests/fixtures/matrix-corpus.json` holds the whole board after each of the 43 matrix rows, run in real Chrome through the lab.
+- **What is recorded is what crosses a boundary:** the claim on each event, every commit, what was said, the editor, palette and host calls, the facts a plugin's judge was handed, and the final document and selection -- never Input's internals.
+- **Deterministic by construction.** Ids are written canonically, by kind and first appearance; `Date.now` is pinned; a pipe's ends are written in canonical order, since the pipe set orders them by random id. Rewriting the gesture corpus left every existing record byte-identical, and the matrix corpus passed four runs in a row, each with fresh ids.
+- **Its coverage is measured.** Every key verb the product's table names is invoked by some scenario, or a test fails.
+- **It catches what the suites do not.** Five mutants -- select-all taking waypoints, the text tool staying armed, the marquee picking a link by one end, two receipts changed -- passed every existing input suite; the corpus fails on all five. Two of them first survived the corpus too, which is how its select-all and marquee gaps were found and closed. A change to how bent links are drawn failed eight matrix rows on the corpus alone, their own checks passing.
+- **It records one known defect as it stands:** B245, the pin a cancelled drag loses (`link-w-pinned-cancelled`). That record changes on purpose when stage 5 fixes it.
+- **Found on the way:** the harness renderer stub lacked `toggleLabels`, so Tab threw in the harness; completed, as the harness requires of a stub.
+

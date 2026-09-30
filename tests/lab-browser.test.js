@@ -25,6 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { teardown, spawnGroup } from './fixtures/teardown.mjs';
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
+import { canonical } from './fixtures/gesture-corpus.mjs';   // ids by kind and first appearance, as the gesture corpus writes them
 
 const SKIP = NO_CHROME;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -683,6 +684,30 @@ test('the matrix uses only steps and checks this runner performs, and declares e
 const judge = (checks, s) => Object.entries(checks).map(([key, want]) => CHECK[key](s, want)).filter((r) => r !== true);
 const perform = async (p, steps) => { for (const [verb, ...args] of steps) await STEP[verb](p, ...args); };
 
+/*
+THE MATRIX CORPUS -- stage 1 of the gesture system (dev/design/input/GESTURE-SYSTEM.md, section 9).
+
+Each row's own checks say what the row is ABOUT. The whole snapshot after its steps -- links, what is drawn and how,
+pipes, anchors, selection, the notice -- is frozen as well, ids canonical, in tests/fixtures/matrix-corpus.json, so a
+restructuring that changes anything a row's checks do not name still fails here. Written from the code as it stood when
+the corpus was made; rewritten only with a ruled behaviour change, by `CORPUS_WRITE=1 node --test tests/lab-browser.test.js`.
+*/
+const MATRIX_CORPUS = new URL('./fixtures/matrix-corpus.json', import.meta.url);
+const WRITING_CORPUS = process.env.CORPUS_WRITE === '1';
+const matrixCorpus = WRITING_CORPUS || !fs.existsSync(MATRIX_CORPUS) ? {} : JSON.parse(fs.readFileSync(MATRIX_CORPUS, 'utf8'));
+const written = {};
+/*
+The snapshot in corpus form: ids canonical, and each pipe written with its ends in canonical order. The pipe set stores
+a pipe's ends sorted by id, and ids are random, so which end prints first is not behaviour -- a pipe is its pair. Every
+id is numbered before the pipes appear in the snapshot, so orienting them afterwards cannot shift the numbering.
+*/
+const corpusForm = (s) => {
+	const c = canonical(s);
+	c.pipes = c.pipes.map((q) => { const [a, b] = [q.a, q.b].sort(); return { ...q, a, b }; });
+	return c;
+};
+after(() => { if (WRITING_CORPUS && Object.keys(written).length) fs.writeFileSync(MATRIX_CORPUS, `${JSON.stringify(written, null, '\t')}\n`); });
+
 for (const row of MATRIX.rows) {
 	const state = MATRIX.states[row.state];
 	const standing = row.standing === 'open' ? 'OPEN' : row.built === 'yes' ? row.standing : `TODO, ${row.standing}`;
@@ -697,6 +722,8 @@ for (const row of MATRIX.rows) {
 			assert.deepEqual(unset, [], `the board is not in state "${row.state}" after its setup, so ${row.id} would prove nothing: ${unset.join('; ')}`);
 			await perform(p, [...row.steps, ['settle']]);
 			const s = await p.run(SNAPSHOT);
+			if (WRITING_CORPUS) written[row.id] = corpusForm(s);
+			else assert.deepEqual(corpusForm(s), matrixCorpus[row.id], `${row.id}: the board after its steps differs from the matrix corpus -- a change its own checks do not name`);
 			const broken = Object.entries(INVARIANT).map(([id, holds]) => { const r = holds(s, t.thrown); return r === true ? null : `${id}: ${r}`; }).filter(Boolean);
 			if (row.standing === 'open') {
 				assert.deepEqual(broken, [], `${row.id} waits for a ruling, but the universal invariants hold on every row`);

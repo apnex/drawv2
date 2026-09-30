@@ -1,0 +1,3712 @@
+{
+	"DEL-01": {
+		"notice": "v2 delete -- 2 links down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"DEL-02": {
+		"notice": "v2 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -240,
+				"y": 300
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": 300
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,300|-480,0",
+					"-240,300|240,300",
+					"240,300|480,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-480 0 L-252.494 284.383 Q-240 300 -220 300 L220 300 Q240 300 252.494 284.383 L480 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"DEL-03": {
+		"notice": "v2 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#1",
+			"node#2"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-04": {
+		"notice": "v3 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-05": {
+		"notice": "v3 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-06": {
+		"notice": "v3 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-07": {
+		"notice": "v3 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-08": {
+		"notice": "v3 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-09": {
+		"notice": "v3 delete -- 1 link down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4"
+				],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": 240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#2"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "link"
+			}
+		],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -220 -120 L220 -120 Q240 -120 254.142 -105.858 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"DEL-10": {
+		"notice": "v2 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 480,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -480,
+				"y": 480
+			},
+			{
+				"id": "waypoint#3",
+				"x": 480,
+				"y": 480
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3"
+		],
+		"alive": [
+			"node#5",
+			"node#6",
+			"node#7",
+			"node#8",
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"240,0|480,0",
+					"480,0|720,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"480,-300|480,0",
+					"480,0|480,300"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M240 0 L460 0 Q480 0 500 0 L720 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M480 -300 L480 -20 Q480 0 480 20 L480 300",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"DEL-11": {
+		"notice": "v2 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#1"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-12": {
+		"notice": "v2 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#3",
+			"node#1",
+			"node#2",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"DEL-13": {
+		"notice": "v2 delete -- 2 links down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [
+					"waypoint#1"
+				],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "node#5",
+				"dst": "node#6",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#4",
+				"src": "node#7",
+				"dst": "node#8",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				]
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [
+					"waypoint#1"
+				]
+			},
+			{
+				"id": "link#3",
+				"src": "node#5",
+				"dst": "node#6",
+				"via": []
+			},
+			{
+				"id": "link#4",
+				"src": "node#7",
+				"dst": "node#8",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -480,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -480,
+				"y": 480
+			},
+			{
+				"id": "waypoint#3",
+				"x": 480,
+				"y": 480
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"node#5",
+			"node#6",
+			"node#7",
+			"node#8",
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "link"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-480,0|-720,0",
+					"-240,0|-480,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"-480,-300|-480,0",
+					"-480,0|-480,300"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-720 0 L-500 0 Q-480 0 -460 0 L-240 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M-480 -300 L-480 -20 Q-480 0 -480 20 L-480 300",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M240 0 L720 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#4": {
+				"d": "M480 -300 L480 300",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"DEL-14": {
+		"notice": "v3 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"DEL-15": {
+		"notice": "v3 delete -- 1 link down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			}
+		],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#3",
+			"node#1",
+			"node#2"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"DEL-16": {
+		"notice": "v2 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#3",
+			"node#4",
+			"node#1",
+			"node#2",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"LOOK-01": {
+		"notice": "v2 delete -- 2 links down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"HEAL-01": {
+		"notice": "2 pipes laid by hand -- g lays pipes, not links; link#1 healed",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,-120",
+					"0,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"HEAL-02": {
+		"notice": "1 pipe laid by hand -- g lays pipes, not links; link#1 healed",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "node#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"HEAL-03": {
+		"notice": "link#1 already joins these two, and a pair takes one unpinned link -- pin a bend with w to draw another",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [],
+		"tabAnchors": [],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"HEAL-04": {
+		"notice": "v3 route -- 2 links down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#3",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "link"
+			}
+		],
+		"selected": [
+			"link#3"
+		],
+		"stretches": [
+			{
+				"id": "link#3",
+				"keys": [
+					"-360,0|0,-120",
+					"0,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#3": {
+				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			}
+		}
+	},
+	"HEAL-05": {
+		"notice": "v4 delete -- 1 link down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "link"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,-120",
+					"0,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"CAP-01": {
+		"notice": "link#1 is down: its way is held by link#2, link#3 -- a pipe carries one link, and the older link keeps it",
+		"links": [
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#3",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			},
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#3",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#3",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#2": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": false
+			},
+			"link#1": {
+				"d": "M-360 0 L0 -240",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
+			}
+		}
+	},
+	"CAP-02": {
+		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
+		"links": [
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			},
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -240,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "link"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-240,0|-480,-180",
+					"-240,0|240,0",
+					"240,0|480,-180"
+				]
+			}
+		],
+		"paths": {
+			"link#2": {
+				"d": "M-480 -180 L-256 -12 Q-240 0 -220 0 L220 0 Q240 0 256 -12 L480 -180",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M-480 180 L480 180",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			},
+			"link#1": {
+				"d": "M-480 -180 L-256 -12 Q-240 0 -220.597 -4.851 L480 -180",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
+			}
+		}
+	},
+	"CAP-03": {
+		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
+		"links": [
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#1",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#1",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -240,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-240,0|-480,-180",
+					"-240,0|240,0",
+					"240,0|480,-180"
+				]
+			}
+		],
+		"paths": {
+			"link#2": {
+				"d": "M-480 -180 L-256 -12 Q-240 0 -220 0 L220 0 Q240 0 256 -12 L480 -180",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": false
+			},
+			"link#1": {
+				"d": "M-480 180 L480 180",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
+			}
+		}
+	},
+	"CAP-04": {
+		"notice": "v2 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -240,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#3",
+			"node#4",
+			"node#1",
+			"node#2",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,0|-480,180",
+					"-240,0|240,0",
+					"240,0|480,180"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-480 180 L-256 12 Q-240 0 -220 0 L220 0 Q240 0 256 12 L480 180",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"CAP-05": {
+		"notice": "seed trunk -- 8 entities, 5 pipes",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -240,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,0|-480,-180",
+					"-240,0|240,0",
+					"240,0|480,-180"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-480 -180 L-256 -12 Q-240 0 -220 0 L220 0 Q240 0 256 -12 L480 -180",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M-480 180 L480 180",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"CAP-06": {
+		"notice": "v3 undo -- 1 link down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": true
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -240,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 240,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#3",
+			"node#4",
+			"node#1",
+			"node#2",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-240,0|-480,-180",
+					"-240,0|240,0",
+					"240,0|480,-180"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-480 180 L480 180",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
+			},
+			"link#2": {
+				"d": "M-480 -180 L-256 -12 Q-240 0 -220 0 L220 0 Q240 0 256 -12 L480 -180",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": false
+			}
+		}
+	},
+	"GST-01": {
+		"notice": "2 pipes laid by hand -- g lays pipes, not links",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -180
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"GST-02": {
+		"notice": "2 pipes laid by hand -- g lays pipes, not links",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -180
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"ALT-01": {
+		"notice": "v5 link",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#5",
+				"x": 240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#6",
+				"x": -240,
+				"y": 120
+			},
+			{
+				"id": "waypoint#7",
+				"x": -60,
+				"y": 120
+			},
+			{
+				"id": "waypoint#8",
+				"x": 60,
+				"y": 120
+			},
+			{
+				"id": "waypoint#9",
+				"x": 240,
+				"y": 120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#6",
+			"waypoint#7",
+			"waypoint#8",
+			"waypoint#9"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#6",
+			"waypoint#7",
+			"waypoint#8",
+			"waypoint#9"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#4",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#5",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#6",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#6",
+				"b": "waypoint#7",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#7",
+				"b": "waypoint#8",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#8",
+				"b": "waypoint#9",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#9",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,-120|-360,0",
+					"-240,-120|0,-120",
+					"0,-120|240,-120",
+					"240,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -220 -120 L-20 -120 Q0 -120 20 -120 L220 -120 Q240 -120 254.142 -105.858 L360 0",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			}
+		}
+	},
+	"ALT-02": {
+		"notice": "v6 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": 240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#5",
+				"x": -240,
+				"y": 120
+			},
+			{
+				"id": "waypoint#6",
+				"x": -60,
+				"y": 120
+			},
+			{
+				"id": "waypoint#7",
+				"x": 60,
+				"y": 120
+			},
+			{
+				"id": "waypoint#8",
+				"x": 240,
+				"y": 120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#6",
+			"waypoint#7",
+			"waypoint#8"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#6",
+			"waypoint#7",
+			"waypoint#8"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#5",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#5",
+				"b": "waypoint#6",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#6",
+				"b": "waypoint#7",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#7",
+				"b": "waypoint#8",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#8",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,120|-360,0",
+					"-240,120|-60,120",
+					"-60,120|60,120",
+					"240,120|60,120",
+					"240,120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 105.858 Q-240 120 -220 120 L-80 120 Q-60 120 -40 120 L40 120 Q60 120 80 120 L220 120 Q240 120 254.142 105.858 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"WP-01": {
+		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
+		"links": [
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4"
+				],
+				"down": false
+			},
+			{
+				"id": "link#1",
+				"src": "waypoint#5",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4"
+				]
+			},
+			{
+				"id": "link#1",
+				"src": "waypoint#5",
+				"dst": "waypoint#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": -360,
+				"y": 300
+			},
+			{
+				"id": "waypoint#3",
+				"x": -120,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": 120,
+				"y": -120
+			},
+			{
+				"id": "waypoint#6",
+				"x": -240,
+				"y": 120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#6"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#6"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#5",
+				"b": "waypoint#6",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#6",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-120,-120|-360,0",
+					"-120,-120|120,-120",
+					"120,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#2": {
+				"d": "M-360 0 L-137.889 -111.056 Q-120 -120 -100 -120 L100 -120 Q120 -120 137.889 -111.056 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#1": {
+				"d": "M-360 300 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"WP-02": {
+		"notice": "v7 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 300
+			},
+			{
+				"id": "waypoint#3",
+				"x": -120,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": 120,
+				"y": -120
+			},
+			{
+				"id": "waypoint#5",
+				"x": -240,
+				"y": 120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#2",
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5"
+		],
+		"alive": [
+			"waypoint#2",
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#5",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#5",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,120|-360,300",
+					"-120,-120|-240,120",
+					"-120,-120|120,-120",
+					"120,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 300 L-251.094 136.641 Q-240 120 -231.056 102.111 L-128.944 -102.111 Q-120 -120 -100 -120 L100 -120 Q120 -120 137.889 -111.056 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"HP-01": {
+		"notice": "v5 delete",
+		"links": [],
+		"tabLinks": [],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": 0,
+				"y": 240
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#3",
+				"laid": "hand"
+			}
+		],
+		"selected": [],
+		"stretches": [],
+		"paths": {}
+	},
+	"HP-02": {
+		"notice": "v5 delete -- 1 link down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3"
+				],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#4",
+				"x": 0,
+				"y": 240
+			},
+			{
+				"id": "waypoint#3",
+				"x": -120,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#4",
+			"waypoint#3"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#4",
+			"waypoint#3"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#4",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			}
+		],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-137.889 -111.056 Q-120 -120 -100.597 -115.149 L360 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	},
+	"SUP-01": {
+		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
+		"links": [
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#1",
+				"src": "waypoint#3",
+				"dst": "waypoint#4",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": []
+			},
+			{
+				"id": "link#1",
+				"src": "waypoint#3",
+				"dst": "waypoint#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": -120
+			},
+			{
+				"id": "waypoint#2",
+				"x": 360,
+				"y": -120
+			},
+			{
+				"id": "waypoint#3",
+				"x": -360,
+				"y": 240
+			},
+			{
+				"id": "waypoint#4",
+				"x": 360,
+				"y": 240
+			},
+			{
+				"id": "waypoint#5",
+				"x": -120,
+				"y": 120
+			},
+			{
+				"id": "waypoint#6",
+				"x": 120,
+				"y": 120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#6"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#6"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#5",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#5",
+				"b": "waypoint#6",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#6",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#5",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#6",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-120,120|-360,-120",
+					"-120,120|120,120",
+					"120,120|360,-120"
+				]
+			}
+		],
+		"paths": {
+			"link#2": {
+				"d": "M-360 -120 L-134.142 105.858 Q-120 120 -100 120 L100 120 Q120 120 134.142 105.858 L360 -120",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": false
+			},
+			"link#1": {
+				"d": "M-360 240 L360 240",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
+			}
+		}
+	},
+	"SRC-01": {
+		"notice": "v4 link",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#2",
+				"dst": "waypoint#3",
+				"via": [
+					"waypoint#4",
+					"waypoint#5"
+				],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "waypoint#6",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#2",
+				"dst": "waypoint#3",
+				"via": [
+					"waypoint#4",
+					"waypoint#5"
+				]
+			},
+			{
+				"id": "link#3",
+				"src": "waypoint#6",
+				"dst": "waypoint#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": -120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#3",
+				"x": 120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#6",
+				"x": -240,
+				"y": 240
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#6"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#6"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#6",
+				"laid": "link"
+			}
+		],
+		"selected": [
+			"link#3"
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,-120|-360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"-120,0|-240,-120",
+					"-120,0|0,-120",
+					"0,-120|120,0"
+				]
+			},
+			{
+				"id": "link#3",
+				"keys": [
+					"-240,-120|-240,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-240 -120",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M-240 -120 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M-240 240 L-240 -120",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			}
+		}
+	},
+	"SRC-02": {
+		"notice": "link#1 is down: no way over the pipes it may use -- it heals when one is laid",
+		"links": [
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "waypoint#2",
+				"dst": "waypoint#3",
+				"via": [
+					"waypoint#4",
+					"waypoint#5"
+				],
+				"down": false
+			},
+			{
+				"id": "link#1",
+				"src": "waypoint#6",
+				"dst": "waypoint#2",
+				"via": [],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "waypoint#2",
+				"dst": "waypoint#3",
+				"via": [
+					"waypoint#4",
+					"waypoint#5"
+				]
+			},
+			{
+				"id": "link#1",
+				"src": "waypoint#6",
+				"dst": "waypoint#2",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": -120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#3",
+				"x": 120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#6",
+				"x": -240,
+				"y": 240
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#6"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#2",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#6"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#2",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#5",
+				"laid": "link"
+			}
+		],
+		"selected": [
+			"link#1"
+		],
+		"stretches": [
+			{
+				"id": "link#2",
+				"keys": [
+					"-240,-120|-360,0"
+				]
+			},
+			{
+				"id": "link#3",
+				"keys": [
+					"-120,0|-240,-120",
+					"-120,0|0,-120",
+					"0,-120|120,0"
+				]
+			}
+		],
+		"paths": {
+			"link#2": {
+				"d": "M-360 0 L-240 -120",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M-240 -120 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#1": {
+				"d": "M-240 240 L-240 -120",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
+			}
+		}
+	},
+	"SRC-03": {
+		"notice": "2 pipes laid by hand -- g lays pipes, not links",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4",
+					"waypoint#5"
+				],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4",
+					"waypoint#5"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": -120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#2",
+				"x": 120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#6",
+				"x": -240,
+				"y": 240
+			},
+			{
+				"id": "waypoint#7",
+				"x": 0,
+				"y": 240
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#2",
+			"waypoint#6",
+			"waypoint#7"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#2",
+			"waypoint#6",
+			"waypoint#7"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#6",
+				"b": "waypoint#7",
+				"laid": "hand"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#7",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"waypoint#6"
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,-120|-360,0",
+					"-120,0|-240,-120",
+					"-120,0|0,-120",
+					"0,-120|120,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -225.858 -105.858 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"DIR-01": {
+		"notice": "v2 link",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "node#1",
+				"dst": "node#3",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "node#1",
+				"dst": "node#3",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "node#3",
+				"laid": "link"
+			}
+		],
+		"selected": [
+			"link#3"
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			},
+			{
+				"id": "link#3",
+				"keys": [
+					"-360,0|0,-240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M-360 0 L0 -240",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			}
+		}
+	},
+	"RFS-01": {
+		"notice": "refused: two links with the same endpoints bend at the same waypoint: waypoint#1",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "link"
+			}
+		],
+		"selected": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,-120",
+					"0,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"UNDO-01": {
+		"notice": "v4 undo -- 1 link down, ready to heal",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4",
+					"waypoint#5"
+				],
+				"down": true
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4",
+					"waypoint#5"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#2",
+				"x": 120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#4",
+				"x": -120,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#2",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#1",
+			"waypoint#4"
+		],
+		"alive": [
+			"waypoint#2",
+			"waypoint#5",
+			"waypoint#3",
+			"waypoint#1",
+			"waypoint#4"
+		],
+		"pipes": [],
+		"selected": [],
+		"stretches": [],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -225.858 -105.858 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(255, 152, 0)",
+				"dotted": true
+			}
+		}
+	}
+}

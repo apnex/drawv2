@@ -143,7 +143,8 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 
 	const calls = [];
 	const rec = (name) => (...args) => { calls.push({ name, args }); };
-	const renderer = { mode: 'view', setMode: rec('renderer.setMode'), setState: rec('renderer.setState'), clearState: rec('renderer.clearState') };
+	const renderer = { mode: 'view', setMode: rec('renderer.setMode'), setState: rec('renderer.setState'), clearState: rec('renderer.clearState'),
+		toggleLabels: rec('renderer.toggleLabels') };   // Tab calls it; a stub must be total (the gesture corpus found the gap)
 	// A stub must be TOTAL or it is a trap — the same lesson Input's own readout null-object records.
 	// `focusId` moved here at H6.12, so the stub tracks it for real rather than swallowing the call:
 	// a test can then assert F2 picked the directly-touched entity, which was unassertable before.
