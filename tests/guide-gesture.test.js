@@ -282,3 +282,26 @@ test('the source w counts only for the anchor it placed', () => {
 		assert.equal(calls[0].srcKey, false, 'the w placed a different anchor');
 	} finally { h.restore(); }
 });
+
+/*
+B261 -- `w` during a CHAINED link drag. A Shift-release chains the next link from the node it landed on (`chainFrom`),
+and that drag's context had no `route`: `w` threw on the push, after putting the new waypoint on the tab's model and
+before recording it for cleanup. Production composition, no plugin: this is the product's own `w`.
+*/
+test('B261: w during a chained link drag adds its bend, and the chained link commits with it', () => {
+	const h = makeInput();
+	try {
+		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
+		h.input.onDown(over(a.id, a.x, a.y));
+		h.input.onMove(over(b.id, b.x, b.y));
+		h.input.onUp({ ...over(b.id, b.x, b.y), shiftKey: true });
+		h.input.onMove(empty(480, 180));
+		assert.doesNotThrow(() => h.input.onKeyDown(key('w')));
+		h.input.onMove(over(c.id, c.x, c.y));
+		h.input.onUp(over(c.id, c.x, c.y));
+		const chained = h.model.all('link').find((l) => l.src === b.id && l.dst === c.id);
+		assert.ok(chained, 'the chained link is made');
+		assert.equal(chained.via?.length, 1, 'through the bend w dropped');
+		assert.equal(h.model.all('waypoint').length, 1, 'and no stray waypoint is left behind');
+	} finally { h.restore(); }
+});

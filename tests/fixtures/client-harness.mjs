@@ -37,6 +37,7 @@ import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
+import { NETWORK_KEYS } from '../../network/keys.mjs';
 
 // ---- the smallest DOM the client's constructors actually touch ----
 
@@ -132,7 +133,7 @@ A real Model, a real Changes, a real Selection, a real Input. The collaborators 
 stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
 can show a gesture did not, say, open the label editor, without asserting on pixels.
 */
-export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null } = {}) {
+export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null } = {}) {
 	const restore = installDom();
 
 	const model = new Model();
@@ -208,12 +209,17 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	history.onCommit((request) => commits.push(request));
 
 	// `bare` omits the optional collaborators entirely, exercising Input's own null-object defaults.
-	const input = bare
-		? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
-		: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap,
-			// the incubating network plugin's route hook (ruled 2026-09-28). Absent unless a test asks for it,
-			// exactly as production constructs Input without one -- so every existing test runs as production does.
-			...(routeHook ? { routeHook } : {}) });
+	let input;
+	try {
+		input = bare
+			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
+			: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap,
+				// `routeHook` composes the incubating network plugin as the lab does (lab/src/root.js): its own keys
+				// (network/keys.mjs) and this function as its drag judge (dev/RULES.md section 11). Absent unless a test
+				// asks for it, exactly as production composes no plugin -- so every other test runs as production does.
+				...(routeHook ? { plugins: [{ owner: 'network', keys: NETWORK_KEYS, judgeDrag: routeHook }] } : {}),
+				...(plugins ? { plugins } : {}) });   // a composition given whole, for tests of the plugin seam itself
+	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 
 	return {

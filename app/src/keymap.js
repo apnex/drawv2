@@ -29,6 +29,7 @@ const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;
 const oneLink = (s) => s.selection.size === 1 && s.selection.kinds[0] === 'link';
 const oneBentLink = (s) => oneLink(s) && s.selection.bends > 0;
 const oneStraightLink = (s) => oneLink(s) && s.selection.bends === 0;
+const linkStepOnNode = (s) => s.gesture === 'link' && s.step === 'node';
 const meta = (e) => e.ctrlKey || e.metaKey;
 const is = (e, k) => e.key.toLowerCase() === k;
 const arrow = (e) => e.key.startsWith('Arrow');
@@ -91,13 +92,11 @@ export const KEYMAP = [
 
 	// ---- authoring ----
 	// `w` is the one mutating verb that belongs DURING a gesture: dropping a bend mid-route is the
-	// whole point of it, and the mouse button is still held.
-	{ id: 'waypoint',  prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'w') && plain(e), run: 'onWaypointKey' },
-	// `g` is `w` without the pin: an anchor the route passes but the link does not connect at. INCUBATING
-	// with the network plugin (ruled 2026-09-28), so it acts only when the composition hands Input a route
-	// hook -- the lab does, production does not. prevent: false for the same reason as `w`: the key is
-	// claimed only on the path that acts, and in production that path never runs.
-	{ id: 'guide',     prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'g') && plain(e), run: 'onGuideKey' },
+	// whole point of it, and the mouse button is still held. Over a node mid-drag it means nothing
+	// here -- a bend cannot sit on a node -- which is what leaves that situation free for a plugin to
+	// mean something by (the network's `stop-on-node`, network/keys.mjs). `g` is not the product's
+	// at all any more: it is the network plugin's, and production composes none (dev/RULES.md section 11).
+	{ id: 'waypoint',  prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'w') && plain(e), when: (s) => !linkStepOnNode(s), run: 'onWaypointKey' },
 	{ id: 'text-tool', mutates: true, on: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
 	{ id: 'reshape',   mutates: true, on: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
 		// B147: meaningful mid-drag now -- a digit places that node and carries the link run through

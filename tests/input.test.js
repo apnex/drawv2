@@ -21,6 +21,7 @@ import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
+import { NETWORK_KEYS } from '../network/keys.mjs';
 
 // the product's key table through the Rules engine (dev/RULES.md section 11), and the row a key resolves to
 const PRODUCT_KEYS = composeRules({ owner: 'product', rules: KEYMAP });
@@ -886,7 +887,6 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 		['z',         { ctrlKey: true },             'undo'],
 		['z',         { ctrlKey: true, shiftKey: true }, 'redo'],
 		['y',         { ctrlKey: true },             'redo'],
-		['g',         {},                            'guide'],
 		['g',         { ctrlKey: true },             'group'],
 		['g',         { ctrlKey: true, shiftKey: true }, 'ungroup'],
 	];
@@ -924,6 +924,30 @@ test('Q3: no keystroke matches two rows of the product table, in any situation o
 	const found = overlapsIn(PRODUCT_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES)
 		.map((o) => `${JSON.stringify(o.guards)} ${o.situation.gesture ?? ''}/${o.situation.step ?? ''} ${JSON.stringify(o.input.key)} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
+});
+
+/*
+A PLUGIN'S ROWS ARE THE PLUGIN'S (the director, 2026-09-30). The network brings `g` and `w` on a node; composed beside
+the product's rows -- as the lab composes them -- no keystroke matches two rows in any situation either, which is what
+Q3 asks of every composition, not only of the product alone.
+*/
+const LAB_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: NETWORK_KEYS });
+
+test('Q3: composed with the network plugin, still no keystroke matches two rows', () => {
+	const found = overlapsIn(LAB_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);
+	assert.deepEqual(found, []);
+});
+
+test('the product names no routing key: g means nothing in production, and the network\'s rows are its own', () => {
+	for (const s of SITUATIONS) assert.equal(resolveKey(key('g'), { gesturing: !!s.gesture }, s), null, 'no product row is about g');
+	assert.deepEqual(LAB_KEYS.filter((r) => r.owner === 'network').map((r) => r.id), ['guide', 'stop-on-node']);
+	const drawing = (step) => sit(undefined, 'link', step);
+	const lab = (k, s) => resolveInput(LAB_KEYS, key(k), s, { gesturing: !!s.gesture }).rule?.id ?? null;
+	assert.equal(lab('g', drawing('ground')), 'guide', 'g during a link drag is the network\'s guide');
+	assert.equal(lab('g', sit()), null, 'and means nothing outside one');
+	assert.equal(lab('w', drawing('node')), 'stop-on-node', 'w over a node mid-drag is the network\'s stop');
+	assert.equal(lab('w', drawing('ground')), 'waypoint', 'w anywhere else is still the product\'s bend');
+	assert.equal(resolveKey(key('w'), { gesturing: true }, drawing('node')), null, 'and in production, w over a node mid-drag means nothing -- as before');
 });
 
 test('Q3: Ctrl+Shift+Backspace means undo-run alone -- it no longer wins by being listed first', () => {
@@ -994,13 +1018,11 @@ test('B47: a conditional claimer prevents only on the path that acts', () => {
 test('B47: every entry declares prevent, or inherits the safe default', () => {
 	const optOut = KEYMAP.filter((r) => r.prevent === false).map((r) => r.id).sort();
 	/*
-	`guide` joins the set, argued 2026-09-28. It is `w` without the pin and opts out for `w`'s reason:
-	the key is claimed only on the path that acts. It has a second reason `w` lacks. `g` is INCUBATING
-	with the network plugin and acts only when the composition supplies a route hook -- the lab does,
-	production does not -- so in production the acting path never runs, and claiming the key would
-	swallow a keystroke the product does nothing with. tests/guide-gesture.test.js holds both halves.
+	`guide` joined the set on 2026-09-28 and left it with T3 (dev/RULES.md section 11): `g` is no longer a product row
+	at all but the network plugin's (network/keys.mjs), which production does not compose -- so production has no row
+	to claim it with, which is the property the opt-out existed for. tests/guide-gesture.test.js holds both halves.
 	*/
-	assert.deepEqual(optOut, ['alt', 'control', 'delete', 'escape', 'guide', 'labels', 'stamp', 'waypoint'],
+	assert.deepEqual(optOut, ['alt', 'control', 'delete', 'escape', 'labels', 'stamp', 'waypoint'],
 		'the opt-outs are a closed, reviewed set — a new one has to be argued for here');
 	for (const r of KEYMAP) {
 		assert.ok(r.prevent === undefined || r.prevent === false,

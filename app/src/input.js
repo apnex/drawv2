@@ -233,13 +233,15 @@ const GESTURES = {
 			const route = [...(ctx.route ?? ctx.via ?? [])];
 			const via = [...(ctx.via || [])];
 			// how the END was reached: released on an anchor (nothing pressed there), or at a stop a key made
-			const endKey = (id) => (validTarget ? false : (ctx.guides ?? []).includes(id) ? 'g' : 'w');
+			// the stops a `g` made, in drawn order -- read from the drag's steps, not kept as a second list
+			const guided = new Set(ctx.steps.filter((t) => t.key === 'g').map((t) => t.stop));
+			const endKey = (id) => (validTarget ? false : guided.has(id) ? 'g' : 'w');
 			if (!dst && route.length) {
 				dst = route.pop();
 				const k = via.indexOf(dst);
 				if (k !== -1) via.splice(k, 1);
 			}
-			const guides = (ctx.guides ?? []).filter((g) => g !== dst);
+			const guides = [...guided].filter((g) => g !== dst);
 			/*
 			B72 -- a ROUTED link may duplicate an existing pair; a straight one may not.
 
@@ -257,21 +259,20 @@ const GESTURES = {
 			// one already exists -- not whether anything does. Keying it on `linkBetween` meant a
 			// direct link became impossible the moment a routed one was drawn, which made the
 			// order a person happened to draw in decide what they could have.
-			// judged on every stop DRAWN, pins and guides: with no route hook they are the same, and with one the hook
-			// judges by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
+			// judged on every stop DRAWN, pins and guides: with no drag judge they are the same, and with one the judge
+			// decides by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
 			const admitted = !pairHolders({ src: ctx.src.id, dst, via: route }, i.model.linksBetween(ctx.src.id, dst), i.model).length;
-			// with a route hook (the lab) a duplicate reaches it too, so the author is told why nothing is made
-			if (dst && srcAlive && dst !== ctx.src.id && (admitted || (i.routeHook && !evt.shiftKey))) {
+			// with a drag judge (the lab's network plugin) a duplicate reaches it too, so the author is told why nothing is made
+			if (dst && srcAlive && dst !== ctx.src.id && (admitted || (i.judgeDrag && !evt.shiftKey))) {
 				/*
-				The route hook sees the whole drawn route before anything commits, and may refuse it -- a guide
-				the fewest-pipes route would skip is not a link worth committing. A refusal commits nothing and
-				removes the anchors this drag placed, exactly as a cancelled drag does. No hook, no question:
-				production commits as it always has.
+				A plugin's drag judge sees the whole drawn route before anything commits, and may refuse it. A
+				refusal commits nothing and removes the anchors this drag placed, exactly as a cancelled drag does.
+				No judge, no question: production commits as it always has.
 				*/
-				if (i.routeHook) {
+				if (i.judgeDrag) {
 					const placed = ctx.placed.map((w) => w.id);
-					const pressed = { w: !!ctx.pressedW, g: !!ctx.pressedG };
-					const verdict = i.routeHook({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst], pressed, endPressed: endKey(dst), srcKey: ctx.srcKey ?? false });
+					const pressed = { w: ctx.steps.some((t) => t.key === 'w'), g: ctx.steps.some((t) => t.key === 'g') };
+					const verdict = i.judgeDrag({ src: ctx.src.id, dst, pins: via, guides, placed, stops: [ctx.src.id, ...route, dst], pressed, endPressed: endKey(dst), srcKey: ctx.srcKey ?? false });
 					if (!verdict?.ok) {
 						/*
 						A refusal may name anchors to KEEP. The link is refused; anchors the hook names survive
@@ -329,12 +330,9 @@ const GESTURES = {
 			const src = i.model.get(hit.kind, hit.id);
 			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
 			i.overlayUi.clearHover();
-			// `via` is what the link will STORE (its pins); `route` is every stop in drawn order, pins and
-			// guides, for the preview and the route hook; `guides` are the stops that are not pins. With no
-			// route hook there are no guides, so `route` is exactly `via` and nothing downstream changes.
 			const sole = i.selection.list();
 			const srcKey = i.armedSource === src.id && sole.length === 1 && sole[0] === src.id ? 'w' : false;
-			i.ctx = { src, path: previewPath(i.overlay), target: null, start: pos, shift: evt.shiftKey, via: [], placed: [], route: [], guides: [], srcKey };
+			i.ctx = i.linkDrag(src, pos, { shift: evt.shiftKey, srcKey });
 			i.updateLinkPreview(pos);
 			return i.ctx;
 		}
@@ -427,7 +425,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now, routeHook = null }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now, plugins = [] }) {
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -436,9 +434,24 @@ export class Input {
 		The hook is asked once per drag, for the WHOLE route: a guide is not in the link's intent, so
 		whether the route passes it is a property of the whole route, not of any one leg.
 		*/
-		this.routeHook = routeHook;
-		// the key table: the product's rows through the Rules engine (dev/RULES.md section 11)
-		this.keyRules = composeRules({ owner: 'product', rules: KEYMAP });
+		/*
+		PLUGINS -- what a composition adds to the product's Input (dev/RULES.md section 11). A plugin brings its own key
+		rows, owned by it and composed beside the product's, and may judge a finished link drag. Production passes none.
+
+		Each run a plugin's row names is handed `pluginHost`, ONE generic verb -- add a stop to the drag, pinned or not --
+		rather than this Input: a plugin acts through what the product declares, never through its internals. A plugin
+		with anything else on it is refused, and so is a second judge: two judges of one drag would need a precedence.
+		*/
+		for (const p of plugins) {
+			const stray = Object.keys(p).filter((k) => !['owner', 'keys', 'judgeDrag'].includes(k));
+			if (typeof p.owner !== 'string' || stray.length) throw new Error(`Input: a plugin is { owner, keys, judgeDrag }${stray.length ? ` -- not ${stray.join(', ')}` : ' and names its owner'}`);
+		}
+		const judges = plugins.filter((p) => p.judgeDrag);
+		if (judges.length > 1) throw new Error(`Input: two plugins judge the link drag (${judges.map((p) => p.owner).join(', ')}) -- one may`);
+		this.judgeDrag = judges[0]?.judgeDrag ?? null;
+		// the key table: the product's rows and each plugin's, through the Rules engine
+		this.keyRules = composeRules({ owner: 'product', rules: KEYMAP }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })));
+		this.pluginHost = { addStop: (step) => this.addStop(step) };
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
@@ -971,95 +984,63 @@ export class Input {
 		return true;
 	}
 
-	// 'w' during a link draw: add the snapped cell to the in-progress route — a new waypoint on an
-	// empty cell (materialised live so it renders; folded into the commit), or thread an existing one.
-	dropRouteWaypoint() {
-		if (!this.lastPos) return;
-		const snapped = snapNode(this.lastPos);
-		const existing = this.model.waypointAt(snapped);   // engine occupancy index (R13)
-		if (existing) {
-			if (existing.id === this.ctx.src.id) return;        // don't thread the source itself
-			/*
-			B210 -- an OCCUPIED waypoint may be threaded, and that is how a junction is made.
+	/*
+	A link drag's context -- ONE shape, whichever way the drag began (B261: a chained drag lacked `route`, and `w` threw).
 
-			This used to refuse, so pressing `w` on a bend did nothing. Nothing splits here: the
-			waypoint joins `ctx.via` like any other and the route carries on, so several bends in
-			one drag still work. The split is computed on RELEASE, in commitRoute, because until
-			the button comes up there is no link to make a junction with.
-			*/
-			/*
-			B162: threading a PINNED waypoint clears the pin.
-
-			The pin means "the author placed this deliberately, with no link". Once a link runs
-			through it that is no longer true -- it is part of that link's shape, and when the link
-			goes it should go too. Leaving the pin set would strand it on the canvas forever, which
-			is the debris the sweep exists to prevent.
-			*/
-			if (existing.pinned) this.model.set('waypoint', existing.id, { pinned: false });
-			if (!this.ctx.via.includes(existing.id)) { this.ctx.via.push(existing.id); this.ctx.route.push(existing.id); }
-			this.ctx.pressedW = true;
-		} else {
-			/*
-			w ON A NODE, with a route hook only -- ruled 2026-09-30: "We have no way to construct a direct link between two
-			anchors now - I guess we need to enable the "w" key on the final anchor before we mouse up". A node is never a
-			pin, so it joins the ROUTE and not `via`: released on it, it is the link's destination, reached with w; if the drag
-			carries on, it is a hop the link routes over (the proposer's reading). Production has no hook, and refuses as before.
-			*/
-			const node = this.routeHook && nodeAt(this.model, this.lastPos);
-			if (node) {
-				if (node.id === this.ctx.src.id || this.ctx.route.includes(node.id)) return;
-				this.ctx.route.push(node.id);
-				this.ctx.pressedW = true;
-				this.updateLinkPreview(this.lastPos);
-				return;
-			}
-			if (occupiedAt(this.model, snapped)) return;        // a node cell — refuse
-			const wp = this.model.makeWaypoint(snapped);
-			this.model.put('waypoint', wp);            // live (visible); committed on release
-			this.ctx.via.push(wp.id);
-			this.ctx.route.push(wp.id);
-			this.ctx.placed.push(wp);
-			this.ctx.pressedW = true;
-		}
-		this.updateLinkPreview(this.lastPos);
+	`via` is what the link will STORE, its pins; `route` is every stop in drawn order, pinned or not, for the preview
+	and a drag judge; `placed` holds the waypoints the drag put on the tab, committed on release or cleaned up. `steps`
+	is the drag as it happened: each key that acted, and the stop it made -- what a plugin reads to know how its stops
+	came to be, instead of flags set along the way. With no plugin every stop is a pin, so `route` is `via`.
+	*/
+	linkDrag(src, pos, { shift = false, srcKey = false, chained = false } = {}) {
+		return { src, path: previewPath(this.overlay), target: null, start: pos, shift, srcKey, ...(chained ? { chained } : {}),
+			via: [], route: [], placed: [], steps: [] };
 	}
 
 	/*
-	`g` mid-drag -- a GUIDE: the route passes this anchor, and the link does not pin it.
+	A DRAG STEP -- the one verb a key uses to add a stop to the link being drawn: the product's `w`, and a plugin's
+	keys through `pluginHost` (network/keys.mjs). What the step MEANS is not decided here; this places or threads an
+	anchor and records which key made it.
 
-	Everything `w` does except the pin. The anchor is placed (or an existing one threaded) and joins
-	the drawn route, so the preview bends through it and the route hook lays pipes to it; but it does
-	not join `via`, so the link's intent is unchanged. What that means shows later, when another link
-	LANDS here: a landing cuts a link that pins the point and crosses one that only passes it (ruled
-	2026-09-26, "connects only at its ends and its pins").
+	  key     the key that made the step, recorded in `steps`
+	  pin     whether the stop joins `via` -- the link connects there -- or only the route it passes
+	  nodes   whether a node may be the stop; a pin never is one, since a pin is always a waypoint
 
-	Unlike `w` it leaves a `pinned` flag alone. B162 clears the flag when a link threads a waypoint,
-	because the link then becomes the waypoint's structure; a guide does not, so the author's
-	"placed deliberately" is still true.
+	An EXISTING anchor at the step is threaded; an empty cell gets a new waypoint, live so it renders, committed on
+	release; a cell a node occupies is refused.
 	*/
-	dropGuideWaypoint() {
+	addStop({ key, pin, nodes = false }) {
 		if (!this.lastPos) return;
+		const ctx = this.ctx;
 		const snapped = snapNode(this.lastPos);
-		/*
-		A NODE may be threaded by `g` (2026-09-30, "Each drag action does one thing"): `g` only lays pipes, and a pipe
-		may end at a node, so pressing `g` on the destination node lays the last pipe into it. `w` still refuses a node,
-		because a pin is always a waypoint.
-		*/
-		const existing = this.model.waypointAt(snapped) ?? nodeAt(this.model, this.lastPos);
-		if (existing) {
-			if (existing.id === this.ctx.src.id || this.ctx.route.includes(existing.id)) return;
-			this.ctx.route.push(existing.id);
-			this.ctx.guides.push(existing.id);
-			this.ctx.pressedG = true;
+		const existing = this.model.waypointAt(snapped) ?? (nodes ? nodeAt(this.model, this.lastPos) : null);   // occupancy index (R13)
+		if (existing && pin) {
+			if (existing.id === ctx.src.id) return;        // don't thread the source itself
+			/*
+			B210 -- an OCCUPIED waypoint may be threaded, and that is how a junction is made. Nothing splits here: the
+			waypoint joins `via` like any other and the route carries on, so several bends in one drag still work. The
+			split is computed on RELEASE, in commitRoute, because until the button comes up there is no link to make a
+			junction with.
+
+			B162 -- threading a PINNED waypoint clears the pin. The pin means "the author placed this deliberately, with no
+			link". Once a link runs through it, it is part of that link's shape and should go when the link goes; leaving
+			the pin would strand it on the canvas forever, the debris the sweep exists to prevent. A stop that is not a pin
+			leaves the flag alone: the link does not become that anchor's structure.
+			*/
+			if (existing.pinned) this.model.set('waypoint', existing.id, { pinned: false });
+			if (!ctx.via.includes(existing.id)) { ctx.via.push(existing.id); ctx.route.push(existing.id); }
+		} else if (existing) {
+			if (existing.id === ctx.src.id || ctx.route.includes(existing.id)) return;
+			ctx.route.push(existing.id);
 		} else {
-			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse, as `w` does
+			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse
 			const wp = this.model.makeWaypoint(snapped);
 			this.model.put('waypoint', wp);            // live (visible); committed on release
-			this.ctx.route.push(wp.id);
-			this.ctx.guides.push(wp.id);
-			this.ctx.placed.push(wp);
-			this.ctx.pressedG = true;
+			if (pin) ctx.via.push(wp.id);
+			ctx.route.push(wp.id);
+			ctx.placed.push(wp);
 		}
+		ctx.steps.push({ key, stop: existing ? existing.id : ctx.route[ctx.route.length - 1] });
 		this.updateLinkPreview(this.lastPos);
 	}
 
@@ -1270,7 +1251,7 @@ export class Input {
 
 	chainFrom(node, pos) {
 		this.mode = 'link';
-		this.ctx = { src: node, path: previewPath(this.overlay), target: null, start: pos, shift: false, chained: true, via: [], placed: [] };
+		this.ctx = this.linkDrag(node, pos, { chained: true });   // B261: the same drag context as any other
 		this.updateLinkPreview(pos);
 		this.readout.setLink(node.name || '?', snapNode(pos));
 	}
@@ -1417,13 +1398,14 @@ export class Input {
 		});
 		if (claimed) evt.preventDefault();   // B47 — bind a key and you own it
 		if (!rule) return;
-		this[rule.run](evt);
+		if (typeof rule.run === 'function') rule.run(this.pluginHost, evt);   // a plugin's row acts through the host
+		else this[rule.run](evt);
 	}
 
 	/*
 	What the pointer is over during a gesture, as the situation's `step` -- a word, never an element.
 
-	The order is production's own for a `w` mid-drag (dropRouteWaypoint): a waypoint at the snapped cell first, then a
+	The order is production's own for a `w` mid-drag (`addStop`): a waypoint at the snapped cell first, then a
 	node under the pointer. A node's footprint runs between grid points with a margin under half the pitch, so a pointer
 	over a node always snaps to a cell that node occupies -- the cell where production's `w` already refuses -- and
 	calling that step 'node' changes nothing production does (tests/rules-acceptance.test.js holds the geometry).
@@ -1507,15 +1489,8 @@ export class Input {
 	// 'w' drops/threads a waypoint: mid-route it adds a bend (the button is still held), idle it
 	// places a standalone one. The one mutating verb that belongs DURING a gesture.
 	onWaypointKey(evt) {
-		if (this.mode === 'link') { evt.preventDefault(); return this.dropRouteWaypoint(); }
+		if (this.mode === 'link') { evt.preventDefault(); return this.addStop({ key: 'w', pin: true }); }
 		if (!this.mode) { evt.preventDefault(); this.placeWaypoint(); }
-	}
-
-	// `g` acts only mid-link-drag AND only when a route hook exists -- the lab, never production. It
-	// claims the key only on that path (prevent: false in the key table), so in production the key
-	// stays the browser's, which is what a key the product does nothing with must do.
-	onGuideKey(evt) {
-		if (this.mode === 'link' && this.routeHook) { evt.preventDefault(); return this.dropGuideWaypoint(); }
 	}
 
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
@@ -1559,7 +1534,7 @@ export class Input {
 	chainThroughNode(type) {
 		if (!this.lastPos) return;
 		const snapped = snapNode(this.lastPos);
-		// the same refusal `dropRouteWaypoint` makes, for the same reason: a taken cell is taken
+		// the same refusal `addStop` makes, for the same reason: a taken cell is taken
 		if (occupiedAt(this.model, snapped)) return;
 		// the source can die mid-gesture (a peer deleting it), and committing onto a corpse would
 		// write a link to nothing

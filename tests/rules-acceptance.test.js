@@ -108,3 +108,26 @@ test('a pointer anywhere over a node snaps to a cell that node occupies, whateve
 		assert.ok(probed > 100, 'the probe actually covered the footprints');
 	} finally { h.restore(); }
 });
+
+/*
+THE PLUGIN SEAM on Input -- what a composition may add: its own key rows, and a judge of a finished link drag. Anything
+else is refused, and so is a second judge, which would need a precedence (Q3). A plugin's row acts through ONE verb
+the product declares, never through Input itself.
+*/
+test('Input refuses a plugin with anything but owner, keys and judgeDrag, and a second judge', () => {
+	assert.throws(() => makeInput({ plugins: [{ owner: 'x', keys: [], hook: () => {} }] }), /hook/);
+	assert.throws(() => makeInput({ plugins: [{ keys: [] }] }), /owner/);
+	assert.throws(() => makeInput({ plugins: [{ owner: 'a', judgeDrag: () => ({}) }, { owner: 'b', judgeDrag: () => ({}) }] }), /a, b/);
+	assert.throws(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'close', on: () => false, run: 'x' }] }] }), /close/, 'and an id the product already uses');
+});
+
+test('a plugin\'s row is handed the host\'s one verb, not Input', () => {
+	let handed = null;
+	const h = makeInput({ plugins: [{ owner: 'probe', keys: [{ id: 'probe', mutates: false, on: (e) => e.key === 'F9', run: (host) => { handed = host; } }] }] });
+	try {
+		h.input.onKeyDown(key('F9'));
+		assert.ok(handed, 'the row ran');
+		assert.deepEqual(Object.keys(handed), ['addStop']);
+		assert.notEqual(handed, h.input);
+	} finally { h.restore(); }
+});

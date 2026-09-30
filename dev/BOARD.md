@@ -531,6 +531,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |
 | H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `dev/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `TODO` |
 | H10.35 | Alt+right-click delete works on a board that holds links -- it threw before any commit | **B258** | S2 - S | `DONE` |
+| H10.36 | `w` during a chained link drag adds its bend -- it threw, leaving an uncommitted waypoint in the tab | **B261** | S2 - S | `DONE` |
 
 ---
 

@@ -930,9 +930,13 @@ test('B210: pressing w on an occupied bend threads it, and the split happens on 
 
 	// sliced on the METHOD DEFINITIONS -- `updateLinkPreview(pos)` also appears as a call site
 	// hundreds of lines earlier, which made the first version of this slice empty and vacuous
-	const drop = src.slice(src.indexOf('\tdropRouteWaypoint() {'), src.indexOf('\tupdateLinkPreview(pos) {'));
+	// the drag-step verb is `addStop` since T3 (dev/RULES.md section 11); it was `dropRouteWaypoint`. The slice must not
+	// start at -1 when a name moves, or it would read nothing and pass vacuously -- hence the guard
+	const from = src.indexOf('\taddStop({ key, pin, nodes = false }) {');
+	assert.ok(from > 0, 'the drag-step verb is where this test looks for it');
+	const drop = src.slice(from, src.indexOf('\tupdateLinkPreview(pos) {'));
 	assert.doesNotMatch(drop, /if \(!waypointFree\(/,
-		'dropRouteWaypoint must not refuse an occupied waypoint -- that is how a junction is threaded');
+		'addStop must not refuse an occupied waypoint -- that is how a junction is threaded');
 	assert.match(drop, /ctx\.via\.push\(existing\.id\)/, 'it threads the existing waypoint like any other');
 	assert.doesNotMatch(drop, /splitAtBend|splitsFor/,
 		'nothing may split mid-drag -- the route is still being drawn and there is no link yet');
