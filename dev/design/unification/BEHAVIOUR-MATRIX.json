@@ -878,6 +878,23 @@
 					"link-000001": 1
 				}
 			}
+		},
+		"transit two pins": {
+			"about": "A link from A to B pinned at P then Q; no transit declared.",
+			"board": "transit-two-pins",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 2,
+				"pipes": {
+					"hand": 0,
+					"link": 3
+				},
+				"pins": {
+					"link-000001": 2
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -3126,6 +3143,102 @@
 				"notice": "is down: its way passes w5, whose transit is off"
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-17",
+			"state": "transit two pins",
+			"gesture": "transit `x`",
+			"does": "Turn P's transit off, then Q's.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Each cut leaves the other standing: three links, A to P, P to Q and Q to B -- cutting at Q must not join the two links already ending at P, whose transit is still off.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"rings": [
+					"waypoint-000005",
+					"waypoint-000006"
+				],
+				"linksBetween": {
+					"node-000001|waypoint-000005": 1,
+					"waypoint-000005|waypoint-000006": 1,
+					"waypoint-000006|node-000002": 1
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-18",
+			"state": "transit two pins",
+			"gesture": "transit `x`",
+			"does": "Turn P's transit off, then Q's, then P's back on.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turning P back on joins only the two links ending at P: A to Q pinned at P, and Q to B, cut where Q's transit is still off.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"rings": [
+					"waypoint-000006"
+				],
+				"pins": {
+					"link-000001": 1
+				},
+				"linksBetween": {
+					"node-000001|waypoint-000006": 1,
+					"waypoint-000006|node-000002": 1
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269).",
 			"standing": "ruled",
 			"built": "yes"
 		}

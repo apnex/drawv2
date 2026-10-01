@@ -1069,3 +1069,34 @@ test('B241: a re-route that drops a grouped bend reaches the same sweep, and kee
 	assert.equal(m.get('group', 'group-aa0001'), undefined, 'and its group, left with one member, dissolved');
 	assert.equal(loadsAtBoot(m), null);
 });
+
+/*
+B269 -- A JOIN IS A REACTION TO A LINK LEAVING A WAYPOINT, not to a link being replaced there. The collapse fired at
+every waypoint a deleted link ended at, where exactly two links then remained -- so splitting a link (del it, put its two
+halves, as a junction split does) joined the OTHER end's two-link terminus, though nothing left it: two links before,
+two after. Found by the director in the lab, cutting a link at a second non-transiting pin.
+*/
+test('B269: splitting a link does not join a two-link terminus at its other end', () => {
+	const m = new Model(); const log = new Log();   // the server's planner works on a plain Model
+	const P = 60, nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
+	const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+	const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...(via ? { via } : {}) } });
+	assert.equal(commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000f', 6, 0), wp('waypoint-00000e', 0, 0), wp('waypoint-00000b', 3, -2),
+		lk('link-00000c', 'node-00000a', 'waypoint-00000e'), lk('link-00000d', 'waypoint-00000e', 'node-00000f', ['waypoint-00000b'])] }, 'x', 'x').ok, true);
+	const r = commit(m, log, { label: 'split', ops: [{ op: 'del', kind: 'link', id: 'link-00000d' },
+		lk('link-00000d', 'waypoint-00000e', 'waypoint-00000b'), lk('link-0000ee', 'waypoint-00000b', 'node-00000f')] }, 'x', 'x');
+	assert.equal(r.ok, true);
+	assert.deepEqual(m.all('link').map((l) => `${l.src}>${l.dst}`).sort(),
+		['node-00000a>waypoint-00000e', 'waypoint-00000b>node-00000f', 'waypoint-00000e>waypoint-00000b'].sort(), 'three links: E keeps its two');
+});
+
+test('B269: a link that really leaves a waypoint still joins the two left there, as ruled', () => {
+	const m = new Model(); const log = new Log();   // the server's planner works on a plain Model
+	const P = 60, nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
+	const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+	const lk = (id, s, d) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d } });
+	commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), nd('node-00000c', 0, -4), wp('waypoint-00000e', 0, 0),
+		lk('link-00000a', 'node-00000a', 'waypoint-00000e'), lk('link-00000b', 'waypoint-00000e', 'node-00000b'), lk('link-00000c', 'node-00000c', 'waypoint-00000e')] }, 'x', 'x');
+	assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: 'link-00000c' }] }, 'x', 'x').ok, true);
+	assert.equal(m.all('link').length, 1, 'three became two at E, so the two join into one');
+});

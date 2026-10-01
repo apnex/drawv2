@@ -271,9 +271,16 @@ export function plan(model, ops, options = {}) {
 		if (!e) continue;
 		for (const end of [e.src, e.dst]) if (proj.get('waypoint', end)) touched.add(end);
 	}
+	/*
+	B269 -- ONLY WHERE A LINK LEFT. A deleted link that is replaced at the same waypoint -- a split puts its half back,
+	ending where it did -- leaves the count there as it was, and nothing was left behind; joining there rewrote a two-link
+	terminus nobody touched. Found in the lab: cutting a link at a second non-transiting pin joined the two links at the
+	first. So a waypoint joins only when this transaction lowered the number of links touching it.
+	*/
+	const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 	for (const w of touched) {
-		const at = proj.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
-		if (at.length !== 2) continue;
+		const at = touching(proj, w);
+		if (at.length !== 2 || at.length >= touching(model, w).length) continue;
 		/*
 		B222 -- PICK A PAIR, do not demand a stored orientation.
 
