@@ -102,6 +102,7 @@ export const LAYER = {
 	planner: [
 		'server/txn.mjs', 'server/log.mjs', 'server/validate.js',
 		'server/tenants.mjs',   // the product's tenants of the planner: groups, and classic links until promotion (PL-3)
+		'server/edges.mjs',     // the planner's edges: the default clock, and the beats record extension (PL-4)
 		'engine/policy.mjs',     // group policy the planner applies (groupAfterRemoval, collectionCap); moves with the planner at K4
 	],
 	canvas: [
@@ -131,7 +132,7 @@ export const LAYER = {
 		'server/svg.mjs',        // the headless SVG door; it composes the export path and nothing else
 	],
 	'server-only': [
-		'server/anchor.mjs',     // anchor resolution; the planner imports it today (L2 debt that K3 removes by injection), and it stays 404 (K4)
+		'server/anchor.mjs',     // anchor resolution; the store passes it to the planner as its placement edge (K3, PL-4), and it stays 404 (K4)
 		'server/app.js', 'server/codes.mjs', 'server/docfile.mjs', 'server/files.mjs', 'server/hub.js', 'server/identity.mjs',
 		'server/locks.js', 'server/origin.mjs', 'server/protocol.js', 'server/rest.js', 'server/routes.mjs', 'server/seed.js',
 		'server/server.js', 'server/sessionlog.mjs', 'server/store.js',
@@ -195,8 +196,9 @@ export const ENTRIES = {
 			'kernel/engine.mjs', 'kernel/geometry.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs', 'model/invariants.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs', 'model/shape.mjs',
-			'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
+			'model/surface.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
 			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
+			'server/edges.mjs',   // the planner's edges (PL-4)
 		],
 	},
 	planner: {
@@ -206,8 +208,9 @@ export const ENTRIES = {
 			'engine/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs',
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs',
-			'model/shape.mjs', 'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
+			'model/shape.mjs', 'model/surface.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
 			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
+			'server/edges.mjs',   // the planner's edges (PL-4)
 		],
 	},
 };
@@ -338,7 +341,6 @@ export const RATCHETS = {
 		'app/src/input.js -> engine/situation.mjs': 1,
 		'engine/index.mjs -> engine/policy.mjs': 1,
 		'lab/src/root.js -> app/src/readout.js': 1,
-		'server/txn.mjs -> server/anchor.mjs': 1,
 	},
 	L4: {
 		'app/src/commands.js -> engine/index.mjs': 1,
@@ -699,10 +701,10 @@ export const UNUSED_EXPORTS = {
 		],
 		/*
 		Modules the planner loads that did not EXIST at K0, so cannot be in its frozen closure: PL-3 split the reactions
-		out of `server/txn.mjs` into new files (dev/design/planner/PLANNER-SYSTEM.md). An arrival is not a departure and
+		out of `server/txn.mjs` into new files, and PL-4 its edges (dev/design/planner/PLANNER-SYSTEM.md). An arrival is not a departure and
 		admits no name; a module that existed at K0 and is missing from the frozen list still fails K2a.
 		*/
-		arrived: ['model/link-reactions.mjs', 'server/tenants.mjs'],
+		arrived: ['model/link-reactions.mjs', 'server/tenants.mjs', 'server/edges.mjs'],
 		list: {
 			'kernel/geometry.mjs': {
 				'rebuild-debt': [
@@ -712,7 +714,7 @@ export const UNUSED_EXPORTS = {
 					'waypoint', 'waypointAnchor', 'waypointJunction', 'waypointLayers', 'waypointRole', 'waypointRoles',
 					'waypointStyle', 'zone'
 				],
-				'serves-a-server-door': ['nearestAnchor'],
+				'serves-a-server-door': ['anchorAt', 'nearestAnchor'],   // anchorAt: server/anchor.mjs left the planner at PL-4, passed in by the store
 			},
 			'kernel/spec.mjs': {
 				'rebuild-debt': ['derive'],

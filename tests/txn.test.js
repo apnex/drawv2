@@ -1210,3 +1210,52 @@ test('PL1: the planner core names no entity kind -- the kinds are the tenants\''
 		assert.throws(() => p(m, del, { links: CLASSIC_LINKS, links2: CLASSIC_LINKS }), /unknown option links2/);
 	});
 }
+
+/*
+PL-4 -- THE EDGES (dev/design/planner/PLANNER-SYSTEM.md section 6.4). Placement and the clock are passed in, and beats are
+a record extension around the core (server/edges.mjs): the core reads no clock, resolves no anchor, and names no reveal.
+*/
+test('PL-4: the planner core reads no clock, resolves no anchor and names no reveal', async () => {
+	const src = (await import('node:fs')).readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+	assert.doesNotMatch(code, /Date\.now|new Date|performance\.now/, 'no clock is read');
+	assert.doesNotMatch(code, /anchor\.mjs|resolveAnchor/, 'placement is handed in');
+	assert.doesNotMatch(code, /reveal|caption|pace/, 'beats are an extension');
+});
+
+test('PL-4: the clock passed in stamps the record and starts a beat, and undo and redo move the beat with the ops', async () => {
+	const m = new Model(); const log = new Log();
+	const nd = (i) => ({ op: 'put', kind: 'node', entity: { id: `node-00000${i}`, name: `n${i}`, type: 'router', x: i * 120, y: 0, shape: 'circle' } });
+	const r = commit(m, log, { ops: [nd(1)], label: 'beat', pace: 500, caption: 'one' }, 'x', 'x', { now: () => 1234 });
+	assert.equal(r.ok, true);
+	assert.equal(r.change.at, 1234, 'the record\'s time is the clock\'s');
+	assert.deepEqual(m.state.reveal, { origin: 1234, beats: [{ interval: 500, ids: ['node-000001'], caption: 'one' }] });
+	assert.deepEqual(r.change.reveal, m.state.reveal);
+	assert.equal(r.change.revealInverse, null);
+	// still playing at 1500 (one id at 500ms runs to 1734), so the next beat joins the schedule
+	commit(m, log, { ops: [nd(2)], label: 'beat', pace: 500 }, 'x', 'x', { now: () => 1500 });
+	assert.equal(m.state.reveal.beats.length, 2);
+	assert.equal(undo(m, log).ok, true);
+	assert.equal(m.state.reveal.beats.length, 1, 'undo takes the second beat with its node');
+	assert.equal(redo(m, log).ok, true);
+	assert.equal(m.state.reveal.beats.length, 2, 'and redo brings it back');
+	const plainLog = new Log(); const plain = commit(new Model(), plainLog, { ops: [nd(3)], label: 'add' }, 'x', 'x', { now: () => 7 });
+	assert.equal('reveal' in plain.change, false, 'an ordinary commit\'s record carries no reveal');
+});
+
+test('PL-4: the store hands the planner its own clock and its placement', async () => {
+	const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+	const { Store } = await import('../server/store.js');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pl4-'));
+	try {
+		const store = new Store(dir, { now: () => 4242, authz: false });
+		await store.init();
+		const id = store.create('pl4').model.state.meta.id;
+		const r = store.commit(id, { label: 'place', ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'lb-1', type: 'router', x: 0, y: 0, shape: 'circle' } },
+			{ op: 'place', kind: 'node', entity: { id: 'node-00000b', name: 'web', type: 'server', shape: 'circle' }, at: { near: 'lb-1', dir: 'right' } }] });
+		assert.equal(r.ok, true, r.error);
+		assert.equal(r.change.at, 4242, 'the record is stamped by the store\'s clock');
+		assert.deepEqual([r.change.ops[1].entity.x, r.change.ops[1].entity.y], [60, 0], 'and the place op resolved through the store\'s placement');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

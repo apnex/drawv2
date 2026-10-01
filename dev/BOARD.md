@@ -163,6 +163,7 @@ AMENDED 2026-09-30: H17.15 approved (PD-1 to PD-4 and PD-6; PD-5 before PL-6); P
 AMENDED 2026-10-01: PL-1 done -- the planner corpus (2084 cases, both compositions); next PL-2, the core owns every inverse.\
 AMENDED 2026-10-01: PL-2 done -- the planner core writes every inverse; next PL-3, reactions and phases.\
 AMENDED 2026-10-01: PL-3 done -- reactions in declared phases, a classic, a network and a group tenant, the four hooks gone; next PL-4, the edges.\
+AMENDED 2026-10-01: PL-4 done -- placement and the clock passed in, beats a record extension, the CLI's resolver gone; next PL-5, the kind and shape tables.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -937,6 +938,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
 | **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | SD2 is ruled, or an agent's landing is reported uncut |
+| **B272** | S3 | A paced commit reveals every entity it `put`s, so a beat that only renames an entity withholds it until its turn | a paced commit is seen to hide an entity already on screen, or the beats extension is next changed |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | K15 lands, or a stacking difference between peers is reported |

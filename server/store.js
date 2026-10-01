@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Model, newId, NODE_EXT, ZONE_EXT } from '../model/index.mjs';
 import { seedDoc } from './seed.js';
-import { validateMutation, validateDoc, validateSelectionIds, validPrincipal } from './validate.js';
+import { validateDoc, validateSelectionIds, validPrincipal } from './validate.js';
 import crypto from 'node:crypto';
 import { STD } from '../kernel/index.mjs';
 
@@ -18,7 +18,8 @@ const PITCH = STD.pitch;
 import { mintCode, formatCode, hashCode } from './codes.mjs';
 import { groupAfterRemoval } from '../engine/index.mjs';
 import { violations } from '../model/invariants.mjs';
-import { commit as txnCommit, undo as txnUndo, redo as txnRedo, plan } from './txn.mjs';
+import { commit as txnCommit, undo as txnUndo, redo as txnRedo } from './txn.mjs';
+import { resolveAnchor } from './anchor.mjs';
 import { Log } from './log.mjs';
 import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
@@ -1233,7 +1234,12 @@ export class Store {
 			return { ok: true, replayed: true, version: entry.seen.get(request.txnId), change: null };
 		}
 
-		const res = txnCommit(entry.model, entry.log, request, by, actor);
+		/*
+		PL-4 -- the planner's edges, passed in (K3): the store is the server's door, so it composes placement, which turns a
+		`place` op's relationship into an anchor, and its own clock -- the one it was constructed with -- for the record's
+		time and a beat's origin.
+		*/
+		const res = txnCommit(entry.model, entry.log, request, by, actor, { place: resolveAnchor, now: this.now });
 		if (res.ok && request.txnId) {
 			entry.seen = entry.seen || new Map();
 			// `res.version` is the log's version after the commit -- `change` carries `seq`/`from`

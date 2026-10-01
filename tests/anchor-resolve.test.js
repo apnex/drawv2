@@ -128,8 +128,9 @@ test('a full canvas refuses rather than returning an occupied anchor', () => {
 
 /*
 The wiring, not just the rule. These drive `plan()` so the intent op is proven to resolve inside
-the transaction that advances the projection -- which is the property the CLI's two round trips buy
-today and the one a drafted set cannot get any other way.
+the transaction that advances the projection -- the one a drafted set cannot get any other way.
+Placement is an EDGE the planner is handed (PL-4, K3), as the server's store hands it, so each passes
+`{ place: resolveAnchor }`.
 */
 test('plan resolves a place op into a put, against the advancing projection', async () => {
 	const { plan } = await import('../server/txn.mjs');
@@ -137,7 +138,7 @@ test('plan resolves a place op into a put, against the advancing projection', as
 	const r = plan(m, [
 		{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'web-01', type: 'server' }, at: { near: 'lb-1' } },
 		{ op: 'place', kind: 'node', entity: { id: 'node-bb0002', name: 'web-02', type: 'server' }, at: { near: 'lb-1' } },
-	]);
+	], { place: resolveAnchor });
 	assert.ok(r.ok, r.error);
 	const puts = r.ops.filter((o) => o.op === 'put' && o.kind === 'node');
 	assert.equal(puts.length, 2, 'both intents became puts');
@@ -154,8 +155,22 @@ test('plan refuses an unresolvable place op and names which op failed', async ()
 	const r = plan(m, [
 		{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'ok', type: 'server' }, at: { near: 'lb-1' } },
 		{ op: 'place', kind: 'node', entity: { id: 'node-bb0002', name: 'bad', type: 'server' }, at: { near: 'ghost' } },
-	]);
+	], { place: resolveAnchor });
 	assert.equal(r.ok, false);
 	assert.equal(r.opIndex, 1, 'the second op is named');
 	assert.match(r.error, /ghost/);
+});
+
+test('PL-4: a composition handed no resolver refuses a place op, naming the op, and resolves nothing itself', async () => {
+	const { plan } = await import('../server/txn.mjs');
+	const m = doc([NODE('node-aa0001', 'lb-1', 0, 0)]);
+	const r = plan(m, [{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'web-01', type: 'server' }, at: { near: 'lb-1' } }]);
+	assert.equal(r.ok, false);
+	assert.equal(r.opIndex, 0);
+	assert.match(r.error, /resolves no placement/);
+	const asked = [];
+	const placed = plan(m, [{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'web-01', type: 'server' }, at: { near: 'lb-1' } }],
+		{ place: (model, at) => { asked.push(at); return { ok: true, x: 600, y: 0 }; } });
+	assert.deepEqual(asked, [{ near: 'lb-1' }], 'the resolver it was handed is asked, with the relationship');
+	assert.deepEqual([placed.ops[0].entity.x, placed.ops[0].entity.y], [600, 0], 'and its answer is where the node lands');
 });

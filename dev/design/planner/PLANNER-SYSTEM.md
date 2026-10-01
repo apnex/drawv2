@@ -225,7 +225,12 @@ The four hooks are gone; the network passes `{ links: network.links }`, and the 
 A delete's `clear` reactions run wherever the delete comes from -- a request, the waypoint cascade or the sweep -- which is how the sweep's group trim (B241) now arrives, with no second copy.\
 The corpus replays all 2084 results unchanged, plus one named case added and checked against the pre-PL-3 planner (an unchanged group put that still steals).\
 Six mutants of the engine and tenants each fail a test, and `dev/design/planner/REACTIONS.md` is generated from the rows by `tools/reaction-table.mjs`, which the gate checks.\
-CLARIFIED 2026-10-01: a link tenant's conditions -- strands or not, what else references an anchor, which orphans are kept, where links join -- are arguments its author passes to `linkTenant` at composition, so the core asks a plugin nothing (PR3).
+CLARIFIED 2026-10-01: a link tenant's conditions -- strands or not, what else references an anchor, which orphans are kept, where links join -- are arguments its author passes to `linkTenant` at composition, so the core asks a plugin nothing (PR3).\
+DONE 2026-10-01: PL-4 -- the edges are passed in: `place` (the store passes `server/anchor.mjs`, K3), `now` (the store passes its own injected clock) and `extensions`, the record extensions run around each commit.\
+Beats and the reveal are `BEATS` in `server/edges.mjs`: a caption refusal before the apply, the next reveal after it, and the core records any extension's field with its inverse and restores it on undo and redo, in the record shape stored logs already hold.\
+The core reads no clock, resolves no anchor and names no reveal, and a test holds all three; the planner's closure lost `server/anchor.mjs`, and the lab no longer serves it.\
+`draw place` sends the relationship every time and reads the position from the server's answer, so its own copy of the resolver is deleted; the two had the same order, occupancy rule and tie-breaking, so where a node lands did not move.\
+The corpus replays all results unchanged; six mutants each fail a test; B272 (a paced commit hides an entity it only changed) was found reading the moved code and is registered, held.
 **These are production code paths:** every stage is gated and deployed to the lab; the production deploy stays the director's call.
 
 ---

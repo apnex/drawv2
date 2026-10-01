@@ -41,8 +41,7 @@ import { STD } from '../kernel/spec.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { violations } from '../model/invariants.mjs';
 import { CLASSIC_LINKS, GROUPS } from './tenants.mjs';
-import { CAPTION_MAX } from '../model/limits.mjs';
-import { resolveAnchor } from './anchor.mjs';
+import { BEATS, wallClock } from './edges.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
 // B113: per KIND, per diagram -- a different enforcement POINT from validateDoc, deliberately, but
@@ -138,10 +137,20 @@ A composition holds ONE link tenant (PD-2): production's classic one by default,
 (`alsoReferenced`, `keepsOrphan`, `isStranded`, `joinsAt`) are conditions inside the network's own reactions now
 (PR3), so the core asks a plugin nothing; a retired `network` option is refused rather than ignored.
 */
-function composition({ links = CLASSIC_LINKS, network, ...rest } = {}, who) {
+/*
+PL-4 -- THE EDGES are passed in too (PLANNER-SYSTEM.md section 6.4):
+  place      resolves a `place` op's relationship to an anchor, `(model, at) -> { ok, x, y } | { ok: false, error }`.
+             The server's store passes `server/anchor.mjs` (K3); a composition with none refuses a `place` op.
+  now        the clock, for the record's time and a beat's origin; `wallClock` (server/edges.mjs) if none is given.
+  extensions the record extensions run around each commit; production's, BEATS, if none are given.
+*/
+function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, extensions = [BEATS], network, ...rest } = {}, who) {
 	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- the network plugs in as its link tenant, { links: network.links } (PL-3)`);
 	const stray = Object.keys(rest);
-	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links } (PL-3)`);
+	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links, place, now, extensions } (PL-4)`);
+	if (place !== null && typeof place !== 'function') throw new Error(`${who}: place is a resolver, (model, at) -> anchor (PL-4)`);
+	if (typeof now !== 'function') throw new Error(`${who}: now is a clock, () -> milliseconds (PL-4)`);
+	for (const x of extensions) if (!x || typeof x.field !== 'string' || typeof x.refuse !== 'function' || typeof x.next !== 'function') throw new Error(`${who}: a record extension is { id, field, refuse, next } (PL-4)`);
 	const rows = Object.fromEntries(PHASES.map((p) => [p, []]));
 	const ids = new Set();
 	for (const tenant of [links, GROUPS]) {
@@ -153,7 +162,7 @@ function composition({ links = CLASSIC_LINKS, network, ...rest } = {}, who) {
 			rows[r.phase].push({ ...r, owner: tenant.owner });
 		}
 	}
-	return rows;
+	return { rows, place, now, extensions };
 }
 
 // the legacy {action, kind, entity} shape validateMutation speaks (it is the trust boundary, and is not rewritten here)
@@ -161,7 +170,7 @@ const asMutation = (op) => ({ action: op.op, kind: op.kind, entity: op.op === 'd
 const subjectOf = (op) => (op.op === 'meta' ? 'meta' : `${op.kind}:${op.op === 'put' ? op.entity.id : op.id}`);
 
 export function plan(model, ops, options = {}) {
-	const rows = composition(options, 'plan');
+	const { rows, place } = composition(options, 'plan');
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -214,7 +223,7 @@ export function plan(model, ops, options = {}) {
 	-1 means the request was refused as a whole rather than at a particular op.
 	*/
 	for (let i = 0; i < ops.length; i++) {
-		const step = planOne(proj, ops[i]);
+		const step = planOne(proj, ops[i], place);
 		if (!step.ok) return { ok: false, error: step.error, opIndex: i };
 		if (!step.op) continue;                                    // narrowed to nothing
 		if (step.unchanged && !follows(step.op)) continue;         // an unchanged put that displaces nothing
@@ -256,7 +265,7 @@ export function plan(model, ops, options = {}) {
 Phase 1 for one requested op: resolved, validated against the document as the ops before it left it, and narrowed to
 what it changes. Answers the op to apply, or none; `unchanged` marks a put of an entity already present byte for byte.
 */
-function planOne(model, op) {
+function planOne(model, op, place) {
 	if (op.op === 'meta') return planMeta(model, op);
 
 	/*
@@ -273,7 +282,8 @@ function planOne(model, op) {
 	refusal keeps plan()'s contract, so the set is refused whole and names the op that failed.
 	*/
 	if (op.op === 'place') {
-		const at = resolveAnchor(model, op.at || {});
+		if (!place) return { ok: false, error: 'this composition resolves no placement: a place op needs a resolver (PL-4)' };
+		const at = place(model, op.at || {});
 		if (!at.ok) return { ok: false, error: at.error };
 		op = { op: 'put', kind: op.kind, entity: { ...op.entity, x: at.x, y: at.y } };
 	}
@@ -328,7 +338,7 @@ function same(a, b) {
 
 export function commit(model, log, request, by = 'client', actor = null, options = {}) {
 	// a composition error is checked FIRST, so a refused request can never hide a half-plugged plugin
-	composition(options, 'commit');
+	const { now, extensions } = composition(options, 'commit');
 	if (!request || typeof request !== 'object') return { ok: false, error: 'invalid request', version: log.version };
 	if (request.label !== undefined && !LABEL.test(String(request.label))) {
 		return { ok: false, error: 'invalid label', version: log.version };
@@ -341,13 +351,14 @@ export function commit(model, log, request, by = 'client', actor = null, options
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 	/*
-	B270 -- EVERY REFUSAL BEFORE THE APPLY. The caption limit (B220, below) was checked after the ops were applied and
-	the version advanced, so a refusal left the edit in the document with no record. It is decided here, from the same
-	planned ops, before anything is touched -- what the header's "rejection safety is by PURITY" requires.
+	B270 -- EVERY REFUSAL BEFORE THE APPLY. A record extension's refusal (the caption limit, B220) was checked after the
+	ops were applied and the version advanced, so a refusal left the edit in the document with no record. It is decided
+	here, from the same planned ops, before anything is touched -- what the header's "rejection safety is by PURITY"
+	requires.
 	*/
-	const beatIds = Number.isInteger(request.pace) && request.pace >= 0 ? planned.ops.filter((o) => o.op === 'put').map((o) => o.entity.id) : [];
-	if (beatIds.length && request.caption !== undefined && String(request.caption).length > CAPTION_MAX) {
-		return { ok: false, error: `caption is ${String(request.caption).length} characters; the limit is ${CAPTION_MAX}`, version: log.version };
+	for (const x of extensions) {
+		const error = x.refuse(request, planned.ops);
+		if (error) return { ok: false, error, version: log.version };
 	}
 
 	applyOps(model, planned.ops);                                    // the sole mutation point
@@ -355,82 +366,31 @@ export function commit(model, log, request, by = 'client', actor = null, options
 	const seq = ++log.version;
 	stamp(model, log);                                               // D6: the document carries its own version
 	/*
-	H14.4/H14.7 -- a `pace` makes this commit a BEAT, and the record is built here because here is
-	the only place that knows which ids it produced.
-
-	An intent op names a relationship and the id is minted while resolving it (B189), so a client
-	assembling this would be guessing at the very ids the beat exists to order. `planned.ops` is
-	the resolved list, in the order it applied, which is exactly the order to reveal in.
-
-	Only CREATED entities are revealed. A beat that renames something would otherwise hide an entity
-	already on screen, and a rename that made a node vanish reads as a deletion.
-
-	The reveal INVERTS like anything else (ruled 2026-09-04). It is captured before and after, and
-	the inverse restores the previous record -- so undoing a beat takes its reveal with it and
-	undoing past an earlier beat restores THAT one, rather than leaving the document holding a
-	record that describes a commit already reversed.
+	PL-4 -- the record extensions (server/edges.mjs): each answers its field's next value, which the core writes on the
+	document's state and records with the value before, so undo and redo move it with the ops. Captured before and after
+	and recorded only when it changed, so an ordinary commit's record is byte-identical to what it was before beats
+	existed.
 	*/
-	const revealBefore = model.state.reveal ? structuredClone(model.state.reveal) : null;
-	if (Number.isInteger(request.pace) && request.pace >= 0) {
-		const ids = planned.ops.filter((o) => o.op === 'put').map((o) => o.entity.id);
-		if (ids.length) {
-			const beat = { interval: request.pace, ids };
-			/*
-			B220 -- REFUSED here, not truncated and not stored unchecked.
-
-			This was `String(request.caption)` with no length test, while `validateDoc` checked the
-			stored file against a limit at boot. So a long caption was accepted, persisted, served
-			all session, and then refused when the server next read the file -- the diagram vanished
-			from its owner's list with nothing said, and the only trace was a skip line in the boot
-			log. A document the system produced could not be reloaded by the system.
-
-			Refusing is right rather than truncating: a caption silently shortened is a narration the
-			author did not write, and they would find out by reading it later. The limit is stated
-			once in `model/limits.mjs` and both doors read it, which is the property that was missing
-			-- not the value of the limit.
-			*/
-			// its length was checked before the apply (B270, above)
-			if (request.caption !== undefined) {
-				const caption = String(request.caption);
-				if (caption) beat.caption = caption;
-			}
-			/*
-			B193 -- a beat joins a schedule that is still playing, and STARTS one that has drained.
-
-			The origin was stamped once and never moved, so a beat committed after the queue finished
-			inherited a window that had already closed and never unfurled. The caption still showed,
-			being held until replaced, so the narration read correctly while nothing paced -- which
-			is why it survived being watched.
-
-			An agent narrating across a pause is the use case rather than an edge, so the test is
-			whether the existing schedule has ENDED, not whether one exists. A drained reveal is
-			replaced rather than appended to: carrying expired beats forward would leave the record
-			describing unfurls nobody can ever see, and they have already played.
-			*/
-			const prev = model.state.reveal;
-			const playing = prev && Date.now() < prev.origin
-				+ prev.beats.reduce((a, b) => a + (b.ids?.length || 0) * (b.interval || 0), 0);
-			model.state.reveal = playing
-				? { ...prev, beats: [...prev.beats, beat] }
-				: { origin: Date.now(), beats: [beat] };
-		}
+	const extended = [];
+	for (const x of extensions) {
+		const before = model.state[x.field] ? structuredClone(model.state[x.field]) : null;
+		const next = x.next(model.state, request, planned.ops, now);
+		if (next !== undefined) model.state[x.field] = next;
+		const after = model.state[x.field] ? structuredClone(model.state[x.field]) : null;
+		if ((before !== null || after !== null) && JSON.stringify(before) !== JSON.stringify(after)) extended.push([x.field, after, before]);
 	}
-	const revealAfter = model.state.reveal ? structuredClone(model.state.reveal) : null;
 
 	const change = {
-		seq, from, at: Date.now(), by, actor,
+		seq, from, at: now(), by, actor,
 		label: request.label || '',
 		ops: planned.ops,
 		inverse: planned.inverse,
 	};
-	// carried beside the ops rather than inside them: a reveal is not a mutation of an entity, and
-	// applyOps is the single writer for those. Only recorded when it actually changed, so an
-	// ordinary commit's record is byte-identical to what it was before beats existed.
-	if (revealBefore !== null || revealAfter !== null) {
-		if (JSON.stringify(revealBefore) !== JSON.stringify(revealAfter)) {
-			change.reveal = revealAfter;
-			change.revealInverse = revealBefore;
-		}
+	// carried beside the ops rather than inside them: an extension's field is not a mutation of an entity, and applyOps is
+	// the single writer for those
+	for (const [field, after, before] of extended) {
+		change[field] = after;
+		change[`${field}Inverse`] = before;
 	}
 	log.append(change);
 	return { ok: true, change, version: log.version };
@@ -454,7 +414,8 @@ function stamp(model, log) {
 // Undo reverses records down to (and including) `to`, as ONE transaction: one version bump, one
 // broadcast. It appends no record — appending an inverse would truncate the redo tail it just
 // created, which is why version cannot be the ring's length.
-export function undo(model, log, to = null) {
+export function undo(model, log, to = null, options = {}) {
+	const { extensions } = composition(options, 'undo');
 	if (!log.canUndo()) return { ok: false, error: 'nothing to undo', version: log.version };
 	// D21 — `to` names the OLDEST record to reverse, and it must name one that is currently
 	// applied. Unvalidated, `undo {to: 0}` reverses the entire ring: the destructive verb would
@@ -470,36 +431,36 @@ export function undo(model, log, to = null) {
 	const target = to == null ? log.records[log.cursor - 1].seq : to;
 	const ops = [];
 	/*
-	H14.7 -- the reveal is reversed along with the ops, to the state before the OLDEST record in
-	this run. Walking outward, the last `revealInverse` seen is the earliest one, which is why it
-	is assigned rather than accumulated: undoing three beats at once restores what stood before all
-	three, not what stood before the last of them.
+	H14.7 -- an extension's field (the reveal) is reversed along with the ops, to the state before the OLDEST record in
+	this run. Walking outward, the last inverse seen is the earliest one, which is why it is assigned rather than
+	accumulated: undoing three beats at once restores what stood before all three, not what stood before the last.
 
-	`undefined` means this record never touched the reveal, and must not be mistaken for `null`,
-	which means it set the reveal to nothing.
+	An absent entry means no record touched the field, and must not be mistaken for `null`, which means it was set to
+	nothing.
 	*/
-	let revealTo;
+	const restore = new Map();
 	while (log.cursor > 0 && log.records[log.cursor - 1].seq >= target) {
 		const rec = log.records[log.cursor - 1];
 		ops.push(...rec.inverse);
-		if ('revealInverse' in rec) revealTo = rec.revealInverse;
+		for (const { field } of extensions) if (`${field}Inverse` in rec) restore.set(field, rec[`${field}Inverse`]);
 		log.cursor--;
 	}
 	if (!ops.length) return { ok: false, error: 'nothing to undo', version: log.version };
 	applyOps(model, ops);
-	if (revealTo !== undefined) model.state.reveal = revealTo ? structuredClone(revealTo) : null;
+	for (const [field, to] of restore) model.state[field] = to ? structuredClone(to) : null;
 	log.version++;
 	stamp(model, log);
 	return { ok: true, ops, version: log.version };
 }
 
-export function redo(model, log) {
+export function redo(model, log, options = {}) {
+	const { extensions } = composition(options, 'redo');
 	if (!log.canRedo()) return { ok: false, error: 'nothing to redo', version: log.version };
 	const record = log.records[log.cursor];
 	applyOps(model, record.ops);
-	// H14.7 -- and the reveal forward again, or redoing a beat would restore its entities while
-	// leaving them permanently hidden by the record undo had already rolled back.
-	if ('reveal' in record) model.state.reveal = record.reveal ? structuredClone(record.reveal) : null;
+	// H14.7 -- and each extension's field forward again, or redoing a beat would restore its entities while leaving them
+	// permanently hidden by the record undo had already rolled back
+	for (const { field } of extensions) if (field in record) model.state[field] = record[field] ? structuredClone(record[field]) : null;
 	log.cursor++;
 	log.version++;
 	stamp(model, log);

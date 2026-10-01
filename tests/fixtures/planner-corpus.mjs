@@ -32,6 +32,7 @@ import { attachRelations } from '../../engine/store.mjs';
 import { cellOf } from '../../kernel/geometry.mjs';
 import { applyOps } from '../../model/ops.mjs';
 import { plan } from '../../server/txn.mjs';
+import { resolveAnchor } from '../../server/anchor.mjs';
 import { validateMutation } from '../../server/validate.js';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { createNetwork } from '../../network/network.mjs';
@@ -237,7 +238,8 @@ function compose(c) {
 	const model = new Model();
 	attachRelations(model, { cellOf });
 	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...c.board });
-	if (c.compose === 'production') return { model, options: {}, reached: { stranded: 0 } };
+	// placement is the server door's edge (PL-4): both compositions are planned as the store would plan them
+	if (c.compose === 'production') return { model, options: { place: resolveAnchor }, reached: { stranded: 0 } };
 	const pipes = createPipeSet();
 	for (const [a, b, laid] of c.pipes || c.board.links.flatMap((l) => pairs(routeOf(l)).map(([x, y]) => [x, y, 'link']))) pipes.lay(a, b, laid);
 	const transit = createTransit();
@@ -249,7 +251,7 @@ function compose(c) {
 	const reached = { stranded: 0 };
 	const links = { ...network.links, reactions: network.links.reactions.map((r) => (r.phase !== 'stranded' ? r
 		: { ...r, run: (ctx, emit) => r.run(ctx, (ops) => { reached.stranded += ops.length; emit(ops); }) })) };
-	return { model, options: { links }, reached };
+	return { model, options: { links, place: resolveAnchor }, reached };
 }
 
 const digest = (c) => crypto.createHash('sha256').update(JSON.stringify([c.compose, c.board, c.pipes, c.off, c.ops])).digest('hex').slice(0, 16);

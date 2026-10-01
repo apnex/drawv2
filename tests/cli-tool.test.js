@@ -139,9 +139,14 @@ test('place puts a node on a free anchor beside a reference, named by name', asy
 		// the second must step PAST the first: an occupied anchor is not a free one
 		const second = JSON.parse(await run('place', 'server', 'near', 'lb-1', '--dir', 'right', '--name', 'web-2', '--diagram', id, '--json'));
 		assert.deepEqual(second.at, { x: 120, y: 0 }, 'stepped over the node it just placed');
+		assert.deepEqual(second.cell, { cx: 2, cy: 0 }, 'and the cell travels with the pixels, from the server');
+
+		// PL-4: the server resolves the relationship; `above` is the tool's word for the server's `up`
+		const third = JSON.parse(await run('place', 'server', 'near', 'lb-1', '--dir', 'above', '--name', 'web-3', '--diagram', id, '--json'));
+		assert.deepEqual(third.at, { x: 0, y: -60 }, 'above is up, one cell');
 
 		const nodes = JSON.parse(await run('get', 'nodes', '--diagram', id, '--json'));
-		assert.deepEqual(nodes.map((n) => n.name).sort(), ['lb-1', 'web-1', 'web-2'], '--name survived flag parsing');
+		assert.deepEqual(nodes.map((n) => n.name).sort(), ['lb-1', 'web-1', 'web-2', 'web-3'], '--name survived flag parsing');
 
 		// a name resolves where the route wants an id
 		const about = JSON.parse(await run('about', 'lb-1', '--diagram', id, '--json'));
@@ -161,6 +166,13 @@ test('place refuses a direction with nothing free, rather than placing elsewhere
 		// disagreed about which verb to suggest
 		assert.match(err, /nothing called nonexistent/, 'the name is named');
 		assert.match(err, /draw show|draw map/, 'and it says how to find the real ones');
+
+		// PL-4: a direction with nothing free is refused by the server's resolver, and the tool adds where to look
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00001', name: 'edge', type: 'router', x: 900, y: 0 } }] }));
+		const boxed = await captureExit(() => run('place', 'server', 'near', 'edge', '--dir', 'right', '--diagram', id));
+		assert.match(boxed, /nothing free to the right of edge/, 'the server says what it could not do');
+		assert.match(boxed, /draw near/, 'and the tool says where to look');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 

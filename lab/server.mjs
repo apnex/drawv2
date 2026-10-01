@@ -60,7 +60,8 @@ const PLANNER_FILES = new Set([
 	'server/txn.mjs',
 	'server/log.mjs',
 	'server/validate.js',
-	'server/anchor.mjs',
+	// PL-4: the planner's edges (the default clock, the beats extension); anchor.mjs left -- the store passes placement
+	'server/edges.mjs',
 	// PL-3: the product's tenants of the planner (groups, classic links) -- rule code the planner runs, like txn.mjs
 	'server/tenants.mjs',
 ]);

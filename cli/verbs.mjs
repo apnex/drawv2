@@ -297,6 +297,8 @@ only the human-facing line is re-said. A refusal that names a verb the caller ha
 than a refusal that names a route they should not be calling.
 */
 const RESAID = [
+	// PL-4: placement is resolved by the server, so its refusal arrives as text; the hint is the tool's to add
+	[/no free anchor|nothing free/i, (what, said) => `${what}: ${said} -- \`draw near <node>\` shows what is free around it`],
 	[/not server-locked/i, (what) => `${what} needs the write slot -- run \`draw lock\` first (it frees after about a minute)`],
 	[/server-locked|held by another/i, (what) => `${what} is blocked: another controller holds the write slot -- \`draw lock status\` says who and until when`],
 ];
@@ -320,7 +322,7 @@ const linkLabel = (l, nm) => `${nm(l.src)}->${nm(l.dst)}${l.routed ? '*' : ''}`;
 const ok = (res, what) => {
 	if (res.ok) return res.body;
 	const said = String(res.body?.error || '');
-	for (const [pattern, say] of RESAID) if (pattern.test(said)) die(say(what));
+	for (const [pattern, say] of RESAID) if (pattern.test(said)) die(say(what, said));
 	die(`${what}: ${said || `HTTP ${res.status}`}${res.body?.opIndex !== undefined ? ` (op ${res.body.opIndex})` : ''}`);
 	return null;
 };
@@ -1057,16 +1059,15 @@ a server next to lb-1. The agent supplies meaning, the tool supplies geometry, a
 it removes are the two an agent actually makes -- computing an off-grid coordinate, and landing on
 something already there.
 
-Composition, not a layout engine. It reads the reference's context, asks which anchors are free,
-picks one, and commits an ordinary transaction; every step is a route that exists, and nothing here
-decides anything the server would not have accepted from a caller that did the arithmetic itself.
+Composition, not a layout engine. It reads the reference's context and commits the relationship as an
+intent op, which the server's planner resolves to a free anchor (PL-4); every step is a route that
+exists, and the choice of anchor is made in one place, server-side.
 `--link` is included because "next to" almost always means "and connected to", and making that a
 second invocation invites the agent to forget it.
 */
-const DIRS = {
-	right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1],
-	above: [0, -1], below: [0, 1],
-};
+// the word the server's resolver takes for each (server/anchor.mjs knows right, left, up and down; above and below are
+// this tool's synonyms, PL-4)
+const DIR_WORD = { right: 'right', left: 'left', up: 'up', down: 'down', above: 'up', below: 'down' };
 
 /*
 B231 -- COLUMNS ARE DERIVED FROM THE DATA, not from a list someone remembers to update.
@@ -1105,7 +1106,7 @@ export function columnsFor(kind, list) {
 
 VERBS.push({
 	name: 'place', group: 'Placement', usage: 'draw place <type> near|inside|between <ref> [--link]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/nearest'],
 	summary: 'put a node beside, inside or between things -- on a free anchor, no coordinates',
 	example: 'draw place server near lb-1 --dir right --link',
 	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')}` },
@@ -1125,20 +1126,22 @@ VERBS.push({
 		if (!type || !['near', 'inside', 'between'].includes(near) || !ref) {
 			die('usage: draw place <type> near <ref> | inside <zone> | between <a> <b>');
 		}
-		if (ctx.flags.dir && !DIRS[ctx.flags.dir]) die(`--dir must be one of ${Object.keys(DIRS).join(', ')}`);
+		if (ctx.flags.dir && !DIR_WORD[ctx.flags.dir]) die(`--dir must be one of ${Object.keys(DIR_WORD).join(', ')}`);
 		const id = await activeId(ctx, ctx.flags);
 
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'place');
-		const free = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors?free=1`), 'place');
-		let options = free.anchors;
-		if (!options.length) die('the canvas is full: every anchor is occupied');
 
 		/*
-		Three ways to say WHERE, all resolving to a free anchor.
+		Three ways to say WHERE, each a relationship the SERVER resolves to a free anchor.
 
-		`inside` and `between` are the same idea as `near` and most of the same code: the agent
-		names a relationship it can see in the diagram, and the tool turns that into a legal
-		position. Only the candidate set differs.
+		PL-4 (dev/design/planner/PLANNER-SYSTEM.md): this verb carried its own copy of the resolver -- nearest by
+		distance, the outward walk for a direction, the zone-bounds filter, the midpoint -- beside the one in
+		`server/anchor.mjs` the planner runs. It now sends the relationship every time and reads the position from the
+		answer. The two had the same order, occupancy rule and ties, so where a node lands did not move; and the direct
+		write no longer resolves against a read that another writer may have overtaken.
+
+		What stays here is naming: which entity a word means (`resolveId`, which refuses an ambiguous name), and what
+		the label says.
 		*/
 		let anchorNode = null;
 		// who a --link should attach to; internal, so NOT smuggled through ctx.flags -- the help
@@ -1156,8 +1159,6 @@ VERBS.push({
 		if (near === 'inside') {
 			const zone = doc.zones.find((z) => z.id === refId);
 			if (!zone) die(`${ref} is not a zone -- \`draw get zones\` lists them`);
-			options = options.filter((a) => a.x >= zone.x && a.x <= zone.x + zone.w && a.y >= zone.y && a.y <= zone.y + zone.h);
-			if (!options.length) die(`zone ${ref} has no free anchor -- \`draw zone contents ${zone.id}\` shows what fills it`);
 			anchorNode = { id: zone.id, name: zone.name, x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 };
 		} else if (near === 'between') {
 			const other = args[3];
@@ -1173,43 +1174,20 @@ VERBS.push({
 			if (!anchorNode) die(`${ref} is not a node -- \`draw get nodes\` lists them`);
 		}
 
-		let target;
-		if (ctx.flags.dir && near === 'near') {
-			const [dx, dy] = DIRS[ctx.flags.dir];
-			// step outward in that direction until an anchor is free, so "right" means right
-			for (let step = 1; step <= 16 && !target; step++) {
-				const x = anchorNode.x + dx * 60 * step, y = anchorNode.y + dy * 60 * step;
-				target = options.find((a) => a.x === x && a.y === y);
-			}
-			if (!target) die(`nothing free to the ${ctx.flags.dir} of ${ref} -- try another direction, or \`draw near\` to see why`);
-		} else {
-			target = options.reduce((best, a) => {
-				const d = Math.hypot(a.x - anchorNode.x, a.y - anchorNode.y);
-				return !best || d < best.d ? { ...a, d } : best;
-			}, null);
-		}
-
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
 		const entity = { id: nid, name: ctx.flags.name || nid, type };
 
 		/*
-		B189/W9 -- a DRAFTED place carries the relationship; a direct one carries the position.
-
-		The two are not a style choice. A drafted op is resolved later, against a document the
-		ops ahead of it have already changed, so a position computed now would be stale: two
-		`near lb-1` intents resolved against one pre-draft snapshot pick the SAME anchor and the
-		server refuses the whole set for occupancy. `plan()` advances a projection between ops,
-		so an intent resolves correctly wherever it sits in the set.
-
-		A direct place keeps its resolved coordinate because it has just read the live document
-		and there is nothing ahead of it -- and because that is the shipped behaviour, unchanged.
+		B189/W9 -- the op carries the RELATIONSHIP, resolved by the planner against the document as the ops ahead of it
+		left it: two `near lb-1` intents in one draft land on two anchors, where resolving both against one snapshot
+		picked the same anchor and the server refused the set for occupancy. Named as the caller named them -- which
+		`resolveId` has already proven unambiguous -- so a refusal speaks the caller's words, and a drafted op reads
+		exactly as it always did.
 		*/
 		const at = near === 'between' ? { between: [ref, args[3]] }
 			: near === 'inside' ? { inside: ref }
-				: ctx.flags.dir ? { near: ref, dir: ctx.flags.dir } : { near: ref };
-		const ops = await staging(ctx)
-			? [{ op: 'place', kind: 'node', entity, at }]
-			: [{ op: 'put', kind: 'node', entity: { ...entity, x: target.x, y: target.y } }];
+				: ctx.flags.dir ? { near: ref, dir: DIR_WORD[ctx.flags.dir] } : { near: ref };
+		const ops = [{ op: 'place', kind: 'node', entity, at }];
 
 		// `between` links BOTH ends, because that is what standing between two things means
 		const linkTo = ctx.flags.link ? (linkEnds || [anchorNode.id]) : [];
@@ -1220,10 +1198,15 @@ VERBS.push({
 		// freely: `place <type> <where> <a long node name>` overflows and the server refuses the
 		// whole commit with `invalid label`, which reads as a placement failure and is not one.
 		const label = `place ${type} ${near} ${anchorNode.name || anchorNode.id}`.slice(0, 32).trim();
-		return submit(ctx, id, ops, label, 'place', (b) => ({
-			json: { id: nid, at: { x: target.x, y: target.y }, cell: { cx: target.cx, cy: target.cy }, linked: !!ctx.flags.link, version: b.version },
-			text: `${ctx.flags.name || nid} (${nid}) at ${target.x},${target.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}`,
-		}));
+		// the position is the server's answer: the put the planner resolved the intent into, and the cell it names
+		return submit(ctx, id, ops, label, 'place', async (b) => {
+			const put = b.ops.find((o) => o.op === 'put' && o.entity.id === nid).entity;
+			const cell = ok(await request(ctx, `/diagrams/${id}/layouts/node/nearest?x=${put.x}&y=${put.y}`), 'place');
+			return {
+				json: { id: nid, at: { x: put.x, y: put.y }, cell: { cx: cell.cx, cy: cell.cy }, linked: !!ctx.flags.link, version: b.version },
+				text: `${ctx.flags.name || nid} (${nid}) at ${put.x},${put.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}`,
+			};
+		});
 	},
 });
 
