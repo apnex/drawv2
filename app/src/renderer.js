@@ -76,6 +76,61 @@ function contentDom(r, parent, idx = 0) {
 }
 
 // opaque backing sized to the text (15px monospace: ~9px/char, CJK wide ~15px)
+/*
+H15.9 -- THE APPEARANCE PIPELINE, for every kind (docs/spec/ATOMICS.md). Each look answers, in ONE call, every attribute
+of an entity's drawing that can change while its STRUCTURE stays -- per part, as attributes, with `text` for a label's
+content. Create builds the structure and applies the look; update checks the structure and applies the same look. So a
+fact cannot be wired into one branch and not the other (B218, B228, B230): there is one place it is decided, and both
+branches emit it. What changes the structure -- a span, content, a waypoint's roles -- re-renders instead.
+
+Links have had this since H15.9's first rung (`linkAppearance`, with `APPEARANCE_KEYS` for its optional keys). A waypoint's
+rings stay a LIST of layers (`waypointLayers`): it draws several circles rather than one element, so its roles re-render.
+tests/appearance.test.js holds the property for every kind: an update equals a fresh render, in two separate documents.
+*/
+const nodeLook = (entity) => {
+	const csig = contentSig(entity), sig = spanSig(entity);
+	const look = { root: { transform: `translate(${entity.x},${entity.y})` } };
+	// a panel or span draws a sized rect, whose corner follows its shape; a plain node `<use>`s the circle or square def
+	look.frame = (sig || csig) ? { rx: frameRadius(entity, L_STD), 'stroke-width': frameWidth(entity) } : { href: `#m-${entity.shape || 'circle'}` };
+	if (!csig) {   // a content node is labelled by its content and its regions own the glyphs
+		const [bx, by, bw, bh] = FIT(entity.type);
+		const pw = pillWidth(entity.name), { sw } = spanExtent(entity.span);
+		look.fit = { viewBox: `${bx} ${by} ${bw} ${bh}` };   // the glyph fitted to its own box (B205)
+		look.glyph = { href: `#glyph-${entity.type}` };
+		look.pill = { x: sw / 2 - pw / 2, width: pw };
+		look.label = { x: sw / 2, text: entity.name || '' };
+	}
+	return look;
+};
+const NODE_PARTS = {
+	frame: (g) => g.querySelector('[data-layer="frame"]'),
+	glyph: (g) => g.querySelector('[data-layer="glyph"]'),
+	fit: (g) => g.querySelector('[data-layer="glyph"]')?.parentNode ?? null,
+	pill: (g) => g.querySelector('.label-pill'),
+	label: (g) => g.querySelector('.label'),
+};
+const zoneLook = (entity) => ({
+	rect: { x: entity.x, y: entity.y, width: entity.w, height: entity.h },
+	label: { x: entity.x + STD.zoneDx, y: entity.y + STD.zoneDy, text: entity.name || '' },   // the spec owns the offset
+	pill: { x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name) },
+});
+const ZONE_PARTS = { rect: (g) => g.querySelector('.zone-rect'), label: (g) => g.querySelector('.label'), pill: (g) => g.querySelector('.label-pill') };
+const groupLook = (box) => ({ hull: { x: box.x, y: box.y, width: box.w, height: box.h } });
+const GROUP_PARTS = { hull: (g) => g.querySelector('.group-hull') };
+const waypointLook = (entity) => ({ root: { transform: `translate(${entity.x},${entity.y})` } });
+
+// emit a look onto an element: each part found by its finder, each attribute set, `text` as the element's content
+function applyLook(dom, look, parts = {}) {
+	for (const [part, attrs] of Object.entries(look)) {
+		const target = part === 'root' ? dom : parts[part]?.(dom);
+		if (!target) continue;
+		for (const [k, v] of Object.entries(attrs)) {
+			if (k === 'text') { if (target.textContent !== v) target.textContent = v; }
+			else target.setAttribute(k, v);
+		}
+	}
+}
+
 function pillWidth(name) {
 	const w = [...(name || '')].reduce((sum, ch) => sum + (ch.codePointAt(0) > 0x2e7f ? 15 : 9), 0);
 	return w > 0 ? w + 8 : 0;
@@ -301,15 +356,14 @@ export class Renderer {
 		this.remove(entity.id);             // put is create-or-replace
 		if (kind === 'node') {
 			const g = el('g', { id: entity.id, class: 'node' }, this.layers.nodes);
-			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
 			const { sw, sh } = spanExtent(entity.span), sig = spanSig(entity), csig = contentSig(entity);
 			if (sig || csig) {   // a panel (content) or multi-cell node → a sized rounded-rect frame (same .frame styling)
 				if (sig) g.setAttribute('data-span', sig);
 				// a panel's corner FOLLOWS its shape (like a 1×1 node, toggled by 's'): circle → the circle radius
 				// (frame.ext=20; a 1×1 panel == the circle, a row → a pill), square → the sharp frame radius (5)
-				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh, rx: frameRadius(entity, L_STD), 'stroke-width': frameWidth(entity) }, g);
+				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh }, g);
 			} else {
-				el('use', { 'data-layer': 'frame', href: `#m-${entity.shape || 'circle'}` }, g);
+				el('use', { 'data-layer': 'frame' }, g);
 			}
 			if (csig) {   // content node (W2): the content regions, + (W4) the per-cell socket grid only in edit mode
 				g.setAttribute('data-content', csig);
@@ -327,18 +381,17 @@ export class Renderer {
 				if (showsSockets(this.renderOpts())) {
 					el('rect', { class: 'socket', x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET }, g);
 				}
-				const [bx, by, bw, bh] = FIT(entity.type);
-				const fit = el('svg', { x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET, viewBox: `${bx} ${by} ${bw} ${bh}`, preserveAspectRatio: 'xMidYMid meet' }, g);
-				el('use', { 'data-layer': 'glyph', href: `#glyph-${entity.type}` }, fit);
+				const fit = el('svg', { x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET, preserveAspectRatio: 'xMidYMid meet' }, g);
+				el('use', { 'data-layer': 'glyph' }, fit);
 			}
 			// a node declaring transit off shows the same ring an anchor does, at its anchor point (TRANSIT.md section 12, X1)
 			if (this.model.declaresNoTransit(entity.id)) layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'), g);
 			el('path', { class: 'select-box', d: sig ? selBox(L_STD, sw, sh) : SELECT_BOX }, g);
 			if (!csig) {   // a content node (text box / panel) is self-labelled by its content — no name sub-title
-				const pw = pillWidth(entity.name);
-				el('rect', { class: 'label-pill', rx: 4, x: sw / 2 - pw / 2, y: NODE_LABEL_Y - 13 + sh, width: pw, height: STD.labelH }, g);
-				el('text', { class: 'label', x: sw / 2, y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize }, g).textContent = entity.name || '';
+				el('rect', { class: 'label-pill', rx: 4, y: NODE_LABEL_Y - 13 + sh, height: STD.labelH }, g);
+				el('text', { class: 'label', y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize }, g);
 			}
+			applyLook(g, nodeLook(entity), NODE_PARTS);   // H15.9: what can change, from the one derivation update uses too
 		}
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
@@ -351,15 +404,17 @@ export class Renderer {
 		}
 		if (kind === 'zone') {
 			const g = el('g', { id: entity.id, class: 'zone' }, this.layers.zones);
-			el('rect', { class: 'zone-rect', rx: ZONE_R, x: entity.x, y: entity.y, width: entity.w, height: entity.h }, g);
-			el('rect', { class: 'label-pill', rx: 4, x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name), height: STD.labelH }, g);
-			el('text', { class: 'label zone-label', x: entity.x + STD.zoneDx, y: entity.y + STD.zoneDy, 'font-size': STD.fontSize }, g).textContent = entity.name || '';
+			el('rect', { class: 'zone-rect', rx: ZONE_R }, g);
+			el('rect', { class: 'label-pill', rx: 4, height: STD.labelH }, g);
+			el('text', { class: 'label zone-label', 'font-size': STD.fontSize }, g);
+			applyLook(g, zoneLook(entity), ZONE_PARTS);
 		}
 		if (kind === 'group') {
 			const b = this.groupBox(entity);
 			if (!b) return;                 // no resolvable members → no hull
 			const g = el('g', { id: entity.id, class: 'group' }, this.layers.groups);
-			el('rect', { class: 'group-hull', x: b.x, y: b.y, width: b.w, height: b.h, rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
+			el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
+			applyLook(g, groupLook(b), GROUP_PARTS);
 		}
 		if (kind === 'waypoint') {
 			/*
@@ -387,7 +442,7 @@ export class Renderer {
 			const armed = entity.spawn ? ' spawning' : '';
 			const cls = roles.length ? roles.join(' ') : 'bend';
 			const g = el('g', { id: entity.id, class: `waypoint ${cls}${armed}` }, this.layers.waypoints);
-			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
+			applyLook(g, waypointLook(entity));
 			// the anchor as drawn: whether it declares transit off comes from the network (the Model's `declaresNoTransit`),
 			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
 			const anchor = { transit: this.model.declaresNoTransit(entity.id) ? false : undefined };
@@ -445,30 +500,8 @@ export class Renderer {
 			// pure move keeps the fast path (frame/content/selBox are all local to the translate → only transform).
 			const sig = spanSig(entity), csig = contentSig(entity);
 			if ((dom.getAttribute('data-span') || null) !== sig || (dom.getAttribute('data-content') || null) !== csig) return this.render('node', entity);
-			dom.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			const glyph = csig ? null : dom.querySelector('[data-layer="glyph"]');
-			if (glyph) {   // a plain node has the default type glyph; a content node has none (its regions own the glyphs)
-				const glyphHref = `#glyph-${entity.type}`;
-				if (glyph.getAttribute('href') !== glyphHref) {
-					glyph.setAttribute('href', glyphHref);
-					const [bx, by, bw, bh] = FIT(entity.type);
-					glyph.parentNode.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);   // refit the socket box
-				}
-			}
-			const frame = dom.querySelector('[data-layer="frame"]');
-			if (frame.tagName.toLowerCase() === 'use') {   // 1×1 plain node: 's' swaps the circle/square frame def
-				const frameHref = `#m-${entity.shape || 'circle'}`;
-				if (frame.getAttribute('href') !== frameHref) frame.setAttribute('href', frameHref);
-			} else {   // a panel/span rect: 's' swaps the corner rx (circle → round 20, square → sharp 5)
-				const rx = (csig && entity.shape !== 'square') ? L_STD.frame.ext : L_STD.frame.r;
-				if (Number(frame.getAttribute('rx')) !== rx) frame.setAttribute('rx', rx);
-			}
-			const label = dom.querySelector('.label');
-			if (label && label.textContent !== entity.name) {
-				label.textContent = entity.name || '';
-				const pw = pillWidth(entity.name), sw = spanExtent(entity.span).sw;
-				setAttrs(dom.querySelector('.label-pill'), { x: sw / 2 - pw / 2, width: pw });
-			}
+			// H15.9: the move, the glyph and its fit box, the frame's def or corner, the label and its pill -- the one look
+			applyLook(dom, nodeLook(entity), NODE_PARTS);
 			this.model.linksOf(entity.id).forEach((link) => this.update('link', link));
 			this.refreshRoutedThrough(entity.id);
 			const grp = this.model.groupOf(entity.id);
@@ -506,21 +539,16 @@ export class Renderer {
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
-			setAttrs(dom.querySelector('.zone-rect'), { x: entity.x, y: entity.y, width: entity.w, height: entity.h });
-			const label = dom.querySelector('.label');
-			setAttrs(label, { x: entity.x + 10, y: entity.y + 22 });
-			if (label.textContent !== entity.name) label.textContent = entity.name || '';
-			setAttrs(dom.querySelector('.label-pill'), { x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name) });
+			applyLook(dom, zoneLook(entity), ZONE_PARTS);   // H15.9: the label offset is the spec's here as in create
 		}
 		if (kind === 'group') {
 			const b = this.groupBox(entity);
 			if (!b) return this.remove(entity.id);                 // shrank below a member → drop the hull
-			const rect = dom.querySelector('.group-hull');
-			if (rect) setAttrs(rect, { x: b.x, y: b.y, width: b.w, height: b.h });
+			if (dom.querySelector('.group-hull')) applyLook(dom, groupLook(b), GROUP_PARTS);
 			else this.render('group', entity);
 		}
 		if (kind === 'waypoint') {
-			dom.setAttribute('transform', `translate(${entity.x},${entity.y})`);
+			applyLook(dom, waypointLook(entity));
 			this.model.linksAt(entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
 			this.refreshRoutedThrough(entity.id);
 			const grp = this.model.groupOf(entity.id);

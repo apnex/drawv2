@@ -182,6 +182,7 @@ AMENDED 2026-10-01: K4 done -- the planner is its own folder, `planner/`, served
 AMENDED 2026-10-01: K7 done -- the held tools are their own canvas module, the palette a view of them; Input reaches neither the palette nor any chrome. Next K8.\
 AMENDED 2026-10-01: K8 done -- one `composeCanvas` builds the canvas half of the product page and of the lab.\
 AMENDED 2026-10-01: promotion is HELD for more consolidation in the lab (`dev/DECISIONS.md`). Reconciled: H15.2 dropped from the board, its row B221 held for promotion's preview (PL-6); H10.34's mechanism shipped with H17.14, only B163's ratification owed; B243's trigger is promotion; H11.29 done. Next H15.9, then H15.23.\
+AMENDED 2026-10-01: H15.9 done -- every kind draws through one look both renderer branches apply; B230 closed, its guard built. Next H15.23.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -858,7 +859,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.20 | A derived weight is not overridden by a stylesheet -- one authority for a frame, not two | **B235** | **S2** | `DONE` |
 | H15.21 | A label is one size and one offset, canvas and export alike | **B236** | S3 | `DONE` |
 | H15.22 | Every optional field a link carries is writable from the CLI, clearing included, from one declared table | **B237** | S3 | `DONE` |
-| H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out -- LINKS DONE; nodes, waypoints, zones and groups still assemble their own attributes | feature | S3 | `WIP` |
+| H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out -- every kind, 2026-10-01; closes B230 | **B230** | S3 | `DONE` |
 | H15.23 | One registry for every colour the canvas draws: tokens named by role, consumed by the stylesheet, and a scanner that fails a hex literal | **B255** | S3 | `TODO` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
@@ -951,7 +952,6 @@ Scored so the comparison is a judgement, not an omission.\
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
-| **B230** | S3 | No guard stops a field being wired into a renderer's CREATE branch and not its UPDATE branch -- B218 and B228 are that defect twice | a third instance appears, or H15.9 lands and makes the class unexpressible rather than merely detectable |
 | **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
 | **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | promotion's format batch (stored drawing order, ruled with B249 2026-10-01) |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |

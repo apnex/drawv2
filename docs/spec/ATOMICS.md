@@ -364,7 +364,7 @@ The experiment that isolated it held topology, counts and waypoint identical and
 Recorded as B221 and B222.
 
 ---
-## The appearance pipeline [PARTIAL 2026-09-22 -- links only]
+## The appearance pipeline [BUILT 2026-10-01 -- every kind]
 
 Everything a renderer needs to draw an entity is derived in ONE call and returned as ATTRIBUTES.\
 A caller emits what it is given and decides nothing.
@@ -383,6 +383,8 @@ It is a response to a ledger rather than a preference.\
 B225, B226, B228, B232 and B234 were all a derivation and a renderer disagreeing, and all five lived in the gap that separate sub-questions and hand assembly create.\
 One answer, assembled once, removes the second place to forget.
 
-**What it does NOT yet cover.**\
-Nodes, waypoints, zones and groups still assemble their own attributes, and the waypoint layer list remains its own shape -- a list of layers rather than a set of attributes, because a waypoint draws several circles rather than one element.\
-Bringing those in is the rest of the rung.
+**What it covers.**\
+AMENDED 2026-10-01 (H15.9): every kind.\
+In the live renderer each of node, zone, group and waypoint has a look -- every attribute that can change while the element's structure stays, per part -- which create applies after building the structure and update applies after checking it (`app/src/renderer.js`); what changes the structure (a span, content, a waypoint's roles) re-renders instead.\
+The waypoint's rings remain a list of layers rather than a set of attributes, because a waypoint draws several circles rather than one element.\
+`tests/appearance.test.js` holds the property for every kind: an update equals a fresh render, in two separate documents.

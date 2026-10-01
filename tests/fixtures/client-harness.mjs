@@ -82,7 +82,18 @@ export function fakeEl(tag = 'div', id = '') {
 		addEventListener() {},
 		removeEventListener() {},
 		closest() { return null; },
-		querySelector(sel) { return this.byId?.[sel] ?? fakeEl('g', sel.replace('#', '')); },
+		/*
+		H15.9 -- a real DESCENDANT lookup for the selectors the renderer uses (`.cls`, `[attr="v"]`, a tag), before the
+		old fallback of a fresh detached element. Returning a detached element made every `update` write into nothing in
+		this harness, so a test comparing an update with a fresh render could only report differences that are not there.
+		*/
+		querySelector(sel) {
+			if (this.byId?.[sel]) return this.byId[sel];
+			const cls = sel.match(/^\.([\w-]+)$/)?.[1], attr = sel.match(/^\[([\w-]+)="([^"]*)"\]$/), tag = /^[a-z]+$/i.test(sel) ? sel.toUpperCase() : null;
+			const hit = (n) => (cls ? (n.attrs?.class || '').split(' ').includes(cls) : attr ? n.attrs?.[attr[1]] === attr[2] : tag ? n.tagName === tag : false);
+			const walk = (n) => { for (const c of n.children || []) { if (hit(c)) return c; const d = walk(c); if (d) return d; } return null; };
+			return ((cls || attr || tag) && walk(this)) || fakeEl('g', sel.replace('#', ''));
+		},
 		// a real class lookup over children. Returning [] made element REMOVAL untestable: code that
 		// clears a layer by `querySelectorAll('.handle').forEach(h => h.remove())` silently cleared
 		// nothing, so a "handles disappear" assertion could never fail.
