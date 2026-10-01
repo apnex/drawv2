@@ -189,6 +189,7 @@ AMENDED 2026-10-01: B163 ratified and closed (H10.34); the goals framework is `V
 AMENDED 2026-10-01: the readout is canvas, built by `composeCanvas`; the last layer-debt edge is gone and L2's records are empty.\
 AMENDED 2026-10-01: production-upgrade considerations are tracked in `dev/PRODUCTION-UPGRADE.md` (B276), added in the commit that creates each; read in full at a production audit.\
 AMENDED 2026-10-01: one core palette, Material-named, with colour roles declared by each owner -- the network plugin owns its pipe, transit-ring and down-link colours (PU24 lists the slight visible changes).\
+AMENDED 2026-10-01: board hygiene -- H10.7, H10.8 and H11.4 dropped from the board, their rows held with triggers (B127 under B256, B79 part-closed, B108 on automated mutation).\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -209,8 +210,8 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 3 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
 | 4 | -- | verifier | **H11.29 closed 2026-10-01: GR14 has its row.** `TRANSACTIONS.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
 | 5 | -- | agent | **H10.32 closed 2026-09-01.** A verb now refuses a positional it never declared, at the dispatcher rather than in 41 verbs. Kept as a rank so the ordering below is not silently renumbered |
-| 6 | H10.8 | local | Real, small, compounding into nothing alone. Take them opportunistically. **H9.22 closed and left this tier 2026-09-01.** Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
-| -- | H10.7 | blocked | Bounded parallel connections. **H10.11 closed and left this tier 2026-09-01.** **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
+| 6 | -- | local | **H10.8 dropped 2026-10-01: its row B79 is part-closed and held with B127.** Real, small, compounding into nothing alone. Take them opportunistically. **H9.22 closed and left this tier 2026-09-01.** Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
+| -- | -- | blocked | **H10.7 dropped 2026-10-01: parallel links are designed under the network model, with B256.** Bounded parallel connections. **H10.11 closed and left this tier 2026-09-01.** **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
 
 **What the arc left undone, deliberately.**\
 The map shows what is where and not what connects to what, and links are not going on it -- `links`, `about` and `link path` answer connectivity as lists, and a text grid carrying both would be the mess the design set out to avoid.\
@@ -549,8 +550,8 @@ Every item here was found by using the application rather than by running the ga
 | H10.15 | A group holds at least two distinct members, enforced server-side | **B85** | S3 - S | `DONE` |
 | H10.16 | Collapse the four referential rules written twice inside `validate.js` into the invariants module | **B83** | S3 - L | `DONE` |
 | H10.17 | Share the constants restated across files -- `MAX_COLLECTION`, `OPTIONAL`, `SELECTABLE`, the name and URL caps | **B86** | S4 - M | `DONE` |
-| H10.7 | Parallel connections between two containers, count bounded by the column span -- designed and walked in `design/walk/FINDINGS.md`, never implemented | **B127** | S4 - L | `TODO` |
-| H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 - M | `TODO` |
+| H10.7 | Parallel connections between two containers, count bounded by the column span -- designed and walked in `design/walk/FINDINGS.md`, never implemented | **B127** | S4 - L | `DROPPED` |
+| H10.8 | Restore the connection-walk apparatus, or correct the record that calls it historical while it governs live decisions | **B79** | S3 - M | `DROPPED` |
 | H10.5 | Suppress the browser context menu outside form fields, not on the canvas alone | **B75** | S3 - S | `DONE` |
 | H10.25 | A rejected commit is spliced from the outbox in memory and left in localStorage, so a command the server can never accept replays on every reload -- observed as the same entity id refused twelve times | **B148** | S1 - S | `DONE` |
 | H10.26 | The header's right cluster shifts on every edit and pops in and out. Fixed widths in `ch`, resting states, the email boxed, and the banner given the slack so nothing can push the cluster | **B155** | S3 - S | `DONE` |
@@ -570,7 +571,7 @@ Every item here was found by using the application rather than by running the ga
 
 ---
 
-## H11 -- the register, and the shipped path - `WIP`
+## H11 -- the register, and the shipped path - `DONE`
 
 Opened 2026-08-26 by a full reconciliation of this file against the register, requested after H9 and H10 landed and the plan stopped describing them.\
 The reconciliation itself is the finding: the two files had drifted in eleven places, and every check that should have caught it was scoped narrower than its own claim.
@@ -604,7 +605,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 | H11.27 | The server emits non-ASCII in agent-facing strings, so an agent reads a character it cannot type back into a grep or an assertion. FOUR, not three -- the fourth was found by the rule rather than by the row, which is the argument for writing one rather than fixing a list | **B152** | S3 - S | `DONE` |
 | H11.28 | `Decisions required` is the last declared list nothing reads, and the one wrong twice. The Held pattern applied to a second section: a `RULING-OWED` verdict and one bidirectional rule | **B153** | S3 - S | `DONE` |
 | H11.29 | `TRANSACTIONS.md` section 5 claims to list the mechanized guardrails and has no row for `GR14`, which is cited on this board and enforced in the gate | **B154** | S4 - S | `DONE` |
-| H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 - L | `TODO` |
+| H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 - L | `DROPPED` |
 | H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 - M | `DONE` |
 
 **Exit:** the plan and the record agree mechanically, in both directions, and a live row cannot be invisible in either file.
@@ -969,6 +970,9 @@ Scored so the comparison is a judgement, not an omission.\
 | **B273** | S4 | The kind table is shared, not injected: a composition cannot add a kind, so pipes wait for promotion | promotion's format batch, or any sixth stored kind |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
+| **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
+| **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
+| **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | promotion's format batch -- ruled 2026-10-01: newest drawn on top, stored drawing order |

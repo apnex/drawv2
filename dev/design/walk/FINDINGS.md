@@ -2,7 +2,9 @@
 
 Running record of the GRC walk (style x rung).\
 Failures are kept (history) and each generates a "what would make it pass" hypothesis -> new candidate styles/rungs.\
-Criteria: grid-snap / clearance / attachment / reserve / count-honored (`dev/design/walk/grc.mjs` + run.mjs).
+Criteria: grid-snap / clearance / attachment / reserve / count-honored (`dev/design/walk/grc.mjs` + run.mjs).\
+AMENDED 2026-10-01 (B79): the apparatus -- `rungs.mjs`, `styles.mjs`, `scene.mjs`, `run.mjs` and `grc.mjs` -- is not in this repository; it is kept at `~/taceng/drawv2-archive/design-generators/design/walk/`.\
+The checker graduated to `kernel/grc.mjs` and was deleted at K12; the parallel-connection bound below was for links drawn between containers, and parallel links are now designed under the network model (B127, B256).
 
 ---
 
