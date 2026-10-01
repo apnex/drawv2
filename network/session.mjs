@@ -28,15 +28,36 @@ import { createPipeSet } from './pipeset.mjs';
 import { createLinkOrder } from './order.mjs';
 import { createNetwork } from './network.mjs';
 import { judgeDrag } from './guide.mjs';
+import { createTransit } from './transit.mjs';
 
 export function createNetworkSession() {
-	const pipes = createPipeSet(), order = createLinkOrder();
-	const network = createNetwork(pipes, order.rankOf);
+	const pipes = createPipeSet(), order = createLinkOrder(), transit = createTransit();
+	const network = createNetwork(pipes, order.rankOf, transit);
+	const watchers = [];
 	let pendingLegs = null, pendingNotice = null;
 	const lay = (legs) => { for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid); };
 
 	return {
 		pipes, order, network,
+
+		/*
+		THE TRANSIT TOGGLE (`x`, TRANSIT.md section 12, X1): flip each selected anchor's transit on its own, and say what
+		happened -- the next settle says it. `selected` is plain data from the host: id, kind, type, name. Watchers hear
+		which anchors changed, so the composition can redraw them.
+		*/
+		toggleTransit(selected) {
+			const anchors = selected.filter((e) => e.kind === 'node' || e.kind === 'waypoint');
+			if (!anchors.length) return;
+			const { flipped, refused } = transit.flip(anchors);
+			const said = [];
+			if (flipped.length) said.push(`transit ${flipped.map((e) => `${e.transit ? 'on' : 'off'} at ${e.name || e.id}`).join(', ')}`);
+			if (refused.length) said.push(`${refused.map((e) => `${e.name || e.id} is a ${e.type}`).join(', ')}, which never passes routes -- its transit stays off`);
+			pendingNotice = said.join('; ');
+			for (const w of watchers) w(flipped.map((e) => e.id));
+		},
+
+		// hear which anchors' transit changed
+		onTransitChange(fn) { watchers.push(fn); },
 
 		// the route hook's answer, and whether a commit follows it -- with none, the legs were laid already
 		judge(drag, links) {

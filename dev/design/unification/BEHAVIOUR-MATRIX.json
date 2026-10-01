@@ -820,6 +820,21 @@
 					"link": 0
 				}
 			}
+		},
+		"transit board": {
+			"about": "Two routers linked through a bare anchor by hand pipes, a lone router, and a host; no transit declared yet.",
+			"board": "transit",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 1,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": []
+			}
 		}
 	},
 	"gestures": {
@@ -832,7 +847,8 @@
 		"draw: `g` on end": "Drag to the end, press `g` on it, and release there.",
 		"draw: `w` bend": "Drag, press `w` at a point on the way, and release on the end.",
 		"undo": "Undo the gesture before.",
-		"select link": "Click a link to select it."
+		"select link": "Click a link to select it.",
+		"transit `x`": "Select anchors or nodes, and press x."
 	},
 	"notApplicable": [
 		[
@@ -2434,6 +2450,193 @@
 				"down": 1
 			},
 			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29), as CORRECTED for undo.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-01",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Select the bare anchor, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "The anchor's transit goes off and the ring shows it: thin, dashed, light orange. Nothing else changes yet -- the link still runs through it until routing obeys transit (X2).",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [
+					"waypoint-000005"
+				],
+				"ringLook": true,
+				"notice": "transit off",
+				"through": {
+					"link-000001": [
+						[
+							0,
+							0
+						]
+					]
+				}
+			},
+			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-02",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Select the bare anchor, and press x twice.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Two states: the second press turns transit back on, and the ring goes.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [],
+				"notice": "transit on"
+			},
+			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-03",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Select the lone router, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					-240
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A router offers the choice, so its transit goes off and it shows the ring, drawn as on an anchor.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [
+					"node-000003"
+				],
+				"ringLook": true
+			},
+			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-04",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Select the host, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					240
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A host offers no choice -- its transit is always off -- so nothing is declared, no ring is drawn, and the notice says why.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [],
+				"notice": "host.*never passes"
+			},
+			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-05",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Turn the anchor's transit off; then select the anchor and the lone router together, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"shiftClick",
+					0,
+					-240
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Each selected anchor is flipped on its own: the anchor comes back on and the router goes off, rather than both being driven to one value.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [
+					"node-000003"
+				]
+			},
+			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
 			"standing": "ruled",
 			"built": "yes"
 		}

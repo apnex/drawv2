@@ -184,6 +184,7 @@ export const ENTRIES = {
 			'network/session.mjs', // the network's session state and the order one edit changes it in (RULESET-AUDIT T5)
 			'network/keys.mjs',    // the network plugin's own key rows for the Rules engine (dev/RULES.md section 11)
 			'network/grammar.mjs', // the network's drag grammar as data, read by the Rules engine (dev/RULES.md section 11)
+			'network/transit.mjs', // transit: the per-type table and the session's settings (TRANSIT.md section 12)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'engine/index.mjs',

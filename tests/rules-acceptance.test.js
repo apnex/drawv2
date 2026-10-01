@@ -121,13 +121,17 @@ test('Input refuses a plugin with anything but owner, keys and judgeDrag, and a 
 	assert.throws(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'close', on: () => false, run: 'x' }] }] }), /close/, 'and an id the product already uses');
 });
 
-test('a plugin\'s row is handed the host\'s one verb, not Input', () => {
+test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the selection as plain data', () => {
 	let handed = null;
 	const h = makeInput({ plugins: [{ owner: 'probe', keys: [{ id: 'probe', mutates: false, on: (e) => e.key === 'F9', run: (host) => { handed = host; } }] }] });
 	try {
 		h.capture.onKeyDown(key('F9'));
 		assert.ok(handed, 'the row ran');
-		assert.deepEqual(Object.keys(handed), ['addStop']);
+		assert.deepEqual(Object.keys(handed), ['addStop', 'selected']);
 		assert.notEqual(handed, h.input);
+		const [n] = seedNodes(h.model, [[0, 0, 'router']]);
+		h.selection.set([n.id]);
+		assert.deepEqual(handed.selected(), [{ id: n.id, kind: 'node', type: 'router', name: n.name }]);
+		assert.deepEqual(JSON.parse(JSON.stringify(handed.selected())), handed.selected(), 'plain data, never an entity or an element');
 	} finally { h.restore(); }
 });

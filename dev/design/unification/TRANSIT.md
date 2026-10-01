@@ -292,3 +292,14 @@ Each stage adds its rows to the behaviour matrix before the code, with their RED
 **What it proves.**\
 The original reason for this document, now with the pipes it led to: an author can decide, per anchor and within what each device type allows, whether links pass through or stop -- and see it.
 
+### 12.5 Progress
+
+**X1 -- the value and the mark, 2026-09-30.**
+- **`x` is a network key row** (`network/keys.mjs`): with anchors or nodes selected and no drag in progress, it flips each one's transit on its own; a type offering no choice is refused and named in the notice.
+- **The table and the settings** are `network/transit.mjs`, held by the network session (TR-6, TR-7); the network answers `declaresNoTransit`, a fifth read of the Model's network interface, which production answers never.
+- **The ring draws as ruled,** dashed and light orange: the canvas now passes the anchor to `waypointLayers`, honours a layer's own stroke and dash -- so does the export -- and draws the same ring on a node, at its anchor point, taken from the same list.
+- **The plugin host gains one declared verb,** `selected()`, the selection as plain data; the lab redraws the anchors a change names, and its notice says what happened.
+- **Nothing else changes:** five matrix rows (TRN-01 to TRN-05) on a new `transit` board, RED before the code; the 43 earlier boards are identical but for an empty ring list; routes still pass a non-transiting anchor until X2.
+- **Not yet:** the export cannot draw a ring, since the setting is session state outside the document until promotion stores it.
+- **Eight mutants, each caught.**
+

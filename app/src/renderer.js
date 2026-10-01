@@ -24,6 +24,14 @@ const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.s
 // on a content change; absent ⇒ no attr (plain node stays byte-identical). hexColor keeps SVG attrs safe.
 const contentSig = (e) => (isPanel(e) ? JSON.stringify(e.content) : null);   // one owner for 'is a panel'
 
+// one layer of the kernel's waypoint rings, as a circle -- a layer may carry its own stroke and dash, as the transit ring
+// does, and is drawn as it says; the canvas and the export draw the same list the same way
+function layerCircle(l, g) {
+	el('circle', l.fill === 'solid'
+		? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
+		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}) }, g);
+}
+
 // render ONE content region into a node's <g> (node-local px) — mirrors kernel/renderer.mjs
 // renderContentRegion. Text via textContent (XSS-safe); multi-row wraps as a paragraph.
 function contentDom(r, parent, idx = 0) {
@@ -308,6 +316,8 @@ export class Renderer {
 				const fit = el('svg', { x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET, viewBox: `${bx} ${by} ${bw} ${bh}`, preserveAspectRatio: 'xMidYMid meet' }, g);
 				el('use', { 'data-layer': 'glyph', href: `#glyph-${entity.type}` }, fit);
 			}
+			// a node declaring transit off shows the same ring an anchor does, at its anchor point (TRANSIT.md section 12, X1)
+			if (this.model.declaresNoTransit(entity.id)) layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'), g);
 			el('path', { class: 'select-box', d: sig ? selBox(L_STD, sw, sh) : SELECT_BOX }, g);
 			if (!csig) {   // a content node (text box / panel) is self-labelled by its content — no name sub-title
 				const pw = pillWidth(entity.name);
@@ -362,11 +372,10 @@ export class Renderer {
 			const cls = roles.length ? roles.join(' ') : 'bend';
 			const g = el('g', { id: entity.id, class: `waypoint ${cls}${armed}` }, this.layers.waypoints);
 			g.setAttribute('transform', `translate(${entity.x},${entity.y})`);
-			for (const l of waypointLayers(roles, FE, this.model.linksAt?.(entity.id) || [])) {
-				el('circle', l.fill === 'solid'
-					? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
-					: { class: l.cls, r: l.radius, fill: l.fill, stroke: TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity }, g);
-			}
+			// the anchor as drawn: whether it declares transit off comes from the network (the Model's `declaresNoTransit`),
+			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
+			const anchor = { transit: this.model.declaresNoTransit(entity.id) ? false : undefined };
+			for (const l of waypointLayers(roles, FE, this.model.linksAt?.(entity.id) || [], anchor)) layerCircle(l, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)

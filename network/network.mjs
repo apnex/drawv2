@@ -16,7 +16,7 @@ import { createNetworkView } from './view.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './resolve.mjs';
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 
-export function createNetwork(pipeSet, rankOf = () => 0) {
+export function createNetwork(pipeSet, rankOf = () => 0, transit = null) {
 	const view = createNetworkView(pipeSet, rankOf);
 	return {
 		view,
@@ -25,6 +25,8 @@ export function createNetwork(pipeSet, rankOf = () => 0) {
 		linksRoutedThrough: pipeDependents(view),
 		isLinkDown: pipeLinkDown(view),
 		blockersOf: pipeBlockers(view),
+		// what the author declared about transit, from the session (TRANSIT.md section 12); a network without it declares nothing
+		declaresNoTransit: (id) => !!transit?.declaredOff(id),
 		// the planner's three -- each judged against the model the planner hands over, so only pipes that survive the edit count
 		alsoReferenced: (model) => pipeAnchors(view, model),
 		keepsOrphan,

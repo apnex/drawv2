@@ -944,7 +944,7 @@ test('Q3: composed with the network plugin, still no keystroke matches two rows'
 
 test('the product names no routing key: g means nothing in production, and the network\'s rows are its own', () => {
 	for (const s of SITUATIONS) assert.equal(resolveKey(key('g'), { gesturing: !!s.gesture }, s), null, 'no product row is about g');
-	assert.deepEqual(LAB_KEYS.filter((r) => r.owner === 'network').map((r) => r.id), ['guide', 'stop-on-node']);
+	assert.deepEqual(LAB_KEYS.filter((r) => r.owner === 'network').map((r) => r.id), ['guide', 'stop-on-node', 'transit']);
 	const drawing = (step) => sit(undefined, 'link', step);
 	const lab = (k, s) => resolveInput(LAB_KEYS, key(k), s, { gesturing: !!s.gesture }).rule?.id ?? null;
 	assert.equal(lab('g', drawing('ground')), 'guide', 'g during a link drag is the network\'s guide');

@@ -200,6 +200,10 @@ const TRANSIT_RADIUS = 10;
 const TRANSIT_WIDTH = 1;
 const TRANSIT_DASH = '2 2';
 
+// the transit ring as a layer -- one spec, which `waypointLayers` hands out for an anchor and the canvas takes for a node
+// from the same list, so the two cannot be drawn differently (transit with pipes, TRANSIT.md section 12, stage X1)
+const transitLayer = () => ({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, fill: 'none', opacity: 1, dash: TRANSIT_DASH, stroke: TOKENS.transitRing });
+
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';
 	return {
@@ -325,7 +329,7 @@ export const waypointLayers = (roles, ext, links = null, anchor = null) => {
 	ring and this one inside it.
 	*/
 	if (anchor && anchor.transit === false) {
-		out.push({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, dash: TRANSIT_DASH, stroke: TOKENS.transitRing });
+		out.push(transitLayer());
 	}
 	if (roles.includes('endpoint')) {
 		// H15.16 -- the ring carries the plane in its WEIGHT, at the same ratio the link uses. The

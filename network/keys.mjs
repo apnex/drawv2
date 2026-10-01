@@ -28,7 +28,10 @@ const is = (e, k) => e.key.toLowerCase() === k;
 const drawingALink = (s) => s.gesture === 'link';
 const overANode = (s) => s.step === 'node';
 
-const NETWORK_KEYS = [
+const anAnchorSelected = (s) => s.selection.kinds.some((k) => k === 'node' || k === 'waypoint');
+
+// the network's key rows; `session` is the network session the transit toggle acts on (absent where the rows are only read)
+const networkKeys = (session) => [
 	{ id: 'guide', input: ['g'], context: 'while drawing a link', doc: 'g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'g') && plain(e), when: drawingALink,
@@ -37,6 +40,11 @@ const NETWORK_KEYS = [
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'w') && plain(e), when: (s) => drawingALink(s) && overANode(s),
 		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'w', pin: false, nodes: true }); } },
+	// TRANSIT (ruled 2026-09-28; TRANSIT.md section 12, X1): `x` flips each selected anchor's transit on its own -- `x` for
+	// ergonomics, beside the wasd keys. Not during a drag: it is a declaration about anchors, not a step of a gesture
+	{ id: 'transit', input: ['x'], context: 'anchors or nodes selected', doc: 'x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice',
+		mutates: true, on: (e) => is(e, 'x') && plain(e), when: anAnchorSelected,
+		run: (host) => session?.toggleTransit(host.selected()) },
 ];
 
 /*
@@ -44,7 +52,7 @@ THE NETWORK, AS INPUT'S PLUGIN -- the one way to compose it into the product's I
 judge of a finished link drag. Input hands over its record of the drag; the judge is handed the FACTS the grammar reads
 (network/grammar.mjs `dragFacts`), so no composition -- the lab, or a test -- can hand it anything else.
 */
-export function networkInput(judge) {
-	return { owner: 'network', keys: NETWORK_KEYS, judgeDrag: (record) => judge(dragFacts(record)) };
+export function networkInput(judge, session = null) {
+	return { owner: 'network', keys: networkKeys(session), judgeDrag: (record) => judge(dragFacts(record)) };
 }
 

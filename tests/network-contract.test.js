@@ -29,7 +29,7 @@ import { Log } from '../server/log.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
 import { createNetwork } from '../network/network.mjs';
 
-const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf'];
+const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit'];
 const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded'];
 const complete = () => Object.fromEntries([...MODEL_READS, ...PLANNER_READS].map((k) => [k, () => undefined]));
 const without = (name) => { const n = complete(); delete n[name]; return n; };
@@ -51,7 +51,7 @@ test('a network member that is not a function is refused, not called later', () 
 	assert.throws(() => new Model({ network: { ...complete(), isLinkDown: true } }), /isLinkDown/);
 });
 
-test('the Model needs only its own four: the planner\'s methods are the planner\'s to check', () => {
+test('the Model needs only its own five: the planner\'s methods are the planner\'s to check', () => {
 	const modelOnly = Object.fromEntries(MODEL_READS.map((k) => [k, () => undefined]));
 	assert.ok(new Model({ network: modelOnly }));
 });

@@ -389,7 +389,11 @@ export class Input {
 		this.judgeDrag = judges[0]?.judgeDrag ?? null;
 		// the key table: the product's rows and each plugin's, through the Rules engine
 		this.keyRules = composeRules({ owner: 'product', rules: KEYMAP }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })));
-		this.pluginHost = { addStop: (step) => this.addStop(step) };
+		// declared verbs only, never Input: add a drag step; read the selection as plain data (id, kind, type, name)
+		this.pluginHost = {
+			addStop: (step) => this.addStop(step),
+			selected: () => this.selection.list().map((id) => { const e = this.model.get(kindOf(id), id); return { id, kind: kindOf(id), type: e?.type ?? null, name: e?.name ?? null }; }),
+		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		this.pressRules = composeRules({ owner: 'product', rules: RECOGNIZE });
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });

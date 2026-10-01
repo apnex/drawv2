@@ -95,7 +95,12 @@ What the MODEL asks the network -- each under the Model's own method name, so `m
   blockersOf(link, model)         which links hold the way a down link would take -- pipes carry one link each (ruled
                                   2026-09-30), and selecting a blocked link highlights its blockers.
 */
-const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf'];
+/*
+  declaresNoTransit(id, model)    whether the author declared this anchor's transit off -- what the transit ring marks
+                                  (ruled 2026-09-28; TRANSIT.md section 12). Only a declaration draws the ring: a type
+                                  that offers no choice declares nothing. Production has no transit: never.
+*/
+const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit'];
 
 export class Model {
 	constructor({ network = null, ...rest } = {}) {
@@ -236,6 +241,11 @@ export class Model {
 	// the links holding the way a down link would take -- never any, without a network
 	blockersOf(link) {
 		return link && this.network ? this.network.blockersOf(link, this) : [];
+	}
+
+	// whether the author declared this anchor's transit off -- never, without a network
+	declaresNoTransit(id) {
+		return !!(this.network && this.network.declaresNoTransit(id, this));
 	}
 
 	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always

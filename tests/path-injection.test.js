@@ -26,7 +26,7 @@ const seeded = (opts) => {
 	return m;
 };
 // a complete network whose answers are production's, so each test overrides only the method it is about
-const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], ...over } });
+const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, ...over } });
 const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] };
 
 test('production is unchanged: new Model() still draws the straight polyline through via', () => {
@@ -116,3 +116,20 @@ test('an injected blockersOf answers, and is handed the link and the model', () 
 	assert.equal(asked.link, LINK);
 	assert.equal(asked.model, m);
 });
+
+/*
+The fifth: WHETHER THE AUTHOR DECLARED AN ANCHOR'S TRANSIT OFF -- what the transit ring marks (ruled 2026-09-28; TRANSIT.md
+section 12). The lab holds that choice in the network's session until promotion stores it, so it is asked of the network;
+production has no transit to declare.
+*/
+test('production: no anchor declares transit off', () => {
+	assert.equal(seeded().declaresNoTransit('waypoint-00000c'), false);
+});
+
+test('an injected declaresNoTransit answers, and is handed the id and the model', () => {
+	let asked = null;
+	const m = seeded(net({ declaresNoTransit: (id, model) => { asked = { id, model }; return true; } }));
+	assert.equal(m.declaresNoTransit('waypoint-00000c'), true);
+	assert.deepEqual(asked, { id: 'waypoint-00000c', model: m });
+});
+

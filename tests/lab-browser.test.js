@@ -161,7 +161,13 @@ async function open(seed, { block = [] } = {}) {
 		await sleep(150);
 	};
 	const click = async (x, y) => { await mouse('mousePressed', x, y, 1); await mouse('mouseReleased', x, y, 0); await sleep(60); };
-	return { run: t.run, ready, close: async () => {}, mouse, key, drag, click };
+	// a Shift-click, for adding to the selection: CDP's modifiers bit 8 is Shift
+	const shiftClick = async (x, y) => {
+		const [sx, sy] = await screen(x, y);
+		for (const type of ['mousePressed', 'mouseReleased']) { await t.send('Input.dispatchMouseEvent', { type, x: sx, y: sy, button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1, modifiers: 8 }); await sleep(20); }
+		await sleep(60);
+	};
+	return { run: t.run, ready, close: async () => {}, mouse, key, drag, click, shiftClick };
 }
 
 /*
@@ -542,6 +548,7 @@ const settle = `new Promise((r) => setTimeout(r, 200))`;
 // every step a row may take, each performed with real input through the canvas's own transform
 const STEP = {
 	click: (p, x, y) => p.click(x, y),
+	shiftClick: (p, x, y) => p.shiftClick(x, y),
 	move: (p, x, y) => p.mouse('mouseMoved', x, y),
 	key: (p, k) => p.key(k),
 	drag: (p, from, to, hops) => p.drag(from, to, hops),
@@ -567,6 +574,8 @@ const SNAPSHOT = `(() => {
 		alive: [...lab.authority.all('node'), ...lab.authority.all('waypoint')].map((e) => e.id),
 		pipes: lab.pipes.list(),
 		selected: lab.input.selection.list(),
+		// what declares transit off on the canvas: each drawn transit ring, by the anchor or node it marks, and how it looks
+		rings: [...document.querySelectorAll('.wp-transit')].map((c) => { const cs = getComputedStyle(c); return { id: c.closest('g[id]').id, stroke: cs.stroke, dashed: cs.strokeDasharray !== 'none' }; }),
 		// every stretch an UP link is drawn along, as the pair of points it joins -- from what is drawn, not from the assignment
 		stretches: lab.model.all('link').filter((l) => !lab.model.isLinkDown(l)).map((l) => {
 			const pts = lab.model.pathOf(l) ?? [];
@@ -650,6 +659,8 @@ const CHECK = {
 		const wrong = Object.entries(want).filter(([id, hex]) => s.paths[id]?.stroke !== rgb(hex));
 		return !wrong.length || wrong.map(([id, hex]) => `${id} is stroked ${s.paths[id]?.stroke ?? '(not drawn)'}, not ${hex}`).join('; ');
 	},
+	rings: (s, ids) => same(s.rings.map((r) => r.id).sort(), [...ids].sort()) || `the rings mark ${s.rings.map((r) => r.id).join(',') || 'nothing'}, not ${ids.join(',') || 'nothing'}`,
+	ringLook: (s) => (s.rings.length > 0 && s.rings.every((r) => r.stroke === rgb('#ffb74d') && r.dashed)) || `the rings are drawn ${JSON.stringify(s.rings)}, not dashed in #ffb74d`,
 	selected: (s, ids) => same([...s.selected].sort(), [...ids].sort()) || `the selection is ${ids.length ? s.selected.join(',') || 'empty' : s.selected.join(',')}, not ${ids.join(',')}`,
 	downStroke: (s, hex) => {
 		const down = s.links.filter((l) => l.down);
@@ -722,16 +733,21 @@ for (const row of MATRIX.rows) {
 			assert.deepEqual(unset, [], `the board is not in state "${row.state}" after its setup, so ${row.id} would prove nothing: ${unset.join('; ')}`);
 			await perform(p, [...row.steps, ['settle']]);
 			const s = await p.run(SNAPSHOT);
-			if (WRITING_CORPUS) written[row.id] = corpusForm(s);
-			else assert.deepEqual(corpusForm(s), matrixCorpus[row.id], `${row.id}: the board after its steps differs from the matrix corpus -- a change its own checks do not name`);
+			// the whole board, frozen -- checked AFTER the row's own checks, so a failing row says what it is about first
+			const corpus = () => {
+				if (WRITING_CORPUS) written[row.id] = corpusForm(s);
+				else assert.deepEqual(corpusForm(s), matrixCorpus[row.id], `${row.id}: the board after its steps differs from the matrix corpus -- a change its own checks do not name`);
+			};
 			const broken = Object.entries(INVARIANT).map(([id, holds]) => { const r = holds(s, t.thrown); return r === true ? null : `${id}: ${r}`; }).filter(Boolean);
 			if (row.standing === 'open') {
 				assert.deepEqual(broken, [], `${row.id} waits for a ruling, but the universal invariants hold on every row`);
+				corpus();
 				return;
 			}
 			const missed = [...broken, ...judge(row.expect, s)];
 			if (row.built === 'yes') assert.deepEqual(missed, [], `${row.id} does not do what the matrix intends:\n  ${missed.join('\n  ')}`);
 			else assert.ok(missed.length > 0, `${row.id} now does what the matrix intends -- promote it to "built": "yes" and drop its "today"`);
+			corpus();
 		} finally { await p.close(); }
 	});
 }
