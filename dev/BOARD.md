@@ -186,6 +186,7 @@ AMENDED 2026-10-01: H15.9 done -- every kind draws through one look both rendere
 AMENDED 2026-10-01: H15.23 done -- one colour registry in `kernel/theme.mjs`, the stylesheet reading generated tokens, a gate that fails any other colour literal; B255 closed, B275 registered.\
 AMENDED 2026-10-01: B275 ruled and fixed (H15.24) -- the export's labels match the canvas.\
 AMENDED 2026-10-01: B163 ratified and closed (H10.34); the goals framework is `VISION.md`. No decision is owed.\
+AMENDED 2026-10-01: the readout is canvas, built by `composeCanvas`; the last layer-debt edge is gone and L2's records are empty.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

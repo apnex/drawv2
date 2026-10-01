@@ -313,9 +313,10 @@ const MUTANTS = [
 	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { cellOf } from './geometry.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf as __c } from '../../kernel/index.mjs?';\n" }] },
 	// a record raised with its violation; a new export borrowing a baseline name into the L10 list
-	// K5 and K7 retired Input's records, so the raised record is the last debt edge in the product: the lab root's readout
-	{ id: 'A9', rule: 'L2', edits: [{ file: 'lab/src/root.js', append: "\nimport('../../app/src/readout.js');\n" },
-		{ file: MAN, replace: ["'lab/src/root.js -> app/src/readout.js': 1,", "'lab/src/root.js -> app/src/readout.js': 2,"] }] },
+	// the L2 records are empty since the readout joined the canvas; the attack re-adds a retired edge twice and records it
+	// at 2, above the frozen ceiling of 1 -- a record raised with its violation
+	{ id: 'A9', rule: 'L2', edits: [{ file: 'lab/src/root.js', append: "\nimport('../../app/src/palette.js');\nimport('../../app/src/palette.js');\n" },
+		{ file: MAN, replace: ["\tL2: {\n\t},", "\tL2: {\n\t\t'lab/src/root.js -> app/src/palette.js': 2,\n\t},"] }] },
 	{ id: 'A14', rule: 'L10', edits: [{ file: 'planner/log.mjs', append: '\nexport const check = () => 0;\n' },
 		{ file: MAN, replace: ["'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX'],", "'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX', 'check'],"] }] },
 	// the second alternative of the id grammar

@@ -12,7 +12,6 @@ import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { Watchdog } from './watchdog.js';
-import { Readout } from './readout.js';
 import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
@@ -43,7 +42,7 @@ const { model, history, renderer, selection, labels, readout, snap, tools, input
 	svg,
 	defs: document.getElementById('kdefs'),
 	host: window,
-	readout: ({ model, selection }) => new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] }),
+	readoutEl: document.getElementById('readout-bottom'),
 	tools: true,
 	help,
 	now: () => clock.now(),

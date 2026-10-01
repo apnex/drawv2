@@ -117,10 +117,11 @@ export const LAYER = {
 		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
 		'app/src/compose-canvas.js', // K8: the canvas half of a page, composed once for the product and the lab
+		'app/src/readout.js',    // the readout line: what the cursor, a drag and the selection are -- canvas state, built by composeCanvas
 	],
 	chrome: [
 		'app/src/main.js',       // the production composition root; nothing imports it
-		'app/src/clock.js', 'app/src/net.js', 'app/src/readout.js', 'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js',
+		'app/src/clock.js', 'app/src/net.js', 'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js',
 		'app/src/help.js',       // the generated help overlay (gesture system stage 6): draws what the bindings document
 		'app/src/run-mode.js',   // K5: run mode's press rows, the product's feature, handed to Input by main.js
 		'app/src/palette.js',    // the device palette widget; input.js reaching into it is L2 debt that K6 removes
@@ -345,7 +346,6 @@ When a rule's record empties, delete its keys; the rule stays.
 
 export const RATCHETS = {
 	L2: {
-		'lab/src/root.js -> app/src/readout.js': 1,
 	},
 	L4: {
 		// K2c (2026-10-01): the barrels are deleted, so no barrel import or re-export remains; L4 holds the line at zero

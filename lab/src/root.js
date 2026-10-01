@@ -30,7 +30,6 @@ import { applyOps } from '../../model/ops.mjs';
 import { derivedToApply } from '../../app/src/changes.js';
 import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
 import { cutAt, joinAt } from '../../network/transit.mjs';
-import { Readout } from '../../app/src/readout.js';
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
@@ -71,7 +70,7 @@ settles through the parts composed here.
 */
 const { model, history, renderer, selection, input, listen } = composeCanvas({
 	svg, defs: document.getElementById('kdefs'), host: window, network,
-	readout: ({ model, selection }) => new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] }),
+	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
 	plugins: [networkInput((drag) => routeHook(drag), session)],   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 });

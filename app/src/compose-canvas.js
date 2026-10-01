@@ -9,7 +9,7 @@ other subscriber (R3) -- so this is the one place they are decided, and each roo
 its sync, palette, clock, movers and reveal; the lab its network session, its authority model and its notice.
 
 Canvas layer: it imports nothing of the page around it. The two parts that ARE the page's come in from the root -- the
-readout, a chrome widget, as a factory over the model and selection built here; the held tools, run mode's rows and the
+readout's element; the held tools, run mode's rows and the
 plugins as values.
 
 ORDER IS BEHAVIOUR, so it is not hidden. Input's key handling runs after any listener a root registers first, and the
@@ -30,6 +30,7 @@ import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
 import { Input } from './input.js';
 import { Capture } from './capture.js';
+import { Readout } from './readout.js';
 
 /*
 B200 -- THE NODE GRID'S DOT IS THE DOT A WAYPOINT HIGHLIGHTS. The kernel owns it as `gridDot` and the waypoint renderer
@@ -47,12 +48,13 @@ const ZONE_GRID_DOT = 5;
   defs       the element the kernel's glyph and frame defs go into (#kdefs) -- handed in, as every element is (B45)
   host       where events arrive and host events go -- the page's `window`, handed in: the canvas reads no host (L11)
   network    the network plugin's object, handed to the Model (the lab); none in production
-  readout    ({ model, selection }) -> a readout, or none
+  readoutEl  the element the readout line writes into, or none -- the readout reads the canvas's own state, so it is built
+             here (it was handed in as a chrome factory until the lab's import of it was the last layer-debt edge)
   tools      true to hold the stamp hand and text tool (the product); the lab holds none
   help, now, plugins, runRules   handed to Input as they are
 Returns every part, and `listen()`, which starts event capture and answers the Capture.
 */
-export function composeCanvas({ svg, defs, host, network = null, readout = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
+export function composeCanvas({ svg, defs, host, network = null, readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs();
 	nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius }, svg.querySelector('#grid-nodes')));
@@ -67,7 +69,7 @@ export function composeCanvas({ svg, defs, host, network = null, readout = null,
 	const selection = new Selection(model);
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
 	const labels = new LabelEditor({ svg, model, history });
-	const shownReadout = readout ? readout({ model, selection }) : null;
+	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl] }) : null;
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
 	// held tools' ghost. Two owners of one layer drew two crosshairs.
 	const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
