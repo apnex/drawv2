@@ -241,6 +241,7 @@ Coalesce survivors + borrowed routing concepts ([[line-routing-references]]) int
    scene-data (containers + relationships), connection-style-agnostic.
 3. **DRC checker** - **BUILT** as `kernel/grc.mjs`: scene-data -> pass/fail per *auto* criterion
    (grid-snap, clearance, overlap, on-grid attachment, reserve-not-squish).
+   AMENDED 2026-10-01: DELETED at K12 by the director's ruling -- it had no caller anywhere in the product, the CLI or the server (`dev/DECISIONS.md`); git history holds it.
 4. **matrix page** - render the variant x rung grid + per-cell scorecard; sectioned
    (containment - connection - routing).
 5. **shot.mjs** - headless screenshot (already built).

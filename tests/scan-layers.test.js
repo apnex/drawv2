@@ -542,9 +542,10 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 
 	for (const k of arrivals) {
 		const mod = k.slice(0, k.lastIndexOf(':')), name = k.slice(k.lastIndexOf(':') + 1);
-		// K2c deleted the three barrels (H17-D4), so they are departed and gone; every other departed module still exists
+		// K2c deleted the three barrels (H17-D4) and K12 the design-rule checker (ruled), so they are departed and gone;
+		// every other departed module still exists
 		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
-		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'kernel/index.mjs', 'model/index.mjs'], 'only the barrels H17-D4 deleted may be missing');
+		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs'], 'only the modules deleted by ruling may be missing');
 		const src = departed.filter((m) => !gone.includes(m)).map((m) => fs.readFileSync(path.join(root, m), 'utf8')).join('\n');
 		assert.match(src, new RegExp(`\\b${name}\\b`),
 			`${k} joined the list, and no module the closure dropped mentions ${name} -- it is a borrowed spelling, which C2(c) refuses`);

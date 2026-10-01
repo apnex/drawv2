@@ -1517,3 +1517,8 @@ Asked when the production browser should run the planner itself, the director ch
 - PL-6's work -- derived ids for minted pieces (H17-D10), intent-only requests, the copies deleted -- joins the promotion plan (`dev/design/unification/PROMOTION.md`).
 - The planner programme (H17.15) closes at PL-5.
 
+**K12: the design-rule checker is deleted -- ruled 2026-10-01.**\
+Asked what to do with `kernel/grc.mjs` -- `check`, `grc`, `RULES` and `crossings`, with no caller anywhere -- the director chose "Delete it" over keeping it held for a use (recommended) and giving it a caller now.
+- It goes with `kernel/router.mjs:segmentsOf`, its only caller's helper; `dev/COMMIT-DELETIONS.md` records both, and git history holds them.
+- `dev/HIERARCHY.md` section 3, which records it as BUILT, carries an AMENDED line.
+

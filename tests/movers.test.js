@@ -377,7 +377,7 @@ the property is "this function is not called here", which no behavioural test ca
 engine cannot detect a difference that only appears in another.
 */
 test('B176: no approximated maths in the measurement path', async () => {
-	const files = ['../kernel/router.mjs', '../kernel/grc.mjs', '../engine/movers.mjs'];
+	const files = ['../kernel/router.mjs', '../engine/movers.mjs'];   // kernel/grc.mjs was deleted at K12
 	for (const f of files) {
 		const src = readFileSync(new URL(f, import.meta.url), 'utf8');
 		// strip block comments: this file explains WHY hypot is banned, and must not trip its own rule

@@ -63,6 +63,13 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	// K12 (2026-10-01) deleted the design-rule checker by the director's ruling; these records name it as it stood
+	'dev/BACKLOG.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
+	'dev/COMMIT-DELETIONS.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
+	'dev/design/h17/PLAN.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
+	'dev/design/unification/BAKEOFF-LINK.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
+	'dev/HIERARCHY.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
+	'dev/DECISIONS.md:kernel/grc.mjs': 'deleted at K12 by ruling; the ruling names what it deleted',
 	/*
 	K2c (2026-10-01) deleted the three barrels, `kernel/index.mjs`, `engine/index.mjs` and `model/index.mjs` (H17-D4). These
 	records name them as they stood when written -- dated rows, rulings and audits that M4 forbids rewriting -- not as live

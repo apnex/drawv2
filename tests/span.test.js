@@ -364,7 +364,7 @@ name collision in the system (HIERARCHY §0, connection taxonomy).
 This asserts the property rather than the absence, so a NEW dead kind fails the same way.
 */
 test('B38: every element kind the kernel handles is a kind resolve() can emit', () => {
-	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8') + fs.readFileSync('kernel/grc.mjs', 'utf8');
+	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8');   // the rule checker, kernel/grc.mjs, was deleted at K12
 	const handled = new Set([...src.matchAll(/kind === '(\w+)'/g)].map((m) => m[1]));
 
 	// What the engine can actually PUT IN A SCENE — read from what resolve() imports from geometry,

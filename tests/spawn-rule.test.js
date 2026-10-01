@@ -13,7 +13,7 @@ failing, not the code. These call the decision directly.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { situationOf, inReadView, onEndpoint, onSpawner } from '../engine/situation.mjs';
+import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
 import { toggleSpawn } from '../app/src/commands.js';
 import { validateEntity } from '../server/validate.js';
 import { applyOps } from '../model/ops.mjs';
@@ -69,7 +69,7 @@ test('H12.7: arming is a SET that introduces the field, and the entity stays val
 	assert.deepEqual(Object.keys(cmd.entries[0].after), ['spawn'], 'the patch touches ONE field, not four');
 	applyOps(m, [{ op: 'set', kind: 'waypoint', id: WP_A, patch: cmd.entries[0].after }]);
 	assert.equal(validateEntity('waypoint', m.get('waypoint', WP_A)), null, 'the server must accept what we authored');
-	assert.equal(onSpawner(sit(m, WP_A, 'run')), true);
+	assert.equal(!!sit(m, WP_A, 'run').target.spawning, true, 'the situation sees it emitting');   // onSpawner, deleted at K12, read exactly this
 });
 
 /*
@@ -91,7 +91,7 @@ test('H12.7: disarming REMOVES the field rather than blanking it', () => {
 	applyOps(m, [{ op: 'put', kind: 'waypoint', entity: off.entries[0].entity }]);
 	assert.equal(m.get('waypoint', WP_A).spawn, undefined);
 	assert.equal(validateEntity('waypoint', m.get('waypoint', WP_A)), null);
-	assert.equal(onSpawner(sit(m, WP_A, 'run')), false);
+	assert.equal(!!sit(m, WP_A, 'run').target.spawning, false, 'and no longer emitting');
 });
 
 test('H12.7: toggling twice returns the waypoint to exactly what it was', () => {

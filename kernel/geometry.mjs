@@ -1,9 +1,9 @@
 // GEOMETRY — the grid (cell↔px) + the resolved element vocabulary + bboxOf. Pure geometry:
 // no rendering, no I/O. Consumes the locked spec; everything downstream (engine, renderer,
-// grc, router) consumes these primitives.
+// router) consumes these primitives.
 //
 // Coordinate model: CELLS = the logical integer grid (center-origin). PX = resolved canvas
-// units (cell · pitch). The single per-cell ANCHOR is the cell CENTRE (cellCenter) — routes
+// units (cell · pitch). The single per-cell ANCHOR is the cell CENTRE (cellPx) — routes
 // thread cell centres; a Waypoint is a placeable anchor that bends a path between cells.
 import { TOKENS } from './theme.mjs';
 import { STD, L_STD, BEND_R } from './spec.mjs';
@@ -11,7 +11,6 @@ import { STD, L_STD, BEND_R } from './spec.mjs';
 // ---- the grid: cell (logical, integer) ↔ px (resolved, center-origin) ----
 export const px = (cell, V = STD) => cell * V.pitch;                       // one axis
 export const cellPx = ([cx, cy], V = STD) => [cx * V.pitch, cy * V.pitch];
-export const cellCenter = (cell, V = STD) => cellPx(cell, V);              // the one anchor per cell
 // px → cell (one axis): the inverse of px(). Rounds a resolved coordinate to its nearest logical
 // cell index; the `+ 0` normalizes signed zero (-0 → +0) so a cell never splits into "-0"/"0" keys.
 // The SINGLE source for px→cell — used by the schema adapter (rendering/validation) and, INJECTED,
@@ -42,8 +41,6 @@ export const LAYOUTS = {
 	node: { name: 'node', offset: 0 },                  // nodes and waypoints sit ON cells
 	zone: { name: 'zone', offset: STD.pitch / 2 },      // zones bound cells, so their edges fall between
 };
-
-export const layoutOf = (name) => LAYOUTS[name] || null;
 
 // is a resolved coordinate ON this layout's grid
 export const onLayout = (L, v, V = STD) => Number.isFinite(v) && (v - L.offset) % V.pitch === 0;
@@ -387,7 +384,7 @@ A predicate rather than a raw field read, because two rules consult it -- the ro
 and the collapse in model/invariants.mjs -- and B232 shipped because one place implemented the
 matrix and another disagreed about it.
 */
-export const samePlane = (a, b) => !!a.control === !!b.control;
+const samePlane = (a, b) => !!a.control === !!b.control;
 
 /*
 The dash a link is drawn with, DERIVED from its plane. Null for an ordinary data link, which is
@@ -406,8 +403,8 @@ Both halves are named. The gap was hardcoded at one width while the dash was a c
 one of the two adjustable and the other invisible -- and the ratio between them is the whole of how
 a dashed line reads.
 */
-export const DASH_ON = 2;      // dash length
-export const DASH_OFF = 1.5;   // gap -- shorter than the dash, or the line reads as separate marks
+const DASH_ON = 2;      // dash length
+const DASH_OFF = 1.5;   // gap -- shorter than the dash, or the line reads as separate marks
 export const linkDash = (link, w = STD.linkW) =>
 	(link.control ? `${round1(w * DASH_ON)} ${round1(w * DASH_OFF)}` : null);
 
@@ -419,7 +416,7 @@ different ideas of "slightly thinner". A fraction rather than a second constant 
 it scales are already ruled numbers -- `linkW` and the endpoint ladder -- and a control link should
 stay in proportion if either is ever changed.
 */
-export const CONTROL_WEIGHT = 0.6;
+const CONTROL_WEIGHT = 0.6;
 export const linkWidth = (link, w = STD.linkW) => (link.control ? round1(w * CONTROL_WEIGHT) : w);
 
 // every link terminating here is control plane. MIXED IS DATA: a terminus serving both is not

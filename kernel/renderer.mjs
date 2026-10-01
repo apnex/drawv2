@@ -261,12 +261,10 @@ function renderEl(el, V, L, opts = {}) {
 // build per-entity DOM (wrap with `id` + state classes) instead of the whole-scene string.
 export function renderElement(el, V = STD, L = L_STD, opts = {}) { return renderEl(el, V, L, opts); }
 
-// the kind → draw-order rank, exported so a host can order its own per-entity DOM consistently.
+// the kind → draw-order rank (no longer exported: no host read it -- K12).
 // Region decorations (zone fill, group hull) sit at the BACK; the graph (links, nodes) in front:
 // zone → group → link/path → junction/waypoint (over the path) → ports → nodes.
-export const DRAW_ORDER = { zone: 0, group: 1, path: 2, junction: 3, waypoint: 3, port: 4, node: 5 };
-
-const ORDER = DRAW_ORDER;
+const ORDER = { zone: 0, group: 1, path: 2, junction: 3, waypoint: 3, port: 4, node: 5 };
 
 /*
 The root carries `xmlns`. Inside an HTML page a browser INFERS the SVG namespace, so the editor

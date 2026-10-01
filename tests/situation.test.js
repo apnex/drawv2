@@ -8,7 +8,7 @@ disagree with the document it describes.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { situationOf, oneSelected, onEndpoint, inReadView, onSpawner } from '../engine/situation.mjs';
+import { situationOf, onEndpoint, inReadView } from '../engine/situation.mjs';
 
 // the small accessor the situation asks its questions through -- the browser hands it a live model,
 // the server a stored document, and neither has to become the other
@@ -88,9 +88,9 @@ test('H12.6: the predicates name the question, so no caller re-derives it', () =
 	const s = situationOf(accessOf(armed, [openLink]), { mode: 'run', targetId: WP, selection: [WP] });
 	assert.equal(inReadView(s), true);
 	assert.equal(onEndpoint(s), true);
-	assert.equal(onSpawner(s), true);
-	assert.equal(oneSelected(s, 'waypoint'), true);
-	assert.equal(oneSelected(s, 'node'), false);
+	// K12: `onSpawner` and `oneSelected` had no production caller and were deleted; the facts they read are asserted
+	assert.equal(s.target.spawning, true, 'the situation knows the endpoint emits');
+	assert.deepEqual([s.selection.size, s.selection.kinds], [1, ['waypoint']], 'and that exactly one waypoint is selected');
 	// and a node target is not an endpoint however it is dressed
 	assert.equal(onEndpoint(situationOf(accessOf(entities, [openLink]), { targetId: ND })), false);
 });

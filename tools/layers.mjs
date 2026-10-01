@@ -124,7 +124,6 @@ export const LAYER = {
 	],
 	export: [
 		'kernel/engine.mjs', 'kernel/adapt.mjs',
-		'kernel/grc.mjs',        // the rule checker behind check()
 		'kernel/fixtures.mjs',   // the spec viewer's reference scenes
 		'server/svg.mjs',        // the headless SVG door; it composes the export path and nothing else
 	],
@@ -345,9 +344,6 @@ export const RATCHETS = {
 	},
 	L5: {
 		'kernel/geometry.mjs:APPEARANCE_KEYS': 1,
-		'kernel/geometry.mjs:CONTROL_WEIGHT': 1,
-		'kernel/geometry.mjs:DASH_OFF': 1,
-		'kernel/geometry.mjs:DASH_ON': 1,
 		'kernel/geometry.mjs:junction': 1,
 		'kernel/geometry.mjs:linkAppearance': 1,
 		'kernel/geometry.mjs:linkDash': 1,
@@ -356,7 +352,6 @@ export const RATCHETS = {
 		'kernel/geometry.mjs:linkWidth': 1,
 		'kernel/geometry.mjs:path': 1,
 		'kernel/geometry.mjs:port': 1,
-		'kernel/geometry.mjs:samePlane': 1,
 		'kernel/geometry.mjs:waypointAnchor': 1,
 		'kernel/geometry.mjs:waypointJunction': 1,
 		'kernel/geometry.mjs:waypointLayers': 1,
@@ -371,7 +366,6 @@ export const RATCHETS = {
 		'kernel/geometry.mjs:linkFacing': 1,
 		'kernel/geometry.mjs:linkMarker': 1,
 		'kernel/geometry.mjs:linkWidth': 1,
-		'kernel/geometry.mjs:samePlane': 1,
 		'kernel/geometry.mjs:waypoint': 1,
 		'kernel/geometry.mjs:waypointAnchor': 1,
 		'kernel/geometry.mjs:waypointJunction': 1,
@@ -617,12 +611,22 @@ export const UNUSED_EXPORTS = {
 		admits no name; a module that existed at K0 and is missing from the frozen list still fails K2a.
 		*/
 		arrived: ['model/link-reactions.mjs', 'server/tenants.mjs', 'server/edges.mjs'],
+		/*
+		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
+		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a
+		deleted name has no home, so any new export spelled the same would take the place (mutant A14, after K12 deleted
+		`check`). A retired name vacates nothing, so a later export reusing it is judged as new.
+		*/
+		retired: [
+			// K12, 2026-10-01: the design-rule checker (ruled), its helper, and exports nothing called
+			'check', 'grc', 'RULES', 'crossings', 'segmentsOf', 'cellCenter', 'layoutOf', 'oneSelected', 'onSpawner',
+		],
 		list: {
 			'kernel/geometry.mjs': {
 				'rebuild-debt': [
-					'APPEARANCE_KEYS', 'CONTROL_WEIGHT', 'DASH_OFF', 'DASH_ON', 'bboxOf', 'cellCenter', 'cellOf', 'cellOn',
-					'cellPx', 'gridDot', 'group', 'groupHull', 'junction', 'layoutOf', 'linkAppearance', 'linkDash', 'linkFacing',
-					'linkMarker', 'linkWidth', 'node', 'path', 'port', 'px', 'pxOn', 'samePlane', 'snapLayout', 'spanExtent',
+					'APPEARANCE_KEYS', 'bboxOf', 'cellOf', 'cellOn',
+					'cellPx', 'gridDot', 'group', 'groupHull', 'junction', 'linkAppearance', 'linkDash', 'linkFacing',
+					'linkMarker', 'linkWidth', 'node', 'path', 'port', 'px', 'pxOn', 'snapLayout', 'spanExtent',
 					'waypoint', 'waypointAnchor', 'waypointJunction', 'waypointLayers', 'waypointRole', 'waypointRoles',
 					'waypointStyle', 'zone'
 				],

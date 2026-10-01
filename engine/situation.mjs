@@ -119,9 +119,6 @@ written at three call sites is three chances to get it subtly different, and the
 defect nobody can see. It is the same argument that put `waypointRole` in the kernel.
 */
 
-// exactly one thing is selected, and it is of this kind
-export const oneSelected = (s, kind) => s.selection.size === 1 && s.selection.kinds[0] === kind;
-
 // the gesture is on a waypoint that TERMINATES a path, rather than bending one. A closed ring has
 // no ends, so nothing on it is ever an endpoint -- that falls out of waypointRole, not from here.
 /*
@@ -141,8 +138,6 @@ export const onEndpoint = (s) => !!s.target && s.target.kind === 'waypoint'
 // the surface is being read rather than authored
 export const inReadView = (s) => s.mode === 'run';
 
-// the target is an endpoint that is already emitting
-export const onSpawner = (s) => onEndpoint(s) && !!s.target.spawning;
 
 /*
 The gesture is on open ground -- no entity under it.

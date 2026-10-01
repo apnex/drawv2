@@ -163,11 +163,3 @@ export function pointAtDistance(geo, d) {
 // ---- grid snapping (hand-routed waypoints land exactly on the grid) ----
 const snap1 = (v, step) => Math.round(v / step) * step;
 export const gridSnap = (pts, step) => pts.map(([x, y]) => [snap1(x, step), snap1(y, step)]);
-
-// segments of a waypoint list, for ortho / crossing checks
-export function segmentsOf(pts, close = false) {
-	const segs = [];
-	for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i + 1]]);
-	if (close && pts.length > 2) segs.push([pts[pts.length - 1], pts[0]]);
-	return segs;
-}

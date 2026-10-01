@@ -892,7 +892,9 @@ const rules = {
 			vacated, and fails (the attack's A14).
 			*/
 			const vacated = new Map(), claimed = new Map();
-			for (const k of baseline) if (!exportsOf(modOf(k)).has(nameOf(k))) vacated.set(nameOf(k), (vacated.get(nameOf(k)) ?? 0) + 1);
+			// a RETIRED name was deleted, not moved: it vacates nothing (UNUSED_EXPORTS.<entry>.retired, K12)
+			const retired = new Set(rec.retired ?? []);
+			for (const k of baseline) if (!exportsOf(modOf(k)).has(nameOf(k)) && !retired.has(nameOf(k))) vacated.set(nameOf(k), (vacated.get(nameOf(k)) ?? 0) + 1);
 			/*
 			K2c -- A VACATED PLACE IS TAKEN BY THE NAME'S REAL HOME, wherever in the product that is. Deleting the three
 			barrels vacated every name they re-exported, about ninety, though they DEFINED only two (`render` and `check`,

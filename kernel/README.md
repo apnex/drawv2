@@ -13,24 +13,23 @@ are vendored into `theme.mjs`.
 | module          | role |
 |-----------------|------|
 | `spec.mjs`      | the **LOCKED** `standard` variant (frozen) + the `derive()` ladder. Single source of px truth. |
-| `geometry.mjs`  | grid (`cell↔px`, `cellCenter`) + element constructors (incl. `waypoint`) + `bboxOf`. Pure. |
+| `geometry.mjs`  | grid (`cell↔px`, `cellPx`) + element constructors (incl. `waypoint`) + `bboxOf`. Pure. |
 | `router.mjs`    | `roundedPath` (lifted prism NPath) + `gridSnap` + segment/corner helpers. Pure, integer-deterministic. |
 | `theme.mjs`     | **the visual-iterate surface**: style tokens, vendored glyph `<defs>`, `GLYPH_BB`, scene CSS. |
 | `renderer.mjs`  | scene → SVG (consumes `theme`; renders the waypoint). No layout decisions. |
 | `engine.mjs`    | `resolve(schema)` → scene. Places containers from cells; threads routes through cell-centre anchors. |
-| `grc.mjs`       | the DRC: 7 rules (grid-snap · clearance · attachment · reserve · ortho · obstacle · overlap) + crossings metric, and `check(schema)`. |
 | `fixtures.mjs`  | canonical scenes in the schema (reference · routing · clover). |
 | `view.mjs`      | the spec/reference viewer → `kernel/out/spec.{html,png}` + a console self-check. |
 
 ## Where each name lives
 
 There is no barrel: every caller imports a name from the module that defines it (H17-D4, deleted at K2c).
-The three entry points:
+The design-rule checker, `grc.mjs`, was deleted at K12 by the director's ruling: nothing called it.
+The two entry points:
 
 ```js
 import { resolve } from './kernel/engine.mjs';    // resolve(schema) -> { V, L, scene, byId }, the deterministic core
 import { render } from '../server/svg.mjs';       // render(schema)  -> SVG string, resolve then the scene renderer
-import { check } from './kernel/grc.mjs';         // check(schema)   -> [{ rule, pass, why }], resolve then the GRC
 ```
 
 ## Schema
