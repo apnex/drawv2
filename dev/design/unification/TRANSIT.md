@@ -308,5 +308,5 @@ The original reason for this document, now with the pipes it led to: an author c
 - **Built once, from the session and the table:** an anchor no route may pass is one declared off, or one whose type offers only off -- a host, a server, a load balancer (TR-6). The board's derivation is keyed on them, so a toggle is a new board state, and links re-route, go down or heal as a matter of course (TR-4).
 - **The notice and the why.** A toggle's notice counts what is then down; a selected down link names the anchors whose transit, turned back on, would give it a way -- or, when none would, the device whose type never passes a route. The first version named the host where the anchor just turned off was the one to turn back; it was caught by a test and corrected before landing.
 - **Matrix:** six rows (TRN-06 to TRN-11) on the transit board and a new board whose short way runs through a host; TRN-01 gave up its "until X2" routing claims to TRN-06 and kept its subject, the ring. Every earlier board unchanged.
-- **Eight mutants, each caught.**
+- **Eight mutants, each caught.**- **Found verifying it live:** a down link is hard to click -- about a third of clicks select it, because the browser hit-tests a dotted stroke's dots and not its gaps. It predates transit (down links have been dotted since 2026-09-29); registered as B268, H17.11.
 
