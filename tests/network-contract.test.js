@@ -30,7 +30,7 @@ import { createPipeSet } from '../network/pipeset.mjs';
 import { createNetwork } from '../network/network.mjs';
 
 const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit'];
-const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded'];
+const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded', 'joinsAt'];
 const complete = () => Object.fromEntries([...MODEL_READS, ...PLANNER_READS].map((k) => [k, () => undefined]));
 const without = (name) => { const n = complete(); delete n[name]; return n; };
 

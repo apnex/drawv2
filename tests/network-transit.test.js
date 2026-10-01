@@ -230,3 +230,27 @@ test('Input commits the pieces a judge names as ONE edit, pinned between the cut
 		assert.deepEqual(links.sort(), [['a', 'cut', 0], ['cut', 'b', 1]].sort());
 	} finally { h.restore(); }
 });
+
+/*
+X4 -- the planner asks the network whether two links left at a waypoint may join (TR-5). And X5, folded in: the type
+table holds for routing as for the toggle -- each type in it, as a node a link's only way runs through.
+*/
+test('X4: the network lets two links join at a waypoint only where its transit is on', () => {
+	const { s, m } = board();
+	assert.equal(s.network.joinsAt('waypoint-00000d', m), true);
+	s.toggleTransit([W]);
+	assert.equal(s.network.joinsAt('waypoint-00000d', m), false);
+});
+
+test('X5: every type routes as the table says -- routers, firewalls and vxlans pass; load balancers, servers and hosts do not', () => {
+	for (const [type, passes] of [['router', true], ['firewall', true], ['vxlan', true], ['loadbalancer', false], ['server', false], ['host', false]]) {
+		const s = createNetworkSession();
+		const m = new Model({ network: s.network });
+		m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
+		m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
+		m.put('node', { id: 'node-00000c', name: 'M', type, x: 0, y: 0, shape: 'circle' });
+		m.put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
+		s.seed([['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand']], ['link-000001']);
+		assert.equal(m.isLinkDown(m.get('link', 'link-000001')), !passes, `${type} ${passes ? 'passes' : 'never passes'} a route`);
+	}
+});

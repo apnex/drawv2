@@ -89,8 +89,9 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . |
 | transit pin | . | . | . | . | . | . | . | . | . | . | TRN-12, TRN-13 | . | . |
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . |
+| transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | . | . | . |
 
-61 rows: 61 built, 0 todo, 0 open.\
+63 rows: 63 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -112,6 +113,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | transit detour | `?seed=transit-detour` | The short way from A to B runs through a host, the long way over two bare anchors; no transit declared. |
 | transit pin | `?seed=transit-pin` | A link from A to B pinned at P, over the pipes its w drag laid; no transit declared. |
 | transit two pins | `?seed=transit-two-pins` | A link from A to B pinned at P then Q; no transit declared. |
+| transit junction | `?seed=transit-junction` | Three links end at P, from A, B and C; no transit declared. |
 
 | gesture | what the author does |
 |---|---|
@@ -198,6 +200,8 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-16 | transit board x draw: `g` on a non-transiting anchor | Turn the bare anchor's transit off; then drag from R, press w at an empty point, g on the anchor, and release on H. | In a link drag, a g on an anchor whose transit is off still lays its hand pipes, and no route passes the anchor: the new link has no other way past its pin, so it is made down, and, selected, says the anchor's transit is what keeps it down. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2, TR-2b and TR-3. | ruled, built |
 | TRN-17 | transit two pins x transit `x` | Turn P's transit off, then Q's. | Each cut leaves the other standing: three links, A to P, P to Q and Q to B -- cutting at Q must not join the two links already ending at P, whose transit is still off. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269). | ruled, built |
 | TRN-18 | transit two pins x transit `x` | Turn P's transit off, then Q's, then P's back on. | Turning P back on joins only the two links ending at P: A to Q pinned at P, and Q to B, cut where Q's transit is still off. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269). | ruled, built |
+| TRN-19 | transit junction x delete link | Turn P's transit off, then select the link from C and press Delete. | Two links are left ending at P, and P's transit is off, so they stay two: what arrives at P stops there. | DECISIONS: "Transit with pipes" (2026-09-30), TR-5; "Two separately drawn links left alone at a point join into one" (2026-09-26). | ruled, built |
+| TRN-20 | transit junction x delete link | Select the link from C and press Delete, transit untouched. | With transit on, the two links left alone at P join into one, as ruled -- the comparison TRN-19 departs from. | DECISIONS: "Transit with pipes" (2026-09-30), TR-5; "Two separately drawn links left alone at a point join into one" (2026-09-26). | ruled, built |
 <!-- END GENERATED: rows -->
 
 ---

@@ -71,7 +71,7 @@ function narrow(kind, before, patch) {
 }
 
 /*
-What the PLANNER asks the network -- three of the seven questions of the one network interface (declared beside the
+What the PLANNER asks the network -- four of the questions of the one network interface (declared beside the
 Model in model/model.mjs, RULESET-AUDIT T1). They began as three separate hooks; with no network every answer is
 production's, and tests/sweep-references.test.js holds that.
 
@@ -91,7 +91,12 @@ production's, and tests/sweep-references.test.js holds that.
                                  link left with no way; widened 2026-09-30 -- a pinned link lives and dies with its
                                  pins, so the network answers yes whatever ways remain. Production: never.
 */
-const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded'];
+/*
+  joinsAt(waypointId, model)     whether two links left alone at a waypoint may join into one (ruled 2026-09-26). The
+                                 network says no where the waypoint's transit is off -- what arrives there stops
+                                 (TRANSIT.md section 12, TR-5). Production: always.
+*/
+const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded', 'joinsAt'];
 const KEEPS_ORPHAN_AS_RULED = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly;
 const NEVER_STRANDED = () => false;
 
@@ -106,6 +111,7 @@ export function plan(model, ops, options = {}) {
 	const alsoReferenced = network ? (m) => network.alsoReferenced(m) : null;
 	const keepsOrphan = network ? (w, info) => network.keepsOrphan(w, info) : KEEPS_ORPHAN_AS_RULED;
 	const isStranded = network ? (link, m) => network.isStranded(link, m) : NEVER_STRANDED;
+	const joinsAt = network ? (w, m) => network.joinsAt(w, m) : () => true;
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -281,6 +287,7 @@ export function plan(model, ops, options = {}) {
 	for (const w of touched) {
 		const at = touching(proj, w);
 		if (at.length !== 2 || at.length >= touching(model, w).length) continue;
+		if (!joinsAt(w, proj)) continue;   // the network keeps them apart: transit is off here (TR-5)
 		/*
 		B222 -- PICK A PAIR, do not demand a stored orientation.
 

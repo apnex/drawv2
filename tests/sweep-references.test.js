@@ -32,7 +32,7 @@ const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id
 const W = 'waypoint-00000f';
 // a complete network whose answers are production's -- the rule B162/B216 stated here, since the planner keeps its own
 // private -- so each test overrides only the question it is about
-const net = (over = {}) => ({ network: { alsoReferenced: () => [], keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, isStranded: () => false, ...over } });
+const net = (over = {}) => ({ network: { alsoReferenced: () => [], keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, isStranded: () => false, joinsAt: () => true, ...over } });
 
 // the SHARED anchor: a pin of link-a, and (in the lab) a guide for link-b over pipes
 function shared() {

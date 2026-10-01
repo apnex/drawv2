@@ -895,6 +895,20 @@
 					"link-000001": 2
 				}
 			}
+		},
+		"transit junction": {
+			"about": "Three links end at P, from A, B and C; no transit declared.",
+			"board": "transit-junction",
+			"setup": [],
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"anchors": 1,
+				"pipes": {
+					"hand": 3,
+					"link": 0
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -3239,6 +3253,76 @@
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-19",
+			"state": "transit junction",
+			"gesture": "delete link",
+			"does": "Turn P's transit off, then select the link from C and press Delete.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "Two links are left ending at P, and P's transit is off, so they stay two: what arrives at P stops there.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"rings": [
+					"waypoint-000005"
+				],
+				"linksBetween": {
+					"node-000001|waypoint-000005": 1,
+					"waypoint-000005|node-000002": 1
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-5; \"Two separately drawn links left alone at a point join into one\" (2026-09-26).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-20",
+			"state": "transit junction",
+			"gesture": "delete link",
+			"does": "Select the link from C and press Delete, transit untouched.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "With transit on, the two links left alone at P join into one, as ruled -- the comparison TRN-19 departs from.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [],
+				"linksBetween": {
+					"node-000001|node-000002": 1
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-5; \"Two separately drawn links left alone at a point join into one\" (2026-09-26).",
 			"standing": "ruled",
 			"built": "yes"
 		}

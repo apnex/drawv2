@@ -155,6 +155,10 @@ So the arc is: **server data-loss now -> build the client net -> then the client
 ## Next slice -- ordered by A14 capital-forward value
 
 Re-cut 2026-08-27, after the agent-first authoring arc.\
+AMENDED 2026-09-30: the table below predates the lab arc (H17) and is kept as recorded; the queue as it now stands, by the director's direction of 2026-09-30:\
+first H17.15, the planner's design, to be approved before any code; then the H17 cuts resume from K2b (H17.3), with B244 (H17.4) and B246 (H17.6).\
+Held, each with its trigger: promotion of the network to production as a full cutover (B266), the context panel (B265), double click on zones (B264), binding overrides (B262).\
+The production deploy of current `main` is the director's call.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
 The previous cut organized around a pattern -- a check whose scope is narrower than its stated claim -- and that pattern held: it accounted for eleven of the defects closed since.\
@@ -901,9 +905,12 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.7 | The lab's pipe sweep works routes out in the same order as drawing, so it never removes a pipe a link is drawn on | **B257** | S2 | `DONE` |
 | H17.8 | A request the lab's planner refuses is taken back out of the tab, as production resynchronises | **B260** | S2 | `DONE` |
 | H17.9 | A run-mode click spends the `w` that placed an anchor, as every press does | **B263** | S4 | `DONE` |
-| H17.10 | Implement and visualise transit in the lab: `x` toggles it, the ring shows it, links stop at a non-transiting anchor, node types offer it by table, and routing over pipes respects it -- its open questions ruled first | **B267** | S3 | `TODO` |
+| H17.10 | Implement and visualise transit in the lab: `x` toggles it, the ring shows it, links stop at a non-transiting anchor, node types offer it by table, and routing over pipes respects it -- its open questions ruled first | **B267** | S3 | `DONE` |
 | H17.11 | A down (dotted) link is selected wherever it is clicked, not only on its dots | **B268** | S3 | `DONE` |
 | H17.12 | Splitting a link no longer joins a two-link terminus at its other end | **B269** | S2 | `DONE` |
+| H17.13 | Consolidate the network ruleset without changing behaviour: one network interface, one derivation per board state, one home for pair capacity, a network session, and the drag grammar as data on a neutral Rules engine (T1-T5, `dev/design/unification/RULESET-AUDIT.md`) | feature | S3 | `DONE` |
+| H17.14 | Input as a layered gesture system: capture, input state, one click rule, bindings and release meanings on the Rules engine, and a generated help overlay (stages 1-6, `dev/design/input/GESTURE-SYSTEM.md`); stage 7, the context panel, is held as B265 | feature | S3 | `DONE` |
+| H17.15 | The planner as a sovereign system: design a transaction core that knows no entity rules, edits' consequences as declared reactions the network and the product bring, placement passed in, and one preview the browser runs instead of its hand-written cascade -- folding H17 cuts K3, K13c, K17 and K18 (design first, approved before code) | feature | S3 | `TODO` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
@@ -965,7 +972,7 @@ Wrong twice before, and now checked rather than trusted.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B163** | Ratify the captured intent from 2026-09-01 and superseded part of `dev/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
+| **B163** | Ratify the captured intent from 2026-09-01 and superseded part of `dev/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 UPDATED 2026-09-30: F2 and F3 are overtaken by work, not ruled -- the prior-art pass ran on 2026-09-02 (`dev/RULES.md` status), and the B163 defect itself is fixed: rules are chosen by the situation on the Rules engine (`kernel/input-rules.mjs`, the `c` acceptance case); `dev/RULES.md` Q1, Q3 and Q4 were ruled 2026-09-30. Still owed: F7, the five outcome axes | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

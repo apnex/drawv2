@@ -41,10 +41,12 @@ export function createNetwork(pipeSet, rankOf = () => 0, transit = null) {
 			const way = preferredRoute(pipes, link);
 			return { declared: [], types: way ? way.slice(1, -1).filter((id) => !passes(id)) : [] };
 		},
-		// the planner's three -- each judged against the model the planner hands over, so only pipes that survive the edit count
+		// the planner's four -- each judged against the model the planner hands over, so only pipes that survive the edit count
 		alsoReferenced: (model) => pipeAnchors(view, model),
 		keepsOrphan,
 		// a pinned link lives and dies with its pins (ruled 2026-09-30): the planner asks only about a link that lost one
 		isStranded: () => true,
+		// two links left at a waypoint join only where what arrives may pass on -- not where transit is off (TR-5)
+		joinsAt: (waypointId, model) => !(transit && transit.blockedIn(model).includes(waypointId)),
 	};
 }
