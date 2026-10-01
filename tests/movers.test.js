@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+import { LAYER } from '../tools/layers.mjs';   // K16: the guard's roots are the manifest's simulation layer
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
 import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/movers.mjs';
 import { STD } from '../kernel/spec.mjs';
@@ -376,15 +378,41 @@ Asserted over the SOURCE deliberately, and it is one of the few places that is t
 the property is "this function is not called here", which no behavioural test can see. A run in one
 engine cannot detect a difference that only appears in another.
 */
-test('B176: no approximated maths in the measurement path', async () => {
-	const files = ['../kernel/router.mjs', '../engine/movers.mjs'];   // kernel/grc.mjs was deleted at K12
-	for (const f of files) {
-		const src = readFileSync(new URL(f, import.meta.url), 'utf8');
-		// strip block comments: this file explains WHY hypot is banned, and must not trip its own rule
-		const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-		for (const banned of ['Math.hypot', 'Math.sin', 'Math.cos', 'Math.tan', 'Math.pow']) {
-			assert.ok(!code.includes(banned), `${f} uses ${banned}, which engines may approximate differently`);
+/*
+K16 (G9) -- THE GUARD FOLLOWS THE SHARED CLOSURE, not a list someone keeps. It named two files, and every other module
+the derivation runs -- the spawners, the combat rules, the spec, the order -- sat outside it: a banned call there passed.
+The roots are the manifest's simulation layer (tools/layers.mjs), the derivation every peer runs, the browser and the
+server alike; the closure is what they import, so a module that joins the path is covered the day it joins.
+
+The banned set is every Math function ECMAScript lets an engine approximate, and `**`, which is `Math.pow`; `sqrt`,
+`abs`, the rounding functions, `min`, `max`, `fround` and the operators are exactly specified and allowed.
+*/
+const APPROXIMATED = /Math\.(acosh?|asinh?|atan2|atanh?|cbrt|cosh?|exp|expm1|hypot|log|log1p|log10|log2|pow|sinh?|tanh?)\b|\*\*/;
+function measurementClosure() {
+	const root = new URL('../', import.meta.url).pathname;
+	const seen = new Set(), todo = [...LAYER.simulation];
+	while (todo.length) {
+		const f = todo.pop();
+		if (seen.has(f)) continue;
+		seen.add(f);
+		const src = readFileSync(root + f, 'utf8');
+		for (const m of src.matchAll(/(?:import|export)[^'"]*?from\s*['"](\.[^'"]+)['"]|import\(\s*['"](\.[^'"]+)['"]\s*\)/g)) {
+			todo.push(posix.normalize(posix.join(posix.dirname(f), m[1] || m[2])));
 		}
+	}
+	return [...seen].sort();
+}
+
+test('B176: no approximated maths anywhere in the measurement path -- the simulation layer and all it imports', () => {
+	const files = measurementClosure();
+	for (const f of ['engine/movers.mjs', 'engine/spawners.mjs', 'engine/rules.mjs', 'kernel/router.mjs']) {
+		assert.ok(files.includes(f), `${f} is in the derivation, so the guard must reach it`);
+	}
+	for (const f of files) {
+		// strip comments: this file explains WHY hypot is banned, and must not trip its own rule
+		const code = readFileSync(new URL('../' + f, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+		const hit = code.match(APPROXIMATED);
+		assert.equal(hit, null, `${f} uses ${hit?.[0]}, which engines may approximate differently`);
 	}
 });
 

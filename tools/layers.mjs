@@ -87,7 +87,7 @@ export const LAYER = {
 		'kernel/spec.mjs', 'kernel/theme.mjs',
 		'kernel/router.mjs',     // path geometry on the grid (rounded turns, snap); its `routeGeometry` name is L5p debt
 		'kernel/input-rules.mjs', // the Rules engine: tenants' rows, uniform guards, one match or none (dev/RULES.md section 11); names no tenant
-		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance are network code until K13a splits it (L5, L5p)
+		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
