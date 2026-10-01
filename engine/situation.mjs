@@ -26,7 +26,13 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { waypointRoles } from '../kernel/network-roles.mjs';
+
+/*
+K5 (dev/design/h17/PLAN.md) -- CORE, so every layer that decides what an input means may read it: the canvas (Input),
+the server, a menu. It sat in the simulation layer, where the canvas may not reach, while describing nothing about
+simulation; its one import outside core was the role derivation, which the caller now applies and hands in
+(`access.rolesOf`), so one derivation still decides what a waypoint is.
+*/
 
 /*
 Build the situation.
@@ -37,7 +43,7 @@ browser hands it a live model's methods, the server hands it a stored document's
 become the other. It is the same shape `model/referential.mjs` already uses for the same reason.
 
 	access.get(kind, id)   -> entity or null
-	access.linksTouching(id) -> the links that name this id as src, dst or via
+	access.rolesOf(id)     -> a waypoint's roles: `waypointRoles` (kernel/network-roles.mjs) over the links touching it
 
 `ctx` is the transient part -- the things that are true of this moment rather than of the document:
 which mode the surface is in, whether it is refusing writes, what the gesture is on, what is
@@ -71,15 +77,14 @@ function describeTarget(access, id) {
 	const t = { kind, id };
 	if (kind === 'waypoint') {
 		/*
-		The role is DERIVED here exactly as it is derived everywhere else -- B162's rule, read from
-		the links that touch this waypoint rather than from a stored field. A situation that carried
-		its own idea of the role would be a third copy, and the first to go stale.
+		The role is DERIVED exactly as it is derived everywhere else -- B162's rule, `waypointRoles`, read
+		from the links that touch this waypoint rather than from a stored field -- and handed in by the
+		caller (K5). A situation that carried its own idea of the role would be a third copy.
 
 		B166: model links are handed straight to the kernel now. There was briefly an adapter here
 		translating `src`/`dst`/`closed` into `from`/`to`/`close`; unifying the vocabulary deleted
 		both the adapter and the class of silent bug it existed to contain.
 		*/
-		const touching = access.linksTouching ? access.linksTouching(id) : [];
 		/*
 		B208 -- the SET, and ONLY the set.
 
@@ -91,7 +96,7 @@ function describeTarget(access, id) {
 		The renderers still read a single `el.role`, but they derive it themselves from
 		`waypointRole`; nothing downstream of here needs one.
 		*/
-		t.roles = waypointRoles(id, touching);
+		t.roles = access.rolesOf ? access.rolesOf(id) : [];   // derived by the one rule, by whoever owns the links (K5)
 		// whether this endpoint is already emitting. A boolean rather than the config, because the
 		// question a decision asks is "is it on"; the numbers belong to whoever is going to run them.
 		t.spawning = !!entity.spawn;

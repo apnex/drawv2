@@ -9,12 +9,13 @@ disagree with the document it describes.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { situationOf, onEndpoint, inReadView } from '../engine/situation.mjs';
+import { waypointRoles } from '../kernel/network-roles.mjs';
 
 // the small accessor the situation asks its questions through -- the browser hands it a live model,
 // the server a stored document, and neither has to become the other
 const accessOf = (entities, links = []) => ({
 	get: (kind, id) => entities[id] || null,
-	linksTouching: (id) => links.filter((l) => l.src === id || l.dst === id || (l.via || []).includes(id)),
+	rolesOf: (id) => waypointRoles(id, ((id) => links.filter((l) => l.src === id || l.dst === id || (l.via || []).includes(id)))(id)),   // K5: the caller applies the one role derivation
 });
 
 const WP = 'waypoint-aaaaaa', WP2 = 'waypoint-bbbbbb', ND = 'node-cccccc';
@@ -148,11 +149,11 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 	*/
 	const access = {
 		get: (kind, id) => (kind === 'waypoint' && id === 'waypoint-aa0001' ? { id, x: 0, y: 0 } : null),
-		linksTouching: () => [
+		rolesOf: (id) => waypointRoles(id, [
 			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001' },
 			{ id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' },
 			{ id: 'link-aa0003', src: 'node-aa0002', dst: 'waypoint-aa0001' },
-		],
+		]),
 	};
 	const s = situationOf(access, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
 	assert.deepEqual(s.target.roles, ['junction'], 'the situation carries the set the kernel derived');
@@ -160,7 +161,7 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 	// a lone terminus still arms, and that is the predicate's job -- read from the SET, not a string
 	const lone = {
 		get: access.get,
-		linksTouching: () => [{ id: 'link-aa0001', src: 'waypoint-aa0001', dst: 'node-aa0003' }],
+		rolesOf: (id) => waypointRoles(id, (() => [{ id: 'link-aa0001', src: 'waypoint-aa0001', dst: 'node-aa0003' }])(id)),   // K5: the caller applies the one role derivation
 	};
 	const t = situationOf(lone, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
 	assert.equal(onEndpoint(t), true,

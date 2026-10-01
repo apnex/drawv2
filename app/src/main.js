@@ -26,6 +26,7 @@ import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
 import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
+import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 
 const svg = document.getElementById('container');
 
@@ -77,7 +78,7 @@ other two have it without reaching through Sync to get it (A3 Air-Gap), and is t
 `scan-wiring` checks: a value the root computes must reach the thing it constructs.
 */
 const clock = new Clock();
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, now: () => clock.now(), snap });
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, now: () => clock.now(), snap, runRules: RUN_PRESSES });
 new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0)
 // the help overlay is GENERATED from the bindings Input resolves -- no hand-written list of controls (RULES I4, stage 6)
 if (help) renderHelp(help.querySelector('#help-rows'), helpSections(input.bindings()));

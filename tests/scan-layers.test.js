@@ -297,7 +297,8 @@ re-points it.
 const MAN = 'tools/layers.mjs';
 const MUTANTS = [
 	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\n" }] },
-	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/situation.mjs')).situationOf; }\n" }] },
+	// K5: the situation is core now, so a canvas reaching the SIMULATION is shown with the movers
+	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/movers.mjs')).moversAt; }\n" }] },
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
 	// PL-5: the kind list's one literal is model/shape.mjs's table now, so the planted sixth kind goes there
 	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];", "export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
@@ -307,13 +308,14 @@ const MUTANTS = [
 	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { collectionCap } from '../engine/policy.mjs';\n" }] },
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
 	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { collectionCap as __c } from '../engine/policy.mjs?v';\n" }] },
-	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/situation.mjs')).situationOf; }\n" }] },
+	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/movers.mjs')).moversAt; }\n" }] },
 	// K2c: no barrel is left to re-point, so the attack plants one and imports it through a suffix; the new file also fails L1
 	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { cellOf } from './geometry.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf as __c } from '../../kernel/index.mjs?';\n" }] },
 	// a record raised with its violation; a new export borrowing a baseline name into the L10 list
-	{ id: 'A9', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/situation.mjs')).situationOf; }\n" },
-		{ file: MAN, replace: ["'app/src/input.js -> engine/situation.mjs': 1,", "'app/src/input.js -> engine/situation.mjs': 2,"] }] },
+	// K5 retired the input -> situation record, so the raised record is the one debt edge Input still has, the palette
+	{ id: 'A9', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('./palette.js')).NODE_TYPES; }\n" },
+		{ file: MAN, replace: ["'app/src/input.js -> app/src/palette.js': 1,", "'app/src/input.js -> app/src/palette.js': 2,"] }] },
 	{ id: 'A14', rule: 'L10', edits: [{ file: 'server/log.mjs', append: '\nexport const check = () => 0;\n' },
 		{ file: MAN, replace: ["'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX'],", "'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX', 'check'],"] }] },
 	// the second alternative of the id grammar
@@ -327,7 +329,7 @@ const MUTANTS = [
 	failed two rules and `fails` asserts exactly one. K2a took every barrel out of the planner
 	closure, so the barrel is no longer listed and the re-export alone is the mutant.
 	*/
-	{ id: 'A5b', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { situationOf } from '../engine/situation.mjs';\n" }] },
+	{ id: 'A5b', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { moversAt } from '../engine/movers.mjs';\n" }] },
 	// a rule primitive taken from a namespace, and from import(), by destructuring
 	{ id: 'A12a', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nimport * as __inv from '../../model/invariants.mjs';\nconst { collapseAtWaypoint: __cw } = __inv;\n" }] },
 	{ id: 'A12c', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nexport async function __a12() { const m = await import('../../model/invariants.mjs'); const { collapseAtWaypoint } = m; return collapseAtWaypoint; }\n" }] },
@@ -336,7 +338,7 @@ const MUTANTS = [
 	{ id: 'A7b', rule: 'L11', edits: [{ file: 'server/txn.mjs', append: '\nconst __host = () => global.draw;\n' }] },
 	{ id: 'A7d', rule: 'L11', edits: [{ file: 'kernel/spec.mjs', append: '\nconst __host = () => \\u0077indow.draw;\n' }] },
 	// a regex after `)` that used to hide the import() after it
-	{ id: 'A15', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a15(ok, s) { if (ok) /'/.test(s); const m = await import(\"../../engine/situation.mjs\"); if (ok) /'/.test(s); return m.situationOf; }\n" }] },
+	{ id: 'A15', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a15(ok, s) { if (ok) /'/.test(s); const m = await import(\"../../engine/movers.mjs\"); if (ok) /'/.test(s); return m.moversAt; }\n" }] },
 	// loading outside import: createRequire, a .cjs shim, an inline module script
 	{ id: 'A18', rule: 'L2', edits: [{ file: 'server/txn.mjs', append: "\nimport { createRequire } from 'node:module';\nconst __req = createRequire(import.meta.url);\nconst __lazy = () => __req('./store.js');\n" }] },
 	{ id: 'A13b', rule: 'L1', edits: [{ file: 'server/helper.cjs', create: "module.exports = require('./origin.mjs');\n" },

@@ -14,7 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RECOGNIZE, DOUBLE_CLICKS } from '../app/src/recognize.js';
 import { KEY_RELEASES } from '../app/src/keymap.js';
-import { RUN_PRESSES } from '../app/src/input.js';
+import { RUN_PRESSES } from '../app/src/run-mode.js';
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
 import { makeInput, key } from './fixtures/client-harness.mjs';
 

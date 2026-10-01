@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import { KEYMAP } from '../app/src/keymap.js';
 import { RECOGNIZE, DOUBLE_CLICKS } from '../app/src/recognize.js';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS } from '../app/src/releases.js';
-import { RUN_PRESSES } from '../app/src/input.js';
+import { RUN_PRESSES } from '../app/src/run-mode.js';
 import { networkInput } from '../network/keys.mjs';
 import { ACTION_LABELS, actionOf } from '../app/src/actions.js';
 import { eventsFor, shown, helpSections } from '../app/src/help.js';

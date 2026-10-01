@@ -92,6 +92,7 @@ export const LAYER = {
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
+		'engine/situation.mjs',  // K5: what is true right now, as a value -- read by whatever decides what an input means, browser or server; it imports only core
 	],
 	network: [
 		'kernel/network-roles.mjs',        // K13a: what a waypoint or link IS -- split from kernel/geometry.mjs, whose core grid exported network names (L5)
@@ -118,11 +119,12 @@ export const LAYER = {
 		'app/src/main.js',       // the production composition root; nothing imports it
 		'app/src/clock.js', 'app/src/net.js', 'app/src/readout.js', 'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js',
 		'app/src/help.js',       // the generated help overlay (gesture system stage 6): draws what the bindings document
+		'app/src/run-mode.js',   // K5: run mode's press rows, the product's feature, handed to Input by main.js
 		'app/src/palette.js',    // the device palette widget; input.js reaching into it is L2 debt that K6 removes
 		'app/src/movers.js', 'app/src/reveal.js', 'app/src/paintloop.js',   // the simulation's painters: production-only, outside the lab
 	],
 	simulation: [
-		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs', 'engine/situation.mjs',
+		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs',
 		'model/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
 	],
 	export: [
@@ -154,7 +156,7 @@ export const ENTRIES = {
 		roots: ['app/src/main.js'],
 		modules: [
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/clock.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
-			'app/src/actions.js', 'app/src/help.js', 'app/src/labeledit.js', 'app/src/main.js', 'app/src/movers.js', 'app/src/net.js', 'app/src/overlay.js',
+			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'app/src/movers.js', 'app/src/net.js', 'app/src/overlay.js',
 			'app/src/painter.js', 'app/src/paintloop.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/reveal.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
@@ -340,7 +342,6 @@ When a rule's record empties, delete its keys; the rule stays.
 export const RATCHETS = {
 	L2: {
 		'app/src/input.js -> app/src/palette.js': 1,
-		'app/src/input.js -> engine/situation.mjs': 1,
 		'lab/src/root.js -> app/src/readout.js': 1,
 	},
 	L4: {

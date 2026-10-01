@@ -14,6 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
+import { waypointRoles } from '../kernel/network-roles.mjs';
 import { toggleSpawn } from '../app/src/commands.js';
 import { validateEntity } from '../server/validate.js';
 import { applyOps } from '../model/ops.mjs';
@@ -31,7 +32,7 @@ function doc() {
 
 const sit = (m, id, mode) => situationOf({
 	get: (kind, i) => m.get(kind, i),
-	linksTouching: (i) => m.all('link').filter((l) => l.src === i || l.dst === i || (l.via || []).includes(i)),
+	rolesOf: (id) => waypointRoles(id, ((i) => m.all('link').filter((l) => l.src === i || l.dst === i || (l.via || []).includes(i)))(id)),   // K5: the caller applies the one role derivation
 }, { mode, targetId: id }, NOW);
 
 // the rule itself, stated once here exactly as `input.js` states it

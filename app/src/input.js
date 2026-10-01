@@ -49,16 +49,9 @@ import { newId, kindOf } from '../../model/model.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
-import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/situation.mjs';
+import { situationOf } from '../../engine/situation.mjs';
+import { waypointRoles } from '../../kernel/network-roles.mjs';
 
-// run mode's presses as rows of the Rules engine -- see `runModePress` for what each means and why they live here
-export const RUN_PRESSES = [
-	{ id: 'toggle-spawn', input: ['left on region:waypoint'], context: 'in run mode, on an endpoint', mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region?.waypoint, when: (s) => inReadView(s) && onEndpoint(s), run: 'toggleSpawnHere' },
-	{ id: 'place-tower', input: ['left on region:ground'], context: 'in run mode, where the cell is free',  mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overWaypoint && !e.region.entity,
-		when: (s) => inReadView(s) && onOpenGround(s), run: 'placeTowerHere' },
-	{ id: 'fire-action', input: ['left on region:action'],  mutates: false, prevent: false, on: (e) => e.button === 0 && !!e.region?.action, run: 'fireActionHere' },
-	{ id: 'open-input', input: ['left on region:input'],   mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action, run: 'openInputHere' },
-];
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
@@ -364,7 +357,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now, plugins = [] }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now, plugins = [], runRules = [] }) {
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -399,7 +392,9 @@ export class Input {
 		this.pressRules = composeRules({ owner: 'product', rules: RECOGNIZE });
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
 		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
-		this.runRules = composeRules({ owner: 'product', rules: RUN_PRESSES });
+		// K5: run mode's rows come from the composition root (app/src/run-mode.js via main.js); a composition without the
+		// simulation passes none, and a run-mode press then means nothing
+		this.runRules = composeRules({ owner: 'product', rules: runRules });
 		// what each gesture MEANS when it ends, or when a press becomes a drag (stage 5, app/src/releases.js)
 		this.meaningRules = Object.fromEntries(Object.entries({ link: LINK_RELEASES, marquee: MARQUEE_RELEASES, ctrlClick: CTRL_CLICKS,
 			replug: REPLUG_RELEASES, zone: ZONE_RELEASES, pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
@@ -565,7 +560,7 @@ export class Input {
 	situation(targetId = null, gesture = null) {
 		return situationOf({
 			get: (kind, id) => this.model.get(kind, id),
-			linksTouching: (id) => this.model.linksAt?.(id) || [],
+			rolesOf: (id) => waypointRoles(id, this.model.linksAt?.(id) || []),   // the one role derivation (K5)
 		}, {
 			mode: this.renderer.mode,
 			readOnly: this.readOnly,
@@ -589,8 +584,7 @@ export class Input {
 	  open-input     on a `data-input` region: open the inline editor. It authors, so a locked client does not (B18)
 
 	Each authoring row is refused on a locked client by the engine's guard; each handler claims the press only on the path
-	that acts. Defined here, beside their handlers, because they ask the situation's own terms (engine/situation.mjs),
-	which the canvas tables cannot import until the situation leaves the simulation layer (cut K5).
+	that acts. The rows are app/src/run-mode.js, handed in by the composition root (K5); the handlers are here.
 	*/
 	runModePress(evt) {
 		const { rule } = resolveInput(this.runRules, evt, this.situation(evt.region?.waypoint ?? null), { readOnly: this.readOnly });

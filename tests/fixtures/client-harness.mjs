@@ -37,6 +37,7 @@ import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
+import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { networkInput } from '../../network/keys.mjs';
 
@@ -219,7 +220,8 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	try {
 		input = bare
 			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
-			: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap,
+			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
+			: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap, runRules: RUN_PRESSES,
 				// `routeHook` composes the incubating network plugin as the lab does (lab/src/root.js): its own keys, and
 				// this function as its drag judge, handed the drag's facts (network/keys.mjs `networkInput`). Absent unless a
 				// test asks for it, exactly as production composes no plugin -- so every other test runs as production does.

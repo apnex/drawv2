@@ -175,6 +175,7 @@ AMENDED 2026-10-01: K13a done -- geometry splits into the grid (core), network r
 AMENDED 2026-10-01: K14a done -- a deleted ring takes its end waypoints (B244, H17.4). Next B246 (H17.6).\
 AMENDED 2026-10-01: K15 done -- every peer answers link queries in id order (B246, H17.6).\
 AMENDED 2026-10-01: B250 done (H17.19), its trigger having fired unattended at K10; the plan's rows for K3, K10, K13c, K14b and K17 reconciled with the work that did them. Next K5, then K16.\
+AMENDED 2026-10-01: K5 done -- the situation is core, and run mode's rows come from the composition root; Input reaches no simulation code. Next K16.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
