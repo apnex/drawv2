@@ -130,7 +130,6 @@ It checks the request's shape and version, runs the three phases on a projection
 ### 6.2 Reactions
 
 A reaction is a declared row, in the shape the Rules engine uses:
-
 ```
 { id, owner, phase,
   on(change, before, after) -> candidates     what in this edit it reacts to
