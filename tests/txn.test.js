@@ -1152,3 +1152,61 @@ test('PL-2: the planner writes inverses in one place, and applies ops to its pro
 	assert.equal((plannerPart.match(/inverseOf\(/g) || []).length, 2, '`inverseOf` is defined once and called once, by `track`');
 	assert.doesNotMatch(plannerPart, /inverse:\s*\[/, 'no planner returns an inverse list');
 });
+
+/*
+PL-3 -- REACTIONS AND PHASES (dev/design/planner/PLANNER-SYSTEM.md section 6.2). What follows from an edit is declared by
+TENANTS as reactions, run by a core that knows no entity rules. Held here: PL1, the core names no kind; PL4, phases run
+in declared order and two reactions changing one entity in a phase is a fault (PD-3); acceptance test 5, a new
+reaction lands with no edit to the core; and PD-2, a composition holds one link tenant. PL3 and PL5 are structural --
+a reaction has only `emit`, so it can neither write an inverse nor refuse -- and PL-2's test above holds the first.
+*/
+test('PL1: the planner core names no entity kind -- the kinds are the tenants\'', async () => {
+	const src = (await import('node:fs')).readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+	for (const kind of ['node', 'link', 'waypoint', 'group', 'zone']) {
+		assert.doesNotMatch(code, new RegExp(`['"\`]${kind}['"\`]`), `the core's code names the kind '${kind}'`);
+	}
+});
+
+{
+	const pl3 = async () => {
+		const { plan: p } = await import('../server/txn.mjs');
+		const { CLASSIC_LINKS } = await import('../server/tenants.mjs');
+		const m = new Model();
+		m.put('node', { id: 'node-00000a', name: 'a', type: 'router', x: 0, y: 0, shape: 'circle' });
+		m.put('node', { id: 'node-00000b', name: 'b', type: 'router', x: 240, y: 0, shape: 'circle' });
+		m.put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
+		return { p, CLASSIC_LINKS, m };
+	};
+	const del = [{ op: 'del', kind: 'node', id: 'node-00000a' }];
+
+	test('acceptance 5: a new reaction lands in a tenant with no edit to the core, and runs in its phase', async () => {
+		const { p, CLASSIC_LINKS, m } = await pl3();
+		const seen = [];
+		const tagged = { id: 'note-renames', phase: 'sweep', run: ({ doc }, emit) => { seen.push(doc.all('node').length); emit([{ op: 'set', kind: 'node', id: 'node-00000b', patch: { name: 'alone' } }]); } };
+		const r = p(m, del, { links: { owner: 'with a note', reactions: [...CLASSIC_LINKS.reactions, tagged] } });
+		assert.equal(r.ok, true);
+		assert.deepEqual(seen, [1], 'it ran once, in the sweep, after the requested delete and its cascade');
+		assert.deepEqual(r.ops.at(-1), { op: 'set', kind: 'node', id: 'node-00000b', patch: { name: 'alone' } });
+		assert.deepEqual(r.inverse[0], { op: 'set', kind: 'node', id: 'node-00000b', patch: { name: 'b' } }, 'and the core wrote its inverse');
+	});
+
+	test('PL4: phases run in the declared order, whatever order the tenant lists its reactions in', async () => {
+		const { p, m } = await pl3();
+		const order = [];
+		const row = (phase) => ({ id: `r-${phase}`, phase, ...(phase === 'clear' ? { on: (op) => op.kind === 'node' } : {}), run: () => order.push(phase) });
+		p(m, del, { links: { owner: 'shuffled', reactions: ['join', 'sweep', 'clear', 'stranded'].map(row) } });
+		assert.deepEqual(order, ['clear', 'stranded', 'sweep', 'join']);
+	});
+
+	test('PL4 / PD-3: two reactions changing one entity in one phase is a fault, thrown, never a silent winner', async () => {
+		const { p, CLASSIC_LINKS, m } = await pl3();
+		const rival = { id: 'rival-cascade', phase: 'clear', on: (op) => op.kind === 'node', run: (_, emit) => emit([{ op: 'set', kind: 'link', id: 'link-000001', patch: { name: 'x' } }]) };
+		assert.throws(() => p(m, del, { links: { owner: 'rivals', reactions: [...CLASSIC_LINKS.reactions, rival] } }), /node-links and rival-cascade both change link:link-000001 in the clear phase/);
+	});
+
+	test('PD-2: a composition holds ONE link tenant -- a second is not a slot the planner has', async () => {
+		const { p, CLASSIC_LINKS, m } = await pl3();
+		assert.throws(() => p(m, del, { links: CLASSIC_LINKS, links2: CLASSIC_LINKS }), /unknown option links2/);
+	});
+}

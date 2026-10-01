@@ -12,10 +12,11 @@ GUIDE for another is swept when the pinning link is deleted, and the guided link
 guide-only anchor is safe, because it was never referenced and the sweep leaves what arrived
 unreferenced alone.
 
-So `commit()` and `plan()` accept a `network` whose `alsoReferenced(model) -> ids` names them -- one object carrying
-all three of the planner's questions (RULESET-AUDIT T1; they began as three hooks). Production passes nothing and must
-sweep exactly as before -- the first test holds that, because the sweep is where a casual change does
-the most damage: it deletes.
+So the orphan sweep is a REACTION its link tenant declares (PL-3, model/link-reactions.mjs), built with
+`linkTenant({ alsoReferenced, keepsOrphan })`: `alsoReferenced(model) -> ids` names what else references an anchor.
+They began as hooks the planner asked a `network` object; since PL-3 the network brings its own tenant and the planner
+asks nothing. Production passes nothing and must sweep exactly as before -- the first test holds that, because the
+sweep is where a casual change does the most damage: it deletes.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,15 +25,20 @@ import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { commit, undo } from '../server/txn.mjs';
 import { Log } from '../server/log.mjs';
+import { linkTenant } from '../model/link-reactions.mjs';
 
 const P = 60;
 const nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
 const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
 const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...(via ? { via } : {}) } });
 const W = 'waypoint-00000f';
-// a complete network whose answers are production's -- the rule B162/B216 stated here, since the planner keeps its own
-// private -- so each test overrides only the question it is about
-const net = (over = {}) => ({ network: { alsoReferenced: () => [], keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, isStranded: () => false, joinsAt: () => true, ...over } });
+// a link tenant built like production's -- the rule B162/B216 stated here -- so each test changes only the condition it
+// is about; `stranded` adds the network's stranded pass, and `onStranded` hears what it emits
+const net = ({ alsoReferenced = null, keepsOrphan = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, stranded = false, onStranded = null } = {}) => {
+	const t = linkTenant({ owner: 'test links', stranded, alsoReferenced, keepsOrphan, says: {} });
+	if (onStranded) t.reactions = t.reactions.map((r) => (r.phase !== 'stranded' ? r : { ...r, run: (ctx, emit) => r.run(ctx, (ops) => { onStranded(ops, ctx); emit(ops); }) }));
+	return { links: t };
+};
 
 // the SHARED anchor: a pin of link-a, and (in the lab) a guide for link-b over pipes
 function shared() {
@@ -73,7 +79,7 @@ with w go when their last link goes -- ends and a pinned start included -- unles
 holds them. In the lab's plugin now; production at promotion, since production has no pipes and no g,
 and there B162 and B216 are the only protection an author's anchor has.
 
-So the planner takes the rule by injection, `network.keepsOrphan(waypoint, { wasBendOnly })`, defaulting to
+So the rule is the tenant's, `linkTenant({ keepsOrphan(waypoint, { wasBendOnly }) })`, and production's tenant states
 production's. The first test is the one that matters most: absent, production sweeps exactly as ruled.
 */
 function ended() {
@@ -113,10 +119,9 @@ A LINK LEFT WITH NO WAY AFTER LOSING A PIN is removed whole -- ruled 2026-09-29.
 S-P1-P2-P3-E with P2 deleted and no other way, the director chose "Delete the whole link" over "Stay,
 shown down"; with another way open it re-routes, as ruled 2026-09-26.
 
-"No way" is a question about ROUTES OVER PIPES, which the planner cannot see -- so it is asked by
-injection, `network.isStranded(link, model)`, the fourth interface the network incubator forces into a product
-module. Production passes nothing: a link that loses a pin keeps the rest of its intent, exactly as
-before, and the first test below holds that.
+Widened 2026-09-30: a pinned link lives and dies with its pins, whatever ways remain. It is the network tenant's
+STRANDED pass (PL-3; it was the hook `isStranded` before), which production's tenant does not have: there a link that
+loses a pin keeps the rest of its intent, exactly as before, and the first test below holds that.
 
 IN THE SAME TRANSACTION, so the orphan sweep then takes the link's w anchors, and one undo restores the
 link, its pin and its anchors together.
@@ -140,9 +145,9 @@ test('production is unchanged: a link that loses a pin keeps the rest of its int
 	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ], 'the pin is dropped and the link stays, as it always has');
 });
 
-test('an injected isStranded removes the link WHOLE in the same transaction, and one undo restores it', () => {
+test('the stranded pass removes the link WHOLE in the same transaction, and one undo restores it', () => {
 	const b = pinned();
-	const r = deleteP(b, net({ isStranded: () => true, keepsOrphan: () => false }));
+	const r = deleteP(b, net({ stranded: true, keepsOrphan: () => false }));
 	assert.equal(r.ok, true);
 	assert.equal(b.m.get('link', PINNED), undefined, 'a link with no way after losing its pin is deleted');
 	assert.equal(b.m.get('waypoint', WQ), undefined, 'and its remaining pin, made for it alone, is swept with it');
@@ -152,20 +157,20 @@ test('an injected isStranded removes the link WHOLE in the same transaction, and
 	assert.ok(b.m.get('waypoint', WP) && b.m.get('waypoint', WQ), 'and both anchors');
 });
 
-test('isStranded is asked only about a link that lost a pin, and sees it as it is AFTER the edit', () => {
+test('the stranded pass removes only a link that lost a pin, judging the document AFTER the edit', () => {
 	const b = pinned();
-	const asked = [];
-	deleteP(b, net({ isStranded: (link, model) => { asked.push({ id: link.id, via: link.via, pGone: !model.get('waypoint', WP) }); return false; } }));
-	assert.deepEqual(asked, [{ id: PINNED, via: [WQ], pGone: true }],
-		'one question, about the pinned link, with P already stripped and gone from the model it is judged in');
-	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ], 'answered "not stranded", the link re-routes on its remaining intent');
+	const heard = [];
+	deleteP(b, net({ stranded: true, onStranded: (ops, { doc }) => heard.push(...ops.map((o) => ({ id: o.id, via: doc.get('link', o.id)?.via, pGone: !doc.get('waypoint', WP) }))) }));
+	assert.deepEqual(heard, [{ id: PINNED, via: [WQ], pGone: true }],
+		'one delete, of the pinned link, with P already stripped and gone from the document it is judged in');
+	assert.ok(b.m.get('link', APART), 'the link the edit never touched stays');
 });
 
-test('a link that ENDS at the deleted anchor is not asked: it goes with its end regardless', () => {
+test('a link that ENDS at the deleted anchor is not the stranded pass\'s: it goes with its end regardless', () => {
 	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 	assert.equal(commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), wp(WP, 3, -2), lk(PINNED, NA, WP)] }, 'lab', 'lab').ok, true);
-	const asked = [];
-	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', net({ isStranded: (l) => { asked.push(l.id); return false; } }));
-	assert.deepEqual(asked, [], '"if either source or dest node is deleted, link is gone with it permanently"');
+	const heard = [];
+	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', net({ stranded: true, onStranded: (ops) => heard.push(...ops) }));
+	assert.deepEqual(heard, [], 'the cascade took it first: "if either source or dest node is deleted, link is gone with it permanently"');
 	assert.equal(m.get('link', PINNED), undefined);
 });

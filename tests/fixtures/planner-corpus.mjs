@@ -95,6 +95,8 @@ for (const compose of ['production', 'network']) {
 	c('refuse-empty-request', {}, []);
 	// groups
 	c('group-steals-and-trims', { nodes: [node(0, 0, 0), node(1, 2, 0), node(2, 4, 0), node(3, 6, 0)], groups: [group(0, [N(0), N(1), N(2), N(3)])] }, [put('group', group(1, [N(0), N(1)]))]);
+	// a document that arrived with a node in two groups: re-putting one group unchanged still steals, so it is not narrowed
+	c('group-unchanged-put-still-steals', { nodes: [node(0, 0, 0), node(1, 2, 0), node(2, 4, 0)], groups: [group(0, [N(0), N(1)]), group(1, [N(1), N(2)])] }, [put('group', group(1, [N(1), N(2)]))]);
 	c('group-steal-dissolves', { nodes: [node(0, 0, 0), node(1, 2, 0), node(2, 4, 0)], groups: [group(0, [N(0), N(1)])] }, [put('group', group(1, [N(1), N(2)]))]);
 	// node cascade
 	c('del-node-takes-links-and-trims-group', { nodes: [node(0, 0, 0), node(1, 4, 0), node(2, 0, 4)], links: [link(0, N(0), N(1)), link(1, N(0), N(2))], groups: [group(0, [N(0), N(1), N(2)])] }, [del('node', N(0))]);
@@ -235,7 +237,7 @@ function compose(c) {
 	const model = new Model();
 	attachRelations(model, { cellOf });
 	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...c.board });
-	if (c.compose === 'production') return { model, options: {}, reached: { stranded: 0, joinAsked: 0 } };
+	if (c.compose === 'production') return { model, options: {}, reached: { stranded: 0 } };
 	const pipes = createPipeSet();
 	for (const [a, b, laid] of c.pipes || c.board.links.flatMap((l) => pairs(routeOf(l)).map(([x, y]) => [x, y, 'link']))) pipes.lay(a, b, laid);
 	const transit = createTransit();
@@ -243,12 +245,11 @@ function compose(c) {
 	const { refused } = transit.flip((c.off || []).map((id) => ({ ...model.get('waypoint', id), kind: 'waypoint' })));
 	if (refused.length) throw new Error(`${c.id}: transit refused to turn off ${refused.map((e) => e.id)}`);
 	const network = createNetwork(pipes, () => 0, transit);
-	// counted, not changed: how often the planner reached the two passes that ask the network
-	const reached = { stranded: 0, joinAsked: 0 };
-	const counted = { ...network,
-		isStranded: (l, m) => { reached.stranded++; return network.isStranded(l, m); },
-		joinsAt: (w, m) => { reached.joinAsked++; return network.joinsAt(w, m); } };
-	return { model, options: { network: counted }, reached };
+	// counted, not changed: how many ops the network's stranded pass emitted
+	const reached = { stranded: 0 };
+	const links = { ...network.links, reactions: network.links.reactions.map((r) => (r.phase !== 'stranded' ? r
+		: { ...r, run: (ctx, emit) => r.run(ctx, (ops) => { reached.stranded += ops.length; emit(ops); }) })) };
+	return { model, options: { links }, reached };
 }
 
 const digest = (c) => crypto.createHash('sha256').update(JSON.stringify([c.compose, c.board, c.pipes, c.off, c.ops])).digest('hex').slice(0, 16);
@@ -256,7 +257,7 @@ const digest = (c) => crypto.createHash('sha256').update(JSON.stringify([c.compo
 /*
 Plans one case and answers { golden, reach }. `golden` is what the file holds: the input digest and the result.
 `reach` is measured beside it and never stored: which passes fired, read off the result -- an unrequested waypoint
-delete is the sweep, an unrequested `set` of a link's ends is the join -- and, for the network, off its two questions --
+delete is the sweep, an unrequested `set` of a link's ends is the join -- and, for the network, off its stranded pass --
 and whether undo of an accepted plan restores the board (PR8) -- every entity byte for byte, compared with each
 collection sorted by id, because a restored entity is appended to its collection: B10, registered and held, whose fix is
 an explicit order field rather than an ordered restore.

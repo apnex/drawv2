@@ -157,7 +157,7 @@ function judgePieces(pipes, drag, { links, rankOf, passes, nameOf }, cutAt) {
 /*
 The anchors the pipes reference IN A GIVEN MODEL -- what the planner's orphan sweep must count.
 
-Handed to `commit(..., { alsoReferenced })`, which asks it of the document before the edit and after.
+The network tenant's orphan sweep (`network/network.mjs`, PL-3) asks it of the document before the edit and after.
 A pipe references its anchors only while it SURVIVES in that model:
 
   - both of its ends exist there, since a pipe is its pair (SD7); and
@@ -206,11 +206,11 @@ function keptOnRefusal(verdict, { guides = [], placed = [] }) {
 /*
 Which orphaned anchors the network model keeps beyond what references them: NONE -- ruled 2026-09-29.
 
-The network's `keepsOrphan`, asked by the planner. Production keeps an orphaned anchor if the author pinned it
+The network's `keepsOrphan`, the condition inside its tenant's orphan sweep (PL-3). Production keeps an orphaned anchor if the author pinned it
 (B162) or it was a link's end (B216). The director ruled that in the network model "deliberate" means
 HELD BY THE PIPES LAID WITH g, so anchors made with w go when their last link goes -- ends included, the
 director confirming: "No - it goes just as ruled." A g anchor survives because its hand pipes reference
-it, which reaches the sweep through `alsoReferenced`; nothing else needs to shelter anything.
+it, which reaches the sweep as one of the anchors the pipes reference; nothing else needs to shelter anything.
 
 The sweep reads only waypoints, so nodes are never orphans at all -- a KIND distinction. The director's
 proposal, recorded and not yet built: "survives last link deleted" is a capability injected to an anchor,

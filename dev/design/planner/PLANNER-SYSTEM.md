@@ -218,7 +218,14 @@ The test holds floors under those, and seven planner mutants each fail it.\
 CLARIFIED 2026-10-01: undo is checked to restore every entity, with each collection compared sorted by id, because a restored entity is appended to its collection -- B10, registered and held, whose fix is an explicit order field.\
 So "byte-identical" in PR8 and PL-2 means per entity, not per collection order, until B10 is revived.\
 DONE 2026-10-01: PL-2 -- `inverseOf` and `track` in `server/txn.mjs`: every op reaches the projection through `track`, which records its inverse from the state just before it; the per-op planners, the cascades, the stranded pass, the sweep and the join return ops only.\
-All 2084 corpus results replay unchanged, inverses included, and a structural test in `tests/txn.test.js` holds one writer of inverses.
+All 2084 corpus results replay unchanged, inverses included, and a structural test in `tests/txn.test.js` holds one writer of inverses.\
+DONE 2026-10-01: PL-3 -- the core in `server/txn.mjs` runs declared phases (`clear`, `follow`, `stranded`, `sweep`, `join`) of reactions brought by tenants, and names no kind (PL1).\
+The link reactions are `model/link-reactions.mjs`, built into a tenant by `linkTenant` with each tenant's own conditions: production's classic tenant and the groups in `server/tenants.mjs`, the network's in `network/network.mjs`.\
+The four hooks are gone; the network passes `{ links: network.links }`, and the retired `network` option is refused.\
+A delete's `clear` reactions run wherever the delete comes from -- a request, the waypoint cascade or the sweep -- which is how the sweep's group trim (B241) now arrives, with no second copy.\
+The corpus replays all 2084 results unchanged, plus one named case added and checked against the pre-PL-3 planner (an unchanged group put that still steals).\
+Six mutants of the engine and tenants each fail a test, and `dev/design/planner/REACTIONS.md` is generated from the rows by `tools/reaction-table.mjs`, which the gate checks.\
+CLARIFIED 2026-10-01: a link tenant's conditions -- strands or not, what else references an anchor, which orphans are kept, where links join -- are arguments its author passes to `linkTenant` at composition, so the core asks a plugin nothing (PR3).
 **These are production code paths:** every stage is gated and deployed to the lab; the production deploy stays the director's call.
 
 ---

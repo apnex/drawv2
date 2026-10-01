@@ -43,7 +43,7 @@ const MOUNTS = {
 };
 
 /*
-`server/` IS NOT MOUNTED. The lab loads exactly four files from it -- the planner -- and they are
+`server/` IS NOT MOUNTED. The lab loads exactly five files from it -- the planner -- and they are
 listed by name rather than by folder.
 
 The first build of this mounted the whole directory, and the probe that caught it is the reason it
@@ -52,7 +52,7 @@ credential, so nothing leaked, but a no-API service that serves its product's en
 directory has thrown away the reason it was safe to deploy at all. A mount is a standing promise
 about every file a folder will EVER hold, and this folder grows.
 
-Named files are a promise about four. `scan-layers` already knows the planner's closure (the
+Named files are a promise about five. `scan-layers` already knows the planner's closure (the
 `planner` entry in tools/layers.mjs), and a test holds this list to it, so a fifth file joining the
 planner fails the gate rather than silently becoming public.
 */
@@ -61,6 +61,8 @@ const PLANNER_FILES = new Set([
 	'server/log.mjs',
 	'server/validate.js',
 	'server/anchor.mjs',
+	// PL-3: the product's tenants of the planner (groups, classic links) -- rule code the planner runs, like txn.mjs
+	'server/tenants.mjs',
 ]);
 
 const MIME = {

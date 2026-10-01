@@ -7,7 +7,8 @@ Txn — the one write.
 
 Every writer in the system — browser gesture, keyboard nudge, palette stamp, label edit, rename,
 REST entity verb, CLI verb, undo, redo — is a caller that builds a request. There is no second
-path. The cascade lives here and only here; so does the inverse.
+path. Every consequence of an edit is decided here -- by the tenants' reactions, which this core runs (PL-3) -- and so
+is every inverse.
 
 The inverse is computed by the planner because the planner is the only place that holds the
 pre-state at the moment each op is decided. Deriving it later is impossible: a forward `set` patch
@@ -31,14 +32,15 @@ transaction shape the ports were dead weight. The substitution seam it offered r
 out, as the Store's injected {flushMs, writeDoc, now}.
 */
 
-import { projection, requireNetwork, refuseStrayOptions } from '../model/model.mjs';
+import { projection } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE } from '../model/shape.mjs';   // OPTIONAL was imported here and never used (B86)
 import { groupAfterRemoval, collectionCap } from '../engine/policy.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
-import { violations, collapseAtWaypoint, pairHolders } from '../model/invariants.mjs';
+import { violations } from '../model/invariants.mjs';
+import { CLASSIC_LINKS, GROUPS } from './tenants.mjs';
 import { CAPTION_MAX } from '../model/limits.mjs';
 import { resolveAnchor } from './anchor.mjs';
 
@@ -109,53 +111,100 @@ function track(proj, ops, out, inv) {
 }
 
 /*
-What the PLANNER asks the network -- four of the questions of the one network interface (declared beside the
-Model in model/model.mjs, RULESET-AUDIT T1). They began as three separate hooks; with no network every answer is
-production's, and tests/sweep-references.test.js holds that.
+PL-3 -- THE PHASES, declared in order (PLANNER-SYSTEM.md section 6.2; PD-3). A request passes through three:
 
-  alsoReferenced(model) -> ids   what ELSE references an anchor. The orphan sweep below removes a waypoint a link
-                                 referenced before this transaction and none references after; in today's document only
-                                 links reference anchors, so that is complete. The network adds PIPES, which reference
-                                 anchors too and live in the lab's session rather than the document -- measured: an
-                                 anchor that pins one link and guides another was swept when the pinning link went.
-                                 After promotion pipes are stored and this reads them from the document; the seam stays.
-  keepsOrphan(w, { wasBendOnly }) WHICH orphaned anchors survive beyond what references them. Production's rule, the
-                                 default: kept if the author pinned it (B162) or it was a link's END (B216). In the
-                                 network model the director ruled otherwise (2026-09-29): "deliberate" means HELD BY THE
-                                 PIPES LAID WITH g, so w anchors go with their last link, and hand pipes reach the sweep
-                                 through `alsoReferenced`. Production keeps its rule until promotion: it has no pipes
-                                 and no g, and there these two protections are the only ones an author's anchor has.
-  isStranded(link, model)        whether a link that LOST A PIN to this transaction goes whole. Ruled 2026-09-29 for a
-                                 link left with no way; widened 2026-09-30 -- a pinned link lives and dies with its
-                                 pins, so the network answers yes whatever ways remain. Production: never.
+  1  the requested ops, each validated and narrowed here, in order
+  2  REACTIONS, brought by tenants, in the phases below
+  3  REFUSALS: the document rules, judged on the result (the backstop at the end of `plan`)
+
+Two phases react to ONE OP, wherever it came from -- a request or another reaction:
+  clear     before a delete applies: what cannot outlive the entity (a node's links, a waypoint's links, group members)
+  follow    after a put applies: what it displaces (a group's stolen members)
+Three react to THE TRANSACTION, once, after the requested ops:
+  stranded  links that lost what they live by (the network's only)
+  sweep     anchors the transaction orphaned
+  join      two links left alone at an anchor, made one
+
+The order is meaning -- today's sequence, held by the planner corpus -- so it is data a reader can see rather than the
+order code happens to run in. Within one run of a phase, two reactions changing one entity is a fault (PD-3), thrown,
+so a test meets it; never a silent winner.
 */
+export const PHASES = ['clear', 'follow', 'stranded', 'sweep', 'join'];   // read by tools/reaction-table.mjs, which documents them
+const PER_OP = new Set(['clear', 'follow']);
+
 /*
-  joinsAt(waypointId, model)     whether two links left alone at a waypoint may join into one (ruled 2026-09-26). The
-                                 network says no where the waypoint's transit is off -- what arrives there stops
-                                 (TRANSIT.md section 12, TR-5). Production: always.
+A composition holds ONE link tenant (PD-2): production's classic one by default, or the network plugin's, passed as
+`{ links }`; the product's group tenant is always there, after it. The four network hooks this file once asked
+(`alsoReferenced`, `keepsOrphan`, `isStranded`, `joinsAt`) are conditions inside the network's own reactions now
+(PR3), so the core asks a plugin nothing; a retired `network` option is refused rather than ignored.
 */
-const PLANNER_READS = ['alsoReferenced', 'keepsOrphan', 'isStranded', 'joinsAt'];
-const KEEPS_ORPHAN_AS_RULED = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly;
-const NEVER_STRANDED = () => false;
-
-// the planner's view of its options: a whole network or none, and nothing else (a retired hook name is refused)
-function plannerNetwork({ network = null, ...rest } = {}, who) {
-	refuseStrayOptions(rest, who);
-	return requireNetwork(network, PLANNER_READS, who);
+function composition({ links = CLASSIC_LINKS, network, ...rest } = {}, who) {
+	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- the network plugs in as its link tenant, { links: network.links } (PL-3)`);
+	const stray = Object.keys(rest);
+	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links } (PL-3)`);
+	const rows = Object.fromEntries(PHASES.map((p) => [p, []]));
+	const ids = new Set();
+	for (const tenant of [links, GROUPS]) {
+		if (!tenant || typeof tenant.owner !== 'string' || !Array.isArray(tenant.reactions)) throw new Error(`${who}: a tenant is { owner, reactions } (PL-3)`);
+		for (const r of tenant.reactions) {
+			if (!r || !PHASES.includes(r.phase) || typeof r.run !== 'function') throw new Error(`${who}: ${tenant.owner}: a reaction is { id, phase, run } with a phase of ${PHASES.join(', ')}`);
+			if (ids.has(r.id)) throw new Error(`${who}: two reactions are named ${r.id}`);
+			ids.add(r.id);
+			rows[r.phase].push({ ...r, owner: tenant.owner });
+		}
+	}
+	return rows;
 }
 
+// the legacy {action, kind, entity} shape validateMutation speaks (it is the trust boundary, and is not rewritten here)
+const asMutation = (op) => ({ action: op.op, kind: op.kind, entity: op.op === 'del' ? { id: op.id } : (op.op === 'set' ? { ...op.patch, id: op.id } : op.entity) });
+const subjectOf = (op) => (op.op === 'meta' ? 'meta' : `${op.kind}:${op.op === 'put' ? op.entity.id : op.id}`);
+
 export function plan(model, ops, options = {}) {
-	const network = plannerNetwork(options, 'plan');
-	const alsoReferenced = network ? (m) => network.alsoReferenced(m) : null;
-	const keepsOrphan = network ? (w, info) => network.keepsOrphan(w, info) : KEEPS_ORPHAN_AS_RULED;
-	const isStranded = network ? (link, m) => network.isStranded(link, m) : NEVER_STRANDED;
-	const joinsAt = network ? (w, m) => network.joinsAt(w, m) : () => true;
+	const rows = composition(options, 'plan');
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
 	const proj = projection(model);
 	const out = [];
 	const inv = [];
+
+	/*
+	Run one phase. Each reaction EMITS ops, and each is applied at once through `apply`, so the next decision -- its own or
+	the next reaction's -- reads the document as it now stands (B240). The ops a reaction emits directly are claimed for it;
+	a second reaction claiming one of the same entities in this run of the phase is a fault (PD-3). What an emitted op sets
+	off in turn -- a delete's own clear phase -- is a run of its own.
+	*/
+	const runPhase = (phase, ctx) => {
+		const claimed = new Map();
+		for (const r of rows[phase]) {
+			if (r.on && !r.on(ctx.op, proj)) continue;
+			r.run(ctx, (emitted) => {
+				for (const op of emitted) {
+					const subject = subjectOf(op);
+					const holder = claimed.get(subject);
+					if (holder && holder !== r.id) throw new Error(`plan: ${holder} and ${r.id} both change ${subject} in the ${phase} phase (PD-3)`);
+					claimed.set(subject, r.id);
+					apply(op);
+				}
+			});
+		}
+	};
+	// one op to the projection: a delete of something present clears what depends on it first; a put is followed after
+	const apply = (op) => {
+		if (op.op === 'del') {
+			if (!proj.get(op.kind, op.id)) return;   // already gone -- accepted, no-op
+			runPhase('clear', { op, doc: proj });
+		}
+		track(proj, [op], out, inv);
+		if (op.op === 'put') runPhase('follow', { op, doc: proj });
+	};
+	// what a put would set off, asked without applying anything -- whether an unchanged put still does something
+	const follows = (op) => {
+		let n = 0;
+		for (const r of rows.follow) if (!r.on || r.on(op, proj)) r.run({ op, doc: proj }, (emitted) => { n += emitted.length; });
+		return n > 0;
+	};
 
 	/*
 	B103 -- `opIndex`, not `at`. This file already used `at` for a Change's wall-clock timestamp
@@ -167,233 +216,12 @@ export function plan(model, ops, options = {}) {
 	for (let i = 0; i < ops.length; i++) {
 		const step = planOne(proj, ops[i]);
 		if (!step.ok) return { ok: false, error: step.error, opIndex: i };
-		track(proj, step.ops, out, inv);       // advance the projection for op i+1, recording each inverse
+		if (!step.op) continue;                                    // narrowed to nothing
+		if (step.unchanged && !follows(step.op)) continue;         // an unchanged put that displaces nothing
+		apply(step.op);
 	}
-	/*
-	A LINK LEFT WITH NO WAY AFTER LOSING A PIN goes whole (ruled 2026-09-29, see `isStranded` above).
-
-	ON THE RESULT, like the sweep below and for the same reason: a batch may strip a pin and lay the way
-	back in a later op. Only a pin DELETED here counts -- one that existed before and is gone now -- so a
-	link that loses its route any other way is left to be down, and one ending at the deleted anchor was
-	already removed by the cascade. Removed exactly as a requested delete would be (`planDel`), and BEFORE
-	the sweep, so the sweep then takes the anchors that existed only for it: one transaction, one undo.
-	*/
-	for (const before of model.all('link')) {
-		if (!(before.via || []).some((w) => model.get('waypoint', w) && !proj.get('waypoint', w))) continue;
-		const now = proj.get('link', before.id);
-		if (!now || !isStranded(now, proj)) continue;
-		track(proj, planDel(proj, { kind: 'link', id: now.id }).ops, out, inv);
-	}
-	/*
-	B162 -- a waypoint that has lost every link self-destructs, in the same transaction.
-
-	The cascade already runs the other way: deleting a waypoint deletes a link that cannot survive
-	it, because "a link that cannot survive the operation does not limp on in a degenerate form".
-	This is the mirror. A waypoint exists to be part of a path; with no path it is debris that still
-	renders and still holds its anchor, so a removed shape used to leave its bends scattered on the
-	canvas -- 64 of them, from one deleted ring.
-
-	ON THE RESULT, not per op, for the same reason the invariant check below is: a batch may
-	transiently orphan and end valid. Deleting one link while re-routing another through the same
-	bends is legal and a per-op sweep would eat them in between.
-
-	IN THIS TRANSACTION, so the inverse restores waypoint and link together and one undo puts the
-	shape back whole.
-
-	THE ROLE IS DERIVED, never stored. In a link's `via` it is a bend; at `src`/`dst` of an open
-	link an endpoint; at `src`/`dst` of a CLOSED link a bend again, because a ring has no ends; and
-	referenced nowhere, an orphan. Only `pinned` is written down, because a waypoint placed
-	deliberately with no link has no structure to read an intention off.
-	*/
-	const refs = (m) => {
-		const set = new Set(alsoReferenced ? alsoReferenced(m) : []);
-		for (const l of m.all('link')) {
-			set.add(l.src);
-			set.add(l.dst);
-			for (const w of Array.isArray(l.via) ? l.via : []) set.add(w);
-		}
-		return set;
-	};
-	/*
-	B216 -- only a BEND is swept. A waypoint an author TERMINATED a link at survives losing it.
-
-	The sweep was written for bends and its reasoning is theirs: a bend exists to shape a path, so
-	with no path it is debris that still renders and still holds its anchor -- 64 of them left over
-	from one deleted ring. An endpoint is not that. It is a place the author put something, the same
-	way a node is, and deleting a link must no more remove it than it removes the node at the other
-	end.
-
-	`refs` cannot tell them apart -- it folds src, dst and via into one set -- so the role is read
-	separately from the state BEFORE the transaction. A waypoint threaded as a bend and nothing else
-	is swept; one anything terminated at is kept, and becomes a bare anchor the author can reuse or
-	delete deliberately.
-	*/
-	const wasBendOnly = (m) => {
-		const bend = new Set();
-		const terminal = new Set();
-		for (const l of m.all('link')) {
-			terminal.add(l.src);
-			terminal.add(l.dst);
-			for (const w of Array.isArray(l.via) ? l.via : []) bend.add(w);
-		}
-		for (const id of terminal) bend.delete(id);
-		return bend;
-	};
-	/*
-	ONLY WHAT THIS TRANSACTION ORPHANED, which is the same rule the invariant check below uses and
-	for the same reason. Sweeping every unreferenced waypoint would make an unrelated commit quietly
-	delete debris the caller never mentioned, and would put those deletions in its inverse -- so an
-	undo of "move a node" would resurrect somebody else's litter. A document that reached a messy
-	state stays repairable on its own terms.
-
-	Found by the GR5 differential: the frozen oracle and the modern planner diverged on random
-	mutations that touched no link at all, because the corpus contains documents with pre-existing
-	orphans. That divergence was the design telling me the scope was wrong.
-	*/
-	const wasReferenced = refs(model);
-	const nowReferenced = refs(proj);
-	const bendOnly = wasBendOnly(model);
-	const debris = proj.all('waypoint').filter((w) => !nowReferenced.has(w.id)
-		&& wasReferenced.has(w.id)                       // it arrived unreferenced; not ours to remove
-		&& !keepsOrphan(w, { wasBendOnly: bendOnly.has(w.id) }));   // pinned or a terminus, in production (B162, B216)
-	/*
-	B241 -- a swept waypoint leaves its group exactly as a requested delete's does: trimmed, or the
-	group dissolved when it falls below two.
-
-	ONE AT A TIME, applied to the projection as each goes. Two swept bends in one group must trim
-	against the membership the previous trim left, or the second would restore the first -- the
-	stale-read shape B240 removed from the collapse. Applied, too, so the invariant check below sees
-	the state that will actually be stored rather than one still carrying the debris.
-	*/
-	for (const w of debris) {
-		const step = [];
-		trimGroupsHolding(proj, w.id, step);
-		step.push({ op: 'del', kind: 'waypoint', id: w.id });
-		track(proj, step, out, inv);
-	}
-
-	/*
-	B215 -- a waypoint left with one link IN and one OUT is a BEND, so rejoin them.
-
-	A junction cannot exist with two links; that shape is a path passing through the point. Deleting
-	a link from a three-way junction leaves exactly it, and without this the waypoint stays a
-	junction -- the document remembering a gesture rather than describing what is on screen.
-
-	HERE, not in the client's delete command, which is where it was first written and wrong. Undo
-	and redo are computed server-side and never run a client command, so an undone split stayed
-	split; and the CLI and REST doors write through this planner without touching `commands.js` at
-	all. One rule, one place, every door.
-
-	THE INBOUND LINK'S ID SURVIVES. It is the half that kept the original id when the link was
-	split, so split-then-delete is a round trip back to the route the author drew rather than a
-	churn of identities.
-
-	ONLY WAYPOINTS THIS TRANSACTION TOUCHED, the same scope rule the sweep above uses and for the
-	same reason: collapsing a pre-existing two-link waypoint would rewrite a shape the caller never
-	mentioned and put that rewrite in its inverse.
-	*/
-	/*
-	ON LOSING A LINK, not on gaining one. The scope was "any waypoint at the end of any link this
-	transaction touched", which included CREATING one -- so drawing two links that met at a
-	waypoint collapsed them into a bend the moment the second was made, and the author could never
-	build a two-link terminus at all.
-
-	A collapse is a reaction to a shape being LEFT BEHIND. Only a removal can leave one.
-	*/
-	const touched = new Set();
-	for (const op of out) {
-		if (op.kind !== 'link' || op.op !== 'del') continue;
-		const e = op.entity || model.get('link', op.id);
-		if (!e) continue;
-		for (const end of [e.src, e.dst]) if (proj.get('waypoint', end)) touched.add(end);
-	}
-	/*
-	B269 -- ONLY WHERE A LINK LEFT. A deleted link that is replaced at the same waypoint -- a split puts its half back,
-	ending where it did -- leaves the count there as it was, and nothing was left behind; joining there rewrote a two-link
-	terminus nobody touched. Found in the lab: cutting a link at a second non-transiting pin joined the two links at the
-	first. So a waypoint joins only when this transaction lowered the number of links touching it.
-	*/
-	const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
-	for (const w of touched) {
-		const at = touching(proj, w);
-		if (at.length !== 2 || at.length >= touching(model, w).length) continue;
-		if (!joinsAt(w, proj)) continue;   // the network keeps them apart: transit is off here (TR-5)
-		/*
-		B222 -- PICK A PAIR, do not demand a stored orientation.
-
-		This chose `inbound` by `l.dst === w` and `outbound` by `l.src === w`, so two links that both
-		stored `w` as their src found no inbound and the collapse silently declined. Stored order is
-		which end the author dragged from; for an undeclared link it means nothing, and reading it
-		here made a bend's survival depend on a gesture several steps earlier.
-
-		The src side is the link that ENDS at the waypoint, preferred so the original id survives a
-		split-then-collapse round trip (B213). When neither ends here, `collapseAtWaypoint` orients
-		them; when both do, the other is flipped. Order within the pair is all that is decided here.
-		*/
-		const src = at.find((l) => l.dst === w) || at[0];
-		const other = at.find((l) => l !== src);
-		const merged = other ? collapseAtWaypoint(src, other, w) : null;
-		if (!merged) continue;
-		const inbound = src, outbound = other;
-		// `patch`, not `after` -- `after` is the COMMAND vocabulary and applyOps reads `patch`. The
-		// first version used the command spelling, so the del landed and the merge silently did not.
-		// SRC travels in the patch too. It never changed while the pair had to arrive stored in the
-		// right order, so writing only dst and via was sufficient; now that the src side may be
-		// flipped to face through the point, omitting it left the merged link still ending at the
-		// waypoint it was supposed to absorb.
-		// FLOW travels with SRC, for the same reason. A declaration is expressed relative to the
-		// stored order, so a flip that inverts `flow` in the merged object but does not write it
-		// leaves the document declaring the opposite of what the author meant -- silently, since
-		// every other field looks right. Omitted only when the link was undeclared.
-		const patch = { src: merged.src, dst: merged.dst, via: merged.via,
-			...(typeof merged.flow === 'boolean' ? { flow: merged.flow } : {}) };
-		/*
-		B239 -- a merge is TAKEN only if the link it produces passes the rules a requested write does.
-
-		The merged link is built from two valid halves, and that is not enough. Joining x->w to
-		w->y via [x] names x twice, and joining two halves can produce an endpoint pair another link
-		already bends through at a shared waypoint. The referential rules refuse both, and they are
-		deliberately outside `violations()` -- which was this write's only check. So the collapse
-		committed documents that `validateDoc` refuses, and the store skips a refused file at its next
-		boot: the whole diagram lost, from a delete the author made legally.
-
-		The SAME check a requested set receives, rather than a second copy of the rules, run against
-		the projection AS THE EARLIER MERGES LEFT IT (B240) -- a merge can be legal on the document
-		the transaction started from and illegal once a neighbouring merge has already produced the
-		link it would duplicate. Declining is safe: two links left meeting at the waypoint is a
-		two-link terminus, which is a legal state (B217) and exactly what the author would have had
-		without the collapse.
-
-		Checked with the absorbed half still present, because it cannot change the verdict: it always
-		ends at this waypoint and the merged link never does, so it never shares the merged link's
-		endpoint pair. The first version removed it from a whole-document copy per candidate, which
-		made a large delete about four times slower and produced byte-identical plans over 39,858
-		randomized transactions (H16 review).
-		*/
-		if (validateMutation(proj, { action: 'set', kind: 'link', entity: { ...patch, id: inbound.id } })) continue;
-		/*
-		The inverse is the core's (`track`, PL-2), and it reaches for `inverseOfSet`, which solves the case that bit here
-		when it was hand-written: a collapse INTRODUCES `via` on a link that had none, and restoring it with
-		`patch: { via: [] }` leaves an empty array where there was no key -- so the inverse is a `put` of the whole prior
-		link. Taken just before each op is applied, so applying the set, which rewrites `inbound` in place, cannot reach it.
-		*/
-		/*
-		B240 -- APPLIED AS IT IS DECIDED, so the next merge reads the document this one left.
-
-		The merges used to be collected and applied once, after the loop. Every merge after the first
-		therefore read its pair as the links stood before ANY merge. Delete the one link that made two
-		neighbouring waypoints junctions and both collapse: the second then rewrote a link the first had
-		already deleted, the set landed on nothing, and the far node was left with no link -- while the
-		transaction reported success and the document validated. Declared flow was judged against the
-		same stale links, so a convergence the matrix calls a junction was merged away.
-
-		This is the shape the planner already uses between requested ops: advance the projection, then
-		read it. The set of waypoints to consider is still fixed before the loop, so a merge's own
-		delete never becomes a trigger -- a valid merge carries both halves' references and cannot
-		leave a new candidate behind.
-		*/
-		track(proj, [{ op: 'del', kind: 'link', id: outbound.id }, { op: 'set', kind: 'link', id: inbound.id, patch }], out, inv);
-	}
+	const ctx = { before: model, doc: proj, ops: out, refuses: (op) => validateMutation(proj, asMutation(op)) };
+	for (const phase of PHASES) if (!PER_OP.has(phase)) runPhase(phase, ctx);
 
 	/*
 	B81 -- the document invariants, checked once against the state this transaction would produce.
@@ -424,6 +252,10 @@ export function plan(model, ops, options = {}) {
 	return { ok: true, ops: out, inverse: inv };
 }
 
+/*
+Phase 1 for one requested op: resolved, validated against the document as the ops before it left it, and narrowed to
+what it changes. Answers the op to apply, or none; `unchanged` marks a put of an entity already present byte for byte.
+*/
 function planOne(model, op) {
 	if (op.op === 'meta') return planMeta(model, op);
 
@@ -437,7 +269,7 @@ function planOne(model, op) {
 	`node-aa2222 and node-aa1111 occupy the same anchor (0,-60)`.
 
 	Additive by construction: resolution rewrites the op into exactly the `put` it would have been
-	handed, and everything below -- validation, planPut, the inverse, applyOps -- is untouched. A
+	handed, and everything below -- validation, the reactions, the inverse, the apply -- is untouched. A
 	refusal keeps plan()'s contract, so the set is refused whole and names the op that failed.
 	*/
 	if (op.op === 'place') {
@@ -447,16 +279,27 @@ function planOne(model, op) {
 	}
 
 	if (!['put', 'set', 'del'].includes(op.op)) return { ok: false, error: `unknown op '${op.op}'` };
-
-	// validateMutation speaks the legacy {action, kind, entity} shape; it is the trust boundary and
-	// is not being rewritten in this milestone.
-	const entity = op.op === 'del' ? { id: op.id } : (op.op === 'set' ? { ...op.patch, id: op.id } : op.entity);
-	const err = validateMutation(model, { action: op.op, kind: op.kind, entity });
+	const err = validateMutation(model, asMutation(op));
 	if (err) return { ok: false, error: err };
 
-	if (op.op === 'put') return planPut(model, op);
-	if (op.op === 'set') return planSet(model, op);
-	return planDel(model, op);
+	if (op.op === 'put') {
+		const before = model.get(op.kind, op.entity.id);
+		if (!before && model.all(op.kind).length >= MAX_COLLECTION[op.kind]) return { ok: false, error: `${op.kind} collection limit reached` };
+		const put = { op: 'put', kind: op.kind, entity: clone(op.kind, op.entity) };
+	// A put of an entity already present unchanged, with no group to steal from, changes nothing.
+	// Narrow it away — the same no-op rule a set and a delete follow (I6). This is what makes an
+	// outbox replay free: a request the server already accepted costs a no-op ack, not a second
+	// version bump and a second record for a document that did not move.
+		// -- unless it still displaces something (a group stealing members), which the core asks of the follow phase.
+		return { ok: true, op: put, unchanged: !!before && same(before, put.entity) };
+	}
+	if (op.op === 'set') {
+		const before = model.get(op.kind, op.id);
+		if (!before) return { ok: false, error: `set on missing entity: ${op.id}` };
+		const narrowed = narrow(op.kind, before, op.patch);
+		return { ok: true, op: Object.keys(narrowed).length ? { op: 'set', kind: op.kind, id: op.id, patch: narrowed } : null };
+	}
+	return { ok: true, op: { op: 'del', kind: op.kind, id: op.id } };
 }
 
 function planMeta(model, op) {
@@ -467,7 +310,7 @@ function planMeta(model, op) {
 	const meta = model.state.meta;
 	const next = {};
 	if (patch.name !== undefined && patch.name !== meta.name) next.name = patch.name;
-	return { ok: true, ops: Object.keys(next).length ? [{ op: 'meta', patch: next }] : [] };
+	return { ok: true, op: Object.keys(next).length ? { op: 'meta', patch: next } : null };
 }
 
 // Order-insensitive structural equality. An entity arriving from the wire may carry the same
@@ -481,116 +324,11 @@ function same(a, b) {
 	return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && same(a[k], b[k]));
 }
 
-function planPut(model, { kind, entity }) {
-	const before = model.get(kind, entity.id);
-	if (!before && model.all(kind).length >= MAX_COLLECTION[kind]) {
-		return { ok: false, error: `${kind} collection limit reached` };
-	}
-	const ops = [{ op: 'put', kind, entity: clone(kind, entity) }];
-
-	// "a node belongs to at most one group" — the rule existed ONLY in the browser
-	// (app/src/commands.js), so POST /groups admitted a node to two groups. It lives here now.
-	if (kind === 'group' && Array.isArray(entity.members)) {
-		for (const other of model.all('group')) {
-			if (other.id === entity.id) continue;
-			const kept = other.members.filter((m) => !entity.members.includes(m));
-			if (kept.length === other.members.length) continue;
-			const { remaining, dissolve } = groupAfterRemoval(other.members, (m) => entity.members.includes(m));
-			ops.push(dissolve ? { op: 'del', kind: 'group', id: other.id } : { op: 'set', kind: 'group', id: other.id, patch: { members: remaining } });
-		}
-	}
-	// A put of an entity already present unchanged, with no group to steal from, changes nothing.
-	// Narrow it away — the same no-op rule planSet and planDel follow (I6). This is what makes an
-	// outbox replay free: a request the server already accepted costs a no-op ack, not a second
-	// version bump and a second record for a document that did not move.
-	if (before && ops.length === 1 && same(before, ops[0].entity)) return { ok: true, ops: [] };
-	return { ok: true, ops };
-}
-
-function planSet(model, { kind, id, patch }) {
-	const before = model.get(kind, id);
-	if (!before) return { ok: false, error: `set on missing entity: ${id}` };
-	const narrowed = narrow(kind, before, patch);
-	if (!Object.keys(narrowed).length) return { ok: true, ops: [] };   // no-op
-	return { ok: true, ops: [{ op: 'set', kind, id, patch: narrowed }] };
-}
-
-/*
-A group loses a member: trimmed, or dissolved when it falls below two. The ops are appended to the caller's list, read
-against `model` as it stands; their inverses are the core's (PL-2).
-
-ONE FUNCTION FOR EVERY PATH THAT REMOVES A MEMBER (B241). It lived as a closure inside `planDel`, so a
-requested delete maintained membership and the orphan sweep -- the other path that deletes a
-waypoint -- did not. The sweep left a group listing a waypoint that no longer existed, which
-`violations()` cannot see and `validateDoc` refuses at the next boot. Two paths holding one duty is
-how one of them forgets it.
-*/
-function trimGroupsHolding(model, memberId, ops) {
-	for (const group of model.all('group')) {
-		if (!group.members.includes(memberId)) continue;
-		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => m === memberId);
-		ops.push(dissolve ? { op: 'del', kind: 'group', id: group.id } : { op: 'set', kind: 'group', id: group.id, patch: { members: remaining } });
-	}
-}
-
-function planDel(model, { kind, id }) {
-	const before = model.get(kind, id);
-	if (!before) return { ok: true, ops: [] };   // already gone — accepted, no-op
-	const ops = [];
-
-	if (kind === 'node') {
-		for (const link of model.linksOf(id)) ops.push({ op: 'del', kind: 'link', id: link.id });
-		trimGroupsHolding(model, id, ops);
-	}
-	if (kind === 'waypoint') {
-		/*
-		B81: stripping a waypoint can leave a link STRAIGHT, and a pair carries only one straight
-		link. Where the strip would produce a colliding duplicate the link is deleted with the
-		waypoint instead, in the same undoable step.
-
-		That matches the branch below it: a waypoint that is a link's ENDPOINT already deletes the
-		link rather than stripping it, on the same principle -- a link that cannot survive the
-		operation does not limp on in a degenerate form. Refusing the waypoint deletion outright
-		was the alternative and was rejected: being told you may not delete a waypoint because of
-		a link you were not thinking about is a worse answer than removing the link that could
-		not exist.
-
-		An EXISTING straight link outranks one that would be created by this strip, so the route
-		yields to the direct link rather than the reverse.
-		*/
-		const dying = new Set();
-		const stripped = [];
-		for (const link of model.linksAt(id)) {
-			if (link.src === id || link.dst === id) dying.add(link.id);
-			else stripped.push(link);
-		}
-		// the document as the strip leaves it, judged by the one predicate (RULESET-AUDIT T4): a stripped link replaces
-		// itself here, and a deleted one leaves, so each strip is judged after the ones before it
-		let standing = model.all('link').filter((l) => !dying.has(l.id));
-
-		for (const link of model.linksAt(id)) if (dying.has(link.id)) ops.push({ op: 'del', kind: 'link', id: link.id });
-		for (const link of stripped) {
-			const remaining = link.via.filter((w) => w !== id);
-			const after = { ...link, via: remaining };
-			if (pairHolders(after, standing, model).length) {
-				ops.push({ op: 'del', kind: 'link', id: link.id });
-				standing = standing.filter((l) => l.id !== link.id);
-				continue;
-			}
-			standing = standing.map((l) => (l.id === link.id ? after : l));
-			ops.push({ op: 'set', kind: 'link', id: link.id, patch: { via: remaining } });
-		}
-		trimGroupsHolding(model, id, ops);
-	}
-	ops.push({ op: 'del', kind, id });
-	return { ok: true, ops };
-}
-
 // ---- the one write ----
 
 export function commit(model, log, request, by = 'client', actor = null, options = {}) {
-	// a composition error is checked FIRST, so a refused request can never hide a half-plugged network
-	const network = plannerNetwork(options, 'commit');
+	// a composition error is checked FIRST, so a refused request can never hide a half-plugged plugin
+	composition(options, 'commit');
 	if (!request || typeof request !== 'object') return { ok: false, error: 'invalid request', version: log.version };
 	if (request.label !== undefined && !LABEL.test(String(request.label))) {
 		return { ok: false, error: 'invalid label', version: log.version };
@@ -599,7 +337,7 @@ export function commit(model, log, request, by = 'client', actor = null, options
 		return { ok: false, error: 'version conflict', version: log.version };
 	}
 
-	const planned = plan(model, request.ops, { network });
+	const planned = plan(model, request.ops, options);
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
 	/*

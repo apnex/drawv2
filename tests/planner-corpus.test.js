@@ -13,6 +13,7 @@ every accepted plan must restore the board (PR8; collection order aside, which i
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CASES, record, readGolden, GENERATED_PER_COMPOSITION } from './fixtures/planner-corpus.mjs';
+import { CLASSIC_LINKS } from '../server/tenants.mjs';
 
 const golden = readGolden();
 const runs = new Map(CASES.map((c) => [c.id, record(c)]));
@@ -47,7 +48,7 @@ test('undo of every accepted plan restores the board', () => {
 
 /*
 THE REACH, counted over the generated cases. The floors sit well under what the corpus reaches when it was written
-(production: sweep 45, join 38; network: stranded 96, sweep 145, join 34, join declined 50 -- of 1000 each), so they
+(production: sweep 45, join 38; network: stranded 96, sweep 145, join 34, join skipped 46 -- of 1000 each), so they
 fail on a pass that stopped firing, not on a tuned generator.
 */
 test('the generated cases reach the stranded pass, the sweep and the join, in each composition', () => {
@@ -60,7 +61,7 @@ test('the generated cases reach the stranded pass, the sweep and the join, in ea
 		stranded: (r) => r.reach.stranded > 0,
 		swept: (r) => r.reach.swept > 0,
 		joined: (r) => r.reach.joined > 0,
-		joinDeclined: (r) => r.reach.joinAsked > r.reach.joined,
+		joinDeclined: (r) => r.reach.joinSkipped > 0,
 		multiOpAccepted: (r) => r.golden.result.ok && r.golden.result.ops.length > 1,
 		refused: (r) => r.reach.refused,
 	};
@@ -70,7 +71,7 @@ test('the generated cases reach the stranded pass, the sweep and the join, in ea
 			assert.ok(n >= floor, `${compose}: ${name} in ${n} generated cases, under the floor of ${floor}`);
 		}
 	}
-	assert.equal(count('production', (r) => r.reach.stranded > 0 || r.reach.joinAsked > 0), 0, 'production asks no network');
+	assert.ok(!CLASSIC_LINKS.reactions.some((r) => r.phase === 'stranded'), 'production strands nothing: its tenant has no stranded pass');
 });
 
 test('the named cases fire the pass each is named for', () => {

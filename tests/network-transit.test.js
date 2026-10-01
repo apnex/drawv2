@@ -148,6 +148,7 @@ X3 -- pins and guides at a non-transiting anchor (TR-2, TR-2b, TR-3).
 */
 import { cutAt, joinAt } from '../network/transit.mjs';
 import { applyOps } from '../model/ops.mjs';
+import { plan } from '../server/txn.mjs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 
 function pinned() {
@@ -232,14 +233,24 @@ test('Input commits the pieces a judge names as ONE edit, pinned between the cut
 });
 
 /*
-X4 -- the planner asks the network whether two links left at a waypoint may join (TR-5). And X5, folded in: the type
-table holds for routing as for the toggle -- each type in it, as a node a link's only way runs through.
+X4 -- two links left at a waypoint join only where its transit is on (TR-5): a condition inside the network tenant's
+join reaction (PL-3; it was the hook `joinsAt`). And X5, folded in: the type table holds for routing as for the
+toggle -- each type in it, as a node a link's only way runs through.
 */
 test('X4: the network lets two links join at a waypoint only where its transit is on', () => {
-	const { s, m } = board();
-	assert.equal(s.network.joinsAt('waypoint-00000d', m), true);
-	s.toggleTransit([W]);
-	assert.equal(s.network.joinsAt('waypoint-00000d', m), false);
+	const joined = (off) => {
+		const { s, m } = board();
+		// a junction at w: A -> w, w -> B, w -> H; deleting w -> H leaves two links meeting at w
+		m.put('link', { id: 'link-000002', name: 'aw', src: 'node-00000a', dst: 'waypoint-00000d' });
+		m.put('link', { id: 'link-000003', name: 'wb', src: 'waypoint-00000d', dst: 'node-00000b' });
+		m.put('link', { id: 'link-000004', name: 'wh', src: 'waypoint-00000d', dst: 'node-00000c' });
+		if (off) s.toggleTransit([W]);
+		const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: s.network.links });
+		assert.equal(r.ok, true);
+		return r.ops.some((o) => o.op === 'set' && o.kind === 'link' && 'src' in o.patch);
+	};
+	assert.equal(joined(false), true, 'transit on: the two links join into one');
+	assert.equal(joined(true), false, 'transit off: what arrives stops, so they stay two');
 });
 
 test('X5: every type routes as the table says -- routers, firewalls and vxlans pass; load balancers, servers and hosts do not', () => {

@@ -194,7 +194,7 @@ history.onCommit((request) => {
 		: request.verb === 'redo' ? redo(authority, log)
 		// the same network: pipes reference anchors, only links and hand pipes keep one, and a link that loses a pin with no
 		// other way goes whole (2026-09-29) -- all judged over the pipes that survive the edit
-		: commit(authority, log, request, 'lab', 'lab', { network });
+		: commit(authority, log, request, 'lab', 'lab', { links: network.links });
 	/*
 	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE -- applied by the session once it has laid the drag's pipes, so the
 	link is drawn along them from its first frame (network/session.mjs `answered`).

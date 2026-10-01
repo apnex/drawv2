@@ -318,8 +318,8 @@ const MUTANTS = [
 	{ id: 'A6c', rule: 'L7k', edits: [{ file: 'server/validate.js', replace: ['const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;', 'const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$|^pipe-[0-9a-f]{6}$/;'] }] },
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	{ id: 'A5', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { violations } from './invariants.mjs';\n" },
-		{ file: 'server/txn.mjs', replace: ["import { projection, requireNetwork, refuseStrayOptions } from '../model/model.mjs';", "import { projection, requireNetwork, refuseStrayOptions } from '../model/model.mjs';\nimport { violations } from '../model/index.mjs';"] },
-		{ file: 'server/txn.mjs', replace: ["import { violations, collapseAtWaypoint, pairHolders } from '../model/invariants.mjs';", "import { collapseAtWaypoint, pairHolders } from '../model/invariants.mjs';"] }] },
+		{ file: 'server/txn.mjs', replace: ["import { projection } from '../model/model.mjs';", "import { projection } from '../model/model.mjs';\nimport { violations } from '../model/index.mjs';"] },
+		{ file: 'server/txn.mjs', replace: ["import { violations } from '../model/invariants.mjs';\n", ''] }] },
 	/*
 	K2a: the second edit is gone. It existed only to keep L10 quiet -- `model/index.mjs` was in the
 	planner's unused list, so a new re-export there needed listing too, or the mutant would have
@@ -512,9 +512,12 @@ test('H17 K2a: the K0 closure is frozen, and it is the one K0 recorded', () => {
 	assert.equal(crypto.createHash('sha256').update(JSON.stringify(k0)).digest('hex'),
 		'e33332244fa80fbb00c6eded142da974cd148458d4c9102510134b2a1c4502e1');
 
-	// it is a FROZEN BEFORE-state, so it must be a superset of what the entry loads now
+	// it is a FROZEN BEFORE-state, so it must be a superset of what the entry loads now -- but for modules that did not
+	// exist at K0 (PL-3's split of the planner), declared by name, each a file the frozen list could not have held
 	const now = new Set(ENTRIES.planner.modules);
-	const missing = [...now].filter((m) => !k0.includes(m));
+	const arrived = UNUSED_EXPORTS.planner.arrived;
+	assert.deepEqual(arrived.filter((m) => k0.includes(m)), [], 'an arrival is a file K0 did not have');
+	const missing = [...now].filter((m) => !k0.includes(m) && !arrived.includes(m));
 	assert.deepEqual(missing, [], 'a module the entry loads today was not in the K0 closure -- the frozen list is wrong, not stale');
 });
 
@@ -716,7 +719,8 @@ file list goes stale (B224).
 const INCUBATOR = 'network/';
 // `tools/gesture-table.mjs` by exact path, added with T3: it generates the network's gesture table in the design docs
 // from the plugin's own rows (P3), and nothing served imports it -- a reader of the incubator, not a promotion of it
-const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs'];
+// and `tools/reaction-table.mjs`, added with PL-3: it generates the planner's reaction table, the network tenant's included
+const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

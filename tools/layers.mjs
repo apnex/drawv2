@@ -95,11 +95,13 @@ export const LAYER = {
 	],
 	network: [
 		'model/invariants.mjs', 'model/referential.mjs',   // the link rules and references; to network/ at K13b
+		'model/link-reactions.mjs',   // the link reactions the planner runs, and `linkTenant`, which builds production's and the network's (PL-3)
 		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
 		'engine/ivm.mjs',                                  // the index's generic mechanism; relations.mjs is its only user
 	],
 	planner: [
 		'server/txn.mjs', 'server/log.mjs', 'server/validate.js',
+		'server/tenants.mjs',   // the product's tenants of the planner: groups, and classic links until promotion (PL-3)
 		'engine/policy.mjs',     // group policy the planner applies (groupAfterRemoval, collectionCap); moves with the planner at K4
 	],
 	canvas: [
@@ -194,16 +196,18 @@ export const ENTRIES = {
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/index.mjs', 'model/invariants.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
+			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
 		],
 	},
 	planner: {
 		roots: ['server/txn.mjs', 'server/log.mjs'],
-		surface: { 'server/txn.mjs': ['plan', 'commit', 'undo', 'redo'], 'server/log.mjs': ['Log'] },
+		surface: { 'server/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'server/log.mjs': ['Log'] },
 		modules: [
 			'engine/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs',
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
+			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
 		],
 	},
 };
@@ -693,6 +697,12 @@ export const UNUSED_EXPORTS = {
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'server/anchor.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
 		],
+		/*
+		Modules the planner loads that did not EXIST at K0, so cannot be in its frozen closure: PL-3 split the reactions
+		out of `server/txn.mjs` into new files (dev/design/planner/PLANNER-SYSTEM.md). An arrival is not a departure and
+		admits no name; a module that existed at K0 and is missing from the frozen list still fails K2a.
+		*/
+		arrived: ['model/link-reactions.mjs', 'server/tenants.mjs'],
 		list: {
 			'kernel/geometry.mjs': {
 				'rebuild-debt': [

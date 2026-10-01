@@ -65,7 +65,7 @@ answer is exactly what it always was.
 A HALF-PLUGIN IS AN ERROR, never a quiet fall-back: a network missing a method its consumer reads throws at
 construction, naming it, and so does an option under a retired hook name, which would otherwise be ignored.
 */
-export function requireNetwork(network, reads, who) {
+function requireNetwork(network, reads, who) {
 	if (network == null) return null;
 	const missing = reads.filter((name) => typeof network[name] !== 'function');
 	if (missing.length) throw new Error(`${who}: the network does not provide ${missing.join(', ')} -- a network is composed whole or not at all (RULESET-AUDIT T1)`);
@@ -73,7 +73,7 @@ export function requireNetwork(network, reads, who) {
 }
 
 // every option a consumer does not read is refused -- a retired hook name above all, which would leave the plugin half-composed
-export function refuseStrayOptions(rest, who) {
+function refuseStrayOptions(rest, who) {
 	const stray = Object.keys(rest);
 	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- the network plugs in as one object, { network } (RULESET-AUDIT T1)`);
 }
