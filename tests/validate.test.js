@@ -310,7 +310,7 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	const src = fs.readFileSync(new URL('../server/validate.js', import.meta.url), 'utf8');
 	assert.doesNotMatch(src, /^const OPTIONAL\s*=/m,
 		'a local OPTIONAL is the duplicate shape.mjs has always claimed to have replaced');
-	assert.match(src, /import \{ OPTIONAL \} from '\.\.\/model\/shape\.mjs'/, 'it imports the one map');
+	assert.match(src, /import \{[^}]*\bOPTIONAL\b[^}]*\} from '\.\.\/model\/shape\.mjs'/, 'it imports the one map');
 	const txn = fs.readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');

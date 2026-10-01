@@ -6,7 +6,7 @@ pushed document is validated for shape, ranges, and referential integrity.
 
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { SELECTABLE_KINDS } from '../model/model.mjs';
-import { OPTIONAL } from '../model/shape.mjs';
+import { OPTIONAL, KINDS, COLLECTION } from '../model/shape.mjs';   // the kind table (PL-5)
 import { linkReferential, groupReferential, waypointOwners } from '../model/referential.mjs';
 import { NAME_MAX, CAPTION_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
@@ -56,7 +56,6 @@ export const DOCUMENT_ID = /^(diagram|template)-[0-9a-f]{6}$/;
 // DERIVED from the model's list, which used to be pinned to this line by a comment reading
 // "MUST match server/validate.js SELECTABLE" -- a comment doing a check's job (B86).
 const SELECTABLE = new RegExp(`^(${SELECTABLE_KINDS.join('|')})-[0-9a-f]{6}$`);
-const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 const ACTIONS = ['put', 'set', 'del'];
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
 // center-origin coordinates: [0,0] is the canvas/slide center
@@ -418,8 +417,8 @@ export function validateDoc(doc) {
 
 
 	const seen = new Set();
-	const collections = { node: 'nodes', waypoint: 'waypoints', link: 'links', zone: 'zones', group: 'groups' };
-	for (const [kind, key] of Object.entries(collections)) {
+	for (const kind of KINDS) {
+		const key = COLLECTION[kind];
 		const list = doc[key] || [];
 		if (!Array.isArray(list)) return `${key} is not an array`;
 		if (list.length > CAP[kind]) return `${key} exceeds entity limit`;

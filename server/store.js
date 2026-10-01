@@ -24,6 +24,7 @@ import { Log } from './log.mjs';
 import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
+import { KINDS, COLLECTION } from '../model/shape.mjs';   // the kind table (PL-5)
 
 const FLUSH_MS = 200;
 
@@ -146,7 +147,7 @@ read, and the document is written back with it. Nothing downstream needs to tole
 function migrateNames(doc) {
 	let changed = false;
 	const taken = new Set();
-	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+	for (const k of KINDS.map((kind) => COLLECTION[kind])) {
 		for (const e of doc[k] || []) if (e && typeof e.name === 'string') taken.add(e.name);
 	}
 	const mint = (prefix) => {

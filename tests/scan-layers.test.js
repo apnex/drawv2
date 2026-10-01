@@ -299,7 +299,8 @@ const MUTANTS = [
 	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\n" }] },
 	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/situation.mjs')).situationOf; }\n" }] },
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
-	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/model.mjs', replace: ["const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];", "const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
+	// PL-5: the kind list's one literal is model/shape.mjs's table now, so the planted sixth kind goes there
+	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];", "export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
 	{ id: 'M5', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/all.mjs', create: "export * from './geometry.mjs';\nexport * from './spec.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf } from '../../kernel/all.mjs';\n" }] },
 	{ id: 'M6', rule: 'L11', edits: [{ file: 'app/src/input.js', append: '\nexport function __m6() { return window.draw.sync.submit({ ops: [] }); }\n' }] },

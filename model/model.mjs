@@ -8,13 +8,11 @@ Ported verbatim from client/src/model.js — the document model + wire format st
 across the kernel migration; only render/geometry are re-platformed onto the kernel.
 */
 
-const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
-const KEY = { node: 'nodes', waypoint: 'waypoints', link: 'links', zone: 'zones', group: 'groups' };
-// the selectable kinds: a group or a diagram is never selected directly. EXPORTED because
-// server/validate.js builds its id regex from this list -- it used to carry its own copy, pinned
-// to this line by a comment reading "MUST match server/validate.js SELECTABLE", which is a
-// comment doing a check's job (B86).
-export const SELECTABLE_KINDS = ['node', 'waypoint', 'link', 'zone'];
+// the kinds, their collections and which are selectable: one table, model/shape.mjs (PL-5). SELECTABLE_KINDS is
+// re-exported because server/validate.js builds its id regex from it -- it used to carry its own copy, pinned to a line
+// here by a comment reading "MUST match server/validate.js SELECTABLE", which is a comment doing a check's job (B86).
+import { KINDS, COLLECTION as KEY, SELECTABLE_KINDS } from './shape.mjs';
+export { SELECTABLE_KINDS };
 const SELECTABLE = new Set(SELECTABLE_KINDS);
 
 /*
@@ -112,11 +110,7 @@ export class Model {
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
 			// An empty owner means unowned, which is what every diagram predating H9 is.
 			meta: { id: '', name: 'untitled', version: 0, schema: 1, owner: '', grants: {} },
-			nodes: {},
-			waypoints: {},
-			links: {},
-			zones: {},
-			groups: {},
+			...Object.fromEntries(KINDS.map((k) => [KEY[k], {}])),   // one collection per kind (model/shape.mjs)
 			selection: new Set(),  // model-state (status): the authoritative selected-id set (MS1). NOT a KIND — round-trips as doc.selection, never via the KINDS loops.
 			/*
 			H14.4 -- the reveal, when the document carries one. Null is the normal case and means

@@ -11,6 +11,7 @@ import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/index.mjs';
 import { NODE_EXT } from '../model/index.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
+import { KINDS } from '../model/shape.mjs';   // the kind table (PL-5)
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -47,7 +48,7 @@ export function announceActivity(hub, store, locks) {
 
 // which collection an id belongs to, without the caller having to say
 function entityIn(model, id) {
-	for (const kind of ['node', 'waypoint', 'link', 'zone', 'group']) {
+	for (const kind of KINDS) {
 		const entity = model.get(kind, id);
 		if (entity) return { kind, entity };
 	}

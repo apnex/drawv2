@@ -467,12 +467,9 @@ export const RATCHETS = {
 		'kernel/router.mjs:routeGeometry': 1,
 	},
 	L7k: {
+		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and server/validate.js to 0: they read model/shape.mjs
 		'cli/verbs.mjs': 11,
 		'kernel/adapt.mjs': 2,
-		'model/model.mjs': 1,
-		'server/rest.js': 1,
-		'server/store.js': 1,
-		'server/validate.js': 1,
 	},
 	L9: {
 		'app/src/commands.js:groupAfterRemoval': 1,

@@ -1276,3 +1276,23 @@ test('B272: a paced commit reveals only the entities it created', () => {
 	const both = commit(m, log, { label: 'both', pace: 500, ops: [nd('node-00000a', 'again', 0), nd('node-00000b', 'b', 120)] }, 'x', 'x', { now: () => 2000 });
 	assert.deepEqual(both.change.reveal.beats.map((b) => b.ids), [['node-00000b']], 'only the node it created');
 });
+
+/*
+PL-5 -- ONE KIND TABLE (model/shape.mjs; ruled 2026-10-01: one table now, injection at promotion's format batch, B273).
+Every list of the kinds in the planner and the server reads it; the id grammar is the one literal kept, pinned by C3,
+and it must agree with the table. The thresholds keep their own authority (engine/policy.mjs) but cover the same kinds.
+*/
+test('PL-5: the kind table is the one list of kinds, and what still states them agrees with it', async () => {
+	const { KINDS, COLLECTION, SELECTABLE_KINDS, COMPOSITE, OPTIONAL } = await import('../model/shape.mjs');
+	const { collectionCap } = await import('../engine/policy.mjs');
+	const fs = await import('node:fs');
+	assert.deepEqual(KINDS, ['node', 'waypoint', 'link', 'zone', 'group']);
+	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
+	assert.deepEqual(SELECTABLE_KINDS, ['node', 'waypoint', 'link', 'zone'], 'a group is never selected directly');
+	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
+	const grammar = fs.readFileSync(new URL('../server/validate.js', import.meta.url), 'utf8').match(/const ID = \/\^\(([^)]*)\)/)[1].split('|');
+	assert.deepEqual(grammar.filter((w) => !['diagram', 'template'].includes(w)), KINDS, 'the id grammar names exactly the table\'s kinds');
+	// a Model's collections are the table's, in its order
+	const m = new Model();
+	assert.deepEqual(Object.keys(m.toJSON()).filter((k) => Object.values(COLLECTION).includes(k)), KINDS.map((k) => COLLECTION[k]));
+});

@@ -1505,3 +1505,9 @@ Do not deploy to production yet - we will validate in lab".
 - PD-6: beats and the reveal become a record extension around the core, with the clock passed in.
 Every stage is validated in the lab; the production deploy waits for the director.
 
+**PL-5: one kind table now; injecting it waits for promotion's format batch -- ruled 2026-10-01.**\
+Asked whether PL-5 should inject the entity kinds into each composition, gather them into one table, or be skipped, the director chose "One table, inject later" (recommended).
+- The five kinds, their collections, whether each is selectable, and their nested and optional fields are one table, `model/shape.mjs`, which every list of the kinds in the planner and the server reads.
+- The id grammar stays a literal pinned by C3, and each kind's field checks stay at the trust boundary in `server/validate.js`.
+- Injection -- a composition passing its own kinds, so the lab could add `pipe` -- has no user until pipes become a stored kind, so it is held as B273 with that trigger; G7 and the C3 guard stand unchanged.
+
