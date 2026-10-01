@@ -174,6 +174,7 @@ AMENDED 2026-10-01: K11 done as K13a's prerequisite -- the SVG scene split from 
 AMENDED 2026-10-01: K13a done -- geometry splits into the grid (core), network roles and network appearance; the core exports no network name. Next K14a (B244, H17.4).\
 AMENDED 2026-10-01: K14a done -- a deleted ring takes its end waypoints (B244, H17.4). Next B246 (H17.6).\
 AMENDED 2026-10-01: K15 done -- every peer answers link queries in id order (B246, H17.6).\
+AMENDED 2026-10-01: B250 done (H17.19), its trigger having fired unattended at K10; the plan's rows for K3, K10, K13c, K14b and K17 reconciled with the work that did them. Next K5, then K16.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -930,6 +931,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.16 | A refused commit changes nothing: every refusal is decided before the document is touched | **B270** | S2 | `DONE` |
 | H17.17 | A partial repair of an existing violation is accepted: the backstop compares violations, not their sentences | **B271** | S3 | `DONE` |
 | H17.18 | A beat reveals only what its commit created: a paced rename no longer withholds an entity already on screen | **B272** | S3 | `DONE` |
+| H17.19 | A skipped test fails CI: the gate names every test that did not run, so the browser suites cannot stop silently | **B250** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
@@ -953,8 +955,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
-| **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | K15 lands, or a stacking difference between peers is reported |
-| **B250** | S4 | CI does not fail when tests are skipped (F-SKIP) | K10's browser tests land |
+| **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | the director rules how entities stack -- the old trigger, K15 landing, fired 2026-10-01 and the ruling was asked |
 | **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |

@@ -44,3 +44,5 @@ deploy/
 
 # a connection code is a credential -- it lives outside the repo (see B223)
 key
+# B250: the TAP record `npm test` writes for tools/scan-skips.mjs -- regenerated on every run
+.test-results.tap
