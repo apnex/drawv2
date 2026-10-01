@@ -63,6 +63,16 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	// dev/PRODUCTION-UPGRADE.md names the URLs an audit requests -- served paths, some deliberately 404 -- not repository files
+	'dev/PRODUCTION-UPGRADE.md:/engine/index.mjs': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/kernel/index.mjs': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/model/index.mjs': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/planner/txn.mjs': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/server/anchor.mjs': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/server/identity.mjs': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/server/store.js': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/style.css': 'a URL the production audit requests, not a repository path',
+	'dev/PRODUCTION-UPGRADE.md:/tokens.css': 'a URL the production audit requests, not a repository path',
 	/*
 	K4 (2026-10-01, H17-D5) moved the planner into its own folder, `planner/`. Records written while these paths lived
 	cite them -- rows, rulings, deletion registers, audits, specs with line numbers true of the file as it was -- and M4

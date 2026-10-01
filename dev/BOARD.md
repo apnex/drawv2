@@ -187,6 +187,7 @@ AMENDED 2026-10-01: H15.23 done -- one colour registry in `kernel/theme.mjs`, th
 AMENDED 2026-10-01: B275 ruled and fixed (H15.24) -- the export's labels match the canvas.\
 AMENDED 2026-10-01: B163 ratified and closed (H10.34); the goals framework is `VISION.md`. No decision is owed.\
 AMENDED 2026-10-01: the readout is canvas, built by `composeCanvas`; the last layer-debt edge is gone and L2's records are empty.\
+AMENDED 2026-10-01: production-upgrade considerations are tracked in `dev/PRODUCTION-UPGRADE.md` (B276), added in the commit that creates each; read in full at a production audit.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -966,6 +967,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B273** | S4 | The kind table is shared, not injected: a composition cannot add a kind, so pipes wait for promotion | promotion's format batch, or any sixth stored kind |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
+| **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | promotion's format batch -- ruled 2026-10-01: newest drawn on top, stored drawing order |
