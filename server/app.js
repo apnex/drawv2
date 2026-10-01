@@ -241,9 +241,14 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	if (!hasClient) console.log('[ app ] no client directory found -- running API-only');
 	// the new thin UI + kernel mounts only advertise when present (absent in API-only / partial images)
 	const hasApp = fs.existsSync(path.join(appDir, 'index.html'));
-	const hasKernel = fs.existsSync(path.join(kernelDir, 'index.mjs'));
-	const hasEngine = fs.existsSync(path.join(engineDir, 'index.mjs'));
-	const hasModel = fs.existsSync(path.join(modelDir, 'index.mjs'));
+	/*
+	K2c (H17-D4, review finding 1): a module folder is mounted because the FOLDER exists. It was mounted only when its
+	`index.mjs` barrel did, so deleting the barrels would have unmounted the kernel, the engine and the model, and the
+	page would have loaded nothing. tests/server.test.js "K2c" fetches one module from each.
+	*/
+	const hasKernel = fs.existsSync(kernelDir);
+	const hasEngine = fs.existsSync(engineDir);
+	const hasModel = fs.existsSync(modelDir);
 
 	const server = http.createServer(async (req, res) => {
 		req.url = throughTheAgentDoor(req.url);

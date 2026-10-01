@@ -893,7 +893,17 @@ const rules = {
 			*/
 			const vacated = new Map(), claimed = new Map();
 			for (const k of baseline) if (!exportsOf(modOf(k)).has(nameOf(k))) vacated.set(nameOf(k), (vacated.get(nameOf(k)) ?? 0) + 1);
-			for (const k of listed.keys()) if (!baseline.has(k)) claimed.set(nameOf(k), (claimed.get(nameOf(k)) ?? 0) + 1);
+			/*
+			K2c -- A VACATED PLACE IS TAKEN BY THE NAME'S REAL HOME, wherever in the product that is. Deleting the three
+			barrels vacated every name they re-exported, about ninety, though they DEFINED only two (`render` and `check`,
+			which moved). Counted against listed entries alone, each vacancy stood open, and any new export reusing one of
+			those spellings was admitted -- A14 got through. So each product module that exports the name now, outside the
+			baseline, claims a place: `cellOf`'s is taken by kernel/geometry.mjs, `render`'s by server/svg.mjs, `check`'s
+			by kernel/grc.mjs, and nothing is left over for a borrowed spelling. A tightening: it admits nothing new.
+			*/
+			const homes = new Set();
+			for (const m of Object.keys(layerOf)) if (M.PRODUCT_LAYERS.includes(layerOf[m])) for (const n of exportsOf(m)) if (vacated.has(n) && !baseline.has(`${m}:${n}`)) homes.add(`${m}:${n}`);
+			for (const k of new Set([...homes, ...[...listed.keys()].filter((x) => !baseline.has(x))])) claimed.set(nameOf(k), (claimed.get(nameOf(k)) ?? 0) + 1);
 			/*
 			C2(c) EXTENDED, ruled by the director at K2a: A CONSUMER LEAVING THE CLOSURE ALSO VACATES.
 

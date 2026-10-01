@@ -64,6 +64,24 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
 	/*
+	K2c (2026-10-01) deleted the three barrels, `kernel/index.mjs`, `engine/index.mjs` and `model/index.mjs` (H17-D4). These
+	records name them as they stood when written -- dated rows, rulings and audits that M4 forbids rewriting -- not as live
+	paths to read.
+	*/
+	'dev/BACKLOG.md:engine/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/BACKLOG.md:kernel/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/BACKLOG.md:model/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/COMMIT-DELETIONS.md:engine/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/COMMIT-DELETIONS.md:kernel/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/COMMIT-DELIVERY.md:model/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/DECISIONS.md:engine/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/DECISIONS.md:kernel/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/DECISIONS.md:model/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/design/h17/PLAN.md:kernel/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'dev/history/COMMIT-AUDIT.md:model/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'docs/spec/TRANSACTIONS.md:engine/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	'docs/spec/TRANSACTIONS.md:model/index.mjs': 'deleted at K2c (H17-D4); a dated record naming it as it stood',
+	/*
 	The link-model bake-off of 2026-09-25 ran in a session scratch directory, not in the repository:
 	its models, suite, judge probes and measurement harness were throwaway instruments, and only their
 	RESULTS were landed, in `dev/design/unification/BAKEOFF-LINK.md`, which says so in its header. The

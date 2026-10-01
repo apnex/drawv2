@@ -4,6 +4,16 @@
 // bend at one (attachment), but it is NOT a solid obstacle (a path threads through it).
 import { bboxOf } from './geometry.mjs';
 import { segmentsOf } from './router.mjs';
+import { resolve } from './engine.mjs';
+
+/*
+A schema checked against the rules: the kernel's core (`resolve`) handed to `grc`. K2c moved it here from the kernel's
+barrel, which defined it and which K2c deleted (H17-D4); it has no caller, which K12 judges with the rest of this file.
+*/
+export function check(schema) {
+	const { V, L, scene } = resolve(schema);
+	return grc(scene, V, L);
+}
 
 const onGrid = (v, step) => Math.abs(v / step - Math.round(v / step)) < 1e-6;
 const frac = (v) => Math.abs(v - Math.round(v)) > 1e-6;

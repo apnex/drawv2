@@ -308,9 +308,9 @@ const MUTANTS = [
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
 	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { collectionCap as __c } from '../engine/policy.mjs?v';\n" }] },
 	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/situation.mjs')).situationOf; }\n" }] },
-	// K2b: snap.js reads its definers now, so the attack moves to a file that still imports a barrel (render, until K2c)
-	{ id: 'A24b', rule: 'L4', edits: [{ file: 'server/svg.mjs', replace: ["from '../kernel/index.mjs';", "from '../kernel/index.mjs?';"] },
-		{ file: MAN, replace: ["\t\t'server/svg.mjs -> kernel/index.mjs': 1,\n", ''] }] },
+	// K2c: no barrel is left to re-point, so the attack plants one and imports it through a suffix; the new file also fails L1
+	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { cellOf } from './geometry.mjs';\n" },
+		{ file: 'app/src/snap.js', append: "\nimport { cellOf as __c } from '../../kernel/index.mjs?';\n" }] },
 	// a record raised with its violation; a new export borrowing a baseline name into the L10 list
 	{ id: 'A9', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/situation.mjs')).situationOf; }\n" },
 		{ file: MAN, replace: ["'app/src/input.js -> engine/situation.mjs': 1,", "'app/src/input.js -> engine/situation.mjs': 2,"] }] },
@@ -319,16 +319,15 @@ const MUTANTS = [
 	// the second alternative of the id grammar
 	{ id: 'A6c', rule: 'L7k', edits: [{ file: 'server/validate.js', replace: ['const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;', 'const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$|^pipe-[0-9a-f]{6}$/;'] }] },
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
-	{ id: 'A5', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { violations } from './invariants.mjs';\n" },
-		{ file: 'server/txn.mjs', replace: ["import { projection } from '../model/model.mjs';", "import { projection } from '../model/model.mjs';\nimport { violations } from '../model/index.mjs';"] },
-		{ file: 'server/txn.mjs', replace: ["import { violations } from '../model/invariants.mjs';\n", ''] }] },
+	// K2c: with the barrels gone, a core module that starts forwarding network code IS a new barrel, so it fails L4 too
+	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { violations } from './invariants.mjs';\n" }] },
 	/*
 	K2a: the second edit is gone. It existed only to keep L10 quiet -- `model/index.mjs` was in the
 	planner's unused list, so a new re-export there needed listing too, or the mutant would have
 	failed two rules and `fails` asserts exactly one. K2a took every barrel out of the planner
 	closure, so the barrel is no longer listed and the re-export alone is the mutant.
 	*/
-	{ id: 'A5b', rule: 'L2', edits: [{ file: 'model/index.mjs', append: "export { situationOf } from '../engine/situation.mjs';\n" }] },
+	{ id: 'A5b', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { situationOf } from '../engine/situation.mjs';\n" }] },
 	// a rule primitive taken from a namespace, and from import(), by destructuring
 	{ id: 'A12a', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nimport * as __inv from '../../model/invariants.mjs';\nconst { collapseAtWaypoint: __cw } = __inv;\n" }] },
 	{ id: 'A12c', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nexport async function __a12() { const m = await import('../../model/invariants.mjs'); const { collapseAtWaypoint } = m; return collapseAtWaypoint; }\n" }] },
@@ -543,7 +542,10 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 
 	for (const k of arrivals) {
 		const mod = k.slice(0, k.lastIndexOf(':')), name = k.slice(k.lastIndexOf(':') + 1);
-		const src = departed.map((m) => fs.readFileSync(path.join(root, m), 'utf8')).join('\n');
+		// K2c deleted the three barrels (H17-D4), so they are departed and gone; every other departed module still exists
+		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
+		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'kernel/index.mjs', 'model/index.mjs'], 'only the barrels H17-D4 deleted may be missing');
+		const src = departed.filter((m) => !gone.includes(m)).map((m) => fs.readFileSync(path.join(root, m), 'utf8')).join('\n');
 		assert.match(src, new RegExp(`\\b${name}\\b`),
 			`${k} joined the list, and no module the closure dropped mentions ${name} -- it is a borrowed spelling, which C2(c) refuses`);
 	}

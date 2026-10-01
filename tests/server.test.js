@@ -1290,3 +1290,17 @@ test('B34: the websocket broadcasts selection too — the gap between the transp
 	assert.ok(evt.body.actor, 'and by whom');
 	a.close(); b.close();
 });
+
+/*
+K2c -- each mounted folder serves its modules because the FOLDER exists, not because a barrel does. The mounts were
+advertised only when `<folder>/index.mjs` was present (server/app.js), so deleting the barrels (H17-D4) would have
+quietly unmounted the kernel, the engine and the model, and the product page would have loaded nothing (review
+finding 1). One real module per folder, by the path the page imports it from.
+*/
+test('K2c: every mounted folder serves its modules, with no barrel in it', async () => {
+	for (const p of ['/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs']) {
+		const res = await fetch(base + p);
+		assert.equal(res.status, 200, `${p} is served`);
+		assert.match(res.headers.get('content-type'), /javascript/, `${p} as a module`);
+	}
+});

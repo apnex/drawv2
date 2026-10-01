@@ -18,19 +18,19 @@ are vendored into `theme.mjs`.
 | `theme.mjs`     | **the visual-iterate surface**: style tokens, vendored glyph `<defs>`, `GLYPH_BB`, scene CSS. |
 | `renderer.mjs`  | scene → SVG (consumes `theme`; renders the waypoint). No layout decisions. |
 | `engine.mjs`    | `resolve(schema)` → scene. Places containers from cells; threads routes through cell-centre anchors. |
-| `grc.mjs`       | the DRC: 7 rules (grid-snap · clearance · attachment · reserve · ortho · obstacle · overlap) + crossings metric. |
-| `index.mjs`     | **the public API** — import from here only. |
+| `grc.mjs`       | the DRC: 7 rules (grid-snap · clearance · attachment · reserve · ortho · obstacle · overlap) + crossings metric, and `check(schema)`. |
 | `fixtures.mjs`  | canonical scenes in the schema (reference · routing · clover). |
 | `view.mjs`      | the spec/reference viewer → `kernel/out/spec.{html,png}` + a console self-check. |
 
-## Public API (`index.mjs`)
+## Where each name lives
+
+There is no barrel: every caller imports a name from the module that defines it (H17-D4, deleted at K2c).
+The three entry points:
 
 ```js
-import { resolve, render, check, STD, L_STD, derive, BEND_R } from './kernel/index.mjs';
-
-resolve(schema)  // → { V, L, scene, byId }   the deterministic core
-render(schema)   // → SVG string               (resolve → renderer)
-check(schema)    // → [{ rule, pass, why }]     (resolve → GRC)
+import { resolve } from './kernel/engine.mjs';    // resolve(schema) -> { V, L, scene, byId }, the deterministic core
+import { render } from '../server/svg.mjs';       // render(schema)  -> SVG string, resolve then the scene renderer
+import { check } from './kernel/grc.mjs';         // check(schema)   -> [{ rule, pass, why }], resolve then the GRC
 ```
 
 ## Schema

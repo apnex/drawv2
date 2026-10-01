@@ -10,10 +10,20 @@ individually addressable elements for a person editing, which a string cannot do
 Self-contained is the whole requirement. A download has no page to inherit from, so the glyph
 artwork and the styles travel inside the file, and every `href="#…"` must resolve within it.
 */
-import { render } from '../kernel/index.mjs';
-import { sharedDefs } from '../kernel/renderer.mjs';
+import { renderScene, sharedDefs } from '../kernel/renderer.mjs';
+import { resolve } from '../kernel/engine.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
 import { KERNEL_CSS } from '../kernel/theme.mjs';
+
+/*
+A schema as an SVG string: the kernel's deterministic core (`resolve`) handed to its scene renderer. K2c moved this here
+from the kernel's barrel, which defined it and which K2c deleted, because the export door is its only production caller
+(H17-D4).
+*/
+export function render(schema, pad) {
+	const { V, L, scene } = resolve(schema);
+	return renderScene(scene, V, L, pad);
+}
 
 export function svgDocument(doc) {
 	const body = render(docToSchema(doc));

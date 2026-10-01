@@ -91,7 +91,6 @@ export const LAYER = {
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half leaves at K11
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
-		'model/index.mjs',       // a barrel (L4) over core modules only; deleted at K2c
 	],
 	network: [
 		'model/invariants.mjs', 'model/referential.mjs',   // the link rules and references; to network/ at K13b
@@ -122,13 +121,11 @@ export const LAYER = {
 	simulation: [
 		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs', 'engine/situation.mjs',
 		'model/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
-		'engine/index.mjs',      // a barrel (L4) with no code of its own; importers are judged at each name's definer; deleted at K2c
 	],
 	export: [
 		'kernel/engine.mjs', 'kernel/adapt.mjs',
 		'kernel/grc.mjs',        // the rule checker behind check()
 		'kernel/fixtures.mjs',   // the spec viewer's reference scenes
-		'kernel/index.mjs',      // a barrel (L4) that also defines render() and check(), which compose the export path; deleted at K2c
 		'server/svg.mjs',        // the headless SVG door; it composes the export path and nothing else
 	],
 	'server-only': [
@@ -341,17 +338,10 @@ export const RATCHETS = {
 	L2: {
 		'app/src/input.js -> app/src/palette.js': 1,
 		'app/src/input.js -> engine/situation.mjs': 1,
-		'engine/index.mjs -> engine/policy.mjs': 1,
 		'lab/src/root.js -> app/src/readout.js': 1,
 	},
 	L4: {
-		// K2b: every importer reads the defining module; what is left is the barrels' own re-exports and the users of
-		// render(), defined in kernel/index.mjs until K2c moves it to server/svg.mjs
-		'barrel engine/index.mjs': 26,
-		'barrel kernel/index.mjs': 57,
-		'barrel model/index.mjs': 11,
-		'server/svg.mjs -> kernel/index.mjs': 1,
-		'tests/span.test.js -> kernel/index.mjs': 10,
+		// K2c (2026-10-01): the barrels are deleted, so no barrel import or re-export remains; L4 holds the line at zero
 	},
 	L5: {
 		'kernel/geometry.mjs:APPEARANCE_KEYS': 1,
