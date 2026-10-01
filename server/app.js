@@ -22,39 +22,17 @@ import { Locks } from './locks.js';
 import { Hub } from './hub.js';
 import { SessionLog } from './sessionlog.mjs';
 import { svgDocument } from './svg.mjs';
+import { fileWithin, sendFile } from './static.mjs';
 
-const MIME = {
-	'.html': 'text/html; charset=utf-8',
-	'.js': 'text/javascript; charset=utf-8',
-	'.mjs': 'text/javascript; charset=utf-8',
-	'.css': 'text/css; charset=utf-8',
-	'.svg': 'image/svg+xml',
-	'.json': 'application/json',
-	'.ico': 'image/x-icon'
-};
-
-// serve a directory under a URL prefix (e.g. /next → app/, /kernel → kernel/). The bare prefix
-// serves index.html. Used to mount the new thin UI + the kernel ESM beside the legacy client.
+/*
+K9 (H17) -- the static files, through the one responder both servers share (server/static.mjs): how a file is found
+inside a folder, and how it is sent. What this server serves -- its mounts and its deep links -- stays here.
+*/
+// a directory under a URL prefix (e.g. /next -> app/, /kernel -> kernel/); the bare prefix serves index.html
 function serveFrom(req, res, baseDir, prefix) {
-	const url = new URL(req.url, 'http://localhost');
-	let rel = url.pathname.slice(prefix.length);
+	let rel = new URL(req.url, 'http://localhost').pathname.slice(prefix.length);
 	if (rel === '' || rel === '/') rel = '/index.html';
-	const file = path.normalize(path.join(baseDir, rel));
-	if (!file.startsWith(baseDir)) {
-		res.writeHead(403);
-		return res.end('forbidden');
-	}
-	fs.readFile(file, (err, data) => {
-		if (err) {
-			res.writeHead(404, { 'Content-Type': 'text/plain' });
-			return res.end('not found');
-		}
-		res.writeHead(200, {
-			'Content-Type': MIME[path.extname(file)] || 'application/octet-stream',
-			'Cache-Control': 'no-store'
-		});
-		res.end(data);
-	});
+	sendFile(req, res, fileWithin(baseDir, rel));
 }
 
 function serveStatic(req, res, clientDir) {
@@ -63,23 +41,8 @@ function serveStatic(req, res, clientDir) {
 	// the grammar is IMPORTED, not restated. This carried its own `diagram-` copy, so a refresh on a
 	// template 404'd -- the deep link fell through to a file lookup for a file that does not exist.
 	const deep = url.pathname.startsWith('/d/') && DOCUMENT_ID.test(url.pathname.slice(3));
-	const route = (url.pathname === '/' || deep) ? 'index.html' : url.pathname;
-	let file = path.normalize(path.join(clientDir, route));
-	if (!file.startsWith(clientDir)) {
-		res.writeHead(403);
-		return res.end('forbidden');
-	}
-	fs.readFile(file, (err, data) => {
-		if (err) {
-			res.writeHead(404, { 'Content-Type': 'text/plain' });
-			return res.end('not found');
-		}
-		res.writeHead(200, {
-			'Content-Type': MIME[path.extname(file)] || 'application/octet-stream',
-			'Cache-Control': 'no-store'
-		});
-		res.end(data);
-	});
+	const route = (url.pathname === '/' || deep) ? '/index.html' : url.pathname;
+	sendFile(req, res, fileWithin(clientDir, route));
 }
 
 

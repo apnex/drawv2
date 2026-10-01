@@ -11,16 +11,16 @@ There is nothing behind it to authorize, which is why it is safe with no IAP.
 It serves static files and that is all. Any method other than GET or HEAD is refused, and the only
 readable directories are the ones a lab page actually loads.
 
-WHY NOT REUSE `serveFrom` FROM server/app.js: it is not exported, and exporting it to reach it here
-would widen the product's surface for the lab's convenience -- the wrong direction. The traversal
-guard below is the same shape and is held by its own test, because a static server whose traversal
-check is wrong is the one way a no-API service can still be dangerous.
+K9: HOW a file is found and sent is the one responder the product's server uses too (server/static.mjs) -- a shared
+module rather than an export of server/app.js, which would have widened the product's surface for the lab. WHAT is
+served stays here, declared below: a static server whose traversal check is wrong is the one way a no-API service can
+still be dangerous, so the check is held once, by its own test (tests/static.test.js).
 */
 
 import http from 'node:http';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fileWithin, sendFile, notFound } from '../server/static.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -66,27 +66,12 @@ const PLANNER_FILES = new Set([
 	'server/tenants.mjs',
 ]);
 
-const MIME = {
-	'.html': 'text/html; charset=utf-8',
-	'.js': 'text/javascript; charset=utf-8',
-	'.mjs': 'text/javascript; charset=utf-8',
-	'.css': 'text/css; charset=utf-8',
-	'.svg': 'image/svg+xml',
-	'.json': 'application/json; charset=utf-8',
-};
-
-function send(res, code, body, type = 'text/plain; charset=utf-8') {
-	res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+function send(res, code, body) {
+	res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
 	res.end(body);
 }
 
-/*
-Resolve a URL path to a file inside a mount, or null.
-
-`path.normalize` collapses `..` BEFORE the prefix check, and the check is on the resolved absolute
-path rather than on the URL text -- a guard that inspects the URL can be walked past with an
-encoded separator, while one that resolves first cannot.
-*/
+// a URL path to a file inside a mount, or null -- the mount's bound is `fileWithin` (server/static.mjs)
 function resolveFile(pathname) {
 	if (pathname === '/' || pathname === '/index.html') return path.join(ROOT, 'lab/index.html');
 	if (pathname === '/lab.css') return path.join(ROOT, 'lab/lab.css');
@@ -97,10 +82,7 @@ function resolveFile(pathname) {
 		return PLANNER_FILES.has(rel) ? path.join(ROOT, rel) : null;
 	}
 	for (const [prefix, dir] of Object.entries(MOUNTS)) {
-		if (!pathname.startsWith(prefix)) continue;
-		const base = path.join(ROOT, dir);
-		const file = path.normalize(path.join(base, pathname.slice(prefix.length)));
-		return file.startsWith(base + path.sep) ? file : null;
+		if (pathname.startsWith(prefix)) return fileWithin(path.join(ROOT, dir), pathname.slice(prefix.length));
 	}
 	return null;
 }
@@ -110,12 +92,7 @@ const server = http.createServer((req, res) => {
 	if (req.url === '/health') return send(res, 200, 'ok');
 
 	const file = resolveFile(new URL(req.url, 'http://localhost').pathname);
-	if (!file) return send(res, 404, 'not found');
-
-	fs.readFile(file, (err, data) => {
-		if (err) return send(res, 404, 'not found');
-		send(res, 200, data, MIME[path.extname(file)] || 'application/octet-stream');
-	});
+	return file ? sendFile(req, res, file) : notFound(res);
 });
 
 const port = Number(process.env.PORT) || 8080;

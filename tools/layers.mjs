@@ -22,6 +22,8 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
   simulation   movers, spawners, rules, kinds and the situation; production-only
   export       the headless SVG path
   server-only  the server's doors and storage, never served to a browser
+  serve        K9: the one static responder (server/static.mjs) -- Node-side, never served to a browser, and the one
+               layer both servers may import, the product's (server-only) and the lab's
   cli          the command-line tool
   lab          the lab composition root (K10); `lab/` does not exist yet
   tools, tests may import any layer, and no product layer imports them
@@ -35,15 +37,16 @@ export const ALLOWED = {
 	chrome: ['core', 'network', 'planner', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'network', 'simulation'],
 	export: ['core', 'network', 'export'],
-	'server-only': ['core', 'network', 'planner', 'simulation', 'export', 'server-only'],
+	'server-only': ['core', 'network', 'planner', 'simulation', 'export', 'server-only', 'serve'],
+	serve: [],   // K9: it imports nothing but Node's own modules
 	cli: ['core', 'network', 'simulation', 'cli'],
-	lab: ['core', 'network', 'planner', 'canvas', 'lab'],
-	tools: ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'cli', 'tools'],
-	tests: ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'cli', 'tools', 'tests'],
+	lab: ['core', 'network', 'planner', 'canvas', 'lab', 'serve'],
+	tools: ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
+	tests: ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
 };
 
 // the layers that ship: what L7k calls "the product"
-export const PRODUCT_LAYERS = ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'cli'];
+export const PRODUCT_LAYERS = ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
 
 /*
 The folders scan-layers walks. A folder with a `layer` gives every module in it that layer, so a new
@@ -139,6 +142,7 @@ export const LAYER = {
 		'server/locks.js', 'server/origin.mjs', 'server/protocol.js', 'server/rest.js', 'server/routes.mjs', 'server/seed.js',
 		'server/server.js', 'server/sessionlog.mjs', 'server/store.js',
 	],
+	serve: ['server/static.mjs'],   // K9: how a file is found inside a folder and sent, for the product's server and the lab's
 	cli: ['cli/draw.mjs', 'cli/verbs.mjs'],
 };
 

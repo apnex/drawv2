@@ -335,7 +335,7 @@ test('static client is served with traversal protection', async () => {
 	const js = await fetch(base + '/src/main.js');
 	assert.equal(js.status, 200);
 	const traversal = await fetch(base + '/../package.json');
-	assert.notEqual(traversal.status, 200);
+	assert.equal(traversal.status, 404, 'C6: one exact status for a path that names nothing servable');
 });
 
 test('deep links /d/<diagram-id> serve the editor', async () => {
@@ -1302,5 +1302,38 @@ test('K2c: every mounted folder serves its modules, with no barrel in it', async
 		const res = await fetch(base + p);
 		assert.equal(res.status, 200, `${p} is served`);
 		assert.match(res.headers.get('content-type'), /javascript/, `${p} as a module`);
+	}
+});
+
+/*
+K9 (H17, condition C6) -- the product's static files through the one responder (server/static.mjs): a template deep
+link opens the editor, every mounted folder serves a module as JavaScript and never cached, and a path that walks out
+of a folder is answered with one exact status. The traversal requests go out RAW, because `fetch` normalizes `..` before
+it sends -- the server must hold the line against a client that does not.
+*/
+test('K9: a template deep link serves the editor, as a diagram one does', async () => {
+	const res = await fetch(`${base}/d/template-1ced1f`);
+	assert.equal(res.status, 200);
+	assert.match(res.headers.get('content-type'), /text\/html/);
+});
+
+test('K9: one module per mount, as JavaScript and never cached', async () => {
+	for (const p of ['/next/src/main.js', '/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs']) {
+		const res = await fetch(base + p);
+		assert.equal(res.status, 200, p);
+		assert.match(res.headers.get('content-type'), /^text\/javascript/, `${p} as a module`);
+		assert.equal(res.headers.get('cache-control'), 'no-store', `${p} is not cached`);
+	}
+});
+
+test('K9: a path that walks out of a mount is answered 404, exactly, however it is spelled', async () => {
+	const http = await import('node:http');
+	const raw = (p) => new Promise((resolve, reject) => {
+		const req = http.request({ host: 'localhost', port: new URL(base).port, path: p, method: 'GET' }, (res) => { res.resume(); resolve(res.statusCode); });
+		req.on('error', reject); req.end();
+	});
+	for (const p of ['/kernel/../../package.json', '/kernel/%2e%2e/%2e%2e/package.json', '/model/..%2f..%2fpackage.json', '/../server/store.js',
+		'/model/..%2fpackage.json', '/kernel/..%2fserver%2fstore.js']) {   // encoded separators whose targets exist
+		assert.equal(await raw(p), 404, p);
 	}
 });
