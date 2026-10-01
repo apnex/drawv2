@@ -259,12 +259,19 @@ So `links.transit: false` reads, uniformly, "what arrives here stops":
 ### 12.3 Decisions to rule first -- one at a time, each with a recommendation
 
 - **TR-1 -- routing.** A route may not pass through a non-transiting anchor; it may only end there. A link whose only way passed through one is down, and says so. Recommended.
+  Ruled 2026-09-30: as recommended.
 - **TR-2 -- a pin there.** A link pinned at a non-transiting anchor is cut there into two links that both end at it, as a junction cuts (B210); turning transit back on joins them again by the join ruling of 2026-09-26. Recommended -- it is exactly the "cut a bend into 2 endpoints, then toggle back to a joined path" the no-history ruling asked for. The alternatives: refuse `w` there, or let a pin pass regardless.
+  Ruled 2026-09-30: as recommended; and `w` pressed there while drawing makes two links ending there (TR-2b).
 - **TR-3 -- a guide there.** `g` on a non-transiting anchor is refused with a notice, since a guide exists to be passed through. Recommended.
+  Ruled 2026-09-30 otherwise: the hand pipe to it is laid, and no route passes through it -- in a link drag the route runs another way and the drawn path is kept as its alternate.
 - **TR-4 -- turning it off under live links.** Links routed through the anchor re-route or go down, and heal when it is turned back on. It is a declaration, not a drag, so "a drag that would move an existing link is refused" does not apply. Recommended.
+  Ruled 2026-09-30: as recommended.
 - **TR-5 -- joining.** Two links left ending at a non-transiting anchor stay two -- section 4's table, confirmed under pipes. Recommended.
+  Ruled 2026-09-30: as recommended.
 - **TR-6 -- the type table.** Its contents (section 6 is illustrative), and what an anchor with no setting takes: recommended, the table's first value, with bare anchors, routers, firewalls and vxlans offering both and defaulting to transit, and load balancers, servers and hosts offering only `false`.
+  Ruled 2026-09-30: as recommended.
 - **TR-7 -- where the value lives in the lab.** Recommended: session state in the network session, keyed by anchor, as pipes are -- the stored-format change lands in promotion's format batch (PROMOTION.md, P2), as section 10.3 and survey F6 require. The cost, as with pipes: undo cannot move it until then. The alternative: a stored optional field now, which the production validator would accept and ignore.
+  Ruled 2026-09-30: as recommended.
 - **TR-8 -- the mark on a node.** Section 9 designed the ring for waypoints; a node's glyph fills the space it would take. Recommended: the same dashed ring, drawn just outside the node's frame -- to be seen in the lab and adjusted by eye before it is settled.
   WITHDRAWN 2026-09-30: the ring is already ruled (section 9) -- radius 10, between the junction and endpoint rings -- and the director confirmed it is settled. On a node, which draws neither of those rings, it is drawn at the same radius and judged by eye in the lab at X1, raised again only if it does not read.
 
@@ -276,7 +283,7 @@ Each stage adds its rows to the behaviour matrix before the code, with their RED
 |---|---|---|---|
 | **X1** | **The value and the mark.** `x` as a network key row, flipping each selected anchor independently (section 8); refused, with a readout, where the type offers no choice; the ring drawn on waypoints and nodes | TR-6, TR-7 | pressing `x` on a real anchor in Chrome draws the ring, and again removes it; a host refuses and says why; nothing else on any board changes |
 | **X2** | **Routing stops there.** The router treats a non-transiting anchor as a dead end except for a link's own ends; the network view keys on transit; a down link blocked by it says so | TR-1, TR-4 | a link whose shortest way passed through the anchor takes another way or goes down, and heals when `x` is pressed again |
-| **X3** | **Pins and guides.** A pin there cuts the link in two, which rejoin when transit returns; `g` there is refused | TR-2, TR-3 | the cut and the rejoin are one undo step each, through the planner |
+| **X3** | **Pins and guides.** A pin there cuts the link in two, which rejoin when transit returns; `w` there while drawing makes two links; `g` there lays its pipe and the route passes elsewhere | TR-2, TR-3 | the cut and the rejoin are one undo step each, through the planner; a `g` there lays its pipe and no route uses it |
 | **X4** | **Joining.** The planner's join leaves links apart at a non-transiting anchor -- a new method of the network interface, answered only by the plugin, so production's join is unchanged | TR-5 | two links left there stay two; with transit on they join, as today |
 | **X5** | **Node types.** The per-type table in `network/` (a slice of cut K6), read by the key's refusal, the router and the mark | TR-6 | a host never passes a route and cannot be toggled; a router passes by default and can be |
 

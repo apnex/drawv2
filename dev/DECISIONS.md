@@ -1468,3 +1468,15 @@ Now that we have pipes - we can revisit Transit and implement it in the lab.\
 Prepare an approach to progress this programme".\
 Recorded as intent; the approach is `dev/design/unification/TRANSIT.md` section 12, with eight decisions (TR-1 to TR-8) for the director before any code.
 
+**Transit with pipes: what stops at a non-transiting anchor -- ruled 2026-09-30.**\
+Asked one at a time (`dev/design/unification/TRANSIT.md` section 12.3), the director ruled:
+- TR-1, routing: a route may not pass through an anchor whose transit is off; it may only end there. A link whose only way passed through one shows down and says why, and heals when transit returns -- "No, it can only end there".
+- TR-2, a pin there: turning transit off where a link is pinned cuts it into two links that both end at the anchor; turning it back on joins them again -- "Cut into two links".
+- TR-2b, `w` while drawing: `w` pressed on an anchor whose transit is off, with the drag carrying on, makes two links ending there, as a digit chains through a node -- "Two links, ending there".
+- TR-3, a guide there: `g` on an anchor whose transit is off still lays the hand pipe to it, and no route passes through it -- "Lay the pipe, no route", chosen over the proposer's recommendation to refuse it. In a link drag the route then runs another way, and the drawn path is kept as its alternate, as for any `g` hop the route skips.
+- TR-4, turning it off under live links: allowed; they re-route or go down, and heal when it is turned back on -- a declaration, not a drag.
+- TR-5, joining: two links left ending at an anchor whose transit is off stay two; with transit on they join as ruled 2026-09-26.
+- TR-6, node types: routers, firewalls, vxlans and bare anchors offer both values and default to transit; load balancers, servers and hosts offer only off.
+- TR-7, in the lab: the setting is session state, as pipes are, saved by promotion's format batch; until then a reload loses it and undo does not move it.
+TR-8, the ring's place, was already ruled (section 9) and is withdrawn as a question.
+
