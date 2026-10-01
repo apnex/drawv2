@@ -52,7 +52,7 @@ PURE: it lays nothing. The caller lays `legs` once the planner accepts what they
 `ok` (a link is made), `legs`, `keep` (anchors to keep when no link is made), `route` (null when made down), and
 `notice`, the sentence the author sees -- absent when things went as drawn.
 */
-export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = [], stops, pressed = { w: false, g: false }, endPressed = false, srcKey = false }, { links = [], rankOf = () => 0 } = {}) {
+export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = [], stops, pressed = { w: false, g: false }, endPressed = false, srcKey = false }, { links = [], rankOf = () => 0, passes } = {}) {
 	const guided = new Set(guides);
 	/*
 	The w that placed the source is the drag's first key (2026-09-30), and "A g in the drag cancels it": a drag's kind is
@@ -75,7 +75,7 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 	const healed = (before, after) => links.filter((l) => !before.get(l.id) && after.get(l.id)).map((l) => l.id);
 
 	if (pipesOnly) {
-		const heals = healed(assignRoutes(pipes, links, { rankOf }), assignRoutes(would, links, { rankOf }));
+		const heals = healed(assignRoutes(pipes, links, { rankOf, passes }), assignRoutes(would, links, { rankOf, passes }));
 		return { ok: false, legs, keep: placed,
 			notice: `${pipes_(fresh.length)} laid by hand -- g lays pipes, not links${heals.length ? `; ${heals.join(', ')} healed` : ''}` };
 	}
@@ -87,7 +87,8 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 
 	// the drawn link is the NEWEST: it sorts after every link there, unranked ones included
 	const drawn = { id: '\uffff drawn', src, dst, via: pins };
-	const opts = { rankOf: (id) => (id === drawn.id ? Infinity : rankOf(id)) };
+	// the anchors no route may pass hold for the drawn link as for every other (TR-1)
+	const opts = { rankOf: (id) => (id === drawn.id ? Infinity : rankOf(id)), passes };
 	const before = assignRoutes(pipes, links, opts);
 	const after = assignRoutes(would, [...links, drawn], opts);
 	const route = after.get(drawn.id) ?? null;

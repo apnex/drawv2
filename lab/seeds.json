@@ -798,5 +798,103 @@
 				"hand"
 			]
 		]
+	},
+	"transit-detour": {
+		"about": "Transit in routing (TRANSIT.md section 12, X2): the short way from A to B runs through a host, which never passes routes; the long way runs over two bare anchors.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000003",
+					"name": "H",
+					"type": "host",
+					"x": 0,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000006",
+					"name": "w6",
+					"x": -120,
+					"y": -240
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000007",
+					"name": "w7",
+					"x": 120,
+					"y": -240
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "east-west",
+					"src": "node-000001",
+					"dst": "node-000002"
+				}
+			}
+		],
+		"pipes": [
+			[
+				"node-000001",
+				"node-000003",
+				"hand"
+			],
+			[
+				"node-000003",
+				"node-000002",
+				"hand"
+			],
+			[
+				"node-000001",
+				"waypoint-000006",
+				"hand"
+			],
+			[
+				"waypoint-000006",
+				"waypoint-000007",
+				"hand"
+			],
+			[
+				"waypoint-000007",
+				"node-000002",
+				"hand"
+			]
+		]
 	}
 }

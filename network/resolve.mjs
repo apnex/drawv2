@@ -33,7 +33,7 @@ A link the model does not hold -- the live drag preview -- is routed alone, over
 const held = (link, model) => !!(link.id && model?.get('link', link.id));
 const routeOf = (net, link, model) => (held(link, model)
 	? net.of(model).route(link.id)
-	: preferredRoute(net.of(model).pipes, link));
+	: preferredRoute(net.of(model).pipes, link, net.of(model).passes));
 
 /*
 F11 (RULESET-AUDIT) -- the LIVE PREVIEW through its stops, when it has no way over the pipes. The preview is a link the
@@ -98,13 +98,18 @@ What the notice says, read from the Model's own answers -- kept here so the lab'
 `whyDown` explains a SELECTED down link: blocked by a named link, or with no way at all. `downSummary` is the
 count after an edit. A down link is "ready to heal" either way: it comes back when a way returns or frees.
 */
-export function whyDown(model, ids) {
+export function whyDown(model, ids, network = null) {
 	const down = ids.map((id) => model.get('link', id)).filter((l) => l && model.isLinkDown(l));
 	if (down.length !== 1) return null;
 	const by = model.blockersOf(down[0]);
-	return by.length
-		? `${down[0].id} is down: its way is held by ${by.join(', ')} -- a pipe carries one link, and the older link keeps it`
-		: `${down[0].id} is down: no way over the pipes it may use -- it heals when one is laid`;
+	if (by.length) return `${down[0].id} is down: its way is held by ${by.join(', ')} -- a pipe carries one link, and the older link keeps it`;
+	// its way would pass an anchor whose transit is off (TR-1): name what the author can turn back on, or else the device
+	// whose type never passes a route
+	const name = (id) => model.endpointOf(id)?.name || id;
+	const { declared = [], types = [] } = network ? network.transitBlocking(down[0], model) : {};
+	if (declared.length) return `${down[0].id} is down: its way passes ${declared.map(name).join(' or ')}, whose transit is off -- it heals when transit is turned back on`;
+	if (types.length) return `${down[0].id} is down: its way passes ${types.map((id) => `${name(id)}, a ${model.endpointOf(id)?.type}`).join(', ')}, which never passes routes`;
+	return `${down[0].id} is down: no way over the pipes it may use -- it heals when one is laid`;
 }
 
 export function downSummary(model) {

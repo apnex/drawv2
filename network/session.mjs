@@ -60,8 +60,10 @@ export function createNetworkSession() {
 		onTransitChange(fn) { watchers.push(fn); },
 
 		// the route hook's answer, and whether a commit follows it -- with none, the legs were laid already
-		judge(drag, links) {
-			const verdict = judgeDrag(pipes.list(), drag, { links, rankOf: order.rankOf });
+		judge(drag, links, model = null) {
+			// in the model the drag is judged against, the anchors no route may pass (TR-1)
+			const stops = new Set(model ? transit.blockedIn(model) : []);
+			const verdict = judgeDrag(pipes.list(), drag, { links, rankOf: order.rankOf, passes: (id) => !stops.has(id) });
 			pendingNotice = verdict.notice ?? null;
 			const commits = verdict.ok || verdict.keep.some((id) => drag.placed.includes(id));
 			if (commits) pendingLegs = verdict.legs;

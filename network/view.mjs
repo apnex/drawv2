@@ -22,17 +22,20 @@ import { deriveNetwork } from './pipes.mjs';
 
 const KEEP = 4;   // the tab, the authority, and a planner projection before and after, at most
 
-export function createNetworkView(pipeSet, rankOf = () => 0) {
+export function createNetworkView(pipeSet, rankOf = () => 0, transit = null) {
 	let recent = [];
 	return {
 		of(model) {
 			const alive = (id) => !!(model.get('node', id) || model.get('waypoint', id));
 			const pipes = pipeSet.list().filter((p) => alive(p.a) && alive(p.b));
 			const links = model.all('link');
-			const key = `${pipes.map((p) => `${p.a}-${p.b}:${p.laid}`).join(',')}#${links.map((l) => `${l.id}:${l.src}>${l.dst}[${(l.via ?? []).join(',')}]@${rankOf(l.id)}`).join(',')}`;
+			// the anchors no route may pass (TRANSIT.md section 12, TR-1): an input to every route, so a part of the key
+			const blocked = transit ? transit.blockedIn(model) : [];
+			const key = `${pipes.map((p) => `${p.a}-${p.b}:${p.laid}`).join(',')}#${links.map((l) => `${l.id}:${l.src}>${l.dst}[${(l.via ?? []).join(',')}]@${rankOf(l.id)}`).join(',')}#${blocked.join(',')}`;
 			const hit = recent.find((r) => r.key === key);
 			if (hit) return hit.view;
-			const view = deriveNetwork(pipes, links, { rankOf });
+			const stops = new Set(blocked);
+			const view = deriveNetwork(pipes, links, { rankOf, passes: (id) => !stops.has(id) });
 			recent = [{ key, view }, ...recent].slice(0, KEEP);
 			return view;
 		},

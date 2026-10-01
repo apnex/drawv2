@@ -85,9 +85,10 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | two pins beside a g path | HP-01 | . | . | . | . | . | . | . | . | . | . |
 | a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . | . |
 | older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . |
-| transit board | . | . | . | . | . | . | . | . | . | . | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05 |
+| transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 |
+| transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 |
 
-48 rows: 48 built, 0 todo, 0 open.\
+54 rows: 54 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -106,6 +107,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | a pin and a g hop beside a g path | blank | Anchors S and E, a g path below them through X, and a link S to E pinned at P, passing the g anchor Y above. |
 | older beside a younger route | blank | An older link A-B on a g path through x above, and a younger link C-D on a middle g path through m1 and m2; A and B also reach the middle path, a longer way. |
 | transit board | `?seed=transit` | Two routers linked through a bare anchor by hand pipes, a lone router, and a host; no transit declared yet. |
+| transit detour | `?seed=transit-detour` | The short way from A to B runs through a host, the long way over two bare anchors; no transit declared. |
 
 | gesture | what the author does |
 |---|---|
@@ -172,11 +174,17 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | DIR-01 | routed x draw: `w` bend | Drag from A, press w on node C, and release there. | A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop. | DECISIONS: "w may be pressed on a node as the last hop" (2026-09-30). | ruled, built |
 | RFS-01 | pinned x draw: `w` bend | Draw the pinned link again: drag from A, press w on its pin, press w on B, and release. | The planner refuses a second link on the same pair bending at the same anchor. The notice says so, and the tab shows nothing of the refused link: it holds exactly what the planner holds. | Production resynchronises a tab whose optimistic change the server refused (app/src/sync.js, requestResync); the lab mounts the same rule (B260). | ruled, built |
 | UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
-| TRN-01 | transit board x transit `x` | Select the bare anchor, and press x. | The anchor's transit goes off and the ring shows it: thin, dashed, light orange. Nothing else changes yet -- the link still runs through it until routing obeys transit (X2). | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
+| TRN-01 | transit board x transit `x` | Select the bare anchor, and press x. | The anchor's transit goes off and the ring shows it: thin, dashed, light orange. What that does to the link through it is TRN-06's (stage X2). | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
 | TRN-02 | transit board x transit `x` | Select the bare anchor, and press x twice. | Two states: the second press turns transit back on, and the ring goes. | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
 | TRN-03 | transit board x transit `x` | Select the lone router, and press x. | A router offers the choice, so its transit goes off and it shows the ring, drawn as on an anchor. | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
 | TRN-04 | transit board x transit `x` | Select the host, and press x. | A host offers no choice -- its transit is always off -- so nothing is declared, no ring is drawn, and the notice says why. | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
 | TRN-05 | transit board x transit `x` | Turn the anchor's transit off; then select the anchor and the lone router together, and press x. | Each selected anchor is flipped on its own: the anchor comes back on and the router goes off, rather than both being driven to one value. | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
+| TRN-06 | transit board x transit `x` | Select the bare anchor the link runs through, and press x. | No route may pass a non-transiting anchor, and the link has no other way: it goes down, its pipes kept for it to heal onto, and the notice counts it. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
+| TRN-07 | transit board x transit `x` | Select the bare anchor, and press x twice. | Turning transit back on heals the link over the same pipes. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
+| TRN-08 | transit board x select link | Turn the bare anchor's transit off, then click the link, which is down. | A selected down link says why: its way passes an anchor whose transit is off, and it heals when transit is turned back on. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
+| TRN-09 | transit detour x transit `x` | Select the host on the short way, and press x. | A host never passes routes, so the link already runs the long way; pressing x on the host is refused and changes nothing. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
+| TRN-10 | transit detour x transit `x` | Select the first anchor on the long way, and press x. | With the host blocking the short way and the anchor the long way, the link has no way left and goes down. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
+| TRN-11 | transit detour x transit `x` | Select the first anchor on the long way, and press x twice. | Turned back on, the link heals the long way -- never through the host. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
 <!-- END GENERATED: rows -->
 
 ---

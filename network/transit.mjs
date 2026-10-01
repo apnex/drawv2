@@ -16,12 +16,18 @@ const OFFERS = { router: BOTH, firewall: BOTH, vxlan: BOTH, loadbalancer: OFF, s
 // the values a type offers: a bare anchor offers both
 const transitOffers = (entity) => (entity.kind === 'waypoint' ? BOTH : OFFERS[entity.type] ?? OFF);
 
+// an anchor in a model, as the table reads it: a node by its type, a waypoint as a bare anchor
+const entitiesOf = (model) => [...model.all('node').map((n) => ({ ...n, kind: 'node' })), ...model.all('waypoint').map((w) => ({ ...w, kind: 'waypoint' }))];
+
 export function createTransit() {
 	const set = new Map();   // anchor id -> its declared value, only where it differs from the type's default
 	const valueOf = (entity) => (set.has(entity.id) ? set.get(entity.id) : transitOffers(entity)[0]);
 	return {
 		// whether the author declared transit off here -- what the ring marks; a type with no choice declares nothing
 		declaredOff: (id) => set.get(id) === false,
+		// the anchors in a model that no route may pass -- declared off, or of a type that offers only off (TR-1, TR-6) --
+		// sorted, so a board's derivation can be keyed on them
+		blockedIn: (model) => entitiesOf(model).filter((e) => valueOf(e) === false).map((e) => e.id).sort(),
 		/*
 		Flip each anchor on its own (ruled 2026-09-28: many anchors at once, each flipped independently). An anchor whose
 		type offers no choice is refused, and named. Answers what changed and what was refused.

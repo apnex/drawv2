@@ -303,3 +303,10 @@ The original reason for this document, now with the pipes it led to: an author c
 - **Not yet:** the export cannot draw a ring, since the setting is session state outside the document until promotion stores it.
 - **Eight mutants, each caught.**- **Seen in the lab, and kept:** on a router the ring at radius 10 sits over the glyph and is hard to read; the director kept it as ruled -- one rule for all nodes -- and will reconsider the glyph design later.
 
+**X2 -- routing stops there, 2026-09-30.**
+- **One predicate, every router.** `passes(id)` -- may a route pass this anchor -- is taken by the router, the share-out of pipes, the preferred way behind the blocker highlight, the board's derivation, the preview of a link not yet held, and the drag judge, so they cannot disagree. A route may begin or end at a non-transiting anchor, never pass it (TR-1).
+- **Built once, from the session and the table:** an anchor no route may pass is one declared off, or one whose type offers only off -- a host, a server, a load balancer (TR-6). The board's derivation is keyed on them, so a toggle is a new board state, and links re-route, go down or heal as a matter of course (TR-4).
+- **The notice and the why.** A toggle's notice counts what is then down; a selected down link names the anchors whose transit, turned back on, would give it a way -- or, when none would, the device whose type never passes a route. The first version named the host where the anchor just turned off was the one to turn back; it was caught by a test and corrected before landing.
+- **Matrix:** six rows (TRN-06 to TRN-11) on the transit board and a new board whose short way runs through a host; TRN-01 gave up its "until X2" routing claims to TRN-06 and kept its subject, the ring. Every earlier board unchanged.
+- **Eight mutants, each caught.**
+

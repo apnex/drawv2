@@ -69,3 +69,76 @@ test('x means transit only with an anchor or node selected, and never mid-drag',
 	assert.equal(resolveInput(t, x, sel(['waypoint']), { gesturing: true }).rule, null, 'a declaration, not a drag step');
 	assert.equal(resolveInput(t, { ...x, ctrlKey: true }, sel(['waypoint']), {}).rule, null);
 });
+
+/*
+X2 -- routing stops at a non-transiting anchor (TR-1, TR-4, TR-6). Every router takes the one predicate, so where a link
+is drawn, whether it is down, what a drag would make and why a link is down all agree.
+*/
+import { route, assignRoutes } from '../network/pipes.mjs';
+import { judgeDrag } from '../network/guide.mjs';
+import { whyDown } from '../network/resolve.mjs';
+import { Model } from '../model/model.mjs';
+
+const hand = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
+
+test('a route never passes a blocked anchor, but may begin or end at one', () => {
+	const pipes = hand(['A', 'X'], ['X', 'B'], ['A', 'p'], ['p', 'q'], ['q', 'B']);
+	assert.deepEqual(route(pipes, 'A', 'B'), ['A', 'X', 'B']);
+	assert.deepEqual(route(pipes, 'A', 'B', (id) => id !== 'X'), ['A', 'p', 'q', 'B'], 'the long way round');
+	assert.deepEqual(route(pipes, 'A', 'X', (id) => id !== 'X'), ['A', 'X'], 'ending there is allowed');
+	assert.deepEqual(route(pipes, 'X', 'B', (id) => id !== 'X'), ['X', 'B'], 'and so is beginning there');
+	assert.equal(route(hand(['A', 'X'], ['X', 'B']), 'A', 'B', (id) => id !== 'X'), null, 'no other way: no route');
+});
+
+// a board in a real Model, composed as the lab composes it
+function board() {
+	const s = createNetworkSession();
+	const m = new Model({ network: s.network });
+	const put = (kind, e) => m.put(kind, e);
+	put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
+	put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
+	put('node', { id: 'node-00000c', name: 'H', type: 'host', x: 0, y: 0, shape: 'circle' });
+	put('waypoint', { id: 'waypoint-00000d', name: 'w', x: 0, y: -240 });
+	put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
+	s.seed([['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand'], ['node-00000a', 'waypoint-00000d', 'hand'], ['waypoint-00000d', 'node-00000b', 'hand']], ['link-000001']);
+	return { s, m, link: m.get('link', 'link-000001') };
+}
+const W = { id: 'waypoint-00000d', kind: 'waypoint', type: null, name: 'w' };
+
+test('a host never passes a route (TR-6): the link takes the way over the bare anchor', () => {
+	const { m, link } = board();
+	assert.deepEqual(m.pathOf(link), [[-360, 0], [0, -240], [360, 0]]);
+	assert.equal(m.isLinkDown(link), false);
+});
+
+test('turning the anchor off downs the link and says why; turning it on heals it (TR-1, TR-4)', () => {
+	const { s, m, link } = board();
+	s.toggleTransit([W]);
+	assert.equal(m.isLinkDown(link), true, 'the host blocks one way and the anchor the other');
+	assert.equal(whyDown(m, [link.id], s.network), 'link-000001 is down: its way passes w, whose transit is off -- it heals when transit is turned back on');
+	s.toggleTransit([W]);
+	assert.equal(m.isLinkDown(link), false);
+});
+
+test('a link blocked only by a host names the host', () => {
+	const { s, m, link } = board();
+	m.del('waypoint', 'waypoint-00000d');
+	assert.equal(m.isLinkDown(link), true);
+	assert.equal(whyDown(m, [link.id], s.network), 'link-000001 is down: its way passes H, a host, which never passes routes');
+});
+
+test('a link the model does not hold yet is routed around blocked anchors too', () => {
+	const { m } = board();
+	const preview = { src: 'node-00000a', via: [], dst: 'node-00000b' };
+	assert.deepEqual(m.pathOf(preview), [[-360, 0], [0, -240], [360, 0]]);
+});
+
+test('a drag is judged with the same stops: a plain link drawn A to B runs over the anchor, not the host', () => {
+	const { s, m } = board();
+	m.del('link', 'link-000001');
+	const drag = { src: 'node-00000a', dst: 'node-00000b', pins: [], guides: [], placed: [], stops: ['node-00000a', 'node-00000b'], pressed: { w: false, g: false }, endPressed: false };
+	const v = s.judge(drag, [], m).verdict;
+	assert.deepEqual(v.route, ['node-00000a', 'waypoint-00000d', 'node-00000b']);
+	assert.equal(judgeDrag(s.pipes.list(), drag, { links: [] }).route.length, 3, 'with no stops given, the shortest way is found -- the host and the anchor tie');
+	assert.deepEqual(assignRoutes(s.pipes.list(), [{ id: 'l', ...drag }], { passes: (id) => id !== 'node-00000c' && id !== 'waypoint-00000d' }).get('l'), null, 'and with both blocked, no way');
+});

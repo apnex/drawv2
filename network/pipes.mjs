@@ -61,7 +61,14 @@ the same pipes find the same route without exchanging anything -- the property e
 this system has held so far, and the one A5 depends on. A tie broken by insertion order would let
 two browsers disagree about where a link runs while agreeing about every stored fact.
 */
-export function route(pipes, from, to) {
+/*
+TRANSIT (ruled 2026-09-30, TR-1): a route may not pass THROUGH an anchor whose transit is off -- it may only begin or end
+there. `passes(id)` says whether one may; every router below takes it, so where a link is drawn, whether it is down,
+what blocks it and what a drag would make all agree. Without it, every anchor passes.
+*/
+const ALL_PASS = () => true;
+
+export function route(pipes, from, to, passes = ALL_PASS) {
 	if (from === to) return [from];
 	const adj = adjacency(pipes);
 	const prev = new Map([[from, null]]);
@@ -70,6 +77,7 @@ export function route(pipes, from, to) {
 		const at = queue.shift();
 		for (const next of adj.get(at) ?? []) {
 			if (prev.has(next)) continue;
+			if (next !== to && !passes(next)) continue;   // a non-transiting anchor ends a route, never carries one on
 			prev.set(next, at);
 			if (next === to) {
 				const path = [to];
@@ -90,7 +98,7 @@ the route is derived. So this routes leg by leg and joins the legs. If any leg h
 is DOWN -- ruled 2026-09-25, "down, and heals" -- which is reported as null rather than a partial
 path, because a route that stops halfway is not a smaller route, it is no route.
 */
-export function routeLink(pipes, { src, dst, via = [] }) {
+export function routeLink(pipes, { src, dst, via = [] }, passes = ALL_PASS) {
 	const stops = [src, ...via, dst];
 	const whole = [src];
 	/*
@@ -101,7 +109,7 @@ export function routeLink(pipes, { src, dst, via = [] }) {
 	*/
 	const used = new Set();
 	for (let i = 0; i < stops.length - 1; i++) {
-		const leg = route(pipes.filter((p) => !used.has(pipeKey(p.a, p.b))), stops[i], stops[i + 1]);
+		const leg = route(pipes.filter((p) => !used.has(pipeKey(p.a, p.b))), stops[i], stops[i + 1], passes);
 		if (!leg) return null;
 		for (let j = 0; j < leg.length - 1; j++) used.add(pipeKey(leg[j], leg[j + 1]));
 		whole.push(...leg.slice(1));
@@ -148,7 +156,7 @@ two pin the same pair -- so a newer link keeps the pipes it laid even against an
 Then, oldest link first, each takes its fewest-pipes way over the pipes it may use -- not full, and not called by
 another link -- and holds what it takes. A link that finds no way is down and holds nothing.
 */
-function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity } = {}) {
+function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity, passes = ALL_PASS } = {}) {
 	const held = new Map();     // pipe key -> the ids of the links it carries
 	const called = new Map();   // w pipe key -> the link with first call on it
 	const routes = new Map();
@@ -160,7 +168,7 @@ function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity } = {}
 			const k = pipeKey(p.a, p.b), on = held.get(k) ?? [], caller = called.get(k);
 			return (caller === undefined || caller === link.id) && (on.length < capacity(p) || on.includes(link.id));
 		});
-		const r = routeLink(open, { src: link.src, dst: link.dst, via: link.via ?? [] });
+		const r = routeLink(open, { src: link.src, dst: link.dst, via: link.via ?? [] }, passes);
 		routes.set(link.id, r);
 		if (r) for (let i = 0; i < r.length - 1; i++) {
 			const k = pipeKey(r[i], r[i + 1]), on = held.get(k) ?? [];
@@ -174,7 +182,7 @@ function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity } = {}
 export const assignRoutes = (pipes, links, opts) => assign(pipes, links, opts).routes;
 
 // the way a link WOULD take if no other link held or called any pipe -- the "preferred path" a blocked link is kept from
-export const preferredRoute = (pipes, link) => routeLink(pipes, { src: link.src, dst: link.dst, via: link.via ?? [] });
+export const preferredRoute = (pipes, link, passes = ALL_PASS) => routeLink(pipes, { src: link.src, dst: link.dst, via: link.via ?? [] }, passes);
 
 /*
 EVERYTHING THE NETWORK KNOWS ABOUT ONE BOARD, derived once -- step T2 of the ruleset audit
@@ -189,6 +197,7 @@ export function deriveNetwork(pipes, links, opts) {
 	const byId = new Map(links.map((l) => [l.id, l]));
 	return {
 		pipes,
+		passes: opts?.passes ?? ALL_PASS,
 		route: (id) => routes.get(id) ?? null,
 		isDown: (id) => byId.has(id) && !routes.get(id),
 		/*
@@ -199,7 +208,7 @@ export function deriveNetwork(pipes, links, opts) {
 		*/
 		blockers(id) {
 			const link = byId.get(id);
-			const want = link && !routes.get(id) && preferredRoute(pipes, link);
+			const want = link && !routes.get(id) && preferredRoute(pipes, link, opts?.passes);
 			if (!want) return [];
 			const by = new Set();
 			for (let i = 0; i < want.length - 1; i++) {

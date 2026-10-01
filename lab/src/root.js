@@ -124,7 +124,7 @@ const history = new Changes(model);
 const renderer = new Renderer(model, svg);
 const selection = new Selection(model);
 // a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30)
-selection.subscribe(() => { renderer.reflectSelection(selection.list()); const why = whyDown(model, selection.list()); if (why) say(why); });
+selection.subscribe(() => { renderer.reflectSelection(selection.list()); const why = whyDown(model, selection.list(), network); if (why) say(why); });
 const labels = new LabelEditor({ svg, model, history });
 const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
@@ -148,7 +148,7 @@ const settle = (sweep, fallback) => {
 	say(session.takeNotice() ?? `${fallback}${downSummary(model)}`.trim());   // DOWN is said as well as drawn
 };
 const routeHook = (drag) => {
-	const { verdict, commits } = session.judge(drag, authority.all('link'));
+	const { verdict, commits } = session.judge(drag, authority.all('link'), authority);
 	if (!commits) settle(true, '');   // nothing to commit: its pipes were laid now
 	return verdict;
 };
@@ -158,7 +158,8 @@ const input = new Input({ svg, model, history, selection, renderer, labels, read
 	plugins: [networkInput(routeHook, session)] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 const capture = new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (L0)
 // a transit change redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12)
-session.onTransitChange((ids) => { for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); } settle(false, ''); });
+// it can take links down or heal them (TR-4), so the notice counts what is down after it
+session.onTransitChange((ids) => { for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); } const said = session.takeNotice() ?? ''; settle(false, ''); say(`${said}${downSummary(model)}`); });
 
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

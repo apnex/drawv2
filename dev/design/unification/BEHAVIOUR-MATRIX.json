@@ -835,6 +835,32 @@
 				},
 				"rings": []
 			}
+		},
+		"transit detour": {
+			"about": "The short way from A to B runs through a host, the long way over two bare anchors; no transit declared.",
+			"board": "transit-detour",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 2,
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				},
+				"through": {
+					"link-000001": [
+						[
+							-120,
+							-240
+						],
+						[
+							120,
+							-240
+						]
+					]
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -2469,10 +2495,9 @@
 					"x"
 				]
 			],
-			"intent": "The anchor's transit goes off and the ring shows it: thin, dashed, light orange. Nothing else changes yet -- the link still runs through it until routing obeys transit (X2).",
+			"intent": "The anchor's transit goes off and the ring shows it: thin, dashed, light orange. What that does to the link through it is TRN-06's (stage X2).",
 			"expect": {
 				"links": 1,
-				"down": 0,
 				"pipes": {
 					"hand": 2,
 					"link": 0
@@ -2481,15 +2506,7 @@
 					"waypoint-000005"
 				],
 				"ringLook": true,
-				"notice": "transit off",
-				"through": {
-					"link-000001": [
-						[
-							0,
-							0
-						]
-					]
-				}
+				"notice": "transit off at w5"
 			},
 			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
 			"standing": "ruled",
@@ -2637,6 +2654,228 @@
 				]
 			},
 			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-06",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Select the bare anchor the link runs through, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "No route may pass a non-transiting anchor, and the link has no other way: it goes down, its pipes kept for it to heal onto, and the notice counts it.",
+			"expect": {
+				"links": 1,
+				"down": 1,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [
+					"waypoint-000005"
+				],
+				"notice": "transit off at w5 -- 1 link down"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-07",
+			"state": "transit board",
+			"gesture": "transit `x`",
+			"does": "Select the bare anchor, and press x twice.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turning transit back on heals the link over the same pipes.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 0
+				},
+				"rings": [],
+				"through": {
+					"link-000001": [
+						[
+							0,
+							0
+						]
+					]
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-08",
+			"state": "transit board",
+			"gesture": "select link",
+			"does": "Turn the bare anchor's transit off, then click the link, which is down.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					0
+				]
+			],
+			"intent": "A selected down link says why: its way passes an anchor whose transit is off, and it heals when transit is turned back on.",
+			"expect": {
+				"links": 1,
+				"down": 1,
+				"selected": [
+					"link-000001"
+				],
+				"notice": "link-000001 is down: its way passes w5, whose transit is off"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-09",
+			"state": "transit detour",
+			"gesture": "transit `x`",
+			"does": "Select the host on the short way, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A host never passes routes, so the link already runs the long way; pressing x on the host is refused and changes nothing.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [],
+				"through": {
+					"link-000001": [
+						[
+							-120,
+							-240
+						],
+						[
+							120,
+							-240
+						]
+					]
+				},
+				"notice": "H is a host, which never passes routes"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-10",
+			"state": "transit detour",
+			"gesture": "transit `x`",
+			"does": "Select the first anchor on the long way, and press x.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-240
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "With the host blocking the short way and the anchor the long way, the link has no way left and goes down.",
+			"expect": {
+				"links": 1,
+				"down": 1,
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				},
+				"rings": [
+					"waypoint-000006"
+				]
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-11",
+			"state": "transit detour",
+			"gesture": "transit `x`",
+			"does": "Select the first anchor on the long way, and press x twice.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-240
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, the link heals the long way -- never through the host.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [],
+				"through": {
+					"link-000001": [
+						[
+							-120,
+							-240
+						],
+						[
+							120,
+							-240
+						]
+					]
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
 			"standing": "ruled",
 			"built": "yes"
 		}
