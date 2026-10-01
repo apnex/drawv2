@@ -185,6 +185,7 @@ AMENDED 2026-10-01: promotion is HELD for more consolidation in the lab (`dev/DE
 AMENDED 2026-10-01: H15.9 done -- every kind draws through one look both renderer branches apply; B230 closed, its guard built. Next H15.23.\
 AMENDED 2026-10-01: H15.23 done -- one colour registry in `kernel/theme.mjs`, the stylesheet reading generated tokens, a gate that fails any other colour literal; B255 closed, B275 registered.\
 AMENDED 2026-10-01: B275 ruled and fixed (H15.24) -- the export's labels match the canvas.\
+AMENDED 2026-10-01: B163 ratified and closed (H10.34); the goals framework is `VISION.md`. No decision is owed.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -560,7 +561,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.23 | The waypoint leaves the palette: it is a routing anchor, not a glyph node, and listing it as `7` is what made B73 read as a behavioural defect | **B146** | S3 - S | `DONE` |
 | H10.24 | `1-6` mid-link-drag places that node and continues the run from it, so a chain of different node types is one gesture | **B147** | S4 - M | `DONE` |
 | H10.6 | Reconcile the help text and the keymap on `7` -- neither side was wrong; the waypoint should not have been a palette tile at all, which H10.23 settled | **B73** | S4 - S | `DONE` |
-| H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `dev/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `TODO` |
+| H10.34 | A rule is chosen by the keystroke and the guards but never by the situation, so context lands as an `if` in a handler body and the help overlay keeps a second, drifted copy of what is legal. `dev/RULES.md` is the design-of-record; three questions are owed a ruling before any code | **B163** | S3 - M | `DONE` |
 | H10.35 | Alt+right-click delete works on a board that holds links -- it threw before any commit | **B258** | S2 - S | `DONE` |
 | H10.36 | `w` during a chained link drag adds its bend -- it threw, leaving an uncommitted waypoint in the tab | **B261** | S2 - S | `DONE` |
 
@@ -1000,12 +1001,12 @@ The deployment that fired its trigger is also the one that answered it: object s
 
 ## Decisions required
 
-**One.**\
-Wrong twice before, and now checked rather than trusted.
+**None.**\
+Wrong twice before, and now checked rather than trusted.\
+B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B163** | Ratify the captured intent from 2026-09-01 and superseded part of `dev/RULES.md`. Three sub-rulings are owed: confirm or amend the five outcome axes (flag F7 -- they were proposer-drafted and never corrected); rule on flag F2, whether the B163 defect is split from the platform surface and fixed ahead of it; and authorise the prerequisite prior-art pass in flag F3 UPDATED 2026-09-30: F2 and F3 are overtaken by work, not ruled -- the prior-art pass ran on 2026-09-02 (`dev/RULES.md` status), and the B163 defect itself is fixed: rules are chosen by the situation on the Rules engine (`kernel/input-rules.mjs`, the `c` acceptance case); `dev/RULES.md` Q1, Q3 and Q4 were ruled 2026-09-30. Still owed: F7, the five outcome axes | The three original mechanism questions no longer need a ruling -- the ambition answer derived them. What remains cannot be derived. The axes are the director's goals framework and every axis mapping in the envelope rests on them, so if one is wrong the interpretations need re-reading rather than re-labelling. F2 decides whether a live defect waits on a platform design. F3 decides whether the surface may be chosen at all, since the director's own instruction was not to assume the shape |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

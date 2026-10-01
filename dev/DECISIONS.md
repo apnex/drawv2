@@ -1539,3 +1539,9 @@ Reviewing the board, the director: "Hold promotion until we perform some more co
 Asked which label colour is right, the director: "lets unify the colour to match the canvas."
 - The SVG export draws node and zone names in `TOKENS.label` (`#ddddff`), as the canvas does; the export-only token is deleted.
 
+**B163 ratified and closed; outcome axes come from the vision -- ruled 2026-10-01.**\
+Asked about flag F7 -- the five outcome axes the B163 survey of 2026-09-01 used, proposer-drafted and never confirmed -- the director chose to ratify and close, agreeing with the recommendation to supersede them with `VISION.md`.
+- The survey's conclusions stand: each was since ruled again explicitly or built and tested (level-triggered rules, overlapping bindings failing the gate, the plain-data situation, a plugin's rules being the plugin's).
+- The axes stay where they are, a historical lens for that one survey; they are not copied into `VISION.md` or kept as a second framework.
+- **The standing goals framework is `VISION.md`**: its three directions -- geometry carries more and stores less, physics becomes extensible, the editor stops being privileged. A future survey draws its outcome axes from them, as the unification survey of 2026-09-25 did.
+
