@@ -252,3 +252,20 @@ test('B268: a link\'s hit twin has its path and width, no dash, and is never see
 		assert.equal(layer.children.filter((c) => (c.attrs.class || '') === 'link-hit').length, 0, 'and goes with it');
 	});
 });
+
+/*
+B275 -- a downloaded picture names nodes and zones in the canvas's colour. The export drew labels in `#e6e9ee` and the
+canvas in `#ddddff` (TOKENS.label) from the day the export was written; ruled 2026-10-01: the export matches the canvas.
+*/
+test('B275: the SVG export draws a node or zone name in the canvas label colour', async () => {
+	const { svgDocument } = await import('../server/svg.mjs');
+	const { TOKENS } = await import('../kernel/theme.mjs');
+	const svg = svgDocument({ meta: { id: 'diagram-000001', name: 'x' }, waypoints: [], links: [], groups: [],
+		nodes: [{ id: 'node-000001', name: 'edge-router', type: 'router', x: 0, y: 0, shape: 'circle' }],
+		zones: [{ id: 'zone-000002', name: 'dmz', x: -90, y: -90, w: 300, h: 240 }] });
+	for (const name of ['edge-router', 'dmz']) {
+		const text = svg.match(new RegExp(`<text[^>]*>${name}</text>`))?.[0];
+		assert.ok(text, `${name} is drawn`);
+		assert.match(text, new RegExp(`fill="${TOKENS.label}"`), `${name} in the canvas label colour`);
+	}
+});

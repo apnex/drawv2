@@ -1535,3 +1535,7 @@ Reviewing the board, the director: "Hold promotion until we perform some more co
 - B266 stays held; its trigger is unchanged -- the director says promotion may start.
 - Lab-side consolidation and unification proceed first, beginning with the appearance pipeline (H15.9) and the colour registry (H15.23).
 
+**B275: a downloaded picture names things in the canvas's colour -- ruled 2026-10-01.**\
+Asked which label colour is right, the director: "lets unify the colour to match the canvas."
+- The SVG export draws node and zone names in `TOKENS.label` (`#ddddff`), as the canvas does; the export-only token is deleted.
+

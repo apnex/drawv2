@@ -184,6 +184,7 @@ AMENDED 2026-10-01: K8 done -- one `composeCanvas` builds the canvas half of the
 AMENDED 2026-10-01: promotion is HELD for more consolidation in the lab (`dev/DECISIONS.md`). Reconciled: H15.2 dropped from the board, its row B221 held for promotion's preview (PL-6); H10.34's mechanism shipped with H17.14, only B163's ratification owed; B243's trigger is promotion; H11.29 done. Next H15.9, then H15.23.\
 AMENDED 2026-10-01: H15.9 done -- every kind draws through one look both renderer branches apply; B230 closed, its guard built. Next H15.23.\
 AMENDED 2026-10-01: H15.23 done -- one colour registry in `kernel/theme.mjs`, the stylesheet reading generated tokens, a gate that fails any other colour literal; B255 closed, B275 registered.\
+AMENDED 2026-10-01: B275 ruled and fixed (H15.24) -- the export's labels match the canvas.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -862,6 +863,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.22 | Every optional field a link carries is writable from the CLI, clearing included, from one declared table | **B237** | S3 | `DONE` |
 | H15.9 | The appearance pipeline: derived state in, one resolution by `composes` and priority per state, out -- every kind, 2026-10-01; closes B230 | **B230** | S3 | `DONE` |
 | H15.23 | One registry for every colour the canvas draws: tokens named by role, consumed by the stylesheet, and a scanner that fails a hex literal | **B255** | S3 | `DONE` |
+| H15.24 | A downloaded picture names nodes and zones in the canvas's label colour | **B275** | S4 | `DONE` |
 | H15.5 | Propagation along a run of bends, derived and never stored; opposing declarations fragment the run | feature | S3 | `TODO` |
 
 **Ruled 2026-09-22 by the director: FRAGMENT.**\
@@ -962,7 +964,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B273** | S4 | The kind table is shared, not injected: a composition cannot add a kind, so pipes wait for promotion | promotion's format batch, or any sixth stored kind |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
-| **B275** | S4 | The export names things in `#e6e9ee`, the canvas in `#ddddff`; both now named in one table | the director picks one, or the difference is reported |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | promotion's format batch -- ruled 2026-10-01: newest drawn on top, stored drawing order |

@@ -42,15 +42,9 @@ export const TOKENS = {
 	accent: '#aed581',       // selection, and the go-ahead accent: what is selected, armed to clone, confirmed
 	danger: '#e57373',       // armed to delete, an error, a refusal
 	clone: '#81d4fa',        // armed to clone
-	label: '#ddddff',        // a node or zone name on the canvas
+	label: '#ddddff',        // a node or zone name, on the canvas and in the export (B275)
 	contentText: '#e6e9ee',  // the default text colour of a content region (both renderers)
 	contentBg: '#0a0a0a',    // the default fill of an outlined content region (both renderers)
-	/*
-	The EXPORT's node and zone name colour. Not the canvas's: the export asked for `label` before it existed and fell back
-	to this literal, so a downloaded picture names things in a different colour from the canvas (B275, registered with the
-	question of which one is right). Named, so the disagreement is in one table where a reader sees both.
-	*/
-	exportLabel: '#e6e9ee',
 	spawning: '#66bb6a',     // an emitting endpoint
 	packet: '#ffa726',       // a mover
 	down: '#ff9800',         // a link that is down, or a link blocking another

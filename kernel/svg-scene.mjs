@@ -27,7 +27,7 @@ The offsets come from the spec rather than from here, so the canvas and the expo
 about where a label sits -- which is exactly what they did while the export had no labels at all.
 */
 const label = (name, x, y, opts = {}) =>
-	(name ? TXT(x, y, String(name), { fill: TOKENS.exportLabel, ...opts }) : '');   // not the canvas's label colour: B275
+	(name ? TXT(x, y, String(name), { fill: TOKENS.label, ...opts }) : '');   // the canvas's label colour (B275, ruled 2026-10-01)
 
 const TXT = (x, y, s, { anchor = 'middle', fill = TOKENS.contentText, size = STD.fontSize } = {}) =>
 	`<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="ui-monospace,monospace" font-size="${size}" fill="${fill}">${escText(s)}</text>`;
