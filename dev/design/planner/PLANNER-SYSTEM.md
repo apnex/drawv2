@@ -291,4 +291,5 @@ PL1-PL7 by their tests; the corpus and the widened differential; the generated r
 - **PD-3 -- reactions that collide.** Phases in declared order; within a phase, two reactions changing one entity fail the gate -- rather than the later one winning. Recommended, in the spirit of Q3 and held as Q3 is: for now.
 - **PD-4 -- who writes inverses.** The core, from the projection, for every op a reaction returns -- rather than each reaction writing its own. Recommended.
 - **PD-5 -- one preview.** PL-6 after PL-5, with derived ids for minted entities (H17-D10) -- rather than at the production rebuild, as H17-D11 deferred it. To be ruled before PL-6.
+  RULED 2026-10-01: at promotion -- H17-D11 stands, and PL-6 joins `dev/design/unification/PROMOTION.md`; the programme closes at PL-5 (`dev/DECISIONS.md`).
 - **PD-6 -- beats and the reveal.** A record extension around the core, the clock passed in -- rather than staying inside `commit`. Recommended.

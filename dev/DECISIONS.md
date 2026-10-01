@@ -1511,3 +1511,9 @@ Asked whether PL-5 should inject the entity kinds into each composition, gather 
 - The id grammar stays a literal pinned by C3, and each kind's field checks stay at the trust boundary in `server/validate.js`.
 - Injection -- a composition passing its own kinds, so the lab could add `pipe` -- has no user until pipes become a stored kind, so it is held as B273 with that trigger; G7 and the C3 guard stand unchanged.
 
+**PD-5: the browser preview (PL-6) lands with promotion, not before -- ruled 2026-10-01.**\
+Asked when the production browser should run the planner itself, the director chose "At promotion" (recommended) over "Now, before promotion".
+- H17-D11 stands: production's browser keeps its three rule copies -- the delete cascade and group steal in `app/src/commands.js`, and the junction split in `app/src/input.js` -- until promotion, when production takes on the lab's composition, which already runs the planner in the page.
+- PL-6's work -- derived ids for minted pieces (H17-D10), intent-only requests, the copies deleted -- joins the promotion plan (`dev/design/unification/PROMOTION.md`).
+- The planner programme (H17.15) closes at PL-5.
+
