@@ -170,6 +170,7 @@ AMENDED 2026-10-01: PD-5 ruled -- PL-6 lands with promotion (`PROMOTION.md` sect
 AMENDED 2026-10-01: K2b done -- every importer reads its defining module; the page loads 51 modules, not 57. Next K2c, deleting the barrels.\
 AMENDED 2026-10-01: K2c done -- the three barrels deleted, folders mounted because they exist; 30 exports the barrels hid are allowed under a `K12:` reason, so K12 is next.\
 AMENDED 2026-10-01: K12 done -- the design-rule checker deleted by ruling, four more dead exports deleted, five un-exported, eighteen kept with their own reasons.\
+AMENDED 2026-10-01: K11 done as K13a's prerequisite -- the SVG scene split from the core renderer into `kernel/svg-scene.mjs`.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

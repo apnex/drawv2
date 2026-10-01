@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { Renderer } from '../app/src/renderer.js';
-import { renderElement } from '../kernel/renderer.mjs';
+import { renderElement } from '../kernel/svg-scene.mjs';
 import { resolve } from '../kernel/engine.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { makeRenderer, classesIn } from './fixtures/client-harness.mjs';

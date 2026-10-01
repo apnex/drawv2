@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { resolve } from '../kernel/engine.mjs';
-import { renderElement, renderContentRegion, selBox, isPanel, frameRadius, showsSockets } from '../kernel/renderer.mjs';
+import { selBox, isPanel, frameRadius, showsSockets } from '../kernel/renderer.mjs';
+import { renderElement, renderContentRegion } from '../kernel/svg-scene.mjs';
 import { bboxOf, cellOf } from '../kernel/geometry.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
@@ -364,7 +365,8 @@ name collision in the system (HIERARCHY §0, connection taxonomy).
 This asserts the property rather than the absence, so a NEW dead kind fails the same way.
 */
 test('B38: every element kind the kernel handles is a kind resolve() can emit', () => {
-	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8');   // the rule checker, kernel/grc.mjs, was deleted at K12
+	// the kernel renderer is two files since K11 (frame primitives, and the SVG scene); the rule checker was deleted at K12
+	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8') + fs.readFileSync('kernel/svg-scene.mjs', 'utf8');
 	const handled = new Set([...src.matchAll(/kind === '(\w+)'/g)].map((m) => m[1]));
 
 	// What the engine can actually PUT IN A SCENE — read from what resolve() imports from geometry,
@@ -695,7 +697,8 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 	behavioural test in this file -- both would be correct on the day it was written -- and then
 	drift the first time one side changed.
 	*/
-	for (const f of ['../app/src/renderer.js', '../kernel/renderer.mjs']) {
+	// K11: the kernel's waypoint drawing is in the SVG scene half (kernel/svg-scene.mjs)
+	for (const f of ['../app/src/renderer.js', '../kernel/svg-scene.mjs']) {
 		const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
 		assert.match(src, /waypointLayers\(/, `${f} must ASK for the layer list (B209), not restate which role draws what`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*5\s*:\s*1\.6/, `${f} restates the stroke weight`);
@@ -812,7 +815,7 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	const { gridDot } = await import('../kernel/geometry.mjs');
 	const main = fs.readFileSync(new URL('../app/src/main.js', import.meta.url), 'utf8');
 	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
-	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 
 	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
 	// B209 -- both renderers get the dot through the layer list; the kernel sources it from gridDot
@@ -1047,7 +1050,7 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	disagree. The pipeline enforces that more strongly than a call check did, because there is now
 	one answer rather than two call sites that happen to ask the same thing.
 	*/
-	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	assert.match(clientRenderer, /linkAppearance\(/, 'and so must the canvas');
@@ -1148,7 +1151,7 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	create uses, over the DECLARED key set, so a key a previous state set is removed rather than
 	stranded. That is B228's property, now enforced by the key set instead of by remembering.
 	*/
-	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(kind, entity)'));
@@ -1239,7 +1242,7 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 	kernel/renderer.mjs and app/src/renderer.js independently, and the frame weight into two
 	stylesheets -- which is the B121 and B200 shape, and why this is derived at all.
 	*/
-	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['app/src/renderer.js', clientRenderer]]) {
 		assert.match(src, /frameWidth\(/, `${name} must derive the frame weight rather than hardcode it`);
@@ -1356,7 +1359,7 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 	}
 
 	// both renderers must go through it, or the pipeline is advisory
-	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
+	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['app/src/renderer.js', clientRenderer]]) {
 		assert.match(src, /linkAppearance\(/, `${name} must derive a link's appearance in one call`);

@@ -546,7 +546,10 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 		// every other departed module still exists
 		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
 		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs'], 'only the modules deleted by ruling may be missing');
-		const src = departed.filter((m) => !gone.includes(m)).map((m) => fs.readFileSync(path.join(root, m), 'utf8')).join('\n');
+		// a deleted module's source is gone, so its frozen K0 export record stands in for it: a name it exported is a name
+		// its departure justifies (K11 moved the renderer text that used to mention `bboxOf`; the barrel exported it)
+		const src = departed.filter((m) => !gone.includes(m)).map((m) => fs.readFileSync(path.join(root, m), 'utf8'))
+			.concat(gone.map((m) => (rec.baseline[m] ?? []).join(' '))).join('\n');
 		assert.match(src, new RegExp(`\\b${name}\\b`),
 			`${k} joined the list, and no module the closure dropped mentions ${name} -- it is a borrowed spelling, which C2(c) refuses`);
 	}

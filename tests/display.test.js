@@ -75,7 +75,8 @@ The invariant worth pinning is not "the function exists" — it is that both ren
 the SAME coordinates. That is what the copy silently threatened and what a shared owner guarantees.
 */
 
-import { contentLayout, renderContentRegion } from '../kernel/renderer.mjs';
+import { contentLayout } from '../kernel/renderer.mjs';
+import { renderContentRegion } from '../kernel/svg-scene.mjs';
 
 const REGIONS = [
 	{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' },

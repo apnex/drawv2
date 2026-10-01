@@ -10,7 +10,8 @@ individually addressable elements for a person editing, which a string cannot do
 Self-contained is the whole requirement. A download has no page to inherit from, so the glyph
 artwork and the styles travel inside the file, and every `href="#…"` must resolve within it.
 */
-import { renderScene, sharedDefs } from '../kernel/renderer.mjs';
+import { sharedDefs } from '../kernel/renderer.mjs';
+import { renderScene } from '../kernel/svg-scene.mjs';
 import { resolve } from '../kernel/engine.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
 import { KERNEL_CSS } from '../kernel/theme.mjs';
