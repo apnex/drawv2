@@ -2,7 +2,8 @@
 
 > **Tier 3 -- a design of record, proposed.** Written 2026-09-30 against `a030e98`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
-> No code moves until the director approves it, and then one stage at a time (section 9).
+> APPROVED 2026-09-30: PD-1 to PD-4 and PD-6 as recommended; PD-5 ruled before PL-6 (`dev/DECISIONS.md`).
+> Built one stage at a time (section 9), validated in the lab; no production deploy until the director says.
 
 ## 1. Status
 

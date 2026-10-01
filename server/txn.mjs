@@ -395,9 +395,10 @@ export function plan(model, ops, options = {}) {
 		the GR5 corpus, whose generator predates the rule and produces such documents freely --
 		a case I would not have thought of, and a lockout rather than a mere inconvenience.
 		*/
-		const before = new Set(violations(model, { groupAfterRemoval }));
-		const introduced = after.filter((v) => !before.has(v));
-		if (introduced.length) return { ok: false, error: introduced[0], opIndex: -1 };
+		// B271 -- by identity and measure, not sentence: a violation this transaction introduced, or made worse
+		const before = new Map(violations(model, { groupAfterRemoval, facts: true }).map((v) => [v.key, v.measure]));
+		const introduced = violations(proj, { groupAfterRemoval, facts: true }).filter((v) => !before.has(v.key) || v.measure > before.get(v.key));
+		if (introduced.length) return { ok: false, error: introduced[0].sentence, opIndex: -1 };
 	}
 	return { ok: true, ops: out, inverse: inv };
 }
@@ -615,6 +616,15 @@ export function commit(model, log, request, by = 'client', actor = null, options
 	const planned = plan(model, request.ops, { network });
 	if (!planned.ok) return { ok: false, error: planned.error, opIndex: planned.opIndex, version: log.version };
 	if (!planned.ops.length) return { ok: true, change: null, version: log.version };   // accepted no-op
+	/*
+	B270 -- EVERY REFUSAL BEFORE THE APPLY. The caption limit (B220, below) was checked after the ops were applied and
+	the version advanced, so a refusal left the edit in the document with no record. It is decided here, from the same
+	planned ops, before anything is touched -- what the header's "rejection safety is by PURITY" requires.
+	*/
+	const beatIds = Number.isInteger(request.pace) && request.pace >= 0 ? planned.ops.filter((o) => o.op === 'put').map((o) => o.entity.id) : [];
+	if (beatIds.length && request.caption !== undefined && String(request.caption).length > CAPTION_MAX) {
+		return { ok: false, error: `caption is ${String(request.caption).length} characters; the limit is ${CAPTION_MAX}`, version: log.version };
+	}
 
 	applyOps(model, planned.ops);                                    // the sole mutation point
 	const from = log.version;
@@ -655,11 +665,9 @@ export function commit(model, log, request, by = 'client', actor = null, options
 			once in `model/limits.mjs` and both doors read it, which is the property that was missing
 			-- not the value of the limit.
 			*/
+			// its length was checked before the apply (B270, above)
 			if (request.caption !== undefined) {
 				const caption = String(request.caption);
-				if (caption.length > CAPTION_MAX) {
-					return { ok: false, error: `caption is ${caption.length} characters; the limit is ${CAPTION_MAX}` };
-				}
 				if (caption) beat.caption = caption;
 			}
 			/*

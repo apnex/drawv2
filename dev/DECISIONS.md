@@ -1493,3 +1493,15 @@ The director: "Approved for X4, then we can progress as recommended.\
 Make sure the board is up to date".\
 The design is `dev/design/planner/PLANNER-SYSTEM.md` (BOARD H17.15), awaiting approval; its inventory found two planner defects, B270 and B271.
 
+**The planner programme: PD-1 to PD-4 and PD-6 as recommended; no production deploy yet -- ruled 2026-09-30.**\
+Asked the decisions of `dev/design/planner/PLANNER-SYSTEM.md` section 12, the director: "Approved.\
+Proceed as per recommended.\
+Do not deploy to production yet - we will validate in lab".
+- PD-1: stages PL-0 (the two defects, B270 and B271) to PL-5, restructuring with no outcome change; PL-6 ruled separately.
+- PD-2: two alternative link tenants before promotion -- production's classic link reactions and the network plugin's -- each composition choosing one; promotion deletes the classic one.
+- PD-3: phases in declared order; within a phase, two reactions changing one entity fail the gate -- held for now, as Q3 is.
+- PD-4: the core writes every inverse, from the projection, for every op a reaction returns.
+- PD-5: the browser preview (PL-6) stays to be ruled before PL-6, as the design recommends.
+- PD-6: beats and the reveal become a record extension around the core, with the clock passed in.
+Every stage is validated in the lab; the production deploy waits for the director.
+

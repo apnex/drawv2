@@ -1100,3 +1100,40 @@ test('B269: a link that really leaves a waypoint still joins the two left there,
 	assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: 'link-00000c' }] }, 'x', 'x').ok, true);
 	assert.equal(m.all('link').length, 1, 'three became two at E, so the two join into one');
 });
+
+/*
+B270 -- A REFUSED COMMIT TOUCHES NOTHING. The caption check (B220) came after the ops were applied and the version
+advanced, so a refusal left the edit in the document, the version moved and no record written -- the document and its
+log disagreeing, and undo blind to the change. The header promises rejection safety by purity.
+*/
+test('B270: a commit refused for its caption leaves the document, the version and the log exactly as they were', () => {
+	const m = new Model(); const log = new Log();
+	const nd = { op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'a', type: 'router', x: 0, y: 0, shape: 'circle' } };
+	const r = commit(m, log, { ops: [nd], label: 'add', pace: 500, caption: 'x'.repeat(5000) }, 'x', 'x');
+	assert.equal(r.ok, false);
+	assert.match(r.error, /caption is 5000 characters/);
+	assert.equal(m.all('node').length, 0, 'the edit is not in the document');
+	assert.equal(log.version, 0, 'the version did not move');
+	assert.equal(r.version, 0, 'and the refusal says so');
+	assert.equal(undo(m, log).ok, false, 'there is nothing to undo, because nothing happened');
+});
+
+/*
+B271 -- A PARTIAL REPAIR IS A REPAIR. The backstop compared violation sentences, which embed counts, so three straight
+links on one pair could not lose one ("2 straight links" read as new) while losing two at once was accepted. A
+transaction is refused for a violation it introduces or worsens -- the same subject, measured.
+*/
+test('B271: deleting one of three straight links on a pair is accepted, and adding a fourth is still refused', () => {
+	const board = () => {
+		const m = new Model();
+		m.put('node', { id: 'node-00000a', name: 'a', type: 'router', x: 0, y: 0, shape: 'circle' });
+		m.put('node', { id: 'node-00000b', name: 'b', type: 'router', x: 360, y: 0, shape: 'circle' });
+		for (const i of [1, 2, 3]) m.put('link', { id: `link-00000${i}`, name: `l${i}`, src: 'node-00000a', dst: 'node-00000b' });
+		return m;
+	};
+	const m = board();
+	assert.equal(commit(m, new Log(), { ops: [{ op: 'del', kind: 'link', id: 'link-000001' }], label: 'del' }, 'x', 'x').ok, true, 'three to two is a repair');
+	const worse = commit(board(), new Log(), { ops: [{ op: 'put', kind: 'link', entity: { id: 'link-000004', name: 'l4', src: 'node-00000b', dst: 'node-00000a' } }], label: 'add' }, 'x', 'x');
+	assert.equal(worse.ok, false, 'three to four is worse, and refused');
+	assert.match(worse.error, /4 straight links/);
+});

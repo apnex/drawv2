@@ -159,6 +159,8 @@ AMENDED 2026-09-30: the table below predates the lab arc (H17) and is kept as re
 first H17.15, the planner's design, to be approved before any code; then the H17 cuts resume from K2b (H17.3), with B244 (H17.4) and B246 (H17.6).\
 Held, each with its trigger: promotion of the network to production as a full cutover (B266), the context panel (B265), double click on zones (B264), binding overrides (B262).\
 The production deploy of current `main` is the director's call.\
+AMENDED 2026-09-30: H17.15 approved (PD-1 to PD-4 and PD-6; PD-5 before PL-6); PL-0 done (H17.16, H17.17); next PL-1, the planner corpus.\
+Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
 The previous cut organized around a pattern -- a check whose scope is narrower than its stated claim -- and that pattern held: it accounted for eleven of the defects closed since.\
@@ -911,8 +913,8 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.13 | Consolidate the network ruleset without changing behaviour: one network interface, one derivation per board state, one home for pair capacity, a network session, and the drag grammar as data on a neutral Rules engine (T1-T5, `dev/design/unification/RULESET-AUDIT.md`) | feature | S3 | `DONE` |
 | H17.14 | Input as a layered gesture system: capture, input state, one click rule, bindings and release meanings on the Rules engine, and a generated help overlay (stages 1-6, `dev/design/input/GESTURE-SYSTEM.md`); stage 7, the context panel, is held as B265 | feature | S3 | `DONE` |
 | H17.15 | The planner as a sovereign system: design a transaction core that knows no entity rules, edits' consequences as declared reactions the network and the product bring, placement passed in, and one preview the browser runs instead of its hand-written cascade -- folding H17 cuts K3, K13c, K17 and K18 (design first, approved before code). The design is written, awaiting approval: `dev/design/planner/PLANNER-SYSTEM.md` | feature | S3 | `TODO` |
-| H17.16 | A refused commit changes nothing: every refusal is decided before the document is touched | **B270** | S2 | `TODO` |
-| H17.17 | A partial repair of an existing violation is accepted: the backstop compares violations, not their sentences | **B271** | S3 | `TODO` |
+| H17.16 | A refused commit changes nothing: every refusal is decided before the document is touched | **B270** | S2 | `DONE` |
+| H17.17 | A partial repair of an existing violation is accepted: the backstop compares violations, not their sentences | **B271** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.

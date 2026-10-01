@@ -236,8 +236,15 @@ a repair tool wants the whole set.
 
 Returns [] for a clean document, so a caller reads emptiness as health without a sentinel.
 */
-export function violations(model, { groupAfterRemoval = null } = {}) {
-	const out = [];
+export function violations(model, { groupAfterRemoval = null, facts = false } = {}) {
+	/*
+	B271 -- each violation has an IDENTITY (its rule and subject) and a MEASURE, as well as its sentence. The planner's
+	backstop refuses a transaction for a violation it introduces or worsens; comparing sentences, which embed counts,
+	refused a partial repair (three straight links on a pair losing one read as a new violation). `facts` returns
+	{ key, measure, sentence }; by default the sentences, for the store's boot report.
+	*/
+	const found = [];
+	const out = { push: (sentence, key = sentence, measure = 1) => found.push({ key, measure, sentence }) };
 	const straightByPair = new Map();
 
 	/*
@@ -256,7 +263,7 @@ export function violations(model, { groupAfterRemoval = null } = {}) {
 	for (const g of model.all('group')) {
 		for (const m of new Set(g.members || [])) {
 			const held = owner.get(m);
-			if (held && held !== g.id) out.push(`${m} is a member of both ${held} and ${g.id}`);
+			if (held && held !== g.id) out.push(`${m} is a member of both ${held} and ${g.id}`, `two-groups:${m}`);
 			else owner.set(m, g.id);
 		}
 	}
@@ -278,9 +285,9 @@ export function violations(model, { groupAfterRemoval = null } = {}) {
 		for (const g of model.all('group')) {
 			const members = g.members || [];
 			const distinct = [...new Set(members)];
-			if (distinct.length !== members.length) out.push(`${g.id} lists the same member twice`);
+			if (distinct.length !== members.length) out.push(`${g.id} lists the same member twice`, `repeated-member:${g.id}`);
 			if (groupAfterRemoval(distinct, () => false).dissolve) {
-				out.push(`${g.id} holds ${distinct.length} member(s), too few to be a group`);
+				out.push(`${g.id} holds ${distinct.length} member(s), too few to be a group`, `too-few:${g.id}`);
 			}
 		}
 	}
@@ -298,7 +305,7 @@ export function violations(model, { groupAfterRemoval = null } = {}) {
 		const [a, b] = key.split('|');
 		const cap = straightCapacity(model, a, b);
 		if (links.length > cap) {
-			out.push(`${links.length} straight links between ${a} and ${b}, which may carry ${cap}`);
+			out.push(`${links.length} straight links between ${a} and ${b}, which may carry ${cap}`, `straight-pair:${a}|${b}`, links.length - cap);   // the excess: worse if links grow or capacity shrinks
 		}
 	}
 	/*
@@ -328,10 +335,10 @@ export function violations(model, { groupAfterRemoval = null } = {}) {
 		for (const e of model.all(kind)) {
 			const key = `${e.x},${e.y}`;
 			const held = at.get(key);
-			if (held) out.push(`${e.id} and ${held} occupy the same anchor (${e.x},${e.y})`);
+			if (held) out.push(`${e.id} and ${held} occupy the same anchor (${e.x},${e.y})`, `occupied:${[e.id, held].sort().join('|')}`);
 			else at.set(key, e.id);
 		}
 	}
 
-	return out;
+	return facts ? found : found.map((f) => f.sentence);
 }
