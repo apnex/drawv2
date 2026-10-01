@@ -1137,3 +1137,18 @@ test('B271: deleting one of three straight links on a pair is accepted, and addi
 	assert.equal(worse.ok, false, 'three to four is worse, and refused');
 	assert.match(worse.error, /4 straight links/);
 });
+
+/*
+PL-2 -- THE CORE WRITES EVERY INVERSE (dev/design/planner/PLANNER-SYSTEM.md, PD-4). One function computes an op's
+inverse and one applies ops to the projection while recording it; the per-op planners and the passes return ops only.
+Held structurally, because the failure it prevents is a NEW pass that builds its own inverse -- or forgets to -- and
+the corpus cannot see a pass that does not exist yet.
+*/
+test('PL-2: the planner writes inverses in one place, and applies ops to its projection in one place', async () => {
+	const src = (await import('node:fs')).readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const plannerPart = src.slice(0, src.indexOf('// ---- the one write ----'));
+	assert.equal((plannerPart.match(/inv\.unshift\(/g) || []).length, 1, 'only `track` records an inverse');
+	assert.equal((plannerPart.match(/applyOps\(/g) || []).length, 1, 'only `track` advances the projection');
+	assert.equal((plannerPart.match(/inverseOf\(/g) || []).length, 2, '`inverseOf` is defined once and called once, by `track`');
+	assert.doesNotMatch(plannerPart, /inverse:\s*\[/, 'no planner returns an inverse list');
+});

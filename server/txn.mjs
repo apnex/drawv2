@@ -13,6 +13,11 @@ The inverse is computed by the planner because the planner is the only place tha
 pre-state at the moment each op is decided. Deriving it later is impossible: a forward `set` patch
 does not carry the old values, and a forward `del` does not carry the entity.
 
+PL-2 (dev/design/planner/PLANNER-SYSTEM.md, PD-4) -- THE CORE WRITES EVERY INVERSE, in one place: `track` applies each
+op to the projection and records its inverse from the state just before it (`inverseOf`). The per-op planners and the
+passes return ops only. Each built its own inverse before -- the same rule hand-written in every planner, cascade and
+pass -- and one that forgot would have committed an edit undo could not reverse.
+
 Rejection safety is by PURITY, not rollback: plan() runs against a scratch projection, so a
 rejected request has touched nothing and there is nothing to undo. That is the same guarantee the
 old planMutation gave for one op, extended to N.
@@ -68,6 +73,39 @@ function narrow(kind, before, patch) {
 		if (!same) out[k] = v;
 	}
 	return out;
+}
+
+/*
+PL-2 -- the inverse of one op, read from the model as it stands just before the op is applied. A `put` over an entity
+restores it, a `put` of a new one deletes it, a `set` restores what its patch touches (`inverseOfSet`), a `del` puts
+the entity back, and `meta` restores the keys it changes. Null for an op that changes nothing it can see -- a `del` of
+an absent entity, which no planner emits.
+*/
+function inverseOf(model, op) {
+	if (op.op === 'meta') {
+		const prev = {};
+		for (const k of Object.keys(op.patch)) prev[k] = model.state.meta[k];
+		return { op: 'meta', patch: prev };
+	}
+	const id = op.op === 'put' ? op.entity.id : op.id;
+	const before = model.get(op.kind, id);
+	if (op.op === 'set') return inverseOfSet(op.kind, before, op.patch);
+	if (op.op === 'put') return before ? { op: 'put', kind: op.kind, entity: clone(op.kind, before) } : { op: 'del', kind: op.kind, id };
+	return before ? { op: 'put', kind: op.kind, entity: clone(op.kind, before) } : null;
+}
+
+/*
+PL-2 -- THE ONE PLACE AN OP REACHES THE PROJECTION. Each op is applied in turn and its inverse taken just before, so the
+inverse list is the exact reverse of the ops whoever produced them: a requested op, a cascade, the stranded pass, the
+sweep, the join. `out` and `inv` are the transaction's lists; `inv` is kept pre-reversed, since undo replays it in order.
+*/
+function track(proj, ops, out, inv) {
+	for (const op of ops) {
+		const back = inverseOf(proj, op);
+		applyOps(proj, [op]);
+		out.push(op);
+		if (back) inv.unshift(back);
+	}
 }
 
 /*
@@ -129,9 +167,7 @@ export function plan(model, ops, options = {}) {
 	for (let i = 0; i < ops.length; i++) {
 		const step = planOne(proj, ops[i]);
 		if (!step.ok) return { ok: false, error: step.error, opIndex: i };
-		applyOps(proj, step.ops);              // advance the projection for op i+1
-		out.push(...step.ops);
-		inv.unshift(...step.inverse);          // pre-reversed: undo replays inv in order
+		track(proj, step.ops, out, inv);       // advance the projection for op i+1, recording each inverse
 	}
 	/*
 	A LINK LEFT WITH NO WAY AFTER LOSING A PIN goes whole (ruled 2026-09-29, see `isStranded` above).
@@ -146,10 +182,7 @@ export function plan(model, ops, options = {}) {
 		if (!(before.via || []).some((w) => model.get('waypoint', w) && !proj.get('waypoint', w))) continue;
 		const now = proj.get('link', before.id);
 		if (!now || !isStranded(now, proj)) continue;
-		const step = planDel(proj, { kind: 'link', id: now.id });
-		applyOps(proj, step.ops);
-		out.push(...step.ops);
-		inv.unshift(...step.inverse);
+		track(proj, planDel(proj, { kind: 'link', id: now.id }).ops, out, inv);
 	}
 	/*
 	B162 -- a waypoint that has lost every link self-destructs, in the same transaction.
@@ -233,13 +266,10 @@ export function plan(model, ops, options = {}) {
 	the state that will actually be stored rather than one still carrying the debris.
 	*/
 	for (const w of debris) {
-		const step = [], undoStep = [];
-		trimGroupsHolding(proj, w.id, step, undoStep);
+		const step = [];
+		trimGroupsHolding(proj, w.id, step);
 		step.push({ op: 'del', kind: 'waypoint', id: w.id });
-		undoStep.unshift({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) });
-		out.push(...step);
-		inv.unshift(...undoStep);
-		applyOps(proj, step);
+		track(proj, step, out, inv);
 	}
 
 	/*
@@ -342,17 +372,11 @@ export function plan(model, ops, options = {}) {
 		*/
 		if (validateMutation(proj, { action: 'set', kind: 'link', entity: { ...patch, id: inbound.id } })) continue;
 		/*
-		`inverseOfSet` rather than a hand-rolled patch, because it already solves the case that bit
-		here: a collapse INTRODUCES `via` on a link that had none, and restoring it with
-		`patch: { via: [] }` leaves an empty array where there was no key. An undone collapse must
-		be byte-identical to what stood before it, or a document drifts a little on every undo --
-		so when a patch introduces a key, the inverse is a `put` of the whole prior entity.
-
-		Taken BEFORE the merge is applied: `inbound` and `outbound` are the projection's live
-		entities, and applying the set rewrites `inbound` in place.
+		The inverse is the core's (`track`, PL-2), and it reaches for `inverseOfSet`, which solves the case that bit here
+		when it was hand-written: a collapse INTRODUCES `via` on a link that had none, and restoring it with
+		`patch: { via: [] }` leaves an empty array where there was no key -- so the inverse is a `put` of the whole prior
+		link. Taken just before each op is applied, so applying the set, which rewrites `inbound` in place, cannot reach it.
 		*/
-		inv.unshift(inverseOfSet('link', inbound, patch),
-			{ op: 'put', kind: 'link', entity: clone('link', outbound) });
 		/*
 		B240 -- APPLIED AS IT IS DECIDED, so the next merge reads the document this one left.
 
@@ -368,10 +392,7 @@ export function plan(model, ops, options = {}) {
 		delete never becomes a trigger -- a valid merge carries both halves' references and cannot
 		leave a new candidate behind.
 		*/
-		const step = [{ op: 'del', kind: 'link', id: outbound.id },
-			{ op: 'set', kind: 'link', id: inbound.id, patch }];
-		out.push(...step);
-		applyOps(proj, step);
+		track(proj, [{ op: 'del', kind: 'link', id: outbound.id }, { op: 'set', kind: 'link', id: inbound.id, patch }], out, inv);
 	}
 
 	/*
@@ -444,13 +465,9 @@ function planMeta(model, op) {
 	const err = validateMetaPatch(patch);
 	if (err) return { ok: false, error: err };
 	const meta = model.state.meta;
-	const ops = [];
-	const inverse = [];
 	const next = {};
-	const prev = {};
-	if (patch.name !== undefined && patch.name !== meta.name) { next.name = patch.name; prev.name = meta.name; }
-	if (Object.keys(next).length) { ops.push({ op: 'meta', patch: next }); inverse.push({ op: 'meta', patch: prev }); }
-	return { ok: true, ops, inverse };
+	if (patch.name !== undefined && patch.name !== meta.name) next.name = patch.name;
+	return { ok: true, ops: Object.keys(next).length ? [{ op: 'meta', patch: next }] : [] };
 }
 
 // Order-insensitive structural equality. An entity arriving from the wire may carry the same
@@ -470,9 +487,6 @@ function planPut(model, { kind, entity }) {
 		return { ok: false, error: `${kind} collection limit reached` };
 	}
 	const ops = [{ op: 'put', kind, entity: clone(kind, entity) }];
-	const inverse = before
-		? [{ op: 'put', kind, entity: clone(kind, before) }]
-		: [{ op: 'del', kind, id: entity.id }];
 
 	// "a node belongs to at most one group" — the rule existed ONLY in the browser
 	// (app/src/commands.js), so POST /groups admitted a node to two groups. It lives here now.
@@ -482,38 +496,28 @@ function planPut(model, { kind, entity }) {
 			const kept = other.members.filter((m) => !entity.members.includes(m));
 			if (kept.length === other.members.length) continue;
 			const { remaining, dissolve } = groupAfterRemoval(other.members, (m) => entity.members.includes(m));
-			if (dissolve) {
-				ops.push({ op: 'del', kind: 'group', id: other.id });
-				inverse.unshift({ op: 'put', kind: 'group', entity: clone('group', other) });
-			} else {
-				ops.push({ op: 'set', kind: 'group', id: other.id, patch: { members: remaining } });
-				inverse.unshift({ op: 'set', kind: 'group', id: other.id, patch: { members: [...other.members] } });
-			}
+			ops.push(dissolve ? { op: 'del', kind: 'group', id: other.id } : { op: 'set', kind: 'group', id: other.id, patch: { members: remaining } });
 		}
 	}
 	// A put of an entity already present unchanged, with no group to steal from, changes nothing.
 	// Narrow it away — the same no-op rule planSet and planDel follow (I6). This is what makes an
 	// outbox replay free: a request the server already accepted costs a no-op ack, not a second
 	// version bump and a second record for a document that did not move.
-	if (before && ops.length === 1 && same(before, ops[0].entity)) return { ok: true, ops: [], inverse: [] };
-	return { ok: true, ops, inverse };
+	if (before && ops.length === 1 && same(before, ops[0].entity)) return { ok: true, ops: [] };
+	return { ok: true, ops };
 }
 
 function planSet(model, { kind, id, patch }) {
 	const before = model.get(kind, id);
 	if (!before) return { ok: false, error: `set on missing entity: ${id}` };
 	const narrowed = narrow(kind, before, patch);
-	if (!Object.keys(narrowed).length) return { ok: true, ops: [], inverse: [] };   // no-op
-	return {
-		ok: true,
-		ops: [{ op: 'set', kind, id, patch: narrowed }],
-		inverse: [inverseOfSet(kind, before, narrowed)],
-	};
+	if (!Object.keys(narrowed).length) return { ok: true, ops: [] };   // no-op
+	return { ok: true, ops: [{ op: 'set', kind, id, patch: narrowed }] };
 }
 
 /*
-A group loses a member: trimmed, or dissolved when it falls below two. The ops and their inverses are
-appended to the caller's lists, read against `model` as it stands.
+A group loses a member: trimmed, or dissolved when it falls below two. The ops are appended to the caller's list, read
+against `model` as it stands; their inverses are the core's (PL-2).
 
 ONE FUNCTION FOR EVERY PATH THAT REMOVES A MEMBER (B241). It lived as a closure inside `planDel`, so a
 requested delete maintained membership and the orphan sweep -- the other path that deletes a
@@ -521,32 +525,22 @@ waypoint -- did not. The sweep left a group listing a waypoint that no longer ex
 `violations()` cannot see and `validateDoc` refuses at the next boot. Two paths holding one duty is
 how one of them forgets it.
 */
-function trimGroupsHolding(model, memberId, ops, inverse) {
+function trimGroupsHolding(model, memberId, ops) {
 	for (const group of model.all('group')) {
 		if (!group.members.includes(memberId)) continue;
 		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => m === memberId);
-		if (dissolve) {
-			ops.push({ op: 'del', kind: 'group', id: group.id });
-			inverse.unshift({ op: 'put', kind: 'group', entity: clone('group', group) });
-		} else {
-			ops.push({ op: 'set', kind: 'group', id: group.id, patch: { members: remaining } });
-			inverse.unshift({ op: 'set', kind: 'group', id: group.id, patch: { members: [...group.members] } });
-		}
+		ops.push(dissolve ? { op: 'del', kind: 'group', id: group.id } : { op: 'set', kind: 'group', id: group.id, patch: { members: remaining } });
 	}
 }
 
 function planDel(model, { kind, id }) {
 	const before = model.get(kind, id);
-	if (!before) return { ok: true, ops: [], inverse: [] };   // already gone — accepted, no-op
+	if (!before) return { ok: true, ops: [] };   // already gone — accepted, no-op
 	const ops = [];
-	const inverse = [];
 
 	if (kind === 'node') {
-		for (const link of model.linksOf(id)) {
-			ops.push({ op: 'del', kind: 'link', id: link.id });
-			inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
-		}
-		trimGroupsHolding(model, id, ops, inverse);
+		for (const link of model.linksOf(id)) ops.push({ op: 'del', kind: 'link', id: link.id });
+		trimGroupsHolding(model, id, ops);
 	}
 	if (kind === 'waypoint') {
 		/*
@@ -574,30 +568,22 @@ function planDel(model, { kind, id }) {
 		// itself here, and a deleted one leaves, so each strip is judged after the ones before it
 		let standing = model.all('link').filter((l) => !dying.has(l.id));
 
-		for (const link of model.linksAt(id)) {
-			if (dying.has(link.id)) {
-				ops.push({ op: 'del', kind: 'link', id: link.id });
-				inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
-			}
-		}
+		for (const link of model.linksAt(id)) if (dying.has(link.id)) ops.push({ op: 'del', kind: 'link', id: link.id });
 		for (const link of stripped) {
 			const remaining = link.via.filter((w) => w !== id);
 			const after = { ...link, via: remaining };
 			if (pairHolders(after, standing, model).length) {
 				ops.push({ op: 'del', kind: 'link', id: link.id });
-				inverse.unshift({ op: 'put', kind: 'link', entity: clone('link', link) });
 				standing = standing.filter((l) => l.id !== link.id);
 				continue;
 			}
 			standing = standing.map((l) => (l.id === link.id ? after : l));
 			ops.push({ op: 'set', kind: 'link', id: link.id, patch: { via: remaining } });
-			inverse.unshift({ op: 'set', kind: 'link', id: link.id, patch: { via: [...link.via] } });
 		}
-		trimGroupsHolding(model, id, ops, inverse);
+		trimGroupsHolding(model, id, ops);
 	}
 	ops.push({ op: 'del', kind, id });
-	inverse.unshift({ op: 'put', kind, entity: clone(kind, before) });
-	return { ok: true, ops, inverse };
+	return { ok: true, ops };
 }
 
 // ---- the one write ----

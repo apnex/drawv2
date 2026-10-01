@@ -161,6 +161,7 @@ Held, each with its trigger: promotion of the network to production as a full cu
 The production deploy of current `main` is the director's call.\
 AMENDED 2026-09-30: H17.15 approved (PD-1 to PD-4 and PD-6; PD-5 before PL-6); PL-0 done (H17.16, H17.17); next PL-1, the planner corpus.\
 AMENDED 2026-10-01: PL-1 done -- the planner corpus (2084 cases, both compositions); next PL-2, the core owns every inverse.\
+AMENDED 2026-10-01: PL-2 done -- the planner core writes every inverse; next PL-3, reactions and phases.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

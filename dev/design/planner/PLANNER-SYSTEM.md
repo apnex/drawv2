@@ -216,7 +216,9 @@ The corpus holds 84 named cases (42 rules in each composition) and 1000 seeded m
 Measured reach over the generated requests: production sweep 45 and join 38; network stranded 96, sweep 145, join 34, join declined 50.\
 The test holds floors under those, and seven planner mutants each fail it.\
 CLARIFIED 2026-10-01: undo is checked to restore every entity, with each collection compared sorted by id, because a restored entity is appended to its collection -- B10, registered and held, whose fix is an explicit order field.\
-So "byte-identical" in PR8 and PL-2 means per entity, not per collection order, until B10 is revived.
+So "byte-identical" in PR8 and PL-2 means per entity, not per collection order, until B10 is revived.\
+DONE 2026-10-01: PL-2 -- `inverseOf` and `track` in `server/txn.mjs`: every op reaches the projection through `track`, which records its inverse from the state just before it; the per-op planners, the cascades, the stranded pass, the sweep and the join return ops only.\
+All 2084 corpus results replay unchanged, inverses included, and a structural test in `tests/txn.test.js` holds one writer of inverses.
 **These are production code paths:** every stage is gated and deployed to the lab; the production deploy stays the director's call.
 
 ---
