@@ -43,6 +43,9 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 	try {
 		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
 		// K4: the planner is served whole from its own folder
+		const tokens = await ask('/tokens.css');   // H15.23: the colour registry the stylesheet reads
+		assert.equal(tokens.status, 200, 'the lab serves the colour registry');
+		assert.match(tokens.type, /^text\/css/);
 		for (const p of ['/kernel/geometry.mjs', '/planner/txn.mjs', '/planner/policy.mjs', '/network/network.mjs']) {
 			const r = await ask(p);
 			assert.equal(r.status, 200, p);

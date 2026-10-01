@@ -27,9 +27,9 @@ The offsets come from the spec rather than from here, so the canvas and the expo
 about where a label sits -- which is exactly what they did while the export had no labels at all.
 */
 const label = (name, x, y, opts = {}) =>
-	(name ? TXT(x, y, String(name), { fill: TOKENS.label || '#e6e9ee', ...opts }) : '');
+	(name ? TXT(x, y, String(name), { fill: TOKENS.exportLabel, ...opts }) : '');   // not the canvas's label colour: B275
 
-const TXT = (x, y, s, { anchor = 'middle', fill = '#e6e9ee', size = STD.fontSize } = {}) =>
+const TXT = (x, y, s, { anchor = 'middle', fill = TOKENS.contentText, size = STD.fontSize } = {}) =>
 	`<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="ui-monospace,monospace" font-size="${size}" fill="${fill}">${escText(s)}</text>`;
 
 // a CONTENT region inside a node, in node-LOCAL px (origin cell centre = 0,0). A region occupies a merged
@@ -51,7 +51,7 @@ export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 	}
 	// text: optional outline (box ON the socket border, never beyond); lines arrive already placed
 	let out = '';
-	if (r.outline) out += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="${typeof r.rx === 'number' ? r.rx : 3}" fill="${hexColor(r.bg) || '#0a0a0a'}" stroke="${hexColor(r.accent) || TOKENS.port}" stroke-width="1.3"/>`;
+	if (r.outline) out += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="${typeof r.rx === 'number' ? r.rx : 3}" fill="${hexColor(r.bg) || TOKENS.contentBg}" stroke="${hexColor(r.accent) || TOKENS.port}" stroke-width="1.3"/>`;
 	for (const ln of lines) out += TXT(tx, ln.y, ln.text, { anchor, fill, size });
 	return out + hit;
 }

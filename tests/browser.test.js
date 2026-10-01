@@ -1255,3 +1255,26 @@ test('K8: Escape during a sidebar drag cancels the drag and is spent there -- th
 		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx, y: cy, button: 'left', clickCount: 1 });
 	} finally { t.ws.close(); }
 });
+
+/*
+H15.23 (B255) -- the colour registry reaches the page. Every colour the stylesheet uses is now a `var(--tok-...)` read
+from app/tokens.css, so a page that failed to load that file would lose every colour at once and still boot. Read off the
+real page's computed styles: a link draws the link token, a label the label token, the page the page token.
+*/
+test('H15.23: the colours the page draws come from the registry, generated from kernel/theme.mjs', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const { TOKENS, CHROME } = await import('../kernel/theme.mjs');
+		const rgb = (hex) => { const h = hex.replace('#', ''); const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return `rgb(${parseInt(f.slice(0, 2), 16)}, ${parseInt(f.slice(2, 4), 16)}, ${parseInt(f.slice(4, 6), 16)})`; };
+		const got = JSON.parse(await t.eval(`JSON.stringify({
+			token: getComputedStyle(document.documentElement).getPropertyValue('--tok-link').trim(),
+			link: getComputedStyle(document.querySelector('#links .link')).stroke,
+			label: getComputedStyle(document.querySelector('#nodes .label')).fill,
+			page: getComputedStyle(document.body).backgroundColor,
+		})`));
+		assert.equal(got.token, TOKENS.link, 'app/tokens.css is loaded and carries the table');
+		assert.equal(got.link, rgb(TOKENS.link), 'a link draws the link token');
+		assert.equal(got.label, rgb(TOKENS.label), 'a label draws the label token');
+		assert.equal(got.page, rgb(CHROME.page), 'the page draws the page token');
+	} finally { t.ws.close(); }
+});

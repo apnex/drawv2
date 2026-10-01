@@ -13,7 +13,7 @@ would drift the day the rail changes.
 :root { --rail: 72px; --rail-border: 1px; }
 
 /* ---- app frame ---- */
-html, body { margin: 0; height: 100%; background: #060606; font-family: monospace; overflow: hidden; }
+html, body { margin: 0; height: 100%; background: var(--tok-page); font-family: monospace; overflow: hidden; }
 body { display: flex; flex-direction: column; }
 /*
 B156: ONE height for every control in the bar.
@@ -32,7 +32,7 @@ the same, because with a fixed height it buys nothing and can only squeeze the t
 #menu {
 	--control-h: 26px;
 	flex: 0 0 40px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
-	background: #181818; border-bottom: 1px solid #262626; color: #aed581; user-select: none;
+	background: var(--tok-surface); border-bottom: 1px solid var(--tok-divider); color: var(--tok-accent); user-select: none;
 }
 /*
 `flex: 0 0 auto` is the half that makes the declared sizes real.
@@ -92,12 +92,12 @@ does nothing to an inline element, which is what a bare span is.
 #menu > span { display: inline-block; line-height: var(--control-h); }
 #logo { font-weight: bold; letter-spacing: 1px; }
 #menu input, #menu select, #menu button {
-	background: #101010; color: #ddddff; border: 1px solid #303030; border-radius: 4px;
+	background: var(--tok-panel); color: var(--tok-ink); border: 1px solid var(--tok-input-border); border-radius: 4px;
 	font-family: monospace; font-size: 13px; padding: 0 8px; outline: none;
 }
-#menu input:focus, #menu select:focus { border-color: #aed581; }
+#menu input:focus, #menu select:focus { border-color: var(--tok-accent); }
 #menu button { cursor: pointer; }
-#menu button:hover { border-color: #aed581; color: #aed581; }
+#menu button:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
 #diagram-name { width: 150px; }
 /*
 B155/H9.9: templates are marked in the picker by colour, because that is what an `<option>` allows.
@@ -114,13 +114,13 @@ warning. It is context: something you may start from and do not own.
 Italic was tried and dropped: the band already carries the distinction, and slanting the text made
 the row harder to read for a difference the colour had already made.
 */
-#diagram-list option.tpl { color: #cfd8dc; background-color: #37474f; }
+#diagram-list option.tpl { color: var(--tok-ink-soft); background-color: var(--tok-chip); }
 
 #slides-url { width: 220px; }
-#slides-push.busy { color: #ffd54f; border-color: #ffd54f; }
-#slides-push.ok { color: #aed581; border-color: #aed581; }
-#slides-push.err { color: #e57373; border-color: #e57373; }
-#diagram-del.armed, #diagram-del.armed:hover { color: #e57373; border-color: #e57373; }
+#slides-push.busy { color: var(--tok-warn); border-color: var(--tok-warn); }
+#slides-push.ok { color: var(--tok-accent); border-color: var(--tok-accent); }
+#slides-push.err { color: var(--tok-danger); border-color: var(--tok-danger); }
+#diagram-del.armed, #diagram-del.armed:hover { color: var(--tok-danger); border-color: var(--tok-danger); }
 /*
 B155: the banner takes the slack, so the indicators to its right cannot be pushed.
 
@@ -130,7 +130,7 @@ element to its right. Giving the banner the flex slack fixes the cluster to the 
 stays right-aligned so it still reads where it always did, and grows leftward into its own space.
 */
 #banner {
-	font-size: 11px; color: #9a9; flex: 1; min-width: 0; text-align: right;
+	font-size: 11px; color: var(--tok-banner); flex: 1; min-width: 0; text-align: right;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /*
@@ -150,13 +150,13 @@ differently for a reason that had gone.
 */
 #lockstate {
 	font: 11px ui-monospace, monospace;
-	padding: 0; border-radius: 3px; color: #101010; box-sizing: border-box;
+	padding: 0; border-radius: 3px; color: var(--tok-panel); box-sizing: border-box;
 	width: 13ch; text-align: center;
 }
-.lock-unlocked { background-color: #aed581; }
-.lock-locked   { background-color: #ffd54f; cursor: pointer; }
-.lock-offline  { background-color: #555; color: #ddd; }
-.lock-readonly { background-color: #90a4ae; color: #fff; }
+.lock-unlocked { background-color: var(--tok-accent); }
+.lock-locked   { background-color: var(--tok-warn); cursor: pointer; }
+.lock-offline  { background-color: var(--tok-edge); color: var(--tok-offline-ink); }
+.lock-readonly { background-color: var(--tok-readonly); color: var(--tok-ink-bright); }
 /*
 B105/B155: the AGENT indicator -- a second axis, not a second state of the pill.
 
@@ -243,17 +243,17 @@ described a restriction the behaviour does not have.
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* an agent working elsewhere: quieter than the pill, and clickable because it names a destination */
-#menu #agents.agents-idle { background-color: #37474f; color: #b0bec5; }
-#menu #agents.agents-idle:hover { background-color: #455a64; color: #eceff1; }
+#menu #agents.agents-idle { background-color: var(--tok-chip); color: var(--tok-chip-ink); }
+#menu #agents.agents-idle:hover { background-color: var(--tok-chip-hover); color: var(--tok-ink-hover); }
 /* driving the diagram in view: nowhere to navigate to, but arming is still available, so the
    pointer stays -- the click means "arm" here rather than "go there" */
-#menu #agents.agents-here { background-color: #4a3b00; color: #ffd54f; }
-#menu #agents.agents-here:hover { background-color: #5a4800; }
+#menu #agents.agents-here { background-color: var(--tok-agents-here); color: var(--tok-warn); }
+#menu #agents.agents-here:hover { background-color: var(--tok-agents-here-hover); }
 /* B76/B155: identity sits immediately left of the authority pill -- who you are, then what you may
    do. Boxed now rather than bare text: it opens the access panel whenever it shows an identity, so
    it was always a control and only looked like a caption. */
-#menu #whoami { background-color: #263238; color: #cfd8dc; }
-#menu #whoami:hover { background-color: #2f3f46; color: #eceff1; }
+#menu #whoami { background-color: var(--tok-whoami); color: var(--tok-ink-soft); }
+#menu #whoami:hover { background-color: var(--tok-whoami-hover); color: var(--tok-ink-hover); }
 /*
 The two RESTING states, dimmed to the same value as `.lock-offline` so all three indicators agree
 about what "nothing to report" looks like. Neither is clickable, and both say something true:
@@ -274,7 +274,7 @@ signed in, so there is no identity to administer -- and its `cursor: default` mo
 rather than riding along here, where it was silently governing the agents button too.
 */
 #menu #agents.agents-none, #menu #whoami.whoami-local {
-	background-color: #242424; color: #6b6b6b;
+	background-color: var(--tok-surface-raised); color: var(--tok-ink-faint);
 }
 #menu #whoami.whoami-local { cursor: default; }
 
@@ -292,7 +292,7 @@ everywhere: a pointer, and a hover that lifts the background and the text togeth
 keeps `cursor: default` and is deliberately left behind -- it is inert for a real reason, having no
 identity to administer, and sharing a rule is not sharing a meaning.
 */
-#menu #agents.agents-none:hover { background-color: #2f2f2f; color: #9a9a9a; }
+#menu #agents.agents-none:hover { background-color: var(--tok-agents-none-hover); color: var(--tok-agents-none-ink-hover); }
 
 /*
 ARMED -- spectator mode, the standing instruction to follow an agent's work.
@@ -314,54 +314,54 @@ removed -- two signals for one fact, and the dimmer one just made the label hard
 `box-sizing: border-box` and eat a pixel of the text's line box -- measurable, and exactly the class
 of one-pixel drift that cost an evening.
 */
-#menu #agents.armed { box-shadow: inset 0 0 0 1px #ffd54f; }
+#menu #agents.armed { box-shadow: inset 0 0 0 1px var(--tok-warn); }
 
 #content { display: flex; flex: 1; min-height: 0; }
 #palette {
 	/* the rail width, single-sourced: `#beat-caption` offsets the canvas centre by it */
-	width: var(--rail); flex: 0 0 var(--rail); background: #181818; border-right: var(--rail-border) solid #262626;
+	width: var(--rail); flex: 0 0 var(--rail); background: var(--tok-surface); border-right: var(--rail-border) solid var(--tok-divider);
 	display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 6px; user-select: none;
 }
 .palette-item { width: 56px; height: 56px; border-radius: 8px; display: block; cursor: grab; touch-action: none; }
-.palette-item:hover { background: #242424; }
-.palette-item.held { background: #242424; outline: 2px solid #aed581; outline-offset: -2px; }
-.palette-item .digit-badge { font: 11px ui-monospace, monospace; fill: #555; }
-.palette-item.held .digit-badge { fill: #aed581; }
+.palette-item:hover { background: var(--tok-surface-raised); }
+.palette-item.held { background: var(--tok-surface-raised); outline: 2px solid var(--tok-accent); outline-offset: -2px; }
+.palette-item .digit-badge { font: 11px ui-monospace, monospace; fill: var(--tok-edge); }
+.palette-item.held .digit-badge { fill: var(--tok-accent); }
 
 #stage { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
 #container { width: 100%; height: 100%; display: block; touch-action: none; }
-#canvas { fill: #101010; }
+#canvas { fill: var(--tok-panel); }
 /* Tab hides names. A class rather than a re-render, so the toggle is instant on a large diagram. */
 #container.labels-off .label, #container.labels-off .label-pill { display: none; }
 
 /* W4 — edit mode: a subtle accent border cues that editing aids (the socket grid) are showing */
-#container.edit-mode #canvas { stroke: #4fc3f7; stroke-width: 2; stroke-opacity: 0.5; }
+#container.edit-mode #canvas { stroke: var(--tok-link); stroke-width: 2; stroke-opacity: 0.5; }
 /* W5 — run mode: clickable content regions ACT. The transparent hit rect captures only in run mode,
    so view/edit clicks pass through to the node for normal gestures. A green border cues run mode. */
 .clickable { pointer-events: none; }
 #container.run-mode .clickable { pointer-events: all; cursor: pointer; }
 #container.run-mode .clickable[data-input] { cursor: text; }   /* W6 — an editable input region */
-#container.run-mode .clickable:hover { fill: rgba(79, 195, 247, 0.14); }
-#container.run-mode #canvas { stroke: #aed581; stroke-width: 2; stroke-opacity: 0.5; }
+#container.run-mode .clickable:hover { fill: var(--tok-clickable-hover); }
+#container.run-mode #canvas { stroke: var(--tok-accent); stroke-width: 2; stroke-opacity: 0.5; }
 #kdefs { position: absolute; width: 0; height: 0; }
 
 /* ---- icon primitives (kernel art) ---- */
-.hollow { fill: var(--fill, #ffffff); stroke: var(--icon, #aed581); stroke-width: 2; }
-.solid  { fill: var(--icon, #aed581); stroke: var(--icon, #aed581); stroke-width: 0.2; }
+.hollow { fill: var(--fill, var(--tok-hollow)); stroke: var(--icon, var(--tok-accent)); stroke-width: 2; }
+.solid  { fill: var(--icon, var(--tok-accent)); stroke: var(--icon, var(--tok-accent)); stroke-width: 0.2; }
 .icon   { transform: scale(0.3); }
-.frame  { fill: var(--fill, #101010); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, #aed581); }
-.socket { fill: none; stroke: #e0a85a; stroke-width: 0.6; stroke-dasharray: 2 2; }
+.frame  { fill: var(--fill, var(--tok-panel)); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, var(--tok-accent)); }
+.socket { fill: none; stroke: var(--tok-socket); stroke-width: 0.6; stroke-dasharray: 2 2; }
 
 /* ---- node state (compose via CSS vars) ---- */
-.node { --icon: #aed581; --fill: #101010; --outer: #aed581; cursor: move; }
-.node.hover { --icon: #101010; --fill: #aed581; }
+.node { --icon: var(--tok-accent); --fill: var(--tok-panel); --outer: var(--tok-accent); cursor: move; }
+.node.hover { --icon: var(--tok-panel); --fill: var(--tok-accent); }
 .node.linkband { cursor: crosshair; }
-.node .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
+.node .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
 .node.selected .select-box { display: block; }
-.node.armed { --icon: #101010; --fill: #e57373; --outer: #e57373; cursor: not-allowed; }
-.node.armed-clone { --icon: #101010; --fill: #81d4fa; --outer: #81d4fa; cursor: copy; }
+.node.armed { --icon: var(--tok-panel); --fill: var(--tok-danger); --outer: var(--tok-danger); cursor: not-allowed; }
+.node.armed-clone { --icon: var(--tok-panel); --fill: var(--tok-clone); --outer: var(--tok-clone); cursor: copy; }
 .node.ghost { opacity: 0.6; pointer-events: none; }
-.node.ghost.blocked { --icon: #e57373; --outer: #e57373; }
+.node.ghost.blocked { --icon: var(--tok-danger); --outer: var(--tok-danger); }
 
 /*
 B198: NOTHING on the canvas is selectable text.
@@ -385,31 +385,31 @@ A text box that genuinely needs selectable content opts back in, and will have a
 /* B236 -- no font-size. A label's size is RULED (kernel STD.fontSize) and emitted as an
    attribute, and a CSS rule silently beats one -- which is how the canvas drew 15 while the
    export drew 13, from the moment B234 taught the export to draw labels at all. */
-.label { font-family: monospace; fill: #ddddff; user-select: none; text-anchor: middle; }
+.label { font-family: monospace; fill: var(--tok-label); user-select: none; text-anchor: middle; }
 .label.zone-label { text-anchor: start; }
-.label-pill { fill: #101010; }
+.label-pill { fill: var(--tok-panel); }
 
 /* ---- links (kernel colour; width is inline) ---- */
-.link { stroke: #4fc3f7; pointer-events: stroke; cursor: pointer; }
+.link { stroke: var(--tok-link); pointer-events: stroke; cursor: pointer; }
 .link-hit { stroke: transparent; fill: none; pointer-events: stroke; cursor: pointer; }   /* a link's click area, never seen (B268) */
 /* A DOWN link -- no route over the pipes right now -- is orange as well as dotted (2026-09-29), and so is a link
    blocking the selected down link's way (2026-09-30). #ff9800 is 8.8:1 on the canvas. Only the lab's network
    plugin ever makes a link down, so neither rule matches in production. Placed BEFORE .selected and .armed, which
    share its specificity, so selecting or arming a link still shows. */
-.link[data-down], .link.blocking { stroke: #ff9800; }
-.link.selected { stroke: #aed581; }
-.link.armed { stroke: #e57373; cursor: not-allowed; }
+.link[data-down], .link.blocking { stroke: var(--tok-down); }
+.link.selected { stroke: var(--tok-accent); }
+.link.armed { stroke: var(--tok-danger); cursor: not-allowed; }
 .link.replugging { opacity: 0.15; }
-.link-live { stroke: #4fc3f7; stroke-width: 6; stroke-dasharray: 10 8; pointer-events: none; }
+.link-live { stroke: var(--tok-link); stroke-width: 6; stroke-dasharray: 10 8; pointer-events: none; }
 
 /* ---- zones (kernel translucent fill; selection via var) ---- */
-.zone { --zstroke: #aab4c4; --zwidth: 1; }
+.zone { --zstroke: var(--tok-zone-stroke); --zwidth: 1; }
 .zone.hover { --zwidth: 2; }
-.zone.selected { --zstroke: #aed581; }
+.zone.selected { --zstroke: var(--tok-accent); }
 #container.zonegrid .zone { cursor: move; }
-.zone.armed { --zstroke: #e57373; cursor: not-allowed; }
-.zone.armed-clone { --zstroke: #81d4fa; cursor: copy; }
-.zone-rect { fill: #8fa3b8; fill-opacity: 0.13; stroke: var(--zstroke, #aab4c4); stroke-opacity: 0.55; stroke-width: var(--zwidth, 1); }
+.zone.armed { --zstroke: var(--tok-danger); cursor: not-allowed; }
+.zone.armed-clone { --zstroke: var(--tok-clone); cursor: copy; }
+.zone-rect { fill: var(--tok-zone-fill); fill-opacity: 0.13; stroke: var(--zstroke, var(--tok-zone-stroke)); stroke-opacity: 0.55; stroke-width: var(--zwidth, 1); }
 
 /* ---- groups (draw-only hull; nodes stay the interaction targets) ---- */
 .group { pointer-events: none; }
@@ -473,7 +473,7 @@ this dot to say so. Hiding it there would remove the only indicator that a spawn
 */
 #container.run-mode .bend .wp-dot { display: none; }
 .waypoint.linkband { cursor: crosshair; }
-.waypoint .select-box { display: none; fill: none; stroke: #4fc3f7; stroke-width: 2; pointer-events: none; }
+.waypoint .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
 .waypoint.selected .select-box { display: block; }
 /*
 A waypoint on a SELECTED path takes the selection green, so the path and its anchors agree.
@@ -482,8 +482,8 @@ A waypoint on a SELECTED path takes the selection green, so the path and its anc
 drifts. Ranked above `.armed` deliberately: arming is a threat and must still shout red over a
 selection.
 */
-.waypoint.on-selected-path .wp-ring { stroke: #aed581; stroke-opacity: 1; }
-.waypoint.on-selected-path .wp-dot { fill: #aed581; }
+.waypoint.on-selected-path .wp-ring { stroke: var(--tok-accent); stroke-opacity: 1; }
+.waypoint.on-selected-path .wp-dot { fill: var(--tok-accent); }
 /*
 H12.8 -- an armed spawner reads as armed in EVERY mode, and never moves in author view.
 
@@ -498,8 +498,8 @@ Placed ABOVE `.armed` deliberately: arming a TOOL is a transient thing the perso
 now and must still shout over this, which is a lasting property of the diagram. Same ordering
 reasoning as the selected-path highlight above.
 */
-.waypoint.spawning .wp-ring { stroke: #66bb6a; stroke-opacity: 1; stroke-width: 3; }
-.waypoint.spawning .wp-dot { fill: #66bb6a; }
+.waypoint.spawning .wp-ring { stroke: var(--tok-spawning); stroke-opacity: 1; stroke-width: 3; }
+.waypoint.spawning .wp-dot { fill: var(--tok-spawning); }
 /* a mover is presentation only: never a pointer target, so it cannot intercept a click meant for
    the line it is riding, and no transition -- the compositor owns its motion via offset-path. */
 /*
@@ -510,101 +510,101 @@ change of mind one edit instead of a rewrite of every diagram that has a spawner
 arrangement stored a hex per spawner and three repaints only ever reached newly armed ones.
 */
 .mover { pointer-events: none; }
-.mover.packet { fill: #ffa726; }
-.waypoint.armed .wp-ring { stroke: #e57373; stroke-opacity: 1; }
-.waypoint.armed .wp-dot { fill: #e57373; }
+.mover.packet { fill: var(--tok-packet); }
+.waypoint.armed .wp-ring { stroke: var(--tok-danger); stroke-opacity: 1; }
+.waypoint.armed .wp-dot { fill: var(--tok-danger); }
 /* stamp ghost (waypoint hand): ring has no inline stroke, so CSS provides it; red when blocked */
-.node.ghost .wp-ring { stroke: #4fc3f7; }
-.node.ghost .wp-dot { fill: #4fc3f7; }
-.node.ghost.blocked .wp-ring { stroke: #e57373; }
-.node.ghost.blocked .wp-dot { fill: #e57373; }
+.node.ghost .wp-ring { stroke: var(--tok-link); }
+.node.ghost .wp-dot { fill: var(--tok-link); }
+.node.ghost.blocked .wp-ring { stroke: var(--tok-danger); }
+.node.ghost.blocked .wp-dot { fill: var(--tok-danger); }
 
 /* ---- handles (zone resize + link re-plug) ---- */
-.handle { fill: #4fc3f7; stroke: #101010; stroke-width: 2; }
+.handle { fill: var(--tok-link); stroke: var(--tok-panel); stroke-width: 2; }
 .handle[data-corner="nw"], .handle[data-corner="se"] { cursor: nwse-resize; }
 .handle[data-corner="ne"], .handle[data-corner="sw"] { cursor: nesw-resize; }
 .handle[data-end] { cursor: grab; }
 
 /* ---- snap feedback + marquee + datum ---- */
-.gridline { stroke: #ddddff; stroke-width: 2; pointer-events: none; }
-.snapbox { rx: 6px; fill: #505050; stroke: #ddddff; stroke-width: 4; pointer-events: none; }
-.marquee { rx: 2px; stroke: #ddddff; stroke-width: 2; stroke-dasharray: 8 6; fill: #ddddff; fill-opacity: 0.08; pointer-events: none; }
+.gridline { stroke: var(--tok-ink); stroke-width: 2; pointer-events: none; }
+.snapbox { rx: 6px; fill: var(--tok-snapbox); stroke: var(--tok-label); stroke-width: 4; pointer-events: none; }
+.marquee { rx: 2px; stroke: var(--tok-label); stroke-width: 2; stroke-dasharray: 8 6; fill: var(--tok-label); fill-opacity: 0.08; pointer-events: none; }
 /* A1 — text-box draw preview (hold 't' + drag) + the armed-tool cursor */
-.textbox-preview { rx: 5px; fill: #101010; fill-opacity: 0.3; stroke: #aed581; stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+.textbox-preview { rx: 5px; fill: var(--tok-panel); fill-opacity: 0.3; stroke: var(--tok-accent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
 #container.texttool { cursor: crosshair; }
-.datum { fill: none; stroke: #ffd54f; stroke-width: 2; pointer-events: none; }
+.datum { fill: none; stroke: var(--tok-datum); stroke-width: 2; pointer-events: none; }
 
 /* ---- grid dots ---- */
-#grid-nodes circle { fill: #202020; pointer-events: none; }
+#grid-nodes circle { fill: var(--tok-grid-dot); pointer-events: none; }
 #grid-zones { visibility: hidden; }
 #container.zonegrid #grid-zones { visibility: visible; }
-#grid-zones circle { fill: #202020; pointer-events: none; }
+#grid-zones circle { fill: var(--tok-grid-dot); pointer-events: none; }
 
 /* ---- footer readout ---- */
-#status { position: relative; flex: 0 0 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #181818; border-top: 1px solid #262626; }
-.readout { font-family: monospace; font-size: 12px; color: #ddddff; cursor: pointer; white-space: nowrap; user-select: none; }
+#status { position: relative; flex: 0 0 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: var(--tok-surface); border-top: 1px solid var(--tok-divider); }
+.readout { font-family: monospace; font-size: 12px; color: var(--tok-ink); cursor: pointer; white-space: nowrap; user-select: none; }
 
 /* ---- data view (Tab numeric overlay) ---- */
-.data-tag { font-family: monospace; font-size: 11px; fill: #ddddff; opacity: 0.6; user-select: none; }
-.data-pill { fill: #101010; opacity: 0.7; }
+.data-tag { font-family: monospace; font-size: 11px; fill: var(--tok-ink); opacity: 0.6; user-select: none; }
+.data-pill { fill: var(--tok-panel); opacity: 0.7; }
 
 /* ---- inline label editor ---- */
 #label-editor {
-	position: fixed; z-index: 10; background: #101010; color: #ddddff;
-	border: 1px solid #aed581; border-radius: 4px; font-family: monospace; font-size: 13px;
+	position: fixed; z-index: 10; background: var(--tok-panel); color: var(--tok-ink);
+	border: 1px solid var(--tok-accent); border-radius: 4px; font-family: monospace; font-size: 13px;
 	padding: 3px 6px; text-align: center; outline: none;
 }
 
 /* ---- help overlay ---- */
-#help { position: fixed; inset: 0; z-index: 20; background: rgba(6, 6, 6, 0.88); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#help { position: fixed; inset: 0; z-index: 20; background: var(--tok-scrim); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 #help[hidden] { display: none; }
-#help-card { background: #181818; border: 1px solid #aed581; border-radius: 8px; padding: 24px 32px; color: #ddddff; font-size: 13px; cursor: default; max-height: 85vh; overflow-y: auto; }
-#help-card h2 { color: #aed581; font-size: 15px; margin: 0 0 12px; }
-#help-card h3 { color: #aed581; font-size: 13px; font-weight: normal; margin: 14px 0 6px; opacity: 0.8; }   /* a section of the generated help (app/src/help.js) */
+#help-card { background: var(--tok-surface); border: 1px solid var(--tok-accent); border-radius: 8px; padding: 24px 32px; color: var(--tok-ink); font-size: 13px; cursor: default; max-height: 85vh; overflow-y: auto; }
+#help-card h2 { color: var(--tok-accent); font-size: 15px; margin: 0 0 12px; }
+#help-card h3 { color: var(--tok-accent); font-size: 13px; font-weight: normal; margin: 14px 0 6px; opacity: 0.8; }   /* a section of the generated help (app/src/help.js) */
 #help-card table { border-collapse: collapse; }
 #help-card td { padding: 3px 14px 3px 0; white-space: nowrap; }
-#help-card td:first-child { color: #aed581; }
+#help-card td:first-child { color: var(--tok-accent); }
 
 /* H9.4d — access panel. Shares the #help overlay geometry deliberately: one modal idiom. */
-#access { position: fixed; inset: 0; z-index: 20; background: rgba(6, 6, 6, 0.88); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#access { position: fixed; inset: 0; z-index: 20; background: var(--tok-scrim); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 #access[hidden] { display: none; }
-#access-card { background: #181818; border: 1px solid #aed581; border-radius: 8px; padding: 24px 32px; color: #ddddff; font-size: 13px; cursor: default; min-width: 460px; max-height: 85vh; overflow-y: auto; }
-#access-card h2 { color: #aed581; font-size: 15px; margin: 0 0 12px; }
-#access-owner { color: #9e9e9e; margin: 0 0 12px; }
+#access-card { background: var(--tok-surface); border: 1px solid var(--tok-accent); border-radius: 8px; padding: 24px 32px; color: var(--tok-ink); font-size: 13px; cursor: default; min-width: 460px; max-height: 85vh; overflow-y: auto; }
+#access-card h2 { color: var(--tok-accent); font-size: 15px; margin: 0 0 12px; }
+#access-owner { color: var(--tok-ink-muted); margin: 0 0 12px; }
 #access-list { border-collapse: collapse; width: 100%; }
 #access-list td { padding: 4px 14px 4px 0; white-space: nowrap; }
-#access-list td:first-child { color: #aed581; }
-#access-list button { background: none; border: 1px solid #555; border-radius: 4px; color: #e57373; cursor: pointer; font-size: 11px; padding: 1px 7px; }
+#access-list td:first-child { color: var(--tok-accent); }
+#access-list button { background: none; border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-danger); cursor: pointer; font-size: 11px; padding: 1px 7px; }
 #access-add, #access-ws-add, #access-code-add { display: flex; gap: 6px; margin-top: 14px; }
-#access-principal { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
-#access-level, #access-grant { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
-#access-error { color: #e57373; margin: 10px 0 0; min-height: 1em; }
-#access-card h2 + p, #access-ws-note { color: #9e9e9e; margin: 0 0 10px; max-width: 46em; }
-#access-ws-head { margin-top: 22px !important; border-top: 1px solid #333; padding-top: 18px; }
+#access-principal { flex: 1; background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 7px; }
+#access-level, #access-grant { background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 7px; cursor: pointer; }
+#access-error { color: var(--tok-danger); margin: 10px 0 0; min-height: 1em; }
+#access-card h2 + p, #access-ws-note { color: var(--tok-ink-muted); margin: 0 0 10px; max-width: 46em; }
+#access-ws-head { margin-top: 22px !important; border-top: 1px solid var(--tok-rule); padding-top: 18px; }
 #access-ws-list { border-collapse: collapse; width: 100%; }
 #access-ws-list td { padding: 4px 14px 4px 0; white-space: nowrap; }
-#access-ws-list td:first-child { color: #aed581; }
-#access-ws-list button { background: none; border: 1px solid #555; border-radius: 4px; color: #e57373; cursor: pointer; font-size: 11px; padding: 1px 7px; }
-#access-ws-principal { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
-#access-ws-level, #access-ws-grant { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
+#access-ws-list td:first-child { color: var(--tok-accent); }
+#access-ws-list button { background: none; border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-danger); cursor: pointer; font-size: 11px; padding: 1px 7px; }
+#access-ws-principal { flex: 1; background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 7px; }
+#access-ws-level, #access-ws-grant { background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 7px; cursor: pointer; }
 /* the diagram half is hidden for a non-owner; the workspace half is always theirs to administer */
 #access-card.not-owner #access-owner, #access-card.not-owner #access-list,
 #access-card.not-owner #access-add { display: none; }
 
 /* H9.29 — connection codes. The plaintext box is deliberately loud: it is the only time it exists. */
-#access-codes-head { margin-top: 22px !important; border-top: 1px solid #333; padding-top: 18px; }
-#access-codes-note { color: #9e9e9e; margin: 0 0 10px; max-width: 46em; }
+#access-codes-head { margin-top: 22px !important; border-top: 1px solid var(--tok-rule); padding-top: 18px; }
+#access-codes-note { color: var(--tok-ink-muted); margin: 0 0 10px; max-width: 46em; }
 #access-codes-list { border-collapse: collapse; width: 100%; }
 #access-codes-list td { padding: 4px 14px 4px 0; white-space: nowrap; }
-#access-codes-list td:first-child { color: #aed581; }
-#access-codes-list button { background: none; border: 1px solid #555; border-radius: 4px; color: #e57373; cursor: pointer; font-size: 11px; padding: 1px 7px; }
-#access-code-new { border: 1px solid #aed581; border-radius: 6px; padding: 12px 14px; margin: 0 0 12px; background: #12180c; }
+#access-codes-list td:first-child { color: var(--tok-accent); }
+#access-codes-list button { background: none; border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-danger); cursor: pointer; font-size: 11px; padding: 1px 7px; }
+#access-code-new { border: 1px solid var(--tok-accent); border-radius: 6px; padding: 12px 14px; margin: 0 0 12px; background: var(--tok-code-new); }
 #access-code-new[hidden] { display: none; }
-#access-code-once { color: #aed581; margin: 0 0 8px; }
-#access-code-value { display: block; font-family: ui-monospace, monospace; font-size: 18px; letter-spacing: 2px; color: #fff; margin-bottom: 10px; user-select: all; cursor: text; }
-#access-code-copy, #access-code-done { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 10px; cursor: pointer; margin-right: 6px; }
-#access-code-agent { flex: 1; background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; }
-#access-code-mint { background: #101010; border: 1px solid #555; border-radius: 4px; color: #ddddff; font: inherit; padding: 4px 7px; cursor: pointer; }
+#access-code-once { color: var(--tok-accent); margin: 0 0 8px; }
+#access-code-value { display: block; font-family: ui-monospace, monospace; font-size: 18px; letter-spacing: 2px; color: var(--tok-ink-bright); margin-bottom: 10px; user-select: all; cursor: text; }
+#access-code-copy, #access-code-done { background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 10px; cursor: pointer; margin-right: 6px; }
+#access-code-agent { flex: 1; background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 7px; }
+#access-code-mint { background: var(--tok-panel); border: 1px solid var(--tok-edge); border-radius: 4px; color: var(--tok-ink); font: inherit; padding: 4px 7px; cursor: pointer; }
 
 /*
 B109 -- the delete window. One modal idiom: the same geometry as #access and #help.
@@ -613,18 +613,18 @@ B109 -- the delete window. One modal idiom: the same geometry as #access and #he
 the signal. `.left` is the only column given emphasis, because how long remains is the fact that
 decides whether to act now; the rest is identification.
 */
-#undelete { position: fixed; inset: 0; z-index: 20; background: rgba(6, 6, 6, 0.88); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#undelete { position: fixed; inset: 0; z-index: 20; background: var(--tok-scrim); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 #undelete[hidden] { display: none; }
-#undelete-card { background: #181818; border: 1px solid #aed581; border-radius: 8px; padding: 24px 32px; color: #ddddff; font-size: 13px; cursor: default; min-width: 460px; max-height: 85vh; overflow-y: auto; }
-#undelete-card h2 { color: #aed581; font-size: 15px; margin: 0 0 12px; }
-#undelete-note { color: #9e9e9e; margin: 0 0 12px; max-width: 46em; }
+#undelete-card { background: var(--tok-surface); border: 1px solid var(--tok-accent); border-radius: 8px; padding: 24px 32px; color: var(--tok-ink); font-size: 13px; cursor: default; min-width: 460px; max-height: 85vh; overflow-y: auto; }
+#undelete-card h2 { color: var(--tok-accent); font-size: 15px; margin: 0 0 12px; }
+#undelete-note { color: var(--tok-ink-muted); margin: 0 0 12px; max-width: 46em; }
 #undelete-list { border-collapse: collapse; width: 100%; }
-#undelete-list td { padding: 4px 10px 4px 0; border-bottom: 1px solid #262626; vertical-align: middle; }
-#undelete-list td.left { color: #e57373; font-variant-numeric: tabular-nums; white-space: nowrap; }
-#undelete-list td.left.roomy { color: #9e9e9e; }
-#undelete-list td.name { color: #ddddff; }
-#undelete-list td.id { color: #6a6a6a; font-size: 11px; }
-#undelete-list button { background: #2d3b2d; color: #aed581; border: 1px solid #3f5340; border-radius: 3px; padding: 2px 10px; cursor: pointer; }
+#undelete-list td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--tok-divider); vertical-align: middle; }
+#undelete-list td.left { color: var(--tok-danger); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#undelete-list td.left.roomy { color: var(--tok-ink-muted); }
+#undelete-list td.name { color: var(--tok-ink); }
+#undelete-list td.id { color: var(--tok-ink-fainter); font-size: 11px; }
+#undelete-list button { background: var(--tok-restore); color: var(--tok-accent); border: 1px solid var(--tok-restore-border); border-radius: 3px; padding: 2px 10px; cursor: pointer; }
 #undelete-actions { margin-top: 14px; text-align: right; }
 
 /*
@@ -634,9 +634,9 @@ Muted while nothing is wrong, because this reports the last event of ANY kind an
 routine. It earns colour only when the server refused something: a surface that shouts constantly
 is one a person stops reading, which is the failure this row exists to end rather than repeat.
 */
-#server-say { color: #6b6b6b; font-size: 12px; white-space: nowrap; overflow: hidden;
+#server-say { color: var(--tok-ink-faint); font-size: 12px; white-space: nowrap; overflow: hidden;
 	text-overflow: ellipsis; max-width: 46ch; margin-left: 14px; }
-#server-say.err { color: #e57373; }
+#server-say.err { color: var(--tok-danger); }
 
 /*
 H14.4 -- the beat.
@@ -711,7 +711,7 @@ is overlapping text in a case that needs both a narrow viewport and a long line,
 that is readable the rest of the time.
 */
 #beat-caption { position: absolute; left: calc(50% + (var(--rail) + var(--rail-border)) / 2); transform: translateX(-50%);
-	max-width: calc(100% - var(--rail) - var(--rail-border)); text-align: center; color: #e4e4e4; font-size: 19px;
+	max-width: calc(100% - var(--rail) - var(--rail-border)); text-align: center; color: var(--tok-caption); font-size: 19px;
 	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
 /* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
@@ -720,18 +720,18 @@ that is readable the rest of the time.
    must never eat that press. */
 .beams { pointer-events: none; }
 .beam {
-	/* brighter, per the director. #ef5350 is a muted material red that reads as a thin line rather
+	/* brighter, per the director. var(--tok-unreachable) is a muted material red that reads as a thin line rather
 	   than as energy; this is a hot core at full opacity with a saturated glow carrying the colour,
 	   which is how a beam reads as bright without becoming thick. */
-	stroke: #ff5d47;
+	stroke: var(--tok-beam);
 	stroke-width: 2.5;
 	stroke-linecap: round;
 	opacity: 1;
-	filter: drop-shadow(0 0 2px #ff8a65) drop-shadow(0 0 6px #ff3d00);
+	filter: drop-shadow(0 0 2px var(--tok-beam-glow)) drop-shadow(0 0 6px var(--tok-beam-core));
 }
 
 /* B178 -- the two rungs above `offline`. A stale tab is worse than a disconnected one, so these
    read as action-required rather than as a passive state. `unreachable` is the louder of the two
    because it is the one the client cannot resolve on its own. */
-.lock-stale { background: #ffa726; color: #1a1a1a; }
-.lock-unreachable { background: #ef5350; color: #fff; font-weight: 600; }
+.lock-stale { background: var(--tok-stale); color: var(--tok-stale-ink); }
+.lock-unreachable { background: var(--tok-unreachable); color: var(--tok-ink-bright); font-weight: 600; }

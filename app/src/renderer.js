@@ -67,7 +67,7 @@ function contentDom(r, parent, idx = 0) {
 		el('use', { 'data-layer': 'glyph', href: `#glyph-${r.glyph}` }, svg);
 		addHit(); return;
 	}
-	if (r.outline) el('rect', { class: 'content-box', x: x0, y: y0, width: w, height: h, rx: (typeof r.rx === 'number' ? r.rx : 3), fill: hexColor(r.bg) || '#0a0a0a', stroke: hexColor(r.accent) || TOKENS.port, 'stroke-width': 1.3 }, parent);
+	if (r.outline) el('rect', { class: 'content-box', x: x0, y: y0, width: w, height: h, rx: (typeof r.rx === 'number' ? r.rx : 3), fill: hexColor(r.bg) || TOKENS.contentBg, stroke: hexColor(r.accent) || TOKENS.port, 'stroke-width': 1.3 }, parent);
 	for (const ln of lines) {
 		const t = el('text', { class: 'content-text', x: tx, y: ln.y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-family': 'ui-monospace,monospace', 'font-size': size, fill }, parent);
 		t.textContent = ln.text;

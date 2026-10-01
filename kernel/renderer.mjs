@@ -82,7 +82,7 @@ export function contentLayout(r, V = STD, L = L_STD) {
 	const al = r.align || 'center', pad = 8;
 	const tx = al === 'left' ? x0 + pad : al === 'right' ? x0 + w - pad : x0 + w / 2;
 	const anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
-	const fill = hexColor(r.fill) || '#e6e9ee';
+	const fill = hexColor(r.fill) || TOKENS.contentText;
 	const value = r.value == null ? '' : String(r.value);
 
 	/*

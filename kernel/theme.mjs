@@ -33,7 +33,69 @@ export const TOKENS = {
 	this ring rather than the other way round.
 	*/
 	transitRing: '#ffb74d',  // 11.0:1 on the canvas; separated from today's socket amber
+	/*
+	H15.23 (B255) -- the roles the canvas's STYLESHEET draws with, beside the ones the kernel draws with above. One table,
+	so a colour has one owner: app/tokens.css is generated from this (tools/colour-tokens.mjs) and app/style.css reads
+	only `var(--tok-...)`; the gate fails a colour literal anywhere outside this file. Two roles may share a value --
+	`port` and `accent` do -- because they are two decisions that happen to agree today.
+	*/
+	accent: '#aed581',       // selection, and the go-ahead accent: what is selected, armed to clone, confirmed
+	danger: '#e57373',       // armed to delete, an error, a refusal
+	clone: '#81d4fa',        // armed to clone
+	label: '#ddddff',        // a node or zone name on the canvas
+	contentText: '#e6e9ee',  // the default text colour of a content region (both renderers)
+	contentBg: '#0a0a0a',    // the default fill of an outlined content region (both renderers)
+	/*
+	The EXPORT's node and zone name colour. Not the canvas's: the export asked for `label` before it existed and fell back
+	to this literal, so a downloaded picture names things in a different colour from the canvas (B275, registered with the
+	question of which one is right). Named, so the disagreement is in one table where a reader sees both.
+	*/
+	exportLabel: '#e6e9ee',
+	spawning: '#66bb6a',     // an emitting endpoint
+	packet: '#ffa726',       // a mover
+	down: '#ff9800',         // a link that is down, or a link blocking another
+	gridDot: '#202020',      // the dim grid point a waypoint lights (B200)
+	snapbox: '#505050',      // the snapped-cell box
+	hollow: '#ffffff',       // a hollow glyph's fill
+	datum: '#ffd54f',        // the measuring datum
+	beam: '#ff5d47', beamGlow: '#ff8a65', beamCore: '#ff3d00',   // a firing tower's beam, its glow and its hot core
+	caption: '#e4e4e4',      // the beat caption
+	clickableHover: 'rgba(79, 195, 247, 0.14)',   // a run-mode clickable region under the pointer
 	bendR: 20                // = spec BEND_R; the locked corner radius
+};
+
+/*
+H15.23 (B255) -- the PAGE's colours: the menu, the cards, the status pills, the banner. Not the canvas's, and not the
+kernel's to draw -- but one registry is the point, so they live beside the canvas's and reach the stylesheet the same way.
+*/
+export const CHROME = {
+	page: '#060606',         // the page behind everything
+	surface: '#181818',      // a panel: menu, palette, status, cards
+	surfaceRaised: '#242424',// a hovered or held control
+	divider: '#262626',      // the line between panels
+	rule: '#333',            // a heading's rule inside a card
+	edge: '#555',            // a control's border and a neutral fill
+	inputBorder: '#303030',
+	scrim: 'rgba(6, 6, 6, 0.88)',   // behind a modal card
+	ink: '#ddddff',          // primary text
+	inkBright: '#fff',
+	inkSoft: '#cfd8dc',
+	inkHover: '#eceff1',
+	inkMuted: '#9e9e9e',
+	inkFaint: '#6b6b6b',
+	inkFainter: '#6a6a6a',
+	warn: '#ffd54f',         // a lock held, an agent here
+	stale: '#ffa726', staleInk: '#1a1a1a',
+	unreachable: '#ef5350',
+	readonly: '#90a4ae',
+	offlineInk: '#ddd',
+	banner: '#9a9',
+	chip: '#37474f', chipHover: '#455a64', chipInk: '#b0bec5',
+	agentsHere: '#4a3b00', agentsHereHover: '#5a4800',
+	agentsNoneHover: '#2f2f2f', agentsNoneInkHover: '#9a9a9a',
+	whoami: '#263238', whoamiHover: '#2f3f46',
+	codeNew: '#12180c',
+	restore: '#2d3b2d', restoreBorder: '#3f5340',
 };
 
 // measured glyph bounding boxes at icon scale 0.3: [x, y, w, h] — fits any glyph into the

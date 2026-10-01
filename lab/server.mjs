@@ -58,6 +58,7 @@ function resolveFile(pathname) {
 	if (pathname === '/lab.css') return path.join(ROOT, 'lab/lab.css');
 	if (pathname === '/seeds.json') return path.join(ROOT, 'lab/seeds.json');   // the fixed boards (data, not code)
 	if (pathname === '/style.css') return path.join(ROOT, 'app/style.css');
+	if (pathname === '/tokens.css') return path.join(ROOT, 'app/tokens.css');   // H15.23: the colours style.css reads
 	for (const [prefix, dir] of Object.entries(MOUNTS)) {
 		if (pathname.startsWith(prefix)) return fileWithin(path.join(ROOT, dir), pathname.slice(prefix.length));
 	}
