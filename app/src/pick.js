@@ -54,6 +54,8 @@ export function hitOf(evt) {
 	const zoneG = target.closest('g.zone');
 	if (zoneG) return evt.shiftKey ? { kind: 'zone', id: zoneG.id } : { kind: 'canvas', id: null };
 	if (target.classList && target.classList.contains('link')) return { kind: 'link', id: target.id };
+	// a link's invisible hit twin takes the click wherever its dotted or dashed stroke has a gap (B268)
+	if (target.classList && target.classList.contains('link-hit')) return { kind: 'link', id: target.dataset.link };
 	return { kind: 'canvas', id: null };
 }
 

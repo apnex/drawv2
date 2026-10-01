@@ -496,6 +496,43 @@ test('F11: after w on a node mid-drag, the live preview still follows the cursor
 	} finally { await p.close(); }
 });
 
+/*
+B268 -- A DOWN LINK IS SELECTED WHEREVER IT IS CLICKED. It is drawn dotted, and the browser hit-tests a stroke's dashes,
+not its gaps: measured live, 10 of 29 clicks along a down link selected it, the rest reaching the pipe beneath. Each link
+now has an invisible twin, the same path and width with no dash, which takes the click for it -- the visual unchanged.
+*/
+test('B268: every click along a down link selects it, and the link still looks the same', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'waypoint', entity: lab.model.get('waypoint', 'waypoint-000005') }] })`);
+		await p.run(settle);
+		const look = await p.run(`(() => { const cs = getComputedStyle(document.getElementById('link-000001')); return { dash: cs.strokeDasharray, cap: cs.strokeLinecap, stroke: cs.stroke }; })()`);
+		assert.notEqual(look.dash, 'none', 'precondition: the link is down, drawn dotted');
+		let hits = 0, tries = 0;
+		for (let x = -300; x <= -100; x += 7) {
+			await p.click(600, 400);
+			await p.click(x, 0);
+			tries++;
+			if ((await p.run('lab.input.selection.list()')).includes('link-000001')) hits++;
+		}
+		assert.equal(hits, tries, `${hits} of ${tries} clicks along the down link selected it`);
+		const after = await p.run(`(() => { const cs = getComputedStyle(document.getElementById('link-000001')); return { dash: cs.strokeDasharray, cap: cs.strokeLinecap, stroke: cs.stroke }; })()`);
+		assert.deepEqual(after, { ...look, stroke: after.stroke }, 'still dotted, with the same caps -- only its colour follows the selection');
+	} finally { await p.close(); }
+});
+
+test('B268: the click area is the link\'s own width -- a click just beside a solid link does not select it', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		const w = await p.run(`parseFloat(getComputedStyle(document.getElementById('link-000001')).strokeWidth)`);
+		await p.click(600, 400);
+		await p.click(-200, w / 2 + 3);
+		assert.deepEqual(await p.run('lab.input.selection.list()'), [], 'beside it: nothing');
+		await p.click(-200, 0);
+		assert.deepEqual(await p.run('lab.input.selection.list()'), ['link-000001'], 'on it: the link');
+	} finally { await p.close(); }
+});
+
 test('every seed pipe carries the lifetime its gesture would give it', () => {
 	const boards = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));
 	const named = Object.entries(boards).filter(([name]) => !name.startsWith('_'));
@@ -661,6 +698,8 @@ const CHECK = {
 	},
 	rings: (s, ids) => same(s.rings.map((r) => r.id).sort(), [...ids].sort()) || `the rings mark ${s.rings.map((r) => r.id).join(',') || 'nothing'}, not ${ids.join(',') || 'nothing'}`,
 	ringLook: (s) => (s.rings.length > 0 && s.rings.every((r) => r.stroke === rgb('#ffb74d') && r.dashed)) || `the rings are drawn ${JSON.stringify(s.rings)}, not dashed in #ffb74d`,
+	// the selection is exactly the one down link -- for a board whose links are drawn by gestures, so their ids are not known
+	selectedDown: (s, want) => { const down = s.links.filter((l) => l.down).map((l) => l.id); return (down.length === 1 && same([...s.selected], down)) === want || `the selection is ${s.selected.join(',') || 'empty'}, and the down links are ${down.join(',') || 'none'}`; },
 	selected: (s, ids) => same([...s.selected].sort(), [...ids].sort()) || `the selection is ${ids.length ? s.selected.join(',') || 'empty' : s.selected.join(',')}, not ${ids.join(',')}`,
 	downStroke: (s, hex) => {
 		const down = s.links.filter((l) => l.down);

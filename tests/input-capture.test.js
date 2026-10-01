@@ -8,7 +8,7 @@ pointer. These hold that contract, and G1 itself: the input layers read no DOM.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
+import { makeInput, pointer, key, seedNodes, installDom } from './fixtures/client-harness.mjs';
 import { Capture } from '../app/src/capture.js';
 
 // a sink that records what it is handed, and optionally claims or captures
@@ -94,4 +94,17 @@ test('G1: app/src/input.js reads no DOM event and touches no DOM API -- that is 
 	const DOM = /preventDefault|\bevt\.target\b|\be\.target\b|\.closest\(|\.dataset\b|classList|setPointerCapture|ownerDocument|\bdocument\.|activeElement|addEventListener|querySelector|\.hidden\b|\btoCanvas\(|\bhitOf\(|clientX|pointerId|CustomEvent|getScreenCTM/g;
 	const found = [...new Set(src.match(DOM) ?? [])];
 	assert.deepEqual(found, [], `DOM reads left in the input layers: ${found.join(', ')}`);
+});
+
+test('B268: a press on a link\'s hit twin is a press on the link', () => {
+	const restore = installDom();
+	try {
+	const svg = { addEventListener() {}, setPointerCapture() {}, getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) };
+	const got = [];
+	const sink = new Proxy({}, { get: () => (e) => got.push(e) });
+	const c = new Capture({ svg, host: { addEventListener() {} }, sink });
+	const twin = { tagName: 'path', id: '', dataset: { link: 'link-000001' }, classList: { contains: (k) => k === 'link-hit' }, closest: () => null };
+	c.onDown({ clientX: 0, clientY: 0, button: 0, target: twin, preventDefault() {} });
+	assert.deepEqual(got[0].on, { kind: 'link', id: 'link-000001' });
+	} finally { restore(); }
 });

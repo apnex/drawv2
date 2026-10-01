@@ -2579,7 +2579,9 @@
 				"laid": "hand"
 			}
 		],
-		"selected": [],
+		"selected": [
+			"link#1"
+		],
 		"rings": [],
 		"stretches": [
 			{
@@ -2594,12 +2596,12 @@
 		"paths": {
 			"link#2": {
 				"d": "M-360 0 L-137.889 -111.056 Q-120 -120 -100 -120 L100 -120 Q120 -120 137.889 -111.056 L360 0",
-				"stroke": "rgb(79, 195, 247)",
+				"stroke": "rgb(255, 152, 0)",
 				"dotted": false
 			},
 			"link#1": {
 				"d": "M-360 300 L360 0",
-				"stroke": "rgb(255, 152, 0)",
+				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
 		}

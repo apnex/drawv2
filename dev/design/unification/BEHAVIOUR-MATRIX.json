@@ -2071,7 +2071,8 @@
 			],
 			"intent": "C-B is blocked, not wayless: its way runs over A-B's w pipes, which A-B has first call on. The notice says A-B holds its way.",
 			"expect": {
-				"notice": "is down: its way is held by link-"
+				"notice": "is down: its way is held by link-",
+				"selectedDown": true
 			},
 			"rule": "DECISIONS: \"A w pipe goes when no link is on it or resolves onto it\" (2026-09-30).",
 			"standing": "ruled",

@@ -220,3 +220,32 @@ test('B218: an endpoint falls back to a plain anchor when its link is deleted', 
 		assert.doesNotMatch(wp().getAttribute('class'), /endpoint|junction/, 'and no sub-type class');
 	});
 });
+
+/*
+B268 -- each link has an invisible TWIN that takes its clicks: the same path and the same width, with no dash, since the
+browser hit-tests a dotted stroke's dots and not its gaps. The twin follows its link through every change, and goes with
+it; the link itself is drawn exactly as before.
+*/
+test('B268: a link\'s hit twin has its path and width, no dash, and is never seen', () => {
+	withRenderer(({ svg, model, make }) => {
+		make(model);
+		model.put('waypoint', { id: 'waypoint-aa0001', name: 'a', x: 0, y: 0 });
+		model.put('waypoint', { id: 'waypoint-aa0002', name: 'b', x: 240, y: 0 });
+		model.put('link', { id: 'link-aa0003', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002', control: true });
+		const layer = svg.byId['#links'];
+		const link = layer.children.find((c) => c.attrs.id === 'link-aa0003');
+		const twin = layer.children.find((c) => (c.attrs.class || '') === 'link-hit');
+		assert.ok(twin, 'a twin is drawn');
+		assert.equal(twin.attrs['data-link'], 'link-aa0003');
+		assert.equal(twin.attrs.d, link.attrs.d);
+		assert.equal(twin.attrs['stroke-width'], link.attrs['stroke-width']);
+		assert.ok(link.attrs['stroke-dasharray'], 'precondition: a control link is dashed');
+		assert.equal(twin.attrs['stroke-dasharray'], undefined, 'the twin has no gaps');
+		assert.equal(twin.attrs.stroke, 'transparent');
+		assert.equal(twin.attrs.id, undefined, 'and no id -- the link keeps its own');
+		model.set('waypoint', 'waypoint-aa0002', { x: 360 });
+		assert.equal(twin.attrs.d, layer.children.find((c) => c.attrs.id === 'link-aa0003').attrs.d, 'it follows the link when an end moves');
+		model.del('link', 'link-aa0003');
+		assert.equal(layer.children.filter((c) => (c.attrs.class || '') === 'link-hit').length, 0, 'and goes with it');
+	});
+});

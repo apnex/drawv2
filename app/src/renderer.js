@@ -24,6 +24,16 @@ const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.s
 // on a content change; absent ⇒ no attr (plain node stays byte-identical). hexColor keeps SVG attrs safe.
 const contentSig = (e) => (isPanel(e) ? JSON.stringify(e.content) : null);   // one owner for 'is a panel'
 
+/*
+B268 -- A LINK'S CLICK AREA, apart from how it looks. The browser hit-tests a stroke's dashes and not its gaps, so a down
+link (dotted) or a control link (dashed) was selected only where a click landed on a dot -- measured, 10 of 29 clicks.
+Each link therefore has an invisible twin drawn just after it: the same path and the same width and caps, never dashed,
+never seen, taking the click for the link (`app/src/pick.js` reads its `data-link`). The click area is exactly the link's
+own outline, gaps filled -- no wider -- and the visible link is untouched.
+*/
+const hitOf = (d, look) => ({ d, fill: 'none', stroke: 'transparent', 'stroke-width': look['stroke-width'],
+	...(look['stroke-linecap'] ? { 'stroke-linecap': look['stroke-linecap'] } : {}) });
+
 // one layer of the kernel's waypoint rings, as a circle -- a layer may carry its own stroke and dash, as the transit ring
 // does, and is drawn as it says; the canvas and the export draw the same list the same way
 function layerCircle(l, g) {
@@ -331,6 +341,7 @@ export class Renderer {
 			// H15.9 -- ONE derivation, emitted as given. The marker, the weight and the dash were
 			// three calls assembled by hand here and again in `update`, which is how B228 shipped.
 			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...this.linkAppearanceOf(entity) }, this.layers.links);
+			el('path', { class: 'link-hit', 'data-link': entity.id, ...hitOf(d, this.linkAppearanceOf(entity)) }, this.layers.links);   // its click area (B268)
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
@@ -485,6 +496,8 @@ export class Renderer {
 				if (attr in want) dom.setAttribute(attr, want[attr]);
 				else dom.removeAttribute(attr);
 			}
+			const twin = this.hitTwinOf(entity.id);
+			if (twin) setAttrs(twin, hitOf(dom.getAttribute('d'), want));
 			this.refreshWaypointsOf(entity);
 		}
 		if (kind === 'zone') {
@@ -513,6 +526,12 @@ export class Renderer {
 	remove(id) {
 		const dom = this.elementOf(id);
 		if (dom) dom.remove();
+		this.hitTwinOf(id)?.remove();   // a link's click area goes with it (B268)
+	}
+
+	// a link's invisible hit twin, found by the link it stands for (B268)
+	hitTwinOf(id) {
+		return [...this.layers.links.querySelectorAll('.link-hit')].find((t) => t.getAttribute('data-link') === id) ?? null;
 	}
 
 	elementOf(id) {
