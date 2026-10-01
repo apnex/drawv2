@@ -207,7 +207,16 @@ Each falsifiable, each with a test before the stage that relies on it lands.
 | **PL-6** | **One preview.** The browser plans its own view; the hand-written copies go; the junction split becomes a reaction (K18a, B243) | PL6 and PL7 held; the gesture corpus records intent only, as ruled |
 
 Stages PL-1 to PL-5 change no outcome, and the corpus proves it.\
-PL-0 fixes two defects; PL-6 changes what the browser sends, which the director rules before it lands (PD-5).
+PL-0 fixes two defects; PL-6 changes what the browser sends, which the director rules before it lands (PD-5).\
+DONE 2026-10-01: PL-0 (`2ebb619`, H17.16 and H17.17).\
+DONE 2026-10-01: PL-1 -- `tests/fixtures/planner-corpus.mjs` and its golden file, replayed by `tests/planner-corpus.test.js`.\
+CLARIFIED 2026-10-01: the differential's oracle for PL-2 to PL-5 is the corpus itself -- the planner's answers at `2ebb619` -- not the frozen pre-CS1 planner of `tests/diff-plan.test.js`, which is single-op and has no stranded pass, sweep or join to compare.\
+That test stays as it is.\
+The corpus holds 84 named cases (42 rules in each composition) and 1000 seeded multi-op requests per composition, over boards with waypoints, junctions, groups, pipes and transit.\
+Measured reach over the generated requests: production sweep 45 and join 38; network stranded 96, sweep 145, join 34, join declined 50.\
+The test holds floors under those, and seven planner mutants each fail it.\
+CLARIFIED 2026-10-01: undo is checked to restore every entity, with each collection compared sorted by id, because a restored entity is appended to its collection -- B10, registered and held, whose fix is an explicit order field.\
+So "byte-identical" in PR8 and PL-2 means per entity, not per collection order, until B10 is revived.
 **These are production code paths:** every stage is gated and deployed to the lab; the production deploy stays the director's call.
 
 ---
@@ -217,6 +226,9 @@ PL-0 fixes two defects; PL-6 changes what the browser sends, which the director 
 - **Order is meaning.** Declared phases must reproduce today's sequence exactly; the corpus, written first, is the check.
 - **Inverses move.** The core computing inverses must be byte-identical with the hand-built ones (PL-2 does nothing else).
 - **Validation inside a reaction** (B239): moving it to phase 3 changes when a failed join is skipped versus refused -- measured in PL-1, ruled if it differs.
+  MEASURED 2026-10-01 (PL-1): of 1000 generated production requests, 41 leave a join undone, and in only 2 of them is it the B239 validation that declines it; the rest are declined by `collapseAtWaypoint` itself, which is a shape rule, not a refusal.\
+  The named cases `join-declined-duplicate-bend` and `join-declined-self-conflict` hold the B239 skips.\
+  So moving that validation to phase 3 would turn about 2 in 1000 accepted deletes into refusals; PL-3 keeps them skips, and the corpus holds that.
 - **The browser's requests change in PL-6,** which changes log records, the gesture corpus, and what reconciliation treats as an echo.
 - **Hooks see different models today:** the live model in one call, an un-networked projection in another; reactions must see one projection, consistently.
 - **Production and the lab differ in link rules** until promotion; two tenants keep that honest, and a gate test proves no composition holds both.
