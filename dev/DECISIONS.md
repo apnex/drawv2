@@ -1480,3 +1480,9 @@ Asked one at a time (`dev/design/unification/TRANSIT.md` section 12.3), the dire
 - TR-7, in the lab: the setting is session state, as pipes are, saved by promotion's format batch; until then a reload loses it and undo does not move it.
 TR-8, the ring's place, was already ruled (section 9) and is withdrawn as a question.
 
+**A node's transit ring is the anchor's, as ruled -- confirmed 2026-09-30, after seeing it.**\
+Stage X1 drew the ring on a router at radius 10, as section 9 of TRANSIT.md rules for an anchor; measured in real Chrome, it sits over the router's glyph and its dashes blend with it.\
+Asked whether a node's ring should move just outside the node's frame, the director: "Keep it as ruled.\
+One rule for all nodes.\
+I will reconsider actual glyph design at a later stage".
+

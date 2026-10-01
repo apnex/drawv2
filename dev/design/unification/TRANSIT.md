@@ -301,5 +301,5 @@ The original reason for this document, now with the pipes it led to: an author c
 - **The plugin host gains one declared verb,** `selected()`, the selection as plain data; the lab redraws the anchors a change names, and its notice says what happened.
 - **Nothing else changes:** five matrix rows (TRN-01 to TRN-05) on a new `transit` board, RED before the code; the 43 earlier boards are identical but for an empty ring list; routes still pass a non-transiting anchor until X2.
 - **Not yet:** the export cannot draw a ring, since the setting is session state outside the document until promotion stores it.
-- **Eight mutants, each caught.**
+- **Eight mutants, each caught.**- **Seen in the lab, and kept:** on a router the ring at radius 10 sits over the glyph and is hard to read; the director kept it as ruled -- one rule for all nodes -- and will reconsider the glyph design later.
 
