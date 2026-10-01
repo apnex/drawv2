@@ -213,7 +213,7 @@ model does not have.
 */
 test('H15.6: cycling direction walks undeclared, forward, reverse, and back to absent', async () => {
 	const { cycleFlow } = await import('../app/src/commands.js');
-	const { linkFacing } = await import('../kernel/geometry.mjs');
+	const { linkFacing } = await import('../kernel/network-roles.mjs');
 
 	const undeclared = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' };
 	const first = cycleFlow(undeclared);
@@ -247,7 +247,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	and a readout saying another is the shape this register is full of.
 	*/
 	const bar = (l) => (typeof l.flow !== 'boolean' ? '<->' : (l.flow ? '>>>' : '<<<'));
-	const { linkMarker } = await import('../kernel/geometry.mjs');
+	const { linkMarker } = await import('../kernel/network-appearance.mjs');
 	for (const l of [undeclared, forward, reverse]) {
 		const head = linkMarker(l);
 		const expect = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';

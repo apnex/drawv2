@@ -157,7 +157,7 @@ distinguish them: an undeclared link has no direction anywhere, and a declared l
 point it merely threads. Both mean "this point imposes no direction", which is all a caller needs.
 
 NOT EXPORTED. `collapseAtWaypoint` below is its only caller, and the twin every other module reaches
-for is `linkFacing` in kernel/geometry.mjs -- exported there because the test holding the two to
+for is `linkFacing` in kernel/network-roles.mjs -- exported there because the test holding the two to
 agreement must drive the real function rather than a copy. Exporting this one as well would offer
 two importable spellings of one rule, which is how the pair starts to drift.
 */

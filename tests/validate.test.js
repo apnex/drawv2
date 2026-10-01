@@ -566,7 +566,7 @@ was refused until two commits ago, so this is not hypothetical.
 test('B210: a split turns a bend into a junction, and the result validates', async () => {
 	const { splitAtBend } = await import('../model/invariants.mjs');
 	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
-	const { waypointRoles } = await import('../kernel/geometry.mjs');
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 
 	// the arithmetic, including a link with bends either side of the cut
 	const cases = [
@@ -698,7 +698,7 @@ The distinction returns when direction can be DECLARED: two flows arriving is a 
 stays a junction. That is a rule about meaning the author asserted, not about field order.
 */
 test('B214: three terminations is the smallest junction, and the collapse rule agrees', async () => {
-	const { waypointRoles } = await import('../kernel/geometry.mjs');
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
 
 	const shapes = {
@@ -755,7 +755,7 @@ one again would be a second record free to disagree with the first after any edi
 this waypoint, is the flow arriving, leaving, or is there no flow at all?
 */
 test('H15.3: facing derives direction at a point, and an undeclared link has none', async () => {
-	const { linkFacing: facing } = await import('../kernel/geometry.mjs');
+	const { linkFacing: facing } = await import('../kernel/network-roles.mjs');
 
 	const undeclared = { id: 'l1', src: 'a', dst: 'w' };
 	assert.equal(facing(undeclared, 'w'), null, 'an undeclared link asserts nothing at either end');
@@ -800,7 +800,7 @@ So the rule is no longer a count. It is: one termination is an endpoint, two tha
 two that oppose is a junction, three or more is a junction whatever they declare.
 */
 test('H15.4: two declared flows that oppose make a junction; agreeing ones make a bend', async () => {
-	const { waypointRoles } = await import('../kernel/geometry.mjs');
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 	const w = 'w';
 
 	// UNDECLARED -- unchanged by this rung. No direction, so nothing can oppose: still an endpoint.
@@ -863,7 +863,7 @@ a test instead of by an import: every combination, both readings, one answer. If
 edited alone this fails, which is the whole point.
 */
 test('H15.4: `facing` and `waypointRoles` read a declaration identically', async () => {
-	const { linkFacing, waypointRoles } = await import('../kernel/geometry.mjs');
+	const { linkFacing, waypointRoles } = await import('../kernel/network-roles.mjs');
 	const w = 'w';
 
 	// The MODEL twin, reached through the collapse that is its only caller. `facing` is not
@@ -929,7 +929,7 @@ agree about every pair, and B232 shipped precisely because the matrix was implem
 and the guard was written from the code rather than from the ruled table. Two rules, one test.
 */
 test('H15.15: a control link and a data link meeting is a junction, not a bend', async () => {
-	const { waypointRoles } = await import('../kernel/geometry.mjs');
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
 	const w = 'w';
 

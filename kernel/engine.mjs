@@ -25,7 +25,9 @@
 // bend. ONE anchor per cell = the centre. Parallel/mechanism realizers are a future additive
 // layer (kept in dev/design/sim), deliberately out of this kernel cut.
 import { STD, derive, BEND_R } from './spec.mjs';
-import { cellPx, node, waypoint, waypointRoles, zone, group, path, groupHull } from './geometry.mjs';
+import { cellPx, node, zone, group, groupHull } from './geometry.mjs';
+import { waypoint, path } from './network-appearance.mjs';
+import { waypointRoles } from './network-roles.mjs';
 import { gridSnap } from './router.mjs';
 
 const VARIANTS = { standard: STD };

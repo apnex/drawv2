@@ -471,7 +471,8 @@ test('B216: an endpoint waypoint survives its link and becomes a plain anchor', 
 		'a bend still goes with its link -- it exists only to shape one');
 
 	// and what survives renders as a plain anchor: no links, so no sub-type
-	const { waypointLayers, waypointRoles } = await import('../kernel/geometry.mjs');
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 	assert.deepEqual(waypointRoles('waypoint-aa0003', []), [], 'no links means no sub-type layer');
 	assert.deepEqual(waypointLayers([], 20).map((l) => l.cls), ['wp-anchor', 'wp-dot'],
 		'a plain anchor: the ring and the grid dot, nothing else');
@@ -760,7 +761,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	const { m, log } = fresh();
 	// the kernel twin -- the model's own `facing` is internal, and these two are held to agree in
 	// tests/validate.test.js, so either spelling reads the same declaration
-	const { linkFacing: facing } = await import('../kernel/geometry.mjs');
+	const { linkFacing: facing } = await import('../kernel/network-roles.mjs');
 	const { validateDoc } = await import('../server/validate.js');
 	// `fresh()` mints no document id, and validateDoc checks meta first -- without this the round
 	// trip would fail on the fixture rather than on the field under test
@@ -962,7 +963,7 @@ test('B240: a declared convergence is judged against the link the earlier collap
 	// stale, the second waypoint paired against the pre-merge undeclared link and merged the
 	// convergence away. Which waypoint merges follows the deleted link's stored order, so the
 	// property is asserted in BOTH orientations rather than naming the survivor (H16 review).
-	const { linkFacing } = await import('../kernel/geometry.mjs');
+	const { linkFacing } = await import('../kernel/network-roles.mjs');
 	for (const flipParallel of [false, true]) {
 		const { m, log } = twoJunctions({ flipParallel, a: { flow: true }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { flow: true } });
 		assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');

@@ -374,7 +374,8 @@ test('B38: every element kind the kernel handles is a kind resolve() can emit', 
 	// constructor still declares its kind, so testing against geometry.mjs would have passed while
 	// the dead kind sat there. Measured from the importer, the only thing that can emit.
 	const eng = fs.readFileSync('kernel/engine.mjs', 'utf8');
-	const imported = eng.match(/import \{([^}]*)\} from '\.\/geometry\.mjs'/)[1];
+	// K13a: the core elements come from geometry, the network's (waypoint, path) from network-appearance
+	const imported = [...eng.matchAll(/import \{([^}]*)\} from '\.\/(?:geometry|network-appearance)\.mjs'/g)].map((m) => m[1]).join(',');
 	const constructible = new Set(imported.split(',').map((n) => n.trim()).filter(Boolean));
 
 	/*
@@ -473,7 +474,7 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { waypointStyle } = await import('../kernel/geometry.mjs');
+	const { waypointStyle } = await import('../kernel/network-appearance.mjs');
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
@@ -533,7 +534,7 @@ This is the twin guard: if either renderer grows its own copy of the rule, or st
 shared one, this fails.
 */
 test('B162: one rule, consumed by the client renderer and the kernel alike', async () => {
-	const { waypointRole } = await import('../kernel/geometry.mjs');
+	const { waypointRole } = await import('../kernel/network-roles.mjs');
 	assert.equal(typeof waypointRole, 'function', 'the rule is exported from the kernel');
 
 	// the four cases, asserted on the rule itself rather than through either renderer
@@ -625,7 +626,7 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { waypointAnchor, waypointStyle } = await import('../kernel/geometry.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
@@ -673,7 +674,7 @@ way and the client imports every one of them: the kernel owns the numbers, each 
 its emission. The waypoint style was the outlier.
 */
 test('B162: the waypoint style has one owner, and neither renderer restates it', async () => {
-	const { waypointAnchor, waypointStyle } = await import('../kernel/geometry.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
 	const end = waypointStyle('endpoint', 20);
 	const bend = waypointStyle('bend', 20);
 
@@ -710,7 +711,7 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 test('B162: the two renderers agree, value for value', async () => {
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { waypointAnchor, waypointStyle } = await import('../kernel/geometry.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
 	// what the export emits, parsed back out of the SVG it produced
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
@@ -766,7 +767,8 @@ happened three times over, with `DOT_RADIUS` feeding the ladder while both rende
 hardcoded 2.2 that nothing could see.
 */
 test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the centre', async () => {
-	const { gridDot, waypointAnchor, waypointJunction, waypointStyle } = await import('../kernel/geometry.mjs');
+	const { gridDot } = await import('../kernel/geometry.mjs');
+	const { waypointAnchor, waypointJunction, waypointStyle } = await import('../kernel/network-appearance.mjs');
 
 	/*
 	The junction rung is RESERVED rather than exported -- nothing draws it yet, and an export with no
@@ -865,7 +867,7 @@ gesture that makes a junction was refused at the pointer before the validator ev
 relaxed the validator; without this the feature is still undrawable.
 */
 test('B209: each role combination draws its own layers, in both renderers', async () => {
-	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
@@ -975,7 +977,7 @@ The endpoint pad already fills for exactly this reason, so the two now agree: a 
 at is opaque, and a circle a line passes through is not.
 */
 test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
-	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
@@ -1019,7 +1021,8 @@ consumed by every renderer without any of them deciding again.
 export can emit. An undeclared link has no head, because it asserts nothing.
 */
 test('H15.6: the arrowhead follows the declaration, from one source', async () => {
-	const { linkFacing, linkMarker } = await import('../kernel/geometry.mjs');
+	const { linkFacing } = await import('../kernel/network-roles.mjs');
+	const { linkMarker } = await import('../kernel/network-appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 
@@ -1093,7 +1096,7 @@ The plane is the same shape of field travelling the same five doors, so it is gu
 that failed rather than trusted because the code looks right.
 */
 test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
-	const { linkDash, linkWidth } = await import('../kernel/geometry.mjs');
+	const { linkDash, linkWidth } = await import('../kernel/network-appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 	const mk = (control) => ({
@@ -1183,7 +1186,7 @@ renderer decides for itself. The ring needs the links to know which plane it ser
 `waypointLayers` takes them -- a role set alone cannot say.
 */
 test('H15.16: a control link and its endpoint ring are thinner than a data one', async () => {
-	const { linkWidth, waypointLayers } = await import('../kernel/geometry.mjs');
+	const { linkWidth, waypointLayers } = await import('../kernel/network-appearance.mjs');
 	const { L_STD, STD } = await import('../kernel/spec.mjs');
 
 	// the LINK
@@ -1331,7 +1334,7 @@ what makes the canvas and the export unable to disagree.
 The defence is structural rather than a new guard: there is no longer a second place to forget.
 */
 test('H15.9: linkAppearance is the whole answer, and it is attributes rather than advice', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../kernel/geometry.mjs');
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../kernel/network-appearance.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 
 	const plain = linkAppearance({ id: 'l', src: 'a', dst: 'b' });
@@ -1379,8 +1382,8 @@ not the control dash -- which a down link must not be mistaken for. A down contr
 thinner weight, so its plane stays legible while it is down.
 */
 test('a DOWN link is dotted: round dots spaced in stroke widths, never the control dash', async () => {
-	const k = await import('../kernel/geometry.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
-	const dots = (link, w, extra) => k.linkAppearance(link, w, { down: true, ...extra });
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../kernel/network-appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
+	const dots = (link, w, extra) => linkAppearance(link, w, { down: true, ...extra });
 	const plain = { id: 'l', src: 'a', dst: 'b' };
 
 	const down = dots(plain, 6);
@@ -1392,19 +1395,19 @@ test('a DOWN link is dotted: round dots spaced in stroke widths, never the contr
 
 	const ctrl = { ...plain, control: true };
 	const ctrlDown = dots(ctrl, 6);
-	assert.equal(ctrlDown['stroke-width'], k.linkAppearance(ctrl, 6)['stroke-width'], 'a down control link keeps its thinner weight');
-	assert.notEqual(ctrlDown['stroke-dasharray'], k.linkAppearance(ctrl, 6)['stroke-dasharray'], 'and is dotted, not dashed');
+	assert.equal(ctrlDown['stroke-width'], linkAppearance(ctrl, 6)['stroke-width'], 'a down control link keeps its thinner weight');
+	assert.notEqual(ctrlDown['stroke-dasharray'], linkAppearance(ctrl, 6)['stroke-dasharray'], 'and is dotted, not dashed');
 
 	/*
 	ORANGE, as well as dotted (2026-09-29). Link colour lives in the stylesheet beside .link.selected and .link.armed,
 	and a stylesheet cannot read the model -- so the derivation marks the state, and the stylesheet colours it.
 	*/
 	assert.equal(down['data-down'], '', 'a down link carries the mark the stylesheet colours');
-	const up = k.linkAppearance(plain, 6);
+	const up = linkAppearance(plain, 6);
 	assert.ok(!('stroke-linecap' in up) && !('stroke-dasharray' in up) && !('data-down' in up), 'a live link carries none of the down keys -- absent, not null');
-	assert.deepEqual(k.linkAppearance(plain, 6, { down: false }), up, 'and "not down" is exactly the live look');
+	assert.deepEqual(linkAppearance(plain, 6, { down: false }), up, 'and "not down" is exactly the live look');
 	for (const key of Object.keys(ctrlDown)) {
-		assert.ok(k.APPEARANCE_KEYS.includes(key), `${key} is emitted when down but not declared -- healing could not remove it`);
+		assert.ok(APPEARANCE_KEYS.includes(key), `${key} is emitted when down but not declared -- healing could not remove it`);
 	}
 });
 
@@ -1418,7 +1421,7 @@ is not "radius is 10" -- it is "this ring fits in the gap the other two leave, a
 either". A later change to any of the three radii must keep that true or fail here.
 */
 test('the transit ring fits between the junction and endpoint rings, touching neither', async () => {
-	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
 	const ext = 12;
 
 	const all = waypointLayers(['endpoint', 'junction'], ext, null, { transit: false });
@@ -1442,7 +1445,7 @@ test('the transit ring fits between the junction and endpoint rings, touching ne
 });
 
 test('the transit ring draws only when the author declared it, at any link count', async () => {
-	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
 	const has = (roles, opts) => waypointLayers(roles, 12, null, opts).some((l) => l.cls === 'wp-transit');
 
 	assert.equal(has(['endpoint'], { transit: false }), true, 'declared, one link: the mark shows');
@@ -1474,7 +1477,7 @@ makes it an endpoint, and the endpoint ring's opaque fill, drawn after the trans
 seen (ruled 2026-09-28), so no filled layer wide enough to cover radius 10 may come after it.
 */
 test('the transit ring is drawn after every filled layer that would cover it', async () => {
-	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
 	for (const roles of [['endpoint'], ['junction'], ['endpoint', 'junction'], []]) {
 		const all = waypointLayers(roles, 20, null, { transit: false });
 		const at = all.findIndex((l) => l.cls === 'wp-transit');

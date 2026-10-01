@@ -93,6 +93,8 @@ export const LAYER = {
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 	],
 	network: [
+		'kernel/network-roles.mjs',        // K13a: what a waypoint or link IS -- split from kernel/geometry.mjs, whose core grid exported network names (L5)
+		'kernel/network-appearance.mjs',   // K13a: how the network is DRAWN -- waypoint rings and layers, link width, dash, arrowhead, appearance
 		'model/invariants.mjs', 'model/referential.mjs',   // the link rules and references; to network/ at K13b
 		'model/link-reactions.mjs',   // the link reactions the planner runs, and `linkTenant`, which builds production's and the network's (PL-3)
 		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
@@ -157,7 +159,7 @@ export const ENTRIES = {
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
-			'kernel/geometry.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
+			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/ops.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
@@ -192,7 +194,7 @@ export const ENTRIES = {
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 
 			'engine/ivm.mjs', 'engine/policy.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
-			'kernel/geometry.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
+			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
@@ -205,7 +207,7 @@ export const ENTRIES = {
 		surface: { 'server/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'server/log.mjs': ['Log'] },
 		modules: [
 			'engine/policy.mjs',
-			'kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs',
+			'kernel/geometry.mjs', 'kernel/spec.mjs', 
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/referential.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
 			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
@@ -344,36 +346,8 @@ export const RATCHETS = {
 		// K2c (2026-10-01): the barrels are deleted, so no barrel import or re-export remains; L4 holds the line at zero
 	},
 	L5: {
-		'kernel/geometry.mjs:APPEARANCE_KEYS': 1,
-		'kernel/geometry.mjs:junction': 1,
-		'kernel/geometry.mjs:linkAppearance': 1,
-		'kernel/geometry.mjs:linkDash': 1,
-		'kernel/geometry.mjs:linkFacing': 1,
-		'kernel/geometry.mjs:linkMarker': 1,
-		'kernel/geometry.mjs:linkWidth': 1,
-		'kernel/geometry.mjs:path': 1,
-		'kernel/geometry.mjs:port': 1,
-		'kernel/geometry.mjs:waypointAnchor': 1,
-		'kernel/geometry.mjs:waypointJunction': 1,
-		'kernel/geometry.mjs:waypointLayers': 1,
-		'kernel/geometry.mjs:waypointRole': 1,
-		'kernel/geometry.mjs:waypointRoles': 1,
-		'kernel/geometry.mjs:waypointStyle': 1,
 	},
 	L5p: {
-		'kernel/geometry.mjs:junction': 1,
-		'kernel/geometry.mjs:linkAppearance': 1,
-		'kernel/geometry.mjs:linkDash': 1,
-		'kernel/geometry.mjs:linkFacing': 1,
-		'kernel/geometry.mjs:linkMarker': 1,
-		'kernel/geometry.mjs:linkWidth': 1,
-		'kernel/geometry.mjs:waypoint': 1,
-		'kernel/geometry.mjs:waypointAnchor': 1,
-		'kernel/geometry.mjs:waypointJunction': 1,
-		'kernel/geometry.mjs:waypointLayers': 1,
-		'kernel/geometry.mjs:waypointRole': 1,
-		'kernel/geometry.mjs:waypointRoles': 1,
-		'kernel/geometry.mjs:waypointStyle': 1,
 		'kernel/router.mjs:routeGeometry': 1,
 	},
 	L7k: {
@@ -625,20 +599,18 @@ export const UNUSED_EXPORTS = {
 		list: {
 			'kernel/geometry.mjs': {
 				'rebuild-debt': [
-					'APPEARANCE_KEYS', 'bboxOf', 'cellOf', 'cellOn',
-					'cellPx', 'gridDot', 'group', 'groupHull', 'junction', 'linkAppearance', 'linkDash', 'linkFacing',
-					'linkMarker', 'linkWidth', 'node', 'path', 'port', 'px', 'pxOn', 'snapLayout', 'spanExtent',
-					'waypoint', 'waypointAnchor', 'waypointJunction', 'waypointLayers', 'waypointRole', 'waypointRoles',
-					'waypointStyle', 'zone'
+					'bboxOf', 'cellOf', 'cellOn',
+					'cellPx', 'gridDot', 'group', 'groupHull', 'node', 'px', 'pxOn', 'snapLayout', 'spanExtent',
+					'zone'
 				],
 				'serves-a-server-door': ['anchorAt', 'nearestAnchor'],   // anchorAt: server/anchor.mjs left the planner at PL-4, passed in by the store
 			},
 			'kernel/spec.mjs': {
-				'rebuild-debt': ['derive'],
+				'rebuild-debt': ['derive', 'BEND_R'],   // BEND_R: its consumer, `path`, left geometry for kernel/network-appearance.mjs at K13a
 			},
 			'kernel/theme.mjs': {
-				'rebuild-debt': ['GLYPH_BB', 'GLYPH_DEFS', 'KERNEL_CSS'],
-				'serves-a-server-door': ['faviconSvg'],
+				'rebuild-debt': [],
+				'serves-a-server-door': [],
 			},
 			'model/invariants.mjs': {
 				'rebuild-debt': ['splitAtBend'],

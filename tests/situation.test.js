@@ -113,7 +113,7 @@ through and another terminates at holds BOTH roles; under a single value the old
 `bend` on sight of a via, so a T-junction would silently lose its spawner pad.
 */
 test('B208: a waypoint holds every role that applies, and onEndpoint reads the set', async () => {
-	const { waypointRoles } = await import('../kernel/geometry.mjs');
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 
 	/*
 	B211 -- a junction is where links TERMINATE, and threading is invisible to it. Two links bending

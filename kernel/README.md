@@ -13,7 +13,10 @@ are vendored into `theme.mjs`.
 | module          | role |
 |-----------------|------|
 | `spec.mjs`      | the **LOCKED** `standard` variant (frozen) + the `derive()` ladder. Single source of px truth. |
-| `geometry.mjs`  | grid (`cell↔px`, `cellPx`) + element constructors (incl. `waypoint`) + `bboxOf`. Pure. |
+| `geometry.mjs`  | grid (`cell↔px`, `cellPx`), layouts and anchors, the `node`, `zone` and `group` elements, `bboxOf`, `gridDot`. Pure, core. |
+| `network-roles.mjs` | what a waypoint or link IS: `waypointRoles`, `linkFacing`. Pure; network layer (K13a). |
+| `network-appearance.mjs` | how the network is DRAWN: waypoint and path elements, the ring ladder and `waypointLayers`, link width, dash, arrowhead, `linkAppearance`. Network layer (K13a). |
+| `svg-scene.mjs` | a resolved scene as one SVG string, for the export door. Export layer (K11). |
 | `router.mjs`    | `roundedPath` (lifted prism NPath) + `gridSnap` + segment/corner helpers. Pure, integer-deterministic. |
 | `theme.mjs`     | **the visual-iterate surface**: style tokens, vendored glyph `<defs>`, `GLYPH_BB`, scene CSS. |
 | `renderer.mjs`  | scene → SVG (consumes `theme`; renders the waypoint). No layout decisions. |
