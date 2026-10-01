@@ -317,7 +317,7 @@ The original reason for this document, now with the pipes it led to: an author c
 - **The limit TR-7 accepted:** undo moves the document but not the session's transit, so undoing a cut restores the pinned link while transit stays off.
 - **Matrix:** five rows (TRN-12 to TRN-16) and a `transit-pin` board; every earlier board unchanged. **Eight mutants, each caught.**
 
-**X4 and X5 -- joining, and the type table, 2026-09-30. Transit in the lab is complete.**
+**X4 and X5 -- joining, and the type table, 2026-09-30 -- transit in the lab is complete.**
 - **Two links left at a non-transiting waypoint stay two** (TR-5): the planner asks the network a fourth question, `joinsAt`, and production answers always. Rows TRN-19 and TRN-20 set the two cases side by side.
 - **Found on the way and fixed first, B269:** the planner joined links where none had left -- a split replaced a link at its other end, and the planner joined the two there; reached by cutting at a second pin. A planner defect, older than transit.
 - **The type table holds everywhere it is read** (X5, folded in): the refusal (TRN-04, TRN-09), routing for every type in it (tests/network-transit.test.js), and joining.
