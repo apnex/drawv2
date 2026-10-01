@@ -1440,3 +1440,19 @@ test('the transit ring takes its colour from the token table, not a literal', as
 		.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 	assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'geometry must carry no colour literal in code; the token table is the authority (B255)');
 });
+
+/*
+The transit ring is never painted over -- the director's report (2026-09-30): cutting a link at a non-transiting anchor
+makes it an endpoint, and the endpoint ring's opaque fill, drawn after the transit ring, hid it. Composed means both are
+seen (ruled 2026-09-28), so no filled layer wide enough to cover radius 10 may come after it.
+*/
+test('the transit ring is drawn after every filled layer that would cover it', async () => {
+	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	for (const roles of [['endpoint'], ['junction'], ['endpoint', 'junction'], []]) {
+		const all = waypointLayers(roles, 20, null, { transit: false });
+		const at = all.findIndex((l) => l.cls === 'wp-transit');
+		const ring = all[at];
+		const covers = all.slice(at + 1).filter((l) => (l.fill === 'solid' || (l.fill && l.fill !== 'none')) && l.radius + (l.width ?? 0) / 2 > ring.radius - ring.width / 2);
+		assert.deepEqual(covers.map((l) => l.cls), [], `${roles.join('+') || 'bend'}: painted over the transit ring`);
+	}
+});

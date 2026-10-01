@@ -326,11 +326,10 @@ export const waypointLayers = (roles, ext, links = null, anchor = null) => {
 	nothing (ruled 2026-09-28).
 
 	It composes rather than replaces: a non-transiting anchor with three links draws the endpoint
-	ring and this one inside it.
+	ring and this one inside it -- so it is pushed AFTER the derived rings, below only the centre dot.
+	Pushed before them first, it was painted over by the endpoint ring's opaque fill the moment a cut
+	made the anchor an endpoint (the director's report, 2026-09-30).
 	*/
-	if (anchor && anchor.transit === false) {
-		out.push(transitLayer());
-	}
 	if (roles.includes('endpoint')) {
 		// H15.16 -- the ring carries the plane in its WEIGHT, at the same ratio the link uses. The
 		// links are needed because a role set alone cannot say which plane a terminus serves.
@@ -339,6 +338,7 @@ export const waypointLayers = (roles, ext, links = null, anchor = null) => {
 		out.push({ cls: 'wp-ring', ...ring });
 	}
 	if (roles.includes('junction')) out.push({ cls: 'wp-junction', ...waypointJunction() });
+	if (anchor && anchor.transit === false) out.push(transitLayer());   // on top of the rings it sits between
 	out.push({ cls: 'wp-dot', radius: gridDot().radius, fill: 'solid' });
 	return out;
 };

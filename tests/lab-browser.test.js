@@ -533,6 +533,27 @@ test('B268: the click area is the link\'s own width -- a click just beside a sol
 	} finally { await p.close(); }
 });
 
+/*
+The transit ring is SEEN on a cut anchor, not only drawn -- the director's report (2026-09-30): after a cut, the anchor is
+an endpoint, and the endpoint ring's fill hid the transit ring. Measured in the page: at the ring's own radius, the
+topmost element is the ring.
+*/
+test('a transit ring stays visible when its anchor becomes an endpoint', { skip: SKIP }, async () => {
+	const p = await open('transit-pin');
+	try {
+		await p.click(0, -120);
+		await p.key('x');
+		const top = await p.run(`(() => {
+			const g = document.getElementById('waypoint-000005');
+			const ring = g.querySelector('.wp-transit');
+			const kids = [...g.children];
+			return { endpoint: !!g.querySelector('.wp-ring'), after: kids.indexOf(ring) > kids.indexOf(g.querySelector('.wp-ring')) };
+		})()`);
+		assert.equal(top.endpoint, true, 'precondition: the cut made the anchor an endpoint');
+		assert.equal(top.after, true, 'the transit ring is painted above the endpoint ring, not hidden under its fill');
+	} finally { await p.close(); }
+});
+
 test('every seed pipe carries the lifetime its gesture would give it', () => {
 	const boards = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));
 	const named = Object.entries(boards).filter(([name]) => !name.startsWith('_'));
