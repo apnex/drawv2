@@ -34,6 +34,9 @@ import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch
 const SKIP = NO_CHROME;
 const PITCH = 60;
 const DIAGRAM = 'diagram-ba0001';
+// K8: the same fixture under its own id, which no other test edits, so its tests see the page as it boots (K7 found the lock;
+// K8's first full run found an earlier test's link)
+const K8_DIAGRAM = 'diagram-c80001';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let dir = null, srv = null, chrome = null, tab = null, port = 0, cdp = 0, booted = null;
@@ -128,6 +131,7 @@ before(async () => {
 	if (SKIP) return;
 	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-harness-'));
 	fs.writeFileSync(path.join(dir, `${DIAGRAM}.json`), JSON.stringify(fixture()));
+	fs.writeFileSync(path.join(dir, `${K8_DIAGRAM}.json`), JSON.stringify({ ...fixture(), meta: { ...fixture().meta, id: K8_DIAGRAM, name: 'k8' } }));
 	port = 8200 + (process.pid % 300);
 	cdp = 9600 + (process.pid % 300);
 
@@ -1199,3 +1203,55 @@ test('K7: a lock releases every armed tool, and nothing arms while it holds (B42
 	assert.equal(await held(), 0, 'nothing arms while locked');
 	assert.equal(await textTool(), false);
 }));
+
+/*
+K8 (H17) -- EQUIVALENCE, held across moving the canvas half of app/src/main.js into `composeCanvas`. Written and green
+before the move, unchanged after it, each on a FRESH tab so nothing an earlier test did is in the way:
+
+  the DOM the page boots into -- every layer, the defs, the grid, the palette, the fixture's entities -- compared with a
+  snapshot recorded from the code before the move (tests/fixtures/k8-dom.json; K8_WRITE=1 re-records it);
+
+  Escape DURING A SIDEBAR DRAG cancels the drag and is spent there -- it does not also put down the held hand -- which
+  holds only while the palette's key listener is registered before the canvas's. Construction order is behaviour.
+*/
+async function freshTab() {
+	const t = await attach(`http://127.0.0.1:${port}/d/${K8_DIAGRAM}`);   // the deep link: the page reads /d/<id>, not ?diagram=
+	await until(t, `document.getElementById('waypoint-ba0002') ? 1 : 0`, 8000);
+	await t.eval(`window.draw.input.setReadOnly(false), 1`);   // earlier tests hold the server lock (see K7)
+	return t;
+}
+
+test('K8: the page boots into the same DOM -- layers, defs, grid, palette and entities', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const snapshot = JSON.parse(await t.eval(`JSON.stringify({
+			defs: document.getElementById('kdefs').innerHTML,
+			layers: [...document.querySelectorAll('#container g[id]')].filter((g) => !['movers', 'overlay', 'snaplayer'].includes(g.id)).map((g) => [g.id, g.children.length]),
+			grid: ['grid-nodes', 'grid-zones'].map((id) => { const g = document.getElementById(id); return [g.children.length, g.firstElementChild && g.firstElementChild.outerHTML]; }),
+			palette: [...document.querySelectorAll('.palette-item')].map((i) => [i.dataset.type, i.getAttribute('class')]),
+			entities: ['zones', 'groups', 'links', 'waypoints', 'nodes'].map((id) => [...document.getElementById(id).querySelectorAll('[id]')].map((e) => e.id + ' ' + (e.getAttribute('class') || '')).sort()),
+		})`));
+		const GOLDEN = new URL('./fixtures/k8-dom.json', import.meta.url);
+		if (process.env.K8_WRITE) fs.writeFileSync(GOLDEN, `${JSON.stringify(snapshot, null, '\t')}\n`);
+		assert.deepEqual(snapshot, JSON.parse(fs.readFileSync(GOLDEN, 'utf8')));
+		assert.ok(snapshot.entities.flat().length > 3 && snapshot.grid[0][0] > 100, 'the snapshot holds a booted page, not an empty one');
+	} finally { t.ws.close(); }
+});
+
+test('K8: Escape during a sidebar drag cancels the drag and is spent there -- the held hand stays', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		await t.key('2');
+		assert.equal(await t.eval(`window.draw.tools.hand`), 'server', 'a hand is held');
+		const [tx, ty] = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.querySelector('.palette-item[data-type="host"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`));
+		const [cx, cy] = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`));
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tx, y: ty });
+		await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: tx, y: ty, button: 'left', clickCount: 1, buttons: 1 });
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: cx, y: cy, button: 'left', buttons: 1 });
+		assert.equal(await t.eval(`!!(window.draw.palette.drag && window.draw.palette.drag.ghost)`), true, 'a tile is being dragged onto the canvas');
+		await t.key('Escape');
+		assert.equal(await t.eval(`window.draw.palette.drag`), null, 'Escape cancelled the sidebar drag');
+		assert.equal(await t.eval(`window.draw.tools.hand`), 'server', 'and was spent there: the held hand is still held');
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx, y: cy, button: 'left', clickCount: 1 });
+	} finally { t.ws.close(); }
+});

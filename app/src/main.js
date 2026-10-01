@@ -4,68 +4,20 @@ history, selection, input gesture machine, palette, label editor, readout, data-
 server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number + the glyph art.
 */
 
-import { sharedDefs } from '../../kernel/renderer.mjs';
-import { cellOf, gridDot } from '../../kernel/geometry.mjs';
-import { el, crosshair } from './painter.js';
-import { nodePoints, zonePoints, CANVAS, GAP } from './snap.js';
-import { Model } from '../../model/model.mjs';
-import { attachRelations } from '../../engine/store.mjs';
-import { Changes } from './changes.js';
-import { Renderer } from './renderer.js';
-import { Selection } from './selection.js';
 import { Clock } from './clock.js';
 import { Movers } from './movers.js';
-import { Input } from './input.js';
-import { Capture } from './capture.js';
 import { helpSections, renderHelp } from './help.js';
+import { composeCanvas } from './compose-canvas.js';   // K8: the canvas half, composed as the lab composes it
 import { Palette } from './palette.js';
-import { Tools } from './tools.js';   // K7: the held tools, which the palette shows and Input reads
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { Watchdog } from './watchdog.js';
-import { LabelEditor } from './labeledit.js';
 import { Readout } from './readout.js';
 import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 
 const svg = document.getElementById('container');
-
-// kernel glyph + frame defs (the kernel owns the look)
-document.getElementById('kdefs').innerHTML = sharedDefs();
-
-/*
-Subtle grid dots: node grid always on, zone grid revealed while Shift held (CSS).
-
-B200 -- THIS IS THE DOT A WAYPOINT HIGHLIGHTS. The kernel owns it as `gridDot` and the waypoint
-renderer draws its own circle at the same radius in a brighter fill, one layer up, so a waypoint
-READS as the grid point lit up while in fact occluding it. Two circles, deliberately: a waypoint
-restyling a grid element would couple the two layers, and the radius is the only part that has to
-agree. They were two literals that happened to match at 2, which is the kind of agreement that
-holds until one is tuned and nobody notices the other did not move.
-
-The zone grid keeps its own size: it marks the HALF-OFFSET grid, a different lattice, and reads as
-bigger on purpose because it only appears while Shift is held.
-*/
-const ZONE_GRID_DOT = 5;   // the half-offset lattice, deliberately larger than the node grid
-const gridNodes = svg.querySelector('#grid-nodes');
-nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius }, gridNodes));
-const gridZones = svg.querySelector('#grid-zones');
-zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT }, gridZones));
-
-const model = new Model();
-attachRelations(model, { cellOf }); // R3 maintained reverse indices (first IVM) backing linksOf/linksAt/linkBetween/groupOf + R5 atCell; cellOf injected here (composition root) so engine/ imports no kernel; registered before other subscribers so they see a fresh index
-const history = new Changes(model);   // the commit boundary; Sync subscribes to it, not to the model
-const renderer = new Renderer(model, svg);
-const selection = new Selection(model);
-selection.subscribe(() => renderer.reflectSelection(selection.list())); // renderer owns the 'selected' visual reflection
-const labels = new LabelEditor({ svg, model, history });
-const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
-// B36 — one crosshair on #snaplayer, owned here and shared. Overlay and Palette each built their
-// own, which is two owners of one layer; the composition root is where that gets decided.
-const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
-const tools = new Tools({ svg, snap });
-const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools });
 
 // help overlay: header button + click-outside-to-close. Resolved HERE and injected — Input used to
 // look the same element up for itself, so the id had two owners (B45).
@@ -80,8 +32,27 @@ other two have it without reaching through Sync to get it (A3 Air-Gap), and is t
 `scan-wiring` checks: a value the root computes must reach the thing it constructs.
 */
 const clock = new Clock();
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, tools, host: window, help, now: () => clock.now(), snap, runRules: RUN_PRESSES });
-new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0)
+
+/*
+K8 -- THE CANVAS HALF, composed by the one function the lab composes it with (app/src/compose-canvas.js): the kernel's
+defs, both grids, the model and its index, the commit boundary, the renderer, the selection, the label editor, the one
+crosshair (B36), the held tools (K7) and the gesture machine. What is this page's own is handed in: its readout, its run
+mode (K5) and its clock.
+*/
+const { model, history, renderer, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
+	svg,
+	defs: document.getElementById('kdefs'),
+	host: window,
+	readout: ({ model, selection }) => new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] }),
+	tools: true,
+	help,
+	now: () => clock.now(),
+	runRules: RUN_PRESSES,
+});
+const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools });
+// capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
+// the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")
+listen();
 // the help overlay is GENERATED from the bindings Input resolves -- no hand-written list of controls (RULES I4, stage 6)
 if (help) renderHelp(help.querySelector('#help-rows'), helpSections(input.bindings()));
 /*

@@ -180,6 +180,7 @@ AMENDED 2026-10-01: K16 done -- the B176 guard covers the simulation's whole imp
 AMENDED 2026-10-01: K9 done -- one static responder for the product and the lab (`server/static.mjs`), separator-bounded traversal guard, the lab's refusals held by an HTTP test.\
 AMENDED 2026-10-01: K4 done -- the planner is its own folder, `planner/`, served whole; `server/` is served by neither door.\
 AMENDED 2026-10-01: K7 done -- the held tools are their own canvas module, the palette a view of them; Input reaches neither the palette nor any chrome. Next K8.\
+AMENDED 2026-10-01: K8 done -- one `composeCanvas` builds the canvas half of the product page and of the lab.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

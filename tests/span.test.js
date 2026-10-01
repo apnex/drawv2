@@ -815,7 +815,8 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 
 test('B200: the node grid and the waypoint centre are one dot, from one source', async () => {
 	const { gridDot } = await import('../kernel/geometry.mjs');
-	const main = fs.readFileSync(new URL('../app/src/main.js', import.meta.url), 'utf8');
+	// K8: the grid is drawn by the one canvas composition (app/src/compose-canvas.js), for the product page and the lab
+	const main = fs.readFileSync(new URL('../app/src/compose-canvas.js', import.meta.url), 'utf8');
 	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 

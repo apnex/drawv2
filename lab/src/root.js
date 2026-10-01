@@ -22,21 +22,15 @@ composition, and it is the whole reason the lab can show the planner's cascade a
 network: the tab model proposes, the authority model rules, exactly as production does.
 */
 
-import { sharedDefs } from '../../kernel/renderer.mjs';
-import { cellOf, gridDot } from '../../kernel/geometry.mjs';
-import { el, crosshair } from '../../app/src/painter.js';
-import { nodePoints, zonePoints, CANVAS, GAP } from '../../app/src/snap.js';
+import { cellOf } from '../../kernel/geometry.mjs';
+import { el } from '../../app/src/painter.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
-import { Changes, derivedToApply } from '../../app/src/changes.js';
-import { Renderer } from '../../app/src/renderer.js';
-import { Selection } from '../../app/src/selection.js';
-import { Input } from '../../app/src/input.js';
-import { Capture } from '../../app/src/capture.js';
+import { derivedToApply } from '../../app/src/changes.js';
+import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
 import { cutAt, joinAt } from '../../network/transit.mjs';
 import { Readout } from '../../app/src/readout.js';
-import { LabelEditor } from '../../app/src/labeledit.js';
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
@@ -59,14 +53,7 @@ const NEEDED = ['container', 'canvas', 'grid-nodes', 'grid-zones', 'snaplayer', 
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 
-document.getElementById('kdefs').innerHTML = sharedDefs();
-
 const svg = document.getElementById('container');
-const ZONE_GRID_DOT = 5;
-const gridNodes = svg.querySelector('#grid-nodes');
-nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius }, gridNodes));
-const gridZones = svg.querySelector('#grid-zones');
-zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT }, gridZones));
 
 /*
 THE NETWORK SESSION (RULESET-AUDIT T5): the pipes, the link ages, the legs a drag lays while the planner's answer is
@@ -77,8 +64,17 @@ whether it is down, what blocks it -- and to the planner -- what else references
 links are stranded. Production constructs `new Model()` and commits with no network; nothing here reaches production.
 */
 const session = createNetworkSession(), { pipes, order, network } = session;
-const model = new Model({ network });
-attachRelations(model, { cellOf });
+/*
+K8 -- the canvas, composed by the one function the product page composes it with (app/src/compose-canvas.js), handed
+this network. The lab holds no tools and no run mode; its drag judge is `routeHook`, below, reached lazily because it
+settles through the parts composed here.
+*/
+const { model, history, renderer, selection, input, listen } = composeCanvas({
+	svg, defs: document.getElementById('kdefs'), host: window, network,
+	readout: ({ model, selection }) => new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] }),
+	help: null, now: () => Date.now(),
+	plugins: [networkInput((drag) => routeHook(drag), session)],   // its own keys, and its judge of a drag (dev/RULES.md section 11)
+});
 
 /*
 The AUTHORITY model, and why there are two.
@@ -121,14 +117,9 @@ const drawPipes = () => {
 };
 model.onChange(drawPipes);
 
-const history = new Changes(model);
-const renderer = new Renderer(model, svg);
-const selection = new Selection(model);
-// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30)
-selection.subscribe(() => { renderer.reflectSelection(selection.list()); const why = whyDown(model, selection.list(), network); if (why) say(why); });
-const labels = new LabelEditor({ svg, model, history });
-const readout = new Readout({ model, selection, elements: [document.getElementById('readout-bottom')] });
-const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
+// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30); the selected LOOK is
+// composeCanvas's subscriber, registered before this one, as it always ran first
+selection.subscribe(() => { const why = whyDown(model, selection.list(), network); if (why) say(why); });
 
 /*
 THE ROUTE HOOK -- how `g`, and the network's rules for a drag, exist in the lab and nowhere else. Input asks it once per
@@ -154,10 +145,7 @@ const routeHook = (drag) => {
 	return verdict;
 };
 
-const input = new Input({ svg, model, history, selection, renderer, labels, readout,
-	host: window, help: null, now: () => Date.now(), snap,   // no tools: the lab holds no stamp hand or text tool (K7)
-	plugins: [networkInput(routeHook, session)] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
-const capture = new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (L0)
+const capture = listen();   // the DOM's events, as input events (L0)
 // a transit change redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12)
 // it can take links down or heal them (TR-4), so the notice counts what is down after it. At a waypoint it is also an EDIT
 // (TR-2): turned off, the links pinned there are cut in two; turned back on, the two left ending there join -- one commit
