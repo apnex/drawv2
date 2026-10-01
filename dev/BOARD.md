@@ -952,7 +952,7 @@ Scored so the comparison is a judgement, not an omission.\
 |---|---|---|---|
 | **B230** | S3 | No guard stops a field being wired into a renderer's CREATE branch and not its UPDATE branch -- B218 and B228 are that defect twice | a third instance appears, or H15.9 lands and makes the class unexpressible rather than merely detectable |
 | **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
-| **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | a user reports it, or explicit z-order becomes a feature |
+| **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | promotion's format batch (stored drawing order, ruled with B249 2026-10-01) |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
@@ -961,7 +961,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
-| **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | the director rules how entities stack -- the old trigger, K15 landing, fired 2026-10-01 and the ruling was asked |
+| **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | promotion's format batch -- ruled 2026-10-01: newest drawn on top, stored drawing order |
 | **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |

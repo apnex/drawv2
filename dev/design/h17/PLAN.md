@@ -143,6 +143,7 @@ The independent check confirms that verdict, with amendments that are included h
 - **F-GR6** (the first pass's FU-8 and H7): GR6 is extended to cover route, split, preview correction and undo, with disconnect and reorder, and must pass before the backport. Held in `dev/BACKLOG.md`.
 - **F-SD12** (FU-6 and H6): an SD12 refusal fixture, a document listing an unknown plugin. It belongs to the stored-format batch. Held in `dev/BACKLOG.md`.
 - **F-ORDER:** `all()` iteration and renderer stacking stay insertion-ordered after K15 (G5 PARTIAL). Held in `dev/BACKLOG.md`.
+  RULED 2026-10-01 (B249): newest drawn on top, from a stored drawing order added in promotion's format batch; G5 stays PARTIAL until then.
 - **F-SKIP:** CI fails when the test report shows `# skipped` above 0, so the lab's browser tests cannot silently disappear. Held in `dev/BACKLOG.md`.
 - **FU-10**, for mission-kit, not drawv2:
   - M7 has no rule for which system's applies-to tags govern when an organisation audits a product or its lab;

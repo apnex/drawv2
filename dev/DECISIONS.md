@@ -1522,3 +1522,11 @@ Asked what to do with `kernel/grc.mjs` -- `check`, `grc`, `RULES` and `crossings
 - It goes with `kernel/router.mjs:segmentsOf`, its only caller's helper; `dev/COMMIT-DELETIONS.md` records both, and git history holds them.
 - `dev/HIERARCHY.md` section 3, which records it as BUILT, carries an AMENDED line.
 
+**B249: newest drawn on top, the same for everyone, stored with promotion's format batch -- ruled 2026-10-01.**\
+Asked which of two crossing links, or two overlapping zones, should be on top, the director chose "Newest drawn on top" (recommended) over "Fixed by id" and "Doesn't matter".\
+Asked when the document should start remembering drawing order, the director chose "With promotion's format batch" (recommended) over "Now, on its own".
+- Within a kind, the item drawn later stacks above the one drawn earlier, on every peer and after every reload; only links and zones can overlap, so that is where it shows.
+- Each item stores its drawing order, and undo restores an item to its old place, which closes B10 by the fix that row names: an explicit order field.
+- For links the stored order is the network plugin's link age (B259), so one field serves both; it lands in the format change promotion already makes (`dev/design/unification/PROMOTION.md`, P2), one migration rather than two.
+- Until then stacking stays as it is: newest on top in the tab that drew it.
+
