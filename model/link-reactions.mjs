@@ -178,12 +178,19 @@ function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {
 		}
 		return set;
 	};
+	/*
+	B244 -- whether a link ENDS at a point: at its `src` or `dst`, unless it is closed, because a ring has no ends. The
+	twin of `linkEndsAt` in kernel/network-roles.mjs, which the role derivation reads; `model/` imports no `kernel/` (C9),
+	so it is restated here, as `facing` is beside `linkFacing`. Without the ring clause a deleted ring's `src` and `dst`
+	were kept as termini while the canvas drew them as bends. tests/sweep-references.test.js "B244: the sweep and the role
+	derivation agree" holds the two together, driving the real derivation and the real sweep.
+	*/
+	const endsAt = (l, id) => !l.closed && (l.src === id || l.dst === id);
 	const wasBendOnly = (m) => {
 		const bend = new Set();
 		const terminal = new Set();
 		for (const l of m.all('link')) {
-			terminal.add(l.src);
-			terminal.add(l.dst);
+			for (const end of [l.src, l.dst]) (endsAt(l, end) ? terminal : bend).add(end);
 			for (const w of Array.isArray(l.via) ? l.via : []) bend.add(w);
 		}
 		for (const id of terminal) bend.delete(id);

@@ -174,3 +174,47 @@ test('a link that ENDS at the deleted anchor is not the stranded pass\'s: it goe
 	assert.deepEqual(heard, [], 'the cascade took it first: "if either source or dest node is deleted, link is gone with it permanently"');
 	assert.equal(m.get('link', PINNED), undefined);
 });
+
+/*
+B244 (H17.4, K14a) -- A RING HAS NO ENDS, so deleting one sweeps every waypoint it ran through. The sweep kept a closed
+ring's `src` and `dst` as termini (B216), because it counted every link's ends as terminals; the role derivation
+(kernel/network-roles.mjs) calls them bends, which is what they are on the canvas. Production composition: the classic
+tenant, which keeps a link's END and sweeps a bend.
+*/
+test('B244: deleting a closed ring sweeps all its waypoints, its src and dst included', () => {
+	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const [A, B, C] = ['waypoint-0000a1', 'waypoint-0000b2', 'waypoint-0000c3'];
+	assert.equal(commit(m, log, { label: 'ring', ops: [wp(A, -2, 0), wp(B, 2, 0), wp(C, 0, 2),
+		{ op: 'put', kind: 'link', entity: { id: 'link-0000d4', name: 'ring', src: A, dst: B, via: [C], closed: true } }] }, 'lab', 'lab').ok, true);
+	assert.equal(commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'link', id: 'link-0000d4' }] }, 'lab', 'lab').ok, true);
+	assert.deepEqual(left(m), [], 'no stray anchors where the ring was');
+	assert.equal(undo(m, log).ok, true);
+	assert.deepEqual(left(m), [A, B, C], 'and one undo puts the ring back whole');
+});
+
+/*
+B244 -- THE TWINS AGREE. The sweep's `endsAt` and the kernel's `linkEndsAt` are one rule that `model/` and `kernel/` may not
+share by import (C9), so the agreement is driven here, against the REAL role derivation and the REAL sweep, not a copy
+in the test: for a waypoint carrying one link, the derivation calls it an endpoint exactly when the classic sweep keeps
+it after that link is deleted (B216), over every shape a single link can take through it.
+*/
+test('B244: the sweep and the role derivation agree on where a link ends, rings included', async () => {
+	const { waypointRoles } = await import('../kernel/network-roles.mjs');
+	const W = 'waypoint-0000e9', [P, Q] = ['waypoint-0000f1', 'waypoint-0000f2'];
+	const shapes = {
+		'open, ending at w': { src: P, dst: W },
+		'open, starting at w': { src: W, dst: P },
+		'open, threaded through w': { src: P, dst: Q, via: [W] },
+		'closed, starting at w': { src: W, dst: P, via: [Q], closed: true },
+		'closed, ending at w': { src: P, dst: W, via: [Q], closed: true },
+		'closed, threaded through w': { src: P, dst: Q, via: [W], closed: true },
+	};
+	for (const [name, shape] of Object.entries(shapes)) {
+		const l = { id: 'link-0000f3', name: 'l', ...shape };
+		const endpoint = waypointRoles(W, [l]).includes('endpoint');
+		const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+		assert.equal(commit(m, log, { label: 'set', ops: [wp(W, 0, 0), wp(P, -3, 0), wp(Q, 3, 2), { op: 'put', kind: 'link', entity: l }] }, 'lab', 'lab').ok, true, name);
+		assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: l.id }] }, 'lab', 'lab').ok, true, name);
+		assert.equal(!!m.get('waypoint', W), endpoint, `${name}: the derivation says ${endpoint ? 'endpoint' : 'bend'}, so the sweep must ${endpoint ? 'keep' : 'take'} w`);
+	}
+});

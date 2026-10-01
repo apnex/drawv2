@@ -79,12 +79,20 @@ export const linkFacing = (link, pointId) => {
 	return null;
 };
 
+/*
+B244 (K14a) -- WHETHER A LINK ENDS AT A POINT: at its `src` or `dst`, unless it is closed, because a ring has no ends. The
+statement the role derivation reads. Its twin is `endsAt` in the planner's orphan sweep (model/link-reactions.mjs), which
+`kernel/` and `model/` may not share by import (C9); the sweep's copy lacked the ring clause, and so kept a deleted ring's
+`src` and `dst` as termini. tests/sweep-references.test.js holds the two to one answer.
+*/
+const linkEndsAt = (link, pointId) => !link.closed && (link.src === pointId || link.dst === pointId);
+
 export const waypointRoles = (id, touching) => {
 	const roles = [];
 	let terminations = 0;
 
 	for (const t of touching || []) {
-		if (t.closed) continue;                       // a ring has no ends
+		if (!linkEndsAt(t, id)) continue;             // threaded through, or a ring, which has no ends
 		if (t.src === id) terminations += 1;
 		if (t.dst === id) terminations += 1;
 	}
@@ -121,7 +129,7 @@ export const waypointRoles = (id, touching) => {
 	written before this field reading exactly as it did.
 	*/
 	if (terminations === 2) {
-		const two = (touching || []).filter((t) => !t.closed && (t.src === id || t.dst === id));
+		const two = (touching || []).filter((t) => linkEndsAt(t, id));
 
 		/*
 		THE TWO-LINK MATRIX. A bend means flow passes through UNCHANGED, so a waypoint where

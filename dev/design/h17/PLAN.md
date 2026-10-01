@@ -110,7 +110,7 @@ Every cut ships with a test proven RED plus a mutant, and ships to production as
 | K13b | `model/invariants.mjs` and `model/referential.mjs` move to `network/`; the `facing` twin merges | |
 | K13c | The sweep and collapse post-pass moves to the network rules | C12: its RED names the `tests/txn.test.js` tests that already kill skip-sweep and skip-collapse mutants (B162, B215-B217, B222, B239-B241) |
 | K13d | The Model's link methods move to the network layer | waits for the rebuild |
-| K14a | B244: the ring sweep reads the role derivation | needs K13a |
+| K14a | B244: the ring sweep reads the role derivation | needs K13a. DONE 2026-10-01: `linkEndsAt` in kernel/network-roles.mjs states where a link ends (a ring has none) and the role derivation reads it; the sweep in model/link-reactions.mjs keeps a twin, `endsAt`, since C9 bars `model/` from importing `kernel/`, held to it by a test that drives the real derivation and the real sweep over six shapes. Only the ring clause changed behaviour: the whole role set would also have swept a declared pass-through terminus that B216 keeps. |
 | K14b | B245: the planner clears the pin when a committed link threads a pinned waypoint | needs K1 |
 | K15 | B246: one derivation order by id | C8: the comparator is stated; no server-stamped sequence (that is batch shape); the parity test covers `linksOf`, `linksAt`, `linkBetween`, `linksBetween` and `spawnersOf` |
 | K16 | The B176 guard reads the manifest's closure | |

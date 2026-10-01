@@ -115,6 +115,10 @@ for (const compose of ['production', 'network']) {
 	c('sweep-terminus', { nodes: [node(0, -4, 0)], waypoints: [way(0, 4, 0)], links: [link(0, N(0), W(0))] }, [del('link', L(0))]);
 	c('sweep-sheltered-by-hand-pipe', bent(), [del('link', L(0))], { pipes: [[N(0), W(0), 'hand'], [W(0), N(1), 'hand']] });
 	c('sweep-trims-group', { ...bent(), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)], groups: [group(0, [W(0), N(2)])] }, [del('link', L(0))]);
+	// B244: a ring has no ends, so deleting it sweeps its src and dst too
+	c('sweep-ring-takes-its-ends', { waypoints: [way(0, -2, 0), way(1, 2, 0), way(2, 0, 2)], links: [{ ...link(0, W(0), W(1), [W(2)]), closed: true }] }, [del('link', L(0))]);
+	// B216 stands: two links ending at a waypoint with one declared direction pass through it (a bend on the canvas), yet the author ended them there
+	c('sweep-keeps-declared-pass-through-terminus', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 0)], links: [{ ...link(0, N(0), W(0)), flow: true }, { ...link(1, W(0), N(1)), flow: true }] }, [del('link', L(0)), del('link', L(1))]);
 	c('sweep-ignores-preexisting-orphan', { nodes: [node(0, 0, 0)], waypoints: [way(0, 4, 4)] }, [set('node', N(0), { x: 120 })]);
 	c('sweep-batch-reroutes-keeps', { ...bent(), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)] }, [del('link', L(0)), put('link', link(1, N(0), N(2), [W(0)]))]);
 	// the join
