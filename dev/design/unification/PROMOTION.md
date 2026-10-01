@@ -107,6 +107,7 @@ Each stage is one approval, one gate, and a lab deploy; P9 is the director's dep
 
 AMENDED 2026-10-01, by the planner programme (`dev/design/planner/PLANNER-SYSTEM.md`, PL-0 to PL-5):
 - **P2:** the kind lists are one table now, `model/shape.mjs` (PL-5); adding `pipe` is a row there, and injecting the table so a composition carries its own kinds is B273, whose trigger is this stage.
+- **P5:** its exit criterion "the lab root holds no network orchestration" is met early (2026-10-01): the choreography -- pipe painter, drag judge, transit edits, answer step and settle -- is `network/host.mjs`'s `attachNetwork`, so this stage attaches it to the product page, its answer step called from `app/src/sync.js`'s answer path, rather than writing the ordering a second time.
 - **P2:** also stores every item's drawing order, ruled with B249 (2026-10-01): newest drawn on top for every peer, and undo restores an item to its place (B10). For links that order is the link age the network already keeps, so one field serves both.
 - **P3:** the planner has no null defaults or hooks left to delete; the network brings its own link tenant (`network.links`), so this stage passes that tenant where the store passes `CLASSIC_LINKS` today, and deletes `CLASSIC_LINKS` from `server/tenants.mjs`.
 - **P3 and P5:** PL-6, the browser preview, lands here by the PD-5 ruling -- derived ids for minted pieces (H17-D10), the browser sending intent only, and its three rule copies deleted (the cascade and group steal in `app/src/commands.js`, the split in `app/src/input.js`).

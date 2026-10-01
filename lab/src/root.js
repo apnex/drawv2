@@ -29,16 +29,14 @@ import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
 import { derivedToApply } from '../../app/src/changes.js';
 import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
-import { cutAt, joinAt } from '../../network/transit.mjs';
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
-import { whyDown, downSummary } from '../../network/resolve.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
 import { networkInput } from '../../network/keys.mjs';
-import { pipeAttributes } from '../../network/appearance.mjs';
+import { attachNetwork } from '../../network/host.mjs';   // the network's choreography around an edit
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -65,14 +63,14 @@ links are stranded. Production constructs `new Model()` and commits with no netw
 const session = createNetworkSession(), { pipes, order, network } = session;
 /*
 K8 -- the canvas, composed by the one function the product page composes it with (app/src/compose-canvas.js), handed
-this network. The lab holds no tools and no run mode; its drag judge is `routeHook`, below, reached lazily because it
-settles through the parts composed here.
+this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
+because the network attaches to the parts composed here.
 */
 const { model, history, renderer, selection, input, listen } = composeCanvas({
 	svg, defs: document.getElementById('kdefs'), host: window, network,
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
-	plugins: [networkInput((drag) => routeHook(drag), session)],   // its own keys, and its judge of a drag (dev/RULES.md section 11)
+	plugins: [networkInput((drag) => net.judge(drag), session)],   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 });
 
 /*
@@ -95,69 +93,14 @@ const say = (text) => { notice.textContent = text; };
 
 
 /*
-PIPES ARE DRAWN, beneath the links routed over them.
-
-Redrawn whole on every change. The pipe set is small and redrawing it is cheap, and a painter that
-tried to reconcile incrementally would need to know which pipes changed -- a second index over the
-pipe set, which is exactly the kind of second authority this programme exists to remove.
-
-How a pipe LOOKS is the network plugin's (network/appearance.mjs), applied here as attributes. The
-first painter left colour to the stylesheet's `currentColor`, which inherited black and made pipes
-invisible; one measured authority in the plugin replaces it.
+THE NETWORK, ATTACHED (network/host.mjs): its pipe painter, its drag judge, its transit edits, its answer step and the
+settle that follows every change -- the plugin's choreography, which promotion attaches to the product page the same way.
+What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
+planner's document back, the notice, and the fixed boards.
 */
-const pipeLayer = svg.querySelector('#pipes');
-const drawPipes = () => {
-	pipeLayer.replaceChildren();
-	for (const { a, b, laid } of pipes.list()) {
-		const p = model.endpointOf(a), q = model.endpointOf(b);
-		if (!p || !q) continue;   // an anchor the pipe names has gone; the next sweep removes the pipe
-		el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}`, ...pipeAttributes(laid) }, pipeLayer);
-	}
-};
-model.onChange(drawPipes);
-
-// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30); the selected LOOK is
-// composeCanvas's subscriber, registered before this one, as it always ran first
-selection.subscribe(() => { const why = whyDown(model, selection.list(), network); if (why) say(why); });
-
-/*
-THE ROUTE HOOK -- how `g`, and the network's rules for a drag, exist in the lab and nowhere else. Input asks it once per
-finished drag; the session judges it (network/session.mjs `judge`) and holds what it lays until the planner answers.
-
-SETTLE THE BOARD after its pipes or links change -- ONE step, so every path that changes them takes all of it. A link's
-drawn route depends on the pipe set, which lives outside the model, so the model's change events never announce that a
-new pipe made a way or that a swept one broke one: EVERY link is redrawn here. Whole-board is right for a lab-sized
-board; a targeted redraw belongs with the promotion, when pipes are stored and their changes are events like any other.
-Before this was one step, a g drag laid its pipes and redrew only the pipes, so a link that healed over them stayed
-drawn down until the next edit. The sweep is skipped after undo and redo (session pipes, network/session.mjs).
-*/
-const settle = (sweep, fallback) => {
-	session.tidy(authority, { sweep });
-	drawPipes();
-	for (const l of model.all('link')) renderer.update('link', l);
-	renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
-	say(session.takeNotice() ?? `${fallback}${downSummary(model)}`.trim());   // DOWN is said as well as drawn
-};
-const routeHook = (drag) => {
-	const { verdict, commits } = session.judge(drag, authority.all('link'), authority);
-	if (!commits) settle(true, '');   // nothing to commit: its pipes were laid now
-	return verdict;
-};
-
+const net = attachNetwork({ session, model, authority, renderer, selection, history,
+	pipeLayer: svg.querySelector('#pipes'), el, say });
 const capture = listen();   // the DOM's events, as input events (L0)
-// a transit change redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12)
-// it can take links down or heal them (TR-4), so the notice counts what is down after it. At a waypoint it is also an EDIT
-// (TR-2): turned off, the links pinned there are cut in two; turned back on, the two left ending there join -- one commit
-session.onTransitChange((ids) => {
-	for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); }
-	const said = session.takeNotice() ?? '';
-	const edits = ids.filter((id) => model.get('waypoint', id)).map((id) => (network.declaresNoTransit(id) ? cutAt(model, id) : joinAt(model, id))).filter(Boolean);
-	if (edits.length) history.commit({ label: 'transit', entries: edits.flatMap((e) => e.entries) });
-	const cut = edits.reduce((n, e) => n + (e.cut ?? 0), 0), joined = edits.some((e) => e.label === 'join');
-	settle(false, '');
-	say(`${said}${cut ? ` -- ${cut} link${cut === 1 ? '' : 's'} cut in two there` : ''}${joined ? ' -- its two links joined again' : ''}${downSummary(model)}`);
-});
-
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.
 
@@ -196,7 +139,7 @@ history.onCommit((request) => {
 	forking a simpler rule. Undo and redo take the same path with nothing sent, as they do in sync.js.
 	Nothing is in flight in the lab, because the planner answers in the same page.
 	*/
-	const accepted = session.answered(answer, authority, () => {
+	const accepted = net.answered(request, answer, () => {
 		const apply = derivedToApply(request.ops ?? [], answer.change?.ops ?? answer.ops ?? [], []);
 		if (apply.length) applyOps(model, apply);
 	});
@@ -206,8 +149,7 @@ history.onCommit((request) => {
 	(app/src/sync.js, requestResync); in the lab the planner is in the page, so the tab reloads from it, keeping its
 	selection of whatever still exists.
 	*/
-	if (!accepted) { model.load({ ...authority.toJSON(), selection: [...model.state.selection] }); settle(false, ''); say(`refused: ${answer.error}`); return; }
-	settle(!request.verb, `v${answer.version} ${request.verb ?? request.label ?? ''}`);
+	if (!accepted) { model.load({ ...authority.toJSON(), selection: [...model.state.selection] }); net.refused(answer); }
 });
 
 say('lab -- nothing is stored, nothing is shared');
@@ -253,9 +195,9 @@ if (wanted) {
 		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else {
-			session.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id));
+			net.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id));
 			applyOps(model, answer.change?.ops ?? []);
-			drawPipes();
+			net.paint();
 			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);
 		}
 	}
@@ -273,4 +215,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, pipes, order, network, history, log, input, capture, routeHook };
+window.lab = { model, authority, pipes, order, network, history, log, input, capture, routeHook: net.judge };

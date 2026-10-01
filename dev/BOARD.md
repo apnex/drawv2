@@ -190,6 +190,7 @@ AMENDED 2026-10-01: the readout is canvas, built by `composeCanvas`; the last la
 AMENDED 2026-10-01: production-upgrade considerations are tracked in `dev/PRODUCTION-UPGRADE.md` (B276), added in the commit that creates each; read in full at a production audit.\
 AMENDED 2026-10-01: one core palette, Material-named, with colour roles declared by each owner -- the network plugin owns its pipe, transit-ring and down-link colours (PU24 lists the slight visible changes).\
 AMENDED 2026-10-01: board hygiene -- H10.7, H10.8 and H11.4 dropped from the board, their rows held with triggers (B127 under B256, B79 part-closed, B108 on automated mutation).\
+AMENDED 2026-10-01: the network's choreography moved out of the lab root into `network/host.mjs` (`attachNetwork`), which promotion's P5 attaches to the product page; the lab root falls to 102 code lines.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
