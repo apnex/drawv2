@@ -1049,7 +1049,7 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				"router"
 			]
 		],
@@ -1150,7 +1150,7 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				"router"
 			]
 		],
@@ -1595,7 +1595,7 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				"router"
 			]
 		],
@@ -2457,7 +2457,7 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				"router"
 			]
 		],
@@ -2803,11 +2803,11 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setTextTool",
+				"tools.setTextTool",
 				true
 			],
 			[
-				"palette.setTextTool",
+				"tools.setTextTool",
 				false
 			]
 		],
@@ -3886,11 +3886,11 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				"router"
 			],
 			[
-				"palette.setHand",
+				"tools.setHand",
 				"host"
 			]
 		],
@@ -4143,11 +4143,11 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				null
 			],
 			[
-				"palette.setTextTool",
+				"tools.setTextTool",
 				false
 			]
 		],
@@ -4202,11 +4202,11 @@
 		"editor": [],
 		"palette": [
 			[
-				"palette.setHand",
+				"tools.setHand",
 				null
 			],
 			[
-				"palette.setTextTool",
+				"tools.setTextTool",
 				false
 			]
 		],

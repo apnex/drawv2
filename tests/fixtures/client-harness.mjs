@@ -10,7 +10,7 @@ Only something that constructs the ASSEMBLY catches them.
 
 Why stubs and not jsdom or a browser: `input.js`'s entire global surface is four lines —
 `document.getElementById('help')`, two `window.addEventListener`, one `window.dispatchEvent` — and
-everything else is injected, with `readout`/`palette`/`dataview` already carrying null-object
+everything else is injected, with `readout`/`tools`/`dataview` already carrying null-object
 defaults. Nine of the fifteen client modules touch no DOM at all. A dependency would buy fidelity
 this arc has no assertion for, and the repo's stated property is one runtime dependency and no
 build step.
@@ -32,7 +32,7 @@ import { attachRelations } from '../../engine/store.mjs';
 import { cellOf } from '../../kernel/geometry.mjs';
 import { Changes } from '../../app/src/changes.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
-import { Palette } from '../../app/src/palette.js';
+import { Tools } from '../../app/src/tools.js';
 import { Selection } from '../../app/src/selection.js';
 import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
@@ -172,19 +172,19 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const readout = { setCursor: rec('readout.setCursor'), setDrag: rec('readout.setDrag'), setBox: rec('readout.setBox'),
 		setLink: rec('readout.setLink'), setDatum: rec('readout.setDatum'), clearTransient: rec('readout.clearTransient'),
 		render: rec('readout.render'), flash: rec('readout.flash'), dims: () => '', signed: () => '' };
-	// The held-tool state is REAL here, not recorded-and-swallowed: H6.13 moved `textTool` onto the
-	// palette, and B42 was precisely a tool surviving a lock — so a stub that forgets it cannot catch
-	// the regression it exists for. `releaseTools` borrows the real one for the same reason
-	// H6.12's labels stub does: a reimplementation would let the product break silently.
-	const palette = {
-		hand: null, textTool: false,
-		setHand(type) { this.hand = type || null; calls.push({ name: 'palette.setHand', args: [type] }); },
-		toggleHand: rec('palette.toggleHand'),
-		trackHand: rec('palette.trackHand'),
-		hideHand: rec('palette.hideHand'),
-		setTextTool(on) { this.textTool = !!on; calls.push({ name: 'palette.setTextTool', args: [!!on] }); },
-		holding: Palette.prototype.holding,
-		releaseTools: Palette.prototype.releaseTools,
+	// The held-tool state is REAL here, not recorded-and-swallowed: B42 was precisely a tool surviving a lock -- so a stub
+	// that forgets it cannot catch the regression it exists for. `holding` and `releaseTools` borrow the real ones (the
+	// tools, app/src/tools.js, since K7) for the same reason H6.12's labels stub does: a reimplementation would let the
+	// product break silently.
+	const tools = {
+		hand: null, textTool: false, readOnly: false,
+		setHand(type) { this.hand = type || null; calls.push({ name: 'tools.setHand', args: [type] }); },
+		toggleHand: rec('tools.toggleHand'),
+		trackHand: rec('tools.trackHand'),
+		hideHand: rec('tools.hideHand'),
+		setTextTool(on) { this.textTool = !!on; calls.push({ name: 'tools.setTextTool', args: [!!on] }); },
+		holding: Tools.prototype.holding,
+		releaseTools: Tools.prototype.releaseTools,
 	};
 	const dataview = { toggle: rec('dataview.toggle') };
 
@@ -221,7 +221,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		input = bare
 			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
-			: new Input({ svg, model, history, selection, renderer, labels, readout, palette, dataview, host, help, snap, runRules: RUN_PRESSES,
+			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules: RUN_PRESSES,
 				// `routeHook` composes the incubating network plugin as the lab does (lab/src/root.js): its own keys, and
 				// this function as its drag judge, handed the drag's facts (network/keys.mjs `networkInput`). Absent unless a
 				// test asks for it, exactly as production composes no plugin -- so every other test runs as production does.
@@ -233,7 +233,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const capture = new Capture({ svg, host, sink: input });
 
 	return {
-		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, palette, help, snap,
+		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, tools, help, snap,
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
 		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without

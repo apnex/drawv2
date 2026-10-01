@@ -28,7 +28,7 @@ const PRODUCT_KEYS = composeRules({ owner: 'product', rules: KEYMAP });
 const sit = (selection = { size: 0, ids: [], kinds: [], bends: null }, gesture = null, step = null) => ({ selection, gesture, step });
 const resolveKey = (e, guards, s = sit()) => resolveInput(PRODUCT_KEYS, e, s, guards).rule;
 import { GAP, NODE_EXT } from '../app/src/snap.js';
-import { Palette } from '../app/src/palette.js';
+import { Tools } from '../app/src/tools.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
@@ -765,28 +765,25 @@ the only reason two were never drawn at once is that onDown happens to call pale
 starting a gesture. Correct by remembering, not by construction — B43's shape exactly. This asserts
 the shared instance, because that is what makes a second one impossible rather than merely absent.
 */
-test('B36: Overlay and Palette share ONE crosshair, so #snaplayer has a single owner', () => {
+test('B36: Overlay and the held tools share ONE crosshair, so #snaplayer has a single owner', () => {
 	const h = makeInput();
 	try {
 		const layer = h.layers['#snaplayer'];
 		assert.equal(layer.children.length, 0, 'nothing drawn at rest');
 
-		// the PALETTE path: an armed stamp hand tracks the snapped cell
-		const palette = new Palette({
-			container: fakeEl('div'), svg: h.svg, model: h.model,
-			history: h.history, selection: h.selection, snap: h.snap,
-		});
-		palette.setHand('host');
-		palette.trackHand({ x: 0, y: 0 }, false);
+		// the STAMP-HAND path: an armed hand tracks the snapped cell -- the tools' since K7, the palette's before
+		const tools = new Tools({ svg: h.svg, snap: h.snap });
+		tools.setHand('host');
+		tools.trackHand({ x: 0, y: 0 }, false);
 		const oneCrosshair = layer.children.filter((c) => c.tagName !== 'G').length;
-		assert.ok(oneCrosshair > 0, 'the palette drew a crosshair, or this test proves nothing');
+		assert.ok(oneCrosshair > 0, 'the stamp hand drew a crosshair, or this test proves nothing');
 
 		// the INPUT path, on the same layer, without the palette having hidden its own first.
 		// Two owners put two crosshairs here; one owner moves the one that exists.
 		h.input.overlayUi.crosshair.show({ x: 180, y: 180 });
 		assert.equal(
 			layer.children.filter((c) => c.tagName !== 'G').length, oneCrosshair,
-			'still exactly one crosshair — Overlay and Palette are driving the same instance',
+			'still exactly one crosshair — Overlay and the tools are driving the same instance',
 		);
 	} finally { h.restore(); }
 });
@@ -1468,7 +1465,7 @@ test('B147: a digit while idle still picks up the stamp hand', () => {
 	const h = makeInput();
 	try {
 		h.capture.onKeyDown(key('2'));
-		assert.equal(h.called('palette.toggleHand'), true, 'idle behaviour is unchanged');
+		assert.equal(h.called('tools.toggleHand'), true, 'idle behaviour is unchanged');
 		assert.equal(h.model.all('node').length, 0, 'and picking up a stamp places nothing by itself');
 	} finally { h.restore(); }
 });

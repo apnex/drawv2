@@ -96,9 +96,12 @@ async function attach(url) {
 			return res.result?.result?.value;
 		},
 		async key(k) {
+			// a NAMED key (Escape) has its own code and no text; a printable one is its character (K7 added the named case)
+			const NAMED = { Escape: 27 };
 			for (const type of ['keyDown', 'keyUp']) {
-				await send('Input.dispatchKeyEvent', { type, text: type === 'keyDown' ? k : undefined,
-					key: k, code: `Key${k.toUpperCase()}`, windowsVirtualKeyCode: k.toUpperCase().charCodeAt(0) });
+				await send('Input.dispatchKeyEvent', NAMED[k]
+					? { type, key: k, code: k, windowsVirtualKeyCode: NAMED[k] }
+					: { type, text: type === 'keyDown' ? k : undefined, key: k, code: `Key${k.toUpperCase()}`, windowsVirtualKeyCode: k.toUpperCase().charCodeAt(0) });
 			}
 		},
 		async click(x, y) {
@@ -1145,3 +1148,54 @@ test('the help overlay is generated from the bindings, in the real page', { skip
 	assert.equal(seen.seven, false, 'no `7`: B146 took the waypoint off the digits');
 	assert.equal(seen.outside, 0, 'no hand-written table left in the card');
 });
+
+/*
+K7 (H17) -- EQUIVALENCE, held across the move of the held tools out of the palette and Input into a Tools module. Written
+and green before the move, unchanged after it: what a person sees (the tile that lights up, the text-tool cursor) and the
+lock's rule (B42: a lock releases every armed tool; B18: nothing arms while locked). Real keys, the real page. Run mode is
+left first: the stamp hand is an authoring tool.
+*/
+/*
+Each K7 test starts from WRITE ACCESS and puts back the lock state it found: earlier tests in this file take the server
+lock through REST, which leaves this page read-only -- where a digit rightly arms nothing (found when the full file ran
+and the filtered run did not).
+*/
+async function withWriteAccess(body) {
+	const was = await tab.eval(`window.draw.input.readOnly`);
+	await tab.eval(`window.draw.input.setReadOnly(false), 1`);
+	if (await tab.eval(`document.querySelector('#container').classList.contains('run-mode')`)) await tab.key('r');
+	try { await body(); } finally { await tab.eval(`window.draw.input.setReadOnly(${!!was}), 1`); }
+}
+
+test('K7: a digit lights its palette tile, the same digit or Escape puts it out, and t arms the text tool', { skip: SKIP }, () => withWriteAccess(async () => {
+	const held = () => tab.eval(`[...document.querySelectorAll('.palette-item.held')].map((t) => t.dataset.type).join(',')`);
+	assert.equal(await held(), '', 'nothing is held to begin with');
+	await tab.key('2');
+	assert.equal(await held(), 'server', 'the second digit holds the second type, and its tile shows it');
+	await tab.key('2');
+	assert.equal(await held(), '', 'the same digit lets it go');
+	await tab.key('3');
+	assert.equal(await held(), 'loadbalancer');
+	await tab.key('Escape');
+	assert.equal(await held(), '', 'Escape lets it go');
+	await tab.key('t');
+	assert.equal(await tab.eval(`document.getElementById('container').classList.contains('texttool')`), true, 't arms the text tool, and the canvas shows it');
+	await tab.key('t');
+	assert.equal(await tab.eval(`document.getElementById('container').classList.contains('texttool')`), false, 'and t again disarms it');
+}));
+
+test('K7: a lock releases every armed tool, and nothing arms while it holds (B42, B18)', { skip: SKIP }, () => withWriteAccess(async () => {
+	const held = () => tab.eval(`document.querySelectorAll('.palette-item.held').length`);
+	const textTool = () => tab.eval(`document.getElementById('container').classList.contains('texttool')`);
+	await tab.key('4');
+	await tab.key('t');
+	assert.equal(await held(), 1);
+	assert.equal(await textTool(), true);
+	await tab.eval(`window.draw.input.setReadOnly(true), 1`);   // the path the lock takes (app/src/main.js applyAccess)
+	assert.equal(await held(), 0, 'the lock released the hand');
+	assert.equal(await textTool(), false, 'and the text tool');
+	await tab.key('1');
+	await tab.key('t');
+	assert.equal(await held(), 0, 'nothing arms while locked');
+	assert.equal(await textTool(), false);
+}));

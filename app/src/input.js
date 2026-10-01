@@ -47,7 +47,7 @@ import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
-import { NODE_TYPES } from './palette.js';
+import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRoles } from '../../kernel/network-roles.mjs';
@@ -260,7 +260,7 @@ const GESTURES = {
 			what they are named. "A click at the drag's own start": for a press the second half follows from the first; a
 			chained run is ended by a press elsewhere, and only one on its anchor selects it (ruled 2026-09-30).
 			*/
-			const hand = i.palette.hand ?? null;
+			const hand = i.tools.hand ?? null;
 			i.act(i.decide('link', evt, {
 				dst: !!dst, dstIsSrc: dst === ctx.src.id, srcAlive: !!srcAlive, validTarget: !!validTarget, hasVia, admitted, judged: !!i.judgeDrag,
 				click: evt.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
@@ -317,7 +317,7 @@ const GESTURES = {
 			ctx.rect.remove();
 			const box = resolveBox(ctx.p1, pos);
 			// a click stamps the held type or clears; a drag selects or adds (app/src/releases.js MARQUEE_RELEASES)
-			i.act(i.decide('marquee', evt, { click: evt.trigger === 'click', hand: !!i.palette.hand, shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey }), { pos, box });
+			i.act(i.decide('marquee', evt, { click: evt.trigger === 'click', hand: !!i.tools.hand, shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey }), { pos, box });
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
@@ -331,7 +331,7 @@ const GESTURES = {
 			const tb = i.model.makeTextBox(f.origin, { cols: f.cols, rows: f.rows });
 			i.history.commit(commands.createEntity('node', tb));
 			i.selection.set([tb.id]);
-			i.palette.setTextTool(false);   // one box per arm — re-tap 't' for another
+			i.tools.setTextTool(false);   // one box per arm — re-tap 't' for another
 			// open the inline editor on the text region, positioned over the new box's frame
 			i.labels.openFrame(tb.id);
 		},
@@ -357,7 +357,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, palette, host, help, snap, now, plugins = [], runRules = [] }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [] }) {
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -409,9 +409,9 @@ export class Input {
 		// only with a real readout injected. Latent because main.js always passes one — found the first
 		// time anything else constructed Input (the H2.1 harness). Keep in step with the call sites.
 		this.readout = readout || { setCursor() {}, setDrag() {}, setBox() {}, setLink() {}, setDatum() {}, clearTransient() {}, render() {}, dims() { return ''; }, signed() { return ''; }, flash() {} };
-		// TOTAL, per the note above: `textTool`, `setTextTool`, `holding` and `releaseTools` joined the
-		// palette's surface at H6.13 and belong here too, or `bare` construction throws on the first `t`.
-		this.palette = palette || { hand: null, textTool: false, setHand() {}, toggleHand() {}, trackHand() {},
+		// the held tools (app/src/tools.js, K7) -- the stamp hand, the text tool and the hand's ghost. TOTAL, per the note
+		// above, or `bare` construction throws on the first `t`; a composition that passes none holds nothing.
+		this.tools = tools || { hand: null, textTool: false, readOnly: false, setHand() {}, toggleHand() {}, trackHand() {},
 			hideHand() {}, setTextTool() {}, holding() { return false; }, releaseTools() {} };
 		/*
 		H12.4/H12.7 -- the agreed instant, injected as a FUNCTION rather than reached for.
@@ -464,7 +464,7 @@ export class Input {
 				if (action === 'load') {
 					this.readout.setDatum(null);
 					this.overlayUi.datum(null);
-					this.palette.setHand(null); // the hand never survives a document swap
+					this.tools.setHand(null); // the hand never survives a document swap
 					this.readout.setCursor(null);
 				}
 			}
@@ -477,7 +477,7 @@ export class Input {
 	// the pointer left the canvas: keys must never act on a stale off-canvas position
 	leave() {
 		this.readout.setCursor(null);
-		this.palette.hideHand();
+		this.tools.hideHand();
 		this.state = track(this.state, { type: 'leave' });
 	}
 
@@ -497,7 +497,7 @@ export class Input {
 	setReadOnly(on) {
 		if (this.readOnly === on) return;
 		this.readOnly = on;
-		this.palette.readOnly = on;
+		this.tools.readOnly = on;
 		if (on) {
 			// Every ARMED intent dies with the lock, not just the in-flight gesture. B42: `t` was
 			// gated at the keypress but the text tool, once armed, outlived the lock and authored a
@@ -505,7 +505,7 @@ export class Input {
 			// hand and arming the delete chord were already cleared here; the text tool was the one
 			// held tool nobody added. That asymmetry is what H6's held-tool unification removes.
 			if (this.mode) this.cancelDrag();
-			this.palette.releaseTools();   // B42 — every armed tool, not a list someone has to maintain
+			this.tools.releaseTools();   // B42 — every armed tool, not a list someone has to maintain
 			this.overlayUi.disarm();
 		}
 	}
@@ -525,7 +525,7 @@ export class Input {
 		if (this.mode === 'link' && evt.button === 0) return;   // the press already ended the chain (input state)
 
 		if (this.labels.isOpen()) this.labels.close(true);
-		this.palette.hideHand();
+		this.tools.hideHand();
 
 		/*
 		THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: it counts as the drag's first key "if that same anchor remains
@@ -566,7 +566,7 @@ export class Input {
 			readOnly: this.readOnly,
 			targetId,
 			selection: this.selection.list(),
-			tool: !!this.palette.textTool,
+			tool: !!this.tools.textTool,
 			...(gesture ? { gesture, step: this.stepUnderPointer() } : {}),
 		}, this.now());
 	}
@@ -814,7 +814,7 @@ export class Input {
 
 	// stamp the held type at the snapped cell; refuses occupied cells
 	stampAt(pos) {
-		const type = this.palette.hand;
+		const type = this.tools.hand;
 		if (!type) return false;
 		const snapped = snapNode(pos);
 		if (type === 'waypoint') {
@@ -841,8 +841,8 @@ export class Input {
 
 	// stamp-hand occupied check: a waypoint needs an empty cell (no node OR waypoint); a node only no node
 	handBlocked(snapped) {
-		if (!this.palette.hand) return false;
-		return this.palette.hand === 'waypoint' ? occupiedAnyAt(this.model, snapped) : occupiedAt(this.model, snapped);
+		if (!this.tools.hand) return false;
+		return this.tools.hand === 'waypoint' ? occupiedAnyAt(this.model, snapped) : occupiedAt(this.model, snapped);
 	}
 
 	// 'w' when idle: drop a standalone waypoint at the snapped cursor cell (empty cells only)
@@ -1031,8 +1031,8 @@ export class Input {
 			// idle: the stamp ghost rides the snapped cell and the readout states the landing
 			const snapped = snapNode(pos);
 			const blocked = this.handBlocked(snapped);
-			this.palette.trackHand(snapped, blocked);
-			this.readout.setCursor(snapped, this.palette.hand, blocked);
+			this.tools.trackHand(snapped, blocked);
+			this.readout.setCursor(snapped, this.tools.hand, blocked);
 			return this.idleAffordance(evt);
 		}
 		GESTURES[this.mode].update?.(this, pos, evt);
@@ -1216,7 +1216,7 @@ export class Input {
 	chainOnFromTarget({ target, pos }) { this.chainFrom(target, pos); }
 
 	retypeClicked({ ctx }) {
-		this.history.commit(commands.retypeNode(ctx.src.id, this.palette.hand));
+		this.history.commit(commands.retypeNode(ctx.src.id, this.tools.hand));
 		this.selection.set([ctx.src.id]);
 		this.labels.setFocus(ctx.src.id);
 	}
@@ -1331,8 +1331,8 @@ export class Input {
 		if (this.mode || !this.state.pointer.at) return;
 		const snapped = snapNode(this.state.pointer.at);
 		const blocked = this.handBlocked(snapped);
-		if (this.palette.hand) this.palette.trackHand(snapped, blocked);
-		this.readout.setCursor(snapped, this.palette.hand, blocked);
+		if (this.tools.hand) this.tools.trackHand(snapped, blocked);
+		this.readout.setCursor(snapped, this.tools.hand, blocked);
 	}
 
 	// datum marker: a small diamond-cross on the snap layer (pointer-inert)
@@ -1467,9 +1467,9 @@ export class Input {
 		// priority: close help > cancel gesture > disarm the tool > clear hand > clear selection
 		if (this.help && isShown(this.help)) return this.toggleHelp(false);
 		if (this.mode) this.cancelDrag(evt);
-		else if (this.palette.textTool) this.palette.setTextTool(false);
-		else if (this.palette.hand) {
-			this.palette.setHand(null);
+		else if (this.tools.textTool) this.tools.setTextTool(false);
+		else if (this.tools.hand) {
+			this.tools.setHand(null);
 			this.readout.setCursor(this.state.pointer.at ? snapNode(this.state.pointer.at) : null);
 		} else this.selection.clear();
 	}
@@ -1508,7 +1508,7 @@ export class Input {
 
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
 	onTextTool() {
-		this.palette.setTextTool(!this.palette.textTool);
+		this.tools.setTextTool(!this.tools.textTool);
 	}
 
 	onReshape() {
@@ -1525,7 +1525,7 @@ export class Input {
 		// B147: mid-link-drag a digit CREATES that node and carries the run through it
 		if (this.mode === 'link') { evt.claimed = true; return this.chainThroughNode(type); }
 		if (this.mode) return;
-		this.palette.toggleHand(type);
+		this.tools.toggleHand(type);
 		this.refreshHand();
 	}
 
@@ -1586,12 +1586,12 @@ export class Input {
 	onPipette() {
 		if (this.mode) return;
 		const over = this.state.pointer.at && nodeAt(this.model, this.state.pointer.at);
-		this.palette.setHand(over ? over.type : null);
+		this.tools.setHand(over ? over.type : null);
 		this.refreshHand();
 	}
 
 	onStampKey(evt) {
-		if (this.mode || !this.palette.hand) return;
+		if (this.mode || !this.tools.hand) return;
 		// mouseless chaining: stamp at the ghost, then re-evaluate the cell — it is occupied now,
 		// and the feedback must say so without a mouse move
 		evt.claimed = true;

@@ -234,7 +234,7 @@ export function record(scenario) {
 			else if (op === 'select') h.selection.set(a[0].map((x) => ids[x]));
 			else if (op === 'selectLast') h.selection.set([lastLink]);
 			else if (op === 'link') { const l = h.model.makeLink(ids[a[0]], ids[a[1]]); h.model.put('link', l); lastLink = l.id; }
-			else if (op === 'hand') h.palette.setHand(a[0]);
+			else if (op === 'hand') h.tools.setHand(a[0]);
 			else if (op === 'readOnly') h.input.setReadOnly(true);
 			else if (op === 'mode') h.renderer.mode = a[0];
 			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(ids, a[0], a[1], null, { up: true })));
@@ -244,7 +244,7 @@ export function record(scenario) {
 		const doc = h.model.toJSON();
 		out.said = h.calls.filter((c) => c.name === 'readout.flash').map((c) => c.args[0]);
 		out.editor = h.calls.filter((c) => c.name.startsWith('labels.')).map((c) => [c.name, ...c.args.filter((x) => typeof x !== 'object')]);
-		out.palette = h.calls.filter((c) => c.name === 'palette.setHand' || c.name === 'palette.setTextTool').map((c) => [c.name, ...c.args]);
+		out.palette = h.calls.filter((c) => c.name === 'tools.setHand' || c.name === 'tools.setTextTool').map((c) => [c.name, ...c.args]);
 		out.host = h.dispatched.map((e) => [e.type, e.detail ?? null]);
 		out.final = { nodes: doc.nodes, waypoints: doc.waypoints, links: doc.links, zones: doc.zones, groups: doc.groups, selection: h.selection.list() };
 	} finally {

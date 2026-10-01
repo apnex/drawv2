@@ -66,11 +66,11 @@ test('a tool is never held on a locked client: locking releases it, and a locked
 	const h = makeInput();
 	try {
 		h.capture.onKeyDown(key('t'));
-		assert.equal(h.palette.textTool, true, 'armed while writes are allowed');
+		assert.equal(h.tools.textTool, true, 'armed while writes are allowed');
 		h.input.setReadOnly(true);
-		assert.equal(h.palette.textTool, false, 'released by the lock (B42)');
+		assert.equal(h.tools.textTool, false, 'released by the lock (B42)');
 		h.capture.onKeyDown(key('t'));
-		assert.equal(h.palette.textTool, false, 'and not armable while locked (B18)');
+		assert.equal(h.tools.textTool, false, 'and not armable while locked (B18)');
 	} finally { h.restore(); }
 });
 

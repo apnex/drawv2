@@ -155,7 +155,7 @@ const routeHook = (drag) => {
 };
 
 const input = new Input({ svg, model, history, selection, renderer, labels, readout,
-	palette: null, host: window, help: null, now: () => Date.now(), snap,
+	host: window, help: null, now: () => Date.now(), snap,   // no tools: the lab holds no stamp hand or text tool (K7)
 	plugins: [networkInput(routeHook, session)] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 const capture = new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (L0)
 // a transit change redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12)

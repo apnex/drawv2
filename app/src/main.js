@@ -19,6 +19,7 @@ import { Input } from './input.js';
 import { Capture } from './capture.js';
 import { helpSections, renderHelp } from './help.js';
 import { Palette } from './palette.js';
+import { Tools } from './tools.js';   // K7: the held tools, which the palette shows and Input reads
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { Watchdog } from './watchdog.js';
@@ -63,7 +64,8 @@ const readout = new Readout({ model, selection, elements: [document.getElementBy
 // B36 — one crosshair on #snaplayer, owned here and shared. Overlay and Palette each built their
 // own, which is two owners of one layer; the composition root is where that gets decided.
 const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
-const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap });
+const tools = new Tools({ svg, snap });
+const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools });
 
 // help overlay: header button + click-outside-to-close. Resolved HERE and injected — Input used to
 // look the same element up for itself, so the id had two owners (B45).
@@ -78,7 +80,7 @@ other two have it without reaching through Sync to get it (A3 Air-Gap), and is t
 `scan-wiring` checks: a value the root computes must reach the thing it constructs.
 */
 const clock = new Clock();
-const input = new Input({ svg, model, history, selection, renderer, labels, readout, palette, host: window, help, now: () => clock.now(), snap, runRules: RUN_PRESSES });
+const input = new Input({ svg, model, history, selection, renderer, labels, readout, tools, host: window, help, now: () => clock.now(), snap, runRules: RUN_PRESSES });
 new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0)
 // the help overlay is GENERATED from the bindings Input resolves -- no hand-written list of controls (RULES I4, stage 6)
 if (help) renderHelp(help.querySelector('#help-rows'), helpSections(input.bindings()));
@@ -788,4 +790,4 @@ menu.del.addEventListener('click', () => {
 
 net.init();
 
-window.draw = { model, history, renderer, selection, input, palette, labels, readout, net, sync, reveal, movers };
+window.draw = { model, history, renderer, selection, input, palette, tools, labels, readout, net, sync, reveal, movers };

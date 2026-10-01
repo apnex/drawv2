@@ -136,8 +136,9 @@ test('acceptance 3: the link, marquee, Ctrl+click, replug and zone releases comm
 // ---- acceptance test 4: read-only is the engine's guard ----
 
 test('acceptance 4: the input layers test read-only nowhere but the engine\'s guard -- and the lock itself', () => {
+	// K7: the lock is told to the held tools (`tools.readOnly = on`), which the palette reads; the palette is not Input's
 	const lines = code(INPUT_SRC).split('\n').filter((l) => /readOnly/.test(l));
-	const allowed = /readOnly: this\.readOnly|this\.readOnly = (false|on)|this\.readOnly === on|palette\.readOnly = on|\{ readOnly = false|readOnly: this\.readOnly,/;
+	const allowed = /readOnly: this\.readOnly|this\.readOnly = (false|on)|this\.readOnly === on|tools\.readOnly = on|textTool: false, readOnly: false,|\{ readOnly = false|readOnly: this\.readOnly,/;
 	assert.deepEqual(lines.filter((l) => !allowed.test(l)).map((l) => l.trim()), []);
 });
 
