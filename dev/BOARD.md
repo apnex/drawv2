@@ -181,6 +181,7 @@ AMENDED 2026-10-01: K9 done -- one static responder for the product and the lab 
 AMENDED 2026-10-01: K4 done -- the planner is its own folder, `planner/`, served whole; `server/` is served by neither door.\
 AMENDED 2026-10-01: K7 done -- the held tools are their own canvas module, the palette a view of them; Input reaches neither the palette nor any chrome. Next K8.\
 AMENDED 2026-10-01: K8 done -- one `composeCanvas` builds the canvas half of the product page and of the lab.\
+AMENDED 2026-10-01: promotion is HELD for more consolidation in the lab (`dev/DECISIONS.md`). Reconciled: H15.2 dropped from the board, its row B221 held for promotion's preview (PL-6); H10.34's mechanism shipped with H17.14, only B163's ratification owed; B243's trigger is promotion; H11.29 done. Next H15.9, then H15.23.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -199,7 +200,7 @@ The ranking below therefore weighs one question above size: **does this let an a
 | 1 | -- | verifier | **H11.4 closed 2026-09-01, re-scoped by measurement.** The stated check was undecidable; the census candidate scored 2 of 9. `tools/mutate.mjs` automates the technique that caught seven of the nine, and found two more gaps on its first run. Original ranking note follows | The general form of every defect this session found by mutation rather than by reading. Narrower than when filed -- the parity gate, `tests/routes.test.js` and `scan-cli` each answer it in one domain -- so **re-scope before building**, and the re-scoping is most of the work. Sharpened since: B147 shipped three times because each test asserted the layer below the one that broke, and mutation cannot see that, because a mutant only probes the assertions that exist. |
 | 2 | -- | user | **H10.3 closed 2026-09-01.** The durable status surface. A server error survives until the next message overwrites it, so the one channel the client has for trouble is the one that forgets -- A5's Operational Lag, on the human side of the symmetry. The only item here a person would notice. |
 | 3 | Level 2 placement | feature | `place` extensions and the `gridLayout` entity, designed in `docs/spec/LAYOUT.md`. The largest remaining product value, and now much cheaper to verify because the map shows what a layout did. |
-| 4 | H11.29 | verifier | `TRANSACTIONS.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
+| 4 | -- | verifier | **H11.29 closed 2026-10-01: GR14 has its row.** `TRANSACTIONS.md` section 5 claims to list the guardrails and has no row for `GR14`. A statement of record, not behaviour. H9.20 closed 2026-08-27: the index is pinned, and the general count rule is deferred with its convention written down. |
 | 5 | -- | agent | **H10.32 closed 2026-09-01.** A verb now refuses a positional it never declared, at the dispatcher rather than in 41 verbs. Kept as a rank so the ordering below is not silently renumbered |
 | 6 | H10.8 | local | Real, small, compounding into nothing alone. Take them opportunistically. **H9.22 closed and left this tier 2026-09-01.** Closed from this tier on 2026-08-27: H10.17 (the caps have one home) and H10.16 (the referential rules have one statement). |
 | -- | H10.7 | blocked | Bounded parallel connections. **H10.11 closed and left this tier 2026-09-01.** **H10.7 is blocked in practice on H10.8**, because the apparatus that derived its bound is not in the tree. |
@@ -595,7 +596,7 @@ The reconciliation itself is the finding: the two files had drifted in eleven pl
 | H11.26 | R12 holds a ranked entry to not being finished and never to existing, so the ranking survived pointing at an item deleted the same commit. Structured data, unambiguous, one branch | **B151** | S1 - S | `DONE` |
 | H11.27 | The server emits non-ASCII in agent-facing strings, so an agent reads a character it cannot type back into a grep or an assertion. FOUR, not three -- the fourth was found by the rule rather than by the row, which is the argument for writing one rather than fixing a list | **B152** | S3 - S | `DONE` |
 | H11.28 | `Decisions required` is the last declared list nothing reads, and the one wrong twice. The Held pattern applied to a second section: a `RULING-OWED` verdict and one bidirectional rule | **B153** | S3 - S | `DONE` |
-| H11.29 | `TRANSACTIONS.md` section 5 claims to list the mechanized guardrails and has no row for `GR14`, which is cited on this board and enforced in the gate | **B154** | S4 - S | `TODO` |
+| H11.29 | `TRANSACTIONS.md` section 5 claims to list the mechanized guardrails and has no row for `GR14`, which is cited on this board and enforced in the gate | **B154** | S4 - S | `DONE` |
 | H11.4 | No check can see a test that reimplements its subject instead of calling it. Narrower than when filed: the parity gate answers it for the renderer, `tests/routes.test.js` for the API, `scan-cli` for the tool. What remains is the general question, and it should be re-scoped before it is built | **B108** | S3 - L | `TODO` |
 | H11.5 | A deleted diagram is recoverable and nothing said so. Reached from both surfaces; the seam answers `null` for a backend with NO window, which is not the same fact as an empty one | **B109** | S2 - M | `DONE` |
 
@@ -838,7 +839,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H15.1 | A collapse reads the COUNT, not the stored order -- orient the pair rather than refuse it | **B222** | **S2** | `DONE` |
-| H15.2 | Share `collapseAtWaypoint` so the client predicts the collapse it cannot currently see coming -- UNBLOCKED: H15.4 landed, so the rule the projection waited for is now written | **B221** | S4 | `TODO` |
+| H15.2 | Share `collapseAtWaypoint` so the client predicts the collapse it cannot currently see coming -- UNBLOCKED: H15.4 landed, so the rule the projection waited for is now written | **B221** | S4 | `DROPPED` |
 | H15.3 | `flow`, the declared direction: an optional boolean, validated, surviving a collapse that flips the link | feature | S3 | `DONE` |
 | H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` reads direction | feature | S3 | `DONE` |
 | H15.6 | The gesture and the arrowhead -- declaring a direction from the canvas, and seeing it | feature | S3 | `DONE` |
@@ -956,7 +957,8 @@ Scored so the comparison is a judgement, not an omission.\
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
-| **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | SD2 is ruled, or an agent's landing is reported uncut |
+| **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | promotion (K18a, scheduled by PD-5), or an agent's landing is reported uncut |
+| **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B273** | S4 | The kind table is shared, not injected: a composition cannot add a kind, so pipes wait for promotion | promotion's format batch, or any sixth stored kind |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |

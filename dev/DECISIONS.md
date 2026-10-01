@@ -1530,3 +1530,8 @@ Asked when the document should start remembering drawing order, the director cho
 - For links the stored order is the network plugin's link age (B259), so one field serves both; it lands in the format change promotion already makes (`dev/design/unification/PROMOTION.md`, P2), one migration rather than two.
 - Until then stacking stays as it is: newest on top in the tab that drew it.
 
+**Promotion is held for more consolidation in the lab -- ruled 2026-10-01.**\
+Reviewing the board, the director: "Hold promotion until we perform some more consolidation, unification adjustments in lab."
+- B266 stays held; its trigger is unchanged -- the director says promotion may start.
+- Lab-side consolidation and unification proceed first, beginning with the appearance pipeline (H15.9) and the colour registry (H15.23).
+
