@@ -173,6 +173,7 @@ AMENDED 2026-10-01: K12 done -- the design-rule checker deleted by ruling, four 
 AMENDED 2026-10-01: K11 done as K13a's prerequisite -- the SVG scene split from the core renderer into `kernel/svg-scene.mjs`.\
 AMENDED 2026-10-01: K13a done -- geometry splits into the grid (core), network roles and network appearance; the core exports no network name. Next K14a (B244, H17.4).\
 AMENDED 2026-10-01: K14a done -- a deleted ring takes its end waypoints (B244, H17.4). Next B246 (H17.6).\
+AMENDED 2026-10-01: K15 done -- every peer answers link queries in id order (B246, H17.6).\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -916,7 +917,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.3 | Build the lab entry on the real modules, cut by cut (K0-K18a in `dev/design/h17/PLAN.md`), each with its test (rows registered before code) | feature | S3 | `WIP` |
 | H17.4 | Deleting a closed ring sweeps its end waypoints too, by reading the role derivation rather than a restated rule | **B244** | S3 | `DONE` |
 | H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `DONE` |
-| H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `TODO` |
+| H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `DONE` |
 | H17.7 | The lab's pipe sweep works routes out in the same order as drawing, so it never removes a pipe a link is drawn on | **B257** | S2 | `DONE` |
 | H17.8 | A request the lab's planner refuses is taken back out of the tab, as production resynchronises | **B260** | S2 | `DONE` |
 | H17.9 | A run-mode click spends the `w` that placed an anchor, as every press does | **B263** | S4 | `DONE` |

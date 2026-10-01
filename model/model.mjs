@@ -13,6 +13,8 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 // here by a comment reading "MUST match server/validate.js SELECTABLE", which is a comment doing a check's job (B86).
 import { KINDS, COLLECTION as KEY, SELECTABLE_KINDS } from './shape.mjs';
 export { SELECTABLE_KINDS };
+// B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
+import { byId } from './order.mjs';
 const SELECTABLE = new Set(SELECTABLE_KINDS);
 
 /*
@@ -180,7 +182,7 @@ export class Model {
 	// ---- queries ----
 	linksOf(nodeId) {
 		if (this.index) return this.index.linksOf(nodeId);
-		return this.all('link').filter((l) => l.src === nodeId || l.dst === nodeId);
+		return this.all('link').filter((l) => l.src === nodeId || l.dst === nodeId).sort(byId);
 	}
 
 	// every link referencing this waypoint in ANY role — endpoint (src/dst) or via bend. A waypoint
@@ -189,7 +191,7 @@ export class Model {
 	linksAt(waypointId) {
 		if (this.index) return this.index.linksAt(waypointId);
 		return this.all('link').filter((l) =>
-			l.src === waypointId || l.dst === waypointId || (Array.isArray(l.via) && l.via.includes(waypointId)));
+			l.src === waypointId || l.dst === waypointId || (Array.isArray(l.via) && l.via.includes(waypointId))).sort(byId);
 	}
 
 	// a link endpoint resolves to a node OR a waypoint — the single authority for "is this a live
@@ -265,10 +267,10 @@ export class Model {
 
 	// whether a and b are connected at all. Since B72 a pair may carry several links, so this
 	// returns AN endpoint-pair link and not THE one -- use linksBetween to reason about which.
+	// B246: the lowest id among them, so every peer names the same one
 	linkBetween(a, b) {
 		if (this.index) return this.index.linkBetween(a, b);
-		return this.all('link').find((l) =>
-			(l.src === a && l.dst === b) || (l.src === b && l.dst === a));
+		return this.linksBetween(a, b)[0];
 	}
 
 	// every link joining a and b (B80). One pair may hold a straight link and routed ones beside
@@ -276,7 +278,7 @@ export class Model {
 	linksBetween(a, b) {
 		if (this.index) return this.index.linksBetween(a, b);
 		return this.all('link').filter((l) =>
-			(l.src === a && l.dst === b) || (l.src === b && l.dst === a));
+			(l.src === a && l.dst === b) || (l.src === b && l.dst === a)).sort(byId);
 	}
 
 	groupOf(nodeId) {

@@ -15,6 +15,7 @@ grid operands (the parity guarantee) and the engine imports no spatial-kernel mo
 */
 
 import { maintainIndex } from './ivm.mjs';
+import { byId } from '../model/order.mjs';   // B246: the one derivation order
 
 // the entity ids a link occupies in the incidence index: src, dst, and every via waypoint.
 const linkRefs = (l) => Array.isArray(l.via) ? [l.src, l.dst, ...l.via] : [l.src, l.dst];
@@ -74,31 +75,29 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			model.all('waypoint').forEach((w) => cellWaypoint.put(w));
 		},
 
-		// ---- the query helpers — semantics mirror model/model.mjs EXACTLY (order-insensitive) ----
+		// ---- the query helpers — semantics AND ORDER mirror model/model.mjs exactly: ascending id (B246) ----
 		linksOf(nodeId) {                                         // links where src/dst === nodeId
 			const s = incident.get(nodeId); if (!s) return [];
 			const out = []; s.forEach((lid) => { const l = model.get('link', lid); if (l && (l.src === nodeId || l.dst === nodeId)) out.push(l); });
-			return out;
+			return out.sort(byId);
 		},
 		linksAt(waypointId) {                                     // links referencing waypointId in ANY role
 			const s = incident.get(waypointId); if (!s) return [];
 			const out = []; s.forEach((lid) => { const l = model.get('link', lid); if (l) out.push(l); });
-			return out;
+			return out.sort(byId);
 		},
 		// AN endpoint-pair link between a and b, not THE one. The `(<=1)` this comment used to
 		// claim stopped being true at B72, when a pair became able to carry a straight link and
 		// routed ones beside it (B80). `incident` was never keyed on the pair, so nothing was
 		// stored wrongly -- only described wrongly.
-		linkBetween(a, b) {
-			const s = incident.get(a); if (!s) return undefined;
-			for (const lid of s) { const l = model.get('link', lid); if (l && ((l.src === a && l.dst === b) || (l.src === b && l.dst === a))) return l; }
-			return undefined;
+		linkBetween(a, b) {                                       // B246: the lowest id among them
+			return this.linksBetween(a, b)[0];
 		},
 		linksBetween(a, b) {                                      // every link joining a and b
 			const s = incident.get(a); if (!s) return [];
 			const out = [];
 			for (const lid of s) { const l = model.get('link', lid); if (l && ((l.src === a && l.dst === b) || (l.src === b && l.dst === a))) out.push(l); }
-			return out;
+			return out.sort(byId);
 		},
 		groupOf(id) {                                             // the group whose members include id, else undefined
 			const gid = member.get(id);
