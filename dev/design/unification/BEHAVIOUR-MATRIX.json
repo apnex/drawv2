@@ -861,6 +861,23 @@
 					]
 				}
 			}
+		},
+		"transit pin": {
+			"about": "A link from A to B pinned at P, over the pipes its w drag laid; no transit declared.",
+			"board": "transit-pin",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 1,
+				"pipes": {
+					"hand": 0,
+					"link": 2
+				},
+				"pins": {
+					"link-000001": 1
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -874,7 +891,9 @@
 		"draw: `w` bend": "Drag, press `w` at a point on the way, and release on the end.",
 		"undo": "Undo the gesture before.",
 		"select link": "Click a link to select it.",
-		"transit `x`": "Select anchors or nodes, and press x."
+		"transit `x`": "Select anchors or nodes, and press x.",
+		"draw: `w` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press w on that anchor, and release beyond it.",
+		"draw: `g` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press g on that anchor, and release beyond it."
 	},
 	"notApplicable": [
 		[
@@ -2877,6 +2896,236 @@
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-12",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "Select the pin P, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A link cannot bend where what arrives stops: it is cut at P into two links that both end there, each up over its own pipe, and the pipes stay.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 2
+				},
+				"rings": [
+					"waypoint-000005"
+				],
+				"linksBetween": {
+					"node-000001|waypoint-000005": 1,
+					"waypoint-000005|node-000002": 1
+				},
+				"pins": {
+					"link-000001": 0
+				},
+				"notice": "transit off at P -- 1 link cut in two there"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-13",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "Select the pin P, and press x twice.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, the two links left ending at P join into one again, pinned at P, keeping the id it was drawn with.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 2
+				},
+				"rings": [],
+				"pins": {
+					"link-000001": 1
+				},
+				"notice": "transit on at P -- its two links joined again"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-14",
+			"state": "transit board",
+			"gesture": "draw: `w` on a non-transiting anchor",
+			"does": "Turn the bare anchor's transit off; then drag from R, press w on the anchor, and release on H.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"drag",
+					[
+						0,
+						-240
+					],
+					[
+						0,
+						240
+					],
+					[
+						[
+							"w",
+							0,
+							0
+						]
+					]
+				]
+			],
+			"intent": "A w on an anchor whose transit is off makes two links ending there, not one bending through it.",
+			"expect": {
+				"links": 3,
+				"linksBetween": {
+					"node-000003|waypoint-000005": 1,
+					"waypoint-000005|node-000004": 1,
+					"node-000003|node-000004": 0
+				},
+				"notice": "cut at w5, whose transit is off"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-15",
+			"state": "transit board",
+			"gesture": "draw: `w` on a non-transiting anchor",
+			"does": "Turn the lone router's transit off; then drag from A, press w on the router, and release on H.",
+			"steps": [
+				[
+					"click",
+					0,
+					-240
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						240
+					],
+					[
+						[
+							"w",
+							0,
+							-240
+						]
+					]
+				]
+			],
+			"intent": "On a node too: a w on a router whose transit is off makes two links ending at it.",
+			"expect": {
+				"links": 3,
+				"linksBetween": {
+					"node-000001|node-000003": 1,
+					"node-000003|node-000004": 1,
+					"node-000001|node-000004": 0
+				},
+				"notice": "cut at R, whose transit is off"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-16",
+			"state": "transit board",
+			"gesture": "draw: `g` on a non-transiting anchor",
+			"does": "Turn the bare anchor's transit off; then drag from R, press w at an empty point, g on the anchor, and release on H.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"drag",
+					[
+						0,
+						-240
+					],
+					[
+						0,
+						240
+					],
+					[
+						[
+							"w",
+							120,
+							-120
+						],
+						[
+							"g",
+							0,
+							0
+						]
+					]
+				]
+			],
+			"intent": "In a link drag, a g on an anchor whose transit is off still lays its hand pipes, and no route passes the anchor: the new link has no other way past its pin, so it is made down, and, selected, says the anchor's transit is what keeps it down.",
+			"expect": {
+				"links": 2,
+				"down": 2,
+				"pipes": {
+					"hand": 4,
+					"link": 1
+				},
+				"linksBetween": {
+					"node-000003|node-000004": 1
+				},
+				"notice": "is down: its way passes w5, whose transit is off"
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
 			"standing": "ruled",
 			"built": "yes"
 		}

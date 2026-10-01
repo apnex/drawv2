@@ -52,7 +52,15 @@ PURE: it lays nothing. The caller lays `legs` once the planner accepts what they
 `ok` (a link is made), `legs`, `keep` (anchors to keep when no link is made), `route` (null when made down), and
 `notice`, the sentence the author sees -- absent when things went as drawn.
 */
-export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = [], stops, pressed = { w: false, g: false }, endPressed = false, srcKey = false }, { links = [], rankOf = () => 0, passes } = {}) {
+export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = [], stops, pressed = { w: false, g: false }, endPressed = false, srcKey = false }, { links = [], rankOf = () => 0, passes, nameOf = (id) => id } = {}) {
+	/*
+	A w ON A STOP THAT DOES NOT PASS CUTS THE LINK THERE (TRANSIT.md section 12, TR-2b): what arrives at an anchor whose
+	transit is off stops, so a link drawn through it with w is two links ending there. A stop is a w stop when no g made
+	it. Each piece is judged as the drag it would have been on its own, the pieces before it already made, and the drag
+	makes all of them or none; the answer names the cuts for Input to make.
+	*/
+	const cutAt = passes ? stops.slice(1, -1).filter((id) => !guides.includes(id) && !passes(id)) : [];
+	if (cutAt.length && kindOf({ pressed }).makes === 'link') return judgePieces(pipes, { src, dst, pins, guides, placed, stops, pressed, endPressed, srcKey }, { links, rankOf, passes, nameOf }, cutAt);
 	const guided = new Set(guides);
 	/*
 	The w that placed the source is the drag's first key (2026-09-30), and "A g in the drag cancels it": a drag's kind is
@@ -113,11 +121,37 @@ export function judgeDrag(pipes, { src, dst, pins = [], guides = [], placed = []
 	*/
 	const skipped = guides.filter((g) => !route.includes(g));
 	if (!skipped.length) return { ok: true, legs, route };
+	// a g on an anchor whose transit is off lays its pipe, and no route passes it (TR-3): say that, not a length
+	const shut = passes ? skipped.filter((g) => !passes(g)) : [];
+	if (shut.length === skipped.length) return { ok: true, legs, route, skipped, notice: `the link runs another way, not through ${shut.map(nameOf).join(', ')}, whose transit is off; the g path drawn is kept as its alternate` };
 	const asDrawn = legs.length, best = route.length - 1;
 	const why = best < asDrawn ? `a shorter way (${pipes_(best)}, against the ${asDrawn} drawn)`
 		: best === asDrawn ? `another way just as short (${pipes_(best)}), which the router's fixed tie order picks`
 		: `another way (${pipes_(best)}), because part of the way drawn is held by another link`;
 	return { ok: true, legs, route, skipped, notice: `the link runs ${why}, not through ${skipped.join(', ')}; the g path drawn is kept as its alternate` };
+}
+
+// the pieces of a drag cut at stops that do not pass -- each judged on its own, in order, with the pieces before it made
+function judgePieces(pipes, drag, { links, rankOf, passes, nameOf }, cutAt) {
+	const bounds = [0, ...cutAt.map((id) => drag.stops.indexOf(id)), drag.stops.length - 1];
+	const legs = [], seen = new Set(), made = [];
+	let laid = pipes;
+	for (let i = 0; i < bounds.length - 1; i++) {
+		const stops = drag.stops.slice(bounds[i], bounds[i + 1] + 1);
+		const inner = new Set(stops.slice(1, -1));
+		const last = i === bounds.length - 2;
+		const piece = { src: stops[0], dst: stops[stops.length - 1], stops, pins: drag.pins.filter((p) => inner.has(p)), guides: drag.guides.filter((g) => inner.has(g)),
+			placed: drag.placed, pressed: drag.pressed, endPressed: last ? drag.endPressed : 'w', srcKey: i === 0 ? drag.srcKey : 'w' };
+		// the pieces already made are older than this one, and newer than every link on the board
+		const order = (id) => (id.startsWith('\uffff piece ') ? 1e15 + Number(id.slice(8)) : rankOf(id));
+		const v = judgeDrag(laid, piece, { links: [...links, ...made], rankOf: order, passes, nameOf });
+		if (!v.ok) return v;   // the drag makes every piece or none
+		for (const l of v.legs) if (!seen.has(pipeKey(l.a, l.b))) { seen.add(pipeKey(l.a, l.b)); legs.push(l); }
+		laid = [...pipes, ...legs];
+		made.push({ id: `\uffff piece ${i}`, src: piece.src, dst: piece.dst, via: piece.pins });
+	}
+	const name = cutAt.map(nameOf).join(', ');
+	return { ok: true, legs, cutAt, route: null, notice: `cut at ${name}, whose transit is off -- ${cutAt.length + 1} links` };
 }
 
 /*

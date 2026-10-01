@@ -896,5 +896,69 @@
 				"hand"
 			]
 		]
+	},
+	"transit-pin": {
+		"about": "Transit at a pin (TRANSIT.md section 12, X3): a link from A to B pinned at P, over the two pipes its w drag laid.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000001",
+					"name": "A",
+					"type": "router",
+					"x": -360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000002",
+					"name": "B",
+					"type": "router",
+					"x": 360,
+					"y": 0,
+					"shape": "circle"
+				}
+			},
+			{
+				"op": "put",
+				"kind": "waypoint",
+				"entity": {
+					"id": "waypoint-000005",
+					"name": "P",
+					"x": 0,
+					"y": -120
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "pinned",
+					"src": "node-000001",
+					"dst": "node-000002",
+					"via": [
+						"waypoint-000005"
+					]
+				}
+			}
+		],
+		"pipes": [
+			[
+				"node-000001",
+				"waypoint-000005",
+				"link"
+			],
+			[
+				"waypoint-000005",
+				"node-000002",
+				"link"
+			]
+		]
 	}
 }

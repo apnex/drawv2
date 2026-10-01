@@ -63,7 +63,8 @@ export function createNetworkSession() {
 		judge(drag, links, model = null) {
 			// in the model the drag is judged against, the anchors no route may pass (TR-1)
 			const stops = new Set(model ? transit.blockedIn(model) : []);
-			const verdict = judgeDrag(pipes.list(), drag, { links, rankOf: order.rankOf, passes: (id) => !stops.has(id) });
+			const verdict = judgeDrag(pipes.list(), drag, { links, rankOf: order.rankOf, passes: (id) => !stops.has(id),
+				nameOf: (id) => model?.endpointOf(id)?.name || id });   // notices name anchors as the author does
 			pendingNotice = verdict.notice ?? null;
 			const commits = verdict.ok || verdict.keep.some((id) => drag.placed.includes(id));
 			if (commits) pendingLegs = verdict.legs;

@@ -1175,8 +1175,9 @@ export class Input {
 	throwing away the `g` anchor, geometry placed deliberately. True when the link was committed.
 	*/
 	commitDrawnLink({ ctx, dst, via, route, validTarget }) {
+		let verdict = null;
 		if (this.judgeDrag) {
-			const verdict = this.judgeDrag({ src: ctx.src.id, dst, pins: via, route, placed: ctx.placed.map((w) => w.id),
+			verdict = this.judgeDrag({ src: ctx.src.id, dst, pins: via, route, placed: ctx.placed.map((w) => w.id),
 				steps: ctx.steps, release: validTarget ? 'anchor' : 'stop', srcKey: ctx.srcKey ?? false });
 			if (!verdict?.ok) {
 				const keep = new Set(verdict?.keep ?? []);
@@ -1186,8 +1187,30 @@ export class Input {
 				return false;
 			}
 		}
-		this.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
+		// the judge may cut the drawn link at stops it names (transit, TR-2b): the pieces, one undo step
+		if (this.judgeDrag && verdict?.cutAt?.length) this.commitPieces(ctx, dst, via, route, verdict.cutAt);
+		else this.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
 		return true;
+	}
+
+	/*
+	The drawn link as PIECES, cut at the stops a drag judge named: each piece runs from one cut (or an end) to the next,
+	pinned at the drag's pins between them. One command, so one undo step; each piece's ends make their junction splits.
+	*/
+	commitPieces(ctx, dst, via, route, cutAt) {
+		const stops = [ctx.src.id, ...route, dst];
+		const cuts = new Set(cutAt);
+		const bounds = stops.map((id, i) => (i === 0 || i === stops.length - 1 || cuts.has(id) ? i : -1)).filter((i) => i >= 0);
+		const links = [];
+		for (let k = 0; k < bounds.length - 1; k++) {
+			const inner = new Set(stops.slice(bounds[k] + 1, bounds[k + 1]));
+			const pins = via.filter((p) => inner.has(p));
+			const a = stops[bounds[k]], b = stops[bounds[k + 1]];
+			links.push({ ...this.model.makeLink(a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
+		}
+		const splits = [...new Map(links.flatMap((l) => this.splitsFor(l)).map((s) => [s.original.id, s])).values()];
+		this.history.commit(commands.routeLinks(ctx.placed, links, splits, ctx.unpin));
+		this.selection.set(links.map((l) => l.id));
 	}
 
 	// ...and carry the run on from the anchor it landed on, when it was committed (Shift, a plain link)

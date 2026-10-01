@@ -70,25 +70,26 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 ## 5. The matrix -- board state by gesture
 
 <!-- BEGIN GENERATED: grid. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
-| state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link | transit `x` |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | . | . | . |
-| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | . | . | . |
-| pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . | . |
-| pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . | . |
-| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . | . |
-| pins and a g hop | DEL-14 | DEL-09 | . | . | . | . | . | . | . | . | . |
-| down | n/a | n/a | DEL-15 | . | HEAL-03 | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . | . |
-| blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 | . |
-| two g paths | . | ALT-02 | . | . | ALT-01 | . | . | . | . | . | . |
-| w path fed by g | . | . | . | WP-02 | . | . | . | . | . | WP-01 | . |
-| two pins beside a g path | HP-01 | . | . | . | . | . | . | . | . | . | . |
-| a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . | . |
-| older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . |
-| transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 |
-| transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 |
+| state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link | transit `x` | draw: `w` on a non-transiting anchor | draw: `g` on a non-transiting anchor |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | . | . | . | . | . |
+| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | . | . | . | . | . |
+| pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . | . | . | . |
+| pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . | . | . | . |
+| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . | . | . | . |
+| pins and a g hop | DEL-14 | DEL-09 | . | . | . | . | . | . | . | . | . | . | . |
+| down | n/a | n/a | DEL-15 | . | HEAL-03 | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . | . | . | . |
+| blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 | . | . | . |
+| two g paths | . | ALT-02 | . | . | ALT-01 | . | . | . | . | . | . | . | . |
+| w path fed by g | . | . | . | WP-02 | . | . | . | . | . | WP-01 | . | . | . |
+| two pins beside a g path | HP-01 | . | . | . | . | . | . | . | . | . | . | . | . |
+| a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . | . | . | . |
+| older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . | . | . |
+| transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 | TRN-14, TRN-15 | TRN-16 |
+| transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . |
+| transit pin | . | . | . | . | . | . | . | . | . | . | TRN-12, TRN-13 | . | . |
 
-54 rows: 54 built, 0 todo, 0 open.\
+59 rows: 59 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -108,6 +109,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | older beside a younger route | blank | An older link A-B on a g path through x above, and a younger link C-D on a middle g path through m1 and m2; A and B also reach the middle path, a longer way. |
 | transit board | `?seed=transit` | Two routers linked through a bare anchor by hand pipes, a lone router, and a host; no transit declared yet. |
 | transit detour | `?seed=transit-detour` | The short way from A to B runs through a host, the long way over two bare anchors; no transit declared. |
+| transit pin | `?seed=transit-pin` | A link from A to B pinned at P, over the pipes its w drag laid; no transit declared. |
 
 | gesture | what the author does |
 |---|---|
@@ -122,6 +124,8 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | undo | Undo the gesture before. |
 | select link | Click a link to select it. |
 | transit `x` | Select anchors or nodes, and press x. |
+| draw: `w` on a non-transiting anchor | Turn an anchor's transit off, then drag a link, press w on that anchor, and release beyond it. |
+| draw: `g` on a non-transiting anchor | Turn an anchor's transit off, then drag a link, press g on that anchor, and release beyond it. |
 <!-- END GENERATED: grid -->
 
 ---
@@ -185,6 +189,11 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-09 | transit detour x transit `x` | Select the host on the short way, and press x. | A host never passes routes, so the link already runs the long way; pressing x on the host is refused and changes nothing. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
 | TRN-10 | transit detour x transit `x` | Select the first anchor on the long way, and press x. | With the host blocking the short way and the anchor the long way, the link has no way left and goes down. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
 | TRN-11 | transit detour x transit `x` | Select the first anchor on the long way, and press x twice. | Turned back on, the link heals the long way -- never through the host. | DECISIONS: "Transit with pipes" (2026-09-30), TR-1, TR-4 and TR-6. | ruled, built |
+| TRN-12 | transit pin x transit `x` | Select the pin P, and press x. | A link cannot bend where what arrives stops: it is cut at P into two links that both end there, each up over its own pipe, and the pipes stay. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2, TR-2b and TR-3. | ruled, built |
+| TRN-13 | transit pin x transit `x` | Select the pin P, and press x twice. | Turned back on, the two links left ending at P join into one again, pinned at P, keeping the id it was drawn with. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2, TR-2b and TR-3. | ruled, built |
+| TRN-14 | transit board x draw: `w` on a non-transiting anchor | Turn the bare anchor's transit off; then drag from R, press w on the anchor, and release on H. | A w on an anchor whose transit is off makes two links ending there, not one bending through it. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2, TR-2b and TR-3. | ruled, built |
+| TRN-15 | transit board x draw: `w` on a non-transiting anchor | Turn the lone router's transit off; then drag from A, press w on the router, and release on H. | On a node too: a w on a router whose transit is off makes two links ending at it. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2, TR-2b and TR-3. | ruled, built |
+| TRN-16 | transit board x draw: `g` on a non-transiting anchor | Turn the bare anchor's transit off; then drag from R, press w at an empty point, g on the anchor, and release on H. | In a link drag, a g on an anchor whose transit is off still lays its hand pipes, and no route passes the anchor: the new link has no other way past its pin, so it is made down, and, selected, says the anchor's transit is what keeps it down. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2, TR-2b and TR-3. | ruled, built |
 <!-- END GENERATED: rows -->
 
 ---

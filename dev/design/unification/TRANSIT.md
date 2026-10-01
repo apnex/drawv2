@@ -310,3 +310,10 @@ The original reason for this document, now with the pipes it led to: an author c
 - **Matrix:** six rows (TRN-06 to TRN-11) on the transit board and a new board whose short way runs through a host; TRN-01 gave up its "until X2" routing claims to TRN-06 and kept its subject, the ring. Every earlier board unchanged.
 - **Eight mutants, each caught.**- **Found verifying it live:** a down link is hard to click -- about a third of clicks select it, because the browser hit-tests a dotted stroke's dots and not its gaps. It predates transit (down links have been dotted since 2026-09-29); registered as B268, H17.11.
 
+**X3 -- pins and guides, 2026-09-30.**
+- **Turning transit off at a pin cuts the link there** into two links ending at it, each up over its own pipe; turning it back on joins the two left ending there, restoring the link the author drew -- the src half keeps the id through the round trip (B213). Each is one edit through the planner, one undo step. `cutAt` and `joinAt` live in `network/transit.mjs`, since where a link may bend is a network rule; the layer scan refused them in the canvas's `commands.js`, rightly.
+- **A `w` on a non-transiting anchor while drawing makes two links ending there,** on a waypoint or a node (TR-2b). The drag judge names the cuts and judges each piece as the drag it would have been, the pieces before it made, all or none; Input commits the pieces as one edit, pinned between the cuts. It is one small, generic addition to the judge seam: a judge may cut the drawn link at stops it names.
+- **A `g` on a non-transiting anchor** lays its pipe and no route uses it, which X2's routing already gives (TRN-16 passed before this stage's code); where the route runs elsewhere the notice now says the anchor's transit, not a length, is why.
+- **The limit TR-7 accepted:** undo moves the document but not the session's transit, so undoing a cut restores the pinned link while transit stays off.
+- **Matrix:** five rows (TRN-12 to TRN-16) and a `transit-pin` board; every earlier board unchanged. **Eight mutants, each caught.**
+

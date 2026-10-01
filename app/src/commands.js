@@ -367,6 +367,27 @@ unpin, so the planner kept the pin the tab had dropped, and a cancelled drag lef
 */
 const unpinEntries = (ids) => (ids || []).map((id) => ({ op: 'set', kind: 'waypoint', id, after: { pinned: false } }));
 
+/*
+Several links from one drag, as ONE undo step -- what `routeLink` is for a single link. A drag judge may cut the drawn link
+at stops it names (transit, TRANSIT.md section 12, TR-2b: a w on an anchor whose transit is off makes two links ending
+there), and the pieces arrive together, with the anchors the drag placed and the splits each piece's ends make.
+*/
+export function routeLinks(placed, links, splits = [], unpins = []) {
+	const splitEntries = splits.flatMap(({ original, halves }) => [
+		{ op: 'del', kind: 'link', entity: clone('link', original) },
+		...halves.map((h) => ({ op: 'put', kind: 'link', entity: clone('link', h) })),
+	]);
+	return {
+		label: 'route',
+		entries: [
+			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...unpinEntries(unpins),
+			...splitEntries,
+			...links.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })),
+		],
+	};
+}
+
 export function chainHop(waypoints, node, link, unpins = []) {
 	return {
 		label: 'chain',

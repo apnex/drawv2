@@ -142,3 +142,91 @@ test('a drag is judged with the same stops: a plain link drawn A to B runs over 
 	assert.equal(judgeDrag(s.pipes.list(), drag, { links: [] }).route.length, 3, 'with no stops given, the shortest way is found -- the host and the anchor tie');
 	assert.deepEqual(assignRoutes(s.pipes.list(), [{ id: 'l', ...drag }], { passes: (id) => id !== 'node-00000c' && id !== 'waypoint-00000d' }).get('l'), null, 'and with both blocked, no way');
 });
+
+/*
+X3 -- pins and guides at a non-transiting anchor (TR-2, TR-2b, TR-3).
+*/
+import { cutAt, joinAt } from '../network/transit.mjs';
+import { applyOps } from '../model/ops.mjs';
+import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
+
+function pinned() {
+	const m = new Model();
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
+	m.put('waypoint', { id: 'waypoint-00000p', name: 'P', x: 0, y: -120 });
+	m.put('waypoint', { id: 'waypoint-00000q', name: 'Q', x: 120, y: -120 });
+	m.put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000p', 'waypoint-00000q'] });
+	return m;
+}
+// a command's entries as the ops applyOps takes (`after` is the command spelling of `patch`)
+const apply = (m, cmd) => applyOps(m, cmd.entries.map((e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e)));
+
+test('cutAt divides a link bending at the waypoint into two ending there; the src half keeps the id, the pins split between them', () => {
+	const m = pinned();
+	const cmd = cutAt(m, 'waypoint-00000p');
+	assert.equal(cmd.cut, 1);
+	apply(m, cmd);
+	const links = m.all('link').map((l) => [l.src, l.dst, l.via ?? []]);
+	assert.deepEqual(m.get('link', 'link-000001') && [m.get('link', 'link-000001').src, m.get('link', 'link-000001').dst], ['node-00000a', 'waypoint-00000p']);
+	assert.deepEqual(links.sort(), [['node-00000a', 'waypoint-00000p', []], ['waypoint-00000p', 'node-00000b', ['waypoint-00000q']]].sort());
+	assert.equal(cutAt(m, 'waypoint-00000p'), null, 'nothing bends there now: nothing to cut');
+});
+
+test('joinAt merges the two links left ending at the waypoint, restoring the link the author drew', () => {
+	const m = pinned();
+	apply(m, cutAt(m, 'waypoint-00000p'));
+	apply(m, joinAt(m, 'waypoint-00000p'));
+	assert.equal(m.all('link').length, 1);
+	assert.deepEqual(m.get('link', 'link-000001').via, ['waypoint-00000p', 'waypoint-00000q']);
+	assert.equal(joinAt(m, 'waypoint-00000q'), null, 'a bend, not two ends: nothing to join');
+});
+
+test('joinAt declines where more than two links meet: a junction stays a junction', () => {
+	const m = pinned();
+	apply(m, cutAt(m, 'waypoint-00000p'));
+	m.put('node', { id: 'node-00000c', name: 'C', type: 'router', x: 0, y: -360, shape: 'circle' });
+	m.put('link', { id: 'link-000009', name: 'x', src: 'node-00000c', dst: 'waypoint-00000p' });
+	assert.equal(joinAt(m, 'waypoint-00000p'), null);
+});
+
+const drag = (o) => ({ pins: [], guides: [], placed: [], pressed: { w: true, g: false }, endPressed: false, srcKey: false, ...o });
+
+test('a w on a stop that does not pass cuts the drawn link there: the judge names the cut and lays every leg', () => {
+	const v = judgeDrag([], drag({ src: 'R', dst: 'H', pins: ['P'], stops: ['R', 'P', 'H'] }), { links: [], passes: (id) => id !== 'P', nameOf: (id) => id.toLowerCase() });
+	assert.equal(v.ok, true);
+	assert.deepEqual(v.cutAt, ['P']);
+	assert.deepEqual(v.legs.map((l) => `${l.a}-${l.b}:${l.laid}`), ['R-P:link', 'P-H:link']);
+	assert.equal(v.notice, 'cut at p, whose transit is off -- 2 links');
+	assert.equal(judgeDrag([], drag({ src: 'R', dst: 'H', pins: ['P'], stops: ['R', 'P', 'H'] }), { links: [] }).cutAt, undefined, 'without transit, nothing is cut');
+});
+
+test('a drag cut in pieces makes every piece or none: a piece refused refuses the drag', () => {
+	const held = { id: 'link-1', src: 'P', dst: 'H' };   // P-H is joined already by an unpinned link
+	const v = judgeDrag([], drag({ src: 'R', dst: 'H', pins: ['P'], stops: ['R', 'P', 'H'] }), { links: [held], passes: (id) => id !== 'P' });
+	assert.equal(v.ok, false);
+	assert.match(v.notice, /already joins/);
+});
+
+test('a g the route skips because its transit is off is named as such (TR-3)', () => {
+	const pipes = [{ a: 'A', b: 'G', laid: 'hand' }, { a: 'G', b: 'B', laid: 'hand' }, { a: 'A', b: 'x', laid: 'hand' }, { a: 'x', b: 'y', laid: 'hand' }, { a: 'y', b: 'B', laid: 'hand' }];
+	const v = judgeDrag(pipes, drag({ src: 'A', dst: 'B', guides: ['G'], stops: ['A', 'G', 'B'], pressed: { w: true, g: true } }), { links: [], passes: (id) => id !== 'G' });
+	assert.deepEqual(v.route, ['A', 'x', 'y', 'B']);
+	assert.match(v.notice, /not through G, whose transit is off/);
+});
+
+test('Input commits the pieces a judge names as ONE edit, pinned between the cuts', () => {
+	// the judge cuts at the first pin it is handed -- as the network's judge cuts at a pin whose transit is off
+	const h = makeInput({ routeHook: (facts) => ({ ok: true, cutAt: [facts.pins[0]] }) });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const over = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(id.split('-')[0]) ? { id } : null) } });
+		h.capture.onDown(over(a.id, 0, 0)); h.capture.onMove(pointer(120, 120)); h.capture.onKeyDown(key('w'));
+		const cut = h.model.all('waypoint')[0].id;
+		h.capture.onMove(pointer(240, 120)); h.capture.onKeyDown(key('w'));
+		h.capture.onMove(over(b.id, 360, 0)); h.capture.onUp(over(b.id, 360, 0));
+		assert.equal(h.commits.length, 1, 'one edit');
+		const links = h.model.all('link').map((l) => [l.src === a.id ? 'a' : l.src === cut ? 'cut' : '?', l.dst === b.id ? 'b' : l.dst === cut ? 'cut' : '?', (l.via ?? []).length]);
+		assert.deepEqual(links.sort(), [['a', 'cut', 0], ['cut', 'b', 1]].sort());
+	} finally { h.restore(); }
+});

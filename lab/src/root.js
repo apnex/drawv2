@@ -34,6 +34,7 @@ import { Renderer } from '../../app/src/renderer.js';
 import { Selection } from '../../app/src/selection.js';
 import { Input } from '../../app/src/input.js';
 import { Capture } from '../../app/src/capture.js';
+import { cutAt, joinAt } from '../../network/transit.mjs';
 import { Readout } from '../../app/src/readout.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { commit, undo, redo } from '../../server/txn.mjs';
@@ -158,8 +159,17 @@ const input = new Input({ svg, model, history, selection, renderer, labels, read
 	plugins: [networkInput(routeHook, session)] });   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 const capture = new Capture({ svg, host: window, sink: input });   // the DOM's events, as input events (L0)
 // a transit change redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12)
-// it can take links down or heal them (TR-4), so the notice counts what is down after it
-session.onTransitChange((ids) => { for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); } const said = session.takeNotice() ?? ''; settle(false, ''); say(`${said}${downSummary(model)}`); });
+// it can take links down or heal them (TR-4), so the notice counts what is down after it. At a waypoint it is also an EDIT
+// (TR-2): turned off, the links pinned there are cut in two; turned back on, the two left ending there join -- one commit
+session.onTransitChange((ids) => {
+	for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); }
+	const said = session.takeNotice() ?? '';
+	const edits = ids.filter((id) => model.get('waypoint', id)).map((id) => (network.declaresNoTransit(id) ? cutAt(model, id) : joinAt(model, id))).filter(Boolean);
+	if (edits.length) history.commit({ label: 'transit', entries: edits.flatMap((e) => e.entries) });
+	const cut = edits.reduce((n, e) => n + (e.cut ?? 0), 0), joined = edits.some((e) => e.label === 'join');
+	settle(false, '');
+	say(`${said}${cut ? ` -- ${cut} link${cut === 1 ? '' : 's'} cut in two there` : ''}${joined ? ' -- its two links joined again' : ''}${downSummary(model)}`);
+});
 
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.
