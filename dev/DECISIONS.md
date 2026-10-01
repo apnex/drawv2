@@ -1486,3 +1486,10 @@ Asked whether a node's ring should move just outside the node's frame, the direc
 One rule for all nodes.\
 I will reconsider actual glyph design at a later stage".
 
+**The planner is to be designed as a sovereign system, after transit -- stated 2026-09-30.**\
+The director asked: "The "planner" - as a sovereign system with a dedicated duty - what is it? is it well scoped, and should its interfaces and seams be adjusted in a similar way to the programme we made for input/gestures?"\
+The proposer answered that its core is sound and that link-network rules, four plugin hooks, placement, presentation and a hand-written browser copy are mixed into it, and recommended finishing transit's X4 first and then writing the design.\
+The director: "Approved for X4, then we can progress as recommended.\
+Make sure the board is up to date".\
+The design is `dev/design/planner/PLANNER-SYSTEM.md` (BOARD H17.15), awaiting approval; its inventory found two planner defects, B270 and B271.
+
