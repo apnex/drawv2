@@ -1552,4 +1552,6 @@ Asked how the palette is named, the director chose "Material, and snap one-offs"
 - Roles name palette entries, declared by each owner: the product's in `kernel/theme.mjs`, the network plugin's beside its appearance in `kernel/network-appearance.mjs` (pipe, transit ring, down link), moving into `network/` at promotion.
 - A one-off within RGB distance 25 of a Material colour moved to it: thirteen values, all slight. Those further away stayed: the socket ochre among them, whose nearest is the transit ring's Orange 300.
 - `tools/colour-tokens.mjs` generates one token file per owner, and the gate fails a colour value outside the palette, a role naming no palette entry, and a stylesheet reading a token its owner does not declare.
+AMENDED 2026-10-01: the director accepted the snap as built, the restore button's lost green tint included, to be reviewed visually in the lab and changed there if needed.\
+The page chrome the lab does not draw -- the menu, the cards, undelete -- is reviewed at the production audit instead (`dev/PRODUCTION-UPGRADE.md` PU24).
 
