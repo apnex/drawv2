@@ -1259,3 +1259,20 @@ test('PL-4: the store hands the planner its own clock and its placement', async 
 		assert.deepEqual([r.change.ops[1].entity.x, r.change.ops[1].entity.y], [60, 0], 'and the place op resolved through the store\'s placement');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+/*
+B272 -- A BEAT REVEALS WHAT IT CREATED, NOTHING ELSE. The beats extension revealed every entity a paced commit put, so a
+beat that only renamed an entity already on screen withheld it until its turn -- what its own comment said must not
+happen. Only ids absent before the commit join the schedule.
+*/
+test('B272: a paced commit reveals only the entities it created', () => {
+	const m = new Model(); const log = new Log();
+	const nd = (id, name, x) => ({ op: 'put', kind: 'node', entity: { id, name, type: 'router', x, y: 0, shape: 'circle' } });
+	commit(m, log, { label: 'add', ops: [nd('node-00000a', 'a', 0)] }, 'x', 'x');
+	const rename = commit(m, log, { label: 'rename', pace: 500, ops: [nd('node-00000a', 'renamed', 0)] }, 'x', 'x', { now: () => 1000 });
+	assert.equal(rename.ok, true);
+	assert.equal(m.state.reveal ?? null, null, 'a beat that only renames reveals nothing, so nothing on screen is withheld');
+	assert.equal('reveal' in rename.change, false);
+	const both = commit(m, log, { label: 'both', pace: 500, ops: [nd('node-00000a', 'again', 0), nd('node-00000b', 'b', 120)] }, 'x', 'x', { now: () => 2000 });
+	assert.deepEqual(both.change.reveal.beats.map((b) => b.ids), [['node-00000b']], 'only the node it created');
+});

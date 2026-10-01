@@ -357,7 +357,7 @@ export function commit(model, log, request, by = 'client', actor = null, options
 	requires.
 	*/
 	for (const x of extensions) {
-		const error = x.refuse(request, planned.ops);
+		const error = x.refuse(request, planned);
 		if (error) return { ok: false, error, version: log.version };
 	}
 
@@ -374,7 +374,7 @@ export function commit(model, log, request, by = 'client', actor = null, options
 	const extended = [];
 	for (const x of extensions) {
 		const before = model.state[x.field] ? structuredClone(model.state[x.field]) : null;
-		const next = x.next(model.state, request, planned.ops, now);
+		const next = x.next(model.state, request, planned, now);
 		if (next !== undefined) model.state[x.field] = next;
 		const after = model.state[x.field] ? structuredClone(model.state[x.field]) : null;
 		if ((before !== null || after !== null) && JSON.stringify(before) !== JSON.stringify(after)) extended.push([x.field, after, before]);

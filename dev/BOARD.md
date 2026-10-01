@@ -164,6 +164,7 @@ AMENDED 2026-10-01: PL-1 done -- the planner corpus (2084 cases, both compositio
 AMENDED 2026-10-01: PL-2 done -- the planner core writes every inverse; next PL-3, reactions and phases.\
 AMENDED 2026-10-01: PL-3 done -- reactions in declared phases, a classic, a network and a group tenant, the four hooks gone; next PL-4, the edges.\
 AMENDED 2026-10-01: PL-4 done -- placement and the clock passed in, beats a record extension, the CLI's resolver gone; next PL-5, the kind and shape tables.\
+AMENDED 2026-10-01: B272 fixed at the director's word (H17.18).\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -919,6 +920,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.15 | The planner as a sovereign system: design a transaction core that knows no entity rules, edits' consequences as declared reactions the network and the product bring, placement passed in, and one preview the browser runs instead of its hand-written cascade -- folding H17 cuts K3, K13c, K17 and K18 (design first, approved before code). The design is written, awaiting approval: `dev/design/planner/PLANNER-SYSTEM.md` | feature | S3 | `TODO` |
 | H17.16 | A refused commit changes nothing: every refusal is decided before the document is touched | **B270** | S2 | `DONE` |
 | H17.17 | A partial repair of an existing violation is accepted: the backstop compares violations, not their sentences | **B271** | S3 | `DONE` |
+| H17.18 | A beat reveals only what its commit created: a paced rename no longer withholds an entity already on screen | **B272** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
@@ -938,7 +940,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
 | **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | SD2 is ruled, or an agent's landing is reported uncut |
-| **B272** | S3 | A paced commit reveals every entity it `put`s, so a beat that only renames an entity withholds it until its turn | a paced commit is seen to hide an entity already on screen, or the beats extension is next changed |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | K15 lands, or a stacking difference between peers is reported |

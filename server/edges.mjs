@@ -14,7 +14,9 @@ hold are here:
 
 A record extension is a row the core runs around every commit:
 
-	{ id, field, refuse(request, ops) -> error | null, next(state, request, ops, now) -> value | undefined }
+	{ id, field, refuse(request, planned) -> error | null, next(state, request, planned, now) -> value | undefined }
+
+`planned` is the plan the core will apply: `{ ops, inverse }`.
 
 `refuse` runs before anything is applied (PR4, B270); `next` runs after the ops apply and answers the field's new value,
 or `undefined` for "untouched". The core writes `state[field]`, records `change[field]` and `change[field + 'Inverse']`
@@ -25,8 +27,18 @@ import { CAPTION_MAX } from '../model/limits.mjs';
 
 export const wallClock = () => Date.now();
 
-// the ids a paced commit reveals: the entities it put, in the order they applied
-const beatIds = (request, ops) => (Number.isInteger(request.pace) && request.pace >= 0 ? ops.filter((o) => o.op === 'put').map((o) => o.entity.id) : []);
+/*
+The ids a paced commit reveals: the entities it CREATED, in the order they applied.
+
+B272 -- it was every entity the commit put, so a beat that only renamed an entity already on screen withheld it until
+its turn. A created entity is one whose inverse is a delete: the core writes a `del` inverse only for a put of something
+absent (`inverseOf`, server/txn.mjs), so the plan says which they are without the extension reading the document.
+*/
+function beatIds(request, { ops, inverse }) {
+	if (!Number.isInteger(request.pace) || request.pace < 0) return [];
+	const created = new Set(inverse.filter((o) => o.op === 'del').map((o) => `${o.kind}:${o.id}`));
+	return ops.filter((o) => o.op === 'put' && created.has(`${o.kind}:${o.entity.id}`)).map((o) => o.entity.id);
+}
 
 export const BEATS = {
 	id: 'beats',
@@ -45,8 +57,8 @@ export const BEATS = {
 
 	B270 -- decided before the apply, from the planned ops, so a refusal touches nothing.
 	*/
-	refuse(request, ops) {
-		if (!beatIds(request, ops).length || request.caption === undefined) return null;
+	refuse(request, planned) {
+		if (!beatIds(request, planned).length || request.caption === undefined) return null;
 		const n = String(request.caption).length;
 		return n > CAPTION_MAX ? `caption is ${n} characters; the limit is ${CAPTION_MAX}` : null;
 	},
@@ -58,15 +70,15 @@ export const BEATS = {
 	be guessing at the very ids the beat exists to order. The planned ops are the resolved list, in the order they
 	applied, which is exactly the order to reveal in.
 
-	Only CREATED entities are meant to be revealed: a beat that renames something would otherwise hide an entity already
-	on screen. CORRECTED 2026-10-01: the code takes every `put`, created or not -- B272, registered and held, since PL-4
-	changes no outcome.
+	Only CREATED entities are revealed: a beat that renames something would otherwise hide an entity already on screen
+	(B272, fixed in `beatIds` above). A caption rides only on a beat, so a paced commit that creates nothing has no beat,
+	and its caption is neither stored nor judged.
 
 	The reveal INVERTS like anything else (ruled 2026-09-04): the core records the value before and after, so undoing a
 	beat takes its reveal with it and undoing past an earlier beat restores THAT one.
 	*/
-	next(state, request, ops, now) {
-		const ids = beatIds(request, ops);
+	next(state, request, planned, now) {
+		const ids = beatIds(request, planned);
 		if (!ids.length) return undefined;
 		const beat = { interval: request.pace, ids };
 		if (request.caption !== undefined) {

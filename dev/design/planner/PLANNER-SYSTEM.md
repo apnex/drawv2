@@ -230,7 +230,8 @@ DONE 2026-10-01: PL-4 -- the edges are passed in: `place` (the store passes `ser
 Beats and the reveal are `BEATS` in `server/edges.mjs`: a caption refusal before the apply, the next reveal after it, and the core records any extension's field with its inverse and restores it on undo and redo, in the record shape stored logs already hold.\
 The core reads no clock, resolves no anchor and names no reveal, and a test holds all three; the planner's closure lost `server/anchor.mjs`, and the lab no longer serves it.\
 `draw place` sends the relationship every time and reads the position from the server's answer, so its own copy of the resolver is deleted; the two had the same order, occupancy rule and tie-breaking, so where a node lands did not move.\
-The corpus replays all results unchanged; six mutants each fail a test; B272 (a paced commit hides an entity it only changed) was found reading the moved code and is registered, held.
+The corpus replays all results unchanged; six mutants each fail a test; B272 (a paced commit hides an entity it only changed) was found reading the moved code and is registered, held.\
+AMENDED 2026-10-01: B272 fixed at the director's word (H17.18): a beat reveals only the entities its commit created, read off the plan -- a put whose inverse is a delete.
 **These are production code paths:** every stage is gated and deployed to the lab; the production deploy stays the director's call.
 
 ---
