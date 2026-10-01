@@ -219,7 +219,7 @@ The live-drag case C4 adds (the second pass's d3-live-gesture, S5), through the 
 A drag writes the tab's Model directly on every pointer frame (app/src/input.js updateMove) and is in
 no request, so no rule can replay it. What protects it is that the answer to the tab's OWN op is not
 re-applied. The real nudge sends `{x, y}` and the planner narrows it to the one field that changed
-(server/txn.mjs narrow), so the echo is not byte-identical to what was sent: read literally, "identical"
+(planner/txn.mjs narrow), so the echo is not byte-identical to what was sent: read literally, "identical"
 would re-apply it and pull the node back to where the nudge left it.
 */
 test('C4 live drag: the answer to the tab\'s own nudge does not pull back a drag already moving that node', async () => {
@@ -402,7 +402,7 @@ test('order: an echo that follows a derived write on the same entity is applied,
 });
 
 /*
-Value. The planner drops an op that changes nothing (server/txn.mjs narrow, I6), so an op the tab sent
+Value. The planner drops an op that changes nothing (planner/txn.mjs narrow, I6), so an op the tab sent
 can have no echo at all -- and a derived op on the same entity, of the same kind or another, must not be
 taken for the echo it never had. Here the tab restates both groups' members unchanged beside two
 deletes; the planner drops the restatements, then trims one group and dissolves the other. Hand-built,
@@ -438,7 +438,7 @@ test('value: a derived trim or dissolve is not taken for the echo of an own op t
 
 /*
 Entity. An echo is matched on the entity it names, not on its shape: the planner writes a delete's
-cascade BEFORE the delete itself (server/txn.mjs planDel), and every one of those is a `del`. Here the
+cascade BEFORE the delete itself (planner/txn.mjs planDel), and every one of those is a `del`. Here the
 tab sends only the node's delete and leaves the cascade to the planner, as a client that does not
 restate it would; no canvas gesture is claimed (the browser's deleteSelection sends its cascade).
 */

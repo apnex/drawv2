@@ -305,9 +305,9 @@ const MUTANTS = [
 	{ id: 'M5', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/all.mjs', create: "export * from './geometry.mjs';\nexport * from './spec.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf } from '../../kernel/all.mjs';\n" }] },
 	{ id: 'M6', rule: 'L11', edits: [{ file: 'app/src/input.js', append: '\nexport function __m6() { return window.draw.sync.submit({ ops: [] }); }\n' }] },
-	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { collectionCap } from '../engine/policy.mjs';\n" }] },
+	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { collectionCap } from '../planner/policy.mjs';\n" }] },
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
-	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { collectionCap as __c } from '../engine/policy.mjs?v';\n" }] },
+	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { collectionCap as __c } from '../planner/policy.mjs?v';\n" }] },
 	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/movers.mjs')).moversAt; }\n" }] },
 	// K2c: no barrel is left to re-point, so the attack plants one and imports it through a suffix; the new file also fails L1
 	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { cellOf } from './geometry.mjs';\n" },
@@ -316,10 +316,10 @@ const MUTANTS = [
 	// K5 retired the input -> situation record, so the raised record is the one debt edge Input still has, the palette
 	{ id: 'A9', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('./palette.js')).NODE_TYPES; }\n" },
 		{ file: MAN, replace: ["'app/src/input.js -> app/src/palette.js': 1,", "'app/src/input.js -> app/src/palette.js': 2,"] }] },
-	{ id: 'A14', rule: 'L10', edits: [{ file: 'server/log.mjs', append: '\nexport const check = () => 0;\n' },
+	{ id: 'A14', rule: 'L10', edits: [{ file: 'planner/log.mjs', append: '\nexport const check = () => 0;\n' },
 		{ file: MAN, replace: ["'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX'],", "'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX', 'check'],"] }] },
 	// the second alternative of the id grammar
-	{ id: 'A6c', rule: 'L7k', edits: [{ file: 'server/validate.js', replace: ['const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;', 'const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$|^pipe-[0-9a-f]{6}$/;'] }] },
+	{ id: 'A6c', rule: 'L7k', edits: [{ file: 'planner/validate.js', replace: ['const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;', 'const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$|^pipe-[0-9a-f]{6}$/;'] }] },
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	// K2c: with the barrels gone, a core module that starts forwarding network code IS a new barrel, so it fails L4 too
 	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { violations } from './invariants.mjs';\n" }] },
@@ -335,14 +335,14 @@ const MUTANTS = [
 	{ id: 'A12c', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nexport async function __a12() { const m = await import('../../model/invariants.mjs'); const { collapseAtWaypoint } = m; return collapseAtWaypoint; }\n" }] },
 	// the host by its other names, and by an escaped name
 	{ id: 'A7a', rule: 'L11', edits: [{ file: 'kernel/spec.mjs', append: '\nconst __host = () => self.draw;\n' }] },
-	{ id: 'A7b', rule: 'L11', edits: [{ file: 'server/txn.mjs', append: '\nconst __host = () => global.draw;\n' }] },
+	{ id: 'A7b', rule: 'L11', edits: [{ file: 'planner/txn.mjs', append: '\nconst __host = () => global.draw;\n' }] },
 	{ id: 'A7d', rule: 'L11', edits: [{ file: 'kernel/spec.mjs', append: '\nconst __host = () => \\u0077indow.draw;\n' }] },
 	// a regex after `)` that used to hide the import() after it
 	{ id: 'A15', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a15(ok, s) { if (ok) /'/.test(s); const m = await import(\"../../engine/movers.mjs\"); if (ok) /'/.test(s); return m.moversAt; }\n" }] },
 	// loading outside import: createRequire, a .cjs shim, an inline module script
-	{ id: 'A18', rule: 'L2', edits: [{ file: 'server/txn.mjs', append: "\nimport { createRequire } from 'node:module';\nconst __req = createRequire(import.meta.url);\nconst __lazy = () => __req('./store.js');\n" }] },
+	{ id: 'A18', rule: 'L2', edits: [{ file: 'planner/txn.mjs', append: "\nimport { createRequire } from 'node:module';\nconst __req = createRequire(import.meta.url);\nconst __lazy = () => __req('./store.js');\n" }] },
 	{ id: 'A13b', rule: 'L1', edits: [{ file: 'server/helper.cjs', create: "module.exports = require('./origin.mjs');\n" },
-		{ file: 'server/txn.mjs', append: "\nimport __helper from './helper.cjs';\n" }] },
+		{ file: 'planner/txn.mjs', append: "\nimport __helper from './helper.cjs';\n" }] },
 	{ id: 'A17', rule: 'L6', edits: [{ file: 'app/index.html', replace: ['<script type="module" src="/src/main.js"></script>', '<script type="module" src="/src/main.js"></script>\n\t\t<script type="module">import(\'/engine/situation.mjs\');</script>'] }] },
 	// a module listed under a second layer, where its window read would go uncounted
 	{ id: 'A23', rule: 'L1', edits: [{ file: MAN, replace: ["'app/src/main.js',       // the production composition root", "'app/src/selection.js', 'app/src/main.js',       // the production composition root"] },
@@ -469,10 +469,10 @@ function closureOf(roots) {
 }
 
 test('H17 K2a: no barrel is in the planner closure, so the planner loads what it uses', () => {
-	const closure = closureOf(['server/txn.mjs', 'server/log.mjs']);
+	const closure = closureOf(['planner/txn.mjs', 'planner/log.mjs']);
 
 	// the walk must have found the planner, or an empty closure would pass vacuously
-	assert.ok(closure.has('server/txn.mjs') && closure.size > 10, `the closure walk found only ${closure.size} module(s)`);
+	assert.ok(closure.has('planner/txn.mjs') && closure.size > 10, `the closure walk found only ${closure.size} module(s)`);
 
 	const reached = BARRELS.filter((b) => closure.has(b));
 	assert.deepEqual(reached, [],
@@ -489,7 +489,7 @@ guard with a file list goes stale (B224), and the next planner module to reach f
 fail here without an edit.
 */
 test('H17 K2a: no planner module takes a name from a barrel, however the closure looks', () => {
-	const planner = [...closureOf(['server/txn.mjs', 'server/log.mjs'])].filter((f) => !BARRELS.includes(f));
+	const planner = [...closureOf(['planner/txn.mjs', 'planner/log.mjs'])].filter((f) => !BARRELS.includes(f));
 	assert.ok(planner.length > 10, `the sweep must find the planner's modules, not ${planner.length}`);
 
 	const offenders = [];
@@ -544,10 +544,11 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 
 	for (const k of arrivals) {
 		const mod = k.slice(0, k.lastIndexOf(':')), name = k.slice(k.lastIndexOf(':') + 1);
-		// K2c deleted the three barrels (H17-D4) and K12 the design-rule checker (ruled), so they are departed and gone;
-		// every other departed module still exists
+		// K2c deleted the three barrels (H17-D4), K12 the design-rule checker (ruled), and K4 moved the planner's K0 files to
+		// planner/ (H17-D5), so they are departed and gone from their K0 paths; every other departed module still exists
 		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
-		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs'], 'only the modules deleted by ruling may be missing');
+		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'engine/policy.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs',
+			'server/log.mjs', 'server/txn.mjs', 'server/validate.js'], 'only the modules deleted or moved by ruling may be missing');
 		// a deleted module's source is gone, so its frozen K0 export record stands in for it: a name it exported is a name
 		// its departure justifies (K11 moved the renderer text that used to mention `bboxOf`; the barrel exported it)
 		const src = departed.filter((m) => !gone.includes(m)).map((m) => fs.readFileSync(path.join(root, m), 'utf8'))
@@ -573,7 +574,7 @@ test('H17 K10: the lab composes the real planner and makes its refusals visible'
 	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
 
 	// G1 -- mount, never fork: the door is the product's own commit, not a lab copy of it
-	assert.match(src, /import \{[^}]*\bcommit\b[^}]*\} from '\.\.\/\.\.\/server\/txn\.mjs'/,
+	assert.match(src, /import \{[^}]*\bcommit\b[^}]*\} from '\.\.\/\.\.\/planner\/txn\.mjs'/,
 		'the lab must call the REAL planner; a lab that reimplements a rule proves nothing about the product');
 	assert.match(src, /history\.onCommit\(/, 'the lab must take the same commit seam the product takes');
 
@@ -607,19 +608,21 @@ So the list is held to the PLANNER'S OWN CLOSURE, which `tools/layers.mjs` alrea
 different purpose. A fifth file joining the planner then fails here rather than quietly becoming
 public, and a file leaving it stops being served without anyone remembering to look.
 */
-test('H17 K10: the lab serves exactly the planner files, derived from the manifest', () => {
+/*
+K4 (H17-D5) -- the planner is its own folder, served WHOLE; `server/` is served not at all. Before K4 the lab named the
+planner's five files inside `server/` one by one, because mounting that folder would have promised every file it will
+ever hold -- the store among them. With the planner out of it, nothing in `server/` is the lab's to serve. What this holds
+is the arrangement; tests/static.test.js asks the running lab for `server/store.js` and the rest, and requires 404.
+*/
+test('H17 K10, K4: the lab mounts the planner whole, serves nothing of server/, and mounts every folder the planner loads', () => {
 	const src = fs.readFileSync(path.join(root, 'lab/server.mjs'), 'utf8');
-
-	const served = [...src.matchAll(/'(server\/[\w.-]+)'/g)].map((m) => m[1]).sort();
-	assert.ok(served.length, 'the lab must name the server files it serves, not mount the folder');
-	assert.doesNotMatch(src, /'\/server\/':/, 'the lab must not MOUNT server/ -- a folder mount promises every file it will ever hold');
-
-	const planner = ENTRIES.planner.modules.filter((m) => m.startsWith('server/')).sort();
-	assert.deepEqual(served, planner,
-		'the lab serves a different set from the planner closure the manifest declares; one of the two moved');
-
-	// and the store is the file the probe caught, so name it explicitly rather than trusting the set
-	assert.ok(!served.includes('server/store.js'), 'server/store.js must never be reachable from the lab');
+	const mounts = Object.fromEntries([...src.matchAll(/'(\/[\w-]+\/)':\s*'([\w/-]+)'/g)].map((m) => [m[1], m[2]]));
+	assert.equal(mounts['/planner/'], 'planner', 'the planner is mounted, whole');
+	assert.ok(!Object.values(mounts).some((d) => d === 'server' || d.startsWith('server/')), 'server/ is mounted nowhere');
+	assert.doesNotMatch(src, /'server\/[\w.-]+'/, 'and names no server/ file');
+	const folders = new Set(Object.values(mounts).map((d) => d.split('/')[0]));
+	const unserved = ENTRIES.planner.modules.filter((m) => !folders.has(m.split('/')[0]));
+	assert.deepEqual(unserved, [], 'every module the planner loads is in a folder the lab serves, or the page cannot commit');
 });
 
 /*
@@ -670,8 +673,8 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	const { Model } = await import('../model/model.mjs');
 	const { attachRelations } = await import('../engine/store.mjs');
 	const { cellOf } = await import('../kernel/geometry.mjs');
-	const { commit } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 
 	// read as DATA -- the boards moved out of the lab's source into lab/seeds.json
 	const boards = JSON.parse(fs.readFileSync(path.join(root, 'lab/seeds.json'), 'utf8'));

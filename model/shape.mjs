@@ -2,9 +2,9 @@
 Shape — the entity kinds and their per-kind field taxonomy, in ONE place.
 
 PL-5 (dev/design/planner/PLANNER-SYSTEM.md; ruled 2026-10-01): the KIND TABLE. The five kinds were listed separately
-in `model/model.mjs` (twice), `server/validate.js` (twice), `server/rest.js` and `server/store.js`; each now derives
+in `model/model.mjs` (twice), `planner/validate.js` (twice), `server/rest.js` and `server/store.js`; each now derives
 from `KINDS` and the table below. One literal, checked by `scan-layers` L7k to be exactly the product's five. Two lists
-stay where they are on purpose: the id grammar in `server/validate.js` is a literal C3 pins, and each kind's field
+stay where they are on purpose: the id grammar in `planner/validate.js` is a literal C3 pins, and each kind's field
 CHECKS stay at the trust boundary, which sources its facts and keeps its checks local. Injecting the table into a
 composition -- so the lab could add a kind production does not have -- waits for promotion's format batch (B273).
 
@@ -15,7 +15,7 @@ lists, in two different layers, that nothing forced to agree:
              Was: the `if (copy.x)` ladder in app/src/commands.js clone().
   OPTIONAL   fields that may be absent from a stored entity — documents written before the
              field existed must still load. Absent means "the renderer's default", never null.
-             Was: the OPTIONAL map in server/validate.js.
+             Was: the OPTIONAL map in planner/validate.js.
 
 The two sets are genuinely different and that is not an accident: `link.closed` is optional but
 scalar, `group.members` is composite but mandatory, `node.shape` is optional but scalar. A single
@@ -25,7 +25,7 @@ Per kind, the table also holds the collection a document stores it under and whe
 
 Downstream this table is the source for: clone()'s deep-copy walk (model/ops.mjs), the
 set-inverse absent-key rule (an inverse that must remove a key rather than restore a value uses a
-whole-entity put — see server/txn.mjs), and validateEntity's optional-field allowance.
+whole-entity put — see planner/txn.mjs), and validateEntity's optional-field allowance.
 */
 
 // the product's kinds, in the order a document lists its collections

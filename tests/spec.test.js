@@ -103,7 +103,7 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	assert.match(entities, /"schema"/);
 
 	// and the whitelist the server enforces is exactly what the block advertises
-	const validate = fs.readFileSync('server/validate.js', 'utf8');
+	const validate = fs.readFileSync('planner/validate.js', 'utf8');
 	const whitelist = validate.match(/\[([^\]]*)\]\.includes\(key\)\) return `unknown meta key/);
 	assert.ok(whitelist, 'the meta whitelist moved — this assertion needs re-pointing');
 	for (const key of whitelist[1].match(/'(\w+)'/g).map((k) => k.slice(1, -1))) {
@@ -213,7 +213,7 @@ drift the way the sentence it guards could.
 */
 test('B104: the id grammar in API.md is the one validate.js enforces', () => {
 	const api = fs.readFileSync('docs/spec/API.md', 'utf8');
-	const src = fs.readFileSync('server/validate.js', 'utf8');
+	const src = fs.readFileSync('planner/validate.js', 'utf8');
 	const live = src.match(/^const ID = \/(.+?)\/;$/m);
 	assert.ok(live, 'validate.js no longer declares `const ID` -- this check has lost its subject');
 	assert.ok(api.includes(live[1]),

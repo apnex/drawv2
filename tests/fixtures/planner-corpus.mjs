@@ -2,7 +2,7 @@
 THE PLANNER CORPUS -- stage PL-1 of the planner as a sovereign system (dev/design/planner/PLANNER-SYSTEM.md, section 9).
 
 The safety net the restructuring stands on. Stages PL-2 to PL-5 move the inverses, the passes, placement and the kind
-tables out of `server/txn.mjs` and change NO outcome; this holds every outcome, so a change nobody wrote a test for
+tables out of `planner/txn.mjs` and change NO outcome; this holds every outcome, so a change nobody wrote a test for
 still fails. Each case is one request planned against one board, in one of two compositions:
 
   production  no network -- what draw.apnex.io runs
@@ -31,9 +31,9 @@ import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { cellOf } from '../../kernel/geometry.mjs';
 import { applyOps } from '../../model/ops.mjs';
-import { plan } from '../../server/txn.mjs';
+import { plan } from '../../planner/txn.mjs';
 import { resolveAnchor } from '../../server/anchor.mjs';
-import { validateMutation } from '../../server/validate.js';
+import { validateMutation } from '../../planner/validate.js';
 import { createPipeSet } from '../../network/pipeset.mjs';
 import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';

@@ -1318,7 +1318,7 @@ test('K9: a template deep link serves the editor, as a diagram one does', async 
 });
 
 test('K9: one module per mount, as JavaScript and never cached', async () => {
-	for (const p of ['/next/src/main.js', '/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs']) {
+	for (const p of ['/next/src/main.js', '/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs', '/planner/policy.mjs']) {
 		const res = await fetch(base + p);
 		assert.equal(res.status, 200, p);
 		assert.match(res.headers.get('content-type'), /^text\/javascript/, `${p} as a module`);
@@ -1335,5 +1335,12 @@ test('K9: a path that walks out of a mount is answered 404, exactly, however it 
 	for (const p of ['/kernel/../../package.json', '/kernel/%2e%2e/%2e%2e/package.json', '/model/..%2f..%2fpackage.json', '/../server/store.js',
 		'/model/..%2fpackage.json', '/kernel/..%2fserver%2fstore.js']) {   // encoded separators whose targets exist
 		assert.equal(await raw(p), 404, p);
+	}
+});
+
+test('K4 (H17-D5): the product serves the planner whole and never `server/` -- the store, identity and anchor above all', async () => {
+	assert.equal((await fetch(`${base}/planner/txn.mjs`)).status, 200);
+	for (const p of ['/server/store.js', '/server/identity.mjs', '/server/anchor.mjs', '/server/txn.mjs', '/server/app.js']) {
+		assert.equal((await fetch(base + p)).status, 404, `${p} is never served`);
 	}
 });

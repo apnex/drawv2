@@ -1,6 +1,6 @@
 // GR5 — the differential oracle.
 //
-// server/txn.mjs#plan replaces the single-op planMutation that lived in server/store.js. The old
+// planner/txn.mjs#plan replaces the single-op planMutation that lived in server/store.js. The old
 // implementation is deleted; this asserts the new one agrees with it, over randomly generated
 // documents and mutations, before the reference is only reachable through git history.
 //
@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { plan } from '../server/txn.mjs';
+import { plan } from '../planner/txn.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { planMutation } from './fixtures/plan-reference.mjs';
 

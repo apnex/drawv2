@@ -21,7 +21,7 @@ misses: a SECOND load appearing inside a file that legitimately has one.
   server/store.js    load x2       Store.install (the whole-document entry) + #loadTemplates (H9.9),
                                    which builds a read-only Model per template. No log, no commits,
                                    no inverses to corrupt, and never in `this.diagrams`.
-  server/txn.mjs     load x0       none of its own now; it calls model/projection()
+  planner/txn.mjs     load x0       none of its own now; it calls model/projection()
 
 That second load is a real second caller. The spec says "no module other than Store.install calls
 model.load"; the planner does, on a Model it constructs and discards. Allow-listing it explicitly
@@ -230,7 +230,7 @@ const ALLOW = {
 	// written back, and lives outside `this.diagrams` entirely. Counted rather than exempted, so
 	// a THIRD load still has to argue for itself.
 	'server/store.js': { mutate: 0, load: 2, reach: null },   // it owns the Map
-	'server/txn.mjs': { mutate: 0, load: 0, reach: 0 },
+	'planner/txn.mjs': { mutate: 0, load: 0, reach: 0 },
 };
 
 // a root that does not exist is an EMPTY root, not a crash. Under `--root` a fixture supplies only

@@ -317,7 +317,7 @@ const KIND_WORD = /^(node|waypoint|link|zone|group)s?$/;
 The names that reach the host object (L11). `window` and `globalThis` are the H17 plan's; `self`
 and `global` are the same object under the names a worker and Node give it. `top`, `parent` and
 `frames` are window aliases too, but they are also ordinary local names in this tree
-(server/log.mjs binds `top`), and the scanner does not resolve scopes: they are the proxy's gap.
+(planner/log.mjs binds `top`), and the scanner does not resolve scopes: they are the proxy's gap.
 */
 const HOST = new Set(['window', 'globalThis', 'self', 'global']);
 /*

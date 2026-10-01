@@ -23,7 +23,7 @@ LAYOUTS -- the named grids, and the one place either of them is defined.
 
 There are two, and until now the kernel knew only the first. `cellOf` and `cellPx` are both offset
 zero, which is the NODE grid; the half-pitch offset that ZONES use lived in `app/src/snap.js` and,
-after B110, in `server/validate.js` as well (B111). Two restatements of a rule the kernel did not
+after B110, in `planner/validate.js` as well (B111). Two restatements of a rule the kernel did not
 hold, and a mistake the author of B110 duly made by hand while migrating a document.
 
 A zone is offset because it BOUNDS cells rather than sitting on one, so its edges fall between them.

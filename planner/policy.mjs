@@ -18,7 +18,7 @@ export function groupAfterRemoval(members, isRemoved) {
 /*
 B113 -- how many of a kind one diagram may hold. The single authority for the number.
 
-It was stated twice at 2000: `server/txn.mjs` refuses a mutation past it, `server/validate.js`
+It was stated twice at 2000: `planner/txn.mjs` refuses a mutation past it, `planner/validate.js`
 refuses a document carrying more. Two enforcement points is correct and deliberate -- one guards the
 wire, one guards what loads -- but two NUMBERS is not, and they had begun to diverge the moment one
 of them became derived.

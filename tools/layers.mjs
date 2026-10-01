@@ -68,6 +68,7 @@ export const FOLDERS = [
 	inside kernel/, model/ and engine/. So the layer table cannot keep production out of THIS folder
 	before promotion; `tests/scan-layers.test.js` holds that as a separate folder rule.
 	*/
+	{ dir: 'planner', layer: 'planner' },   // K4 (H17-D5): the planner, served whole to the lab, never `server/`
 	{ dir: 'network', layer: 'network' },
 	{ dir: 'lab', layer: 'lab' },   // K10: composition only, held to that by L8
 	{ dir: 'tools', layer: 'tools' },
@@ -106,10 +107,7 @@ export const LAYER = {
 		'engine/ivm.mjs',                                  // the index's generic mechanism; relations.mjs is its only user
 	],
 	planner: [
-		'server/txn.mjs', 'server/log.mjs', 'server/validate.js',
-		'server/tenants.mjs',   // the product's tenants of the planner: groups, and classic links until promotion (PL-3)
-		'server/edges.mjs',     // the planner's edges: the default clock, and the beats record extension (PL-4)
-		'engine/policy.mjs',     // group policy the planner applies (groupAfterRemoval, collectionCap); moves with the planner at K4
+		// K4 (H17-D5): the planner is its own folder now, `planner/`, whose folder layer is this one (FOLDERS)
 	],
 	canvas: [
 		'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
@@ -150,8 +148,8 @@ export const LAYER = {
 The composition roots whose closure is DECLARED (L6), and the names each exposes to its callers
 (L10 counts those as used). The closure follows static imports, re-exports and literal `import()`.
 
-`page` is the production page. `planner` is the planner entry: `server/txn.mjs` does not import
-`server/log.mjs`, and the server's door imports both (`server/store.js:21-22`), so the entry has
+`page` is the production page. `planner` is the planner entry: `planner/txn.mjs` does not import
+`planner/log.mjs`, and the server's door imports both (`server/store.js:21-22`), so the entry has
 both roots -- with txn alone, log.mjs would sit outside every L6 and L10 check. The lab root joins
 at K10 (L6 hard for it, with `layers`).
 */
@@ -164,7 +162,7 @@ export const ENTRIES = {
 			'app/src/painter.js', 'app/src/paintloop.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/reveal.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
-			'engine/kinds.mjs', 'engine/movers.mjs', 'engine/policy.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
+			'engine/kinds.mjs', 'engine/movers.mjs', 'planner/policy.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
@@ -199,26 +197,26 @@ export const ENTRIES = {
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 
-			'engine/ivm.mjs', 'engine/policy.mjs', 'engine/relations.mjs',
+			'engine/ivm.mjs', 'planner/policy.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs', 'model/shape.mjs',
-			'model/surface.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
-			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
-			'server/edges.mjs',   // the planner's edges (PL-4)
+			'model/surface.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
+			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
+			'planner/edges.mjs',   // the planner's edges (PL-4)
 		],
 	},
 	planner: {
-		roots: ['server/txn.mjs', 'server/log.mjs'],
-		surface: { 'server/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'server/log.mjs': ['Log'] },
+		roots: ['planner/txn.mjs', 'planner/log.mjs'],
+		surface: { 'planner/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'planner/log.mjs': ['Log'] },
 		modules: [
-			'engine/policy.mjs',
+			'planner/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs',
-			'model/shape.mjs', 'model/surface.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js',
-			'model/link-reactions.mjs', 'server/tenants.mjs',   // the planner's tenants (PL-3)
-			'server/edges.mjs',   // the planner's edges (PL-4)
+			'model/shape.mjs', 'model/surface.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
+			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
+			'planner/edges.mjs',   // the planner's edges (PL-4)
 		],
 	},
 };
@@ -273,7 +271,7 @@ export const RULES = {
 	L7k: {
 		kinds: ['node', 'waypoint', 'link', 'zone', 'group'],
 		// the WHOLE pattern is fixed: `^(` + the alternation + `)` + `rest`, with no flags
-		grammar: [{ file: 'server/validate.js', name: 'ID', others: ['diagram', 'template'], rest: '-[0-9a-f]{6}$' }],
+		grammar: [{ file: 'planner/validate.js', name: 'ID', others: ['diagram', 'template'], rest: '-[0-9a-f]{6}$' }],
 	},
 	// `lab/` is composition only. The line budget is declared by K10 with the lab; until then there is no lab to hold to it
 	/*
@@ -310,7 +308,7 @@ export const RULES = {
 	*/
 	L9: {
 		layers: ['canvas', 'chrome', 'lab'],
-		primitives: { splitAtBend: 'model/invariants.mjs', collapseAtWaypoint: 'model/invariants.mjs', violations: 'model/invariants.mjs', groupAfterRemoval: 'engine/policy.mjs' },
+		primitives: { splitAtBend: 'model/invariants.mjs', collapseAtWaypoint: 'model/invariants.mjs', violations: 'model/invariants.mjs', groupAfterRemoval: 'planner/policy.mjs' },
 	},
 	// C2(d): the only two tags, and the layers whose imports make "serves-a-server-door" true
 	L10: { tags: ['rebuild-debt', 'serves-a-server-door'], doors: ['server-only'] },
@@ -318,7 +316,7 @@ export const RULES = {
 	Hard in core, network and planner (they take their host by injection); a per-file ratchet in the
 	canvas. A host read is `window`, `globalThis`, `self` or `global`, escapes decoded. PROXY: `top`,
 	`parent` and `frames` also reach the window, but they are ordinary local names here too
-	(server/log.mjs binds `top`) and the scanner does not resolve scopes, so they are not read.
+	(planner/log.mjs binds `top`) and the scanner does not resolve scopes, so they are not read.
 	*/
 	L11: { hard: ['core', 'network', 'planner'], ratchet: ['canvas'] },
 };
@@ -330,7 +328,7 @@ When a rule's record empties, delete its keys; the rule stays.
 
   L2   `importer -> definer`: edges against ALLOWED, judged through barrels, re-exports included.
        K6 removes the palette edge, K5 the situation edge, K3 the anchor edge, and K2c the simulation
-       barrel's re-export of the planner's group policy (engine/index.mjs -> engine/policy.mjs)
+       barrel's re-export of the planner's group policy (engine/index.mjs -> planner/policy.mjs)
   L4   `barrel <file>`, one count per name each barrel re-exports (so a barrel that grows is a
        rise), and `importer -> barrel` per import site, static and dynamic. The review counted 125
        lines; 2 of them are kernel/README.md:29 and a comment in kernel/index.mjs:4, so 123 are code:
@@ -357,7 +355,7 @@ export const RATCHETS = {
 		'kernel/router.mjs:routeGeometry': 1,
 	},
 	L7k: {
-		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and server/validate.js to 0: they read model/shape.mjs
+		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and planner/validate.js to 0: they read model/shape.mjs
 		'cli/verbs.mjs': 11,
 		'kernel/adapt.mjs': 2,
 	},
@@ -588,10 +586,11 @@ export const UNUSED_EXPORTS = {
 		],
 		/*
 		Modules the planner loads that did not EXIST at K0, so cannot be in its frozen closure: PL-3 split the reactions
-		out of `server/txn.mjs` into new files, and PL-4 its edges (dev/design/planner/PLANNER-SYSTEM.md). An arrival is not a departure and
+		out of `planner/txn.mjs` into new files, and PL-4 its edges (dev/design/planner/PLANNER-SYSTEM.md). An arrival is not a departure and
 		admits no name; a module that existed at K0 and is missing from the frozen list still fails K2a.
 		*/
-		arrived: ['model/link-reactions.mjs', 'server/tenants.mjs', 'server/edges.mjs', 'model/order.mjs'],
+		// K4 moved the planner's files to `planner/`: paths K0 never knew, so arrivals too (its frozen list names their old places)
+		arrived: ['model/link-reactions.mjs', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js', 'planner/policy.mjs'],
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a
@@ -628,13 +627,13 @@ export const UNUSED_EXPORTS = {
 			'model/surface.mjs': {
 				'rebuild-debt': ['SURFACE'],
 			},
-			'server/log.mjs': {
+			'planner/log.mjs': {
 				'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX'],
 			},
-			'server/txn.mjs': {
+			'planner/txn.mjs': {
 				'rebuild-debt': ['MAX_OPS'],
 			},
-			'server/validate.js': {
+			'planner/validate.js': {
 				'rebuild-debt': ['validateEntity'],
 				'serves-a-server-door': ['DOCUMENT_ID', 'validPrincipal', 'validateDoc', 'validateSelectionIds'],
 			},
@@ -682,9 +681,9 @@ keeps the order it had in its scanner. L1 checks that every entry is a folder in
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'tools', 'cli', 'lab', 'network'],   // scan-dead PROD: where a consumer counts as production
-	deadMethods: ['server', 'model', 'engine', 'kernel'],                        // scan-dead METHOD_SCOPE: where a public method must have a caller
-	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'cli'],         // scan-docrefs CODE_ROOTS: code whose comments cite paths
-	twins: ['kernel', 'engine', 'model', 'app/src', 'server'],                  // scan-twins ROOTS: where shared arithmetic is compared
-	writers: ['server', 'model'],                                                // scan-writers ROOTS: where the one-writer rule is held
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network'],   // scan-dead PROD: where a consumer counts as production
+	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
+	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
+	twins: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner'],     // scan-twins ROOTS: where shared arithmetic is compared
+	writers: ['server', 'planner', 'model'],     // scan-writers ROOTS: where the one-writer rule is held
 };

@@ -35,7 +35,7 @@ out, as the Store's injected {flushMs, writeDoc, now}.
 import { projection } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { COMPOSITE } from '../model/shape.mjs';   // OPTIONAL was imported here and never used (B86)
-import { groupAfterRemoval, collectionCap } from '../engine/policy.mjs';
+import { groupAfterRemoval, collectionCap } from './policy.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
@@ -45,7 +45,7 @@ import { BEATS, wallClock } from './edges.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
 // B113: per KIND, per diagram -- a different enforcement POINT from validateDoc, deliberately, but
-// no longer a different NUMBER. Both source engine/policy.mjs, which is the authority for it.
+// no longer a different NUMBER. Both source planner/policy.mjs, which is the authority for it.
 const MAX_COLLECTION = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: STD.pitch });
 const LABEL = /^[a-z0-9 -]{0,32}$/;
 
@@ -141,7 +141,7 @@ A composition holds ONE link tenant (PD-2): production's classic one by default,
 PL-4 -- THE EDGES are passed in too (PLANNER-SYSTEM.md section 6.4):
   place      resolves a `place` op's relationship to an anchor, `(model, at) -> { ok, x, y } | { ok: false, error }`.
              The server's store passes `server/anchor.mjs` (K3); a composition with none refuses a `place` op.
-  now        the clock, for the record's time and a beat's origin; `wallClock` (server/edges.mjs) if none is given.
+  now        the clock, for the record's time and a beat's origin; `wallClock` (planner/edges.mjs) if none is given.
   extensions the record extensions run around each commit; production's, BEATS, if none are given.
 */
 function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, extensions = [BEATS], network, ...rest } = {}, who) {
@@ -366,7 +366,7 @@ export function commit(model, log, request, by = 'client', actor = null, options
 	const seq = ++log.version;
 	stamp(model, log);                                               // D6: the document carries its own version
 	/*
-	PL-4 -- the record extensions (server/edges.mjs): each answers its field's next value, which the core writes on the
+	PL-4 -- the record extensions (planner/edges.mjs): each answers its field's next value, which the core writes on the
 	document's state and records with the value before, so undo and redo move it with the ops. Captured before and after
 	and recorded only when it changed, so an ordinary commit's record is byte-identical to what it was before beats
 	existed.

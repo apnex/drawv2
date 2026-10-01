@@ -133,7 +133,7 @@ Placement is an EDGE the planner is handed (PL-4, K3), as the server's store han
 `{ place: resolveAnchor }`.
 */
 test('plan resolves a place op into a put, against the advancing projection', async () => {
-	const { plan } = await import('../server/txn.mjs');
+	const { plan } = await import('../planner/txn.mjs');
 	const m = doc([NODE('node-aa0001', 'lb-1', 0, 0)]);
 	const r = plan(m, [
 		{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'web-01', type: 'server' }, at: { near: 'lb-1' } },
@@ -150,7 +150,7 @@ test('plan resolves a place op into a put, against the advancing projection', as
 });
 
 test('plan refuses an unresolvable place op and names which op failed', async () => {
-	const { plan } = await import('../server/txn.mjs');
+	const { plan } = await import('../planner/txn.mjs');
 	const m = doc([NODE('node-aa0001', 'lb-1', 0, 0)]);
 	const r = plan(m, [
 		{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'ok', type: 'server' }, at: { near: 'lb-1' } },
@@ -162,7 +162,7 @@ test('plan refuses an unresolvable place op and names which op failed', async ()
 });
 
 test('PL-4: a composition handed no resolver refuses a place op, naming the op, and resolves nothing itself', async () => {
-	const { plan } = await import('../server/txn.mjs');
+	const { plan } = await import('../planner/txn.mjs');
 	const m = doc([NODE('node-aa0001', 'lb-1', 0, 0)]);
 	const r = plan(m, [{ op: 'place', kind: 'node', entity: { id: 'node-bb0001', name: 'web-01', type: 'server' }, at: { near: 'lb-1' } }]);
 	assert.equal(r.ok, false);

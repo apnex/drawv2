@@ -1713,7 +1713,7 @@ test('B237: flow is three states and the CLI can reach all three, clearing with 
 
 		/*
 		CLEARING IS THE ONE THAT BREAKS. A `set` patch cannot remove a key -- `inverseOfSet` in
-		server/txn.mjs says so, and `cycleFlow` in app/src/commands.js learned it the hard way:
+		planner/txn.mjs says so, and `cycleFlow` in app/src/commands.js learned it the hard way:
 		`{flow: undefined}` is an own property that vanishes from JSON, survives `in`, and is
 		refused by a schema asking for a boolean. The canvas clears with a whole-entity put and so
 		must the CLI, or the clear reports success and the field is still there on reload.

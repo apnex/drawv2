@@ -10,18 +10,18 @@ import path from 'node:path';
 import { Model, newId } from '../model/model.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { seedDoc } from './seed.js';
-import { validateDoc, validateSelectionIds, validPrincipal } from './validate.js';
+import { validateDoc, validateSelectionIds, validPrincipal } from '../planner/validate.js';
 import crypto from 'node:crypto';
 import { STD } from '../kernel/spec.mjs';
 
 // the grid's own pitch, sourced not restated -- a speed in CELLS is meaningless without it
 const PITCH = STD.pitch;
 import { mintCode, formatCode, hashCode } from './codes.mjs';
-import { groupAfterRemoval } from '../engine/policy.mjs';
+import { groupAfterRemoval } from '../planner/policy.mjs';
 import { violations } from '../model/invariants.mjs';
-import { commit as txnCommit, undo as txnUndo, redo as txnRedo } from './txn.mjs';
+import { commit as txnCommit, undo as txnUndo, redo as txnRedo } from '../planner/txn.mjs';
 import { resolveAnchor } from './anchor.mjs';
-import { Log } from './log.mjs';
+import { Log } from '../planner/log.mjs';
 import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)

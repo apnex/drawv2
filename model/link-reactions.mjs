@@ -2,7 +2,7 @@
 THE LINK REACTIONS -- what follows from an edit to links and the anchors they run through (PL-3,
 dev/design/planner/PLANNER-SYSTEM.md section 6.2).
 
-They were fixed passes inside the planner (`server/txn.mjs`), each asking the network a question beside it -- four
+They were fixed passes inside the planner (`planner/txn.mjs`), each asking the network a question beside it -- four
 hooks for one plugin. Now each is a declared REACTION, a row the planner's core runs in its phase:
 
 	{ id, phase, doc, on?(op, doc) -> bool, run(ctx, emit) }
@@ -14,7 +14,7 @@ reaction before it did (B240, B241), and the core writes every inverse (PL-2). A
 cannot do it declines, and the document rules judge the result in the core's last phase.
 
 A TENANT is an owner and its rows. A composition holds one link tenant (PD-2): production's CLASSIC_LINKS
-(`server/tenants.mjs`), or the network plugin's (`network/network.mjs`), each built with `linkTenant` and its own
+(`planner/tenants.mjs`), or the network plugin's (`network/network.mjs`), each built with `linkTenant` and its own
 conditions --
 pipes that reference anchors, a sweep that keeps nothing deliberate, a join that stops where transit is off, and a
 stranded pass production does not have. Promotion deletes the classic tenant (PROMOTION.md).
@@ -353,7 +353,7 @@ function linkJoin({ joinsAt = () => true, says }) {
 /*
 Every link tenant is the same rows in the same order, differing in its CONDITIONS -- which the tenant's author states
 at composition, and the planner never asks: whether links that lost a pin are stranded, what else references an
-anchor, which orphans survive, where links may join. `says` puts the last two in words, for the generated table. Production states its own (`server/tenants.mjs`), and so does
+anchor, which orphans survive, where links may join. `says` puts the last two in words, for the generated table. Production states its own (`planner/tenants.mjs`), and so does
 the network (`network/network.mjs`).
 */
 export function linkTenant({ owner, stranded = false, alsoReferenced = null, keepsOrphan, joinsAt = () => true, says }) {

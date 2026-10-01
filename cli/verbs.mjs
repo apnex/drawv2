@@ -1194,7 +1194,7 @@ VERBS.push({
 		for (const src of linkTo) {
 			ops.push({ op: 'put', kind: 'link', entity: (() => { const lid = `link-${Math.random().toString(16).slice(2, 8)}`; return { id: lid, name: lid, src, dst: nid }; })() });
 		}
-		// LABEL is `^[a-z0-9 -]{0,32}$` (server/txn.mjs), so this is TRUNCATED rather than composed
+		// LABEL is `^[a-z0-9 -]{0,32}$` (planner/txn.mjs), so this is TRUNCATED rather than composed
 		// freely: `place <type> <where> <a long node name>` overflows and the server refuses the
 		// whole commit with `invalid label`, which reads as a placement failure and is not one.
 		const label = `place ${type} ${near} ${anchorNode.name || anchorNode.id}`.slice(0, 32).trim();
@@ -1794,7 +1794,7 @@ Structural verbs -- B133 / H11.12.
 Everything below existed only as hand-authored JSON through `commit --ops` until this landed, and
 the cost was not the typing. It was that an agent building a zone had to know the zone grid sits
 half a pitch off the node grid, an agent routing a link had to mint waypoint ids in a grammar
-written down in `server/validate.js`, and an agent doing either had to re-derive cell-to-pixel. A
+written down in `planner/validate.js`, and an agent doing either had to re-derive cell-to-pixel. A
 20-node topology built this way re-implemented six rules the codebase already owns, in a throwaway
 script, and got two of them wrong on the first attempt.
 
@@ -1819,7 +1819,7 @@ const cell = (s, what) => {
 	const [cx, cy] = String(s).split(',').map(Number);
 	return { cx, cy };
 };
-// the id grammar lives in server/validate.js; minting it by hand in a caller's script is B133
+// the id grammar lives in planner/validate.js; minting it by hand in a caller's script is B133
 const mint = (kind) => `${kind}-${Math.random().toString(16).slice(2, 8).padStart(6, '0')}`;
 
 // cell -> pixel for BOTH grids, asked of the server rather than recomputed here. `add` already
@@ -2501,7 +2501,7 @@ VERBS.push(
 			/*
 			CLEARING IS A WHOLE-ENTITY PUT, not a set carrying undefined.
 
-			`inverseOfSet` in server/txn.mjs reaches for the same move for the same reason, and
+			`inverseOfSet` in planner/txn.mjs reaches for the same move for the same reason, and
 			`cycleFlow` in app/src/commands.js learned it the hard way: `{flow: undefined}` sets an
 			own property holding undefined, which vanishes from JSON, survives `in`, and is refused
 			by a schema asking for a boolean -- so the clear is dropped in memory and silently

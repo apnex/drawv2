@@ -3,8 +3,8 @@
 reaction-table -- the planner's reactions, phase by phase, generated from the tenants, and the gate that holds it.
 
 ONE MASTER, ONE GENERATED VIEW (mission-kit P3), as tools/gesture-table.mjs is for the drag grammar. The master is the
-rows the planner runs: its declared phases (`PHASES`, server/txn.mjs) and each tenant's reactions with their `doc` --
-the product's (server/tenants.mjs) and the network plugin's (`network.links`, network/network.mjs). The readable view is
+rows the planner runs: its declared phases (`PHASES`, planner/txn.mjs) and each tenant's reactions with their `doc` --
+the product's (planner/tenants.mjs) and the network plugin's (`network.links`, network/network.mjs). The readable view is
 `dev/design/planner/REACTIONS.md`, whose charter is hand-written and whose tables are GENERATED here. A reaction changes
 by editing its row; the table follows, and `--check` in the gate fails when the two differ. Order is meaning in the
 planner (PLANNER-SYSTEM.md section 10), so the order is what this shows: the phases as declared, and within each the
@@ -15,8 +15,8 @@ Usage: node tools/reaction-table.mjs --check | --write
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { PHASES } from '../server/txn.mjs';
-import { CLASSIC_LINKS, GROUPS } from '../server/tenants.mjs';
+import { PHASES } from '../planner/txn.mjs';
+import { CLASSIC_LINKS, GROUPS } from '../planner/tenants.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
 

@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
-import { collectionCap } from '../engine/policy.mjs';
+import { collectionCap } from '../planner/policy.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { violations } from '../model/invariants.mjs';
-import { commit } from '../server/txn.mjs';
-import { Log } from '../server/log.mjs';
+import { commit } from '../planner/txn.mjs';
+import { Log } from '../planner/log.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
-import { validateSelectionIds, validateDoc, validateMutation } from '../server/validate.js';
+import { validateSelectionIds, validateDoc, validateMutation } from '../planner/validate.js';
 import { Model } from '../model/model.mjs';
 
 // MS1: the persisted selection (model-state / status) is SHAPE-validated only — never
@@ -243,7 +243,7 @@ that becomes one" -- it becomes one exactly when the numbers diverge, which is w
 */
 test('B86: the name cap is one number, and truncation lands where rejection begins', async () => {
 	const { NAME_MAX } = await import('../model/limits.mjs');
-	const { validateDoc } = await import('../server/validate.js');
+	const { validateDoc } = await import('../planner/validate.js');
 	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, node: {}, link: {}, group: {}, zone: {}, waypoint: {} });
 
 	assert.equal(validateDoc(doc('x'.repeat(NAME_MAX))), null, 'exactly at the cap is legal');
@@ -260,7 +260,7 @@ test('B86: the name cap is one number, and truncation lands where rejection begi
 
 test('B86: the span and content caps are one number across both peers', async () => {
 	const { SPAN_MAX, CONTENT_VALUE_MAX } = await import('../model/limits.mjs');
-	const { validateEntity } = await import('../server/validate.js');
+	const { validateEntity } = await import('../planner/validate.js');
 	const node = (span) => ({ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'n', span });
 
 	assert.equal(validateEntity('node', node({ cols: SPAN_MAX, rows: SPAN_MAX }), { full: false }), null);
@@ -290,15 +290,15 @@ test('B86: the span and content caps are one number across both peers', async ()
 /*
 And the two lists that were kept in step by a COMMENT rather than by a check.
 
-`model/shape.mjs` claimed it had superseded "the OPTIONAL map in server/validate.js" while that map
-was still there and still the one consulted, and `server/txn.mjs` imported the shape.mjs version and
+`model/shape.mjs` claimed it had superseded "the OPTIONAL map in planner/validate.js" while that map
+was still there and still the one consulted, and `planner/txn.mjs` imported the shape.mjs version and
 never used it -- so every angle except the consuming one made the tree look single-sourced.
 `SELECTABLE` was a Set in the model and a regex on the server, held together by a comment reading
-"MUST match server/validate.js SELECTABLE".
+"MUST match planner/validate.js SELECTABLE".
 */
 test('B86: the selectable kinds are derived from the model, not restated beside it', async () => {
 	const { SELECTABLE_KINDS } = await import('../model/shape.mjs');
-	const { validateSelectionIds } = await import('../server/validate.js');
+	const { validateSelectionIds } = await import('../planner/validate.js');
 	for (const kind of SELECTABLE_KINDS) {
 		assert.equal(validateSelectionIds([`${kind}-aa0001`]), null, `${kind} is selectable in both`);
 	}
@@ -307,11 +307,11 @@ test('B86: the selectable kinds are derived from the model, not restated beside 
 });
 
 test('B86: validate.js consults the shared OPTIONAL map, and declares none of its own', () => {
-	const src = fs.readFileSync(new URL('../server/validate.js', import.meta.url), 'utf8');
+	const src = fs.readFileSync(new URL('../planner/validate.js', import.meta.url), 'utf8');
 	assert.doesNotMatch(src, /^const OPTIONAL\s*=/m,
 		'a local OPTIONAL is the duplicate shape.mjs has always claimed to have replaced');
 	assert.match(src, /import \{[^}]*\bOPTIONAL\b[^}]*\} from '\.\.\/model\/shape\.mjs'/, 'it imports the one map');
-	const txn = fs.readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');
 });
@@ -329,7 +329,7 @@ would start refusing the smallest zone the client can draw -- and this fails.
 */
 test('B86: the smallest legal zone is one grid cell, wherever the pitch is set', async () => {
 	const { STD } = await import('../kernel/spec.mjs');
-	const { validateEntity } = await import('../server/validate.js');
+	const { validateEntity } = await import('../planner/validate.js');
 	const off = STD.pitch / 2;                                    // the zone grid's half-pitch offset
 	const zone = (w) => ({ id: 'zone-aa0001', x: off, y: off, w, h: STD.pitch, name: 'z' });
 
@@ -343,7 +343,7 @@ test('B86: the smallest legal zone is one grid cell, wherever the pitch is set',
 /*
 B83 / H10.16 -- the two referential paths agree, because there is only one of them.
 
-Five cross-entity rules were written twice inside `server/validate.js`: once incrementally against a
+Five cross-entity rules were written twice inside `planner/validate.js`: once incrementally against a
 live Model in `validateMutation`, once globally against a plain doc in `validateDoc`. Two
 implementations, two error vocabularies, two complexity classes, and nothing forcing them to agree.
 A disagreement means a document the wire refuses can be loaded from disk, or the reverse -- and the
@@ -356,7 +356,7 @@ VERDICTS are compared. Sharing the predicate is what makes them agree; this is w
 someone unshared it.
 */
 test('B83: the document door and the mutation door reach the same verdict', async () => {
-	const { validateDoc, validateMutation } = await import('../server/validate.js');
+	const { validateDoc, validateMutation } = await import('../planner/validate.js');
 	const { Model } = await import('../model/model.mjs');
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
@@ -434,7 +434,7 @@ The four shipped templates are validated as the documents they are, so a malform
 failure rather than a boot failure.
 */
 test('H9.9: a template id is a valid document id, and a made-up kind is not', async () => {
-	const { validateDoc } = await import('../server/validate.js');
+	const { validateDoc } = await import('../planner/validate.js');
 	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, nodes: [], links: [], groups: [], zones: [], waypoints: [] });
 
 	assert.equal(validateDoc(doc('template-4f2c11')), null, 'a template is a document');
@@ -448,7 +448,7 @@ test('H9.9: a template id is a valid document id, and a made-up kind is not', as
 });
 
 test('H9.9: every shipped template is a valid document', async () => {
-	const { validateDoc } = await import('../server/validate.js');
+	const { validateDoc } = await import('../planner/validate.js');
 	const dir = new URL('../templates/', import.meta.url);
 	const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
 	assert.ok(files.length >= 4, 'the template set is present — otherwise this passes vacuously');

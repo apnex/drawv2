@@ -28,7 +28,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Store } from '../server/store.js';
-import { validateDoc } from '../server/validate.js';
+import { validateDoc } from '../planner/validate.js';
 import { OWNER, makeApp } from './fixtures/app.mjs';
 import { WebSocket } from 'ws';
 
@@ -342,7 +342,7 @@ the third place in this feature where the id had to be recognised -- the other t
 `kindOf` for free, which is exactly why the kind lives in the identifier.
 */
 test('H9.9: a deep link to a template serves the editor, and nonsense still does not', async () => {
-	const { DOCUMENT_ID } = await import('../server/validate.js');
+	const { DOCUMENT_ID } = await import('../planner/validate.js');
 	for (const [id, want] of [
 		['template-c8d87c', true], ['diagram-000001', true],
 		['node-000001', false], ['nonsense', false], ['template-XYZ', false], ['', false],

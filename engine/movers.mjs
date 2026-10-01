@@ -16,7 +16,7 @@ is allocated, nothing is synced, nothing is torn down.
 
 Three consequences, and they are the reason this shape was chosen over an entity list:
 
-  the log is untouched   `server/log.mjs` caps history at LOG_MAX = 100 records with oldest-first
+  the log is untouched   `planner/log.mjs` caps history at LOG_MAX = 100 records with oldest-first
                          eviction. A mover that entered the transaction boundary at frame rate would
                          evict the whole of a person's real undo history in under two seconds.
 

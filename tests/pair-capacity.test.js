@@ -2,7 +2,7 @@
 ONE HOME FOR PAIR CAPACITY -- step T4 of the ruleset audit (dev/design/unification/RULESET-AUDIT.md, F7).
 
 "A pair of endpoints takes one straight link" (B72) was decided in six places: the planner's invariant, Input's release
-gate and its replug gate, the network's `judgeDrag`, and the two delete cascades that strip a bend (server/txn.mjs and
+gate and its replug gate, the network's `judgeDrag`, and the two delete cascades that strip a bend (planner/txn.mjs and
 app/src/commands.js). Only the invariant asked `straightCapacity`, the function built so the limit could one day be
 configured in one place; the other five each assumed a capacity of one in their own way -- a Set of pair keys, a
 `some(...)`, a `find(...)`. Raising the limit would have changed what the planner accepts and nothing else, so every
@@ -115,8 +115,8 @@ import { Model } from './model/model.mjs';
 import { violations } from './model/invariants.mjs';
 import { attachRelations } from './engine/store.mjs';
 import { cellOf } from './kernel/geometry.mjs';
-import { commit } from './server/txn.mjs';
-import { Log } from './server/log.mjs';
+import { commit } from './planner/txn.mjs';
+import { Log } from './planner/log.mjs';
 import { deleteSelection } from './app/src/commands.js';
 import { judgeDrag } from './network/guide.mjs';
 
@@ -179,7 +179,7 @@ const NEEDLE = 'function straightCapacity(_model, _a, _b) {\n\treturn 1;\n}';
 test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a second straight link', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pair-capacity-'));
 	try {
-		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'network', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
+		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
 		const inv = path.join(dir, 'model/invariants.mjs');
 		const src = fs.readFileSync(inv, 'utf8');

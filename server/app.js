@@ -6,7 +6,7 @@ into both the websocket sessions and the REST writes.
 Importable for tests (port 0 = random); server.js is the CLI entry.
 */
 
-import { DOCUMENT_ID } from './validate.js';
+import { DOCUMENT_ID } from '../planner/validate.js';
 import { faviconSvg } from '../kernel/theme.mjs';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -115,6 +115,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const kernelDir = path.resolve(root, '..', 'kernel');  // the geometry kernel ESM (mounted at /kernel)
 	const engineDir = path.resolve(root, '..', 'engine');  // the relational engine ESM (mounted at /engine)
 	const modelDir = path.resolve(root, '..', 'model'); // the model substrate ESM (mounted at /model)
+	const plannerDir = path.resolve(root, '..', 'planner'); // K4 (H17-D5): the planner, served whole (mounted at /planner); `server/` never is
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
 	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
@@ -212,6 +213,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const hasKernel = fs.existsSync(kernelDir);
 	const hasEngine = fs.existsSync(engineDir);
 	const hasModel = fs.existsSync(modelDir);
+	const hasPlanner = fs.existsSync(plannerDir);
 
 	const server = http.createServer(async (req, res) => {
 		req.url = throughTheAgentDoor(req.url);
@@ -276,6 +278,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (hasKernel && url.pathname.startsWith('/kernel/')) return serveFrom(req, res, kernelDir, '/kernel');
 		if (hasEngine && url.pathname.startsWith('/engine/')) return serveFrom(req, res, engineDir, '/engine');
 		if (hasModel && url.pathname.startsWith('/model/')) return serveFrom(req, res, modelDir, '/model');
+		if (hasPlanner && url.pathname.startsWith('/planner/')) return serveFrom(req, res, plannerDir, '/planner');
 		if (!hasClient) {
 			res.writeHead(404, { 'Content-Type': 'application/json' });
 			return res.end(JSON.stringify({ error: 'API-only mode; editor client not bundled' }) + '\n');

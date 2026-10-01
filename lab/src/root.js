@@ -16,7 +16,7 @@ WHAT IS PRESENT is the whole key table (H17-D7), because the point of the lab is
 gestures against real rules.
 
 THE DOOR. In the product, `history.onCommit` hands a request to `sync.submit` and the server's
-planner answers. Here the same callback hands it to `commit()` from `server/txn.mjs` against a
+planner answers. Here the same callback hands it to `commit()` from `planner/txn.mjs` against a
 LOCAL AUTHORITY MODEL, and the answer is applied back. That is one line's difference in the
 composition, and it is the whole reason the lab can show the planner's cascade and sweep with no
 network: the tab model proposes, the authority model rules, exactly as production does.
@@ -37,8 +37,8 @@ import { Capture } from '../../app/src/capture.js';
 import { cutAt, joinAt } from '../../network/transit.mjs';
 import { Readout } from '../../app/src/readout.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
-import { commit, undo, redo } from '../../server/txn.mjs';
-import { Log } from '../../server/log.mjs';
+import { commit, undo, redo } from '../../planner/txn.mjs';
+import { Log } from '../../planner/log.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';

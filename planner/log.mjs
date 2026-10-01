@@ -1,7 +1,7 @@
 /*
 Log — the per-diagram change ring: what happened, in order, with each change's inverse.
 
-Split out of server/txn.mjs deliberately. The eviction and cursor rules are the fiddliest part of
+Split out of planner/txn.mjs deliberately. The eviction and cursor rules are the fiddliest part of
 this design and they are testable here without constructing a transaction, a Model, or a Store.
 
   version   monotonic, +1 per accepted transaction INCLUDING undo and redo. Never decreases.

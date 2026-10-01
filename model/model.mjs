@@ -9,8 +9,8 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 */
 
 // the kinds, their collections and which are selectable: one table, model/shape.mjs (PL-5). SELECTABLE_KINDS is
-// re-exported because server/validate.js builds its id regex from it -- it used to carry its own copy, pinned to a line
-// here by a comment reading "MUST match server/validate.js SELECTABLE", which is a comment doing a check's job (B86).
+// re-exported because planner/validate.js builds its id regex from it -- it used to carry its own copy, pinned to a line
+// here by a comment reading "MUST match planner/validate.js SELECTABLE", which is a comment doing a check's job (B86).
 import { KINDS, COLLECTION as KEY, SELECTABLE_KINDS } from './shape.mjs';
 export { SELECTABLE_KINDS };
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
@@ -21,7 +21,7 @@ const SELECTABLE = new Set(SELECTABLE_KINDS);
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state
 left by the step before it WITHOUT touching the live one.
 
-Both sides of the wire have this problem and it is the same problem. `server/txn.mjs` plans op k
+Both sides of the wire have this problem and it is the same problem. `planner/txn.mjs` plans op k
 against the state op k-1 left, which is how "a rejected request wrote nothing" holds by purity
 rather than by rollback. `app/src/commands.js` allocates entity k against the entity k-1 it just
 invented — ids, names, and the duplicate-link check all read the namespace, and all three go wrong
@@ -134,7 +134,7 @@ export class Model {
 
 	// A Model is a VALUE CONTAINER. It used to advance meta.rev here, which made every render
 	// signal a version bump — one drag was ~60 of them. Versioning is a property of a transaction,
-	// so it is minted where transactions are (server/txn.mjs), not where changes are drawn.
+	// so it is minted where transactions are (planner/txn.mjs), not where changes are drawn.
 	emit(action, kind, entity) {
 		this.subs.forEach((fn) => fn(action, kind, entity));
 	}

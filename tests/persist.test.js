@@ -9,7 +9,7 @@ import path from 'node:path';
 import { Store } from '../server/store.js';
 import { openStore, OWNER } from './fixtures/app.mjs';
 import { fsFiles } from '../server/files.mjs';
-import { Log } from '../server/log.mjs';
+import { Log } from '../planner/log.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cs2-'));
@@ -53,7 +53,7 @@ B13 — a `$` in any entity name must not corrupt the file.
 `serialize` splices the log block in with `String.replace(regex, string)`, and in a string
 replacement `$&`, $-backtick, `$'`, `$1` and `$$` are REPLACEMENT PATTERNS, not literals. The block
 carries every log record, a record carries entity names, and a name is any string
-(`server/validate.js` FIELDS.node.name = `str(v, 64)`). `$&` expands to the matched `"\n}"` and
+(`planner/validate.js` FIELDS.node.name = `str(v, 64)`). `$&` expands to the matched `"\n}"` and
 injects a raw newline into a JSON string literal.
 
 Why this is worse than a bad write: the write SUCCEEDS and `entry.dirty` is cleared
@@ -394,7 +394,7 @@ test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-
 		await s.flush(id);
 		const raw = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
 		assert.ok(raw.log, 'the file carries a log');
-		const { validateDoc } = await import('../server/validate.js');
+		const { validateDoc } = await import('../planner/validate.js');
 		assert.equal(validateDoc(raw), null, 'a validator that knows nothing of `log` still accepts the file');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -569,7 +569,7 @@ unloadable -- including a backup taken last week. The loader strips first, which
 both can be true.
 */
 test('Phase 2: the schema refuses meta.slides, and a pre-purge file still loads', async () => {
-	const { validateDoc } = await import('../server/validate.js');
+	const { validateDoc } = await import('../planner/validate.js');
 	const legacy = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 1, owner: '', grants: {},
 		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
 		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };

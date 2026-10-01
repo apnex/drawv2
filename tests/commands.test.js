@@ -265,7 +265,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	*/
 	const { Model } = await import('../model/model.mjs');
 	const { applyOps } = await import('../model/ops.mjs');
-	const { validateEntity } = await import('../server/validate.js');
+	const { validateEntity } = await import('../planner/validate.js');
 	const m = new Model();
 	const seeded = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', flow: false };
 	m.put('link', seeded);

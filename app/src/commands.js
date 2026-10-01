@@ -16,7 +16,7 @@ idempotently over the explicit ops (an already-deleted link yields no further op
 inverse-building, not the closure.
 */
 
-import { groupAfterRemoval } from '../../engine/policy.mjs';
+import { groupAfterRemoval } from '../../planner/policy.mjs';
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
 import { pairHolders } from '../../model/invariants.mjs';
@@ -85,7 +85,7 @@ export function deleteSelection(model, ids) {
 	// restored LAST — after the waypoint is put back (waypoint dels are last → restored first).
 	if (deletedWaypoints.size) {
 		/*
-		B81, mirroring server/txn.mjs: a strip that would leave a link STRAIGHT is a deletion
+		B81, mirroring planner/txn.mjs: a strip that would leave a link STRAIGHT is a deletion
 		instead when the pair already carries a straight link, because only one may exist. This is
 		a local projection of the server's rule, like the rest of this cascade -- the server is
 		authoritative and its planner refuses the state outright, so a client that guessed wrong
@@ -268,7 +268,7 @@ export function cycleFlow(link) {
 	so the clear was refused in memory and silently repaired by the next reload. That is B220's
 	shape: two doors disagreeing, with a restart hiding the evidence.
 
-	A whole-entity put is how this tree already removes a key -- `inverseOfSet` in server/txn.mjs
+	A whole-entity put is how this tree already removes a key -- `inverseOfSet` in planner/txn.mjs
 	reaches for the same move when a patch would have to restore an absence. The entity is built
 	without `flow` rather than with it undefined.
 	*/
@@ -493,7 +493,7 @@ This was `input.js#cloneClosure`, where it had to `put` each copy into the live 
 That put was doing allocation, not authoring: `newId` reads the collection, `nextName` rebuilds its
 set from the model, and both go wrong for sibling k if k-1 is not there yet. Proven by removing the
 puts and cloning three hosts — `[host-4, host-4, host-4]`. A scratch projection gives the batch a
-namespace that already contains itself, which is the same trick `server/txn.mjs` plans with.
+namespace that already contains itself, which is the same trick `planner/txn.mjs` plans with.
 
 What comes back is inert: plain entities in no model at all. MATERIALISING them is the caller's
 decision and the two callers differ, which is exactly why it does not belong in here. A clone DRAG
@@ -506,7 +506,7 @@ export function cloneSubgraph(model, seedIds) {
 	const clones = [];
 
 	// One cloner per placeable kind. A waypoint is `{id, x, y}` and nothing else
-	// (server/validate.js FIELDS.waypoint), so it must NOT be given a name — inventing a field the
+	// (planner/validate.js FIELDS.waypoint), so it must NOT be given a name — inventing a field the
 	// server rejects makes the clone apply locally and then be refused on the wire.
 	const cloneEntity = (kind, src) => {
 		const copy = { ...src, id: newId(kind, scratch.collection(kind)) };
@@ -584,7 +584,7 @@ ASYMMETRIC ON PURPOSE, and the asymmetry is forced by the ops vocabulary rather 
 Arming ADDS a key, which `set` expresses. Disarming REMOVES one, which `set` cannot: `model.set` is
 `Object.assign`, so a patch of `{ spawn: undefined }` writes the key as undefined rather than
 dropping it, and the validator then refuses the entity because `spawn` must be a whole object. So
-disarming is a `put` of the entity WITHOUT the field -- the same reasoning `server/txn.mjs`
+disarming is a `put` of the entity WITHOUT the field -- the same reasoning `planner/txn.mjs`
 already applies in reverse, where a `set` that introduces a key inverts as a whole-entity `put`.
 
 `since` is stamped by the CALLER from the agreed clock, never from `Date.now()` here. A builder

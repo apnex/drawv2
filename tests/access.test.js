@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
-import { validateDoc, validateMetaPatch } from '../server/validate.js';
+import { validateDoc, validateMetaPatch } from '../planner/validate.js';
 import { createApp } from '../server/app.js';
 import { Session, snapshotBody } from '../server/protocol.js';
 import { Locks } from '../server/locks.js';

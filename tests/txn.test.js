@@ -5,9 +5,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { plan, commit, undo, redo, MAX_OPS } from '../server/txn.mjs';
-import { Log } from '../server/log.mjs';
-import { validateDoc } from '../server/validate.js';
+import { plan, commit, undo, redo, MAX_OPS } from '../planner/txn.mjs';
+import { Log } from '../planner/log.mjs';
+import { validateDoc } from '../planner/validate.js';
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -332,7 +332,7 @@ differently: the client's index declares membership single-valued and answers la
 the server has no index and answers first-in-order, and `groupOf` drives both selection expansion
 and the renderer hull.
 
-The threshold for "too few to be a group" is NOT restated in the invariant. `engine/policy.mjs`
+The threshold for "too few to be a group" is NOT restated in the invariant. `planner/policy.mjs`
 owns it, `model/` and `engine/` are sovereign peers, so the rule is injected by the composition
 point that already depends on both -- the same shape as `cellOf` into `attachRelations`.
 */
@@ -708,7 +708,7 @@ Asserted as a round trip rather than against 256, so changing the limit cannot r
 divergence. If a future edit loosens one door, the other fails here.
 */
 test('B220: a caption the commit accepts survives a reload', async () => {
-	const { validateDoc } = await import('../server/validate.js');
+	const { validateDoc } = await import('../planner/validate.js');
 	const { CAPTION_MAX } = await import('../model/limits.mjs');
 
 	const withCaption = (caption) => {
@@ -762,7 +762,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	// the kernel twin -- the model's own `facing` is internal, and these two are held to agree in
 	// tests/validate.test.js, so either spelling reads the same declaration
 	const { linkFacing: facing } = await import('../kernel/network-roles.mjs');
-	const { validateDoc } = await import('../server/validate.js');
+	const { validateDoc } = await import('../planner/validate.js');
 	// `fresh()` mints no document id, and validateDoc checks meta first -- without this the round
 	// trip would fail on the fixture rather than on the field under test
 	const loadable = () => { const d = m.toJSON(); d.meta.id = 'diagram-cc0001'; d.meta.name = 'flow'; return d; };
@@ -1146,7 +1146,7 @@ Held structurally, because the failure it prevents is a NEW pass that builds its
 the corpus cannot see a pass that does not exist yet.
 */
 test('PL-2: the planner writes inverses in one place, and applies ops to its projection in one place', async () => {
-	const src = (await import('node:fs')).readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const src = (await import('node:fs')).readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	const plannerPart = src.slice(0, src.indexOf('// ---- the one write ----'));
 	assert.equal((plannerPart.match(/inv\.unshift\(/g) || []).length, 1, 'only `track` records an inverse');
 	assert.equal((plannerPart.match(/applyOps\(/g) || []).length, 1, 'only `track` advances the projection');
@@ -1162,7 +1162,7 @@ reaction lands with no edit to the core; and PD-2, a composition holds one link 
 a reaction has only `emit`, so it can neither write an inverse nor refuse -- and PL-2's test above holds the first.
 */
 test('PL1: the planner core names no entity kind -- the kinds are the tenants\'', async () => {
-	const src = (await import('node:fs')).readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const src = (await import('node:fs')).readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 	for (const kind of ['node', 'link', 'waypoint', 'group', 'zone']) {
 		assert.doesNotMatch(code, new RegExp(`['"\`]${kind}['"\`]`), `the core's code names the kind '${kind}'`);
@@ -1171,8 +1171,8 @@ test('PL1: the planner core names no entity kind -- the kinds are the tenants\''
 
 {
 	const pl3 = async () => {
-		const { plan: p } = await import('../server/txn.mjs');
-		const { CLASSIC_LINKS } = await import('../server/tenants.mjs');
+		const { plan: p } = await import('../planner/txn.mjs');
+		const { CLASSIC_LINKS } = await import('../planner/tenants.mjs');
 		const m = new Model();
 		m.put('node', { id: 'node-00000a', name: 'a', type: 'router', x: 0, y: 0, shape: 'circle' });
 		m.put('node', { id: 'node-00000b', name: 'b', type: 'router', x: 240, y: 0, shape: 'circle' });
@@ -1214,10 +1214,10 @@ test('PL1: the planner core names no entity kind -- the kinds are the tenants\''
 
 /*
 PL-4 -- THE EDGES (dev/design/planner/PLANNER-SYSTEM.md section 6.4). Placement and the clock are passed in, and beats are
-a record extension around the core (server/edges.mjs): the core reads no clock, resolves no anchor, and names no reveal.
+a record extension around the core (planner/edges.mjs): the core reads no clock, resolves no anchor, and names no reveal.
 */
 test('PL-4: the planner core reads no clock, resolves no anchor and names no reveal', async () => {
-	const src = (await import('node:fs')).readFileSync(new URL('../server/txn.mjs', import.meta.url), 'utf8');
+	const src = (await import('node:fs')).readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 	assert.doesNotMatch(code, /Date\.now|new Date|performance\.now/, 'no clock is read');
 	assert.doesNotMatch(code, /anchor\.mjs|resolveAnchor/, 'placement is handed in');
@@ -1281,17 +1281,17 @@ test('B272: a paced commit reveals only the entities it created', () => {
 /*
 PL-5 -- ONE KIND TABLE (model/shape.mjs; ruled 2026-10-01: one table now, injection at promotion's format batch, B273).
 Every list of the kinds in the planner and the server reads it; the id grammar is the one literal kept, pinned by C3,
-and it must agree with the table. The thresholds keep their own authority (engine/policy.mjs) but cover the same kinds.
+and it must agree with the table. The thresholds keep their own authority (planner/policy.mjs) but cover the same kinds.
 */
 test('PL-5: the kind table is the one list of kinds, and what still states them agrees with it', async () => {
 	const { KINDS, COLLECTION, SELECTABLE_KINDS, COMPOSITE, OPTIONAL } = await import('../model/shape.mjs');
-	const { collectionCap } = await import('../engine/policy.mjs');
+	const { collectionCap } = await import('../planner/policy.mjs');
 	const fs = await import('node:fs');
 	assert.deepEqual(KINDS, ['node', 'waypoint', 'link', 'zone', 'group']);
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
 	assert.deepEqual(SELECTABLE_KINDS, ['node', 'waypoint', 'link', 'zone'], 'a group is never selected directly');
 	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
-	const grammar = fs.readFileSync(new URL('../server/validate.js', import.meta.url), 'utf8').match(/const ID = \/\^\(([^)]*)\)/)[1].split('|');
+	const grammar = fs.readFileSync(new URL('../planner/validate.js', import.meta.url), 'utf8').match(/const ID = \/\^\(([^)]*)\)/)[1].split('|');
 	assert.deepEqual(grammar.filter((w) => !['diagram', 'template'].includes(w)), KINDS, 'the id grammar names exactly the table\'s kinds');
 	// a Model's collections are the table's, in its order
 	const m = new Model();

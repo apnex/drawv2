@@ -64,7 +64,7 @@ pair capacity (RULESET-AUDIT T4, F7).
 
 The invariant below REPORTS a pair over its capacity; every place that must decide BEFORE a link exists asks this:
 Input's release and replug gates, the network's `judgeDrag`, and the two cascades that strip a link's last bend
-(server/txn.mjs, app/src/commands.js). Before T4 those five each assumed a capacity of one in their own way, and only the
+(planner/txn.mjs, app/src/commands.js). Before T4 those five each assumed a capacity of one in their own way, and only the
 invariant read `straightCapacity` -- so configuring the limit would have changed what the planner accepts and nothing
 else. tests/pair-capacity.test.js raises it in a copy of the tree and drives all six.
 
@@ -271,7 +271,7 @@ export function violations(model, { groupAfterRemoval = null, facts = false } = 
 	/*
 	B85 -- a group holds at least two distinct members.
 
-	The threshold is NOT restated here. `engine/policy.mjs` declares itself the single authority
+	The threshold is NOT restated here. `planner/policy.mjs` declares itself the single authority
 	for it, and `model/` and `engine/` are sovereign peers -- neither imports the other -- so the
 	rule is injected by the composition point that already depends on both, exactly as `cellOf` is
 	injected into `attachRelations` so that engine imports no kernel. Asking whether a group would
@@ -325,7 +325,7 @@ export function violations(model, { groupAfterRemoval = null, facts = false } = 
 	something.
 
 	Compared as resolved coordinates rather than cell indices, deliberately. The two are the same
-	question only while every entity is on-grid, which `server/validate.js` now enforces at the
+	question only while every entity is on-grid, which `planner/validate.js` now enforces at the
 	boundary; comparing px states the property itself rather than depending on that one holding, and
 	two entities somehow 30px apart are reported rather than collapsed into one cell the way
 	`cellOf` would collapse them.

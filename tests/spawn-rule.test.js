@@ -16,7 +16,7 @@ import { Model } from '../model/model.mjs';
 import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
 import { waypointRoles } from '../kernel/network-roles.mjs';
 import { toggleSpawn } from '../app/src/commands.js';
-import { validateEntity } from '../server/validate.js';
+import { validateEntity } from '../planner/validate.js';
 import { applyOps } from '../model/ops.mjs';
 
 const NOW = 1_700_000_000_000;

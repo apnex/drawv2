@@ -3,7 +3,7 @@ The planner's orphan sweep takes EXTRA references by injection -- the second int
 incubator forces into a product module.
 
 The sweep removes a waypoint that a link referenced before a transaction and none references after
-(server/txn.mjs). That is right for today's document, where only links reference anchors. The
+(planner/txn.mjs). That is right for today's document, where only links reference anchors. The
 incubating network plugin adds PIPES, which reference anchors too -- and they live in the lab's
 session, not the document, so the real planner cannot see them.
 
@@ -23,8 +23,8 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
-import { commit, undo } from '../server/txn.mjs';
-import { Log } from '../server/log.mjs';
+import { commit, undo } from '../planner/txn.mjs';
+import { Log } from '../planner/log.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
 
 const P = 60;

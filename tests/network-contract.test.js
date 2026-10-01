@@ -28,8 +28,8 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
-import { commit, plan } from '../server/txn.mjs';
-import { Log } from '../server/log.mjs';
+import { commit, plan } from '../planner/txn.mjs';
+import { Log } from '../planner/log.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
 import { createNetwork } from '../network/network.mjs';
 

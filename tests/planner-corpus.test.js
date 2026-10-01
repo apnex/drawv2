@@ -13,7 +13,7 @@ every accepted plan must restore the board (PR8; collection order aside, which i
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CASES, record, readGolden, GENERATED_PER_COMPOSITION } from './fixtures/planner-corpus.mjs';
-import { CLASSIC_LINKS } from '../server/tenants.mjs';
+import { CLASSIC_LINKS } from '../planner/tenants.mjs';
 
 const golden = readGolden();
 const runs = new Map(CASES.map((c) => [c.id, record(c)]));

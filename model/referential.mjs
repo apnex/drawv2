@@ -4,7 +4,7 @@ Referential - the cross-entity rules, stated ONCE (B83 / H10.16).
 A link's endpoints must exist. A link is not a self-link. Its `via` waypoints exist. A waypoint
 belongs to at most one link, in at most one role. A group's members exist.
 
-These were written TWICE inside `server/validate.js`: once incrementally against a live `Model` in
+These were written TWICE inside `planner/validate.js`: once incrementally against a live `Model` in
 `validateMutation`, once globally against a plain doc in `validateDoc`. Two implementations, two
 error vocabularies, two complexity classes, and nothing forcing them to agree. Divergence means a
 document the wire refuses can be loaded from disk, or the reverse -- and the two peers then disagree

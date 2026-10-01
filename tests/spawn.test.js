@@ -6,12 +6,12 @@ should survive a reload, reach the other viewers, and be undoable like anything 
 The movers it implies are none of those things, which is exactly why they are derived instead.
 
 Both peers are checked here. `model/shape.mjs` says which optional fields a kind may carry and the
-client trusts it; `server/validate.js` refuses what arrives anyway. B86 is the standing reason those
+client trusts it; `planner/validate.js` refuses what arrives anyway. B86 is the standing reason those
 two are tested together rather than apart -- one number, two enforcers, or the pair drifts.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateEntity } from '../server/validate.js';
+import { validateEntity } from '../planner/validate.js';
 import { OPTIONAL } from '../model/shape.mjs';
 import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { Model } from '../model/model.mjs';

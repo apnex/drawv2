@@ -126,8 +126,8 @@ test('B152: no agent-facing string carries a character an agent cannot type', ()
 	banner, the tooltips and the lock messages a person actually sees. An em dash reached a tooltip
 	and the director had to report it by eye, which is the check this replaces.
 	*/
-	const files = ['server/rest.js', 'server/protocol.js', 'server/validate.js', 'server/store.js',
-		'server/txn.mjs', 'server/locks.js', 'server/app.js', 'app/src/main.js'];
+	const files = ['server/rest.js', 'server/protocol.js', 'planner/validate.js', 'server/store.js',
+		'planner/txn.mjs', 'server/locks.js', 'server/app.js', 'app/src/main.js'];
 	const offenders = [];
 	for (const f of files) {
 		const src = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').split('\n');

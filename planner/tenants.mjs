@@ -5,7 +5,7 @@ composition holds, and CLASSIC_LINKS, production's link tenant until promotion d
 Rows in the shape the core runs -- `{ id, phase, on, run(ctx, emit) }` -- emitting ops only; the core applies them as
 they go and writes their inverses (PL-2).
 */
-import { groupAfterRemoval } from '../engine/policy.mjs';
+import { groupAfterRemoval } from './policy.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
 
 /*

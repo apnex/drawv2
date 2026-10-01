@@ -9,7 +9,7 @@ import { renderElement, renderContentRegion } from '../kernel/svg-scene.mjs';
 import { bboxOf, cellOf } from '../kernel/geometry.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
-import { validateEntity, validateDoc } from '../server/validate.js';
+import { validateEntity, validateDoc } from '../planner/validate.js';
 import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
 import { controlBarDoc } from './fixtures/control-bar-doc.mjs';
 

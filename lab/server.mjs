@@ -27,11 +27,15 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /*
 The mounts, declared rather than derived.
 
-A lab page loads its own files, the canvas modules it composes, and the four sovereign module
-folders. Nothing else is reachable: `server/` is NOT mounted, so the planner's source is loaded by
-the page from `/server/txn.mjs` -- which means that one folder IS needed. It is mounted read-only
-like the rest, and it carries no secret: `server/txn.mjs` is the rule code the browser must run,
-and every credential lives in the environment or in GCS, never in a served file.
+A lab page loads its own files, the canvas modules it composes, the sovereign module folders, and the planner. Each
+folder is served whole or not at all (H17-D5), and nothing else is reachable.
+
+`server/` IS NOT SERVED, at all. The first build of this mounted the whole directory, and the probe that caught it is
+the reason it does not now: `GET /server/store.js` returned 200 -- the GCS-backed store. It carried no credential, so
+nothing leaked, but a no-API service that serves its product's server directory has thrown away the reason it was safe
+to deploy. Then the planner lived in `server/` and had to be served as five named files; K4 moved it to its own folder,
+`planner/`, which holds rule code the browser runs and no secret, so it is mounted like the rest and `server/` needs no
+exception. tests/static.test.js asks for `server/store.js`, `identity.mjs` and `anchor.mjs` and requires 404.
 */
 const MOUNTS = {
 	'/src/': 'lab/src',
@@ -39,32 +43,9 @@ const MOUNTS = {
 	'/kernel/': 'kernel',
 	'/model/': 'model',
 	'/engine/': 'engine',
+	'/planner/': 'planner',   // K4 (H17-D5): the planner, whole -- the page commits through it
 	'/network/': 'network',   // the incubating plugin (ruled 2026-09-28)
 };
-
-/*
-`server/` IS NOT MOUNTED. The lab loads exactly five files from it -- the planner -- and they are
-listed by name rather than by folder.
-
-The first build of this mounted the whole directory, and the probe that caught it is the reason it
-does not now: `GET /server/store.js` returned 200. That file is the GCS-backed store. It carries no
-credential, so nothing leaked, but a no-API service that serves its product's entire server
-directory has thrown away the reason it was safe to deploy at all. A mount is a standing promise
-about every file a folder will EVER hold, and this folder grows.
-
-Named files are a promise about five. `scan-layers` already knows the planner's closure (the
-`planner` entry in tools/layers.mjs), and a test holds this list to it, so a fifth file joining the
-planner fails the gate rather than silently becoming public.
-*/
-const PLANNER_FILES = new Set([
-	'server/txn.mjs',
-	'server/log.mjs',
-	'server/validate.js',
-	// PL-4: the planner's edges (the default clock, the beats extension); anchor.mjs left -- the store passes placement
-	'server/edges.mjs',
-	// PL-3: the product's tenants of the planner (groups, classic links) -- rule code the planner runs, like txn.mjs
-	'server/tenants.mjs',
-]);
 
 function send(res, code, body) {
 	res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -77,10 +58,6 @@ function resolveFile(pathname) {
 	if (pathname === '/lab.css') return path.join(ROOT, 'lab/lab.css');
 	if (pathname === '/seeds.json') return path.join(ROOT, 'lab/seeds.json');   // the fixed boards (data, not code)
 	if (pathname === '/style.css') return path.join(ROOT, 'app/style.css');
-	if (pathname.startsWith('/server/')) {
-		const rel = path.normalize(pathname).slice(1);
-		return PLANNER_FILES.has(rel) ? path.join(ROOT, rel) : null;
-	}
 	for (const [prefix, dir] of Object.entries(MOUNTS)) {
 		if (pathname.startsWith(prefix)) return fileWithin(path.join(ROOT, dir), pathname.slice(prefix.length));
 	}

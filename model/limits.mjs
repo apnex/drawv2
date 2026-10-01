@@ -7,7 +7,7 @@ refuse what arrives anyway. Two enforcers, one number, or the pair drifts and th
 offering what the server rejects.
 
 B86 found each of these stated five and two times respectively, with NO shared constant, across
-`server/validate.js`, `server/store.js`, `server/protocol.js`, `app/src/sync.js` and
+`planner/validate.js`, `server/store.js`, `server/protocol.js`, `app/src/sync.js` and
 `app/src/labeledit.js`.
 
 THE TWO RESPONSES DIFFER ON PURPOSE, and sharing the number is what makes that safe rather than
@@ -52,7 +52,7 @@ export const CAPTION_MAX = 256;
 
 // the largest footprint a node may span, in cells. Its own constant rather than a second use of
 // NAME_MAX: the two share a value today and mean nothing alike, so they must be free to diverge.
-// Both peers cap it -- `app/src/commands.js` while resizing, `server/validate.js` on arrival -- and
+// Both peers cap it -- `app/src/commands.js` while resizing, `planner/validate.js` on arrival -- and
 // neither had a shared source. Found while closing B86 rather than listed in it.
 export const SPAN_MAX = 64;
 

@@ -25,6 +25,8 @@ COPY kernel/ kernel/
 COPY engine/ engine/
 # the model substrate ESM (served at /model; imported by server/store.js + seed.js at boot)
 COPY model/ model/
+# K4 (H17-D5): the planner, served whole to the lab and run by the server
+COPY planner/ planner/
 
 # the LAB canvas (H17 K10): a minimal client composition over the same modules, deployed to its own
 # service at lab.apnex.io with no IAP, because it stores nothing -- no Store, no Hub, no Locks, no

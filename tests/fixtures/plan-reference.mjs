@@ -1,9 +1,9 @@
 // FROZEN REFERENCE — the pre-CS1 single-op planner, lifted verbatim from server/store.js at
-// commit f31ff79 and kept only as the differential oracle for server/txn.mjs#plan. It is not
+// commit f31ff79 and kept only as the differential oracle for planner/txn.mjs#plan. It is not
 // wired into anything. GR5: the old implementation is deleted only in the commit that lands its
 // own green differential, so the oracle must outlive the code it replaced.
-import { groupAfterRemoval } from '../../engine/policy.mjs';
-import { validateMutation } from '../../server/validate.js';
+import { groupAfterRemoval } from '../../planner/policy.mjs';
+import { validateMutation } from '../../planner/validate.js';
 
 export // S1b: the mutation PLANNER — pure (reads the model, applies NOTHING). Runs the validateMutation gate,
 // then computes the ordered op-list for the mutation + its server-side cascade (idempotent with the

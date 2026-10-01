@@ -63,6 +63,17 @@ const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, '
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
+	/*
+	K4 (2026-10-01, H17-D5) moved the planner into its own folder, `planner/`. Records written while these paths lived
+	cite them -- rows, rulings, deletion registers, audits, specs with line numbers true of the file as it was -- and M4
+	forbids rewriting them. Code was repointed in the commit that moved it.
+	*/
+	'*:server/txn.mjs': 'moved to planner/txn.mjs at K4 (H17-D5); a record written while it lived here cites it here',
+	'*:server/log.mjs': 'moved to planner/log.mjs at K4 (H17-D5); a record written while it lived here cites it here',
+	'*:server/validate.js': 'moved to planner/validate.js at K4 (H17-D5); a record written while it lived here cites it here',
+	'*:server/tenants.mjs': 'moved to planner/tenants.mjs at K4 (H17-D5); a record written while it lived here cites it here',
+	'*:server/edges.mjs': 'moved to planner/edges.mjs at K4 (H17-D5); a record written while it lived here cites it here',
+	'*:engine/policy.mjs': 'moved to planner/policy.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	// K12 (2026-10-01) deleted the design-rule checker by the director's ruling; these records name it as it stood
 	'dev/BACKLOG.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
 	'dev/COMMIT-DELETIONS.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
@@ -194,7 +205,7 @@ const ALLOW = {
 	'dev/COMMIT-DELETIONS.md:cli/draw.sh': 'the shell CLI, 6 commits, retired at B117. This file names the dead; that is its job.',
 	'dev/COMMIT-DELETIONS.md:app/src/schema.js': 'the client schema module, 3 commits, deleted. Cited as the thing deleted.',
 	'dev/COMMIT-DELETIONS.md:server/slides/transform.js': 'purged with Slides, 5 commits. Cited as the thing purged.',
-	'dev/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `server/txn.mjs` replaced it at CS1. A real file, really removed.',
+	'dev/COMMIT-DELETIONS.md:server/commit.mjs': 'existed for 2 commits before `planner/txn.mjs` replaced it at CS1. A real file, really removed.',
 	'dev/COMMIT-DELETIONS.md:diagrams/diagram-000001.json': 'runtime data, gitignored by design (B49). Present on a working machine, absent from a clone -- which is what `git ls-files` correctly reports.',
 	'dev/history/COMMIT-AUDIT.md:cli/draw.sh': 'as above -- a received audit citing the shell CLI while it existed.',
 	'dev/history/COMMIT-AUDIT.md:app/src/schema.js': 'as above.',
@@ -234,7 +245,7 @@ const ALLOW = {
 	// The register cites the file BECAUSE it is gone -- the row is the record of its whole life.
 	'dev/BACKLOG.md:engine/routes.mjs': 'provenance -- the adapter B166 deleted; the row records why it existed and why it does not',
 	'tools/scan-docrefs.mjs:engine/routes.mjs': 'this scanner\'s own allow-list text',
-	'server/txn.mjs:server/commit.mjs': 'provenance header — records the file this one replaced (CS1)',
+	'planner/txn.mjs:server/commit.mjs': 'provenance header — records the file this one replaced (CS1)',
 	'kernel/renderer.mjs:dev/design/widgets/render.mjs': 'provenance — the mockup the content-region renderer was derived from',
 	'tools/scan-docrefs.mjs:server/commit.mjs': 'this scanner\'s own allow-list text',
 	'tools/scan-docrefs.mjs:design/sim/atomics.mjs': 'as above',

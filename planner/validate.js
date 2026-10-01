@@ -11,7 +11,7 @@ import { linkReferential, groupReferential, waypointOwners } from '../model/refe
 import { NAME_MAX, CAPTION_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { collectionCap } from '../engine/policy.mjs';
+import { collectionCap } from './policy.mjs';
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -54,7 +54,7 @@ one did so in the exact way H9.9 was careful to avoid everywhere else.
 */
 export const DOCUMENT_ID = /^(diagram|template)-[0-9a-f]{6}$/;
 // DERIVED from the model's list, which used to be pinned to this line by a comment reading
-// "MUST match server/validate.js SELECTABLE" -- a comment doing a check's job (B86).
+// "MUST match planner/validate.js SELECTABLE" -- a comment doing a check's job (B86).
 const SELECTABLE = new RegExp(`^(${SELECTABLE_KINDS.join('|')})-[0-9a-f]{6}$`);
 const ACTIONS = ['put', 'set', 'del'];
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
@@ -101,7 +101,7 @@ trust boundary is never delegated to the module that supplies the magnitude.
 const PITCH = STD.pitch;
 const onGrid = (name, v) => onLayout(LAYOUTS[name], v);
 
-// B113: the cap has ONE owner. engine/policy.mjs already declares itself the authority for a
+// B113: the cap has ONE owner. planner/policy.mjs already declares itself the authority for a
 // threshold (B85), and this was stated twice at 2000 -- here and in txn.mjs -- which is one number
 // too many the moment either becomes derived.
 const CAP = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: PITCH });
@@ -274,7 +274,7 @@ field existed must still load. Absent means the renderer's default (node.shape -
 writes that include the field are still range-checked.
 
 `model/shape.mjs` has claimed since it was written that it superseded "the OPTIONAL map in
-server/validate.js", and the map was still here and still the one consulted -- while `server/txn.mjs`
+planner/validate.js", and the map was still here and still the one consulted -- while `planner/txn.mjs`
 imported the shape.mjs version and never used it, so the tree LOOKED single-sourced from every angle
 except the one that mattered. The imported map also carries the three kinds this one omitted, which
 the consuming loop already tolerated either way (`optional && optional.has(key)`).

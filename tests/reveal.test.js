@@ -17,7 +17,7 @@ of seconds because a stamp crossed a machine boundary.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { validateDoc } from '../server/validate.js';
+import { validateDoc } from '../planner/validate.js';
 import { revealedAt, beatsOf } from '../model/reveal.mjs';
 
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
@@ -212,8 +212,8 @@ its reveal with it and restores the one before, which is what keeps `one undo pe
 stops the document holding a record that describes a commit already reversed.
 */
 test('a commit carrying pace and caption records a reveal over the ids it produced', async () => {
-	const { commit } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();
@@ -234,8 +234,8 @@ test('a commit carrying pace and caption records a reveal over the ids it produc
 });
 
 test('a commit with no pace records nothing -- a set is not a beat', async () => {
-	const { commit } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	commit(m, new Log(), { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-aa0001', name: 'a', type: 'server', x: 0, y: 0 } }] });
@@ -243,8 +243,8 @@ test('a commit with no pace records nothing -- a set is not a beat', async () =>
 });
 
 test('undoing a beat takes its reveal with it', async () => {
-	const { commit, undo } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit, undo } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();
@@ -257,8 +257,8 @@ test('undoing a beat takes its reveal with it', async () => {
 });
 
 test('undoing back past an earlier beat restores THAT one, not nothing', async () => {
-	const { commit, undo } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit, undo } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();
@@ -273,8 +273,8 @@ test('undoing back past an earlier beat restores THAT one, not nothing', async (
 });
 
 test('a second beat queues behind the first rather than replacing it', async () => {
-	const { commit } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();
@@ -288,8 +288,8 @@ test('a second beat queues behind the first rather than replacing it', async () 
 });
 
 test('a beat records only the entities it CREATED, not ones it merely touched', async () => {
-	const { commit } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc([NODE('node-aa0001', 'existing', 0, 0)]));
 	const log = new Log();
@@ -300,8 +300,8 @@ test('a beat records only the entities it CREATED, not ones it merely touched', 
 });
 
 test('redo puts the beat back, reveal and all', async () => {
-	const { commit, undo, redo } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit, undo, redo } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();
@@ -355,8 +355,8 @@ test('undoing a RUN of beats restores what stood before all of them', async () =
 	newest one it happened to see first. Restoring the newest would leave the document holding a
 	beat whose entities were just removed, which is the exact ghost this ruling exists to prevent.
 	*/
-	const { commit, undo } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit, undo } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();
@@ -436,8 +436,8 @@ narration reads correctly while the unfurl it describes never happened.
 instant is STALE. An agent narrating across a pause is the whole use case, not an edge.
 */
 test('B193: a beat committed after the queue drained gets a fresh origin', async () => {
-	const { commit } = await import('../server/txn.mjs');
-	const { Log } = await import('../server/log.mjs');
+	const { commit } = await import('../planner/txn.mjs');
+	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
 	m.load(doc());
 	const log = new Log();

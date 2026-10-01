@@ -112,7 +112,7 @@ test('spanExtent: the far edge of a span lands on the node grid', () => {
 B111 -- the two grids have ONE owner, and a layout is what an anchor comes from.
 
 The kernel knew only the node grid: cellOf and cellPx are both offset zero. The half-pitch offset
-zones use lived in app/src/snap.js, and B110 added a second copy to server/validate.js -- two
+zones use lived in app/src/snap.js, and B110 added a second copy to planner/validate.js -- two
 restatements of a rule the kernel did not hold, in the same session that fixed B107 for being
 exactly that.
 */

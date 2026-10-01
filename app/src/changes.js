@@ -56,7 +56,7 @@ broken by the replay itself.
 
 "Echoed back" is read as the real planner echoes, where a byte comparison of op bodies is wrong three
 ways (tests/b242-reconcile.test.js has a case for each):
-- a set comes back NARROWED to the fields that changed (server/txn.mjs narrow), so a planned set is an
+- a set comes back NARROWED to the fields that changed (planner/txn.mjs narrow), so a planned set is an
   echo when every field it carries has the value a sent set gave it;
 - each sent op vouches for at most ONE planned op, so a coalesced burst that sets one field three times
   is three echoes -- keyed by op:kind:id alone, the last sent value would stand for all three;

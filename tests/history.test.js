@@ -12,8 +12,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Model } from '../model/model.mjs';
-import { Log, LOG_MAX, LOG_HARD_MAX } from '../server/log.mjs';
-import { commit, undo } from '../server/txn.mjs';
+import { Log, LOG_MAX, LOG_HARD_MAX } from '../planner/log.mjs';
+import { commit, undo } from '../planner/txn.mjs';
 import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 

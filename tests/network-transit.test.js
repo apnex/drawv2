@@ -148,7 +148,7 @@ X3 -- pins and guides at a non-transiting anchor (TR-2, TR-2b, TR-3).
 */
 import { cutAt, joinAt } from '../network/transit.mjs';
 import { applyOps } from '../model/ops.mjs';
-import { plan } from '../server/txn.mjs';
+import { plan } from '../planner/txn.mjs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 
 function pinned() {

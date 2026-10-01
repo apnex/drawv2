@@ -178,6 +178,7 @@ AMENDED 2026-10-01: B250 done (H17.19), its trigger having fired unattended at K
 AMENDED 2026-10-01: K5 done -- the situation is core, and run mode's rows come from the composition root; Input reaches no simulation code. Next K16.\
 AMENDED 2026-10-01: K16 done -- the B176 guard covers the simulation's whole import closure (G9 held).\
 AMENDED 2026-10-01: K9 done -- one static responder for the product and the lab (`server/static.mjs`), separator-bounded traversal guard, the lab's refusals held by an HTTP test.\
+AMENDED 2026-10-01: K4 done -- the planner is its own folder, `planner/`, served whole; `server/` is served by neither door.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

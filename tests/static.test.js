@@ -29,7 +29,7 @@ K9 -- THE LAB'S SERVER, over HTTP. It is a no-API service deployed without IAP (
 dangerous is to serve a file it should not: the product's store, or anything a traversal reaches. Booted from the working
 tree and asked raw, since `fetch` would normalize the `..` away before sending.
 */
-test('K9: the lab serves its mounts and named planner files, and nothing else, however the path is spelled', async () => {
+test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, however the path is spelled', async () => {
 	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
 	const http = await import('node:http');
 	const net = await import('node:net');
@@ -42,13 +42,15 @@ test('K9: the lab serves its mounts and named planner files, and nothing else, h
 	});
 	try {
 		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
-		for (const p of ['/kernel/geometry.mjs', '/server/txn.mjs', '/network/network.mjs']) {
+		// K4: the planner is served whole from its own folder
+		for (const p of ['/kernel/geometry.mjs', '/planner/txn.mjs', '/planner/policy.mjs', '/network/network.mjs']) {
 			const r = await ask(p);
 			assert.equal(r.status, 200, p);
 			assert.match(r.type, /^text\/javascript/, p);
 			assert.equal(r.cache, 'no-store', p);
 		}
-		for (const p of ['/server/store.js', '/server/identity.mjs', '/server/anchor.mjs', '/kernel/../server/store.js',
+		// K4 (H17-D5): `server/` is not served at all -- the store, identity and anchor above all, and its old planner path too
+		for (const p of ['/server/store.js', '/server/identity.mjs', '/server/anchor.mjs', '/server/txn.mjs', '/kernel/../server/store.js',
 			'/kernel/%2e%2e/server/store.js', '/server/../package.json', '/model/..%2f..%2fpackage.json', '/package.json',
 			// encoded separators whose targets EXIST, so only the guard stops them (a surviving mutant found the gap)
 			'/model/..%2fpackage.json', '/kernel/..%2fserver%2fstore.js']) {

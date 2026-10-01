@@ -2,7 +2,7 @@
 THE PLANNER'S EDGES -- what sits around the transaction core rather than in it (PL-4, dev/design/planner/PLANNER-SYSTEM.md
 section 6.4; PD-6).
 
-The core (`server/txn.mjs`) plans, applies and records, and knows neither time nor presentation. Two things it used to
+The core (`planner/txn.mjs`) plans, applies and records, and knows neither time nor presentation. Two things it used to
 hold are here:
 
   wallClock     the clock a composition passes as `now` -- the default, so a test that passes nothing still gets one.
@@ -32,7 +32,7 @@ The ids a paced commit reveals: the entities it CREATED, in the order they appli
 
 B272 -- it was every entity the commit put, so a beat that only renamed an entity already on screen withheld it until
 its turn. A created entity is one whose inverse is a delete: the core writes a `del` inverse only for a put of something
-absent (`inverseOf`, server/txn.mjs), so the plan says which they are without the extension reading the document.
+absent (`inverseOf`, planner/txn.mjs), so the plan says which they are without the extension reading the document.
 */
 function beatIds(request, { ops, inverse }) {
 	if (!Number.isInteger(request.pace) || request.pace < 0) return [];
