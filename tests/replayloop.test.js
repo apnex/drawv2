@@ -23,7 +23,7 @@ confirmed durable is the same trap, and it is the one that bit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
 

@@ -308,8 +308,9 @@ const MUTANTS = [
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
 	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { collectionCap as __c } from '../engine/policy.mjs?v';\n" }] },
 	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/situation.mjs')).situationOf; }\n" }] },
-	{ id: 'A24b', rule: 'L4', edits: [{ file: 'app/src/snap.js', replace: ["from '../../kernel/index.mjs';", "from '../../kernel/index.mjs?';"] },
-		{ file: MAN, replace: ["\t\t'app/src/snap.js -> kernel/index.mjs': 1,\n", ''] }] },
+	// K2b: snap.js reads its definers now, so the attack moves to a file that still imports a barrel (render, until K2c)
+	{ id: 'A24b', rule: 'L4', edits: [{ file: 'server/svg.mjs', replace: ["from '../kernel/index.mjs';", "from '../kernel/index.mjs?';"] },
+		{ file: MAN, replace: ["\t\t'server/svg.mjs -> kernel/index.mjs': 1,\n", ''] }] },
 	// a record raised with its violation; a new export borrowing a baseline name into the L10 list
 	{ id: 'A9', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/situation.mjs')).situationOf; }\n" },
 		{ file: MAN, replace: ["'app/src/input.js -> engine/situation.mjs': 1,", "'app/src/input.js -> engine/situation.mjs': 2,"] }] },

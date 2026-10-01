@@ -8,7 +8,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { plan } from '../server/txn.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { planMutation } from './fixtures/plan-reference.mjs';

@@ -43,12 +43,13 @@ import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
 import { DRAG_THRESHOLD, dragging, releaseTrigger } from './triggers.js';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
-import { roundedPath, BEND_R } from '../../kernel/index.mjs';
-import { newId, kindOf } from '../../model/index.mjs';
+import { roundedPath } from '../../kernel/router.mjs';
+import { BEND_R } from '../../kernel/spec.mjs';
+import { newId, kindOf } from '../../model/model.mjs';
 import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './palette.js';
 import * as commands from './commands.js';
-import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/index.mjs';
+import { situationOf, inReadView, onEndpoint, onOpenGround } from '../../engine/situation.mjs';
 
 // run mode's presses as rows of the Rules engine -- see `runModePress` for what each means and why they live here
 export const RUN_PRESSES = [

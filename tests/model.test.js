@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model, newId, kindOf } from '../model/index.mjs';
+import { Model, newId, kindOf } from '../model/model.mjs';
 
 test('newId produces prefixed 6-hex ids and avoids collisions', () => {
 	const id = newId('node');

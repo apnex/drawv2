@@ -26,7 +26,7 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { waypointRoles } from '../kernel/index.mjs';
+import { waypointRoles } from '../kernel/geometry.mjs';
 
 /*
 Build the situation.

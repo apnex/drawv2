@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Changes } from '../app/src/changes.js';
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one

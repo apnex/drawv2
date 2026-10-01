@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/index.mjs';
+import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/movers.mjs';
 import { STD } from '../kernel/spec.mjs';
 
 /*

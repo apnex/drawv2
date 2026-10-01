@@ -27,9 +27,9 @@ leaving it to memory.
 ──────────────────────────────────────────────────────────────────────────────────────────────
 */
 
-import { Model } from '../../model/index.mjs';
-import { attachRelations } from '../../engine/index.mjs';
-import { cellOf } from '../../kernel/index.mjs';
+import { Model } from '../../model/model.mjs';
+import { attachRelations } from '../../engine/store.mjs';
+import { cellOf } from '../../kernel/geometry.mjs';
 import { Changes } from '../../app/src/changes.js';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { Palette } from '../../app/src/palette.js';

@@ -1,9 +1,10 @@
 import { test } from 'node:test';
-import { LAYOUTS, onLayout, snapLayout, cellOn, pxOn, nearestAnchor, anchorAt, STD } from '../kernel/index.mjs';
+import { LAYOUTS, onLayout, snapLayout, cellOn, pxOn, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
+import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
 import { CANVAS, GAP, NODE_EXT, ZONE_EXT, spanExtent, snapNode, snapZone, resolveBox, pointInBox, dist, nodePoints } from '../app/src/snap.js';
-import { SURFACE, NODE_EXT as DOC_NODE_EXT, ZONE_EXT as DOC_ZONE_EXT } from '../model/index.mjs';
+import { SURFACE, NODE_EXT as DOC_NODE_EXT, ZONE_EXT as DOC_ZONE_EXT } from '../model/surface.mjs';
 
 // Grid math lives in app/src/snap.js (shipped). The center-origin geometry was ported from the
 // retired client/src/grid.js; as of CL3 the canvas surface + usable extents are single-sourced

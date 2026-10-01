@@ -12,8 +12,8 @@ failing, not the code. These call the decision directly.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
-import { situationOf, inReadView, onEndpoint, onSpawner } from '../engine/index.mjs';
+import { Model } from '../model/model.mjs';
+import { situationOf, inReadView, onEndpoint, onSpawner } from '../engine/situation.mjs';
 import { toggleSpawn } from '../app/src/commands.js';
 import { validateEntity } from '../server/validate.js';
 import { applyOps } from '../model/ops.mjs';

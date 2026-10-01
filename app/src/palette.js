@@ -9,7 +9,8 @@ click) whose ghost rides the snapped cell; input.js stamps it on click.
 import { CANVAS, GAP, snapNode } from './snap.js';
 import { toCanvas, ghostNode } from './painter.js';
 import * as commands from './commands.js';
-import { GLYPH_BB, STD } from '../../kernel/index.mjs';
+import { GLYPH_BB } from '../../kernel/theme.mjs';
+import { STD } from '../../kernel/spec.mjs';
 
 export const NODE_TYPES = ['host', 'server', 'loadbalancer', 'firewall', 'vxlan', 'router'];
 

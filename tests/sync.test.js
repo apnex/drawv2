@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
 import fs from 'node:fs';

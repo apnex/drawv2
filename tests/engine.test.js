@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
-import { attachRelations } from '../engine/index.mjs';
-import { cellOf, px, STD } from '../kernel/index.mjs';
+import { Model } from '../model/model.mjs';
+import { attachRelations } from '../engine/store.mjs';
+import { cellOf, px } from '../kernel/geometry.mjs';
+import { STD } from '../kernel/spec.mjs';
 
 // R5 — the engine stages `atCell` (a logical cell EDB atom) off the entity, via the kernel's
 // single-sourced px→cell primitive. These are the FIRST suite tests over the app/src + engine +

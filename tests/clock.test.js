@@ -9,7 +9,7 @@ converge -- which is the thing a per-machine `Date.now()` cannot do.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Clock } from '../app/src/clock.js';
-import { prepareSpawner, moversAt } from '../engine/index.mjs';
+import { prepareSpawner, moversAt } from '../engine/movers.mjs';
 
 // a machine whose wall clock is wrong by `skewMs`, without touching the real one
 const onMachine = (skewMs, fn) => {

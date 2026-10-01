@@ -17,8 +17,9 @@ failed silently and the "finding" was the probe, not the code (B170).
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
-import { situationOf, inReadView, onOpenGround, onEndpoint, worldOf } from '../engine/index.mjs';
+import { Model } from '../model/model.mjs';
+import { situationOf, inReadView, onOpenGround, onEndpoint } from '../engine/situation.mjs';
+import { worldOf } from '../engine/rules.mjs';
 import { createEntity } from '../app/src/commands.js';
 import { validateEntity } from '../server/validate.js';
 import { applyOps } from '../model/ops.mjs';

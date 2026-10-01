@@ -4,11 +4,12 @@ history, selection, input gesture machine, palette, label editor, readout, data-
 server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number + the glyph art.
 */
 
-import { sharedDefs, cellOf, gridDot } from '../../kernel/index.mjs';
+import { sharedDefs } from '../../kernel/renderer.mjs';
+import { cellOf, gridDot } from '../../kernel/geometry.mjs';
 import { el, crosshair } from './painter.js';
 import { nodePoints, zonePoints, CANVAS, GAP } from './snap.js';
-import { Model } from '../../model/index.mjs';
-import { attachRelations } from '../../engine/index.mjs';
+import { Model } from '../../model/model.mjs';
+import { attachRelations } from '../../engine/store.mjs';
 import { Changes } from './changes.js';
 import { Renderer } from './renderer.js';
 import { Selection } from './selection.js';

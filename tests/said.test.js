@@ -13,7 +13,7 @@ element would be testing a timeout, which is a different mechanism and not the o
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Sync } from '../app/src/sync.js';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Selection } from '../app/src/selection.js';
 

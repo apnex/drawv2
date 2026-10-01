@@ -16,7 +16,7 @@ of seconds because a stamp crossed a machine boundary.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { validateDoc } from '../server/validate.js';
 import { revealedAt, beatsOf } from '../model/reveal.mjs';
 

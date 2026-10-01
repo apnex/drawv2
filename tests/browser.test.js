@@ -1107,7 +1107,7 @@ test('B236: a node label is the ruled size, and the browser draws that size', { 
 	})()`);
 	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
 
-	const { STD } = await import('../kernel/index.mjs');
+	const { STD } = await import('../kernel/spec.mjs');
 	assert.equal(seen.drawn, STD.fontSize,
 		`the canvas must draw a label at the ruled size -- it drew ${seen.drawn}, the kernel exports ${STD.fontSize}`);
 

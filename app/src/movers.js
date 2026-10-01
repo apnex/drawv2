@@ -24,8 +24,11 @@ file's -- so an author can see that an endpoint emits without it moving under th
 */
 
 import { el } from './painter.js';
-import { moversAt, spawnersOf, worldOf, combatAt, aimAt } from '../../engine/index.mjs';
-import { roundedPath, BEND_R } from '../../kernel/index.mjs';
+import { moversAt } from '../../engine/movers.mjs';
+import { spawnersOf } from '../../engine/spawners.mjs';
+import { worldOf, combatAt, aimAt } from '../../engine/rules.mjs';
+import { roundedPath } from '../../kernel/router.mjs';
+import { BEND_R } from '../../kernel/spec.mjs';
 import { loop, clockOf } from './paintloop.js';
 
 // how often to look for a NEWLY DEPARTED mover. Not a frame rate -- the compositor owns motion.

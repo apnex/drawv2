@@ -20,7 +20,7 @@ reversed.
 */
 
 import { prepareSpawner } from './movers.mjs';
-import { BEND_R } from '../kernel/index.mjs';
+import { BEND_R } from '../kernel/spec.mjs';
 
 /*
 `model` is anything answering `all('waypoint')`, `linksAt(id)` and `pathOf(link)` -- the live client

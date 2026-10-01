@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Model } from '../model/index.mjs';
-import { attachRelations } from '../engine/index.mjs';
-import { resolve, renderElement, renderContentRegion, bboxOf, selBox, cellOf, STD, L_STD , isPanel, frameRadius, showsSockets } from '../kernel/index.mjs';
+import { Model } from '../model/model.mjs';
+import { attachRelations } from '../engine/store.mjs';
+import { resolve } from '../kernel/engine.mjs';
+import { renderElement, renderContentRegion, selBox, isPanel, frameRadius, showsSockets } from '../kernel/renderer.mjs';
+import { bboxOf, cellOf } from '../kernel/geometry.mjs';
+import { STD, L_STD } from '../kernel/spec.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
 import { validateEntity, validateDoc } from '../server/validate.js';
 import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
@@ -450,7 +453,8 @@ Nothing is stored. Closing a path changes how its corners draw because a ring HA
 falls out of the derivation rather than out of a rewrite.
 */
 test('B162: the kernel derives bend from endpoint, and closing a path flips it', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const doc = (closed) => ({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
@@ -458,15 +462,17 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'], closed }],
 		zones: [], groups: [],
 	});
-	const roles = (d) => [...k.render(k.docToSchema(d)).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
+	const roles = (d) => [...render(docToSchema(d)).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
 
 	assert.deepEqual(roles(doc(false)), ['endpoint', 'bend'], 'a terminal is an endpoint, a via is a bend');
 	assert.deepEqual(roles(doc(true)), ['bend', 'bend'], 'and a RING has no ends — both are corners');
 });
 
 test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
-	const k = await import('../kernel/index.mjs');
-	const svg = k.render(k.docToSchema({
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
+	const { waypointStyle } = await import('../kernel/geometry.mjs');
+	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
 		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 60, y: 60 }],
@@ -499,7 +505,7 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	assert.ok(anchorOf(end), 'the ENDPOINT draws the anchor too -- this is the whole point of B199');
 	assert.deepEqual(anchorOf(end), anchorOf(bend), 'and it is the same anchor, not a similar one');
 
-	const pad = end.circles.find((c) => c.r === k.waypointStyle('endpoint', 20).radius);
+	const pad = end.circles.find((c) => c.r === waypointStyle('endpoint', 20).radius);
 	assert.ok(pad, 'the endpoint pad is drawn');
 	assert.ok(pad.w > anchorOf(end).w * 2, 'the pad is far heavier -- a line terminates on it');
 
@@ -525,16 +531,16 @@ This is the twin guard: if either renderer grows its own copy of the rule, or st
 shared one, this fails.
 */
 test('B162: one rule, consumed by the client renderer and the kernel alike', async () => {
-	const k = await import('../kernel/index.mjs');
-	assert.equal(typeof k.waypointRole, 'function', 'the rule is exported from the kernel');
+	const { waypointRole } = await import('../kernel/geometry.mjs');
+	assert.equal(typeof waypointRole, 'function', 'the rule is exported from the kernel');
 
 	// the four cases, asserted on the rule itself rather than through either renderer
 	const open = [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }];
 	const ring = [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }];
-	assert.equal(k.waypointRole('w1', open), 'endpoint', 'a terminal on an open path');
-	assert.equal(k.waypointRole('w3', open), 'bend', 'a via is a corner');
-	assert.equal(k.waypointRole('w1', ring), 'bend', 'a RING has no ends');
-	assert.equal(k.waypointRole('w9', []), 'bend', 'and an orphan draws plainly');
+	assert.equal(waypointRole('w1', open), 'endpoint', 'a terminal on an open path');
+	assert.equal(waypointRole('w3', open), 'bend', 'a via is a corner');
+	assert.equal(waypointRole('w1', ring), 'bend', 'a RING has no ends');
+	assert.equal(waypointRole('w9', []), 'bend', 'and an orphan draws plainly');
 
 	/*
 	Both renderers must ASK for the role rather than decide it.
@@ -566,8 +572,8 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	assert.match(engine, /waypointRoles\(/, 'as does the kernel');
 
 	// B166 -- a model link is accepted by the rule DIRECTLY, with nothing translating on the way
-	assert.equal(k.waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
-	assert.equal(k.waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }]), 'bend', 'a ring still has no ends');
+	assert.equal(waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
+	assert.equal(waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }]), 'bend', 'a ring still has no ends');
 
 	// and no translation may reappear anywhere -- this is the whole point of the unification
 	for (const [label, src] of [['renderer', client], ['kernel engine', engine]]) {
@@ -615,8 +621,10 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 });
 
 test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
-	const k = await import('../kernel/index.mjs');
-	const svg = k.render(k.docToSchema({
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../kernel/geometry.mjs');
+	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
 		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 }],
@@ -634,7 +642,7 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	the moment a second layer stacked on top. The radius comes from the kernel, so this names the pad
 	itself rather than wherever it happens to sit in the group.
 	*/
-	const want = { endpoint: k.waypointStyle('endpoint', 20).radius, bend: k.waypointAnchor(20).radius };
+	const want = { endpoint: waypointStyle('endpoint', 20).radius, bend: waypointAnchor(20).radius };
 	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
 		const ring = [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]*)"[^>]*?\/>/g)]
 			.find((m) => Number(m[1]) === want[role]);
@@ -663,11 +671,11 @@ way and the client imports every one of them: the kernel owns the numbers, each 
 its emission. The waypoint style was the outlier.
 */
 test('B162: the waypoint style has one owner, and neither renderer restates it', async () => {
-	const k = await import('../kernel/index.mjs');
-	const end = k.waypointStyle('endpoint', 20);
-	const bend = k.waypointStyle('bend', 20);
+	const { waypointAnchor, waypointStyle } = await import('../kernel/geometry.mjs');
+	const end = waypointStyle('endpoint', 20);
+	const bend = waypointStyle('bend', 20);
 
-	const anchor = k.waypointAnchor(20);
+	const anchor = waypointAnchor(20);
 
 	assert.ok(end.width > bend.width * 2, 'a pad is far heavier than a corner');
 	assert.equal(end.fill, '#101010', 'opaque, so the path terminates on it');
@@ -697,9 +705,11 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 });
 
 test('B162: the two renderers agree, value for value', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../kernel/geometry.mjs');
 	// what the export emits, parsed back out of the SVG it produced
-	const svg = k.render(k.docToSchema({
+	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
 		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 }],
@@ -711,7 +721,7 @@ test('B162: the two renderers agree, value for value', async () => {
 	every role. Matching the first circle compared the export's anchor against the kernel's endpoint
 	style and failed on a change that had kept both sides in perfect agreement.
 	*/
-	const target = { endpoint: k.waypointStyle('endpoint', 20).radius, bend: k.waypointAnchor(20).radius };
+	const target = { endpoint: waypointStyle('endpoint', 20).radius, bend: waypointAnchor(20).radius };
 	const drawn = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
 		// B200 -- by radius, not by position: a stacked preview layer made "last" the wrong ring
 		const m = [...body.matchAll(/<circle[^>]*?r="([\d.]+)" fill="([^"]*)"[^>]*?stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"[^>]*?\/>/g)]
@@ -724,13 +734,13 @@ test('B162: the two renderers agree, value for value', async () => {
 		.map(([, r, w]) => ({ radius: Number(r), width: Number(w) }));
 	assert.equal(anchors.length, 2, 'both waypoints were drawn');
 	assert.deepEqual(anchors[0], anchors[1], 'the anchor is the same ring whatever the sub-type');
-	assert.deepEqual(anchors[0], { radius: k.waypointAnchor(20).radius, width: k.waypointAnchor(20).width },
+	assert.deepEqual(anchors[0], { radius: waypointAnchor(20).radius, width: waypointAnchor(20).width },
 		'and it is the kernel anchor, not a lookalike');
 
 	// the live renderer sets exactly these attributes from the same call, so comparing the export
 	// against the shared source proves both sides emit one set of numbers
 	for (const role of ['endpoint', 'bend']) {
-		assert.deepEqual(drawn[role], k.waypointStyle(role, 20), `${role} is drawn as the kernel specifies`);
+		assert.deepEqual(drawn[role], waypointStyle(role, 20), `${role} is drawn as the kernel specifies`);
 	}
 });
 
@@ -753,7 +763,7 @@ happened three times over, with `DOT_RADIUS` feeding the ladder while both rende
 hardcoded 2.2 that nothing could see.
 */
 test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the centre', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { gridDot, waypointAnchor, waypointJunction, waypointStyle } = await import('../kernel/geometry.mjs');
 
 	/*
 	The junction rung is RESERVED rather than exported -- nothing draws it yet, and an export with no
@@ -769,11 +779,11 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 	geometry.
 	*/
 	// B209 -- the rung is a drawn layer now, not a reservation read out of source text
-	const junction = k.waypointJunction();
+	const junction = waypointJunction();
 
 	const bands = [
-		['dot', 0, k.gridDot().radius],
-		...[['junction', junction], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]
+		['dot', 0, gridDot().radius],
+		...[['junction', junction], ['endpoint', waypointStyle('endpoint', 20)], ['anchor', waypointAnchor(20)]]
 			.map(([name, st]) => [name, st.radius - st.width / 2, st.radius + st.width / 2]),
 	];
 
@@ -784,22 +794,22 @@ test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the
 	}
 
 	// whole numbers were the point of the exercise; fractions are how the old ladder got 6.7 and 13.7
-	for (const [name, st] of [['junction', junction], ['endpoint', k.waypointStyle('endpoint', 20)], ['anchor', k.waypointAnchor(20)]]) {
+	for (const [name, st] of [['junction', junction], ['endpoint', waypointStyle('endpoint', 20)], ['anchor', waypointAnchor(20)]]) {
 		assert.equal(st.radius % 1, 0, `${name} radius ${st.radius} is not a whole number`);
 		assert.equal(st.width % 1, 0, `${name} width ${st.width} is not a whole number`);
 	}
-	assert.equal(k.gridDot().radius % 1, 0, 'the grid dot radius is not a whole number');
+	assert.equal(gridDot().radius % 1, 0, 'the grid dot radius is not a whole number');
 
 	/*
 	WEIGHT CARRIES MEANING. A heavy ring says a line terminates here; the equal-weight variant was
 	rejected for making the junction and the endpoint read as peers.
 	*/
-	assert.ok(k.waypointStyle('endpoint', 20).width > junction.width,
+	assert.ok(waypointStyle('endpoint', 20).width > junction.width,
 		'the endpoint pad must stay heavier than the junction ring');
 });
 
 test('B200: the node grid and the waypoint centre are one dot, from one source', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { gridDot } = await import('../kernel/geometry.mjs');
 	const main = fs.readFileSync(new URL('../app/src/main.js', import.meta.url), 'utf8');
 	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	const kernelRenderer = fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8');
@@ -837,7 +847,7 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 			assert.doesNotMatch(src, pattern, `${name} carries a hardcoded ${what} -- the ladder has one source`);
 		}
 	}
-	assert.equal(k.gridDot().radius, 2, 'the dot is 2 -- the value the node grid already drew');
+	assert.equal(gridDot().radius, 2, 'the dot is 2 -- the value the node grid already drew');
 });
 
 /*
@@ -852,7 +862,9 @@ gesture that makes a junction was refused at the pointer before the validator ev
 relaxed the validator; without this the feature is still undrawable.
 */
 test('B209: each role combination draws its own layers, in both renderers', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const cases = [
 		['bend', [], ['wp-anchor', 'wp-dot']],
@@ -863,12 +875,12 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 		['both, if ever combined', ['junction', 'endpoint'], ['wp-anchor', 'wp-ring', 'wp-junction', 'wp-dot']],
 	];
 	for (const [why, roles, want] of cases) {
-		assert.deepEqual(k.waypointLayers(roles, 20).map((l) => l.cls), want, why);
+		assert.deepEqual(waypointLayers(roles, 20).map((l) => l.cls), want, why);
 	}
 
 	// the anchor is the floor and the dot the centre, whatever the roles
 	for (const [, roles] of cases) {
-		const ls = k.waypointLayers(roles, 20).map((l) => l.cls);
+		const ls = waypointLayers(roles, 20).map((l) => l.cls);
 		assert.equal(ls[0], 'wp-anchor', 'the anchor is always drawn first -- it is the floor');
 		assert.equal(ls[ls.length - 1], 'wp-dot', 'the dot is always last, so no opaque pad buries it');
 	}
@@ -886,7 +898,7 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	});
 	const bend = [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }];
 	const drawn = (links) => {
-		const m = k.render(k.docToSchema(doc(links))).match(/<g class="waypoint ([^"]*)">(.*?)<\/g>/s);
+		const m = render(docToSchema(doc(links))).match(/<g class="waypoint ([^"]*)">(.*?)<\/g>/s);
 		return { cls: m[1], circles: (m[2].match(/<circle/g) || []).length };
 	};
 
@@ -960,9 +972,11 @@ The endpoint pad already fills for exactly this reason, so the two now agree: a 
 at is opaque, and a circle a line passes through is not.
 */
 test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { waypointLayers } = await import('../kernel/geometry.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
 
-	const fillOf = (roles, cls) => k.waypointLayers(roles, 20).find((l) => l.cls === cls).fill;
+	const fillOf = (roles, cls) => waypointLayers(roles, 20).find((l) => l.cls === cls).fill;
 
 	assert.notEqual(fillOf(['junction'], 'wp-junction'), 'none',
 		'a junction must be opaque -- links END at it, and a hollow ring shows their tails crossing underneath');
@@ -977,7 +991,7 @@ test('B212: the junction ring masks what is behind it, as the endpoint pad does'
 	assert.equal(fillOf([], 'wp-anchor'), 'none', 'the anchor is hollow: a bend shows the path turning through it');
 
 	// emitted, not just computed
-	const svg = k.render(k.docToSchema({
+	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }],
 		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }],
@@ -1002,13 +1016,15 @@ consumed by every renderer without any of them deciding again.
 export can emit. An undeclared link has no head, because it asserts nothing.
 */
 test('H15.6: the arrowhead follows the declaration, from one source', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { linkFacing, linkMarker } = await import('../kernel/geometry.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 
-	assert.equal(k.linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
+	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
 		'an undeclared link carries no head -- it asserts no direction to point');
-	assert.equal(k.linkMarker({ id: 'l', src: 'a', dst: 'b', flow: true }), 'end',
+	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b', flow: true }), 'end',
 		'a forward flow points at the stored dst, which is the path END');
-	assert.equal(k.linkMarker({ id: 'l', src: 'a', dst: 'b', flow: false }), 'start',
+	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b', flow: false }), 'start',
 		'a reversed flow points at the stored src, which is the path START');
 
 	/*
@@ -1017,9 +1033,9 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	*/
 	for (const flow of [true, false]) {
 		const link = { id: 'l', src: 'a', dst: 'b', flow };
-		const head = k.linkMarker(link);
+		const head = linkMarker(link);
 		const arrivesAt = head === 'end' ? link.dst : link.src;
-		assert.equal(k.linkFacing(link, arrivesAt), 'in',
+		assert.equal(linkFacing(link, arrivesAt), 'in',
 			'the head must sit where the flow arrives, or the picture contradicts the model');
 	}
 
@@ -1051,15 +1067,15 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(flow === undefined ? {} : { flow }) }],
 		waypoints: [], zones: [], groups: [],
 	});
-	assert.match(k.render(k.docToSchema(mk(true))), /marker-end="url\(#flow-end\)"/,
+	assert.match(render(docToSchema(mk(true))), /marker-end="url\(#flow-end\)"/,
 		'a forward flow must reach the exported path, not merely the defs');
-	assert.match(k.render(k.docToSchema(mk(false))), /marker-start="url\(#flow-start\)"/,
+	assert.match(render(docToSchema(mk(false))), /marker-start="url\(#flow-start\)"/,
 		'and a reversed one must point the other way');
-	assert.doesNotMatch(k.render(k.docToSchema(mk(undefined))), /marker-(end|start)=/,
+	assert.doesNotMatch(render(docToSchema(mk(undefined))), /marker-(end|start)=/,
 		'an undeclared link must export no head at all');
 
 	// the round trip too: what the adapter carries out, it must carry back
-	const back = k.schemaToDoc(k.docToSchema(mk(false)));
+	const back = schemaToDoc(docToSchema(mk(false)));
 	assert.equal(back.links[0].flow, false, 'the adapter must not lose the declaration in either direction');
 });
 
@@ -1074,7 +1090,9 @@ The plane is the same shape of field travelling the same five doors, so it is gu
 that failed rather than trusted because the code looks right.
 */
 test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { linkDash, linkWidth } = await import('../kernel/geometry.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 	const mk = (control) => ({
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(control ? { control: true } : {}) }],
@@ -1086,17 +1104,17 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	and the dash scales with the stroke, so `6 6` became `3.6 3.6` -- a pinned number would have
 	failed for a change that was entirely correct, and the property was never the number.
 	*/
-	const ctrlW = k.linkWidth({ id: 'l', control: true });
-	const pattern = k.linkDash({ id: 'l', control: true }, ctrlW);
-	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-dasharray="${pattern}"`),
+	const ctrlW = linkWidth({ id: 'l', control: true });
+	const pattern = linkDash({ id: 'l', control: true }, ctrlW);
+	assert.match(render(docToSchema(mk(true))), new RegExp(`stroke-dasharray="${pattern}"`),
 		'a control link must reach the exported path dashed, at the pattern its own width derives');
 	assert.notEqual(pattern.split(' ')[0], pattern.split(' ')[1],
 		'the dash is LONGER than the gap -- equal parts read as a row of squares rather than a dashed line');
-	assert.match(k.render(k.docToSchema(mk(true))), new RegExp(`stroke-width="${ctrlW}"`),
+	assert.match(render(docToSchema(mk(true))), new RegExp(`stroke-width="${ctrlW}"`),
 		'and thinner than a data link, by the same rule the canvas reads');
-	assert.doesNotMatch(k.render(k.docToSchema(mk(false))), /stroke-dasharray/,
+	assert.doesNotMatch(render(docToSchema(mk(false))), /stroke-dasharray/,
 		'and an ordinary data link must carry no dash attribute at all');
-	assert.equal(k.schemaToDoc(k.docToSchema(mk(true))).links[0].control, true,
+	assert.equal(schemaToDoc(docToSchema(mk(true))).links[0].control, true,
 		'the adapter must not lose the plane in either direction -- that was B225');
 
 	// the dash is DERIVED, by one rule, and scales with the stroke rather than carrying its own number
@@ -1105,7 +1123,7 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	These were literals -- '6 6' and '10 10' -- and both broke when the dash was lengthened, for a
 	change that was entirely correct. A literal here tests the value; the ratio tests the rule.
 	*/
-	assert.equal(k.linkDash({ id: 'l' }, 6), null, 'absence of the field is absence of the dash');
+	assert.equal(linkDash({ id: 'l' }, 6), null, 'absence of the field is absence of the dash');
 	/*
 	ASSERTED AGAINST THE RULING, not against the constants.
 
@@ -1116,7 +1134,7 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	What is RULED is the relationship: the pattern scales with the stroke, the dash is longer than
 	the gap, and the gap is wide enough to read as a gap. The numbers may move within that.
 	*/
-	const at = (w) => k.linkDash({ id: 'l', control: true }, w).split(' ').map(Number);
+	const at = (w) => linkDash({ id: 'l', control: true }, w).split(' ').map(Number);
 	const [on6, off6] = at(6);
 	const [on12, off12] = at(12);
 	assert.equal(on12, on6 * 2, 'the dash SCALES with the stroke, so it is a ratio rather than a size');
@@ -1162,16 +1180,17 @@ renderer decides for itself. The ring needs the links to know which plane it ser
 `waypointLayers` takes them -- a role set alone cannot say.
 */
 test('H15.16: a control link and its endpoint ring are thinner than a data one', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { linkWidth, waypointLayers } = await import('../kernel/geometry.mjs');
+	const { L_STD, STD } = await import('../kernel/spec.mjs');
 
 	// the LINK
-	assert.ok(k.linkWidth({ id: 'l', control: true }) < k.linkWidth({ id: 'l' }),
+	assert.ok(linkWidth({ id: 'l', control: true }) < linkWidth({ id: 'l' }),
 		'a control link must be thinner than a data link');
-	assert.equal(k.linkWidth({ id: 'l' }), k.STD.linkW, 'and a data link is unchanged -- the default is the baseline');
+	assert.equal(linkWidth({ id: 'l' }), STD.linkW, 'and a data link is unchanged -- the default is the baseline');
 
 	// the ENDPOINT RING, derived from what terminates there
-	const ext = k.L_STD.frame.ext;
-	const ringOf = (links) => k.waypointLayers(['endpoint'], ext, links).find((l) => l.cls === 'wp-ring');
+	const ext = L_STD.frame.ext;
+	const ringOf = (links) => waypointLayers(['endpoint'], ext, links).find((l) => l.cls === 'wp-ring');
 	const data = ringOf([{ id: 'a', src: 'x', dst: 'w' }]);
 	const ctrl = ringOf([{ id: 'a', src: 'x', dst: 'w', control: true }]);
 	assert.ok(ctrl.width < data.width, 'a control endpoint ring must be thinner than a data one');
@@ -1185,7 +1204,7 @@ test('H15.16: a control link and its endpoint ring are thinner than a data one',
 	assert.equal(mixed.width, data.width, 'a mixed terminus reads as data -- it is not partly control');
 
 	// the default keeps every existing caller correct: no links passed means the data weight
-	assert.equal(k.waypointLayers(['endpoint'], ext).find((l) => l.cls === 'wp-ring').width, data.width,
+	assert.equal(waypointLayers(['endpoint'], ext).find((l) => l.cls === 'wp-ring').width, data.width,
 		'omitting the links must not change what a waypoint has always drawn');
 });
 
@@ -1201,16 +1220,19 @@ Units are the SVG user space the whole spec uses -- the same unit as `linkW: 6` 
 not pixels or points. A stroke stays proportional to the drawing under zoom, which is correct.
 */
 test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { frameWidth } = await import('../kernel/renderer.mjs');
+	const { STD } = await import('../kernel/spec.mjs');
+	const { render } = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const panel = { id: 'node-aa0001', type: 'text', content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' }] };
 	const plain = { id: 'node-aa0002', type: 'host' };
 
-	assert.equal(k.frameWidth(panel), 1, 'a text panel frame is ONE unit -- lighter than a component');
-	assert.equal(k.frameWidth(plain), k.STD.frameW, 'and a plain node keeps the ruled weight');
-	assert.ok(k.frameWidth(panel) < k.frameWidth(plain), 'the panel is the lighter of the two');
+	assert.equal(frameWidth(panel), 1, 'a text panel frame is ONE unit -- lighter than a component');
+	assert.equal(frameWidth(plain), STD.frameW, 'and a plain node keeps the ruled weight');
+	assert.ok(frameWidth(panel) < frameWidth(plain), 'the panel is the lighter of the two');
 
-	assert.equal(k.STD.fontSize, 13, 'the ruled default text size');
+	assert.equal(STD.fontSize, 13, 'the ruled default text size');
 
 	/*
 	BOTH RENDERERS READ THE RULE, not a literal of their own. Font size 15 was written into
@@ -1229,7 +1251,7 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 		nodes: [{ ...panel, name: 't', x: 0, y: 0, span: { cols: 2, rows: 1 } }],
 		links: [], waypoints: [], zones: [], groups: [],
 	};
-	assert.match(k.render(k.docToSchema(doc)), /stroke-width="1"/,
+	assert.match(render(docToSchema(doc)), /stroke-width="1"/,
 		'the exported panel frame must be thin too -- CSS alone would leave the export heavy');
 });
 
@@ -1250,7 +1272,8 @@ A picture that disagrees with the canvas is the class B225 and B226 both were, w
 asserts the rendered OUTPUT rather than that a function is called.
 */
 test('B234: an exported node and zone carry their names', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
+	const { render } = await import('../kernel/index.mjs');
 	const doc = {
 		nodes: [{ id: 'node-aa0001', name: 'spine1', type: 'router', x: 0, y: 0 }],
 		zones: [{ id: 'zone-aa0001', name: 'core', x: -120, y: -120, w: 240, h: 240 }],
@@ -1258,19 +1281,19 @@ test('B234: an exported node and zone carry their names', async () => {
 	};
 
 	// the ADAPTER must carry the name, or nothing downstream can draw it
-	const schema = k.docToSchema(doc);
+	const schema = docToSchema(doc);
 	const node = schema.entities.find((e) => e.kind === 'node');
 	const zone = schema.entities.find((e) => e.kind === 'zone');
 	assert.equal(node.name, 'spine1', 'the adapter must carry a node name into the scene');
 	assert.equal(zone.name, 'core', 'and a zone name');
 
 	// and the RENDERER must draw it
-	const svg = k.render(schema);
+	const svg = render(schema);
 	assert.match(svg, />spine1</, 'the exported node must show its name');
 	assert.match(svg, />core</, 'and the exported zone must show its name');
 
 	// an UNNAMED entity draws nothing rather than an empty text element
-	const bare = k.render(k.docToSchema({
+	const bare = render(docToSchema({
 		nodes: [{ id: 'node-aa0002', type: 'router', x: 0, y: 0 }],
 		zones: [], links: [], waypoints: [], groups: [],
 	}));
@@ -1278,7 +1301,7 @@ test('B234: an exported node and zone carry their names', async () => {
 
 	// the name is ESCAPED -- it reaches an attribute-free text node, but a bare & or < would still
 	// break the document, and a diagram is user content
-	const nasty = k.render(k.docToSchema({
+	const nasty = render(docToSchema({
 		nodes: [{ id: 'node-aa0003', name: 'a<b&c', type: 'router', x: 0, y: 0 }],
 		zones: [], links: [], waypoints: [], groups: [],
 	}));
@@ -1305,19 +1328,20 @@ what makes the canvas and the export unable to disagree.
 The defence is structural rather than a new guard: there is no longer a second place to forget.
 */
 test('H15.9: linkAppearance is the whole answer, and it is attributes rather than advice', async () => {
-	const k = await import('../kernel/index.mjs');
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../kernel/geometry.mjs');
+	const { STD } = await import('../kernel/spec.mjs');
 
-	const plain = k.linkAppearance({ id: 'l', src: 'a', dst: 'b' });
-	assert.equal(plain['stroke-width'], k.STD.linkW, 'a data link takes the ruled width');
+	const plain = linkAppearance({ id: 'l', src: 'a', dst: 'b' });
+	assert.equal(plain['stroke-width'], STD.linkW, 'a data link takes the ruled width');
 	assert.ok(!('stroke-dasharray' in plain), 'and carries NO dash key -- absent, not null');
 	assert.ok(!('marker-end' in plain) && !('marker-start' in plain), 'and no head');
 
-	const ctrl = k.linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, flow: true });
+	const ctrl = linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, flow: true });
 	assert.ok(ctrl['stroke-width'] < plain['stroke-width'], 'a control link is thinner');
 	assert.match(ctrl['stroke-dasharray'], /^[\d.]+ [\d.]+$/, 'and dashed, as a ready attribute value');
 	assert.equal(ctrl['marker-end'], 'url(#flow-end)', 'and its head is a ready url(), not a hint');
 
-	assert.equal(k.linkAppearance({ id: 'l', flow: false })['marker-start'], 'url(#flow-start)',
+	assert.equal(linkAppearance({ id: 'l', flow: false })['marker-start'], 'url(#flow-start)',
 		'a reversed flow points the other way');
 
 	/*
@@ -1325,10 +1349,10 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 	and it can only do that if it knows every key this function could ever produce. Returning
 	`undefined` for an absent value would make that impossible to distinguish from "unchanged".
 	*/
-	assert.ok(Array.isArray(k.APPEARANCE_KEYS) && k.APPEARANCE_KEYS.length > 0,
+	assert.ok(Array.isArray(APPEARANCE_KEYS) && APPEARANCE_KEYS.length > 0,
 		'the caller must be able to ask which keys to clear');
 	for (const key of Object.keys(ctrl)) {
-		assert.ok(k.APPEARANCE_KEYS.includes(key), `${key} is emitted but not declared -- an update could not remove it`);
+		assert.ok(APPEARANCE_KEYS.includes(key), `${key} is emitted but not declared -- an update could not remove it`);
 	}
 
 	// both renderers must go through it, or the pipeline is advisory

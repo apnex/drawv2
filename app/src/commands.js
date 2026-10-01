@@ -16,9 +16,9 @@ idempotently over the explicit ops (an already-deleted link yields no further op
 inverse-building, not the closure.
 */
 
-import { groupAfterRemoval } from '../../engine/index.mjs';
+import { groupAfterRemoval } from '../../engine/policy.mjs';
 import { clone } from '../../model/ops.mjs';
-import { kindOf, newId, projection } from '../../model/index.mjs';
+import { kindOf, newId, projection } from '../../model/model.mjs';
 import { pairHolders } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';

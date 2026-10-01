@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { resolveAnchor } from '../server/anchor.mjs';
 
 /*

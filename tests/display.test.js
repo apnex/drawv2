@@ -13,7 +13,7 @@ was measured against lives on in `Model#pathOf`, which `tests/model.test.js` hol
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Readout } from '../app/src/readout.js';
 import { installDom } from './fixtures/client-harness.mjs';
@@ -75,7 +75,7 @@ The invariant worth pinning is not "the function exists" — it is that both ren
 the SAME coordinates. That is what the copy silently threatened and what a shared owner guarantees.
 */
 
-import { contentLayout, renderContentRegion } from '../kernel/index.mjs';
+import { contentLayout, renderContentRegion } from '../kernel/renderer.mjs';
 
 const REGIONS = [
 	{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' },

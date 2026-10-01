@@ -9,9 +9,11 @@ a different substrate, a tested implementation standing in for the one that runs
 import { test } from 'node:test';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Renderer } from '../app/src/renderer.js';
-import { renderElement, resolve, STD, L_STD } from '../kernel/index.mjs';
+import { renderElement } from '../kernel/renderer.mjs';
+import { resolve } from '../kernel/engine.mjs';
+import { STD, L_STD } from '../kernel/spec.mjs';
 import { makeRenderer, classesIn } from './fixtures/client-harness.mjs';
 
 const withRenderer = (fn) => {
@@ -161,7 +163,8 @@ Asserted as AGREEMENT rather than against literals. Checking the palette emits v
 mode that produced the drift. What must hold is that both sides read the same source.
 */
 test('B205: the palette fits each glyph exactly as the kernel does', async () => {
-	const { GLYPH_BB, STD } = await import('../kernel/index.mjs');
+	const { GLYPH_BB } = await import('../kernel/theme.mjs');
+	const { STD } = await import('../kernel/spec.mjs');
 	const src = fs.readFileSync(new URL('../app/src/palette.js', import.meta.url), 'utf8');
 
 	assert.match(src, /GLYPH_BB\[type\]/, 'the palette must fit the glyph to ITS OWN bounding box');

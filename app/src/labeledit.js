@@ -4,7 +4,8 @@ the entity's label; Enter/blur commits an undoable rename, Escape cancels.
 */
 
 import { NODE_R } from './snap.js';
-import { kindOf, NAME_MAX, CONTENT_VALUE_MAX } from '../../model/index.mjs';
+import { kindOf } from '../../model/model.mjs';
+import { NAME_MAX, CONTENT_VALUE_MAX } from '../../model/limits.mjs';
 import * as commands from './commands.js';
 
 // the caps are the model's, shared with the server rather than restated here (B86)

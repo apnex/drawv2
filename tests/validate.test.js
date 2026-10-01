@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
-import { collectionCap } from '../engine/index.mjs';
-import { NODE_EXT, ZONE_EXT } from '../model/index.mjs';
+import { collectionCap } from '../engine/policy.mjs';
+import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit } from '../server/txn.mjs';
 import { Log } from '../server/log.mjs';
-import { STD } from '../kernel/index.mjs';
+import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import { validateSelectionIds, validateDoc, validateMutation } from '../server/validate.js';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 
 // MS1: the persisted selection (model-state / status) is SHAPE-validated only — never
 // existence-checked — so a deleted-but-selected id can't make the diagram vanish on boot.
@@ -297,7 +297,7 @@ never used it -- so every angle except the consuming one made the tree look sing
 "MUST match server/validate.js SELECTABLE".
 */
 test('B86: the selectable kinds are derived from the model, not restated beside it', async () => {
-	const { SELECTABLE_KINDS } = await import('../model/index.mjs');
+	const { SELECTABLE_KINDS } = await import('../model/shape.mjs');
 	const { validateSelectionIds } = await import('../server/validate.js');
 	for (const kind of SELECTABLE_KINDS) {
 		assert.equal(validateSelectionIds([`${kind}-aa0001`]), null, `${kind} is selectable in both`);
@@ -328,7 +328,7 @@ at exactly one pitch, so if the kernel's pitch moved and the server kept a hardc
 would start refusing the smallest zone the client can draw -- and this fails.
 */
 test('B86: the smallest legal zone is one grid cell, wherever the pitch is set', async () => {
-	const { STD } = await import('../kernel/index.mjs');
+	const { STD } = await import('../kernel/spec.mjs');
 	const { validateEntity } = await import('../server/validate.js');
 	const off = STD.pitch / 2;                                    // the zone grid's half-pitch offset
 	const zone = (w) => ({ id: 'zone-aa0001', x: off, y: off, w, h: STD.pitch, name: 'z' });
@@ -357,7 +357,7 @@ someone unshared it.
 */
 test('B83: the document door and the mutation door reach the same verdict', async () => {
 	const { validateDoc, validateMutation } = await import('../server/validate.js');
-	const { Model } = await import('../model/index.mjs');
+	const { Model } = await import('../model/model.mjs');
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
 	const W = (n, y) => ({ id: `waypoint-aa000${n}`, name: `w${n}`, x: 60, y });
@@ -443,7 +443,7 @@ test('H9.9: a template id is a valid document id, and a made-up kind is not', as
 	assert.match(validateDoc(doc('sketch-4f2c11')) || '', /meta\.id/, 'and an invented kind is refused');
 
 	// kindOf needed no change at all: it is `id.split('-')[0]`, so the id answers for itself
-	const { kindOf } = await import('../model/index.mjs');
+	const { kindOf } = await import('../model/model.mjs');
 	assert.equal(kindOf('template-4f2c11'), 'template', 'the identifier carries the kind');
 });
 
@@ -566,7 +566,7 @@ was refused until two commits ago, so this is not hypothetical.
 test('B210: a split turns a bend into a junction, and the result validates', async () => {
 	const { splitAtBend } = await import('../model/invariants.mjs');
 	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
-	const { waypointRoles } = await import('../kernel/index.mjs');
+	const { waypointRoles } = await import('../kernel/geometry.mjs');
 
 	// the arithmetic, including a link with bends either side of the cut
 	const cases = [
@@ -698,7 +698,7 @@ The distinction returns when direction can be DECLARED: two flows arriving is a 
 stays a junction. That is a rule about meaning the author asserted, not about field order.
 */
 test('B214: three terminations is the smallest junction, and the collapse rule agrees', async () => {
-	const { waypointRoles } = await import('../kernel/index.mjs');
+	const { waypointRoles } = await import('../kernel/geometry.mjs');
 	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
 
 	const shapes = {
@@ -755,7 +755,7 @@ one again would be a second record free to disagree with the first after any edi
 this waypoint, is the flow arriving, leaving, or is there no flow at all?
 */
 test('H15.3: facing derives direction at a point, and an undeclared link has none', async () => {
-	const { linkFacing: facing } = await import('../kernel/index.mjs');
+	const { linkFacing: facing } = await import('../kernel/geometry.mjs');
 
 	const undeclared = { id: 'l1', src: 'a', dst: 'w' };
 	assert.equal(facing(undeclared, 'w'), null, 'an undeclared link asserts nothing at either end');
@@ -800,7 +800,7 @@ So the rule is no longer a count. It is: one termination is an endpoint, two tha
 two that oppose is a junction, three or more is a junction whatever they declare.
 */
 test('H15.4: two declared flows that oppose make a junction; agreeing ones make a bend', async () => {
-	const { waypointRoles } = await import('../kernel/index.mjs');
+	const { waypointRoles } = await import('../kernel/geometry.mjs');
 	const w = 'w';
 
 	// UNDECLARED -- unchanged by this rung. No direction, so nothing can oppose: still an endpoint.
@@ -863,7 +863,7 @@ a test instead of by an import: every combination, both readings, one answer. If
 edited alone this fails, which is the whole point.
 */
 test('H15.4: `facing` and `waypointRoles` read a declaration identically', async () => {
-	const { linkFacing, waypointRoles } = await import('../kernel/index.mjs');
+	const { linkFacing, waypointRoles } = await import('../kernel/geometry.mjs');
 	const w = 'w';
 
 	// The MODEL twin, reached through the collapse that is its only caller. `facing` is not
@@ -929,7 +929,7 @@ agree about every pair, and B232 shipped precisely because the matrix was implem
 and the guard was written from the code rather than from the ruled table. Two rules, one test.
 */
 test('H15.15: a control link and a data link meeting is a junction, not a bend', async () => {
-	const { waypointRoles } = await import('../kernel/index.mjs');
+	const { waypointRoles } = await import('../kernel/geometry.mjs');
 	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
 	const w = 'w';
 

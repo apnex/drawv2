@@ -4,7 +4,8 @@ Painter — low-level SVG DOM helpers + ephemeral overlay widgets
 no model knowledge, raw canvas coordinates only.
 */
 
-import { waypointLayers, L_STD } from '../../kernel/index.mjs';
+import { waypointLayers } from '../../kernel/geometry.mjs';
+import { L_STD } from '../../kernel/spec.mjs';
 import { TOKENS } from '../../kernel/theme.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';

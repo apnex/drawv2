@@ -17,7 +17,7 @@ import { validateDoc, validateMetaPatch } from '../server/validate.js';
 import { createApp } from '../server/app.js';
 import { Session, snapshotBody } from '../server/protocol.js';
 import { Locks } from '../server/locks.js';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
 

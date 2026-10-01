@@ -7,7 +7,10 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRoles, waypointLayers, linkAppearance, APPEARANCE_KEYS, STD, L_STD, selBox, roundedPath, BEND_R, groupHull, contentLayout, hexColor, spanExtent, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/index.mjs';
+import { waypointRoles, waypointLayers, linkAppearance, APPEARANCE_KEYS, groupHull, spanExtent } from '../../kernel/geometry.mjs';
+import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
+import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
+import { roundedPath } from '../../kernel/router.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)

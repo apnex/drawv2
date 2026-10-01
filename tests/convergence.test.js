@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';

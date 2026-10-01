@@ -4,7 +4,7 @@ diagram"). Entity ids are generated fresh each time so two seeded diagrams
 are stable across reseeds.
 */
 
-import { newId } from '../model/index.mjs';
+import { newId } from '../model/model.mjs';
 
 export function seedDoc() {
 	const taken = {};

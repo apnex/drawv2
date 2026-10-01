@@ -8,8 +8,8 @@ exactly one side writes at a time.
 */
 
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
-import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/index.mjs';
-import { NODE_EXT } from '../model/index.mjs';
+import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
+import { NODE_EXT } from '../model/surface.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { KINDS } from '../model/shape.mjs';   // the kind table (PL-5)
 

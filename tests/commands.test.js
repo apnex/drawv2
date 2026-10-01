@@ -10,7 +10,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/index.mjs';
+import { Model } from '../model/model.mjs';
 import { createEntity, moveEntities, deleteSelection, createGroup, ungroupAll,
 	setContentValue, reshapeNodes, renameEntity } from '../app/src/commands.js';
 import { applyOps } from '../model/ops.mjs';
@@ -213,7 +213,7 @@ model does not have.
 */
 test('H15.6: cycling direction walks undeclared, forward, reverse, and back to absent', async () => {
 	const { cycleFlow } = await import('../app/src/commands.js');
-	const { linkFacing } = await import('../kernel/index.mjs');
+	const { linkFacing } = await import('../kernel/geometry.mjs');
 
 	const undeclared = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' };
 	const first = cycleFlow(undeclared);
@@ -247,7 +247,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	and a readout saying another is the shape this register is full of.
 	*/
 	const bar = (l) => (typeof l.flow !== 'boolean' ? '<->' : (l.flow ? '>>>' : '<<<'));
-	const { linkMarker } = await import('../kernel/index.mjs');
+	const { linkMarker } = await import('../kernel/geometry.mjs');
 	for (const l of [undeclared, forward, reverse]) {
 		const head = linkMarker(l);
 		const expect = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';
@@ -263,7 +263,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	two doors disagreeing with a restart hiding the evidence. The entry must therefore produce an
 	entity the validator accepts, not merely one that looks right when printed.
 	*/
-	const { Model } = await import('../model/index.mjs');
+	const { Model } = await import('../model/model.mjs');
 	const { applyOps } = await import('../model/ops.mjs');
 	const { validateEntity } = await import('../server/validate.js');
 	const m = new Model();

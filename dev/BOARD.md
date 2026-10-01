@@ -167,6 +167,7 @@ AMENDED 2026-10-01: PL-4 done -- placement and the clock passed in, beats a reco
 AMENDED 2026-10-01: B272 fixed at the director's word (H17.18).\
 AMENDED 2026-10-01: PL-5 done as one kind table, injection held (B273); PL-0 to PL-5 complete, next PD-5, the browser preview, ruled before PL-6.\
 AMENDED 2026-10-01: PD-5 ruled -- PL-6 lands with promotion (`PROMOTION.md` section 6); H17.15 closes at PL-5. The H17 cuts resume: K2b (H17.3), B244 (H17.4), B246 (H17.6).\
+AMENDED 2026-10-01: K2b done -- every importer reads its defining module; the page loads 51 modules, not 57. Next K2c, deleting the barrels.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

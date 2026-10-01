@@ -4,10 +4,11 @@ THE KERNEL SPEC (STD.pitch) so the UI and the geometry kernel can never disagree
 Node grid: multiples of pitch from origin. Zone grid: half-cell offset (±pitch/2 + k·pitch).
 Extent clamps stay a UI concern (canvas margins).
 */
-import { STD, L_STD, spanExtent, LAYOUTS, snapLayout } from '../../kernel/index.mjs';
+import { STD, L_STD } from '../../kernel/spec.mjs';
+import { spanExtent, LAYOUTS, snapLayout } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode/snapZone/grid-points reference NODE_EXT/ZONE_EXT locally.
-import { SURFACE, NODE_EXT, ZONE_EXT } from '../../model/index.mjs';
+import { SURFACE, NODE_EXT, ZONE_EXT } from '../../model/surface.mjs';
 export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
 export const HALF = GAP / 2;
 export const NODE_R = L_STD.frame.ext;            // node frame half-extent — from the kernel spec (20)

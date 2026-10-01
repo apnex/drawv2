@@ -1462,8 +1462,8 @@ VERBS.push({
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'combat');
-		const { Model } = await import('../model/index.mjs');
-		const { worldOf, combatAt } = await import('../engine/index.mjs');
+		const { Model } = await import('../model/model.mjs');
+		const { worldOf, combatAt } = await import('../engine/rules.mjs');
 		const model = new Model();
 		model.load(doc);
 		const at = ctx.flags.at && ctx.flags.at !== true ? Number(ctx.flags.at) : Date.now();
@@ -1497,8 +1497,9 @@ VERBS.push({
 	async run(ctx, args) {
 		const id = await activeId(ctx, ctx.flags);
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'movers');
-		const { Model } = await import('../model/index.mjs');
-		const { spawnersOf, moversAt } = await import('../engine/index.mjs');
+		const { Model } = await import('../model/model.mjs');
+		const { spawnersOf } = await import('../engine/spawners.mjs');
+		const { moversAt } = await import('../engine/movers.mjs');
 		const model = new Model();
 		model.load(doc);
 		let prepared = spawnersOf(model);
