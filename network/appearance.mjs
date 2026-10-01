@@ -21,7 +21,12 @@ plugin contributes to it.
           HAND is solid, because it stays (the 2026-09-27 lifetime ruling). The difference is on the
           canvas rather than something the author must remember.
 */
-const PIPE_STROKE = '#8b949e';
+import { colour } from '../kernel/palette.mjs';
+import { NETWORK_COLOURS } from '../kernel/network-appearance.mjs';
+
+// the network's pipe role, from the one palette (kernel/network-appearance.mjs NETWORK_COLOURS; snapped 2026-10-01 to
+// Blue Grey 400, the nearest Material colour to the #8b949e measured below)
+const PIPE_STROKE = colour(NETWORK_COLOURS.pipe);
 const PIPE_WIDTH = 3;
 const PIPE_DASH = { link: '6 4', hand: null };
 

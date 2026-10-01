@@ -1458,18 +1458,21 @@ test('the transit ring draws only when the author declared it, at any link count
 	assert.equal(has(['endpoint'], {}), false, 'undeclared: the author declared nothing, so nothing draws');
 });
 
-test('the transit ring takes its colour from the token table, not a literal', async () => {
-	const { TOKENS } = await import('../kernel/theme.mjs');
-	assert.ok(TOKENS.transitRing, 'the ring colour must be a NAMED token -- B255 is 73 uses of a colour with two authorities');
+test('the transit ring takes its colour from the network\'s role over the palette, not a literal', async () => {
+	// the ring is the network plugin's, so its role is too (kernel/network-appearance.mjs, ruled 2026-10-01)
+	const { NETWORK_COLOURS, waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { colour } = await import('../kernel/palette.mjs');
+	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
+	assert.equal(ring.stroke, colour(NETWORK_COLOURS.transitRing), 'drawn in the network\'s transit-ring role');
 	/*
 	CODE, not prose. The first version of this read the whole file and failed on two hex values
 	inside a comment describing the grid dot -- a guard that cannot tell documentation from an
 	instruction will be switched off rather than obeyed. Comments are stripped first, so the
 	assertion is about what the module DOES.
 	*/
-	const src = fs.readFileSync(new URL('../kernel/geometry.mjs', import.meta.url), 'utf8')
+	const src = fs.readFileSync(new URL('../kernel/network-appearance.mjs', import.meta.url), 'utf8')
 		.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-	assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'geometry must carry no colour literal in code; the token table is the authority (B255)');
+	assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'the network appearance carries no colour value in code; the palette is the authority (B255)');
 });
 
 /*

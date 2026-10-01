@@ -188,6 +188,7 @@ AMENDED 2026-10-01: B275 ruled and fixed (H15.24) -- the export's labels match t
 AMENDED 2026-10-01: B163 ratified and closed (H10.34); the goals framework is `VISION.md`. No decision is owed.\
 AMENDED 2026-10-01: the readout is canvas, built by `composeCanvas`; the last layer-debt edge is gone and L2's records are empty.\
 AMENDED 2026-10-01: production-upgrade considerations are tracked in `dev/PRODUCTION-UPGRADE.md` (B276), added in the commit that creates each; read in full at a production audit.\
+AMENDED 2026-10-01: one core palette, Material-named, with colour roles declared by each owner -- the network plugin owns its pipe, transit-ring and down-link colours (PU24 lists the slight visible changes).\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 

@@ -1545,3 +1545,11 @@ Asked about flag F7 -- the five outcome axes the B163 survey of 2026-09-01 used,
 - The axes stay where they are, a historical lens for that one survey; they are not copied into `VISION.md` or kept as a second framework.
 - **The standing goals framework is `VISION.md`**: its three directions -- geometry carries more and stores less, physics becomes extensible, the editor stops being privileged. A future survey draws its outcome axes from them, as the unification survey of 2026-09-25 did.
 
+**One core palette, roles per owner, Material names -- ruled 2026-10-01.**\
+Asked how plugins should own colour, the director: "one core palette - but plugins can declare which color to use from that palette".\
+Asked how the palette is named, the director chose "Material, and snap one-offs" over Material names with custom neutrals (recommended) and names of our own.
+- `kernel/palette.mjs` holds every colour value: Google Material colours by their Material names, a neutral dark ladder Material does not provide (`neutral10` is #101010), and four custom colours with no near Material match.
+- Roles name palette entries, declared by each owner: the product's in `kernel/theme.mjs`, the network plugin's beside its appearance in `kernel/network-appearance.mjs` (pipe, transit ring, down link), moving into `network/` at promotion.
+- A one-off within RGB distance 25 of a Material colour moved to it: thirteen values, all slight. Those further away stayed: the socket ochre among them, whose nearest is the transit ring's Orange 300.
+- `tools/colour-tokens.mjs` generates one token file per owner, and the gate fails a colour value outside the palette, a role naming no palette entry, and a stylesheet reading a token its owner does not declare.
+

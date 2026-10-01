@@ -1,0 +1,10 @@
+/*
+THE NETWORK PLUGIN'S STYLESHEET -- the rules for what only the network draws, coloured from its own roles
+(kernel/network-appearance.mjs NETWORK_COLOURS, generated into network/tokens.css). Loaded by a page that composes the
+network -- the lab, until promotion -- and loaded BEFORE app/style.css, whose .selected and .armed share these rules'
+specificity and must win.
+
+A DOWN link -- no route over the pipes right now -- is orange as well as dotted (2026-09-29), and so is a link blocking the
+selected down link's way (2026-09-30): 8.8:1 on the canvas.
+*/
+.link[data-down], .link.blocking { stroke: var(--tok-network-down); }

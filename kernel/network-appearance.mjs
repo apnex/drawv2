@@ -7,7 +7,20 @@ draw a waypoint or a link differently.
 K13a (dev/design/h17/PLAN.md): split from kernel/geometry.mjs, whose core grid exported these network names (L5, L5p).
 Network layer: it reads the core spec, theme and grid, and nothing else.
 */
-import { TOKENS } from './theme.mjs';
+import { TOKENS } from './theme.mjs';   // the product's roles it draws beside its own (the canvas panel fill)
+import { colour } from './palette.mjs';
+
+/*
+THE NETWORK PLUGIN'S COLOUR ROLES -- which palette colour each thing it draws uses (ruled 2026-10-01: one core palette,
+kernel/palette.mjs; a plugin declares its roles). Here, beside its appearance, because production already loads this
+module and the transit ring is drawn by it; at promotion the roles move into `network/` with the rest of the plugin
+(dev/PRODUCTION-UPGRADE.md PU22). tools/colour-tokens.mjs writes them to network/tokens.css as `--tok-network-<role>`.
+*/
+export const NETWORK_COLOURS = {
+	pipe: 'blueGrey400',         // the layer beneath the links (network/appearance.mjs)
+	transitRing: 'orange300',    // an anchor whose transit the author turned off (TRANSIT.md section 12)
+	down: 'orange500',           // a link with no route right now, and a link blocking the selected down link's way
+};
 import { STD, BEND_R } from './spec.mjs';
 import { gridDot } from './geometry.mjs';
 
@@ -116,7 +129,7 @@ const TRANSIT_DASH = '2 2';
 
 // the transit ring as a layer -- one spec, which `waypointLayers` hands out for an anchor and the canvas takes for a node
 // from the same list, so the two cannot be drawn differently (transit with pipes, TRANSIT.md section 12, stage X1)
-const transitLayer = () => ({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, fill: 'none', opacity: 1, dash: TRANSIT_DASH, stroke: TOKENS.transitRing });
+const transitLayer = () => ({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, fill: 'none', opacity: 1, dash: TRANSIT_DASH, stroke: colour(NETWORK_COLOURS.transitRing) });
 
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';

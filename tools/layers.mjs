@@ -96,6 +96,7 @@ export const LAYER = {
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
+		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
 		'engine/situation.mjs',  // K5: what is true right now, as a value -- read by whatever decides what an input means, browser or server; it imports only core
 	],
 	network: [
@@ -169,7 +170,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
-			'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
+			'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
 	},
 	lab: {
@@ -204,7 +205,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
-			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs', 'model/shape.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)

@@ -25,7 +25,9 @@ before composing.
 		<!-- no icon, said explicitly: without this Chrome asks for /favicon.ico, the lab answers 404, and every
 		     first page load logs an error -- which the behaviour matrix's invariant I5 caught as a real one -->
 		<link rel="icon" href="data:,">
-		<link rel="stylesheet" href="/tokens.css"><!-- H15.23: the colour registry, generated from kernel/theme.mjs -->
+		<link rel="stylesheet" href="/tokens.css"><!-- the product's colour roles, generated (tools/colour-tokens.mjs) -->
+		<link rel="stylesheet" href="/network/tokens.css"><!-- the network plugin's colour roles -->
+		<link rel="stylesheet" href="/network/network.css"><!-- the network's rules: before style.css, whose .selected must win -->
 		<link rel="stylesheet" href="/style.css">
 		<link rel="stylesheet" href="/lab.css">
 	</head>
