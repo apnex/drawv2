@@ -88,6 +88,12 @@ Pipes as entities in the lab's tab and authority models; the network's derivatio
 - **N3 -- link ages in P1.** Recommended: they stay session state in P1 and move at P2 with B249's drawing-order field, which stores one order for every kind, link age included -- a core field, so a production format change. Undo already keeps a returning link's age (`network/session.mjs:23`). The alternative: an age field on links now, which the network would add to a core kind ahead of B249.
 - **N4 -- which start-of-promotion decisions bind P1.** `PROMOTION.md` section 11 gated P1 on all of section 10. Recommended: only P-1 (N2) binds it; P-2 is N3's; P-3 to P-9 concern the estate and the cutover, and are asked when promotion starts.
 
+AMENDED 2026-10-02 -- N1 RULED as recommended, and generalised (`dev/DECISIONS.md`, "Plugins bring their own kinds"):
+- **N-a grows to one shape for every kind:** each of the six kinds is a row carrying its storage facts, a check for every field with its id prefix, its cross-entity check and the kinds it references; the five built-ins' checks move into their rows; the id grammar is built from the rows (amending C3). A twice-claimed kind and a missing referenced kind are refused when the composition is built.
+- **Two questions the ruling opened**, asked after N2 to N4 in this order:
+  - **N5 -- names.** Every kind is named today (B187), and one name namespace spans the kinds. Whether a kind joins it is a row fact; for `pipe`, whether it is named.
+  - **N6 -- whether a pipe can be selected,** which decides the gesture that deletes a hand pipe (B281).
+
 ---
 
 ## 9. Axiom alignment audit (M7)

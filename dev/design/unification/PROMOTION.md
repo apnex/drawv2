@@ -119,6 +119,9 @@ AMENDED 2026-10-02, by the re-audit of item 3 (`network/host.mjs`):
 AMENDED 2026-10-02, by B277 (a non-transiting anchor has endpoints only):
 - **P2:** storing transit (TR-7) must hand it to the SVG export's role derivation too (`kernel/engine.mjs`, `waypointRoles`): until then the export cannot know an anchor's transit, and would draw a junction where the canvas draws endpoints (B277).
 
+AMENDED 2026-10-02, by N1 (`dev/DECISIONS.md`, "Plugins bring their own kinds"):
+- **P2:** `pipe` is the network plugin's kind, not a sixth core kind: production composes it by composing the network, and its exit criterion "every kind list names six" reads "every kind list is built from the composition's rows, and the product composes six". The kind table is passed in from P1 in the lab (B273), so P2 adds the stored format, not the mechanism.
+
 ---
 
 ## 7. Binary exit criteria for the whole promotion
