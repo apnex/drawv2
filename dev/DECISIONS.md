@@ -1594,3 +1594,16 @@ Asked about pipe identity, the director proposed "pipe-6hexsrc-6hexdst - a liter
 - **The pipe keeps `a` and `b` as fields**, the full anchor ids, and its row refuses an id that does not match them. Anchor ids never change, so the two cannot drift.
 - **Anchor hex is unique across nodes and waypoints from N-a**: a new node or waypoint id is checked against both collections. Without it `node-abc123` and `waypoint-abc123` could both exist (model/model.mjs `newId` checks one collection), and a pipe id could name two pairs.
 - **The goal: the waypoint kind is eliminated at promotion.** There are nodes, each with an anchor; a bare waypoint becomes a node with no type. Held as B282, in promotion's format batch. Cross-kind unique hex is its first step: when `waypoint-abc123` becomes `node-abc123`, no id collides and no pipe id changes. The estate must be checked for hex already shared by a node and a waypoint (P8).
+
+**Link ages stay session state through P1 -- ruled 2026-10-02 (B279, N3).**\
+Asked where link ages live in P1, the director agreed the recommendation over an age field on links now and over bringing B249's drawing-order field forward.
+- P1 moves pipes into the model, not ages; ages move at promotion's P2 with B249's drawing-order field, which stores one order for every kind.
+- Undo already keeps a returning link's age (network/session.mjs), so nothing visible is lost; for one stage network state lives in two places, accepted.
+CORRECTED 2026-10-02: "a bare waypoint becomes a node with no type" above is the proposer's wording, not the ruled model. Under "a node is a CORE plus packs, and a type is a composition" (2026-09-22), there is no type field to leave empty: a waypoint becomes an anchor whose composition carries only `routable` -- the composition with the fewest packs -- and stops being distinguishable rather than being deleted.
+
+**A type is the name of a composition, not a pack -- confirmed 2026-10-02.**\
+Asked whether "type" survives unification, the director: "a node is a composition of an anchor with a pipeline including capability packs, behaviours and appearance. So "type" wont exist in the same way as it does today, it will be a result of that composition - though perhaps labelled as a pack == router etc.. am I correct?" -- agreed with one correction: `router` names a composition (`glyph(router)` plus a routing pack), not a pack.
+- What survives of "type" is the name an author picks for a composition; the core does not know what it means.
+- The transit table, keyed by type today (`network/transit.mjs` `OFFERS`), is the table of the routing pack each composition includes, and moves when compositions exist.
+- Storing transit on the anchor (`routable.links.transit`) is a pack adding a field to the anchor's row -- the open question the 2026-09-22 ruling named, how a pack contributes; held, to be earned by composing two packs.
+- B282 widens to carry it: anchors unified, and type as composition.

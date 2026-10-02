@@ -125,6 +125,7 @@ AMENDED 2026-10-02, by N1 (`dev/DECISIONS.md`, "Plugins bring their own kinds"):
 AMENDED 2026-10-02, by N2 (`dev/DECISIONS.md`, "A pipe's id is its two anchors' hex"):
 - **P-1 is ruled:** a pipe's id is `pipe-<lowerhex>-<higherhex>`, not a random id.
 - **P2:** the format batch also eliminates the waypoint kind (B282): a waypoint becomes a node with no type, and `waypoint-<hex>` is rewritten to `node-<hex>`, keeping the hex, so no pipe id changes.
+  CORRECTED 2026-10-02: an anchor whose composition carries only `routable`, not a node with no type; and B282 widened -- the stored `type` becomes the name of a composition of packs, which supply their own tables, transit's included.
 - **P8:** the dry run checks the estate for hex shared by a node and a waypoint, which the rewrite would collide.
 
 ---
