@@ -16,6 +16,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `RULESET-AUDIT.md` | The audit of that ruleset: defects, duplication, cost, a consolidation design and its axiom audit. | Analytical. Proposes; the director decides. |
 | `GESTURES.md` | The network plugin's keys and drag grammar -- what a finished drag makes and which pipe each hop lays -- generated from the rows the Rules engine reads. | Living. Generated; records, rules nothing. |
 | `PROMOTION.md` | The plan for promoting the network plugin into production as a full cutover of every existing diagram: ten stages, risks, and the decisions to rule at the start. | Plan of record, held (B266). |
+| `NETWORK-READS-MODEL.md` | Promotion's stage P1 run in the lab: pipes become entities the network plugin brings, every pipe change an op, so undo restores pipes; four decisions before any code. | Delta, proposed. |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\

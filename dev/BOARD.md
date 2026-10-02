@@ -195,6 +195,7 @@ CORRECTED 2026-10-02: the 102 code lines were all of `lab/`, the root and the st
 AMENDED 2026-10-02: item 3 re-audited -- a fixed board's order moved into the host too, two dropped comments restored, the L8 budget lowered from 180 to 120 (`lab/` at 100), and the hooks' remaining read of the lab's planner model recorded as owed before P5 (`PROMOTION.md`).\
 AMENDED 2026-10-02: B277 fixed at the director's word (H17.20) -- a waypoint whose transit is off is an endpoint at any link count, drawn with the one endpoint ring, and Input judges it so too.\
 AMENDED 2026-10-02: B278 done (H17.21) -- one transit question, `stopsAt`, asked by routing, the join refusal, the toggle and the roles; the declaration only draws the ring. Nothing visible changed. Next: the item 4 design (promotion's P1 in the lab) for the director.\
+AMENDED 2026-10-02: the item 4 design is `dev/design/unification/NETWORK-READS-MODEL.md`; building it waits on N1 to N4 (B279, under Decisions required).\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -1022,6 +1023,7 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B279** | N1 to N4 of `dev/design/unification/NETWORK-READS-MODEL.md`, one at a time: how pipes enter a model before the format batch, pipe identity, where link ages live in P1, and which start-of-promotion decisions bind P1 | N1 brings B273 forward -- code production runs changes shape while promotion is held -- and N2 to N4 rule ahead of promotion's own start |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
