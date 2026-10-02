@@ -3,4 +3,5 @@
 	--tok-network-pipe: #78909c;   /* blueGrey400 */
 	--tok-network-transit-ring: #ffb74d;   /* orange300 */
 	--tok-network-down: #ff9800;   /* orange500 */
+	--tok-network-pipe-selected: #aed581;   /* lightGreen300 */
 }

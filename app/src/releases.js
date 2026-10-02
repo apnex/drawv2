@@ -95,7 +95,8 @@ B203 -- a LEFT drag never moves a waypoint: left is the link button on a waypoin
 never moves at all.
 */
 export const PRESS_DRAGS = [
-	{ id: 'start-move', mutates: true, on: moved, when: (r) => !r.onLink && !(r.onWaypoint && r.leftPress), run: 'startMove' },
+	// a plugin's mark is never moved by a drag (H17.22 N-c2): what it joins decides where it is
+	{ id: 'start-move', mutates: true, on: moved, when: (r) => !r.onLink && !r.onMark && !(r.onWaypoint && r.leftPress), run: 'startMove' },
 ];
 export const CLONE_DRAGS = [
 	{ id: 'start-clone', mutates: true, on: moved, run: 'startClone' },

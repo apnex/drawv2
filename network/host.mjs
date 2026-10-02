@@ -20,7 +20,7 @@ code -- with the painter's `el`.
 */
 import { whyDown, downSummary } from './resolve.mjs';
 import { cutAt, joinAt } from './transit.mjs';
-import { pipeAttributes } from './appearance.mjs';
+import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
 
 export function attachNetwork({ session, model, authority, renderer, selection, history, pipeLayer, el, say }) {
 	const { network } = session;
@@ -34,12 +34,20 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	applied as attributes: the first painter left colour to the stylesheet's `currentColor`, which inherited black and made
 	pipes invisible, and one measured authority in the plugin replaced it.
 	*/
+	/*
+	Each pipe is drawn under its own id, so the canvas's selection reaches it (the renderer marks an id it can find), and a
+	repaint keeps it marked. A HAND pipe also gets an invisible hit line naming it (`data-select`), which is how the canvas
+	picks a plugin's mark (app/src/pick.js) -- so a hand pipe can be selected and deleted (N6, B281). A pipe laid with a link
+	gets none: it follows its links, and is never offered.
+	*/
 	const paint = () => {
 		pipeLayer.replaceChildren();
-		for (const { a, b, laid } of model.all('pipe')) {   // the tab's pipes, as it holds them (N-c)
+		const selected = new Set(selection.list());
+		for (const { id, a, b, laid } of model.all('pipe')) {   // the tab's pipes, as it holds them (N-c)
 			const p = model.endpointOf(a), q = model.endpointOf(b);
-			if (!p || !q) continue;   // an anchor the pipe names has gone; the next sweep removes the pipe
-			el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}`, ...pipeAttributes(laid) }, pipeLayer);
+			if (!p || !q) continue;   // an anchor the pipe names has gone; the planner removes the pipe in the same edit
+			el('line', { id, x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}${selected.has(id) ? ' selected' : ''}`, ...pipeAttributes(laid) }, pipeLayer);
+			if (laid === 'hand') el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: 'pipe-hit', 'data-select': id, ...pipeHitAttributes() }, pipeLayer);
 		}
 	};
 	model.onChange(paint);

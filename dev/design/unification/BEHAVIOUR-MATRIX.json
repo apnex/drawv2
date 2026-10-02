@@ -3,7 +3,7 @@
 		"THE MASTER of the lab behaviour matrix. BEHAVIOUR-MATRIX.md beside it is generated from this file by `node tools/lab-matrix.mjs --write`, and the gate fails if the two differ: edit here, never there.",
 		"tests/lab-browser.test.js runs every row in real Chrome with real input. A state's `setup` builds its board and its `expect` proves the board is what the state claims, before any row acts on it.",
 		"A row: `steps` perform the gesture; `intent` says in words what should happen and `expect` says it as checks; `rule` cites the ruling. `standing` is ruled, reading (the proposer's reading, not ruled) or open. `built` is yes (the gate proves it) or todo (the gate proves it still FAILS, and demands promotion the day it passes).",
-		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"redo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
+		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"redo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; selectedKinds [kinds], the kinds of what is selected, for an id minted by the gesture; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
 	],
 	"invariants": {
 		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, the same anchors, and the same pipes (since H17.22 N-c, when pipes became entities in both).",
@@ -925,7 +925,9 @@
 		"select link": "Click a link to select it.",
 		"transit `x`": "Select anchors or nodes, and press x.",
 		"draw: `w` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press w on that anchor, and release beyond it.",
-		"draw: `g` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press g on that anchor, and release beyond it."
+		"draw: `g` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press g on that anchor, and release beyond it.",
+		"select pipe": "Click a pipe to select it -- a hand pipe with no link drawn over it takes the click (H17.22 N-c2).",
+		"delete pipe": "Select a hand pipe, and press Delete."
 	},
 	"notApplicable": [
 		[
@@ -3504,6 +3506,274 @@
 				}
 			},
 			"rule": "DECISIONS: \"A non-transiting anchor has endpoints only, under one ring\" (2026-10-02), B277; TRANSIT.md section 4.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "PIPE-01",
+			"state": "routed",
+			"gesture": "select pipe",
+			"does": "Lay pipes with g as in GST-01, then click the free hand pipe from A to the g anchor.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						],
+						[
+							"g",
+							0,
+							-240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-300,
+					-90
+				]
+			],
+			"intent": "A hand pipe with no link over it takes the click: it alone is selected.",
+			"expect": {
+				"selectedKinds": [
+					"pipe"
+				],
+				"pipes": {
+					"hand": 6,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Hand pipes can be selected and deleted; link pipes cannot\" (2026-10-02, N6), building \"a pipe the author placed by hand stays until the author deletes it\" (2026-09-27); B281.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "PIPE-02",
+			"state": "routed",
+			"gesture": "select pipe",
+			"does": "Click a hand pipe the upper link is drawn over, at its middle.",
+			"steps": [
+				[
+					"click",
+					-180,
+					0
+				]
+			],
+			"intent": "A pipe a link is drawn over is covered by the link, so the click takes the link, not the pipe.",
+			"expect": {
+				"selectedKinds": [
+					"link"
+				]
+			},
+			"rule": "DECISIONS: \"Hand pipes can be selected and deleted; link pipes cannot\" (2026-10-02, N6), building \"a pipe the author placed by hand stays until the author deletes it\" (2026-09-27); B281.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "PIPE-03",
+			"state": "routed",
+			"gesture": "delete pipe",
+			"does": "Lay pipes with g as in GST-01, click the pipe from A to the g anchor, and press Delete.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						],
+						[
+							"g",
+							0,
+							-240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-300,
+					-90
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "The pipe goes, and only it: the g anchor stays, held by its other hand pipe, and the links are untouched.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"keptAt": [
+					[
+						-240,
+						-180
+					]
+				],
+				"pipes": {
+					"hand": 5,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Hand pipes can be selected and deleted; link pipes cannot\" (2026-10-02, N6), building \"a pipe the author placed by hand stays until the author deletes it\" (2026-09-27); B281.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "PIPE-04",
+			"state": "routed",
+			"gesture": "delete pipe",
+			"does": "As PIPE-03, then undo.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						],
+						[
+							"g",
+							0,
+							-240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-300,
+					-90
+				],
+				[
+					"key",
+					"Delete"
+				],
+				[
+					"settle"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "Deleting a pipe is an edit like any other: undo lays it back.",
+			"expect": {
+				"links": 2,
+				"keptAt": [
+					[
+						-240,
+						-180
+					]
+				],
+				"pipes": {
+					"hand": 6,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Hand pipes can be selected and deleted; link pipes cannot\" (2026-10-02, N6), building \"a pipe the author placed by hand stays until the author deletes it\" (2026-09-27); B281.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "PIPE-05",
+			"state": "routed",
+			"gesture": "delete pipe",
+			"does": "Lay pipes with g as in GST-01, then delete both of its hand pipes, one after the other.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						],
+						[
+							"g",
+							0,
+							-240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-300,
+					-90
+				],
+				[
+					"key",
+					"Delete"
+				],
+				[
+					"settle"
+				],
+				[
+					"click",
+					-120,
+					-210
+				],
+				[
+					"key",
+					"Delete"
+				]
+			],
+			"intent": "With its last hand pipe gone the g anchor is held by nothing, so the planner sweeps it: g anchors are held by their pipes (2026-09-29).",
+			"expect": {
+				"links": 2,
+				"anchors": 1,
+				"pipes": {
+					"hand": 4,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Hand pipes can be selected and deleted; link pipes cannot\" (2026-10-02, N6), building \"a pipe the author placed by hand stays until the author deletes it\" (2026-09-27); B281. And \"in the lab only links and pipes laid by hand keep an anchor\" (2026-09-29).",
 			"standing": "ruled",
 			"built": "yes"
 		}

@@ -81,7 +81,8 @@ export const RECOGNIZE = [
 
 	// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
 	// promises exactly them: "selection, the data view, and the readout still work".
-	{ id: 'press', input: ['Shift+left on zone', 'left on link'],     mutates: false, on: (e) => L(e) && (e.on.kind === 'zone' || e.on.kind === 'link') && !e.ctrlKey, when: free, gesture: 'pending' },
+	// a plugin's mark (app/src/pick.js) is pressed as a link is: it selects, and a drag never moves it (H17.22 N-c2)
+	{ id: 'press', input: ['Shift+left on zone', 'left on link', 'left on mark'],     mutates: false, on: (e) => L(e) && (e.on.kind === 'zone' || e.on.kind === 'link' || !!e.on.mark) && !e.ctrlKey, when: free, gesture: 'pending' },
 	{ id: 'marquee', input: ['left on canvas'],   mutates: false, on: (e) => L(e) && e.on.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
 
 	// ...and what a locked client reached by falling past the authoring rows above, which a writer never sees

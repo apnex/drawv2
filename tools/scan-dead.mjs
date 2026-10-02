@@ -57,7 +57,6 @@ const ALLOW = {
 	'kernel/geometry.mjs:pxOn': 'pixel from a cell on a layout, used by `anchorAt` in this module. Exported so tests/grid.test.js asserts the zone half-pitch offset directly.',
 	'kernel/geometry.mjs:px': 'one axis, cell to pixel, used throughout this module. Exported so tests/engine.test.js asserts placement in pixels without restating the pitch.',
 	'kernel/network-appearance.mjs:linkDash': 'a link`s dash, used by `linkAppearance` in this module. Exported so tests/span.test.js asserts the control-link dash on its own.',
-	'kernel/network-appearance.mjs:linkWidth': 'a link`s width, used by `linkAppearance` in this module. Exported so tests/span.test.js asserts the control-link weight on its own.',
 	'kernel/network-roles.mjs:linkFacing': 'which way a link runs at a point, used by `waypointRoles` in this module. Exported because tests hold it and its twin in model/invariants.mjs to one answer (model/invariants.mjs says so).',
 	'kernel/network-appearance.mjs:waypointAnchor': 'the plain anchor ring, used by `waypointLayers` in this module. Exported so tests/span.test.js asserts each layer of a waypoint on its own.',
 	'kernel/network-appearance.mjs:waypointJunction': 'the junction mark, used by `waypointLayers` in this module. Exported for the same per-layer assertions.',

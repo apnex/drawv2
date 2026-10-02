@@ -8,3 +8,11 @@ A DOWN link -- no route over the pipes right now -- is orange as well as dotted 
 selected down link's way (2026-09-30): 8.8:1 on the canvas.
 */
 .link[data-down], .link.blocking { stroke: var(--tok-network-down); }
+
+/*
+A HAND PIPE CAN BE SELECTED and deleted (ruled 2026-10-02, N6; B281): the painter gives each one an invisible hit line,
+the thinnest link's width, beneath the links -- so a link drawn over a pipe covers it and takes the click -- and a selected pipe takes the
+product's selection colour. A pipe laid with a link has no hit line, and is never offered.
+*/
+.pipe.selected { stroke: var(--tok-network-pipe-selected); }
+.pipe-hit { pointer-events: stroke; cursor: pointer; }   /* its width and colour are network/appearance.mjs pipeHitAttributes */

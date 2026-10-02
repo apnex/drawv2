@@ -20,6 +20,7 @@ export const NETWORK_COLOURS = {
 	pipe: 'blueGrey400',         // the layer beneath the links (network/appearance.mjs)
 	transitRing: 'orange300',    // an anchor whose transit the author turned off (TRANSIT.md section 12)
 	down: 'orange500',           // a link with no route right now, and a link blocking the selected down link's way
+	pipeSelected: 'lightGreen300',   // a selected hand pipe (H17.22 N-c2, B281) -- the product's one selection colour, its accent
 };
 import { STD, BEND_R } from './spec.mjs';
 import { gridDot } from './geometry.mjs';

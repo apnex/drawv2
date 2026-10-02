@@ -7474,5 +7474,649 @@
 				"dotted": false
 			}
 		}
+	},
+	"PIPE-01": {
+		"notice": "2 pipes laid by hand -- g lays pipes, not links",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -180
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
+		"selected": [
+			"pipe:node#1:waypoint#2"
+		],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"PIPE-02": {
+		"notice": "seed cross -- 7 entities, 4 pipes",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
+		"selected": [
+			"link#1"
+		],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"PIPE-03": {
+		"notice": "v3 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -180
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
+		"selected": [],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"PIPE-04": {
+		"notice": "v4 undo",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -180
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
+		"selected": [],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"PIPE-05": {
+		"notice": "v4 delete",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
+		"selected": [],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
 	}
 }

@@ -17,6 +17,7 @@ first of the three units INPUT.md §8 names.
 */
 
 import { NODE_R, dist, spanExtent } from './snap.js';
+import { kindOf } from '../../model/model.mjs';
 
 // ---- footprint predicates: a node occupies a RECTANGLE, not a point ----
 
@@ -56,6 +57,13 @@ export function hitOf(evt) {
 	if (target.classList && target.classList.contains('link')) return { kind: 'link', id: target.id };
 	// a link's invisible hit twin takes the click wherever its dotted or dashed stroke has a gap (B268)
 	if (target.classList && target.classList.contains('link-hit')) return { kind: 'link', id: target.dataset.link };
+	/*
+	H17.22 N-c2 -- A MARK a plugin drew names what a click on it selects (`data-select`): the network's hand pipes (B281). The
+	kind is read off the id, as everywhere; `mark` says the canvas draws no handle of its own for it, so a press selects it and
+	a drag never moves it (app/src/releases.js PRESS_DRAGS). The canvas names no plugin kind.
+	*/
+	const mark = target.dataset?.select;
+	if (mark) return { kind: kindOf(mark), id: mark, mark: true };
 	return { kind: 'canvas', id: null };
 }
 

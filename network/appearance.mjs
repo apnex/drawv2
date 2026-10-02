@@ -22,7 +22,7 @@ plugin contributes to it.
           canvas rather than something the author must remember.
 */
 import { colour } from '../kernel/palette.mjs';
-import { NETWORK_COLOURS } from '../kernel/network-appearance.mjs';
+import { NETWORK_COLOURS, linkWidth } from '../kernel/network-appearance.mjs';
 
 // the network's pipe role, from the one palette (kernel/network-appearance.mjs NETWORK_COLOURS; snapped 2026-10-01 to
 // Blue Grey 400, the nearest Material colour to the #8b949e measured below)
@@ -36,3 +36,10 @@ export function pipeAttributes(laid) {
 	const dash = PIPE_DASH[laid];
 	return { stroke: PIPE_STROKE, 'stroke-width': PIPE_WIDTH, fill: 'none', ...(dash ? { 'stroke-dasharray': dash } : {}) };
 }
+
+/*
+A HAND PIPE'S CLICK AREA (H17.22 N-c2, B281): exactly the thinnest link's width -- a control link's -- so a pipe a link is
+drawn over is covered by that link's own click area (B268: a link's click area is its own width) and never peeks out
+beside it, as ruled: a covered pipe cannot be clicked. Wider than the pipe drawn, so a free pipe is not fiddly.
+*/
+export const pipeHitAttributes = () => ({ stroke: 'transparent', 'stroke-width': linkWidth({ control: true }), fill: 'none' });

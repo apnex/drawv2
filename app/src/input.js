@@ -122,7 +122,7 @@ const GESTURES = {
 		*/
 		// what the drag becomes is a row (app/src/releases.js PRESS_DRAGS): B203, links, and a locked client by the guard
 		update: (i, pos, evt) => i.escalate(pos, evt, 'pressDrag',
-			{ onLink: i.ctx.hit.kind === 'link', onWaypoint: i.ctx.hit.kind === 'waypoint', leftPress: !!i.ctx.leftPress }, 'move'),
+			{ onLink: i.ctx.hit.kind === 'link', onMark: !!i.ctx.hit.mark, onWaypoint: i.ctx.hit.kind === 'waypoint', leftPress: !!i.ctx.leftPress }, 'move'),
 		start: (i, hit, pos, evt) => {
 			i.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');   // for zones Shift is the layer key, not selection-add
 			i.ctx.orthoReady = !evt.shiftKey;

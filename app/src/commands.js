@@ -141,7 +141,16 @@ export function deleteSelection(model, ids) {
 	// waypoints last (leaf entities → restored FIRST on undo, before via-restore + link-restore)
 	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: 'waypoint', entity: clone('waypoint', model.get('waypoint', id)) }));
 
-	return { label: 'delete', entries };
+	/*
+	H17.22 N-c2 -- A SELECTED ENTITY THE CASCADE ABOVE DOES NOT REACH is deleted as itself: a kind a plugin brings -- the
+	network's hand pipe (B281) -- whose consequences are the planner's reactions, not this browser copy. First, so on undo
+	it is restored last, after anything it references. The canvas names no plugin kind here.
+	*/
+	const named = new Set(entries.filter((e) => e.op === 'del').map((e) => e.entity.id));
+	const theirs = [...ids].filter((id) => !named.has(id) && model.entityExists(id))
+		.map((id) => ({ op: 'del', kind: kindOf(id), entity: clone(kindOf(id), model.get(kindOf(id), id)) }));
+
+	return { label: 'delete', entries: [...theirs, ...entries] };
 }
 
 export function createGroup(model, memberIds) {

@@ -28,7 +28,8 @@ const REGIONS = {
 	input: { input: 0, node: 'node-000001', control: true, entity: true },
 };
 const blank = { waypoint: null, overWaypoint: false, action: null, input: null, node: null, control: false, entity: false };
-const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se' } : kind === 'lhandle' ? { kind, end: 'src' } : { kind, id: `${kind}-000001` });
+// a `mark` is what a plugin draws for the canvas to select (app/src/pick.js, H17.22 N-c2): any kind, flagged as a mark
+const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se' } : kind === 'lhandle' ? { kind, end: 'src' } : kind === 'mark' ? { kind: 'plugin', id: 'plugin-000001', mark: true } : { kind, id: `${kind}-000001` });
 
 // every event an input names -- a key chord may name several (Arrows), a press one per kind
 export function eventsFor(input) {
@@ -47,7 +48,7 @@ export function eventsFor(input) {
 }
 
 // an input as a person reads it
-const KIND_WORDS = { node: 'a node', waypoint: 'a waypoint', zone: 'a zone', link: 'a link', canvas: 'the canvas', handle: 'a corner handle', lhandle: 'a link end',
+const KIND_WORDS = { node: 'a node', waypoint: 'a waypoint', zone: 'a zone', link: 'a link', canvas: 'the canvas', handle: 'a corner handle', lhandle: 'a link end', mark: 'a plugin\'s mark',
 	'region:waypoint': 'an endpoint', 'region:ground': 'open ground', 'region:action': 'a panel button', 'region:input': 'a panel input' };
 export function shown(input) {
 	if (input === 'double') return 'double-click';

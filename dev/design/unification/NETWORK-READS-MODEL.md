@@ -82,6 +82,12 @@ Undo and redo restore pipes: UNDO-01 now returns up, and two new rows hold a `g`
 Every other matrix row produces the board it did before, field for field once the new pipe fields and the order pipes are listed in are set aside: the corpus differs by UNDO-01 and the two new rows only.\
 Found on the way: the `compare` board gave four nodes and four waypoints the same hex, which a pipe's id cannot tell apart (N2); its waypoints are renumbered, and the Node test of every board now commits each with its pipes, as the lab does, and was shown to fail on the old board.
 
+**N-c2 done.**\
+A hand pipe can be selected and deleted (B281), through four generic seams, none naming a plugin kind: the painter draws every pipe under its own id and gives a hand pipe alone an invisible hit line naming it (`data-select`), the thinnest link's width so a link drawn over a pipe covers it; the canvas's pick reads `data-select` as a mark; a press on a mark selects it and a drag never moves it; and Delete removes a selected entity the product's cascade does not reach as itself, first, so undo restores it last.\
+A selected pipe takes the product's selection colour through the network's own role, `pipeSelected`.\
+Matrix rows PIPE-01 to PIPE-05: a free hand pipe takes the click; a pipe under a link does not; deleting one leaves its `g` anchor held by its other pipe; undo lays it back; deleting the last sweeps the anchor, as ruled.\
+Found on the way: the hit line was first 14 units wide, wider than a link's own click area, so a click just beside a link selected the pipe beneath it; B268's test caught it.
+
 ---
 
 ## 6. Behaviour that changes, stated before it is built
