@@ -78,6 +78,8 @@ import { route, assignRoutes } from '../network/pipes.mjs';
 import { judgeDrag } from '../network/guide.mjs';
 import { whyDown } from '../network/resolve.mjs';
 import { Model } from '../model/model.mjs';
+import { createNetwork } from '../network/network.mjs';
+import { createPipeSet } from '../network/pipeset.mjs';
 
 const hand = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
@@ -264,4 +266,40 @@ test('X5: every type routes as the table says -- routers, firewalls and vxlans p
 		s.seed([['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand']], ['link-000001']);
 		assert.equal(m.isLinkDown(m.get('link', 'link-000001')), !passes, `${type} ${passes ? 'passes' : 'never passes'} a route`);
 	}
+});
+
+/*
+B278 -- ONE QUESTION, `stopsAt`: does what arrives at this anchor stop there. Declared off, or of a type that offers only
+off -- the set routing keys on (`blockedIn`), asked of one anchor. It differs from the declaration exactly where a type
+offers no choice: a host stops what arrives and declares nothing, so it draws no ring.
+*/
+test('B278: stopsAt answers, anchor by anchor, what routing blocks -- and differs from the declaration only where a type offers no choice', () => {
+	const s = createNetworkSession();
+	const m = new Model();
+	m.put('waypoint', { id: wp.id, name: 'w1', x: 0, y: 0 });
+	for (const [n, type] of [[2, 'router'], [3, 'host'], [4, 'firewall'], [5, 'server']]) m.put('node', { id: `node-00000${n}`, name: `${type}-${n}`, type, x: 120 * n, y: 0, shape: 'circle' });
+	s.toggleTransit([wp, node('firewall', 4)]);
+	const anchors = [wp.id, 'node-000002', 'node-000003', 'node-000004', 'node-000005'];
+	const blocked = s.network.view.of(m);
+	for (const id of anchors) assert.equal(s.network.stopsAt(id, m), !blocked.passes(id), `${id}: stopsAt and routing agree`);
+	assert.deepEqual(anchors.filter((id) => s.network.stopsAt(id, m)), [wp.id, 'node-000003', 'node-000004', 'node-000005']);
+	assert.deepEqual(anchors.filter((id) => s.network.declaresNoTransit(id)), [wp.id, 'node-000004'], 'the host and the server stop, and declare nothing');
+	assert.equal(s.network.stopsAt('node-00000f', m), false, 'an id the model does not hold is no anchor, and stops nothing');
+});
+
+test('B278: the planner refuses a join where what arrives stops, whatever was declared', () => {
+	// a stand-in transit where the two questions differ: w stops what arrives, and nothing is declared
+	const transit = { declaredOff: () => false, blockedIn: () => ['waypoint-00000d'], stopsAt: (id) => id === 'waypoint-00000d' };
+	const network = createNetwork(createPipeSet(), () => 0, transit);
+	const m = new Model({ network });
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000c', name: 'H', type: 'host', x: 0, y: 0, shape: 'circle' });
+	m.put('waypoint', { id: 'waypoint-00000d', name: 'w', x: 0, y: -240 });
+	m.put('link', { id: 'link-000002', name: 'aw', src: 'node-00000a', dst: 'waypoint-00000d' });
+	m.put('link', { id: 'link-000003', name: 'wb', src: 'waypoint-00000d', dst: 'node-00000b' });
+	m.put('link', { id: 'link-000004', name: 'wh', src: 'waypoint-00000d', dst: 'node-00000c' });
+	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: network.links });
+	assert.equal(r.ok, true);
+	assert.equal(r.ops.some((o) => o.op === 'set' && o.kind === 'link' && 'src' in o.patch), false, 'they stay two');
 });

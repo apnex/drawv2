@@ -91,8 +91,8 @@ const linkEndsAt = (link, pointId) => !link.closed && (link.src === pointId || l
 B277 -- TRANSIT OFF ADMITS ENDPOINTS ONLY. An anchor whose transit is off stops what arrives (TRANSIT.md section 4, TR-5),
 so nothing meets there and nothing turns there: every link that ends there ends, at any count, and the anchor is an
 endpoint -- never a junction, never a bend (the director, 2026-10-02). One endpoint ring at every count, ruled the same
-day; the transit ring beside it says why. `transit` is the anchor's declaration, handed in by whoever holds it -- the
-network, through the Model's `declaresNoTransit` -- and absent means on, which is every anchor production has.
+day; the transit ring beside it says why. `transit` is whether what arrives passes, handed in by whoever holds it -- the
+network, through the Model's `stopsAt` (B278) -- and absent means on, which is every anchor production has.
 */
 export const waypointRoles = (id, touching, { transit = true } = {}) => {
 	const roles = [];
@@ -169,11 +169,13 @@ export const waypointRoles = (id, touching, { transit = true } = {}) => {
 /*
 A WAYPOINT'S ROLES IN A MODEL -- the question every reader holding a Model asks, asked in one place: the canvas renderer
 (what to draw) and Input's situation (what the pointer is on). Both had written `waypointRoles(id, model.linksAt(id))`
-for themselves, and B277 was both of them omitting the anchor's transit. The Model is read by shape -- `kernel/` imports
-no `model/` -- so a model with no network, which declares nothing, gets the transiting roles it always had.
+for themselves, and B277 was both of them omitting the anchor's transit. It asks `stopsAt` -- whether what arrives stops
+there -- and not the declaration, which only draws the ring (B278): a type offering only off stops what arrives and declares
+nothing. The Model is read by shape -- `kernel/` imports no `model/` -- so a model with no network, where nothing stops,
+gets the transiting roles it always had.
 */
 export const waypointRolesIn = (model, id) =>
-	waypointRoles(id, model.linksAt?.(id) || [], { transit: !model.declaresNoTransit?.(id) });
+	waypointRoles(id, model.linksAt?.(id) || [], { transit: !model.stopsAt?.(id) });
 
 /*
 The single role, for callers that still ask for one. Derived from the set so there is one

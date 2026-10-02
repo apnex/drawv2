@@ -9,6 +9,9 @@ says so; the sweep runs after an edit and not after undo or redo. Each part is a
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { attachNetwork } from '../network/host.mjs';
+import { Model } from '../model/model.mjs';
+import { attachRelations } from '../engine/store.mjs';
+import { cellOf } from '../kernel/geometry.mjs';
 
 function rig({ commits = true, accepts = true } = {}) {
 	const calls = [];
@@ -80,4 +83,31 @@ test('the pipes repaint on every model change, and a transit change settles', ()
 	assert.deepEqual(r.names(), ['paint']);
 	r.onTransit()([]);
 	assert.ok(r.names().includes('tidy') && r.names().at(-1) === 'say');
+});
+
+/*
+B278 -- THE TOGGLE ASKS WHAT EVERY RULE ASKS: whether what arrives at the waypoint now stops there, not whether the author
+declared it. A stand-in network where the two differ -- the anchor stops, declaring nothing -- tells the two apart.
+*/
+test('B278: a transit change cuts the links pinned at a waypoint where what arrives stops, whatever was declared', () => {
+	const model = new Model();
+	attachRelations(model, { cellOf });
+	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	model.put('waypoint', { id: 'waypoint-000003', name: 'P', x: 120, y: -120 });
+	model.put('link', { id: 'link-000004', src: 'node-000001', dst: 'node-000002', via: ['waypoint-000003'] });
+	const commits = [];
+	let onTransit = null;
+	const network = { stopsAt: (id) => id === 'waypoint-000003', declaresNoTransit: () => false };
+	attachNetwork({
+		session: { pipes: { list: () => [] }, network, tidy: () => {}, takeNotice: () => null, onTransitChange: (fn) => { onTransit = fn; } },
+		model, authority: { all: () => [] },
+		renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		selection: { subscribe: () => {}, list: () => [] },
+		history: { commit: (c) => commits.push(c) }, pipeLayer: { replaceChildren: () => {} }, el: () => {}, say: () => {},
+	});
+	onTransit(['waypoint-000003']);
+	assert.equal(commits.length, 1, 'one commit');
+	assert.equal(commits[0].label, 'transit');
+	assert.deepEqual(commits[0].entries.map((e) => `${e.op} ${e.entity?.id ?? e.id}`).sort(), ['del link-000004', 'put link-000004', `put ${commits[0].entries.find((e) => e.op === 'put' && e.entity.id !== 'link-000004').entity.id}`].sort(), 'the pinned link cut in two there');
 });

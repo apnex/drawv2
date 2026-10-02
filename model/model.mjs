@@ -99,8 +99,12 @@ What the MODEL asks the network -- each under the Model's own method name, so `m
   declaresNoTransit(id, model)    whether the author declared this anchor's transit off -- what the transit ring marks
                                   (ruled 2026-09-28; TRANSIT.md section 12). Only a declaration draws the ring: a type
                                   that offers no choice declares nothing. Production has no transit: never.
+  stopsAt(id, model)              whether what arrives at this anchor stops there -- declared off, or of a type that offers
+                                  only off (B278). The ONE transit question the rules ask: the roles a waypoint takes, the
+                                  toggle's cut and join, the planner's join refusal; the declaration above only draws the
+                                  ring. Production has no transit: nothing stops.
 */
-const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit'];
+const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
 
 export class Model {
 	constructor({ network = null, ...rest } = {}) {
@@ -242,6 +246,11 @@ export class Model {
 	// whether the author declared this anchor's transit off -- never, without a network
 	declaresNoTransit(id) {
 		return !!(this.network && this.network.declaresNoTransit(id, this));
+	}
+
+	// whether what arrives at this anchor stops there (B278) -- never, without a network
+	stopsAt(id) {
+		return !!(this.network && this.network.stopsAt(id, this));
 	}
 
 	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always

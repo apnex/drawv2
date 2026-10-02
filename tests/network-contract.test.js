@@ -33,7 +33,7 @@ import { Log } from '../planner/log.mjs';
 import { createPipeSet } from '../network/pipeset.mjs';
 import { createNetwork } from '../network/network.mjs';
 
-const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit'];
+const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
 const RETIRED_PLANNER_HOOKS = ['alsoReferenced', 'keepsOrphan', 'isStranded', 'joinsAt'];
 const complete = () => Object.fromEntries(MODEL_READS.map((k) => [k, () => undefined]));
 const without = (name) => { const n = complete(); delete n[name]; return n; };
@@ -55,7 +55,7 @@ test('a network member that is not a function is refused, not called later', () 
 	assert.throws(() => new Model({ network: { ...complete(), isLinkDown: true } }), /isLinkDown/);
 });
 
-test('the Model needs only its own five', () => {
+test('the Model needs only its own six', () => {
 	const modelOnly = Object.fromEntries(MODEL_READS.map((k) => [k, () => undefined]));
 	assert.ok(new Model({ network: modelOnly }));
 });

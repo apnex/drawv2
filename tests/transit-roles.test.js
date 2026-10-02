@@ -55,9 +55,16 @@ test('B277: drawn, three links at a non-transiting waypoint take the endpoint ri
 
 test('B277: the roles in a model read its links and whether it declares transit off, so every reader asks one question', () => {
 	const links = SHAPES['three links'];
-	const model = (off) => ({ linksAt: (id) => (id === W ? links : []), declaresNoTransit: (id) => off && id === W });
+	const model = (off) => ({ linksAt: (id) => (id === W ? links : []), stopsAt: (id) => off && id === W });
 	assert.deepEqual(waypointRolesIn(model(true), W), ['endpoint']);
 	assert.deepEqual(waypointRolesIn(model(false), W), ['junction']);
 	assert.deepEqual(waypointRolesIn({ linksAt: () => links }, W), ['junction'], 'a model with no network declares nothing');
 	assert.deepEqual(waypointRolesIn({}, W), [], 'and one with no incidence index has no links');
+});
+
+test('B278: the roles ask whether what arrives stops there, not whether the author declared it', () => {
+	const links = SHAPES['three links'];
+	const at = (stops, declared) => ({ linksAt: () => links, stopsAt: () => stops, declaresNoTransit: () => declared });
+	assert.deepEqual(waypointRolesIn(at(true, false), W), ['endpoint'], 'stops by its type, declaring nothing: an endpoint');
+	assert.deepEqual(waypointRolesIn(at(false, true), W), ['junction'], 'the declaration alone decides no role');
 });

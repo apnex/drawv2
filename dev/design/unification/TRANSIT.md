@@ -325,3 +325,8 @@ The original reason for this document, now with the pipes it led to: an author c
 - **The type table holds everywhere it is read** (X5, folded in): the refusal (TRN-04, TRN-09), routing for every type in it (tests/network-transit.test.js), and joining.
 - **What it adds to the case for the planner's redesign:** `joinsAt` is the fourth question the planner asks the network, each a hook beside a fixed pass; H17.15 designs them as reactions instead.
 
+**One transit question, 2026-10-02 (B278, H17.21).**
+- **Every rule asks `stopsAt`:** whether what arrives at an anchor stops there -- declared off, or of a type that offers only off. Routing keys on the same rule as a set (`blockedIn`, X2); the planner's join refusal, the toggle's cut and join, and the roles a waypoint takes (B277) ask it of one anchor, through the Model's network interface, which gains it as a sixth read that production answers never.
+- **The declaration only draws the ring:** `declaresNoTransit` is what the author chose, and the ring and the why-down notice read it; no rule does.
+- **Nothing visible changes,** since a bare waypoint always offers both values: every matrix row and the whole corpus unchanged. Seven mutants caught, each a reader asking the declaration in a case where the two differ.
+

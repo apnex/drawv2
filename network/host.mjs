@@ -74,11 +74,12 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	A TRANSIT CHANGE redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12).
 	It can take links down or heal them (TR-4), so the notice counts what is down after it. At a waypoint it is also an EDIT
 	(TR-2): turned off, the links pinned there are cut in two; turned back on, the two left ending there join -- one commit.
+	Which, it asks as every rule does: whether what arrives now stops there (`stopsAt`, B278), not what was declared.
 	*/
 	session.onTransitChange((ids) => {
 		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); }
 		const said = session.takeNotice() ?? '';
-		const edits = ids.filter((id) => model.get('waypoint', id)).map((id) => (network.declaresNoTransit(id) ? cutAt(model, id) : joinAt(model, id))).filter(Boolean);
+		const edits = ids.filter((id) => model.get('waypoint', id)).map((id) => (network.stopsAt(id, model) ? cutAt(model, id) : joinAt(model, id))).filter(Boolean);
 		if (edits.length) history.commit({ label: 'transit', entries: edits.flatMap((e) => e.entries) });
 		const cut = edits.reduce((n, e) => n + (e.cut ?? 0), 0), joined = edits.some((e) => e.label === 'join');
 		settle(false, '');

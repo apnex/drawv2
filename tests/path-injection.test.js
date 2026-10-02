@@ -26,7 +26,7 @@ const seeded = (opts) => {
 	return m;
 };
 // a complete network whose answers are production's, so each test overrides only the method it is about
-const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, ...over } });
+const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, stopsAt: () => false, ...over } });
 const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] };
 
 test('production is unchanged: new Model() still draws the straight polyline through via', () => {
@@ -133,3 +133,19 @@ test('an injected declaresNoTransit answers, and is handed the id and the model'
 	assert.deepEqual(asked, { id: 'waypoint-00000c', model: m });
 });
 
+/*
+The sixth: WHETHER WHAT ARRIVES AT AN ANCHOR STOPS THERE (B278) -- declared off, or of a type that offers only off. The
+one transit question every rule asks -- routing, the join refusal, the toggle's cut, the roles -- where the declaration
+above only draws the ring. Production has no transit: nothing stops.
+*/
+test('production: nothing stops at any anchor', () => {
+	assert.equal(seeded().stopsAt('waypoint-00000c'), false);
+	assert.equal(seeded().stopsAt('node-00000a'), false);
+});
+
+test('an injected stopsAt answers, and is handed the id and the model', () => {
+	let asked = null;
+	const m = seeded(net({ stopsAt: (id, model) => { asked = { id, model }; return true; } }));
+	assert.equal(m.stopsAt('node-00000a'), true);
+	assert.deepEqual(asked, { id: 'node-00000a', model: m });
+});

@@ -1,8 +1,8 @@
 /*
 The network plugin, as ONE object -- step T1 of the ruleset audit (dev/design/unification/RULESET-AUDIT.md).
 
-The Model asks the network four questions while drawing (`pathOf`, `linksRoutedThrough`, `isLinkDown`, `blockersOf`),
-declared in model/model.mjs, which refuses a network missing any. The planner asks it NOTHING (PL-3): the network brings
+The Model asks the network four questions while drawing (`pathOf`, `linksRoutedThrough`, `isLinkDown`, `blockersOf`) and
+two about transit (`declaresNoTransit`, what the ring marks; `stopsAt`, what every rule asks -- B278), declared in model/model.mjs, which refuses a network missing any. The planner asks it NOTHING (PL-3): the network brings
 its own LINK TENANT, `links`, the reactions the planner runs when an edit touches links -- the waypoint and node
 cascades it shares with production, and its own stranded pass, sweep and join, each with the network's conditions
 inside (they were four hooks, `alsoReferenced`, `keepsOrphan`, `isStranded` and `joinsAt`, until PL-3). The lab hands
@@ -24,13 +24,16 @@ export function createNetwork(pipeSet, rankOf = () => 0, transit = null) {
 	const view = createNetworkView(pipeSet, rankOf, transit);
 	return {
 		view,
-		// the Model's four
+		// the Model's four drawing questions
 		pathOf: pipeResolver(view),
 		linksRoutedThrough: pipeDependents(view),
 		isLinkDown: pipeLinkDown(view),
 		blockersOf: pipeBlockers(view),
-		// what the author declared about transit, from the session (TRANSIT.md section 12); a network without it declares nothing
+		// what the author declared about transit, from the session (TRANSIT.md section 12) -- what the ring marks, and nothing else
 		declaresNoTransit: (id) => !!transit?.declaredOff(id),
+		// whether what arrives at an anchor stops there (B278): the one transit question every rule asks -- routing keys on the
+		// same rule as a set (network/view.mjs), the join refusal below, the toggle's cut, the roles; without transit, nothing stops
+		stopsAt: (id, model) => !!transit?.stopsAt(id, model),
 		/*
 		Why transit keeps a down link from a way -- what a selected down link says (TR-1). `declared`: the anchors whose
 		transit the author turned off, any ONE of which turned back on would give the link a way -- what the author can do.
@@ -56,7 +59,7 @@ export function createNetwork(pipeSet, rankOf = () => 0, transit = null) {
 			alsoReferenced: (model) => pipeAnchors(view, model),
 			keepsOrphan,
 			// two links left at a waypoint join only where what arrives may pass on -- not where transit is off (TR-5)
-			joinsAt: (waypointId, model) => !(transit && transit.blockedIn(model).includes(waypointId)),
+			joinsAt: (waypointId, model) => !transit?.stopsAt(waypointId, model),
 			says: { sweep: 'the pipes that survive the edit reference anchors too, and nothing else is kept (ruled 2026-09-29)', join: 'only where the waypoint\'s transit is on (TR-5)' },
 		}),
 	};

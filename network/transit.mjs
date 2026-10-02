@@ -26,12 +26,18 @@ const entitiesOf = (model) => [...model.all('node').map((n) => ({ ...n, kind: 'n
 export function createTransit() {
 	const set = new Map();   // anchor id -> its declared value, only where it differs from the type's default
 	const valueOf = (entity) => (set.has(entity.id) ? set.get(entity.id) : transitOffers(entity)[0]);
+	// THE ONE RULE (B278): what arrives at this anchor stops there -- declared off, or of a type that offers only off (TR-1, TR-6)
+	const stops = (entity) => valueOf(entity) === false;
 	return {
-		// whether the author declared transit off here -- what the ring marks; a type with no choice declares nothing
+		// whether the author declared transit off here -- what the ring marks, and nothing else; a type with no choice declares nothing
 		declaredOff: (id) => set.get(id) === false,
-		// the anchors in a model that no route may pass -- declared off, or of a type that offers only off (TR-1, TR-6) --
-		// sorted, so a board's derivation can be keyed on them
-		blockedIn: (model) => entitiesOf(model).filter((e) => valueOf(e) === false).map((e) => e.id).sort(),
+		// the anchors in a model where what arrives stops, sorted, so a board's derivation can be keyed on them -- the rule as a set
+		blockedIn: (model) => entitiesOf(model).filter(stops).map((e) => e.id).sort(),
+		// whether what arrives at one anchor stops there -- the rule asked of one id; an id the model holds no anchor for stops nothing
+		stopsAt: (id, model) => {
+			const node = model.get('node', id), waypoint = !node && model.get('waypoint', id);
+			return node ? stops({ ...node, kind: 'node' }) : waypoint ? stops({ ...waypoint, kind: 'waypoint' }) : false;
+		},
 		/*
 		Flip each anchor on its own (ruled 2026-09-28: many anchors at once, each flipped independently). An anchor whose
 		type offers no choice is refused, and named. Answers what changed and what was refused.
