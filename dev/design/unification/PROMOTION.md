@@ -190,7 +190,8 @@ Each is a real fork with a recommendation, asked one at a time when the work sta
 ## 11. Axiom alignment audit (M7)
 
 **Identity:** this plan, against `fca7828`, measured against mission-kit A1-A14.\
-**Verdict: pass-with-guardrails** -- with section 10 ruled before P1.
+**Verdict: pass-with-guardrails** -- with section 10 ruled before P1.\
+AMENDED 2026-10-02 (N4): only P-1 and P-2 bind P1, both now ruled; P-3 to P-9 are ruled when promotion starts.
 
 | axiom | weight | how the plan holds it |
 |---|---|---|

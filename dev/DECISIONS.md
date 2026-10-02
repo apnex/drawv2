@@ -1607,3 +1607,9 @@ Asked whether "type" survives unification, the director: "a node is a compositio
 - The transit table, keyed by type today (`network/transit.mjs` `OFFERS`), is the table of the routing pack each composition includes, and moves when compositions exist.
 - Storing transit on the anchor (`routable.links.transit`) is a pack adding a field to the anchor's row -- the open question the 2026-09-22 ruling named, how a pack contributes; held, to be earned by composing two packs.
 - B282 widens to carry it: anchors unified, and type as composition.
+
+**Only P-1 and P-2 bind P1; the rest wait for promotion's start -- ruled 2026-10-02 (B279, N4).**\
+Asked which of promotion's start-of-work decisions (`PROMOTION.md` section 10) must be ruled before P1, the director approved the recommendation.
+- P-1 is ruled by N2 and P-2 answered for P1 by N3. P-3 (closed rings) does not bind it: P1 moves pipes into the model without changing routing, so a ring behaves as it does today.
+- P-4 to P-9 concern the estate and the cutover, and are asked when promotion starts.
+- Every question gating P1 in the lab is ruled; its build is H17.22.
