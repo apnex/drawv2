@@ -122,6 +122,11 @@ AMENDED 2026-10-02, by B277 (a non-transiting anchor has endpoints only):
 AMENDED 2026-10-02, by N1 (`dev/DECISIONS.md`, "Plugins bring their own kinds"):
 - **P2:** `pipe` is the network plugin's kind, not a sixth core kind: production composes it by composing the network, and its exit criterion "every kind list names six" reads "every kind list is built from the composition's rows, and the product composes six". The kind table is passed in from P1 in the lab (B273), so P2 adds the stored format, not the mechanism.
 
+AMENDED 2026-10-02, by N2 (`dev/DECISIONS.md`, "A pipe's id is its two anchors' hex"):
+- **P-1 is ruled:** a pipe's id is `pipe-<lowerhex>-<higherhex>`, not a random id.
+- **P2:** the format batch also eliminates the waypoint kind (B282): a waypoint becomes a node with no type, and `waypoint-<hex>` is rewritten to `node-<hex>`, keeping the hex, so no pipe id changes.
+- **P8:** the dry run checks the estate for hex shared by a node and a waypoint, which the rewrite would collide.
+
 ---
 
 ## 7. Binary exit criteria for the whole promotion

@@ -1573,3 +1573,24 @@ The director likened it to a Kubernetes CRD, and the likeness holds with stated 
 - **The core keeps only what spans kinds,** each kind opting in: ids, selection, names, ops, undo, the log, the planner's phases, the document envelope and the grid. A group's membership is stated in those terms, not by naming kinds.
 - **Build only what one plugin kind needs:** the table passed in, with no registry, discovery or lifecycle (mission-kit P4; A3, earned exposure).
 - **Not now:** regrouping the existing kinds into plugins -- zones, groups and links each their own, the core holding none -- is held as B280 with its trigger. The Model asking a plugin named `network` its questions is a privilege of one plugin, recorded there.
+
+**Names are a service a kind opts into; pipes are not named -- ruled 2026-10-02 (B279, N5).**\
+Asked whether a kind joins the shared name namespace, the director agreed the recommendation over every kind named (pipes as `pipe-1`, `pipe-2`) and names optional everywhere.
+- A kind's row declares whether it is named. A named kind requires a name, is given one automatically (`nextName`), and is found by name (`resolveId`); both read the composition's named kinds instead of fixed lists.
+- The five built-in kinds stay named exactly as today (B187).
+- A pipe is not named: it is addressed by its id, or by its two ends, since one pipe joins a pair. Most pipes are laid by the system rather than chosen, so a name would record no intent -- the reason names were added.
+- Addressing a pipe by its ends in the CLI waits for the first verb that needs it.
+
+**Hand pipes can be selected and deleted; link pipes cannot -- ruled 2026-10-02 (B279, N6).**\
+Asked whether a pipe can be selected, the director chose "B" over every pipe selectable and over a separate gesture: "No need to select a pipe that is laid with W and consumed by a link."
+- A pipe laid by hand (`g`) can be selected on the canvas and deleted with Delete; the deletion is an op, so undo restores it. This builds "a pipe the author placed by hand stays until the author deletes it" (2026-09-27; B281).
+- A pipe laid with a link (`w`) is never offered: the system lays it with its link and sweeps it once no link needs it, a down link's own legs included. The canvas gives only hand pipes a hit line.
+- The pipe kind's row is selectable; the restriction is the plugin's picking, so selection stays a fact of the kind. Another door (CLI, REST) may delete any pipe by id: the planner does not refuse it, and a link that loses its way re-routes or goes down.
+- A hand pipe a link is drawn over is covered by the link and cannot be clicked; reaching it waits for a need.
+
+**A pipe's id is its two anchors' hex, and waypoints go as a kind at promotion -- ruled 2026-10-02 (B279, N2).**\
+Asked about pipe identity, the director proposed "pipe-6hexsrc-6hexdst - a literally copy of anchor 6hex ids", over a random id with one pipe per pair as a rule and over a 64-bit hash of the pair; then recalled the ruling of 2026-09-22 (the base entity is the node, and a node has an anchor): "as long as a anchor ID is unique, there is no such collision"; and stated the goal: "once we move to prod, is to eliminate waypoints as a kind. We just have nodes (and their ID), and they include an anchor."
+- **A pipe's id is `pipe-<lowerhex>-<higherhex>`**: the 6-hex parts of its two anchors' ids, lower first, since a pipe has no direction. Every peer, the browser preview and the planner mint the same id for the same pair (the principle of H17-D10), one pipe per pair follows from the id, and an anchor restored by undo restores the same pipe id. No hash; the id names what it joins.
+- **The pipe keeps `a` and `b` as fields**, the full anchor ids, and its row refuses an id that does not match them. Anchor ids never change, so the two cannot drift.
+- **Anchor hex is unique across nodes and waypoints from N-a**: a new node or waypoint id is checked against both collections. Without it `node-abc123` and `waypoint-abc123` could both exist (model/model.mjs `newId` checks one collection), and a pipe id could name two pairs.
+- **The goal: the waypoint kind is eliminated at promotion.** There are nodes, each with an anchor; a bare waypoint becomes a node with no type. Held as B282, in promotion's format batch. Cross-kind unique hex is its first step: when `waypoint-abc123` becomes `node-abc123`, no id collides and no pipe id changes. The estate must be checked for hex already shared by a node and a waypoint (P8).

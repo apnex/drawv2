@@ -197,6 +197,9 @@ AMENDED 2026-10-02: B277 fixed at the director's word (H17.20) -- a waypoint who
 AMENDED 2026-10-02: B278 done (H17.21) -- one transit question, `stopsAt`, asked by routing, the join refusal, the toggle and the roles; the declaration only draws the ring. Nothing visible changed. Next: the item 4 design (promotion's P1 in the lab) for the director.\
 AMENDED 2026-10-02: the item 4 design is `dev/design/unification/NETWORK-READS-MODEL.md`; building it waits on N1 to N4 (B279, under Decisions required).\
 AMENDED 2026-10-02: N1 ruled -- plugins bring their own kinds, every kind a row of one shape (`dev/DECISIONS.md`); B273 brought forward to N-a; regrouping the existing kinds held as B280; the missing pipe-delete gesture registered as B281. Next: N5, names.\
+AMENDED 2026-10-02: N5 ruled -- names are a service a kind opts into; pipes are not named. Next: N6, selecting a pipe.\
+AMENDED 2026-10-02: N6 ruled -- hand pipes can be selected and deleted, link pipes cannot (B281's gesture). Next: N2, pipe identity.\
+AMENDED 2026-10-02: N2 ruled -- a pipe's id is its two anchors' hex; anchor hex unique across kinds from N-a; the waypoint kind eliminated at promotion (B282). Next: N3, link ages.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -978,7 +981,8 @@ Scored so the comparison is a judgement, not an omission.\
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B273** | S4 | The kind table is shared, not injected: a composition cannot add a kind, so pipes wait for promotion | B279's remaining decisions ruled -- N-a builds it (brought forward by N1, 2026-10-02) |
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
-| **B281** | S3 | No gesture deletes a pipe, though a hand pipe stays until the author deletes it | N6 ruled (B279): whether a pipe can be selected |
+| **B281** | S3 | No gesture deletes a pipe, though a hand pipe stays until the author deletes it -- ruled: select it, press Delete (N6) | the pipe kind lands in the lab (N-b, B279) |
+| **B282** | S3 | The waypoint kind still exists, though every node carries an anchor (ruled 2026-09-22): eliminated at promotion | promotion's format batch (P2) |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
@@ -1026,7 +1030,7 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B279** | N2 to N6 of `dev/design/unification/NETWORK-READS-MODEL.md`, one at a time (N1 ruled 2026-10-02): pipe identity, where link ages live in P1, which start-of-promotion decisions bind P1, whether a kind joins the shared name namespace, and whether a pipe can be selected | they rule ahead of promotion's own start, and N5 and N6 shape the row every kind takes |
+| **B279** | N3 and N4 of `dev/design/unification/NETWORK-READS-MODEL.md`, one at a time (N1, N2, N5 and N6 ruled 2026-10-02): where link ages live in P1, and which start-of-promotion decisions bind P1 | they rule ahead of promotion's own start |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
