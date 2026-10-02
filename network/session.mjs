@@ -4,8 +4,8 @@ The network SESSION -- step T5 of the ruleset audit (dev/design/unification/RULE
 One object owns the network's state for a session and the order it changes in: the pipe set, the order links were made
 in, the one network object built over both (T1), the legs a drag lays while the planner's answer is awaited, and the
 notice that drag set. Before T5 all of it lived in the lab's composition root, which is wiring (scan-layers L8) and sat
-at 178 of its 180 lines. It knows no DOM: the root still draws pipes and links and says the notice -- this says what
-the network did.
+at 178 of its 180 lines. It knows no DOM: the attached network (network/host.mjs) draws pipes and links, and the page
+says the notice -- this says what the network did.
 
 SESSION STATE, NOT STORED. Pipes and ages are not in the document yet -- that is the one format batch, last (F6) -- so a
 reload starts from nothing, which is correct rather than missing. For the same reason undo and redo cannot move pipes,

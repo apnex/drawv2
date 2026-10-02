@@ -10,7 +10,8 @@ of the ordering, the drift K8 removed for the canvas. So a page ATTACHES the net
   judge(drag)                 the drag judge Input asks once per finished drag (network/keys.mjs `networkInput`)
   answered(request, answer, apply)   the page's commit door hands it the planner's answer; true when accepted
   refused(answer)             after the page has taken the planner's document back on a refusal
-  seed(pipes, linkIds) / paint()     a fixed board's pipes, before its ops are applied; then draw them
+  seed(pipes, linkIds, apply)        a fixed board: its pipes laid, the page's `apply` of its ops, then the pipes drawn
+  paint()                            draw the pipes now
 
 The page keeps what is its own: where the planner runs (the lab's authority model, production's server), how a refusal
 is resynchronised, and the notice it writes to (`say`). The canvas parts come in -- the network layer imports no canvas
@@ -28,7 +29,9 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 
 	Redrawn whole on every change. The pipe set is small and redrawing it is cheap, and a painter that tried to reconcile
 	incrementally would need to know which pipes changed -- a second index over the pipe set, which is exactly the kind of
-	second authority this programme exists to remove. How a pipe LOOKS is the plugin's own (network/appearance.mjs).
+	second authority this programme exists to remove. How a pipe LOOKS is the plugin's own (network/appearance.mjs),
+	applied as attributes: the first painter left colour to the stylesheet's `currentColor`, which inherited black and made
+	pipes invisible, and one measured authority in the plugin replaced it.
 	*/
 	const paint = () => {
 		pipeLayer.replaceChildren();
@@ -39,7 +42,8 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 		}
 	};
 	model.onChange(paint);
-	// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30)
+	// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30). The selected LOOK is
+	// composeCanvas's subscriber, so a page attaches the network AFTER composing the canvas, and that one runs first
 	selection.subscribe(() => { const why = whyDown(model, selection.list(), network); if (why) say(why); });
 
 	/*
@@ -94,8 +98,9 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	};
 	const refused = (answer) => { settle(false, ''); say(`refused: ${answer.error}`); };
 
-	// a fixed board: its pipes laid first, so its links are routed over them the moment the page applies its ops
-	const seed = (boardPipes, linkIds) => session.seed(boardPipes, linkIds);
+	// a fixed board: its pipes laid first, so its links are routed over them the moment the page applies its ops (`apply`,
+	// the page's own); then the pipes are drawn once more, whole, though each applied op has already repainted them
+	const seed = (boardPipes, linkIds, apply) => { session.seed(boardPipes, linkIds); apply(); paint(); };
 
 	return { judge, answered, refused, seed, paint };
 }

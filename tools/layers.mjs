@@ -304,7 +304,12 @@ export const RULES = {
 	NOT be spent: if this ceiling keeps rising, that is the signal something that belongs in the
 	incubator is being written in the lab instead.
 	*/
-	L8: { dir: 'lab', budget: 180 },
+	/*
+	LOWERED, 180 to 120, when the network's choreography left the lab for network/host.mjs (item 3, 2026-10-02). Both raises
+	are spent elsewhere now: the boards are data in lab/seeds.json, and the pipe painter is the attached network's. MEASURED
+	at 100 code lines across the root and the static server; 120 is K10's own ceiling, the measurement plus a little again.
+	*/
+	L8: { dir: 'lab', budget: 120 },
 	/*
 	A PROXY for criterion 5 (browser restatements of planner rules): it sees a browser module reach
 	for a rule's code, and misses a rule re-typed by hand. It reads 2 while the three restated rules

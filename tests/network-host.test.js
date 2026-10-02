@@ -67,6 +67,13 @@ test('a drag that commits nothing settles at once, sweeping; one that commits wa
 	assert.deepEqual(later.names(), ['judge'], 'the answer settles it, when it comes');
 });
 
+test('a fixed board: its pipes are laid first, then the page applies its ops, then the pipes are drawn', () => {
+	const r = rig();
+	r.net.seed([['node-000001', 'node-000002', 'hand']], ['link-000001'], () => r.calls.push(['apply']));
+	assert.deepEqual(r.names(), ['seed', 'apply', 'paint']);
+	assert.deepEqual(r.calls[0], ['seed', [['node-000001', 'node-000002', 'hand']], ['link-000001']]);
+});
+
 test('the pipes repaint on every model change, and a transit change settles', () => {
 	const r = rig();
 	r.onChange()();

@@ -96,7 +96,7 @@ const say = (text) => { notice.textContent = text; };
 THE NETWORK, ATTACHED (network/host.mjs): its pipe painter, its drag judge, its transit edits, its answer step and the
 settle that follows every change -- the plugin's choreography, which promotion attaches to the product page the same way.
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
-planner's document back, the notice, and the fixed boards.
+planner's document back, the notice, and which fixed board to load.
 */
 const net = attachNetwork({ session, model, authority, renderer, selection, history,
 	pipeLayer: svg.querySelector('#pipes'), el, say });
@@ -174,8 +174,8 @@ place. It was: boards are data, not composition. Moving them out also retired a 
 tests had been extracting the literals from this source and evaluating them.
 
 Every board is applied THROUGH THE PLANNER, as an author's edit is, so a board the product could not
-reach is refused rather than shown. Its pipes are laid into the session's pipe set first, so the
-links are routed over it the moment they are drawn. An unknown name refuses and lists what exists,
+reach is refused rather than shown. The attached network lays its pipes first, so the links are
+routed over them the moment they are drawn (network/host.mjs `seed`). An unknown name refuses and lists what exists,
 rather than silently giving a different board.
 */
 const wanted = new URLSearchParams(location.search).get('seed');
@@ -195,9 +195,7 @@ if (wanted) {
 		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else {
-			net.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id));
-			applyOps(model, answer.change?.ops ?? []);
-			net.paint();
+			net.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id), () => applyOps(model, answer.change?.ops ?? []));
 			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);
 		}
 	}
