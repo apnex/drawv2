@@ -214,6 +214,7 @@ AMENDED 2026-10-02: its notice says how many drawn links were cut and into how m
 AMENDED 2026-10-02: and turned back on, how many pieces joined into how many links -- "3 pieces joined into 1 link".\
 AMENDED 2026-10-02: B284 fixed at the director's report (H17.24) -- a link cut in two keeps its control plane and direction on both halves, so a control link cut with `x` rejoins as one; the product's cut on landing at a bend had the same fault (PU26).\
 AMENDED 2026-10-02: B285 fixed at the director's report and ruling (H17.25) -- two links at a junction join as soon as an edit makes them compatible, no transit toggle needed (PU27).\
+AMENDED 2026-10-02: the fields that decide whether two links join are one list, `LINK_DECLARATIONS`, read by the cut and the join, held to the join's comparison by a test; the transit toggle's join becoming a planner reaction recorded for P2.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\

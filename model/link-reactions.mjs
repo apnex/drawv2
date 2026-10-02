@@ -22,7 +22,7 @@ stranded pass production does not have. Promotion deletes the classic tenant (PR
 Network-layer code (tools/layers.mjs): it reads the model and the link invariants, and nothing of the planner. What it
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
-import { collapseAtWaypoint, pairHolders } from './invariants.mjs';
+import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './invariants.mjs';
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 
@@ -254,15 +254,15 @@ function linkJoin({ joinsAt = () => true, says }) {
 		run: ({ before, doc, ops, refuses }, emit) => {
 			const touched = new Set();
 			/*
-	B285 -- A CHANGE OF DECLARATION decides a join too (ruled 2026-10-02): an edit that changes a link's plane or direction
-	can make the two links at a junction compatible, and two links remaining compatible after a mutation join (2026-09-28).
+	B285 -- A CHANGE OF DECLARATION decides a join too (ruled 2026-10-02): an edit that changes one of a link's declarations
+	(`LINK_DECLARATIONS`, model/invariants.mjs -- its plane, its direction) can make the two links at a junction compatible, and two links remaining compatible after a mutation join (2026-09-28).
 	So the ends of such a link are candidates whatever the count did. Nothing else that sets a link is: a rename or a move
 	of a pin decides nothing, and a second link drawn to a terminus still never joins (B214).
 	*/
 			const redeclared = new Set();
 			for (const op of ops) {
 				if (op.kind !== 'link') continue;
-				if (op.op === 'set' && ('control' in op.patch || 'flow' in op.patch)) {
+				if (op.op === 'set' && LINK_DECLARATIONS.some((k) => k in op.patch)) {
 					const e = doc.get('link', op.id);
 					if (e) for (const end of [e.src, e.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
 					continue;

@@ -123,6 +123,9 @@ AMENDED 2026-10-02, by H17.22 (P1 run in the lab, `NETWORK-READS-MODEL.md`):
 - **P1 is done in the lab:** pipes are entities of the network's own kind, every pipe change is an op, undo restores pipes, and the session pipe set is deleted. Link ages and transit stay session state (N3, TR-7).
 - **P5's owed decision is settled:** `attachNetwork` takes the page's model and no planner model, so the hooks are page-neutral; this stage attaches them to the product page as they stand.
 
+AMENDED 2026-10-02, by B283 to B285 (transit's cut and join):
+- **P2:** storing transit on the anchor makes a transit toggle an op -- a `set` of the anchor's transit -- so the cut and the join it causes become planner reactions in the network's tenant, beside its other link reactions, instead of an edit the page builds (`network/transit.mjs` `transitEdit`). Until then the two share the planner's rules (`collapseAtWaypoint`, `splitAtBend`) and so cannot disagree, but there are two places that decide when a join happens.
+
 AMENDED 2026-10-02, by N1 (`dev/DECISIONS.md`, "Plugins bring their own kinds"):
 - **P2:** `pipe` is the network plugin's kind, not a sixth core kind: production composes it by composing the network, and its exit criterion "every kind list names six" reads "every kind list is built from the composition's rows, and the product composes six". The kind table is passed in from P1 in the lab (B273), so P2 adds the stored format, not the mechanism.
 
