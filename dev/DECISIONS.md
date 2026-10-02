@@ -1555,3 +1555,9 @@ Asked how the palette is named, the director chose "Material, and snap one-offs"
 AMENDED 2026-10-01: the director accepted the snap as built, the restore button's lost green tint included, to be reviewed visually in the lab and changed there if needed.\
 The page chrome the lab does not draw -- the menu, the cards, undelete -- is reviewed at the production audit instead (`dev/PRODUCTION-UPGRADE.md` PU24).
 
+**A non-transiting anchor has endpoints only, under one ring -- ruled 2026-10-02.**\
+Reasoning about transit, the director: "If transit:false is suppose to disable bends AND junctions, and ONLY PERMIT endpoints, we need to mechanism and visual rings to match with the logic."\
+Asked how three or more endpoints at one anchor should look, where `TRANSIT.md` section 4 had said "a larger ring", the director chose "Same endpoint ring" (the proposer's recommendation) over "Larger endpoint ring".
+- An anchor whose transit is off is an endpoint for every link that ends there, at any count: never a bend, never a junction -- in the role every reader takes (what the canvas draws, what Input judges the pointer to be on) and in the rings drawn (B277).
+- It is drawn with the endpoint ring at every count, and the transit ring inside it; the ring ladder is unchanged. The dashed transit ring already says that what arrives stops, and the lines show how many arrive.
+- Nothing changes where transit is on or undeclared, which is every anchor production has.

@@ -42,6 +42,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -101,6 +102,24 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {}
 	},
@@ -117,6 +136,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -130,6 +150,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -143,6 +164,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -156,6 +178,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -169,6 +192,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -182,6 +206,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -258,6 +283,48 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -358,6 +425,32 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -399,6 +492,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {}
 	},
@@ -456,6 +550,16 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -598,6 +702,32 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -670,6 +800,24 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {}
 	},
@@ -702,6 +850,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -771,6 +920,16 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -831,6 +990,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -908,6 +1068,16 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -979,6 +1149,7 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -1043,6 +1214,7 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -1139,6 +1311,16 @@
 			"link#3"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#3",
@@ -1229,6 +1411,16 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -1339,6 +1531,16 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -1482,6 +1684,24 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -1597,6 +1817,24 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -1692,6 +1930,24 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -1797,6 +2053,24 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -1907,6 +2181,24 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -2020,6 +2312,24 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -2139,6 +2449,24 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -2307,6 +2635,88 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#7",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#8",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#9",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -2446,6 +2856,80 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#7",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#8",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -2583,6 +3067,68 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -2690,6 +3236,56 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -2754,6 +3350,32 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {}
 	},
@@ -2833,6 +3455,48 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -2953,6 +3617,72 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -3106,6 +3836,72 @@
 			"link#3"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"junction"
+				],
+				"junctionRing": true,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": [
+					"junction"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -3271,6 +4067,72 @@
 			"link#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"junction"
+				],
+				"junctionRing": true,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": [
+					"junction"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#2",
@@ -3423,6 +4285,72 @@
 			"waypoint#6"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#7",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -3535,6 +4463,16 @@
 			"link#3"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -3627,6 +4565,16 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -3715,6 +4663,56 @@
 		"pipes": [],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -3782,6 +4780,16 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": true,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -3843,6 +4851,16 @@
 			"waypoint#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -3918,6 +4936,16 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -3987,6 +5015,16 @@
 			"node#4"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -4061,6 +5099,16 @@
 				"id": "node#3",
 				"stroke": "rgb(255, 183, 77)",
 				"dashed": true
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
 			}
 		],
 		"stretches": [
@@ -4138,6 +5186,16 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": true,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -4199,6 +5257,16 @@
 			"waypoint#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -4272,6 +5340,16 @@
 				"id": "waypoint#1",
 				"stroke": "rgb(255, 183, 77)",
 				"dashed": true
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": true,
+				"judged": []
 			}
 		],
 		"stretches": [],
@@ -4356,6 +5434,24 @@
 			"node#3"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -4453,6 +5549,24 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": true,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#1": {
@@ -4535,6 +5649,24 @@
 			"waypoint#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -4622,6 +5754,20 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -4703,6 +5849,16 @@
 			"waypoint#1"
 		],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -4813,6 +5969,20 @@
 				"id": "waypoint#1",
 				"stroke": "rgb(255, 183, 77)",
 				"dashed": true
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [
@@ -4940,6 +6110,16 @@
 				"id": "node#3",
 				"stroke": "rgb(255, 183, 77)",
 				"dashed": true
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
 			}
 		],
 		"stretches": [
@@ -5078,6 +6258,24 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": true,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [],
 		"paths": {
 			"link#2": {
@@ -5189,6 +6387,32 @@
 				"id": "waypoint#2",
 				"stroke": "rgb(255, 183, 77)",
 				"dashed": true
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [
@@ -5314,6 +6538,28 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -5415,6 +6661,20 @@
 				"dashed": true
 			}
 		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -5500,6 +6760,16 @@
 		],
 		"selected": [],
 		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
 		"stretches": [
 			{
 				"id": "link#1",
@@ -5512,6 +6782,280 @@
 		"paths": {
 			"link#1": {
 				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"TRN-21": {
+		"notice": "transit off at P",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "waypoint#1",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "waypoint#1",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "waypoint#1",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "waypoint#1",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"waypoint#1"
+		],
+		"rings": [
+			{
+				"id": "waypoint#1",
+				"stroke": "rgb(255, 183, 77)",
+				"dashed": true
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#3",
+				"keys": [
+					"0,-240|0,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L0 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M0 -240 L0 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"TRN-22": {
+		"notice": "transit on at P",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "waypoint#1",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "waypoint#1",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "waypoint#1",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#3",
+				"src": "node#3",
+				"dst": "waypoint#1",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"selected": [
+			"waypoint#1"
+		],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"junction"
+				],
+				"junctionRing": true,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": [
+					"junction"
+				]
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#3",
+				"keys": [
+					"0,-240|0,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L0 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#3": {
+				"d": "M0 -240 L0 0",
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}

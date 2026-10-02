@@ -634,6 +634,10 @@ const SNAPSHOT = `(() => {
 		selected: lab.input.selection.list(),
 		// what declares transit off on the canvas: each drawn transit ring, by the anchor or node it marks, and how it looks
 		rings: [...document.querySelectorAll('.wp-transit')].map((c) => { const cs = getComputedStyle(c); return { id: c.closest('g[id]').id, stroke: cs.stroke, dashed: cs.strokeDasharray !== 'none' }; }),
+		// what each waypoint IS (B277): its roles as drawn -- the class and the rings -- and as Input judges it, the two readers
+		waypointRoles: [...document.querySelectorAll('#waypoints g.waypoint')].map((g) => ({ id: g.id,
+			drawn: [...g.classList].filter((c) => c === 'endpoint' || c === 'junction'), junctionRing: !!g.querySelector('.wp-junction'),
+			endpointRing: !!g.querySelector('.wp-ring'), transitOff: !!g.querySelector('.wp-transit'), judged: lab.input.situation(g.id).target?.roles ?? null })),
 		// every stretch an UP link is drawn along, as the pair of points it joins -- from what is drawn, not from the assignment
 		stretches: lab.model.all('link').filter((l) => !lab.model.isLinkDown(l)).map((l) => {
 			const pts = lab.model.pathOf(l) ?? [];
@@ -667,6 +671,11 @@ const INVARIANT = {
 		for (const { id, keys } of s.stretches) for (const k of new Set(keys)) on.set(k, [...(on.get(k) ?? []), id]);
 		const stacked = [...on].filter(([, ids]) => ids.length > 1);
 		return !stacked.length || stacked.map(([k, ids]) => `${ids.join(' and ')} are both drawn along ${k}`).join('; ');
+	},
+	// B277: transit off admits endpoints only -- no junction class, no junction ring, and Input never judges one
+	I7: (s) => {
+		const wrong = s.waypointRoles.filter((w) => w.transitOff && (w.junctionRing || w.drawn.includes('junction') || (w.judged ?? []).includes('junction')));
+		return !wrong.length || wrong.map((w) => `${w.id} declares transit off and is a junction: ${JSON.stringify(w)}`).join('; ');
 	},
 };
 
@@ -718,6 +727,15 @@ const CHECK = {
 		return !wrong.length || wrong.map(([id, hex]) => `${id} is stroked ${s.paths[id]?.stroke ?? '(not drawn)'}, not ${hex}`).join('; ');
 	},
 	rings: (s, ids) => same(s.rings.map((r) => r.id).sort(), [...ids].sort()) || `the rings mark ${s.rings.map((r) => r.id).join(',') || 'nothing'}, not ${ids.join(',') || 'nothing'}`,
+	// what a waypoint is, the same as drawn and as judged; an endpoint carries the endpoint ring, a junction the junction ring
+	roles: (s, want) => {
+		const wrong = Object.entries(want).filter(([id, roles]) => {
+			const w = s.waypointRoles.find((x) => x.id === id);
+			return !w || !same(w.drawn, roles) || !same(w.judged, roles)
+				|| w.endpointRing !== roles.includes('endpoint') || w.junctionRing !== roles.includes('junction');
+		});
+		return !wrong.length || wrong.map(([id, roles]) => `${id} is ${JSON.stringify(s.waypointRoles.find((x) => x.id === id) ?? 'not drawn')}, not ${roles.join(' and ')}`).join('; ');
+	},
 	ringLook: (s) => (s.rings.length > 0 && s.rings.every((r) => r.stroke === rgb('#ffb74d') && r.dashed)) || `the rings are drawn ${JSON.stringify(s.rings)}, not dashed in #ffb74d`,
 	// the selection is exactly the one down link -- for a board whose links are drawn by gestures, so their ids are not known
 	selectedDown: (s, want) => { const down = s.links.filter((l) => l.down).map((l) => l.id); return (down.length === 1 && same([...s.selected], down)) === want || `the selection is ${s.selected.join(',') || 'empty'}, and the down links are ${down.join(',') || 'none'}`; },

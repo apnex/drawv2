@@ -50,7 +50,7 @@ import { splitAtBend, pairHolders } from '../../model/invariants.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
-import { waypointRoles } from '../../kernel/network-roles.mjs';
+import { waypointRolesIn } from '../../kernel/network-roles.mjs';
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -560,7 +560,7 @@ export class Input {
 	situation(targetId = null, gesture = null) {
 		return situationOf({
 			get: (kind, id) => this.model.get(kind, id),
-			rolesOf: (id) => waypointRoles(id, this.model.linksAt?.(id) || []),   // the one role derivation (K5)
+			rolesOf: (id) => waypointRolesIn(this.model, id),   // the one role derivation (K5), its transit included (B277)
 		}, {
 			mode: this.renderer.mode,
 			readOnly: this.readOnly,

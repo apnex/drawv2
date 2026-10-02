@@ -116,6 +116,9 @@ AMENDED 2026-10-02, by the re-audit of item 3 (`network/host.mjs`):
 - **Section 3.2:** the orchestration it lists as "in the lab root" is `network/host.mjs`'s `attachNetwork` now, a fixed board's order included; the lab root keeps its own door, its refusal reload, its notice and which board to load.
 - **P5:** the hooks are not yet page-neutral. `attachNetwork` takes `authority`, the lab's in-page planner model, and reads it in three places: the drag judge's links and transit stops, the sweep, and the link ages noted on an answer (`network/session.mjs` `judge`, `tidy`, `answered`). The product tab holds no such model. P1 moves the sweep and the waiting legs into the planner; what P5 passes for the other two is owed before this stage starts, and is not decided here.
 
+AMENDED 2026-10-02, by B277 (a non-transiting anchor has endpoints only):
+- **P2:** storing transit (TR-7) must hand it to the SVG export's role derivation too (`kernel/engine.mjs`, `waypointRoles`): until then the export cannot know an anchor's transit, and would draw a junction where the canvas draws endpoints (B277).
+
 ---
 
 ## 7. Binary exit criteria for the whole promotion

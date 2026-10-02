@@ -63,6 +63,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | I4 | No pipe names an anchor that does not exist. |
 | I5 | Nothing is thrown in the page. |
 | I6 | No two links that are up are drawn along the same stretch: a pipe carries one link (2026-09-30). |
+| I7 | An anchor whose transit is off is never a junction, drawn or judged: what arrives there stops, so it is an endpoint (2026-10-02, B277). |
 <!-- END GENERATED: invariants -->
 
 ---
@@ -89,9 +90,9 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . |
 | transit pin | . | . | . | . | . | . | . | . | . | . | TRN-12, TRN-13 | . | . |
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . |
-| transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | . | . | . |
+| transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . |
 
-63 rows: 63 built, 0 todo, 0 open.\
+65 rows: 65 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -202,6 +203,8 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-18 | transit two pins x transit `x` | Turn P's transit off, then Q's, then P's back on. | Turning P back on joins only the two links ending at P: A to Q pinned at P, and Q to B, cut where Q's transit is still off. | DECISIONS: "Transit with pipes" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269). | ruled, built |
 | TRN-19 | transit junction x delete link | Turn P's transit off, then select the link from C and press Delete. | Two links are left ending at P, and P's transit is off, so they stay two: what arrives at P stops there. | DECISIONS: "Transit with pipes" (2026-09-30), TR-5; "Two separately drawn links left alone at a point join into one" (2026-09-26). | ruled, built |
 | TRN-20 | transit junction x delete link | Select the link from C and press Delete, transit untouched. | With transit on, the two links left alone at P join into one, as ruled -- the comparison TRN-19 departs from. | DECISIONS: "Transit with pipes" (2026-09-30), TR-5; "Two separately drawn links left alone at a point join into one" (2026-09-26). | ruled, built |
+| TRN-21 | transit junction x transit `x` | Select P, where three links end, and press x. | What arrives at P stops there, so P is an endpoint for each of the three links -- drawn with the endpoint ring and the transit ring, never a junction -- and the links stay three. | DECISIONS: "A non-transiting anchor has endpoints only, under one ring" (2026-10-02), B277; TRANSIT.md section 4. | ruled, built |
+| TRN-22 | transit junction x transit `x` | Select P, where three links end, and press x twice. | Turned back on, the three links meet at P again: a junction, with no transit ring -- the comparison TRN-21 departs from. | DECISIONS: "A non-transiting anchor has endpoints only, under one ring" (2026-10-02), B277; TRANSIT.md section 4. | ruled, built |
 <!-- END GENERATED: rows -->
 
 ---

@@ -3,7 +3,7 @@
 		"THE MASTER of the lab behaviour matrix. BEHAVIOUR-MATRIX.md beside it is generated from this file by `node tools/lab-matrix.mjs --write`, and the gate fails if the two differ: edit here, never there.",
 		"tests/lab-browser.test.js runs every row in real Chrome with real input. A state's `setup` builds its board and its `expect` proves the board is what the state claims, before any row acts on it.",
 		"A row: `steps` perform the gesture; `intent` says in words what should happen and `expect` says it as checks; `rule` cites the ruling. `standing` is ruled, reading (the proposer's reading, not ruled) or open. `built` is yes (the gate proves it) or todo (the gate proves it still FAILS, and demands promotion the day it passes).",
-		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]. A selector is a link id, or \"only\" when exactly one link exists."
+		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
 	],
 	"invariants": {
 		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, and the same anchors.",
@@ -11,7 +11,8 @@
 		"I3": "The canvas draws exactly the links that exist, each along a path.",
 		"I4": "No pipe names an anchor that does not exist.",
 		"I5": "Nothing is thrown in the page.",
-		"I6": "No two links that are up are drawn along the same stretch: a pipe carries one link (2026-09-30)."
+		"I6": "No two links that are up are drawn along the same stretch: a pipe carries one link (2026-09-30).",
+		"I7": "An anchor whose transit is off is never a junction, drawn or judged: what arrives there stops, so it is an endpoint (2026-10-02, B277)."
 	},
 	"states": {
 		"routed": {
@@ -3323,6 +3324,74 @@
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-5; \"Two separately drawn links left alone at a point join into one\" (2026-09-26).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-21",
+			"state": "transit junction",
+			"gesture": "transit `x`",
+			"does": "Select P, where three links end, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "What arrives at P stops there, so P is an endpoint for each of the three links -- drawn with the endpoint ring and the transit ring, never a junction -- and the links stay three.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"rings": [
+					"waypoint-000005"
+				],
+				"roles": {
+					"waypoint-000005": [
+						"endpoint"
+					]
+				}
+			},
+			"rule": "DECISIONS: \"A non-transiting anchor has endpoints only, under one ring\" (2026-10-02), B277; TRANSIT.md section 4.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-22",
+			"state": "transit junction",
+			"gesture": "transit `x`",
+			"does": "Select P, where three links end, and press x twice.",
+			"steps": [
+				[
+					"click",
+					0,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, the three links meet at P again: a junction, with no transit ring -- the comparison TRN-21 departs from.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"rings": [],
+				"roles": {
+					"waypoint-000005": [
+						"junction"
+					]
+				}
+			},
+			"rule": "DECISIONS: \"A non-transiting anchor has endpoints only, under one ring\" (2026-10-02), B277; TRANSIT.md section 4.",
 			"standing": "ruled",
 			"built": "yes"
 		}

@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRoles } from '../../kernel/network-roles.mjs';
+import { waypointRolesIn } from '../../kernel/network-roles.mjs';
 import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../kernel/network-appearance.mjs';
 import { groupHull, spanExtent } from '../../kernel/geometry.mjs';
 import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
@@ -432,7 +432,7 @@ export class Renderer {
 			// B166 -- model links go straight to the kernel. This used to map src/dst/closed into
 			// from/to/close inline, and the situation needed the same mapping, which is what turned
 			// a four-word detail into a twin. Unifying the vocabulary removed both copies.
-			const roles = waypointRoles(entity.id, this.model.linksAt?.(entity.id) || []);
+			const roles = waypointRolesIn(this.model, entity.id);   // B277: its transit too -- off admits endpoints only
 			// the numbers are the kernel's, shared with the SVG export; this only emits them
 			/*
 			B209 -- walk the kernel's layer list. Which sub-type draws what lives in

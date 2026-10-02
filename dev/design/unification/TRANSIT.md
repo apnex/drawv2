@@ -53,6 +53,8 @@ They fall out of two things the page already holds: how many links terminate at 
 The first column is today's matrix (`docs/spec/ATOMICS.md:272-275`), unchanged.\
 The second column is what the toggle adds.
 
+AMENDED 2026-10-02: three or more endpoints are drawn with the same endpoint ring as one, not a larger ring (`dev/DECISIONS.md`, "A non-transiting anchor has endpoints only, under one ring"); the second column is now built as the role every reader takes (B277).
+
 **The uniformity is the point.**\
 One property behaves the same way at every arity: transit off means what arrives stops.\
 An earlier draft of this proposal claimed a bend could be toggled and a junction could not, on the reasoning that an author never chooses a junction -- they draw a third link and it is one.\

@@ -193,6 +193,7 @@ AMENDED 2026-10-01: board hygiene -- H10.7, H10.8 and H11.4 dropped from the boa
 AMENDED 2026-10-01: the network's choreography moved out of the lab root into `network/host.mjs` (`attachNetwork`), which promotion's P5 attaches to the product page; the lab root falls to 102 code lines.\
 CORRECTED 2026-10-02: the 102 code lines were all of `lab/`, the root and the static server together, not the root alone.\
 AMENDED 2026-10-02: item 3 re-audited -- a fixed board's order moved into the host too, two dropped comments restored, the L8 budget lowered from 180 to 120 (`lab/` at 100), and the hooks' remaining read of the lab's planner model recorded as owed before P5 (`PROMOTION.md`).\
+AMENDED 2026-10-02: B277 fixed at the director's word (H17.20) -- a waypoint whose transit is off is an endpoint at any link count, drawn with the one endpoint ring, and Input judges it so too.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
 
@@ -951,6 +952,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.17 | A partial repair of an existing violation is accepted: the backstop compares violations, not their sentences | **B271** | S3 | `DONE` |
 | H17.18 | A beat reveals only what its commit created: a paced rename no longer withholds an entity already on screen | **B272** | S3 | `DONE` |
 | H17.19 | A skipped test fails CI: the gate names every test that did not run, so the browser suites cannot stop silently | **B250** | S3 | `DONE` |
+| H17.20 | A waypoint whose transit is off is an endpoint at any link count -- never a bend or a junction -- in the role every reader takes and in the rings drawn | **B277** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.

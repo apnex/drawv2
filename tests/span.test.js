@@ -571,7 +571,8 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	The PROPERTY asserted is unchanged and is the only thing that ever mattered: both renderers ASK
 	for the role rather than deciding it.
 	*/
-	assert.match(client, /waypointRoles\(/, 'the live renderer asks for the role SET (B209)');
+	// B277: the live renderer asks through `waypointRolesIn`, the same rule handed its model, so the anchor's transit is read
+	assert.match(client, /waypointRolesIn\(/, 'the live renderer asks for the role SET (B209), in its model (B277)');
 	assert.match(engine, /waypointRoles\(/, 'as does the kernel');
 
 	// B166 -- a model link is accepted by the rule DIRECTLY, with nothing translating on the way
