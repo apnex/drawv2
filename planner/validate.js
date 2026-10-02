@@ -152,7 +152,8 @@ export function validateMutation(model, mutation, kinds = PRODUCT_KINDS) {
 	};
 	// the kind's own cross-entity check (its row), judged on the entity as it would stand -- a `set` merged over what is
 	// stored -- and told what the op carried; it was two hard-coded branches here, for the link and the group (N-a)
-	return row.refers({ ...(model.get(kind, entity.id) ?? {}), ...entity }, access, entity);
+	const before = model.get(kind, entity.id) ?? null;
+	return row.refers({ ...(before ?? {}), ...entity }, access, entity, before);
 }
 
 // full document validation (push / load from disk)
@@ -246,7 +247,7 @@ export function validateDoc(doc, { kinds = PRODUCT_KINDS } = {}) {
 		const row = kinds.row(kind);
 		if (!row.refers) continue;
 		for (const entity of doc[kinds.collection[kind]] || []) {
-			const err = row.refers(entity, access, entity);
+			const err = row.refers(entity, access, entity, null);
 			if (err) return `${err} (${entity.id})`;
 		}
 	}

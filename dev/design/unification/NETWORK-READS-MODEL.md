@@ -63,6 +63,14 @@ AMENDED 2026-10-02 -- **N-a done.**\
 Production unchanged: every corpus and earlier test as before.\
 Pinned by tests/kinds.test.js; 16 of 17 mutants killed, the survivor equivalent.
 
+AMENDED 2026-10-02 -- **N-b done.**\
+The pipe kind is the network's row, `network/pipe-kind.mjs`: id `pipe-<lowerhex>-<higherhex>`, ends `a` and `b` stored lower hex first, `laid` link or hand; its check refuses an end that does not exist, an id its ends do not make, and a hand pipe becoming a link pipe.\
+The network's derivation reads its pipes from a source, `pipesOf(model)` -- the session's set until N-c, the model's own pipes where it holds them.\
+The network's tenant gains two reactions: `pipe-cascade` (an anchor deleted takes its pipes) and `pipe-sweep` (link pipes no link runs over, after the join, as the session swept once the commit had landed); both inert where the model holds no pipes, which N-d removes.\
+Proven over every network case in the planner corpus, 1,045, planned again with its pipes in the model: the same verdict, ops and inverse on everything but pipes, the pipes the session would leave, and an undo that restores them -- 687 accepted, 1,156 pipe ops made by the reactions.\
+The corpus never has a join that changes a route, so it cannot tell the sweep before the join from after; the contract test that pins the phase order does.\
+The hand-pipe delete (B281) moves to N-c, which first puts pipes in the lab's models.
+
 ---
 
 ## 6. Behaviour that changes, stated before it is built

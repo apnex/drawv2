@@ -22,12 +22,18 @@ import { deriveNetwork } from './pipes.mjs';
 
 const KEEP = 4;   // the tab, the authority, and a planner projection before and after, at most
 
-export function createNetworkView(pipeSet, rankOf = () => 0, transit = null) {
+/*
+H17.22 N-b -- THE PIPES ARE READ FROM A SOURCE, `pipesOf(model)`: the session's set while the lab keeps its pipes there
+(`() => pipes.list()`), and the model's own pipe entities where a composition stores them (`(model) => model.all('pipe')`),
+which is every network model from N-c. One derivation either way; the source is the only difference.
+*/
+export function createNetworkView(pipesOf, rankOf = () => 0, transit = null) {
+	if (typeof pipesOf !== 'function') throw new Error('createNetworkView: pipes come from a source, (model) -> [{ a, b, laid }] (H17.22 N-b)');
 	let recent = [];
 	return {
 		of(model) {
 			const alive = (id) => !!(model.get('node', id) || model.get('waypoint', id));
-			const pipes = pipeSet.list().filter((p) => alive(p.a) && alive(p.b));
+			const pipes = pipesOf(model).filter((p) => alive(p.a) && alive(p.b));
 			const links = model.all('link');
 			// the anchors no route may pass (TRANSIT.md section 12, TR-1): an input to every route, so a part of the key
 			const blocked = transit ? transit.blockedIn(model) : [];

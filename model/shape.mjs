@@ -82,7 +82,8 @@ Every kind is a ROW of one shape, whoever brings it -- the product's five or a p
   optional    fields a stored entity may lack
   references  the kinds its entities point at; a composition without one of them is refused
   fields      a check for every field, `id` included -- the planner's half, absent from the core's default
-  refers      its cross-entity check, `(entity, access, patch) -> error | null` -- the planner's half too
+  refers      its cross-entity check, `(entity, access, patch, before) -> error | null`, `before` the stored entity or
+              null -- the planner's half too
   cap         the most of it one document may hold -- the planner's half too
 
 This module is CORE, so it holds the mechanism and the five rows' STORAGE half, and treats checks as opaque. The

@@ -14,7 +14,7 @@ import { preferredRoute } from '../network/pipes.mjs';
 
 // A and B are far apart; the only pipes run A -> w -> B, around the straight line
 function board(pipeSet) {
-	const m = new Model({ network: createNetwork(pipeSet) });
+	const m = new Model({ network: createNetwork(() => pipeSet.list()) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: 120 });
@@ -41,7 +41,7 @@ test('with NO pipes a link has no route: it is DOWN, drawn straight between its 
 	layer is never a board not yet laid. No pipes is simply no route.
 	*/
 	const s = createPipeSet();
-	const m = new Model({ network: createNetwork(s) });
+	const m = new Model({ network: createNetwork(() => s.list()) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	assert.deepEqual(m.pathOf(LINK), [[0, 0], [240, 0]], 'drawn directly between its source and destination');
@@ -73,7 +73,7 @@ test('the network\'s linksRoutedThrough names a link routed THROUGH an anchor it
 	const s = createPipeSet();
 	s.lay('node-00000a', 'waypoint-00000c');
 	s.lay('waypoint-00000c', 'node-00000b');
-	const m = new Model({ network: createNetwork(s) });
+	const m = new Model({ network: createNetwork(() => s.list()) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: 120 });
@@ -99,7 +99,7 @@ test('the resolver and the down state agree with the router for every pipe set: 
 	for (let mask = 0; mask < 1 << universe.length; mask++) {
 		const s = createPipeSet();
 		universe.forEach(([a, b], i) => { if (mask & (1 << i)) s.lay(a, b, 'link'); });
-		const m = new Model({ network: createNetwork(s) });
+		const m = new Model({ network: createNetwork(() => s.list()) });
 		m.put('node', { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 		m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 		m.put('waypoint', { id: W, name: 'w', x: 120, y: 120 });
@@ -120,7 +120,7 @@ test('down is read LIVE: removing the last way takes a link down, and laying one
 	const s = createPipeSet();
 	s.lay('node-00000a', 'waypoint-00000c');
 	s.lay('waypoint-00000c', 'node-00000b');
-	const m = new Model({ network: createNetwork(s) });
+	const m = new Model({ network: createNetwork(() => s.list()) });
 	// the anchors the pipes join are in the model: a pipe to an anchor the model lacks is no way (RULESET-AUDIT F10)
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
@@ -140,7 +140,7 @@ test('the Model\'s companions answer from the one assignment: a blocked link is 
 	const s = createPipeSet();
 	for (const [a, b] of [['node-00000a', 'waypoint-000001'], ['node-00000c', 'waypoint-000001'], ['waypoint-000001', 'waypoint-000002'], ['waypoint-000002', 'node-00000b'], ['waypoint-000002', 'node-00000d']]) s.lay(a, b, 'hand');
 	const rankOf = (id) => (id === 'link-00000u' ? 0 : 1);
-	const m = new Model({ network: createNetwork(s, rankOf) });
+	const m = new Model({ network: createNetwork(() => s.list(), rankOf) });
 	for (const [id, x, y] of [['node-00000a', -480, -180], ['node-00000b', 480, -180], ['node-00000c', -480, 180], ['node-00000d', 480, 180]]) m.put('node', { id, name: id, type: 'router', x, y, shape: 'circle' });
 	m.put('waypoint', { id: 'waypoint-000001', name: 't1', x: -240, y: 0 });
 	m.put('waypoint', { id: 'waypoint-000002', name: 't2', x: 240, y: 0 });
@@ -161,7 +161,7 @@ null, and the preview froze where it was. Production's straight polyline is unto
 */
 test('F11: a preview whose stops include a node is drawn through it, with no way over the pipes', () => {
 	const s = createPipeSet();
-	const m = new Model({ network: createNetwork(s) });
+	const m = new Model({ network: createNetwork(() => s.list()) });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	// as Input draws it: the source entity, every stop drawn so far, and the cursor as a free position

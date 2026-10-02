@@ -204,6 +204,7 @@ AMENDED 2026-10-02: N3 ruled -- link ages stay session state through P1. Next: N
 AMENDED 2026-10-02: N4 ruled -- only P-1 and P-2 bind P1. Every question ruled; B279 closed; the build is H17.22, N-a first.\
 CORRECTED 2026-10-02: B279 stays open until H17.22 is built; only its questions are ruled.\
 AMENDED 2026-10-02: N-a done -- a composition brings its kinds, every kind a row of one shape (B273 closed); production unchanged, its corpora untouched. Next N-b, the network's pipe kind.\
+AMENDED 2026-10-02: N-b done -- the network's pipe kind and its two reactions, an anchor's deletion taking its pipes and the sweep after the join, held to the session across every network corpus case; the lab unchanged. Next N-c, the lab's models hold pipes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
@@ -986,7 +987,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | promotion (K18a, scheduled by PD-5), or an agent's landing is reported uncut |
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
-| **B281** | S3 | No gesture deletes a pipe, though a hand pipe stays until the author deletes it -- ruled: select it, press Delete (N6) | the pipe kind lands in the lab (N-b, B279) |
+| **B281** | S3 | No gesture deletes a pipe, though a hand pipe stays until the author deletes it -- ruled: select it, press Delete (N6) | the pipe kind lands in the lab's models (N-c, B279) |
 | **B282** | S3 | Anchors unified and type as composition (ruled 2026-09-22): the waypoint kind goes, and `type` becomes the name of a composition of packs | promotion's format batch (P2), packs composing earned by composing two |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |

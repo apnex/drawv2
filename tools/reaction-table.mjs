@@ -18,7 +18,6 @@ import path from 'node:path';
 import { PHASES } from '../planner/txn.mjs';
 import { CLASSIC_LINKS, GROUPS } from '../planner/tenants.mjs';
 import { createNetwork } from '../network/network.mjs';
-import { createPipeSet } from '../network/pipeset.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const VIEW = path.join(root, 'dev/design/planner/REACTIONS.md');
@@ -31,7 +30,7 @@ const composition = (links) => PHASES.flatMap((phase) => [links, GROUPS].flatMap
 
 const BLOCKS = {
 	production: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(CLASSIC_LINKS)),
-	network: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(createNetwork(createPipeSet()).links)),
+	network: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(createNetwork(() => []).links)),
 };
 
 function render(current) {

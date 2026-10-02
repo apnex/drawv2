@@ -8,7 +8,7 @@ import { assignRoutes, deriveNetwork } from '../network/pipes.mjs';
 import { createNetworkView } from '../network/view.mjs';
 
 // a network view over a plain pipe list, as the lab builds one over its pipe set
-const viewOver = (list, rankOf) => createNetworkView({ list: () => list }, rankOf);
+const viewOver = (list, rankOf) => createNetworkView(() => list, rankOf);
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 

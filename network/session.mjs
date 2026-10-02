@@ -32,7 +32,7 @@ import { createTransit } from './transit.mjs';
 
 export function createNetworkSession() {
 	const pipes = createPipeSet(), order = createLinkOrder(), transit = createTransit();
-	const network = createNetwork(pipes, order.rankOf, transit);
+	const network = createNetwork(() => pipes.list(), order.rankOf, transit);   // the session's pipes, until N-c
 	const watchers = [];
 	let pendingLegs = null, pendingNotice = null;
 	const lay = (legs) => { for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid); };

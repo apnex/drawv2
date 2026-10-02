@@ -21,7 +21,7 @@ function board() {
 	};
 	b.set = { list: () => b.pipes };
 	b.model = { get: (kind, id) => (kind === 'link' ? b.links.find((l) => l.id === id) : b.anchors.has(id) ? { id } : undefined), all: () => b.links };
-	b.net = createNetworkView(b.set, (id) => b.ages.get(id) ?? Infinity);
+	b.net = createNetworkView(() => b.set.list(), (id) => b.ages.get(id) ?? Infinity);
 	return b;
 }
 

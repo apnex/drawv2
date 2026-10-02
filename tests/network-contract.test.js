@@ -99,19 +99,20 @@ test('the retired planner hooks, and the retired network option, are refused by 
 		assert.throws(() => plan(m, request.ops, { [old]: () => null }), /unknown option/);
 	}
 	const { m, log } = board();
-	assert.throws(() => commit(m, log, request, 'lab', 'lab', { network: createNetwork(createPipeSet()) }), /retired.*links: network\.links/);
-	assert.throws(() => plan(m, request.ops, { network: createNetwork(createPipeSet()) }), /retired/);
+	assert.throws(() => commit(m, log, request, 'lab', 'lab', { network: createNetwork(() => []) }), /retired.*links: network\.links/);
+	assert.throws(() => plan(m, request.ops, { network: createNetwork(() => []) }), /retired/);
 });
 
 test('the plugin builds ONE object: the Model reads it, and the planner takes its link tenant', () => {
 	const pipes = createPipeSet();
-	const network = createNetwork(pipes, () => 0);
+	const network = createNetwork(() => pipes.list(), () => 0);
 	for (const name of MODEL_READS) assert.equal(typeof network[name], 'function', `network.${name}`);
 	for (const old of RETIRED_PLANNER_HOOKS) assert.equal(network[old], undefined, `network.${old} is retired: the tenant holds it`);
 	const m = new Model({ network });
 	assert.equal(m.network, network, 'the Model holds the object it was given, not a copy of some of it');
 	assert.equal(network.links.owner, 'network links');
-	assert.deepEqual(network.links.reactions.map((r) => r.phase), ['clear', 'clear', 'stranded', 'sweep', 'join']);
+	// the link tenant's five, then the pipes' own two (H17.22 N-b): an anchor's deletion takes its pipes, and the sweep follows the join
+	assert.deepEqual(network.links.reactions.map((r) => `${r.phase}:${r.id}`), ['clear:node-links', 'clear:waypoint-links', 'stranded:stranded-links', 'sweep:orphan-sweep', 'join:link-join', 'clear:pipe-cascade', 'join:pipe-sweep']);
 	const { m: authority, log } = board();
 	assert.equal(commit(authority, log, request, 'lab', 'lab', { links: network.links }).ok, true, 'and the planner accepts its tenant');
 });
@@ -125,7 +126,7 @@ serves its purpose". The network tenant's stranded pass deletes a link whose pin
 test('the network strands every link that lost a pin, whatever ways remain', () => {
 	const pipes = createPipeSet();
 	pipes.lay('node-00000a', 'node-00000b', 'hand');   // a way, and a free one
-	const network = createNetwork(pipes, () => 0);
+	const network = createNetwork(() => pipes.list(), () => 0);
 	const { m, log } = board();
 	assert.equal(commit(m, log, { label: 'setup', ops: [
 		{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },

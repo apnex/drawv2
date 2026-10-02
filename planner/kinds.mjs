@@ -233,8 +233,8 @@ const FIELDS = {
 };
 
 /*
-EACH KIND'S CROSS-ENTITY CHECK -- `(entity, access, patch)`, `entity` being the entity as it would stand after the op (a
-`set` merged over what is stored) and `patch` what the op itself carried. The two rules are model/referential.mjs's,
+EACH KIND'S CROSS-ENTITY CHECK -- `(entity, access, patch, before)`, `entity` being the entity as it would stand after the op (a
+`set` merged over what is stored), `patch` what the op itself carried, and `before` what was stored (null for a new one). The two rules are model/referential.mjs's,
 shared with `validateDoc`; what each row adds is the part that was the mutation path's own -- a link is judged on the
 `src`, `dst` and `via` it keeps, and a group only when the op names its members.
 */
