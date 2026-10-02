@@ -84,7 +84,7 @@ test('GR10: the retired wire tokens are gone from the reference, not merely anno
 	}
 });
 
-test('GR10: the entity block carries the schema the server actually validates', () => {
+test('GR10: the entity block carries the schema the server actually validates', async () => {
 	/*
 	B165 -- this test pinned the defect it was named after.
 
@@ -112,8 +112,8 @@ test('GR10: the entity block carries the schema the server actually validates', 
 
 	// every kind the server validates appears in the block, DERIVED rather than listed here --
 	// a hand-kept list would drift exactly as the heading did
-	const fields = validate.slice(validate.indexOf('const FIELDS = {'));
-	const kinds = [...fields.matchAll(/^\t(\w+): \{$/gm)].map((m) => m[1]);
+	// H17.22 N-a: the kinds the server validates are the product's composition (planner/kinds.mjs), each a row with its checks
+	const kinds = (await import('../planner/kinds.mjs')).PRODUCT_KINDS.list;
 	assert.ok(kinds.length >= 5, `expected the validator to declare at least five kinds, found ${kinds}`);
 	for (const kind of kinds) {
 		assert.ok(entities.includes(`"${kind}s"`), `${kind} is validated but absent from the entity block`);
@@ -211,16 +211,28 @@ doc keeps the old list, and an agent written from the doc is refused for a reaso
 The check is byte-for-byte against the source of truth rather than a re-derivation, so it cannot
 drift the way the sentence it guards could.
 */
-test('B104: the id grammar in API.md is the one validate.js enforces', () => {
+test('B104: the id grammar in API.md is the one validate.js enforces', async () => {
 	const api = fs.readFileSync('docs/spec/API.md', 'utf8');
-	const src = fs.readFileSync('planner/validate.js', 'utf8');
-	const live = src.match(/^const ID = \/(.+?)\/;$/m);
-	assert.ok(live, 'validate.js no longer declares `const ID` -- this check has lost its subject');
-	assert.ok(api.includes(live[1]),
-		`API.md does not carry the enforced id grammar. validate.js has ${live[1]}`);
+	/*
+	H17.22 N-a: the grammar is no longer a literal in validate.js -- it is built from the product's kind rows (each row's id
+	check) beside the document ids. So the documented grammar is DERIVED from that composition here, and each row's id
+	check is held to it on the edges the document names: uppercase hex, five digits or seven, another kind's prefix.
+	*/
+	const { PRODUCT_KINDS } = await import('../planner/kinds.mjs');
+	const { DOCUMENT_ID } = await import('../planner/validate.js');
+	const live = [`^(${[...PRODUCT_KINDS.list, 'diagram', 'template'].join('|')})-[0-9a-f]{6}$`];
+	assert.ok(api.includes(live[0]),
+		`API.md does not carry the enforced id grammar. The product composes ${live[0]}`);
+	for (const k of PRODUCT_KINDS.list) {
+		const check = PRODUCT_KINDS.row(k).fields.id;
+		assert.equal(check(`${k}-0a1b2c`), true, `${k}: a lowercase six-hex id`);
+		// another product kind, a plugin's kind, a document id: a row accepts its own prefix and no other
+		for (const bad of [`${k}-0A1B2C`, `${k}-0a1b2`, `${k}-0a1b2c3`, `${k === 'node' ? 'zone' : 'node'}-0a1b2c`, 'pipe-0a1b2c', 'diagram-0a1b2c', `x${k}-0a1b2c`]) assert.equal(check(bad), false, `${k} refuses ${bad}`);
+	}
+	assert.equal(DOCUMENT_ID.source, '^(diagram|template)-[0-9a-f]{6}$');
 
 	// and the documented examples must actually pass it, which a hand-written sample need not
-	const re = new RegExp(live[1]);
+	const re = new RegExp(live[0]);
 	const block = api.slice(api.indexOf('## What an id looks like'));
 	const samples = (block.slice(0, block.indexOf('```', block.indexOf('```text') + 7))
 		.match(/\b[a-z]+-[0-9a-f]{6}\b/g) || []);

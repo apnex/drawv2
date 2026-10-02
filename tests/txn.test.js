@@ -1284,15 +1284,18 @@ Every list of the kinds in the planner and the server reads it; the id grammar i
 and it must agree with the table. The thresholds keep their own authority (planner/policy.mjs) but cover the same kinds.
 */
 test('PL-5: the kind table is the one list of kinds, and what still states them agrees with it', async () => {
-	const { KINDS, COLLECTION, SELECTABLE_KINDS, COMPOSITE, OPTIONAL } = await import('../model/shape.mjs');
+	const { CORE_KINDS, COMPOSITE } = await import('../model/shape.mjs');
+	const { list: KINDS, collection: COLLECTION, selectable: SELECTABLE_KINDS, optional: OPTIONAL } = CORE_KINDS;
 	const { collectionCap } = await import('../planner/policy.mjs');
-	const fs = await import('node:fs');
 	assert.deepEqual(KINDS, ['node', 'waypoint', 'link', 'zone', 'group']);
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
 	assert.deepEqual(SELECTABLE_KINDS, ['node', 'waypoint', 'link', 'zone'], 'a group is never selected directly');
 	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
-	const grammar = fs.readFileSync(new URL('../planner/validate.js', import.meta.url), 'utf8').match(/const ID = \/\^\(([^)]*)\)/)[1].split('|');
-	assert.deepEqual(grammar.filter((w) => !['diagram', 'template'].includes(w)), KINDS, 'the id grammar names exactly the table\'s kinds');
+	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
+	// accepting its own kind's id and no other's
+	const { PRODUCT_KINDS } = await import('../planner/kinds.mjs');
+	assert.deepEqual(PRODUCT_KINDS.list, KINDS, 'the product composes exactly the table\'s kinds');
+	for (const k of KINDS) for (const other of KINDS) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
 	// a Model's collections are the table's, in its order
 	const m = new Model();
 	assert.deepEqual(Object.keys(m.toJSON()).filter((k) => Object.values(COLLECTION).includes(k)), KINDS.map((k) => COLLECTION[k]));

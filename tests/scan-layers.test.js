@@ -301,7 +301,7 @@ const MUTANTS = [
 	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/movers.mjs')).moversAt; }\n" }] },
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
 	// PL-5: the kind list's one literal is model/shape.mjs's table now, so the planted sixth kind goes there
-	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];", "export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
+	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];", "const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
 	{ id: 'M5', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/all.mjs', create: "export * from './geometry.mjs';\nexport * from './spec.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf } from '../../kernel/all.mjs';\n" }] },
 	{ id: 'M6', rule: 'L11', edits: [{ file: 'app/src/input.js', append: '\nexport function __m6() { return window.draw.sync.submit({ ops: [] }); }\n' }] },
@@ -320,7 +320,10 @@ const MUTANTS = [
 	{ id: 'A14', rule: 'L10', edits: [{ file: 'planner/log.mjs', append: '\nexport const check = () => 0;\n' },
 		{ file: MAN, replace: ["'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX'],", "'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX', 'check'],"] }] },
 	// the second alternative of the id grammar
-	{ id: 'A6c', rule: 'L7k', edits: [{ file: 'planner/validate.js', replace: ['const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$/;', 'const ID = /^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$|^pipe-[0-9a-f]{6}$/;'] }] },
+	// A6c RETIRED by H17.22 N-a: it widened the id grammar's literal in planner/validate.js, and there is no literal now --
+	// each kind's row carries its id check. Its attack, a sixth kind the product's grammar accepts, is caught by
+	// tests/txn.test.js PL-5 and tests/spec.test.js B104, which hold the product's composition to exactly five rows each
+	// accepting only its own kind (planted and caught when the literal went).
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	// K2c: with the barrels gone, a core module that starts forwarding network code IS a new barrel, so it fails L4 too
 	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { violations } from './invariants.mjs';\n" }] },

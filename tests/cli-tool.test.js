@@ -1673,7 +1673,7 @@ for. `via` is excluded deliberately: it is a route, minted by `draw link --via`,
 property, and `closed` likewise belongs to the shape of the route.
 */
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
-	const { OPTIONAL } = await import('../model/shape.mjs');
+	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
 	const { SETTABLE } = await import('../cli/verbs.mjs');
 
 	// the route fields are the route verb's business; every other optional field must be settable
@@ -1771,7 +1771,7 @@ test('B237: a link can be declared at creation, in one call', async () => {
 });
 
 test('B237: the settable table matches the taxonomy for every kind, not just links', async () => {
-	const { OPTIONAL } = await import('../model/shape.mjs');
+	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
 	const { SETTABLE } = await import('../cli/verbs.mjs');
 
 	/*

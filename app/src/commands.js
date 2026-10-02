@@ -509,7 +509,7 @@ export function cloneSubgraph(model, seedIds) {
 	// (planner/validate.js FIELDS.waypoint), so it must NOT be given a name — inventing a field the
 	// server rejects makes the clone apply locally and then be refused on the wire.
 	const cloneEntity = (kind, src) => {
-		const copy = { ...src, id: newId(kind, scratch.collection(kind)) };
+		const copy = { ...src, id: scratch.freshId(kind) };   // an anchor's hex unique across anchor kinds (N2)
 		/*
 		B187 -- EVERY clone is renamed, by kind rather than by a list of kinds.
 

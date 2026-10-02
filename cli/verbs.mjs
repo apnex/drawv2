@@ -334,7 +334,7 @@ One entry per settable field. `words` maps what an agent types to what is stored
 sentinel for "remove the key", which is a state a `set` patch cannot express (see `run`). A field
 with no `words` takes its value verbatim and validates with `check`.
 
-Restated from `OPTIONAL`/the validator rather than imported, because B138 ships this file alone.
+Restated from the kinds' optional fields (`CORE_KINDS.optional`)/the validator rather than imported, because B138 ships this file alone.
 Held to the taxonomy by a test that SWEEPS it, so a kind gaining an optional scalar is caught here
 with no edit to the test -- a list that names its kinds goes stale, which is B224.
 */
@@ -2443,7 +2443,7 @@ VERBS.push(
 
 	A flat closed array was B231's defect in the write direction: `flow` and `control` reached the
 	document, the canvas, the matrix and the export, and `set` refused them, so the tool could SEE a
-	declaration it could not MAKE. The table below restates `OPTIONAL` from `model/shape.mjs`
+	declaration it could not MAKE. The table below restates the optional fields of `model/shape.mjs` (`CORE_KINDS.optional`)
 	because the CLI ships standalone (B138 installs it by symlink into a directory holding nothing
 	else, so importing a sibling breaks it), and a restated table is a drift risk, which is a test's
 	job -- the same arrangement FONT_MIN/FONT_MAX already have.

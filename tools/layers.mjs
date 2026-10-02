@@ -207,7 +207,7 @@ export const ENTRIES = {
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
-			'model/surface.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
+			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 		],
@@ -219,7 +219,7 @@ export const ENTRIES = {
 			'planner/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs',
-			'model/shape.mjs', 'model/surface.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
+			'model/shape.mjs', 'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 		],
@@ -275,8 +275,14 @@ export const RULES = {
 	*/
 	L7k: {
 		kinds: ['node', 'waypoint', 'link', 'zone', 'group'],
-		// the WHOLE pattern is fixed: `^(` + the alternation + `)` + `rest`, with no flags
-		grammar: [{ file: 'planner/validate.js', name: 'ID', others: ['diagram', 'template'], rest: '-[0-9a-f]{6}$' }],
+		/*
+		AMENDED by H17.22 N-a (ruled 2026-10-02, amending C3): the id grammar is no longer a literal. Each kind's row carries
+		its id check and planner/validate.js builds the grammar from the composition's rows, so there is no regex here to
+		pin. What C3 held -- the product's grammar accepts exactly its five kinds -- is held by behaviour instead: the product
+		composes exactly `kinds`, and each row accepts its own kind's id and no other's (tests/txn.test.js PL-5,
+		tests/spec.test.js B104). The check below stays for any literal grammar a file declares again.
+		*/
+		grammar: [],
 	},
 	// `lab/` is composition only. The line budget is declared by K10 with the lab; until then there is no lab to hold to it
 	/*
@@ -598,7 +604,8 @@ export const UNUSED_EXPORTS = {
 		admits no name; a module that existed at K0 and is missing from the frozen list still fails K2a.
 		*/
 		// K4 moved the planner's files to `planner/`: paths K0 never knew, so arrivals too (its frozen list names their old places)
-		arrived: ['model/link-reactions.mjs', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js', 'planner/policy.mjs'],
+		arrived: ['model/link-reactions.mjs', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js', 'planner/policy.mjs',
+			'planner/kinds.mjs'],   // H17.22 N-a: the product's kind rows, split out of planner/validate.js
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a

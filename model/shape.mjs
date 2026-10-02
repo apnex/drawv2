@@ -6,7 +6,8 @@ in `model/model.mjs` (twice), `planner/validate.js` (twice), `server/rest.js` an
 from `KINDS` and the table below. One literal, checked by `scan-layers` L7k to be exactly the product's five. Two lists
 stay where they are on purpose: the id grammar in `planner/validate.js` is a literal C3 pins, and each kind's field
 CHECKS stay at the trust boundary, which sources its facts and keeps its checks local. Injecting the table into a
-composition -- so the lab could add a kind production does not have -- waits for promotion's format batch (B273).
+composition -- so the lab could add a kind production does not have -- was held for promotion's format batch (B273), and
+is built now: see `composeKinds` below (H17.22 N-a).
 
 Two facts about every entity kind that were previously encoded in two separate hand-maintained
 lists, in two different layers, that nothing forced to agree:
@@ -29,7 +30,7 @@ whole-entity put — see planner/txn.mjs), and validateEntity's optional-field a
 */
 
 // the product's kinds, in the order a document lists its collections
-export const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
+const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 
 /*
   collection  the document key the kind is stored under
@@ -60,11 +61,94 @@ const TABLE = {
 	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };
 
-const byKind = (fact) => Object.fromEntries(KINDS.map((k) => [k, fact(TABLE[k])]));
+// the rest of each of the five's storage half: every one is named (B187, N5), nodes and waypoints are the anchors (N2),
+// and links and groups point at anchors
+const REFERENCES = { link: ['node', 'waypoint'], group: ['node', 'waypoint'] };
+const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node' || k === 'waypoint', references: REFERENCES[k] ?? [] }]));
 
-export const COLLECTION = byKind((t) => t.collection);
-export const SELECTABLE_KINDS = KINDS.filter((k) => TABLE[k].selectable);
-// nested value -> a spread is not enough
-export const COMPOSITE = byKind((t) => new Set(t.composite));
-// may be absent from a stored entity
-export const OPTIONAL = byKind((t) => new Set(t.optional));
+/*
+H17.22 N-a -- A COMPOSITION BRINGS ITS KINDS (ruled 2026-10-02, "Plugins bring their own kinds"; B273).
+
+Every kind is a ROW of one shape, whoever brings it -- the product's five or a plugin's own, the network's `pipe`:
+
+  kind        the id prefix, and the name the planner and the Model know it by
+  owner       who brings it, named when two claim one kind
+  collection  the document key it is stored under
+  selectable  whether a selection may hold it
+  named       whether it joins the one name namespace (N5): required name, given one, found by name
+  anchor      whether it is an anchor -- its 6-hex part is unique across every anchor kind (N2), so a pipe's id,
+              made of its two anchors' hex, names one pair
+  composite   fields holding a nested value -- a spread is not enough to copy one
+  optional    fields a stored entity may lack
+  references  the kinds its entities point at; a composition without one of them is refused
+  fields      a check for every field, `id` included -- the planner's half, absent from the core's default
+  refers      its cross-entity check, `(entity, access, patch) -> error | null` -- the planner's half too
+  cap         the most of it one document may hold -- the planner's half too
+
+This module is CORE, so it holds the mechanism and the five rows' STORAGE half, and treats checks as opaque. The
+product's full rows -- checks, cross-entity checks, caps -- are the planner's (`planner/kinds.mjs`), because the link's
+cross-entity check is network-layer code the core may not import. `new Model()` takes `CORE_KINDS`, the planner takes
+`PRODUCT_KINDS`, and the planner refuses a model composed with different kinds.
+
+Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).
+*/
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap'];
+const DOCUMENT_KINDS = ['diagram', 'template'];   // document-level ids (planner/validate.js DOCUMENT_ID), never an entity kind
+
+export function composeKinds(rows, who = 'a composition') {
+	if (!Array.isArray(rows) || !rows.length) throw new Error(`${who}: a composition is a list of kind rows`);
+	const byName = new Map(), byCollection = new Map();
+	for (const row of rows) {
+		const stray = Object.keys(row ?? {}).filter((k) => !ROW_KEYS.includes(k));
+		if (stray.length) throw new Error(`${who}: kind ${row?.kind}: unknown row key ${stray.join(', ')} -- a row is { ${ROW_KEYS.join(', ')} }`);
+		if (typeof row.kind !== 'string' || !/^[a-z]+$/.test(row.kind)) throw new Error(`${who}: a kind is named in lowercase letters, not ${JSON.stringify(row.kind)}`);
+		if (DOCUMENT_KINDS.includes(row.kind)) throw new Error(`${who}: ${row.kind} is a document id, not a kind an entity may take`);
+		if (byName.has(row.kind)) throw new Error(`${who}: kind ${row.kind} is claimed by ${byName.get(row.kind).owner} and by ${row.owner} -- one owner brings a kind`);
+		if (typeof row.collection !== 'string' || !row.collection) throw new Error(`${who}: kind ${row.kind} names no collection`);
+		if (byCollection.has(row.collection)) throw new Error(`${who}: kinds ${byCollection.get(row.collection)} and ${row.kind} are both stored under ${row.collection}`);
+		for (const list of ['composite', 'optional', 'references']) if (!Array.isArray(row[list] ?? [])) throw new Error(`${who}: kind ${row.kind}: ${list} is a list`);
+		if (row.fields !== undefined) {
+			const names = Object.keys(row.fields);
+			const unchecked = names.filter((f) => typeof row.fields[f] !== 'function');
+			if (unchecked.length) throw new Error(`${who}: kind ${row.kind}: field ${unchecked.join(', ')} has no check`);
+			if (!names.includes('id')) throw new Error(`${who}: kind ${row.kind}: no check for its id`);
+			for (const list of ['composite', 'optional']) {
+				const loose = (row[list] ?? []).filter((f) => !names.includes(f));
+				if (loose.length) throw new Error(`${who}: kind ${row.kind}: ${list} names ${loose.join(', ')}, which it has no check for`);
+			}
+			if (row.named && !names.includes('name')) throw new Error(`${who}: kind ${row.kind} is named but has no check for a name`);
+		}
+		// `clone` (model/ops.mjs) copies nested fields by the core's table, so a kind the core does not know may not hold one yet
+		if (!Object.hasOwn(TABLE, row.kind) && (row.composite ?? []).length) throw new Error(`${who}: kind ${row.kind}: nested fields are copied by the core's table only, so a plugin kind may not declare one yet`);
+		byName.set(row.kind, row);
+		byCollection.set(row.collection, row.kind);
+	}
+	for (const row of rows) {
+		const missing = (row.references ?? []).filter((k) => !byName.has(k));
+		if (missing.length) throw new Error(`${who}: kind ${row.kind} references ${missing.join(', ')}, which this composition does not include`);
+	}
+	const list = rows.map((r) => r.kind);
+	const of = (fact) => Object.fromEntries(rows.map((r) => [r.kind, fact(r)]));
+	return Object.freeze({
+		list,
+		has: (kind) => byName.has(kind),
+		row: (kind) => byName.get(kind),
+		collection: of((r) => r.collection),
+		selectable: list.filter((k) => byName.get(k).selectable),
+		named: list.filter((k) => byName.get(k).named),
+		anchors: list.filter((k) => byName.get(k).anchor),
+		composite: of((r) => new Set(r.composite ?? [])),
+		optional: of((r) => new Set(r.optional ?? [])),
+		// whether every row carries its checks -- what the planner requires of a composition it validates against
+		checked: rows.every((r) => r.fields !== undefined),
+	});
+}
+
+// the five rows' storage half, as the core knows them; the planner adds each one's checks (planner/kinds.mjs)
+export const CORE_ROWS = KINDS.map((kind) => ({ kind, owner: 'the product', ...STORAGE[kind] }));
+// what `new Model()` is composed with when nothing else is passed: the product's five
+export const CORE_KINDS = composeKinds(CORE_ROWS, 'the core');
+
+// nested value -> a spread is not enough; what `clone` (model/ops.mjs) copies deeper, read by kind without a composition.
+// The kinds' other facts are read from a composition -- `CORE_KINDS` where nothing else is composed (H17.22 N-a).
+export const COMPOSITE = CORE_KINDS.composite;

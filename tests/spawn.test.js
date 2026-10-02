@@ -12,7 +12,8 @@ two are tested together rather than apart -- one number, two enforcers, or the p
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateEntity } from '../planner/validate.js';
-import { OPTIONAL } from '../model/shape.mjs';
+import { CORE_KINDS } from '../model/shape.mjs';
+const OPTIONAL = CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
 import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { Model } from '../model/model.mjs';
 

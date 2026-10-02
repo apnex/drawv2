@@ -34,19 +34,16 @@ out, as the Store's injected {flushMs, writeDoc, now}.
 
 import { projection } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
-import { COMPOSITE } from '../model/shape.mjs';   // OPTIONAL was imported here and never used (B86)
-import { groupAfterRemoval, collectionCap } from './policy.mjs';
-import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
-import { STD } from '../kernel/spec.mjs';
+import { groupAfterRemoval } from './policy.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
+import { PRODUCT_KINDS } from './kinds.mjs';   // H17.22 N-a: the kinds a composition brings, each a whole row
 import { violations } from '../model/invariants.mjs';
 import { CLASSIC_LINKS, GROUPS } from './tenants.mjs';
 import { BEATS, wallClock } from './edges.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
-// B113: per KIND, per diagram -- a different enforcement POINT from validateDoc, deliberately, but
-// no longer a different NUMBER. Both source planner/policy.mjs, which is the authority for it.
-const MAX_COLLECTION = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: STD.pitch });
+// B113: the collection cap is per KIND, per diagram -- a different enforcement POINT from validateDoc, deliberately, but
+// no longer a different NUMBER: both read the kind's row (`cap`), which planner/policy.mjs sources (H17.22 N-a).
 const LABEL = /^[a-z0-9 -]{0,32}$/;
 
 // The inverse of a `set` restores the previous value of exactly the keys the patch touches. If the
@@ -63,12 +60,12 @@ function inverseOfSet(kind, before, patch) {
 
 // Only the keys that actually change survive into the op. Narrowing here is what makes a no-op
 // transaction detectable (an empty op list) instead of a version bump for nothing.
-function narrow(kind, before, patch) {
+function narrow(kind, before, patch, kinds) {
 	const out = {};
 	for (const [k, v] of Object.entries(patch)) {
 		if (k === 'id') continue;
 		const cur = before[k];
-		const same = COMPOSITE[kind]?.has(k)
+		const same = kinds.composite[kind]?.has(k)
 			? JSON.stringify(cur) === JSON.stringify(v)
 			: cur === v;
 		if (!same) out[k] = v;
@@ -144,10 +141,17 @@ PL-4 -- THE EDGES are passed in too (PLANNER-SYSTEM.md section 6.4):
   now        the clock, for the record's time and a beat's origin; `wallClock` (planner/edges.mjs) if none is given.
   extensions the record extensions run around each commit; production's, BEATS, if none are given.
 */
-function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, extensions = [BEATS], network, ...rest } = {}, who) {
+/*
+H17.22 N-a -- THE KINDS are passed in too: `kinds`, a composition of whole rows (model/shape.mjs `composeKinds`), the
+product's five (planner/kinds.mjs) if none are given. Every row must carry its checks, and the model planned against must
+be composed with the same kinds -- a model holding a kind the planner cannot validate, or the reverse, is a half-composed
+plugin, refused by name rather than met as an `unknown kind` later.
+*/
+function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, extensions = [BEATS], kinds = PRODUCT_KINDS, network, ...rest } = {}, who) {
 	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- the network plugs in as its link tenant, { links: network.links } (PL-3)`);
 	const stray = Object.keys(rest);
-	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links, place, now, extensions } (PL-4)`);
+	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links, place, now, extensions, kinds } (PL-4, N-a)`);
+	if (!kinds || !Array.isArray(kinds.list) || !kinds.checked) throw new Error(`${who}: kinds is a composition whose every row carries its checks -- composeKinds(rows) (model/shape.mjs, N-a)`);
 	if (place !== null && typeof place !== 'function') throw new Error(`${who}: place is a resolver, (model, at) -> anchor (PL-4)`);
 	if (typeof now !== 'function') throw new Error(`${who}: now is a clock, () -> milliseconds (PL-4)`);
 	for (const x of extensions) if (!x || typeof x.field !== 'string' || typeof x.refuse !== 'function' || typeof x.next !== 'function') throw new Error(`${who}: a record extension is { id, field, refuse, next } (PL-4)`);
@@ -162,7 +166,13 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 			rows[r.phase].push({ ...r, owner: tenant.owner });
 		}
 	}
-	return { rows, place, now, extensions };
+	return { rows, place, now, extensions, kinds };
+}
+
+// the model must be composed with the planner's kinds, in the same order (N-a)
+function sameKinds(model, kinds, who) {
+	const held = model.kinds?.list ?? [];
+	if (held.join() !== kinds.list.join()) throw new Error(`${who}: the model is composed with kinds ${held.join(', ')} and the planner with ${kinds.list.join(', ')} -- a composition passes one set of kinds to both (N-a)`);
 }
 
 // the legacy {action, kind, entity} shape validateMutation speaks (it is the trust boundary, and is not rewritten here)
@@ -170,7 +180,8 @@ const asMutation = (op) => ({ action: op.op, kind: op.kind, entity: op.op === 'd
 const subjectOf = (op) => (op.op === 'meta' ? 'meta' : `${op.kind}:${op.op === 'put' ? op.entity.id : op.id}`);
 
 export function plan(model, ops, options = {}) {
-	const { rows, place } = composition(options, 'plan');
+	const { rows, place, kinds } = composition(options, 'plan');
+	sameKinds(model, kinds, 'plan');
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
 	}
@@ -223,13 +234,13 @@ export function plan(model, ops, options = {}) {
 	-1 means the request was refused as a whole rather than at a particular op.
 	*/
 	for (let i = 0; i < ops.length; i++) {
-		const step = planOne(proj, ops[i], place);
+		const step = planOne(proj, ops[i], place, kinds);
 		if (!step.ok) return { ok: false, error: step.error, opIndex: i };
 		if (!step.op) continue;                                    // narrowed to nothing
 		if (step.unchanged && !follows(step.op)) continue;         // an unchanged put that displaces nothing
 		apply(step.op);
 	}
-	const ctx = { before: model, doc: proj, ops: out, refuses: (op) => validateMutation(proj, asMutation(op)) };
+	const ctx = { before: model, doc: proj, ops: out, refuses: (op) => validateMutation(proj, asMutation(op), kinds) };
 	for (const phase of PHASES) if (!PER_OP.has(phase)) runPhase(phase, ctx);
 
 	/*
@@ -265,7 +276,7 @@ export function plan(model, ops, options = {}) {
 Phase 1 for one requested op: resolved, validated against the document as the ops before it left it, and narrowed to
 what it changes. Answers the op to apply, or none; `unchanged` marks a put of an entity already present byte for byte.
 */
-function planOne(model, op, place) {
+function planOne(model, op, place, kinds) {
 	if (op.op === 'meta') return planMeta(model, op);
 
 	/*
@@ -289,12 +300,12 @@ function planOne(model, op, place) {
 	}
 
 	if (!['put', 'set', 'del'].includes(op.op)) return { ok: false, error: `unknown op '${op.op}'` };
-	const err = validateMutation(model, asMutation(op));
+	const err = validateMutation(model, asMutation(op), kinds);
 	if (err) return { ok: false, error: err };
 
 	if (op.op === 'put') {
 		const before = model.get(op.kind, op.entity.id);
-		if (!before && model.all(op.kind).length >= MAX_COLLECTION[op.kind]) return { ok: false, error: `${op.kind} collection limit reached` };
+		if (!before && model.all(op.kind).length >= kinds.row(op.kind).cap) return { ok: false, error: `${op.kind} collection limit reached` };
 		const put = { op: 'put', kind: op.kind, entity: clone(op.kind, op.entity) };
 	// A put of an entity already present unchanged, with no group to steal from, changes nothing.
 	// Narrow it away — the same no-op rule a set and a delete follow (I6). This is what makes an
@@ -306,7 +317,7 @@ function planOne(model, op, place) {
 	if (op.op === 'set') {
 		const before = model.get(op.kind, op.id);
 		if (!before) return { ok: false, error: `set on missing entity: ${op.id}` };
-		const narrowed = narrow(op.kind, before, op.patch);
+		const narrowed = narrow(op.kind, before, op.patch, kinds);
 		return { ok: true, op: Object.keys(narrowed).length ? { op: 'set', kind: op.kind, id: op.id, patch: narrowed } : null };
 	}
 	return { ok: true, op: { op: 'del', kind: op.kind, id: op.id } };

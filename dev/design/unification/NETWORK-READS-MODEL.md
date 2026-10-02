@@ -57,6 +57,12 @@ Pipes as entities in the lab's tab and authority models; the network's derivatio
 | **N-c** | **The network reads the model.** The view and the judge read `model.all('pipe')`; the judge's verdict carries the pipe entries; Input gains one generic seam -- a judge may add entries to the commit it judges -- so its commit stays pipe-agnostic; a `g` drag with no link commits its pipes; the host loses the lay, the tidy and the planner model; seeds commit their pipes as ops | the behaviour matrix passes with every row unedited except UNDO-01 (section 6); the corpus differs only by pipe ids and the undo rows |
 | **N-d** | **The session pipe set is deleted,** with `alsoReferenced`'s outside list and the skip-after-undo rule | no module imports `network/pipeset.mjs`; `attachNetwork` takes no `authority` |
 
+
+AMENDED 2026-10-02 -- **N-a done.**\
+`composeKinds` (model/shape.mjs) builds a composition of whole rows and refuses a twice-claimed kind, a missing referenced kind, a field without a check, a named kind with no name check, and a plugin kind with nested fields (which `clone` cannot yet copy); the Model and the planner each take `kinds`, and the planner refuses a model composed differently; the product's rows are planner/kinds.mjs; the id grammar is built from the rows; anchors are minted with their hex unique across both anchor kinds (`Model.freshId`).\
+Production unchanged: every corpus and earlier test as before.\
+Pinned by tests/kinds.test.js; 16 of 17 mutants killed, the survivor equivalent.
+
 ---
 
 ## 6. Behaviour that changes, stated before it is built

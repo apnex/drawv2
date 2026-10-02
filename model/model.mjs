@@ -8,14 +8,12 @@ Ported verbatim from client/src/model.js — the document model + wire format st
 across the kernel migration; only render/geometry are re-platformed onto the kernel.
 */
 
-// the kinds, their collections and which are selectable: one table, model/shape.mjs (PL-5). SELECTABLE_KINDS is
-// re-exported because planner/validate.js builds its id regex from it -- it used to carry its own copy, pinned to a line
-// here by a comment reading "MUST match planner/validate.js SELECTABLE", which is a comment doing a check's job (B86).
-import { KINDS, COLLECTION as KEY, SELECTABLE_KINDS } from './shape.mjs';
-export { SELECTABLE_KINDS };
+// the kinds, their collections and which are selectable: a composition of kind rows (model/shape.mjs, H17.22 N-a), the
+// product's five unless one is passed. The selectable list was re-exported here for planner/validate.js's id regex; the
+// validator now reads the composition it is handed.
+import { CORE_KINDS } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId } from './order.mjs';
-const SELECTABLE = new Set(SELECTABLE_KINDS);
 
 /*
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state
@@ -32,17 +30,19 @@ passes, paid at gesture rate on the client and per request on the server — nev
 rate, which is why the browser sends one request per command.
 */
 export function projection(model) {
-	const scratch = new Model();
+	const scratch = new Model({ kinds: model.kinds });   // the same kinds, or a plugin's would not load into it
 	scratch.load(model.toJSON());
 	return scratch;
 }
 
+// `taken` is the ids already in use, as an object keyed by id or as a predicate -- the Model's `freshId` asks one
 export function newId(kind, taken = {}) {
+	const used = typeof taken === 'function' ? taken : (id) => taken[id];
 	let id;
 	do {
 		const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
 		id = `${kind}-${hex}`;
-	} while (taken[id]);
+	} while (used(id));
 	return id;
 }
 
@@ -107,8 +107,11 @@ What the MODEL asks the network -- each under the Model's own method name, so `m
 const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
 
 export class Model {
-	constructor({ network = null, ...rest } = {}) {
+	constructor({ network = null, kinds = CORE_KINDS, ...rest } = {}) {
 		refuseStrayOptions(rest, 'Model');
+		// the kinds this model stores (H17.22 N-a): the product's five unless a composition brings its own (model/shape.mjs)
+		if (!kinds || !Array.isArray(kinds.list) || typeof kinds.has !== 'function') throw new Error('Model: kinds is a composition -- composeKinds(rows) (model/shape.mjs)');
+		this.kinds = kinds;
 		// null in production, which draws, depends and never goes down exactly as it always has -- a test holds it byte for byte
 		this.network = requireNetwork(network, MODEL_READS, 'Model');
 		this.state = {
@@ -116,7 +119,7 @@ export class Model {
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
 			// An empty owner means unowned, which is what every diagram predating H9 is.
 			meta: { id: '', name: 'untitled', version: 0, schema: 1, owner: '', grants: {} },
-			...Object.fromEntries(KINDS.map((k) => [KEY[k], {}])),   // one collection per kind (model/shape.mjs)
+			...Object.fromEntries(kinds.list.map((k) => [kinds.collection[k], {}])),   // one collection per kind composed
 			selection: new Set(),  // model-state (status): the authoritative selected-id set (MS1). NOT a KIND — round-trips as doc.selection, never via the KINDS loops.
 			/*
 			H14.4 -- the reveal, when the document carries one. Null is the normal case and means
@@ -143,8 +146,10 @@ export class Model {
 		this.subs.forEach((fn) => fn(action, kind, entity));
 	}
 
+	// a kind this model was not composed with is refused, named -- never an undefined collection read as empty
 	collection(kind) {
-		return this.state[KEY[kind]];
+		if (!this.kinds.has(kind)) throw new Error(`Model: ${kind} is not a kind this model was composed with (${this.kinds.list.join(', ')})`);
+		return this.state[this.kinds.collection[kind]];
 	}
 
 	get(kind, id) {
@@ -325,10 +330,21 @@ export class Model {
 	duplicate the first time somebody named a waypoint `link-1`, and `resolveId` refuses an ambiguous
 	name -- so the collision would surface as an unrelated verb suddenly failing.
 	*/
+	/*
+	A FRESH ID for a new entity of `kind` (H17.22 N-a; N2). An anchor's 6-hex part is unique across EVERY anchor kind, not
+	only its own: a pipe's id is made of its two anchors' hex, so `node-abc123` beside `waypoint-abc123` would let one pipe
+	id name two pairs. It is also the first step of the waypoint kind's retirement (B282), when `waypoint-<hex>` becomes
+	`node-<hex>` and must collide with nothing.
+	*/
+	freshId(kind) {
+		const shared = this.kinds.anchors.includes(kind) ? this.kinds.anchors : [kind];
+		const hex = (id) => id.slice(kind.length + 1);
+		return newId(kind, (id) => shared.some((k) => this.get(k, `${k}-${hex(id)}`)));
+	}
+
 	nextName(prefix) {
-		// KINDS, not a second list: after B187 every kind is named, so "named kinds" and "kinds"
-		// are the same set and a separate constant would be a twin waiting to drift.
-		const taken = new Set(KINDS.flatMap((k) => this.all(k).map((e) => e.name)));
+		// the NAMED kinds, one namespace (B187): a kind opts in by its row, and the product's five all do (N5)
+		const taken = new Set(this.kinds.named.flatMap((k) => this.all(k).map((e) => e.name)));
 		let n = 1;
 		while (taken.has(`${prefix}-${n}`)) n++;
 		return `${prefix}-${n}`;
@@ -337,7 +353,7 @@ export class Model {
 	// ---- entity factories ----
 	makeNode(type, pos, shape = 'circle') {
 		return {
-			id: newId('node', this.collection('node')),
+			id: this.freshId('node'),
 			name: this.nextName(type),
 			type,
 			shape, // the outer frame (circle, square, …): independent of the glyph `type`
@@ -352,7 +368,7 @@ export class Model {
 	makeTextBox(pos, span = { cols: 1, rows: 1 }) {
 		const cols = span.cols, rows = span.rows;
 		return {
-			id: newId('node', this.collection('node')),
+			id: this.freshId('node'),
 			name: '',
 			type: 'text',
 			shape: 'circle',   // a panel's corner follows shape: 'circle' = rounded (rx=circle radius); 's' toggles to 'square'
@@ -373,7 +389,7 @@ export class Model {
 	makeWaypoint(pos) {
 		// B187 -- named like every other entity. A waypoint is minted from a position rather than
 		// from a request for a named thing, so the name is generated rather than asked for.
-		return { id: newId('waypoint', this.collection('waypoint')), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
+		return { id: this.freshId('waypoint'), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
 	}
 
 	makeZone(box) {
@@ -399,7 +415,7 @@ export class Model {
 	// does the entity for this id exist? kind is inferred from the id; safe for ids of unknown kind.
 	entityExists(id) {
 		const k = kindOf(id);
-		return KEY[k] !== undefined && this.get(k, id) !== undefined;
+		return this.kinds.has(k) && this.get(k, id) !== undefined;
 	}
 
 	// admissible into the selection: a SELECTABLE kind whose entity exists. The single admission rule
@@ -407,7 +423,7 @@ export class Model {
 	// the server's validateSelectionIds (else a group id would round-trip out of toJSON then get the
 	// whole doc rejected on reload, defeating tolerate-stale).
 	selectable(id) {
-		return SELECTABLE.has(kindOf(id)) && this.entityExists(id);
+		return this.kinds.selectable.includes(kindOf(id)) && this.entityExists(id);
 	}
 
 	// expand to the group-as-one rule: a grouped node/waypoint pulls in its whole group.
@@ -443,8 +459,8 @@ export class Model {
 	*/
 	toJSON() {
 		const doc = { meta: { ...this.state.meta, grants: { ...this.state.meta.grants } } };
-		KINDS.forEach((kind) => {
-			doc[KEY[kind]] = this.all(kind).map((e) => ({ ...e }));
+		this.kinds.list.forEach((kind) => {
+			doc[this.kinds.collection[kind]] = this.all(kind).map((e) => ({ ...e }));
 		});
 		doc.selection = [...this.state.selection];   // model-state (status): authoritative selection (MS1)
 		// omitted entirely when absent: a document with no beat must not grow a null key, or every
@@ -454,9 +470,9 @@ export class Model {
 	}
 
 	load(doc) {
-		KINDS.forEach((kind) => {
-			this.state[KEY[kind]] = {};
-			(doc[KEY[kind]] || []).forEach((e) => {
+		this.kinds.list.forEach((kind) => {
+			this.state[this.kinds.collection[kind]] = {};
+			(doc[this.kinds.collection[kind]] || []).forEach((e) => {
 				this.collection(kind)[e.id] = { ...e };
 			});
 		});

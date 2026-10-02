@@ -297,7 +297,7 @@ never used it -- so every angle except the consuming one made the tree look sing
 "MUST match planner/validate.js SELECTABLE".
 */
 test('B86: the selectable kinds are derived from the model, not restated beside it', async () => {
-	const { SELECTABLE_KINDS } = await import('../model/shape.mjs');
+	const SELECTABLE_KINDS = (await import('../model/shape.mjs')).CORE_KINDS.selectable;
 	const { validateSelectionIds } = await import('../planner/validate.js');
 	for (const kind of SELECTABLE_KINDS) {
 		assert.equal(validateSelectionIds([`${kind}-aa0001`]), null, `${kind} is selectable in both`);
@@ -306,11 +306,15 @@ test('B86: the selectable kinds are derived from the model, not restated beside 
 	assert.ok(SELECTABLE_KINDS.length >= 4, 'the list is non-trivial, so the loop is not vacuous');
 });
 
-test('B86: validate.js consults the shared OPTIONAL map, and declares none of its own', () => {
+test('B86: validate.js consults the shared OPTIONAL map, and declares none of its own', async () => {
 	const src = fs.readFileSync(new URL('../planner/validate.js', import.meta.url), 'utf8');
 	assert.doesNotMatch(src, /^const OPTIONAL\s*=/m,
 		'a local OPTIONAL is the duplicate shape.mjs has always claimed to have replaced');
-	assert.match(src, /import \{[^}]*\bOPTIONAL\b[^}]*\} from '\.\.\/model\/shape\.mjs'/, 'it imports the one map');
+	// H17.22 N-a: it reads the composition's map, which the rows carry from the one table in model/shape.mjs
+	assert.match(src, /kinds\.optional\[kind\]/, 'it reads the composition\'s one map');
+	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;
+	const { PRODUCT_KINDS } = await import('../planner/kinds.mjs');
+	assert.deepEqual(PRODUCT_KINDS.optional, OPTIONAL, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');

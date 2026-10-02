@@ -11,7 +11,7 @@ import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
-import { KINDS } from '../model/shape.mjs';   // the kind table (PL-5)
+import { CORE_KINDS } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a)
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -48,7 +48,7 @@ export function announceActivity(hub, store, locks) {
 
 // which collection an id belongs to, without the caller having to say
 function entityIn(model, id) {
-	for (const kind of KINDS) {
+	for (const kind of CORE_KINDS.list) {
 		const entity = model.get(kind, id);
 		if (entity) return { kind, entity };
 	}

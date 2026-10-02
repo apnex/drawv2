@@ -46,6 +46,7 @@ The held backlog row B276 is this register's trigger: it fires when the director
 
 | # | Consideration | Source | The audit checks |
 |---|---|---|---|
+| PU25 | Validation is restructured, accepting what it accepted: each kind is a row carrying its field checks, its cross-entity check and its cap (`planner/kinds.mjs`), the id grammar is built from the rows instead of a literal, and the planner refuses a model composed with other kinds. New node and waypoint ids no longer share their 6-hex part across the two kinds -- still the old format. | H17.22 N-a | the production planner corpus, the gesture corpus and the validator's tests pass unchanged on the deployed revision, and a document saved before the upgrade loads after it |
 | PU13 | No stored-format change since `2814d8d`: templates, examples and the validator's fields are unchanged, and change records keep the reveal under the same field names. A rollback to `2814d8d` reads every document written after the upgrade. | measured 2026-10-01 | `git diff 2814d8d -- templates examples` is empty and a document saved after the upgrade loads on the old image |
 
 ---
@@ -73,3 +74,5 @@ Ruled to land with promotion (`dev/design/unification/PROMOTION.md`), so each is
 | PU21 | A link landing on a bend is cut at every door, not only in the browser. | B243, K18a |
 | PU22 | The network plugin's colour roles move from the network layer's kernel-side module into `network/`, beside the rest of the plugin. | the palette design, 2026-10-01 |
 | PU23 | One device table in `network/`, replacing the `NODE_TYPES` literal the held tools carry. | K6 |
+
+AMENDED 2026-10-02: PU19's mechanism is built (H17.22 N-a, PU25), and `pipe` is the network plugin's kind rather than a sixth core kind (N1); what remains for the cutover is the stored format.
