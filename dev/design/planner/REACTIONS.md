@@ -28,7 +28,7 @@ Production's composition: the classic link tenant and the groups.
 | clear | `group-trim` | groups | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
 | follow | `group-steal` | groups | putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group |
 | sweep | `orphan-sweep` | classic links | a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); only links reference an anchor, and a pinned anchor or a link's end is kept (B216) |
-| join | `link-join` | classic links | two links this edit left alone at a waypoint become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); at any waypoint |
+| join | `link-join` | classic links | two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); at any waypoint |
 <!-- END GENERATED: production -->
 
 ## The network plugin
@@ -46,6 +46,6 @@ Promotion deletes the classic tenant and makes this production's (`dev/design/un
 | follow | `group-steal` | groups | putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group |
 | stranded | `stranded-links` | network links | a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins |
 | sweep | `orphan-sweep` | network links | a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); the pipes that survive the edit reference anchors too, and nothing else is kept (ruled 2026-09-29) |
-| join | `link-join` | network links | two links this edit left alone at a waypoint become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); only where the waypoint's transit is on (TR-5) |
+| join | `link-join` | network links | two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); only where the waypoint's transit is on (TR-5) |
 | join | `pipe-sweep` | network links | after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27) |
 <!-- END GENERATED: network -->

@@ -250,11 +250,24 @@ function linkJoin({ joinsAt = () => true, says }) {
 	return {
 		id: 'link-join',
 		phase: 'join',
-		doc: `two links this edit left alone at a waypoint become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); ${says}`,
+		doc: `two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); ${says}`,
 		run: ({ before, doc, ops, refuses }, emit) => {
 			const touched = new Set();
+			/*
+	B285 -- A CHANGE OF DECLARATION decides a join too (ruled 2026-10-02): an edit that changes a link's plane or direction
+	can make the two links at a junction compatible, and two links remaining compatible after a mutation join (2026-09-28).
+	So the ends of such a link are candidates whatever the count did. Nothing else that sets a link is: a rename or a move
+	of a pin decides nothing, and a second link drawn to a terminus still never joins (B214).
+	*/
+			const redeclared = new Set();
 			for (const op of ops) {
-				if (op.kind !== 'link' || op.op !== 'del') continue;
+				if (op.kind !== 'link') continue;
+				if (op.op === 'set' && ('control' in op.patch || 'flow' in op.patch)) {
+					const e = doc.get('link', op.id);
+					if (e) for (const end of [e.src, e.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
+					continue;
+				}
+				if (op.op !== 'del') continue;
 				const e = op.entity || before.get('link', op.id);
 				if (!e) continue;
 				for (const end of [e.src, e.dst]) if (doc.get('waypoint', end)) touched.add(end);
@@ -267,7 +280,8 @@ function linkJoin({ joinsAt = () => true, says }) {
 	*/
 			for (const w of touched) {
 				const at = touching(doc, w);
-				if (at.length !== 2 || at.length >= touching(before, w).length) continue;
+				// a link left (B269), or one of the two was redeclared (B285)
+				if (at.length !== 2 || (at.length >= touching(before, w).length && !redeclared.has(w))) continue;
 				if (!joinsAt(w, doc)) continue;
 				/*
 		B222 -- PICK A PAIR, do not demand a stored orientation.

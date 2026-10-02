@@ -88,11 +88,11 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . |
 | transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 | TRN-14, TRN-15 | TRN-16 | . | . |
 | transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . | . | . |
-| transit pin | . | . | . | . | . | . | . | . | . | . | TRN-12, TRN-13 | . | . | . | . |
+| transit pin | . | . | . | . | . | . | . | . | . | . | TRN-12, TRN-13, TRN-29, TRN-30 | . | . | . | . |
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . | . | . |
 | transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . | . | . |
 
-78 rows: 78 built, 0 todo, 0 open.\
+80 rows: 80 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -215,6 +215,8 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-26 | w-chain x transit `x` | As TRN-25, then press x again with both still selected. | Turned back on, they join into the one link, pinned at all three, up. | The director's report, 2026-10-02 (B283); DECISIONS: "Transit with pipes" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28). | ruled, built |
 | TRN-27 | w-chain x transit `x` | Make the link a control link with k, then select the middle pin P2 and press x. | Cut in two at P2, and both halves are still control links: a cut keeps the link's plane, and its direction. | The director's report, 2026-10-02 (B284); DECISIONS: "Transit with pipes" (2026-09-30), TR-2; H15.15 (a control and a data link do not join). | ruled, built |
 | TRN-28 | w-chain x transit `x` | As TRN-27, then press x again. | Turned back on, the two control halves join into the one control link, pinned at all three -- a control half beside a data half never could. | The director's report, 2026-10-02 (B284); DECISIONS: "Transit with pipes" (2026-09-30), TR-2; H15.15 (a control and a data link do not join). | ruled, built |
+| TRN-29 | transit pin x transit `x` | Cut at P with x, make the left half a control link with k, and turn P back on with x. | A control half and a data half do not join: P is left a junction, transit on, two links ending there. | DECISIONS: "Two links at a junction join when an edit makes them compatible" (2026-10-02), B285; the 2026-09-28 ruling, "If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined". | ruled, built |
+| TRN-30 | transit pin x transit `x` | As TRN-29, then make the right half a control link with k too. | Now both are control links, compatible, at a junction: they join in that edit, into the one control link pinned at P -- no need to turn transit off and on. | DECISIONS: "Two links at a junction join when an edit makes them compatible" (2026-10-02), B285; the 2026-09-28 ruling, "If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined". | ruled, built |
 | PIPE-01 | routed x select pipe | Lay pipes with g as in GST-01, then click the free hand pipe from A to the g anchor. | A hand pipe with no link over it takes the click: it alone is selected. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
 | PIPE-02 | routed x select pipe | Click a hand pipe the upper link is drawn over, at its middle. | A pipe a link is drawn over is covered by the link, so the click takes the link, not the pipe. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
 | PIPE-03 | routed x delete pipe | Lay pipes with g as in GST-01, click the pipe from A to the g anchor, and press Delete. | The pipe goes, and only it: the g anchor stays, held by its other hand pipe, and the links are untouched. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |

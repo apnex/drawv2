@@ -1630,3 +1630,10 @@ Asked to adjust the transit ring's dash to "4/2 or 5/3", shown both, the directo
 - `evenDash(length, dash, gap)` (kernel/renderer.mjs) takes a dash and gap in real units, lays the whole number of periods nearest to fitting a closed shape, and measures the shape as exactly that long (SVG `pathLength`), so every dash is equal and only slightly off the target. The radius and stroke never change.
 - For closed shapes only: an open path's length changes with every edit, so links keep their dashes sized to the stroke.
 - The transit ring uses it: seven dashes of about 4.2 and gaps of about 2.1, none cut short where the ring begins and ends. Both renderers emit the fitted length.
+
+**Two links at a junction join when an edit makes them compatible -- ruled 2026-10-02 (B285).**\
+The director's report: a link cut at its pin, one half made control, uncut -- a junction, correctly; then the other half made control, and they did not rejoin.\
+Asked "When an edit changes a link's plane or direction (k, f) so that the two links ending at a transiting waypoint become compatible, should they join in that same edit?", the director answered: "You mean "ending at a junction" ? Yes".
+- The planner's join fires at the ends of a link whose plane or direction an edit changed, as it fires where an edit removed a link -- where exactly two links end, transit is on, and they are compatible. It is the 2026-09-28 ruling, "If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined", applied to one more mutation.
+- Drawing a second link to a point where a link already ends still never joins (B214): the two-link terminus stays buildable.
+- One rule, in the shared join reaction, for the lab and for production (`dev/PRODUCTION-UPGRADE.md`).

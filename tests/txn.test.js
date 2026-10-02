@@ -1103,6 +1103,36 @@ test('B269: a link that really leaves a waypoint still joins the two left there,
 });
 
 /*
+B285 -- TWO LINKS AT A JUNCTION JOIN WHEN AN EDIT MAKES THEM COMPATIBLE (ruled 2026-10-02): a change of plane or direction
+is a mutation after which two links remain, compatible, so they join -- as when a link leaves. Drawing a second link to a
+terminus still never joins (B214), and an edit that leaves them incompatible, or touches nothing that decides, joins nothing.
+*/
+test('B285: two links at a junction join when an edit to one makes their planes match, and only then', () => {
+	const P = 60, nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
+	const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+	const lk = (id, s, d, extra = {}) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...extra } });
+	const board = () => {
+		const m = new Model(); const log = new Log();
+		assert.equal(commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), wp('waypoint-00000e', 0, -2),
+			lk('link-00000a', 'node-00000a', 'waypoint-00000e', { control: true }), lk('link-00000b', 'waypoint-00000e', 'node-00000b')] }, 'x', 'x').ok, true);
+		assert.equal(m.all('link').length, 2, 'a control link and a data link meeting at E: drawn, so never joined');
+		return { m, log };
+	};
+	const set = (patch, id = 'link-00000b') => ({ label: 'plane', ops: [{ op: 'set', kind: 'link', id, patch }] });
+	const { m, log } = board();
+	assert.equal(commit(m, log, set({ name: 'renamed' }), 'x', 'x').ok, true);
+	assert.equal(m.all('link').length, 2, 'a rename decides nothing: still two');
+	assert.equal(commit(m, log, set({ control: true }), 'x', 'x').ok, true);
+	assert.deepEqual(m.all('link').map((l) => [l.id, l.src, l.dst, l.via, l.control]), [['link-00000a', 'node-00000a', 'node-00000b', ['waypoint-00000e'], true]], 'now both control: one link, bending at E');
+	const other = board();
+	assert.equal(commit(other.m, other.log, set({ control: false }, 'link-00000a'), 'x', 'x').ok, true);
+	assert.equal(other.m.all('link').length, 1, 'or the other way: both data');
+	const opposed = board();
+	assert.equal(commit(opposed.m, opposed.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, flow: true } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { flow: false } }] }, 'x', 'x').ok, true);
+	assert.equal(opposed.m.all('link').length, 2, 'planes match but both arrive at E: incompatible, still two');
+});
+
+/*
 B270 -- A REFUSED COMMIT TOUCHES NOTHING. The caption check (B220) came after the ops were applied and the version
 advanced, so a refusal left the edit in the document, the version moved and no record written -- the document and its
 log disagreeing, and undo blind to the change. The header promises rejection safety by purity.

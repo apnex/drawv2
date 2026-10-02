@@ -3735,6 +3735,107 @@
 			"built": "yes"
 		},
 		{
+			"id": "TRN-29",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "Cut at P with x, make the left half a control link with k, and turn P back on with x.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A control half and a data half do not join: P is left a junction, transit on, two links ending there.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"controls": 1,
+				"rings": []
+			},
+			"rule": "DECISIONS: \"Two links at a junction join when an edit makes them compatible\" (2026-10-02), B285; the 2026-09-28 ruling, \"If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined\".",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-30",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "As TRN-29, then make the right half a control link with k too.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				]
+			],
+			"intent": "Now both are control links, compatible, at a junction: they join in that edit, into the one control link pinned at P -- no need to turn transit off and on.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"controls": 1,
+				"pins": {
+					"only": 1
+				}
+			},
+			"rule": "DECISIONS: \"Two links at a junction join when an edit makes them compatible\" (2026-10-02), B285; the 2026-09-28 ruling, \"If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined\".",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "PIPE-01",
 			"state": "routed",
 			"gesture": "select pipe",

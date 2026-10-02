@@ -213,6 +213,7 @@ AMENDED 2026-10-02: B283 fixed at the director's report (H17.23) -- turning tran
 AMENDED 2026-10-02: its notice says how many drawn links were cut and into how many pieces -- "1 link cut into 3 pieces".\
 AMENDED 2026-10-02: and turned back on, how many pieces joined into how many links -- "3 pieces joined into 1 link".\
 AMENDED 2026-10-02: B284 fixed at the director's report (H17.24) -- a link cut in two keeps its control plane and direction on both halves, so a control link cut with `x` rejoins as one; the product's cut on landing at a bend had the same fault (PU26).\
+AMENDED 2026-10-02: B285 fixed at the director's report and ruling (H17.25) -- two links at a junction join as soon as an edit makes them compatible, no transit toggle needed (PU27).\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -978,6 +979,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.22 | The network reads a model (promotion's P1 in the lab): a composition brings its kinds, every kind a row of one shape (N-a); the network's pipe kind and its rules, and the hand-pipe delete (N-b); the network reads the model's pipes, so undo restores them (N-c); the session pipe set deleted (N-d) | **B279** | S3 | `DONE` |
 | H17.23 | A transit change at several anchors at once builds each anchor's edit on the board the ones before it leave, so cutting two pins of one link makes three straight pieces and turning them back on rejoins them | **B283** | S2 | `DONE` |
 | H17.24 | A link cut in two keeps its declarations -- its plane (control) and its direction (flow) -- on both halves, whichever cut made them | **B284** | S2 | `DONE` |
+| H17.25 | Two links at a junction join when an edit to one makes them compatible -- a change of plane or direction -- as they join when a link leaves; a second link drawn to a terminus still never joins (B214) | **B285** | S2 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
