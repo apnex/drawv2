@@ -5148,7 +5148,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -5308,7 +5308,7 @@
 		"rings": [
 			{
 				"id": "node#3",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -5477,7 +5477,7 @@
 		"rings": [
 			{
 				"id": "node#3",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -5564,7 +5564,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -5724,7 +5724,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -5935,7 +5935,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -6144,7 +6144,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -6365,7 +6365,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -6508,7 +6508,7 @@
 		"rings": [
 			{
 				"id": "node#3",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -6656,7 +6656,7 @@
 		"rings": [
 			{
 				"id": "waypoint#2",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -6784,12 +6784,12 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			},
 			{
 				"id": "waypoint#2",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -6940,7 +6940,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -7065,7 +7065,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],
@@ -7283,7 +7283,7 @@
 		"rings": [
 			{
 				"id": "waypoint#1",
-				"stroke": "rgb(255, 183, 77)",
+				"stroke": "rgb(239, 154, 154)",
 				"dashed": true
 			}
 		],

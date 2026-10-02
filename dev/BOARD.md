@@ -208,6 +208,7 @@ AMENDED 2026-10-02: N-b done -- the network's pipe kind and its two reactions, a
 AMENDED 2026-10-02: N-c1 done -- the lab's models hold pipes, a drag's pipes ride in its own commit, and undo restores them (UNDO-01 returns up; UNDO-02 and UNDO-03 new); every other matrix row unchanged. Next N-c2, deleting a hand pipe (B281).\
 AMENDED 2026-10-02: N-c2 done -- a hand pipe is selected with a click and deleted with Delete (B281 closed); a link pipe is never offered. Next N-d, deleting the session pipe set.\
 AMENDED 2026-10-02: N-d done, and H17.22 with it (B279 closed) -- the session pipe set deleted, the network reading the model it is asked about, the host taking no planner model; nothing visible changed. Promotion's P1 is done in the lab, and P5's owed decision settled.\
+AMENDED 2026-10-02: the transit ring takes the junction's place -- radius 7, width 3, dashed, light red (Red 200) -- as ruled; matrix row TRN-01 and the ring checks updated, every other row unchanged but for the ring's colour.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.

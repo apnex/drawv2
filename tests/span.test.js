@@ -1417,36 +1417,31 @@ test('a DOWN link is dotted: round dots spaced in stroke widths, never the contr
 });
 
 /*
-The transit ring -- ruled 2026-09-28. An anchor whose author declared `transit: false` keeps apart
-what reaches it, and says so with a thin dashed ring between the junction and endpoint rings.
+The transit ring -- ruled 2026-09-28. An anchor whose author declared `transit: false` keeps apart what reaches it, and
+says so with a dashed ring.
 
-Asserted as GEOMETRY RELATIONSHIPS rather than as the three literals. Five tests in one session
-broke on a correct change because they pinned a value the spec was free to move, and the rule here
-is not "radius is 10" -- it is "this ring fits in the gap the other two leave, and never touches
-either". A later change to any of the three radii must keep that true or fail here.
+AMENDED 2026-10-02: IT TAKES THE JUNCTION'S PLACE. A non-transiting anchor is never a junction (B277), so the ring is drawn
+on the junction's rung -- its radius and its width, dashed, light red. Asserted as RELATIONSHIPS rather than literals, as
+before: the rule is "the junction's ring, dashed, each dash at least as long as the stroke is thick", not "radius 7".
 */
-test('the transit ring fits between the junction and endpoint rings, touching neither', async () => {
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+test('the transit ring sits where the junction would, at its radius and width, dashed, clear of the endpoint ring', async () => {
+	const { waypointLayers, waypointJunction } = await import('../kernel/network-appearance.mjs');
 	const ext = 12;
 
-	const all = waypointLayers(['endpoint', 'junction'], ext, null, { transit: false });
+	const all = waypointLayers(['endpoint'], ext, null, { transit: false });
 	const ring = all.find((l) => l.cls === 'wp-transit');
 	assert.ok(ring, 'an anchor declared non-transiting must draw a ring');
-
-	const junction = all.find((l) => l.cls === 'wp-junction');
+	const junction = waypointJunction();
 	const endpoint = all.find((l) => l.cls === 'wp-ring');
+
+	assert.equal(ring.radius, junction.radius, 'on the junction\'s rung: a non-transiting anchor never draws a junction');
+	assert.equal(ring.width, junction.width, 'at the junction ring\'s width too, chosen by eye (2026-10-02)');
+	assert.ok(ring.dash, 'still dashed (2026-10-02)');
+	const [dash] = String(ring.dash).split(/\s+/).map(Number);
+	assert.ok(dash >= ring.width, `each dash (${dash}) at least as long as the stroke is thick (${ring.width}), or the ring reads as ticks`);
+	assert.equal(ring.fill, 'none', 'unfilled: the endpoint pad masks a waypoint\'s centre, and a fill would blank a node\'s glyph');
 	const span = (l) => [l.radius - l.width / 2, l.radius + l.width / 2];
-	const [, jOut] = span(junction);
-	const [tIn, tOut] = span(ring);
-	const [eIn] = span(endpoint);
-
-	assert.ok(tIn > jOut, `the transit ring (from ${tIn}) must clear the junction ring (to ${jOut})`);
-	assert.ok(tOut < eIn, `the transit ring (to ${tOut}) must clear the endpoint ring (from ${eIn})`);
-
-	// the weight is the grammar: a rule is drawn lighter than the things it constrains
-	assert.ok(ring.width < junction.width && ring.width < endpoint.width,
-		'the transit ring must be the lightest of the three, or it reads as a thing rather than a rule');
-	assert.ok(ring.dash, 'the ring is dashed -- solid would read as another derived role');
+	assert.ok(span(ring)[1] < span(endpoint)[0], `the transit ring (to ${span(ring)[1]}) must clear the endpoint ring (from ${span(endpoint)[0]})`);
 });
 
 test('the transit ring draws only when the author declared it, at any link count', async () => {

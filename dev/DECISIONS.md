@@ -1600,7 +1600,8 @@ Asked about pipe identity, the director proposed "pipe-6hexsrc-6hexdst - a liter
 Asked where link ages live in P1, the director agreed the recommendation over an age field on links now and over bringing B249's drawing-order field forward.
 - P1 moves pipes into the model, not ages; ages move at promotion's P2 with B249's drawing-order field, which stores one order for every kind.
 - Undo already keeps a returning link's age (network/session.mjs), so nothing visible is lost; for one stage network state lives in two places, accepted.
-CORRECTED 2026-10-02: "a bare waypoint becomes a node with no type" above is the proposer's wording, not the ruled model. Under "a node is a CORE plus packs, and a type is a composition" (2026-09-22), there is no type field to leave empty: a waypoint becomes an anchor whose composition carries only `routable` -- the composition with the fewest packs -- and stops being distinguishable rather than being deleted.
+CORRECTED 2026-10-02: "a bare waypoint becomes a node with no type" above is the proposer's wording, not the ruled model.\
+Under "a node is a CORE plus packs, and a type is a composition" (2026-09-22), there is no type field to leave empty: a waypoint becomes an anchor whose composition carries only `routable` -- the composition with the fewest packs -- and stops being distinguishable rather than being deleted.
 
 **A type is the name of a composition, not a pack -- confirmed 2026-10-02.**\
 Asked whether "type" survives unification, the director: "a node is a composition of an anchor with a pipeline including capability packs, behaviours and appearance. So "type" wont exist in the same way as it does today, it will be a result of that composition - though perhaps labelled as a pack == router etc.. am I correct?" -- agreed with one correction: `router` names a composition (`glyph(router)` plus a routing pack), not a pack.
@@ -1614,3 +1615,12 @@ Asked which of promotion's start-of-work decisions (`PROMOTION.md` section 10) m
 - P-1 is ruled by N2 and P-2 answered for P1 by N3. P-3 (closed rings) does not bind it: P1 moves pipes into the model without changing routing, so a ring behaves as it does today.
 - P-4 to P-9 concern the estate and the cutover, and are asked when promotion starts.
 - Every question gating P1 in the lab is ruled; its build is H17.22.
+
+**The transit ring takes the junction's place -- ruled 2026-10-02.**\
+The director: "The visual ring for transit. I now want this to be a copy of the JUNCTION ring, but just very slightly thinner, and a light red color. Now that we can never draw a junction I would like the transit ring to occupy that visual space"; then "Oh and still dashed".\
+Asked which light red, the director chose "Red 200 #ef9a9a" (the proposer's recommendation) over Red 300.\
+Then, "We might even keep the ring width to the same as junction": shown widths 2 and 3 side by side in the lab, the director chose "Width 3, dash 3 2" over width 2 as built (the proposer's recommendation) and width 3 with the old dash.
+- The transit ring is drawn on the junction's rung: radius 7, width 3, dashed `3 2` -- each dash as long as the stroke is thick, so it reads as a dashed ring rather than a row of ticks -- in Red 200, a Material colour added to the palette for it.
+- Unfilled, unlike the junction: on a waypoint the endpoint pad beneath already masks the centre, and on a node, which draws the same ring at its anchor point, a fill would blank out the glyph.
+- It replaces the thin ring at radius 10, width 1, dashed `2 2`, in Orange 300 (ruled 2026-09-28).
+- Seen in the lab: on a router the ring sits inside the glyph's arrows and reads less clearly than on a waypoint -- as the earlier ring did, which the director kept as one rule for every node, the glyph design to be reconsidered later.

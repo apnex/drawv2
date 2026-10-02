@@ -21,11 +21,11 @@ THE NAMES (ruled 2026-10-01: Material, and snap the one-offs):
             were merged (#2f2f2f into #303030, #6a6a6a into #6b6b6b).
   custom    four colours with no near Material match, kept as they were: two dark ambers and a dark green the page uses
             for status, and the socket ochre, whose nearest Material colour (Orange 300) is the transit ring's, which a
-            ruling says the socket must keep clear of.
+            ruling says the socket must keep clear of. (AMENDED 2026-10-02: the transit ring is Red 200 now.)
 */
 const PALETTE = {
 	// ---- Material ----
-	red300: '#e57373', red400: '#ef5350', redA200: '#ff5252',
+	red200: '#ef9a9a', red300: '#e57373', red400: '#ef5350', redA200: '#ff5252',
 	deepPurpleA100: '#b388ff',
 	indigo50: '#e8eaf6',
 	lightBlue200: '#81d4fa', lightBlue300: '#4fc3f7',

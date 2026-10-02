@@ -2661,7 +2661,7 @@
 					"x"
 				]
 			],
-			"intent": "The anchor's transit goes off and the ring shows it: thin, dashed, light orange. What that does to the link through it is TRN-06's (stage X2).",
+			"intent": "The anchor's transit goes off and the ring shows it: dashed, light red, on the junction's rung -- a non-transiting anchor is never a junction (2026-10-02; it was thin, dashed and light orange until then). What that does to the link through it is TRN-06's (stage X2).",
 			"expect": {
 				"links": 1,
 				"pipes": {
@@ -2674,7 +2674,7 @@
 				"ringLook": true,
 				"notice": "transit off at w5"
 			},
-			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7.",
+			"rule": "DECISIONS: \"The transit gesture\" and \"The transit mark\" (2026-09-28); \"Transit with pipes\" (2026-09-30), TR-6 and TR-7. The look AMENDED 2026-10-02: \"a copy of the JUNCTION ring, but just very slightly thinner, and a light red color\", \"still dashed\".",
 			"standing": "ruled",
 			"built": "yes"
 		},

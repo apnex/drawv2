@@ -18,7 +18,7 @@ module and the transit ring is drawn by it; at promotion the roles move into `ne
 */
 export const NETWORK_COLOURS = {
 	pipe: 'blueGrey400',         // the layer beneath the links (network/appearance.mjs)
-	transitRing: 'orange300',    // an anchor whose transit the author turned off (TRANSIT.md section 12)
+	transitRing: 'red200',       // an anchor whose transit the author turned off (TRANSIT.md section 12; light red, ruled 2026-10-02)
 	down: 'orange500',           // a link with no route right now, and a link blocking the selected down link's way
 	pipeSelected: 'lightGreen300',   // a selected hand pipe (H17.22 N-c2, B281) -- the product's one selection colour, its accent
 };
@@ -115,18 +115,21 @@ const ENDPOINT_WIDTH = 5;
 The transit ring (ruled 2026-09-28): the author declared that this anchor keeps apart what
 reaches it, so no bend and no junction form here.
 
-It sits in the gap the other two rings already leave: junction spans 5.5 to 8.5, endpoint
-11.5 to 16.5, so a one-unit ring at radius 10 centres in three clear units with a full unit
-either side. Nothing existing moves, and that clearance is also what keeps the dash readable
--- a terminating link's stroke stops at the endpoint ring, a unit outside this one.
+AMENDED 2026-10-02 -- IT TAKES THE JUNCTION'S PLACE (the director: "a copy of the JUNCTION ring, but just very slightly
+thinner, and a light red color ... Now that we can never draw a junction I would like the transit ring to occupy that
+visual space"; "still dashed"). An anchor whose transit is off is never a junction (B277), so the junction's rung of the
+ladder is free there: the ring is drawn at the junction's radius, 7, and -- seen side by side in the lab -- at its width, 3,
+too (the director chose "Width 3, dash 3 2" over width 2). Dashed, in light red (Red 200), each dash 3 long and a gap of
+2, so a dash stays at least as long as the stroke is thick and the ring reads as dashed rather than as a row of ticks,
+which a 2-unit dash at this width did. Unfilled, unlike the junction: on a waypoint the endpoint pad beneath already
+masks the centre, and on a node, which draws the same ring at its anchor point, a fill would blank out the glyph. It
+clears the endpoint ring as the junction does: ink 5.5 to 8.5 against the endpoint's 11.5 to 16.5.
 
-THE WEIGHT CARRIES THE MEANING: endpoint 5, junction 3, this 1. Thin and dashed reads as a
-rule rather than a thing, which is right, because it is the only one of the three that is not
-derived from the page.
+Until then it sat at radius 10 with a width of 1, in the gap between the junction and endpoint rings, in Orange 300.
 */
-const TRANSIT_RADIUS = 10;
-const TRANSIT_WIDTH = 1;
-const TRANSIT_DASH = '2 2';
+const TRANSIT_RADIUS = JUNCTION_RADIUS;
+const TRANSIT_WIDTH = JUNCTION_WIDTH;
+const TRANSIT_DASH = '3 2';
 
 // the transit ring as a layer -- one spec, which `waypointLayers` hands out for an anchor and the canvas takes for a node
 // from the same list, so the two cannot be drawn differently (transit with pipes, TRANSIT.md section 12, stage X1)
