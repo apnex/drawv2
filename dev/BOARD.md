@@ -210,6 +210,7 @@ AMENDED 2026-10-02: N-c2 done -- a hand pipe is selected with a click and delete
 AMENDED 2026-10-02: N-d done, and H17.22 with it (B279 closed) -- the session pipe set deleted, the network reading the model it is asked about, the host taking no planner model; nothing visible changed. Promotion's P1 is done in the lab, and P5's owed decision settled.\
 AMENDED 2026-10-02: the transit ring takes the junction's place -- radius 7, width 3, dashed, light red (Red 200) -- as ruled; matrix row TRN-01 and the ring checks updated, every other row unchanged but for the ring's colour.\
 AMENDED 2026-10-02: B283 fixed at the director's report (H17.23) -- turning transit off at several pins of one link at once builds each cut on the board the one before it leaves, so the link becomes straight pieces, none down, and turning them back on rejoins it.\
+AMENDED 2026-10-02: its notice says how many drawn links were cut and into how many pieces -- "1 link cut into 3 pieces".\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.

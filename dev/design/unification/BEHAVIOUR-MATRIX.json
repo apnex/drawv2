@@ -3079,7 +3079,7 @@
 				"pins": {
 					"link-000001": 0
 				},
-				"notice": "transit off at P -- 1 link cut in two there"
+				"notice": "transit off at P -- 1 link cut into 2 pieces"
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2, TR-2b and TR-3.",
 			"standing": "ruled",
@@ -3538,7 +3538,7 @@
 					"link": 4,
 					"hand": 0
 				},
-				"notice": "cut in two"
+				"notice": "1 link cut into 3 pieces"
 			},
 			"rule": "The director's report, 2026-10-02 (B283); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28).",
 			"standing": "ruled",

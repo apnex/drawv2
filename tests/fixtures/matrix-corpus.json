@@ -6078,7 +6078,7 @@
 		}
 	},
 	"TRN-12": {
-		"notice": "transit off at P -- 1 link cut in two there",
+		"notice": "transit off at P -- 1 link cut into 2 pieces",
 		"links": [
 			{
 				"id": "link#1",
@@ -6693,7 +6693,7 @@
 		}
 	},
 	"TRN-17": {
-		"notice": "transit off at Q -- 1 link cut in two there",
+		"notice": "transit off at Q -- 1 link cut into 2 pieces",
 		"links": [
 			{
 				"id": "link#1",
@@ -7476,7 +7476,7 @@
 		}
 	},
 	"TRN-23": {
-		"notice": "transit off at waypoint-2, off at waypoint-3 -- 2 links cut in two there",
+		"notice": "transit off at waypoint-2, off at waypoint-3 -- 1 link cut into 3 pieces",
 		"links": [
 			{
 				"id": "link#1",
@@ -7869,7 +7869,7 @@
 		}
 	},
 	"TRN-25": {
-		"notice": "transit off at waypoint-2, off at waypoint-4 -- 2 links cut in two there",
+		"notice": "transit off at waypoint-2, off at waypoint-4 -- 1 link cut into 3 pieces",
 		"links": [
 			{
 				"id": "link#1",

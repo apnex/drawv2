@@ -308,3 +308,21 @@ test('B278: the planner refuses a join where what arrives stops, whatever was de
 	assert.equal(r.ok, true);
 	assert.equal(r.ops.some((o) => o.op === 'set' && o.kind === 'link' && 'src' in o.patch), false, 'they stay two');
 });
+
+/*
+B283's notice, reworded at the director's word (2026-10-02): how many links the author DREW were cut, and into how many
+pieces -- a piece an earlier cut made is traced back to its drawn link, so one link cut at two pins is "1 link cut into 3
+pieces", not "2 links cut in two".
+*/
+test('a transit change counts the drawn links it cut and the pieces they became', async () => {
+	const { transitEdit } = await import('../network/transit.mjs');
+	const m = new Model();
+	const [S, A, B, E, F] = ['waypoint-00000a', 'waypoint-00000b', 'waypoint-00000c', 'waypoint-00000d', 'waypoint-00000e'];
+	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120], [F, 120, 0]].forEach(([id, x, y]) => m.put('waypoint', { id, name: id, x, y }));
+	m.put('link', { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] });
+	assert.deepEqual(transitEdit(m, [A], () => true).cut, { links: 1, pieces: 2 });
+	assert.deepEqual(transitEdit(m, [A, B], () => true).cut, { links: 1, pieces: 3 }, 'one drawn link, cut twice');
+	m.put('link', { id: 'link-000002', name: 'k', src: S, dst: F, via: [A] });
+	assert.deepEqual(transitEdit(m, [A, B], () => true).cut, { links: 2, pieces: 5 }, 'two drawn links: three pieces and two');
+	assert.equal(transitEdit(m, [A, B], () => false), null, 'turned on where nothing is cut, nothing to join: no edit');
+});

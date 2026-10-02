@@ -101,7 +101,9 @@ a projection of the board as the ones before it leave it, and applied there befo
 the same board, two cuts of one link both deleted and re-put the original -- the second re-ending it over both pins while
 the first's far piece still ran past the second -- so a link ended up down over a pipe another held, and no join could undo
 it (the director's report, 2026-10-02). `stops(id)` says whether what arrives at the waypoint now stops there.
-Answers the entries, as the canvas's history takes them, how many links were cut, and whether any joined; null if nothing.
+Answers the entries, as the canvas's history takes them; `cut`, how many links the author drew were cut and into how many
+pieces -- a piece an earlier cut made is traced back to the link it came from, so one link cut at two waypoints is one link
+in three pieces, not two links cut in two (the director, 2026-10-02); and whether any joined. Null if nothing.
 */
 const asOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e);
 
@@ -110,14 +112,25 @@ export function transitEdit(model, waypointIds, stops) {
 	if (!ids.length) return null;
 	const board = projection(model);
 	const entries = [];
-	let cut = 0, joined = false;
+	const drawnAs = new Map();   // a piece's id -> the id of the link the author drew, which it was cut from
+	const drawn = (id) => drawnAs.get(id) ?? id;
+	let pieces = 0, joined = false;
 	for (const id of ids) {
 		const edit = stops(id) ? cutAt(board, id) : joinAt(board, id);
 		if (!edit) continue;
 		applyOps(board, edit.entries.map(asOp));
 		entries.push(...edit.entries);
-		cut += edit.cut ?? 0;
+		// a cut deletes a link and puts its two halves, the first keeping its id; the second is new, and is the same drawn link
+		if (edit.label === 'cut') {
+			let from = null;
+			for (const e of edit.entries) {
+				if (e.op === 'del') from = drawn(e.entity.id);
+				else if (e.op === 'put' && e.entity.id !== from && !drawnAs.has(e.entity.id) && from) drawnAs.set(e.entity.id, from);
+			}
+			pieces += edit.cut;
+		}
 		joined ||= edit.label === 'join';
 	}
-	return entries.length ? { label: 'transit', entries, cut, joined } : null;
+	const cutLinks = new Set(drawnAs.values()).size;
+	return entries.length ? { label: 'transit', entries, cut: cutLinks ? { links: cutLinks, pieces: cutLinks + pieces } : null, joined } : null;
 }
