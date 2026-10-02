@@ -166,7 +166,7 @@ The readout says so rather than failing silently.
 
 ## 9. The mark, ruled 2026-09-28
 
-AMENDED 2026-10-02: the mark takes the junction's place -- radius 7 and width 3, dashed `3 2`, in Red 200 (`#ef9a9a`), unfilled -- since an anchor whose transit is off is never a junction (B277); `dev/DECISIONS.md`, "The transit ring takes the junction's place".
+AMENDED 2026-10-02: the mark takes the junction's place -- radius 7 and width 3, dashed (about `4 2`, fitted to divide the ring exactly; first `3 2`), in Red 200 (`#ef9a9a`), unfilled -- since an anchor whose transit is off is never a junction (B277); `dev/DECISIONS.md`, "The transit ring takes the junction's place".
 What follows is the mark as first ruled.
 
 **A thin dashed ring in light orange, radius 10, width 1**, drawn inside the endpoint ring and outside the junction ring.\

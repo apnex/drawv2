@@ -5149,7 +5149,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -5309,7 +5310,8 @@
 			{
 				"id": "node#3",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -5478,7 +5480,8 @@
 			{
 				"id": "node#3",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -5565,7 +5568,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -5725,7 +5729,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -5936,7 +5941,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -6145,7 +6151,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -6366,7 +6373,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -6509,7 +6517,8 @@
 			{
 				"id": "node#3",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -6657,7 +6666,8 @@
 			{
 				"id": "waypoint#2",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -6785,12 +6795,14 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			},
 			{
 				"id": "waypoint#2",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -6941,7 +6953,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -7066,7 +7079,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -7284,7 +7298,8 @@
 			{
 				"id": "waypoint#1",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -7597,12 +7612,14 @@
 			{
 				"id": "waypoint#2",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			},
 			{
 				"id": "waypoint#3",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [
@@ -7990,12 +8007,14 @@
 			{
 				"id": "waypoint#2",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			},
 			{
 				"id": "waypoint#3",
 				"stroke": "rgb(239, 154, 154)",
-				"dashed": true
+				"dashed": true,
+				"fitted": 42
 			}
 		],
 		"waypointRoles": [

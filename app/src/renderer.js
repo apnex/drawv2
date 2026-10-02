@@ -44,7 +44,7 @@ const hitOf = (d, look) => ({ d, fill: 'none', stroke: 'transparent', 'stroke-wi
 function layerCircle(l, g) {
 	el('circle', l.fill === 'solid'
 		? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
-		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}) }, g);
+		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}), ...(l.pathLength ? { pathLength: l.pathLength } : {}) }, g);   // a fitted dash (evenDash)
 }
 
 // render ONE content region into a node's <g> (node-local px) — mirrors kernel/renderer.mjs

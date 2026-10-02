@@ -655,7 +655,7 @@ const SNAPSHOT = `(() => {
 		// canonical numbering cannot see, while the ends are anchor ids it numbers like any other
 		selected: lab.input.selection.list().map((id) => { const p = id.startsWith('pipe-') && lab.model.get('pipe', id); return p ? \`pipe:\${p.a}:\${p.b}\` : id; }),
 		// what declares transit off on the canvas: each drawn transit ring, by the anchor or node it marks, and how it looks
-		rings: [...document.querySelectorAll('.wp-transit')].map((c) => { const cs = getComputedStyle(c); return { id: c.closest('g[id]').id, stroke: cs.stroke, dashed: cs.strokeDasharray !== 'none' }; }),
+		rings: [...document.querySelectorAll('.wp-transit')].map((c) => { const cs = getComputedStyle(c); return { id: c.closest('g[id]').id, stroke: cs.stroke, dashed: cs.strokeDasharray !== 'none', fitted: Number(c.getAttribute('pathLength')) || null }; }),
 		// what each waypoint IS (B277): its roles as drawn -- the class and the rings -- and as Input judges it, the two readers
 		waypointRoles: [...document.querySelectorAll('#waypoints g.waypoint')].map((g) => ({ id: g.id,
 			drawn: [...g.classList].filter((c) => c === 'endpoint' || c === 'junction'), junctionRing: !!g.querySelector('.wp-junction'),
@@ -759,7 +759,7 @@ const CHECK = {
 		return !wrong.length || wrong.map(([id, roles]) => `${id} is ${JSON.stringify(s.waypointRoles.find((x) => x.id === id) ?? 'not drawn')}, not ${roles.join(' and ')}`).join('; ');
 	},
 	// dashed, light red (Red 200), on the junction's rung -- ruled 2026-10-02; it was light orange until then
-	ringLook: (s) => (s.rings.length > 0 && s.rings.every((r) => r.stroke === rgb('#ef9a9a') && r.dashed)) || `the rings are drawn ${JSON.stringify(s.rings)}, not dashed in #ef9a9a`,
+	ringLook: (s) => (s.rings.length > 0 && s.rings.every((r) => r.stroke === rgb('#ef9a9a') && r.dashed && r.fitted)) || `the rings are drawn ${JSON.stringify(s.rings)}, not dashed in #ef9a9a and fitted to the ring`,
 	// the selection is exactly the one down link -- for a board whose links are drawn by gestures, so their ids are not known
 	selectedDown: (s, want) => { const down = s.links.filter((l) => l.down).map((l) => l.id); return (down.length === 1 && same([...s.selected], down)) === want || `the selection is ${s.selected.join(',') || 'empty'}, and the down links are ${down.join(',') || 'none'}`; },
 	// the kinds of what is selected -- for an id the gesture minted, which a row cannot name (H17.22 N-c2)

@@ -112,6 +112,7 @@ own literal and agreed with the kernel.
 const DOT_RADIUS = 2;
 export const gridDot = () => ({ radius: DOT_RADIUS });
 
+
 export const zone = (x, y, w, h) => ({ kind: 'zone', x, y, w, h });
 export const group = (x, y, w, h) => ({ kind: 'group', x, y, w, h });
 

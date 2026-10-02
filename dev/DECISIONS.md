@@ -1624,3 +1624,9 @@ Then, "We might even keep the ring width to the same as junction": shown widths 
 - Unfilled, unlike the junction: on a waypoint the endpoint pad beneath already masks the centre, and on a node, which draws the same ring at its anchor point, a fill would blank out the glyph.
 - It replaces the thin ring at radius 10, width 1, dashed `2 2`, in Orange 300 (ruled 2026-09-28).
 - Seen in the lab: on a router the ring sits inside the glyph's arrows and reads less clearly than on a waypoint -- as the earlier ring did, which the director kept as one rule for every node, the glyph design to be reconsidered later.
+
+**A dash is a target size the pattern fits to the shape; the transit ring dashes about 4, gaps about 2 -- ruled 2026-10-02.**\
+Asked to adjust the transit ring's dash to "4/2 or 5/3", shown both, the director asked what equal dashes would require, then: "In many instances we may wish to target an approximate dash size - then have the helper slightly adjust to make it fit correctly. This will still allow us to say "dash of length 4" etc as an input"; and chose "4 / 2" (the proposer's recommendation) over 5 / 3.
+- `evenDash(length, dash, gap)` (kernel/renderer.mjs) takes a dash and gap in real units, lays the whole number of periods nearest to fitting a closed shape, and measures the shape as exactly that long (SVG `pathLength`), so every dash is equal and only slightly off the target. The radius and stroke never change.
+- For closed shapes only: an open path's length changes with every edit, so links keep their dashes sized to the stroke.
+- The transit ring uses it: seven dashes of about 4.2 and gaps of about 2.1, none cut short where the ring begins and ends. Both renderers emit the fitted length.

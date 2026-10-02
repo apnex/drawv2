@@ -24,6 +24,7 @@ export const NETWORK_COLOURS = {
 };
 import { STD, BEND_R } from './spec.mjs';
 import { gridDot } from './geometry.mjs';
+import { evenDash } from './renderer.mjs';   // a fitted dash for the transit ring (2026-10-02)
 
 // ---- the network's scene elements (px coords, center-origin) ----
 /*
@@ -121,7 +122,7 @@ visual space"; "still dashed"). An anchor whose transit is off is never a juncti
 ladder is free there: the ring is drawn at the junction's radius, 7, and -- seen side by side in the lab -- at its width, 3,
 too (the director chose "Width 3, dash 3 2" over width 2). Dashed, in light red (Red 200), each dash 3 long and a gap of
 2, so a dash stays at least as long as the stroke is thick and the ring reads as dashed rather than as a row of ticks,
-which a 2-unit dash at this width did. Unfilled, unlike the junction: on a waypoint the endpoint pad beneath already
+which a 2-unit dash at this width did. (AMENDED: about 4 and 2, fitted -- below.) Unfilled, unlike the junction: on a waypoint the endpoint pad beneath already
 masks the centre, and on a node, which draws the same ring at its anchor point, a fill would blank out the glyph. It
 clears the endpoint ring as the junction does: ink 5.5 to 8.5 against the endpoint's 11.5 to 16.5.
 
@@ -129,11 +130,16 @@ Until then it sat at radius 10 with a width of 1, in the gap between the junctio
 */
 const TRANSIT_RADIUS = JUNCTION_RADIUS;
 const TRANSIT_WIDTH = JUNCTION_WIDTH;
-const TRANSIT_DASH = '3 2';
+/*
+AMENDED 2026-10-02: dashes of about 4 with gaps of about 2, fitted to divide the ring exactly (`evenDash`) -- the director
+chose "4 / 2" over 5 / 3, and asked that a dash size be a target the pattern adjusts to fit, so no short dash is left where
+the ring begins and ends. On this ring: seven dashes, each about 4.2.
+*/
+const TRANSIT_DASH = evenDash(2 * Math.PI * TRANSIT_RADIUS, 4, 2);
 
 // the transit ring as a layer -- one spec, which `waypointLayers` hands out for an anchor and the canvas takes for a node
 // from the same list, so the two cannot be drawn differently (transit with pipes, TRANSIT.md section 12, stage X1)
-const transitLayer = () => ({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, fill: 'none', opacity: 1, dash: TRANSIT_DASH, stroke: colour(NETWORK_COLOURS.transitRing) });
+const transitLayer = () => ({ cls: 'wp-transit', radius: TRANSIT_RADIUS, width: TRANSIT_WIDTH, fill: 'none', opacity: 1, dash: TRANSIT_DASH.dash, pathLength: TRANSIT_DASH.pathLength, stroke: colour(NETWORK_COLOURS.transitRing) });
 
 export const waypointStyle = (role, ext) => {
 	const endpoint = role === 'endpoint';

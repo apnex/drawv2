@@ -116,7 +116,7 @@ function renderEl(el, V, L, opts = {}) {
 		const circles = waypointLayers(roles, L.frame.ext, el.links).map((l) => (l.fill === 'solid'
 			? `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${TOKENS.waypoint}"/>`
 			// a layer may carry its own stroke and dash -- the transit ring does -- and is drawn as it says
-			: `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${l.fill}" stroke="${l.stroke ?? TOKENS.waypoint}" stroke-width="${l.width}" stroke-opacity="${l.opacity}"${l.dash ? ` stroke-dasharray="${l.dash}"` : ''}/>`)).join('');
+			: `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${l.fill}" stroke="${l.stroke ?? TOKENS.waypoint}" stroke-width="${l.width}" stroke-opacity="${l.opacity}"${l.dash ? ` stroke-dasharray="${l.dash}"` : ''}${l.pathLength ? ` pathLength="${l.pathLength}"` : ''}/>`)).join('');
 		return `<g class="waypoint ${cls}">${circles}</g>`;
 	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are

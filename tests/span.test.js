@@ -1437,8 +1437,13 @@ test('the transit ring sits where the junction would, at its radius and width, d
 	assert.equal(ring.radius, junction.radius, 'on the junction\'s rung: a non-transiting anchor never draws a junction');
 	assert.equal(ring.width, junction.width, 'at the junction ring\'s width too, chosen by eye (2026-10-02)');
 	assert.ok(ring.dash, 'still dashed (2026-10-02)');
-	const [dash] = String(ring.dash).split(/\s+/).map(Number);
+	const [dash, gap] = String(ring.dash).split(/\s+/).map(Number);
 	assert.ok(dash >= ring.width, `each dash (${dash}) at least as long as the stroke is thick (${ring.width}), or the ring reads as ticks`);
+	// fitted (2026-10-02): the ring is measured as a whole number of periods, so every dash is equal, none cut short
+	const periods = ring.pathLength / (dash + gap);
+	assert.ok(Number.isInteger(periods) && periods >= 1, `the ring divides into whole periods, not ${periods}`);
+	const drawn = dash * (2 * Math.PI * ring.radius) / ring.pathLength;
+	assert.ok(Math.abs(drawn - dash) / dash < 0.1, `each dash as drawn (${drawn.toFixed(2)}) within a tenth of the target (${dash})`);
 	assert.equal(ring.fill, 'none', 'unfilled: the endpoint pad masks a waypoint\'s centre, and a fill would blank a node\'s glyph');
 	const span = (l) => [l.radius - l.width / 2, l.radius + l.width / 2];
 	assert.ok(span(ring)[1] < span(endpoint)[0], `the transit ring (to ${span(ring)[1]}) must clear the endpoint ring (from ${span(endpoint)[0]})`);
@@ -1488,4 +1493,32 @@ test('the transit ring is drawn after every filled layer that would cover it', a
 		const covers = all.slice(at + 1).filter((l) => (l.fill === 'solid' || (l.fill && l.fill !== 'none')) && l.radius + (l.width ?? 0) / 2 > ring.radius - ring.width / 2);
 		assert.deepEqual(covers.map((l) => l.cls), [], `${roles.join('+') || 'bend'}: painted over the transit ring`);
 	}
+});
+
+/*
+AN EVEN DASH (kernel/renderer.mjs `evenDash`, 2026-10-02): asked for a dash and gap in real units, it lays a whole number of
+periods around a closed shape -- the count nearest to fitting -- and measures the shape as exactly that long, so the dashes
+are equal and only slightly off the target. Every renderer emits what it answers: the canvas and the export draw one layer
+list, so a fitted ring is fitted in both.
+*/
+test('evenDash fits a whole number of dashes, nearest the target, at least one', async () => {
+	const { evenDash } = await import('../kernel/renderer.mjs');
+	assert.deepEqual(evenDash(2 * Math.PI * 7, 4, 2), { dash: '4 2', pathLength: 42, count: 7 }, 'the transit ring: 44 long, seven periods of six');
+	assert.deepEqual(evenDash(2 * Math.PI * 7, 5, 3), { dash: '5 3', pathLength: 40, count: 5 });
+	assert.equal(evenDash(10, 4, 2).count, 2, '1.67 periods rounds to two');
+	assert.equal(evenDash(2, 4, 2).count, 1, 'a shape shorter than one period still draws one dash');
+	for (const [r, d, g] of [[7, 4, 2], [14, 3, 2], [20, 6, 3], [3, 1, 1]]) {
+		const len = 2 * Math.PI * r, f = evenDash(len, d, g);
+		assert.ok(Math.abs(len / f.pathLength - 1) <= (d + g) / 2 / f.pathLength + 1e-9, `r=${r}: stretched by at most half a period`);
+	}
+});
+
+test('a fitted dash is drawn as fitted, by the canvas and the export alike', async () => {
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
+	assert.ok(ring.pathLength, 'the transit ring carries its fitted length');
+	const canvas = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	const scene = fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8');
+	assert.match(canvas, /pathLength: l\.pathLength/, 'the canvas emits it');
+	assert.match(scene, /pathLength="\$\{l\.pathLength\}"/, 'and so does the export');
 });

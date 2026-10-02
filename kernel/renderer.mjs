@@ -154,3 +154,19 @@ export function sharedDefs(V = STD, L = L_STD) {
 	  </defs>
 	</svg>`;
 }
+
+/*
+AN EVEN DASH -- a render primitive, beside the others here: a dash pattern that divides a closed shape exactly, so no short dash is left where it starts and ends (the
+director, 2026-10-02: "target an approximate dash size - then have the helper slightly adjust to make it fit correctly").
+
+The dash and gap are asked for in real units -- "a dash of length 4" -- and the count is the whole number of periods nearest
+to fitting the length; the shape is then measured as exactly that many periods long (SVG `pathLength`), so the browser
+stretches or squeezes each period slightly to fit. The radius and the stroke never change; only how the pattern is laid out.
+For a closed shape only: an open path's length changes with every edit, and fitting would change its dashes with it.
+Answers the SVG attributes, `dash` and `pathLength`, and `count`, how many dashes are drawn -- at least one.
+*/
+export function evenDash(length, dash, gap) {
+	const period = dash + gap;
+	const count = Math.max(1, Math.round(length / period));
+	return { dash: `${dash} ${gap}`, pathLength: count * period, count };
+}
