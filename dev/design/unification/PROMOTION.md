@@ -135,6 +135,22 @@ AMENDED 2026-10-02, by N2 (`dev/DECISIONS.md`, "A pipe's id is its two anchors' 
   CORRECTED 2026-10-02: an anchor whose composition carries only `routable`, not a node with no type; and B282 widened -- the stored `type` becomes the name of a composition of packs, which supply their own tables, transit's included.
 - **P8:** the dry run checks the estate for hex shared by a node and a waypoint, which the rewrite would collide.
 
+
+AMENDED 2026-10-02 -- **THE LINK'S PATH THROUGH PROMOTION**, gathered in one place at the director's word ("I just wanted to make sure the specifics of the promotion relating to links were encoded in our durable plan").\
+Link rules are already one set -- one join reaction, one split rule (`splitAtBend`), one list of declarations (`LINK_DECLARATIONS`), shared by both tenants; what promotion changes is who owns them and where they live:
+
+| stage | what happens to links | carried by |
+|---|---|---|
+| **P2** | a transit toggle becomes an op (a `set` of the anchor's stored transit), so its cut and join become planner reactions in the network's tenant instead of an edit the page builds (`network/transit.mjs` `transitEdit`) | this section, above |
+| **P3** | production composes the network's link tenant, and `CLASSIC_LINKS` is deleted from `planner/tenants.mjs`: one set of link reactions, not two tenants built from shared code | P3 note above |
+| **P3** | `link` becomes the network plugin's kind: its row leaves the product's five (`planner/kinds.mjs`) for `network/`, beside `pipe`, and the product composes it by composing the network | B280 (its trigger names P3) |
+| **P3 to P5** | the link rules move into `network/` once production may import it: `model/invariants.mjs`, `model/referential.mjs`, `model/link-reactions.mjs`, and the role and appearance modules (`kernel/network-roles.mjs`, `kernel/network-appearance.mjs`) | H17 cut K13b (`dev/design/h17/PLAN.md`); PU22 for the appearance roles |
+| **P3 and P5** | the browser's own copies of planner rules are deleted, the browser previewing with the planner (PL-6) | P3/P5 note above; B221 |
+| **the rebuild** | the core Model's link methods move to the network layer, so the core knows no link | H17 cut K13d |
+
+Not before promotion: making `link` the network's kind in the lab alone would give one kind two definitions while production still needs its row (2026-10-02).\
+Waypoints becoming anchors on nodes, and type becoming a composition of packs (B282), travel with the format batch (P2) and change what a link's ends reference -- the anchor kinds -- not the link.
+
 ---
 
 ## 7. Binary exit criteria for the whole promotion
