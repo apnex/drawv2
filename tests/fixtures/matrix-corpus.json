@@ -17,6 +17,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -62,6 +63,7 @@
 	"DEL-02": {
 		"notice": "v2 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [
 			{
@@ -130,6 +132,7 @@
 	"DEL-03": {
 		"notice": "v2 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -149,6 +152,7 @@
 	"DEL-04": {
 		"notice": "v3 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -165,6 +169,7 @@
 	"DEL-05": {
 		"notice": "v3 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -181,6 +186,7 @@
 	"DEL-06": {
 		"notice": "v3 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -197,6 +203,7 @@
 	"DEL-07": {
 		"notice": "v3 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -213,6 +220,7 @@
 	"DEL-08": {
 		"notice": "v3 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -240,6 +248,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -370,6 +379,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -503,6 +513,7 @@
 	"DEL-11": {
 		"notice": "v2 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [],
 		"tabAnchors": [],
@@ -529,6 +540,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -637,6 +649,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -796,6 +809,7 @@
 	"DEL-14": {
 		"notice": "v3 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [
 			{
@@ -860,6 +874,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -901,6 +916,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -997,6 +1013,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -1057,6 +1074,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -1154,6 +1172,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -1227,6 +1246,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -1296,6 +1316,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -1408,6 +1429,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -1512,6 +1534,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -1648,6 +1671,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -1796,6 +1820,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -1919,6 +1944,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -2036,6 +2062,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -2166,6 +2193,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -2296,6 +2324,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -2435,6 +2464,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -2567,6 +2597,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -2809,6 +2840,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -3035,6 +3067,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -3229,6 +3262,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -3376,6 +3410,7 @@
 	"HP-01": {
 		"notice": "v5 delete",
 		"links": [],
+		"controls": 0,
 		"tabLinks": [],
 		"anchors": [
 			{
@@ -3462,6 +3497,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -3596,6 +3632,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -3808,6 +3845,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -4046,6 +4084,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -4260,6 +4299,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -4475,6 +4515,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -4608,6 +4649,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -4691,6 +4733,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -4857,6 +4900,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -4971,6 +5015,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5103,6 +5148,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5183,6 +5229,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5264,6 +5311,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5352,6 +5400,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5433,6 +5482,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5522,6 +5572,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5602,6 +5653,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5683,6 +5735,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5763,6 +5816,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5874,6 +5928,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -5983,6 +6038,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -6101,6 +6157,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -6209,6 +6266,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -6304,6 +6362,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -6448,6 +6507,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -6590,6 +6650,7 @@
 				"down": true
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#2",
@@ -6727,6 +6788,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -6889,6 +6951,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7025,6 +7088,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7137,6 +7201,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7236,6 +7301,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7379,6 +7445,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7517,6 +7584,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7734,6 +7802,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -7912,6 +7981,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -8129,6 +8199,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -8280,6 +8351,372 @@
 			}
 		}
 	},
+	"TRN-27": {
+		"notice": "transit off at waypoint-3 -- 1 link cut into 2 pieces",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3"
+				],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#2",
+				"dst": "waypoint#4",
+				"via": [
+					"waypoint#5"
+				],
+				"down": false
+			}
+		],
+		"controls": 2,
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3"
+				]
+			},
+			{
+				"id": "link#2",
+				"src": "waypoint#2",
+				"dst": "waypoint#4",
+				"via": [
+					"waypoint#5"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#2",
+				"x": -120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": 120,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#2",
+			"waypoint#5",
+			"waypoint#4"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#2",
+			"waypoint#5",
+			"waypoint#4"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "link"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
+		"selected": [
+			"waypoint#2"
+		],
+		"rings": [
+			{
+				"id": "waypoint#2",
+				"stroke": "rgb(239, 154, 154)",
+				"dashed": true,
+				"fitted": 42
+			}
+		],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": true,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,-120|-360,0",
+					"-120,0|-240,-120"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"-120,0|0,-120",
+					"0,-120|120,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -225.858 -105.858 L-120 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M-120 0 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"TRN-28": {
+		"notice": "transit on at waypoint-3 -- 2 pieces joined into 1 link",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4",
+					"waypoint#5"
+				],
+				"down": false
+			}
+		],
+		"controls": 1,
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "waypoint#1",
+				"dst": "waypoint#2",
+				"via": [
+					"waypoint#3",
+					"waypoint#4",
+					"waypoint#5"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": -360,
+				"y": 0
+			},
+			{
+				"id": "waypoint#3",
+				"x": -240,
+				"y": -120
+			},
+			{
+				"id": "waypoint#4",
+				"x": -120,
+				"y": 0
+			},
+			{
+				"id": "waypoint#5",
+				"x": 0,
+				"y": -120
+			},
+			{
+				"id": "waypoint#2",
+				"x": 120,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#2"
+		],
+		"alive": [
+			"waypoint#1",
+			"waypoint#3",
+			"waypoint#4",
+			"waypoint#5",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#4",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#5",
+				"laid": "link"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
+		"selected": [
+			"waypoint#4"
+		],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#3",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,-120|-360,0",
+					"-120,0|-240,-120",
+					"-120,0|0,-120",
+					"0,-120|120,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -225.858 -105.858 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
 	"PIPE-01": {
 		"notice": "2 pipes laid by hand -- g lays pipes, not links",
 		"links": [
@@ -8298,6 +8735,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -8439,6 +8877,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -8555,6 +8994,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -8689,6 +9129,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",
@@ -8828,6 +9269,7 @@
 				"down": false
 			}
 		],
+		"controls": 0,
 		"tabLinks": [
 			{
 				"id": "link#1",

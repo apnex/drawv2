@@ -1664,6 +1664,29 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 });
 
 /*
+B284 -- A LINK CUT IN TWO KEEPS ITS DECLARATIONS on both halves: its plane (control) and its direction (flow). The product's
+cut on landing at a bend built both halves from a fresh link, so a control link came back as two data links.
+*/
+test('B284: a drag onto a bend of a control link with a direction splits it into two halves that keep both', () => {
+	const h = makeInput();
+	try {
+		const m = h.model;
+		m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', x: -120, y: 0 });
+		m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', x: 120, y: 0 });
+		m.put('node', { id: 'node-aa0003', name: 'c', type: 'host', x: 0, y: 120 });
+		m.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
+		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'], control: true, flow: true });
+		const at = (x, y, id) => pointer(x, y, { button: 0, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) } });
+		h.capture.onDown(at(0, 120, 'node-aa0003'));
+		h.capture.onMove(at(0, 60, null));
+		h.capture.onUp(at(0, 0, 'waypoint-aa0001'));
+		const halves = m.all('link').filter((l) => l.src === 'node-aa0001' || l.dst === 'node-aa0002');
+		assert.equal(halves.length, 2, 'the bend split in two');
+		for (const l of halves) assert.deepEqual([l.control, l.flow], [true, true], `${l.id} keeps the control plane and the direction`);
+	} finally { h.restore(); }
+});
+
+/*
 B258 -- Alt+right-click deletes the entity under the cursor, on a board that holds links. `deleteUnderCursor` passed an
 Array to `deleteSelection`, which asks `ids.has` of every link, so the gesture threw before any commit whenever a link
 existed. Found by the ruleset audit's code inventory (dev/design/unification/RULESET-AUDIT.md, F2).

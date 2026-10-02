@@ -3,7 +3,7 @@
 		"THE MASTER of the lab behaviour matrix. BEHAVIOUR-MATRIX.md beside it is generated from this file by `node tools/lab-matrix.mjs --write`, and the gate fails if the two differ: edit here, never there.",
 		"tests/lab-browser.test.js runs every row in real Chrome with real input. A state's `setup` builds its board and its `expect` proves the board is what the state claims, before any row acts on it.",
 		"A row: `steps` perform the gesture; `intent` says in words what should happen and `expect` says it as checks; `rule` cites the ruling. `standing` is ruled, reading (the proposer's reading, not ruled) or open. `built` is yes (the gate proves it) or todo (the gate proves it still FAILS, and demands promotion the day it passes).",
-		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"redo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; selectedKinds [kinds], the kinds of what is selected, for an id minted by the gesture; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
+		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"redo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; controls n, how many links are control links; selectedKinds [kinds], the kinds of what is selected, for an id minted by the gesture; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
 	],
 	"invariants": {
 		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, the same anchors, and the same pipes (since H17.22 N-c, when pipes became entities in both).",
@@ -3654,6 +3654,83 @@
 				}
 			},
 			"rule": "The director's report, 2026-10-02 (B283); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-27",
+			"state": "w-chain",
+			"gesture": "transit `x`",
+			"does": "Make the link a control link with k, then select the middle pin P2 and press x.",
+			"steps": [
+				[
+					"click",
+					-300,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					-120,
+					0
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Cut in two at P2, and both halves are still control links: a cut keeps the link's plane, and its direction.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"controls": 2
+			},
+			"rule": "The director's report, 2026-10-02 (B284); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2; H15.15 (a control and a data link do not join).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-28",
+			"state": "w-chain",
+			"gesture": "transit `x`",
+			"does": "As TRN-27, then press x again.",
+			"steps": [
+				[
+					"click",
+					-300,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					-120,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, the two control halves join into the one control link, pinned at all three -- a control half beside a data half never could.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"controls": 1,
+				"pins": {
+					"only": 3
+				}
+			},
+			"rule": "The director's report, 2026-10-02 (B284); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2; H15.15 (a control and a data link do not join).",
 			"standing": "ruled",
 			"built": "yes"
 		},

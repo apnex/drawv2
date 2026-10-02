@@ -219,13 +219,22 @@ export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	return merged;
 }
 
+/*
+B284 -- A HALF KEEPS THE LINK'S DECLARATIONS: its plane (`control`) and its direction (`flow`), whatever cut made it. Each
+caller built the rest of a half itself, and two lost them -- a control link came back from a cut as data (the director's
+report, 2026-10-02). A cut keeps the stored order, so a direction reads the same on both halves. Only what the link
+declared is carried: an undeclared link stays undeclared, with no field invented.
+*/
+const DECLARATIONS = ['control', 'flow'];
+
 export function splitAtBend(link, waypointId) {
 	if (link.closed) return null;                       // a ring has no ends to cut toward
 	if (link.src === waypointId || link.dst === waypointId) return null;   // would be a self-link
 	const via = Array.isArray(link.via) ? link.via : [];
 	const at = via.indexOf(waypointId);
 	if (at === -1) return null;                         // not a bend of this link
-	const half = (src, dst, v) => ({ src, dst, ...(v.length ? { via: v } : {}) });
+	const declared = Object.fromEntries(DECLARATIONS.filter((k) => k in link).map((k) => [k, link[k]]));
+	const half = (src, dst, v) => ({ ...declared, src, dst, ...(v.length ? { via: v } : {}) });
 	return [half(link.src, waypointId, via.slice(0, at)), half(waypointId, link.dst, via.slice(at + 1))];
 }
 

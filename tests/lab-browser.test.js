@@ -642,6 +642,8 @@ const SNAPSHOT = `(() => {
 	return {
 		notice: document.getElementById('lab-notice').textContent,
 		links: lab.authority.all('link').map((l) => ({ ...shape(l), down: lab.model.isLinkDown(l) })),
+		// how many links are control links (B284: a cut keeps the plane)
+		controls: lab.authority.all('link').filter((l) => l.control).length,
 		tabLinks: lab.model.all('link').map(shape),
 		anchors: lab.authority.all('waypoint').map((w) => ({ id: w.id, x: w.x, y: w.y })),
 		tabAnchors: lab.model.all('waypoint').map((w) => w.id),
@@ -764,6 +766,7 @@ const CHECK = {
 	selectedDown: (s, want) => { const down = s.links.filter((l) => l.down).map((l) => l.id); return (down.length === 1 && same([...s.selected], down)) === want || `the selection is ${s.selected.join(',') || 'empty'}, and the down links are ${down.join(',') || 'none'}`; },
 	// the kinds of what is selected -- for an id the gesture minted, which a row cannot name (H17.22 N-c2)
 	selectedKinds: (s, kinds) => same(s.selected.map((id) => id.split(/[-:]/)[0]).sort(), [...kinds].sort()) || `the selection is ${s.selected.join(',') || 'empty'}, not of kinds ${kinds.join(',')}`,
+	controls: (s, n) => s.controls === n || `${s.controls} control links, not ${n}`,
 	selected: (s, ids) => same([...s.selected].sort(), [...ids].sort()) || `the selection is ${ids.length ? s.selected.join(',') || 'empty' : s.selected.join(',')}, not ${ids.join(',')}`,
 	downStroke: (s, hex) => {
 		const down = s.links.filter((l) => l.down);

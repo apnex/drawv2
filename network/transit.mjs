@@ -73,7 +73,7 @@ export function cutAt(model, waypointId) {
 	const piece = (original, p, i) => {
 		const base = i === 0 ? { ...original } : { ...model.makeLink(p.src, p.dst), id: newId('link', model.collection('link')) };
 		const { via: _drop, ...rest } = base;
-		return { ...rest, src: p.src, dst: p.dst, ...(p.via ? { via: p.via } : {}) };
+		return { ...rest, ...p };   // the half's ends, pins and the link's declarations (`splitAtBend`, B284)
 	};
 	const entries = cuts.flatMap(({ original, pieces }) => [
 		{ op: 'del', kind: 'link', entity: clone('link', original) },
