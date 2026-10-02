@@ -12,7 +12,7 @@ every accepted plan must restore the board (PR8; collection order aside, which i
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CASES, record, readGolden, GENERATED_PER_COMPOSITION, compareModelPipes } from './fixtures/planner-corpus.mjs';
+import { CASES, record, readGolden, GENERATED_PER_COMPOSITION } from './fixtures/planner-corpus.mjs';
 import { CLASSIC_LINKS } from '../planner/tenants.mjs';
 
 const golden = readGolden();
@@ -87,32 +87,4 @@ test('the named cases fire the pass each is named for', () => {
 		assert.equal(r(id).joined, 0, `${id}: declined`);
 		assert.equal(r(id).joinSkipped, 1, `${id}: and counted as skipped`);
 	}
-});
-
-/*
-H17.22 N-b -- PIPES IN THE MODEL CHANGE NOTHING BUT WHERE PIPES LIVE. Every network case, named and generated, planned
-again with its pipes as entities of the network's `pipe` kind and the planner's own pipe reactions (network/network.mjs):
-the same verdict, the same ops and inverse on everything but pipes, exactly the pipes the session's prune and sweep leave,
-and undo restores the pipes with everything else -- which the session never could (UNDO-01).
-*/
-test('N-b: every network case makes the same edit with its pipes in the model, leaves the pipes the session would, and undoes them', () => {
-	const strip = (ops) => ops.filter((o) => o.kind !== 'pipe');
-	const wrong = [];
-	let accepted = 0, pipeOps = 0;
-	for (const c of CASES.filter((x) => x.compose === 'network')) {
-		const r = compareModelPipes(c);
-		const say = (why) => wrong.push(`${c.id}: ${why}`);
-		if (r.session.ok !== r.withPipes.ok) { say(`the session ${r.session.ok ? 'accepts' : 'refuses'} and the model ${r.withPipes.ok ? 'accepts' : `refuses: ${r.withPipes.error}`}`); continue; }
-		if (!r.session.ok) { if (r.session.error !== r.withPipes.error || r.session.opIndex !== r.withPipes.opIndex) say(`refused differently: ${r.session.error} / ${r.withPipes.error}`); continue; }
-		accepted++;
-		pipeOps += r.withPipes.ops.length - strip(r.withPipes.ops).length;
-		if (JSON.stringify(strip(r.withPipes.ops)) !== JSON.stringify(r.session.ops)) say('its ops differ beyond pipes');
-		if (JSON.stringify(strip(r.withPipes.inverse)) !== JSON.stringify(r.session.inverse)) say('its inverse differs beyond pipes');
-		if (JSON.stringify(r.got) !== JSON.stringify(r.expected)) say(`leaves pipes ${r.got.join(' ')} where the session leaves ${r.expected.join(' ')}`);
-		if (!r.undoRestores) say('undo does not restore it, pipes included');
-	}
-	assert.deepEqual(wrong.slice(0, 8), [], `${wrong.length} case(s) differ`);
-	// and the comparison is not vacuous: plenty accepted, and the reactions changed pipes in many of them
-	assert.ok(accepted > 500, `${accepted} accepted network cases`);
-	assert.ok(pipeOps > 300, `${pipeOps} pipe ops made by the planner's reactions`);
 });

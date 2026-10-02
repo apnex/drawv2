@@ -31,7 +31,7 @@ import { pipeId, pipeEntity } from './pipe-kind.mjs';
 /*
 What a drag's legs change in a model, as entries the canvas's history takes: a pipe new to its pair is put; a link pipe
 laid again by hand becomes a hand pipe; anything else -- the same pipe again, or a hand pipe a link lays over, which must
-never become disposable -- changes nothing (network/pipeset.mjs `lay`, whose rule this is).
+never become disposable -- changes nothing. The rule the session's pipe set held until N-d deleted it.
 */
 function pipeEntries(legs, model) {
 	const seen = new Set(), out = [];
@@ -48,7 +48,7 @@ function pipeEntries(legs, model) {
 
 export function createNetworkSession() {
 	const order = createLinkOrder(), transit = createTransit();
-	const network = createNetwork((model) => model.all('pipe'), order.rankOf, transit);   // the model's own pipes (N-c)
+	const network = createNetwork(order.rankOf, transit);   // it reads the models' own pipes (N-c, N-d)
 	const watchers = [];
 	let pendingNotice = null;
 
@@ -90,10 +90,10 @@ export function createNetworkSession() {
 		},
 
 		// the planner's answer: true when accepted, after `apply` has brought the tab to it
-		answered(answer, authority, apply) {
+		answered(answer, model, apply) {
 			if (!answer.ok) return false;
 			apply();
-			order.note(authority.all('link').map((l) => l.id).sort());
+			order.note(model.all('link').map((l) => l.id).sort());   // the model `apply` brought to the answer
 			return true;
 		},
 

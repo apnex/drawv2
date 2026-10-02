@@ -30,7 +30,7 @@ const composition = (links) => PHASES.flatMap((phase) => [links, GROUPS].flatMap
 
 const BLOCKS = {
 	production: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(CLASSIC_LINKS)),
-	network: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(createNetwork(() => []).links)),
+	network: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(createNetwork().links)),
 };
 
 function render(current) {

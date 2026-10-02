@@ -88,6 +88,16 @@ A selected pipe takes the product's selection colour through the network's own r
 Matrix rows PIPE-01 to PIPE-05: a free hand pipe takes the click; a pipe under a link does not; deleting one leaves its `g` anchor held by its other pipe; undo lays it back; deleting the last sweeps the anchor, as ruled.\
 Found on the way: the hit line was first 14 units wide, wider than a link's own click area, so a click just beside a link selected the pipe beneath it; B268's test caught it.
 
+**N-d done -- the delta's to-state is reached.**\
+The session pipe set is deleted (`network/pipeset.mjs` and its test), each of its rules held by a successor: one pipe per pair and no pipe to itself by the pipe row; a hand pipe never demoted by the row and the session's `pipeEntries`; the prune by `pipe-cascade`; the sweep by `pipe-sweep`, a route crossing a pipe in either direction counting as using it (a new test).\
+`createNetwork` takes no pipe source: the network reads the model it is asked about.\
+Its tenant names the kind it needs, `pipe`, and the planner refuses a composition without it, so the guards that let the pipe reactions run over a model with no pipes are gone.\
+`attachNetwork` takes no planner model: the judge reads the tab, and ages are noted on the tab the answer was applied to -- the gap recorded against promotion's P5.\
+The planner corpus's network cases now hold their pipes in the model: rewritten, and accepted only because every case's verdict, ops and inverse equal the old golden once pipe ops are set aside (470 cases gain 1,156 pipe ops; every production case unchanged).\
+Nothing visible changed: the behaviour matrix and its corpus pass unedited.
+
+**Exit criteria (section 5), each now true:** the matrix passes, edited only at UNDO-01 with new rows UNDO-02, UNDO-03 and PIPE-01 to PIPE-05; undo restores pipes; no module imports the session pipe set; `attachNetwork` takes no `authority`.
+
 ---
 
 ## 6. Behaviour that changes, stated before it is built

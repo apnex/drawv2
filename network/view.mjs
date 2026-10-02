@@ -23,9 +23,8 @@ import { deriveNetwork } from './pipes.mjs';
 const KEEP = 4;   // the tab, the authority, and a planner projection before and after, at most
 
 /*
-H17.22 N-b -- THE PIPES ARE READ FROM A SOURCE, `pipesOf(model)`: the session's set while the lab keeps its pipes there
-(`() => pipes.list()`), and the model's own pipe entities where a composition stores them (`(model) => model.all('pipe')`),
-which is every network model from N-c. One derivation either way; the source is the only difference.
+H17.22 N-b -- THE PIPES ARE READ FROM A SOURCE, `pipesOf(model)`. The network passes the model's own pipe entities
+(network/network.mjs, N-d); a derivation over a plain list -- a drag judge's hypothetical board, a test -- passes the list.
 */
 export function createNetworkView(pipesOf, rankOf = () => 0, transit = null) {
 	if (typeof pipesOf !== 'function') throw new Error('createNetworkView: pipes come from a source, (model) -> [{ a, b, laid }] (H17.22 N-b)');

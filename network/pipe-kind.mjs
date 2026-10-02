@@ -12,7 +12,7 @@ A pipe joins two anchors. It is stored as `{ id, a, b, laid }`:
          anchor's id never changes, so the two cannot drift, and the row refuses an id that does not match them.
   laid   `link` -- laid with a link, swept once no link needs it -- or `hand`, laid by `g`, kept until the author deletes
          it (ruled 2026-09-27). A pipe laid with a link and then laid by hand becomes a hand pipe; the reverse never
-         happens, or deleting a link would remove geometry the author chose (network/pipeset.mjs `lay`).
+         happens, or deleting a link would remove geometry the author chose (the session's `pipeEntries`; this row refuses it).
 
 Not named (N5): most pipes are laid by the system, so a name would record no intent. Selectable (N6): the canvas offers
 only hand pipes, by its picking; another door may delete any pipe by id.

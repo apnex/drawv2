@@ -43,7 +43,6 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
-	'network/pipeset.mjs:createPipeSet': 'the session pipe set, which no page reads since H17.22 N-c put pipes in the model; kept one stage as the oracle the planner corpus holds the pipe reactions to, and deleted with this entry at N-d.',
 	'tools/scan-skips.mjs:skipsIn': 'the TAP parser behind B250`s skip check. Its production caller is the CLI half of the same file, so the export earns its keep from tests/scan-skips.test.js, which drives it on written TAP -- nested subtests, todo, reasons -- without needing a machine that lacks Chrome.',
 	// K12 (2026-10-01): exports the deleted barrels had hidden, each kept for its own reason; the rest were deleted or un-exported.
 	'engine/kinds.mjs:MOVERS': 'the mover kinds table; `moverFor` reads it in this module. Exported so tests/rules.test.js asserts every kind against the table itself rather than a copy that would drift.',

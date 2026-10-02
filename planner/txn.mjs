@@ -159,6 +159,9 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 	const ids = new Set();
 	for (const tenant of [links, GROUPS]) {
 		if (!tenant || typeof tenant.owner !== 'string' || !Array.isArray(tenant.reactions)) throw new Error(`${who}: a tenant is { owner, reactions } (PL-3)`);
+		// a tenant names the kinds its reactions read -- the network's pipes -- and a composition without one is half-composed (N-d)
+		const lacking = (tenant.kinds ?? []).filter((k) => !kinds.has(k));
+		if (lacking.length) throw new Error(`${who}: ${tenant.owner} needs the kind ${lacking.join(', ')}, which this composition does not include (H17.22 N-d)`);
 		for (const r of tenant.reactions) {
 			if (!r || !PHASES.includes(r.phase) || typeof r.run !== 'function') throw new Error(`${who}: ${tenant.owner}: a reaction is { id, phase, run } with a phase of ${PHASES.join(', ')}`);
 			if (ids.has(r.id)) throw new Error(`${who}: two reactions are named ${r.id}`);

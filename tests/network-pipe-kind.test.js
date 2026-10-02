@@ -29,7 +29,7 @@ function board() {
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('waypoint', { id: W, name: 'w', x: 0, y: -120 });
-	const network = createNetwork((model) => model.all('pipe'));
+	const network = createNetwork();
 	return { m, log: new Log(), opts: { links: network.links, kinds: KINDS } };
 }
 const putPipe = (x, y, laid) => ({ op: 'put', kind: 'pipe', entity: pipeEntity(x, y, laid) });
@@ -88,6 +88,15 @@ test('N-b: an edit sweeps link pipes no link runs over, keeps hand pipes, and th
 	assert.equal(after.get('waypoint', W), undefined, 'and the pin went with them: no hand pipe held it');
 	applyOps(after, res.inverse);
 	assert.equal(after.all('pipe').length, 3, 'undo restores the swept pipes');
+});
+
+test('N-d: a link crossing a pipe in either direction is using it -- the sweep keeps it', () => {
+	// held by the session's pipe set until N-d deleted it; a pipe has no direction, so a route stepping b to a uses a-b
+	const { m, log, opts } = board();
+	const back = { id: 'link-00000e', name: 'back', src: B, dst: A, via: [W] };
+	assert.equal(commit(m, log, { ops: [{ op: 'put', kind: 'link', entity: back }, putPipe(A, W, 'link'), putPipe(W, B, 'link')] }, 'test', 'test', opts).ok, true);
+	assert.equal(commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-00000f', name: 'F', type: 'router', x: 0, y: 240, shape: 'circle' } }] }, 'test', 'test', opts).ok, true, 'any edit sweeps');
+	assert.deepEqual(m.all('pipe').map((p) => p.id).sort(), [pipeId(A, W), pipeId(B, W)].sort(), 'both pipes stay: B to A runs them backwards, and still runs them');
 });
 
 test('N-b: the product refuses a pipe -- it composes its five', () => {

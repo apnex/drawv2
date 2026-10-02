@@ -102,7 +102,7 @@ settle that follows every change -- the plugin's choreography, which promotion a
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
 */
-const net = attachNetwork({ session, model, authority, renderer, selection, history,
+const net = attachNetwork({ session, model, renderer, selection, history,
 	pipeLayer: svg.querySelector('#pipes'), el, say });
 const capture = listen();   // the DOM's events, as input events (L0)
 /*

@@ -30,7 +30,8 @@ import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { commit, plan } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
-import { createPipeSet } from '../network/pipeset.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { createNetwork } from '../network/network.mjs';
 
 const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
@@ -39,7 +40,9 @@ const complete = () => Object.fromEntries(MODEL_READS.map((k) => [k, () => undef
 const without = (name) => { const n = complete(); delete n[name]; return n; };
 
 const request = { label: 'add', ops: [{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } }] };
-const board = () => { const m = new Model(); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
+const board = (kinds) => { const m = new Model(kinds ? { kinds } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
+// the network's composition: the product's kinds and its pipe, which its tenant needs (H17.22 N-d)
+const KINDS = productKinds(PIPE_ROW);
 
 test('the Model reads the network under its OWN method names', () => {
 	for (const name of MODEL_READS) assert.equal(typeof Model.prototype[name], 'function', `Model.${name} is the question network.${name} answers`);
@@ -99,13 +102,12 @@ test('the retired planner hooks, and the retired network option, are refused by 
 		assert.throws(() => plan(m, request.ops, { [old]: () => null }), /unknown option/);
 	}
 	const { m, log } = board();
-	assert.throws(() => commit(m, log, request, 'lab', 'lab', { network: createNetwork(() => []) }), /retired.*links: network\.links/);
-	assert.throws(() => plan(m, request.ops, { network: createNetwork(() => []) }), /retired/);
+	assert.throws(() => commit(m, log, request, 'lab', 'lab', { network: createNetwork() }), /retired.*links: network\.links/);
+	assert.throws(() => plan(m, request.ops, { network: createNetwork() }), /retired/);
 });
 
 test('the plugin builds ONE object: the Model reads it, and the planner takes its link tenant', () => {
-	const pipes = createPipeSet();
-	const network = createNetwork(() => pipes.list(), () => 0);
+	const network = createNetwork(() => 0);
 	for (const name of MODEL_READS) assert.equal(typeof network[name], 'function', `network.${name}`);
 	for (const old of RETIRED_PLANNER_HOOKS) assert.equal(network[old], undefined, `network.${old} is retired: the tenant holds it`);
 	const m = new Model({ network });
@@ -113,8 +115,11 @@ test('the plugin builds ONE object: the Model reads it, and the planner takes it
 	assert.equal(network.links.owner, 'network links');
 	// the link tenant's five, then the pipes' own two (H17.22 N-b): an anchor's deletion takes its pipes, and the sweep follows the join
 	assert.deepEqual(network.links.reactions.map((r) => `${r.phase}:${r.id}`), ['clear:node-links', 'clear:waypoint-links', 'stranded:stranded-links', 'sweep:orphan-sweep', 'join:link-join', 'clear:pipe-cascade', 'join:pipe-sweep']);
-	const { m: authority, log } = board();
-	assert.equal(commit(authority, log, request, 'lab', 'lab', { links: network.links }).ok, true, 'and the planner accepts its tenant');
+	const { m: authority, log } = board(KINDS);
+	assert.equal(commit(authority, log, request, 'lab', 'lab', { links: network.links, kinds: KINDS }).ok, true, 'and the planner accepts its tenant');
+	// its tenant names the kind its reactions read, so a planner composed without pipes refuses it outright (N-d)
+	const { m: product, log: plog } = board();
+	assert.throws(() => commit(product, plog, request, 'lab', 'lab', { links: network.links }), /network links needs the kind pipe, which this composition does not include/);
 });
 
 /*
@@ -124,16 +129,15 @@ serves its purpose". The network tenant's stranded pass deletes a link whose pin
 -- a free one, one another link holds, or none.
 */
 test('the network strands every link that lost a pin, whatever ways remain', () => {
-	const pipes = createPipeSet();
-	pipes.lay('node-00000a', 'node-00000b', 'hand');   // a way, and a free one
-	const network = createNetwork(() => pipes.list(), () => 0);
-	const { m, log } = board();
+	const network = createNetwork(() => 0);
+	const { m, log } = board(KINDS);
 	assert.equal(commit(m, log, { label: 'setup', ops: [
 		{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },
 		{ op: 'put', kind: 'node', entity: { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' } },
 		{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-00000c', name: 'p', x: 120, y: 120 } },
-		{ op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] } }] }, 'lab', 'lab').ok, true);
-	const r = commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-00000c' }] }, 'lab', 'lab', { links: network.links });
+		{ op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] } },
+		{ op: 'put', kind: 'pipe', entity: pipeEntity('node-00000a', 'node-00000b', 'hand') }] }, 'lab', 'lab', { kinds: KINDS }).ok, true);   // a way, and a free one
+	const r = commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-00000c' }] }, 'lab', 'lab', { links: network.links, kinds: KINDS });
 	assert.equal(r.ok, true);
 	assert.equal(m.get('link', 'link-000001'), undefined, 'the free way does not save it: its pin was its intent');
 });

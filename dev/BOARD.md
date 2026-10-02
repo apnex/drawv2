@@ -207,6 +207,7 @@ AMENDED 2026-10-02: N-a done -- a composition brings its kinds, every kind a row
 AMENDED 2026-10-02: N-b done -- the network's pipe kind and its two reactions, an anchor's deletion taking its pipes and the sweep after the join, held to the session across every network corpus case; the lab unchanged. Next N-c, the lab's models hold pipes.\
 AMENDED 2026-10-02: N-c1 done -- the lab's models hold pipes, a drag's pipes ride in its own commit, and undo restores them (UNDO-01 returns up; UNDO-02 and UNDO-03 new); every other matrix row unchanged. Next N-c2, deleting a hand pipe (B281).\
 AMENDED 2026-10-02: N-c2 done -- a hand pipe is selected with a click and deleted with Delete (B281 closed); a link pipe is never offered. Next N-d, deleting the session pipe set.\
+AMENDED 2026-10-02: N-d done, and H17.22 with it (B279 closed) -- the session pipe set deleted, the network reading the model it is asked about, the host taking no planner model; nothing visible changed. Promotion's P1 is done in the lab, and P5's owed decision settled.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.
@@ -968,7 +969,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.19 | A skipped test fails CI: the gate names every test that did not run, so the browser suites cannot stop silently | **B250** | S3 | `DONE` |
 | H17.20 | A waypoint whose transit is off is an endpoint at any link count -- never a bend or a junction -- in the role every reader takes and in the rings drawn | **B277** | S3 | `DONE` |
 | H17.21 | One transit question, `stopsAt`: whether what arrives at an anchor stops there, asked by routing, the join refusal, the toggle and the roles alike; the declaration only draws the ring | **B278** | S4 | `DONE` |
-| H17.22 | The network reads a model (promotion's P1 in the lab): a composition brings its kinds, every kind a row of one shape (N-a); the network's pipe kind and its rules, and the hand-pipe delete (N-b); the network reads the model's pipes, so undo restores them (N-c); the session pipe set deleted (N-d) | **B279** | S3 | `WIP` |
+| H17.22 | The network reads a model (promotion's P1 in the lab): a composition brings its kinds, every kind a row of one shape (N-a); the network's pipe kind and its rules, and the hand-pipe delete (N-b); the network reads the model's pipes, so undo restores them (N-c); the session pipe set deleted (N-d) | **B279** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.

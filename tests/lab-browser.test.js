@@ -342,7 +342,7 @@ test('pipes an author laid hold an anchor the sweep would take, and a pipe to a 
 	try {
 		// bend: A -- w -- B, the link pinned at w. Its seed pipes are the link's own legs, laid WITH it (seeds
 		// carry the lifetime their gesture gives, ruled 2026-09-29), so the author lays w-B again BY HAND --
-		// which promotes it (network/pipeset.mjs). Delete A: the planner takes the link, and would sweep w as
+		// which promotes it (the session's `pipeEntries`; the pipe row refuses the reverse). Delete A: the planner takes the link, and would sweep w as
 		// the bend it left -- but w still has a hand pipe to B, so it is structure, not debris (pipes count as
 		// references). The pipe A-w has lost an end, so it goes.
 		await p.run(pipesIn(`lay([['waypoint-000005', 'node-000002', 'hand']]);`));

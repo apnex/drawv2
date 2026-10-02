@@ -23,17 +23,16 @@ import { linkTenant } from '../model/link-reactions.mjs';
 /*
 H17.22 N-b -- THE PIPES' OWN REACTIONS, where the model holds pipes (the network's `pipe` kind, network/pipe-kind.mjs):
 
-  pipe-cascade  an anchor deleted takes every pipe that ends at it -- a pipe is its pair (SD7), hand pipes included, as
-                the session's prune did (network/pipeset.mjs `prune`)
+  pipe-cascade  an anchor deleted takes every pipe that ends at it -- a pipe is its pair (SD7), hand pipes included
   pipe-sweep    after the edit, every pipe laid with a link that no link then runs over goes; hand pipes stay (ruled
                 2026-09-27) -- the session's sweep, judged on the same derivation (`view.inUse`, which keeps a down
                 link's own legs). In the JOIN phase, after the join, because the session swept once the whole commit
                 had landed, and a join can change a route.
 
-A pipe change is therefore an op in the transaction that causes it, and undo restores pipes by replaying it. Inert where
-the model holds no pipe kind -- the lab until N-c, which keeps its pipes in the session; N-d deletes that path.
+A pipe change is therefore an op in the transaction that causes it, and undo restores pipes by replaying it. The tenant
+declares the kind it needs (`kinds: ['pipe']`), so a planner composed without it refuses the network outright (N-d) --
+the session's pipe set, and the guard that let these run over a model with no pipes, are gone.
 */
-const holdsPipes = (doc) => !!doc.kinds?.has('pipe');
 const endsAt = (pipe, id) => pipe.a === id || pipe.b === id;
 
 function pipeReactions(view) {
@@ -42,7 +41,7 @@ function pipeReactions(view) {
 			id: 'pipe-cascade',
 			phase: 'clear',
 			doc: 'an anchor deleted takes every pipe that ends at it, hand pipes included: a pipe is its pair (SD7)',
-			on: (op, doc) => op.op === 'del' && holdsPipes(doc) && doc.kinds.anchors.includes(op.kind),
+			on: (op, doc) => op.op === 'del' && doc.kinds.anchors.includes(op.kind),
 			run: ({ op, doc }, emit) => emit(doc.all('pipe').filter((p) => endsAt(p, op.id)).map((p) => ({ op: 'del', kind: 'pipe', id: p.id }))),
 		},
 		{
@@ -50,7 +49,6 @@ function pipeReactions(view) {
 			phase: 'join',
 			doc: 'after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27)',
 			run: ({ doc }, emit) => {
-				if (!holdsPipes(doc)) return;
 				const used = new Set();
 				for (const r of view.of(doc).inUse()) for (let i = 0; i < r.length - 1; i++) used.add(pipeKey(r[i], r[i + 1]));
 				emit(doc.all('pipe').filter((p) => p.laid === 'link' && !used.has(pipeKey(p.a, p.b))).map((p) => ({ op: 'del', kind: 'pipe', id: p.id })));
@@ -59,8 +57,12 @@ function pipeReactions(view) {
 	];
 }
 
-export function createNetwork(pipesOf, rankOf = () => 0, transit = null) {
-	const view = createNetworkView(pipesOf, rankOf, transit);
+/*
+H17.22 N-d -- THE NETWORK READS THE MODEL IT IS ASKED ABOUT: its pipes are that model's `pipe` entities, always. It took
+a pipe source while the lab still kept pipes in the session; that source, and the session's set, are deleted.
+*/
+export function createNetwork(rankOf = () => 0, transit = null) {
+	const view = createNetworkView((model) => model.all('pipe'), rankOf, transit);
 	/*
 	The network's LINK TENANT (PL-3, PD-2), in place of production's classic one, with the pipes' own reactions after it.
 	Each condition is judged against the model the planner hands over, so only pipes that survive the edit count.
@@ -102,6 +104,6 @@ export function createNetwork(pipesOf, rankOf = () => 0, transit = null) {
 			return { declared: [], types: way ? way.slice(1, -1).filter((id) => !passes(id)) : [] };
 		},
 		// the link tenant, the pipes' reactions after its own (N-b)
-		links: { owner: tenant.owner, reactions: [...tenant.reactions, ...pipeReactions(view)] },
+		links: { owner: tenant.owner, kinds: ['pipe'], reactions: [...tenant.reactions, ...pipeReactions(view)] },
 	};
 }

@@ -295,8 +295,8 @@ test('B278: stopsAt answers, anchor by anchor, what routing blocks -- and differ
 test('B278: the planner refuses a join where what arrives stops, whatever was declared', () => {
 	// a stand-in transit where the two questions differ: w stops what arrives, and nothing is declared
 	const transit = { declaredOff: () => false, blockedIn: () => ['waypoint-00000d'], stopsAt: (id) => id === 'waypoint-00000d' };
-	const network = createNetwork(() => [], () => 0, transit);
-	const m = new Model({ network });
+	const network = createNetwork(() => 0, transit);
+	const m = new Model({ network, kinds: KINDS });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000c', name: 'H', type: 'host', x: 0, y: 0, shape: 'circle' });
@@ -304,7 +304,7 @@ test('B278: the planner refuses a join where what arrives stops, whatever was de
 	m.put('link', { id: 'link-000002', name: 'aw', src: 'node-00000a', dst: 'waypoint-00000d' });
 	m.put('link', { id: 'link-000003', name: 'wb', src: 'waypoint-00000d', dst: 'node-00000b' });
 	m.put('link', { id: 'link-000004', name: 'wh', src: 'waypoint-00000d', dst: 'node-00000c' });
-	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: network.links });
+	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: network.links, kinds: KINDS });
 	assert.equal(r.ok, true);
 	assert.equal(r.ops.some((o) => o.op === 'set' && o.kind === 'link' && 'src' in o.patch), false, 'they stay two');
 });

@@ -6,7 +6,8 @@ tables out of `planner/txn.mjs` and change NO outcome; this holds every outcome,
 still fails. Each case is one request planned against one board, in one of two compositions:
 
   production  no network -- what draw.apnex.io runs
-  network     the network plugin's object (`createNetwork`), with pipes and transit -- what the lab runs
+  network     the network plugin's object (`createNetwork`), with transit, over a model holding its pipes as entities of the
+              network's `pipe` kind -- what the lab runs (H17.22 N-d; until then the pipes were a session set beside it)
 
 and records exactly what `plan()` answers: accepted with its ops and inverse, or refused with its error and opIndex.
 
@@ -34,11 +35,9 @@ import { applyOps } from '../../model/ops.mjs';
 import { plan } from '../../planner/txn.mjs';
 import { resolveAnchor } from '../../server/anchor.mjs';
 import { validateMutation } from '../../planner/validate.js';
-import { createPipeSet } from '../../network/pipeset.mjs';
 import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';
-import { composeKinds } from '../../model/shape.mjs';
-import { PRODUCT_KINDS } from '../../planner/kinds.mjs';
+import { productKinds } from '../../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../../network/pipe-kind.mjs';
 
 const GOLDEN = new URL('./planner-corpus.json', import.meta.url);
@@ -241,24 +240,38 @@ export const CASES = [...NAMED, ...GENERATED];
 
 // ---- running a case ----
 
+/*
+A case's pipes as entities: each pair once, a pipe laid again by hand made a hand pipe and never the reverse, and no pipe
+from an anchor to itself -- the rule the session's pipe set held, which these cases were first written against.
+*/
+function pipesOf(c) {
+	const out = new Map();
+	for (const [a, b, laid] of c.pipes || c.board.links.flatMap((l) => pairs(routeOf(l)).map(([x, y]) => [x, y, 'link']))) {
+		if (a === b) continue;
+		const p = pipeEntity(a, b, laid), had = out.get(p.id);
+		if (!had) out.set(p.id, p);
+		else if (laid === 'hand') had.laid = 'hand';
+	}
+	return [...out.values()];
+}
+
 function compose(c) {
-	const model = new Model();
+	const network = c.compose === 'network';
+	const model = new Model(network ? { kinds: WITH_PIPES } : {});
 	attachRelations(model, { cellOf });
-	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...c.board });
+	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...c.board, ...(network ? { pipes: pipesOf(c) } : {}) });
 	// placement is the server door's edge (PL-4): both compositions are planned as the store would plan them
-	if (c.compose === 'production') return { model, options: { place: resolveAnchor }, reached: { stranded: 0 } };
-	const pipes = createPipeSet();
-	for (const [a, b, laid] of c.pipes || c.board.links.flatMap((l) => pairs(routeOf(l)).map(([x, y]) => [x, y, 'link']))) pipes.lay(a, b, laid);
+	if (!network) return { model, options: { place: resolveAnchor }, reached: { stranded: 0 } };
 	const transit = createTransit();
 	// as the session hands them over: an anchor with its kind, which is what the transit table reads
 	const { refused } = transit.flip((c.off || []).map((id) => ({ ...model.get('waypoint', id), kind: 'waypoint' })));
 	if (refused.length) throw new Error(`${c.id}: transit refused to turn off ${refused.map((e) => e.id)}`);
-	const network = createNetwork(() => pipes.list(), () => 0, transit);
+	const plugin = createNetwork(() => 0, transit);
 	// counted, not changed: how many ops the network's stranded pass emitted
 	const reached = { stranded: 0 };
-	const links = { ...network.links, reactions: network.links.reactions.map((r) => (r.phase !== 'stranded' ? r
+	const links = { ...plugin.links, reactions: plugin.links.reactions.map((r) => (r.phase !== 'stranded' ? r
 		: { ...r, run: (ctx, emit) => r.run(ctx, (ops) => { reached.stranded += ops.length; emit(ops); }) })) };
-	return { model, options: { links, place: resolveAnchor }, reached };
+	return { model, options: { links, place: resolveAnchor, kinds: WITH_PIPES }, reached };
 }
 
 const digest = (c) => crypto.createHash('sha256').update(JSON.stringify([c.compose, c.board, c.pipes, c.off, c.ops])).digest('hex').slice(0, 16);
@@ -287,7 +300,7 @@ export function record(c) {
 			if (o.op === 'del' && o.kind === 'waypoint' && !asked.has(`del waypoint ${o.id}`)) reach.swept++;
 			if (o.op === 'set' && o.kind === 'link' && 'src' in o.patch && !asked.has(`set link ${o.id}`)) reach.joined++;
 		}
-		const scratch = new Model();
+		const scratch = new Model({ kinds: model.kinds });   // the case's kinds, so undo is judged on its pipes too
 		scratch.load(JSON.parse(before));
 		applyOps(scratch, res.ops);
 		/*
@@ -306,52 +319,9 @@ export function record(c) {
 
 export const readGolden = () => JSON.parse(fs.readFileSync(GOLDEN, 'utf8'));
 
-/*
-H17.22 N-b -- THE SAME CASE WITH ITS PIPES IN THE MODEL. A network case planned twice: as the lab plans it today, its
-pipes in a session set that the planner never changes and the session then prunes and sweeps; and as N-c will, its pipes
-entities of the network's `pipe` kind, changed by the planner's own reactions. Answers what each leaves, for
-tests/planner-corpus.test.js to hold to one another: the same verdict, the same ops and inverse on everything but pipes,
-exactly the pipes the session would have left, and an undo that restores the pipes too.
-*/
-export const WITH_PIPES = composeKinds([...PRODUCT_KINDS.list.map((k) => PRODUCT_KINDS.row(k)), PIPE_ROW], 'the corpus, with pipes');
-const pairKey = (p) => `${[p.a, p.b].sort().join('|')}:${p.laid}`;
+// the network composition's kinds: the product's five and the network's pipe (H17.22)
+export const WITH_PIPES = productKinds(PIPE_ROW);
 
-export function compareModelPipes(c) {
-	if (c.compose !== 'network') throw new Error(`${c.id}: only a network case has pipes`);
-	// as the lab runs today: the session's pipes, pruned and swept after the plan
-	const session = compose(c);
-	const res = plan(session.model, structuredClone(c.ops), session.options);
-	// the session's set, as `compose` laid it, read back through the network it built
-	const setOf = () => { const p = createPipeSet(); for (const [a, b, laid] of c.pipes || c.board.links.flatMap((l) => pairs(routeOf(l)).map(([x, y]) => [x, y, 'link']))) p.lay(a, b, laid); return p; };
-	const pipes = setOf();
-	const transitOf = (model) => { const t = createTransit(); t.flip((c.off || []).map((id) => ({ ...model.get('waypoint', id), kind: 'waypoint' }))); return t; };
-	let expected = null;
-	if (res.ok) {
-		const post = new Model();
-		post.load(session.model.toJSON());
-		applyOps(post, res.ops);
-		pipes.prune((id) => !!(post.get('node', id) || post.get('waypoint', id)));
-		pipes.sweep(createNetwork(() => pipes.list(), () => 0, transitOf(session.model)).view.of(post).inUse());
-		expected = pipes.list().map(pairKey).sort();
-	}
-	// as N-c will: the pipes are entities, and the planner's reactions change them
-	const model = new Model({ kinds: WITH_PIPES });
-	attachRelations(model, { cellOf });
-	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...c.board, pipes: setOf().list().map((p) => pipeEntity(p.a, p.b, p.laid)) });
-	const network = createNetwork((m) => m.all('pipe'), () => 0, transitOf(model));
-	const before = model.toJSON();
-	const withPipes = plan(model, structuredClone(c.ops), { links: network.links, place: resolveAnchor, kinds: WITH_PIPES });
-	const out = { session: res, withPipes, expected, got: null, undoRestores: null };
-	if (withPipes.ok) {
-		const after = new Model({ kinds: WITH_PIPES });
-		after.load(before);
-		applyOps(after, withPipes.ops);
-		out.got = after.all('pipe').map(pairKey).sort();
-		applyOps(after, withPipes.inverse);
-		out.undoRestores = unordered(after.toJSON()) === unordered(before);
-	}
-	return out;
-}
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1] && process.argv[2] === '--write') {
 	const golden = Object.fromEntries(CASES.map((c) => [c.id, record(c).golden]));

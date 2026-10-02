@@ -22,7 +22,13 @@ import { whyDown, downSummary } from './resolve.mjs';
 import { cutAt, joinAt } from './transit.mjs';
 import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
 
-export function attachNetwork({ session, model, authority, renderer, selection, history, pipeLayer, el, say }) {
+/*
+H17.22 N-d -- IT TAKES THE PAGE'S MODEL AND NO OTHER. It took the lab's in-page planner model too, and read it in three
+places: the drag judge's links and transit stops, the sweep, and the ages noted on an answer -- the gap recorded against
+promotion's P5, since the product page holds no such model. The sweep is the planner's now; the judge reads the tab, which
+holds what the planner holds once an answer is applied, and the ages are noted on the tab `apply` has just brought to it.
+*/
+export function attachNetwork({ session, model, renderer, selection, history, pipeLayer, el, say }) {
 	const { network } = session;
 
 	/*
@@ -76,7 +82,7 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	// THE DRAG JUDGE -- how `g`, and the network's rules for a drag, exist; the session judges it (network/session.mjs
 	// `judge`), its pipes riding as entries in the commit Input makes. With no commit at all, the board settles now, to say why
 	const judge = (drag) => {
-		const { verdict, commits } = session.judge(drag, authority.all('link'), authority);
+		const { verdict, commits } = session.judge(drag, model.all('link'), model);
 		if (!commits) settle('');
 		return verdict;
 	};
@@ -103,7 +109,7 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	back as it resynchronises, and then calls `refused`.
 	*/
 	const answered = (request, answer, apply) => {
-		const accepted = session.answered(answer, authority, apply);
+		const accepted = session.answered(answer, model, apply);
 		if (accepted) settle(`v${answer.version} ${request.verb ?? request.label ?? ''}`);
 		return accepted;
 	};
