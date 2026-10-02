@@ -314,7 +314,7 @@ B283's notice, reworded at the director's word (2026-10-02): how many links the 
 pieces -- a piece an earlier cut made is traced back to its drawn link, so one link cut at two pins is "1 link cut into 3
 pieces", not "2 links cut in two".
 */
-test('a transit change counts the drawn links it cut and the pieces they became', async () => {
+test('a transit change counts the drawn links it cut and the pieces they became, and the pieces it joined', async () => {
 	const { transitEdit } = await import('../network/transit.mjs');
 	const m = new Model();
 	const [S, A, B, E, F] = ['waypoint-00000a', 'waypoint-00000b', 'waypoint-00000c', 'waypoint-00000d', 'waypoint-00000e'];
@@ -325,4 +325,14 @@ test('a transit change counts the drawn links it cut and the pieces they became'
 	m.put('link', { id: 'link-000002', name: 'k', src: S, dst: F, via: [A] });
 	assert.deepEqual(transitEdit(m, [A, B], () => true).cut, { links: 2, pieces: 5 }, 'two drawn links: three pieces and two');
 	assert.equal(transitEdit(m, [A, B], () => false), null, 'turned on where nothing is cut, nothing to join: no edit');
+	// and back: the pieces of one cut link, joined at both waypoints, are three pieces into one link
+	const one = new Model();
+	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => one.put('waypoint', { id, name: id, x, y }));
+	one.put('link', { id: 'link-000001', name: 'l', src: S, dst: A });
+	one.put('link', { id: 'link-000002', name: 'm', src: A, dst: B });
+	one.put('link', { id: 'link-000003', name: 'n', src: B, dst: E });
+	const back = transitEdit(one, [A, B], () => false);
+	assert.deepEqual(back.joined, { links: 1, pieces: 3 }, 'three pieces joined into one link');
+	assert.equal(back.cut, null);
+	assert.deepEqual(transitEdit(one, [A], () => false).joined, { links: 1, pieces: 2 });
 });

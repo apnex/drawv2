@@ -103,7 +103,8 @@ the first's far piece still ran past the second -- so a link ended up down over 
 it (the director's report, 2026-10-02). `stops(id)` says whether what arrives at the waypoint now stops there.
 Answers the entries, as the canvas's history takes them; `cut`, how many links the author drew were cut and into how many
 pieces -- a piece an earlier cut made is traced back to the link it came from, so one link cut at two waypoints is one link
-in three pieces, not two links cut in two (the director, 2026-10-02); and whether any joined. Null if nothing.
+in three pieces, not two links cut in two (the director, 2026-10-02); and `joined`, how many pieces joined into how many
+links -- three pieces joined at two waypoints are three pieces into one link, not "its two links". Null if nothing.
 */
 const asOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e);
 
@@ -114,7 +115,9 @@ export function transitEdit(model, waypointIds, stops) {
 	const entries = [];
 	const drawnAs = new Map();   // a piece's id -> the id of the link the author drew, which it was cut from
 	const drawn = (id) => drawnAs.get(id) ?? id;
-	let pieces = 0, joined = false;
+	let pieces = 0;
+	const into = new Map();   // a link a join removed -> the link it joined into; followed to the one left standing
+	const survivor = (id) => (into.has(id) ? survivor(into.get(id)) : id);
 	for (const id of ids) {
 		const edit = stops(id) ? cutAt(board, id) : joinAt(board, id);
 		if (!edit) continue;
@@ -129,8 +132,15 @@ export function transitEdit(model, waypointIds, stops) {
 			}
 			pieces += edit.cut;
 		}
-		joined ||= edit.label === 'join';
+		// a join deletes one link and re-ends the other over both: the deleted one joined into the one kept
+		if (edit.label === 'join') {
+			const gone = edit.entries.find((e) => e.op === 'del').entity.id, kept = edit.entries.find((e) => e.op === 'set').id;
+			into.set(gone, kept);
+		}
 	}
 	const cutLinks = new Set(drawnAs.values()).size;
-	return entries.length ? { label: 'transit', entries, cut: cutLinks ? { links: cutLinks, pieces: cutLinks + pieces } : null, joined } : null;
+	const joinedLinks = new Set([...into.keys()].map(survivor)).size;
+	return entries.length ? { label: 'transit', entries,
+		cut: cutLinks ? { links: cutLinks, pieces: cutLinks + pieces } : null,
+		joined: joinedLinks ? { links: joinedLinks, pieces: joinedLinks + into.size } : null } : null;
 }

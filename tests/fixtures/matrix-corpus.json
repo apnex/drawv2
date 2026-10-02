@@ -6197,7 +6197,7 @@
 		}
 	},
 	"TRN-13": {
-		"notice": "transit on at P -- its two links joined again",
+		"notice": "transit on at P -- 2 pieces joined into 1 link",
 		"links": [
 			{
 				"id": "link#1",
@@ -6870,7 +6870,7 @@
 		}
 	},
 	"TRN-18": {
-		"notice": "transit on at P -- its two links joined again",
+		"notice": "transit on at P -- 2 pieces joined into 1 link",
 		"links": [
 			{
 				"id": "link#1",
@@ -7720,7 +7720,7 @@
 		}
 	},
 	"TRN-24": {
-		"notice": "transit on at waypoint-2, on at waypoint-3 -- its two links joined again",
+		"notice": "transit on at waypoint-2, on at waypoint-3 -- 3 pieces joined into 1 link",
 		"links": [
 			{
 				"id": "link#1",
@@ -8115,7 +8115,7 @@
 		}
 	},
 	"TRN-26": {
-		"notice": "transit on at waypoint-2, on at waypoint-4 -- its two links joined again",
+		"notice": "transit on at waypoint-2, on at waypoint-4 -- 3 pieces joined into 1 link",
 		"links": [
 			{
 				"id": "link#1",

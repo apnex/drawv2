@@ -99,10 +99,10 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 		// one edit, each waypoint's cut or join built on the board the ones before it leave (B283)
 		const edit = transitEdit(model, ids, (id) => network.stopsAt(id, model));
 		if (edit) history.commit({ label: edit.label, entries: edit.entries });
-		const cut = edit?.cut ?? null, joined = !!edit?.joined;
+		const cut = edit?.cut ?? null, joined = edit?.joined ?? null;
 		settle('');
-		// how many links the author drew were cut, and into how many pieces -- one link at two pins is one link in three (2026-10-02)
-		say(`${said}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ' -- its two links joined again' : ''}${downSummary(model)}`);
+		// how many drawn links were cut and into how many pieces, and how many pieces joined into how many links (2026-10-02)
+		say(`${said}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ` -- ${joined.pieces} pieces joined into ${joined.links} link${joined.links === 1 ? '' : 's'}` : ''}${downSummary(model)}`);
 	});
 
 	/*
