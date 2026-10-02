@@ -3510,6 +3510,153 @@
 			"built": "yes"
 		},
 		{
+			"id": "TRN-23",
+			"state": "w-chain",
+			"gesture": "transit `x`",
+			"does": "Select the first two pins, P1 and P2, together, and press x.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-120
+				],
+				[
+					"shiftClick",
+					-120,
+					0
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Both cuts are one edit, each made on the board the one before it leaves: the link becomes three straight pieces -- S to P1, P1 to P2, P2 to E pinned at P3 -- each up over its own pipes, and none overlaps another.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"pipes": {
+					"link": 4,
+					"hand": 0
+				},
+				"notice": "cut in two"
+			},
+			"rule": "The director's report, 2026-10-02 (B283); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-24",
+			"state": "w-chain",
+			"gesture": "transit `x`",
+			"does": "As TRN-23, then press x again with both still selected.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-120
+				],
+				[
+					"shiftClick",
+					-120,
+					0
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, the pieces join into the one link again, pinned at all three, up.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"only": 3
+				},
+				"pipes": {
+					"link": 4,
+					"hand": 0
+				}
+			},
+			"rule": "The director's report, 2026-10-02 (B283); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-25",
+			"state": "w-chain",
+			"gesture": "transit `x`",
+			"does": "Select P1 and P3, which are not neighbours, together, and press x.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-120
+				],
+				[
+					"shiftClick",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Three pieces again -- S to P1, P1 to P3 pinned at P2, P3 to E -- each up, none overlapping.",
+			"expect": {
+				"links": 3,
+				"down": 0,
+				"pipes": {
+					"link": 4,
+					"hand": 0
+				}
+			},
+			"rule": "The director's report, 2026-10-02 (B283); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-26",
+			"state": "w-chain",
+			"gesture": "transit `x`",
+			"does": "As TRN-25, then press x again with both still selected.",
+			"steps": [
+				[
+					"click",
+					-240,
+					-120
+				],
+				[
+					"shiftClick",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, they join into the one link, pinned at all three, up.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"only": 3
+				}
+			},
+			"rule": "The director's report, 2026-10-02 (B283); DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "PIPE-01",
 			"state": "routed",
 			"gesture": "select pipe",

@@ -19,7 +19,7 @@ is resynchronised, and the notice it writes to (`say`). The canvas parts come in
 code -- with the painter's `el`.
 */
 import { whyDown, downSummary } from './resolve.mjs';
-import { cutAt, joinAt } from './transit.mjs';
+import { transitEdit } from './transit.mjs';
 import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
 
 /*
@@ -96,9 +96,10 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	session.onTransitChange((ids) => {
 		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); }
 		const said = session.takeNotice() ?? '';
-		const edits = ids.filter((id) => model.get('waypoint', id)).map((id) => (network.stopsAt(id, model) ? cutAt(model, id) : joinAt(model, id))).filter(Boolean);
-		if (edits.length) history.commit({ label: 'transit', entries: edits.flatMap((e) => e.entries) });
-		const cut = edits.reduce((n, e) => n + (e.cut ?? 0), 0), joined = edits.some((e) => e.label === 'join');
+		// one edit, each waypoint's cut or join built on the board the ones before it leave (B283)
+		const edit = transitEdit(model, ids, (id) => network.stopsAt(id, model));
+		if (edit) history.commit({ label: edit.label, entries: edit.entries });
+		const cut = edit?.cut ?? 0, joined = !!edit?.joined;
 		settle('');
 		say(`${said}${cut ? ` -- ${cut} link${cut === 1 ? '' : 's'} cut in two there` : ''}${joined ? ' -- its two links joined again' : ''}${downSummary(model)}`);
 	});

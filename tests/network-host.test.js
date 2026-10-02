@@ -9,6 +9,9 @@ sweeps nothing -- the planner does, in the edit -- and paints the tab's own pipe
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { attachNetwork } from '../network/host.mjs';
+import { createNetworkSession } from '../network/session.mjs';
+import { pipeEntity } from '../network/pipe-kind.mjs';
+import { applyOps } from '../model/ops.mjs';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
@@ -112,4 +115,40 @@ test('B278: a transit change cuts the links pinned at a waypoint where what arri
 	assert.equal(commits.length, 1, 'one commit');
 	assert.equal(commits[0].label, 'transit');
 	assert.deepEqual(commits[0].entries.map((e) => `${e.op} ${e.entity?.id ?? e.id}`).sort(), ['del link-000004', 'put link-000004', `put ${commits[0].entries.find((e) => e.op === 'put' && e.entity.id !== 'link-000004').entity.id}`].sort(), 'the pinned link cut in two there');
+});
+
+/*
+B283 -- A TRANSIT CHANGE AT SEVERAL ANCHORS AT ONCE, each anchor's edit built on the board the ones before it leave. The
+director's report (2026-10-02): a link drawn w, w, w, w, its two middle anchors selected, `x` pressed -- each cut was built
+against the same board and both committed together, so the second re-ended the original over both pins and a link ended
+up down over a pipe another held; turning both back on could not rejoin them.
+*/
+test('B283: turning transit off at two pins of one link at once makes three straight pieces, and turning them back on rejoins it whole', () => {
+	const session = createNetworkSession();
+	const model = new Model({ kinds: productKinds(PIPE_ROW), network: session.network });
+	attachRelations(model, { cellOf });
+	const [S, A, B, E] = ['waypoint-00000a', 'waypoint-00000b', 'waypoint-00000c', 'waypoint-00000d'];
+	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('waypoint', { id, name: id, x, y }));
+	model.put('link', { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] });
+	for (const [a, b] of [[S, A], [A, B], [B, E]]) model.put('pipe', pipeEntity(a, b, 'link'));
+	// the canvas's history, applying each commit to the model as the tab does
+	const toOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e);
+	const commits = [];
+	attachNetwork({
+		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		selection: { subscribe: () => {}, list: () => [] },
+		history: { commit: (c) => { commits.push(c); applyOps(model, c.entries.map(toOp)); } },
+		pipeLayer: { replaceChildren: () => {} }, el: () => {}, say: () => {},
+	});
+	const anchors = [{ id: A, kind: 'waypoint' }, { id: B, kind: 'waypoint' }];
+	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${model.isLinkDown(l) ? ' down' : ''}`).sort();
+
+	session.toggleTransit(anchors);
+	assert.equal(commits.length, 1, 'one edit');
+	assert.deepEqual(shape(), [`${A}>${B}[]`, `${B}>${E}[]`, `${S}>${A}[]`].sort(), 'three straight pieces, none down');
+	assert.equal(model.get('link', 'link-000001').src, S, 'the first piece keeps the id the author drew');
+
+	session.toggleTransit(anchors);
+	assert.deepEqual(shape(), [`${S}>${E}[${A},${B}]`], 'turned back on, they join into the one link, pinned at both');
+	assert.ok(model.get('link', 'link-000001'), 'with the id it was drawn with');
 });

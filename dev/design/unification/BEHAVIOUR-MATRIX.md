@@ -77,7 +77,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | . | . | . | . | . | . | . |
 | pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . | . | . | . | . | . |
 | pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . | . | . | . | . | . |
+| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . | TRN-23, TRN-24, TRN-25, TRN-26 | . | . | . | . |
 | pins and a g hop | DEL-14 | DEL-09 | . | . | . | . | . | . | . | . | . | . | . | . | . |
 | down | n/a | n/a | DEL-15 | . | HEAL-03 | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . | . | . | . | . | . |
 | blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 | . | . | . | . | . |
@@ -92,7 +92,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . | . | . |
 | transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . | . | . |
 
-72 rows: 72 built, 0 todo, 0 open.\
+76 rows: 76 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -209,6 +209,10 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-20 | transit junction x delete link | Select the link from C and press Delete, transit untouched. | With transit on, the two links left alone at P join into one, as ruled -- the comparison TRN-19 departs from. | DECISIONS: "Transit with pipes" (2026-09-30), TR-5; "Two separately drawn links left alone at a point join into one" (2026-09-26). | ruled, built |
 | TRN-21 | transit junction x transit `x` | Select P, where three links end, and press x. | What arrives at P stops there, so P is an endpoint for each of the three links -- drawn with the endpoint ring and the transit ring, never a junction -- and the links stay three. | DECISIONS: "A non-transiting anchor has endpoints only, under one ring" (2026-10-02), B277; TRANSIT.md section 4. | ruled, built |
 | TRN-22 | transit junction x transit `x` | Select P, where three links end, and press x twice. | Turned back on, the three links meet at P again: a junction, with no transit ring -- the comparison TRN-21 departs from. | DECISIONS: "A non-transiting anchor has endpoints only, under one ring" (2026-10-02), B277; TRANSIT.md section 4. | ruled, built |
+| TRN-23 | w-chain x transit `x` | Select the first two pins, P1 and P2, together, and press x. | Both cuts are one edit, each made on the board the one before it leaves: the link becomes three straight pieces -- S to P1, P1 to P2, P2 to E pinned at P3 -- each up over its own pipes, and none overlaps another. | The director's report, 2026-10-02 (B283); DECISIONS: "Transit with pipes" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28). | ruled, built |
+| TRN-24 | w-chain x transit `x` | As TRN-23, then press x again with both still selected. | Turned back on, the pieces join into the one link again, pinned at all three, up. | The director's report, 2026-10-02 (B283); DECISIONS: "Transit with pipes" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28). | ruled, built |
+| TRN-25 | w-chain x transit `x` | Select P1 and P3, which are not neighbours, together, and press x. | Three pieces again -- S to P1, P1 to P3 pinned at P2, P3 to E -- each up, none overlapping. | The director's report, 2026-10-02 (B283); DECISIONS: "Transit with pipes" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28). | ruled, built |
+| TRN-26 | w-chain x transit `x` | As TRN-25, then press x again with both still selected. | Turned back on, they join into the one link, pinned at all three, up. | The director's report, 2026-10-02 (B283); DECISIONS: "Transit with pipes" (2026-09-30), TR-2 -- many anchors at once, each flipped on its own (2026-09-28). | ruled, built |
 | PIPE-01 | routed x select pipe | Lay pipes with g as in GST-01, then click the free hand pipe from A to the g anchor. | A hand pipe with no link over it takes the click: it alone is selected. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
 | PIPE-02 | routed x select pipe | Click a hand pipe the upper link is drawn over, at its middle. | A pipe a link is drawn over is covered by the link, so the click takes the link, not the pipe. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
 | PIPE-03 | routed x delete pipe | Lay pipes with g as in GST-01, click the pipe from A to the g anchor, and press Delete. | The pipe goes, and only it: the g anchor stays, held by its other hand pipe, and the links are untouched. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |

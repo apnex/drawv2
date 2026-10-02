@@ -11,8 +11,8 @@ THE SETTING is the author's choice within what the type offers, kept per anchor.
 pipes are, until promotion's format batch stores it (TR-7): a reload loses it, and undo does not move it.
 */
 import { splitAtBend, collapseAtWaypoint } from '../model/invariants.mjs';
-import { clone } from '../model/ops.mjs';
-import { newId } from '../model/model.mjs';
+import { clone, applyOps } from '../model/ops.mjs';
+import { newId, projection } from '../model/model.mjs';
 
 const BOTH = [true, false], OFF = [false];
 const OFFERS = { router: BOTH, firewall: BOTH, vxlan: BOTH, loadbalancer: OFF, server: OFF, host: OFF };
@@ -93,4 +93,31 @@ export function joinAt(model, waypointId) {
 		{ op: 'del', kind: 'link', entity: clone('link', other) },
 		{ op: 'set', kind: 'link', id: src.id, after: { src: merged.src, dst: merged.dst, via: merged.via ?? [], ...(typeof merged.flow === 'boolean' ? { flow: merged.flow } : {}) } },
 	] };
+}
+
+/*
+B283 -- A TRANSIT CHANGE AT SEVERAL WAYPOINTS AT ONCE is ONE edit, built in order: each waypoint's cut or join is judged on
+a projection of the board as the ones before it leave it, and applied there before the next is judged. Built each against
+the same board, two cuts of one link both deleted and re-put the original -- the second re-ending it over both pins while
+the first's far piece still ran past the second -- so a link ended up down over a pipe another held, and no join could undo
+it (the director's report, 2026-10-02). `stops(id)` says whether what arrives at the waypoint now stops there.
+Answers the entries, as the canvas's history takes them, how many links were cut, and whether any joined; null if nothing.
+*/
+const asOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e);
+
+export function transitEdit(model, waypointIds, stops) {
+	const ids = waypointIds.filter((id) => model.get('waypoint', id));   // a node's transit cuts nothing: its links end there
+	if (!ids.length) return null;
+	const board = projection(model);
+	const entries = [];
+	let cut = 0, joined = false;
+	for (const id of ids) {
+		const edit = stops(id) ? cutAt(board, id) : joinAt(board, id);
+		if (!edit) continue;
+		applyOps(board, edit.entries.map(asOp));
+		entries.push(...edit.entries);
+		cut += edit.cut ?? 0;
+		joined ||= edit.label === 'join';
+	}
+	return entries.length ? { label: 'transit', entries, cut, joined } : null;
 }
