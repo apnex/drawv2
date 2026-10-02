@@ -90,7 +90,7 @@ Pipes as entities in the lab's tab and authority models; the network's derivatio
 
 AMENDED 2026-10-02 -- N1 RULED as recommended, and generalised (`dev/DECISIONS.md`, "Plugins bring their own kinds"):
 - **N-a grows to one shape for every kind:** each of the six kinds is a row carrying its storage facts, a check for every field with its id prefix, its cross-entity check and the kinds it references; the five built-ins' checks move into their rows; the id grammar is built from the rows (amending C3). A twice-claimed kind and a missing referenced kind are refused when the composition is built.
-- **Two questions the ruling opened**, asked after N2 to N4 in this order:
+- **Two questions the ruling opened**, asked first, since they shape the row every kind takes:
   - **N5 -- names.** Every kind is named today (B187), and one name namespace spans the kinds. Whether a kind joins it is a row fact; for `pipe`, whether it is named.
   - **N6 -- whether a pipe can be selected,** which decides the gesture that deletes a hand pipe (B281).
 
