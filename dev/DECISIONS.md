@@ -1223,7 +1223,8 @@ AMENDED 2026-09-30: no longer -- a pinned link lives and dies with its pins, so 
 Built as a fourth planner interface, `isStranded(link, model)`, which is asked only about a link whose pin the transaction deleted, is judged over the pipes that survive the edit, and is never asked in production.\
 The removal is in the same transaction, so the orphan sweep takes the link's `w` anchors and one undo restores all of it.\
 CORRECTED, the option's "undo brings it back": undo restores the link and every anchor, but not its pipes, which are session state outside the planner's log until the format batch stores them (F6).\
-So the link returns DOWN, drawn dotted, rather than routed -- the stated limit every lab undo already has, held by a test so the change shows when pipes are stored.
+So the link returns DOWN, drawn dotted, rather than routed -- the stated limit every lab undo already has, held by a test so the change shows when pipes are stored.\
+AMENDED 2026-10-02: the limit is gone in the lab (H17.22 N-c) -- pipes are ops in the edit, so undo restores them and the link returns up, as the option first worded it; matrix row UNDO-01 now says so.
 
 **Seed boards give each pipe the lifetime its gesture would -- ruled 2026-09-29.**\
 The lab's seeds loaded every pipe as laid by hand, so on `?seed=bend` deleting the link's end left its bend anchor and a pipe standing: a board no gesture could have made.\

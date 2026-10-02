@@ -43,11 +43,7 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
-	// H17.22 N-b: the network's pipe kind, built and proven in the planner one stage before the lab composes it (N-c), which
-	// is its production consumer; these three entries go in N-c's commit
-	'network/pipe-kind.mjs:PIPE_ROW': 'the network plugin\'s pipe kind (H17.22 N-b), proven by tests/network-pipe-kind.test.js and the planner corpus before the lab composes it at N-c, which removes this entry.',
-	'network/pipe-kind.mjs:pipeId': 'the id a pair of anchors makes (N2), used by the row and by its tests until the drag judge mints pipes at N-c, which removes this entry.',
-	'network/pipe-kind.mjs:pipeEntity': 'a pipe entity from its two ends, used by the corpus equivalence until the drag judge and the seeds make pipes at N-c, which removes this entry.',
+	'network/pipeset.mjs:createPipeSet': 'the session pipe set, which no page reads since H17.22 N-c put pipes in the model; kept one stage as the oracle the planner corpus holds the pipe reactions to, and deleted with this entry at N-d.',
 	'tools/scan-skips.mjs:skipsIn': 'the TAP parser behind B250`s skip check. Its production caller is the CLI half of the same file, so the export earns its keep from tests/scan-skips.test.js, which drives it on written TAP -- nested subtests, todo, reasons -- without needing a machine that lacks Chrome.',
 	// K12 (2026-10-01): exports the deleted barrels had hidden, each kept for its own reason; the rest were deleted or un-exported.
 	'engine/kinds.mjs:MOVERS': 'the mover kinds table; `moverFor` reads it in this module. Exported so tests/rules.test.js asserts every kind against the table itself rather than a copy that would drift.',

@@ -944,9 +944,10 @@ export class Input {
 	and chain paths had — it was writing the link live a line before `history.commit` re-put it
 	through `applyOps` anyway. Verified redundant by removing it against a real route gesture (H6.11).
 	*/
-	commitRoute(ctx, dstId, via) {
+	// `extra`: the entries a drag judge adds (N-c), after the drag's own
+	commitRoute(ctx, dstId, via, extra = []) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
-		this.history.commit(commands.routeLink(ctx.placed, link, this.splitsFor(link), ctx.unpin));
+		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link, this.splitsFor(link), ctx.unpin), extra));
 		this.selection.set([link.id]);
 	}
 
@@ -1168,6 +1169,10 @@ export class Input {
 	them, the destination taken off. A refusal may name anchors to KEEP: they reach the planner in one commit, and
 	everything else the drag placed is cleaned up, as a cancelled drag's is -- the director's report was a refused `g` drag
 	throwing away the `g` anchor, geometry placed deliberately. True when the link was committed.
+
+	H17.22 N-c -- A JUDGE MAY ADD ENTRIES to the commit it judges (`verdict.entries`): they ride after the drag's own, in its
+	one undo step -- the network's pipes, laid with the link they belong to -- and with no commit of the drag's own (a
+	refused drag that keeps nothing) they are committed alone. What the entries are is the judge's; Input names no kind.
 	*/
 	commitDrawnLink({ ctx, dst, via, route, validTarget }) {
 		let verdict = null;
@@ -1178,13 +1183,15 @@ export class Input {
 				const keep = new Set(verdict?.keep ?? []);
 				const kept = ctx.placed.filter((w) => keep.has(w.id));
 				this.cleanupRoute({ placed: ctx.placed.filter((w) => !keep.has(w.id)) });
-				if (kept.length) this.history.commit(commands.keepAnchors(kept.map((w) => this.model.get('waypoint', w.id) ?? w)));
+				const command = commands.withJudged(kept.length ? commands.keepAnchors(kept.map((w) => this.model.get('waypoint', w.id) ?? w)) : null, verdict?.entries);
+				if (command) this.history.commit(command);
 				return false;
 			}
 		}
+		const extra = verdict?.entries ?? [];
 		// the judge may cut the drawn link at stops it names (transit, TR-2b): the pieces, one undo step
-		if (this.judgeDrag && verdict?.cutAt?.length) this.commitPieces(ctx, dst, via, route, verdict.cutAt);
-		else this.commitRoute(ctx, dst, via);     // placed waypoints + the link, one undo step
+		if (this.judgeDrag && verdict?.cutAt?.length) this.commitPieces(ctx, dst, via, route, verdict.cutAt, extra);
+		else this.commitRoute(ctx, dst, via, extra);     // placed waypoints + the link, one undo step
 		return true;
 	}
 
@@ -1192,7 +1199,7 @@ export class Input {
 	The drawn link as PIECES, cut at the stops a drag judge named: each piece runs from one cut (or an end) to the next,
 	pinned at the drag's pins between them. One command, so one undo step; each piece's ends make their junction splits.
 	*/
-	commitPieces(ctx, dst, via, route, cutAt) {
+	commitPieces(ctx, dst, via, route, cutAt, extra = []) {
 		const stops = [ctx.src.id, ...route, dst];
 		const cuts = new Set(cutAt);
 		const bounds = stops.map((id, i) => (i === 0 || i === stops.length - 1 || cuts.has(id) ? i : -1)).filter((i) => i >= 0);
@@ -1204,7 +1211,7 @@ export class Input {
 			links.push({ ...this.model.makeLink(a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
 		}
 		const splits = [...new Map(links.flatMap((l) => this.splitsFor(l)).map((s) => [s.original.id, s])).values()];
-		this.history.commit(commands.routeLinks(ctx.placed, links, splits, ctx.unpin));
+		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links, splits, ctx.unpin), extra));
 		this.selection.set(links.map((l) => l.id));
 	}
 

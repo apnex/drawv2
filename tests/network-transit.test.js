@@ -79,7 +79,12 @@ import { judgeDrag } from '../network/guide.mjs';
 import { whyDown } from '../network/resolve.mjs';
 import { Model } from '../model/model.mjs';
 import { createNetwork } from '../network/network.mjs';
-import { createPipeSet } from '../network/pipeset.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+import { PIPE_ROW } from '../network/pipe-kind.mjs';
+
+// pipes are entities since H17.22 N-c: a board's model holds the network's pipe kind, and a fixed board's pipes go into it
+const KINDS = productKinds(PIPE_ROW);
+const lay = (s, m, pipes, ids) => { for (const op of s.seed(pipes, ids)) m.put('pipe', op.entity); };
 
 const hand = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
@@ -95,14 +100,14 @@ test('a route never passes a blocked anchor, but may begin or end at one', () =>
 // a board in a real Model, composed as the lab composes it
 function board() {
 	const s = createNetworkSession();
-	const m = new Model({ network: s.network });
+	const m = new Model({ network: s.network, kinds: KINDS });
 	const put = (kind, e) => m.put(kind, e);
 	put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
 	put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
 	put('node', { id: 'node-00000c', name: 'H', type: 'host', x: 0, y: 0, shape: 'circle' });
 	put('waypoint', { id: 'waypoint-00000d', name: 'w', x: 0, y: -240 });
 	put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
-	s.seed([['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand'], ['node-00000a', 'waypoint-00000d', 'hand'], ['waypoint-00000d', 'node-00000b', 'hand']], ['link-000001']);
+	lay(s, m, [['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand'], ['node-00000a', 'waypoint-00000d', 'hand'], ['waypoint-00000d', 'node-00000b', 'hand']], ['link-000001']);
 	return { s, m, link: m.get('link', 'link-000001') };
 }
 const W = { id: 'waypoint-00000d', kind: 'waypoint', type: null, name: 'w' };
@@ -141,8 +146,8 @@ test('a drag is judged with the same stops: a plain link drawn A to B runs over 
 	const drag = { src: 'node-00000a', dst: 'node-00000b', pins: [], guides: [], placed: [], stops: ['node-00000a', 'node-00000b'], pressed: { w: false, g: false }, endPressed: false };
 	const v = s.judge(drag, [], m).verdict;
 	assert.deepEqual(v.route, ['node-00000a', 'waypoint-00000d', 'node-00000b']);
-	assert.equal(judgeDrag(s.pipes.list(), drag, { links: [] }).route.length, 3, 'with no stops given, the shortest way is found -- the host and the anchor tie');
-	assert.deepEqual(assignRoutes(s.pipes.list(), [{ id: 'l', ...drag }], { passes: (id) => id !== 'node-00000c' && id !== 'waypoint-00000d' }).get('l'), null, 'and with both blocked, no way');
+	assert.equal(judgeDrag(m.all('pipe'), drag, { links: [] }).route.length, 3, 'with no stops given, the shortest way is found -- the host and the anchor tie');
+	assert.deepEqual(assignRoutes(m.all('pipe'), [{ id: 'l', ...drag }], { passes: (id) => id !== 'node-00000c' && id !== 'waypoint-00000d' }).get('l'), null, 'and with both blocked, no way');
 });
 
 /*
@@ -247,7 +252,7 @@ test('X4: the network lets two links join at a waypoint only where its transit i
 		m.put('link', { id: 'link-000003', name: 'wb', src: 'waypoint-00000d', dst: 'node-00000b' });
 		m.put('link', { id: 'link-000004', name: 'wh', src: 'waypoint-00000d', dst: 'node-00000c' });
 		if (off) s.toggleTransit([W]);
-		const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: s.network.links });
+		const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: s.network.links, kinds: KINDS });
 		assert.equal(r.ok, true);
 		return r.ops.some((o) => o.op === 'set' && o.kind === 'link' && 'src' in o.patch);
 	};
@@ -258,12 +263,12 @@ test('X4: the network lets two links join at a waypoint only where its transit i
 test('X5: every type routes as the table says -- routers, firewalls and vxlans pass; load balancers, servers and hosts do not', () => {
 	for (const [type, passes] of [['router', true], ['firewall', true], ['vxlan', true], ['loadbalancer', false], ['server', false], ['host', false]]) {
 		const s = createNetworkSession();
-		const m = new Model({ network: s.network });
+		const m = new Model({ network: s.network, kinds: KINDS });
 		m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
 		m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
 		m.put('node', { id: 'node-00000c', name: 'M', type, x: 0, y: 0, shape: 'circle' });
 		m.put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
-		s.seed([['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand']], ['link-000001']);
+		lay(s, m, [['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand']], ['link-000001']);
 		assert.equal(m.isLinkDown(m.get('link', 'link-000001')), !passes, `${type} ${passes ? 'passes' : 'never passes'} a route`);
 	}
 });
@@ -275,7 +280,7 @@ offers no choice: a host stops what arrives and declares nothing, so it draws no
 */
 test('B278: stopsAt answers, anchor by anchor, what routing blocks -- and differs from the declaration only where a type offers no choice', () => {
 	const s = createNetworkSession();
-	const m = new Model();
+	const m = new Model({ kinds: KINDS });
 	m.put('waypoint', { id: wp.id, name: 'w1', x: 0, y: 0 });
 	for (const [n, type] of [[2, 'router'], [3, 'host'], [4, 'firewall'], [5, 'server']]) m.put('node', { id: `node-00000${n}`, name: `${type}-${n}`, type, x: 120 * n, y: 0, shape: 'circle' });
 	s.toggleTransit([wp, node('firewall', 4)]);

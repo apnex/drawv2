@@ -40,6 +40,8 @@
 			"node#4"
 		],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -100,6 +102,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -134,6 +138,8 @@
 			"node#2"
 		],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -148,6 +154,8 @@
 		"tabAnchors": [],
 		"alive": [],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -162,6 +170,8 @@
 		"tabAnchors": [],
 		"alive": [],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -176,6 +186,8 @@
 		"tabAnchors": [],
 		"alive": [],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -190,6 +202,8 @@
 		"tabAnchors": [],
 		"alive": [],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -204,6 +218,8 @@
 		"tabAnchors": [],
 		"alive": [],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -281,6 +297,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -423,6 +441,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -490,6 +510,8 @@
 			"node#1"
 		],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -548,6 +570,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -700,6 +724,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -798,6 +824,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 1,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -848,6 +876,8 @@
 			"node#2"
 		],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -918,6 +948,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -988,6 +1020,8 @@
 			"node#4"
 		],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -1066,6 +1100,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -1147,6 +1183,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 1,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -1212,6 +1250,8 @@
 			"node#4"
 		],
 		"pipes": [],
+		"pipesAgree": true,
+		"tabPipeCount": 0,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [],
@@ -1307,6 +1347,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"link#3"
 		],
@@ -1409,6 +1451,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -1527,6 +1571,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [
 			"link#1"
 		],
@@ -1680,6 +1726,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
 		"selected": [
 			"link#1"
 		],
@@ -1813,6 +1861,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#1"
 		],
@@ -1928,6 +1978,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -2049,6 +2101,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#1"
 		],
@@ -2177,6 +2231,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#1"
 		],
@@ -2310,6 +2366,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -2447,6 +2505,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -2631,6 +2691,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 9,
 		"selected": [
 			"link#1"
 		],
@@ -2854,6 +2916,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 7,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -3063,6 +3127,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#1"
 		],
@@ -3234,6 +3300,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -3348,6 +3416,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -3453,6 +3523,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -3613,6 +3685,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#1"
 		],
@@ -3832,6 +3906,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#3"
 		],
@@ -4063,6 +4139,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [
 			"link#1"
 		],
@@ -4281,6 +4359,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
 		"selected": [
 			"waypoint#6"
 		],
@@ -4459,6 +4539,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#3"
 		],
@@ -4563,6 +4645,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -4593,7 +4677,7 @@
 		}
 	},
 	"UNDO-01": {
-		"notice": "v4 undo -- 1 link down, ready to heal",
+		"notice": "v4 undo",
 		"links": [
 			{
 				"id": "link#1",
@@ -4604,7 +4688,7 @@
 					"waypoint#4",
 					"waypoint#5"
 				],
-				"down": true
+				"down": false
 			}
 		],
 		"tabLinks": [
@@ -4660,7 +4744,30 @@
 			"waypoint#1",
 			"waypoint#4"
 		],
-		"pipes": [],
+		"pipes": [
+			{
+				"a": "waypoint#2",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#1",
+				"b": "waypoint#3",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#4",
+				"b": "waypoint#5",
+				"laid": "link"
+			},
+			{
+				"a": "waypoint#3",
+				"b": "waypoint#4",
+				"laid": "link"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -4713,12 +4820,275 @@
 				"judged": []
 			}
 		],
-		"stretches": [],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-240,-120|-360,0",
+					"-120,0|-240,-120",
+					"-120,0|0,-120",
+					"0,-120|120,0"
+				]
+			}
+		],
 		"paths": {
 			"link#1": {
 				"d": "M-360 0 L-254.142 -105.858 Q-240 -120 -225.858 -105.858 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
-				"stroke": "rgb(255, 152, 0)",
-				"dotted": true
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"UNDO-02": {
+		"notice": "v3 undo",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
+		"selected": [],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		}
+	},
+	"UNDO-03": {
+		"notice": "v4 redo",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": [],
+				"down": false
+			}
+		],
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#3",
+				"dst": "node#4",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			},
+			{
+				"id": "waypoint#2",
+				"x": -240,
+				"y": -180
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#3",
+			"node#4",
+			"waypoint#1",
+			"waypoint#2"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#4",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "waypoint#2",
+				"laid": "hand"
+			},
+			{
+				"a": "node#3",
+				"b": "waypoint#2",
+				"laid": "hand"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 6,
+		"selected": [],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"0,-240|0,0",
+					"0,0|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M0 -240 L0 -20 Q0 0 0 20 L0 240",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
 			}
 		}
 	},
@@ -4770,6 +5140,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1"
 		],
@@ -4847,6 +5219,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1"
 		],
@@ -4926,6 +5300,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"node#3"
 		],
@@ -5011,6 +5387,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"node#4"
 		],
@@ -5090,6 +5468,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1",
 			"node#3"
@@ -5176,6 +5556,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1"
 		],
@@ -5253,6 +5635,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1"
 		],
@@ -5332,6 +5716,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"link#1"
 		],
@@ -5430,6 +5816,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"node#3"
 		],
@@ -5539,6 +5927,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"waypoint#1"
 		],
@@ -5645,6 +6035,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"waypoint#1"
 		],
@@ -5744,6 +6136,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1"
 		],
@@ -5845,6 +6239,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
 		"selected": [
 			"waypoint#1"
 		],
@@ -5960,6 +6356,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [
 			"link#2",
 			"link#3"
@@ -6101,6 +6499,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
 		"selected": [
 			"link#2",
 			"link#3"
@@ -6248,6 +6648,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 5,
 		"selected": [
 			"link#1"
 		],
@@ -6374,6 +6776,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [
 			"waypoint#2"
 		],
@@ -6528,6 +6932,8 @@
 				"laid": "link"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [
 			"waypoint#2"
 		],
@@ -6653,6 +7059,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [],
 		"rings": [
 			{
@@ -6758,6 +7166,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [],
 		"rings": [],
 		"waypointRoles": [
@@ -6865,6 +7275,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [
 			"waypoint#1"
 		],
@@ -7005,6 +7417,8 @@
 				"laid": "hand"
 			}
 		],
+		"pipesAgree": true,
+		"tabPipeCount": 3,
 		"selected": [
 			"waypoint#1"
 		],

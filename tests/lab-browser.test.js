@@ -176,7 +176,20 @@ first. Since pipes count as references, a hand pipe legitimately holds a waypoin
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one
 hide a failure in the other.
 */
-const CLEAR_PIPES = `lab.pipes.list().forEach((x) => lab.pipes.remove(x.a, x.b))`;
+/*
+PIPES ARE ENTITIES since H17.22 N-c, in both models, changed only through the planner. So a test lays and removes them as
+an author's edit does -- a commit through the door -- with the page's own pipe kind making the entities, never a second
+copy of its id rule here. `pipesIn(body)` runs `body` with `lay`, `clear`, `pipes` and `has` in scope.
+*/
+const PIPES = `const { pipeId, pipeEntity } = await import('/network/pipe-kind.mjs');
+	const pipes = () => lab.authority.all('pipe').map(({ a, b, laid }) => ({ a, b, laid }));
+	const has = (x, y) => !!lab.authority.get('pipe', pipeId(x, y));
+	const commitPipes = (entries) => { if (entries.length) lab.history.commit({ label: 'pipes', entries }); };
+	const lay = (list) => commitPipes(list.map(([a, b, laid]) => { const had = lab.model.get('pipe', pipeId(a, b));
+		return !had ? { op: 'put', kind: 'pipe', entity: pipeEntity(a, b, laid) } : laid === 'hand' && had.laid !== 'hand' ? { op: 'set', kind: 'pipe', id: had.id, after: { laid: 'hand' } } : null; }).filter(Boolean));
+	const clear = () => commitPipes(lab.model.all('pipe').map((x) => ({ op: 'del', kind: 'pipe', entity: { ...x } })));`;
+const pipesIn = (body) => `(async () => { ${PIPES} ${body} })()`;
+const CLEAR_PIPES = pipesIn('clear();');
 
 // the tab's document, counted -- the thing the author actually sees
 const COUNTS = `({ nodes: Object.keys(lab.model.state.nodes).length, waypoints: Object.keys(lab.model.state.waypoints).length,
@@ -257,10 +270,10 @@ const roleOf = (id) => `[...document.getElementById('${id}').classList].filter((
 test('compare: a landing CUTS the links that pin the centre, and the centre becomes a junction', { skip: SKIP }, async () => {
 	const p = await open('compare');
 	try {
-		assert.deepEqual(await p.run(roleOf('waypoint-000001')), ['bend'], 'before the landing, the pinned centre is a bend, not a junction');
-		await p.run(land('waypoint-000003', 'waypoint-000001'));
-		assert.ok((await p.run(roleOf('waypoint-000001'))).includes('junction'), 'after it, the pinned pair was cut there: a junction');
-		const ending = await p.run(`lab.authority.all('link').filter((l) => l.src === 'waypoint-000001' || l.dst === 'waypoint-000001').length`);
+		assert.deepEqual(await p.run(roleOf('waypoint-000011')), ['bend'], 'before the landing, the pinned centre is a bend, not a junction');
+		await p.run(land('waypoint-000013', 'waypoint-000011'));
+		assert.ok((await p.run(roleOf('waypoint-000011'))).includes('junction'), 'after it, the pinned pair was cut there: a junction');
+		const ending = await p.run(`lab.authority.all('link').filter((l) => l.src === 'waypoint-000011' || l.dst === 'waypoint-000011').length`);
 		assert.equal(ending, 5, 'two pinned links cut in two, plus the landing: five links end at the centre');
 	} finally { await p.close(); }
 });
@@ -268,8 +281,8 @@ test('compare: a landing CUTS the links that pin the centre, and the centre beco
 test('compare: a landing CROSSES the links that only pass the centre, and they stay whole', { skip: SKIP }, async () => {
 	const p = await open('compare');
 	try {
-		await p.run(land('waypoint-000004', 'waypoint-000002'));
-		assert.ok(!(await p.run(roleOf('waypoint-000002'))).includes('junction'), 'the guided centre must NOT become a junction');
+		await p.run(land('waypoint-000014', 'waypoint-000012'));
+		assert.ok(!(await p.run(roleOf('waypoint-000012'))).includes('junction'), 'the guided centre must NOT become a junction');
 		for (const id of ['link-000003', 'link-000004']) {
 			const l = await p.run(`lab.authority.get('link', '${id}')`);
 			assert.ok(l, `${id} was cut -- a link that only passes a point is not connected to a landing there`);
@@ -285,7 +298,7 @@ THE ROUTE HOOK -- `g`'s whole-route check and its pipes, in the page.
 test('the route hook accepts a g route the link will not follow, names the guides skipped, and lays nothing itself', { skip: SKIP }, async () => {
 	const p = await open('detour');
 	try {
-		const before = await p.run('lab.pipes.list().length');
+		const before = await p.run(`lab.authority.all('pipe').length`);
 		/*
 		n1 to n2 through w7 then w6: three pipes, while n1-w6-n2 is two once the legs are laid, so the link will not
 		pass w7. This was a refusal until 2026-09-30, when the director ruled "Link runs the shorter way": the link is
@@ -297,28 +310,30 @@ test('the route hook accepts a g route the link will not follow, names the guide
 			pressed: { w: true, g: true }, endPressed: 'w' })`);   // a w drag with g hops: only w makes a link (2026-09-30)
 		assert.equal(v.ok, true, v.notice);
 		assert.deepEqual(v.skipped, ['waypoint-000007'], 'the guide the link will not pass is named');
-		assert.equal(await p.run('lab.pipes.list().length'), before, 'the check lays nothing: the legs wait for the planner to accept the link');
+		assert.equal(await p.run(`lab.authority.all('pipe').length`), before, 'the check lays nothing: its pipes ride in the link\'s commit (N-c)');
 	} finally { await p.close(); }
 });
 
-test('an accepted route lays its pipes only once the planner accepts the link, and the sweep takes it back', { skip: SKIP }, async () => {
+test('an accepted route\'s pipes ride in its link\'s commit, and the sweep takes them back', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
-		const before = await p.run('lab.pipes.list().length');
+		const before = await p.run(`lab.authority.all('pipe').length`);
 		// A straight to D: a new one-pipe leg, shorter than A-centre-D, so the route takes it
 		// w pressed at D: only w lays a pipe WITH a link, and a key at the end lays the pipe into it (2026-09-30)
 		const v = await p.run(`lab.routeHook({ src: 'node-000001', dst: 'node-000004', pins: [], guides: [], placed: [], stops: ['node-000001', 'node-000004'], pressed: { w: true, g: false }, endPressed: 'w' })`);
 		assert.equal(v.ok, true, v.notice);
-		assert.equal(await p.run('lab.pipes.list().length'), before, 'nothing is laid by the check itself');
+		assert.equal(await p.run(`lab.authority.all('pipe').length`), before, 'nothing is laid by the check itself');
+		assert.deepEqual(v.entries.map((e) => [e.op, e.kind, e.entity.a, e.entity.b, e.entity.laid]), [['put', 'pipe', 'node-000001', 'node-000004', 'link']], 'its leg is an entry for the link\'s commit');
 
-		await p.run(`lab.input.commitRoute({ src: lab.model.get('node', 'node-000001'), placed: [] }, 'node-000004', [])`);
-		assert.equal(await p.run('lab.pipes.list().length'), before + 1, 'the planner accepted the link, so its leg is laid');
-		assert.equal(await p.run(`lab.pipes.list().find((x) => x.a === 'node-000001' && x.b === 'node-000004').laid`), 'link');
+		// Input adds the judge's entries to the drag's own commit (N-c), here asked directly
+		await p.run(`lab.input.commitRoute({ src: lab.model.get('node', 'node-000001'), placed: [] }, 'node-000004', [], ${JSON.stringify(v.entries)})`);
+		assert.equal(await p.run(`lab.authority.all('pipe').length`), before + 1, 'the planner accepted the link, its leg with it');
+		assert.equal(await p.run(`lab.authority.all('pipe').find((x) => x.a === 'node-000001' && x.b === 'node-000004').laid`), 'link');
 
 		// delete that link: its pipe was laid WITH it, and no other link uses it, so it goes (2026-09-27)
 		const id = await p.run(`lab.authority.all('link').find((l) => l.src === 'node-000001' && l.dst === 'node-000004').id`);
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'link', entity: lab.model.get('link', '${id}') }] })`);
-		assert.equal(await p.run('lab.pipes.list().length'), before, 'a pipe laid with a link goes once no link remains on it');
+		assert.equal(await p.run(`lab.authority.all('pipe').length`), before, 'a pipe laid with a link goes once no link remains on it');
 	} finally { await p.close(); }
 });
 
@@ -330,12 +345,12 @@ test('pipes an author laid hold an anchor the sweep would take, and a pipe to a 
 		// which promotes it (network/pipeset.mjs). Delete A: the planner takes the link, and would sweep w as
 		// the bend it left -- but w still has a hand pipe to B, so it is structure, not debris (pipes count as
 		// references). The pipe A-w has lost an end, so it goes.
-		await p.run(`lab.pipes.lay('waypoint-000005', 'node-000002', 'hand')`);
+		await p.run(pipesIn(`lay([['waypoint-000005', 'node-000002', 'hand']]);`));
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'node', entity: lab.model.get('node', 'node-000001') }] })`);
 		const c = await p.run(COUNTS);
 		assert.equal(c.links, 0, 'the link went with its end');
 		assert.equal(c.waypoints, 1, 'w survives: its hand pipe to B still references it');
-		assert.deepEqual(await p.run(`lab.pipes.list().map((x) => [x.a, x.b].join('-'))`), ['node-000002-waypoint-000005'],
+		assert.deepEqual(await p.run(`lab.authority.all('pipe').map((x) => [x.a, x.b].sort().join('-'))`), ['node-000002-waypoint-000005'],
 			'the pipe to the deleted node is pruned; the author\'s pipe to B remains');
 	} finally { await p.close(); }
 });
@@ -397,7 +412,7 @@ test('moving a NODE redraws the links routed through it, too', { skip: SKIP }, a
 	const p = await open('cross');
 	try {
 		// re-lay the pipes so link-000001 (A to B) routes through node C, which it does not name
-		await p.run(`lab.pipes.list().forEach((x) => lab.pipes.remove(x.a, x.b)); lab.pipes.lay('node-000001', 'node-000003', 'hand'); lab.pipes.lay('node-000003', 'node-000002', 'hand')`);
+		await p.run(pipesIn(`clear(); lay([['node-000001', 'node-000003', 'hand'], ['node-000003', 'node-000002', 'hand']]);`));
 		await p.run(`lab.history.commit({ label: 'move', entries: [{ op: 'set', kind: 'node', id: 'node-000003', after: { x: 60, y: -300 } }] })`);
 		assert.match(await p.run(`document.getElementById('link-000001').getAttribute('d')`), /Q60 -300/,
 			"the drawn link must follow the node it routes through, not only the nodes it names");
@@ -456,12 +471,12 @@ test('B257: an edit keeps the pipes a link is drawn on, whichever order ids sort
 		await put('older', [lk('link-0000ff', 'waypoint-00000a', 'waypoint-00000b')]);      // aged first, sorts last by id
 		await put('younger', [lk('link-000001', 'waypoint-00000c', 'waypoint-00000d')]);
 		// the pipes, once both links exist -- a link pipe with no link on it is swept, as ruled
-		await p.run(`[['waypoint-0000e1','waypoint-0000e2','link'], ['waypoint-00000a','waypoint-0000e1','hand'], ['waypoint-0000e2','waypoint-00000b','hand'],
+		await p.run(pipesIn(`lay([['waypoint-0000e1','waypoint-0000e2','link'], ['waypoint-00000a','waypoint-0000e1','hand'], ['waypoint-0000e2','waypoint-00000b','hand'],
 			['waypoint-00000c','waypoint-0000e1','hand'], ['waypoint-0000e2','waypoint-00000d','hand'], ['waypoint-00000c','waypoint-0000f1','link'],
-			['waypoint-0000f1','waypoint-0000f2','link'], ['waypoint-0000f2','waypoint-00000d','link']].forEach(([a, b, laid]) => lab.pipes.lay(a, b, laid))`);
+			['waypoint-0000f1','waypoint-0000f2','link'], ['waypoint-0000f2','waypoint-00000d','link']]);`));
 		await put('unrelated', [wp('waypoint-000099', 600, 420)]);                          // any edit settles, and sweeps
-		assert.equal(await p.run(`['waypoint-00000c|waypoint-0000f1', 'waypoint-0000f1|waypoint-0000f2', 'waypoint-0000f2|waypoint-00000d']
-			.filter((k) => lab.pipes.has(...k.split('|'))).length`), 3, 'the pipes the younger link is drawn on survive the sweep');
+		assert.equal(await p.run(pipesIn(`return ['waypoint-00000c|waypoint-0000f1', 'waypoint-0000f1|waypoint-0000f2', 'waypoint-0000f2|waypoint-00000d']
+			.filter((k) => has(...k.split('|'))).length;`)), 3, 'the pipes the younger link is drawn on survive the sweep');
 		assert.match(await p.run(`document.getElementById('link-000001').getAttribute('d')`), /Q-120 360/, 'and it is drawn over them, by age');
 		assert.equal(await p.run(`lab.model.isLinkDown(lab.model.get('link', 'link-0000ff'))`), false, 'while the older link keeps the free w pipe');
 	} finally { await p.close(); }
@@ -611,6 +626,7 @@ const STEP = {
 	key: (p, k) => p.key(k),
 	drag: (p, from, to, hops) => p.drag(from, to, hops),
 	undo: (p) => p.run('lab.history.undo()'),   // the path Ctrl+Z takes
+	redo: (p) => p.run('lab.history.redo()'),   // the path Ctrl+Shift+Z takes
 	settle: (p) => p.run(settle),
 };
 
@@ -630,7 +646,11 @@ const SNAPSHOT = `(() => {
 		anchors: lab.authority.all('waypoint').map((w) => ({ id: w.id, x: w.x, y: w.y })),
 		tabAnchors: lab.model.all('waypoint').map((w) => w.id),
 		alive: [...lab.authority.all('node'), ...lab.authority.all('waypoint')].map((e) => e.id),
-		pipes: lab.pipes.list(),
+		// pipes are entities in both models since N-c: what the planner holds, and whether the tab holds the same (I1)
+		pipes: lab.authority.all('pipe').map(({ a, b, laid }) => ({ a, b, laid })),
+		// whether the tab holds exactly the authority's pipes -- a verdict, not the ids, which carry minted anchors' random hex
+		pipesAgree: JSON.stringify(lab.model.all('pipe').map((p) => p.id).sort()) === JSON.stringify(lab.authority.all('pipe').map((p) => p.id).sort()),
+		tabPipeCount: lab.model.all('pipe').length,
 		selected: lab.input.selection.list(),
 		// what declares transit off on the canvas: each drawn transit ring, by the anchor or node it marks, and how it looks
 		rings: [...document.querySelectorAll('.wp-transit')].map((c) => { const cs = getComputedStyle(c); return { id: c.closest('g[id]').id, stroke: cs.stroke, dashed: cs.strokeDasharray !== 'none' }; }),
@@ -653,8 +673,8 @@ const ids = (xs) => xs.map((x) => x.id ?? x).join(',') || 'none';
 
 // what must hold after EVERY row, ruled or not -- each true, or a sentence saying what broke
 const INVARIANT = {
-	I1: (s) => (same(byId(s.links.map(({ down, ...l }) => l)), byId(s.tabLinks)) && same([...s.tabAnchors].sort(), s.anchors.map((a) => a.id).sort()))
-		|| `the tab holds links ${ids(s.tabLinks)} and ${s.tabAnchors.length} anchors; the authority holds ${ids(s.links)} and ${s.anchors.length}`,
+	I1: (s) => (same(byId(s.links.map(({ down, ...l }) => l)), byId(s.tabLinks)) && same([...s.tabAnchors].sort(), s.anchors.map((a) => a.id).sort()) && s.pipesAgree)
+		|| `the tab holds links ${ids(s.tabLinks)}, ${s.tabAnchors.length} anchors and ${s.tabPipeCount} pipes; the authority holds ${ids(s.links)}, ${s.anchors.length} and ${s.pipes.length}${s.pipesAgree ? '' : ', and the pipes differ'}`,
 	I2: (s) => {
 		const wrong = s.links.filter((l) => s.paths[l.id] && s.paths[l.id].dotted !== l.down);
 		return !wrong.length || wrong.map((l) => `${l.id} is ${l.down ? 'down but drawn solid' : 'up but drawn dotted'}`).join('; ');

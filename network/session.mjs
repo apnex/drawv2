@@ -1,44 +1,59 @@
 /*
 The network SESSION -- step T5 of the ruleset audit (dev/design/unification/RULESET-AUDIT.md, F14).
 
-One object owns the network's state for a session and the order it changes in: the pipe set, the order links were made
-in, the one network object built over both (T1), the legs a drag lays while the planner's answer is awaited, and the
-notice that drag set. Before T5 all of it lived in the lab's composition root, which is wiring (scan-layers L8) and sat
+One object owns the network's state for a session and the order it changes in: the order links were made in, the
+transit settings, the one network object built over them and the model's pipes (T1), and the notice a drag set. It held
+the pipe set and the legs a drag laid while the planner's answer was awaited until H17.22 N-c moved pipes into the model. Before T5 all of it lived in the lab's composition root, which is wiring (scan-layers L8) and sat
 at 178 of its 180 lines. It knows no DOM: the attached network (network/host.mjs) draws pipes and links, and the page
 says the notice -- this says what the network did.
 
-SESSION STATE, NOT STORED. Pipes and ages are not in the document yet -- that is the one format batch, last (F6) -- so a
-reload starts from nothing, which is correct rather than missing. For the same reason undo and redo cannot move pipes,
-and the sweep is skipped after them: sweeping after an undo would leave the redone link with no pipes. A stated limit
-of session pipes, not a rule.
+PIPES ARE IN THE MODEL (H17.22 N-c). They were this session's set; now they are entities of the network's `pipe` kind
+(network/pipe-kind.mjs) in the models the page holds, changed only through the planner: a drag's pipes ride in the drag's
+own commit, an anchor's deletion takes its pipes, and the sweep is a planner reaction (network/network.mjs). So undo and
+redo move pipes with everything else, and the rule "the sweep is skipped after undo" is gone with the limit it served.
+Link ages and transit stay session state until promotion's format batch (N3, TR-7): a reload starts from nothing.
 
-THE ORDER OF ONE EDIT, which is the reason this is one object:
+THE ORDER OF ONE EDIT:
   1. `judge` -- the route hook. network/guide.mjs judges a finished drag by the director's rule of 2026-09-30 (any `w`
-     makes a link, `g` alone lays pipes, a plain drag makes a link that lays none). What it lays WAITS for the planner
-     to accept what it belongs to -- the link, or the anchors it keeps -- so a refused link leaves no pipes behind. With
-     nothing to commit, it lays at once. The ordering holds because a route commit is emitted the moment it is made
-     (`commands.routeLink` never sets `coalesce`), so the answer follows the hook and consumes exactly these legs.
-  2. `answered` -- the planner's answer. Accepted: the legs are laid BEFORE the tab applies it, so the link is drawn
-     along them from its first frame, and ages are noted AFTER -- a link seen for the first time is the newest, and one
-     seen before keeps its age, so undo restores its place. Refused: the legs are dropped.
-  3. `tidy` -- a pipe to an anchor the authority lost is not a pipe (SD7), and pipes laid WITH A LINK go once no link
-     runs over them (ruled 2026-09-27), judged on the routes as drawn: one derivation (B257, T2).
+     makes a link, `g` alone lays pipes, a plain drag makes a link that lays none). What it lays comes back as ENTRIES
+     -- pipe puts, or a link pipe made a hand pipe -- which Input adds to the commit the drag makes: the link, its pieces,
+     or the anchors a refused drag keeps; with none of those, Input commits the pipes alone. So a refused link's pipes are
+     refused with it, and the link is drawn along its pipes from its first frame, both by construction.
+  2. `answered` -- the planner's answer. Accepted: the page applies it, and ages are noted AFTER -- a link seen for the
+     first time is the newest, and one seen before keeps its age, so undo restores its place.
 */
-import { createPipeSet } from './pipeset.mjs';
 import { createLinkOrder } from './order.mjs';
 import { createNetwork } from './network.mjs';
 import { judgeDrag } from './guide.mjs';
 import { createTransit } from './transit.mjs';
+import { pipeId, pipeEntity } from './pipe-kind.mjs';
+
+/*
+What a drag's legs change in a model, as entries the canvas's history takes: a pipe new to its pair is put; a link pipe
+laid again by hand becomes a hand pipe; anything else -- the same pipe again, or a hand pipe a link lays over, which must
+never become disposable -- changes nothing (network/pipeset.mjs `lay`, whose rule this is).
+*/
+function pipeEntries(legs, model) {
+	const seen = new Set(), out = [];
+	for (const { a, b, laid } of legs ?? []) {
+		const id = pipeId(a, b);
+		if (a === b || seen.has(id)) continue;
+		seen.add(id);
+		const had = model.get('pipe', id);
+		if (!had) out.push({ op: 'put', kind: 'pipe', entity: pipeEntity(a, b, laid) });
+		else if (laid === 'hand' && had.laid !== 'hand') out.push({ op: 'set', kind: 'pipe', id, after: { laid: 'hand' } });
+	}
+	return out;
+}
 
 export function createNetworkSession() {
-	const pipes = createPipeSet(), order = createLinkOrder(), transit = createTransit();
-	const network = createNetwork(() => pipes.list(), order.rankOf, transit);   // the session's pipes, until N-c
+	const order = createLinkOrder(), transit = createTransit();
+	const network = createNetwork((model) => model.all('pipe'), order.rankOf, transit);   // the model's own pipes (N-c)
 	const watchers = [];
-	let pendingLegs = null, pendingNotice = null;
-	const lay = (legs) => { for (const { a, b, laid } of legs ?? []) pipes.lay(a, b, laid); };
+	let pendingNotice = null;
 
 	return {
-		pipes, order, network,
+		order, network,
 
 		/*
 		THE TRANSIT TOGGLE (`x`, TRANSIT.md section 12, X1): flip each selected anchor's transit on its own, and say what
@@ -59,32 +74,27 @@ export function createNetworkSession() {
 		// hear which anchors' transit changed
 		onTransitChange(fn) { watchers.push(fn); },
 
-		// the route hook's answer, and whether a commit follows it -- with none, the legs were laid already
-		judge(drag, links, model = null) {
+		/*
+		The route hook's answer, carrying its pipes as `entries` for the drag's commit, and whether any commit follows --
+		none when the drag makes no link, keeps no anchor and lays no pipe, and then nothing reaches the planner.
+		*/
+		judge(drag, links, model) {
 			// in the model the drag is judged against, the anchors no route may pass (TR-1)
-			const stops = new Set(model ? transit.blockedIn(model) : []);
-			const verdict = judgeDrag(pipes.list(), drag, { links, rankOf: order.rankOf, passes: (id) => !stops.has(id),
-				nameOf: (id) => model?.endpointOf(id)?.name || id });   // notices name anchors as the author does
-			pendingNotice = verdict.notice ?? null;
-			const commits = verdict.ok || verdict.keep.some((id) => drag.placed.includes(id));
-			if (commits) pendingLegs = verdict.legs;
-			else lay(verdict.legs);
+			const stops = new Set(transit.blockedIn(model));
+			const judged = judgeDrag(model.all('pipe'), drag, { links, rankOf: order.rankOf, passes: (id) => !stops.has(id),
+				nameOf: (id) => model.endpointOf(id)?.name || id });   // notices name anchors as the author does
+			pendingNotice = judged.notice ?? null;
+			const verdict = { ...judged, entries: pipeEntries(judged.legs, model) };
+			const commits = verdict.ok || verdict.keep.some((id) => drag.placed.includes(id)) || verdict.entries.length > 0;
 			return { verdict, commits };
 		},
 
 		// the planner's answer: true when accepted, after `apply` has brought the tab to it
 		answered(answer, authority, apply) {
-			const legs = pendingLegs; pendingLegs = null;
 			if (!answer.ok) return false;
-			lay(legs);
 			apply();
 			order.note(authority.all('link').map((l) => l.id).sort());
 			return true;
-		},
-
-		tidy(authority, { sweep }) {
-			pipes.prune((id) => !!(authority.get('node', id) || authority.get('waypoint', id)));
-			if (sweep) pipes.sweep(network.view.of(authority).inUse());
 		},
 
 		// what the last drag said, once
@@ -93,10 +103,13 @@ export function createNetworkSession() {
 			return notice;
 		},
 
-		// a fixed board: each pipe with the lifetime its gesture would give it (2026-09-29), each link as old as it is listed
+		/*
+		A fixed board: each link as old as it is listed, and each pipe -- with the lifetime its gesture would give it
+		(2026-09-29) -- as an op for the board's own commit, so the board's pipes are in the document like an author's.
+		*/
 		seed(pipeTriples, linkIds) {
-			for (const [a, b, laid] of pipeTriples) pipes.lay(a, b, laid);
 			order.note(linkIds);
+			return pipeTriples.filter(([a, b]) => a !== b).map(([a, b, laid]) => ({ op: 'put', kind: 'pipe', entity: pipeEntity(a, b, laid) }));
 		},
 	};
 }

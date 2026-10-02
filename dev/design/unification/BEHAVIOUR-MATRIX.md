@@ -57,7 +57,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 <!-- BEGIN GENERATED: invariants. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
 | id | after every row, whatever it checks for itself |
 |---|---|
-| I1 | The tab holds exactly what the authority holds: the same links, with the same ends and pins, and the same anchors. |
+| I1 | The tab holds exactly what the authority holds: the same links, with the same ends and pins, the same anchors, and the same pipes (since H17.22 N-c, when pipes became entities in both). |
 | I2 | A link is drawn dotted exactly when it is down. |
 | I3 | The canvas draws exactly the links that exist, each along a path. |
 | I4 | No pipe names an anchor that does not exist. |
@@ -73,7 +73,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 <!-- BEGIN GENERATED: grid. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
 | state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link | transit `x` | draw: `w` on a non-transiting anchor | draw: `g` on a non-transiting anchor |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | . | . | . | . | . |
+| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | UNDO-02, UNDO-03 | . | . | . | . |
 | pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | . | . | . | . | . |
 | pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . | . | . | . |
 | pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . | . | . | . |
@@ -92,7 +92,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . |
 | transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . |
 
-65 rows: 65 built, 0 todo, 0 open.\
+67 rows: 67 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -182,7 +182,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | SRC-03 | w-chain x draw: `g` bend | Press w below to place S, then drag from S with g at a point and g on the end E, and release. | A g in the drag cancels the source w: two hand pipes are laid and no link is made, so the chain is untouched. | DECISIONS: "The w that placed the source counts as the drag's first key" (2026-09-30). Asked whether a g in the drag cancels it, the director chose "A g in the drag cancels it". | ruled, built |
 | DIR-01 | routed x draw: `w` bend | Drag from A, press w on node C, and release there. | A direct link from A to C, with its pipe laid with it, and up: w may be pressed on a node as the last hop. | DECISIONS: "w may be pressed on a node as the last hop" (2026-09-30). | ruled, built |
 | RFS-01 | pinned x draw: `w` bend | Draw the pinned link again: drag from A, press w on its pin, press w on B, and release. | The planner refuses a second link on the same pair bending at the same anchor. The notice says so, and the tab shows nothing of the refused link: it holds exactly what the planner holds. | Production resynchronises a tab whose optimistic change the server refused (app/src/sync.js, requestResync); the lab mounts the same rule (B260). | ruled, built |
-| UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), as CORRECTED for undo. | ruled, built |
+| UNDO-01 | w-chain x undo | Delete the middle pin, then undo. | One undo restores the link with its three pins, all five anchors and its four pipes, so it returns up: pipes are ops in the edit since H17.22 N-c, and undo replays them. Until then pipes were session state and the link returned down. | DECISIONS: "A link that loses a pin with no other way is deleted whole" (2026-09-29), its undo as first worded -- "undo brings it back" -- now that pipes are in the document's edits (H17.22 N-c). | ruled, built |
+| UNDO-02 | routed x undo | Lay pipes with g as in GST-01, then undo. | A g drag that makes no link is one edit: one undo removes the g anchor and both hand pipes it laid, and the board is as it was. | DECISIONS: "Each drag action does one thing" (2026-09-30); NETWORK-READS-MODEL.md section 6 -- a drag's pipes are ops in its own edit (H17.22 N-c). | ruled, built |
+| UNDO-03 | routed x undo | Lay pipes with g as in GST-01, undo, then redo. | Redo lays them again: the g anchor and both hand pipes are back, as GST-01 left them. | DECISIONS: "Each drag action does one thing" (2026-09-30); NETWORK-READS-MODEL.md section 6 -- a drag's pipes are ops in its own edit (H17.22 N-c). | ruled, built |
 | TRN-01 | transit board x transit `x` | Select the bare anchor, and press x. | The anchor's transit goes off and the ring shows it: thin, dashed, light orange. What that does to the link through it is TRN-06's (stage X2). | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
 | TRN-02 | transit board x transit `x` | Select the bare anchor, and press x twice. | Two states: the second press turns transit back on, and the ring goes. | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |
 | TRN-03 | transit board x transit `x` | Select the lone router, and press x. | A router offers the choice, so its transit goes off and it shows the ring, drawn as on an anchor. | DECISIONS: "The transit gesture" and "The transit mark" (2026-09-28); "Transit with pipes" (2026-09-30), TR-6 and TR-7. | ruled, built |

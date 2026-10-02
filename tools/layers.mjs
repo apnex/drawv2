@@ -187,7 +187,7 @@ export const ENTRIES = {
 		modules: [
 			'lab/src/root.js',
 			'network/pipes.mjs',   // the incubating plugin (ruled 2026-09-28)
-			'network/pipeset.mjs',
+			'network/pipe-kind.mjs',   // the network's pipe kind, a row of the one shape (H17.22 N-b); the lab composes it from N-c
 			'network/appearance.mjs',
 			'network/guide.mjs',
 			'network/resolve.mjs',
@@ -214,7 +214,8 @@ export const ENTRIES = {
 	},
 	planner: {
 		roots: ['planner/txn.mjs', 'planner/log.mjs'],
-		surface: { 'planner/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'planner/log.mjs': ['Log'] },
+		// `productKinds`: the kinds a composition hands plan and commit, the product's five and a plugin's rows (H17.22 N-c)
+		surface: { 'planner/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'planner/log.mjs': ['Log'], 'planner/kinds.mjs': ['productKinds'] },
 		modules: [
 			'planner/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 

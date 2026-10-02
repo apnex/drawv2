@@ -588,7 +588,7 @@ test('H17 K10: the lab composes the real planner and makes its refusals visible'
 	assert.match(refusal[0], /say\(|notice/, 'a refusal must reach the notice sink, not be swallowed');
 
 	// H17-D8 -- two models, or the lab shows the tab's optimism and never the planner's rules
-	assert.match(src, /const authority = new Model\(\)/,
+	assert.match(src, /const authority = new Model\(/,   // composed with the lab's kinds since H17.22 N-c
 		'the lab needs an AUTHORITY model; with one model the cascade and sweep are never exercised');
 });
 
@@ -679,6 +679,9 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	const { cellOf } = await import('../kernel/geometry.mjs');
 	const { commit } = await import('../planner/txn.mjs');
 	const { Log } = await import('../planner/log.mjs');
+	const { productKinds } = await import('../planner/kinds.mjs');
+	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
+	const { createNetworkSession } = await import('../network/session.mjs');
 
 	// read as DATA -- the boards moved out of the lab's source into lab/seeds.json
 	const boards = JSON.parse(fs.readFileSync(path.join(root, 'lab/seeds.json'), 'utf8'));
@@ -686,11 +689,15 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	assert.ok(names.length >= 5, `the lab must carry its boards, found ${names.length}`);
 
 	for (const name of names) {
-		const model = new Model();
+		// with its pipes, in the lab's composition, as the lab commits it (H17.22 N-c): a pipe between a node and a waypoint
+		// sharing their hex is no pipe, which the 'compare' board did until its waypoints were renumbered
+		const kinds = productKinds(PIPE_ROW);
+		const model = new Model({ kinds });
 		attachRelations(model, { cellOf });
-		const answer = commit(model, new Log(), { ops: boards[name].ops, label: `seed ${name}` }, 'lab', 'lab');
+		const pipeOps = createNetworkSession().seed(boards[name].pipes ?? [], []);
+		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds });
 		assert.equal(answer.ok, true, `seed '${name}' is refused by the planner: ${answer.error} -- it would fail silently in the browser`);
-		assert.ok((answer.change?.ops ?? []).length >= boards[name].ops.length, `seed '${name}' committed fewer ops than it asked for`);
+		assert.ok((answer.change?.ops ?? []).length >= boards[name].ops.length + pipeOps.length, `seed '${name}' committed fewer ops than it asked for`);
 		assert.ok(boards[name].about, `seed '${name}' must say what it is for`);
 	}
 });

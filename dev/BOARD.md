@@ -205,6 +205,7 @@ AMENDED 2026-10-02: N4 ruled -- only P-1 and P-2 bind P1. Every question ruled; 
 CORRECTED 2026-10-02: B279 stays open until H17.22 is built; only its questions are ruled.\
 AMENDED 2026-10-02: N-a done -- a composition brings its kinds, every kind a row of one shape (B273 closed); production unchanged, its corpora untouched. Next N-b, the network's pipe kind.\
 AMENDED 2026-10-02: N-b done -- the network's pipe kind and its two reactions, an anchor's deletion taking its pipes and the sweep after the join, held to the session across every network corpus case; the lab unchanged. Next N-c, the lab's models hold pipes.\
+AMENDED 2026-10-02: N-c1 done -- the lab's models hold pipes, a drag's pipes ride in its own commit, and undo restores them (UNDO-01 returns up; UNDO-02 and UNDO-03 new); every other matrix row unchanged. Next N-c2, deleting a hand pipe (B281).\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
 Ranked by deleted future friction rather than by size or by how recently something was noticed.

@@ -71,6 +71,17 @@ Proven over every network case in the planner corpus, 1,045, planned again with 
 The corpus never has a join that changes a route, so it cannot tell the sweep before the join from after; the contract test that pins the phase order does.\
 The hand-pipe delete (B281) moves to N-c, which first puts pipes in the lab's models.
 
+AMENDED 2026-10-02 -- **N-c, in two parts.**\
+N-c1 puts pipes in the lab's models and makes them ops; N-c2 adds the hand-pipe delete (B281), each gated and deployed.
+
+**N-c1 done.**\
+The lab composes `productKinds(PIPE_ROW)` for both models and the planner, and the network reads `model.all('pipe')`.\
+A drag's pipes ride in the drag's own commit through one generic seam in Input -- a judge may add entries to the commit it judges, committed alone when the drag makes none -- so Input names no pipe; the session's waiting legs, its prune and its sweep are gone, and the host sweeps nothing.\
+A fixed board's pipes are ops in its own commit, under the product's tenant as before, so nothing is swept at load; the board is drawn again once it lands, since its commit lists links before pipes.\
+Undo and redo restore pipes: UNDO-01 now returns up, and two new rows hold a `g` drag as one undoable, redoable edit (UNDO-02, UNDO-03).\
+Every other matrix row produces the board it did before, field for field once the new pipe fields and the order pipes are listed in are set aside: the corpus differs by UNDO-01 and the two new rows only.\
+Found on the way: the `compare` board gave four nodes and four waypoints the same hex, which a pipe's id cannot tell apart (N2); its waypoints are renumbered, and the Node test of every board now commits each with its pipes, as the lab does, and was shown to fail on the old board.
+
 ---
 
 ## 6. Behaviour that changes, stated before it is built

@@ -31,9 +31,11 @@ import { derivedToApply } from '../../app/src/changes.js';
 import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
+import { productKinds } from '../../planner/kinds.mjs';
 // INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
+import { PIPE_ROW } from '../../network/pipe-kind.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
 import { networkInput } from '../../network/keys.mjs';
 import { attachNetwork } from '../../network/host.mjs';   // the network's choreography around an edit
@@ -53,21 +55,23 @@ if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', 
 const svg = document.getElementById('container');
 
 /*
-THE NETWORK SESSION (RULESET-AUDIT T5): the pipes, the link ages, the legs a drag lays while the planner's answer is
-awaited, and the order one edit changes them in -- network/session.mjs, which knows no DOM. This file draws what it says.
+THE NETWORK SESSION (RULESET-AUDIT T5): the link ages, the transit settings, and the network that reads the models' own
+pipes (H17.22 N-c) -- network/session.mjs, which knows no DOM. This file draws what it says.
 
 Its network is ONE object (T1), handed to the tab's Model -- where a link runs, which links a moved anchor affects,
 whether it is down, what blocks it -- and to the planner -- what else references an anchor, which orphans survive, which
 links are stranded. Production constructs `new Model()` and commits with no network; nothing here reaches production.
 */
-const session = createNetworkSession(), { pipes, order, network } = session;
+const session = createNetworkSession(), { order, network } = session;
+// THE KINDS (H17.22): the product's five and the network's pipe, one composition handed to both models and the planner
+const kinds = productKinds(PIPE_ROW);
 /*
 K8 -- the canvas, composed by the one function the product page composes it with (app/src/compose-canvas.js), handed
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
 because the network attaches to the parts composed here.
 */
 const { model, history, renderer, selection, input, listen } = composeCanvas({
-	svg, defs: document.getElementById('kdefs'), host: window, network,
+	svg, defs: document.getElementById('kdefs'), host: window, network, kinds,
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
 	plugins: [networkInput((drag) => net.judge(drag), session)],   // its own keys, and its judge of a drag (dev/RULES.md section 11)
@@ -84,7 +88,7 @@ So the lab holds both, in one page. The authority model starts empty and is fed 
 the planner's answer is what the tab applies. The seam is identical to production's; only the
 transport is gone.
 */
-const authority = new Model();
+const authority = new Model({ kinds });
 attachRelations(authority, { cellOf });
 const log = new Log();
 
@@ -120,14 +124,14 @@ history.onCommit((request) => {
 	`expect` is deliberately not checked here. It guards the server against a concurrent writer; the
 	lab is one writer in one page, and its Changes never learns a server version to send.
 	*/
-	const answer = request.verb === 'undo' ? undo(authority, log, request.to ?? null)
-		: request.verb === 'redo' ? redo(authority, log)
+	const answer = request.verb === 'undo' ? undo(authority, log, request.to ?? null, { kinds })
+		: request.verb === 'redo' ? redo(authority, log, { kinds })
 		// the same network: pipes reference anchors, only links and hand pipes keep one, and a link that loses a pin with no
 		// other way goes whole (2026-09-29) -- all judged over the pipes that survive the edit
-		: commit(authority, log, request, 'lab', 'lab', { links: network.links });
+		: commit(authority, log, request, 'lab', 'lab', { links: network.links, kinds });
 	/*
-	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE -- applied by the session once it has laid the drag's pipes, so the
-	link is drawn along them from its first frame (network/session.mjs `answered`).
+	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE -- pipes included, since they are ops in the edit (N-c), so a link is
+	drawn along its pipes from its first frame (network/session.mjs `answered`).
 
 	Two shapes: `commit()` returns its applied ops at `change.ops` -- reading `answer.ops` there
 	applied nothing, the first build's defect -- and `undo()`/`redo()` return them at `ops`.
@@ -174,8 +178,8 @@ place. It was: boards are data, not composition. Moving them out also retired a 
 tests had been extracting the literals from this source and evaluating them.
 
 Every board is applied THROUGH THE PLANNER, as an author's edit is, so a board the product could not
-reach is refused rather than shown. The attached network lays its pipes first, so the links are
-routed over them the moment they are drawn (network/host.mjs `seed`). An unknown name refuses and lists what exists,
+reach is refused rather than shown. Its pipes are ops in the same commit (N-c) and its links are aged first, so the links
+are routed over them the moment they are drawn (network/host.mjs `seed`). An unknown name refuses and lists what exists,
 rather than silently giving a different board.
 */
 const wanted = new URLSearchParams(location.search).get('seed');
@@ -192,12 +196,14 @@ if (wanted) {
 	const board = boards[wanted];
 	if (!board) { if (Object.keys(boards).length) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`); }
 	else {
-		const answer = commit(authority, log, { ops: board.ops, label: `seed ${wanted}` }, 'lab', 'lab');
+		// the board's pipes ride in its own commit (N-c); the product's tenant, so the board is laid as listed and nothing swept
+		const answer = net.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id), (pipeOps) => {
+			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { kinds });
+			if (a.ok) applyOps(model, a.change?.ops ?? []);
+			return a;
+		});
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
-		else {
-			net.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id), () => applyOps(model, answer.change?.ops ?? []));
-			say(`seed ${wanted} -- ${board.ops.length} entities, ${pipes.list().length} pipes`);
-		}
+		else say(`seed ${wanted} -- ${board.ops.length} entities, ${model.all('pipe').length} pipes`);
 	}
 }
 
@@ -213,4 +219,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, pipes, order, network, history, log, input, capture, routeHook: net.judge };
+window.lab = { model, authority, order, network, history, log, input, capture, routeHook: net.judge };

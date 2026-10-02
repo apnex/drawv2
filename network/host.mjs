@@ -10,7 +10,8 @@ of the ordering, the drift K8 removed for the canvas. So a page ATTACHES the net
   judge(drag)                 the drag judge Input asks once per finished drag (network/keys.mjs `networkInput`)
   answered(request, answer, apply)   the page's commit door hands it the planner's answer; true when accepted
   refused(answer)             after the page has taken the planner's document back on a refusal
-  seed(pipes, linkIds, apply)        a fixed board: its pipes laid, the page's `apply` of its ops, then the pipes drawn
+  seed(pipes, linkIds, run)          a fixed board: its links aged, its pipes handed to the page's `run` as ops for the board's
+                                     own commit, then the pipes drawn
   paint()                            draw the pipes now
 
 The page keeps what is its own: where the planner runs (the lab's authority model, production's server), how a refusal
@@ -22,7 +23,7 @@ import { cutAt, joinAt } from './transit.mjs';
 import { pipeAttributes } from './appearance.mjs';
 
 export function attachNetwork({ session, model, authority, renderer, selection, history, pipeLayer, el, say }) {
-	const { pipes, network } = session;
+	const { network } = session;
 
 	/*
 	PIPES ARE DRAWN, beneath the links routed over them.
@@ -35,7 +36,7 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	*/
 	const paint = () => {
 		pipeLayer.replaceChildren();
-		for (const { a, b, laid } of pipes.list()) {
+		for (const { a, b, laid } of model.all('pipe')) {   // the tab's pipes, as it holds them (N-c)
 			const p = model.endpointOf(a), q = model.endpointOf(b);
 			if (!p || !q) continue;   // an anchor the pipe names has gone; the next sweep removes the pipe
 			el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}`, ...pipeAttributes(laid) }, pipeLayer);
@@ -52,21 +53,23 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 	new pipe made a way or that a swept one broke one: EVERY link is redrawn here. Whole-board is right for a lab-sized
 	board; a targeted redraw belongs with the promotion, when pipes are stored and their changes are events like any other.
 	Before this was one step, a g drag laid its pipes and redrew only the pipes, so a link that healed over them stayed
-	drawn down until the next edit. The sweep is skipped after undo and redo (session pipes, network/session.mjs).
+	drawn down until the next edit. It sweeps nothing: since N-c the planner sweeps and prunes pipes in the edit itself.
 	*/
-	const settle = (sweep, fallback) => {
-		session.tidy(authority, { sweep });
+	const redraw = () => {
 		paint();
 		for (const l of model.all('link')) renderer.update('link', l);
 		renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
+	};
+	const settle = (fallback) => {
+		redraw();
 		say(session.takeNotice() ?? `${fallback}${downSummary(model)}`.trim());   // DOWN is said as well as drawn
 	};
 
 	// THE DRAG JUDGE -- how `g`, and the network's rules for a drag, exist; the session judges it (network/session.mjs
-	// `judge`) and holds what it lays until the planner answers
+	// `judge`), its pipes riding as entries in the commit Input makes. With no commit at all, the board settles now, to say why
 	const judge = (drag) => {
 		const { verdict, commits } = session.judge(drag, authority.all('link'), authority);
-		if (!commits) settle(true, '');   // nothing to commit: its pipes were laid now
+		if (!commits) settle('');
 		return verdict;
 	};
 
@@ -82,26 +85,28 @@ export function attachNetwork({ session, model, authority, renderer, selection, 
 		const edits = ids.filter((id) => model.get('waypoint', id)).map((id) => (network.stopsAt(id, model) ? cutAt(model, id) : joinAt(model, id))).filter(Boolean);
 		if (edits.length) history.commit({ label: 'transit', entries: edits.flatMap((e) => e.entries) });
 		const cut = edits.reduce((n, e) => n + (e.cut ?? 0), 0), joined = edits.some((e) => e.label === 'join');
-		settle(false, '');
+		settle('');
 		say(`${said}${cut ? ` -- ${cut} link${cut === 1 ? '' : 's'} cut in two there` : ''}${joined ? ' -- its two links joined again' : ''}${downSummary(model)}`);
 	});
 
 	/*
-	THE ANSWER -- the session lays the drag's pipes once the planner accepts it, so the link is drawn along them from its
-	first frame (network/session.mjs `answered`), and calls `apply`, the page's own reconciliation, between. Then the board
-	settles, sweeping after an edit and not after undo or redo. False when refused: the page takes the planner's document
+	THE ANSWER -- the page's own reconciliation, `apply`, brings the tab to it, pipes included; then the session notes the
+	ages (network/session.mjs `answered`) and the board settles. False when refused: the page takes the planner's document
 	back as it resynchronises, and then calls `refused`.
 	*/
 	const answered = (request, answer, apply) => {
 		const accepted = session.answered(answer, authority, apply);
-		if (accepted) settle(!request.verb, `v${answer.version} ${request.verb ?? request.label ?? ''}`);
+		if (accepted) settle(`v${answer.version} ${request.verb ?? request.label ?? ''}`);
 		return accepted;
 	};
-	const refused = (answer) => { settle(false, ''); say(`refused: ${answer.error}`); };
+	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); };
 
-	// a fixed board: its pipes laid first, so its links are routed over them the moment the page applies its ops (`apply`,
-	// the page's own); then the pipes are drawn once more, whole, though each applied op has already repainted them
-	const seed = (boardPipes, linkIds, apply) => { session.seed(boardPipes, linkIds); apply(); paint(); };
+	/*
+	A fixed board: its links aged first, so they are routed by age; its pipes go to the page's `run` as ops for the board's
+	own commit (N-c); and once it lands the board is drawn again whole -- the commit lists its links before its pipes, so
+	each link was drawn before the pipes it runs over existed in the tab. Answers the page's answer.
+	*/
+	const seed = (boardPipes, linkIds, run) => { const answer = run(session.seed(boardPipes, linkIds)); redraw(); return answer; };
 
 	return { judge, answered, refused, seed, paint };
 }

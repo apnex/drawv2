@@ -960,7 +960,10 @@ test('B210: pressing w on an occupied bend threads it, and the split happens on 
 	assert.doesNotMatch(drop, /splitAtBend|splitsFor/,
 		'nothing may split mid-drag -- the route is still being drawn and there is no link yet');
 
-	const commit = src.slice(src.indexOf('\tcommitRoute(ctx, dstId, via) {'), src.indexOf('\tcleanupRoute(ctx) {'));
+	// H17.22 N-c: commitRoute also takes the entries a drag judge adds; the slice must find it, or it reads nothing
+	const at = src.indexOf('\tcommitRoute(ctx, dstId, via, extra = []) {');
+	assert.ok(at > 0, 'commitRoute is where this test looks for it');
+	const commit = src.slice(at, src.indexOf('\tcleanupRoute(ctx) {'));
 	assert.match(commit, /splitsFor\(link\)/, 'the split is computed on release');
 	assert.match(commit, /routeLink\(ctx\.placed, link, /,
 		'and rides in the SAME command, so one drag is one undo -- a separate commit would let undo '

@@ -54,13 +54,13 @@ const ZONE_GRID_DOT = 5;
   help, now, plugins, runRules   handed to Input as they are
 Returns every part, and `listen()`, which starts event capture and answers the Capture.
 */
-export function composeCanvas({ svg, defs, host, network = null, readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
+export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs();
 	nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius }, svg.querySelector('#grid-nodes')));
 	zonePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: ZONE_GRID_DOT }, svg.querySelector('#grid-zones')));
 
-	const model = new Model({ network });
+	const model = new Model({ network, kinds });   // the kinds a composition brings -- the product's five when none are passed (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; `cellOf` is
 	// injected here, at a composition root, so engine/ imports no kernel
 	attachRelations(model, { cellOf });

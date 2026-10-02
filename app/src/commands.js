@@ -43,6 +43,16 @@ export function keepAnchors(waypoints) {
 	return { label: 'guide anchors', entries: waypoints.map((w) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) })) };
 }
 
+/*
+H17.22 N-c -- A DRAG JUDGE'S ENTRIES, after the drag's own command: one edit, one undo step. With no command of the drag's
+own (a refused drag that keeps nothing), the judge's entries are the edit, labelled for what they are. Kind-blind: what
+the entries put is the judge's -- the network's pipes in the lab.
+*/
+export function withJudged(command, judged = []) {
+	if (!command) return judged.length ? { label: 'pipes', entries: [...judged] } : null;
+	return judged.length ? { ...command, entries: [...command.entries, ...judged] } : command;
+}
+
 // moves: [{ kind: 'node'|'zone', id, after: {x,y} }]
 export function moveEntities(moves) {
 	return {

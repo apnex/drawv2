@@ -11,7 +11,7 @@ kind and a missing referenced kind are refused.
 
 PLANNER layer, not core, because the link's cross-entity check is network-layer code (model/referential.mjs) the core may
 not import. `PRODUCT_KINDS` is what the planner and `validateDoc` take when nothing else is passed; a composition with a
-plugin's kinds spreads the product's rows and adds its own (the lab, from N-b).
+plugin's kinds is `productKinds(...rows)`, below.
 */
 
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
@@ -245,4 +245,9 @@ const REFERS = {
 
 // the product's five, whole -- in the core's order, which is the order a document lists its collections
 const PRODUCT_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: FIELDS[row.kind], cap: CAP[row.kind], ...(REFERS[row.kind] ? { refers: REFERS[row.kind] } : {}) }));
-export const PRODUCT_KINDS = composeKinds(PRODUCT_ROWS, 'the product');
+/*
+The product's composition, and a plugin's rows after its five: the one way a composition with a plugin's kinds is built --
+the lab's, with the network's `pipe` (H17.22 N-c), and the product page's at promotion.
+*/
+export const productKinds = (...pluginRows) => composeKinds([...PRODUCT_ROWS, ...pluginRows], pluginRows.length ? `the product with ${pluginRows.map((r) => r.kind).join(', ')}` : 'the product');
+export const PRODUCT_KINDS = productKinds();

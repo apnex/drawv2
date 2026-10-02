@@ -3,10 +3,10 @@
 		"THE MASTER of the lab behaviour matrix. BEHAVIOUR-MATRIX.md beside it is generated from this file by `node tools/lab-matrix.mjs --write`, and the gate fails if the two differ: edit here, never there.",
 		"tests/lab-browser.test.js runs every row in real Chrome with real input. A state's `setup` builds its board and its `expect` proves the board is what the state claims, before any row acts on it.",
 		"A row: `steps` perform the gesture; `intent` says in words what should happen and `expect` says it as checks; `rule` cites the ruling. `standing` is ruled, reading (the proposer's reading, not ruled) or open. `built` is yes (the gate proves it) or todo (the gate proves it still FAILS, and demands promotion the day it passes).",
-		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
+		"Steps: [\"click\",x,y] [\"move\",x,y] [\"key\",k] [\"drag\",[x,y],[x,y],[[k,x,y],...]] [\"undo\"] [\"redo\"] [\"settle\"]. Checks: links anchors down (counts); pipes (count, or {hand,link}); linkState {id: up|down|gone}; pins {sel: n}; straight {sel: d}; through {sel: [[x,y],...]}; linksBetween {\"a|b\": n}; keptAt [[x,y],...]; notice noticeNot (patterns); refused (bool); downStroke (#rrggbb); stroke {id: #rrggbb}; selected [ids]; roles {anchor id: [roles]}, as drawn and as Input judges it. A selector is a link id, or \"only\" when exactly one link exists."
 	],
 	"invariants": {
-		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, and the same anchors.",
+		"I1": "The tab holds exactly what the authority holds: the same links, with the same ends and pins, the same anchors, and the same pipes (since H17.22 N-c, when pipes became entities in both).",
 		"I2": "A link is drawn dotted exactly when it is down.",
 		"I3": "The canvas draws exactly the links that exist, each along a path.",
 		"I4": "No pipe names an anchor that does not exist.",
@@ -2518,16 +2518,128 @@
 					"undo"
 				]
 			],
-			"intent": "One undo restores the link with its three pins and all five anchors. Its pipes are not restored, being session state until the format batch (F6), so it returns down.",
+			"intent": "One undo restores the link with its three pins, all five anchors and its four pipes, so it returns up: pipes are ops in the edit since H17.22 N-c, and undo replays them. Until then pipes were session state and the link returned down.",
 			"expect": {
 				"links": 1,
 				"pins": {
 					"only": 3
 				},
 				"anchors": 5,
-				"down": 1
+				"down": 0,
+				"pipes": {
+					"link": 4,
+					"hand": 0
+				}
 			},
-			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29), as CORRECTED for undo.",
+			"rule": "DECISIONS: \"A link that loses a pin with no other way is deleted whole\" (2026-09-29), its undo as first worded -- \"undo brings it back\" -- now that pipes are in the document's edits (H17.22 N-c).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "UNDO-02",
+			"state": "routed",
+			"gesture": "undo",
+			"does": "Lay pipes with g as in GST-01, then undo.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						],
+						[
+							"g",
+							0,
+							-240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "A g drag that makes no link is one edit: one undo removes the g anchor and both hand pipes it laid, and the board is as it was.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"anchors": 1,
+				"pipes": {
+					"hand": 4,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30); NETWORK-READS-MODEL.md section 6 -- a drag's pipes are ops in its own edit (H17.22 N-c).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "UNDO-03",
+			"state": "routed",
+			"gesture": "undo",
+			"does": "Lay pipes with g as in GST-01, undo, then redo.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						-240
+					],
+					[
+						[
+							"g",
+							-240,
+							-180
+						],
+						[
+							"g",
+							0,
+							-240
+						]
+					]
+				],
+				[
+					"settle"
+				],
+				[
+					"undo"
+				],
+				[
+					"redo"
+				]
+			],
+			"intent": "Redo lays them again: the g anchor and both hand pipes are back, as GST-01 left them.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"keptAt": [
+					[
+						-240,
+						-180
+					]
+				],
+				"pipes": {
+					"hand": 6,
+					"link": 0
+				}
+			},
+			"rule": "DECISIONS: \"Each drag action does one thing\" (2026-09-30); NETWORK-READS-MODEL.md section 6 -- a drag's pipes are ops in its own edit (H17.22 N-c).",
 			"standing": "ruled",
 			"built": "yes"
 		},
