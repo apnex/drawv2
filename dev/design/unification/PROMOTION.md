@@ -228,7 +228,9 @@ P-2 is answered by the ruling of 2026-10-01 (B249): every item stores its drawin
 
 ---
 
-AMENDED 2026-10-03 -- **Section 10 ruled** (`dev/DECISIONS.md`, "Promotion's start-of-work decisions, P-3 to P-10"): P-3 to P-9 as recommended, and a tenth, **P-10**, added and ruled -- the format batch eliminates the waypoint kind (B282). So P2's single migration carries: the pipe kind and its stored pipes, every item's drawing order (link ages, B249, B10, B259), transit on the anchor (TR-7), the `link.flow` rename (name to be asked), a ring's closing pipe (P-3), splitting any shared leg (P-4), `pinned` retired and waypoints become nodes with ids keeping their hex (P-5, P-10), undo history truncated (P-6), and `meta.schema` 2. Rollback after it is the backup (P-8).
+AMENDED 2026-10-03 -- **Section 10 ruled** (`dev/DECISIONS.md`, "Promotion's start-of-work decisions, P-3 to P-10"): P-3 to P-9 as recommended, and a tenth, **P-10**, added and ruled -- the format batch eliminates the waypoint kind (B282).\
+So P2's single migration carries: the pipe kind and its stored pipes, every item's drawing order (link ages, B249, B10, B259), transit on the anchor (TR-7), the `link.flow` rename (name to be asked), a ring's closing pipe (P-3), splitting any shared leg (P-4), `pinned` retired and waypoints become nodes with ids keeping their hex (P-5, P-10), undo history truncated (P-6), and `meta.schema` 2.\
+Rollback after it is the backup (P-8).
 
 ---
 
