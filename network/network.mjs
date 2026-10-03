@@ -134,6 +134,6 @@ export function createNetwork(transit = null) {
 		},
 		// the link tenant, the pipes' reactions after its own (N-b)
 		// and transit's cut and its refusal of a value a type does not offer (F-e)
-		links: { owner: tenant.owner, kinds: ['pipe'], reactions: [...tenant.reactions, ...(edits?.reactions ?? []), ...pipeReactions(view)], refusals: edits?.refusals ?? [] },
+		links: { owner: tenant.owner, kinds: ['pipe'], ...(transit ? { fields: { node: ['transit'] } } : {}), reactions: [...tenant.reactions, ...(edits?.reactions ?? []), ...pipeReactions(view)], refusals: edits?.refusals ?? [] },
 	};
 }

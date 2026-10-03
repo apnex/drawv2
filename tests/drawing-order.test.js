@@ -15,6 +15,7 @@ import { docToSchema } from '../kernel/adapt.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { makeRenderer } from './fixtures/client-harness.mjs';
 
 const router = (id, x, extra = {}) => ({ id, name: id, type: 'router', x, y: 0, ...extra });
@@ -81,7 +82,7 @@ test('F-d: the migration gives every item its collection position, and keeps any
 });
 
 test('F-d (B259): a link\'s age is its order -- the older keeps a contested pipe, whatever its id says', () => {
-	const kinds = productKinds(PIPE_ROW);
+	const kinds = productKinds(...NETWORK_ROWS);
 	const board = (olderId) => {
 		const m = new Model({ network: createNetwork(), kinds });
 		for (const [id, x, y] of [['node-00000a', -240, 0], ['node-00000b', 240, 0], ['node-00000c', -240, 120], ['node-00000d', 240, 120]]) m.put('node', { id, name: id, type: 'router', x, y });

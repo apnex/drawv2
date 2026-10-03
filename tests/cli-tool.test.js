@@ -300,7 +300,12 @@ test('place reads inside a zone and between two nodes, linking both ends', async
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
-// F-e (H18.7): an agent can do with transit what `x` does (A5) -- on, off, or back to the type's default
+/*
+F-e (H18.7): an agent can do with transit what `x` does (A5) -- on, off, or back to the type's default.
+S-a (H18.11, G3): `transit` is the network's field now, so a server that does not compose the network refuses it, naming it;
+S-b (H18.12) composes the network in the server and this test asserts the round trip again. Held both ways meanwhile.
+*/
+const SERVER_COMPOSES_NETWORK = false;   // S-b sets this
 test('F-e: draw set <waypoint> transit takes on, off and default, and stores only what differs', async () => {
 	await boot();
 	try {
@@ -309,6 +314,10 @@ test('F-e: draw set <waypoint> transit takes on, off and default, and stores onl
 		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
 			{ op: 'put', kind: 'node', entity: { id: 'node-a00003', name: 'bend', x: 0, y: 60 } }] }));
 		const now = async () => JSON.parse(await run('show', '--diagram', id, '--json')).waypoints.find((n) => n.id === 'node-a00003');   // show names a node with no type a waypoint (F4)
+		if (!SERVER_COMPOSES_NETWORK) {
+			assert.match(await captureExit(() => run('set', 'bend', 'transit', 'off', '--diagram', id)), /unknown field node\.transit/, 'refused, named, until the server composes the network');
+			return;
+		}
 		await run('set', 'bend', 'transit', 'off', '--diagram', id);
 		assert.equal((await now()).transit, false);
 		await run('set', 'bend', 'transit', 'default', '--diagram', id);

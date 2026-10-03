@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { pipeHitAttributes } from '../network/appearance.mjs';
 import { linkWidth } from '../kernel/network-appearance.mjs';
 import { attachNetwork } from '../network/host.mjs';
@@ -25,7 +26,7 @@ import { deleteSelection } from '../app/src/commands.js';
 
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 function board() {
-	const m = new Model({ kinds: productKinds(PIPE_ROW) });
+	const m = new Model({ kinds: productKinds(...NETWORK_ROWS) });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });
@@ -114,7 +115,7 @@ network's derivation; a free pipe, and a down link's own legs, are drawn.
 test('the painter marks hidden every pipe an up link runs over, keeping it in the page, and no other', async () => {
 	const { createNetworkSession } = await import('../network/session.mjs');
 	const session = createNetworkSession();
-	const m = new Model({ kinds: productKinds(PIPE_ROW), network: session.network });
+	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: session.network });
 	const C = 'node-00000d', D = 'node-00000e';
 	for (const [id, x] of [[A, -240], [B, 240], [C, -240], [D, 240]]) m.put('node', { id, name: id, type: 'router', x, y: id === C || id === D ? 240 : 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });

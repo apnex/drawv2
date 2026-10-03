@@ -104,9 +104,10 @@ import { Model } from '../model/model.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 // pipes are entities since H17.22 N-c: a board's model holds the network's pipe kind, and a fixed board's pipes go into it
-const KINDS = productKinds(PIPE_ROW);
+const KINDS = productKinds(...NETWORK_ROWS);
 const lay = (s, m, pipes) => { for (const op of s.seed(pipes)) m.put('pipe', op.entity); };
 
 const hand = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));

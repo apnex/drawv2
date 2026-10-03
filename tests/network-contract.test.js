@@ -32,6 +32,7 @@ import { commit, plan } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork } from '../network/network.mjs';
 
 const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
@@ -42,7 +43,7 @@ const without = (name) => { const n = complete(); delete n[name]; return n; };
 const request = { label: 'add', ops: [{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } }] };
 const board = (kinds) => { const m = new Model(kinds ? { kinds } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
 // the network's composition: the product's kinds and its pipe, which its tenant needs (H17.22 N-d)
-const KINDS = productKinds(PIPE_ROW);
+const KINDS = productKinds(...NETWORK_ROWS);
 
 test('the Model reads the network under its OWN method names', () => {
 	for (const name of MODEL_READS) assert.equal(typeof Model.prototype[name], 'function', `Model.${name} is the question network.${name} answers`);

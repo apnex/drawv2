@@ -12,12 +12,13 @@ import { createNetwork } from '../network/network.mjs';
 import { preferredRoute } from '../network/pipes.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 /*
 H17.22 N-d: the network reads the model's own pipes, so each board is a model composed with the network's pipe kind, and
 `pipesIn(m)` lays and removes pipes in it -- the session's pipe set these tests drove is deleted.
 */
-const KINDS = productKinds(PIPE_ROW);
+const KINDS = productKinds(...NETWORK_ROWS);
 const model = () => new Model({ network: createNetwork(), kinds: KINDS });   // links aged by their stored order (F-d)
 const pipesIn = (m) => ({
 	lay: (a, b, laid = 'hand') => { if (!m.get('pipe', pipeId(a, b))) m.put('pipe', pipeEntity(a, b, laid)); },

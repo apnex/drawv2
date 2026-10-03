@@ -148,6 +148,13 @@ S-e moves about 1,000 lines between folders and re-points their importers; behav
 AMENDED 2026-10-03 -- **G1 to G5 RULED as recommended** (`dev/DECISIONS.md`, "P3's design decisions, G1 to G5").\
 The build is H18.11 to H18.16, one stage each, S-a to S-f.
 
+AMENDED 2026-10-03 -- **S-a done** (H18.11; G3).\
+A composition may hold EXTENSION rows -- `{ kind, owner, extends: true, fields, optional }` -- each adding fields to a kind another owner brings; `composeKinds` merges them into that kind's row, so every reader sees one row, and refuses an extension of a kind not composed, a field the owner or another plugin already brings (both named), a field that is not optional, a field without a check, and any other key; the composition says who brought a field (`contributed`).\
+The network's rows are one list, `network/kinds.mjs` `NETWORK_ROWS`: its `pipe` kind and `transit` on the node; every composition with the network is `productKinds(...NETWORK_ROWS)`. The product's node row, and the core's table, name no `transit`.\
+A tenant may name the fields it reads on another owner's kind, as it names the kinds it needs: the network's tenant names `node.transit`, and the planner refuses a composition without it.\
+**A stated consequence, designed:** until S-b composes the network in the server, the store refuses a stored `transit`, naming the field -- so an agent's `draw set <ref> transit` is refused there meanwhile. Held both ways by the CLI and store tests, which assert the round trip again once S-b lands. Production is frozen and the lab composes the network, so no one meets it.\
+Corpora unchanged; the estate holds no transit. Mutants: 9, all killed.
+
 ---
 
 ## 10. Axiom alignment audit (M7)

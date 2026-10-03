@@ -36,6 +36,7 @@ import { productKinds } from '../../planner/kinds.mjs';
 // proven. Production does not import network/ until then, and a test holds that boundary.
 import { routeLink } from '../../network/pipes.mjs';
 import { PIPE_ROW } from '../../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetworkSession } from '../../network/session.mjs';
 import { networkInput } from '../../network/keys.mjs';
 import { attachNetwork } from '../../network/host.mjs';   // the network's choreography around an edit
@@ -64,7 +65,7 @@ links are stranded. Production constructs `new Model()` and commits with no netw
 */
 const session = createNetworkSession(), { network } = session;
 // THE KINDS (H17.22): the product's five and the network's pipe, one composition handed to both models and the planner
-const kinds = productKinds(PIPE_ROW);
+const kinds = productKinds(...NETWORK_ROWS);
 /*
 K8 -- the canvas, composed by the one function the product page composes it with (app/src/compose-canvas.js), handed
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily

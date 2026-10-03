@@ -62,12 +62,10 @@ const TABLE = {
 	Which of the fields a node may carry follows whether it has a type, held by the node row's cross-entity check
 	(planner/kinds.mjs).
 
-	F-e (H18.7, TR-7): `transit` -- whether what arrives at the anchor passes through it. Stored only where the author chose
-	other than what its type does when nothing is declared; what each type offers, and what a value means, is the network
-	plugin's (network/transit.mjs), which refuses a value a type does not offer. A product without the network reads it as
-	nothing, as it read the session's setting before.
+	`transit` is not the product's: the network plugin contributes it to the node (S-a, H18.11, G3; network/kinds.mjs), so a
+	composition without the network refuses it.
 	*/
-	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn', 'order', 'transit'] },
+	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn', 'order'] },
 	// `order` (F-d, H18.6): the drawing order of every drawn kind, model/order.mjs; optional, so a hand-made board still loads
 	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control', 'order'] },
 	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: ['order'] },
@@ -107,10 +105,21 @@ cross-entity check is network-layer code the core may not import. `new Model()` 
 Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).
 */
 const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap'];
+/*
+S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
+whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
+An EXTENSION row says so -- `{ kind, owner, extends: true, fields, optional }`: the kind it adds to, who adds, and a check for
+each field, every one optional, since a document written without the plugin must still be valid with it. Merged into the
+owner's row when the composition is built, so a reader sees one row; refused when the kind is not composed, when a field is
+already the owner's or another plugin's (both named), when a field is not optional, or when it carries anything else.
+*/
+const EXTENSION_KEYS = ['kind', 'owner', 'extends', 'fields', 'optional'];
 const DOCUMENT_KINDS = ['diagram', 'template'];   // document-level ids (planner/validate.js DOCUMENT_ID), never an entity kind
 
-export function composeKinds(rows, who = 'a composition') {
-	if (!Array.isArray(rows) || !rows.length) throw new Error(`${who}: a composition is a list of kind rows`);
+export function composeKinds(given, who = 'a composition') {
+	if (!Array.isArray(given) || !given.length) throw new Error(`${who}: a composition is a list of kind rows`);
+	const extensions = given.filter((r) => r?.extends === true);
+	const rows = given.filter((r) => r?.extends !== true);
 	const byName = new Map(), byCollection = new Map();
 	for (const row of rows) {
 		const stray = Object.keys(row ?? {}).filter((k) => !ROW_KEYS.includes(k));
@@ -141,8 +150,28 @@ export function composeKinds(rows, who = 'a composition') {
 		const missing = (row.references ?? []).filter((k) => !byName.has(k));
 		if (missing.length) throw new Error(`${who}: kind ${row.kind} references ${missing.join(', ')}, which this composition does not include`);
 	}
+	// the extensions, merged into the rows they extend (S-a)
+	const contributedBy = new Map();   // `kind.field` -> owner
+	for (const ext of extensions) {
+		const stray = Object.keys(ext).filter((k) => !EXTENSION_KEYS.includes(k));
+		if (stray.length) throw new Error(`${who}: ${ext.owner}'s fields for ${ext.kind}: unknown key ${stray.join(', ')} -- an extension is { ${EXTENSION_KEYS.join(', ')} }`);
+		const base = byName.get(ext.kind);
+		if (!base) throw new Error(`${who}: ${ext.owner} adds fields to ${ext.kind}, which this composition does not include`);
+		const names = Object.keys(ext.fields ?? {});
+		if (!names.length) throw new Error(`${who}: ${ext.owner} adds no fields to ${ext.kind}`);
+		const unchecked = names.filter((f) => typeof ext.fields[f] !== 'function');
+		if (unchecked.length) throw new Error(`${who}: ${ext.owner}'s field ${unchecked.join(', ')} for ${ext.kind} has no check`);
+		const required = names.filter((f) => !(ext.optional ?? []).includes(f));
+		if (required.length) throw new Error(`${who}: ${ext.owner}'s field ${required.join(', ')} for ${ext.kind} must be optional -- a document written without ${ext.owner} is still valid with it`);
+		for (const f of names) {
+			const claimed = contributedBy.get(`${ext.kind}.${f}`) ?? ((base.fields && f in base.fields) || (base.optional ?? []).includes(f) ? base.owner : null);
+			if (claimed) throw new Error(`${who}: field ${ext.kind}.${f} is claimed by ${claimed} and by ${ext.owner} -- one owner brings a field`);
+			contributedBy.set(`${ext.kind}.${f}`, ext.owner);
+		}
+		byName.set(ext.kind, { ...base, ...(base.fields ? { fields: { ...base.fields, ...ext.fields } } : {}), optional: [...(base.optional ?? []), ...names] });
+	}
 	const list = rows.map((r) => r.kind);
-	const of = (fact) => Object.fromEntries(rows.map((r) => [r.kind, fact(r)]));
+	const of = (fact) => Object.fromEntries(rows.map((r) => [r.kind, fact(byName.get(r.kind))]));   // the rows as merged (S-a)
 	return Object.freeze({
 		list,
 		has: (kind) => byName.has(kind),
@@ -155,6 +184,8 @@ export function composeKinds(rows, who = 'a composition') {
 		optional: of((r) => new Set(r.optional ?? [])),
 		// whether every row carries its checks -- what the planner requires of a composition it validates against
 		checked: rows.every((r) => r.fields !== undefined),
+		// who brought a field another owner's kind carries (S-a): `kind.field` -> owner
+		contributed: (kind, field) => contributedBy.get(`${kind}.${field}`) ?? null,
 	});
 }
 

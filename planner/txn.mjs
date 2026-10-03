@@ -262,6 +262,11 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 		// a tenant names the kinds its reactions read -- the network's pipes -- and a composition without one is half-composed (N-d)
 		const lacking = (tenant.kinds ?? []).filter((k) => !kinds.has(k));
 		if (lacking.length) throw new Error(`${who}: ${tenant.owner} needs the kind ${lacking.join(', ')}, which this composition does not include (H17.22 N-d)`);
+		// and the fields it reads on another owner's kind -- the network's `transit` on a node (S-a)
+		for (const [k, names] of Object.entries(tenant.fields ?? {})) {
+			const missing = names.filter((f) => !kinds.row(k)?.fields?.[f]);
+			if (missing.length) throw new Error(`${who}: ${tenant.owner} needs the field ${missing.map((f) => `${k}.${f}`).join(', ')}, which this composition does not include (S-a)`);
+		}
 		for (const r of tenant.reactions) {
 			if (!r || !PHASES.includes(r.phase) || typeof r.run !== 'function') throw new Error(`${who}: ${tenant.owner}: a reaction is { id, phase, trigger, run } with a phase of ${PHASES.join(', ')}`);
 			if (r.on !== undefined) throw new Error(`${who}: ${tenant.owner}: ${r.id} carries \`on\`, retired by TG-2 -- a reaction declares its trigger as data (H17.28)`);

@@ -192,6 +192,7 @@ export const ENTRIES = {
 			'lab/src/root.js',
 			'network/pipes.mjs',   // the incubating plugin (ruled 2026-09-28)
 			'network/pipe-kind.mjs',   // the network's pipe kind, a row of the one shape (H17.22 N-b); the lab composes it from N-c
+			'network/kinds.mjs',   // the network's rows: its pipe kind and the transit field it contributes to the node (S-a)
 			'network/appearance.mjs',
 			'network/guide.mjs',
 			'network/resolve.mjs',

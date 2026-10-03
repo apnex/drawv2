@@ -12,6 +12,7 @@ import { attachNetwork } from '../network/host.mjs';
 import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { createNetworkSession } from '../network/session.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { applyOps } from '../model/ops.mjs';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
@@ -99,7 +100,7 @@ F-e (H18.7) -- A TRANSIT CHANGE IS AN EDIT: the host commits the session's set o
 rule, that a cut asks whether what arrives stops rather than what was declared, is the cut reaction's, held below.
 */
 test('F-e: a transit change commits the session\'s edit as given, and no edit of the host\'s own', () => {
-	const model = new Model({ kinds: productKinds(PIPE_ROW) });
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS) });
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
 	const commits = [];
 	let onTransit = null;
@@ -119,12 +120,12 @@ test('B278: the cut asks whether what arrives stops, whatever was declared', asy
 	const { plan } = await import('../planner/txn.mjs');
 	// a stand-in transit where the two questions differ: P stops what arrives, and nothing is declared
 	const [cut] = transitReactions({ stopsAt: (id) => id === 'node-000003' }).reactions;
-	const model = new Model({ kinds: productKinds(PIPE_ROW) });
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS) });
 	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
 	model.put('link', { id: 'link-000004', name: 'l', order: 1, src: 'node-000001', dst: 'node-000002', via: ['node-000003'] });
-	const r = plan(model, [{ op: 'set', kind: 'node', id: 'node-000003', patch: { transit: true } }], { links: { owner: 'probe', reactions: [cut] }, kinds: productKinds(PIPE_ROW) });
+	const r = plan(model, [{ op: 'set', kind: 'node', id: 'node-000003', patch: { transit: true } }], { links: { owner: 'probe', reactions: [cut] }, kinds: productKinds(...NETWORK_ROWS) });
 	assert.equal(r.ok, true, r.error);
 	assert.equal(r.ops.filter((o) => o.op === 'put' && o.kind === 'link').length, 2, 'declared on, yet what arrives stops: the pinned link is cut in two there');
 });
@@ -137,7 +138,7 @@ up down over a pipe another held; turning both back on could not rejoin them.
 */
 test('B283: turning transit off at two pins of one link at once makes three straight pieces, and turning them back on rejoins it whole', () => {
 	const session = createNetworkSession();
-	const model = new Model({ kinds: productKinds(PIPE_ROW), network: session.network });
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), network: session.network });
 	attachRelations(model, { cellOf });
 	const [S, A, B, E] = ['node-00000a', 'node-00000b', 'node-00000c', 'node-00000d'];
 	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('node', { id, name: id, x, y }));
@@ -153,7 +154,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: (c) => {
 			commits.push(c);
-			const r = plan(model, c.entries.map(toOp), { links: session.network.links, kinds: productKinds(PIPE_ROW) });
+			const r = plan(model, c.entries.map(toOp), { links: session.network.links, kinds: productKinds(...NETWORK_ROWS) });
 			net.answered(c, { ok: r.ok, error: r.error, version: commits.length, ops: r.ops }, () => applyOps(model, r.ops));
 		} },
 		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: (t) => said.push(t),

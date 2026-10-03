@@ -9,10 +9,11 @@ import { Model } from '../model/model.mjs';
 import { plan } from '../planner/txn.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork } from '../network/network.mjs';
 import { CASES, composeCase } from './fixtures/planner-corpus.mjs';
 
-const P = 60, KINDS = productKinds(PIPE_ROW);
+const P = 60, KINDS = productKinds(...NETWORK_ROWS);
 function board() {
 	const m = new Model({ kinds: KINDS });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });

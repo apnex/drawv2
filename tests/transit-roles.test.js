@@ -12,6 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { waypointRoles, waypointRolesIn } from '../kernel/network-roles.mjs';
 import { waypointLayers } from '../kernel/network-appearance.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const W = 'node-e00001';
 const L = (n, src, dst, extra = {}) => ({ id: `link-00000${n}`, src, dst, via: [], ...extra });
@@ -83,7 +84,7 @@ test('F-e: the export and the canvas give a waypoint whose transit is off the sa
 	const { resolve } = await import('../kernel/engine.mjs');
 	const { svgDocument } = await import('../server/svg.mjs');
 	const s = createNetworkSession();
-	const m = new Model({ network: s.network, kinds: productKinds(PIPE_ROW) });
+	const m = new Model({ network: s.network, kinds: productKinds(...NETWORK_ROWS) });
 	m.put('node', { id: W, name: 'w', x: 0, y: 0, transit: false });
 	[['node-00000a', -120, 0], ['node-00000b', 120, 0], ['node-00000c', 0, 120]].forEach(([id, x, y], i) => {
 		m.put('node', { id, name: id, type: 'router', x, y });
@@ -107,7 +108,10 @@ test('F-e: transit survives a reload -- stored in the document, written by the s
 		const store = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await store.init();
 		const id = store.create('fe').model.state.meta.id;
-		assert.equal(store.commit(id, { label: 'transit', ops: [{ op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 0, y: 0 } }, { op: 'set', kind: 'node', id: W, patch: { transit: false } }] }).ok, true);
+		const set = store.commit(id, { label: 'transit', ops: [{ op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 0, y: 0 } }, { op: 'set', kind: 'node', id: W, patch: { transit: false } }] });
+		// S-a (H18.11, G3): the network's field, refused by a store that does not compose the network; S-b composes it there
+		if (!store.composesNetwork) { assert.match(set.error ?? '', /unknown field node\.transit/); return; }
+		assert.equal(set.ok, true);
 		await store.flush(id);
 		const again = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await again.init();

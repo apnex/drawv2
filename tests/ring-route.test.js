@@ -13,8 +13,9 @@ import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
-const KINDS = productKinds(PIPE_ROW);
+const KINDS = productKinds(...NETWORK_ROWS);
 const NET = createNetwork(createTransit());
 const [A, B, W] = ['node-00000a', 'node-00000b', 'node-00000e'];
 

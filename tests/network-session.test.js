@@ -15,9 +15,10 @@ import { Model } from '../model/model.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { createNetworkSession } from '../network/session.mjs';
 import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const P = 60;
-const KINDS = productKinds(PIPE_ROW);
+const KINDS = productKinds(...NETWORK_ROWS);
 function board(ids, pipes = []) {
 	const m = new Model({ kinds: KINDS });
 	ids.forEach((id, i) => m.put(id.startsWith('node') ? 'node' : 'waypoint', id.startsWith('node')

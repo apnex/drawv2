@@ -1032,7 +1032,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.8 | F-f: a ring's closing leg is routed like any leg (P-3) | feature | S2 | `DONE` |
 | H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | feature | S2 | `DONE` |
 | H18.10 | Design P3 for approval before any code: the server composes the network, stored pipes and the P-4 split in the migration (F2), `pinned` and the classic tenant retired, the browser's rule copies deleted (PL-6) | feature | S2 | `DONE` |
-| H18.11 | S-a: a plugin contributes fields to a kind it does not own; the network brings `transit` (G3) | **B266** | S2 | `TODO` |
+| H18.11 | S-a: a plugin contributes fields to a kind it does not own; the network brings `transit` (G3) | feature | S2 | `DONE` |
 | H18.12 | S-b: the server composes the network; the planner requires a tenant; the product page holds pipes (G1); the classic tenant and the pinned-orphan rule deleted | **B266** | S2 | `TODO` |
 | H18.13 | S-c: `link-legs` -- a pinned link lays the legs it has no way over, from any door; `ring-pipe` folded in (G2) | **B266** | S2 | `TODO` |
 | H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | **B266** | S2 | `TODO` |
@@ -1049,6 +1049,7 @@ AMENDED 2026-10-03: H18.8 (F-f) done -- a ring's closing leg is routed over a pi
 AMENDED 2026-10-03: H18.9 (F-g) done -- P2's format batch is complete on `main` (`FORMAT-BATCH.md`, "The batch, closed"); next H18.10, P3's design.\
 AMENDED 2026-10-03: H18.10's design is `dev/design/unification/SERVER-COMPOSES-NETWORK.md`, proposed; its decisions G1 to G5 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and G1 to G5 ruled as recommended (`dev/DECISIONS.md`); H18.10 DONE, the build is H18.11 to H18.16.\
+AMENDED 2026-10-03: H18.11 (S-a) done -- a plugin contributes fields to a kind it does not own; the network brings `transit`, and the product's node row names none.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

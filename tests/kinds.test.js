@@ -14,10 +14,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { composeKinds, CORE_KINDS } from '../model/shape.mjs';
 import { Model } from '../model/model.mjs';
-import { PRODUCT_KINDS } from '../planner/kinds.mjs';
+import { PRODUCT_KINDS, productKinds } from '../planner/kinds.mjs';
 import { commit, plan } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
-import { validateDoc, validateSelectionIds } from '../planner/validate.js';
+import { validateDoc, validateSelectionIds, validateEntity } from '../planner/validate.js';
 
 // a plugin's kind: a probe sits at a node, is selectable, unnamed, and one document holds at most three
 const PROBE = {
@@ -115,4 +115,46 @@ test('N-a (N2): an anchor\'s 6-hex part is unique across both anchor kinds, and 
 	assert.equal(drawing(() => m.freshId('node')), 'node-222222', 'and so does a node');
 	assert.equal(drawing(() => m.freshId('zone')), 'zone-111111', 'a zone is no anchor: its own collection is all it avoids');
 	assert.equal(drawing(() => m.makeWaypoint({ x: 0, y: 0 }).id), 'node-222222', 'a waypoint skips the hex a node holds: the Model mints anchors through it');
+});
+
+/*
+S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN CONTRIBUTES FIELDS TO A KIND IT DOES NOT OWN. The network brings `transit` to
+the product's node: merged into the node's row when the composition is built, refused by a composition without it.
+*/
+const EXT = (fields = { colour: (v) => typeof v === 'string' }, extra = {}) => ({ kind: 'node', owner: 'a test plugin', extends: true, fields, optional: Object.keys(fields), ...extra });
+
+test('S-a: an extension\'s fields join the kind it extends -- checked, optional, and owned by who brought them', () => {
+	const k = composeKinds([...productRows(), EXT()], 't');
+	assert.equal(typeof k.row('node').fields.colour, 'function');
+	assert.ok(k.optional.node.has('colour'), 'optional: a document without the plugin is still valid with it');
+	assert.equal(k.contributed('node', 'colour'), 'a test plugin');
+	assert.equal(k.contributed('node', 'type'), null, 'the owner\'s own fields are not contributed');
+	assert.deepEqual(k.list, PRODUCT_KINDS.list, 'an extension adds no kind');
+	assert.equal(validateEntity('node', { ...NODE, colour: 'red' }, { kinds: k }), null);
+	assert.match(validateEntity('node', { ...NODE, colour: 7 }, { kinds: k }), /invalid value for node\.colour/);
+	assert.match(validateEntity('node', { ...NODE, colour: 'red' }), /unknown field node\.colour/, 'and a composition without it refuses the field');
+});
+
+test('S-a: an extension is refused when built -- each way it can be wrong, named', () => {
+	const refused = (rows, re) => assert.throws(() => composeKinds(rows, 't'), re);
+	refused([...productRows(), EXT({ type: () => true })], /field node\.type is claimed by the product and by a test plugin/);
+	refused([...productRows(), EXT(), { ...EXT(), owner: 'another' }], /field node\.colour is claimed by a test plugin and by another/);
+	refused([...productRows(), EXT(undefined, { kind: 'probe' })], /adds fields to probe, which this composition does not include/);
+	refused([...productRows(), EXT(undefined, { optional: [] })], /must be optional/);
+	refused([...productRows(), EXT({ colour: true })], /has no check/);
+	refused([...productRows(), EXT({})], /adds no fields/);
+	refused([...productRows(), EXT(undefined, { cap: 9 })], /unknown key cap/);
+});
+
+test('S-a: the network brings transit, and the product names none; a tenant reading a field it lacks is refused', async () => {
+	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
+	const { createNetwork } = await import('../network/network.mjs');
+	const { createTransit } = await import('../network/transit.mjs');
+	const { plan } = await import('../planner/txn.mjs');
+	assert.equal('transit' in PRODUCT_KINDS.row('node').fields, false, 'the product\'s node row names no transit');
+	const net = productKinds(...NETWORK_ROWS);
+	assert.equal(net.contributed('node', 'transit'), 'the network');
+	const withPipesOnly = productKinds(NETWORK_ROWS.find((r) => r.kind === 'pipe'));
+	const m = new Model({ kinds: withPipesOnly });
+	assert.throws(() => plan(m, [{ op: 'del', kind: 'node', id: 'node-00000a' }], { links: createNetwork(createTransit()).links, kinds: withPipesOnly }), /needs the field node\.transit/);
 });

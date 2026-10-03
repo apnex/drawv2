@@ -39,6 +39,7 @@ import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';
 import { productKinds } from '../../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { bareAnchor } from '../../model/anchors.mjs';
 
 const GOLDEN = new URL('./planner-corpus.json', import.meta.url);
@@ -328,7 +329,7 @@ export function record(c) {
 export const readGolden = () => JSON.parse(fs.readFileSync(GOLDEN, 'utf8'));
 
 // the network composition's kinds: the product's five and the network's pipe (H17.22)
-export const WITH_PIPES = productKinds(PIPE_ROW);
+export const WITH_PIPES = productKinds(...NETWORK_ROWS);
 
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1] && process.argv[2] === '--write') {
