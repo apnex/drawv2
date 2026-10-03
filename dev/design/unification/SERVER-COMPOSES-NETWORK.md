@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-03 against `d5abf1f`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-03: approved, its decisions ruled (section 9).
 
 ## 1. Status
 
@@ -143,6 +144,9 @@ S-e moves about 1,000 lines between folders and re-points their importers; behav
 - **G3 -- where `transit` lives.** Recommended: a plugin may contribute fields to a kind it does not own, declared in its composition and checked like any field, so the network brings `transit` and the product's node row names none -- the clean answer the target state asks for, small because composition already validates rows. The alternative: leave `transit` in the node row as a named stopgap until B282's packs supply fields.
 - **G4 -- the tab agreeing before the answer.** Recommended: that half of P3's exit criterion, and PL-6, move to P5, where the product page has the network's tenant to preview with; the tab converges on the answer meanwhile. The alternative: give the page the planner's network tenant at P3 without its drawing, which is most of P5's composition done early.
 - **G5 -- when the link becomes the network's.** Recommended: at P3, as the link's path table already places it (B280), with its model-side rules (K13b) -- once production imports `network/`, the rules can live there, and the "network code in core folders" gap closes for the model and planner; the kernel's half moves at P5 with the canvas. The alternative: after the cutover, which keeps the gap through P9.
+
+AMENDED 2026-10-03 -- **G1 to G5 RULED as recommended** (`dev/DECISIONS.md`, "P3's design decisions, G1 to G5").\
+The build is H18.11 to H18.16, one stage each, S-a to S-f.
 
 ---
 

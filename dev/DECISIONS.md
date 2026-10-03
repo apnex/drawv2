@@ -1688,3 +1688,11 @@ Asked, after P2, whether production was beginning to integrate the network plugi
 - Clean: the core names no plugin; a plugin's rules, kinds and fields are its own. Deduplicated: one copy of each rule, the browser's included (PL-6). Modular: composed as rows and tenants, never patched in. In step with the lab: production runs what the lab proved, and the lab keeps incubating on the same modules.
 - The two known gaps are carried into P3's design as decisions: where `transit` lives while a plugin cannot add a field to another owner's kind (B282), and when the link rules move into `network/` (K13b).
 
+**P3's design decisions, G1 to G5, ruled as recommended -- 2026-10-03 (B266, H18.10).**\
+Asked one at a time against `dev/design/unification/SERVER-COMPOSES-NETWORK.md` section 9, judged against promotion's target state.
+- G1: the product page composes the pipe kind at P3 and holds pipes without drawing them, drawing links straight as today; P5 follows P3 directly -- a named stopgap, removed at P5. The page is not live while production is frozen.
+- G2: one rule in the network's tenant, `link-legs`: a link with pins lays a link pipe for each leg that has no way; a plain link lays nothing, as the grammar rules for a drag; it subsumes `ring-pipe`. An agent's plain link can come up down until P6 gives agents pipe verbs -- a named stopgap.
+- G3: a plugin may contribute fields to a kind it does not own, declared in its composition, checked like any field, refused when two claim one; the network brings `transit`, and the product's node row names none.
+- G4: the half of P3's exit criterion saying the tab agrees before the answer, and PL-6, move to P5; the tab converges on the answer meanwhile.
+- G5: the link kind and its model-side rules move into `network/` at P3 (B280, K13b's model half); the kernel's roles and appearance follow at P5 with the canvas.
+

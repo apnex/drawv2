@@ -1031,7 +1031,13 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.7 | F-e: transit stored on the anchor (TR-7); a toggle is a `set`, its cut and join planner reactions; the export reads it | feature | S2 | `DONE` |
 | H18.8 | F-f: a ring's closing leg is routed like any leg (P-3) | feature | S2 | `DONE` |
 | H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | feature | S2 | `DONE` |
-| H18.10 | Design P3 for approval before any code: the server composes the network, stored pipes and the P-4 split in the migration (F2), `pinned` and the classic tenant retired, the browser's rule copies deleted (PL-6) | **B266** | S2 | `WIP` |
+| H18.10 | Design P3 for approval before any code: the server composes the network, stored pipes and the P-4 split in the migration (F2), `pinned` and the classic tenant retired, the browser's rule copies deleted (PL-6) | feature | S2 | `DONE` |
+| H18.11 | S-a: a plugin contributes fields to a kind it does not own; the network brings `transit` (G3) | **B266** | S2 | `TODO` |
+| H18.12 | S-b: the server composes the network; the planner requires a tenant; the product page holds pipes (G1); the classic tenant and the pinned-orphan rule deleted | **B266** | S2 | `TODO` |
+| H18.13 | S-c: `link-legs` -- a pinned link lays the legs it has no way over, from any door; `ring-pipe` folded in (G2) | **B266** | S2 | `TODO` |
+| H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | **B266** | S2 | `TODO` |
+| H18.15 | S-e: the link kind and its model-side rules move into `network/` (G5, B280, K13b) | **B280** | S2 | `TODO` |
+| H18.16 | S-f: P3 closed -- estate dry run, register, records | **B266** | S2 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
 AMENDED 2026-10-03: H18.3 (F-a) done -- `server/migrate.mjs`, run by the store on every path in; `meta.schema` 2; undo history truncated; `direction`; the estate dry run passes (`tools/migrate-schema.mjs`). Production stays on `draw:2538ab8` from here (F3, PU31).\
@@ -1042,6 +1048,7 @@ AMENDED 2026-10-03: H18.7 (F-e) done -- transit is stored on the anchor; `x` is 
 AMENDED 2026-10-03: H18.8 (F-f) done -- a ring's closing leg is routed over a pipe like any leg, laid when the link is closed and swept when it is opened (P-3).\
 AMENDED 2026-10-03: H18.9 (F-g) done -- P2's format batch is complete on `main` (`FORMAT-BATCH.md`, "The batch, closed"); next H18.10, P3's design.\
 AMENDED 2026-10-03: H18.10's design is `dev/design/unification/SERVER-COMPOSES-NETWORK.md`, proposed; its decisions G1 to G5 are asked one at a time before any code.\
+AMENDED 2026-10-03: approved and G1 to G5 ruled as recommended (`dev/DECISIONS.md`); H18.10 DONE, the build is H18.11 to H18.16.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
