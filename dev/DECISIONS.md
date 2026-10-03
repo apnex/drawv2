@@ -1653,3 +1653,14 @@ Re-triaged first by the director, its decisions asked one at a time (`dev/design
 - TG-D2: the shadow -- each triggered reaction also run untriggered, the two required to emit the same ops -- runs in the tests only, over every corpus case, not at run time in the lab.
 - TG-D3: `pipe-sweep` is triggered, running only when links or pipes change, and judges the whole board over the cached derivation; bounding it further is the read side's incremental work.
 - TG-D4: built now, in the lab, before promotion; behaviour identical, proven by the corpora, and recorded for the production audit.
+
+**Promotion's start-of-work decisions, P-3 to P-10, ruled as recommended -- 2026-10-03 (B266, H18.1).**\
+Promotion started at the director's word; the decisions were asked one at a time against the estate measured from the production backup of 2026-10-02 (`dev/design/unification/PROMOTION.md`, "The estate, measured"). P-1 was ruled as N2 and P-2 by B249.
+- P-3: a ring's closing leg is routed like any leg, over a pipe the migration lays -- 17 rings in the estate.
+- P-4: a shared leg the migration meets is split into a junction (B210) so no link comes up down; the estate holds none today.
+- P-5: the `pinned` field is retired by the migration and no pinned anchor is lost: pinned waypoints become nodes with an anchor (P-10), which the sweep never takes -- 104 in the estate. The option as asked was worded badly by the proposer ("Retire it; lay a hand pipe? no -- keep the anchor"); its description is what was ruled.
+- P-6: undo history is truncated at the cutover, each log keeping its version -- 2,004 records in the estate.
+- P-7: deleting a pin deletes its link in existing diagrams as in new work; every existing bend becomes a pin -- 90 links, 302 bends. Recorded for users in the production-upgrade register.
+- P-8: the rollback after the cutover is restoring the pre-migration backup, accepted in advance; taken and verified before migrating, rehearsed in P8, held open across the window (W25).
+- P-9: the `link.flow` rename is folded into the format batch; the new name is asked when P2 starts -- 42 links declare a direction.
+- P-10: the format batch also eliminates the waypoint kind (B282): a waypoint becomes a node with an anchor and no type, its id keeping its hex -- the 3 that share their hex with a node renumbered. Type-as-composition stays out: `type` stays the stored name, and packs become code tables keyed by it, with no format change.

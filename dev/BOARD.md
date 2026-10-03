@@ -239,6 +239,7 @@ AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`) -- promotion's 
 AMENDED 2026-10-02: B290 fixed at the director's word (H17.29) -- a resume against a template is answered at version 0, and one against a diagram the caller may not read is refused, typed (PU30).\
 AMENDED 2026-10-03: production runs `2538ab8` (`draw-00155-hfx`) with the B290 fix, at the director's word; booted clean.\
 AMENDED 2026-10-03: promotion started at the director's word (B266, milestone H18); its decisions are ruled first, against the estate measured from the production backup.\
+AMENDED 2026-10-03: P-3 to P-10 ruled as recommended (H18.1); P2's format batch is fixed, waypoints into nodes among it. Next H18.2, P2's design for approval.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -1013,7 +1014,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
 
-## H18 -- promotion: the network plugin into production - `TODO`
+## H18 -- promotion: the network plugin into production - `WIP`
 
 Opened 2026-10-03 by the director ("Approved for next best action", the re-triage's step 3), firing B266's trigger.\
 The plan of record is `dev/design/unification/PROMOTION.md`: P0 (production on current `main`) is done, P1 was run in the lab (H17.22), and its start-of-work decisions come first, one at a time, before P2.\
@@ -1021,7 +1022,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H18.1 | Rule promotion's start-of-work decisions, P-3 to P-9 and the format batch's scope, one at a time, against the measured estate | **B266** | S2 | `WIP` |
+| H18.1 | Rule promotion's start-of-work decisions, P-3 to P-9 and the format batch's scope, one at a time, against the measured estate | feature | S2 | `DONE` |
+| H18.2 | Design P2, the format batch, for approval before any code: the stored pipe kind, drawing order, transit on the anchor, the flow rename, waypoints into nodes, the migration and its dry run on the estate | **B266** | S2 | `TODO` |
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
@@ -1042,7 +1044,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | promotion (K18a, scheduled by PD-5), or an agent's landing is reported uncut |
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
-| **B282** | S3 | Anchors unified and type as composition (ruled 2026-09-22): the waypoint kind goes, and `type` becomes the name of a composition of packs | promotion's format batch (P2), packs composing earned by composing two |
+| **B282** | S3 | Type as composition of packs (ruled 2026-09-22) -- its waypoint step ruled into P2 (P-10); this half needs no format change | a second pack composes, or the device table K6 lands |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
