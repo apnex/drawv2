@@ -237,6 +237,7 @@ AMENDED 2026-10-02: TG-4 done, and H17.28 with it (B287 closed) -- the planner i
 AMENDED 2026-10-02: the production upgrade audited (`dev/PRODUCTION-UPGRADE.md`, "Audit 2026-10-02") and the bucket backed up; the director approved the deploy. Found while auditing: B290, a resume against a template throwing in production since before `2814d8d`.\
 AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`) -- promotion's P0 done; verified at boot, at the edge and in its logs; rollback to `2814d8d` held. Owed to the director: a look at the page (PU11, PU12, PU24). Next by the triage: start promotion (B266), when the director says.\
 AMENDED 2026-10-02: B290 fixed at the director's word (H17.29) -- a resume against a template is answered at version 0, and one against a diagram the caller may not read is refused, typed (PU30).\
+AMENDED 2026-10-03: production runs `2538ab8` (`draw-00155-hfx`) with the B290 fix, at the director's word; booted clean.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\

@@ -127,3 +127,8 @@ At the edge: `/` and `/api/v1/diagrams` answer 302 to sign-in, `/about` and `/pr
 No warning, error or 5xx in the new revision's logs in its first minutes.\
 Rollback, held: redeploy `draw:2814d8d` (revision `draw-00153-4sj`), which reads everything written since (PU13), with the bucket's copy as the last resort.\
 Owed to the director's eye: PU11, PU12 and PU24 -- the page's colours, its network panel, the undelete card.
+
+**Deployed 2026-10-03:** `draw-00155-hfx` serving `draw:2538ab8` -- the B290 fix (PU30), at the director's word, on top of `d58816c`.\
+Booted against the bucket with the same 43 diagrams and 4 templates; the edge unchanged (`/` 302, `/about` 200).\
+PU30 CHECKED by its tests (tests/resume.test.js "B290"), not by the logs: none of the error in the new revision's first ten minutes, but none in the previous revision's last two hours either -- its last occurrence was 2026-10-02 07:22 UTC, so the tab that met it had already closed, and production could not have shown the fix.\
+Rollback: redeploy `draw:d58816c`.
