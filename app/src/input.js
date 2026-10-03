@@ -51,7 +51,7 @@ import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with t
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../kernel/network-roles.mjs';
-import { BARE_KIND, ANCHOR_KINDS, bareAnchor, bareAnchors } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, ANCHOR_KINDS, bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -134,7 +134,7 @@ const GESTURES = {
 
 	'clone-pending': {
 		// Ctrl+click without drag: toggle selection (draw.io behavior) -- app/src/releases.js CTRL_CLICKS
-		commit: (i, ctx, pos, evt) => i.act(i.decide('ctrlClick', evt, { exists: !!i.model.get(ctx.hit.kind, ctx.hit.id) }), ctx),
+		commit: (i, ctx, pos, evt) => i.act(i.decide('ctrlClick', evt, { exists: !!i.model.get(kindOf(ctx.hit.id), ctx.hit.id) }), ctx),
 		update: (i, pos, evt) => i.escalate(pos, evt, 'cloneDrag', {}, 'clone'),
 		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
 	},
@@ -266,7 +266,7 @@ const GESTURES = {
 				dst: !!dst, dstIsSrc: dst === ctx.src.id, srcAlive: !!srcAlive, validTarget: !!validTarget, hasVia, admitted, judged: !!i.judgeDrag,
 				click: evt.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
 				shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey, pressShift: !!ctx.shift,
-				srcIsNode: !!i.model.get('node', ctx.src.id), hand, handIsSrcType: hand === ctx.src.type, chained: !!i.state.chained,
+				srcIsNode: !!(isTypedEntity('node', i.model.get('node', ctx.src.id)) ? i.model.get('node', ctx.src.id) : undefined), hand, handIsSrcType: hand === ctx.src.type, chained: !!i.state.chained,
 				srcSelected: i.selection.has(ctx.src.id),
 			}), { ctx, pos, dst, via, route, target, validTarget });
 		},
@@ -282,7 +282,7 @@ const GESTURES = {
 			i.readout.setLink(i.ctx.src.name || '?', (target && target.id !== i.ctx.src.id) ? (target.name || '?') : snapNode(pos));
 		},
 		start: (i, hit, pos, evt) => {
-			const src = i.model.get(hit.kind, hit.id);
+			const src = i.model.get(kindOf(hit.id), hit.id);   // a hit names what is drawn; the id names how it is stored (F-c)
 			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
 			i.overlayUi.clearHover();
 			const sole = i.selection.list();
@@ -660,7 +660,7 @@ export class Input {
 	startClone(pos) {
 		const hit = this.ctx.hit;
 		// links can't anchor a clone; the entity may also have died mid-press (undo)
-		if (hit.kind === 'link' || !this.model.get(hit.kind, hit.id)) {
+		if (hit.kind === 'link' || !this.model.get(kindOf(hit.id), hit.id)) {
 			this.mode = null;
 			this.ctx = {};
 			return;
@@ -675,7 +675,7 @@ export class Input {
 		clones.forEach((c) => this.model.put(c.kind, c.entity));
 
 		const moved = clones
-			.filter((c) => c.kind === 'node' || c.kind === 'zone')
+			.filter((c) => isTypedEntity(c.kind, c.entity) || c.kind === 'zone')
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
 		this.mode = 'clone';
 		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId: idMap.get(hit.id) };
@@ -709,10 +709,10 @@ export class Input {
 		// them live, model.set each one, then read every position back out — three steps to do what
 		// the commit does anyway.
 		result.clones.forEach((c) => {
-			if (c.kind === 'node' || c.kind === 'zone') { c.entity.x += delta.x; c.entity.y += delta.y; }
+			if (isTypedEntity(c.kind, c.entity) || c.kind === 'zone') { c.entity.x += delta.x; c.entity.y += delta.y; }
 		});
 		this.history.commit(commands.cloneEntities(result.clones));
-		const placed = result.clones.filter((c) => c.kind === 'node' || c.kind === 'zone');
+		const placed = result.clones.filter((c) => isTypedEntity(c.kind, c.entity) || c.kind === 'zone');
 		this.selection.set(placed.map((c) => c.entity.id));
 		this.afterHistory();
 		this.lastDelta = delta; // tap-tap-tap repeats the same pitch
@@ -1247,7 +1247,7 @@ export class Input {
 	// Zones are not marquee-pickable (the Shift layer); they are selected directly
 	pickedIn(box) {
 		const picked = [];
-		this.model.all('node').forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
+		typedNodes(this.model).forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
 		bareAnchors(this.model).forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
 		const inBox = new Set(picked);
 		this.model.all('link').forEach((l) => { if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id); });
@@ -1372,7 +1372,7 @@ export class Input {
 			this.labels.setFocus(tb.id);
 			return this.labels.openFrame(tb.id);
 		}
-		const nodes = this.model.all('node');
+		const nodes = typedNodes(this.model);
 		const best = (cands) => cands.sort((p, q) => p.d - q.d || q.i - p.i)[0];
 		const icon = best(nodes.map((n, i) => ({ n, d: dist(n, pos), i }))
 			.filter((c) => c.d <= NODE_R + 4));
@@ -1489,7 +1489,7 @@ export class Input {
 
 	onSelectAll() {
 		this.selection.set([
-			...this.model.all('node').map((n) => n.id),
+			...typedNodes(this.model).map((n) => n.id),
 			...this.model.all('zone').map((z) => z.id),
 			...this.model.all('link').map((l) => l.id)
 		]);

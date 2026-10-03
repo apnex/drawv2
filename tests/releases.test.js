@@ -159,7 +159,7 @@ test('acceptance 6, B245: threading a pinned waypoint sends the unpin with the l
 		const h = makeInput();
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		const w = { ...h.model.makeWaypoint({ x: 180, y: 120 }), pinned: true };
-		h.model.put('waypoint', w);
+		h.model.put('node', w);
 		const over = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(id.split('-')[0]) ? { id } : null) } });
 		h.capture.onDown(over(a.id, 0, 0)); h.capture.onMove(over(w.id, 180, 120)); h.capture.onKeyDown(key('w'));
 		finish(h, over, b);
@@ -167,12 +167,12 @@ test('acceptance 6, B245: threading a pinned waypoint sends the unpin with the l
 	};
 	const done = drive((h, over, b) => { h.capture.onMove(over(b.id, 360, 0)); h.capture.onUp(over(b.id, 360, 0)); });
 	try {
-		assert.deepEqual(done.h.commits[0].ops.find((o) => o.op === 'set'), { op: 'set', kind: 'waypoint', id: done.w.id, patch: { pinned: false } }, 'the planner is told');
-		assert.equal(done.h.model.get('waypoint', done.w.id).pinned, false);
+		assert.deepEqual(done.h.commits[0].ops.find((o) => o.op === 'set'), { op: 'set', kind: 'node', id: done.w.id, patch: { pinned: false } }, 'the planner is told');
+		assert.equal(done.h.model.get('node', done.w.id).pinned, false);
 	} finally { done.h.restore(); }
 	const cancelled = drive((h) => h.capture.onKeyDown(key('Escape')));
 	try {
-		assert.equal(cancelled.h.model.get('waypoint', cancelled.w.id).pinned, true, 'nothing was committed, so nothing was unpinned');
+		assert.equal(cancelled.h.model.get('node', cancelled.w.id).pinned, true, 'nothing was committed, so nothing was unpinned');
 		assert.equal(cancelled.h.commits.length, 0);
 	} finally { cancelled.h.restore(); }
 });

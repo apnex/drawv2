@@ -41,8 +41,8 @@ function equivalent(board, change) {
 
 const N = (o = {}) => ['node', { id: 'node-a00001', name: 'router-1', type: 'router', shape: 'circle', x: 0, y: 0, ...o }];
 const N2 = ['node', { id: 'node-a00002', name: 'host-2', type: 'host', shape: 'circle', x: 360, y: 0 }];
-const W = (o = {}) => ['waypoint', { id: 'waypoint-a00003', name: 'w', x: -240, y: 120, ...o }];
-const L = ['link', { id: 'link-a00004', name: 'l', src: 'waypoint-a00003', dst: 'node-a00001' }];
+const W = (o = {}) => ['node', { id: 'node-a00003', name: 'w', x: -240, y: 120, ...o }];
+const L = ['link', { id: 'link-a00004', name: 'l', src: 'node-a00003', dst: 'node-a00001' }];
 const Z = (o = {}) => ['zone', { id: 'zone-a00005', name: 'dmz', x: -330, y: -210, w: 600, h: 420, ...o }];
 const G = ['group', { id: 'group-a00006', name: 'g', members: ['node-a00001', 'node-a00002'] }];
 const PANEL = N({ content: [{ content: 'text', at: [0, 0], cols: 2, rows: 1, value: 'hello' }], span: { cols: 2, rows: 1 } });
@@ -59,9 +59,9 @@ const CASES = {
 	'zone resized': [[Z()], [['zone', 'zone-a00005', { w: 720, h: 300 }]]],
 	'zone renamed': [[Z()], [['zone', 'zone-a00005', { name: 'core-network' }]]],
 	'group member moved': [[N(), N2, G], [['node', 'node-a00002', { x: 480, y: 120 }]]],
-	'waypoint moved': [[N(), W(), L], [['waypoint', 'waypoint-a00003', { x: -360, y: 0 }]]],
-	'waypoint armed': [[N(), W(), L], [['waypoint', 'waypoint-a00003', { spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }]]],
-	'lone waypoint moved': [[W()], [['waypoint', 'waypoint-a00003', { x: 0, y: 240 }]]],
+	'waypoint moved': [[N(), W(), L], [['node', 'node-a00003', { x: -360, y: 0 }]]],
+	'waypoint armed': [[N(), W(), L], [['node', 'node-a00003', { spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }]]],
+	'lone waypoint moved': [[W()], [['node', 'node-a00003', { x: 0, y: 240 }]]],
 	'link declared': [[N(), W(), L], [['link', 'link-a00004', { direction: 'forward' }]]],
 };
 

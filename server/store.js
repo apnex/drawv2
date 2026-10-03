@@ -162,7 +162,8 @@ read, and the document is written back with it. Nothing downstream needs to tole
 function migrateNames(doc) {
 	let changed = false;
 	const taken = new Set();
-	for (const k of CORE_KINDS.list.map((kind) => CORE_KINDS.collection[kind])) {
+	// `waypoints` by name: a document written before the format batch keeps them apart, and the kind table no longer lists them (F-c)
+	for (const k of [...CORE_KINDS.list.map((kind) => CORE_KINDS.collection[kind]), 'waypoints']) {
 		for (const e of doc[k] || []) if (e && typeof e.name === 'string') taken.add(e.name);
 	}
 	const mint = (prefix) => {

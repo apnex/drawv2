@@ -51,7 +51,7 @@ so the placement test has somewhere to click that is genuinely unoccupied, and p
 exist without the harness having to arm them first.
 */
 function fixture() {
-	const wp = (id, x, y, spawn) => ({ id, x, y, ...(spawn ? { spawn } : {}) });
+	const wp = (id, x, y, spawn) => ({ id, name: id, x, y, ...(spawn ? { spawn } : {}) });   // a waypoint: a node with no type, named (B187)
 	return {
 		meta: { id: DIAGRAM, name: 'harness', version: 1 },
 		/*
@@ -63,14 +63,14 @@ function fixture() {
 		by luck, then failed in the full suite. Beside the path the bearing sweeps a wide arc as a
 		packet goes by, which is both the honest test and how a player actually places one.
 		*/
-		nodes: [{ id: 'node-ba0004', name: 'lb', type: 'loadbalancer', x: 6 * PITCH, y: 2 * PITCH, shape: 'circle' }],
-		waypoints: [
+		// the two waypoints are nodes with no type (F-c)
+		nodes: [{ id: 'node-ba0004', name: 'lb', type: 'loadbalancer', x: 6 * PITCH, y: 2 * PITCH, shape: 'circle' },
 			// `since` must be a real stamp: the validator floors it at 2020-09 and a document it refuses is
 		// SKIPPED, not reported -- which is how the first fixture vanished without a word
-		wp('waypoint-ba0002', 0, 0, { interval: 600, speed: 2, kind: 'packet', since: Date.now() - 60_000 }),
-			wp('waypoint-ba0003', 12 * PITCH, 0),
+		wp('node-ba0002', 0, 0, { interval: 600, speed: 2, kind: 'packet', since: Date.now() - 60_000 }),
+			wp('node-ba0003', 12 * PITCH, 0),
 		],
-		links: [{ id: 'link-ba0005', name: 'link-ba0005', src: 'waypoint-ba0002', dst: 'waypoint-ba0003' }],
+		links: [{ id: 'link-ba0005', name: 'link-ba0005', src: 'node-ba0002', dst: 'node-ba0003' }],
 		zones: [], groups: [], selection: [],
 	};
 }
@@ -163,7 +163,7 @@ before(async () => {
 	document vanished, exactly as `server/store.js` documents. A harness that cannot tell a missing
 	fixture from broken behaviour will eventually accuse the code of something the test did.
 	*/
-	const loaded = await until(tab, `document.getElementById('waypoint-ba0002') ? 1 : 0`, 6000);
+	const loaded = await until(tab, `document.getElementById('node-ba0002') ? 1 : 0`, 6000);
 	const movers = await until(tab, `document.querySelectorAll('[data-mover]').length`, 8000);
 	booted = { inRun: !!inRun, loaded: !!loaded, movers: Number(movers) || 0 };
 });
@@ -1216,7 +1216,7 @@ before the move, unchanged after it, each on a FRESH tab so nothing an earlier t
 */
 async function freshTab() {
 	const t = await attach(`http://127.0.0.1:${port}/d/${K8_DIAGRAM}`);   // the deep link: the page reads /d/<id>, not ?diagram=
-	await until(t, `document.getElementById('waypoint-ba0002') ? 1 : 0`, 8000);
+	await until(t, `document.getElementById('node-ba0002') ? 1 : 0`, 8000);
 	await t.eval(`window.draw.input.setReadOnly(false), 1`);   // earlier tests hold the server lock (see K7)
 	return t;
 }

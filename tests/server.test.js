@@ -857,10 +857,10 @@ test('B112: free anchors exclude what is occupied, and an anchor round-trips int
 		const w = free.anchors[1];
 		await fetch(`${base}/api/v1/diagrams/${id}/commit`, {
 			method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token },
-			body: JSON.stringify({ ops: [{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-a11c01', name: 'waypoint-a11c01', x: w.x, y: w.y } }] }),
+			body: JSON.stringify({ ops: [{ op: 'put', kind: 'node', entity: { id: 'node-e11c01', name: 'node-e11c01', x: w.x, y: w.y } }] }),
 		});
 		const wq = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=${w.x}&y=${w.y}`)).body;
-		assert.equal(wq.occupant, 'waypoint-a11c01', 'a waypoint IS a node for placement');
+		assert.equal(wq.occupant, 'node-e11c01', 'a waypoint IS a node for placement');
 		const after = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).body;
 		assert.ok(!after.anchors.some((q) => q.x === w.x && q.y === w.y),
 			'and the anchor it holds has left the free list');

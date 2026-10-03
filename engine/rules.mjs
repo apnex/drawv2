@@ -38,6 +38,7 @@ import { moversAt } from './movers.mjs';
 import { spawnersOf } from './spawners.mjs';
 import { towerFor, moverFor, tickAt, cycleOf, TICK_MS } from './kinds.mjs';
 import { STD } from '../kernel/spec.mjs';
+import { typedNodes } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const PITCH = STD.pitch;
 
@@ -51,7 +52,7 @@ which keeps the decision itself in exact integer arithmetic.
 */
 export function worldOf(model) {
 	const towers = [];
-	for (const n of model.all('node')) {
+	for (const n of typedNodes(model)) {
 		const spec = towerFor(n);
 		if (spec) towers.push({ id: n.id, x: n.x, y: n.y, ...spec });
 	}

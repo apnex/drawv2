@@ -32,10 +32,10 @@ const WITH_PROBE = composeKinds([...productRows(), PROBE], 'a test composition')
 const NODE = { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' };
 
 test('N-a: a composition lists its kinds and what each opts into', () => {
-	assert.deepEqual(WITH_PROBE.list, ['node', 'waypoint', 'link', 'zone', 'group', 'probe']);
-	assert.deepEqual(WITH_PROBE.selectable, ['node', 'waypoint', 'link', 'zone', 'probe']);
-	assert.deepEqual(WITH_PROBE.named, ['node', 'waypoint', 'link', 'zone', 'group'], 'a probe opts out of names (N5)');
-	assert.deepEqual(WITH_PROBE.anchors, ['node', 'waypoint']);
+	assert.deepEqual(WITH_PROBE.list, ['node', 'link', 'zone', 'group', 'probe']);   // four since F-c: a waypoint is a node with no type
+	assert.deepEqual(WITH_PROBE.selectable, ['node', 'link', 'zone', 'probe']);
+	assert.deepEqual(WITH_PROBE.named, ['node', 'link', 'zone', 'group'], 'a probe opts out of names (N5)');
+	assert.deepEqual(WITH_PROBE.anchors, ['node']);
 	assert.equal(WITH_PROBE.checked, true);
 	assert.equal(CORE_KINDS.checked, false, 'the core holds storage only; the checks are the planner\'s');
 	assert.deepEqual(CORE_KINDS.list, PRODUCT_KINDS.list);
@@ -67,7 +67,7 @@ test('N-a: a Model composed with a plugin kind stores, round-trips and selects i
 	again.setSelection(['probe-00000b']);
 	assert.deepEqual([...again.state.selection], ['probe-00000b'], 'a selectable plugin kind joins the selection');
 	assert.equal(m.nextName('probe'), 'probe-1', 'an unnamed kind takes no part in the namespace');
-	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, waypoint, link, zone, group\)/);
+	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, link, zone, group\)/);
 	assert.throws(() => new Model({ kinds: { list: ['node'] } }), /Model: kinds is a composition/);
 });
 
@@ -89,7 +89,7 @@ test('N-a: the product\'s planner refuses the plugin kind, and a model and plann
 	const product = new Model();
 	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }]).error, 'unknown kind: probe');
 	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }]),
-		/plan: the model is composed with kinds node, waypoint, link, zone, group, probe and the planner with node, waypoint, link, zone, group/);
+		/plan: the model is composed with kinds node, link, zone, group, probe and the planner with node, link, zone, group/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE }), /plan: the model is composed with kinds/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS }), /kinds is a composition whose every row carries its checks/);
 });
@@ -106,13 +106,13 @@ test('N-a: a document with the plugin kind validates against its composition, an
 	assert.equal(validateSelectionIds(['probe-00000b'], WITH_PROBE), null);
 });
 
+// F-c (H18.5): one anchor kind now, so N2's uniqueness is the node collection's own; held still, by the minting path
 test('N-a (N2): an anchor\'s 6-hex part is unique across both anchor kinds, and other kinds are free to repeat it', () => {
 	const m = new Model();
 	m.put('node', { ...NODE, id: 'node-111111' });
 	const draws = [0x111111, 0x111111, 0x222222], real = Math.random;
 	const drawing = (fn) => { const seq = [...draws]; Math.random = () => (seq.shift() ?? 0x333333) / 0xffffff; try { return fn(); } finally { Math.random = real; } };
-	assert.equal(drawing(() => m.freshId('waypoint')), 'waypoint-222222', 'a waypoint skips the hex a node holds');
 	assert.equal(drawing(() => m.freshId('node')), 'node-222222', 'and so does a node');
 	assert.equal(drawing(() => m.freshId('zone')), 'zone-111111', 'a zone is no anchor: its own collection is all it avoids');
-	assert.equal(drawing(() => m.makeWaypoint({ x: 0, y: 0 }).id), 'waypoint-222222', 'the Model mints anchors through it');
+	assert.equal(drawing(() => m.makeWaypoint({ x: 0, y: 0 }).id), 'node-222222', 'a waypoint skips the hex a node holds: the Model mints anchors through it');
 });

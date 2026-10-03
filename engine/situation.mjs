@@ -26,7 +26,8 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity } from '../model/anchors.mjs';
+import { drawnKind } from '../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 /*
 K5 (dev/design/h17/PLAN.md) -- CORE, so every layer that decides what an input means may read it: the canvas (Input),
@@ -114,7 +115,9 @@ function describeTarget(access, id) {
 function describeSelection(access, ids) {
 	const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
 	const one = list.length === 1 && kindOf(list[0]) === 'link' && access.get ? access.get('link', list[0]) : null;
-	return { size: list.length, ids: [...list], kinds: [...new Set(list.map(kindOf))].sort(),
+	// what each selected entity is DRAWN as -- a waypoint is a node with no type (F-c), and the situation says waypoint (F4)
+	const drawn = (id) => (access.get ? drawnKind(kindOf(id), access.get(kindOf(id), id)) : kindOf(id));
+	return { size: list.length, ids: [...list], kinds: [...new Set(list.map(drawn))].sort(),
 		bends: one ? (Array.isArray(one.via) ? one.via.length : 0) : null };
 }
 

@@ -15,7 +15,7 @@ import { Model } from '../model/model.mjs';
 
 test('validateSelectionIds is shape-only over selectable kinds', () => {
 	assert.equal(validateSelectionIds([]), null);
-	assert.equal(validateSelectionIds(['node-abc123', 'link-00ff99', 'zone-000000', 'waypoint-abcdef']), null);
+	assert.equal(validateSelectionIds(['node-abc123', 'link-00ff99', 'zone-000000', 'node-abcdef']), null);
 	assert.match(validateSelectionIds('nope'), /array/);
 	assert.match(validateSelectionIds(['group-abc123']), /invalid selection id/);   // group not selectable
 	assert.match(validateSelectionIds(['__proto__']), /invalid selection id/);
@@ -103,9 +103,9 @@ test('B110: the refusal covers `set`, which is how a node MOVES', () => {
 });
 
 test('B110: a waypoint shares the NODE grid', () => {
-	assert.equal(put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: -120, y: 60 }), null);
-	assert.match(String(put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: -90, y: 60 })),
-		/invalid value for waypoint\.x/,
+	assert.equal(put('node', { id: 'node-ea0001', name: 'node-ea0001', x: -120, y: 60 }), null);
+	assert.match(String(put('node', { id: 'node-ea0001', name: 'node-ea0001', x: -90, y: 60 })),
+		/invalid value for node\.x/,   // a waypoint is a node with no type (F-c)
 		'the exact value the agent wrote live, and that the browser then snapped to -120');
 });
 
@@ -147,9 +147,9 @@ test('B112: two nodes on one anchor is a violation', () => {
 test('B112: a waypoint occupies an anchor, because a waypoint IS a node for placement', () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: 120, y: 0 });
-	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 180, y: 0 });
+	m.put('node', { id: 'node-ea0001', name: 'node-ea0001', x: 180, y: 0 });
 	assert.deepEqual(violations(m), [], 'distinct anchors are fine');
-	m.set('waypoint', 'waypoint-aa0001', { x: 120 });
+	m.set('node', 'node-ea0001', { x: 120 });
 	assert.match(String(violations(m)), /occupy the same anchor \(120,0\)/,
 		'a bend hidden under a node is not a diagram anyone can read');
 });
@@ -200,7 +200,7 @@ test('B113: the positioned cap is DERIVED from the grid, not a flat constant', (
 	const anchors = (Math.floor(NODE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(NODE_EXT.y / STD.pitch) * 2 + 1);
 	assert.equal(cap.node, anchors, 'the node cap IS the number of node anchors');
 	assert.equal(cap.node, 527);
-	assert.equal(cap.waypoint, cap.node, 'a waypoint is a node for placement, so it shares the ceiling');
+	assert.equal(cap.waypoint, undefined, 'a waypoint is a node since F-c, so the node ceiling is the one it shares');
 	assert.notEqual(cap.node, 2000, 'a flat 2000 is unreachable for a positioned kind and so is not a limit');
 	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
 	assert.equal(cap.link, 2000);
@@ -303,7 +303,7 @@ test('B86: the selectable kinds are derived from the model, not restated beside 
 		assert.equal(validateSelectionIds([`${kind}-aa0001`]), null, `${kind} is selectable in both`);
 	}
 	assert.ok(validateSelectionIds(['group-aa0001']), 'and a group is selectable in neither');
-	assert.ok(SELECTABLE_KINDS.length >= 4, 'the list is non-trivial, so the loop is not vacuous');
+	assert.ok(SELECTABLE_KINDS.length >= 3, 'the list is non-trivial, so the loop is not vacuous');
 });
 
 test('B86: validate.js consults the shared OPTIONAL map, and declares none of its own', async () => {
@@ -364,7 +364,7 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 	const { Model } = await import('../model/model.mjs');
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
-	const W = (n, y) => ({ id: `waypoint-aa000${n}`, name: `w${n}`, x: 60, y });
+	const W = (n, y) => ({ id: `node-ea000${n}`, name: `w${n}`, x: 60, y });   // a waypoint: a node with no type (F-c)
 	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, zones: [], groups: [], waypoints: [] };
 
 	const cases = {
@@ -375,25 +375,25 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 		'self-link':
 			{ nodes: [N(1, 0)], links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0001' }] },
 		'clean route through a waypoint':
-			{ nodes: [N(1, 0), N(2, 60)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }] },
+			{ nodes: [N(1, 0), N(2, 60), W(1, 60)],
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] }] },
 		'via a waypoint that does not exist':
 			{ nodes: [N(1, 0), N(2, 60)],
-				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0009'] }] },
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0009'] }] },
 		'one waypoint in two roles on one link':
-			{ nodes: [N(1, 0)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0001'] }] },
+			{ nodes: [N(1, 0), W(1, 60)],
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0001'] }] },
 		// B207 -- LEGAL since the junction relaxation: two links meeting at one waypoint is a
 		// junction, and this case moved from the bad column to the good one.
 		'one waypoint shared by two links (a junction)':
-			{ nodes: [N(1, 0), N(2, 60), N(3, 120), N(4, 180)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
-					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }] },
+			{ nodes: [N(1, 0), N(2, 60), N(3, 120), N(4, 180), W(1, 60)],
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] },
+					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0003', dst: 'node-aa0004', via: ['node-ea0001'] }] },
 		// and what replaced it: the same PAIR bending at the same point is still refused
 		'two links with the same endpoints bend at one waypoint':
-			{ nodes: [N(1, 0), N(2, 60)], waypoints: [W(1, 60)],
-				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] },
-					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0002', dst: 'node-aa0001', via: ['waypoint-aa0001'] }] },
+			{ nodes: [N(1, 0), N(2, 60), W(1, 60)],
+				links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] },
+					{ id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0002', dst: 'node-aa0001', via: ['node-ea0001'] }] },
 		'group member that does not exist':
 			{ nodes: [N(1, 0), N(2, 60)], links: [],
 				groups: [{ id: 'group-aa0001', members: ['node-aa0001', 'node-aa0009'], name: 'g' }] },
@@ -596,13 +596,13 @@ test('B210: a split turns a bend into a junction, and the result validates', asy
 	END TO END: a->b via w, then a link drawn from w to c. The split must leave a document the
 	validator accepts, and the waypoint must read as a junction that also terminates.
 	*/
-	const orig = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] };
-	const halves = splitAtBend(orig, 'waypoint-aa0001').map((h, i) => ({ id: `link-bb000${i}`, ...h }));
-	const added = { id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' };
+	const orig = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] };
+	const halves = splitAtBend(orig, 'node-ea0001').map((h, i) => ({ id: `link-bb000${i}`, ...h }));
+	const added = { id: 'link-aa0002', src: 'node-ea0001', dst: 'node-aa0003' };
 	const after = [...halves, added];
 
 	const nodes = new Set(['node-aa0001', 'node-aa0002', 'node-aa0003']);
-	const wps = new Set(['waypoint-aa0001']);
+	const wps = new Set(['node-ea0001']);
 	const owners = waypointOwners(after);
 	const byId = new Map(after.map((l) => [l.id, l]));
 	const access = {
@@ -614,11 +614,11 @@ test('B210: a split turns a bend into a junction, and the result validates', asy
 	}
 	// B211 -- a junction SUPERSEDES an endpoint: every link at one terminates there, so saying both
 	// would say nothing and would draw the pad under the ring
-	assert.deepEqual(waypointRoles('waypoint-aa0001', after), ['junction'],
+	assert.deepEqual(waypointRoles('node-ea0001', after), ['junction'],
 		'after the split the waypoint is a junction -- a MEET, not a crossing');
 
 	// the case the split exists to prevent: nothing bends through it any more
-	assert.ok(after.every((l) => !(l.via || []).includes('waypoint-aa0001')),
+	assert.ok(after.every((l) => !(l.via || []).includes('node-ea0001')),
 		'no link may still bend through a junction -- that is the crossing case the split removes');
 });
 
@@ -639,12 +639,12 @@ before the split is pointing at a stranger afterwards.
 test('B213: a split then a collapse restores the original link, id included', async () => {
 	const { splitAtBend, collapseAtWaypoint } = await import('../model/invariants.mjs');
 
-	const orig = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] };
-	const [srcHalf, dstHalf] = splitAtBend(orig, 'waypoint-aa0001');
+	const orig = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] };
+	const [srcHalf, dstHalf] = splitAtBend(orig, 'node-ea0001');
 	const kept = { ...orig, ...srcHalf, via: srcHalf.via || [] };
 	const minted = { id: 'link-bb0001', name: 'm', ...dstHalf };
 
-	const back = collapseAtWaypoint(kept, minted, 'waypoint-aa0001');
+	const back = collapseAtWaypoint(kept, minted, 'node-ea0001');
 	assert.equal(back.id, orig.id, 'the collapse must restore the ORIGINAL id -- that is what the src half kept it for');
 	assert.equal(back.src, orig.src);
 	assert.equal(back.dst, orig.dst);

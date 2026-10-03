@@ -37,7 +37,7 @@ const anchors = (ext, pitch) => (Math.floor(ext.x / pitch) * 2 + 1) * (Math.floo
 
 export function collectionCap({ nodeExt, zoneExt, pitch }) {
 	return {
-		node: anchors(nodeExt, pitch), waypoint: anchors(nodeExt, pitch), zone: anchors(zoneExt, pitch),
+		node: anchors(nodeExt, pitch), zone: anchors(zoneExt, pitch),   // one occupant per anchor cell, typed or not (F-c)
 		link: 2000, group: 2000,
 	};
 }

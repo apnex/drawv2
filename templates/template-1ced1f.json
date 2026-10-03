@@ -289,53 +289,51 @@
 				}
 			],
 			"shape": "square"
-		}
-	],
-	"waypoints": [
+		},
 		{
-			"id": "waypoint-7d093e",
+			"id": "node-7d093e",
 			"x": -480,
 			"y": -420,
 			"name": "waypoint-1"
 		},
 		{
-			"id": "waypoint-2512fa",
+			"id": "node-2512fa",
 			"x": 480,
 			"y": -420,
 			"name": "waypoint-2"
 		},
 		{
-			"id": "waypoint-337063",
+			"id": "node-337063",
 			"x": -420,
 			"y": -180,
 			"name": "waypoint-3"
 		},
 		{
-			"id": "waypoint-c7897a",
+			"id": "node-c7897a",
 			"x": 480,
 			"y": -180,
 			"name": "waypoint-4"
 		},
 		{
-			"id": "waypoint-625b2b",
+			"id": "node-625b2b",
 			"x": -120,
 			"y": -60,
 			"name": "waypoint-5"
 		},
 		{
-			"id": "waypoint-9f5472",
+			"id": "node-9f5472",
 			"x": 0,
 			"y": 60,
 			"name": "waypoint-6"
 		},
 		{
-			"id": "waypoint-e2db5e",
+			"id": "node-e2db5e",
 			"x": 120,
 			"y": -60,
 			"name": "waypoint-7"
 		},
 		{
-			"id": "waypoint-9831c2",
+			"id": "node-9831c2",
 			"x": -60,
 			"y": 240,
 			"name": "waypoint-8"
@@ -437,7 +435,7 @@
 			"src": "node-3b2eb6",
 			"dst": "node-92e37b",
 			"via": [
-				"waypoint-7d093e"
+				"node-7d093e"
 			],
 			"name": "link-16"
 		},
@@ -446,7 +444,7 @@
 			"src": "node-f0878b",
 			"dst": "node-801bd9",
 			"via": [
-				"waypoint-2512fa"
+				"node-2512fa"
 			],
 			"name": "link-17"
 		},
@@ -455,7 +453,7 @@
 			"src": "node-d547bf",
 			"dst": "node-351577",
 			"via": [
-				"waypoint-337063"
+				"node-337063"
 			],
 			"name": "link-18"
 		},
@@ -464,17 +462,17 @@
 			"src": "node-d547bf",
 			"dst": "node-c7a09a",
 			"via": [
-				"waypoint-c7897a"
+				"node-c7897a"
 			],
 			"name": "link-19"
 		},
 		{
 			"id": "link-b2e213",
 			"src": "node-d547bf",
-			"dst": "waypoint-e2db5e",
+			"dst": "node-e2db5e",
 			"via": [
-				"waypoint-625b2b",
-				"waypoint-9f5472"
+				"node-625b2b",
+				"node-9f5472"
 			],
 			"closed": true,
 			"name": "link-20"
@@ -484,7 +482,7 @@
 			"src": "node-45bbad",
 			"dst": "node-a96657",
 			"via": [
-				"waypoint-9831c2"
+				"node-9831c2"
 			],
 			"name": "link-21"
 		}

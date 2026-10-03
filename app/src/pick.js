@@ -18,7 +18,7 @@ first of the three units INPUT.md §8 names.
 
 import { NODE_R, dist, spanExtent } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
-import { bareAnchors } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { bareAnchors, typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // ---- footprint predicates: a node occupies a RECTANGLE, not a point ----
 
@@ -72,7 +72,7 @@ export function hitOf(evt) {
 
 // the node whose footprint contains `pos`. Backs select, move, link-target and re-plug.
 export const nodeAt = (model, pos, slop = NODE_R + 4) =>
-	model.all('node').find((n) => inFootprint(n, pos, slop));
+	typedNodes(model).find((n) => inFootprint(n, pos, slop));
 
 // a waypoint belongs to at most one link; a FREE one can still take an endpoint
 

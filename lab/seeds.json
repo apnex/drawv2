@@ -52,9 +52,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "w5",
 					"x": 0,
 					"y": 0
@@ -84,21 +84,21 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000002",
 				"hand"
 			],
 			[
 				"node-000003",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000004",
 				"hand"
 			]
@@ -133,9 +133,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "w5",
 					"x": 0,
 					"y": -120
@@ -150,7 +150,7 @@
 					"src": "node-000001",
 					"dst": "node-000002",
 					"via": [
-						"waypoint-000005"
+						"node-000005"
 					]
 				}
 			}
@@ -158,11 +158,11 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"link"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000002",
 				"link"
 			]
@@ -197,9 +197,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "w5",
 					"x": 0,
 					"y": 0
@@ -207,9 +207,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000006",
+					"id": "node-000006",
 					"name": "w6",
 					"x": -240,
 					"y": 300
@@ -217,9 +217,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000007",
+					"id": "node-000007",
 					"name": "w7",
 					"x": 240,
 					"y": 300
@@ -234,7 +234,7 @@
 					"src": "node-000001",
 					"dst": "node-000002",
 					"via": [
-						"waypoint-000005"
+						"node-000005"
 					]
 				}
 			}
@@ -242,26 +242,26 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"link"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000002",
 				"link"
 			],
 			[
 				"node-000001",
-				"waypoint-000006",
+				"node-000006",
 				"hand"
 			],
 			[
-				"waypoint-000006",
-				"waypoint-000007",
+				"node-000006",
+				"node-000007",
 				"hand"
 			],
 			[
-				"waypoint-000007",
+				"node-000007",
 				"node-000002",
 				"hand"
 			]
@@ -368,9 +368,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000011",
+					"id": "node-000011",
 					"name": "w1",
 					"x": -480,
 					"y": 0
@@ -378,9 +378,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000012",
+					"id": "node-000012",
 					"name": "w2",
 					"x": 480,
 					"y": 0
@@ -388,9 +388,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000013",
+					"id": "node-000013",
 					"name": "w3",
 					"x": -480,
 					"y": 480
@@ -398,9 +398,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000014",
+					"id": "node-000014",
 					"name": "w4",
 					"x": 480,
 					"y": 480
@@ -415,7 +415,7 @@
 					"src": "node-000001",
 					"dst": "node-000002",
 					"via": [
-						"waypoint-000011"
+						"node-000011"
 					]
 				}
 			},
@@ -428,7 +428,7 @@
 					"src": "node-000003",
 					"dst": "node-000004",
 					"via": [
-						"waypoint-000011"
+						"node-000011"
 					]
 				}
 			},
@@ -456,41 +456,41 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000011",
+				"node-000011",
 				"link"
 			],
 			[
-				"waypoint-000011",
+				"node-000011",
 				"node-000002",
 				"link"
 			],
 			[
 				"node-000003",
-				"waypoint-000011",
+				"node-000011",
 				"link"
 			],
 			[
-				"waypoint-000011",
+				"node-000011",
 				"node-000004",
 				"link"
 			],
 			[
 				"node-000005",
-				"waypoint-000012",
+				"node-000012",
 				"hand"
 			],
 			[
-				"waypoint-000012",
+				"node-000012",
 				"node-000006",
 				"hand"
 			],
 			[
 				"node-000007",
-				"waypoint-000012",
+				"node-000012",
 				"hand"
 			],
 			[
-				"waypoint-000012",
+				"node-000012",
 				"node-000008",
 				"hand"
 			]
@@ -537,9 +537,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "w5",
 					"x": 0,
 					"y": 0
@@ -552,7 +552,7 @@
 					"id": "link-000001",
 					"name": "a",
 					"src": "node-000001",
-					"dst": "waypoint-000005"
+					"dst": "node-000005"
 				}
 			},
 			{
@@ -562,7 +562,7 @@
 					"id": "link-000002",
 					"name": "b",
 					"src": "node-000002",
-					"dst": "waypoint-000005"
+					"dst": "node-000005"
 				}
 			},
 			{
@@ -572,24 +572,24 @@
 					"id": "link-000003",
 					"name": "c",
 					"src": "node-000003",
-					"dst": "waypoint-000005"
+					"dst": "node-000005"
 				}
 			}
 		],
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
 				"node-000002",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
 				"node-000003",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			]
 		]
@@ -647,9 +647,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "t1",
 					"x": -240,
 					"y": 0
@@ -657,9 +657,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000006",
+					"id": "node-000006",
 					"name": "t2",
 					"x": 240,
 					"y": 0
@@ -689,26 +689,26 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
 				"node-000003",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
-				"waypoint-000005",
-				"waypoint-000006",
+				"node-000005",
+				"node-000006",
 				"hand"
 			],
 			[
-				"waypoint-000006",
+				"node-000006",
 				"node-000002",
 				"hand"
 			],
 			[
-				"waypoint-000006",
+				"node-000006",
 				"node-000004",
 				"hand"
 			]
@@ -767,9 +767,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "w5",
 					"x": 0,
 					"y": 0
@@ -789,11 +789,11 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000002",
 				"hand"
 			]
@@ -840,9 +840,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000006",
+					"id": "node-000006",
 					"name": "w6",
 					"x": -120,
 					"y": -240
@@ -850,9 +850,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000007",
+					"id": "node-000007",
 					"name": "w7",
 					"x": 120,
 					"y": -240
@@ -882,16 +882,16 @@
 			],
 			[
 				"node-000001",
-				"waypoint-000006",
+				"node-000006",
 				"hand"
 			],
 			[
-				"waypoint-000006",
-				"waypoint-000007",
+				"node-000006",
+				"node-000007",
 				"hand"
 			],
 			[
-				"waypoint-000007",
+				"node-000007",
 				"node-000002",
 				"hand"
 			]
@@ -926,9 +926,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "P",
 					"x": 0,
 					"y": -120
@@ -943,7 +943,7 @@
 					"src": "node-000001",
 					"dst": "node-000002",
 					"via": [
-						"waypoint-000005"
+						"node-000005"
 					]
 				}
 			}
@@ -951,11 +951,11 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"link"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000002",
 				"link"
 			]
@@ -990,9 +990,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "P",
 					"x": -120,
 					"y": -120
@@ -1000,9 +1000,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000006",
+					"id": "node-000006",
 					"name": "Q",
 					"x": 120,
 					"y": -120
@@ -1017,8 +1017,8 @@
 					"src": "node-000001",
 					"dst": "node-000002",
 					"via": [
-						"waypoint-000005",
-						"waypoint-000006"
+						"node-000005",
+						"node-000006"
 					]
 				}
 			}
@@ -1026,16 +1026,16 @@
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"link"
 			],
 			[
-				"waypoint-000005",
-				"waypoint-000006",
+				"node-000005",
+				"node-000006",
 				"link"
 			],
 			[
-				"waypoint-000006",
+				"node-000006",
 				"node-000002",
 				"link"
 			]
@@ -1082,9 +1082,9 @@
 			},
 			{
 				"op": "put",
-				"kind": "waypoint",
+				"kind": "node",
 				"entity": {
-					"id": "waypoint-000005",
+					"id": "node-000005",
 					"name": "P",
 					"x": 0,
 					"y": 0
@@ -1097,7 +1097,7 @@
 					"id": "link-000001",
 					"name": "west",
 					"src": "node-000001",
-					"dst": "waypoint-000005"
+					"dst": "node-000005"
 				}
 			},
 			{
@@ -1106,7 +1106,7 @@
 				"entity": {
 					"id": "link-000002",
 					"name": "east",
-					"src": "waypoint-000005",
+					"src": "node-000005",
 					"dst": "node-000002"
 				}
 			},
@@ -1117,24 +1117,24 @@
 					"id": "link-000003",
 					"name": "north",
 					"src": "node-000003",
-					"dst": "waypoint-000005"
+					"dst": "node-000005"
 				}
 			}
 		],
 		"pipes": [
 			[
 				"node-000001",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			],
 			[
-				"waypoint-000005",
+				"node-000005",
 				"node-000002",
 				"hand"
 			],
 			[
 				"node-000003",
-				"waypoint-000005",
+				"node-000005",
 				"hand"
 			]
 		]

@@ -106,25 +106,28 @@ test('node shape is a first-class field, defaults to circle, survives roundtrip'
 	assert.equal(restored.get('node', b.id).shape, 'square');
 });
 
-// ---- shipped-only coverage (model/model.mjs): waypoint kind + link via[] + kindOf ----
+// ---- shipped-only coverage (model/model.mjs): waypoints + link via[] + kindOf ----
 
-test('waypoint entities are a first-class kind that round-trips put/get + toJSON/load', () => {
+// F-c (H18.5, P-10): a waypoint is a node with no type, stored among the nodes
+test('waypoints are nodes with no type, and round-trip put/get + toJSON/load', () => {
 	const model = new Model();
 	const w = model.makeWaypoint({ x: 60, y: -120 });
-	assert.match(w.id, /^waypoint-[0-9a-f]{6}$/);
-	model.put('waypoint', w);
+	assert.match(w.id, /^node-[0-9a-f]{6}$/);
+	assert.equal('type' in w, false, 'a waypoint carries no type');
+	model.put('node', w);
 	assert.deepEqual(
-		[model.get('waypoint', w.id).x, model.get('waypoint', w.id).y],
+		[model.get('node', w.id).x, model.get('node', w.id).y],
 		[60, -120]
 	);
-	assert.equal(model.all('waypoint').length, 1);
+	assert.equal(model.all('node').filter((n) => !n.type).length, 1);
 
 	const doc = model.toJSON();
-	assert.equal(doc.waypoints.length, 1);
+	assert.equal('waypoints' in doc, false, 'no collection of its own');
+	assert.equal(doc.nodes.filter((n) => !n.type).length, 1);
 	const restored = new Model();
 	restored.load(doc);
 	assert.deepEqual(
-		[restored.get('waypoint', w.id).x, restored.get('waypoint', w.id).y],
+		[restored.get('node', w.id).x, restored.get('node', w.id).y],
 		[60, -120],
 		'waypoint position survives the persist/restore round-trip'
 	);
@@ -137,7 +140,7 @@ test("a link's via:[waypointId] bend array survives toJSON/load", () => {
 	model.put('node', a);
 	model.put('node', b);
 	const w = model.makeWaypoint({ x: 120, y: 60 });
-	model.put('waypoint', w);
+	model.put('node', w);
 	const link = model.makeLink(a.id, b.id);
 	link.via = [w.id]; // route threads through the waypoint pivot
 	model.put('link', link);
@@ -158,7 +161,7 @@ test('kindOf derives the kind from the id of each kind', () => {
 	const zone = model.makeZone({ x: 30, y: 30, w: 60, h: 60 });
 	const group = model.makeGroup([node.id]);
 	assert.equal(kindOf(node.id), 'node');
-	assert.equal(kindOf(wp.id), 'waypoint');
+	assert.equal(kindOf(wp.id), 'node', 'a waypoint is a node with no type (F-c)');
 	assert.equal(kindOf(link.id), 'link');
 	assert.equal(kindOf(zone.id), 'zone');
 	assert.equal(kindOf(group.id), 'group');
@@ -185,7 +188,7 @@ const linked = () => {
 	const a = m.makeNode('host', { x: 0, y: 0 });
 	const b = m.makeNode('host', { x: 120, y: 0 });
 	const w = m.makeWaypoint({ x: 60, y: 60 });
-	[['node', a], ['node', b], ['waypoint', w]].forEach(([k, e]) => m.put(k, e));
+	[['node', a], ['node', b], ['node', w]].forEach(([k, e]) => m.put(k, e));
 	return { m, a, b, w };
 };
 
@@ -215,7 +218,7 @@ test('pathOf: a dangling route resolves to nothing, never a partial path', () =>
 	const l = m.makeLink(a.id, 'node-dead01');
 	m.put('link', l);
 	assert.equal(m.pathOf(l), null, 'half a path would render as a line to nowhere');
-	const l2 = { ...m.makeLink(a.id, a.id), via: ['waypoint-dead1'] };
+	const l2 = { ...m.makeLink(a.id, a.id), via: ['node-dead1'] };
 	assert.equal(m.pathOf(l2), null, 'a missing BEND is as dangling as a missing end');
 });
 
@@ -236,7 +239,7 @@ test('B187: every factory mints a named entity, and the names do not collide', (
 	];
 	for (const e of made) assert.ok(typeof e.name === 'string' && e.name, `${e.id} was minted unnamed`);
 
-	m.put('node', made[0]); m.put('waypoint', made[1]); m.put('zone', made[2]);
+	m.put('node', made[0]); m.put('node', made[1]); m.put('zone', made[2]);
 	const link = m.makeLink(made[0].id, made[1].id);
 	assert.ok(link.name, 'makeLink minted an unnamed link');
 	m.put('link', link);

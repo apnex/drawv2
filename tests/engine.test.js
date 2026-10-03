@@ -23,7 +23,7 @@ function seeded() {
 	const m = new Model();
 	attachRelations(m, { cellOf });                      // inject px→cell; sets m.index = the maintained relations
 	const n = m.makeNode('router', { x: 120, y: -60 }); m.put('node', n);
-	const w = m.makeWaypoint({ x: 0, y: 180 });          m.put('waypoint', w);
+	const w = m.makeWaypoint({ x: 0, y: 180 });          m.put('node', w);
 	const l = m.makeLink(n.id, w.id);                    m.put('link', l);
 	const z = m.makeZone({ x: 30, y: 30, w: 60, h: 60 }); m.put('zone', z);
 	const g = m.makeGroup([n.id]);                       m.put('group', g);
@@ -87,7 +87,7 @@ test('occupancy index === px-scan fallback for grid-snapped points (parity)', ()
 	const withIndex = seeded().m;                                  // engine attached → index path
 	const scan = new Model();                                      // detached → scan path (index === null)
 	scan.put('node', scan.makeNode('router', { x: 120, y: -60 }));
-	scan.put('waypoint', scan.makeWaypoint({ x: 0, y: 180 }));
+	scan.put('node', scan.makeWaypoint({ x: 0, y: 180 }));
 	assert.equal(scan.index, null);
 	for (const p of [{ x: 120, y: -60 }, { x: 0, y: 180 }, { x: 600, y: 0 }]) {
 		assert.equal(withIndex.occupiedAt(p), scan.occupiedAt(p), `occupiedAt parity @ ${p.x},${p.y}`);
@@ -134,8 +134,8 @@ test('waypointAt resolves the waypoint entity at a cell (index path)', () => {
 
 test('waypointAt resolves co-occupancy in collection order (parity with the old find)', () => {
 	const m = new Model(); attachRelations(m, { cellOf });
-	const w1 = m.makeWaypoint({ x: 60, y: 0 }); m.put('waypoint', w1);
-	const w2 = m.makeWaypoint({ x: 60, y: 0 }); m.put('waypoint', w2);   // legal stack — move/nudge don't gate
+	const w1 = m.makeWaypoint({ x: 60, y: 0 }); m.put('node', w1);
+	const w2 = m.makeWaypoint({ x: 60, y: 0 }); m.put('node', w2);   // legal stack — move/nudge don't gate
 	assert.equal(m.waypointAt({ x: 60, y: 0 })?.id, w1.id, 'first in collection order, like the old all().find');
 });
 
@@ -153,8 +153,8 @@ test('incidence snapshot-diff: a link via-change reroutes linksAt (index === sca
 	const { detach } = attachRelations(m, { cellOf });
 	const n1 = m.makeNode('host', { x: 0, y: 0 }); m.put('node', n1);
 	const n2 = m.makeNode('host', { x: 300, y: 0 }); m.put('node', n2);
-	const w1 = m.makeWaypoint({ x: 60, y: 0 }); m.put('waypoint', w1);
-	const w2 = m.makeWaypoint({ x: 120, y: 0 }); m.put('waypoint', w2);
+	const w1 = m.makeWaypoint({ x: 60, y: 0 }); m.put('node', w1);
+	const w2 = m.makeWaypoint({ x: 120, y: 0 }); m.put('node', w2);
 	const l = { ...m.makeLink(n1.id, n2.id), via: [w1.id] }; m.put('link', l);
 	m.set('link', l.id, { via: [w2.id] });   // ONE set delivers only the new link — the snapshot-diff hard case
 	const idxW1 = m.linksAt(w1.id).map((x) => x.id), idxW2 = m.linksAt(w2.id).map((x) => x.id);   // index path

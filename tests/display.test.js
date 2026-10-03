@@ -24,7 +24,7 @@ function routed() {
 	const a = m.makeNode('host', { x: 0, y: 0 });
 	const b = m.makeNode('host', { x: 120, y: 0 });
 	const w = m.makeWaypoint({ x: 60, y: 60 });
-	[['node', a], ['node', b], ['waypoint', w]].forEach(([k, e]) => m.put(k, e));
+	[['node', a], ['node', b], ['node', w]].forEach(([k, e]) => m.put(k, e));
 	const link = { ...m.makeLink(a.id, b.id), via: [w.id] };
 	m.put('link', link);
 	return { m, a, b, w, link };

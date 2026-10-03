@@ -23,9 +23,9 @@ Production's composition: the classic link tenant and the groups.
 <!-- BEGIN GENERATED: production. Run node tools/reaction-table.mjs --write; do not edit by hand. -->
 | phase | reaction | tenant | listens to | what follows |
 |---|---|---|---|---|
-| clear | `node-links` | classic links | node deleted | deleting a node deletes every link ending at it |
-| clear | `waypoint-links` | classic links | waypoint deleted | deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81) |
-| clear | `group-trim` | groups | node, waypoint deleted | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
+| clear | `node-links` | classic links | node deleted | deleting a typed node deletes every link ending at it |
+| clear | `waypoint-links` | classic links | node deleted | deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81) |
+| clear | `group-trim` | groups | node deleted | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
 | follow | `group-steal` | groups | group created; or group members changed | putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group |
 | sweep | `orphan-sweep` | classic links | link, pipe deleted; or link src, dst, via changed | a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); only links reference an anchor, and a pinned anchor or a link's end is kept (B216) |
 | join | `link-join` | classic links | link deleted; or link control, direction changed | two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); at any waypoint |
@@ -39,12 +39,12 @@ Promotion deletes the classic tenant and makes this production's (`dev/design/un
 <!-- BEGIN GENERATED: network. Run node tools/reaction-table.mjs --write; do not edit by hand. -->
 | phase | reaction | tenant | listens to | what follows |
 |---|---|---|---|---|
-| clear | `node-links` | network links | node deleted | deleting a node deletes every link ending at it |
-| clear | `waypoint-links` | network links | waypoint deleted | deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81) |
-| clear | `pipe-cascade` | network links | node, waypoint deleted | an anchor deleted takes every pipe that ends at it, hand pipes included: a pipe is its pair (SD7) |
-| clear | `group-trim` | groups | node, waypoint deleted | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
+| clear | `node-links` | network links | node deleted | deleting a typed node deletes every link ending at it |
+| clear | `waypoint-links` | network links | node deleted | deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81) |
+| clear | `pipe-cascade` | network links | node deleted | an anchor deleted takes every pipe that ends at it, hand pipes included: a pipe is its pair (SD7) |
+| clear | `group-trim` | groups | node deleted | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
 | follow | `group-steal` | groups | group created; or group members changed | putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group |
-| stranded | `stranded-links` | network links | waypoint deleted | a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins |
+| stranded | `stranded-links` | network links | node deleted | a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins |
 | sweep | `orphan-sweep` | network links | link, pipe deleted; or link src, dst, via changed | a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); the pipes that survive the edit reference anchors too, and nothing else is kept (ruled 2026-09-29) |
 | join | `link-join` | network links | link deleted; or link control, direction changed | two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); only where the waypoint's transit is on (TR-5) |
 | join | `pipe-sweep` | network links | link, pipe deleted; or link, pipe created; or link src, dst, via changed; or pipe laid changed | after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27) |

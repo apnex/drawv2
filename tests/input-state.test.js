@@ -19,7 +19,7 @@ test('the input state is plain data', () => {
 });
 
 test('track is pure: it never changes what it is given, and the same input gives the same output', () => {
-	const s = deepFreeze(track(track(initialInputState(), { type: 'armed', id: 'waypoint-000001' }), { type: 'chained' }));
+	const s = deepFreeze(track(track(initialInputState(), { type: 'armed', id: 'node-000001' }), { type: 'chained' }));
 	for (const e of [{ type: 'down', at: at(1, 2), button: 0 }, { type: 'move', at: at(3, 4) }, { type: 'leave' }, { type: 'armed', id: 'w' }, { type: 'chained' }, { type: 'up', at: at(0, 0) }]) {
 		const ev = deepFreeze({ ...e });
 		assert.doesNotThrow(() => track(s, ev), `${e.type}: it wrote into a frozen state or event`);
@@ -28,10 +28,10 @@ test('track is pure: it never changes what it is given, and the same input gives
 });
 
 test('a press moves the pointer, hands the armed w over and clears it, and ends a chain', () => {
-	let s = track(initialInputState(), { type: 'armed', id: 'waypoint-000001' });
+	let s = track(initialInputState(), { type: 'armed', id: 'node-000001' });
 	s = track(s, { type: 'chained' });
 	s = track(s, { type: 'down', at: at(60, 0), button: 0 });
-	assert.deepEqual(s, { pointer: { at: at(60, 0) }, armed: { placed: null, source: 'waypoint-000001' }, chained: false, press: { at: at(60, 0), travelled: 0 } });
+	assert.deepEqual(s, { pointer: { at: at(60, 0) }, armed: { placed: null, source: 'node-000001' }, chained: false, press: { at: at(60, 0), travelled: 0 } });
 	s = track(s, { type: 'down', at: at(0, 0), button: 2 });
 	assert.deepEqual(s.armed, { placed: null, source: null }, 'every press spends it: the next press hands over nothing');
 });
@@ -49,7 +49,7 @@ test('events it does not track leave the state as it was -- the very same value'
 });
 
 test('G2: a recorded stream replays to the same state, however it is folded', () => {
-	const stream = [{ type: 'move', at: at(0, 0) }, { type: 'armed', id: 'waypoint-000001' }, { type: 'down', at: at(0, 0), button: 0 },
+	const stream = [{ type: 'move', at: at(0, 0) }, { type: 'armed', id: 'node-000001' }, { type: 'down', at: at(0, 0), button: 0 },
 		{ type: 'move', at: at(60, 0) }, { type: 'chained' }, { type: 'up', at: at(60, 0) }, { type: 'move', at: at(120, 60) }];
 	const whole = stream.reduce(track, initialInputState());
 	assert.deepEqual(stream.reduce(track, initialInputState()), whole, 'twice, the same');

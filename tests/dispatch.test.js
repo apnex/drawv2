@@ -17,10 +17,10 @@ function board() {
 	const m = new Model({ kinds: KINDS });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
-	m.put('waypoint', { id: 'waypoint-00000e', name: 'E', x: 0, y: -2 * P });
+	m.put('node', { id: 'node-00000e', name: 'E', x: 0, y: -2 * P });
 	m.put('zone', { id: 'zone-00000a', name: 'Z', x: -90, y: -90, w: 180, h: 180 });
-	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000e'] });
-	for (const [a, b] of [['node-00000a', 'waypoint-00000e'], ['waypoint-00000e', 'node-00000b']]) m.put('pipe', pipeEntity(a, b, 'link'));
+	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', via: ['node-00000e'] });
+	for (const [a, b] of [['node-00000a', 'node-00000e'], ['node-00000e', 'node-00000b']]) m.put('pipe', pipeEntity(a, b, 'link'));
 	return m;
 }
 const calls = (ops) => {
@@ -38,9 +38,11 @@ test('TG-4: a rename calls nothing, and a plane change calls only the join', () 
 	assert.deepEqual(calls([{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: true } }]), ['link-join']);
 });
 
+// F-c (H18.5): a waypoint is a node with no type, so `node-links` hears its delete as well, and does nothing with it -- each
+// clear reaction acts on its own shape of node (model/link-reactions.mjs)
 test('TG-4: deleting a pin calls what listens to a waypoint deleted, and then what its consequences wake', () => {
-	assert.deepEqual(calls([{ op: 'del', kind: 'waypoint', id: 'waypoint-00000e' }]),
-		['waypoint-links', 'pipe-cascade', 'group-trim', 'stranded-links', 'orphan-sweep', 'link-join', 'pipe-sweep']);
+	assert.deepEqual(calls([{ op: 'del', kind: 'node', id: 'node-00000e' }]),
+		['node-links', 'waypoint-links', 'pipe-cascade', 'group-trim', 'stranded-links', 'orphan-sweep', 'link-join', 'pipe-sweep']);
 });
 
 test('TG-4: over the planner corpus, dispatch calls far fewer reactions than calling every one would', () => {

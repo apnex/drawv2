@@ -29,9 +29,9 @@ import { linkTenant } from '../model/link-reactions.mjs';
 
 const P = 60;
 const nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
-const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+const wp = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, x: x * P, y: y * P } });
 const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...(via ? { via } : {}) } });
-const W = 'waypoint-00000f';
+const W = 'node-00000f';
 // a link tenant built like production's -- the rule B162/B216 stated here -- so each test changes only the condition it
 // is about; `stranded` adds the network's stranded pass, and `onStranded` hears what it emits
 const net = ({ alsoReferenced = null, keepsOrphan = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, stranded = false, onStranded = null } = {}) => {
@@ -53,21 +53,21 @@ const deletePin = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [
 test('production is unchanged: with no extra references, the orphaned pin is swept exactly as before', () => {
 	const b = shared();
 	assert.equal(deletePin(b).ok, true);
-	assert.equal(b.m.get('waypoint', W), undefined, 'today\'s sweep removes a bend its last link released');
+	assert.equal(b.m.get('node', W), undefined, 'today\'s sweep removes a bend its last link released');
 });
 
 test('an anchor something else references survives the sweep', () => {
 	const b = shared();
 	assert.equal(deletePin(b, net({ alsoReferenced: () => [W] })).ok, true);
-	assert.ok(b.m.get('waypoint', W), 'the pipes still reference it, so it is structure, not debris');
+	assert.ok(b.m.get('node', W), 'the pipes still reference it, so it is structure, not debris');
 });
 
 test('the extra references are asked of the model, and an unrelated anchor is still swept', () => {
 	const b = shared();
 	const seen = [];
-	deletePin(b, net({ alsoReferenced: (model) => { seen.push(model); return ['waypoint-000999']; } }));
+	deletePin(b, net({ alsoReferenced: (model) => { seen.push(model); return ['node-000999']; } }));
 	assert.ok(seen.length > 0 && seen.every((x) => typeof x.all === 'function'), 'the provider must be handed a model to read');
-	assert.equal(b.m.get('waypoint', W), undefined, 'naming a DIFFERENT anchor must not shelter this one');
+	assert.equal(b.m.get('node', W), undefined, 'naming a DIFFERENT anchor must not shelter this one');
 });
 
 /*
@@ -86,19 +86,19 @@ function ended() {
 	// a link from a PINNED anchor, through a bend, to an unpinned END anchor
 	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 	const ok = commit(m, log, { label: 'setup', ops: [
-		{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-0000a1', name: 's', x: -360, y: 0, pinned: true } },
-		wp('waypoint-0000b2', 0, -2), wp('waypoint-0000c3', 6, 0),
-		lk('link-0000d4', 'waypoint-0000a1', 'waypoint-0000c3', ['waypoint-0000b2'])] }, 'lab', 'lab');
+		{ op: 'put', kind: 'node', entity: { id: 'node-0000a1', name: 's', x: -360, y: 0, pinned: true } },
+		wp('node-0000b2', 0, -2), wp('node-0000c3', 6, 0),
+		lk('link-0000d4', 'node-0000a1', 'node-0000c3', ['node-0000b2'])] }, 'lab', 'lab');
 	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
 	return { m, log };
 }
 const deleteIt = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'link', id: 'link-0000d4' }] }, 'lab', 'lab', opts);
-const left = (m) => m.all('waypoint').map((w) => w.id).sort();
+const left = (m) => m.all('node').filter((n) => !n.type).map((w) => w.id).sort();
 
 test('production is unchanged: the bend goes, and the pinned start and the end stay (B162, B216)', () => {
 	const b = ended();
 	assert.equal(deleteIt(b).ok, true);
-	assert.deepEqual(left(b.m), ['waypoint-0000a1', 'waypoint-0000c3']);
+	assert.deepEqual(left(b.m), ['node-0000a1', 'node-0000c3']);
 });
 
 test('the network plugin\'s rule: with nothing but references keeping an anchor, all three go', () => {
@@ -111,7 +111,7 @@ test('the rule is told whether the orphan was only ever a bend, and sees the way
 	const b = ended();
 	const asked = [];
 	deleteIt(b, net({ keepsOrphan: (w, info) => { asked.push([w.id, info.wasBendOnly]); return false; } }));
-	assert.deepEqual(asked.sort(), [['waypoint-0000a1', false], ['waypoint-0000b2', true], ['waypoint-0000c3', false]]);
+	assert.deepEqual(asked.sort(), [['node-0000a1', false], ['node-0000b2', true], ['node-0000c3', false]]);
 });
 
 /*
@@ -127,7 +127,7 @@ IN THE SAME TRANSACTION, so the orphan sweep then takes the link's w anchors, an
 link, its pin and its anchors together.
 */
 const [NA, NB, NC, ND] = ['node-0000e1', 'node-0000e2', 'node-0000e3', 'node-0000e4'];
-const [WQ, WP] = ['waypoint-0000e5', 'waypoint-0000e6'];
+const [WQ, WP] = ['node-0000e5', 'node-0000e6'];
 const [PINNED, APART] = ['link-0000e7', 'link-0000e8'];
 function pinned() {
 	// A -> B pinned at Q then P; and C -> D, which touches neither
@@ -137,7 +137,7 @@ function pinned() {
 	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
 	return { m, log };
 }
-const deleteP = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', opts);
+const deleteP = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'node', id: WP }] }, 'lab', 'lab', opts);
 
 test('production is unchanged: a link that loses a pin keeps the rest of its intent', () => {
 	const b = pinned();
@@ -150,17 +150,17 @@ test('the stranded pass removes the link WHOLE in the same transaction, and one 
 	const r = deleteP(b, net({ stranded: true, keepsOrphan: () => false }));
 	assert.equal(r.ok, true);
 	assert.equal(b.m.get('link', PINNED), undefined, 'a link with no way after losing its pin is deleted');
-	assert.equal(b.m.get('waypoint', WQ), undefined, 'and its remaining pin, made for it alone, is swept with it');
+	assert.equal(b.m.get('node', WQ), undefined, 'and its remaining pin, made for it alone, is swept with it');
 	assert.ok(b.m.get('link', APART), 'a link the edit never touched is left alone');
 	assert.equal(undo(b.m, b.log).ok, true);
 	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ, WP], 'one undo restores the link with both pins');
-	assert.ok(b.m.get('waypoint', WP) && b.m.get('waypoint', WQ), 'and both anchors');
+	assert.ok(b.m.get('node', WP) && b.m.get('node', WQ), 'and both anchors');
 });
 
 test('the stranded pass removes only a link that lost a pin, judging the document AFTER the edit', () => {
 	const b = pinned();
 	const heard = [];
-	deleteP(b, net({ stranded: true, onStranded: (ops, { doc }) => heard.push(...ops.map((o) => ({ id: o.id, via: doc.get('link', o.id)?.via, pGone: !doc.get('waypoint', WP) }))) }));
+	deleteP(b, net({ stranded: true, onStranded: (ops, { doc }) => heard.push(...ops.map((o) => ({ id: o.id, via: doc.get('link', o.id)?.via, pGone: !doc.get('node', WP) }))) }));
 	assert.deepEqual(heard, [{ id: PINNED, via: [WQ], pGone: true }],
 		'one delete, of the pinned link, with P already stripped and gone from the document it is judged in');
 	assert.ok(b.m.get('link', APART), 'the link the edit never touched stays');
@@ -170,7 +170,7 @@ test('a link that ENDS at the deleted anchor is not the stranded pass\'s: it goe
 	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 	assert.equal(commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), wp(WP, 3, -2), lk(PINNED, NA, WP)] }, 'lab', 'lab').ok, true);
 	const heard = [];
-	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: WP }] }, 'lab', 'lab', net({ stranded: true, onStranded: (ops) => heard.push(...ops) }));
+	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'node', id: WP }] }, 'lab', 'lab', net({ stranded: true, onStranded: (ops) => heard.push(...ops) }));
 	assert.deepEqual(heard, [], 'the cascade took it first: "if either source or dest node is deleted, link is gone with it permanently"');
 	assert.equal(m.get('link', PINNED), undefined);
 });
@@ -183,7 +183,7 @@ tenant, which keeps a link's END and sweeps a bend.
 */
 test('B244: deleting a closed ring sweeps all its waypoints, its src and dst included', () => {
 	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
-	const [A, B, C] = ['waypoint-0000a1', 'waypoint-0000b2', 'waypoint-0000c3'];
+	const [A, B, C] = ['node-0000a1', 'node-0000b2', 'node-0000c3'];
 	assert.equal(commit(m, log, { label: 'ring', ops: [wp(A, -2, 0), wp(B, 2, 0), wp(C, 0, 2),
 		{ op: 'put', kind: 'link', entity: { id: 'link-0000d4', name: 'ring', src: A, dst: B, via: [C], closed: true } }] }, 'lab', 'lab').ok, true);
 	assert.equal(commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'link', id: 'link-0000d4' }] }, 'lab', 'lab').ok, true);
@@ -200,7 +200,7 @@ it after that link is deleted (B216), over every shape a single link can take th
 */
 test('B244: the sweep and the role derivation agree on where a link ends, rings included', async () => {
 	const { waypointRoles } = await import('../kernel/network-roles.mjs');
-	const W = 'waypoint-0000e9', [P, Q] = ['waypoint-0000f1', 'waypoint-0000f2'];
+	const W = 'node-0000e9', [P, Q] = ['node-0000f1', 'node-0000f2'];
 	const shapes = {
 		'open, ending at w': { src: P, dst: W },
 		'open, starting at w': { src: W, dst: P },
@@ -215,6 +215,6 @@ test('B244: the sweep and the role derivation agree on where a link ends, rings 
 		const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 		assert.equal(commit(m, log, { label: 'set', ops: [wp(W, 0, 0), wp(P, -3, 0), wp(Q, 3, 2), { op: 'put', kind: 'link', entity: l }] }, 'lab', 'lab').ok, true, name);
 		assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: l.id }] }, 'lab', 'lab').ok, true, name);
-		assert.equal(!!m.get('waypoint', W), endpoint, `${name}: the derivation says ${endpoint ? 'endpoint' : 'bend'}, so the sweep must ${endpoint ? 'keep' : 'take'} w`);
+		assert.equal(!!m.get('node', W), endpoint, `${name}: the derivation says ${endpoint ? 'endpoint' : 'bend'}, so the sweep must ${endpoint ? 'keep' : 'take'} w`);
 	}
 });

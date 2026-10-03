@@ -16,7 +16,7 @@ grid operands (the parity guarantee) and the engine imports no spatial-kernel mo
 
 import { maintainIndex } from './ivm.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
-import { ANCHOR_KINDS, isBareEntity, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS, isBareEntity, bareAnchors, typedNodes } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // the entity ids a link occupies in the incidence index: src, dst, and every via waypoint.
 const linkRefs = (l) => Array.isArray(l.via) ? [l.src, l.dst, ...l.via] : [l.src, l.dst];
@@ -73,7 +73,7 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			incident.clear(); member.clear(); cellNode.clear(); cellWaypoint.clear();
 			model.all('link').forEach((l) => incident.put(l));
 			model.all('group').forEach((g) => member.put(g));
-			model.all('node').forEach((n) => cellNode.put(n));
+			typedNodes(model).forEach((n) => cellNode.put(n));
 			bareAnchors(model).forEach((w) => cellWaypoint.put(w));
 		},
 

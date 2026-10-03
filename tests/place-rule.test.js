@@ -27,12 +27,12 @@ import { applyOps } from '../model/ops.mjs';
 import { TOWERS } from '../engine/kinds.mjs';
 
 const NOW = 1_700_000_000_000;
-const WP_A = 'waypoint-aaaaaa', WP_B = 'waypoint-bbbbbb', LINK = 'link-cccccc';
+const WP_A = 'node-aaaaaa', WP_B = 'node-bbbbbb', LINK = 'link-cccccc';
 
 function doc() {
 	const m = new Model();
-	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
-	m.put('waypoint', { id: WP_B, name: WP_B, x: 200, y: 0 });
+	m.put('node', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('node', { id: WP_B, name: WP_B, x: 200, y: 0 });
 	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_B });
 	return m;
 }

@@ -1659,7 +1659,8 @@ Promotion started at the director's word; the decisions were asked one at a time
 P-1 was ruled as N2 and P-2 by B249.
 - P-3: a ring's closing leg is routed like any leg, over a pipe the migration lays -- 17 rings in the estate.
 - P-4: a shared leg the migration meets is split into a junction (B210) so no link comes up down; the estate holds none today.
-- P-5: the `pinned` field is retired by the migration and no pinned anchor is lost: pinned waypoints become nodes with an anchor (P-10), which the sweep never takes -- 104 in the estate. The option as asked was worded badly by the proposer ("Retire it; lay a hand pipe? no -- keep the anchor"); its description is what was ruled.
+- P-5: the `pinned` field is retired by the migration and no pinned anchor is lost: pinned waypoints become nodes with an anchor (P-10), which the sweep never takes -- 104 in the estate.
+  CORRECTED 2026-10-03 ("P-5 corrected", below): a node with no type is still a waypoint the sweep can take; `pinned` goes at P3, with production's orphan rule. The option as asked was worded badly by the proposer ("Retire it; lay a hand pipe? no -- keep the anchor"); its description is what was ruled.
 - P-6: undo history is truncated at the cutover, each log keeping its version -- 2,004 records in the estate.
 - P-7: deleting a pin deletes its link in existing diagrams as in new work; every existing bend becomes a pin -- 90 links, 302 bends. Recorded for users in the production-upgrade register.
 - P-8: the rollback after the cutover is restoring the pre-migration backup, accepted in advance; taken and verified before migrating, rehearsed in P8, held open across the window (W25).
@@ -1672,3 +1673,12 @@ Asked one at a time against `dev/design/unification/FORMAT-BATCH.md` section 9.
 - F2: the migration's pipe step, and the P-4 split, land with P3, which composes the network's tenant in the server, so the product never holds a pipe it cannot keep; the rest of the batch lands at P2, and the migration still runs on the estate once, whole, at the cutover.
 - F3: production stays on `draw:2538ab8` from the batch's first stage until the cutover; a fix it needs is built on a branch from `2538ab8`, deployed from there, and landed on `main`.
 - F4: people and agents keep calling a node with no type a waypoint -- the key, the help and the `draw` verbs unchanged; the format and the ids say `node`.
+
+**P-5 corrected: a pinned waypoint is an ordinary waypoint, and `pinned` goes at P3 -- ruled 2026-10-03 (H18.5).**\
+Building F-c found P-5's record wrong: it said pinned waypoints "become nodes with an anchor (P-10), which the sweep never takes", but under P-10 a waypoint becomes a node with no type, which is still a waypoint, and the sweep can take one.\
+Of the estate's 104 pinned waypoints, 72 are link ends, 25 bends and 7 free; the migration loses none of them either way.\
+Asked what should happen afterwards, the director chose "Ordinary waypoints; pinned goes at P3" (recommended) over dropping `pinned` in F-c and over keeping them out of the sweep for good.
+- Pinned waypoints are ordinary waypoints, under the network's ruled sweep rules like any other.
+- `pinned` and its rule are deleted at P3, with production's own orphan rule (`planner/tenants.mjs` `keepsOrphan`), so F-c changes no behaviour.
+- P-5's entry above is CORRECTED by this one rather than rewritten.
+

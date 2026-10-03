@@ -321,8 +321,8 @@ test('B162: an ack applies what the server ADDED, and not what we sent', () => {
 	const { model, sync } = harness();
 	model.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	model.put('node', { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' });
-	model.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 60, y: 60 });
-	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] });
+	model.put('node', { id: 'node-ea0001', name: 'node-ea0001', x: 60, y: 60 });
+	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] });
 
 	// what the client sent, and applied optimistically
 	const mine = [{ op: 'del', kind: 'link', id: 'link-aa0001' }];
@@ -331,9 +331,9 @@ test('B162: an ack applies what the server ADDED, and not what we sent', () => {
 
 	// what the server answers: our op, plus the sweep it added
 	sync.onMessage({ cmd: 'ack', body: { acked: 't1', version: 2, label: 'delete',
-		ops: [...mine, { op: 'del', kind: 'waypoint', id: 'waypoint-aa0001' }] } });
+		ops: [...mine, { op: 'del', kind: 'node', id: 'node-ea0001' }] } });
 
-	assert.equal(model.get('waypoint', 'waypoint-aa0001'), undefined,
+	assert.equal(model.get('node', 'node-ea0001'), undefined,
 		'the swept bend is gone from the client model too');
 });
 

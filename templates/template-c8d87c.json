@@ -226,119 +226,117 @@
 			"shape": "circle",
 			"x": 600,
 			"y": 300
-		}
-	],
-	"waypoints": [
+		},
 		{
-			"id": "waypoint-03bfa1",
+			"id": "node-03bfa1",
 			"x": 180,
 			"y": 60,
 			"name": "waypoint-1"
 		},
 		{
-			"id": "waypoint-ba6979",
+			"id": "node-ba6979",
 			"x": 180,
 			"y": -60,
 			"name": "waypoint-2"
 		},
 		{
-			"id": "waypoint-8e1b57",
+			"id": "node-8e1b57",
 			"x": -180,
 			"y": 240,
 			"name": "waypoint-3"
 		},
 		{
-			"id": "waypoint-deeaa5",
+			"id": "node-deeaa5",
 			"x": -180,
 			"y": 360,
 			"name": "waypoint-4"
 		},
 		{
-			"id": "waypoint-fe847f",
+			"id": "node-fe847f",
 			"x": -120,
 			"y": 300,
 			"name": "waypoint-5"
 		},
 		{
-			"id": "waypoint-4db9bb",
+			"id": "node-4db9bb",
 			"x": -60,
 			"y": 240,
 			"name": "waypoint-6"
 		},
 		{
-			"id": "waypoint-d4caaa",
+			"id": "node-d4caaa",
 			"x": -60,
 			"y": 360,
 			"name": "waypoint-7"
 		},
 		{
-			"id": "waypoint-1fe6ad",
+			"id": "node-1fe6ad",
 			"x": 720,
 			"y": 60,
 			"name": "waypoint-8"
 		},
 		{
-			"id": "waypoint-e291c1",
+			"id": "node-e291c1",
 			"x": 720,
 			"y": 120,
 			"name": "waypoint-9"
 		},
 		{
-			"id": "waypoint-3dc579",
+			"id": "node-3dc579",
 			"x": 780,
 			"y": 120,
 			"name": "waypoint-10"
 		},
 		{
-			"id": "waypoint-64de7c",
+			"id": "node-64de7c",
 			"x": 780,
 			"y": 60,
 			"name": "waypoint-11"
 		},
 		{
-			"id": "waypoint-019220",
+			"id": "node-019220",
 			"x": -360,
 			"y": -120,
 			"name": "waypoint-12"
 		},
 		{
-			"id": "waypoint-125675",
+			"id": "node-125675",
 			"x": -180,
 			"y": -120,
 			"name": "waypoint-13"
 		},
 		{
-			"id": "waypoint-d6ff56",
+			"id": "node-d6ff56",
 			"x": -180,
 			"y": 60,
 			"name": "waypoint-14"
 		},
 		{
-			"id": "waypoint-04c4d3",
+			"id": "node-04c4d3",
 			"x": -240,
 			"y": 60,
 			"name": "waypoint-15"
 		},
 		{
-			"id": "waypoint-ee1b29",
+			"id": "node-ee1b29",
 			"x": -240,
 			"y": -60,
 			"name": "waypoint-16"
 		},
 		{
-			"id": "waypoint-c1c455",
+			"id": "node-c1c455",
 			"x": -300,
 			"y": -60,
 			"name": "waypoint-17"
 		},
 		{
-			"id": "waypoint-4e5cc0",
+			"id": "node-4e5cc0",
 			"x": -300,
 			"y": 60,
 			"name": "waypoint-18"
 		},
 		{
-			"id": "waypoint-9b0de9",
+			"id": "node-9b0de9",
 			"x": -360,
 			"y": 60,
 			"name": "waypoint-19"
@@ -392,36 +390,36 @@
 			"src": "node-000004",
 			"dst": "node-000008",
 			"via": [
-				"waypoint-03bfa1",
-				"waypoint-ba6979"
+				"node-03bfa1",
+				"node-ba6979"
 			],
 			"closed": false,
 			"name": "link-8"
 		},
 		{
 			"id": "link-7cbe4d",
-			"src": "waypoint-8e1b57",
-			"dst": "waypoint-deeaa5",
+			"src": "node-8e1b57",
+			"dst": "node-deeaa5",
 			"via": [
-				"waypoint-fe847f",
-				"waypoint-4db9bb",
-				"waypoint-d4caaa"
+				"node-fe847f",
+				"node-4db9bb",
+				"node-d4caaa"
 			],
 			"closed": true,
 			"name": "link-9"
 		},
 		{
 			"id": "link-088ba1",
-			"src": "waypoint-1fe6ad",
-			"dst": "waypoint-e291c1",
+			"src": "node-1fe6ad",
+			"dst": "node-e291c1",
 			"name": "link-10"
 		},
 		{
 			"id": "link-8dc443",
-			"src": "waypoint-3dc579",
+			"src": "node-3dc579",
 			"dst": "node-000006",
 			"via": [
-				"waypoint-64de7c"
+				"node-64de7c"
 			],
 			"name": "link-11"
 		},
@@ -475,15 +473,15 @@
 		},
 		{
 			"id": "link-e481b3",
-			"src": "waypoint-019220",
-			"dst": "waypoint-9b0de9",
+			"src": "node-019220",
+			"dst": "node-9b0de9",
 			"via": [
-				"waypoint-125675",
-				"waypoint-d6ff56",
-				"waypoint-04c4d3",
-				"waypoint-ee1b29",
-				"waypoint-c1c455",
-				"waypoint-4e5cc0"
+				"node-125675",
+				"node-d6ff56",
+				"node-04c4d3",
+				"node-ee1b29",
+				"node-c1c455",
+				"node-4e5cc0"
 			],
 			"closed": true,
 			"name": "link-20"
@@ -617,36 +615,36 @@
 			"name": "group-3",
 			"members": [
 				"node-000004",
-				"waypoint-03bfa1",
-				"waypoint-ba6979"
+				"node-03bfa1",
+				"node-ba6979"
 			]
 		},
 		{
 			"id": "group-196d62",
 			"name": "group-4",
 			"members": [
-				"waypoint-8e1b57",
-				"waypoint-deeaa5",
-				"waypoint-4db9bb",
-				"waypoint-d4caaa"
+				"node-8e1b57",
+				"node-deeaa5",
+				"node-4db9bb",
+				"node-d4caaa"
 			]
 		},
 		{
 			"id": "group-53ffa2",
 			"name": "group-6",
 			"members": [
-				"waypoint-019220",
-				"waypoint-125675"
+				"node-019220",
+				"node-125675"
 			]
 		},
 		{
 			"id": "group-f93ebf",
 			"name": "group-7",
 			"members": [
-				"waypoint-d6ff56",
-				"waypoint-04c4d3",
-				"waypoint-4e5cc0",
-				"waypoint-9b0de9"
+				"node-d6ff56",
+				"node-04c4d3",
+				"node-4e5cc0",
+				"node-9b0de9"
 			]
 		}
 	]

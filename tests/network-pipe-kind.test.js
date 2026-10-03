@@ -21,14 +21,14 @@ import { createNetwork } from '../network/network.mjs';
 import { PIPE_ROW, pipeId, pipeEntity } from '../network/pipe-kind.mjs';
 
 const KINDS = composeKinds([...PRODUCT_KINDS.list.map((k) => PRODUCT_KINDS.row(k)), PIPE_ROW], 'a test');
-const A = 'node-00000a', B = 'node-00000b', W = 'waypoint-00000c';
+const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 
 function board() {
 	const m = new Model({ kinds: KINDS });
 	attachRelations(m, { cellOf });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
-	m.put('waypoint', { id: W, name: 'w', x: 0, y: -120 });
+	m.put('node', { id: W, name: 'w', x: 0, y: -120 });
 	const network = createNetwork();
 	return { m, log: new Log(), opts: { links: network.links, kinds: KINDS } };
 }
@@ -67,7 +67,7 @@ test('N-b: a link pipe laid by hand becomes a hand pipe; a hand pipe never becom
 test('N-b: deleting an anchor takes its pipes, hand pipes too, in the same edit -- and undo brings them back', () => {
 	const { m, log, opts } = board();
 	assert.equal(commit(m, log, { ops: [putPipe(A, W, 'hand'), putPipe(W, B, 'hand'), putPipe(A, B, 'hand')] }, 'test', 'test', opts).ok, true);
-	const res = commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: W }] }, 'test', 'test', opts);
+	const res = commit(m, log, { ops: [{ op: 'del', kind: 'node', id: W }] }, 'test', 'test', opts);
 	assert.equal(res.ok, true);
 	assert.deepEqual(m.all('pipe').map((p) => p.id), [pipeId(A, B)]);
 	assert.equal(undo(m, log, null, opts).ok, true);
@@ -85,7 +85,7 @@ test('N-b: an edit sweeps link pipes no link runs over, keeps hand pipes, and th
 	after.load(m.toJSON());
 	applyOps(after, res.ops);
 	assert.deepEqual(after.all('pipe').map((p) => p.id), [pipeId(A, B)], 'the link pipes went with the last link; the hand pipe stays');
-	assert.equal(after.get('waypoint', W), undefined, 'and the pin went with them: no hand pipe held it');
+	assert.equal(after.get('node', W), undefined, 'and the pin went with them: no hand pipe held it');
 	applyOps(after, res.inverse);
 	assert.equal(after.all('pipe').length, 3, 'undo restores the swept pipes');
 });

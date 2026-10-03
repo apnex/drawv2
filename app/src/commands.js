@@ -22,14 +22,16 @@ import { kindOf, newId, projection } from '../../model/model.mjs';
 import { pairHolders } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
-import { BARE_KIND, ANCHOR_KINDS, bareAnchor } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, ANCHOR_KINDS, bareAnchor, isTypedEntity } from '../../model/anchors.mjs';
+import { drawnKind } from '../../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history
 // ---- command builders ----
 
 export function createEntity(kind, entity) {
-	return { label: `create ${kind}`, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
+	// named for what is drawn: a node with no type is a waypoint (F-c, F4)
+	return { label: `create ${drawnKind(kind, entity)}`, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
 }
 
 /*
@@ -78,7 +80,7 @@ export function deleteSelection(model, ids) {
 	const deletedWaypoints = new Set();
 
 	ids.forEach((id) => {
-		if (model.get('node', id)) deletedNodes.add(id);
+		if ((isTypedEntity('node', model.get('node', id)) ? model.get('node', id) : undefined)) deletedNodes.add(id);
 		if (bareAnchor(model, id)) deletedWaypoints.add(id);
 	});
 
@@ -192,7 +194,7 @@ export function setContentValue(model, nodeId, idx, value) {
 // toggle each selected node's frame shape (circle <-> square) — one undoable command. Non-node ids and
 // missing nodes are skipped (model.get returns undefined).
 export function reshapeNodes(model, ids) {
-	const entries = ids.map((id) => model.get('node', id)).filter(Boolean).map((n) => {
+	const entries = ids.map((id) => (isTypedEntity('node', model.get('node', id)) ? model.get('node', id) : undefined)).filter(Boolean).map((n) => {
 		const before = n.shape || 'circle';
 		return { op: 'set', kind: 'node', id: n.id, after: { shape: before === 'square' ? 'circle' : 'square' } };
 	});
@@ -497,7 +499,7 @@ export function resizeZoneStep(model, ids, dx, dy) {
 export function resizeNodeStep(model, ids, dx, dy) {
 	const none = { label: 'resize', entries: [] };
 	if (ids.length !== 1 || kindOf(ids[0]) !== 'node') return none;
-	const node = model.get('node', ids[0]);
+	const node = (isTypedEntity('node', model.get('node', ids[0])) ? model.get('node', ids[0]) : undefined);
 	if (!node) return none;
 	const cur = node.span || { cols: 1, rows: 1 };
 	const cols = Math.min(Math.max(cur.cols + dx, 1), SPAN_MAX);
@@ -541,7 +543,7 @@ export function cloneSubgraph(model, seedIds) {
 		A node is renamed from its TYPE -- `host-4`, not `node-4` -- which is the convention
 		`nextName` was built for and the only reason this is not a one-liner.
 		*/
-		copy.name = scratch.nextName(kind === 'node' ? src.type : kind);
+		copy.name = scratch.nextName(isTypedEntity(kind, src) ? src.type : drawnKind(kind, src));
 		idMap.set(src.id, copy.id);
 		scratch.put(kind, copy);             // the THROWAWAY, so sibling k+1 can see it
 		clones.push({ kind, entity: copy });

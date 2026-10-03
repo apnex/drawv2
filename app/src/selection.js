@@ -5,6 +5,7 @@ its own: a thin behavior layer over `model.state.selection` (MS1), and NO render
 observers subscribe()). Reconcile-to-config (auto-prune on del, restore-on-load) is single-sourced
 in the Model (expandSelection/setSelection, load-filter, del-net). Testable without a renderer.
 */
+import { isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-c)
 
 export class Selection {
 	constructor(model) {
@@ -59,7 +60,7 @@ export class Selection {
 	size() { return this.model.state.selection.size; }
 
 	selectedNodes() {
-		return this.list().filter((id) => this.model.get('node', id));
+		return this.list().filter((id) => (isTypedEntity('node', this.model.get('node', id)) ? this.model.get('node', id) : undefined));   // a waypoint is not one (F-c)
 	}
 
 	// nodes AND waypoints in the selection — the entities that can be grouped / moved as one

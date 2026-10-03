@@ -14,7 +14,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 import { CORE_KINDS, SCHEMA } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId } from './order.mjs';
-import { BARE_KIND, bareAnchor, bareAnchors, anchorOf } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, bareAnchor, bareAnchors, typedNodes, anchorOf } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state
@@ -309,13 +309,12 @@ export class Model {
 	// Keeps doc.js free of any kernel import.
 	occupiedAt(p) {
 		if (this.index) return this.index.occupiedAt(p);
-		return this.all('node').some((n) => n.x === p.x && n.y === p.y);
+		return typedNodes(this).some((n) => n.x === p.x && n.y === p.y);
 	}
 
 	occupiedAnyAt(p) {
 		if (this.index) return this.index.occupiedAnyAt(p);
-		return this.all('node').some((n) => n.x === p.x && n.y === p.y)
-			|| bareAnchors(this).some((w) => w.x === p.x && w.y === p.y);
+		return this.all('node').some((n) => n.x === p.x && n.y === p.y);   // every anchor, typed or not
 	}
 
 	waypointAt(p) {
@@ -390,7 +389,7 @@ export class Model {
 	makeWaypoint(pos) {
 		// B187 -- named like every other entity. A waypoint is minted from a position rather than
 		// from a request for a named thing, so the name is generated rather than asked for.
-		// named with the word people use (F4), whatever kind stores it
+		// a node with no type since F-c (P-10), named with the word people use (F4)
 		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
 	}
 

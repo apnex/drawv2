@@ -34,7 +34,7 @@ test('PRODUCTION: with no route hook, `g` mid-drag changes nothing -- the commit
 		const [a2, b2] = seedNodes(withG.model, [[0, 0], [360, 0]]);
 		drag(plain, a1, b1, []);
 		drag(withG, a2, b2, [['g', 180, 120]]);
-		const shape = (h) => ({ links: h.model.all('link').map((l) => ({ via: l.via ?? null })), waypoints: h.model.all('waypoint').length, commits: h.commits.length });
+		const shape = (h) => ({ links: h.model.all('link').map((l) => ({ via: l.via ?? null })), waypoints: h.model.all('node').filter((n) => !n.type).length, commits: h.commits.length });
 		assert.deepEqual(shape(withG), shape(plain), 'g must be inert in production: no anchor, no via, no extra commit');
 	} finally { plain.restore(); withG.restore(); }
 });
@@ -61,7 +61,7 @@ test('with a route hook, `g` drops an anchor the link passes but does NOT pin', 
 		const links = h.model.all('link');
 		assert.equal(links.length, 1, 'the link commits');
 		assert.equal(links[0].via, undefined, 'and pins nothing -- a guide is not in the link\'s intent');
-		const guide = h.model.all('waypoint');
+		const guide = h.model.all('node').filter((n) => !n.type);
 		assert.equal(guide.length, 1, 'the guide anchor itself is committed, so its pipes have somewhere to go');
 
 		assert.equal(calls.length, 1, 'the hook is asked once, for the whole route');
@@ -95,7 +95,7 @@ test('a refusing route hook commits nothing, and the anchors the drag placed are
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		drag(h, a, b, [['g', 180, 120]]);
 		assert.equal(h.model.all('link').length, 0, 'a refused route is not committed');
-		assert.equal(h.model.all('waypoint').length, 0, 'and the guide it placed does not linger');
+		assert.equal(h.model.all('node').filter((n) => !n.type).length, 0, 'and the guide it placed does not linger');
 		assert.equal(h.commits.length, 0);
 	} finally { h.restore(); }
 });
@@ -110,10 +110,10 @@ test('a refusal may name anchors to KEEP: those are committed, the rest are clea
 		drag(h, a, b, [['w', 120, 120], ['g', 240, 120]]);
 		assert.deepEqual(asked.placed.length, 2, 'the hook is told which anchors this drag placed, so it can reason about what survives');
 		assert.equal(h.model.all('link').length, 0, 'the link is still refused');
-		const left = h.model.all('waypoint').map((w) => w.id);
+		const left = h.model.all('node').filter((n) => !n.type).map((w) => w.id);
 		assert.deepEqual(left, asked.guides, 'the g anchor is kept, and the w anchor -- which existed only for the refused link -- is not');
 		assert.equal(h.commits.length, 1, 'the kept anchor reaches the planner in exactly one commit');
-		assert.deepEqual(h.commits[0].ops.map((o) => `${o.op}:${o.kind}`), ['put:waypoint']);
+		assert.deepEqual(h.commits[0].ops.map((o) => `${o.op}:${o.kind}`), ['put:node']);
 	} finally { h.restore(); }
 });
 
@@ -229,7 +229,7 @@ test('the w that placed the source counts when the next press drags from it, sti
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
 		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));        // w with nothing in hand places S
-		const wp = h.model.all('waypoint')[0];
+		const wp = h.model.all('node').filter((n) => !n.type)[0];
 		assert.ok(wp, 'w placed an anchor');
 		dragFromWp(h, wp, b);
 		assert.equal(calls.length, 1);
@@ -243,13 +243,13 @@ test('a click away between placing S and dragging from it clears that w', () => 
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
 		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));
-		const wp = h.model.all('waypoint')[0];
+		const wp = h.model.all('node').filter((n) => !n.type)[0];
 		h.capture.onDown(empty(600, 600)); h.capture.onUp(empty(600, 600));   // click off it
 		dragFromWp(h, wp, b);
 		assert.equal(calls[0].srcKey, false, 'the drag follows the normal rules');
 		// and selecting S again does not bring it back: S did not REMAIN the sole selection since the w
 		h.capture.onMove(empty(0, 480)); h.capture.onKeyDown(key('w'));
-		const s2 = h.model.all('waypoint').find((x) => x.y === 480);
+		const s2 = h.model.all('node').filter((n) => !n.type).find((x) => x.y === 480);
 		h.capture.onDown(empty(600, 600)); h.capture.onUp(empty(600, 600));
 		h.selection.set([s2.id]);                                          // reselected, as a click on it would
 		dragFromWp(h, s2, b);
@@ -263,7 +263,7 @@ test('the source w stops counting once that anchor is no longer the sole selecti
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
 		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));
-		const wp = h.model.all('waypoint')[0];
+		const wp = h.model.all('node').filter((n) => !n.type)[0];
 		h.selection.set([wp.id, b.id]);                                    // selection widened without a press
 		dragFromWp(h, wp, b);
 		assert.equal(calls[0].srcKey, false);
@@ -275,10 +275,10 @@ test('the source w counts only for the anchor it placed', () => {
 	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
 	try {
 		const [b] = seedNodes(h.model, [[360, 0]]);
-		h.model.put('waypoint', { id: 'waypoint-00000f', name: 't', x: 240, y: 240 });
+		h.model.put('node', { id: 'node-00000f', name: 't', x: 240, y: 240 });
 		h.capture.onMove(empty(0, 240)); h.capture.onKeyDown(key('w'));
-		h.selection.set(['waypoint-00000f']);                              // another anchor, now the sole selection
-		dragFromWp(h, h.model.get('waypoint', 'waypoint-00000f'), b);
+		h.selection.set(['node-00000f']);                              // another anchor, now the sole selection
+		dragFromWp(h, h.model.get('node', 'node-00000f'), b);
 		assert.equal(calls[0].srcKey, false, 'the w placed a different anchor');
 	} finally { h.restore(); }
 });
@@ -302,6 +302,6 @@ test('B261: w during a chained link drag adds its bend, and the chained link com
 		const chained = h.model.all('link').find((l) => l.src === b.id && l.dst === c.id);
 		assert.ok(chained, 'the chained link is made');
 		assert.equal(chained.via?.length, 1, 'through the bend w dropped');
-		assert.equal(h.model.all('waypoint').length, 1, 'and no stray waypoint is left behind');
+		assert.equal(h.model.all('node').filter((n) => !n.type).length, 1, 'and no stray waypoint is left behind');
 	} finally { h.restore(); }
 });

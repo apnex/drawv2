@@ -29,7 +29,7 @@ function makeDoc(r, i) {
 	const nodes = Array.from({ length: 2 + Math.floor(r() * 5) }, (_, k) =>
 		({ id: `node-${hex(i * 100 + k)}`, name: `n${k}`, type: pick(r, ['host', 'router', 'server']), shape: 'circle', x: coord(r, 900), y: coord(r, 480) }));
 	const waypoints = Array.from({ length: Math.floor(r() * 3) }, (_, k) =>
-		({ id: `waypoint-${hex(i * 100 + 50 + k)}`, x: coord(r, 900), y: coord(r, 480) }));
+		({ id: `node-${hex(i * 100 + 50 + k)}`, x: coord(r, 900), y: coord(r, 480) }));   // waypoints: nodes with no type (F-c)
 	const links = [];
 	for (let k = 0; k < 1 + Math.floor(r() * 3); k++) {
 		const a = pick(r, nodes), b = pick(r, nodes);
@@ -43,12 +43,12 @@ function makeDoc(r, i) {
 		groups.push({ id: `group-${hex(i * 100 + 90)}`, name: 'g', members });
 	}
 	return { meta: { id: `diagram-${hex(i)}`, name: 'd' },
-		nodes, waypoints, links, zones: [], groups };
+		nodes: [...nodes, ...waypoints], links, zones: [], groups };
 }
 
 // A random mutation in the OLD wire vocabulary, plus its equivalent in the new op vocabulary.
 function makeMutation(r, doc) {
-	const kinds = ['node', 'waypoint', 'link', 'zone', 'group'];
+	const kinds = ['node', 'link', 'zone', 'group'];
 
 	// ~20% deliberately invalid: a corpus in which nothing is ever rejected cannot prove the two
 	// planners agree on REJECTION, only on acceptance.
@@ -78,7 +78,7 @@ function makeMutation(r, doc) {
 		return [{ action: 'del', kind, entity: { id } }, { op: 'del', kind, id }];
 	}
 	if (action === 'set') {
-		const pool = [...doc.nodes, ...doc.waypoints].map((e) => [e.id.split('-')[0], e]);
+		const pool = doc.nodes.map((e) => [e.id.split('-')[0], e]);   // typed or not (F-c)
 		if (!pool.length) return null;
 		const [kind, e] = pick(r, pool);
 		const patch = { id: e.id, x: coord(r, 900), y: coord(r, 480) };
@@ -89,7 +89,7 @@ function makeMutation(r, doc) {
 	// planner behaviour CS6 changed sits outside the differential, and GR5 goes green while blind
 	// to it. The corpus has to reach the change, or the guardrail is decoration.
 	if (r() < 0.15) {
-		const pool = [...doc.nodes, ...doc.waypoints, ...doc.links, ...doc.groups];
+		const pool = [...doc.nodes, ...doc.links, ...doc.groups];
 		if (pool.length) {
 			const e = pick(r, pool);
 			const kind = e.id.split('-')[0];
@@ -163,9 +163,9 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 		if (a.ok && !b.ok && /occupy the same anchor/.test(b.error || '')) {
 			const ent = modern.entity || model.get(modern.kind, modern.id);
 			const patched = modern.op === 'set' ? { ...ent, ...modern.patch } : ent;
-			assert.ok(['node', 'waypoint'].includes(modern.kind),
+			assert.ok(modern.kind === 'node',
 				`iteration ${i}: the occupancy invariant fired on a ${modern.kind} op`);
-			const others = [...model.all('node'), ...model.all('waypoint')];
+			const others = [...model.all('node'), ...model.all('node').filter((n) => !n.type)];
 			assert.ok(others.some((o2) => o2.id !== patched.id && o2.x === patched.x && o2.y === patched.y),
 				`iteration ${i}: nothing already occupies (${patched.x},${patched.y})`);
 			invariantRefusals++;
@@ -252,13 +252,15 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 		wrong first time -- it contains such documents, and every unrelated mutation diverged.
 		*/
 		const act = (o) => o.action || o.op;
-		const sweptWps = b.ops.filter((o) => o.kind === 'waypoint' && act(o) === 'del'
-			&& !narrowLegacy.some((l) => l.kind === 'waypoint' && act(l) === 'del' && l.id === o.id));
+		// a waypoint is a node with no type (F-c): told apart in the document as it stood before the mutation
+		const bareBefore = (o) => o.kind === 'node' && !!model.get('node', o.id) && !model.get('node', o.id).type;
+		const sweptWps = b.ops.filter((o) => bareBefore(o) && act(o) === 'del'
+			&& !narrowLegacy.some((l) => bareBefore(l) && act(l) === 'del' && l.id === o.id));
 		if (sweptWps.length) {
 			const ids = new Set(sweptWps.map((o) => o.id));
 			sweptOrphans += ids.size;
 			assert.deepEqual(
-				norm(b.ops.filter((o) => !(o.kind === 'waypoint' && ids.has(o.id)))),
+				norm(b.ops.filter((o) => !(o.kind === 'node' && ids.has(o.id)))),
 				norm(narrowLegacy),
 				`iteration ${i}: divergence beyond the B162 orphan sweep`,
 			);
@@ -322,7 +324,7 @@ test('GR5: plan() emits an inverse that restores the pre-state, over the same co
 		// a CS1 regression — it is recorded as B10 with the renderer draw-order consequence.
 		const shape = (m) => {
 			const d = m.toJSON(); delete d.meta.version;
-			for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+			for (const k of ['nodes', 'links', 'zones', 'groups']) {
 				d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
 			}
 			return JSON.stringify(d);

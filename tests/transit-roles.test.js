@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { waypointRoles, waypointRolesIn } from '../kernel/network-roles.mjs';
 import { waypointLayers } from '../kernel/network-appearance.mjs';
 
-const W = 'waypoint-000001';
+const W = 'node-e00001';
 const L = (n, src, dst, extra = {}) => ({ id: `link-00000${n}`, src, dst, via: [], ...extra });
 const SHAPES = {
 	'no links': [],

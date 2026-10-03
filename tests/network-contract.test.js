@@ -140,10 +140,10 @@ test('the network strands every link that lost a pin, whatever ways remain', () 
 	assert.equal(commit(m, log, { label: 'setup', ops: [
 		{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },
 		{ op: 'put', kind: 'node', entity: { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' } },
-		{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-00000c', name: 'p', x: 120, y: 120 } },
-		{ op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] } },
+		{ op: 'put', kind: 'node', entity: { id: 'node-00000c', name: 'p', x: 120, y: 120 } },
+		{ op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['node-00000c'] } },
 		{ op: 'put', kind: 'pipe', entity: pipeEntity('node-00000a', 'node-00000b', 'hand') }] }, 'lab', 'lab', { kinds: KINDS }).ok, true);   // a way, and a free one
-	const r = commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-00000c' }] }, 'lab', 'lab', { links: network.links, kinds: KINDS });
+	const r = commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'node', id: 'node-00000c' }] }, 'lab', 'lab', { links: network.links, kinds: KINDS });
 	assert.equal(r.ok, true);
 	assert.equal(m.get('link', 'link-000001'), undefined, 'the free way does not save it: its pin was its intent');
 });

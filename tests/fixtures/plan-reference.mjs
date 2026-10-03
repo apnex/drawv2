@@ -30,11 +30,14 @@ function planMutation(model, mutation) {
 		ops.push({ action: 'set', kind, id: entity.id, patch: { ...entity } });
 	}
 	if (action === 'del') {
-		if (kind === 'node') {
+		// AMENDED 2026-10-03 (F-c, H18.5): a waypoint is a node with no type since the format batch (P-10), so the two branches
+		// below are told apart by the stored node's shape where they were told apart by its kind; nothing else in the oracle moved
+		const bare = kind === 'node' && !!model.get('node', entity.id) && !model.get('node', entity.id).type;
+		if (kind === 'node' && !bare) {
 			model.linksOf(entity.id).forEach((link) => ops.push({ action: 'del', kind: 'link', id: link.id }));
 			trimGroupsHolding(entity.id);
 		}
-		if (kind === 'waypoint') {
+		if (bare) {
 			model.linksAt(entity.id).forEach((link) => {
 				if (link.src === entity.id || link.dst === entity.id) ops.push({ action: 'del', kind: 'link', id: link.id });
 				else ops.push({ action: 'set', kind: 'link', id: link.id, patch: { via: link.via.filter((w) => w !== entity.id) } });

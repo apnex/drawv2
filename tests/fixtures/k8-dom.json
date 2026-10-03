@@ -26,11 +26,11 @@
 			2
 		],
 		[
-			"waypoint-ba0002",
+			"node-ba0002",
 			4
 		],
 		[
-			"waypoint-ba0003",
+			"node-ba0003",
 			4
 		],
 		[
@@ -85,8 +85,8 @@
 			"link-ba0005 link"
 		],
 		[
-			"waypoint-ba0002 waypoint endpoint spawning",
-			"waypoint-ba0003 waypoint endpoint"
+			"node-ba0002 waypoint endpoint spawning",
+			"node-ba0003 waypoint endpoint"
 		],
 		[
 			"node-ba0004 node"

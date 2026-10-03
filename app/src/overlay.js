@@ -24,6 +24,7 @@ import { el } from './painter.js';
 import { CANVAS, GAP, NODE_R, dist, zoneCorners } from './snap.js';
 import { inFootprint } from './pick.js';
 import { kindOf } from '../../model/model.mjs';
+import { isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const HANDLE = 12;
 
@@ -69,7 +70,7 @@ export class Overlay {
 		const id = this.hovered;
 		const ent = this.model.get(kindOf(id), id);
 		const still = pos && ent && ent.x !== undefined
-			&& (kindOf(id) === 'node' ? inFootprint(ent, pos, NODE_R) : dist(ent, pos) <= NODE_R);
+			&& (isTypedEntity(kindOf(id), ent) ? inFootprint(ent, pos, NODE_R) : dist(ent, pos) <= NODE_R);
 		if (!still) {
 			this.renderer.clearState(id, 'hover', 'linkband');
 			this.hovered = null;
@@ -98,7 +99,7 @@ export class Overlay {
 		if (readOnly || !this.hovered || gesturing) return;
 		const kind = kindOf(this.hovered);
 		if (evt.altKey) this.armed = { id: this.hovered, cls: 'armed' };
-		else if (evt.ctrlKey && (kind === 'node' || kind === 'zone')) this.armed = { id: this.hovered, cls: 'armed-clone' };
+		else if (evt.ctrlKey && (isTypedEntity(kind, this.model.get(kind, this.hovered)) || kind === 'zone')) this.armed = { id: this.hovered, cls: 'armed-clone' };
 		if (this.armed) this.renderer.setState(this.armed.id, this.armed.cls, true);
 	}
 

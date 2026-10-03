@@ -64,13 +64,13 @@ const toOp = (e) => {
 const wire = (cmd) => cmd.entries.map(toOp);
 
 const NODE = 'node-aa0001', LINK = 'link-aa0003';
-const WP_A = 'waypoint-aa0004', WP_B = 'waypoint-aa0005';
+const WP_A = 'node-aa0004', WP_B = 'node-aa0005';
 
 function doc() {
 	const m = new Model();
 	m.put('node', { id: NODE, name: 'n', type: 'host', shape: 'circle', x: 60, y: 60 });
-	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
-	m.put('waypoint', { id: WP_B, name: WP_B, x: 240, y: 0 });
+	m.put('node', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('node', { id: WP_B, name: WP_B, x: 240, y: 0 });
 	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_B });
 	return m;
 }
@@ -138,9 +138,9 @@ test('F5: replaying an arm leaves the spawner armed with the same instant', () =
 	const m = doc();
 	const ops = wire(commands.toggleSpawn(m, WP_A, 1_788_300_000_000));
 	applyOps(m, ops);
-	const first = JSON.stringify(m.get('waypoint', WP_A).spawn);
+	const first = JSON.stringify(m.get('node', WP_A).spawn);
 	applyOps(m, ops);
-	assert.equal(JSON.stringify(m.get('waypoint', WP_A).spawn), first, 'the replay changed the spawn');
+	assert.equal(JSON.stringify(m.get('node', WP_A).spawn), first, 'the replay changed the spawn');
 });
 
 test('F5: replaying a delete is a no-op rather than a fault', () => {

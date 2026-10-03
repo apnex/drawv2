@@ -46,7 +46,7 @@ function oldResolve(hit, evt, ctx) {
 const outcome = (r) => (r ? (r.gesture ? `gesture:${r.gesture}` : `run:${r.run}`) : 'nothing');
 
 // ---- every press worth distinguishing ----
-const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' }, { kind: 'waypoint', id: 'waypoint-000001' },
+const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' }, { kind: 'waypoint', id: 'node-e00001' },
 	{ kind: 'zone', id: 'zone-000001' }, { kind: 'link', id: 'link-000001' }, { kind: 'handle', id: 'se' }, { kind: 'lhandle', end: 'src' }];
 const MODSETS = [];
 for (const shiftKey of [false, true]) for (const ctrlKey of [false, true]) for (const altKey of [false, true]) MODSETS.push({ shiftKey, ctrlKey, altKey, metaKey: false });
@@ -121,16 +121,16 @@ test('key releases are bindings, and each key release matches one row', () => {
 test('run mode\'s presses are rows too, and no run-mode press matches two of them, locked or not', () => {
 	const t = composeRules({ owner: 'product', rules: RUN_PRESSES });
 	const region = (o) => ({ waypoint: null, overWaypoint: false, action: null, input: null, node: null, control: false, entity: false, ...o });
-	const presses = [region({}), region({ waypoint: 'waypoint-000001', overWaypoint: true }), region({ action: 'help', control: true }),
+	const presses = [region({}), region({ waypoint: 'node-e00001', overWaypoint: true }), region({ action: 'help', control: true }),
 		region({ input: 0, node: 'node-000001', control: true, entity: true }), region({ entity: true }), null]
 		.flatMap((r) => [0, 2].map((button) => ({ type: 'down', button, region: r, on: { kind: 'canvas' } })));
-	const endpoint = { mode: 'run', target: { kind: 'waypoint', id: 'waypoint-000001', roles: ['endpoint'] } };
-	const bend = { mode: 'run', target: { kind: 'waypoint', id: 'waypoint-000001', roles: [] } };
+	const endpoint = { mode: 'run', target: { kind: 'waypoint', id: 'node-e00001', roles: ['endpoint'] } };
+	const bend = { mode: 'run', target: { kind: 'waypoint', id: 'node-e00001', roles: [] } };
 	const ground = { mode: 'run', target: null };
 	assert.deepEqual(overlapsIn(t, presses, [endpoint, bend, ground], GUARDS), []);
 	const id = (r, s, g) => resolveInput(t, { type: 'down', button: 0, region: r }, s, g).rule?.id ?? null;
 	assert.equal(id(region({ action: 'help', control: true }), ground, { readOnly: true }), 'fire-action', 'an action fires on a locked client: it commits nothing');
-	assert.equal(id(region({ waypoint: 'waypoint-000001', overWaypoint: true }), endpoint, { readOnly: true }), null, 'arming is refused by the guard');
+	assert.equal(id(region({ waypoint: 'node-e00001', overWaypoint: true }), endpoint, { readOnly: true }), null, 'arming is refused by the guard');
 	assert.equal(id(region({}), ground, { readOnly: true }), null, 'so is placing a tower');
 });
 

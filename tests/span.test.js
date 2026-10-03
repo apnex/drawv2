@@ -460,9 +460,8 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const doc = (closed) => ({
 		meta: { id: 'diagram-aa0001', name: 't' },
-		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 60, y: 60 }],
-		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'], closed }],
+		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'], closed }],
 		zones: [], groups: [],
 	});
 	const roles = (d) => [...render(docToSchema(d)).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
@@ -477,9 +476,8 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	const { waypointStyle } = await import('../kernel/network-appearance.mjs');
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
-		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 60, y: 60 }],
-		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
 	}));
 	// each waypoint group, with EVERY circle it drew -- the composition is the subject here, so
@@ -630,9 +628,8 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
-		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 }],
-		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
 	}));
 	/*
@@ -716,9 +713,8 @@ test('B162: the two renderers agree, value for value', async () => {
 	// what the export emits, parsed back out of the SVG it produced
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
-		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 }, { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 }],
-		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] }],
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
+		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
 	}));
 	/*
@@ -899,11 +895,11 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	const doc = (links) => ({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' },
-			{ id: 'node-aa0003', type: 'host', x: 0, y: 120, name: 'c' }, { id: 'node-aa0004', type: 'host', x: 0, y: -120, name: 'd' }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }],
+			{ id: 'node-aa0003', type: 'host', x: 0, y: 120, name: 'c' }, { id: 'node-aa0004', type: 'host', x: 0, y: -120, name: 'd' },
+			{ id: 'node-ea0001', name: 'w', x: 0, y: 0 }],
 		links, zones: [], groups: [],
 	});
-	const bend = [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] }];
+	const bend = [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] }];
 	const drawn = (links) => {
 		const m = render(docToSchema(doc(links))).match(/<g class="waypoint ([^"]*)">(.*?)<\/g>/s);
 		return { cls: m[1], circles: (m[2].match(/<circle/g) || []).length };
@@ -913,12 +909,12 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	/*
 	B211 -- threading does not make a junction, and a junction shows only its own ring.
 	*/
-	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'node-aa0003', dst: 'node-aa0004', via: ['waypoint-aa0001'] }]),
+	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'node-aa0003', dst: 'node-aa0004', via: ['node-ea0001'] }]),
 		{ cls: 'bend', circles: 2 }, 'two links THREADED through one point is two bends, not a junction');
 	// B214 -- THREE terminations is the smallest meet; two is a bend, a fan, or a terminus reached twice
-	assert.deepEqual(drawn([{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' },
-		{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' },
-		{ id: 'link-aa0003', name: 'n', src: 'node-aa0003', dst: 'waypoint-aa0001' }]),
+	assert.deepEqual(drawn([{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-ea0001' },
+		{ id: 'link-aa0002', name: 'm', src: 'node-ea0001', dst: 'node-aa0002' },
+		{ id: 'link-aa0003', name: 'n', src: 'node-aa0003', dst: 'node-ea0001' }]),
 		{ cls: 'junction', circles: 3 }, 'three terminations is a junction, and it draws the ring rather than the pad');
 });
 
@@ -1003,11 +999,10 @@ test('B212: the junction ring masks what is behind it, as the endpoint pad does'
 	// emitted, not just computed
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
-		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }],
-		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' },
-			{ id: 'link-aa0002', name: 'm', src: 'waypoint-aa0001', dst: 'node-aa0002' },
-			{ id: 'link-aa0003', name: 'n', src: 'node-aa0002', dst: 'waypoint-aa0001' }],
+		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }, { id: 'node-ea0001', name: 'w', x: 0, y: 0 }],
+		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-ea0001' },
+			{ id: 'link-aa0002', name: 'm', src: 'node-ea0001', dst: 'node-aa0002' },
+			{ id: 'link-aa0003', name: 'n', src: 'node-aa0002', dst: 'node-ea0001' }],
 		zones: [], groups: [],
 	}));
 	const ring = svg.match(/class="waypoint junction">.*?<circle[^>]*r="7"[^>]*fill="([^"]*)"/s);
@@ -1075,8 +1070,8 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	*/
 	const mk = (direction) => ({
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
+		zones: [], groups: [],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(direction === undefined ? {} : { direction }) }],
-		waypoints: [], zones: [], groups: [],
 	});
 	assert.match(render(docToSchema(mk('forward'))), /marker-end="url\(#flow-end\)"/,
 		'a forward flow must reach the exported path, not merely the defs');
@@ -1106,8 +1101,8 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 	const mk = (control) => ({
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
+		zones: [], groups: [],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(control ? { control: true } : {}) }],
-		waypoints: [], zones: [], groups: [],
 	});
 
 	/*

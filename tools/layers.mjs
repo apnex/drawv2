@@ -94,7 +94,8 @@ export const LAYER = {
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
-		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4); F-c changes its answers
+		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4; F-c, H18.5)
+		'model/anchor-words.mjs', // the drawn word for an anchor -- waypoint or node (F4); apart, because the planner reads none
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
 		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
@@ -172,7 +173,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
-			'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
+			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
 	},
 	lab: {
@@ -208,7 +209,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
-			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
@@ -277,7 +278,8 @@ export const RULES = {
 	not seen, and it holds each file to a count of such lines rather than to the five.
 	*/
 	L7k: {
-		kinds: ['node', 'waypoint', 'link', 'zone', 'group'],
+		// F-c (H18.5, P-10): four -- a waypoint is a node with no type
+		kinds: ['node', 'link', 'zone', 'group'],
 		/*
 		AMENDED by H17.22 N-a (ruled 2026-10-02, amending C3): the id grammar is no longer a literal. Each kind's row carries
 		its id check and planner/validate.js builds the grammar from the composition's rows, so there is no regex here to
@@ -373,7 +375,8 @@ export const RATCHETS = {
 	},
 	L7k: {
 		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and planner/validate.js to 0: they read model/shape.mjs
-		'cli/verbs.mjs': 11,
+		// F-c (H18.5) lowered cli/verbs.mjs from 11: the waypoint collection left the lists that named all the kinds
+		'cli/verbs.mjs': 7,
 		'kernel/adapt.mjs': 2,
 	},
 	L9: {

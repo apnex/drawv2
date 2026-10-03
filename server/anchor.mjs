@@ -28,7 +28,7 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 
 import { LAYOUTS, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
-import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS, typedNodes } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // The four directions a caller may ask for, as unit steps on the grid. Screen coordinates, so `up`
 // is negative y -- the same mapping `cli/verbs.mjs` shipped, kept identical so moving the rule
@@ -86,7 +86,7 @@ function nearest(candidates, x, y) {
 // name is the model's job at the trust boundary; here a miss is simply a refusal that names what
 // was asked for, because an agent reading `ghost is not a node` can act on it.
 function nodeNamed(model, ref) {
-	return model.all('node').find((n) => n.name === ref || n.id === ref) || null;
+	return typedNodes(model).find((n) => n.name === ref || n.id === ref) || null;
 }
 
 /*

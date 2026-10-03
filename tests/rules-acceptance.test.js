@@ -24,7 +24,7 @@ function board(bends) {
 	const h = makeInput();
 	const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 	const link = h.model.makeLink(a.id, b.id);
-	if (bends) { const w = h.model.makeWaypoint({ x: 180, y: 120 }); h.model.put('waypoint', w); link.via = [w.id]; }
+	if (bends) { const w = h.model.makeWaypoint({ x: 180, y: 120 }); h.model.put('node', w); link.via = [w.id]; }
 	h.model.put('link', link);
 	return { h, link };
 }

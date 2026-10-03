@@ -16,9 +16,9 @@ function board() {
 	const m = new Model();
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
-	m.put('waypoint', { id: 'waypoint-00000e', name: 'E', x: 0, y: -2 * P });
-	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'waypoint-00000e', control: true });
-	m.put('link', { id: 'link-00000b', name: 'b', src: 'waypoint-00000e', dst: 'node-00000b' });
+	m.put('node', { id: 'node-00000e', name: 'E', x: 0, y: -2 * P });
+	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000e', control: true });
+	m.put('link', { id: 'link-00000b', name: 'b', src: 'node-00000e', dst: 'node-00000b' });
 	return { m, sel: new Selection(m) };
 }
 const join = (m) => {

@@ -19,9 +19,9 @@ import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval, speed, kind: 'packet', since: 0 } });
-	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 1200, y: 0 });
-	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+	m.put('node', { id: 'node-aa0001', name: 'node-aa0001', x: 0, y: 0, spawn: { interval, speed, kind: 'packet', since: 0 } });
+	m.put('node', { id: 'node-aa0002', name: 'node-aa0002', x: 1200, y: 0 });
+	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' });
 	towers.forEach(([x, y], i) => m.put('node', { id: `node-bb00${i}1`, type: 'loadbalancer', x, y }));
 	return m;
 }
@@ -85,12 +85,12 @@ test('H12.16: towers are iterated in a fixed order whatever the document says', 
 test('H12.16: range is inclusive and measured in CELLS, in exact integer arithmetic', () => {
 	// a tower at the origin, range 3 cells = 180px at a 60px pitch. 180 is in, 181 is out.
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
-	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 1200, y: 0 });
-	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+	m.put('node', { id: 'node-aa0001', name: 'node-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
+	m.put('node', { id: 'node-aa0002', name: 'node-aa0002', x: 1200, y: 0 });
+	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' });
 	m.put('node', { id: 'node-bb0001', type: 'loadbalancer', x: 0, y: 0 });
 	const w = worldOf(m);
-	const at = (x) => factsAt(w, 0, [{ id: 'waypoint-aa0001#0', progress: 0.5, at: [x, 0] }]);
+	const at = (x) => factsAt(w, 0, [{ id: 'node-aa0001#0', progress: 0.5, at: [x, 0] }]);
 	assert.equal(at(TOWERS.loadbalancer.range * 60).length, 1, 'exactly at range: in');
 	assert.equal(at(TOWERS.loadbalancer.range * 60 + 1).length, 0, 'one pixel beyond: out');
 });
@@ -110,7 +110,7 @@ test('H12.16: a creep dies when its hit points run out, and stays dead', () => {
 test('H12.16: hit points come from the mover KIND, not from the spawner', () => {
 	assert.ok(MOVERS.packet.hp > 0);
 	const m = board();
-	assert.equal(m.get('waypoint', 'waypoint-aa0001').spawn.hp, undefined, 'not stored on the spawner');
+	assert.equal(m.get('node', 'node-aa0001').spawn.hp, undefined, 'not stored on the spawner');
 });
 
 test('H12.16: a second tower kills strictly more -- the defence curve is real', () => {
@@ -158,12 +158,12 @@ test('H12.16: range is measured in BOTH axes -- the y term is load-bearing', () 
 	// the original test put every tower and mover on y=0, so `dx*dx + dy*dy` would have passed
 	// with the y term deleted, or subtracted. Range is a circle; a test on one axis cannot see that.
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
-	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 1200, y: 0 });
-	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+	m.put('node', { id: 'node-aa0001', name: 'node-aa0001', x: 0, y: 0, spawn: { interval: 100000, speed: 0.1, kind: 'packet', since: 0 } });
+	m.put('node', { id: 'node-aa0002', name: 'node-aa0002', x: 1200, y: 0 });
+	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' });
 	m.put('node', { id: 'node-bb0001', type: 'loadbalancer', x: 300, y: 180 });
 	const w = worldOf(m);
-	const at = (x, y) => factsAt(w, 0, [{ id: 'waypoint-aa0001#0', progress: 0.5, at: [x, y] }]).length;
+	const at = (x, y) => factsAt(w, 0, [{ id: 'node-aa0001#0', progress: 0.5, at: [x, y] }]).length;
 	const R = TOWERS.loadbalancer.range * 60;
 	assert.equal(at(300, 180), 1, 'on top of the tower');
 	assert.equal(at(300, 180 + R), 1, 'due south at exactly range -- pure y, dx is zero');
@@ -178,9 +178,9 @@ test('H12.16: a tower shoots the mover FURTHEST along, not merely a consistent o
 	// the order-independence test could not see this: it reversed the input and compared two runs of
 	// the SAME comparator, so any policy at all would have satisfied it.
 	const w = worldOf(board());
-	const near = { id: 'waypoint-aa0001#1', progress: 0.10, at: [600, 0] };
-	const far = { id: 'waypoint-aa0001#2', progress: 0.90, at: [600, 0] };
-	const mid = { id: 'waypoint-aa0001#3', progress: 0.50, at: [600, 0] };
+	const near = { id: 'node-aa0001#1', progress: 0.10, at: [600, 0] };
+	const far = { id: 'node-aa0001#2', progress: 0.90, at: [600, 0] };
+	const mid = { id: 'node-aa0001#3', progress: 0.50, at: [600, 0] };
 	for (const order of [[near, far, mid], [far, mid, near], [mid, near, far]]) {
 		const f = factsAt(w, 0, order);
 		assert.equal(f.length, 1, 'one shot, one target');
@@ -193,7 +193,7 @@ test('H12.16: it takes exactly hp/damage hits to kill -- not one more, not one f
 	// that something dies cannot distinguish three hits from four.
 	const w = worldOf(board());
 	const need = Math.ceil(MOVERS.packet.hp / TOWERS.loadbalancer.damage);
-	const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+	const target = { id: 'node-aa0001#0', progress: 0.5, at: [600, 0] };
 	let hp = MOVERS.packet.hp, shots = 0;
 	while (hp > 0) { hp -= factsAt(w, 0, [target])[0].damage; shots++; }
 	assert.equal(shots, need, `${MOVERS.packet.hp}hp against ${TOWERS.loadbalancer.damage} damage is ${need} shots`);
@@ -250,7 +250,7 @@ test('H12.16: the beam burns for exactly `beam` ticks, then is dark for exactly 
 	*/
 	const w = worldOf(board());
 	const spec = TOWERS.loadbalancer;
-	const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+	const target = { id: 'node-aa0001#0', progress: 0.5, at: [600, 0] };
 	const lit = [];
 	for (let tick = 0; tick < cycleOf(spec) * 2; tick++) {
 		lit.push(factsAt(w, tick, [target]).length ? 1 : 0);
@@ -282,7 +282,7 @@ test('H12.16: cooldown is a lever -- zero means a beam that never stops', () => 
 	TOWERS.loadbalancer = { range: 3, beam: 10, cooldown: 0, damage: 1 };
 	try {
 		const w = worldOf(board());
-		const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+		const target = { id: 'node-aa0001#0', progress: 0.5, at: [600, 0] };
 		for (let tick = 0; tick < 25; tick++) {
 			assert.equal(factsAt(w, tick, [target]).length, 1, `tick ${tick} must still be burning`);
 		}
@@ -296,7 +296,7 @@ test('H12.16: a kind with no beam never fires, rather than firing forever', () =
 	TOWERS.loadbalancer = { range: 3, beam: 0, cooldown: 0, damage: 1 };
 	try {
 		const w = worldOf(board());
-		const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+		const target = { id: 'node-aa0001#0', progress: 0.5, at: [600, 0] };
 		for (let tick = 0; tick < 25; tick++) {
 			assert.equal(factsAt(w, tick, [target]).length, 0, `tick ${tick} must stay dark`);
 		}
@@ -346,7 +346,7 @@ test('H13.2: aim is the board alone -- a turret tracks through the cooldown', ()
 	`facts` gates on the beam phase; `aimAt` must not, or a tower would look away every second.
 	*/
 	const w = worldOf(board());
-	const target = { id: 'waypoint-aa0001#0', progress: 0.5, at: [600, 0] };
+	const target = { id: 'node-aa0001#0', progress: 0.5, at: [600, 0] };
 	const spec = TOWERS.loadbalancer;
 	const dark = spec.beam;                       // the first tick of the cooldown
 	assert.equal(factsAt(w, dark, [target]).length, 0, 'not firing during cooldown');
@@ -356,8 +356,8 @@ test('H13.2: aim is the board alone -- a turret tracks through the cooldown', ()
 test('H13.2: a turret aims at the leading target, and does not depend on input order', () => {
 	// the same determinism the beam has: two peers must point a turret the same way without asking
 	const w = worldOf(board());
-	const near = { id: 'waypoint-aa0001#1', progress: 0.10, at: [600, 0] };
-	const far = { id: 'waypoint-aa0001#2', progress: 0.90, at: [600, 0] };
+	const near = { id: 'node-aa0001#1', progress: 0.10, at: [600, 0] };
+	const far = { id: 'node-aa0001#2', progress: 0.90, at: [600, 0] };
 	for (const order of [[near, far], [far, near]]) {
 		const aim = aimAt(w, order);
 		assert.equal(aim.get('node-bb0001').id, far.id, 'the one about to escape');
@@ -369,5 +369,5 @@ test('H13.2: nothing in range means no aim, rather than a default bearing', () =
 	// rather than inventing a direction the peers would have to agree on
 	const w = worldOf(board());
 	assert.equal(aimAt(w, []).size, 0);
-	assert.equal(aimAt(w, [{ id: 'waypoint-aa0001#0', progress: 0.5, at: [99999, 0] }]).size, 0);
+	assert.equal(aimAt(w, [{ id: 'node-aa0001#0', progress: 0.5, at: [99999, 0] }]).size, 0);
 });

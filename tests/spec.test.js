@@ -96,7 +96,7 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	noticing. B96 is called out as the same disease a few lines below this one. The kind check below
 	is the assertion the title always promised.
 	*/
-	const entities = section('Entities (five)');
+	const entities = section('Entities (four)');   // four since the format batch (F-c)
 	assert.equal(entities.includes('"rev"'), false, 'meta.rev died at CS5');
 	assert.equal(entities.includes('"grid"'), false, 'meta.grid died at CS5');
 	assert.match(entities, /"version"/);
@@ -114,7 +114,7 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	// a hand-kept list would drift exactly as the heading did
 	// H17.22 N-a: the kinds the server validates are the product's composition (planner/kinds.mjs), each a row with its checks
 	const kinds = (await import('../planner/kinds.mjs')).PRODUCT_KINDS.list;
-	assert.ok(kinds.length >= 5, `expected the validator to declare at least five kinds, found ${kinds}`);
+	assert.ok(kinds.length >= 4, `expected the validator to declare at least four kinds, found ${kinds}`);
 	for (const kind of kinds) {
 		assert.ok(entities.includes(`"${kind}s"`), `${kind} is validated but absent from the entity block`);
 	}

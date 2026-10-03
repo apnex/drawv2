@@ -71,7 +71,7 @@ test('F-a: the version kept is the high-water mark -- a log whose records run pa
 test('F-a: the document is stamped schema 2, and every step is named in what the function reports', () => {
 	const { doc, steps } = migrateFormatBatch(schema1(), log1());
 	assert.equal(doc.meta.schema, 2);
-	assert.deepEqual(steps, ['direction', 'history', 'schema']);
+	assert.deepEqual(steps, ['history', 'anchors', 'direction', 'schema']);
 });
 
 test('F-a: pure -- the input document and log are untouched', () => {
@@ -191,7 +191,7 @@ test('F-a dry run: a directory of schema 1 files passes, through a real store bo
 	const r = await dryRun(dir, { say: () => {} });
 	assert.deepEqual(r.problems, []);
 	assert.equal(r.booted, 2);
-	assert.deepEqual(r.ran, { direction: 2, history: 1, schema: 2 });
+	assert.deepEqual(r.ran, { history: 1, renumber: 0, anchors: 2, direction: 2, schema: 2 });
 	assert.equal(r.directions, 4);
 	assert.equal(r.records, 3);
 	assert.equal(fs.readFileSync(path.join(dir, 'diagram-a1a1a1.json'), 'utf8'), before, 'the dry run never writes the data directory');
@@ -206,4 +206,129 @@ test('F-a dry run: a file the store refuses is reported, not skipped quietly', a
 	const r = await dryRun(dir, { say: () => {} });
 	assert.ok(r.problems.some((p) => /booted 1 diagram\(s\) of 2/.test(p)), r.problems.join('; '));
 	assert.ok(r.problems.some((p) => /diagram-b2b2b2: did not boot/.test(p)));
+});
+
+// ---- F-c (H18.5): waypoints become nodes with no type (P-10) ----
+
+// a schema 1 document with two waypoints, one sharing its hex with a node, referenced from every place a document names one
+const withWaypoints = () => ({
+	meta: { id: 'diagram-c1c1c1', name: 'anchors', version: 1, schema: 1 },
+	nodes: [{ id: 'node-0000aa', name: 'a', type: 'host', x: 0, y: 0 }, { id: 'node-0000bb', name: 'b', type: 'host', x: 240, y: 0 }],
+	waypoints: [
+		{ id: 'waypoint-0000aa', name: 'clash', x: 120, y: 60, pinned: true },          // its hex is node-0000aa's
+		{ id: 'waypoint-0000cc', name: 'spawner', x: -60, y: 0, spawn: { interval: 900, speed: 1.4, kind: 'packet', since: 1790000000000 } },
+	],
+	links: [
+		{ id: 'link-0000dd', name: 'l1', src: 'node-0000aa', dst: 'node-0000bb', via: ['waypoint-0000aa'] },
+		{ id: 'link-0000ee', name: 'l2', src: 'waypoint-0000cc', dst: 'node-0000aa' },
+	],
+	zones: [],
+	groups: [{ id: 'group-0000ff', name: 'g', members: ['node-0000bb', 'waypoint-0000aa'] }],
+	selection: ['waypoint-0000aa'],
+	reveal: { origin: 1790000000000, beats: [{ interval: 250, ids: ['waypoint-0000cc', 'link-0000ee'] }] },
+});
+
+test('F-c: each waypoint joins the nodes after them, with no type, keeping its hex, name, place, pin and spawner', () => {
+	const { doc, steps } = migrateFormatBatch(withWaypoints(), null);
+	assert.deepEqual(steps, ['renumber', 'anchors', 'schema']);
+	assert.equal('waypoints' in doc, false, 'the collection is gone');
+	assert.deepEqual(doc.nodes.map((n) => n.id).slice(0, 2), ['node-0000aa', 'node-0000bb'], 'the nodes first, untouched');
+	const spawner = doc.nodes.find((n) => n.name === 'spawner');
+	assert.equal(spawner.id, 'node-0000cc', 'a waypoint keeps its hex');
+	assert.equal('type' in spawner, false);
+	assert.equal(spawner.spawn.interval, 900, 'its spawner rides with it');
+	assert.equal(doc.nodes.find((n) => n.name === 'clash').pinned, true, 'its pin rides with it, until P3 (ruled 2026-10-03)');
+	assert.equal(validateDoc(doc), null, 'and the result is a valid schema 2 document');
+});
+
+test('F-c: a waypoint whose hex a node holds is renumbered to the next free hex, and every reference follows it', () => {
+	const { doc } = migrateFormatBatch(withWaypoints(), null);
+	const moved = doc.nodes.find((n) => n.name === 'clash').id;
+	assert.equal(moved, 'node-0000ab', 'the next hex above its own that nothing holds');
+	assert.deepEqual(doc.links[0].via, [moved], 'a bend');
+	assert.equal(doc.links[1].src, 'node-0000cc', 'an end');
+	assert.deepEqual(doc.groups[0].members, ['node-0000bb', moved], 'a group member');
+	assert.deepEqual(doc.selection, [moved], 'the stored selection');
+	assert.deepEqual(doc.reveal.beats[0].ids, ['node-0000cc', 'link-0000ee'], 'a reveal beat');
+	assert.equal(doc.links[0].src, 'node-0000aa', 'and the node that held the hex keeps it');
+});
+
+test('F-c: renumbering skips a hex any anchor holds, and is the same every time it runs', () => {
+	const source = withWaypoints();
+	source.nodes.push({ id: 'node-0000ab', name: 'squatter', type: 'host', x: 360, y: 0 });
+	const once = migrateFormatBatch(source, null).doc, again = migrateFormatBatch(source, null).doc;
+	assert.equal(once.nodes.find((n) => n.name === 'clash').id, 'node-0000ac', 'past the next hex, which a node holds');
+	assert.deepEqual(once, again, 'deterministic: the dry run and the real run agree');
+});
+
+test('F-c: a document stamped 2 that still holds waypoints loses its undo records too -- they name a kind that is gone', () => {
+	const doc = { ...withWaypoints(), meta: { ...withWaypoints().meta, schema: 2 } };
+	const log = { version: 5, cursor: 1, evicted: 0, evictedHuman: 0, records: [{ seq: 5, from: 4, at: 1, by: 'client', actor: 'a', label: 'x',
+		ops: [{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-0000cc', name: 'spawner', x: 0, y: 0 } }], inverse: [] }] };
+	const out = migrateFormatBatch(doc, log);
+	assert.equal(out.steps[0], 'history');
+	assert.deepEqual(out.log.records, []);
+	assert.equal(out.log.version, 5);
+});
+
+test('F-c: idempotent -- a migrated document passes through unchanged', () => {
+	const once = migrateFormatBatch(withWaypoints(), null).doc;
+	const twice = migrateFormatBatch(once, null);
+	assert.deepEqual(twice.steps, []);
+	assert.deepEqual(twice.doc, once);
+});
+
+test('F-c dry run: the waypoint map is found by name and place, so a renumbering that lost a reference is a difference', async () => {
+	const { canonical, waypointMap } = await import('../tools/migrate-schema.mjs');
+	const source = withWaypoints();
+	const { doc } = migrateFormatBatch(source, null);
+	const map = waypointMap(source, doc);
+	assert.equal(map.size, 2);
+	assert.equal(canonical(doc), canonical(source, map));
+	const lost = structuredClone(doc); lost.groups[0].members = ['node-0000bb', 'node-0000aa'];   // pointed at the node instead
+	assert.notEqual(canonical(lost), canonical(source, map));
+	const moved = structuredClone(doc); moved.nodes[3].x = 0;
+	assert.notEqual(canonical(moved), canonical(source, waypointMap(source, moved)), 'a waypoint moved is found as no node, and differs');
+});
+
+// ---- F-c: the node row keeps the line the kind boundary kept ----
+
+test('F-c: whether a node has a type is fixed when it is made, and each shape keeps its own fields', async () => {
+	const { plan } = await import('../planner/txn.mjs');
+	const { Model } = await import('../model/model.mjs');
+	const m = new Model();
+	m.put('node', { id: 'node-0000aa', name: 'r', type: 'router', x: 0, y: 0 });
+	m.put('node', { id: 'node-0000bb', name: 'w', x: 120, y: 0 });
+	const refused = (ops, re) => { const r = plan(m, ops); assert.equal(r.ok, false, JSON.stringify(ops)); assert.match(r.error, re); };
+	refused([{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { type: 'router' } }], /type is fixed when it is made/);
+	refused([{ op: 'put', kind: 'node', entity: { id: 'node-0000aa', name: 'r', x: 0, y: 0 } }], /type is fixed when it is made/);
+	refused([{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { pinned: true } }], /a typed node has no pinned/);
+	refused([{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { spawn: { interval: 900, speed: 1.4, kind: 'packet', since: Date.now() } } }], /a typed node has no spawn/);
+	refused([{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { shape: 'square' } }], /a waypoint \(a node with no type\) has no shape/);
+	refused([{ op: 'put', kind: 'node', entity: { id: 'node-0000cc', name: 'p', x: 240, y: 0, span: { cols: 2, rows: 1 } } }], /has no span/);
+	assert.equal(plan(m, [{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { type: 'firewall' } }]).ok, true, 'a typed node may change its type');
+	assert.equal(plan(m, [{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { pinned: true } }]).ok, true, 'a waypoint may be pinned');
+	assert.equal(validateDoc({ meta: { id: 'diagram-0000dd', name: 'd' }, nodes: [{ id: 'node-0000aa', name: 'r', type: 'router', x: 0, y: 0, pinned: true }] })?.includes('a typed node has no pinned'), true, 'and a stored one is refused at load');
+});
+
+test('F-c: a link bends only at a waypoint -- a typed node in a via is refused, as a node id there always was', async () => {
+	const { plan } = await import('../planner/txn.mjs');
+	const { Model } = await import('../model/model.mjs');
+	const m = new Model();
+	for (const [id, x] of [['node-0000aa', 0], ['node-0000bb', 240], ['node-0000cc', 120]]) m.put('node', { id, name: id, type: 'host', x, y: 0 });
+	const r = plan(m, [{ op: 'put', kind: 'link', entity: { id: 'link-0000dd', name: 'l', src: 'node-0000aa', dst: 'node-0000bb', via: ['node-0000cc'] } }]);
+	assert.equal(r.ok, false);
+	assert.match(r.error, /link via waypoint does not exist: node-0000cc/);
+});
+
+test('F-c: an unnamed old waypoint is named around the names its fellow waypoints already hold', async () => {
+	const dir = tmp();
+	const doc = withWaypoints();
+	doc.waypoints[0].name = 'waypoint-1';
+	delete doc.waypoints[1].name;
+	fs.writeFileSync(path.join(dir, 'diagram-c1c1c1.json'), serialize(doc, null));
+	const store = new Store(dir, { flushMs: 3_600_000 });
+	await store.init();
+	const names = store.diagrams.get('diagram-c1c1c1').model.all('node').filter((n) => !n.type).map((n) => n.name).sort();
+	assert.deepEqual(names, ['waypoint-1', 'waypoint-2'], 'not a second waypoint-1');
 });

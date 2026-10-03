@@ -22,14 +22,15 @@ THE SITUATION TERMS are the plugin's own, over the fields the host's situation d
 `gesture` and `step`. The plugin cannot import the product's predicates, and should not -- it names what it asks.
 */
 import { dragFacts } from './grammar.mjs';
-import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isAnchorWord } from '../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
+   // the bare anchor, asked in one place (F-b)
 
 const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;
 const is = (e, k) => e.key.toLowerCase() === k;
 const drawingALink = (s) => s.gesture === 'link';
 const overANode = (s) => s.step === 'node';
 
-const anAnchorSelected = (s) => s.selection.kinds.some((k) => ANCHOR_KINDS.includes(k));
+const anAnchorSelected = (s) => s.selection.kinds.some(isAnchorWord);   // the situation's words: node or waypoint (F4)
 
 // the network's key rows; `session` is the network session the transit toggle acts on (absent where the rows are only read)
 const networkKeys = (session) => [

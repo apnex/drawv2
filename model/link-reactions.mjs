@@ -29,13 +29,20 @@ const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === 
 
 // ---- clear: before an anchor is deleted, the links that cannot outlive it ----
 
-// deleting a node deletes every link ending at it
+/*
+Deleting a node deletes every link ending at it. Since F-c (H18.5) a waypoint is a node with no type, and both clear reactions
+hear a node deleted: each reads which shape of node it was -- the entity is still in the document during the clear phase --
+and acts on its own, as the two kinds' triggers kept them apart before.
+*/
 const NODE_LINKS = {
 	id: 'node-links',
 	phase: 'clear',
-	doc: 'deleting a node deletes every link ending at it',
+	doc: 'deleting a typed node deletes every link ending at it',
 	trigger: { deleted: ['node'] },
-	run: ({ op, doc }, emit) => emit(doc.linksOf(op.id).map((link) => ({ op: 'del', kind: 'link', id: link.id }))),
+	run: ({ op, doc }, emit) => {
+		if (isBareEntity(op.kind, doc.get(op.kind, op.id))) return;   // a waypoint: WAYPOINT_LINKS
+		emit(doc.linksOf(op.id).map((link) => ({ op: 'del', kind: 'link', id: link.id })));
+	},
 };
 
 // deleting a waypoint deletes the links ending at it and strips it from the links bending through it
@@ -45,6 +52,7 @@ const WAYPOINT_LINKS = {
 	doc: 'deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81)',
 	trigger: { deleted: [BARE_KIND] },
 	run: ({ op, doc }, emit) => {
+		if (!isBareEntity(op.kind, doc.get(op.kind, op.id))) return;   // a typed node: NODE_LINKS
 		const id = op.id;
 		const ops = [];
 		/*

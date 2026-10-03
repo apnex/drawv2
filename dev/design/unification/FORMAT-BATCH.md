@@ -157,6 +157,20 @@ What still names the kind does so for a reason, recorded per file in `tests/bare
 The planner, gesture and matrix corpora are unchanged, byte for byte; the estate dry run unchanged.\
 Mutants: 14 on the module and the readers that now ask of the entity, 13 killed by the tests as written; the survivor -- REST reading a waypoint's links as a node's, which misses a bend -- killed by a new test of `about` on a bend.
 
+AMENDED 2026-10-03 -- **F-c done** (H18.5).\
+A waypoint is a node with no `type`: the kind table holds four kinds, `type` is optional, and `pinned` and `spawn` joined the node's fields.\
+The node row's cross-entity check holds the line the kind boundary held -- whether a node has a type is fixed when it is made, `pinned` and `spawn` are a waypoint's alone, and `shape`, `span` and `content` a typed node's alone -- and `validateMutation` judges a `put` as it stands, not merged over what it replaces, so a put that drops a type is seen.\
+`model/anchors.mjs` answers "a node with no type", and adds `isTypedEntity` and `typedNodes` for the readers that meant a typed node when they said `node`: the renderer's passes, the occupancy index, the picker, the label editor, `L`'s link, the readout, the clone set, select-all, the tower world and the anchor resolver; the word the canvas and the situation say for a node, `waypoint` or `node`, is `model/anchor-words.mjs`'s.\
+The two clear reactions both hear a node deleted and each acts on its own shape of node; the reaction table says so.\
+The migration gained two steps, keyed on the `waypoints` collection: `renumber` moves a waypoint whose hex a node holds to the next free hex, deterministically, and `anchors` moves every waypoint into the nodes and rewrites every reference -- links' ends and bends, groups, the stored selection and the reveal's beats; the history step now runs first, and also clears a log beside a schema 2 document that still holds waypoints.\
+The CLI reads the wire through one view that keeps its two words, and names an old `waypoint-` id's new id; the export's adapter draws a node with no type as a waypoint; `docs/spec/API.md` is amended.\
+Every document in the repository is migrated in source -- the four templates by the function itself, the lab's seeds and the behaviour matrix by the id map -- and each was checked equal to its source once the id map is applied.\
+**On the estate backup: 43 diagrams boot; 475 waypoints become nodes, 1,005 in all; 3 renumbered, in 2 diagrams; nothing else changed.**\
+Corpora: the matrix corpus and the 84 rows unchanged, byte for byte; the gesture corpus differs only where an op on a waypoint now names kind `node` (9 lines); every one of the planner corpus's 2,089 cases equals the old once the id map, the op kind and the input digest are set aside; the K8 DOM snapshot differs only by 4 ids.\
+P-5 is CORRECTED (`dev/DECISIONS.md`): a node with no type is still a waypoint the sweep may take, so `pinned` stays until P3, where it goes with production's orphan rule; F-c changes no behaviour.\
+Found on the way: the loader's naming repair read the kind table's collections, which no longer list `waypoints`, so two unnamed old waypoints could both be named `waypoint-1`; it now reads the old collection by name, and a test that failed without the fix holds it.\
+Mutants: 27, on the module, the node row, the put view, the clear reactions, the migration's steps, the adapter, the CLI's view, the occupancy index and the canvas readers -- all 27 killed.
+
 Each stage is one gate and one lab deploy.
 
 **Size, by judgement:** F-b and F-c are most of it -- the word appears 514 times in product code and 4,172 in tests and the lab.

@@ -123,7 +123,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
@@ -300,7 +300,7 @@
 				"ops": [
 					{
 						"op": "set",
-						"kind": "waypoint",
+						"kind": "node",
 						"id": "waypoint#1",
 						"patch": {
 							"pinned": false
@@ -436,7 +436,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
@@ -811,7 +811,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
@@ -2987,7 +2987,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
@@ -4362,7 +4362,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
@@ -4470,7 +4470,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-2",
@@ -4719,7 +4719,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
@@ -4826,7 +4826,7 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "waypoint",
+						"kind": "node",
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",

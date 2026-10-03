@@ -28,7 +28,13 @@ const newId = (kind) => `${kind}-${Math.floor(Math.random() * 0xffffff).toString
 export function docToSchema(doc, opts = {}) {
 	const selected = opts.selected || new Set();
 	const entities = [], relations = [];
-	(doc.nodes || []).forEach((n) => {
+	/*
+	F-c (H18.5) -- a waypoint is a node with no `type` (P-10), and is drawn as a waypoint (F4). The question is model/anchors.mjs's
+	`isBareEntity`, restated here because kernel/ may not import model/ (C9); tests/bare-anchor.test.js holds the two to the
+	same answer. Typed nodes first and waypoints after the zones, the order the scene had when they were two collections.
+	*/
+	const bare = (n) => !n.type;
+	(doc.nodes || []).filter((n) => !bare(n)).forEach((n) => {
 		const c0 = cell(n.x), r0 = cell(n.y);
 		// B234 -- the NAME travels. It was dropped here, so no renderer downstream could draw a
 		// label however much it wanted to, and every exported SVG came out unlabelled.
@@ -44,7 +50,7 @@ export function docToSchema(doc, opts = {}) {
 		const r0 = cell(z.y + P / 2), r1 = Math.max(r0, cell(z.y + z.h - P / 2));
 		entities.push({ id: z.id, kind: 'zone', span: { cols: [c0, c1], rows: [r0, r1] }, name: z.name });
 	});
-	(doc.waypoints || []).forEach((w) => entities.push({ id: w.id, kind: 'waypoint', cell: [cell(w.x), cell(w.y)] }));
+	(doc.nodes || []).filter(bare).forEach((w) => entities.push({ id: w.id, kind: 'waypoint', cell: [cell(w.x), cell(w.y)] }));
 	(doc.groups || []).forEach((g) => entities.push({ id: g.id, kind: 'group', members: [...(g.members || [])] }));
 	// H15.6 -- `flow` travels with the route, or the exported SVG loses the arrowhead the canvas
 	// draws. The adapter is a THIRD door on this field, after the commit and the boot, and it was
@@ -59,7 +65,7 @@ export function docToSchema(doc, opts = {}) {
 // No `meta.schema`: the document generation is model/shape.mjs's `SCHEMA`, which kernel/ may not import (C9), and the
 // validator reads an absent one as the current generation -- the store stamps it.
 export function schemaToDoc(schema, meta = {}) {
-	const nodes = [], waypoints = [], zones = [], groups = [], links = [];
+	const nodes = [], waypoints = [], zones = [], groups = [], links = [];   // a scene waypoint is a node with no type (F-c)
 	(schema.entities || []).forEach((e) => {
 		if (e.kind === 'node') {
 			const n = { id: e.id, name: e.name || '', type: e.glyph, shape: e.frame || 'circle', x: e.cell[0] * P, y: e.cell[1] * P };
@@ -74,5 +80,5 @@ export function schemaToDoc(schema, meta = {}) {
 		} else if (e.kind === 'group') groups.push({ id: e.id, name: e.name || '', members: [...(e.members || [])] });
 	});
 	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.src, dst: r.route.dst, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.closed ? { closed: true } : {}), ...(r.route.direction !== undefined ? { direction: r.route.direction } : {}), ...(r.route.control ? { control: true } : {}) }); });
-	return { meta: { id: '', name: 'untitled', version: 0, ...meta }, nodes, waypoints, links, zones, groups };
+	return { meta: { id: '', name: 'untitled', version: 0, ...meta }, nodes: [...nodes, ...waypoints], links, zones, groups };
 }

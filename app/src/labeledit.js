@@ -7,6 +7,7 @@ import { NODE_R } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX } from '../../model/limits.mjs';
 import * as commands from './commands.js';
+import { drawnKind } from '../../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // the caps are the model's, shared with the server rather than restated here (B86)
 
@@ -59,8 +60,9 @@ export class LabelEditor {
 		if (this.input) this.close(false);
 		const entity = this.model.get(kind, id);
 		if (!entity) return;
+		const drawn = drawnKind(kind, entity);   // a waypoint is a node with no type (F-c), placed and stepped as a waypoint
 
-		const placement = kind === 'node'
+		const placement = drawn === 'node'
 			? this.toScreen({ x: entity.x, y: entity.y + NODE_R + 6 })
 			: this.toScreen({ x: entity.x + 10, y: entity.y + 6 });
 
@@ -71,7 +73,7 @@ export class LabelEditor {
 		input.value = entity.name || '';
 		const width = 160;
 		input.style.width = `${width}px`;
-		input.style.left = `${kind === 'node' ? placement.x - width / 2 : placement.x}px`;
+		input.style.left = `${drawn === 'node' ? placement.x - width / 2 : placement.x}px`;
 		input.style.top = `${placement.y}px`;
 
 		input.addEventListener('keydown', (evt) => {
@@ -159,7 +161,7 @@ export class LabelEditor {
 
 	// next/previous same-kind entity in reading order (y, then x), wrapping
 	neighbor(kind, id, dir) {
-		const list = [...this.model.all(kind)].sort((p, q) => (p.y - q.y) || (p.x - q.x));
+		const list = [...this.model.all(kind).filter((e) => drawnKind(kind, e) === drawnKind(kind, this.model.get(kind, id)))].sort((p, q) => (p.y - q.y) || (p.x - q.x));
 		const i = list.findIndex((e) => e.id === id);
 		if (i < 0 || list.length < 2) return null;
 		return list[(i + dir + list.length) % list.length].id;

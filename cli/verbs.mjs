@@ -238,14 +238,25 @@ Deliberately checks entities in the order a caller is most likely to mean, and r
 rather than guessing: two things sharing a name is a diagram problem, and silently picking one
 would turn it into a mystery about which one moved.
 */
+/*
+F-c (H18.5) -- A WAYPOINT IS A NODE WITH NO TYPE on the wire (P-10), and agents still call it a waypoint (F4). The CLI ships
+standalone (B138) and cannot import model/anchors.mjs, so it states the question once here; every verb that reads the
+document's collections reads them through `viewOf`, where `nodes` are the typed ones and `waypoints` the bare ones -- the two
+words the verbs have always used. Held to model/anchors.mjs by tests/cli-tool.test.js.
+*/
+export const isWaypoint = (e) => !!e && typeof e.id === 'string' && e.id.startsWith('node-') && !e.type;
+const viewOf = (doc) => ({ ...doc, nodes: (doc.nodes || []).filter((n) => !isWaypoint(n)), waypoints: (doc.nodes || []).filter(isWaypoint) });
+
 async function resolveId(ctx, diagramId, ref, known = null) {
-	if (/^(node|waypoint|link|zone|group)-[0-9a-f]{6}$/.test(ref)) return ref;
+	// PU33: a waypoint's id became a node's with the same hex at the format batch; an old one is named as such, not "not found"
+	if (/^waypoint-[0-9a-f]{6}$/.test(ref)) die(`${ref} is a waypoint id from before the format batch -- waypoints are nodes now: node-${ref.slice(9)}`);
+	if (/^(node|link|zone|group)-[0-9a-f]{6}$/.test(ref)) return ref;
 	// `known` lets a verb that has already fetched the document reuse it. `place` used to avoid the
 	// second read by reimplementing the lookup inline, four times, which is how the ambiguity
 	// refusal below got dropped from three of them (B143).
 	const doc = known || ok(await request(ctx, `/diagrams/${diagramId}`), 'resolve');
 	const hits = [];
-	for (const k of ['nodes', 'zones', 'groups', 'links', 'waypoints']) {
+	for (const k of ['nodes', 'zones', 'groups', 'links']) {
 		for (const e of doc[k] || []) if (e.name === ref) hits.push(e.id);
 	}
 
@@ -311,7 +322,7 @@ direction. Ids stay in `--json`, which is what composes.
 */
 const naming = (doc) => {
 	const m = new Map();
-	for (const k of ['nodes', 'waypoints', 'zones', 'groups', 'links']) {
+	for (const k of ['nodes', 'zones', 'groups', 'links']) {
 		for (const e of doc[k] || []) m.set(e.id, e.name || e.id);
 	}
 	return (ref) => m.get(ref) || ref;
@@ -455,7 +466,7 @@ export const VERBS = [
 			const KINDS = ['nodes', 'waypoints', 'links', 'zones', 'groups'];
 			const rows = [];
 			for (const d of b) {
-				const doc = ok(await request(ctx, `/diagrams/${d.id}`), 'diagrams');
+				const doc = viewOf(ok(await request(ctx, `/diagrams/${d.id}`), 'diagrams'));
 				rows.push([d.id, d.name, d.version, ...KINDS.map((k) => (doc[k] || []).length)]);
 				d.counts = Object.fromEntries(KINDS.map((k) => [k, (doc[k] || []).length]));
 			}
@@ -482,7 +493,7 @@ export const VERBS = [
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
-			const d = ok(await request(ctx, `/diagrams/${id}`), 'status');
+			const d = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'status'));
 			const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups'].map((k) => [k, (d[k] || []).length]);
 			return { json: { id, name: d.meta.name, version: d.meta.version, owner: d.meta.owner, counts: Object.fromEntries(counts) },
 				text: `${d.meta.name}  ${d.meta.id}  v${d.meta.version}\n${table(counts, ['KIND', 'COUNT'])}` };
@@ -499,7 +510,7 @@ export const VERBS = [
 			const k = args[0] && (kinds[args[0]] || (Object.values(kinds).includes(args[0]) ? args[0] : null));
 			if (!k) die(`unknown kind: ${args[0]} -- one of ${Object.values(kinds).join(', ')}`);
 			const id = await activeId(ctx, ctx.flags);
-			const doc = ok(await request(ctx, `/diagrams/${id}`), 'get');
+			const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'get'));
 			let list = doc[k] || [];
 			if (args[1]) list = list.filter((e) => e.id === args[1] || e.name === args[1]);
 			/*
@@ -729,11 +740,11 @@ VERBS.push(
 				const body = svg.split('</defs>').pop();
 				const count = (re) => (body.match(re) || []).length;
 				const emitted = {
-					nodes: count(/<g id="node-[0-9a-f]{6}"/g),
+					nodes: count(/<g id="node-[0-9a-f]{6}"/g) - count(/<g id="node-[0-9a-f]{6}"><g class="waypoint\b/g),
 					// waypoints are drawn, and were missing from the first version of this summary --
 					// the map reported 27 occupied anchors and the summary 20 elements, which is the
 					// kind of quiet disagreement a verification verb exists to prevent
-					waypoints: count(/<g id="waypoint-[0-9a-f]{6}"/g),
+					waypoints: count(/<g id="node-[0-9a-f]{6}"><g class="waypoint\b/g),   // drawn under its node id since F-c
 					links: count(/<g id="link-[0-9a-f]{6}"/g),
 					zones: count(/<g id="zone-[0-9a-f]{6}"/g),
 					glyphs: count(/href="#glyph-/g),
@@ -1373,7 +1384,7 @@ VERBS.push({
 		const id = await activeId(ctx, ctx.flags);
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'dump');
 		const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups']
-			.map((k) => `${(doc[k] || []).length} ${k}`).join('  ');
+			.map((k) => `${(viewOf(doc)[k] || []).length} ${k}`).join('  ');
 		return { json: doc, text: `${JSON.stringify(doc, null, 2)}\n\n${counts}` };
 	},
 }, {
@@ -1560,9 +1571,9 @@ VERBS.push({
 	async run(ctx, args) {
 		if (!args[0]) die('usage: draw spawn <waypoint> [--off]');
 		const id = await activeId(ctx, ctx.flags);
-		const doc = ok(await request(ctx, `/diagrams/${id}`), 'spawn');
+		const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'spawn'));
 		const wid = await resolveId(ctx, id, args[0], doc);
-		if (!wid.startsWith('waypoint-')) die(`${args[0]} is a ${wid.split('-')[0]}, not a waypoint -- only an endpoint emits`);
+		if (!(doc.waypoints || []).some((w) => w.id === wid)) die(`${args[0]} is a ${(doc.nodes || []).some((n) => n.id === wid) ? 'typed node' : wid.split('-')[0]}, not a waypoint -- only an endpoint emits`);
 		const wp = (doc.waypoints || []).find((w) => w.id === wid);
 		if (!wp) die(`${wid} is not in this diagram`);
 
@@ -1584,7 +1595,7 @@ VERBS.push({
 		if (ctx.flags.off) {
 			if (!wp.spawn) die(`${wid} is not spawning`);
 			const { spawn, ...without } = wp;
-			return submit(ctx, id, [{ op: 'put', kind: 'waypoint', entity: without }], 'stop spawning', 'spawn',
+			return submit(ctx, id, [{ op: 'put', kind: 'node', entity: without }], 'stop spawning', 'spawn',
 				(r) => ({ json: { id: wid, spawning: false, version: r.version }, text: `${wid} stopped  v${r.version}` }));
 		}
 		const num = (f, d) => (ctx.flags[f] === undefined ? d : Number(ctx.flags[f]));
@@ -1594,7 +1605,7 @@ VERBS.push({
 			if (!Number.isFinite(spawn[k])) die(`--${k} takes a number, not ${ctx.flags[k]}`);
 		}
 		const dir = link.src === wid ? `${link.src} -> ${link.dst}` : `${link.dst} -> ${link.src}`;
-		return submit(ctx, id, [{ op: 'set', kind: 'waypoint', id: wid, patch: { spawn } }], 'spawn', 'spawn', (r) => ({
+		return submit(ctx, id, [{ op: 'set', kind: 'node', id: wid, patch: { spawn } }], 'spawn', 'spawn', (r) => ({
 			json: { id: wid, spawning: true, along: link.id, spawn, version: r.version },
 			text: `${wid} spawning along ${link.id}  ${dir}  every ${spawn.interval}ms at ${spawn.speed} cells/s  v${r.version}`,
 		}));
@@ -1643,9 +1654,9 @@ VERBS.push({
 		if (spot.occupant) die(`cell ${cx},${cy} is taken by ${spot.occupant} -- \`draw about ${spot.occupant}\` says what it is`);
 
 		if (type === 'waypoint') {
-			const wid = mint('waypoint');
+			const wid = mint('node');   // a node with no type (F-c)
 			// B187 -- named from its own id: a waypoint minted at a cell was not asked for by name
-			const wops = [{ op: 'put', kind: 'waypoint', entity: { id: wid, name: wid, x: spot.x, y: spot.y } }];
+			const wops = [{ op: 'put', kind: 'node', entity: { id: wid, name: wid, x: spot.x, y: spot.y } }];
 			return submit(ctx, id, wops, 'add waypoint', 'add', (wb) => ({
 				json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
 				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}`,
@@ -1736,7 +1747,7 @@ VERBS.push({
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
-		const d = ok(await request(ctx, `/diagrams/${id}`), 'show');
+		const d = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'show'));
 		const out = [`${d.meta.name}  ${d.meta.id}  v${d.meta.version}`];
 		for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
 			const list = d[k] || [];
@@ -1895,8 +1906,8 @@ VERBS.push(
 				// a waypoint IS a node for placement (B110/B112), so an occupied anchor refuses here
 				// rather than at the server, where the message would name a cell the caller never typed
 				if (spot.occupant) die(`--via ${v} is taken by ${spot.occupant} -- a waypoint needs a free anchor`);
-				const w = mint('waypoint');
-				ops.push({ op: 'put', kind: 'waypoint', entity: { id: w, name: w, x: spot.x, y: spot.y } });
+				const w = mint('node');   // a waypoint: a node with no type (F-c)
+				ops.push({ op: 'put', kind: 'node', entity: { id: w, name: w, x: spot.x, y: spot.y } });
 				via.push(w);
 			}
 			// the ring's destination is its last bend; a plain link's is the node the caller named
@@ -2067,7 +2078,7 @@ VERBS.push(
 			const id = await activeId(ctx, ctx.flags);
 			const eid = await resolveId(ctx, id, ref);
 			const kind = eid.split('-')[0];
-			if (kind !== 'node' && kind !== 'waypoint') die(`${ref} is a ${kind}; only a node or a waypoint sits on an anchor`);
+			if (kind !== 'node') die(`${ref} is a ${kind}; only a node or a waypoint sits on an anchor`);
 			const spot = await cellToPx(ctx, id, 'node', cell(c, 'to'), 'move');
 			if (spot.occupant && spot.occupant !== eid) {
 				die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
@@ -2214,7 +2225,7 @@ VERBS.push({
 		const id = await activeId(ctx, ctx.flags);
 		const layout = ctx.flags.layout && ctx.flags.layout !== true ? ctx.flags.layout : 'node';
 		if (!['node', 'zone'].includes(layout)) die(`--layout takes node or zone, not ${layout}`);
-		const doc = ok(await request(ctx, `/diagrams/${id}`), 'map');
+		const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'map'));
 		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors`), 'map').anchors;
 
 		const byId = new Map();
@@ -2222,7 +2233,7 @@ VERBS.push({
 		const glyphFor = (occ) => {
 			const e = byId.get(occ);
 			if (!e) return '?';
-			if (occ.startsWith('waypoint-')) return '+';
+			if (isWaypoint(byId.get(occ))) return '+';
 			if (e.span) return '#';
 			return GLYPH[e.type] || '?';
 		};
@@ -2387,7 +2398,7 @@ finding; two extra reads buy a report that is true by construction.
 */
 const census = (doc) => {
 	const m = new Map();
-	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+	for (const k of ['nodes', 'links', 'zones', 'groups']) {
 		for (const e of doc[k] || []) m.set(e.id, e.name || e.id);
 	}
 	return m;
@@ -2471,7 +2482,10 @@ VERBS.push(
 			const id = await activeId(ctx, ctx.flags);
 			const eid = await resolveId(ctx, id, ref);
 			const kind = eid.split('-')[0];
-			const table = SETTABLE[kind] || {};
+			// a waypoint is a node with no type (F-c) and takes a waypoint's fields: the table is chosen by what it is
+			const entity0 = kind === 'node' ? (ok(await request(ctx, `/diagrams/${id}`), 'set').nodes || []).find((n) => n.id === eid) : null;
+			const word = isWaypoint(entity0) ? 'waypoint' : kind;
+			const table = SETTABLE[word] || {};
 			const names = Object.keys(table);
 
 			/*
@@ -2481,7 +2495,7 @@ VERBS.push(
 			*/
 			const listing = names.map((n) => `  ${n}  -- ${table[n].about}`).join('\n');
 			if (!field) die(`${eid} takes:\n${listing}`);
-			if (!(field in table)) die(`a ${kind} has no '${field}'. It takes:\n${listing}\n\nPosition is \`draw move\`.`);
+			if (!(field in table)) die(`a ${word} has no '${field}'. It takes:\n${listing}\n\nPosition is \`draw move\`.`);
 
 			const spec = table[field];
 			if (value === undefined) {
@@ -2805,7 +2819,7 @@ VERBS.push({
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
-		const doc = ok(await request(ctx, `/diagrams/${id}`), 'parity');
+		const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'parity'));
 		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'parity').anchors;
 
 		// the render is fetched raw, like `draw render` does -- the one route that is not JSON
@@ -2813,7 +2827,11 @@ VERBS.push({
 		const res = await fetch(url, { headers: ctx.code ? { authorization: `Bearer ${ctx.code}` } : {} });
 		if (!res.ok) die(`parity: the render answered HTTP ${res.status}`);
 		const body = (await res.text()).split('</defs>').pop();
-		const drew = (kind) => (body.match(new RegExp(`<g id="${kind}-[0-9a-f]{6}"`, 'g')) || []).length;
+		const count = (re) => (body.match(re) || []).length;
+		// a waypoint is drawn under its node id (F-c), told apart by the class it is drawn with
+		const drawnWaypoints = count(/<g id="node-[0-9a-f]{6}"><g class="waypoint\b/g);
+		const drew = (kind) => (kind === 'waypoint' ? drawnWaypoints
+			: count(new RegExp(`<g id="${kind}-[0-9a-f]{6}"`, 'g')) - (kind === 'node' ? drawnWaypoints : 0));
 
 		const held = (k) => (doc[k] || []).length;
 		const placed = anchors.filter((a) => a.occupant).length;

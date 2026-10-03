@@ -153,7 +153,7 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 // server's stamp alone (tests/convergence.test.js), so it is not compared
 function diffDocs(a, b) {
 	const out = [];
-	for (const kind of ['node', 'waypoint', 'link', 'zone', 'group']) {
+	for (const kind of ['node', 'link', 'zone', 'group']) {
 		const ids = new Set([...a.all(kind), ...b.all(kind)].map((e) => e.id));
 		for (const id of [...ids].sort()) {
 			const x = a.get(kind, id), y = b.get(kind, id);
@@ -170,7 +170,7 @@ function diffDocs(a, b) {
 const CONVERGED = 'CONVERGENCE: the tab\'s document equals the server\'s once every answer is in';
 
 const A = 'node-00000a', B = 'node-00000b', X = 'node-00000c', C = 'node-00000d';
-const W = 'waypoint-0000f1', G = 'group-0000e1';
+const W = 'node-0000f1', G = 'group-0000e1';
 const LONE = [
 	['node', { id: A, name: 'a', type: 'host', x: 0, y: 0 }],
 	['node', { id: B, name: 'b', type: 'host', x: 240, y: 240 }],
@@ -182,7 +182,7 @@ const G1 = [
 	['node', { id: A, name: 'a', type: 'host', x: 0, y: 0 }],
 	['node', { id: B, name: 'b', type: 'host', x: 240, y: 0 }],
 	['node', { id: C, name: 'c', type: 'host', x: 480, y: 0 }],
-	['waypoint', { id: W, name: 'wp1', x: 120, y: 120 }],
+	['node', { id: W, name: 'wp1', x: 120, y: 120 }],
 	['link', { id: 'link-0000c1', name: 'l1', src: A, dst: B, via: [W] }],
 	['group', { id: G, name: 'g1', members: [A, B, C, W] }],
 ];

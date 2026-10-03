@@ -32,7 +32,7 @@ const shape = (m) => {
 	// the browser learns its version from the wire (ack/change), not by stamping the model, so a
 	// participant's meta.version lags between snapshots. Document equality is the claim here.
 	delete d.meta.version;
-	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+	for (const k of ['nodes', 'links', 'zones', 'groups']) {
 		d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
 	}
 	return JSON.stringify(d);

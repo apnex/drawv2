@@ -14,7 +14,7 @@ import { LINK_DECLARATIONS, collapseAtWaypoint, splitAtBend } from '../model/inv
 import { PRODUCT_KINDS } from '../planner/kinds.mjs';
 
 const STRUCTURAL = ['id', 'name', 'src', 'dst', 'via', 'closed'];
-const W = 'waypoint-00000e';
+const W = 'node-00000e';
 const pair = () => [{ id: 'link-00000a', name: 'a', src: 'node-00000a', dst: W }, { id: 'link-00000b', name: 'b', src: W, dst: 'node-00000b' }];
 const joins = (a, b) => collapseAtWaypoint(a, b, W) !== null;
 // the values a field's own check accepts, from a small universe -- enough to set it, and to set it differently

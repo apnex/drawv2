@@ -94,18 +94,18 @@ test('deleteSelection shrinks a group, and dissolves it below two members', () =
 
 test('deleting a via-waypoint strips it from every routed link', () => {
 	const m = seeded();
-	m.put('waypoint', { id: 'waypoint-da0001', name: 'waypoint-da0001', x: 60, y: 60 });
-	m.set('link', 'link-aa0004', { via: ['waypoint-da0001'] });
-	apply(m, deleteSelection(m, new Set(['waypoint-da0001'])));
-	assert.equal(m.get('waypoint', 'waypoint-da0001'), undefined);
+	m.put('node', { id: 'node-da0001', name: 'node-da0001', x: 60, y: 60 });
+	m.set('link', 'link-aa0004', { via: ['node-da0001'] });
+	apply(m, deleteSelection(m, new Set(['node-da0001'])));
+	assert.equal(m.get('node', 'node-da0001'), undefined);
 	assert.deepEqual(m.get('link', 'link-aa0004').via, [], 'the surviving link no longer references it');
 });
 
 test('deleting a waypoint ENDPOINT deletes the link rather than stripping it', () => {
 	const m = seeded();
-	m.put('waypoint', { id: 'waypoint-ea0001', name: 'waypoint-ea0001', x: 60, y: 60 });
-	m.put('link', { id: 'link-ea0002', name: 'link-ea0002', src: 'node-aa0001', dst: 'waypoint-ea0001' });
-	apply(m, deleteSelection(m, new Set(['waypoint-ea0001'])));
+	m.put('node', { id: 'node-ea0001', name: 'node-ea0001', x: 60, y: 60 });
+	m.put('link', { id: 'link-ea0002', name: 'link-ea0002', src: 'node-aa0001', dst: 'node-ea0001' });
+	apply(m, deleteSelection(m, new Set(['node-ea0001'])));
 	assert.equal(m.get('link', 'link-ea0002'), undefined);
 });
 
@@ -162,10 +162,10 @@ attempt and would have been worthless: a copy of the converter can agree with a 
 */
 test('B87: the B81 cascade entry survives the real Changes — it threw, and shipped', () => {
 	const m = seeded();                                            // node-aa0001 -- node-aa0002 straight
-	m.put('waypoint', { id: 'waypoint-aa0005', name: 'waypoint-aa0005', x: 30, y: -40 });
-	m.put('link', { id: 'link-aa0006', name: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0005'] });
+	m.put('node', { id: 'node-aa0005', name: 'node-aa0005', x: 30, y: -40 });
+	m.put('link', { id: 'link-aa0006', name: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-aa0005'] });
 
-	const cmd = deleteSelection(m, new Set(['waypoint-aa0005']));
+	const cmd = deleteSelection(m, new Set(['node-aa0005']));
 	const del = cmd.entries.find((e) => e.op === 'del' && e.kind === 'link');
 	assert.ok(del, 'the colliding link is deleted with the waypoint (B81)');
 	assert.ok(del.entity, 'and the entity rides along, as commands.js:6 requires');
@@ -179,13 +179,13 @@ test('B87: the B81 cascade entry survives the real Changes — it threw, and shi
 test('B87: every del entry a builder emits carries an entity, across every branch here', () => {
 	const cases = () => {
 		const m = seeded();
-		m.put('waypoint', { id: 'waypoint-aa0005', name: 'waypoint-aa0005', x: 30, y: -40 });
-		m.put('link', { id: 'link-aa0006', name: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0005'] });
+		m.put('node', { id: 'node-aa0005', name: 'node-aa0005', x: 30, y: -40 });
+		m.put('link', { id: 'link-aa0006', name: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-aa0005'] });
 		m.put('group', { id: 'group-aa0007', name: 'g', members: ['node-aa0002', 'node-aa0003'] });
 		return m;
 	};
 	for (const [what, build] of [
-		['waypoint whose strip would collide', (m) => deleteSelection(m, new Set(['waypoint-aa0005']))],
+		['waypoint whose strip would collide', (m) => deleteSelection(m, new Set(['node-aa0005']))],
 		['node carrying links away', (m) => deleteSelection(m, new Set(['node-aa0001']))],
 		['group emptied below two', (m) => deleteSelection(m, new Set(['node-aa0002']))],
 		['ungroup', (m) => ungroupAll(m, ['node-aa0002'])],

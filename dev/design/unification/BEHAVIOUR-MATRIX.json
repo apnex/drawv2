@@ -2670,7 +2670,7 @@
 					"link": 0
 				},
 				"rings": [
-					"waypoint-000005"
+					"node-000005"
 				],
 				"ringLook": true,
 				"notice": "transit off at w5"
@@ -2849,7 +2849,7 @@
 					"link": 0
 				},
 				"rings": [
-					"waypoint-000005"
+					"node-000005"
 				],
 				"notice": "transit off at w5 -- 1 link down"
 			},
@@ -2997,7 +2997,7 @@
 					"link": 0
 				},
 				"rings": [
-					"waypoint-000006"
+					"node-000006"
 				]
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-1, TR-4 and TR-6.",
@@ -3071,11 +3071,11 @@
 					"link": 2
 				},
 				"rings": [
-					"waypoint-000005"
+					"node-000005"
 				],
 				"linksBetween": {
-					"node-000001|waypoint-000005": 1,
-					"waypoint-000005|node-000002": 1
+					"node-000001|node-000005": 1,
+					"node-000005|node-000002": 1
 				},
 				"pins": {
 					"link-000001": 0
@@ -3162,8 +3162,8 @@
 			"expect": {
 				"links": 3,
 				"linksBetween": {
-					"node-000003|waypoint-000005": 1,
-					"waypoint-000005|node-000004": 1,
+					"node-000003|node-000005": 1,
+					"node-000005|node-000004": 1,
 					"node-000003|node-000004": 0
 				},
 				"notice": "cut at w5, whose transit is off"
@@ -3306,13 +3306,13 @@
 				"links": 3,
 				"down": 0,
 				"rings": [
-					"waypoint-000005",
-					"waypoint-000006"
+					"node-000005",
+					"node-000006"
 				],
 				"linksBetween": {
-					"node-000001|waypoint-000005": 1,
-					"waypoint-000005|waypoint-000006": 1,
-					"waypoint-000006|node-000002": 1
+					"node-000001|node-000005": 1,
+					"node-000005|node-000006": 1,
+					"node-000006|node-000002": 1
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269).",
@@ -3358,14 +3358,14 @@
 				"links": 2,
 				"down": 0,
 				"rings": [
-					"waypoint-000006"
+					"node-000006"
 				],
 				"pins": {
 					"link-000001": 1
 				},
 				"linksBetween": {
-					"node-000001|waypoint-000006": 1,
-					"waypoint-000006|node-000002": 1
+					"node-000001|node-000006": 1,
+					"node-000006|node-000002": 1
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-2 and TR-5; the director's report of 2026-09-30 (B269).",
@@ -3402,11 +3402,11 @@
 				"links": 2,
 				"down": 0,
 				"rings": [
-					"waypoint-000005"
+					"node-000005"
 				],
 				"linksBetween": {
-					"node-000001|waypoint-000005": 1,
-					"waypoint-000005|node-000002": 1
+					"node-000001|node-000005": 1,
+					"node-000005|node-000002": 1
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-5; \"Two separately drawn links left alone at a point join into one\" (2026-09-26).",
@@ -3463,10 +3463,10 @@
 				"links": 3,
 				"down": 0,
 				"rings": [
-					"waypoint-000005"
+					"node-000005"
 				],
 				"roles": {
-					"waypoint-000005": [
+					"node-000005": [
 						"endpoint"
 					]
 				}
@@ -3501,7 +3501,7 @@
 				"down": 0,
 				"rings": [],
 				"roles": {
-					"waypoint-000005": [
+					"node-000005": [
 						"junction"
 					]
 				}

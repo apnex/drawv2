@@ -250,8 +250,8 @@ already deletes the link rather than stripping it to a degenerate form.
 function pairWithBoth() {
 	const { m, log } = seeded();                                    // node-aa0001 -- node-aa0002, straight
 	commit(m, log, { ops: [
-		put('waypoint', { id: 'waypoint-bb0001', name: 'waypoint-bb0001', x: 0, y: -60 }),
-		put('link', { id: 'link-bb0002', name: 'link-bb0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-bb0001'] }),
+		put('node', { id: 'node-eb0001', name: 'node-eb0001', x: 0, y: -60 }),
+		put('link', { id: 'link-bb0002', name: 'link-bb0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-eb0001'] }),
 	] }, 'server', 't');
 	return { m, log };
 }
@@ -260,9 +260,9 @@ test('B81: deleting the only bend of a routed link deletes the link when a strai
 	const { m, log } = pairWithBoth();
 	assert.equal(m.all('link').length, 2, 'a straight link and a routed one');
 
-	const r = commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-bb0001' }] }, 'server', 't');
+	const r = commit(m, log, { ops: [{ op: 'del', kind: 'node', id: 'node-eb0001' }] }, 'server', 't');
 	assert.equal(r.ok, true, 'the waypoint deletion is NOT refused — that was the rejected alternative');
-	assert.equal(m.get('waypoint', 'waypoint-bb0001'), undefined, 'the waypoint is gone');
+	assert.equal(m.get('node', 'node-eb0001'), undefined, 'the waypoint is gone');
 	assert.equal(m.get('link', 'link-bb0002'), undefined,
 		'and so is the link that would have been left as a straight duplicate');
 	assert.ok(m.get('link', 'link-aa0003'), 'the ORIGINAL straight link survives — it outranks the route');
@@ -272,7 +272,7 @@ test('B81: with no straight link on the pair, the same deletion merely strips th
 	const { m, log } = pairWithBoth();
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
 
-	commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-bb0001' }] }, 'server', 't');
+	commit(m, log, { ops: [{ op: 'del', kind: 'node', id: 'node-eb0001' }] }, 'server', 't');
 	const survivor = m.get('link', 'link-bb0002');
 	assert.ok(survivor, 'the link survives, because nothing collides with it');
 	assert.deepEqual(survivor.via, [], 'stripped to straight, which is the unchanged behaviour');
@@ -284,7 +284,7 @@ test('B81: the deletion is ONE undoable step, and undo restores both', () => {
 	// compare the counter and not the restoration
 	const content = () => { const d = m.toJSON(); delete d.meta; return JSON.stringify(d); };
 	const before = content();
-	const r = commit(m, log, { ops: [{ op: 'del', kind: 'waypoint', id: 'waypoint-bb0001' }] }, 'server', 't');
+	const r = commit(m, log, { ops: [{ op: 'del', kind: 'node', id: 'node-eb0001' }] }, 'server', 't');
 	assert.equal(m.all('link').length, 1, 'the link went with the waypoint');
 
 	const back = undo(m, log, null);
@@ -301,7 +301,7 @@ test('B81: a bare `set` clearing via is refused — the path no call-site guard 
 	] }, 'server', 't');
 	assert.equal(r.ok, false, 'the invariant refuses it');
 	assert.match(r.error, /straight links between/, 'and names what is wrong');
-	assert.deepEqual(m.get('link', 'link-bb0002').via, ['waypoint-bb0001'], 'nothing was written');
+	assert.deepEqual(m.get('link', 'link-bb0002').via, ['node-eb0001'], 'nothing was written');
 });
 
 test('B81: an already-broken document can still be repaired, not bricked', () => {
@@ -420,17 +420,17 @@ test('B162: deleting a link takes its bends, and one undo puts them back', () =>
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	m.put('node', { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' });
-	m.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 60, y: 60 });
-	m.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 120, y: 60 });
-	m.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001', 'waypoint-aa0002'] });
+	m.put('node', { id: 'node-ea0001', name: 'node-ea0001', x: 60, y: 60 });
+	m.put('node', { id: 'node-ea0002', name: 'node-ea0002', x: 120, y: 60 });
+	m.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001', 'node-ea0002'] });
 
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0001' }]);
 	assert.equal(r.ok, true);
-	const gone = r.ops.filter((o) => o.kind === 'waypoint' && o.op === 'del').map((o) => o.id).sort();
-	assert.deepEqual(gone, ['waypoint-aa0001', 'waypoint-aa0002'], 'both bends go with the link');
+	const gone = r.ops.filter((o) => o.kind === 'node' && o.op === 'del').map((o) => o.id).sort();
+	assert.deepEqual(gone, ['node-ea0001', 'node-ea0002'], 'both bends go with the link');
 	// ONE undoable step: the inverse restores the waypoints as well as the link
-	const back = r.inverse.filter((o) => o.kind === 'waypoint' && o.op === 'put').map((o) => o.entity.id).sort();
-	assert.deepEqual(back, ['waypoint-aa0001', 'waypoint-aa0002'], 'and the undo brings them back');
+	const back = r.inverse.filter((o) => o.kind === 'node' && o.op === 'put').map((o) => o.entity.id).sort();
+	assert.deepEqual(back, ['node-ea0001', 'node-ea0002'], 'and the undo brings them back');
 });
 
 /*
@@ -452,11 +452,11 @@ roles were already derived from the links rather than remembered.
 test('B216: an endpoint waypoint survives its link and becomes a plain anchor', async () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	m.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 120, y: 0 });
-	m.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'waypoint-aa0003' });
+	m.put('node', { id: 'node-ea0003', name: 'node-ea0003', x: 120, y: 0 });
+	m.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'node-ea0003' });
 
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
-	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false,
+	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false,
 		'the waypoint a link TERMINATED at must survive it, as the node at the other end does');
 	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false, 'and so must the node');
 
@@ -464,16 +464,16 @@ test('B216: an endpoint waypoint survives its link and becomes a plain anchor', 
 	const m2 = new Model();
 	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	m2.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
-	m2.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 120, y: 0 });
-	m2.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0003'] });
+	m2.put('node', { id: 'node-ea0003', name: 'node-ea0003', x: 120, y: 0 });
+	m2.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0003'] });
 	const r2 = plan(m2, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
-	assert.ok(r2.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-aa0003' && o.op === 'del'),
+	assert.ok(r2.ops.some((o) => o.kind === 'node' && o.id === 'node-ea0003' && o.op === 'del'),
 		'a bend still goes with its link -- it exists only to shape one');
 
 	// and what survives renders as a plain anchor: no links, so no sub-type
 	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
 	const { waypointRoles } = await import('../kernel/network-roles.mjs');
-	assert.deepEqual(waypointRoles('waypoint-aa0003', []), [], 'no links means no sub-type layer');
+	assert.deepEqual(waypointRoles('node-ea0003', []), [], 'no links means no sub-type layer');
 	assert.deepEqual(waypointLayers([], 20).map((l) => l.cls), ['wp-anchor', 'wp-dot'],
 		'a plain anchor: the ring and the grid dot, nothing else');
 });
@@ -493,17 +493,17 @@ and testing the guard that happens to sit in front of it.
 */
 test('B162: a lone waypoint is safe by SCOPE, not by the pin', () => {
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-bb0001', name: 'waypoint-bb0001', x: 60, y: 60, pinned: true });
+	m.put('node', { id: 'node-eb0001', name: 'node-eb0001', x: 60, y: 60, pinned: true });
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	const r = plan(m, [{ op: 'put', kind: 'node', entity: { id: 'node-aa0002', type: 'host', x: 180, y: 0, name: 'b' } }]);
-	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'a lone waypoint stays');
+	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false, 'a lone waypoint stays');
 
 	// and it is the SCOPE rule doing it: an unpinned lone waypoint is equally safe
 	const m2 = new Model();
-	m2.put('waypoint', { id: 'waypoint-bb0002', name: 'waypoint-bb0002', x: 60, y: 60 });
+	m2.put('node', { id: 'node-eb0002', name: 'node-eb0002', x: 60, y: 60 });
 	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	const r2 = plan(m2, [{ op: 'put', kind: 'node', entity: { id: 'node-aa0004', type: 'host', x: 180, y: 0, name: 'd' } }]);
-	assert.equal(r2.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false, 'pinned or not');
+	assert.equal(r2.ops.some((o) => o.kind === 'node' && o.op === 'del'), false, 'pinned or not');
 });
 
 test('B162: the pin outranks the sweep when a BEND loses its link', () => {
@@ -517,18 +517,18 @@ test('B162: the pin outranks the sweep when a BEND loses its link', () => {
 		const m = new Model();
 		m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 		m.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
-		m.put('waypoint', { id: wp, name: wp, x: 120, y: 0, ...extra });
+		m.put('node', { id: wp, name: wp, x: 120, y: 0, ...extra });
 		m.put('link', { id: link, name: link, src: 'node-aa0001', dst: 'node-aa0002', via: [wp] });
 		return plan(m, [{ op: 'del', kind: 'link', id: link }]);
 	};
 
-	const pinned = bent('waypoint-bb0003', 'link-bb0001', { pinned: true });
-	assert.equal(pinned.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0003'), false,
+	const pinned = bent('node-eb0003', 'link-bb0001', { pinned: true });
+	assert.equal(pinned.ops.some((o) => o.kind === 'node' && o.id === 'node-eb0003'), false,
 		'the author said keep it, so the sweep leaves it');
 
 	// the same shape without the pin IS swept, or the assertion above proves nothing
-	const loose = bent('waypoint-bb0004', 'link-bb0002');
-	assert.ok(loose.ops.some((o) => o.kind === 'waypoint' && o.id === 'waypoint-bb0004'), 'unpinned goes');
+	const loose = bent('node-bb0004', 'link-bb0002');
+	assert.ok(loose.ops.some((o) => o.kind === 'node' && o.id === 'node-bb0004'), 'unpinned goes');
 });
 
 /*
@@ -541,12 +541,12 @@ pre-existing orphans, and every unrelated mutation diverged from the frozen orac
 */
 test('B162: pre-existing debris is left alone -- a commit removes only what it orphaned', () => {
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-cc0001', name: 'waypoint-cc0001', x: 60, y: 60 });          // already unreferenced
+	m.put('node', { id: 'node-ec0001', name: 'node-ec0001', x: 60, y: 60 });          // already unreferenced
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	const r = plan(m, [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 180 } }]);
-	assert.equal(r.ops.some((o) => o.kind === 'waypoint' && o.op === 'del'), false,
+	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false,
 		'moving a node does not sweep litter it did not create');
-	assert.equal(r.inverse.some((o) => o.kind === 'waypoint'), false,
+	assert.equal(r.inverse.some((o) => o.kind === 'node' && o.op === 'put'), false,
 		'and its undo does not resurrect any');
 });
 
@@ -565,10 +565,10 @@ test('B215: deleting the third link from a junction rejoins the other two into a
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
-		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
-		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
-		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
-		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'waypoint-aa0001' }),
+		put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-ea0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'node-ea0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'node-ea0001' }),
 	] }, 'server', 't');
 	assert.equal(m.all('link').length, 3, 'precondition: a three-way junction');
 
@@ -579,17 +579,17 @@ test('B215: deleting the third link from a junction rejoins the other two into a
 	assert.equal(links[0].id, 'link-aa0001', 'and the INBOUND id survives -- the one a split would have kept');
 	assert.equal(links[0].src, 'node-aa0001');
 	assert.equal(links[0].dst, 'node-aa0002');
-	assert.deepEqual(links[0].via, ['waypoint-aa0001'], 'bending through the waypoint');
+	assert.deepEqual(links[0].via, ['node-ea0001'], 'bending through the waypoint');
 });
 
 test('B215: UNDOING the collapse restores the junction exactly', () => {
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
-		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
-		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
-		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
-		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'waypoint-aa0001' }),
+		put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-ea0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'node-ea0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'node-ea0001' }),
 	] }, 'server', 't');
 	const before = shape(m);
 
@@ -617,9 +617,9 @@ test('B217: two links meeting at a waypoint survive being drawn', () => {
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)),
-		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
-		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
-		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
+		put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-ea0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'node-ea0001', dst: 'node-aa0002' }),
 	] }, 'server', 't');
 
 	assert.equal(m.all('link').length, 2,
@@ -627,20 +627,20 @@ test('B217: two links meeting at a waypoint survive being drawn', () => {
 
 	// and the whole point: removing them both leaves the anchor, not nothing
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0001' }] }, 'server', 't');
-	assert.equal(m.all('waypoint').length, 1, 'the terminus survives losing one link');
+	assert.equal(m.all('node').filter((n) => !n.type).length, 1, 'the terminus survives losing one link');
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0002' }] }, 'server', 't');
 	assert.equal(m.all('link').length, 0);
-	assert.equal(m.all('waypoint').length, 1, 'and losing the last one leaves a plain anchor');
+	assert.equal(m.all('node').filter((n) => !n.type).length, 1, 'and losing the last one leaves a plain anchor');
 });
 
 test('B217: a collapse still fires when a junction LOSES a link', () => {
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
-		put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 }),
-		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'waypoint-aa0001' }),
-		put('link', { id: 'link-aa0002', name: 'l2', src: 'waypoint-aa0001', dst: 'node-aa0002' }),
-		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'waypoint-aa0001' }),
+		put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 }),
+		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-ea0001' }),
+		put('link', { id: 'link-aa0002', name: 'l2', src: 'node-ea0001', dst: 'node-aa0002' }),
+		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'node-ea0001' }),
 	] }, 'server', 't');
 	assert.equal(m.all('link').length, 3, 'precondition: a three-way junction, built without collapsing');
 
@@ -648,7 +648,7 @@ test('B217: a collapse still fires when a junction LOSES a link', () => {
 	const links = m.all('link');
 	assert.equal(links.length, 1, 'one in and one out is a bend, so they rejoin');
 	assert.equal(links[0].id, 'link-aa0001', 'and the inbound id survives');
-	assert.deepEqual(links[0].via, ['waypoint-aa0001']);
+	assert.deepEqual(links[0].via, ['node-ea0001']);
 });
 
 /*
@@ -673,12 +673,12 @@ test('B222: two links stored in the SAME direction still collapse -- order is no
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-bb0001', -120)), put('node', node('node-bb0002', 120)), put('node', node('node-bb0003', 240)),
-		put('waypoint', { id: 'waypoint-bb0001', name: 'w', x: 0, y: 0 }),
+		put('node', { id: 'node-eb0001', name: 'w', x: 0, y: 0 }),
 		// every link stores the WAYPOINT as its src -- the shape a junction is left in when the
 		// link that happened to point inward is the one deleted
-		put('link', { id: 'link-bb0001', name: 'l1', src: 'waypoint-bb0001', dst: 'node-bb0001' }),
-		put('link', { id: 'link-bb0002', name: 'l2', src: 'waypoint-bb0001', dst: 'node-bb0002' }),
-		put('link', { id: 'link-bb0003', name: 'l3', src: 'waypoint-bb0001', dst: 'node-bb0003' }),
+		put('link', { id: 'link-bb0001', name: 'l1', src: 'node-eb0001', dst: 'node-bb0001' }),
+		put('link', { id: 'link-bb0002', name: 'l2', src: 'node-eb0001', dst: 'node-bb0002' }),
+		put('link', { id: 'link-bb0003', name: 'l3', src: 'node-eb0001', dst: 'node-bb0003' }),
 	] }, 'server', 't');
 	assert.equal(m.all('link').length, 3, 'precondition: three links, every one stored outward');
 
@@ -686,7 +686,7 @@ test('B222: two links stored in the SAME direction still collapse -- order is no
 	const links = m.all('link');
 	assert.equal(links.length, 1, 'two undeclared links at a waypoint are a bend whatever their stored order');
 	assert.equal(links[0].via.length, 1, 'and the waypoint survives as the bend between them');
-	assert.deepEqual(links[0].via, ['waypoint-bb0001']);
+	assert.deepEqual(links[0].via, ['node-eb0001']);
 	const ends = [links[0].src, links[0].dst].sort();
 	assert.deepEqual(ends, ['node-bb0001', 'node-bb0002'], 'the merged link spans what the two survivors reached');
 });
@@ -769,7 +769,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 
 	commit(m, log, { ops: [
 		put('node', node('node-cc0001', -120)), put('node', node('node-cc0002', 120)), put('node', node('node-cc0003', 240)),
-		put('waypoint', { id: 'waypoint-cc0001', name: 'w', x: 0, y: 0 }),
+		put('node', { id: 'node-ec0001', name: 'w', x: 0, y: 0 }),
 		// all three stored OUTWARD from the waypoint, so a collapse must flip one of them. Three
 		// DISTINCT far ends -- a repeated endpoint pair is refused as a duplicate, which would
 		// leave the fixture with two links and collapse it before the test began (the B217 trap).
@@ -778,9 +778,9 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 		// cc0002 declares flow WITH its storage, meaning it leaves. One in, one out: a bend.
 		// (Both declared the same way would be two flows leaving one point, which is a divergence
 		// and stays a junction -- that case is the matrix's, H15.4.)
-		put('link', { id: 'link-cc0001', name: 'l1', src: 'waypoint-cc0001', dst: 'node-cc0001', direction: 'reverse' }),
-		put('link', { id: 'link-cc0002', name: 'l2', src: 'waypoint-cc0001', dst: 'node-cc0002', direction: 'forward' }),
-		put('link', { id: 'link-cc0003', name: 'l3', src: 'waypoint-cc0001', dst: 'node-cc0003' }),
+		put('link', { id: 'link-cc0001', name: 'l1', src: 'node-ec0001', dst: 'node-cc0001', direction: 'reverse' }),
+		put('link', { id: 'link-cc0002', name: 'l2', src: 'node-ec0001', dst: 'node-cc0002', direction: 'forward' }),
+		put('link', { id: 'link-cc0003', name: 'l3', src: 'node-ec0001', dst: 'node-cc0003' }),
 	] }, 'server', 't');
 
 	assert.equal(m.all('link').length, 3, 'precondition: three links, every one stored outward');
@@ -789,7 +789,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	// the same trap as B217 where a fixture was rewritten before the assertions ran.
 	const before = { ...m.get('link', 'link-cc0001') };
 	assert.equal(before.direction, 'reverse', 'the commit door accepted a declared flow');
-	assert.equal(facing(before, 'waypoint-cc0001'), 'in', 'and it means: arriving at the waypoint');
+	assert.equal(facing(before, 'node-ec0001'), 'in', 'and it means: arriving at the waypoint');
 	assert.equal(facing(before, 'node-cc0001'), 'out', 'having left node-cc0001');
 
 	// what the write accepted, the boot must load -- the B220 round trip
@@ -797,7 +797,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 
 	// now force a collapse that has to flip one half
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-cc0003' }] }, 'server', 't');
-	const merged = m.all('link').find((l) => (l.via || []).includes('waypoint-cc0001'));
+	const merged = m.all('link').find((l) => (l.via || []).includes('node-ec0001'));
 	assert.ok(merged, 'precondition: the two survivors collapsed to a bend');
 
 	/*
@@ -834,10 +834,10 @@ test('B239: a collapse whose merge would name a waypoint twice is not taken', ()
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0002', 300)), put('node', node('node-aa0003', 600)),
-		put('waypoint', wpAt('waypoint-aa0010', 120)), put('waypoint', wpAt('waypoint-aa0011', 240)),
-		linkPut('link-aa0001', 'waypoint-aa0010', 'waypoint-aa0011'),
-		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002', { via: ['waypoint-aa0010'] }),
-		linkPut('link-aa0003', 'node-aa0003', 'waypoint-aa0011'),
+		put('node', wpAt('node-aa0010', 120)), put('node', wpAt('node-aa0011', 240)),
+		linkPut('link-aa0001', 'node-aa0010', 'node-aa0011'),
+		linkPut('link-aa0002', 'node-aa0011', 'node-aa0002', { via: ['node-aa0010'] }),
+		linkPut('link-aa0003', 'node-aa0003', 'node-aa0011'),
 	] }, 'server', 't');
 	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 
@@ -852,11 +852,11 @@ test('B239: a collapse whose merge would duplicate a link bending through the sa
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 480)), put('node', node('node-aa0003', 600)),
-		put('waypoint', wpAt('waypoint-aa0010', 120)), put('waypoint', wpAt('waypoint-aa0011', 240)),
-		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011', { via: ['waypoint-aa0010'] }),
-		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002'),
-		linkPut('link-aa0003', 'node-aa0003', 'waypoint-aa0011'),
-		linkPut('link-aa0004', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0010'] }),
+		put('node', wpAt('node-aa0010', 120)), put('node', wpAt('node-aa0011', 240)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0011', { via: ['node-aa0010'] }),
+		linkPut('link-aa0002', 'node-aa0011', 'node-aa0002'),
+		linkPut('link-aa0003', 'node-aa0003', 'node-aa0011'),
+		linkPut('link-aa0004', 'node-aa0001', 'node-aa0002', { via: ['node-aa0010'] }),
 	] }, 'server', 't');
 	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 
@@ -875,14 +875,14 @@ test('B239: the guard judges each merge against the document the EARLIER merge l
 	const { m, log } = fresh();
 	const seeded = commit(m, log, { ops: [
 		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)), put('node', node('node-aa0003', 300, { y: 240 })),
-		put('waypoint', wpAt('waypoint-aa0011', 180)), put('waypoint', wpAt('waypoint-aa0012', 180, 240)),
-		put('waypoint', wpAt('waypoint-aa0013', 420)),
-		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011'),
-		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002', { via: ['waypoint-aa0013'] }),
-		linkPut('link-aa0003', 'node-aa0001', 'waypoint-aa0012'),
-		linkPut('link-aa0004', 'waypoint-aa0012', 'node-aa0002', { via: ['waypoint-aa0013'] }),
-		linkPut('link-aa0005', 'node-aa0003', 'waypoint-aa0011'),
-		linkPut('link-aa0006', 'node-aa0003', 'waypoint-aa0012'),
+		put('node', wpAt('node-aa0011', 180)), put('node', wpAt('node-aa0012', 180, 240)),
+		put('node', wpAt('node-aa0013', 420)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0011'),
+		linkPut('link-aa0002', 'node-aa0011', 'node-aa0002', { via: ['node-aa0013'] }),
+		linkPut('link-aa0003', 'node-aa0001', 'node-aa0012'),
+		linkPut('link-aa0004', 'node-aa0012', 'node-aa0002', { via: ['node-aa0013'] }),
+		linkPut('link-aa0005', 'node-aa0003', 'node-aa0011'),
+		linkPut('link-aa0006', 'node-aa0003', 'node-aa0012'),
 	] }, 'server', 't');
 	assert.ok(seeded.ok !== false, 'precondition: the seed commits');
 	assert.equal(m.all('link').length, 6, 'precondition: all six links exist');
@@ -899,10 +899,10 @@ test('B239: a merge that passes the referential rules is still taken', () => {
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 480)), put('node', node('node-aa0003', 600)),
-		put('waypoint', wpAt('waypoint-aa0011', 240)),
-		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011'),
-		linkPut('link-aa0002', 'waypoint-aa0011', 'node-aa0002'),
-		linkPut('link-aa0003', 'node-aa0003', 'waypoint-aa0011'),
+		put('node', wpAt('node-aa0011', 240)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0011'),
+		linkPut('link-aa0002', 'node-aa0011', 'node-aa0002'),
+		linkPut('link-aa0003', 'node-aa0003', 'node-aa0011'),
 	] }, 'server', 't');
 	commit(m, log, { ops: [delOp('link', 'link-aa0003')] }, 'server', 't');
 	assert.equal(m.all('link').length, 1, 'a legal merge still rejoins the two links into one');
@@ -923,16 +923,16 @@ function twoJunctions(extra = {}) {
 	const { m, log } = fresh();
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)),
-		put('waypoint', wpAt('waypoint-aa0011', 180)), put('waypoint', wpAt('waypoint-aa0012', 360)),
-		put('waypoint', wpAt('waypoint-aa0013', 300, 240)),
-		linkPut('link-aa0001', 'node-aa0001', 'waypoint-aa0011', extra.a || {}),
-		linkPut('link-aa0002', 'waypoint-aa0011', 'waypoint-aa0012'),
-		linkPut('link-aa0003', extra.cSrc || 'waypoint-aa0012', extra.cDst || 'node-aa0002', extra.c || {}),
+		put('node', wpAt('node-aa0011', 180)), put('node', wpAt('node-aa0012', 360)),
+		put('node', wpAt('node-aa0013', 300, 240)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0011', extra.a || {}),
+		linkPut('link-aa0002', 'node-aa0011', 'node-aa0012'),
+		linkPut('link-aa0003', extra.cSrc || 'node-aa0012', extra.cDst || 'node-aa0002', extra.c || {}),
 		// the parallel route: deleting it is what leaves both waypoints one-in one-out. Its STORED
 		// orientation decides which waypoint the planner visits first, so tests can flip it.
 		extra.flipParallel
-			? linkPut('link-aa0009', 'waypoint-aa0012', 'waypoint-aa0011', { via: ['waypoint-aa0013'] })
-			: linkPut('link-aa0009', 'waypoint-aa0011', 'waypoint-aa0012', { via: ['waypoint-aa0013'] }),
+			? linkPut('link-aa0009', 'node-aa0012', 'node-aa0011', { via: ['node-aa0013'] })
+			: linkPut('link-aa0009', 'node-aa0011', 'node-aa0012', { via: ['node-aa0013'] }),
 	] }, 'server', 't');
 	assert.equal(m.all('link').length, 4, 'precondition: the seed committed all four links');
 	return { m, log };
@@ -948,7 +948,7 @@ test('B240: two collapses that share a link rejoin the chain end to end, and los
 	assert.equal(links.length, 1, 'both waypoints are left one-in one-out, so the chain rejoins into ONE link');
 	assert.equal(links[0].src, 'node-aa0001');
 	assert.equal(links[0].dst, 'node-aa0002', 'the far node is still connected -- no link was silently lost');
-	assert.deepEqual(links[0].via, ['waypoint-aa0011', 'waypoint-aa0012']);
+	assert.deepEqual(links[0].via, ['node-aa0011', 'node-aa0012']);
 	assert.equal(loadsAtBoot(m), null);
 
 	undo(m, log);
@@ -965,7 +965,7 @@ test('B240: a declared convergence is judged against the link the earlier collap
 	// property is asserted in BOTH orientations rather than naming the survivor (H16 review).
 	const { linkFacing } = await import('../kernel/network-roles.mjs');
 	for (const flipParallel of [false, true]) {
-		const { m, log } = twoJunctions({ flipParallel, a: { direction: 'forward' }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { direction: 'forward' } });
+		const { m, log } = twoJunctions({ flipParallel, a: { direction: 'forward' }, cSrc: 'node-aa0002', cDst: 'node-aa0012', c: { direction: 'forward' } });
 		assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 
 		commit(m, log, { ops: [delOp('link', 'link-aa0009')] }, 'server', 't');
@@ -974,7 +974,7 @@ test('B240: a declared convergence is judged against the link the earlier collap
 		for (const n of ['node-aa0001', 'node-aa0002']) {
 			assert.ok(links.some((l) => l.src === n || l.dst === n), `${n} keeps its link (flipped: ${flipParallel})`);
 		}
-		const ends = (l) => [l.src, l.dst].filter((e) => e.startsWith('waypoint-'));
+		const ends = (l) => [l.src, l.dst].filter((e) => { const n = m.get('node', e); return n && !n.type; });   // the waypoints (F-c)
 		const meet = ends(links[0]).filter((e) => ends(links[1]).includes(e));
 		assert.equal(meet.length, 1, `the two survivors meet at one waypoint (flipped: ${flipParallel})`);
 		for (const l of links) {
@@ -1008,24 +1008,24 @@ function groupedBend(members) {
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)),
 		put('node', node('node-aa0003', 120, { y: 240 })), put('node', node('node-aa0004', 240, { y: 240 })),
-		put('waypoint', wpAt('waypoint-aa0011', 300)),
-		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0011'] }),
+		put('node', wpAt('node-aa0011', 300)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['node-aa0011'] }),
 		put('group', { id: 'group-aa0001', name: 'g', members }),
 	] }, 'server', 't');
 	// without these, a refused seed would leave an empty document on which the dissolve and re-route
 	// tests pass with the defect present -- their bend is "swept" because it never existed (H16 review)
-	assert.ok(m.get('waypoint', 'waypoint-aa0011'), 'precondition: the grouped bend exists');
+	assert.ok(m.get('node', 'node-aa0011'), 'precondition: the grouped bend exists');
 	assert.deepEqual(m.get('group', 'group-aa0001')?.members, members, 'precondition: the group holds it');
 	return { m, log };
 }
 
 test('B241: sweeping a grouped bend dissolves a group it leaves below two members', () => {
-	const { m, log } = groupedBend(['waypoint-aa0011', 'node-aa0003']);
+	const { m, log } = groupedBend(['node-aa0011', 'node-aa0003']);
 	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 	const before = contentOf(m);
 
 	commit(m, log, { ops: [delOp('link', 'link-aa0001')] }, 'server', 't');
-	assert.equal(m.get('waypoint', 'waypoint-aa0011'), undefined, 'precondition: the bend was swept');
+	assert.equal(m.get('node', 'node-aa0011'), undefined, 'precondition: the bend was swept');
 	assert.equal(m.get('group', 'group-aa0001'), undefined, 'a group left with one member dissolves, as it would on a requested delete');
 	assert.equal(loadsAtBoot(m), null, 'the committed document is one the store will load');
 
@@ -1034,7 +1034,7 @@ test('B241: sweeping a grouped bend dissolves a group it leaves below two member
 });
 
 test('B241: sweeping a grouped bend trims it from a group that keeps two members', () => {
-	const { m, log } = groupedBend(['waypoint-aa0011', 'node-aa0003', 'node-aa0004']);
+	const { m, log } = groupedBend(['node-aa0011', 'node-aa0003', 'node-aa0004']);
 	commit(m, log, { ops: [delOp('link', 'link-aa0001')] }, 'server', 't');
 	assert.deepEqual(m.get('group', 'group-aa0001')?.members, ['node-aa0003', 'node-aa0004']);
 	assert.equal(loadsAtBoot(m), null);
@@ -1047,9 +1047,9 @@ test('B241: two swept bends in one group compose, member by member', () => {
 	commit(m, log, { ops: [
 		put('node', node('node-aa0001', 0)), put('node', node('node-aa0002', 600)),
 		put('node', node('node-aa0003', 120, { y: 240 })), put('node', node('node-aa0004', 240, { y: 240 })),
-		put('waypoint', wpAt('waypoint-aa0011', 240)), put('waypoint', wpAt('waypoint-aa0012', 360)),
-		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['waypoint-aa0011', 'waypoint-aa0012'] }),
-		put('group', { id: 'group-aa0001', name: 'g', members: ['waypoint-aa0011', 'waypoint-aa0012', 'node-aa0003', 'node-aa0004'] }),
+		put('node', wpAt('node-aa0011', 240)), put('node', wpAt('node-aa0012', 360)),
+		linkPut('link-aa0001', 'node-aa0001', 'node-aa0002', { via: ['node-aa0011', 'node-aa0012'] }),
+		put('group', { id: 'group-aa0001', name: 'g', members: ['node-aa0011', 'node-aa0012', 'node-aa0003', 'node-aa0004'] }),
 	] }, 'server', 't');
 	const before = contentOf(m);
 	commit(m, log, { ops: [delOp('link', 'link-aa0001')] }, 'server', 't');
@@ -1064,9 +1064,9 @@ test('B241: a re-route that drops a grouped bend reaches the same sweep, and kee
 	// not a delete at all: `set via []` straightens the link, the bend becomes debris, and the sweep
 	// takes it. The reality map found six request shapes that reach the sweep; the fix lives in the
 	// sweep itself rather than at any one of them, and this is the one that deletes nothing by name.
-	const { m, log } = groupedBend(['waypoint-aa0011', 'node-aa0003']);
+	const { m, log } = groupedBend(['node-aa0011', 'node-aa0003']);
 	commit(m, log, { ops: [{ op: 'set', kind: 'link', id: 'link-aa0001', patch: { via: [] } }] }, 'server', 't');
-	assert.equal(m.get('waypoint', 'waypoint-aa0011'), undefined, 'precondition: the bend was swept');
+	assert.equal(m.get('node', 'node-aa0011'), undefined, 'precondition: the bend was swept');
 	assert.equal(m.get('group', 'group-aa0001'), undefined, 'and its group, left with one member, dissolved');
 	assert.equal(loadsAtBoot(m), null);
 });
@@ -1080,24 +1080,24 @@ two after. Found by the director in the lab, cutting a link at a second non-tran
 test('B269: splitting a link does not join a two-link terminus at its other end', () => {
 	const m = new Model(); const log = new Log();   // the server's planner works on a plain Model
 	const P = 60, nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
-	const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+	const wp = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, x: x * P, y: y * P } });
 	const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...(via ? { via } : {}) } });
-	assert.equal(commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000f', 6, 0), wp('waypoint-00000e', 0, 0), wp('waypoint-00000b', 3, -2),
-		lk('link-00000c', 'node-00000a', 'waypoint-00000e'), lk('link-00000d', 'waypoint-00000e', 'node-00000f', ['waypoint-00000b'])] }, 'x', 'x').ok, true);
+	assert.equal(commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000f', 6, 0), wp('node-00000e', 0, 0), wp('node-e0000b', 3, -2),
+		lk('link-00000c', 'node-00000a', 'node-00000e'), lk('link-00000d', 'node-00000e', 'node-00000f', ['node-e0000b'])] }, 'x', 'x').ok, true);
 	const r = commit(m, log, { label: 'split', ops: [{ op: 'del', kind: 'link', id: 'link-00000d' },
-		lk('link-00000d', 'waypoint-00000e', 'waypoint-00000b'), lk('link-0000ee', 'waypoint-00000b', 'node-00000f')] }, 'x', 'x');
+		lk('link-00000d', 'node-00000e', 'node-e0000b'), lk('link-0000ee', 'node-e0000b', 'node-00000f')] }, 'x', 'x');
 	assert.equal(r.ok, true);
 	assert.deepEqual(m.all('link').map((l) => `${l.src}>${l.dst}`).sort(),
-		['node-00000a>waypoint-00000e', 'waypoint-00000b>node-00000f', 'waypoint-00000e>waypoint-00000b'].sort(), 'three links: E keeps its two');
+		['node-00000a>node-00000e', 'node-e0000b>node-00000f', 'node-00000e>node-e0000b'].sort(), 'three links: E keeps its two');
 });
 
 test('B269: a link that really leaves a waypoint still joins the two left there, as ruled', () => {
 	const m = new Model(); const log = new Log();   // the server's planner works on a plain Model
 	const P = 60, nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
-	const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+	const wp = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, x: x * P, y: y * P } });
 	const lk = (id, s, d) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d } });
-	commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), nd('node-00000c', 0, -4), wp('waypoint-00000e', 0, 0),
-		lk('link-00000a', 'node-00000a', 'waypoint-00000e'), lk('link-00000b', 'waypoint-00000e', 'node-00000b'), lk('link-00000c', 'node-00000c', 'waypoint-00000e')] }, 'x', 'x');
+	commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), nd('node-00000c', 0, -4), wp('node-00000e', 0, 0),
+		lk('link-00000a', 'node-00000a', 'node-00000e'), lk('link-00000b', 'node-00000e', 'node-00000b'), lk('link-00000c', 'node-00000c', 'node-00000e')] }, 'x', 'x');
 	assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: 'link-00000c' }] }, 'x', 'x').ok, true);
 	assert.equal(m.all('link').length, 1, 'three became two at E, so the two join into one');
 });
@@ -1109,12 +1109,12 @@ terminus still never joins (B214), and an edit that leaves them incompatible, or
 */
 test('B285: two links at a junction join when an edit to one makes their planes match, and only then', () => {
 	const P = 60, nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
-	const wp = (id, x, y) => ({ op: 'put', kind: 'waypoint', entity: { id, name: id, x: x * P, y: y * P } });
+	const wp = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, x: x * P, y: y * P } });
 	const lk = (id, s, d, extra = {}) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...extra } });
 	const board = () => {
 		const m = new Model(); const log = new Log();
-		assert.equal(commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), wp('waypoint-00000e', 0, -2),
-			lk('link-00000a', 'node-00000a', 'waypoint-00000e', { control: true }), lk('link-00000b', 'waypoint-00000e', 'node-00000b')] }, 'x', 'x').ok, true);
+		assert.equal(commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), wp('node-00000e', 0, -2),
+			lk('link-00000a', 'node-00000a', 'node-00000e', { control: true }), lk('link-00000b', 'node-00000e', 'node-00000b')] }, 'x', 'x').ok, true);
 		assert.equal(m.all('link').length, 2, 'a control link and a data link meeting at E: drawn, so never joined');
 		return { m, log };
 	};
@@ -1123,7 +1123,7 @@ test('B285: two links at a junction join when an edit to one makes their planes 
 	assert.equal(commit(m, log, set({ name: 'renamed' }), 'x', 'x').ok, true);
 	assert.equal(m.all('link').length, 2, 'a rename decides nothing: still two');
 	assert.equal(commit(m, log, set({ control: true }), 'x', 'x').ok, true);
-	assert.deepEqual(m.all('link').map((l) => [l.id, l.src, l.dst, l.via, l.control]), [['link-00000a', 'node-00000a', 'node-00000b', ['waypoint-00000e'], true]], 'now both control: one link, bending at E');
+	assert.deepEqual(m.all('link').map((l) => [l.id, l.src, l.dst, l.via, l.control]), [['link-00000a', 'node-00000a', 'node-00000b', ['node-00000e'], true]], 'now both control: one link, bending at E');
 	const other = board();
 	assert.equal(commit(other.m, other.log, set({ control: false }, 'link-00000a'), 'x', 'x').ok, true);
 	assert.equal(other.m.all('link').length, 1, 'or the other way: both data');
@@ -1327,9 +1327,9 @@ test('PL-5: the kind table is the one list of kinds, and what still states them 
 	const { CORE_KINDS, COMPOSITE } = await import('../model/shape.mjs');
 	const { list: KINDS, collection: COLLECTION, selectable: SELECTABLE_KINDS, optional: OPTIONAL } = CORE_KINDS;
 	const { collectionCap } = await import('../planner/policy.mjs');
-	assert.deepEqual(KINDS, ['node', 'waypoint', 'link', 'zone', 'group']);
+	assert.deepEqual(KINDS, ['node', 'link', 'zone', 'group']);
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
-	assert.deepEqual(SELECTABLE_KINDS, ['node', 'waypoint', 'link', 'zone'], 'a group is never selected directly');
+	assert.deepEqual(SELECTABLE_KINDS, ['node', 'link', 'zone'], 'a group is never selected directly');
 	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's

@@ -367,7 +367,7 @@ field the server rejects — the clone would apply locally and then be refused o
 const routed = (h) => {
 	const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
 	const w = h.model.makeWaypoint({ x: 60, y: 60 });
-	h.model.put('waypoint', w);
+	h.model.put('node', w);
 	const link = { ...h.model.makeLink(a.id, b.id), via: [w.id] };
 	h.model.put('link', link);
 	return { a, b, w, link };
@@ -386,7 +386,7 @@ test('B30: duplicating a routed link keeps its route', () => {
 		assert.equal(link.via?.length, 1, 'the clone kept its bend');
 		assert.notEqual(link.via[0], w.id, 'and the bend is the CLONED waypoint, not the original');
 
-		const wp = ops.filter((o) => o.kind === 'waypoint').map((o) => o.entity);
+		const wp = ops.filter((o) => o.kind === 'node' && !o.entity.type).map((o) => o.entity);
 		assert.equal(wp.length, 1, 'the via waypoint was pulled into the closure');
 		/*
 		B187 reversed this assertion, and the reversal is the point.
@@ -424,7 +424,7 @@ test('B30: an explicitly selected waypoint is cloned', () => {
 
 		const ops = h.soleCommit().ops;
 		assert.equal(ops.length, 1);
-		assert.equal(ops[0].kind, 'waypoint', 'a waypoint is selectable, so it is duplicable');
+		assert.deepEqual([ops[0].kind, ops[0].entity.type], ['node', undefined], 'a waypoint is selectable, so it is duplicable -- a node with no type (F-c)');
 		assert.notEqual(ops[0].entity.id, w.id);
 	} finally { h.restore(); }
 });
@@ -1119,7 +1119,7 @@ test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		const wp = h.model.makeWaypoint({ x: 180, y: 60 });
-		h.model.put('waypoint', wp);
+		h.model.put('node', wp);
 		const link = { ...h.model.makeLink(a.id, b.id), via: [wp.id], closed: true };
 		h.model.put('link', link);
 
@@ -1128,7 +1128,7 @@ test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
 		assert.equal(copy.closed, true, 'the closed flag is authored geometry, not decoration');
 		assert.equal(copy.via.length, 1);
 		assert.notEqual(copy.via[0], wp.id, 'the bend is the copy\'s own — sharing it is invalid');
-		assert.ok(clones.some((c) => c.kind === 'waypoint'), 'so the waypoint was pulled into the set');
+		assert.ok(clones.some((c) => c.kind === 'node' && !c.entity.type), 'so the waypoint was pulled into the set');
 	} finally { h.restore(); }
 });
 
@@ -1168,7 +1168,7 @@ test('B46: a routed link commits once, with its bend, and lands selected', () =>
 		const link = h.model.all('link')[0];
 		assert.equal(h.model.all('link').length, 1);
 		assert.equal(link.via.length, 1, 'the bend rode along');
-		assert.equal(h.model.all('waypoint').length, 1);
+		assert.equal(h.model.all('node').filter((n) => !n.type).length, 1);
 		assert.ok(h.selection.has(link.id), 'and the route is selected');
 	} finally { h.restore(); }
 });
@@ -1258,7 +1258,7 @@ test('B72: a second link between the same pair is allowed when it carries a bend
 		routed();
 		assert.equal(h.model.all('link').length, 2,
 			'a routed duplicate IS allowed: the bend makes it a distinct, visible path');
-		assert.equal(h.model.all('waypoint').length, 1,
+		assert.equal(h.model.all('node').filter((n) => !n.type).length, 1,
 			'and the waypoint survived — the refusal used to delete every one the user placed');
 		assert.ok(h.model.all('link').some((l) => l.via && l.via.length === 1), 'the second carries its bend');
 	} finally { h.restore(); }
@@ -1306,7 +1306,7 @@ test('B80: linksBetween reports every link joining a pair, where linkBetween rep
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const w = h.model.makeWaypoint({ x: 180, y: -40 }); h.model.put('waypoint', w);
+		const w = h.model.makeWaypoint({ x: 180, y: -40 }); h.model.put('node', w);
 		const straight = h.model.makeLink(a.id, b.id); h.model.put('link', straight);
 		const bent = h.model.makeLink(a.id, b.id); bent.via = [w.id]; h.model.put('link', bent);
 
@@ -1367,7 +1367,7 @@ test('B146: the waypoint is not a palette digit, and `w` still covers both state
 		// idle: `w` places a standalone waypoint. This is the case the tile duplicated.
 		h.capture.onMove(pointer(0, 0));
 		h.capture.onKeyDown(key('w'));
-		assert.equal(h.model.all('waypoint').length, 1, '`w` places one when idle');
+		assert.equal(h.model.all('node').filter((n) => !n.type).length, 1, '`w` places one when idle');
 
 		// `7` is no longer a hand digit at all
 		assert.equal(resolveKey(key('7'), { gesturing: false }), null, '7 resolves to nothing');
@@ -1522,7 +1522,7 @@ looks like it covers this and does not: the endpoint pad is still hit-testable i
 design, so a drag started on the pad is the case that would slip through.
 */
 test('B202: a press in run mode starts no gesture, on a waypoint or a node', () => {
-	for (const kind of ['waypoint-aa0001', 'node-aa0001']) {
+	for (const kind of ['node-ea0001', 'node-aa0001']) {
 		const h = makeInput();
 		try {
 			h.renderer.mode = 'run';
@@ -1568,19 +1568,19 @@ still select, which `link`'s commit already does for any kind: "a no-drag press 
 test('B211: a left CLICK on a linked waypoint selects it', () => {
 	const h = makeInput();
 	try {
-		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
-		h.model.put('waypoint', { id: 'waypoint-aa0002', name: 'w2', x: 180, y: 0 });
-		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+		h.model.put('node', { id: 'node-ea0001', name: 'w1', x: 0, y: 0 });
+		h.model.put('node', { id: 'node-ea0002', name: 'w2', x: 180, y: 0 });
+		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-ea0001', dst: 'node-ea0002' });
 		const at = (x, y) => pointer(x, y, {
 			button: 0,
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'node-ea0001' } : null) },
 		});
 
 		// press and release on the spot -- no drag
 		h.capture.onDown(at(0, 0));
 		h.capture.onUp(at(0, 0));
 
-		assert.ok(h.selection.list().includes('waypoint-aa0001'),
+		assert.ok(h.selection.list().includes('node-ea0001'),
 			'a click with no drag must select, exactly as it does on a node');
 		assert.equal(h.commits.length, 0, 'and a click alone commits nothing');
 	} finally { h.restore(); }
@@ -1589,11 +1589,11 @@ test('B211: a left CLICK on a linked waypoint selects it', () => {
 test('B203: a left drag never MOVES a waypoint', () => {
 	const h = makeInput();
 	try {
-		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
-		h.model.put('waypoint', { id: 'waypoint-aa0002', name: 'w2', x: 180, y: 0 });
-		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+		h.model.put('node', { id: 'node-ea0001', name: 'w1', x: 0, y: 0 });
+		h.model.put('node', { id: 'node-ea0002', name: 'w2', x: 180, y: 0 });
+		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-ea0001', dst: 'node-ea0002' });
 		const at = (x, y, mod) => pointer(x, y, {
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'node-ea0001' } : null) },
 			...mod,
 		});
 
@@ -1601,7 +1601,7 @@ test('B203: a left drag never MOVES a waypoint', () => {
 		h.capture.onMove(at(0, 240, { button: 0 }));
 		h.capture.onUp(at(0, 240, { button: 0 }));
 
-		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 0,
+		assert.equal(h.model.get('node', 'node-ea0001').y, 0,
 			'a LEFT drag moved the waypoint -- left is the link button, right is the move button');
 	} finally { h.restore(); }
 });
@@ -1609,19 +1609,19 @@ test('B203: a left drag never MOVES a waypoint', () => {
 test('B203: right-drag still moves a waypoint', () => {
 	const h = makeInput();
 	try {
-		h.model.put('waypoint', { id: 'waypoint-aa0001', name: 'w1', x: 0, y: 0 });
-		h.model.put('waypoint', { id: 'waypoint-aa0002', name: 'w2', x: 180, y: 0 });
-		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002' });
+		h.model.put('node', { id: 'node-ea0001', name: 'w1', x: 0, y: 0 });
+		h.model.put('node', { id: 'node-ea0002', name: 'w2', x: 180, y: 0 });
+		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-ea0001', dst: 'node-ea0002' });
 		const at = (x, y) => pointer(x, y, {
 			button: 2,
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'waypoint-aa0001' } : null) },
+			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'node-ea0001' } : null) },
 		});
 
 		h.capture.onDown(at(0, 0));
 		h.capture.onMove(at(0, 240));
 		h.capture.onUp(at(0, 240));
 
-		assert.equal(h.model.get('waypoint', 'waypoint-aa0001').y, 240, 'the RIGHT drag is the move gesture and it did not move');
+		assert.equal(h.model.get('node', 'node-ea0001').y, 240, 'the RIGHT drag is the move gesture and it did not move');
 		assert.equal(h.commits.length, 1, 'one drag is one change');
 	} finally { h.restore(); }
 });
@@ -1644,8 +1644,8 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 		m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', x: -120, y: 0 });
 		m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', x: 120, y: 0 });
 		m.put('node', { id: 'node-aa0003', name: 'c', type: 'host', x: 0, y: 120 });
-		m.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
-		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'] });
+		m.put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 });
+		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] });
 
 		const at = (x, y, id) => pointer(x, y, {
 			button: 0,
@@ -1653,13 +1653,13 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 		});
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
-		h.capture.onUp(at(0, 0, 'waypoint-aa0001'));
+		h.capture.onUp(at(0, 0, 'node-ea0001'));
 
 		assert.equal(m.all('link').length, 3, 'the bend split, and the new link joined it');
 		const srcHalf = m.get('link', 'link-aa0001');
 		assert.ok(srcHalf, 'the SRC half keeps the original id');
 		assert.equal(srcHalf.src, 'node-aa0001', 'it carries the route original start');
-		assert.equal(srcHalf.dst, 'waypoint-aa0001', 'and ends at the waypoint');
+		assert.equal(srcHalf.dst, 'node-ea0001', 'and ends at the waypoint');
 	} finally { h.restore(); }
 });
 
@@ -1674,12 +1674,12 @@ test('B284: a drag onto a bend of a control link with a direction splits it into
 		m.put('node', { id: 'node-aa0001', name: 'a', type: 'host', x: -120, y: 0 });
 		m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', x: 120, y: 0 });
 		m.put('node', { id: 'node-aa0003', name: 'c', type: 'host', x: 0, y: 120 });
-		m.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
-		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'], control: true, direction: 'forward' });
+		m.put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 });
+		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'], control: true, direction: 'forward' });
 		const at = (x, y, id) => pointer(x, y, { button: 0, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) } });
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
-		h.capture.onUp(at(0, 0, 'waypoint-aa0001'));
+		h.capture.onUp(at(0, 0, 'node-ea0001'));
 		const halves = m.all('link').filter((l) => l.src === 'node-aa0001' || l.dst === 'node-aa0002');
 		assert.equal(halves.length, 2, 'the bend split in two');
 		for (const l of halves) assert.deepEqual([l.control, l.direction], [true, 'forward'], `${l.id} keeps the control plane and the direction`);

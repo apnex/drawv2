@@ -63,9 +63,9 @@ test('TG-1b: a link the join absorbs records what it joined into; nothing else c
 	const m = new Model();
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
-	m.put('waypoint', { id: 'waypoint-00000e', name: 'E', x: 0, y: -2 * P });
-	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'waypoint-00000e', control: true });
-	m.put('link', { id: 'link-00000b', name: 'b', src: 'waypoint-00000e', dst: 'node-00000b' });
+	m.put('node', { id: 'node-00000e', name: 'E', x: 0, y: -2 * P });
+	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000e', control: true });
+	m.put('link', { id: 'link-00000b', name: 'b', src: 'node-00000e', dst: 'node-00000b' });
 	let seen = null;
 	const probe = { id: 'probe', phase: 'join', doc: 'test probe', trigger: EVERYTHING, run: ({ changes }) => { seen = changes.list(); } };
 	// the probe runs after the classic join, in the same phase

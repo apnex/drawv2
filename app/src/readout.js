@@ -10,6 +10,7 @@ clicking any mount toggles, persisted.
 import { kindOf } from '../../model/model.mjs';
 import { GAP, spanExtent } from './snap.js';
 import { linkMarker } from '../../kernel/network-appearance.mjs';
+import { isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const UNITS_KEY = 'draw.units';
 
@@ -120,7 +121,7 @@ export class Readout {
 			const kind = kindOf(id);
 			const entity = this.model.get(kind, id);
 			if (!entity) return null;
-			if (kind === 'node') return `${entity.name || 'node'} ${this.pair(entity.x, entity.y)}${this.rel(entity.x, entity.y)}`;
+			if (isTypedEntity(kind, entity)) return `${entity.name || 'node'} ${this.pair(entity.x, entity.y)}${this.rel(entity.x, entity.y)}`;
 			if (kind === 'zone') return `${entity.name || 'zone'} ${this.pair(entity.x, entity.y)} ${this.dims(entity.w, entity.h)}${this.rel(entity.x, entity.y)}`;
 			if (kind === 'link') {
 				// an ANCHOR is a node OR a waypoint (B29). A waypoint has no name — it is a bend, not a

@@ -18,8 +18,8 @@ const accessOf = (entities, links = []) => ({
 	rolesOf: (id) => waypointRoles(id, ((id) => links.filter((l) => l.src === id || l.dst === id || (l.via || []).includes(id)))(id)),   // K5: the caller applies the one role derivation
 });
 
-const WP = 'waypoint-aaaaaa', WP2 = 'waypoint-bbbbbb', ND = 'node-cccccc';
-const entities = { [WP]: { id: WP, x: 0, y: 0 }, [WP2]: { id: WP2, x: 40, y: 0 }, [ND]: { id: ND, x: 80, y: 0 } };
+const WP = 'node-aaaaaa', WP2 = 'node-bbbbbb', ND = 'node-cccccc';
+const entities = { [WP]: { id: WP, x: 0, y: 0 }, [WP2]: { id: WP2, x: 40, y: 0 }, [ND]: { id: ND, type: 'router', x: 80, y: 0 } };   // a typed node; the other two are waypoints (F-c)
 const openLink = { id: 'link-dddddd', name: 'link-dddddd', src: WP, dst: WP2 };
 
 test('H12.6: a situation SERIALISES -- it survives a round trip through JSON unchanged', () => {
@@ -54,7 +54,7 @@ test('H12.6: a CLOSED route has no ends, so nothing on it reads as an endpoint',
 
 test('H12.6: an unreferenced waypoint is a bend, and a missing target is null', () => {
 	assert.deepEqual(situationOf(accessOf(entities, []), { targetId: WP }).target.roles, [], 'no links: no sub-type');
-	assert.equal(situationOf(accessOf(entities, []), { targetId: 'waypoint-999999' }).target, null);
+	assert.equal(situationOf(accessOf(entities, []), { targetId: 'node-999999' }).target, null);
 	assert.equal(situationOf(accessOf(entities, []), {}).target, null, 'on nothing is a real answer');
 });
 
@@ -148,22 +148,22 @@ test('B208: a waypoint holds every role that applies, and onEndpoint reads the s
 	field `onEndpoint` reads is the one `situationOf` populates.
 	*/
 	const access = {
-		get: (kind, id) => (kind === 'waypoint' && id === 'waypoint-aa0001' ? { id, x: 0, y: 0 } : null),
+		get: (kind, id) => (kind === 'node' && id === 'node-ea0001' ? { id, x: 0, y: 0 } : null),
 		rolesOf: (id) => waypointRoles(id, [
-			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001' },
-			{ id: 'link-aa0002', src: 'waypoint-aa0001', dst: 'node-aa0003' },
-			{ id: 'link-aa0003', src: 'node-aa0002', dst: 'waypoint-aa0001' },
+			{ id: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001' },
+			{ id: 'link-aa0002', src: 'node-ea0001', dst: 'node-aa0003' },
+			{ id: 'link-aa0003', src: 'node-aa0002', dst: 'node-ea0001' },
 		]),
 	};
-	const s = situationOf(access, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
+	const s = situationOf(access, { mode: 'run', readOnly: false, targetId: 'node-ea0001', selection: [] }, Date.now());
 	assert.deepEqual(s.target.roles, ['junction'], 'the situation carries the set the kernel derived');
 
 	// a lone terminus still arms, and that is the predicate's job -- read from the SET, not a string
 	const lone = {
 		get: access.get,
-		rolesOf: (id) => waypointRoles(id, (() => [{ id: 'link-aa0001', src: 'waypoint-aa0001', dst: 'node-aa0003' }])(id)),   // K5: the caller applies the one role derivation
+		rolesOf: (id) => waypointRoles(id, (() => [{ id: 'link-aa0001', src: 'node-ea0001', dst: 'node-aa0003' }])(id)),   // K5: the caller applies the one role derivation
 	};
-	const t = situationOf(lone, { mode: 'run', readOnly: false, targetId: 'waypoint-aa0001', selection: [] }, Date.now());
+	const t = situationOf(lone, { mode: 'run', readOnly: false, targetId: 'node-ea0001', selection: [] }, Date.now());
 	assert.equal(onEndpoint(t), true,
 		'a terminus must arm -- if this is false, onEndpoint is reading a string and arming is dead everywhere');
 });

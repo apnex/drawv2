@@ -15,6 +15,7 @@ import { Watchdog } from './watchdog.js';
 import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
+import { typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const svg = document.getElementById('container');
 
@@ -675,7 +676,7 @@ const sync = new Sync({
 			menu.say.classList.toggle('err', !!(said && said.err));
 			menu.say.title = said ? `${new Date(said.at).toLocaleTimeString()} -- ${said.text}` : 'the last thing the server said';
 		}
-		menu.banner.textContent = `${model.all('node').length} nodes / ${model.all('link').length} links / ${model.all('zone').length} zones`;
+		menu.banner.textContent = `${typedNodes(model).length} nodes / ${model.all('link').length} links / ${model.all('zone').length} zones`;
 		// D29 — the server came back holding LESS than we do: it restarted before flushing changes
 		// it had already acked. Say so. The alternative is reverting the user's work in silence.
 		if (rewound) {

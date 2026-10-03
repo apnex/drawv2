@@ -108,7 +108,7 @@ async function world(seed) {
 const shape = (m) => {
 	const d = m.toJSON();
 	delete d.meta.version;
-	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
+	for (const k of ['nodes', 'links', 'zones', 'groups']) d[k] = [...d[k]].sort((p, q) => p.id.localeCompare(q.id));
 	return JSON.stringify(d);
 };
 
@@ -143,7 +143,7 @@ const NO_REGRESSION = 'NO OWN-EDIT REGRESSION: after every message, the tab stil
 // ---- the brief's seeds ----
 
 const A = 'node-00000a', B = 'node-00000b', C = 'node-00000c', D = 'node-00000d';
-const W = 'waypoint-0000f1', G = 'group-0000e1';
+const W = 'node-0000f1', G = 'group-0000e1';
 const L1 = 'link-0000a1', L2 = 'link-0000a2', L3 = 'link-0000a3';
 
 // S1/S2: a bend W on the link a-b, and a group holding a, b, c and W. Deleting a cascades the link,
@@ -152,7 +152,7 @@ const G1 = [
 	['node', { id: A, name: 'a', type: 'host', x: 0, y: 0 }],
 	['node', { id: B, name: 'b', type: 'host', x: 240, y: 0 }],
 	['node', { id: C, name: 'c', type: 'host', x: 480, y: 0 }],
-	['waypoint', { id: W, name: 'wp1', x: 120, y: 120 }],
+	['node', { id: W, name: 'wp1', x: 120, y: 120 }],
 	['link', { id: 'link-0000c1', name: 'l1', src: A, dst: B, via: [W] }],
 	['group', { id: G, name: 'g1', members: [A, B, C, W] }],
 ];
@@ -163,7 +163,7 @@ const G3 = [
 	['node', { id: B, name: 'b', type: 'host', x: 480, y: 0 }],
 	['node', { id: C, name: 'c', type: 'host', x: 0, y: 360 }],
 	['node', { id: D, name: 'd', type: 'host', x: 0, y: -360 }],
-	['waypoint', { id: W, name: 'w', x: 0, y: 0 }],
+	['node', { id: W, name: 'w', x: 0, y: 0 }],
 	['link', { id: L1, name: 'l1', src: A, dst: W }],
 	['link', { id: L2, name: 'l2', src: W, dst: B }],
 	['link', { id: L3, name: 'l3', src: C, dst: W }],
@@ -254,7 +254,7 @@ test('C4 live drag: a derived op arriving mid-drag lands, and the dragged node s
 		w.serve();
 		w.tab.set('node', C, { x: 600, y: 120 });                     // dragging c while the delete is answered
 		w.deliver();
-		assert.equal(w.tab.get('waypoint', W), undefined, 'the sweep landed on the tab');
+		assert.equal(w.tab.get('node', W), undefined, 'the sweep landed on the tab');
 		assert.deepEqual(w.tab.get('group', G).members, w.server().get('group', G).members, 'and so did its group trim');
 		assert.deepEqual([w.tab.get('node', C).x, w.tab.get('node', C).y], [600, 120], 'and the drag did not snap back');
 	} finally { w.close(); }

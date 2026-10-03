@@ -14,7 +14,7 @@ import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
-import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
 const SOCKET = STD.socket;             // glyph box (26)
@@ -218,7 +218,7 @@ export class Renderer {
 		this.svg.classList.toggle('run-mode', mode === 'run');
 		// every node, not only the panels. Gating a plain node's socket on the mode is pointless if
 		// switching mode never re-renders it -- the change would appear on the next unrelated edit.
-		this.model.all('node').forEach((n) => this.render('node', n));
+		typedNodes(this.model).forEach((n) => this.render('node', n));
 		// H12.8 -- one hook, so the composition root can start or stop the movers without the
 		// renderer knowing they exist. The renderer draws the document; movers are not in it.
 		this.onMode?.(this.mode);
@@ -322,7 +322,7 @@ export class Renderer {
 		this.model.all('group').forEach((g) => this.render('group', g));
 		this.model.all('link').forEach((l) => this.render('link', l));
 		bareAnchors(this.model).forEach((w) => this.render(BARE_KIND, w));
-		this.model.all('node').forEach((n) => this.render('node', n));
+		typedNodes(this.model).forEach((n) => this.render('node', n));
 	}
 
 	// the routed path of a link: src → its via-waypoint centres → dst, rounded at the kernel bend.

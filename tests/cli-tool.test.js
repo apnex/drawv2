@@ -313,8 +313,8 @@ test('F-b: about a bend names the link that bends through it, and its two ends a
 		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
 			{ op: 'put', kind: 'node', entity: { id: 'node-a00001', name: 'a', type: 'host', x: -240, y: -120 } },
 			{ op: 'put', kind: 'node', entity: { id: 'node-a00002', name: 'b', type: 'host', x: 180, y: -120 } },
-			{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-a00003', name: 'bend', x: 0, y: 60 } },
-			{ op: 'put', kind: 'link', entity: { id: 'link-a00004', name: 'l', src: 'node-a00001', dst: 'node-a00002', via: ['waypoint-a00003'] } }] }));
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00003', name: 'bend', x: 0, y: 60 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-a00004', name: 'l', src: 'node-a00001', dst: 'node-a00002', via: ['node-a00003'] } }] }));
 		const bend = JSON.parse(await run('about', 'bend', '--diagram', id, '--json'));
 		assert.deepEqual(bend.links.map((l) => l.id), ['link-a00004'], 'the link through the bend');
 		assert.deepEqual(bend.neighbours.sort(), ['node-a00001', 'node-a00002']);
@@ -454,7 +454,7 @@ test('B133: draw link mints a waypoint per --via, and repeats accumulate', async
 
 		const one = JSON.parse(await run('link', 'left', 'right', '--via', '0,-2', '--json'));
 		assert.equal(one.via.length, 1, 'one --via mints one waypoint');
-		assert.match(one.via[0], /^waypoint-[0-9a-f]{6}$/);
+		assert.match(one.via[0], /^node-[0-9a-f]{6}$/, 'a waypoint is a node with no type (F-c)');
 
 		/*
 		A REPEATED flag accumulates. `parseArgs` used to assign, so the second `--via` overwrote the
@@ -534,7 +534,7 @@ test('B133: a ring is a source and the bends that return to it', async () => {
 		const r = JSON.parse(await run('link', 'overlay', '--closed', '--via', '-2,-1', '--via', '0,1', '--via', '2,-1', '--json'));
 		assert.equal(r.closed, true);
 		assert.equal(r.via.length, 2, 'three bends: two are the route, the last is the destination');
-		assert.match(r.dst, /^waypoint-/, 'and the destination is a minted waypoint, not a node the caller had to make');
+		assert.match(r.dst, /^node-/, 'and the destination is a minted waypoint -- a node with no type since F-c -- not a node the caller had to make');
 
 		const thin = await captureExit(() => run('link', 'overlay', '--closed', '--via', '4,-1'));
 		assert.match(thin, /at least two --via/, 'a one-bend ring would draw a line back over itself');
@@ -1526,9 +1526,9 @@ test('B179: draw combat derives the same answer the browser would', async () => 
 	const { Model } = await import('../model/model.mjs');
 	const { worldOf, combatAt } = await import('../engine/rules.mjs');
 	const m = new Model();
-	m.put('waypoint', { id: 'waypoint-ca0001', name: 'waypoint-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
-	m.put('waypoint', { id: 'waypoint-ca0002', name: 'waypoint-ca0002', x: 720, y: 0 });
-	m.put('link', { id: 'link-ca0003', name: 'link-ca0003', src: 'waypoint-ca0001', dst: 'waypoint-ca0002' });
+	m.put('node', { id: 'node-ca0001', name: 'node-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
+	m.put('node', { id: 'node-ca0002', name: 'node-ca0002', x: 720, y: 0 });
+	m.put('link', { id: 'link-ca0003', name: 'link-ca0003', src: 'node-ca0001', dst: 'node-ca0002' });
 	m.put('node', { id: 'node-ca0004', type: 'loadbalancer', x: 360, y: 0 });
 
 	const at = 1_788_300_060_000;
@@ -1636,7 +1636,7 @@ test('B231: every field an entity carries is a column, for every kind', async ()
 
 	const cases = {
 		links: [{ id: 'link-aa0001', name: 'l', src: 'a', dst: 'b', via: ['w'], direction: 'forward', closed: false }],
-		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0, pinned: true, spawn: { every: 1 } }],
+		waypoints: [{ id: 'node-ea0001', name: 'w', x: 0, y: 0, pinned: true, spawn: { every: 1 } }],
 		nodes: [{ id: 'node-aa0001', name: 'n', type: 'host', x: 0, y: 0, shape: 'square', span: { w: 2, h: 1 } }],
 	};
 	for (const [kind, list] of Object.entries(cases)) {
@@ -1651,7 +1651,7 @@ test('B231: every field an entity carries is a column, for every kind', async ()
 		'the familiar columns keep their order -- derivation must not reshuffle the table');
 
 	// and a lead column nothing carries is dropped rather than printed empty
-	assert.ok(!columnsFor('waypoints', [{ id: 'waypoint-aa0001', x: 0, y: 0 }]).includes('name'),
+	assert.ok(!columnsFor('waypoints', [{ id: 'node-ea0001', x: 0, y: 0 }]).includes('name'),
 		'an unnamed set of waypoints must not print an empty NAME column');
 });
 
@@ -1805,7 +1805,9 @@ test('B237: the settable table matches the taxonomy for every kind, not just lin
 		for (const f of fields) {
 			if (NOT_SCALAR.has(f)) continue;
 			checked++;
-			assert.ok(SETTABLE[kind] && f in SETTABLE[kind],
+			// a node has two shapes since F-c, and `set` takes each one's table: a typed node's, or a waypoint's
+			const tables = kind === 'node' ? [SETTABLE.node, SETTABLE.waypoint] : [SETTABLE[kind]];
+			assert.ok(tables.some((t) => t && f in t),
 				`${kind}.${f} is an optional scalar the tool cannot write`);
 		}
 	}

@@ -22,12 +22,12 @@ const seeded = (opts) => {
 	const m = opts === undefined ? new Model() : new Model(opts);
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
-	m.put('waypoint', { id: 'waypoint-00000c', name: 'w', x: 120, y: -60 });
+	m.put('node', { id: 'node-00000c', name: 'w', x: 120, y: -60 });
 	return m;
 };
 // a complete network whose answers are production's, so each test overrides only the method it is about
 const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, stopsAt: () => false, ...over } });
-const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['waypoint-00000c'] };
+const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['node-00000c'] };
 
 test('production is unchanged: new Model() still draws the straight polyline through via', () => {
 	const m = seeded();
@@ -68,14 +68,14 @@ Absent in production, where `linksRoutedThrough` is empty and the renderer redra
 always has.
 */
 test('production: linksRoutedThrough is empty, so nothing extra is redrawn', () => {
-	assert.deepEqual(seeded().linksRoutedThrough('waypoint-00000c'), []);
+	assert.deepEqual(seeded().linksRoutedThrough('node-00000c'), []);
 });
 
 test('an injected linksRoutedThrough answers which links a moved anchor affects', () => {
 	let asked = null;
 	const m = seeded(net({ linksRoutedThrough: (id, model) => { asked = { id, model }; return [LINK]; } }));
-	assert.deepEqual(m.linksRoutedThrough('waypoint-00000c'), [LINK]);
-	assert.equal(asked.id, 'waypoint-00000c');
+	assert.deepEqual(m.linksRoutedThrough('node-00000c'), [LINK]);
+	assert.equal(asked.id, 'node-00000c');
 	assert.equal(asked.model, m, 'handed the model, like pathOf, so it can read the routes');
 });
 
@@ -123,14 +123,14 @@ section 12). The lab holds that choice in the network's session until promotion 
 production has no transit to declare.
 */
 test('production: no anchor declares transit off', () => {
-	assert.equal(seeded().declaresNoTransit('waypoint-00000c'), false);
+	assert.equal(seeded().declaresNoTransit('node-00000c'), false);
 });
 
 test('an injected declaresNoTransit answers, and is handed the id and the model', () => {
 	let asked = null;
 	const m = seeded(net({ declaresNoTransit: (id, model) => { asked = { id, model }; return true; } }));
-	assert.equal(m.declaresNoTransit('waypoint-00000c'), true);
-	assert.deepEqual(asked, { id: 'waypoint-00000c', model: m });
+	assert.equal(m.declaresNoTransit('node-00000c'), true);
+	assert.deepEqual(asked, { id: 'node-00000c', model: m });
 });
 
 /*
@@ -139,7 +139,7 @@ one transit question every rule asks -- routing, the join refusal, the toggle's 
 above only draws the ring. Production has no transit: nothing stops.
 */
 test('production: nothing stops at any anchor', () => {
-	assert.equal(seeded().stopsAt('waypoint-00000c'), false);
+	assert.equal(seeded().stopsAt('node-00000c'), false);
 	assert.equal(seeded().stopsAt('node-00000a'), false);
 });
 

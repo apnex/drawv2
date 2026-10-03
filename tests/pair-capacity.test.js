@@ -29,7 +29,7 @@ import { pairHolders } from '../model/invariants.mjs';
 // admitted = no link holds the pair against it
 const admits = (link, among) => pairHolders(link, among).length === 0;
 
-const A = 'node-00000a', B = 'node-00000b', W = 'waypoint-00000c';
+const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const straight = (id, src, dst) => ({ id, src, dst, via: [] });
 
 test('a link with a bend is always admitted: routed links fan out and are not limited here', () => {
@@ -95,7 +95,7 @@ test('replug: a ROUTED link may be moved onto a pair that holds a straight one',
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 360]]);
-		const w = h.model.makeWaypoint({ x: 180, y: 180 }); h.model.put('waypoint', w);
+		const w = h.model.makeWaypoint({ x: 180, y: 180 }); h.model.put('node', w);
 		const held = h.model.makeLink(a.id, b.id); h.model.put('link', held);
 		const l = h.model.makeLink(c.id, b.id); l.via = [w.id]; h.model.put('link', l);
 		replug(h, l, 'src', a.x, a.y);
@@ -120,7 +120,7 @@ import { Log } from './planner/log.mjs';
 import { deleteSelection } from './app/src/commands.js';
 import { judgeDrag } from './network/guide.mjs';
 
-const P = 60, A = 'node-00000a', B = 'node-00000b', W = 'waypoint-00000c';
+const P = 60, A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const out = {};
 
 // the invariant: two straight links on one pair
@@ -134,14 +134,14 @@ const out = {};
   const r0 = commit(m, log, { label: 'setup', ops: [
     { op: 'put', kind: 'node', entity: { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },
     { op: 'put', kind: 'node', entity: { id: B, name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' } },
-    { op: 'put', kind: 'waypoint', entity: { id: W, name: 'w', x: 3 * P, y: 2 * P } },
+    { op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 3 * P, y: 2 * P } },
     { op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: A, dst: B } },
     { op: 'put', kind: 'link', entity: { id: 'link-000002', name: 'm', src: A, dst: B, via: [W] } }] }, 'lab', 'lab');
   if (!r0.ok) throw new Error('setup refused: ' + r0.error);
   // the client's strip, projected over the same document
   const entries = deleteSelection(m, new Set([W])).entries;
   out.clientStrip = !entries.some((e) => e.op === 'del' && e.kind === 'link');
-  commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'waypoint', id: W }] }, 'lab', 'lab');
+  commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'node', id: W }] }, 'lab', 'lab');
   out.plannerStrip = m.all('link').length === 2; }
 
 // the network's judgement of a plain drag on a pair that holds a straight link

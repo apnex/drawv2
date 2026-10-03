@@ -54,7 +54,7 @@ function seed(h, board) {
 		else if (kind === 'waypoint') e = { ...h.model.makeWaypoint({ x: a[0], y: a[1] }), ...(a[2] ? { pinned: true } : {}) };
 		else if (kind === 'zone') e = h.model.makeZone({ x: a[0], y: a[1], w: a[2], h: a[3] });
 		else { e = h.model.makeLink(ids[a[0]], ids[a[1]]); if (a[2]) e.via = a[2].map((w) => ids[w]); }
-		h.model.put(kind, e);
+		h.model.put(kind === 'waypoint' ? 'node' : kind, e);   // a waypoint is a node with no type (F-c)
 		ids[alias] = e.id;
 	}
 	return ids;
@@ -246,7 +246,8 @@ export function record(scenario) {
 		out.editor = h.calls.filter((c) => c.name.startsWith('labels.')).map((c) => [c.name, ...c.args.filter((x) => typeof x !== 'object')]);
 		out.palette = h.calls.filter((c) => c.name === 'tools.setHand' || c.name === 'tools.setTextTool').map((c) => [c.name, ...c.args]);
 		out.host = h.dispatched.map((e) => [e.type, e.detail ?? null]);
-		out.final = { nodes: doc.nodes, waypoints: doc.waypoints, links: doc.links, zones: doc.zones, groups: doc.groups, selection: h.selection.list() };
+		// the record keeps the two words a reader of it uses -- typed nodes and waypoints -- though one kind stores both (F-c)
+		out.final = { nodes: doc.nodes.filter((n) => n.type), waypoints: doc.nodes.filter((n) => !n.type), links: doc.links, zones: doc.zones, groups: doc.groups, selection: h.selection.list() };
 	} finally {
 		h.history.flush?.();
 		h.restore();
@@ -259,7 +260,21 @@ export function record(scenario) {
 export function canonical(value) {
 	const text = JSON.stringify(value);
 	const seen = new Map(), count = {};
-	return JSON.parse(text.replace(/\b(node|waypoint|link|zone|group)-[0-9a-f]{6}\b/g, (id, kind) => {
+	// F-c: a waypoint is a node with no type, so its id says `node`; it is still named `waypoint#n` here, read off any entity
+	// in the record that carries a place and no type, or listed where a drag lists the waypoints it placed, pinned, guided
+	// through or bent at -- so the record names what was drawn
+	const bare = new Set();
+	const WAYPOINT_LISTS = ['placed', 'pins', 'guides', 'via'];
+	const find = (v) => {
+		if (Array.isArray(v)) return v.forEach(find);
+		if (!v || typeof v !== 'object') return;
+		if (typeof v.id === 'string' && v.id.startsWith('node-') && 'x' in v && !('type' in v)) bare.add(v.id);
+		for (const k of WAYPOINT_LISTS) if (Array.isArray(v[k])) for (const id of v[k]) if (typeof id === 'string') bare.add(id);
+		Object.values(v).forEach(find);
+	};
+	find(value);
+	return JSON.parse(text.replace(/\b(node|waypoint|link|zone|group)-[0-9a-f]{6}\b/g, (id, stored) => {
+		const kind = bare.has(id) ? 'waypoint' : stored;
 		if (!seen.has(id)) { count[kind] = (count[kind] ?? 0) + 1; seen.set(id, `${kind}#${count[kind]}`); }
 		return seen.get(id);
 	}));

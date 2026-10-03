@@ -90,19 +90,19 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
 
 ---
 
-## Entities (five)
+## Entities (four)
 
 ```json
 {
-  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 1,
+  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 2,
               "owner": "user:someone@example.com",
               "grants": { "user:other@example.com": "read", "agent:planner": "write" },
               },
-  "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 } ],
-  "waypoints": [ { "id": "waypoint-5e5e5e", "x": 570, "y": 270,
+  "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 },
+              { "id": "node-5e5e5e", "name": "waypoint-1", "x": 570, "y": 270,
                 "spawn": { "interval": 900, "speed": 1.4, "kind": "packet", "since": 1788300000000 } } ],
   "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6",
-                "via": ["waypoint-5e5e5e"], "closed": false } ],
+                "via": ["node-5e5e5e"], "closed": false, "direction": "forward" } ],
   "zones":  [ { "id": "zone-77bb01", "name": "dmz", "x": 480, "y": 240, "w": 240, "h": 180 } ],
   "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ]
 }
@@ -119,19 +119,24 @@ Writes are gated at all seven mutating store methods, reads at `hello`, `open`, 
 A connection code is a CREDENTIAL that authenticates as an agent identity, and is deliberately NOT a principal (H9.4b): conflating them meant revoking a code destroyed an owner, rotating one lost every grant, and a code could not be reused across diagrams because the code was the grant.\
 Still pending from the same amendment and not yet built: a grant may name an OWNER as well as a diagram, so an agent granted on a person reaches everything that person owns.
 
-- node: a `shape` frame (the outer shell - `circle` | `square`) with a `type` glyph
-  attached in its middle, snapped to a grid point, with editable label. Frame and glyph
-  are independent layers (`#frame-*` raw-canvas shapes + `#glyph-*` 0.3-scaled art);
-  `shape` is optional and defaults to `circle` (legacy docs load unchanged).
-- link: a route between two endpoints, each a node or a waypoint. Bends through any `via`
+- node: an anchor on a grid point, with an editable label, in one of two shapes fixed when it is made.
+  A TYPED node has a `shape` frame (the outer shell - `circle` | `square`) with a `type` glyph
+  attached in its middle. Frame and glyph are independent layers (`#frame-*` raw-canvas shapes +
+  `#glyph-*` 0.3-scaled art); `shape` is optional and defaults to `circle`.
+  A node with NO `type` is a WAYPOINT: a grid point a link may terminate at or bend through. An
+  ENDPOINT waypoint may carry a `spawn` composite, which makes it emit movers along its link in
+  read view -- whole or absent, never partial. The numbers a mover obeys are declared in
+  `engine/kinds.mjs`, never stored here.
+- link: a route between two endpoints, each a node, typed or not. Bends through any `via`
   waypoints and is drawn with rounded corners (`BEND_R` on the grid pitch); `closed` makes it
-  a ring with no ends. `src`/`dst`/`closed` is the one vocabulary, kernel and model alike (B166).
-- waypoint: a grid point a link may terminate at or bend through. An ENDPOINT waypoint may carry
-  a `spawn` composite, which makes it emit movers along its link in read view -- whole or absent,
-  never partial. The numbers a mover obeys are declared in `engine/kinds.mjs`, never stored here.
+  a ring with no ends; `direction`, `forward` or `reverse`, is a declared direction. `src`/`dst`/`closed`
+  is the one vocabulary, kernel and model alike (B166).
 - zone: grid-aligned rectangle on the half-offset grid, with label. Purely visual.
 - group: logical member set; selecting/moving any member moves all. Not rendered, not synced
   as a shape.
+
+AMENDED 2026-10-03, by promotion's format batch (`dev/design/unification/FORMAT-BATCH.md`): `meta.schema` is 2; a waypoint is a node with no `type`, where it was its own kind, `waypoint`, stored under `waypoints` (P-10); `link.flow`, `true` or `false`, is `direction`, `forward` or `reverse` (F1).\
+Every document entering the store is migrated first, so a schema 1 document is accepted and stored as schema 2.
 
 ---
 
@@ -228,12 +233,13 @@ Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, 
 Every entity id is its kind, a hyphen, and exactly six lowercase hex digits.
 
 ```text
-node-0003fc      waypoint-aa0001      link-b09674
+node-0003fc      node-aa0001          link-b09674
 zone-285c5e      group-8582bf         diagram-7bc886
 template-c8d87c
 ```
 
-The server enforces `^(node|waypoint|link|zone|group|diagram|template)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
+The server enforces `^(node|link|zone|group|diagram|template)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
+AMENDED 2026-10-03: `waypoint` left the grammar with the format batch -- a waypoint is a node with no type, and its id says `node` (P-10).\
 A refusal here is a `422` naming the op that carried the bad id.
 
 *(Amended 2026-08-27, H9.9)* -- `template` joins the grammar as a second DOCUMENT-level kind beside `diagram`.\

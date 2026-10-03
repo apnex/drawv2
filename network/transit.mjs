@@ -13,7 +13,7 @@ pipes are, until promotion's format batch stores it (TR-7): a reload loses it, a
 import { splitAtBend, collapseAtWaypoint } from '../model/invariants.mjs';
 import { clone, applyOps } from '../model/ops.mjs';
 import { newId, projection } from '../model/model.mjs';
-import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity, bareAnchor } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const BOTH = [true, false], OFF = [false];
 const OFFERS = { router: BOTH, firewall: BOTH, vxlan: BOTH, loadbalancer: OFF, server: OFF, host: OFF };
@@ -22,7 +22,7 @@ const OFFERS = { router: BOTH, firewall: BOTH, vxlan: BOTH, loadbalancer: OFF, s
 const transitOffers = (entity) => (isBareEntity(entity.kind, entity) ? BOTH : OFFERS[entity.type] ?? OFF);
 
 // an anchor in a model, as the table reads it: a node by its type, a waypoint as a bare anchor
-const entitiesOf = (model) => [...model.all('node').map((n) => ({ ...n, kind: 'node' })), ...bareAnchors(model).map((w) => ({ ...w, kind: BARE_KIND }))];
+const entitiesOf = (model) => model.all('node').map((n) => ({ ...n, kind: 'node' }));   // every anchor, typed or not (F-c)
 
 export function createTransit() {
 	const set = new Map();   // anchor id -> its declared value, only where it differs from the type's default
@@ -36,8 +36,8 @@ export function createTransit() {
 		blockedIn: (model) => entitiesOf(model).filter(stops).map((e) => e.id).sort(),
 		// whether what arrives at one anchor stops there -- the rule asked of one id; an id the model holds no anchor for stops nothing
 		stopsAt: (id, model) => {
-			const node = model.get('node', id), waypoint = !node && bareAnchor(model, id);
-			return node ? stops({ ...node, kind: 'node' }) : waypoint ? stops({ ...waypoint, kind: BARE_KIND }) : false;
+			const anchor = model.get('node', id);
+			return anchor ? stops({ ...anchor, kind: 'node' }) : false;
 		},
 		/*
 		Flip each anchor on its own (ruled 2026-09-28: many anchors at once, each flipped independently). An anchor whose

@@ -21,6 +21,7 @@ import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERV
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { collectionCap } from './policy.mjs';
+import { isTypedEntity } from '../model/anchors.mjs';   // the two shapes of node (F-c)
 
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
 // center-origin coordinates: [0,0] is the canvas/slide center
@@ -144,32 +145,16 @@ const FIELDS = {
 	node: {
 		id: (v) => id(v, 'node'),
 		name: (v) => str(v, NAME_MAX),
+		// optional since the format batch (F-c, H18.5): a node with no type is a bare anchor -- a waypoint (P-10, F4); whether it
+		// has one is fixed when it is made (REFERS.node, below)
 		type: (v) => str(v, 32) && /^[a-z0-9-]+$/.test(v),
 		shape: (v) => SHAPES.includes(v),
 		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),
 		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
 		span: (v) => dims(v),    // optional multi-cell footprint (W1); absent ⇒ 1×1
-		content: (v) => content(v)   // optional content regions (W2); absent ⇒ the type glyph
-	},
-	waypoint: {
-		id: (v) => id(v, 'waypoint'),
-		/*
-		B187 -- every entity may be named, and a waypoint is not the exception.
-
-		The `pinned` note below says a waypoint stores INTENT and nothing else, and that argued
-		against this field. The ruling is that a name IS intent -- an author calling a bend
-		`flow-in` has recorded something no geometry can express -- and that naming is a property of
-		the schema rather than of any one kind.
-
-		It also closes a real gap: `resolveId` has always matched on `e.name` across every kind, so
-		waypoints were the only addressable entity that could not be referred to in words. Two of
-		them cost a demo rehearsal, and forced piping JSON through a script to recover their ids.
-
-		Optional, like every other name.
-		*/
-		name: (v) => str(v, NAME_MAX),
-		x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),   // a waypoint IS a node for placement
-		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
+		content: (v) => content(v),   // optional content regions (W2); absent ⇒ the type glyph
+		// a WAYPOINT'S own fields -- a node with no type (F-c, H18.5); a typed node carries neither (REFERS.node). Its name is
+		// every node's (B187: naming is schema-wide, and a waypoint was the gap)
 		/*
 		B162 -- INTENT, and the only thing about a waypoint worth storing.
 
@@ -183,7 +168,7 @@ const FIELDS = {
 		leaves it alone. Threading a link through it clears the pin: from then on it is part of that
 		link's shape and shares its fate.
 		*/
-		pinned: (v) => typeof v === 'boolean',
+		pinned: (v) => typeof v === 'boolean',   // retired at P3 with production's orphan rule (ruled 2026-10-03)
 		/*
 		H12.5 -- this endpoint EMITS movers along its link.
 
@@ -205,9 +190,9 @@ const FIELDS = {
 	link: {
 		id: (v) => id(v, 'link'),
 		name: (v) => str(v, NAME_MAX),   // B187 -- naming is schema-wide, and a link was the other gap
-		src: (v) => id(v, 'node') || id(v, 'waypoint'),   // endpoint = node OR waypoint
-		dst: (v) => id(v, 'node') || id(v, 'waypoint'),
-		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'waypoint')),
+		src: (v) => id(v, 'node'),   // an anchor: a node, typed or not (F-c)
+		dst: (v) => id(v, 'node'),
+		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node')),   // waypoints only: model/referential.mjs
 		closed: (v) => typeof v === 'boolean',            // a routed link looped dst → src (render-only)
 		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; `forward` means the
 		// flow follows the stored order, `reverse` that it runs against it. See `facing` in model/invariants.mjs.
@@ -229,7 +214,7 @@ const FIELDS = {
 	group: {
 		id: (v) => id(v, 'group'),
 		name: (v) => str(v, NAME_MAX),
-		members: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node') || id(m, 'waypoint'))
+		members: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node'))
 	}
 };
 
@@ -239,12 +224,28 @@ EACH KIND'S CROSS-ENTITY CHECK -- `(entity, access, patch, before)`, `entity` be
 shared with `validateDoc`; what each row adds is the part that was the mutation path's own -- a link is judged on the
 `src`, `dst` and `via` it keeps, and a group only when the op names its members.
 */
+const WAYPOINT_ONLY = ['pinned', 'spawn'];
+const TYPED_ONLY = ['shape', 'span', 'content'];
 const REFERS = {
+	/*
+	F-c (H18.5) -- ONE NODE KIND, TWO SHAPES, told apart by `type`. A waypoint became a node with no type (P-10), and every
+	rule that read "a waypoint" reads "a node with no type" -- so the line between them is held here, where the kind boundary
+	held it before: whether a node has a type is fixed when it is made, so a bend can never become a router or the reverse
+	(FORMAT-BATCH.md section 4); `pinned` and `spawn` are a waypoint's alone, and `shape`, `span` and `content` a typed
+	node's alone -- exactly the fields each kind had. Relaxing the first belongs to B282's type-as-composition half.
+	*/
+	node: (entity, access, patch, before) => {
+		if (before && isTypedEntity('node', before) !== isTypedEntity('node', entity)) return `a node's type is fixed when it is made -- a waypoint stays a waypoint, and a typed node keeps a type: ${entity.id}`;
+		const typed = isTypedEntity('node', entity);
+		const wrong = (typed ? WAYPOINT_ONLY : TYPED_ONLY).filter((f) => f in entity);
+		if (wrong.length) return `${typed ? 'a typed node' : 'a waypoint (a node with no type)'} has no ${wrong.join(', ')}: ${entity.id}`;
+		return null;
+	},
 	link: (entity, access) => linkReferential({ id: entity.id, src: entity.src, dst: entity.dst, via: entity.via ?? [] }, access),
 	group: (entity, access, patch) => (patch.members ? groupReferential(entity, access) : null),
 };
 
-// the product's five, whole -- in the core's order, which is the order a document lists its collections
+// the product's four, whole -- in the core's order, which is the order a document lists its collections
 const PRODUCT_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: FIELDS[row.kind], cap: CAP[row.kind], ...(REFERS[row.kind] ? { refers: REFERS[row.kind] } : {}) }));
 /*
 The product's composition, and a plugin's rows after its five: the one way a composition with a plugin's kinds is built --

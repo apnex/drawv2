@@ -20,12 +20,12 @@ import { validateEntity } from '../planner/validate.js';
 import { applyOps } from '../model/ops.mjs';
 
 const NOW = 1_700_000_000_000;
-const WP_A = 'waypoint-aaaaaa', WP_B = 'waypoint-bbbbbb', LINK = 'link-cccccc';
+const WP_A = 'node-aaaaaa', WP_B = 'node-bbbbbb', LINK = 'link-cccccc';
 
 function doc() {
 	const m = new Model();
-	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
-	m.put('waypoint', { id: WP_B, name: WP_B, x: 200, y: 0 });
+	m.put('node', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('node', { id: WP_B, name: WP_B, x: 200, y: 0 });
 	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_B });
 	return m;
 }
@@ -47,15 +47,15 @@ test('H12.7: the SAME target means different things in read view and author view
 
 test('H12.7: only an ENDPOINT is armable -- a bend and a node are not', () => {
 	const m = doc();
-	m.put('waypoint', { id: 'waypoint-dddddd', name: 'waypoint-dddddd', x: 40, y: 0 });
-	m.set('link', LINK, { via: ['waypoint-dddddd'] });
-	assert.equal(armable(sit(m, 'waypoint-dddddd', 'run')), false, 'a bend turns a path, it does not end one');
+	m.put('node', { id: 'node-dddddd', name: 'node-dddddd', x: 40, y: 0 });
+	m.set('link', LINK, { via: ['node-dddddd'] });
+	assert.equal(armable(sit(m, 'node-dddddd', 'run')), false, 'a bend turns a path, it does not end one');
 	assert.equal(armable(sit(m, WP_A, 'run')), true, 'its endpoints still are');
 });
 
 test('H12.7: a CLOSED route cannot be armed, because a ring has no ends', () => {
 	const m = new Model();
-	m.put('waypoint', { id: WP_A, name: WP_A, x: 0, y: 0 });
+	m.put('node', { id: WP_A, name: WP_A, x: 0, y: 0 });
 	m.put('link', { id: LINK, name: LINK, src: WP_A, dst: WP_A, closed: true });
 	assert.equal(armable(sit(m, WP_A, 'run')), false);
 });
@@ -68,8 +68,8 @@ test('H12.7: arming is a SET that introduces the field, and the entity stays val
 	assert.equal(cmd.entries[0].op, 'set');
 	assert.equal(cmd.entries[0].after.spawn.since, NOW, 'the phase is the agreed instant, not a local one');
 	assert.deepEqual(Object.keys(cmd.entries[0].after), ['spawn'], 'the patch touches ONE field, not four');
-	applyOps(m, [{ op: 'set', kind: 'waypoint', id: WP_A, patch: cmd.entries[0].after }]);
-	assert.equal(validateEntity('waypoint', m.get('waypoint', WP_A)), null, 'the server must accept what we authored');
+	applyOps(m, [{ op: 'set', kind: 'node', id: WP_A, patch: cmd.entries[0].after }]);
+	assert.equal(validateEntity('node', m.get('node', WP_A)), null, 'the server must accept what we authored');
 	assert.equal(!!sit(m, WP_A, 'run').target.spawning, true, 'the situation sees it emitting');   // onSpawner, deleted at K12, read exactly this
 });
 
@@ -84,38 +84,38 @@ already been told succeeded.
 */
 test('H12.7: disarming REMOVES the field rather than blanking it', () => {
 	const m = doc();
-	applyOps(m, [{ op: 'set', kind: 'waypoint', id: WP_A, patch: toggleSpawn(m, WP_A, NOW).entries[0].after }]);
+	applyOps(m, [{ op: 'set', kind: 'node', id: WP_A, patch: toggleSpawn(m, WP_A, NOW).entries[0].after }]);
 	const off = toggleSpawn(m, WP_A, NOW);
 	assert.equal(off.label, 'stop spawning');
 	assert.equal(off.entries[0].op, 'put', 'a set cannot express removal');
 	assert.equal('spawn' in off.entries[0].entity, false, 'the field is GONE, not undefined');
-	applyOps(m, [{ op: 'put', kind: 'waypoint', entity: off.entries[0].entity }]);
-	assert.equal(m.get('waypoint', WP_A).spawn, undefined);
-	assert.equal(validateEntity('waypoint', m.get('waypoint', WP_A)), null);
+	applyOps(m, [{ op: 'put', kind: 'node', entity: off.entries[0].entity }]);
+	assert.equal(m.get('node', WP_A).spawn, undefined);
+	assert.equal(validateEntity('node', m.get('node', WP_A)), null);
 	assert.equal(!!sit(m, WP_A, 'run').target.spawning, false, 'and no longer emitting');
 });
 
 test('H12.7: toggling twice returns the waypoint to exactly what it was', () => {
 	const m = doc();
-	const before = JSON.parse(JSON.stringify(m.get('waypoint', WP_A)));
-	applyOps(m, [{ op: 'set', kind: 'waypoint', id: WP_A, patch: toggleSpawn(m, WP_A, NOW).entries[0].after }]);
+	const before = JSON.parse(JSON.stringify(m.get('node', WP_A)));
+	applyOps(m, [{ op: 'set', kind: 'node', id: WP_A, patch: toggleSpawn(m, WP_A, NOW).entries[0].after }]);
 	const off = toggleSpawn(m, WP_A, NOW);
-	applyOps(m, [{ op: 'put', kind: 'waypoint', entity: off.entries[0].entity }]);
-	assert.deepEqual(m.get('waypoint', WP_A), before);
+	applyOps(m, [{ op: 'put', kind: 'node', entity: off.entries[0].entity }]);
+	assert.deepEqual(m.get('node', WP_A), before);
 });
 
 test('H12.7: the built spawn passes the authored bounds it will be validated against', () => {
 	const m = doc();
 	const spawn = toggleSpawn(m, WP_A, NOW).entries[0].after;
-	applyOps(m, [{ op: 'set', kind: 'waypoint', id: WP_A, patch: spawn }]);
-	assert.equal(validateEntity('waypoint', m.get('waypoint', WP_A)), null);
+	applyOps(m, [{ op: 'set', kind: 'node', id: WP_A, patch: spawn }]);
+	assert.equal(validateEntity('node', m.get('node', WP_A)), null);
 	// and a caller may override, still within bounds
 	const custom = toggleSpawn(doc(), WP_A, NOW, { interval: 300, speed: 400, kind: 'packet' }).entries[0].after;
 	assert.deepEqual(custom, { spawn: { interval: 300, speed: 400, kind: 'packet', since: NOW } });
 });
 
 test('H12.7: a missing waypoint yields no command rather than a throw', () => {
-	assert.equal(toggleSpawn(doc(), 'waypoint-999999', NOW), null);
+	assert.equal(toggleSpawn(doc(), 'node-999999', NOW), null);
 });
 
 test('H12.7: the builder never reads a wall clock -- the instant is always the caller\'s', () => {

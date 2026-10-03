@@ -17,13 +17,13 @@ import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { spawnersOf } from '../engine/spawners.mjs';
 
-const N = (i) => `node-00000${i}`, W = (i) => `waypoint-00000${i}`, L = (h) => `link-${h}`;
+const N = (i) => `node-00000${i}`, W = (i) => `node-0000e${i}`   /* a waypoint: a node with no type (F-c) */, L = (h) => `link-${h}`;
 const entities = [
 	['node', { id: N(1), name: 'a', type: 'router', x: -240, y: 0, shape: 'circle' }],
 	['node', { id: N(2), name: 'b', type: 'router', x: 240, y: 0, shape: 'circle' }],
-	['waypoint', { id: W(3), name: 's', x: 0, y: -120, spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }],
-	['waypoint', { id: W(4), name: 'r', x: 0, y: 120 }],
-	['waypoint', { id: W(5), name: 't', x: 0, y: 240, spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }],
+	['node', { id: W(3), name: 's', x: 0, y: -120, spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }],
+	['node', { id: W(4), name: 'r', x: 0, y: 120 }],
+	['node', { id: W(5), name: 't', x: 0, y: 240, spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }],
 	// three links at the spawn waypoint s and two joining a and b, with ids out of insertion order on purpose
 	['link', { id: L('00000f'), name: 'f', src: W(3), dst: N(1) }],
 	['link', { id: L('00000a'), name: 'a', src: W(3), dst: N(2) }],

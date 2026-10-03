@@ -3,7 +3,7 @@ Shape — the entity kinds and their per-kind field taxonomy, in ONE place.
 
 PL-5 (dev/design/planner/PLANNER-SYSTEM.md; ruled 2026-10-01): the KIND TABLE. The five kinds were listed separately
 in `model/model.mjs` (twice), `planner/validate.js` (twice), `server/rest.js` and `server/store.js`; each now derives
-from `KINDS` and the table below. One literal, checked by `scan-layers` L7k to be exactly the product's five. Two lists
+from `KINDS` and the table below. One literal, checked by `scan-layers` L7k to be exactly the product's kinds (four since F-c, H18.5). Two lists
 stay where they are on purpose: the id grammar in `planner/validate.js` is a literal C3 pins, and each kind's field
 CHECKS stay at the trust boundary, which sources its facts and keeps its checks local. Injecting the table into a
 composition -- so the lab could add a kind production does not have -- was held for promotion's format batch (B273), and
@@ -38,7 +38,7 @@ only through the migration, server/migrate.mjs, which every path into the store 
 export const SCHEMA = 2;
 
 // the product's kinds, in the order a document lists its collections
-const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
+const KINDS = ['node', 'link', 'zone', 'group'];
 
 /*
   collection  the document key the kind is stored under
@@ -47,37 +47,36 @@ const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
   optional    fields that may be absent from a stored entity (pre-dates the field, or is genuinely optional)
 */
 const TABLE = {
-	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['shape', 'span', 'content'] },
-	waypoint: {
-		collection: 'waypoints', selectable: true, composite: [],
-		/*
-		B162: `pinned` says the author placed this waypoint deliberately, with no link to derive a
-		role from. Optional because almost none carry it -- a bend never does.
+	/*
+	F-c (H18.5, P-10) -- ONE ANCHOR KIND. A waypoint is a node with no `type` (model/anchors.mjs); it was a kind of its own,
+	`waypoint`, stored under `waypoints`, until the format batch. So `type` is optional, and the waypoint's own fields join:
 
-		H12.5: `spawn` says this endpoint EMITS along its link. One composite field rather than four
-		loose ones, because absent means "not a spawner" and that is a single fact -- four independent
-		optional numbers would make a half-configured spawner representable, and it is not a state.
+	B162: `pinned` says the author placed this waypoint deliberately, with no link to derive a role from. Optional because
+	almost none carry it -- a bend never does. Retired at P3 with production's orphan rule (ruled 2026-10-03).
 
-		The DIRECTION is not stored. It is derived from which end of the link this waypoint is: press
-		the `src` end and movers run src to dst, press `dst` and they run the other way. Storing it
-		would be a twin of the link, wrong the first time a route was reversed.
-		*/
-		optional: ['pinned', 'spawn'],
-	},
+	H12.5: `spawn` says this endpoint EMITS along its link. One composite field rather than four loose ones, because absent
+	means "not a spawner" and that is a single fact -- four independent optional numbers would make a half-configured spawner
+	representable, and it is not a state. The DIRECTION is not stored. It is derived from which end of the link this
+	waypoint is: press the `src` end and movers run src to dst, press `dst` and they run the other way.
+
+	Which of the fields a node may carry follows whether it has a type, held by the node row's cross-entity check
+	(planner/kinds.mjs).
+	*/
+	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn'] },
 	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control'] },
 	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: [] },
 	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };
 
-// the rest of each of the five's storage half: every one is named (B187, N5), nodes and waypoints are the anchors (N2),
-// and links and groups point at anchors
-const REFERENCES = { link: ['node', 'waypoint'], group: ['node', 'waypoint'] };
-const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node' || k === 'waypoint', references: REFERENCES[k] ?? [] }]));
+// the rest of each of the four's storage half: every one is named (B187, N5), nodes are the anchors (N2), and links and
+// groups point at them
+const REFERENCES = { link: ['node'], group: ['node'] };
+const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node', references: REFERENCES[k] ?? [] }]));
 
 /*
 H17.22 N-a -- A COMPOSITION BRINGS ITS KINDS (ruled 2026-10-02, "Plugins bring their own kinds"; B273).
 
-Every kind is a ROW of one shape, whoever brings it -- the product's five or a plugin's own, the network's `pipe`:
+Every kind is a ROW of one shape, whoever brings it -- the product's four or a plugin's own, the network's `pipe`:
 
   kind        the id prefix, and the name the planner and the Model know it by
   owner       who brings it, named when two claim one kind
@@ -94,7 +93,7 @@ Every kind is a ROW of one shape, whoever brings it -- the product's five or a p
               null -- the planner's half too
   cap         the most of it one document may hold -- the planner's half too
 
-This module is CORE, so it holds the mechanism and the five rows' STORAGE half, and treats checks as opaque. The
+This module is CORE, so it holds the mechanism and the four rows' STORAGE half, and treats checks as opaque. The
 product's full rows -- checks, cross-entity checks, caps -- are the planner's (`planner/kinds.mjs`), because the link's
 cross-entity check is network-layer code the core may not import. `new Model()` takes `CORE_KINDS`, the planner takes
 `PRODUCT_KINDS`, and the planner refuses a model composed with different kinds.
@@ -153,9 +152,9 @@ export function composeKinds(rows, who = 'a composition') {
 	});
 }
 
-// the five rows' storage half, as the core knows them; the planner adds each one's checks (planner/kinds.mjs)
+// the four rows' storage half, as the core knows them; the planner adds each one's checks (planner/kinds.mjs)
 export const CORE_ROWS = KINDS.map((kind) => ({ kind, owner: 'the product', ...STORAGE[kind] }));
-// what `new Model()` is composed with when nothing else is passed: the product's five
+// what `new Model()` is composed with when nothing else is passed: the product's four
 export const CORE_KINDS = composeKinds(CORE_ROWS, 'the core');
 
 // nested value -> a spread is not enough; what `clone` (model/ops.mjs) copies deeper, read by kind without a composition.

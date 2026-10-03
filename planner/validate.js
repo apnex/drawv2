@@ -155,7 +155,9 @@ export function validateMutation(model, mutation, kinds = PRODUCT_KINDS) {
 	// the kind's own cross-entity check (its row), judged on the entity as it would stand -- a `set` merged over what is
 	// stored -- and told what the op carried; it was two hard-coded branches here, for the link and the group (N-a)
 	const before = model.get(kind, entity.id) ?? null;
-	return row.refers({ ...(before ?? {}), ...entity }, access, entity, before);
+	// a `put` stands as it is put -- merging it over the stored entity would keep a field the put removed (F-c: a typed node
+	// put without its type)
+	return row.refers(action === 'put' ? entity : { ...(before ?? {}), ...entity }, access, entity, before);
 }
 
 // full document validation (push / load from disk)

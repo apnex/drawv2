@@ -90,13 +90,13 @@ test('H12.1: a sample midway round a corner is ON the corner, not at the vertex'
 // ---- H12.3 — the simulation ----
 
 const spawner = (o = {}) => prepareSpawner({
-	id: 'waypoint-aaaaaa', pts: [[0, 0], [1000, 0]], since: 0, interval: 1000, speed: CELLS(100), ...o,
+	id: 'node-aaaaaa', pts: [[0, 0], [1000, 0]], since: 0, interval: 1000, speed: CELLS(100), ...o,
 });
 
 test('H12.3: a prepared spawner carries its own route and length, and stays plain data', () => {
 	const s = spawner();
 	assert.equal(s.length, 1000);
-	assert.equal(s.id, 'waypoint-aaaaaa');
+	assert.equal(s.id, 'node-aaaaaa');
 	assert.ok(Array.isArray(s.geo));
 });
 
@@ -153,10 +153,10 @@ test('H12.3: the window WIDTH is the transit time -- a longer route holds more m
 });
 
 test('H12.3: identity is STABLE -- the seam the deviation tier will key on', () => {
-	assert.equal(moversAt([spawner()], 1000)[0].id, 'waypoint-aaaaaa#0');
+	assert.equal(moversAt([spawner()], 1000)[0].id, 'node-aaaaaa#0');
 	// the same mover keeps its id as it travels, and as others join ahead of it
 	const later = moversAt([spawner()], 5500).find((m) => m.k === 0);
-	assert.equal(later.id, 'waypoint-aaaaaa#0');
+	assert.equal(later.id, 'node-aaaaaa#0');
 });
 
 /*
@@ -210,18 +210,18 @@ after it emitted nothing: a second armed endpoint simply looked unarmed. Silent,
 256 movers, which is why it survived. Two spawners is the smallest case that can show it.
 */
 test('B173: one saturating spawner does not starve the next', () => {
-	const a = spawner({ id: 'waypoint-aaaaaa', name: 'waypoint-aaaaaa', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
-	const b = spawner({ id: 'waypoint-bbbbbb', name: 'waypoint-bbbbbb', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
+	const a = spawner({ id: 'node-aaaaaa', name: 'node-aaaaaa', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
+	const b = spawner({ id: 'node-bbbbbb', name: 'node-bbbbbb', interval: 1, speed: CELLS(1), pts: [[0, 0], [4000, 0]] });
 	const by = moversAt([a, b], 1_000_000).reduce((m, x) => (m[x.spawnerId] = (m[x.spawnerId] || 0) + 1, m), {});
-	assert.equal(by['waypoint-aaaaaa'], MAX_MOVERS_PER_SPAWNER);
-	assert.equal(by['waypoint-bbbbbb'], MAX_MOVERS_PER_SPAWNER, 'the SECOND spawner emitted nothing before B173');
+	assert.equal(by['node-aaaaaa'], MAX_MOVERS_PER_SPAWNER);
+	assert.equal(by['node-bbbbbb'], MAX_MOVERS_PER_SPAWNER, 'the SECOND spawner emitted nothing before B173');
 });
 
 test('B173: two ordinary spawners are both represented, in the order given', () => {
-	const a = spawner({ id: 'waypoint-aaaaaa', name: 'waypoint-aaaaaa' });
-	const b = spawner({ id: 'waypoint-bbbbbb', name: 'waypoint-bbbbbb', interval: 700, speed: CELLS(72), pts: [[0, 0], [600, 0]] });
+	const a = spawner({ id: 'node-aaaaaa', name: 'node-aaaaaa' });
+	const b = spawner({ id: 'node-bbbbbb', name: 'node-bbbbbb', interval: 700, speed: CELLS(72), pts: [[0, 0], [600, 0]] });
 	const by = moversAt([a, b], 60_000).reduce((m, x) => (m[x.spawnerId] = (m[x.spawnerId] || 0) + 1, m), {});
-	assert.ok(by['waypoint-aaaaaa'] > 0 && by['waypoint-bbbbbb'] > 0, 'both spawners emit');
+	assert.ok(by['node-aaaaaa'] > 0 && by['node-bbbbbb'] > 0, 'both spawners emit');
 });
 
 test('H12.3: movers ride the DRAWN line, so a bend never throws one off it', () => {

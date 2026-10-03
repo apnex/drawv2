@@ -205,10 +205,10 @@ test('B218: an endpoint falls back to a plain anchor when its link is deleted', 
 	withRenderer(({ svg, model, make }) => {
 		make(model);
 		model.put('node', { id: 'node-aa0001', name: 'a', type: 'host', shape: 'circle', x: -120, y: 0 });
-		model.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
-		model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'waypoint-aa0001' });
+		model.put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 });
+		model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-ea0001' });
 
-		const wp = () => svg.ownerDocument.getElementById('waypoint-aa0001');
+		const wp = () => svg.ownerDocument.getElementById('node-ea0001');
 		const ringCount = () => wp().querySelectorAll('.wp-ring').length;
 
 		assert.equal(ringCount(), 1, 'precondition: a link terminates here, so it draws the endpoint pad');
@@ -232,9 +232,9 @@ it; the link itself is drawn exactly as before.
 test('B268: a link\'s hit twin has its path and width, no dash, and is never seen', () => {
 	withRenderer(({ svg, model, make }) => {
 		make(model);
-		model.put('waypoint', { id: 'waypoint-aa0001', name: 'a', x: 0, y: 0 });
-		model.put('waypoint', { id: 'waypoint-aa0002', name: 'b', x: 240, y: 0 });
-		model.put('link', { id: 'link-aa0003', name: 'l', src: 'waypoint-aa0001', dst: 'waypoint-aa0002', control: true });
+		model.put('node', { id: 'node-ea0001', name: 'a', x: 0, y: 0 });
+		model.put('node', { id: 'node-aa0002', name: 'b', x: 240, y: 0 });
+		model.put('link', { id: 'link-aa0003', name: 'l', src: 'node-ea0001', dst: 'node-aa0002', control: true });
 		const layer = svg.byId['#links'];
 		const link = layer.children.find((c) => c.attrs.id === 'link-aa0003');
 		const twin = layer.children.find((c) => (c.attrs.class || '') === 'link-hit');
@@ -246,7 +246,7 @@ test('B268: a link\'s hit twin has its path and width, no dash, and is never see
 		assert.equal(twin.attrs['stroke-dasharray'], undefined, 'the twin has no gaps');
 		assert.equal(twin.attrs.stroke, 'transparent');
 		assert.equal(twin.attrs.id, undefined, 'and no id -- the link keeps its own');
-		model.set('waypoint', 'waypoint-aa0002', { x: 360 });
+		model.set('node', 'node-aa0002', { x: 360 });
 		assert.equal(twin.attrs.d, layer.children.find((c) => c.attrs.id === 'link-aa0003').attrs.d, 'it follows the link when an end moves');
 		model.del('link', 'link-aa0003');
 		assert.equal(layer.children.filter((c) => (c.attrs.class || '') === 'link-hit').length, 0, 'and goes with it');

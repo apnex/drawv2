@@ -25,7 +25,7 @@ function board(ids, pipes = []) {
 	for (const [a, b, laid] of pipes) m.put('pipe', pipeEntity(a, b, laid));
 	return m;
 }
-const [A, B, Pn, G] = ['node-00000a', 'node-00000b', 'waypoint-00000c', 'waypoint-00000d'];
+const [A, B, Pn, G] = ['node-00000a', 'node-00000b', 'node-00000c', 'node-00000d'];
 const drag = (o) => ({ pins: [], guides: [], placed: [], pressed: { w: false, g: false }, endPressed: false, ...o });
 const wLink = drag({ src: A, dst: B, pins: [Pn], placed: [Pn], stops: [A, Pn, B], pressed: { w: true, g: false }, endPressed: 'w' });
 const puts = (entries) => entries.map((e) => (e.op === 'put' ? `put ${e.entity.id}:${e.entity.laid}` : `${e.op} ${e.id} ${JSON.stringify(e.after)}`)).sort();

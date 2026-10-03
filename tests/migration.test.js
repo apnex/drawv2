@@ -99,7 +99,7 @@ store, and the vocabulary check below asserts the two stay in step.
 */
 function nameEverything(doc) {
 	const taken = new Set();
-	for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
+	for (const k of ['nodes', 'links', 'zones', 'groups']) {
 		for (const e of doc[k] || []) if (typeof e?.name === 'string') taken.add(e.name);
 	}
 	for (const [key, prefix] of [['waypoints', 'waypoint'], ['links', 'link']]) {
@@ -199,11 +199,11 @@ test('B187: a document written before names gains them on read, uniquely', async
 		const out = entry.model.toJSON();
 
 		assert.equal(out.nodes[0].name, 'waypoint-1', 'an existing name must not be rewritten');
-		const wp = out.waypoints.map((w) => w.name);
+		const wp = out.nodes.filter((n) => !n.type).map((w) => w.name);   // waypoints are nodes with no type since F-c
 		assert.deepEqual(wp, ['waypoint-2', 'waypoint-3'], `minted around the squatter, got ${wp}`);
 		assert.equal(out.links[0].name, 'link-1');
 
-		const all = [...out.nodes, ...out.waypoints, ...out.links].map((e) => e.name);
+		const all = [...out.nodes, ...out.links].map((e) => e.name);
 		assert.equal(new Set(all).size, all.length, `names collided: ${all}`);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

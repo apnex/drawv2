@@ -17,36 +17,36 @@ const OPTIONAL = CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
 import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { Model } from '../model/model.mjs';
 
-const wp = (extra) => ({ id: 'waypoint-aaaaaa', name: 'waypoint-aaaaaa', x: 0, y: 0, ...extra });
+const wp = (extra) => ({ id: 'node-aaaaaa', name: 'node-aaaaaa', x: 0, y: 0, ...extra });
 const armed = () => ({ interval: 1000, speed: 1.4, kind: 'packet', since: Date.now() });
 
 test('H12.5: a waypoint may carry spawn, and the two peers agree that it may', () => {
-	assert.ok(OPTIONAL.waypoint.has('spawn'), 'the model must allow the field');
-	assert.equal(validateEntity('waypoint', wp({ spawn: armed() })), null, 'the server must accept it');
+	assert.ok(OPTIONAL.node.has('spawn'), 'the model must allow the field -- on a node with no type (F-c)');
+	assert.equal(validateEntity('node', wp({ spawn: armed() })), null, 'the server must accept it');
 });
 
 test('H12.5: absent spawn is the normal case and stays legal', () => {
-	assert.equal(validateEntity('waypoint', wp({})), null);
-	assert.equal(validateEntity('waypoint', wp({ pinned: true })), null, 'B162 pinned is undisturbed');
+	assert.equal(validateEntity('node', wp({})), null);
+	assert.equal(validateEntity('node', wp({ pinned: true })), null, 'B162 pinned is undisturbed');
 });
 
 test('H12.5: a spawner is WHOLE or absent -- a partial one is not a state', () => {
 	for (const missing of ['interval', 'speed', 'kind', 'since']) {
 		const partial = armed();
 		delete partial[missing];
-		assert.ok(validateEntity('waypoint', wp({ spawn: partial })), `missing ${missing} must be refused`);
+		assert.ok(validateEntity('node', wp({ spawn: partial })), `missing ${missing} must be refused`);
 	}
 });
 
 test('H12.5: an unknown key is refused rather than ignored', () => {
 	// direction in particular: it is DERIVED from which end of the link this is, and accepting a
 	// stored one would create a second answer that can disagree with the link
-	assert.ok(validateEntity('waypoint', wp({ spawn: { ...armed(), direction: 'forward' } })));
-	assert.ok(validateEntity('waypoint', wp({ spawn: { ...armed(), speedd: 1 } })));
+	assert.ok(validateEntity('node', wp({ spawn: { ...armed(), direction: 'forward' } })));
+	assert.ok(validateEntity('node', wp({ spawn: { ...armed(), speedd: 1 } })));
 });
 
 test('H12.5: the authored bounds come from limits, and both edges are enforced', () => {
-	const at = (o) => validateEntity('waypoint', wp({ spawn: { ...armed(), ...o } }));
+	const at = (o) => validateEntity('node', wp({ spawn: { ...armed(), ...o } }));
 	assert.equal(at({ interval: SPAWN_INTERVAL_MIN }), null, 'the floor itself is legal');
 	assert.ok(at({ interval: SPAWN_INTERVAL_MIN - 1 }), 'below the floor is not');
 	assert.equal(at({ interval: SPAWN_INTERVAL_MAX }), null);
@@ -58,7 +58,7 @@ test('H12.5: the authored bounds come from limits, and both edges are enforced',
 });
 
 test('H12.5: `since` is bounded, because it feeds arithmetic', () => {
-	const at = (since) => validateEntity('waypoint', wp({ spawn: { ...armed(), since } }));
+	const at = (since) => validateEntity('node', wp({ spawn: { ...armed(), since } }));
 	assert.equal(at(Date.now()), null);
 	assert.ok(at(1), 'an epoch-zero stamp is corruption, not a diagram somebody armed');
 	assert.ok(at(Date.now() + 30 * 86_400_000), 'a month ahead is not clock skew');
@@ -66,22 +66,22 @@ test('H12.5: `since` is bounded, because it feeds arithmetic', () => {
 });
 
 test('H12.5: the colour must be a colour', () => {
-	assert.ok(validateEntity('waypoint', wp({ spawn: { ...armed(), colour: 'red' } })));
-	assert.ok(validateEntity('waypoint', wp({ spawn: { ...armed(), colour: 'javascript:x' } })));
-	assert.equal(validateEntity('waypoint', wp({ spawn: { ...armed(), kind: 'packet' } })), null);
+	assert.ok(validateEntity('node', wp({ spawn: { ...armed(), colour: 'red' } })));
+	assert.ok(validateEntity('node', wp({ spawn: { ...armed(), colour: 'javascript:x' } })));
+	assert.equal(validateEntity('node', wp({ spawn: { ...armed(), kind: 'packet' } })), null);
 });
 
 test('H12.5: spawn survives a document round trip, so arming outlives a reload', () => {
 	const m = new Model();
-	m.put('waypoint', wp({ spawn: armed() }));
+	m.put('node', wp({ spawn: armed() }));
 	const back = new Model();
 	back.load(JSON.parse(JSON.stringify(m.toJSON())));
-	assert.deepEqual(back.get('waypoint', 'waypoint-aaaaaa').spawn, m.get('waypoint', 'waypoint-aaaaaa').spawn);
+	assert.deepEqual(back.get('node', 'node-aaaaaa').spawn, m.get('node', 'node-aaaaaa').spawn);
 });
 
 test('H12.5: a malformed spawn is refused whole -- nothing partial reaches the document', () => {
 	for (const bad of [[], 'on', 42, null, true, { }]) {
-		assert.ok(validateEntity('waypoint', wp({ spawn: bad })), `${JSON.stringify(bad)} must be refused`);
+		assert.ok(validateEntity('node', wp({ spawn: bad })), `${JSON.stringify(bad)} must be refused`);
 	}
 });
 
@@ -106,6 +106,7 @@ test('B172: a spawner stored with `colour` and pixel speed still loads, converte
 	fsp.writeFileSync(pathp.join(dir, 'diagram-aa0001.json'), JSON.stringify({
 		meta: { id: 'diagram-aa0001', name: 'legacy', version: 3, schema: 1 },
 		nodes: [], zones: [], groups: [],
+		// as STORED before the format batch: a waypoint, `waypoint-<hex>`; it loads as `node-<hex>` (F-c)
 		waypoints: [{ id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 0, y: 180,
 			spawn: { interval: 700, speed: 160, colour: '#4fc3f7', since: 1788000000000 } }],
 		links: [],
@@ -115,11 +116,11 @@ test('B172: a spawner stored with `colour` and pixel speed still loads, converte
 		await store.init();
 		const entry = store.diagrams.get('diagram-aa0001');
 		assert.ok(entry, 'the diagram LOADED -- a refused one is skipped, which is data loss');
-		const wp = entry.model.all('waypoint').find((w) => w.id === 'waypoint-aa0001');
+		const wp = entry.model.all('node').filter((n) => !n.type).find((w) => w.id === 'node-aa0001');
 		assert.equal(wp.spawn.colour, undefined, 'the retired key is gone');
 		assert.equal(wp.spawn.kind, 'packet', 'and a kind took its place');
 		assert.equal(wp.spawn.speed, Math.round((160 / STD.pitch) * 100) / 100, 'pixels became cells');
 		assert.equal(wp.spawn.interval, 700, 'everything else is untouched');
-		assert.equal(validateEntity('waypoint', wp), null, 'and the result passes the strict schema');
+		assert.equal(validateEntity('node', wp), null, 'and the result passes the strict schema');
 	} finally { fsp.rmSync(dir, { recursive: true, force: true }); }
 });

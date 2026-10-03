@@ -39,6 +39,7 @@ import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';
 import { productKinds } from '../../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../../network/pipe-kind.mjs';
+import { bareAnchor } from '../../model/anchors.mjs';
 
 const GOLDEN = new URL('./planner-corpus.json', import.meta.url);
 const P = 60;
@@ -47,7 +48,7 @@ const P = 60;
 
 const hex = (n) => n.toString(16).padStart(6, '0');
 const N = (i) => `node-${hex(0xa00 + i)}`;
-const W = (i) => `waypoint-${hex(0xb00 + i)}`;
+const W = (i) => `node-${hex(0xb00 + i)}`;   // a waypoint: a node with no type (F-c); its hex range stays apart from the nodes'
 const L = (i) => `link-${hex(0xc00 + i)}`;
 const G = (i) => `group-${hex(0xd00 + i)}`;
 const node = (i, x, y) => ({ id: N(i), name: `n${i}`, type: 'router', x: x * P, y: y * P, shape: 'circle' });
@@ -105,12 +106,12 @@ for (const compose of ['production', 'network']) {
 	c('del-node-takes-links-and-trims-group', { nodes: [node(0, 0, 0), node(1, 4, 0), node(2, 0, 4)], links: [link(0, N(0), N(1)), link(1, N(0), N(2))], groups: [group(0, [N(0), N(1), N(2)])] }, [del('node', N(0))]);
 	c('del-node-dissolves-group', { nodes: [node(0, 0, 0), node(1, 4, 0)], groups: [group(0, [N(0), N(1)])] }, [del('node', N(0))]);
 	// waypoint cascade
-	c('del-waypoint-endpoint-link-dies', junction(), [del('waypoint', W(0))]);
-	c('del-waypoint-strips-bend', bent(), [del('waypoint', W(0))]);
-	c('del-waypoint-strip-collides-deletes', { ...bent(), links: [link(0, N(0), N(1), [W(0)]), link(1, N(0), N(1))] }, [del('waypoint', W(0))]);
-	c('del-waypoint-trims-group', { ...bent(true), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)], groups: [group(0, [W(0), N(0), N(2)])] }, [del('waypoint', W(0))]);
+	c('del-waypoint-endpoint-link-dies', junction(), [del('node', W(0))]);
+	c('del-waypoint-strips-bend', bent(), [del('node', W(0))]);
+	c('del-waypoint-strip-collides-deletes', { ...bent(), links: [link(0, N(0), N(1), [W(0)]), link(1, N(0), N(1))] }, [del('node', W(0))]);
+	c('del-waypoint-trims-group', { ...bent(true), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)], groups: [group(0, [W(0), N(0), N(2)])] }, [del('node', W(0))]);
 	// the stranded pass: a pin deleted under a link that keeps another way
-	c('stranded-pin-deleted', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 2), way(1, 0, -2)], links: [link(0, N(0), N(1), [W(0), W(1)])] }, [del('waypoint', W(0))]);
+	c('stranded-pin-deleted', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 2), way(1, 0, -2)], links: [link(0, N(0), N(1), [W(0), W(1)])] }, [del('node', W(0))]);
 	// the sweep
 	c('sweep-bend-released', bent(), [del('link', L(0))]);
 	c('sweep-keeps-pinned', bent(true), [del('link', L(0))]);
@@ -158,7 +159,7 @@ function genBoard(r) {
 	const waypoints = Array.from({ length: 1 + Math.floor(r() * 4) }, (_, i) => way(i, ...take(), r() < 0.2));
 	const scratch = new Model();
 	for (const e of nodes) scratch.put('node', e);
-	for (const e of waypoints) scratch.put('waypoint', e);
+	for (const e of waypoints) scratch.put('node', e);
 	const anchors = [...nodes, ...waypoints].map((e) => e.id);
 	const links = [];
 	const add = (l) => {
@@ -193,7 +194,7 @@ function genOp(r, board, i) {
 	const anchors = [...board.nodes, ...board.waypoints].map((e) => e.id);
 	const roll = r();
 	if (roll < 0.22 && board.links.length) return del('link', pick(r, board.links).id);
-	if (roll < 0.40 && board.waypoints.length) return del('waypoint', pick(r, board.waypoints).id);
+	if (roll < 0.40 && board.waypoints.length) return del('node', pick(r, board.waypoints).id);
 	if (roll < 0.48) return del('node', pick(r, board.nodes).id);
 	if (roll < 0.60 && board.links.length) {
 		const l = pick(r, board.links);
@@ -262,12 +263,14 @@ function compose(c) {
 	const network = c.compose === 'network';
 	const model = new Model(network ? { kinds: WITH_PIPES } : {});
 	attachRelations(model, { cellOf });
-	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...c.board, ...(network ? { pipes: pipesOf(c) } : {}) });
+	// a case keeps its waypoints apart to describe the board; the document holds them among the nodes (F-c)
+	const { waypoints = [], ...board } = c.board;
+	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...board, nodes: [...(board.nodes || []), ...waypoints], ...(network ? { pipes: pipesOf(c) } : {}) });
 	// placement is the server door's edge (PL-4): both compositions are planned as the store would plan them
 	if (!network) return { model, options: { place: resolveAnchor }, reached: { stranded: 0 } };
 	const transit = createTransit();
 	// as the session hands them over: an anchor with its kind, which is what the transit table reads
-	const { refused } = transit.flip((c.off || []).map((id) => ({ ...model.get('waypoint', id), kind: 'waypoint' })));
+	const { refused } = transit.flip((c.off || []).map((id) => ({ ...model.get('node', id), kind: 'node' })));
 	if (refused.length) throw new Error(`${c.id}: transit refused to turn off ${refused.map((e) => e.id)}`);
 	const plugin = createNetwork(() => 0, transit);
 	// counted, not changed: how many ops the network's stranded pass emitted
@@ -300,7 +303,7 @@ export function record(c) {
 	const reach = { ...reached, swept: 0, joined: 0, joinSkipped: 0, refused: !res.ok, undoRestores: null };
 	if (res.ok) {
 		for (const o of res.ops) {
-			if (o.op === 'del' && o.kind === 'waypoint' && !asked.has(`del waypoint ${o.id}`)) reach.swept++;
+			if (o.op === 'del' && o.kind === 'node' && !asked.has(`del node ${o.id}`)) reach.swept++;   // only a waypoint is ever swept
 			if (o.op === 'set' && o.kind === 'link' && 'src' in o.patch && !asked.has(`set link ${o.id}`)) reach.joined++;
 		}
 		const scratch = new Model({ kinds: model.kinds });   // the case's kinds, so undo is judged on its pipes too
@@ -313,7 +316,7 @@ export function record(c) {
 		*/
 		const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w)).length;
 		const ends = new Set(res.ops.filter((o) => o.op === 'del' && o.kind === 'link').flatMap((o) => { const e = model.get('link', o.id); return e ? [e.src, e.dst] : []; }));
-		for (const w of ends) if (scratch.get('waypoint', w) && touching(scratch, w) === 2 && touching(model, w) > 2) reach.joinSkipped++;
+		for (const w of ends) if (bareAnchor(scratch, w) && touching(scratch, w) === 2 && touching(model, w) > 2) reach.joinSkipped++;
 		applyOps(scratch, res.inverse);
 		reach.undoRestores = unordered(scratch.toJSON()) === unordered(JSON.parse(before));
 	}

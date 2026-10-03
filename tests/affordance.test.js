@@ -140,23 +140,23 @@ test('a selected link lights its waypoints, and releases them when selection mov
 	const { Model } = await import('../model/model.mjs');
 	const model = new Model();
 	model.put('node', { id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' });
-	model.put('waypoint', { id: 'waypoint-aa0001', name: 'waypoint-aa0001', x: 120, y: 0 });
-	model.put('waypoint', { id: 'waypoint-aa0002', name: 'waypoint-aa0002', x: 0, y: -120 });
-	model.put('waypoint', { id: 'waypoint-aa0003', name: 'waypoint-aa0003', x: 300, y: 300 });   // on no link at all
-	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'waypoint-aa0001', via: ['waypoint-aa0002'] });
+	model.put('node', { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 });
+	model.put('node', { id: 'node-aa0002', name: 'node-aa0002', x: 0, y: -120 });
+	model.put('node', { id: 'node-aa0003', name: 'node-aa0003', x: 300, y: 300 });   // on no link at all
+	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-aa0002'] });
 
 	const state = new Map();
 	const host = { model, selectedSet: new Set(['link-aa0001']), pathLit: undefined,
 		setState: (id, cls, on) => state.set(`${id}:${cls}`, on) };
 
 	Renderer.prototype.reflectPathSelection.call(host);
-	assert.equal(state.get('waypoint-aa0001:on-selected-path'), true, 'the endpoint lights');
-	assert.equal(state.get('waypoint-aa0002:on-selected-path'), true, 'and so does the bend — it sits ON the line');
-	assert.equal(state.has('waypoint-aa0003:on-selected-path'), false, 'a waypoint elsewhere is untouched');
+	assert.equal(state.get('node-ea0001:on-selected-path'), true, 'the endpoint lights');
+	assert.equal(state.get('node-aa0002:on-selected-path'), true, 'and so does the bend — it sits ON the line');
+	assert.equal(state.has('node-aa0003:on-selected-path'), false, 'a waypoint elsewhere is untouched');
 
 	// the selection moves to the node: the path's anchors must let go
 	host.selectedSet = new Set(['node-aa0001']);
 	Renderer.prototype.reflectPathSelection.call(host);
-	assert.equal(state.get('waypoint-aa0001:on-selected-path'), false, 'the endpoint releases');
-	assert.equal(state.get('waypoint-aa0002:on-selected-path'), false, 'and the bend releases');
+	assert.equal(state.get('node-ea0001:on-selected-path'), false, 'the endpoint releases');
+	assert.equal(state.get('node-aa0002:on-selected-path'), false, 'and the bend releases');
 });

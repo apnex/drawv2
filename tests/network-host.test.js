@@ -101,11 +101,11 @@ test('B278: a transit change cuts the links pinned at a waypoint where what arri
 	attachRelations(model, { cellOf });
 	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
-	model.put('waypoint', { id: 'waypoint-000003', name: 'P', x: 120, y: -120 });
-	model.put('link', { id: 'link-000004', src: 'node-000001', dst: 'node-000002', via: ['waypoint-000003'] });
+	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
+	model.put('link', { id: 'link-000004', src: 'node-000001', dst: 'node-000002', via: ['node-000003'] });
 	const commits = [];
 	let onTransit = null;
-	const network = { stopsAt: (id) => id === 'waypoint-000003', declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } };
+	const network = { stopsAt: (id) => id === 'node-000003', declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } };
 	attachNetwork({
 		session: { pipes: { list: () => [] }, network, tidy: () => {}, takeNotice: () => null, onTransitChange: (fn) => { onTransit = fn; } },
 		model, authority: { all: () => [] },
@@ -113,7 +113,7 @@ test('B278: a transit change cuts the links pinned at a waypoint where what arri
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: (c) => commits.push(c) }, ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
-	onTransit(['waypoint-000003']);
+	onTransit(['node-000003']);
 	assert.equal(commits.length, 1, 'one commit');
 	assert.equal(commits[0].label, 'transit');
 	assert.deepEqual(commits[0].entries.map((e) => `${e.op} ${e.entity?.id ?? e.id}`).sort(), ['del link-000004', 'put link-000004', `put ${commits[0].entries.find((e) => e.op === 'put' && e.entity.id !== 'link-000004').entity.id}`].sort(), 'the pinned link cut in two there');
@@ -129,8 +129,8 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 	const session = createNetworkSession();
 	const model = new Model({ kinds: productKinds(PIPE_ROW), network: session.network });
 	attachRelations(model, { cellOf });
-	const [S, A, B, E] = ['waypoint-00000a', 'waypoint-00000b', 'waypoint-00000c', 'waypoint-00000d'];
-	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('waypoint', { id, name: id, x, y }));
+	const [S, A, B, E] = ['node-00000a', 'node-00000b', 'node-00000c', 'node-00000d'];
+	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('node', { id, name: id, x, y }));
 	model.put('link', { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] });
 	for (const [a, b] of [[S, A], [A, B], [B, E]]) model.put('pipe', pipeEntity(a, b, 'link'));
 	// the canvas's history, applying each commit to the model as the tab does
@@ -142,7 +142,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 		history: { commit: (c) => { commits.push(c); applyOps(model, c.entries.map(toOp)); } },
 		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
-	const anchors = [{ id: A, kind: 'waypoint' }, { id: B, kind: 'waypoint' }];
+	const anchors = [{ id: A, kind: 'node' }, { id: B, kind: 'node' }];
 	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${model.isLinkDown(l) ? ' down' : ''}`).sort();
 
 	session.toggleTransit(anchors);
