@@ -65,6 +65,7 @@ The held backlog row B276 is this register's trigger: it fires when the director
 | PU14 | The image copies `planner/` (Dockerfile). | K4, `7630d73` | the built image serves `/planner/txn.mjs` |
 | PU15 | CI fails a run that skips any test, so a browser suite cannot stop silently. | B250, `7f1c366` | CI's last run reports `skipped 0` and `scan-skips: PASS` |
 | PU16 | The agent door has no Cloud Armor; deliberately IAP-free and still unthrottled. | H10.30 | carried: the director's call, independent of this upgrade |
+| PU31 | Production is frozen on `draw:2538ab8` from the format batch's first stage (H18.3) until the cutover: `main` then writes schema 2, which that image refuses. A fix production needs is built on a branch from `2538ab8`, deployed from there, and landed on `main`. | F3, H18.2 | production serves `2538ab8` or a commit on its fix branch, until P9 |
 
 ---
 
@@ -81,6 +82,8 @@ Ruled to land with promotion (`dev/design/unification/PROMOTION.md`), so each is
 | PU21 | A link landing on a bend is cut at every door, not only in the browser. | B243, K18a |
 | PU22 | The network plugin's colour roles move from the network layer's kernel-side module into `network/`, beside the rest of the plugin. | the palette design, 2026-10-01 |
 | PU23 | One device table in `network/`, replacing the `NODE_TYPES` literal the held tools carry. | K6 |
+| PU32 | A link's declared direction is stored as `direction`, `forward` or `reverse`, where it was `flow`, `true` or `false`; `set`, `show`, `get`, REST and the CLI's flag name it so. | F1, P-9 |
+| PU33 | Every waypoint id becomes a node id with the same hex (`waypoint-1a2b3c` becomes `node-1a2b3c`), 3 renumbered; names are unchanged and still resolve. People and agents still call a node with no type a waypoint (F4). | P-10, F4 |
 
 AMENDED 2026-10-02: PU19's mechanism is built (H17.22 N-a, PU25), and `pipe` is the network plugin's kind rather than a sixth core kind (N1); what remains for the cutover is the stored format.
 

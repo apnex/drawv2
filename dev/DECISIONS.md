@@ -1665,3 +1665,10 @@ P-1 was ruled as N2 and P-2 by B249.
 - P-8: the rollback after the cutover is restoring the pre-migration backup, accepted in advance; taken and verified before migrating, rehearsed in P8, held open across the window (W25).
 - P-9: the `link.flow` rename is folded into the format batch; the new name is asked when P2 starts -- 42 links declare a direction.
 - P-10: the format batch also eliminates the waypoint kind (B282): a waypoint becomes a node with an anchor and no type, its id keeping its hex -- the 3 that share their hex with a node renumbered. Type-as-composition stays out: `type` stays the stored name, and packs become code tables keyed by it, with no format change.
+
+**P2's design decisions, F1 to F4, ruled as recommended -- 2026-10-03 (B266, H18.2).**\
+Asked one at a time against `dev/design/unification/FORMAT-BATCH.md` section 9.
+- F1: `link.flow` becomes `direction`, stored as `forward` or `reverse`, absent meaning none -- the words the CLI and the help already use; 37 forward and 5 reverse in the estate.
+- F2: the migration's pipe step, and the P-4 split, land with P3, which composes the network's tenant in the server, so the product never holds a pipe it cannot keep; the rest of the batch lands at P2, and the migration still runs on the estate once, whole, at the cutover.
+- F3: production stays on `draw:2538ab8` from the batch's first stage until the cutover; a fix it needs is built on a branch from `2538ab8`, deployed from there, and landed on `main`.
+- F4: people and agents keep calling a node with no type a waypoint -- the key, the help and the `draw` verbs unchanged; the format and the ids say `node`.

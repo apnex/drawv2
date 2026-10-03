@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-03 against `b63f966`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-03: approved, its decisions ruled (section 9).
 
 ## 1. Status
 
@@ -183,6 +184,9 @@ Nothing else changes.
 - **F2 -- where stored pipes land.** Recommended: with P3, which composes the network's tenant in the server, so the product never holds a pipe it cannot keep; the migration's pipe step and the P-4 split land there, and the rest of the batch at P2. The alternatives: a temporary pipe cascade in the product's tenant at P2, written to be deleted a stage later; or composing the network in the server at P2, which makes P3 part of P2.
 - **F3 -- production during the batch.** Recommended: production stays on `draw:2538ab8` from F-a until the cutover; a fix it needs is built on a branch from `2538ab8`, deployed from there and landed on `main`. The alternatives: build the batch on a branch, so `main` stays deployable, with every lab change merged twice; or migrate production at F-a, before it composes the network.
 - **F4 -- the word for a node with no type.** The format and the ids say `node`. Recommended: people and agents keep calling it a waypoint -- the key, the help and `draw` verbs unchanged, a waypoint being a node with no type. The alternatives: `anchor` everywhere; or `node` everywhere, with no word of its own.
+
+AMENDED 2026-10-03 -- **F1 to F4 RULED as recommended** (`dev/DECISIONS.md`, "P2's design decisions, F1 to F4"): `direction`, stored as `forward` or `reverse`; stored pipes and the P-4 split with P3; production frozen on `draw:2538ab8` until the cutover; the word waypoint kept.\
+The build is H18.3 to H18.9, one stage each, F-a to F-g.
 
 ---
 
