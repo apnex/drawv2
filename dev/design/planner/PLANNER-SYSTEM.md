@@ -314,7 +314,8 @@ Two defects the same day came from that scan missing a kind of change -- a decla
 - **Efficient at scale:** the cost of an edit follows what it touched, not the size of the document.
 - **Adding a behaviour is declarative:** declare what it listens to, write what it does, in the tenant that owns it.
 
-**Not the planner's.** Derived state -- routes, down links, roles, blockers -- is worked out on read by the network's derivation (`network/view.mjs`), never stored, so nothing reacts to keep it current.\
+**Not the planner's.**\
+Derived state -- routes, down links, roles, blockers -- is worked out on read by the network's derivation (`network/view.mjs`), never stored, so nothing reacts to keep it current.\
 Making that side incremental at scale is a read-side concern of its own.
 
 **What waits for promotion.**
@@ -323,3 +324,99 @@ Making that side incremental at scale is a read-side concern of its own.
 - The rest -- the change set, declared triggers for the transaction phases, dispatch by trigger -- can be built in the lab first, proven by the planner and gesture corpora with no visible change; it changes code production runs, so when is the director's call.
 
 Tracked as B287, held.
+
+---
+
+## 14. Design -- declared triggers and one change set (proposed 2026-10-02, held)
+
+> **Proposes; decides nothing.** Written at the director's word ("Write the design then hold") against `2acd3d1`, to reach section 13's target in the lab before promotion, as recommended.
+> Nothing here is built until the director rules TG-D1 to TG-D4 and schedules it (B287).
+
+### 14.1 The reactions today -- measured
+
+| reaction | tenant | phase | how it finds its work today |
+|---|---|---|---|
+| `node-links` | links | clear | declared: a node deleted |
+| `waypoint-links` | links | clear | declared: a waypoint deleted |
+| `group-trim` | groups | clear | declared: an anchor deleted |
+| `pipe-cascade` | network | clear | declared: an anchor deleted |
+| `group-steal` | groups | follow | declared: a group put with members |
+| `stranded-links` | network | stranded | **scans every link before the edit** for a pin that is gone after it |
+| `orphan-sweep` | links | sweep | **scans every waypoint** for one referenced before and not after |
+| `link-join` | links | join | **scans the ops** for a link deleted, or a declaration changed (B285, B286) |
+| `pipe-sweep` | network | join | **scans every pipe** against every route |
+
+The per-op phases are already triggered.\
+The four transaction-phase reactions scan, and each scan is a place where a kind of change can be missed -- B285 and B286 were two.
+
+### 14.2 The change set
+
+The core keeps one change set for the transaction, built as each op is applied (`track`), whoever emitted it -- a request or a reaction:
+```text
+change  { kind, id, before, after, fields }
+  before / after   the entity on either side, or null -- so created, deleted and changed are read off it
+  fields           the fields whose value differs, compared by value (composites by content)
+```
+
+It is computed however the op was written: a whole-entity put that clears a field reports that field changed, as B286 needed.\
+Reactions' own ops feed it, so a consequence's consequence is seen like any other change.
+
+### 14.3 Declared triggers
+
+Every reaction declares what it listens to, as data, in every phase; `on` is replaced:
+```text
+trigger  { deleted?: [kinds], created?: [kinds], changed?: { kind, fields } }   -- one or a list
+```
+
+| reaction | trigger | what it is handed |
+|---|---|---|
+| `node-links` | `{ deleted: ['node'] }` | the node |
+| `waypoint-links`, `group-trim`, `pipe-cascade` | `{ deleted: <the anchor kinds> }` | the anchor |
+| `group-steal` | `{ created: ['group'] }`, `{ changed: { kind: 'group', fields: ['members'] } }` | the group |
+| `stranded-links` | `{ deleted: ['waypoint'] }` | the links that pinned it, from the relation index before the edit |
+| `orphan-sweep` | `{ deleted: ['link', 'pipe'] }`, `{ changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }` | the anchors the changed links or pipes referenced before the edit |
+| `link-join` | `{ deleted: ['link'] }`, `{ changed: { kind: 'link', fields: LINK_DECLARATIONS } }` | the end waypoints of those links |
+| `pipe-sweep` | `{ deleted: ['link', 'pipe'] }`, `{ created: ['link'] }`, `{ changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }` | the board -- see TG-D3 |
+
+The core indexes reactions by kind and event when the composition is built, and calls a reaction only when its trigger matches, handing it the matching changes.\
+A transaction-phase reaction runs once, with every match since the transaction began; a per-op reaction runs per matching op, as today.\
+Phase order and the claim rule (PD-3) are unchanged, and still guard loops and conflicts.\
+A reaction with no trigger is refused when the composition is built.
+
+### 14.4 The guard against a missed trigger
+
+A declared trigger can be wrong in the same way a scan can: it names too little.\
+So the tests run a **shadow**: each triggered reaction is also run untriggered, over the whole document, for every case in the planner and gesture corpora, and the two must emit the same ops.\
+A trigger that misses a kind of change fails there, before any behaviour can depend on it -- the guard B285 and B286 lacked.
+
+### 14.5 Build order -- each stage gated, corpus-proven, deployed to the lab
+
+| stage | what lands | exit criterion |
+|---|---|---|
+| **TG-1** | the change set, built in `track`, handed to every phase; no reaction reads it yet | a test holds it to before and after for every op shape (set, put, put clearing a field, delete, cascade); every corpus unchanged |
+| **TG-2** | declared triggers on the five per-op reactions, `on` retired, the composition refusing a reaction with none | every corpus unchanged; the reaction table shows each trigger |
+| **TG-3** | the four transaction-phase reactions take their matches instead of scanning, with the shadow guard (14.4) | every corpus unchanged; the shadow equal on every case |
+| **TG-4** | the dispatch index, and a count of reactions called per edit | an edit that touches only a zone calls no link or pipe reaction; a rename calls no join; counts recorded on the corpus |
+
+Not in it: transit's cut and join (P2), one link tenant (P3), and the read-side derivation.
+
+### 14.6 Decisions for the director -- one at a time
+
+- **TG-D1 -- triggers as data or as predicates.** Recommended: data, as in 14.3 -- the core can index it, the reaction table can show it, and the shadow can check it -- rather than a predicate per reaction, which hides what it listens to.
+- **TG-D2 -- where the shadow runs.** Recommended: in the tests only, over every corpus case -- rather than also at run time in the lab, which doubles the cost of every edit to catch what the corpora already would.
+- **TG-D3 -- `pipe-sweep` at scale.** Routes are assigned by age across the whole board, so one link's change can move another's route anywhere; the sweep's work cannot be bounded by its trigger alone. Recommended: triggered, so it runs only when links or pipes change, but judging the whole board, over the cached derivation -- bounding it further belongs to the read side's incremental work, not to the planner.
+- **TG-D4 -- when.** Recommended: in the lab before promotion (the director's question of 2026-10-02); a production-upgrade entry records it, behaviour identical.
+
+### 14.7 Axiom alignment audit (M7)
+
+**Verdict: pass-with-guardrails** -- TG-D1 to TG-D4 ruled first.
+
+| axiom | weight | how the design holds it |
+|---|---|---|
+| A2 Isomorphic Specification | load-bearing | what a reaction listens to is declared, read by the core and shown in the reaction table: one statement, not a scan to be read |
+| A11 Cognitive Minimalism | load-bearing | relevance is computed once by deterministic code, not re-derived by hand in each reaction |
+| A8 Gated Recursive Integrity | supporting | each stage gated by the corpora; the shadow proves the triggers complete before the scans go |
+| A3 Sovereign Composition | supporting | the core owns dispatch, tenants own semantics -- the split section 13 confirmed |
+| A4-A7, A9, A10, A12-A14 | not materially implicated | |
+
+**Guardrails:** every corpus unchanged at every stage; no reaction without a trigger; the shadow equal on every corpus case before a scan is removed.

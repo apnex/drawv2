@@ -218,6 +218,7 @@ AMENDED 2026-10-02: the fields that decide whether two links join are one list, 
 AMENDED 2026-10-02: the link's whole path through promotion gathered in `PROMOTION.md` by stage -- transit reactions (P2), one link tenant and `link` the network's kind (P3, B280), the rules into `network/` (K13b), the browser preview (PL-6), the Model's link methods (K13d) -- each pointing at the row that carries it.\
 AMENDED 2026-10-02: B286 fixed at the director's report (H17.26) -- clearing a direction with `f` now joins two links it makes compatible, as reversing one does; the join compares declarations before and after, not a patch.\
 AMENDED 2026-10-02: the planner's target set -- an event-triggered, declarative reaction graph, efficient at scale (`PLANNER-SYSTEM.md` section 13, held as B287); the planner confirmed as the sovereign component for a write's consequences.\
+AMENDED 2026-10-02: its design written and held -- `PLANNER-SYSTEM.md` section 14, stages TG-1 to TG-4, decisions TG-D1 to TG-D4 owed (B287).\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
