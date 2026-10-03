@@ -238,6 +238,7 @@ AMENDED 2026-10-02: the production upgrade audited (`dev/PRODUCTION-UPGRADE.md`,
 AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`) -- promotion's P0 done; verified at boot, at the edge and in its logs; rollback to `2814d8d` held. Owed to the director: a look at the page (PU11, PU12, PU24). Next by the triage: start promotion (B266), when the director says.\
 AMENDED 2026-10-02: B290 fixed at the director's word (H17.29) -- a resume against a template is answered at version 0, and one against a diagram the caller may not read is refused, typed (PU30).\
 AMENDED 2026-10-03: production runs `2538ab8` (`draw-00155-hfx`) with the B290 fix, at the director's word; booted clean.\
+AMENDED 2026-10-03: promotion started at the director's word (B266, milestone H18); its decisions are ruled first, against the estate measured from the production backup.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -1012,6 +1013,19 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
 
+## H18 -- promotion: the network plugin into production - `TODO`
+
+Opened 2026-10-03 by the director ("Approved for next best action", the re-triage's step 3), firing B266's trigger.\
+The plan of record is `dev/design/unification/PROMOTION.md`: P0 (production on current `main`) is done, P1 was run in the lab (H17.22), and its start-of-work decisions come first, one at a time, before P2.\
+The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`, "The estate, measured").
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H18.1 | Rule promotion's start-of-work decisions, P-3 to P-9 and the format batch's scope, one at a time, against the measured estate | **B266** | S2 | `WIP` |
+**Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1047,7 +1061,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B262** | S4 | Bindings cannot override one another (Q3, held for now, DG2) | a binding must shadow another and disjoint conditions are measurably worse, or a plugin must replace a product binding |
 | **B264** | S4 | A double click finds a zone without Shift; a press needs Shift (kept for now) | the director re-evaluates it in the lab, or an author double-clicks a zone meaning the node beneath |
 | **B265** | S3 | The context panel (a fixed panel following the situation) is not designed; gesture system stage 7 parked | the director opens the context panel's design |
-| **B266** | S2 | Promote the network plugin to production: full cutover, no legacy -- planned in PROMOTION.md, not started | the director says promotion may start |
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
 | **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |

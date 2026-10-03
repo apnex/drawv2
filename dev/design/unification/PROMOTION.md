@@ -211,6 +211,23 @@ Each is a real fork with a recommendation, asked one at a time when the work sta
 
 ---
 
+AMENDED 2026-10-03 -- **The estate, measured** from the production backup of 2026-10-02 (`d58816c`'s audit), before the decisions are ruled.
+
+| | count | bears on |
+|---|---|---|
+| diagrams / links / waypoints / nodes | 43 / 464 / 475 / 530 | |
+| closed rings | 17 | P-3 |
+| shared legs -- one consecutive stop pair used by two links | 0 | P-4: none to migrate |
+| `pinned` waypoints | 104 | P-5 |
+| undo records | 2,004 | P-6 |
+| links with bends / bends | 90 / 302 | P-7: every bend becomes a pin |
+| links with a declared direction | 42 | P-9 |
+| node and waypoint ids sharing their 6-hex part | 3, in 2 diagrams | B282: renumbered when waypoints become nodes |
+
+P-2 is answered by the ruling of 2026-10-01 (B249): every item stores its drawing order, and a link's age is that order.
+
+---
+
 ## 11. Axiom alignment audit (M7)
 
 **Identity:** this plan, against `fca7828`, measured against mission-kit A1-A14.\
