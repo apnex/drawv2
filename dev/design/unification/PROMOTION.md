@@ -148,6 +148,7 @@ Link rules are already one set -- one join reaction, one split rule (`splitAtBen
 | **P3 and P5** | the browser's own copies of planner rules are deleted, the browser previewing with the planner (PL-6) | P3/P5 note above; B221 |
 | **the rebuild** | the core Model's link methods move to the network layer, so the core knows no link | H17 cut K13d |
 
+The planner's target -- an event-triggered, declarative reaction graph (`dev/design/planner/PLANNER-SYSTEM.md` section 13, B287) -- is completed by these steps: the P2 and P3 rows give transit and links their triggered reactions under one owner.\
 Not before promotion: making `link` the network's kind in the lab alone would give one kind two definitions while production still needs its row (2026-10-02).\
 Waypoints becoming anchors on nodes, and type becoming a composition of packs (B282), travel with the format batch (P2) and change what a link's ends reference -- the anchor kinds -- not the link.
 

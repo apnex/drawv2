@@ -293,3 +293,33 @@ PL1-PL7 by their tests; the corpus and the widened differential; the generated r
 - **PD-5 -- one preview.** PL-6 after PL-5, with derived ids for minted entities (H17-D10) -- rather than at the production rebuild, as H17-D11 deferred it. To be ruled before PL-6.
   RULED 2026-10-01: at promotion -- H17-D11 stands, and PL-6 joins `dev/design/unification/PROMOTION.md`; the programme closes at PL-5 (`dev/DECISIONS.md`).
 - **PD-6 -- beats and the reveal.** A record extension around the core, the clock passed in -- rather than staying inside `commit`. Recommended.
+
+---
+
+## 13. The target -- an event-triggered, declarative reaction graph (set 2026-10-02)
+
+AMENDED 2026-10-02, at the director's word: "I think our target should be an event triggered graph - declarative - efficient at scale. I understand parts of this cannot be fully realised until we promote to production and properly unify kinds."\
+Confirmed the same day: the planner is the sovereign component for a write's consequences -- the mechanism; tenants bring the semantics, as reactions; kind rows validate one entity.
+
+**Where it stands (measured at `3da8ae9`).**\
+Reactions are declared rows in ordered phases, composed from tenants, documented by a generated table.\
+The two per-op phases (`clear`, `follow`) are triggered: a declared `on(op)` filter decides relevance.\
+The three per-transaction phases (`stranded`, `sweep`, `join`) are not: each reaction scans the edit itself to find where it applies.\
+Two defects the same day came from that scan missing a kind of change -- a declaration changed by a `set` (B285), then by a whole-entity put (B286).
+
+**The target.**
+- **One change set per transaction, computed by the core:** which kinds, which entities and which fields an edit created, deleted or changed, by comparing before and after -- however each op was written.
+- **Every reaction declares its trigger,** in every phase -- for example `{ kind: 'link', changed: LINK_DECLARATIONS }`, or "an anchor deleted" -- and the core calls a reaction only where its trigger matches, handing it the matching entities. No reaction scans the edit by hand.
+- **Emitted ops feed the change set,** so consequences cascade through the graph, still under the phase order and the claim rule (PD-3), which guard loops and conflicts.
+- **Efficient at scale:** the cost of an edit follows what it touched, not the size of the document.
+- **Adding a behaviour is declarative:** declare what it listens to, write what it does, in the tenant that owns it.
+
+**Not the planner's.** Derived state -- routes, down links, roles, blockers -- is worked out on read by the network's derivation (`network/view.mjs`), never stored, so nothing reacts to keep it current.\
+Making that side incremental at scale is a read-side concern of its own.
+
+**What waits for promotion.**
+- Transit becomes an op when it is stored on the anchor (P2), so the toggle's cut and join become triggered reactions (`dev/design/unification/PROMOTION.md`).
+- One link tenant, and `link` the network's kind (P3, B280), so link reactions have one owner.
+- The rest -- the change set, declared triggers for the transaction phases, dispatch by trigger -- can be built in the lab first, proven by the planner and gesture corpora with no visible change; it changes code production runs, so when is the director's call.
+
+Tracked as B287, held.

@@ -217,6 +217,7 @@ AMENDED 2026-10-02: B285 fixed at the director's report and ruling (H17.25) -- t
 AMENDED 2026-10-02: the fields that decide whether two links join are one list, `LINK_DECLARATIONS`, read by the cut and the join, held to the join's comparison by a test; the transit toggle's join becoming a planner reaction recorded for P2.\
 AMENDED 2026-10-02: the link's whole path through promotion gathered in `PROMOTION.md` by stage -- transit reactions (P2), one link tenant and `link` the network's kind (P3, B280), the rules into `network/` (K13b), the browser preview (PL-6), the Model's link methods (K13d) -- each pointing at the row that carries it.\
 AMENDED 2026-10-02: B286 fixed at the director's report (H17.26) -- clearing a direction with `f` now joins two links it makes compatible, as reversing one does; the join compares declarations before and after, not a patch.\
+AMENDED 2026-10-02: the planner's target set -- an event-triggered, declarative reaction graph, efficient at scale (`PLANNER-SYSTEM.md` section 13, held as B287); the planner confirmed as the sovereign component for a write's consequences.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -1005,6 +1006,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
 | **B282** | S3 | Anchors unified and type as composition (ruled 2026-09-22): the waypoint kind goes, and `type` becomes the name of a composition of packs | promotion's format batch (P2), packs composing earned by composing two |
+| **B287** | S3 | The planner as an event-triggered declarative graph: one change set per transaction, declared triggers, dispatch only where they match (`PLANNER-SYSTEM.md` section 13) | the director schedules it, in the lab or with promotion |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
