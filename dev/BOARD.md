@@ -1030,7 +1030,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.6 | F-d: every node, link and zone stores its drawing order; newest on top for every peer; undo restores place; link ages read it | **B249** | S2 | `DONE` |
 | H18.7 | F-e: transit stored on the anchor (TR-7); a toggle is a `set`, its cut and join planner reactions; the export reads it | feature | S2 | `DONE` |
 | H18.8 | F-f: a ring's closing leg is routed like any leg (P-3) | feature | S2 | `DONE` |
-| H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | **B266** | S2 | `TODO` |
+| H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | feature | S2 | `DONE` |
+| H18.10 | Design P3 for approval before any code: the server composes the network, stored pipes and the P-4 split in the migration (F2), `pinned` and the classic tenant retired, the browser's rule copies deleted (PL-6) | **B266** | S2 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
 AMENDED 2026-10-03: H18.3 (F-a) done -- `server/migrate.mjs`, run by the store on every path in; `meta.schema` 2; undo history truncated; `direction`; the estate dry run passes (`tools/migrate-schema.mjs`). Production stays on `draw:2538ab8` from here (F3, PU31).\
@@ -1039,6 +1040,7 @@ AMENDED 2026-10-03: H18.5 (F-c) done -- a waypoint is a node with no type; the k
 AMENDED 2026-10-03: H18.6 (F-d) done -- every node, link and zone stores its drawing order; newest on top for every peer, undo restores an item to its place, and a link's age is its order; B10, B249 and B259 closed.\
 AMENDED 2026-10-03: H18.7 (F-e) done -- transit is stored on the anchor; `x` is an edit, undone and redone like any other, and the planner cuts and joins from it, from any door; the export draws the canvas's roles and ring; `transitEdit` is deleted.\
 AMENDED 2026-10-03: H18.8 (F-f) done -- a ring's closing leg is routed over a pipe like any leg, laid when the link is closed and swept when it is opened (P-3).\
+AMENDED 2026-10-03: H18.9 (F-g) done -- P2's format batch is complete on `main` (`FORMAT-BATCH.md`, "The batch, closed"); next H18.10, P3's design.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
@@ -1060,6 +1062,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
 | **B282** | S3 | Type as composition of packs (ruled 2026-09-22) -- its waypoint step ruled into P2 (P-10); this half needs no format change | a second pack composes, or the device table K6 lands |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
+| **B291** | S3 | Delete the schema 2 migration, the loader's repairs and the dry-run tool once nothing stored is older | promotion's cutover has run and every stored document, the rollback backups included, is schema 2 |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |

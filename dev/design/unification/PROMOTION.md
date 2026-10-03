@@ -234,6 +234,7 @@ Rollback after it is the backup (P-8).
 
 AMENDED 2026-10-03 -- **P2's design** is `FORMAT-BATCH.md`, proposed.\
 Measuring for it found that the product cannot hold stored pipes before P3 composes the network's tenant: the pipe step of the one migration is proposed to land with P3 (its decision F2).\
+AMENDED 2026-10-03 -- **P2 is done on `main`** (H18.3 to H18.9; `FORMAT-BATCH.md`, "The batch, closed"): `meta.schema` 2, one migration admitted on every path into the store, waypoints as nodes with no type, drawing order and link ages, stored transit with its cut and join as planner reactions, `direction`, a ring's closing leg routed, undo history truncated. Its exit criterion "a document with pipes round-trips" moves to P3 with the stored pipes (F2). P3 therefore carries: the server composing the network; the migration's pipe step and the P-4 split; `pinned` and production's orphan rule deleted (P-5 corrected); the classic tenant deleted; the browser's rule copies (PL-6).\
 AMENDED 2026-10-03 (H18.7): the B277 note on P2 above is met -- the export reads the stored transit.\
 AMENDED 2026-10-03: F1 to F4 ruled as recommended; so **P3 also carries** the migration's pipe step -- every link's pipes, closing legs included -- and the P-4 split, and production stays on `draw:2538ab8` from P2's first stage until P9.
 

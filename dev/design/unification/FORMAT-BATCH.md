@@ -4,6 +4,7 @@
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
 > AMENDED 2026-10-03: approved, its decisions ruled (section 9).
+> AMENDED 2026-10-03: built and closed (H18.3 to H18.9); see "The batch, closed", after section 6.
 
 ## 1. Status
 
@@ -204,6 +205,14 @@ No format change: `closed` was stored already. The 17 estate rings get their clo
 Corpora: the planner, gesture and matrix corpora unchanged; three matrix rows added -- RING-01 closes the `bend` board's link (a third link pipe, the ring up), RING-02 opens it again (swept), RING-03 undoes the close (pipe gone).\
 Measured in Chrome on the lab: `c` on the bend board's link draws the ring closed and up, over three link pipes.\
 Mutants: 8 -- 6 killed as written; two survivors (a ring's closing leg not among the legs it calls, and a down ring not keeping its closing pipe) killed by new tests.
+
+AMENDED 2026-10-03 -- **The batch, closed** (F-g, H18.9).\
+**The estate dry run, every step at once, on the production backup of 2026-10-02:** 43 diagrams boot in a real store; history 42, renumber 2, anchors 43, order 42, direction 10, schema 43 (diagrams each step changed); 42 declared directions renamed, 2,004 undo records dropped, 1,005 nodes and no waypoint collection after, 3 waypoints renumbered; every collection's orders rise in the order it was listed; nothing changed that was not ruled.\
+**Exit criteria (section 6), each now true on `main`:** the estate dry run passes; a schema 1 document through `create` is stored as schema 2 and a schema 2 one carrying `flow` is refused; no composition names `waypoint`; two tabs and a reload stack alike and undo restores place, and `network/order.mjs` is deleted; transit survives a reload and undo and the export draws the canvas's roles, and `transitEdit` is deleted; a ring's closing leg is laid, routed and kept.\
+**Section 7, each with its register entry:** ids PU33 and PU35; `direction` PU32; undo history and the rollback PU34; stacking PU36; transit PU37; the ring PU38; and P-7, whose entry the ruling named and no stage made -- PU39, added now.\
+**Not done here, by ruling:** stored pipes and the P-4 split (P3, F2); `pinned` and production's orphan rule (P3, P-5 corrected); deleting the migration, held as B291 with its trigger, as section 5.1 promised.\
+**Coverage (section 8), against the to-state:** proved -- P-3, P-5 as corrected, P-6, P-9 as F1, P-10; B249, B10, B259; TR-7; B282's waypoint half; B277's export parity. Deferred -- as section 8 lists, with P-4 and stored pipes at P3.\
+Production stays on `draw:2538ab8` (F3, PU31); the lab runs every stage.
 
 Each stage is one gate and one lab deploy.
 
