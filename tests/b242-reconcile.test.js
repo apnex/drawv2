@@ -73,7 +73,7 @@ async function world(seed) {
 	const tab = new Model();
 	// a window that never closes by itself: the test closes it, standing in for the 600ms timer
 	const changes = new Changes(tab, { coalesceMs: 3_600_000 });
-	const sync = new Sync({ model: tab, net, history: changes, selection: { subscribe() {}, list: () => [] }, onState() {} });
+	const sync = new Sync({ model: tab, net, history: changes, selection: { subscribe() {}, list: () => [], has: () => false, add() {} }, onState() {} });
 	changes.onCommit((request) => sync.submit(request));          // app/src/main.js:752
 
 	toServer('hello', { diagram: id });

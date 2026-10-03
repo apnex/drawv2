@@ -30,7 +30,7 @@ to sustain a loop. Losing an undeliverable change is the lesser harm, and the us
 */
 const MAX_REPLAYS = 5;
 import * as commands from './commands.js';
-import { derivedToApply } from './changes.js';
+import { derivedToApply, applyAnswer } from './changes.js';
 import { NAME_MAX } from '../../model/limits.mjs';
 import { Clock } from './clock.js';
 
@@ -612,8 +612,8 @@ export class Sync {
 		before its answer IS ours and in flight, and taking their whole list used to revert it.
 		*/
 		if (Array.isArray(b.ops)) {
-			const apply = derivedToApply(sent?.ops || [], b.ops, this.pendingOps());
-			if (apply.length) applyOps(this.model, apply);
+			// applied with a selection carried across a join (B288)
+			applyAnswer(this.model, this.selection, derivedToApply(sent?.ops || [], b.ops, this.pendingOps()));
 		}
 		this.emitState({});
 	}
@@ -762,7 +762,7 @@ export class Sync {
 		overwrote the edit, and the edit's own answer was then skipped as an echo of something the
 		tab no longer showed: the tab kept the other writer's value, the server the tab's.
 		*/
-		if (Array.isArray(body.ops)) applyOps(this.model, derivedToApply([], body.ops, this.pendingOps()));
+		if (Array.isArray(body.ops)) applyAnswer(this.model, this.selection, derivedToApply([], body.ops, this.pendingOps()));   // B288
 		if (typeof body.version === 'number') this.appliedVersion = body.version;
 	}
 

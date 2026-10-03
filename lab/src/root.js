@@ -27,7 +27,7 @@ import { el } from '../../app/src/painter.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
-import { derivedToApply } from '../../app/src/changes.js';
+import { derivedToApply, applyAnswer } from '../../app/src/changes.js';
 import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
@@ -144,8 +144,7 @@ history.onCommit((request) => {
 	Nothing is in flight in the lab, because the planner answers in the same page.
 	*/
 	const accepted = net.answered(request, answer, () => {
-		const apply = derivedToApply(request.ops ?? [], answer.change?.ops ?? answer.ops ?? [], []);
-		if (apply.length) applyOps(model, apply);
+		applyAnswer(model, selection, derivedToApply(request.ops ?? [], answer.change?.ops ?? answer.ops ?? [], []));   // a selection carried across a join (B288)
 	});
 	/*
 	B260 -- A REFUSAL TAKES THE PLANNER'S DOCUMENT BACK. The tab applied the request optimistically, so a refused one

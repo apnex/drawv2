@@ -4059,6 +4059,83 @@
 			"built": "yes"
 		},
 		{
+			"id": "TRN-34",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "As TRN-31, then select the right half -- the one a join gives up -- and press f.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				]
+			],
+			"intent": "They join into the link drawn first, and the selection follows: the joined link is selected, as the half that was.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"selected": [
+					"link-000001"
+				]
+			},
+			"rule": "The director's report, 2026-10-02 (B288); DECISIONS: \"A join keeps the earlier-drawn link's name and identity\" (2026-09-26).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "PIPE-01",
 			"state": "routed",
 			"gesture": "select pipe",

@@ -83,6 +83,41 @@ export function derivedToApply(sent, planned, pending) {
 	return [...derived, ...pending.filter((op) => written.has(entityOf(op)))];
 }
 
+/*
+B288 -- WHICH LINKS AN ANSWER JOINED, AND INTO WHICH, read off its ops. The planner's join (model/link-reactions.mjs
+`linkJoin`) deletes one link and re-ends the other over the waypoint the two met at, so the signature is a link deleted and,
+in the same ops, another link set to pass through one of the deleted link's ends. Read here, where the answer is applied,
+because the page does not load the planner's reactions; tests/apply-answer.test.js holds it to the real planner's join, so
+the two cannot drift. `model` is the board before the ops apply. Answers a Map, deleted link id -> the link it joined into.
+*/
+function joinsIn(ops, model) {
+	const into = new Map();
+	for (const del of ops) {
+		if (del.op !== 'del' || del.kind !== 'link') continue;
+		const gone = model.get('link', del.id);
+		if (!gone) continue;
+		const kept = ops.find((o) => o.op === 'set' && o.kind === 'link' && o.id !== del.id && Array.isArray(o.patch?.via)
+			&& [gone.src, gone.dst].some((end) => o.patch.via.includes(end)));
+		if (kept) into.set(del.id, kept.id);
+	}
+	return into;
+}
+
+/*
+B288 -- AN ANSWER, APPLIED: the derived ops (`derivedToApply`) onto the model, and a selected link that a join absorbed
+handing its selection to the link it joined into -- a join keeps the earlier-drawn link's id (ruled 2026-09-26), so the
+half the author had selected was the one deleted, and the selection emptied (the director's report, 2026-10-02). The one
+step every door that applies a planner's answer takes: the lab's, and production's sync, for its own answers and another
+writer's change alike.
+*/
+export function applyAnswer(model, selection, ops) {
+	if (!ops.length) return;
+	const carry = [...joinsIn(ops, model)].filter(([gone]) => selection.has(gone)).map(([, kept]) => kept);
+	applyOps(model, ops);
+	const live = carry.filter((id) => model.get('link', id) && !selection.has(id));
+	if (live.length) selection.add(live);
+}
+
 // a meta op carries neither kind nor id, so every meta op keys as one entity of its own
 const entityOf = (op) => `${op.kind}:${op.id ?? op.entity?.id}`;
 const sameValue = (a, b) => JSON.stringify(a) === JSON.stringify(b);

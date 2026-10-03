@@ -8877,7 +8877,9 @@
 		],
 		"pipesAgree": true,
 		"tabPipeCount": 2,
-		"selected": [],
+		"selected": [
+			"link#1"
+		],
 		"rings": [],
 		"waypointRoles": [
 			{
@@ -8901,7 +8903,7 @@
 		"paths": {
 			"link#1": {
 				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
-				"stroke": "rgb(79, 195, 247)",
+				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
 		}
@@ -9066,7 +9068,9 @@
 		],
 		"pipesAgree": true,
 		"tabPipeCount": 2,
-		"selected": [],
+		"selected": [
+			"link#1"
+		],
 		"rings": [],
 		"waypointRoles": [
 			{
@@ -9090,13 +9094,97 @@
 		"paths": {
 			"link#1": {
 				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
-				"stroke": "rgb(79, 195, 247)",
+				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
 		}
 	},
 	"TRN-33": {
 		"notice": "v7 flow reverse",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				],
+				"down": false
+			}
+		],
+		"controls": 1,
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [
+					"waypoint#1"
+				]
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": -120
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "link"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "link"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 2,
+		"selected": [
+			"link#1"
+		],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,-120",
+					"0,-120|360,0"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-18.974 -113.675 Q0 -120 18.974 -113.675 L360 0",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			}
+		}
+	},
+	"TRN-34": {
+		"notice": "v7 flow cleared",
 		"links": [
 			{
 				"id": "link#1",

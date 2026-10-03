@@ -219,6 +219,7 @@ AMENDED 2026-10-02: the link's whole path through promotion gathered in `PROMOTI
 AMENDED 2026-10-02: B286 fixed at the director's report (H17.26) -- clearing a direction with `f` now joins two links it makes compatible, as reversing one does; the join compares declarations before and after, not a patch.\
 AMENDED 2026-10-02: the planner's target set -- an event-triggered, declarative reaction graph, efficient at scale (`PLANNER-SYSTEM.md` section 13, held as B287); the planner confirmed as the sovereign component for a write's consequences.\
 AMENDED 2026-10-02: its design written and held -- `PLANNER-SYSTEM.md` section 14, stages TG-1 to TG-4, decisions TG-D1 to TG-D4 owed (B287).\
+AMENDED 2026-10-02: B288 fixed at the director's report (H17.27) -- a selected link that a join absorbs hands its selection to the joined link; it depended on which half was selected, not on control (PU28).\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -986,6 +987,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.24 | A link cut in two keeps its declarations -- its plane (control) and its direction (flow) -- on both halves, whichever cut made them | **B284** | S2 | `DONE` |
 | H17.25 | Two links at a junction join when an edit to one makes them compatible -- a change of plane or direction -- as they join when a link leaves; a second link drawn to a terminus still never joins (B214) | **B285** | S2 | `DONE` |
 | H17.26 | A join is woken by a declaration that CHANGED, however the edit is written -- a set, or the whole-entity put that clears a direction | **B286** | S2 | `DONE` |
+| H17.27 | A selected link that a join absorbs hands its selection to the link it joined into, in the lab and in production alike | **B288** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
