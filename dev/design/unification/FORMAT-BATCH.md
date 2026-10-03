@@ -196,6 +196,15 @@ Found on the way: the cut first trusted its trigger, and the TG-3 shadow -- ever
 Measured in Chrome on the lab: `x` at P cuts the link and says so, undo restores P and the one link with no ring, redo cuts it again with the ring.\
 Mutants: 16 -- 13 killed as written; the three survivors (a host's stored off drawn as declared, a cut where nothing stops, the CLI's word for off) killed by new tests.
 
+AMENDED 2026-10-03 -- **F-f done** (H18.8; P-3).\
+A closed link's stops return to its start (`network/pipes.mjs`), so its closing leg is routed, called and held like any leg, and a ring can be down on it; the derivation's key includes `closed`, so closing a link re-derives its board.\
+`ring-pipe`, in the network's tenant, lays a link pipe from a ring's end back to its start when a link is closed (or made closed) and no pipe joins them -- in the planner's `reshape` phase, renamed from `cut` since it now holds two reactions, before the sweep; the sweep wakes on `closed`, so opening a ring sweeps the pipe, and undo takes it back with the close.\
+The canvas still draws the ring closed; the route's repeated start is dropped before drawing, so no point is drawn twice.\
+No format change: `closed` was stored already. The 17 estate rings get their closing pipes from the migration's pipe step, at P3 (F2).\
+Corpora: the planner, gesture and matrix corpora unchanged; three matrix rows added -- RING-01 closes the `bend` board's link (a third link pipe, the ring up), RING-02 opens it again (swept), RING-03 undoes the close (pipe gone).\
+Measured in Chrome on the lab: `c` on the bend board's link draws the ring closed and up, over three link pipes.\
+Mutants: 8 -- 6 killed as written; two survivors (a ring's closing leg not among the legs it calls, and a down ring not keeping its closing pipe) killed by new tests.
+
 Each stage is one gate and one lab deploy.
 
 **Size, by judgement:** F-b and F-c are most of it -- the word appears 514 times in product code and 4,172 in tests and the lab.

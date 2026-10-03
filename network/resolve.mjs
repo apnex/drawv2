@@ -58,7 +58,9 @@ export function pipeResolver(net) {
 		// ids to positions. The view routes only over pipes whose ends the model holds, so every id resolves;
 		// deferring when one does not is a guard, not a path.
 		const points = [];
-		for (const id of route) {
+		// a ring's route returns to its start (F-f); the drawing closes itself, so the start is not drawn twice
+		const ids = link.closed && route.length > 2 && route[route.length - 1] === route[0] ? route.slice(0, -1) : route;
+		for (const id of ids) {
 			const at = model.endpointOf(id);
 			if (!at) return straight(link);
 			points.push([at.x, at.y]);

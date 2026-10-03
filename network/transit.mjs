@@ -70,8 +70,8 @@ that end there (TR-2); turning it back on joins the two left ending there -- the
 (model/link-reactions.mjs `wakesAt`). They were an edit the page built (`transitEdit`), so two places decided when a join
 happened; now a change of `transit`, from any door, sets them off, and undo replays them with the rest.
 
-`transit-cut` runs in its own phase, after the requested ops and before the stranded pass, the sweep and the join, so
-those see the pieces. Each waypoint is cut on the board the cuts before it left (B283), in the order the edit changed them.
+`transit-cut` runs in the `reshape` phase, after the requested ops and before the stranded pass, the sweep and the join,
+so those see the pieces. Each waypoint is cut on the board the cuts before it left (B283), in the order the edit changed them.
 A cut re-ends the link the author drew -- its id, its order, its declarations (B213, B284) -- and puts each new piece
 newest, with an id derived from the link and the waypoint, so the planner mints the same piece on every peer.
 */
@@ -88,7 +88,7 @@ const pieceId = (doc, from, at) => {
 export function transitReactions(transit) {
 	const cut = {
 		id: 'transit-cut',
-		phase: 'cut',
+		phase: 'reshape',
 		trigger: { changed: { kind: BARE_KIND, fields: ['transit'] } },
 		doc: 'a waypoint whose transit this edit turned off cuts every link bending there into links that end there, the first keeping the link\'s id, its order and its declarations, each new piece the newest (TR-2, B283, B284)',
 		run: ({ doc, matches }, emit) => {

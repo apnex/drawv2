@@ -212,7 +212,7 @@ The order is meaning -- today's sequence, held by the planner corpus -- so it is
 order code happens to run in. Within one run of a phase, two reactions changing one entity is a fault (PD-3), thrown,
 so a test meets it; never a silent winner.
 */
-export const PHASES = ['clear', 'follow', 'cut', 'stranded', 'sweep', 'join'];   // read by tools/reaction-table.mjs, which documents them
+export const PHASES = ['clear', 'follow', 'reshape', 'stranded', 'sweep', 'join'];   // read by tools/reaction-table.mjs, which documents them
 const PER_OP = new Set(['clear', 'follow']);
 
 /*

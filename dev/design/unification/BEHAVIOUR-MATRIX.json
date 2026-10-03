@@ -928,7 +928,8 @@
 		"draw: `w` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press w on that anchor, and release beyond it.",
 		"draw: `g` on a non-transiting anchor": "Turn an anchor's transit off, then drag a link, press g on that anchor, and release beyond it.",
 		"select pipe": "Click a pipe to select it -- a hand pipe with no link drawn over it takes the click (H17.22 N-c2).",
-		"delete pipe": "Select a hand pipe, and press Delete."
+		"delete pipe": "Select a hand pipe, and press Delete.",
+		"close `c`": "Select a link with a bend, and press c to close it into a ring, or open it again."
 	},
 	"notApplicable": [
 		[
@@ -4202,6 +4203,100 @@
 				}
 			},
 			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch (\"P2's design decisions\", 2026-10-03; FORMAT-BATCH.md F-e).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "RING-01",
+			"state": "pinned",
+			"gesture": "close `c`",
+			"does": "Select the link on its left leg, and press c.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"c"
+				]
+			],
+			"intent": "The ring's closing leg, from B back to A, is routed like any leg: a link pipe is laid there in the same edit, and the ring is up over it, drawn closed as before -- the drawing joins B to A itself, along that pipe.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"link": 3,
+					"hand": 0
+				}
+			},
+			"rule": "DECISIONS: \"Promotion's start-of-work decisions, P-3 to P-10\" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "RING-02",
+			"state": "pinned",
+			"gesture": "close `c`",
+			"does": "As RING-01, then press c again.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"c"
+				],
+				[
+					"key",
+					"c"
+				]
+			],
+			"intent": "Opened, nothing runs over the closing pipe, so it is swept as any link pipe a link stops using is; the link is as drawn.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"link": 2,
+					"hand": 0
+				}
+			},
+			"rule": "DECISIONS: \"Promotion's start-of-work decisions, P-3 to P-10\" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "RING-03",
+			"state": "pinned",
+			"gesture": "undo",
+			"does": "As RING-01, then undo.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"c"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "One edit closed the ring and laid its pipe, so one undo opens it and takes the pipe back.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"link": 2,
+					"hand": 0
+				}
+			},
+			"rule": "DECISIONS: \"Promotion's start-of-work decisions, P-3 to P-10\" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f.",
 			"standing": "ruled",
 			"built": "yes"
 		},

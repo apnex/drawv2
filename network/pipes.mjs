@@ -98,8 +98,20 @@ the route is derived. So this routes leg by leg and joins the legs. If any leg h
 is DOWN -- ruled 2026-09-25, "down, and heals" -- which is reported as null rather than a partial
 path, because a route that stops halfway is not a smaller route, it is no route.
 */
-export function routeLink(pipes, { src, dst, via = [] }, passes = ALL_PASS) {
-	const stops = [src, ...via, dst];
+/*
+F-f (H18.8; P-3, ruled 2026-10-03) -- A RING'S STOPS RETURN TO ITS START. A closed link runs src, its pins, dst, and back to
+src, and that closing leg is routed over a pipe like any other: a ring is a route like any link. It was drawn by the
+renderer joining dst to src in a straight line, over no pipe, so a ring could never be down on that leg, and the sweep took
+any pipe there. Every reader of a link's stops reads this.
+*/
+const stopsOf = (link) => {
+	const open = [link.src, ...(link.via ?? []), link.dst];
+	return link.closed ? [...open, link.src] : open;
+};
+
+export function routeLink(pipes, link, passes = ALL_PASS) {
+	const stops = stopsOf(link);
+	const src = stops[0];
 	const whole = [src];
 	/*
 	NEVER THE SAME PIPE TWICE -- ruled 2026-09-30. A pin left on a spur could only be reached out and back over one pipe
@@ -143,7 +155,7 @@ function pipeCapacity(_pipe) {
 
 // the pipes joining a link's own consecutive stops -- its ends and pins, in order
 function ownLegs(link) {
-	const stops = [link.src, ...(link.via ?? []), link.dst];
+	const stops = stopsOf(link);   // a ring's closing leg among them (F-f)
 	return stops.slice(1).map((b, i) => pipeKey(stops[i], b));
 }
 
@@ -168,7 +180,7 @@ function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity, passe
 			const k = pipeKey(p.a, p.b), on = held.get(k) ?? [], caller = called.get(k);
 			return (caller === undefined || caller === link.id) && (on.length < capacity(p) || on.includes(link.id));
 		});
-		const r = routeLink(open, { src: link.src, dst: link.dst, via: link.via ?? [] }, passes);
+		const r = routeLink(open, link, passes);
 		routes.set(link.id, r);
 		if (r) for (let i = 0; i < r.length - 1; i++) {
 			const k = pipeKey(r[i], r[i + 1]), on = held.get(k) ?? [];
@@ -182,7 +194,7 @@ function assign(pipes, links, { rankOf = () => 0, capacity = pipeCapacity, passe
 export const assignRoutes = (pipes, links, opts) => assign(pipes, links, opts).routes;
 
 // the way a link WOULD take if no other link held or called any pipe -- the "preferred path" a blocked link is kept from
-export const preferredRoute = (pipes, link, passes = ALL_PASS) => routeLink(pipes, { src: link.src, dst: link.dst, via: link.via ?? [] }, passes);
+export const preferredRoute = (pipes, link, passes = ALL_PASS) => routeLink(pipes, link, passes);
 
 /*
 EVERYTHING THE NETWORK KNOWS ABOUT ONE BOARD, derived once -- step T2 of the ruleset audit
@@ -220,7 +232,7 @@ export function deriveNetwork(pipes, links, opts) {
 		// the ids of the links routed through an anchor -- what a moved anchor must redraw
 		through: (anchorId) => links.filter((l) => routes.get(l.id)?.includes(anchorId)).map((l) => l.id),
 		// what the sweep keeps: each link's route, or a down link's own legs, which it heals onto (ruled 2026-09-27)
-		inUse: () => links.map((l) => routes.get(l.id) ?? [l.src, ...(l.via ?? []), l.dst]),
+		inUse: () => links.map((l) => routes.get(l.id) ?? stopsOf(l)),
 	};
 }
 

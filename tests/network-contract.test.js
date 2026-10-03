@@ -79,7 +79,7 @@ test('a malformed link tenant is refused by plan() and commit(), saying what is 
 	const run = (row) => ({ owner: 'bad', reactions: [row] });
 	for (const [links, says] of [
 		[{ reactions: [] }, /owner, reactions/],
-		[run({ id: 'x', phase: 'later', run: () => {} }), /phase of clear, follow, cut, stranded, sweep, join/],
+		[run({ id: 'x', phase: 'later', run: () => {} }), /phase of clear, follow, reshape, stranded, sweep, join/],
 		[run({ id: 'x', phase: 'sweep' }), /a reaction is/],
 		[{ owner: 'twice', reactions: [{ id: 'group-trim', phase: 'clear', trigger: { deleted: ['node'] }, run: () => {} }] }, /two reactions are named group-trim/],
 		// TG-2: a reaction declares its trigger as data; `on` is retired, and a trigger must say something
@@ -120,7 +120,7 @@ test('the plugin builds ONE object: the Model reads it, and the planner takes it
 	assert.equal(m.network, network, 'the Model holds the object it was given, not a copy of some of it');
 	assert.equal(network.links.owner, 'network links');
 	// the link tenant's five, then the pipes' own two (H17.22 N-b): an anchor's deletion takes its pipes, and the sweep follows the join
-	assert.deepEqual(network.links.reactions.map((r) => `${r.phase}:${r.id}`), ['clear:node-links', 'clear:waypoint-links', 'stranded:stranded-links', 'sweep:orphan-sweep', 'join:link-join', 'clear:pipe-cascade', 'join:pipe-sweep']);
+	assert.deepEqual(network.links.reactions.map((r) => `${r.phase}:${r.id}`), ['clear:node-links', 'clear:waypoint-links', 'stranded:stranded-links', 'sweep:orphan-sweep', 'join:link-join', 'reshape:ring-pipe', 'clear:pipe-cascade', 'join:pipe-sweep']);
 	const { m: authority, log } = board(KINDS);
 	assert.equal(commit(authority, log, request, 'lab', 'lab', { links: network.links, kinds: KINDS }).ok, true, 'and the planner accepts its tenant');
 	// its tenant names the kind its reactions read, so a planner composed without pipes refuses it outright (N-d)

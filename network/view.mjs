@@ -50,7 +50,8 @@ export function createNetworkView(pipesOf, rankOf = null, transit = null) {
 			const rank = rankOf ?? ageIn(model);
 			// the anchors no route may pass (TRANSIT.md section 12, TR-1): an input to every route, so a part of the key
 			const blocked = transit ? transit.blockedIn(model) : [];
-			const key = `${pipes.map((p) => `${p.a}-${p.b}:${p.laid}`).join(',')}#${links.map((l) => `${l.id}:${l.src}>${l.dst}[${(l.via ?? []).join(',')}]@${rank(l.id)}`).join(',')}#${blocked.join(',')}`;
+			// a ring is part of the key (F-f): closing a link changes its stops, so a board's derivation differs with it
+			const key = `${pipes.map((p) => `${p.a}-${p.b}:${p.laid}`).join(',')}#${links.map((l) => `${l.id}:${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${l.closed ? 'o' : ''}@${rank(l.id)}`).join(',')}#${blocked.join(',')}`;
 			const hit = recent.find((r) => r.key === key);
 			if (hit) return hit.view;
 			const stops = new Set(blocked);

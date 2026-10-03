@@ -10,7 +10,7 @@ A request passes through three phases: the requested ops, then the reactions, th
 The reactions run in the phases declared in `server/txn.mjs`, in this order:
 - `clear` runs before any delete applies, wherever the delete came from: what cannot outlive the entity.
 - `follow` runs after a put applies: what it displaces.
-- `cut`, `stranded`, `sweep` and `join` run once each, after the requested ops: what the transaction as a whole left behind -- `cut` first, so the others see its pieces (F-e).
+- `reshape`, `stranded`, `sweep` and `join` run once each, after the requested ops: what the transaction as a whole left behind -- `reshape` first, so the others see what it reshaped: transit's cut (F-e), a ring's closing pipe (F-f).
 - `refuse` rows run last, on the result: a rule a tenant holds that refuses the whole transaction, changing nothing (F-e).
 
 Within a phase the rows run top to bottom, and two rows changing one entity in one run of a phase is a fault (PD-3).\
@@ -45,10 +45,11 @@ Promotion deletes the classic tenant and makes this production's (`dev/design/un
 | clear | `pipe-cascade` | network links | node deleted | an anchor deleted takes every pipe that ends at it, hand pipes included: a pipe is its pair (SD7) |
 | clear | `group-trim` | groups | node deleted | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
 | follow | `group-steal` | groups | group created; or group members changed | putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group |
-| cut | `transit-cut` | network links | node transit changed | a waypoint whose transit this edit turned off cuts every link bending there into links that end there, the first keeping the link's id, its order and its declarations, each new piece the newest (TR-2, B283, B284) |
+| reshape | `transit-cut` | network links | node transit changed | a waypoint whose transit this edit turned off cuts every link bending there into links that end there, the first keeping the link's id, its order and its declarations, each new piece the newest (TR-2, B283, B284) |
+| reshape | `ring-pipe` | network links | link created; or link closed, src, dst changed | a link closed into a ring lays a link pipe from its end back to its start, where none joins them: its closing leg is routed like any leg (P-3) |
 | stranded | `stranded-links` | network links | node deleted | a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins |
 | sweep | `orphan-sweep` | network links | link, pipe deleted; or link src, dst, via changed | a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); the pipes that survive the edit reference anchors too, and nothing else is kept (ruled 2026-09-29) |
 | join | `link-join` | network links | link deleted; or link control, direction changed; or node transit changed | two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); only where the waypoint's transit is on (TR-5) |
-| join | `pipe-sweep` | network links | link, pipe deleted; or link, pipe created; or link src, dst, via changed; or pipe laid changed | after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27) |
+| join | `pipe-sweep` | network links | link, pipe deleted; or link, pipe created; or link src, dst, via, closed changed; or pipe laid changed | after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27) |
 | refuse | `transit-offers` | network links | node created; or node transit, type changed | a node may store only a transit its type offers: a load balancer, a server and a host never pass routes (TR-6) |
 <!-- END GENERATED: network -->

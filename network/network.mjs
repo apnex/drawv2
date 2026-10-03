@@ -20,7 +20,8 @@ import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './reso
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
 import { transitReactions } from './transit.mjs';
-import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { pipeId, pipeEntity } from './pipe-kind.mjs';
 
 /*
 H17.22 N-b -- THE PIPES' OWN REACTIONS, where the model holds pipes (the network's `pipe` kind, network/pipe-kind.mjs):
@@ -39,6 +40,25 @@ const endsAt = (pipe, id) => pipe.a === id || pipe.b === id;
 
 function pipeReactions(view) {
 	return [
+		/*
+		F-f (H18.8; P-3) -- A RING LAYS ITS CLOSING PIPE. Closing a link (`c`, or a link made closed) adds a leg from its dst
+		back to its src, routed like any leg (network/pipes.mjs `stopsOf`); with no pipe there the ring would be down, so the
+		pipe is laid with it, as a drag lays a link's legs -- a link pipe, swept when the ring is opened and nothing runs over
+		it. In the reshape phase, before the stranded pass, the sweep and the join look.
+		*/
+		{
+			id: 'ring-pipe',
+			phase: 'reshape',
+			trigger: [{ created: ['link'] }, { changed: { kind: 'link', fields: ['closed', 'src', 'dst'] } }],
+			doc: 'a link closed into a ring lays a link pipe from its end back to its start, where none joins them: its closing leg is routed like any leg (P-3)',
+			// it reads what each change is (TG-3): a link that is closed now, and whose closing pair no pipe joins
+			run: ({ doc, matches }, emit) => {
+				for (const { kind, after } of matches) {
+					if (kind !== 'link' || !after?.closed || after.src === after.dst) continue;
+					if (!doc.get('pipe', pipeId(after.src, after.dst)) && anchorOf(doc, after.src) && anchorOf(doc, after.dst)) emit([{ op: 'put', kind: 'pipe', entity: pipeEntity(after.src, after.dst, 'link') }]);
+				}
+			},
+		},
 		{
 			id: 'pipe-cascade',
 			phase: 'clear',
@@ -51,7 +71,7 @@ function pipeReactions(view) {
 			phase: 'join',
 			// anything that can move a route: a link made, deleted, re-ended or re-pinned; a pipe made, deleted or re-laid -- a new
 			// hand pipe can shorten a route and leave a link pipe unused (TG-D3: judged over the whole board)
-			trigger: [{ deleted: ['link', 'pipe'] }, { created: ['link', 'pipe'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }, { changed: { kind: 'pipe', fields: ['laid'] } }],
+			trigger: [{ deleted: ['link', 'pipe'] }, { created: ['link', 'pipe'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via', 'closed'] } }, { changed: { kind: 'pipe', fields: ['laid'] } }],
 			doc: 'after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27)',
 			run: ({ doc }, emit) => {
 				const used = new Set();

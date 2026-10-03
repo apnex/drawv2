@@ -72,28 +72,28 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 ## 5. The matrix -- board state by gesture
 
 <!-- BEGIN GENERATED: grid. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
-| state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link | transit `x` | draw: `w` on a non-transiting anchor | draw: `g` on a non-transiting anchor | select pipe | delete pipe |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | UNDO-02, UNDO-03 | . | . | . | . | PIPE-01, PIPE-02 | PIPE-03, PIPE-04, PIPE-05 |
-| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | . | . | . | . | . | . | . |
-| pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . | TRN-23, TRN-24, TRN-25, TRN-26, TRN-27, TRN-28 | . | . | . | . |
-| pins and a g hop | DEL-14 | DEL-09 | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| down | n/a | n/a | DEL-15 | . | HEAL-03 | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . | . | . | . | . | . |
-| blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 | . | . | . | . | . |
-| two g paths | . | ALT-02 | . | . | ALT-01 | . | . | . | . | . | . | . | . | . | . |
-| w path fed by g | . | . | . | WP-02 | . | . | . | . | . | WP-01 | . | . | . | . | . |
-| two pins beside a g path | HP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . |
-| transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 | TRN-14, TRN-15 | TRN-16 | . | . |
-| transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . | . | . |
-| transit pin | . | . | . | . | . | . | . | . | TRN-35, TRN-36 | . | TRN-12, TRN-13, TRN-29, TRN-30, TRN-31, TRN-32, TRN-33, TRN-34 | . | . | . | . |
-| transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . | . | . |
-| transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . | . | . |
+| state \ gesture | delete pin | delete `g` hop | delete end | delete link | draw: mouseup on end | draw: `g` bend | draw: `g` on end | draw: `w` bend | undo | select link | transit `x` | draw: `w` on a non-transiting anchor | draw: `g` on a non-transiting anchor | select pipe | delete pipe | close `c` |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| routed | n/a | DEL-01, LOOK-01 | DEL-12 | DEL-16 | CAP-01 | GST-01, GST-02 | . | DIR-01 | UNDO-02, UNDO-03 | . | . | . | . | PIPE-01, PIPE-02 | PIPE-03, PIPE-04, PIPE-05 | . |
+| pinned | DEL-03 | n/a | DEL-11 | . | . | . | . | RFS-01 | RING-03 | . | . | . | . | . | . | RING-01, RING-02 |
+| pinned, another way | DEL-02 | n/a | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
+| pinned and passed | DEL-10 | DEL-13 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
+| w-chain | DEL-04, DEL-05 | n/a | DEL-06, DEL-07 | DEL-08 | SRC-01, SRC-02 | SRC-03 | . | . | UNDO-01 | . | TRN-23, TRN-24, TRN-25, TRN-26, TRN-27, TRN-28 | . | . | . | . | . |
+| pins and a g hop | DEL-14 | DEL-09 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
+| down | n/a | n/a | DEL-15 | . | HEAL-03 | HEAL-01 | HEAL-02 | HEAL-04, HEAL-05 | . | . | . | . | . | . | . | . |
+| blocked | n/a | . | . | CAP-04 | . | . | . | CAP-02 | CAP-06 | CAP-03, CAP-05 | . | . | . | . | . | . |
+| two g paths | . | ALT-02 | . | . | ALT-01 | . | . | . | . | . | . | . | . | . | . | . |
+| w path fed by g | . | . | . | WP-02 | . | . | . | . | . | WP-01 | . | . | . | . | . | . |
+| two pins beside a g path | HP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
+| a pin and a g hop beside a g path | . | HP-02 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
+| older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
+| transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 | TRN-14, TRN-15 | TRN-16 | . | . | . |
+| transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . | . | . | . |
+| transit pin | . | . | . | . | . | . | . | . | TRN-35, TRN-36 | . | TRN-12, TRN-13, TRN-29, TRN-30, TRN-31, TRN-32, TRN-33, TRN-34 | . | . | . | . | . |
+| transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . | . | . | . |
+| transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . | . | . | . |
 
-86 rows: 86 built, 0 todo, 0 open.\
+89 rows: 89 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -134,6 +134,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | draw: `g` on a non-transiting anchor | Turn an anchor's transit off, then drag a link, press g on that anchor, and release beyond it. |
 | select pipe | Click a pipe to select it -- a hand pipe with no link drawn over it takes the click (H17.22 N-c2). |
 | delete pipe | Select a hand pipe, and press Delete. |
+| close `c` | Select a link with a bend, and press c to close it into a ring, or open it again. |
 <!-- END GENERATED: grid -->
 
 ---
@@ -224,6 +225,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-34 | transit pin x transit `x` | As TRN-31, then select the right half -- the one a join gives up -- and press f. | They join into the link drawn first, and the selection follows: the joined link is selected, as the half that was. | The director's report, 2026-10-02 (B288); DECISIONS: "A join keeps the earlier-drawn link's name and identity" (2026-09-26). | ruled, built |
 | TRN-35 | transit pin x undo | Select the pin P, press x, and undo. | Transit is stored on the anchor, so the cut and the setting are one edit: undo turns P back on and restores the one link pinned at P, with the id it was drawn with -- the session's setting could not be undone. | DECISIONS: "Transit with pipes" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch ("P2's design decisions", 2026-10-03; FORMAT-BATCH.md F-e). | ruled, built |
 | TRN-36 | transit pin x undo | As TRN-35, then redo. | Redo replays the edit whole: P off again, and the link cut into the same two links ending there. | DECISIONS: "Transit with pipes" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch ("P2's design decisions", 2026-10-03; FORMAT-BATCH.md F-e). | ruled, built |
+| RING-01 | pinned x close `c` | Select the link on its left leg, and press c. | The ring's closing leg, from B back to A, is routed like any leg: a link pipe is laid there in the same edit, and the ring is up over it, drawn closed as before -- the drawing joins B to A itself, along that pipe. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
+| RING-02 | pinned x close `c` | As RING-01, then press c again. | Opened, nothing runs over the closing pipe, so it is swept as any link pipe a link stops using is; the link is as drawn. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
+| RING-03 | pinned x undo | As RING-01, then undo. | One edit closed the ring and laid its pipe, so one undo opens it and takes the pipe back. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
 | PIPE-01 | routed x select pipe | Lay pipes with g as in GST-01, then click the free hand pipe from A to the g anchor. | A hand pipe with no link over it takes the click: it alone is selected. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
 | PIPE-02 | routed x select pipe | Click a hand pipe the upper link is drawn over, at its middle. | A pipe a link is drawn over is covered by the link, so the click takes the link, not the pipe. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
 | PIPE-03 | routed x delete pipe | Lay pipes with g as in GST-01, click the pipe from A to the g anchor, and press Delete. | The pipe goes, and only it: the g anchor stays, held by its other hand pipe, and the links are untouched. | DECISIONS: "Hand pipes can be selected and deleted; link pipes cannot" (2026-10-02, N6), building "a pipe the author placed by hand stays until the author deletes it" (2026-09-27); B281. | ruled, built |
