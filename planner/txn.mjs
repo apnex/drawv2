@@ -97,13 +97,54 @@ PL-2 -- THE ONE PLACE AN OP REACHES THE PROJECTION. Each op is applied in turn a
 inverse list is the exact reverse of the ops whoever produced them: a requested op, a cascade, the stranded pass, the
 sweep, the join. `out` and `inv` are the transaction's lists; `inv` is kept pre-reversed, since undo replays it in order.
 */
-function track(proj, ops, out, inv) {
+function track(proj, ops, out, inv, changes) {
 	for (const op of ops) {
+		changes.note(op);   // before it applies, so the change set holds the entity as it stood (TG-1)
 		const back = inverseOf(proj, op);
 		applyOps(proj, [op]);
 		out.push(op);
 		if (back) inv.unshift(back);
 	}
+}
+
+/*
+TG-1 (H17.28; `dev/design/planner/PLANNER-SYSTEM.md` section 14.2) -- THE CHANGE SET: every entity the transaction touched,
+as it stood before the transaction and as it stands now, and which of its fields differ -- however each op was written, a
+set or a whole-entity put, and whoever emitted it, the request or a reaction. Noted by `track`, the one place an op reaches
+the projection, so nothing applied is missed. `before` is a copy taken the first time an entity is touched; `after` is read
+from the projection when asked, so it is always current. An entity created and deleted again, or put back unchanged, is no
+change. Handed to every phase as `changes`; the reactions read it from TG-3.
+*/
+const sameValue = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+function changeSet(proj) {
+	const seen = new Map();   // `kind:id` -> { kind, id, before }
+	const fieldsOf = (before, after) => {
+		if (!before || !after) return new Set(Object.keys(before ?? after ?? {}));
+		return new Set([...new Set([...Object.keys(before), ...Object.keys(after)])].filter((k) => !sameValue(before[k], after[k])));
+	};
+	return {
+		note(op) {
+			if (op.op === 'meta') return;
+			const id = op.op === 'put' ? op.entity.id : op.id;
+			const key = `${op.kind}:${id}`;
+			if (seen.has(key)) return;
+			const was = proj.get(op.kind, id);
+			seen.set(key, { kind: op.kind, id, before: was ? structuredClone(was) : null });
+		},
+		// every change, as { kind, id, before, after, fields }; `before` or `after` null for an entity created or deleted
+		list() {
+			const out = [];
+			for (const { kind, id, before } of seen.values()) {
+				const now = proj.get(kind, id);
+				const after = now ? structuredClone(now) : null;
+				if (!before && !after) continue;
+				const fields = fieldsOf(before, after);
+				if (before && after && !fields.size) continue;
+				out.push({ kind, id, before, after, fields });
+			}
+			return out;
+		},
+	};
 }
 
 /*
@@ -191,6 +232,7 @@ export function plan(model, ops, options = {}) {
 	const proj = projection(model);
 	const out = [];
 	const inv = [];
+	const changes = changeSet(proj);   // TG-1
 
 	/*
 	Run one phase. Each reaction EMITS ops, and each is applied at once through `apply`, so the next decision -- its own or
@@ -217,10 +259,10 @@ export function plan(model, ops, options = {}) {
 	const apply = (op) => {
 		if (op.op === 'del') {
 			if (!proj.get(op.kind, op.id)) return;   // already gone -- accepted, no-op
-			runPhase('clear', { op, doc: proj });
+			runPhase('clear', { op, doc: proj, changes });
 		}
-		track(proj, [op], out, inv);
-		if (op.op === 'put') runPhase('follow', { op, doc: proj });
+		track(proj, [op], out, inv, changes);
+		if (op.op === 'put') runPhase('follow', { op, doc: proj, changes });
 	};
 	// what a put would set off, asked without applying anything -- whether an unchanged put still does something
 	const follows = (op) => {
@@ -243,7 +285,7 @@ export function plan(model, ops, options = {}) {
 		if (step.unchanged && !follows(step.op)) continue;         // an unchanged put that displaces nothing
 		apply(step.op);
 	}
-	const ctx = { before: model, doc: proj, ops: out, refuses: (op) => validateMutation(proj, asMutation(op), kinds) };
+	const ctx = { before: model, doc: proj, ops: out, changes, refuses: (op) => validateMutation(proj, asMutation(op), kinds) };
 	for (const phase of PHASES) if (!PER_OP.has(phase)) runPhase(phase, ctx);
 
 	/*

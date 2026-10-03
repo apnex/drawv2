@@ -1,0 +1,53 @@
+/*
+TG-1 (H17.28; PLANNER-SYSTEM.md section 14.2) -- THE CHANGE SET the planner keeps for a transaction: every entity touched,
+as it stood before and as it stands after, and which fields differ, however each op was written and whoever emitted it. Read
+here by a probe reaction in the last phase, as the transaction-phase reactions will read it from TG-3.
+*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Model } from '../model/model.mjs';
+import { plan } from '../planner/txn.mjs';
+import { CLASSIC_LINKS } from '../planner/tenants.mjs';
+
+const P = 60;
+function board() {
+	const m = new Model();
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
+	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', flow: true });
+	return m;
+}
+// plan with a probe in the join phase, answering the change set it was handed
+function changesOf(m, ops) {
+	let seen = null;
+	const probe = { id: 'probe', phase: 'join', doc: 'test probe', run: ({ changes }) => { seen = changes.list(); } };
+	const r = plan(m, ops, { links: { ...CLASSIC_LINKS, reactions: [...CLASSIC_LINKS.reactions, probe] } });
+	assert.equal(r.ok, true, r.error);
+	return Object.fromEntries(seen.map((c) => [`${c.kind}:${c.id}`, { created: !c.before, deleted: !c.after, fields: [...c.fields].sort() }]));
+}
+
+test('TG-1: a set reports the fields it changed, and only those', () => {
+	assert.deepEqual(changesOf(board(), [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { flow: false, name: 'a' } }]),
+		{ 'link:link-00000a': { created: false, deleted: false, fields: ['flow'] } }, 'name was set to what it was: not a change');
+});
+
+test('TG-1: a whole-entity put that clears a field reports that field changed', () => {
+	const m = board();
+	const { flow: _f, ...cleared } = m.get('link', 'link-00000a');
+	assert.deepEqual(changesOf(m, [{ op: 'put', kind: 'link', entity: cleared }]), { 'link:link-00000a': { created: false, deleted: false, fields: ['flow'] } });
+});
+
+test('TG-1: a create and a delete, and a cascade a reaction emits, are all in it', () => {
+	const m = board();
+	const got = changesOf(m, [{ op: 'del', kind: 'node', id: 'node-00000a' }, { op: 'put', kind: 'node', entity: { id: 'node-00000c', name: 'C', type: 'router', x: 0, y: 4 * P, shape: 'circle' } }]);
+	assert.deepEqual(Object.keys(got).sort(), ['link:link-00000a', 'node:node-00000a', 'node:node-00000c'], 'the link the node\'s cascade deleted is there too');
+	assert.equal(got['node:node-00000a'].deleted, true);
+	assert.equal(got['link:link-00000a'].deleted, true);
+	assert.equal(got['node:node-00000c'].created, true);
+});
+
+test('TG-1: an entity created and deleted in one transaction, or put back unchanged, is no change', () => {
+	const m = board();
+	const c = { id: 'node-00000c', name: 'C', type: 'router', x: 0, y: 4 * P, shape: 'circle' };
+	assert.deepEqual(changesOf(m, [{ op: 'put', kind: 'node', entity: c }, { op: 'del', kind: 'node', id: 'node-00000c' }, { op: 'set', kind: 'link', id: 'link-00000a', patch: { name: 'z' } }, { op: 'set', kind: 'link', id: 'link-00000a', patch: { name: 'a' } }]), {});
+});

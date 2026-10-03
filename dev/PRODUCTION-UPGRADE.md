@@ -50,6 +50,7 @@ The held backlog row B276 is this register's trigger: it fires when the director
 | # | Consideration | Source | The audit checks |
 |---|---|---|---|
 | PU25 | Validation is restructured, accepting what it accepted: each kind is a row carrying its field checks, its cross-entity check and its cap (`planner/kinds.mjs`), the id grammar is built from the rows instead of a literal, and the planner refuses a model composed with other kinds. New node and waypoint ids no longer share their 6-hex part across the two kinds -- still the old format. | H17.22 N-a | the production planner corpus, the gesture corpus and the validator's tests pass unchanged on the deployed revision, and a document saved before the upgrade loads after it |
+| PU29 | The planner keeps a change set per transaction and calls reactions by declared trigger instead of each scanning the edit (H17.28, built in stages). Behaviour identical -- every planner, gesture and matrix corpus unchanged at each stage. | B287, H17.28 | the planner corpus and gesture corpus pass unchanged on the deployed revision |
 | PU13 | No stored-format change since `2814d8d`: templates, examples and the validator's fields are unchanged, and change records keep the reveal under the same field names. A rollback to `2814d8d` reads every document written after the upgrade. | measured 2026-10-01 | `git diff 2814d8d -- templates examples` is empty and a document saved after the upgrade loads on the old image |
 
 ---
