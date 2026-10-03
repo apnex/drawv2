@@ -212,20 +212,20 @@ what `facing` reads as "no direction". A link left holding `flow: null` would be
 model does not have.
 */
 test('H15.6: cycling direction walks undeclared, forward, reverse, and back to absent', async () => {
-	const { cycleFlow } = await import('../app/src/commands.js');
+	const { cycleDirection } = await import('../app/src/commands.js');
 	const { linkFacing } = await import('../kernel/network-roles.mjs');
 
 	const undeclared = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' };
-	const first = cycleFlow(undeclared);
+	const first = cycleDirection(undeclared);
 	assert.equal(first.entries.length, 1, 'one entry -- a declaration is a single set');
-	assert.equal(first.entries[0].after.flow, true, 'undeclared becomes forward');
+	assert.equal(first.entries[0].after.direction, 'forward', 'undeclared becomes forward');
 
-	const forward = { ...undeclared, flow: true };
-	assert.equal(cycleFlow(forward).entries[0].after.flow, false, 'forward becomes reverse');
+	const forward = { ...undeclared, direction: 'forward' };
+	assert.equal(cycleDirection(forward).entries[0].after.direction, 'reverse', 'forward becomes reverse');
 	assert.equal(linkFacing(forward, 'node-aa0002'), 'in', 'forward arrives at the stored dst');
 
-	const reverse = { ...undeclared, flow: false };
-	const back = cycleFlow(reverse);
+	const reverse = { ...undeclared, direction: 'reverse' };
+	const back = cycleDirection(reverse);
 	assert.equal(linkFacing(reverse, 'node-aa0001'), 'in', 'reverse arrives at the stored src');
 
 	/*
@@ -234,7 +234,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	cycle restores a link byte-identical to the one that had never been declared.
 	*/
 	assert.equal(back.entries[0].op, 'put', 'clearing is a whole-entity put -- a set cannot express an absence');
-	assert.ok(!('flow' in back.entries[0].entity), 'and the entity it puts simply has no flow key');
+	assert.ok(!('direction' in back.entries[0].entity), 'and the entity it puts simply has no flow key');
 
 	// and the labels say which way, because a cycle with a silent step is a cycle you lose your place in
 	assert.notEqual(first.label, back.label, 'each step names what it did');
@@ -246,7 +246,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	`linkMarker` puts on the path, the readout's bar must agree with. A picture saying one thing
 	and a readout saying another is the shape this register is full of.
 	*/
-	const bar = (l) => (typeof l.flow !== 'boolean' ? '<->' : (l.flow ? '>>>' : '<<<'));
+	const bar = (l) => (l.direction === undefined ? '<->' : (l.direction === 'forward' ? '>>>' : '<<<'));
 	const { linkMarker } = await import('../kernel/network-appearance.mjs');
 	for (const l of [undeclared, forward, reverse]) {
 		const head = linkMarker(l);
@@ -257,7 +257,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	/*
 	AND THE CLEARED LINK MUST SURVIVE THE VALIDATOR, which is where the first version of this
 	failed. `after: { flow: undefined }` sets an OWN PROPERTY holding undefined -- invisible to
-	JSON.stringify, visible to `'flow' in link`, and refused by a schema asking typeof === boolean.
+	JSON.stringify, visible to `'direction' in link`, and refused by a schema asking typeof === boolean.
 
 	So the clear was rejected in memory and silently repaired by a reload, which is B220's shape:
 	two doors disagreeing with a restart hiding the evidence. The entry must therefore produce an
@@ -267,10 +267,10 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	const { applyOps } = await import('../model/ops.mjs');
 	const { validateEntity } = await import('../planner/validate.js');
 	const m = new Model();
-	const seeded = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', flow: false };
+	const seeded = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', direction: 'reverse' };
 	m.put('link', seeded);
 	// cycle the REAL stored link, so the entry carries every field the validator will demand
-	const clear = cycleFlow(m.get('link', 'link-aa0001'));
+	const clear = cycleDirection(m.get('link', 'link-aa0001'));
 	applyOps(m, clear.entries.map((e) => (e.op === 'put' ? e : { op: e.op, kind: e.kind, id: e.id, patch: e.after })));
 	const cleared = m.get('link', 'link-aa0001');
 	assert.equal(validateEntity('link', cleared), null, 'a cleared link must pass the door it will be committed through');

@@ -95,7 +95,7 @@ test('N-a: the product\'s planner refuses the plugin kind, and a model and plann
 });
 
 test('N-a: a document with the plugin kind validates against its composition, and not against the product\'s', () => {
-	const doc = { meta: { id: 'diagram-00000a', name: 'd', version: 0, schema: 1 }, nodes: [NODE], probes: [{ id: 'probe-00000b', at: NODE.id }],
+	const doc = { meta: { id: 'diagram-00000a', name: 'd', version: 0, schema: 2 }, nodes: [NODE], probes: [{ id: 'probe-00000b', at: NODE.id }],
 		reveal: { origin: 1, beats: [{ interval: 0, ids: ['probe-00000b', NODE.id] }] }, selection: ['probe-00000b'] };
 	assert.equal(validateDoc(doc, { kinds: WITH_PROBE }), null);
 	assert.equal(validateDoc({ ...doc, probes: [{ id: 'probe-00000b', at: 'node-0000ff' }] }, { kinds: WITH_PROBE }), 'probe at a node that does not exist: node-0000ff (probe-00000b)');

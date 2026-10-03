@@ -1614,7 +1614,7 @@ test('B231: every field an entity carries is a column, for every kind', async ()
 	const { columnsFor } = await import('../cli/verbs.mjs');
 
 	const cases = {
-		links: [{ id: 'link-aa0001', name: 'l', src: 'a', dst: 'b', via: ['w'], flow: true, closed: false }],
+		links: [{ id: 'link-aa0001', name: 'l', src: 'a', dst: 'b', via: ['w'], direction: 'forward', closed: false }],
 		waypoints: [{ id: 'waypoint-aa0001', name: 'w', x: 0, y: 0, pinned: true, spawn: { every: 1 } }],
 		nodes: [{ id: 'node-aa0001', name: 'n', type: 'host', x: 0, y: 0, shape: 'square', span: { w: 2, h: 1 } }],
 	};
@@ -1703,24 +1703,24 @@ test('B237: flow is three states and the CLI can reach all three, clearing with 
 		};
 
 		// absent is the starting state, and it is a real state -- undeclared, not "false"
-		assert.ok(!('flow' in await linkNow()), 'a new link declares no direction');
+		assert.ok(!('direction' in await linkNow()), 'a new link declares no direction');
 
-		await run('set', lid, 'flow', 'forward');
-		assert.equal((await linkNow()).flow, true, 'forward follows the stored order');
+		await run('set', lid, 'direction', 'forward');
+		assert.equal((await linkNow()).direction, 'forward', 'forward follows the stored order');
 
-		await run('set', lid, 'flow', 'reverse');
-		assert.equal((await linkNow()).flow, false, 'reverse runs against it');
+		await run('set', lid, 'direction', 'reverse');
+		assert.equal((await linkNow()).direction, 'reverse', 'reverse runs against it');
 
 		/*
 		CLEARING IS THE ONE THAT BREAKS. A `set` patch cannot remove a key -- `inverseOfSet` in
-		planner/txn.mjs says so, and `cycleFlow` in app/src/commands.js learned it the hard way:
+		planner/txn.mjs says so, and `cycleDirection` in app/src/commands.js learned it the hard way:
 		`{flow: undefined}` is an own property that vanishes from JSON, survives `in`, and is
 		refused by a schema asking for a boolean. The canvas clears with a whole-entity put and so
 		must the CLI, or the clear reports success and the field is still there on reload.
 		*/
-		await run('set', lid, 'flow', 'none');
+		await run('set', lid, 'direction', 'none');
 		const cleared = await linkNow();
-		assert.ok(!('flow' in cleared), 'none REMOVES the key -- an undefined left behind is not absence');
+		assert.ok(!('direction' in cleared), 'none REMOVES the key -- an undefined left behind is not absence');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
@@ -1757,16 +1757,16 @@ test('B237: a link can be declared at creation, in one call', async () => {
 		await run('add', 'router', 'at', '-6,0', '--name', 'a');
 		await run('add', 'router', 'at', '6,0', '--name', 'b');
 
-		const r = JSON.parse(await run('link', 'a', 'b', '--flow', 'forward', '--control', '--json'));
+		const r = JSON.parse(await run('link', 'a', 'b', '--direction', 'forward', '--control', '--json'));
 		const doc = JSON.parse(await run('show', '--json'));
 		const l = doc.links.find((x) => x.id === r.id);
-		assert.equal(l.flow, true, 'a direction declared at creation is stored');
+		assert.equal(l.direction, 'forward', 'a direction declared at creation is stored');
 		assert.equal(l.control, true, 'and so is the plane -- no create-then-amend');
 
 		// and an undeclared link stays undeclared; a flag absent must not write a default
 		const plain = JSON.parse(await run('link', 'a', 'b', '--via', '0,4', '--json'));
 		const p = JSON.parse(await run('show', '--json')).links.find((x) => x.id === plain.id);
-		assert.ok(!('flow' in p) && !('control' in p), 'absent flags declare nothing');
+		assert.ok(!('direction' in p) && !('control' in p), 'absent flags declare nothing');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 

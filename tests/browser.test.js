@@ -867,13 +867,13 @@ test('B228: cycling flow changes the marker every time, not only the first', { s
 		const out = [markerOf()];
 		const trace = [];
 		for (let i = 0; i < 3; i += 1) {
-			const before = String(model.get('link', link.id).flow);
-			app.input.onFlowKey();
-			const after = String(model.get('link', link.id).flow);
+			const before = String(model.get('link', link.id).direction);
+			app.input.onDirectionKey();
+			const after = String(model.get('link', link.id).direction);
 			trace.push(before + '->' + after);
 			out.push(markerOf());
 		}
-		return { out, trace, sel, said: app.readout && app.readout.flashMsg, flow: String(model.get('link', link.id).flow) };
+		return { out, trace, sel, said: app.readout && app.readout.flashMsg, flow: String(model.get('link', link.id).direction) };
 	})()`);
 	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
 	assert.equal(seen.out[1], 'url(#flow-end)', 'forward must show the end marker after an update');
@@ -901,7 +901,7 @@ test('B229: the selection line says which way a selected link flows, and keeps s
 		const line = () => document.getElementById('readout-bottom').textContent;
 		const bars = [];
 		for (let i = 0; i < 3; i += 1) {
-			app.input.onFlowKey();
+			app.input.onDirectionKey();
 			bars.push(line());
 		}
 		// and it must SURVIVE -- re-render with no further gesture and it still says the same thing

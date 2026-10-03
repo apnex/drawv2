@@ -62,7 +62,7 @@ const CASES = {
 	'waypoint moved': [[N(), W(), L], [['waypoint', 'waypoint-a00003', { x: -360, y: 0 }]]],
 	'waypoint armed': [[N(), W(), L], [['waypoint', 'waypoint-a00003', { spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }]]],
 	'lone waypoint moved': [[W()], [['waypoint', 'waypoint-a00003', { x: 0, y: 240 }]]],
-	'link declared': [[N(), W(), L], [['link', 'link-a00004', { flow: true }]]],
+	'link declared': [[N(), W(), L], [['link', 'link-a00004', { direction: 'forward' }]]],
 };
 
 for (const [name, [board, change]] of Object.entries(CASES)) {

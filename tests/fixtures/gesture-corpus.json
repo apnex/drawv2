@@ -3258,11 +3258,11 @@
 						"kind": "link",
 						"id": "link#1",
 						"patch": {
-							"flow": true
+							"direction": "forward"
 						}
 					}
 				],
-				"label": "flow forward"
+				"label": "direction forward"
 			},
 			{
 				"ops": [
@@ -3271,11 +3271,11 @@
 						"kind": "link",
 						"id": "link#1",
 						"patch": {
-							"flow": false
+							"direction": "reverse"
 						}
 					}
 				],
-				"label": "flow reverse"
+				"label": "direction reverse"
 			},
 			{
 				"ops": [
@@ -3322,7 +3322,7 @@
 					"name": "link-1",
 					"src": "node#1",
 					"dst": "node#2",
-					"flow": false,
+					"direction": "reverse",
 					"control": true
 				}
 			],

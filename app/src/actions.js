@@ -33,7 +33,7 @@ export const ACTION_LABELS = {
 	onWrapKey: 'wrap the selection in a zone',
 	onCloseKey: 'close or open the selected route',
 	onCloseRefused: 'say why a straight link cannot close',
-	onFlowKey: 'cycle the selected link\'s flow: forward, reverse, none',
+	onDirectionKey: 'cycle the selected link\'s direction: forward, reverse, none',
 	onPlaneKey: 'toggle the selected link\'s control plane (dashed; carries no data)',
 	onChainKey: 'link the selected nodes in a chain',
 	onStarKey: 'link the selected nodes as a star',

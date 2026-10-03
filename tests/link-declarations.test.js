@@ -18,7 +18,7 @@ const W = 'waypoint-00000e';
 const pair = () => [{ id: 'link-00000a', name: 'a', src: 'node-00000a', dst: W }, { id: 'link-00000b', name: 'b', src: W, dst: 'node-00000b' }];
 const joins = (a, b) => collapseAtWaypoint(a, b, W) !== null;
 // the values a field's own check accepts, from a small universe -- enough to set it, and to set it differently
-const valuesOf = (check) => [true, false, 'a', 'b', 1, 2].filter((v) => { try { return check(v); } catch { return false; } });
+const valuesOf = (check) => [true, false, 'a', 'b', 1, 2, 'forward', 'reverse'].filter((v) => { try { return check(v); } catch { return false; } });
 
 test('every link field that can change whether two links join is a declaration, and every declaration can', () => {
 	const fields = PRODUCT_KINDS.row('link').fields;
@@ -39,8 +39,8 @@ test('every link field that can change whether two links join is a declaration, 
 });
 
 test('a cut carries exactly the declarations a link has, and invents none', () => {
-	const link = { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', via: [W], control: true, flow: false };
+	const link = { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', via: [W], control: true, direction: 'reverse' };
 	for (const half of splitAtBend(link, W)) for (const d of LINK_DECLARATIONS) assert.equal(half[d], link[d], d);
-	const { control: _c, flow: _f, ...plain } = link;
+	const { control: _c, direction: _f, ...plain } = link;
 	for (const half of splitAtBend(plain, W)) for (const d of LINK_DECLARATIONS) assert.ok(!(d in half), `an undeclared link's half has no ${d}`);
 });

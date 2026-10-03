@@ -143,6 +143,7 @@ export const LAYER = {
 		'server/app.js', 'server/codes.mjs', 'server/docfile.mjs', 'server/files.mjs', 'server/hub.js', 'server/identity.mjs',
 		'server/locks.js', 'server/origin.mjs', 'server/protocol.js', 'server/rest.js', 'server/routes.mjs', 'server/seed.js',
 		'server/server.js', 'server/sessionlog.mjs', 'server/store.js',
+		'server/migrate.mjs',    // the schema 2 migration; the store admits every document through it, and it is deleted after the cutover (H18.3)
 	],
 	serve: ['server/static.mjs'],   // K9: how a file is found inside a folder and sent, for the product's server and the lab's
 	cli: ['cli/draw.mjs', 'cli/verbs.mjs'],

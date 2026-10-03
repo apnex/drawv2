@@ -5,6 +5,7 @@ are stable across reseeds.
 */
 
 import { newId } from '../model/model.mjs';
+import { SCHEMA } from '../model/shape.mjs';
 
 export function seedDoc() {
 	const taken = {};
@@ -36,7 +37,7 @@ export function seedDoc() {
 			id: make('diagram'),
 			name: 'example',
 			version: 0,
-			schema: 1
+			schema: SCHEMA
 		},
 		nodes,
 		links,

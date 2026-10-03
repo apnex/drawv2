@@ -19,7 +19,7 @@ function board() {
 	const m = new Model();
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
-	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', flow: true });
+	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'node-00000b', direction: 'forward' });
 	return m;
 }
 // plan with a probe in the join phase, answering the change set it was handed
@@ -34,14 +34,14 @@ function changesOf(m, ops) {
 }
 
 test('TG-1: a set reports the fields it changed, and only those', () => {
-	assert.deepEqual(changesOf(board(), [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { flow: false, name: 'a' } }]),
-		{ 'link:link-00000a': { created: false, deleted: false, fields: ['flow'] } }, 'name was set to what it was: not a change');
+	assert.deepEqual(changesOf(board(), [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { direction: 'reverse', name: 'a' } }]),
+		{ 'link:link-00000a': { created: false, deleted: false, fields: ['direction'] } }, 'name was set to what it was: not a change');
 });
 
 test('TG-1: a whole-entity put that clears a field reports that field changed', () => {
 	const m = board();
-	const { flow: _f, ...cleared } = m.get('link', 'link-00000a');
-	assert.deepEqual(changesOf(m, [{ op: 'put', kind: 'link', entity: cleared }]), { 'link:link-00000a': { created: false, deleted: false, fields: ['flow'] } });
+	const { direction: _f, ...cleared } = m.get('link', 'link-00000a');
+	assert.deepEqual(changesOf(m, [{ op: 'put', kind: 'link', entity: cleared }]), { 'link:link-00000a': { created: false, deleted: false, fields: ['direction'] } });
 });
 
 test('TG-1: a create and a delete, and a cascade a reaction emits, are all in it', () => {

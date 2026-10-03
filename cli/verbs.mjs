@@ -341,7 +341,8 @@ with no edit to the test -- a list that names its kinds goes stale, which is B22
 const CLEAR = Symbol('clear');
 
 const ONOFF = { on: true, off: CLEAR };
-const FLOW = { forward: true, reverse: false, none: CLEAR };
+// F1 (2026-10-03): the words ARE the stored values now; was `flow`, true or false
+const DIRECTION = { forward: 'forward', reverse: 'reverse', none: CLEAR };
 
 export const SETTABLE = {
 	node: {
@@ -354,7 +355,7 @@ export const SETTABLE = {
 	// `via` and `closed` are the ROUTE, minted and shaped by `draw link`, not scalar properties
 	link: {
 		name: { about: 'the label it draws' },
-		flow: { about: 'forward, reverse or none -- the declared direction', words: FLOW },
+		direction: { about: 'forward, reverse or none -- the declared direction', words: DIRECTION },
 		control: { about: 'on or off -- the control plane, drawn dashed and thinner', words: ONOFF },
 	},
 	waypoint: {
@@ -1853,7 +1854,7 @@ async function cellToPx(ctx, id, layout, { cx, cy }, what) {
 
 VERBS.push(
 	{
-		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--flow forward|reverse] [--control]',
+		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--direction forward|reverse] [--control]',
 		route: '/diagrams/<id>/commit', method: 'POST',
 		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'join two things that already exist, bending the route through cells you name',
@@ -1862,7 +1863,7 @@ VERBS.push(
 			{ name: 'dst', about: 'a node id or name. Omit it with --closed to loop back to src' }],
 		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
 			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
-			{ name: '--flow', about: 'declare a direction: forward (the default if bare) or reverse' },
+			{ name: '--direction', about: 'declare a direction: forward (the default if bare) or reverse' },
 			{ name: '--control', about: 'the control plane -- drawn dashed and thinner' },
 			{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
@@ -1912,16 +1913,16 @@ VERBS.push(
 			B237 -- a link can be DECLARED as it is drawn, rather than created and then amended.
 
 			The words come from `SETTABLE.link` so the two verbs cannot drift: whatever
-			`draw set <link> flow` accepts is what `--flow` accepts. A bare `--flow` means forward,
+			`draw set <link> direction` accepts is what `--direction` accepts. A bare `--direction` means forward,
 			because that is the only reading of a direction flag with no argument, and `--control`
 			is a plain switch. An ABSENT flag declares nothing -- it must not write a default, or
 			every link the tool draws would claim a direction its author never chose.
 			*/
-			for (const f of ['flow', 'control']) {
+			for (const f of ['direction', 'control']) {
 				const given = ctx.flags[f];
 				if (given === undefined) continue;
 				const words = SETTABLE.link[f].words;
-				const word = given === true ? (f === 'flow' ? 'forward' : 'on') : given;
+				const word = given === true ? (f === 'direction' ? 'forward' : 'on') : given;
 				if (!(word in words)) die(`--${f} takes ${Object.keys(words).join(', ')} -- not ${word}`);
 				const stored = words[word];
 				// `none`/`off` at creation is simply an absent key -- there is nothing to clear yet
@@ -1930,7 +1931,7 @@ VERBS.push(
 			ops.push({ op: 'put', kind: 'link', entity });
 			return submit(ctx, id, ops, 'link', 'link', (r) => ({
 				json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed,
-					...(entity.flow === undefined ? {} : { flow: entity.flow }),
+					...(entity.direction === undefined ? {} : { direction: entity.direction }),
 					...(entity.control === undefined ? {} : { control: entity.control }), version: r.version },
 				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}${entity.control ? ' (control)' : ''}  v${r.version}`,
 			}));
@@ -2441,15 +2442,15 @@ VERBS.push(
 
 	B237 -- the list is now a TABLE, per kind, and every entry declares how a word becomes a value.
 
-	A flat closed array was B231's defect in the write direction: `flow` and `control` reached the
+	A flat closed array was B231's defect in the write direction: `flow` (now `direction`) and `control` reached the
 	document, the canvas, the matrix and the export, and `set` refused them, so the tool could SEE a
 	declaration it could not MAKE. The table below restates the optional fields of `model/shape.mjs` (`CORE_KINDS.optional`)
 	because the CLI ships standalone (B138 installs it by symlink into a directory holding nothing
 	else, so importing a sibling breaks it), and a restated table is a drift risk, which is a test's
 	job -- the same arrangement FONT_MIN/FONT_MAX already have.
 
-	Each entry maps the AGENT'S WORD to a stored value. `flow` is a relation and `true` does not say
-	which way, so the words are the ones the canvas readout already uses -- forward, reverse, none.
+	Each entry maps the AGENT'S WORD to a stored value. A direction's words are the ones the canvas readout already uses --
+	forward, reverse, none -- and since F1 (2026-10-03) the first two are stored as they are said.
 	`CLEAR` is the third state and it is not a value: absent means undeclared, and no `set` patch
 	can express it. See the clear path in `run` below.
 	*/
@@ -2476,7 +2477,7 @@ VERBS.push(
 			/*
 			THE REFUSAL IS THE DOCUMENTATION. An agent that guesses a field name gets the list for
 			the kind it actually named -- not a flat list spanning every kind, which is what sent
-			`draw set <link> flow` to a message about `shape` and `cols`.
+			`draw set <link> direction` to a message about `shape` and `cols`.
 			*/
 			const listing = names.map((n) => `  ${n}  -- ${table[n].about}`).join('\n');
 			if (!field) die(`${eid} takes:\n${listing}`);
@@ -2502,9 +2503,9 @@ VERBS.push(
 			CLEARING IS A WHOLE-ENTITY PUT, not a set carrying undefined.
 
 			`inverseOfSet` in planner/txn.mjs reaches for the same move for the same reason, and
-			`cycleFlow` in app/src/commands.js learned it the hard way: `{flow: undefined}` sets an
+			`cycleDirection` in app/src/commands.js learned it the hard way: `{direction: undefined}` sets an
 			own property holding undefined, which vanishes from JSON, survives `in`, and is refused
-			by a schema asking for a boolean -- so the clear is dropped in memory and silently
+			by a schema asking for a word -- so the clear is dropped in memory and silently
 			repaired by the next reload. That is B220's shape, two doors disagreeing with a restart
 			hiding the evidence. The entity is rebuilt WITHOUT the key instead.
 			*/

@@ -1033,17 +1033,17 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 
 	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
 		'an undeclared link carries no head -- it asserts no direction to point');
-	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b', flow: true }), 'end',
+	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b', direction: 'forward' }), 'end',
 		'a forward flow points at the stored dst, which is the path END');
-	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b', flow: false }), 'start',
+	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b', direction: 'reverse' }), 'start',
 		'a reversed flow points at the stored src, which is the path START');
 
 	/*
 	AND IT AGREES WITH `linkFacing`, because they are two readings of one field and this tree has
 	paid for that shape repeatedly. The head belongs at whichever end the flow ARRIVES at.
 	*/
-	for (const flow of [true, false]) {
-		const link = { id: 'l', src: 'a', dst: 'b', flow };
+	for (const direction of ['forward', 'reverse']) {
+		const link = { id: 'l', src: 'a', dst: 'b', direction };
 		const head = linkMarker(link);
 		const arrivesAt = head === 'end' ? link.dst : link.src;
 		assert.equal(linkFacing(link, arrivesAt), 'in',
@@ -1073,21 +1073,21 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 
 	So this drives the real export end to end rather than checking that a function exists.
 	*/
-	const mk = (flow) => ({
+	const mk = (direction) => ({
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
-		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(flow === undefined ? {} : { flow }) }],
+		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(direction === undefined ? {} : { direction }) }],
 		waypoints: [], zones: [], groups: [],
 	});
-	assert.match(render(docToSchema(mk(true))), /marker-end="url\(#flow-end\)"/,
+	assert.match(render(docToSchema(mk('forward'))), /marker-end="url\(#flow-end\)"/,
 		'a forward flow must reach the exported path, not merely the defs');
-	assert.match(render(docToSchema(mk(false))), /marker-start="url\(#flow-start\)"/,
+	assert.match(render(docToSchema(mk('reverse'))), /marker-start="url\(#flow-start\)"/,
 		'and a reversed one must point the other way');
 	assert.doesNotMatch(render(docToSchema(mk(undefined))), /marker-(end|start)=/,
 		'an undeclared link must export no head at all');
 
 	// the round trip too: what the adapter carries out, it must carry back
-	const back = schemaToDoc(docToSchema(mk(false)));
-	assert.equal(back.links[0].flow, false, 'the adapter must not lose the declaration in either direction');
+	const back = schemaToDoc(docToSchema(mk('reverse')));
+	assert.equal(back.links[0].direction, 'reverse', 'the adapter must not lose the declaration in either direction');
 });
 
 /*
@@ -1347,12 +1347,12 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 	assert.ok(!('stroke-dasharray' in plain), 'and carries NO dash key -- absent, not null');
 	assert.ok(!('marker-end' in plain) && !('marker-start' in plain), 'and no head');
 
-	const ctrl = linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, flow: true });
+	const ctrl = linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, direction: 'forward' });
 	assert.ok(ctrl['stroke-width'] < plain['stroke-width'], 'a control link is thinner');
 	assert.match(ctrl['stroke-dasharray'], /^[\d.]+ [\d.]+$/, 'and dashed, as a ready attribute value');
 	assert.equal(ctrl['marker-end'], 'url(#flow-end)', 'and its head is a ready url(), not a hint');
 
-	assert.equal(linkAppearance({ id: 'l', flow: false })['marker-start'], 'url(#flow-start)',
+	assert.equal(linkAppearance({ id: 'l', direction: 'reverse' })['marker-start'], 'url(#flow-start)',
 		'a reversed flow points the other way');
 
 	/*

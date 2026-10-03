@@ -9092,7 +9092,7 @@
 		"drawnPipes": 0
 	},
 	"TRN-32": {
-		"notice": "v7 flow cleared",
+		"notice": "v7 direction cleared",
 		"links": [
 			{
 				"id": "link#1",
@@ -9177,7 +9177,7 @@
 		"drawnPipes": 0
 	},
 	"TRN-33": {
-		"notice": "v7 flow reverse",
+		"notice": "v7 direction reverse",
 		"links": [
 			{
 				"id": "link#1",
@@ -9262,7 +9262,7 @@
 		"drawnPipes": 0
 	},
 	"TRN-34": {
-		"notice": "v7 flow cleared",
+		"notice": "v7 direction cleared",
 		"links": [
 			{
 				"id": "link#1",

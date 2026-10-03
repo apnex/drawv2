@@ -86,7 +86,7 @@ for (const compose of ['production', 'network']) {
 	c('put-identical-is-no-op', { nodes: [node(0, 0, 0)] }, [put('node', node(0, 0, 0))]);
 	c('set-moves', { nodes: [node(0, 0, 0)] }, [set('node', N(0), { x: 120 })]);
 	c('set-unchanged-is-no-op', { nodes: [node(0, 0, 0)] }, [set('node', N(0), { x: 0 })]);
-	c('set-introduces-key-inverse-is-put', bent(), [set('link', L(0), { flow: true })]);
+	c('set-introduces-key-inverse-is-put', bent(), [set('link', L(0), { direction: 'forward' })]);
 	c('del-missing-is-no-op', {}, [del('node', N(9))]);
 	c('meta-rename', {}, [{ op: 'meta', patch: { name: 'renamed' } }]);
 	c('place-beside', { nodes: [node(0, 0, 0)] }, [{ op: 'place', kind: 'node', entity: { id: N(1), name: 'n1', type: 'router', shape: 'circle' }, at: { near: 'n0' } }]);
@@ -120,13 +120,13 @@ for (const compose of ['production', 'network']) {
 	// B244: a ring has no ends, so deleting it sweeps its src and dst too
 	c('sweep-ring-takes-its-ends', { waypoints: [way(0, -2, 0), way(1, 2, 0), way(2, 0, 2)], links: [{ ...link(0, W(0), W(1), [W(2)]), closed: true }] }, [del('link', L(0))]);
 	// B216 stands: two links ending at a waypoint with one declared direction pass through it (a bend on the canvas), yet the author ended them there
-	c('sweep-keeps-declared-pass-through-terminus', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 0)], links: [{ ...link(0, N(0), W(0)), flow: true }, { ...link(1, W(0), N(1)), flow: true }] }, [del('link', L(0)), del('link', L(1))]);
+	c('sweep-keeps-declared-pass-through-terminus', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 0)], links: [{ ...link(0, N(0), W(0)), direction: 'forward' }, { ...link(1, W(0), N(1)), direction: 'forward' }] }, [del('link', L(0)), del('link', L(1))]);
 	c('sweep-ignores-preexisting-orphan', { nodes: [node(0, 0, 0)], waypoints: [way(0, 4, 4)] }, [set('node', N(0), { x: 120 })]);
 	c('sweep-batch-reroutes-keeps', { ...bent(), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)] }, [del('link', L(0)), put('link', link(1, N(0), N(2), [W(0)]))]);
 	// the join
 	c('join-at-junction', junction(), [del('link', L(2))]);
 	c('join-both-stored-as-src', { ...junction(), links: [link(0, W(0), N(0)), link(1, W(0), N(1)), link(2, W(0), N(2))] }, [del('link', L(2))]);
-	c('join-carries-flow', { ...junction(), links: [{ ...link(0, N(0), W(0)), flow: true }, { ...link(1, W(0), N(1)), flow: true }, link(2, W(0), N(2))] }, [del('link', L(2))]);
+	c('join-carries-flow', { ...junction(), links: [{ ...link(0, N(0), W(0)), direction: 'forward' }, { ...link(1, W(0), N(1)), direction: 'forward' }, link(2, W(0), N(2))] }, [del('link', L(2))]);
 	c('join-not-on-create', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 0, true)] }, [put('link', link(0, N(0), W(0))), put('link', link(1, W(0), N(1)))]);
 	c('join-not-where-count-unchanged', junction(), [del('link', L(2)), put('link', link(3, W(0), N(2)))]);
 	c('join-declined-duplicate-bend', { nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, 4)], waypoints: [way(0, 0, 0), way(1, -2, -2)], links: [link(0, N(0), W(0), [W(1)]), link(1, W(0), N(1)), link(2, W(0), N(2)), link(3, N(0), N(1), [W(1)])] }, [del('link', L(2))]);

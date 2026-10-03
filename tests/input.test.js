@@ -1675,14 +1675,14 @@ test('B284: a drag onto a bend of a control link with a direction splits it into
 		m.put('node', { id: 'node-aa0002', name: 'b', type: 'host', x: 120, y: 0 });
 		m.put('node', { id: 'node-aa0003', name: 'c', type: 'host', x: 0, y: 120 });
 		m.put('waypoint', { id: 'waypoint-aa0001', name: 'w', x: 0, y: 0 });
-		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'], control: true, flow: true });
+		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['waypoint-aa0001'], control: true, direction: 'forward' });
 		const at = (x, y, id) => pointer(x, y, { button: 0, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) } });
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
 		h.capture.onUp(at(0, 0, 'waypoint-aa0001'));
 		const halves = m.all('link').filter((l) => l.src === 'node-aa0001' || l.dst === 'node-aa0002');
 		assert.equal(halves.length, 2, 'the bend split in two');
-		for (const l of halves) assert.deepEqual([l.control, l.flow], [true, true], `${l.id} keeps the control plane and the direction`);
+		for (const l of halves) assert.deepEqual([l.control, l.direction], [true, 'forward'], `${l.id} keeps the control plane and the direction`);
 	} finally { h.restore(); }
 });
 

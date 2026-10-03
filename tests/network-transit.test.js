@@ -344,20 +344,20 @@ regressed to data. A cut keeps a link's declarations, its plane and its directio
 test('B284: transit\'s cut keeps the control plane and the direction on both halves', () => {
 	const m = new Model();
 	['a', 'b', 'c'].forEach((h, i) => m.put('waypoint', { id: `waypoint-00000${h}`, name: h, x: i * 120, y: 0 }));
-	m.put('link', { id: 'link-000001', name: 'l', src: 'waypoint-00000a', dst: 'waypoint-00000c', via: ['waypoint-00000b'], control: true, flow: false });
+	m.put('link', { id: 'link-000001', name: 'l', src: 'waypoint-00000a', dst: 'waypoint-00000c', via: ['waypoint-00000b'], control: true, direction: 'reverse' });
 	const halves = cutAt(m, 'waypoint-00000b').entries.filter((e) => e.op === 'put').map((e) => e.entity);
 	assert.equal(halves.length, 2);
-	for (const l of halves) assert.deepEqual([l.control, l.flow], [true, false], `${l.id} keeps both`);
+	for (const l of halves) assert.deepEqual([l.control, l.direction], [true, 'reverse'], `${l.id} keeps both`);
 	// and back: the two control halves join into the one control link -- a control half beside a data half never could (H15.15)
 	const cut = cutAt(m, 'waypoint-00000b');
 	applyOps(m, cut.entries.map((e) => (e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e)));
 	const join = joinAt(m, 'waypoint-00000b');
 	assert.ok(join, 'the halves join again');
 	applyOps(m, join.entries.map((e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : { op: 'del', kind: e.kind, id: e.entity.id })));
-	assert.deepEqual(m.all('link').map((l) => [l.id, l.control, l.flow, l.via]), [['link-000001', true, false, ['waypoint-00000b']]], 'one control link, as drawn');
+	assert.deepEqual(m.all('link').map((l) => [l.id, l.control, l.direction, l.via]), [['link-000001', true, 'reverse', ['waypoint-00000b']]], 'one control link, as drawn');
 	m.put('link', { id: 'link-000002', name: 'k', src: 'waypoint-00000a', dst: 'waypoint-00000c', via: ['waypoint-00000b'] });
 	m.del('link', 'link-000001');
 	for (const l of cutAt(m, 'waypoint-00000b').entries.filter((e) => e.op === 'put').map((e) => e.entity)) {
-		assert.ok(!('control' in l) && !('flow' in l), 'an undeclared link stays undeclared: no field is invented');
+		assert.ok(!('control' in l) && !('direction' in l), 'an undeclared link stays undeclared: no field is invented');
 	}
 });

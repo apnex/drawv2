@@ -139,6 +139,16 @@ Any other difference fails the run.
 
 At P3, if F2 is ruled as recommended: the pipes step and the P-4 split, with the store composing the network.
 
+AMENDED 2026-10-03 -- **F-a done** (H18.3).\
+`server/migrate.mjs`'s `migrateFormatBatch` -- named apart from CS5's `migrateDoc` in `tools/migrate-version.mjs`, which a reader searching for either would otherwise find both of -- holds the direction, history and schema steps, each keyed on the shape it repairs and pure; the store admits every document through it before validation -- boot, examples, `create`, templates (which skipped the loader's repairs before) and restore -- and writes a migrated file back once.\
+The document generation has one owner, `SCHEMA` in `model/shape.mjs`, read by the Model, the store, the seed and the validator, which takes 2 alone; `kernel/adapt.mjs` stamps none, since `kernel/` may not import it.\
+`link.flow` is `direction` everywhere a direction is read or written: the field checks, the join and the split, both readings of which way a link faces, the arrowhead, the export's adapter, the CLI's `set` and `--direction`, and the `f` key, its command, its labels and its help.\
+The templates are schema 2 in source; the lab's seeds and the server's seed carry nothing to rename.\
+The dry run, `tools/migrate-schema.mjs`, boots a real store on a copy and compares every diagram with its source once the ruled changes are set aside by its own normaliser, written from the rulings rather than from the migration.\
+**On the estate backup: 43 diagrams boot; 42 directions renamed in 10 diagrams; 2,004 undo records dropped from 42; every version kept; nothing else changed.**\
+Corpora: the planner corpus differs in 6 cases, each only by the rename and its input digest; the gesture corpus by 5 lines and the matrix corpus by 3 notices, each only by the rename.\
+Mutants: 21 -- 20 killed by the tests as written; the survivor, a migrated file not written back, killed once its test stopped booting through a helper that marks every adopted diagram dirty; the dry run's own undo check shown to fail by disabling the history step.
+
 Each stage is one gate and one lab deploy.
 
 **Size, by judgement:** F-b and F-c are most of it -- the word appears 514 times in product code and 4,172 in tests and the lab.

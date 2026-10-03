@@ -46,7 +46,7 @@ test('readout: a link between two nodes names both', () => {
 	assert.match(r.selectionText(), /<->/, 'an undeclared link is symmetric, and says so');
 	assert.ok(!r.selectionText().includes('?'), 'both ends resolved');
 
-	m.put('link', { ...m.get('link', l.id), flow: true });
+	m.put('link', { ...m.get('link', l.id), direction: 'forward' });
 	assert.match(r.selectionText(), />>>/, 'and a declared one says which way');
 });
 

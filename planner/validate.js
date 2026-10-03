@@ -9,6 +9,7 @@ import { NAME_MAX, CAPTION_MAX } from '../model/limits.mjs';
 // H17.22 N-a: every kind is a ROW -- its field checks, its cross-entity check and its cap travel with it (planner/kinds.mjs).
 // Validation reads the composition it is handed, the product's five when nothing else is passed.
 import { PRODUCT_KINDS } from './kinds.mjs';
+import { SCHEMA } from '../model/shape.mjs';   // the document generation, one owner (H18.3)
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -185,7 +186,7 @@ export function validateDoc(doc, { kinds = PRODUCT_KINDS } = {}) {
 	for (const key of Object.keys(doc.meta)) {
 		if (!['id', 'name', 'version', 'schema', 'owner', 'grants'].includes(key)) return `unknown meta key: ${key}`;
 	}
-	if ('schema' in doc.meta && doc.meta.schema !== 1) return `unsupported meta.schema: ${doc.meta.schema}`;
+	if ('schema' in doc.meta && doc.meta.schema !== SCHEMA) return `unsupported meta.schema: ${doc.meta.schema}`;
 	if ('version' in doc.meta && !(Number.isInteger(doc.meta.version) && doc.meta.version >= 0)) return 'invalid meta.version';
 	/*
 	Authorization, validated as strictly as geometry -- ACCESS.md.

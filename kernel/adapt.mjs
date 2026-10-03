@@ -49,13 +49,15 @@ export function docToSchema(doc, opts = {}) {
 	// H15.6 -- `flow` travels with the route, or the exported SVG loses the arrowhead the canvas
 	// draws. The adapter is a THIRD door on this field, after the commit and the boot, and it was
 	// the one that silently dropped it: markers were defined in the export and used by nothing.
-	(doc.links || []).forEach((l) => relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed, ...(typeof l.flow === 'boolean' ? { flow: l.flow } : {}), ...(l.control ? { control: true } : {}) } }));
+	(doc.links || []).forEach((l) => relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed, ...(l.direction !== undefined ? { direction: l.direction } : {}), ...(l.control ? { control: true } : {}) } }));
 	return { variant: 'standard', entities, relations };
 }
 
 // kernel schema → document (the inverse coordinate math). Names are NOT in the schema (a UI/doc
 // concern), so a doc→schema→doc round-trip preserves geometry/structure, not labels. Used for
 // future import; the live UI keeps the doc as the source of truth and only ever derives a schema.
+// No `meta.schema`: the document generation is model/shape.mjs's `SCHEMA`, which kernel/ may not import (C9), and the
+// validator reads an absent one as the current generation -- the store stamps it.
 export function schemaToDoc(schema, meta = {}) {
 	const nodes = [], waypoints = [], zones = [], groups = [], links = [];
 	(schema.entities || []).forEach((e) => {
@@ -71,6 +73,6 @@ export function schemaToDoc(schema, meta = {}) {
 			zones.push({ id: e.id, name: e.name || '', x: c0 * P - P / 2, y: r0 * P - P / 2, w: (c1 - c0 + 1) * P, h: (r1 - r0 + 1) * P });
 		} else if (e.kind === 'group') groups.push({ id: e.id, name: e.name || '', members: [...(e.members || [])] });
 	});
-	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.src, dst: r.route.dst, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.closed ? { closed: true } : {}), ...(typeof r.route.flow === 'boolean' ? { flow: r.route.flow } : {}), ...(r.route.control ? { control: true } : {}) }); });
-	return { meta: { id: '', name: 'untitled', version: 0, schema: 1, ...meta }, nodes, waypoints, links, zones, groups };
+	(schema.relations || []).forEach((r) => { if (r.route) links.push({ id: r.id || newId('link'), src: r.route.src, dst: r.route.dst, ...(r.route.via && r.route.via.length ? { via: [...r.route.via] } : {}), ...(r.route.closed ? { closed: true } : {}), ...(r.route.direction !== undefined ? { direction: r.route.direction } : {}), ...(r.route.control ? { control: true } : {}) }); });
+	return { meta: { id: '', name: 'untitled', version: 0, ...meta }, nodes, waypoints, links, zones, groups };
 }

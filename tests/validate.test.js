@@ -57,7 +57,7 @@ true rather than merely documented.
 test('B95: a Model is not a doc, and toJSON is the boundary between them', () => {
 	const model = new Model();
 	model.load({
-		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 1 },
+		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2 },
 		nodes: [], waypoints: [], links: [], zones: [], groups: [],
 	});
 
@@ -765,18 +765,18 @@ test('H15.3: facing derives direction at a point, and an undeclared link has non
 	assert.equal(facing(undeclared, 'w'), null, 'an undeclared link asserts nothing at either end');
 	assert.equal(facing(undeclared, 'a'), null, 'including the end it is stored from');
 
-	// flow: true -- the head is `dst`, so the link ARRIVES at dst and LEAVES from src
-	const forward = { id: 'l2', src: 'a', dst: 'w', flow: true };
+	// direction: 'forward' -- the head is `dst`, so the link ARRIVES at dst and LEAVES from src
+	const forward = { id: 'l2', src: 'a', dst: 'w', direction: 'forward' };
 	assert.equal(facing(forward, 'w'), 'in', 'the stored dst is where a forward flow arrives');
 	assert.equal(facing(forward, 'a'), 'out', 'and it leaves the stored src');
 
-	// flow: false -- the same two ends, the opposite meaning
-	const reverse = { id: 'l3', src: 'a', dst: 'w', flow: false };
+	// direction: 'reverse' -- the same two ends, the opposite meaning
+	const reverse = { id: 'l3', src: 'a', dst: 'w', direction: 'reverse' };
 	assert.equal(facing(reverse, 'w'), 'out', 'a reversed flow leaves the stored dst');
 	assert.equal(facing(reverse, 'a'), 'in', 'and arrives at the stored src');
 
 	// a point the link merely threads is not an end, so it has no facing there
-	const through = { id: 'l4', src: 'a', dst: 'b', via: ['w'], flow: true };
+	const through = { id: 'l4', src: 'a', dst: 'b', via: ['w'], direction: 'forward' };
 	assert.equal(facing(through, 'w'), null, 'a bend is passed through, not faced');
 
 	/*
@@ -784,7 +784,7 @@ test('H15.3: facing derives direction at a point, and an undeclared link has non
 	declared link that is flipped carries its meaning with it -- which is what makes the B222
 	orientation safe to keep once declarations exist.
 	*/
-	const flipped = { id: 'l5', src: 'w', dst: 'a', flow: false };
+	const flipped = { id: 'l5', src: 'w', dst: 'a', direction: 'reverse' };
 	assert.equal(facing(flipped, 'w'), 'in', 'stored the other way round, still arriving at w');
 	assert.equal(facing(forward, 'w'), facing(flipped, 'w'), 'two storages of one drawing agree');
 });
@@ -828,18 +828,18 @@ test('H15.4: two declared flows that oppose make a junction; agreeing ones make 
 	The director found it in one gesture: declare two links inward, making a junction, then flip
 	one so the flow passes through. The junction should become a BEND and became an endpoint.
 	*/
-	const passThrough = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: w, dst: 'b', flow: true }];
+	const passThrough = [{ id: 'l1', src: 'a', dst: w, direction: 'forward' }, { id: 'l2', src: w, dst: 'b', direction: 'forward' }];
 	assert.deepEqual(waypointRoles(w, passThrough), [],
 		'one in and one out is a path through, which is a bend -- and a bend adds no sub-type at all');
 
 	// DECLARED, OPPOSING -- a convergence and a divergence. Both are junctions.
-	const converge = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w, flow: true }];
-	const diverge = [{ id: 'l1', src: w, dst: 'a', flow: true }, { id: 'l2', src: w, dst: 'b', flow: true }];
+	const converge = [{ id: 'l1', src: 'a', dst: w, direction: 'forward' }, { id: 'l2', src: 'b', dst: w, direction: 'forward' }];
+	const diverge = [{ id: 'l1', src: w, dst: 'a', direction: 'forward' }, { id: 'l2', src: w, dst: 'b', direction: 'forward' }];
 	assert.deepEqual(waypointRoles(w, converge), ['junction'], 'two flows arriving is a convergence');
 	assert.deepEqual(waypointRoles(w, diverge), ['junction'], 'two flows leaving is a divergence');
 
 	// ONE DECLARED, ONE NOT -- the undeclared half asserts nothing, so it cannot contradict.
-	const half = [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w }];
+	const half = [{ id: 'l1', src: 'a', dst: w, direction: 'forward' }, { id: 'l2', src: 'b', dst: w }];
 	assert.deepEqual(waypointRoles(w, half), ['endpoint'], 'an undeclared link never creates a conflict');
 
 	// THREE OR MORE -- a junction regardless, which B214 already held and this must not disturb.
@@ -851,8 +851,8 @@ test('H15.4: two declared flows that oppose make a junction; agreeing ones make 
 	overriding the other. Neither link is rewritten -- the waypoint between them simply reads as a
 	junction, so the break is visible exactly where it was authored.
 	*/
-	assert.equal(converge[0].flow, true, 'the earlier declaration is untouched');
-	assert.equal(converge[1].flow, true, 'and so is the later one');
+	assert.equal(converge[0].direction, 'forward', 'the earlier declaration is untouched');
+	assert.equal(converge[1].direction, 'forward', 'and so is the later one');
 });
 
 /*
@@ -876,9 +876,9 @@ test('H15.4: `facing` and `waypointRoles` read a declaration identically', async
 	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
 
 	const cases = [];
-	for (const flow of [true, false, undefined]) {
+	for (const direction of ['forward', 'reverse', undefined]) {
 		for (const [src, dst] of [[w, 'a'], ['a', w], ['a', 'b']]) {
-			const link = { id: 'l', src, dst, ...(flow === undefined ? {} : { flow }) };
+			const link = { id: 'l', src, dst, ...(direction === undefined ? {} : { direction }) };
 			if (src !== w && dst !== w) link.via = [w];      // the threading case
 			cases.push(link);
 		}
@@ -891,9 +891,9 @@ test('H15.4: `facing` and `waypointRoles` read a declaration identically', async
 	one it merges. If either side's reading of `flow` inverts, exactly these disagree.
 	*/
 	const shapes = {
-		converge: [{ id: 'la', src: 'a', dst: w, flow: true }, { id: 'lb', src: 'b', dst: w, flow: true }],
-		diverge:  [{ id: 'la', src: w, dst: 'a', flow: true }, { id: 'lb', src: w, dst: 'b', flow: true }],
-		through:  [{ id: 'la', src: 'a', dst: w, flow: true }, { id: 'lb', src: w, dst: 'b', flow: true }],
+		converge: [{ id: 'la', src: 'a', dst: w, direction: 'forward' }, { id: 'lb', src: 'b', dst: w, direction: 'forward' }],
+		diverge:  [{ id: 'la', src: w, dst: 'a', direction: 'forward' }, { id: 'lb', src: w, dst: 'b', direction: 'forward' }],
+		through:  [{ id: 'la', src: 'a', dst: w, direction: 'forward' }, { id: 'lb', src: w, dst: 'b', direction: 'forward' }],
 	};
 	for (const [why, [la, lb]] of Object.entries(shapes)) {
 		const fa = linkFacing(la, w), fb = linkFacing(lb, w);
@@ -912,7 +912,7 @@ test('H15.4: `facing` and `waypointRoles` read a declaration identically', async
 	if `waypointRoles` ignored direction entirely, so this drives the real function: two flows
 	arriving must read as a junction, which only the kernel's own branch can produce.
 	*/
-	assert.deepEqual(waypointRoles(w, [{ id: 'l1', src: 'a', dst: w, flow: true }, { id: 'l2', src: 'b', dst: w, flow: true }]),
+	assert.deepEqual(waypointRoles(w, [{ id: 'l1', src: 'a', dst: w, direction: 'forward' }, { id: 'l2', src: 'b', dst: w, direction: 'forward' }]),
 		['junction'], 'the kernel branch under test is the one deciding');
 });
 
@@ -939,11 +939,11 @@ test('H15.15: a control link and a data link meeting is a junction, not a bend',
 
 	// the four combinations of (directions agree?) x (planes match?)
 	const cases = [
-		{ why: 'agree, same plane', a: { flow: true }, b: { flow: true }, bend: true },
-		{ why: 'oppose, same plane', a: { flow: true }, b: { flow: false }, bend: false },
-		{ why: 'agree, planes differ', a: { flow: true, control: true }, b: { flow: true }, bend: false },
-		{ why: 'oppose, planes differ', a: { flow: true, control: true }, b: { flow: false }, bend: false },
-		{ why: 'agree, both control', a: { flow: true, control: true }, b: { flow: true, control: true }, bend: true },
+		{ why: 'agree, same plane', a: { direction: 'forward' }, b: { direction: 'forward' }, bend: true },
+		{ why: 'oppose, same plane', a: { direction: 'forward' }, b: { direction: 'reverse' }, bend: false },
+		{ why: 'agree, planes differ', a: { direction: 'forward', control: true }, b: { direction: 'forward' }, bend: false },
+		{ why: 'oppose, planes differ', a: { direction: 'forward', control: true }, b: { direction: 'reverse' }, bend: false },
+		{ why: 'agree, both control', a: { direction: 'forward', control: true }, b: { direction: 'forward', control: true }, bend: true },
 	];
 	for (const { why, a, b, bend } of cases) {
 		const la = { id: 'la', src: 'x', dst: w, ...a };
@@ -970,7 +970,7 @@ test('H15.15: a control link and a data link meeting is a junction, not a bend',
 	assert.equal(collapseAtWaypoint(noFlow[0], noFlow[1], w), null,
 		'and the collapse must refuse it too, for the same reason');
 
-	const oneSided = [{ id: 'la', src: 'x', dst: w, control: true, flow: true }, { id: 'lb', src: w, dst: 'y' }];
+	const oneSided = [{ id: 'la', src: 'x', dst: w, control: true, direction: 'forward' }, { id: 'lb', src: w, dst: 'y' }];
 	assert.deepEqual(waypointRoles(w, oneSided), ['junction'],
 		'one declared and one not still differs in PLANE, which is enough');
 
@@ -979,8 +979,8 @@ test('H15.15: a control link and a data link meeting is a junction, not a bend',
 	undeclared links match one another -- which keeps every document written before this field
 	reading exactly as it did.
 	*/
-	const plain = [{ id: 'la', src: 'x', dst: w, flow: true }, { id: 'lb', src: w, dst: 'y', flow: true }];
-	const bothData = [{ id: 'la', src: 'x', dst: w, flow: true, control: false }, { id: 'lb', src: w, dst: 'y', flow: true }];
+	const plain = [{ id: 'la', src: 'x', dst: w, direction: 'forward' }, { id: 'lb', src: w, dst: 'y', direction: 'forward' }];
+	const bothData = [{ id: 'la', src: 'x', dst: w, direction: 'forward', control: false }, { id: 'lb', src: w, dst: 'y', direction: 'forward' }];
 	assert.deepEqual(waypointRoles(w, plain), waypointRoles(w, bothData),
 		'absent and false are the same plane -- absence must not read as a third kind of link');
 });

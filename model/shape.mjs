@@ -29,6 +29,14 @@ set-inverse absent-key rule (an inverse that must remove a key rather than resto
 whole-entity put — see planner/txn.mjs), and validateEntity's optional-field allowance.
 */
 
+/*
+THE DOCUMENT GENERATION -- one owner, read by the Model's new document, the store's meta, the server's seed and the
+validator, which accepts this generation alone. Was four literals that nothing forced to agree.
+2 is promotion's format batch (dev/design/unification/FORMAT-BATCH.md; ruled 2026-10-03): a schema 1 document enters
+only through the migration, server/migrate.mjs, which every path into the store runs first.
+*/
+export const SCHEMA = 2;
+
 // the product's kinds, in the order a document lists its collections
 const KINDS = ['node', 'waypoint', 'link', 'zone', 'group'];
 
@@ -56,7 +64,7 @@ const TABLE = {
 		*/
 		optional: ['pinned', 'spawn'],
 	},
-	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'flow', 'control'] },
+	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control'] },
 	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: [] },
 	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };

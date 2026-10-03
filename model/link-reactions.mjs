@@ -318,12 +318,12 @@ function linkJoin({ joinsAt = () => true, says }) {
 		// right order, so writing only dst and via was sufficient; now that the src side may be
 		// flipped to face through the point, omitting it left the merged link still ending at the
 		// waypoint it was supposed to absorb.
-		// FLOW travels with SRC, for the same reason. A declaration is expressed relative to the
-		// stored order, so a flip that inverts `flow` in the merged object but does not write it
+		// DIRECTION travels with SRC, for the same reason. A declaration is expressed relative to the
+		// stored order, so a flip that inverts `direction` in the merged object but does not write it
 		// leaves the document declaring the opposite of what the author meant -- silently, since
 		// every other field looks right. Omitted only when the link was undeclared.
 				const patch = { src: merged.src, dst: merged.dst, via: merged.via,
-					...(typeof merged.flow === 'boolean' ? { flow: merged.flow } : {}) };
+					...(merged.direction !== undefined ? { direction: merged.direction } : {}) };
 				/*
 		B239 -- a merge is TAKEN only if the link it produces passes the rules a requested write does.
 

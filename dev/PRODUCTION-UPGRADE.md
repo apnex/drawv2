@@ -83,8 +83,10 @@ Ruled to land with promotion (`dev/design/unification/PROMOTION.md`), so each is
 | PU22 | The network plugin's colour roles move from the network layer's kernel-side module into `network/`, beside the rest of the plugin. | the palette design, 2026-10-01 |
 | PU23 | One device table in `network/`, replacing the `NODE_TYPES` literal the held tools carry. | K6 |
 | PU32 | A link's declared direction is stored as `direction`, `forward` or `reverse`, where it was `flow`, `true` or `false`; `set`, `show`, `get`, REST and the CLI's flag name it so. | F1, P-9 |
+| PU34 | Undo history from before the cutover is dropped, each diagram keeping its version, so the next edit continues the numbering (P-6); the stored format is `meta.schema` 2, which images before it refuse, so the rollback is the backup (P-8). Every document entering the store -- boot, `create`, templates, examples, restore -- passes through one migration first, so a tab open across the cutover that posts its old document is migrated rather than refused. | P-6, P-8, H18.3 |
 | PU33 | Every waypoint id becomes a node id with the same hex (`waypoint-1a2b3c` becomes `node-1a2b3c`), 3 renumbered; names are unchanged and still resolve. People and agents still call a node with no type a waypoint (F4). | P-10, F4 |
 
+AMENDED 2026-10-03: PU32 and PU34 are built on `main` (H18.3) and reach production at the cutover under PU31; with PU32, the edit labels and notices read `direction forward`, `direction reverse` and `direction cleared` where they read `flow ...`, and the `f` key's help line says direction.\
 AMENDED 2026-10-02: PU19's mechanism is built (H17.22 N-a, PU25), and `pipe` is the network plugin's kind rather than a sixth core kind (N1); what remains for the cutover is the stored format.
 
 ---

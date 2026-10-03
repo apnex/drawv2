@@ -259,48 +259,48 @@ export function toggleClosed(link) {
 /*
 H15.6 -- CYCLE a link's declared direction. Three states, so this cycles rather than toggles.
 
-`flow` is absent (undeclared and symmetric), true (the flow follows the stored order) or false (it
-runs against it). The cycle is undeclared -> forward -> reverse -> undeclared, which lets an author
+`direction` is absent (undeclared and symmetric), `forward` (the flow follows the stored order) or `reverse`
+(it runs against it) -- `flow`, a boolean, until the format batch (F1, 2026-10-03). The cycle is undeclared -> forward -> reverse -> undeclared, which lets an author
 reach every state from any state without needing to know which one they are in.
 
 RETURNING TO UNDECLARED REMOVES THE KEY rather than writing a third value. Absent is what every
 document written before this field carries and what `facing` reads as "no direction at all"; a link
-left holding `flow: null` would be a fourth state the model does not have. `flow` is listed OPTIONAL
+left holding `direction: null` would be a fourth state the model does not have. `direction` is listed OPTIONAL
 in model/shape.mjs, so the set-inverse rule turns the removing patch into a whole-entity put and
 undoing the last step restores a link byte-identical to one never declared.
 
 Direction is stored relative to `src`/`dst` and NOT as an end-name, so this never has to look at
 which end is which -- see `linkFacing` in kernel/network-roles.mjs for what reads it.
 */
-export function cycleFlow(link) {
-	if (typeof link.flow !== 'boolean') {
-		return { label: 'flow forward', entries: [{ op: 'set', kind: 'link', id: link.id, after: { flow: true } }] };
+export function cycleDirection(link) {
+	if (link.direction !== 'forward' && link.direction !== 'reverse') {
+		return { label: 'direction forward', entries: [{ op: 'set', kind: 'link', id: link.id, after: { direction: 'forward' } }] };
 	}
-	if (link.flow) {
-		return { label: 'flow reverse', entries: [{ op: 'set', kind: 'link', id: link.id, after: { flow: false } }] };
+	if (link.direction === 'forward') {
+		return { label: 'direction reverse', entries: [{ op: 'set', kind: 'link', id: link.id, after: { direction: 'reverse' } }] };
 	}
 	/*
 	CLEARING IS A PUT, not a set carrying undefined, and the difference is not cosmetic.
 
-	`after: { flow: undefined }` sets an OWN PROPERTY holding undefined. It vanishes from
-	JSON.stringify, survives `'flow' in link`, and FAILS a schema asking `typeof v === 'boolean'` --
+	`after: { direction: undefined }` sets an OWN PROPERTY holding undefined. It vanishes from
+	JSON.stringify, survives `'direction' in link`, and FAILS a schema asking for `forward` or `reverse` --
 	so the clear was refused in memory and silently repaired by the next reload. That is B220's
 	shape: two doors disagreeing, with a restart hiding the evidence.
 
 	A whole-entity put is how this tree already removes a key -- `inverseOfSet` in planner/txn.mjs
 	reaches for the same move when a patch would have to restore an absence. The entity is built
-	without `flow` rather than with it undefined.
+	without `direction` rather than with it undefined.
 	*/
-	const { flow, ...without } = link;
-	return { label: 'flow cleared', entries: [{ op: 'put', kind: 'link', entity: without }] };
+	const { direction, ...without } = link;
+	return { label: 'direction cleared', entries: [{ op: 'put', kind: 'link', entity: without }] };
 }
 
 /*
 H15.15 -- TOGGLE a link between the control plane and the data plane.
 
 `control: true` means the link carries no data-plane packets. Two states rather than three, so this
-toggles where `cycleFlow` cycles -- and turning it OFF removes the key rather than writing `false`,
-for the reason cycleFlow clears with a put: `after: { control: undefined }` sets an own property
+toggles where `cycleDirection` cycles -- and turning it OFF removes the key rather than writing `false`,
+for the reason cycleDirection clears with a put: `after: { control: undefined }` sets an own property
 holding undefined, which is invisible to JSON, visible to `in`, and refused by a schema asking for a
 boolean. Absent is the ordinary data link and what every older document carries.
 */

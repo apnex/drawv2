@@ -778,8 +778,8 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 		// cc0002 declares flow WITH its storage, meaning it leaves. One in, one out: a bend.
 		// (Both declared the same way would be two flows leaving one point, which is a divergence
 		// and stays a junction -- that case is the matrix's, H15.4.)
-		put('link', { id: 'link-cc0001', name: 'l1', src: 'waypoint-cc0001', dst: 'node-cc0001', flow: false }),
-		put('link', { id: 'link-cc0002', name: 'l2', src: 'waypoint-cc0001', dst: 'node-cc0002', flow: true }),
+		put('link', { id: 'link-cc0001', name: 'l1', src: 'waypoint-cc0001', dst: 'node-cc0001', direction: 'reverse' }),
+		put('link', { id: 'link-cc0002', name: 'l2', src: 'waypoint-cc0001', dst: 'node-cc0002', direction: 'forward' }),
 		put('link', { id: 'link-cc0003', name: 'l3', src: 'waypoint-cc0001', dst: 'node-cc0003' }),
 	] }, 'server', 't');
 
@@ -788,7 +788,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	// across the collapse compares a value to itself -- the aliasing form of a vacuous test, and
 	// the same trap as B217 where a fixture was rewritten before the assertions ran.
 	const before = { ...m.get('link', 'link-cc0001') };
-	assert.equal(before.flow, false, 'the commit door accepted a declared flow');
+	assert.equal(before.direction, 'reverse', 'the commit door accepted a declared flow');
 	assert.equal(facing(before, 'waypoint-cc0001'), 'in', 'and it means: arriving at the waypoint');
 	assert.equal(facing(before, 'node-cc0001'), 'out', 'having left node-cc0001');
 
@@ -965,7 +965,7 @@ test('B240: a declared convergence is judged against the link the earlier collap
 	// property is asserted in BOTH orientations rather than naming the survivor (H16 review).
 	const { linkFacing } = await import('../kernel/network-roles.mjs');
 	for (const flipParallel of [false, true]) {
-		const { m, log } = twoJunctions({ flipParallel, a: { flow: true }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { flow: true } });
+		const { m, log } = twoJunctions({ flipParallel, a: { direction: 'forward' }, cSrc: 'node-aa0002', cDst: 'waypoint-aa0012', c: { direction: 'forward' } });
 		assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 
 		commit(m, log, { ops: [delOp('link', 'link-aa0009')] }, 'server', 't');
@@ -1129,16 +1129,16 @@ test('B285: two links at a junction join when an edit to one makes their planes 
 	assert.equal(other.m.all('link').length, 1, 'or the other way: both data');
 	// B286 -- a direction CLEARED is a declaration changed too, though `f` writes it as a whole-entity put
 	const cleared = board();
-	assert.equal(commit(cleared.m, cleared.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, flow: true } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { flow: false } }] }, 'x', 'x').ok, true);
+	assert.equal(commit(cleared.m, cleared.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, direction: 'forward' } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { direction: 'reverse' } }] }, 'x', 'x').ok, true);
 	assert.equal(cleared.m.all('link').length, 2, 'both arriving: incompatible');
-	const { flow: _f, ...undirected } = cleared.m.get('link', 'link-00000b');
+	const { direction: _f, ...undirected } = cleared.m.get('link', 'link-00000b');
 	assert.equal(commit(cleared.m, cleared.log, { label: 'flow cleared', ops: [{ op: 'put', kind: 'link', entity: undirected }] }, 'x', 'x').ok, true);
 	assert.equal(cleared.m.all('link').length, 1, 'one direction cleared, a put: an undeclared link opposes nothing, so they join');
 	const same = board();
 	assert.equal(commit(same.m, same.log, { label: 'noop', ops: [{ op: 'put', kind: 'link', entity: { ...same.m.get('link', 'link-00000b'), name: 'renamed' } }] }, 'x', 'x').ok, true);
 	assert.equal(same.m.all('link').length, 2, 'a put that changes no declaration decides nothing');
 	const opposed = board();
-	assert.equal(commit(opposed.m, opposed.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, flow: true } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { flow: false } }] }, 'x', 'x').ok, true);
+	assert.equal(commit(opposed.m, opposed.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, direction: 'forward' } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { direction: 'reverse' } }] }, 'x', 'x').ok, true);
 	assert.equal(opposed.m.all('link').length, 2, 'planes match but both arrive at E: incompatible, still two');
 });
 

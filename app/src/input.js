@@ -756,17 +756,17 @@ export class Input {
 	have to guess whether the author meant each link's own stored order or some shared direction --
 	and those differ the moment two links are stored facing opposite ways.
 	*/
-	cycleLinkFlow() {
+	cycleLinkDirection() {
 		const ids = this.selection.list();
 		if (ids.length !== 1 || kindOf(ids[0]) !== 'link') return;
 		const link = this.model.get('link', ids[0]);
 		if (!link) return;
-		const cmd = commands.cycleFlow(link);
+		const cmd = commands.cycleDirection(link);
 		this.history.commit(cmd);
 		/*
 		B227 -- SAY THE WHOLE RELATION, not just what changed.
 
-		`flow reverse` names the step and leaves the author to work out what it now means, which on
+		`direction reverse` names the step and leaves the author to work out what it now means, which on
 		a link whose stored order they never chose is a puzzle rather than feedback. The endpoints
 		with an arrow between them says the RESULT, and the arrow is the same fact the canvas draws
 		-- so the readout and the picture cannot disagree.
@@ -1631,7 +1631,7 @@ export class Input {
 	onWrapKey() { this.wrapInZone(); }
 	onCloseKey() { this.toggleClosePath(); }
 	onCloseRefused() { this.readout.flash('✗ close needs a multi-hop route'); }   // the `close-refused` row: ONE link, no bend
-	onFlowKey() { this.cycleLinkFlow(); }
+	onDirectionKey() { this.cycleLinkDirection(); }
 	onPlaneKey() { this.toggleLinkPlane(); }
 	onChainKey() { this.linkSelectedNodes(false); }
 	onStarKey()  { this.linkSelectedNodes(true); }

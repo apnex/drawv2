@@ -20,7 +20,7 @@ const SHAPES = {
 	'one link': [L(1, 'node-000001', W)],
 	'two plain links': [L(1, 'node-000001', W), L(2, W, 'node-000002')],
 	'two, control with data': [L(1, 'node-000001', W, { control: true }), L(2, W, 'node-000002')],
-	'two, both arriving': [L(1, 'node-000001', W, { flow: true }), L(2, 'node-000002', W, { flow: true })],
+	'two, both arriving': [L(1, 'node-000001', W, { direction: 'forward' }), L(2, 'node-000002', W, { direction: 'forward' })],
 	'three links': [L(1, 'node-000001', W), L(2, W, 'node-000002'), L(3, W, 'node-000003')],
 	'four links': [L(1, 'node-000001', W), L(2, W, 'node-000002'), L(3, W, 'node-000003'), L(4, 'node-000004', W)],
 };

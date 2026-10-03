@@ -91,7 +91,7 @@ export function joinAt(model, waypointId) {
 	if (!merged) return null;
 	return { label: 'join', entries: [
 		{ op: 'del', kind: 'link', entity: clone('link', other) },
-		{ op: 'set', kind: 'link', id: src.id, after: { src: merged.src, dst: merged.dst, via: merged.via ?? [], ...(typeof merged.flow === 'boolean' ? { flow: merged.flow } : {}) } },
+		{ op: 'set', kind: 'link', id: src.id, after: { src: merged.src, dst: merged.dst, via: merged.via ?? [], ...(merged.direction !== undefined ? { direction: merged.direction } : {}) } },
 	] };
 }
 

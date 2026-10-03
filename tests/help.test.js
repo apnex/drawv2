@@ -56,9 +56,9 @@ test('acceptance 7: the overlay is Input\'s own tables, and deleting a binding r
 	try {
 		const sections = helpSections(h.input.bindings());
 		const lines = (secs) => secs.flatMap((s) => s.lines.map((l) => `${l.inputs.join(' / ')} :: ${l.label}`));
-		assert.ok(lines(sections).includes('f :: cycle the selected link\'s flow: forward, reverse, none'));
+		assert.ok(lines(sections).includes('f :: cycle the selected link\'s direction: forward, reverse, none'));
 		const b = h.input.bindings();
-		const without = helpSections({ ...b, keys: b.keys.filter((r) => r.id !== 'flow') });
+		const without = helpSections({ ...b, keys: b.keys.filter((r) => r.id !== 'direction') });
 		assert.equal(lines(without).some((l) => l.startsWith('f ::')), false, 'the line went with the binding');
 		assert.equal(lines(without).length, lines(sections).length - 1, 'and nothing else did');
 	} finally { h.restore(); }

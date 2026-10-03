@@ -25,7 +25,8 @@ import { Log } from '../planner/log.mjs';
 import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
-import { CORE_KINDS } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a)
+import { CORE_KINDS, SCHEMA } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a), and the document generation
+import { migrateFormatBatch } from './migrate.mjs';
 
 const FLUSH_MS = 200;
 
@@ -84,10 +85,9 @@ raise the number instead, which is a decision they can see rather than one baked
 */
 const MAX_PER_PRINCIPAL = Number(process.env.MAX_PER_PRINCIPAL) || 20;
 
-// The document generation. `meta.grid` was accidentally serving this role — a doc without it was
-// a pre-center-origin file — and dropping grid without a replacement would leave the format with
-// no discriminator at all for the next migration (D8).
-const SCHEMA = 1;
+// The document generation is model/shape.mjs's `SCHEMA` (H18.3). `meta.grid` was accidentally serving this role -- a doc
+// without it was a pre-center-origin file -- and dropping grid without a replacement would have left the format with no
+// discriminator at all for the next migration (D8).
 
 // rebuild meta from whitelisted fields only — never persist junk keys
 /*
@@ -129,6 +129,20 @@ function shedRetired(doc) {
 		if (key in doc.meta) { delete doc.meta[key]; shed = true; }
 	}
 	return migrateNames(doc) || migrateSpawn(doc) || shed;
+}
+
+/*
+H18.3 -- EVERY DOCUMENT ENTERS THROUGH HERE, before it is validated: boot, examples, `create`, templates and restore.
+
+The loader's earlier repairs first (they read the shape they were written against), then the schema 2 migration
+(server/migrate.mjs), which is pure. Templates skipped the loader until now; a template is shipped content and is migrated
+in source, but a path that skips the migration is a path the validator refuses, so it runs here too.
+Returns the document and log to install, and whether either differs from what was read -- a file to write back once.
+*/
+function admit(raw, log = null) {
+	const shed = shedRetired(raw);
+	const migrated = migrateFormatBatch(raw, log);
+	return { doc: migrated.doc, log: migrated.log, changed: shed || migrated.steps.length > 0 };
 }
 
 /*
@@ -290,8 +304,8 @@ export class Store {
 			if (!FILE.test(file)) continue;
 			candidates++;
 			try {
-				const { doc, log } = parse(await this.files.read(file));
-				const shed = shedRetired(doc);
+				const read = parse(await this.files.read(file));
+				const { doc, log, changed: shed } = admit(read.doc, read.log);
 				const err = validateDoc(doc);
 				if (err) {
 					failures.push(`${file}: ${err}`);
@@ -617,8 +631,7 @@ export class Store {
 		let first = null;
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
 			try {
-				const { doc } = parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8'));
-				shedRetired(doc);
+				const { doc } = admit(parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8')).doc);
 				const err = validateDoc(doc);
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
@@ -760,7 +773,8 @@ export class Store {
 			// Validate the document as it will be INSTALLED, not as it arrived: the minted id and
 			// the server-side name are substituted first, so validation cannot pass on a value the
 			// store then discards. Nothing is installed unless it passes (I1, by purity).
-			const candidate = { ...doc, meta: { ...doc.meta, id, name } };
+			// H18.3: admitted first, so an open tab from before the cutover posting its old document is migrated, not refused
+			const { doc: candidate } = admit({ ...doc, meta: { ...doc.meta, id, name } });
 			const err = validateDoc(candidate);
 			if (err) return { ok: false, error: err };
 			/*
@@ -826,7 +840,7 @@ export class Store {
 		let bad = 0;
 		for (const file of fs.readdirSync(this.templatesDir).filter((f) => f.endsWith('.json')).sort()) {
 			try {
-				const doc = JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8'));
+				const { doc } = admit(JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8')));
 				const why = validateDoc(doc);
 				if (why) throw new Error(why);
 				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
@@ -1066,8 +1080,8 @@ export class Store {
 		// name, so a wrong id and someone else's id give the same answer, which is the correct one
 		if (!hit) return 'nothing recoverable by that name';
 		await this.files.restore(`${id}.json`, hit.generation);
-		const { doc, log } = parse(await this.files.read(`${id}.json`));
-		shedRetired(doc);
+		const read = parse(await this.files.read(`${id}.json`));
+		const { doc, log } = admit(read.doc, read.log);
 		const err = validateDoc(doc);
 		if (err) return `restored file is not a valid document: ${err}`;
 		/*

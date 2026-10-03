@@ -87,6 +87,8 @@ const ALLOW = {
 	'planner/txn.mjs:MAX_OPS': 'the per-transaction op cap. Asserted so the rejection is proven to happen BEFORE any write, which is a claim about ordering that needs the bound.',
 	'planner/validate.js:validateEntity': 'the per-entity half of the validator, called by validateDoc. Exported because 27 assertions exercise entity shapes directly -- span, content regions, node frame -- and routing each through a whole document would test the wrapper instead of the rule.',
 	'tools/migrate-version.mjs:migrateDoc': 'the CS5 migration transform. The gate proves a migrated corpus boots and every entity survives deep-equal, which requires calling the transform rather than the CLI around it.',
+	'tools/migrate-schema.mjs:dryRun': 'the format batch`s dry run. Its production caller is the `import.meta.url` guard in the same file; the test drives it directly to prove a refused file and a changed entity are reported, which a run against the estate alone cannot show.',
+	'tools/migrate-schema.mjs:canonical': 'the dry run`s normaliser: the ruled changes set aside, everything else compared. Asserted directly to prove it still sees a moved node, a direction migrated the wrong way and a lost declaration.',
 	'tools/migrate-version.mjs:invariant': 'the migration`s own equality check. Asserted directly because a count-only comparison passes on a mangled coordinate -- the test exists to prove the checker catches what a weaker one would miss.',
 };
 

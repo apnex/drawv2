@@ -71,9 +71,9 @@ Exported so the agreement between the twins is driven against THIS function rath
 re-typed in a test, which would pass while the real one drifted.
 */
 export const linkFacing = (link, pointId) => {
-	if (typeof link.flow !== 'boolean') return null;
-	const head = link.flow ? link.dst : link.src;
-	const tail = link.flow ? link.src : link.dst;
+	if (link.direction !== 'forward' && link.direction !== 'reverse') return null;
+	const head = link.direction === 'forward' ? link.dst : link.src;
+	const tail = link.direction === 'forward' ? link.src : link.dst;
 	if (pointId === head) return 'in';
 	if (pointId === tail) return 'out';
 	return null;
@@ -129,7 +129,7 @@ export const waypointRoles = (id, touching, { transit = true } = {}) => {
 	divergence, and neither is a path passing through -- each is a place where flow does something
 	other than continue, which is what a junction is.
 
-	`flow` is read the same way `facing` in model/invariants.mjs reads it, and the two are held to
+	`direction` is read the same way `facing` in model/invariants.mjs reads it, and the two are held to
 	agree by test rather than by a shared import: `kernel/` imports no `model/` and `model/` imports
 	no `kernel/`, which is a deliberate independence neither should lose for one boolean.
 

@@ -1024,15 +1024,16 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 |---|---|---|---|---|
 | H18.1 | Rule promotion's start-of-work decisions, P-3 to P-9 and the format batch's scope, one at a time, against the measured estate | feature | S2 | `DONE` |
 | H18.2 | Design P2, the format batch, for approval before any code: the stored pipe kind, drawing order, transit on the anchor, the flow rename, waypoints into nodes, the migration and its dry run on the estate | feature | S2 | `DONE` |
-| H18.3 | F-a, the frame: one migration keyed on content, run on every load path and by a dry-run tool; `meta.schema` 2; undo history truncated (P-6); `link.flow` becomes `direction` (F1) | **B266** | S2 | `TODO` |
+| H18.3 | F-a, the frame: one migration keyed on content, run on every load path and by a dry-run tool; `meta.schema` 2; undo history truncated (P-6); `link.flow` becomes `direction` (F1) | feature | S2 | `DONE` |
 | H18.4 | F-b: every reader asks one question for "a bare anchor"; no format change, every corpus unchanged | **B282** | S2 | `TODO` |
 | H18.5 | F-c: the waypoint kind goes -- a waypoint is a node with no type, ids keep their hex, 3 renumbered, `pinned` retired (P-10, P-5) | **B282** | S2 | `TODO` |
 | H18.6 | F-d: every node, link and zone stores its drawing order; newest on top for every peer; undo restores place; link ages read it | **B249** | S2 | `TODO` |
 | H18.7 | F-e: transit stored on the anchor (TR-7); a toggle is a `set`, its cut and join planner reactions; the export reads it | feature | S2 | `TODO` |
 | H18.8 | F-f: a ring's closing leg is routed like any leg (P-3) | feature | S2 | `TODO` |
 | H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | **B266** | S2 | `TODO` |
-AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.
-AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).
+AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
+AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
+AMENDED 2026-10-03: H18.3 (F-a) done -- `server/migrate.mjs`, run by the store on every path in; `meta.schema` 2; undo history truncated; `direction`; the estate dry run passes (`tools/migrate-schema.mjs`). Production stays on `draw:2538ab8` from here (F3, PU31).\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

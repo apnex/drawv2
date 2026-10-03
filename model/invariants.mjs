@@ -144,11 +144,12 @@ Returns the merged link, or null when the pair cannot describe a path through th
 /*
 H15.3 -- which way a link faces AT a point, and the only direction any rule may read.
 
-`src` and `dst` say which end the author dragged from; `flow` says what the author MEANT. Absent is
-undeclared -- the default, and what every link written before this field carries. `true` means the
-flow follows the stored order, `false` that it runs against it.
+`src` and `dst` say which end the author dragged from; `direction` says what the author MEANT. Absent is
+undeclared -- the default, and what every link written before this field carries. `forward` means the
+flow follows the stored order, `reverse` that it runs against it. (Stored as `flow`, a boolean, until the
+format batch renamed it, F1, 2026-10-03.)
 
-A boolean rather than an end-name because the link already holds two ends. Naming one again would
+Relative to the stored order rather than an end-name because the link already holds two ends. Naming one again would
 be a second record of the same fact, free to disagree with `src` and `dst` after any edit that
 changes them -- which is the exact shape of defect B222 was.
 
@@ -162,20 +163,20 @@ agreement must drive the real function rather than a copy. Exporting this one as
 two importable spellings of one rule, which is how the pair starts to drift.
 */
 function facing(link, pointId) {
-	if (typeof link.flow !== 'boolean') return null;        // undeclared: symmetric, no direction
-	const head = link.flow ? link.dst : link.src;           // where the flow is going
-	const tail = link.flow ? link.src : link.dst;
+	if (link.direction !== 'forward' && link.direction !== 'reverse') return null;   // undeclared: symmetric, no direction
+	const head = link.direction === 'forward' ? link.dst : link.src;               // where the flow is going
+	const tail = link.direction === 'forward' ? link.src : link.dst;
 	if (pointId === head) return 'in';
 	if (pointId === tail) return 'out';
 	return null;                                            // a via, not an end
 }
 
 /*
-Flipping carries `flow` with it. A flipped link stores its ends the other way round, so a
+Flipping carries `direction` with it. A flipped link stores its ends the other way round, so a
 declaration expressed relative to that order must invert to mean the same thing -- which is what
 makes the B222 orientation safe to keep once declarations exist.
 */
-const flip = (l) => ({ ...l, src: l.dst, dst: l.src, ...(typeof l.flow === 'boolean' ? { flow: !l.flow } : {}), ...(l.via ? { via: [...l.via].reverse() } : {}) });
+const flip = (l) => ({ ...l, src: l.dst, dst: l.src, ...(l.direction !== undefined ? { direction: l.direction === 'forward' ? 'reverse' : 'forward' } : {}), ...(l.via ? { via: [...l.via].reverse() } : {}) });
 
 export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	if (!inbound || !outbound || inbound.id === outbound.id) return null;
@@ -212,16 +213,16 @@ export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	place implementing the matrix while another disagreed is exactly what B232 was.
 	*/
 	if (!!a.control !== !!b.control) return null;
-	const flow = fa ? a.flow : (fb ? b.flow : undefined);
+	const direction = fa ? a.direction : (fb ? b.direction : undefined);
 	const via = [...(a.via || []), waypointId, ...(b.via || [])];
 	const merged = { ...a, src: a.src, dst: b.dst, via };
-	if (typeof flow === 'boolean') merged.flow = flow; else delete merged.flow;
+	if (direction !== undefined) merged.direction = direction; else delete merged.direction;
 	return merged;
 }
 
 /*
 A LINK'S DECLARATIONS -- the fields an author sets on a link that decide whether two links are compatible: its plane
-(`control`) and its direction (`flow`). ONE list, read wherever that question is asked, so a new declaration -- a VLAN,
+(`control`) and its direction (`direction`). ONE list, read wherever that question is asked, so a new declaration -- a VLAN,
 ruled and not yet built -- is added here once:
 
   `collapseAtWaypoint` above  compares them, each by its own rule, to decide a join
@@ -232,7 +233,7 @@ ruled and not yet built -- is added here once:
 tests/link-declarations.test.js holds the list to `collapseAtWaypoint`: every link field that can change its verdict is
 on the list, and every field on the list can. Twice in one day the fields were written out by hand in a second place.
 */
-export const LINK_DECLARATIONS = ['control', 'flow'];
+export const LINK_DECLARATIONS = ['control', 'direction'];
 
 /*
 B284 -- A HALF KEEPS THE LINK'S DECLARATIONS, whatever cut made it. Each caller built the rest of a half itself, and two

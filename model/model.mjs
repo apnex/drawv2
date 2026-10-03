@@ -11,7 +11,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 // the kinds, their collections and which are selectable: a composition of kind rows (model/shape.mjs, H17.22 N-a), the
 // product's five unless one is passed. The selectable list was re-exported here for planner/validate.js's id regex; the
 // validator now reads the composition it is handed.
-import { CORE_KINDS } from './shape.mjs';
+import { CORE_KINDS, SCHEMA } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId } from './order.mjs';
 
@@ -118,7 +118,7 @@ export class Model {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
 			// An empty owner means unowned, which is what every diagram predating H9 is.
-			meta: { id: '', name: 'untitled', version: 0, schema: 1, owner: '', grants: {} },
+			meta: { id: '', name: 'untitled', version: 0, schema: SCHEMA, owner: '', grants: {} },
 			...Object.fromEntries(kinds.list.map((k) => [kinds.collection[k], {}])),   // one collection per kind composed
 			selection: new Set(),  // model-state (status): the authoritative selected-id set (MS1). NOT a KIND — round-trips as doc.selection, never via the KINDS loops.
 			/*

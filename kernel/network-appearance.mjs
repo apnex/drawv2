@@ -331,6 +331,6 @@ export const linkAppearance = (link, w = STD.linkW, { down = false } = {}) => {
 };
 
 export const linkMarker = (link) => {
-	if (typeof link.flow !== 'boolean') return null;
-	return link.flow ? 'end' : 'start';
+	if (link.direction !== 'forward' && link.direction !== 'reverse') return null;
+	return link.direction === 'forward' ? 'end' : 'start';
 };

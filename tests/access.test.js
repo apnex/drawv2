@@ -153,7 +153,7 @@ test('H9.1: a client cannot grant itself access through a meta patch', () => {
 
 test('H9.1: the document validator refuses a malformed principal or level', () => {
 	const doc = (meta) => ({
-		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 1, ...meta },
+		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2, ...meta },
 		nodes: [], waypoints: [], links: [], zones: [], groups: [],
 	});
 	assert.equal(validateDoc(doc({})), null, 'legacy documents carry neither key and still load');
@@ -937,7 +937,7 @@ The grammar is asserted rather than the regex, because the point is which string
 and will not accept as an identity, and narrowing a grammar later is the change you cannot make.
 */
 const principalDoc = (owner) => ({
-	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 1, owner },
+	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2, owner },
 	nodes: [], waypoints: [], links: [], zones: [], groups: [],
 });
 const acceptsPrincipal = (p) => validateDoc(principalDoc(p)) === null;

@@ -146,7 +146,7 @@ test('CS5 gate: a migrated corpus boots, and every entity is deep-equal through 
 			const loaded = store.get(id).toJSON();
 			assert.equal(invariant(loaded), before.get(id), `${id}: every entity survived`);
 			assert.equal(loaded.meta.version, store.diagrams.get(id).log.version, 'GR9: meta.version === log.version');
-			assert.equal(loaded.meta.schema, 1);
+			assert.equal(loaded.meta.schema, 2, 'CS5 stamps 1, and the store carries it on to the current generation as it loads (H18.3)');
 			assert.equal('rev' in loaded.meta, false);
 			assert.equal('grid' in loaded.meta, false);
 		}

@@ -209,9 +209,10 @@ const FIELDS = {
 		dst: (v) => id(v, 'node') || id(v, 'waypoint'),
 		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'waypoint')),
 		closed: (v) => typeof v === 'boolean',            // a routed link looped dst → src (render-only)
-		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; true means the
-		// flow follows the stored order, false that it runs against it. See `facing` in model/invariants.mjs.
-		flow: (v) => typeof v === 'boolean',
+		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; `forward` means the
+		// flow follows the stored order, `reverse` that it runs against it. See `facing` in model/invariants.mjs.
+		// Was `flow`, a boolean, until the format batch (F1, ruled 2026-10-03): the CLI's words, stored as they are said.
+		direction: (v) => v === 'forward' || v === 'reverse',
 		// H15.15 -- a CONTROL-PLANE link carries no data-plane packets. Absent is an ordinary data
 		// link, so every document written before this field reads exactly as it did.
 		control: (v) => typeof v === 'boolean'
