@@ -80,3 +80,40 @@ Ruled to land with promotion (`dev/design/unification/PROMOTION.md`), so each is
 | PU23 | One device table in `network/`, replacing the `NODE_TYPES` literal the held tools carry. | K6 |
 
 AMENDED 2026-10-02: PU19's mechanism is built (H17.22 N-a, PU25), and `pipe` is the network plugin's kind rather than a sixth core kind (N1); what remains for the cutover is the stored format.
+
+---
+
+## Audit 2026-10-02 -- production `2814d8d` to `d58816c`
+
+At the director's word ("Approved. Proceed as recommended", the re-triage's step 2), read in full before the deploy.\
+Production ran `draw-00153-4sj` on `draw:2814d8d`; the bucket `gs://diagrams.apnex.io` was copied first, 45 objects, 1,110,578 bytes, matching, into the private archive (`drawv2-archive/backups/2026-10-02-pre-d58816c/`).\
+CI's gate passed on `d58816c`; the local gate passed 1716 of 1716.\
+Production sits behind IAP, which a headless browser cannot sign into, so an entry whose check is looking at the page is marked for the director's eye after the deploy.
+
+| # | Verdict | Evidence |
+|---|---|---|
+| PU1 | CHECKED, pre-deploy | tests/sweep-references.test.js B244 |
+| PU2 | CHECKED, pre-deploy | tests/txn.test.js B272 |
+| PU3 | CHECKED, pre-deploy | tests/txn.test.js B270 |
+| PU4 | CHECKED, pre-deploy | tests/txn.test.js B271 |
+| PU5 | CHECKED, pre-deploy | tests/link-order.test.js (B246) |
+| PU6 | CHECKED, pre-deploy | tests/appearance.test.js (B275) |
+| PU24 | DIRECTOR'S EYE, after deploy | the palette gate passes; the slight colour moves, the undelete card among them, are seen on the page |
+| PU26 | CHECKED, pre-deploy | tests/input.test.js and tests/network-transit.test.js B284 |
+| PU27 | CHECKED, pre-deploy | tests/txn.test.js B285 (cleared and reversed directions) |
+| PU28 | CHECKED, pre-deploy | tests/apply-answer.test.js B288 |
+| PU7 | CHECKED, pre-deploy | tests/cli-tool.test.js, `draw place` against the planner's placement (PL-4) |
+| PU8 | CHECKED, pre-deploy | tests/static.test.js; the same image serves `/planner/txn.mjs` in the lab today |
+| PU9 | CHECKED, pre-deploy | scan-layers L4: no barrel, none imported |
+| PU10 | CHECKED, pre-deploy | tests/static.test.js traversal answers 404 |
+| PU11 | DIRECTOR'S EYE, after deploy | tests/browser.test.js boots the page with `/tokens.css`; colours seen on the page |
+| PU12 | DIRECTOR'S EYE, after deploy | tests/browser.test.js boots the product page with no 404; the deployed network panel |
+| PU25 | CHECKED, pre-deploy | the planner and gesture corpora unchanged since N-a; tests/kinds.test.js |
+| PU29 | CHECKED, pre-deploy | every corpus unchanged at each stage of H17.28; tests/trigger-shadow.test.js |
+| PU13 | CHECKED, pre-deploy, AMENDED | templates and examples unchanged since `2814d8d`. New since it was written: the planner's join writes `into` on a delete op into the change log (TG-1b). `2814d8d`'s log reader checks a record only for `seq`, `from` and arrays of ops and inverses (`server/log.mjs` `#readable`), and its apply ignores an unknown op field, so a rollback still reads every document and log written after the upgrade |
+| PU14 | CHECKED, pre-deploy | the image is the lab's, which serves `/planner/` (H17 C5's test holds the Dockerfile) |
+| PU15 | CHECKED | CI run on `d58816c`: success |
+| PU16 | CARRIED | the director's call, H10.30, independent of this upgrade |
+| PU17 to PU23 | CARRIED | deferred to promotion's cutover by ruling; not in this deploy |
+
+**Found while auditing, not caused by this deploy:** production logs "internal error handling resume: Cannot read properties of undefined (reading 'version')" every five minutes -- a tab resuming against a template, whose model the store holds and whose log it does not (`server/protocol.js` `resume`, `server/store.js` `log`). The code is unchanged since `2814d8d`, so the deploy carries it as it was; registered B290.
