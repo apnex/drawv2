@@ -262,6 +262,7 @@ AMENDED 2026-10-02 (N4): only P-1 and P-2 bind P1, both now ruled; P-3 to P-9 ar
 - **A full cutover against user continuity.** Bend deletion and down links change what existing users feel. Resolved by P-4 (no link comes up down through migration) and P-7 (the director confirms bend deletion for the estate).
 
 **Guardrails.**
+- AMENDED 2026-10-03: every stage is judged against the target state the director stated (`dev/DECISIONS.md`, "Promotion's target state") -- a clean, deduplicated, modular system in step with the lab; a stopgap is named, with the stage that removes it, and none is added twice.
 - No stage lands with a behaviour change the cutover ruling does not cover; the lab matrix and the gesture corpus are the proof at every stage.
 - No production path may construct a Model or run the planner without the network once P3 lands.
 - P9 does not start until the P8 dry run has zero unexplained differences.

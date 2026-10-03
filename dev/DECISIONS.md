@@ -1682,3 +1682,9 @@ Asked what should happen afterwards, the director chose "Ordinary waypoints; pin
 - `pinned` and its rule are deleted at P3, with production's own orphan rule (`planner/tenants.mjs` `keepsOrphan`), so F-c changes no behaviour.
 - P-5's entry above is CORRECTED by this one rather than rewritten.
 
+**Promotion's target state: a clean, deduplicated, modular system in step with the lab -- stated 2026-10-03 (B266).**\
+Asked, after P2, whether production was beginning to integrate the network plugin, and told where the decoupling is not yet clean (transit stored in the product's node row; the link rules still in `model/` and `kernel/`), the director: "Right - as long as our north-star and target state is a clean, deduplicated modular system that is in sync with the intent and goals of lab, then we can keep progressing".
+- Each remaining stage of promotion is designed and judged against it: a stage may leave a stopgap, but names it, says which stage removes it, and does not add a second one.
+- Clean: the core names no plugin; a plugin's rules, kinds and fields are its own. Deduplicated: one copy of each rule, the browser's included (PL-6). Modular: composed as rows and tenants, never patched in. In step with the lab: production runs what the lab proved, and the lab keeps incubating on the same modules.
+- The two known gaps are carried into P3's design as decisions: where `transit` lives while a plugin cannot add a field to another owner's kind (B282), and when the link rules move into `network/` (K13b).
+
