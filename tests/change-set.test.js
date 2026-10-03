@@ -51,3 +51,20 @@ test('TG-1: an entity created and deleted in one transaction, or put back unchan
 	const c = { id: 'node-00000c', name: 'C', type: 'router', x: 0, y: 4 * P, shape: 'circle' };
 	assert.deepEqual(changesOf(m, [{ op: 'put', kind: 'node', entity: c }, { op: 'del', kind: 'node', id: 'node-00000c' }, { op: 'set', kind: 'link', id: 'link-00000a', patch: { name: 'z' } }, { op: 'set', kind: 'link', id: 'link-00000a', patch: { name: 'a' } }]), {});
 });
+
+test('TG-1b: a link the join absorbs records what it joined into; nothing else carries succession', () => {
+	const m = new Model();
+	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
+	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
+	m.put('waypoint', { id: 'waypoint-00000e', name: 'E', x: 0, y: -2 * P });
+	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'waypoint-00000e', control: true });
+	m.put('link', { id: 'link-00000b', name: 'b', src: 'waypoint-00000e', dst: 'node-00000b' });
+	let seen = null;
+	const probe = { id: 'probe', phase: 'join', doc: 'test probe', run: ({ changes }) => { seen = changes.list(); } };
+	// the probe runs after the classic join, in the same phase
+	plan(m, [{ op: 'set', kind: 'link', id: 'link-00000b', patch: { control: true } }], { links: { ...CLASSIC_LINKS, reactions: [...CLASSIC_LINKS.reactions, probe] } });
+	const b = seen.find((c) => c.id === 'link-00000b'), a = seen.find((c) => c.id === 'link-00000a');
+	assert.equal(b.after, null, 'b was absorbed');
+	assert.equal(b.into, 'link-00000a', 'into the link it joined');
+	assert.equal('into' in a, false, 'the link kept carries no succession');
+});

@@ -230,6 +230,7 @@ AMENDED 2026-10-02: re-triaged at the director's word ("revisit our unification 
 4 -- features alongside or after: H15.5; H15.7 dropped from the board and held under B282. H17.3's remaining cuts all travel with promotion; H10.30 is the director's call.\
 AMENDED 2026-10-02: TG-D1 to TG-D4 ruled as recommended; B287 is built now, in the lab, as H17.28.\
 AMENDED 2026-10-02: TG-1 done -- the planner keeps one change set per transaction, handed to every phase; nothing reads it yet, every corpus unchanged. Next TG-1b, succession.\
+AMENDED 2026-10-02: TG-1b done -- the join says what it absorbed a link into, the answer carries it, and the selection hand-off reads it; the op-shape recogniser deleted. Next TG-2, declared triggers for the per-op reactions.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\

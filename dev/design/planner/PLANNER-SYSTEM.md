@@ -412,6 +412,10 @@ AMENDED 2026-10-02 -- **TG-1 done.**\
 The change set is kept in `planner/txn.mjs` (`changeSet`), noted by `track` before each op applies, and handed to every phase as `changes`; no reaction reads it yet.\
 tests/change-set.test.js holds it for a set, a put clearing a field, a create, a delete, a reaction's cascade, and an entity created and deleted or put back unchanged (no change); four mutants killed; every corpus unchanged.
 
+AMENDED 2026-10-02 -- **TG-1b done.**\
+The planner's join marks the link it deletes with the link it joined into (`into` on the delete), the change set records it, and the answer carries it; `applyAnswer` (app/src/changes.js) reads it, and its recogniser `joinsIn` is deleted.\
+Accepted only because the planner corpus differed in nothing but 86 join deletes gaining `into`; the matrix and gesture corpora are unchanged, TRN-34 among them. Without `into`, the B288 tests, TRN-34 and the succession test fail.
+
 ### 14.6 Decisions for the director -- one at a time
 
 - **TG-D1 -- triggers as data or as predicates.** Recommended: data, as in 14.3 -- the core can index it, the reaction table can show it, and the shadow can check it -- rather than a predicate per reaction, which hides what it listens to.

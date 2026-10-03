@@ -363,7 +363,9 @@ function linkJoin({ joinsAt = () => true, says }) {
 		delete never becomes a trigger -- a valid merge carries both halves' references and cannot
 		leave a new candidate behind.
 		*/
-				emit([{ op: 'del', kind: 'link', id: outbound.id }, { op: 'set', kind: 'link', id: inbound.id, patch }]);
+				// SUCCESSION (TG-1b): the deleted link says what it joined into, a fact the answer carries, so a page following an
+				// entity -- its selection, B288 -- reads it rather than recognising the shape of these two ops
+				emit([{ op: 'del', kind: 'link', id: outbound.id, into: inbound.id }, { op: 'set', kind: 'link', id: inbound.id, patch }]);
 			}
 		},
 	};

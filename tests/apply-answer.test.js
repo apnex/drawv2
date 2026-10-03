@@ -1,8 +1,8 @@
 /*
 B288 -- AN ANSWER THAT JOINS A SELECTED LINK CARRIES THE SELECTION to the link it joined into (app/src/changes.js
 `applyAnswer`, the one step the lab's door and production's sync take to apply a planner's answer). Driven by the REAL
-planner's join, so the recogniser in changes.js is held to what the planner actually emits: if the join's ops change shape,
-this fails rather than the selection quietly emptying again.
+planner's join, which marks the link it deletes with what it joined into (`into`, TG-1b succession): if the join stops
+saying so, this fails rather than the selection quietly emptying again.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,7 +24,7 @@ function board() {
 const join = (m) => {
 	const r = plan(m, [{ op: 'set', kind: 'link', id: 'link-00000b', patch: { control: true } }]);
 	assert.equal(r.ok, true);
-	assert.ok(r.ops.some((o) => o.op === 'del' && o.id === 'link-00000b'), 'the planner joined b into a');
+	assert.ok(r.ops.some((o) => o.op === 'del' && o.id === 'link-00000b' && o.into === 'link-00000a'), 'the planner joined b into a, and said so');
 	return r.ops;
 };
 

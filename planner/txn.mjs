@@ -100,6 +100,7 @@ sweep, the join. `out` and `inv` are the transaction's lists; `inv` is kept pre-
 function track(proj, ops, out, inv, changes) {
 	for (const op of ops) {
 		changes.note(op);   // before it applies, so the change set holds the entity as it stood (TG-1)
+		changes.absorbed(op);
 		const back = inverseOf(proj, op);
 		applyOps(proj, [op]);
 		out.push(op);
@@ -129,18 +130,21 @@ function changeSet(proj) {
 			const key = `${op.kind}:${id}`;
 			if (seen.has(key)) return;
 			const was = proj.get(op.kind, id);
-			seen.set(key, { kind: op.kind, id, before: was ? structuredClone(was) : null });
+			seen.set(key, { kind: op.kind, id, before: was ? structuredClone(was) : null, into: null });
 		},
-		// every change, as { kind, id, before, after, fields }; `before` or `after` null for an entity created or deleted
+		// SUCCESSION (TG-1b): an op that deletes an entity may name what it was absorbed into -- the join's `into`
+		absorbed(op) { if (op.op === 'del' && op.into) seen.get(`${op.kind}:${op.id}`).into = op.into; },
+		// every change, as { kind, id, before, after, fields, into? }; `before` or `after` null for an entity created or deleted,
+		// and `into` what a deleted entity was absorbed into, when the op that deleted it said so
 		list() {
 			const out = [];
-			for (const { kind, id, before } of seen.values()) {
+			for (const { kind, id, before, into } of seen.values()) {
 				const now = proj.get(kind, id);
 				const after = now ? structuredClone(now) : null;
 				if (!before && !after) continue;
 				const fields = fieldsOf(before, after);
 				if (before && after && !fields.size) continue;
-				out.push({ kind, id, before, after, fields });
+				out.push({ kind, id, before, after, fields, ...(into && !after ? { into } : {}) });
 			}
 			return out;
 		},
