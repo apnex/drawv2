@@ -30,7 +30,9 @@ test('TG-3 shadow: every corpus case answers the same with its triggers as with 
 		const triggered = plan(a.model, structuredClone(c.ops), a.options);
 		const shadow = plan(b.model, structuredClone(c.ops), { ...b.options, links: shadowOf(b.options.links ?? CLASSIC_LINKS, kinds) });
 		planned++;
-		if (JSON.stringify(triggered) !== JSON.stringify(shadow)) differ.push(c.id);
+		// what the planner decides, not which reactions it called -- the shadow calls every one by design (TG-4's `called`)
+		const decided = ({ called: _c, ...rest }) => rest;
+		if (JSON.stringify(decided(triggered)) !== JSON.stringify(decided(shadow))) differ.push(c.id);
 	}
 	assert.equal(planned, CASES.length);
 	assert.deepEqual(differ.slice(0, 8), [], `${differ.length} case(s) answer differently in shadow -- a trigger hears too little`);

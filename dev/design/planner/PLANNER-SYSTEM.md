@@ -428,6 +428,12 @@ A transaction-phase reaction is called only when its trigger hears a change, and
 The shadow (tests/trigger-shadow.test.js): every planner corpus case, both compositions, planned with the triggers and again with each transaction reaction forced and handed every change, the two required equal. On its first run it caught `stranded-links` taking every change it was handed for a deleted waypoint, trusting its trigger; it now reads what each change is. Narrowing any one of the four triggers fails it, in 84 to 206 cases.\
 Every corpus unchanged.
 
+AMENDED 2026-10-02 -- **TG-4 done; section 14 built (H17.28).**\
+The composition builds a dispatch index -- per phase, the reactions listening to each kind -- and a change is offered only to those, in declared order; `plan` answers `called`, the reactions it called.\
+tests/dispatch.test.js: a zone edit calls nothing; a rename calls nothing; a plane change calls only the join; deleting a pin calls the seven that listen to a waypoint deleted and its consequences.\
+Measured over the planner corpus: an accepted edit calls 3.0 reactions in the product's composition and 5.6 in the network's, against 10,584 and 21,528 calls were every reaction offered every op; 109 edits call none.\
+Removing the index alone changes no answer -- it is what makes the cost follow the kinds touched -- so it is held by `called` and the counts, not by a behaviour test.
+
 ### 14.6 Decisions for the director -- one at a time
 
 - **TG-D1 -- triggers as data or as predicates.** Recommended: data, as in 14.3 -- the core can index it, the reaction table can show it, and the shadow can check it -- rather than a predicate per reaction, which hides what it listens to.

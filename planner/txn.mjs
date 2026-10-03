@@ -255,7 +255,23 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 			rows[r.phase].push({ ...r, owner: tenant.owner });
 		}
 	}
-	return { rows, place, now, extensions, kinds };
+	/*
+	TG-4 -- THE DISPATCH INDEX: for each phase, which reactions listen to each kind, built once with the composition. A
+	change is offered only to the reactions listening to its kind, in their declared order, so an edit's cost follows the
+	kinds it touched, not the number of reactions composed.
+	*/
+	const kindsOf = (trigger) => new Set([].concat(trigger).flatMap((c) => [...(c.deleted ?? []), ...(c.created ?? []), ...(c.changed ? [c.changed.kind] : [])]));
+	const listening = Object.fromEntries(PHASES.map((p) => [p, new Map()]));
+	for (const p of PHASES) for (const r of rows[p]) for (const k of kindsOf(r.trigger)) {
+		if (!listening[p].has(k)) listening[p].set(k, []);
+		listening[p].get(k).push(r);
+	}
+	// the reactions of a phase listening to any of these kinds, in declared order
+	const listeners = (phase, kinds) => {
+		const hear = new Set(kinds.flatMap((k) => listening[phase].get(k) ?? []));
+		return rows[phase].filter((r) => hear.has(r));
+	};
+	return { rows, listeners, place, now, extensions, kinds };
 }
 
 // the model must be composed with the planner's kinds, in the same order (N-a)
@@ -269,7 +285,8 @@ const asMutation = (op) => ({ action: op.op, kind: op.kind, entity: op.op === 'd
 const subjectOf = (op) => (op.op === 'meta' ? 'meta' : `${op.kind}:${op.op === 'put' ? op.entity.id : op.id}`);
 
 export function plan(model, ops, options = {}) {
-	const { rows, place, kinds } = composition(options, 'plan');
+	const { rows, listeners, place, kinds } = composition(options, 'plan');
+	const called = [];   // the reactions this plan called, in order (TG-4) -- what an edit cost
 	sameKinds(model, kinds, 'plan');
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
 		return { ok: false, error: `request must carry 1..${MAX_OPS} ops`, opIndex: -1 };
@@ -289,7 +306,9 @@ export function plan(model, ops, options = {}) {
 	*/
 	const runPhase = (phase, ctx) => {
 		const claimed = new Map();
-		for (const r of rows[phase]) {
+		// offered only to the reactions listening to a kind this op or this transaction touched (TG-4)
+		const touchedKinds = ctx.op ? [ctx.op.kind] : [...new Set(changes.list().map((c) => c.kind))];
+		for (const r of listeners(phase, touchedKinds)) {
 			let call = ctx;
 			if (ctx.op) { if (!opMatches(r.trigger, ctx.op, isCreated(ctx.op))) continue; }   // a per-op reaction, by its trigger (TG-2)
 			else {
@@ -299,6 +318,7 @@ export function plan(model, ops, options = {}) {
 				if (!matches.length) continue;
 				call = { ...ctx, matches };
 			}
+			called.push(r.id);
 			r.run(call, (emitted) => {
 				for (const op of emitted) {
 					const subject = subjectOf(op);
@@ -322,7 +342,7 @@ export function plan(model, ops, options = {}) {
 	// what a put would set off, asked without applying anything -- whether an unchanged put still does something
 	const follows = (op) => {
 		let n = 0;
-		for (const r of rows.follow) if (opMatches(r.trigger, op, isCreated(op))) r.run({ op, doc: proj, changes }, (emitted) => { n += emitted.length; });
+		for (const r of listeners('follow', [op.kind])) if (opMatches(r.trigger, op, isCreated(op))) r.run({ op, doc: proj, changes }, (emitted) => { n += emitted.length; });
 		return n > 0;
 	};
 
@@ -369,7 +389,7 @@ export function plan(model, ops, options = {}) {
 		const introduced = violations(proj, { groupAfterRemoval, facts: true }).filter((v) => !before.has(v.key) || v.measure > before.get(v.key));
 		if (introduced.length) return { ok: false, error: introduced[0].sentence, opIndex: -1 };
 	}
-	return { ok: true, ops: out, inverse: inv };
+	return { ok: true, ops: out, inverse: inv, called };
 }
 
 /*
