@@ -19,7 +19,7 @@ is resynchronised, and the notice it writes to (`say`). The canvas parts come in
 code -- with the painter's `el`.
 */
 import { whyDown, downSummary } from './resolve.mjs';
-import { transitEdit } from './transit.mjs';
+import { transitSummary } from './transit.mjs';
 import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
 import { pipeId } from './pipe-kind.mjs';
 import { kindOf } from '../model/model.mjs';
@@ -118,22 +118,25 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	};
 
 	/*
-	A TRANSIT CHANGE redraws the anchors it marks, then settles -- which says what the session said (TRANSIT.md section 12).
-	It can take links down or heal them (TR-4), so the notice counts what is down after it. At a waypoint it is also an EDIT
-	(TR-2): turned off, the links pinned there are cut in two; turned back on, the two left ending there join -- one commit.
-	Which, it asks as every rule does: whether what arrives now stops there (`stopsAt`, B278), not what was declared.
+	A TRANSIT CHANGE is an EDIT (F-e, H18.7): the session hands over the set of each anchor's `transit`, committed here as one
+	edit; the planner cuts the links pinned at a waypoint turned off and joins the two left at one turned back on (TR-2), from
+	any door. The notice -- what the session said, then how many drawn links were cut into how many pieces and how many pieces
+	joined into how many links (2026-10-02), then what is down -- is said when the planner answers, from the answer's ops.
+	A toggle that changes nothing (every anchor refused) commits nothing, and settles at once.
 	*/
-	session.onTransitChange((ids) => {
-		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(kindOf(id), e); }
+	let pendingTransit = null;
+	session.onTransitChange((ids, entries) => {
 		const said = session.takeNotice() ?? '';
-		// one edit, each waypoint's cut or join built on the board the ones before it leave (B283)
-		const edit = transitEdit(model, ids, (id) => network.stopsAt(id, model));
-		if (edit) history.commit({ label: edit.label, entries: edit.entries });
-		const cut = edit?.cut ?? null, joined = edit?.joined ?? null;
-		settle('');
-		// how many drawn links were cut and into how many pieces, and how many pieces joined into how many links (2026-10-02)
-		say(`${said}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ` -- ${joined.pieces} pieces joined into ${joined.links} link${joined.links === 1 ? '' : 's'}` : ''}${downSummary(model)}`);
+		if (!entries?.length) { settle(''); say(`${said}${downSummary(model)}`); return; }
+		pendingTransit = said;
+		history.commit({ label: 'transit', entries });
+		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(kindOf(id), e); }   // the ring, at once
 	});
+	const transitNotice = (answer) => {
+		const said = pendingTransit; pendingTransit = null;
+		const { cut, joined } = transitSummary(answer.change?.ops ?? answer.ops ?? []);
+		say(`${said}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ` -- ${joined.pieces} pieces joined into ${joined.links} link${joined.links === 1 ? '' : 's'}` : ''}${downSummary(model)}`);
+	};
 
 	/*
 	THE ANSWER -- the page's own reconciliation, `apply`, brings the tab to it, pipes included; then the session notes the
@@ -143,6 +146,8 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	const answered = (request, answer, apply) => {
 		const accepted = session.answered(answer, model, apply);
 		if (accepted) settle(`v${answer.version} ${request.verb ?? request.label ?? ''}`);
+		if (accepted && request.label === 'transit' && pendingTransit !== null) transitNotice(answer);   // the transit edit's own notice (F-e)
+		if (!accepted && request.label === 'transit') pendingTransit = null;
 		return accepted;
 	};
 	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); };

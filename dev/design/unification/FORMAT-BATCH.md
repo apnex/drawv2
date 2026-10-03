@@ -183,6 +183,19 @@ Corpora: the planner corpus differs in 304 of 2,090 cases, each only by the orde
 Measured in Chrome on the lab: a link deleted and undone returns beneath the link drawn after it, though the planner's collection lists it last.\
 Mutants: 23 -- 20 killed by the tests as written; two survivors killed by new tests (the migration's ordering of a collection that already holds an order, and the drag judge's ages); the dry run's wiring of its order check survives, its check itself shown to fail three ways.
 
+AMENDED 2026-10-03 -- **F-e done** (H18.7; TR-7).\
+A node stores `transit`, a boolean, where its author chose other than its type's default; the network's transit rules read it off the model each is asked about and keep nothing, so the tab, the planner's model, every peer and the export agree, and a reload keeps it (a store round-trip test).\
+`x` is an edit: the session hands over a set of each anchor's `transit`, or a whole put without it when the flip returns to the default, and the page commits it as one edit labelled `transit`; a toggle refused for every anchor commits nothing.\
+The cut is the planner's, `transit-cut`, in a new transaction phase, `cut`, before the stranded pass, the sweep and the join: a waypoint whose transit changed and now stops what arrives cuts each link bending there, re-ending the link the author drew -- its id, its order, its declarations -- and putting the new piece newest, with an id derived from the link and the waypoint, so every peer mints the same piece; each waypoint is cut on the board the cuts before it left (B283).\
+The join is the shared `link-join`, woken in the network's tenant by a waypoint's `transit` changing (`wakesAt`); the classic tenant wakes on nothing new.\
+A tenant now carries REFUSALS as well as reactions -- rules held on the result, as data with a trigger, judged after the phases: the network's first refuses a transit a type does not offer, from any door, a retype included. The reaction table shows the `cut` phase and the `refuse` rows.\
+The notice is said when the planner answers, from its ops (`transitSummary`): a cut is a re-put and the put of its piece in a row, so a piece cut from a piece is traced to its drawn link (B283's counting).\
+The export reads the stored field: a waypoint whose transit is off takes endpoints only and draws the transit ring, as the canvas does (B277), held by a parity test. The CLI sets it with `transit on|off|default` (A5). `transitEdit`, `cutAt` and `joinAt` are deleted.\
+Corpora: the gesture corpus unchanged; the planner corpus differs in 110 cases, each only by a restored node carrying its stored `transit: false` -- undo restores transit now; the matrix corpus differs in 5 rows only by a version one higher (a toggle that cuts nothing is an edit now, where it was session state), and gains TRN-35 and TRN-36: a cut at P undone restores P's transit and the one link, and redone cuts it again.\
+Found on the way: the cut first trusted its trigger, and the TG-3 shadow -- every reaction handed every change -- caught it cutting at a waypoint merely moved while off; it reads what each change is now.\
+Measured in Chrome on the lab: `x` at P cuts the link and says so, undo restores P and the one link with no ring, redo cuts it again with the ring.\
+Mutants: 16 -- 13 killed as written; the three survivors (a host's stored off drawn as declared, a cut where nothing stops, the CLI's word for off) killed by new tests.
+
 Each stage is one gate and one lab deploy.
 
 **Size, by judgement:** F-b and F-c are most of it -- the word appears 514 times in product code and 4,172 in tests and the lab.

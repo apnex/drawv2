@@ -19,6 +19,7 @@ import { preferredRoute, pipeKey } from './pipes.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './resolve.mjs';
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
+import { transitReactions } from './transit.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
@@ -68,6 +69,7 @@ a pipe source while the lab still kept pipes in the session; that source, and th
 export function createNetwork(transit = null) {
 	// each model's links aged by their own stored drawing order (network/view.mjs `ageIn`, F-d)
 	const view = createNetworkView((model) => model.all('pipe'), null, transit);
+	const edits = transit ? transitReactions(transit) : null;   // transit's own reactions and refusal (F-e)
 	/*
 	The network's LINK TENANT (PL-3, PD-2), in place of production's classic one, with the pipes' own reactions after it.
 	Each condition is judged against the model the planner hands over, so only pipes that survive the edit count.
@@ -81,6 +83,8 @@ export function createNetwork(transit = null) {
 		keepsOrphan,
 		// two links left at a waypoint join only where what arrives may pass on -- not where transit is off (TR-5)
 		joinsAt: (waypointId, model) => !transit?.stopsAt(waypointId, model),
+		// and turning a waypoint's transit back on wakes the join there (TR-2, F-e)
+		joinWakesAt: transit ? ['transit'] : [],
 		says: { sweep: 'the pipes that survive the edit reference anchors too, and nothing else is kept (ruled 2026-09-29)', join: 'only where the waypoint\'s transit is on (TR-5)' },
 	});
 	return {
@@ -90,8 +94,8 @@ export function createNetwork(transit = null) {
 		linksRoutedThrough: pipeDependents(view),
 		isLinkDown: pipeLinkDown(view),
 		blockersOf: pipeBlockers(view),
-		// what the author declared about transit, from the session (TRANSIT.md section 12) -- what the ring marks, and nothing else
-		declaresNoTransit: (id) => !!transit?.declaredOff(id),
+		// what the author declared about transit, as the anchor stores it (F-e, TRANSIT.md section 12) -- what the ring marks
+		declaresNoTransit: (id, model) => !!transit?.declaredOff(id, model),
 		// whether what arrives at an anchor stops there (B278): the one transit question every rule asks -- routing keys on the
 		// same rule as a set (network/view.mjs), the join refusal below, the toggle's cut, the roles; without transit, nothing stops
 		stopsAt: (id, model) => !!transit?.stopsAt(id, model),
@@ -102,13 +106,14 @@ export function createNetwork(transit = null) {
 		*/
 		transitBlocking(link, model) {
 			const { pipes, passes } = view.of(model);
-			const declared = (transit ? transit.blockedIn(model) : []).filter((id) => transit.declaredOff(id)
+			const declared = (transit ? transit.blockedIn(model) : []).filter((id) => transit.declaredOff(id, model)
 				&& preferredRoute(pipes, link, (x) => x === id || passes(x)));
 			if (declared.length) return { declared, types: [] };
 			const way = preferredRoute(pipes, link);
 			return { declared: [], types: way ? way.slice(1, -1).filter((id) => !passes(id)) : [] };
 		},
 		// the link tenant, the pipes' reactions after its own (N-b)
-		links: { owner: tenant.owner, kinds: ['pipe'], reactions: [...tenant.reactions, ...pipeReactions(view)] },
+		// and transit's cut and its refusal of a value a type does not offer (F-e)
+		links: { owner: tenant.owner, kinds: ['pipe'], reactions: [...tenant.reactions, ...(edits?.reactions ?? []), ...pipeReactions(view)], refusals: edits?.refusals ?? [] },
 	};
 }

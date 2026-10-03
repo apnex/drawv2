@@ -79,7 +79,7 @@ test('a malformed link tenant is refused by plan() and commit(), saying what is 
 	const run = (row) => ({ owner: 'bad', reactions: [row] });
 	for (const [links, says] of [
 		[{ reactions: [] }, /owner, reactions/],
-		[run({ id: 'x', phase: 'later', run: () => {} }), /phase of clear, follow, stranded, sweep, join/],
+		[run({ id: 'x', phase: 'later', run: () => {} }), /phase of clear, follow, cut, stranded, sweep, join/],
 		[run({ id: 'x', phase: 'sweep' }), /a reaction is/],
 		[{ owner: 'twice', reactions: [{ id: 'group-trim', phase: 'clear', trigger: { deleted: ['node'] }, run: () => {} }] }, /two reactions are named group-trim/],
 		// TG-2: a reaction declares its trigger as data; `on` is retired, and a trigger must say something

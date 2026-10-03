@@ -68,3 +68,49 @@ test('B278: the roles ask whether what arrives stops there, not whether the auth
 	assert.deepEqual(waypointRolesIn(at(true, false), W), ['endpoint'], 'stops by its type, declaring nothing: an endpoint');
 	assert.deepEqual(waypointRolesIn(at(false, true), W), ['junction'], 'the declaration alone decides no role');
 });
+
+/*
+F-e (H18.7; B277): transit is STORED on the anchor, so the export -- which composes no network -- reads it from the document
+and draws the roles and the ring the canvas draws. Before, the export could not know an anchor's transit and drew a junction
+where the canvas drew endpoints.
+*/
+test('F-e: the export and the canvas give a waypoint whose transit is off the same roles, and both draw its ring', async () => {
+	const { Model } = await import('../model/model.mjs');
+	const { createNetworkSession } = await import('../network/session.mjs');
+	const { productKinds } = await import('../planner/kinds.mjs');
+	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
+	const { docToSchema } = await import('../kernel/adapt.mjs');
+	const { resolve } = await import('../kernel/engine.mjs');
+	const { svgDocument } = await import('../server/svg.mjs');
+	const s = createNetworkSession();
+	const m = new Model({ network: s.network, kinds: productKinds(PIPE_ROW) });
+	m.put('node', { id: W, name: 'w', x: 0, y: 0, transit: false });
+	[['node-00000a', -120, 0], ['node-00000b', 120, 0], ['node-00000c', 0, 120]].forEach(([id, x, y], i) => {
+		m.put('node', { id, name: id, type: 'router', x, y });
+		m.put('link', { id: `link-00000${i + 1}`, name: `l${i}`, src: id, dst: W });
+	});
+	const canvas = waypointRolesIn(m, W);
+	assert.deepEqual(canvas, ['endpoint'], 'three links end there and transit is off: endpoints, never a junction');
+	const exported = resolve(docToSchema(m.toJSON())).scene.find((e) => e.id === W).roles;
+	assert.deepEqual(exported, canvas, 'the export reads the stored field and agrees');
+	const body = svgDocument(m.toJSON()).split('</defs>').pop();
+	assert.match(body, new RegExp(`<g id="${W}"><g class="waypoint endpoint">[^]*?stroke-dasharray`), 'and draws the transit ring the canvas draws');
+	m.put('node', { id: W, name: 'w', x: 0, y: 0 });   // back on: the default, nothing stored
+	assert.deepEqual(resolve(docToSchema(m.toJSON())).scene.find((e) => e.id === W).roles, ['junction']);
+});
+
+test('F-e: transit survives a reload -- stored in the document, written by the store and read back at boot', async () => {
+	const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+	const { Store } = await import('../server/store.js');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fe-'));
+	try {
+		const store = new Store(dir, { flushMs: 3_600_000, authz: false });
+		await store.init();
+		const id = store.create('fe').model.state.meta.id;
+		assert.equal(store.commit(id, { label: 'transit', ops: [{ op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 0, y: 0 } }, { op: 'set', kind: 'node', id: W, patch: { transit: false } }] }).ok, true);
+		await store.flush(id);
+		const again = new Store(dir, { flushMs: 3_600_000, authz: false });
+		await again.init();
+		assert.equal(again.get(id).get('node', W).transit, false, 'the setting is the document\'s, not a tab\'s');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

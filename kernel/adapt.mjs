@@ -57,7 +57,9 @@ export function docToSchema(doc, opts = {}) {
 		const r0 = cell(z.y + P / 2), r1 = Math.max(r0, cell(z.y + z.h - P / 2));
 		entities.push({ id: z.id, kind: 'zone', span: { cols: [c0, c1], rows: [r0, r1] }, name: z.name });
 	});
-	drawn(doc.nodes).filter(bare).forEach((w) => entities.push({ id: w.id, kind: 'waypoint', cell: [cell(w.x), cell(w.y)] }));
+	// F-e (H18.7; B277): a waypoint's stored transit travels, so the export draws the roles and ring the canvas draws -- off is
+	// endpoints only, and declared; a waypoint offers both, so only `false` says anything (network/transit.mjs)
+	drawn(doc.nodes).filter(bare).forEach((w) => entities.push({ id: w.id, kind: 'waypoint', cell: [cell(w.x), cell(w.y)], ...(w.transit === false ? { transit: false } : {}) }));
 	(doc.groups || []).forEach((g) => entities.push({ id: g.id, kind: 'group', members: [...(g.members || [])] }));
 	// H15.6 -- `flow` travels with the route, or the exported SVG loses the arrowhead the canvas
 	// draws. The adapter is a THIRD door on this field, after the commit and the boot, and it was

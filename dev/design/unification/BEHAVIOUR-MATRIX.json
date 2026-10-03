@@ -4137,6 +4137,75 @@
 			"built": "yes"
 		},
 		{
+			"id": "TRN-35",
+			"state": "transit pin",
+			"gesture": "undo",
+			"does": "Select the pin P, press x, and undo.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "Transit is stored on the anchor, so the cut and the setting are one edit: undo turns P back on and restores the one link pinned at P, with the id it was drawn with -- the session's setting could not be undone.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [],
+				"pins": {
+					"link-000001": 1
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch (\"P2's design decisions\", 2026-10-03; FORMAT-BATCH.md F-e).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-36",
+			"state": "transit pin",
+			"gesture": "undo",
+			"does": "As TRN-35, then redo.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"undo"
+				],
+				[
+					"redo"
+				]
+			],
+			"intent": "Redo replays the edit whole: P off again, and the link cut into the same two links ending there.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"rings": [
+					"node-000005"
+				],
+				"pins": {
+					"link-000001": 0
+				}
+			},
+			"rule": "DECISIONS: \"Transit with pipes\" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch (\"P2's design decisions\", 2026-10-03; FORMAT-BATCH.md F-e).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "PIPE-01",
 			"state": "routed",
 			"gesture": "select pipe",

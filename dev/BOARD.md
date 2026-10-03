@@ -1028,7 +1028,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.4 | F-b: every reader asks one question for "a bare anchor"; no format change, every corpus unchanged | feature | S2 | `DONE` |
 | H18.5 | F-c: the waypoint kind goes -- a waypoint is a node with no type, ids keep their hex, 3 renumbered; `pinned` goes at P3 (P-10, P-5 corrected) | feature | S2 | `DONE` |
 | H18.6 | F-d: every node, link and zone stores its drawing order; newest on top for every peer; undo restores place; link ages read it | **B249** | S2 | `DONE` |
-| H18.7 | F-e: transit stored on the anchor (TR-7); a toggle is a `set`, its cut and join planner reactions; the export reads it | feature | S2 | `TODO` |
+| H18.7 | F-e: transit stored on the anchor (TR-7); a toggle is a `set`, its cut and join planner reactions; the export reads it | feature | S2 | `DONE` |
 | H18.8 | F-f: a ring's closing leg is routed like any leg (P-3) | feature | S2 | `TODO` |
 | H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | **B266** | S2 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
@@ -1037,6 +1037,7 @@ AMENDED 2026-10-03: H18.3 (F-a) done -- `server/migrate.mjs`, run by the store o
 AMENDED 2026-10-03: H18.4 (F-b) done -- `model/anchors.mjs` is the one place that says how a bare anchor is stored; the corpora are unchanged, byte for byte.\
 AMENDED 2026-10-03: H18.5 (F-c) done -- a waypoint is a node with no type; the kinds are four; the estate dry run migrates 475 waypoints into 1,005 nodes, renumbering 3; P-5 corrected (`dev/DECISIONS.md`): `pinned` goes at P3.\
 AMENDED 2026-10-03: H18.6 (F-d) done -- every node, link and zone stores its drawing order; newest on top for every peer, undo restores an item to its place, and a link's age is its order; B10, B249 and B259 closed.\
+AMENDED 2026-10-03: H18.7 (F-e) done -- transit is stored on the anchor; `x` is an edit, undone and redone like any other, and the planner cuts and joins from it, from any door; the export draws the canvas's roles and ring; `transitEdit` is deleted.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

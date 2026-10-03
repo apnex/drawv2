@@ -262,12 +262,17 @@ function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {
 `joinsAt(waypointId, doc)` says whether two links left at a waypoint may join: production always; the network not
 where the waypoint's transit is off (TR-5).
 */
-function linkJoin({ joinsAt = () => true, says }) {
+/*
+`wakesAt` (F-e, H18.7): the node fields whose change makes a waypoint a candidate however its links stood -- the network's
+`transit`, so turning it back on joins the two links a cut left there (TR-2). The classic tenant names none.
+*/
+function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 	return {
 		id: 'link-join',
 		phase: 'join',
-		// a link leaving a waypoint, or a link's declarations changing there (B269, B285, B286)
-		trigger: [{ deleted: ['link'] }, { changed: { kind: 'link', fields: LINK_DECLARATIONS } }],
+		// a link leaving a waypoint, or a link's declarations changing there (B269, B285, B286) -- or, where a tenant says so, a
+		// waypoint's own (F-e)
+		trigger: [{ deleted: ['link'] }, { changed: { kind: 'link', fields: LINK_DECLARATIONS } }, ...(wakesAt.length ? [{ changed: { kind: BARE_KIND, fields: wakesAt } }] : [])],
 		doc: `two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); ${says}`,
 		// TG-3: handed the links its trigger heard -- deleted, or a declaration changed -- instead of scanning the ops
 		run: ({ before, doc, matches, refuses }, emit) => {
@@ -284,7 +289,9 @@ function linkJoin({ joinsAt = () => true, says }) {
 	patch test missed it. A link the edit created is not compared: a second link drawn to a terminus never joins (B214).
 	*/
 			const redeclared = new Set();
-			for (const { kind, before: was, after: now, fields } of matches) {
+			for (const { kind, id, before: was, after: now, fields } of matches) {
+				// a waypoint whose own declaration changed -- its transit turned back on, say (F-e): a candidate as a redeclared link's end is
+				if (kind === BARE_KIND) { if (now && isBareEntity(kind, now) && wakesAt.some((f) => fields.has(f))) { touched.add(id); redeclared.add(id); } continue; }
 				if (kind !== 'link') continue;
 				if (now && LINK_DECLARATIONS.some((k) => fields.has(k))) {
 					for (const end of [now.src, now.dst]) if (bareAnchor(doc, end)) { touched.add(end); redeclared.add(end); }
@@ -393,10 +400,10 @@ at composition, and the planner never asks: whether links that lost a pin are st
 anchor, which orphans survive, where links may join. `says` puts the last two in words, for the generated table. Production states its own (`planner/tenants.mjs`), and so does
 the network (`network/network.mjs`).
 */
-export function linkTenant({ owner, stranded = false, alsoReferenced = null, keepsOrphan, joinsAt = () => true, says }) {
+export function linkTenant({ owner, stranded = false, alsoReferenced = null, keepsOrphan, joinsAt = () => true, joinWakesAt = [], says }) {
 	return {
 		owner,
 		reactions: [NODE_LINKS, WAYPOINT_LINKS, ...(stranded ? [STRANDED_LINKS] : []),
-			orphanSweep({ alsoReferenced, keepsOrphan, says: says.sweep }), linkJoin({ joinsAt, says: says.join })],
+			orphanSweep({ alsoReferenced, keepsOrphan, says: says.sweep }), linkJoin({ joinsAt, says: says.join, wakesAt: joinWakesAt })],
 	};
 }

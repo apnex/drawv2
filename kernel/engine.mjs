@@ -70,8 +70,10 @@ export function resolve(schema) {
 		const [cx, cy] = cellPx(e.cell, V);
 		// the rule lives in geometry.mjs so the live client reaches the same answer from its own index
 		// B209 -- the SET reaches the renderer; `waypoint()` keeps `role` as its projection for hit tests
-		const el = waypoint(cx, cy, waypointRoles(e.id, routes));
+		// B277, F-e: a waypoint whose transit is off takes endpoints only, as the canvas reads it (`waypointRolesIn`)
+		const el = waypoint(cx, cy, waypointRoles(e.id, routes, { transit: e.transit !== false }));
 		el.id = e.id;
+		if (e.transit === false) el.transit = false;   // and its ring is drawn
 		// H15.16 -- the layer list needs the links to weight the ring by plane, which a role set
 		// alone cannot say. Terminating links only: a route merely threading the point is not its
 		// terminus and has no bearing on what the endpoint ring means.

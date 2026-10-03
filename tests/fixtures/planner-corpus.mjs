@@ -270,8 +270,10 @@ function compose(c) {
 	if (!network) return { model, options: { place: resolveAnchor }, reached: { stranded: 0 } };
 	const transit = createTransit();
 	// as the session hands them over: an anchor with its kind, which is what the transit table reads
-	const { refused } = transit.flip((c.off || []).map((id) => ({ ...model.get('node', id), kind: 'node' })));
+	const { refused, entries } = transit.flip((c.off || []).map((id) => ({ ...model.get('node', id), kind: 'node' })));
 	if (refused.length) throw new Error(`${c.id}: transit refused to turn off ${refused.map((e) => e.id)}`);
+	// stored on the anchors since F-e -- part of the board the case starts from, as the session's setting was
+	applyOps(model, entries.map((e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e)));
 	const plugin = createNetwork(transit);
 	// counted, not changed: how many ops the network's stranded pass emitted
 	const reached = { stranded: 0 };

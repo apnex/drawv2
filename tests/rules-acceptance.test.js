@@ -131,7 +131,9 @@ test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the
 		assert.notEqual(handed, h.input);
 		const [n] = seedNodes(h.model, [[0, 0, 'router']]);
 		h.selection.set([n.id]);
-		assert.deepEqual(handed.selected(), [{ id: n.id, kind: 'node', type: 'router', name: n.name }]);
+		// each selected entity's fields, with its kind -- a plugin reads the fields it owns (the network, transit: F-e)
+		assert.deepEqual(handed.selected(), [{ ...h.model.get('node', n.id), kind: 'node' }]);
+		assert.notEqual(handed.selected()[0], h.model.get('node', n.id), 'a copy, never the entity itself');
 		assert.deepEqual(JSON.parse(JSON.stringify(handed.selected())), handed.selected(), 'plain data, never an entity or an element');
 	} finally { h.restore(); }
 });

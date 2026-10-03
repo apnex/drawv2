@@ -113,7 +113,7 @@ function renderEl(el, V, L, opts = {}) {
 		*/
 		const roles = el.roles || [];
 		const cls = roles.length ? roles.join(' ') : 'bend';
-		const circles = waypointLayers(roles, L.frame.ext, el.links).map((l) => (l.fill === 'solid'
+		const circles = waypointLayers(roles, L.frame.ext, el.links, el.transit === false ? { transit: false } : null).map((l) => (l.fill === 'solid'
 			? `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${TOKENS.waypoint}"/>`
 			// a layer may carry its own stroke and dash -- the transit ring does -- and is drawn as it says
 			: `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${l.fill}" stroke="${l.stroke ?? TOKENS.waypoint}" stroke-width="${l.width}" stroke-opacity="${l.opacity}"${l.dash ? ` stroke-dasharray="${l.dash}"` : ''}${l.pathLength ? ` pathLength="${l.pathLength}"` : ''}/>`)).join('');

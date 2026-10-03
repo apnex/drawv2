@@ -61,8 +61,13 @@ const TABLE = {
 
 	Which of the fields a node may carry follows whether it has a type, held by the node row's cross-entity check
 	(planner/kinds.mjs).
+
+	F-e (H18.7, TR-7): `transit` -- whether what arrives at the anchor passes through it. Stored only where the author chose
+	other than what its type does when nothing is declared; what each type offers, and what a value means, is the network
+	plugin's (network/transit.mjs), which refuses a value a type does not offer. A product without the network reads it as
+	nothing, as it read the session's setting before.
 	*/
-	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn', 'order'] },
+	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn', 'order', 'transit'] },
 	// `order` (F-d, H18.6): the drawing order of every drawn kind, model/order.mjs; optional, so a hand-made board still loads
 	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control', 'order'] },
 	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: ['order'] },

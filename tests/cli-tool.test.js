@@ -300,6 +300,22 @@ test('place reads inside a zone and between two nodes, linking both ends', async
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+// F-e (H18.7): an agent can do with transit what `x` does (A5) -- on, off, or back to the type's default
+test('F-e: draw set <waypoint> transit takes on, off and default, and stores only what differs', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'fe-cli')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00003', name: 'bend', x: 0, y: 60 } }] }));
+		const now = async () => JSON.parse(await run('show', '--diagram', id, '--json')).waypoints.find((n) => n.id === 'node-a00003');   // show names a node with no type a waypoint (F4)
+		await run('set', 'bend', 'transit', 'off', '--diagram', id);
+		assert.equal((await now()).transit, false);
+		await run('set', 'bend', 'transit', 'default', '--diagram', id);
+		assert.ok(!('transit' in await now()), 'default stores nothing');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 /*
 H18.4 (F-b) -- `about` a BEND lists the link that bends there. A waypoint's links are read with `linksAt`, which sees a `via`;
 a node's with `linksOf`, which sees ends only. F-b put the choice behind model/anchors.mjs's question, and no test drove a

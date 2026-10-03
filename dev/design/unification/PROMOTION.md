@@ -234,6 +234,7 @@ Rollback after it is the backup (P-8).
 
 AMENDED 2026-10-03 -- **P2's design** is `FORMAT-BATCH.md`, proposed.\
 Measuring for it found that the product cannot hold stored pipes before P3 composes the network's tenant: the pipe step of the one migration is proposed to land with P3 (its decision F2).\
+AMENDED 2026-10-03 (H18.7): the B277 note on P2 above is met -- the export reads the stored transit.\
 AMENDED 2026-10-03: F1 to F4 ruled as recommended; so **P3 also carries** the migration's pipe step -- every link's pipes, closing legs included -- and the P-4 split, and production stays on `draw:2538ab8` from P2's first stage until P9.
 
 ---

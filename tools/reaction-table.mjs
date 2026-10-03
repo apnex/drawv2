@@ -18,6 +18,7 @@ import path from 'node:path';
 import { PHASES } from '../planner/txn.mjs';
 import { CLASSIC_LINKS, GROUPS } from '../planner/tenants.mjs';
 import { createNetwork } from '../network/network.mjs';
+import { createTransit } from '../network/transit.mjs';   // the lab's network composes transit, so its table shows transit's rows (F-e)
 
 const root = path.resolve(import.meta.dirname, '..');
 const VIEW = path.join(root, 'dev/design/planner/REACTIONS.md');
@@ -29,11 +30,15 @@ const table = (head, rows) => [`| ${head.join(' | ')} |`, `|${head.map(() => '--
 // a reaction's trigger as words: what it listens to (TG-2)
 const listensTo = (trigger) => [].concat(trigger).map((c) => [c.deleted && `${c.deleted.join(', ')} deleted`, c.created && `${c.created.join(', ')} created`,
 	c.changed && `${c.changed.kind} ${c.changed.fields.join(', ')} changed`].filter(Boolean).join('; ')).join('; or ');
-const composition = (links) => PHASES.flatMap((phase) => [links, GROUPS].flatMap((t) => t.reactions.filter((r) => r.phase === phase).map((r) => [phase, `\`${r.id}\``, t.owner, listensTo(r.trigger), r.doc])));
+// and after the phases, each tenant's refusals, on the result (F-e)
+const composition = (links) => [
+	...PHASES.flatMap((phase) => [links, GROUPS].flatMap((t) => t.reactions.filter((r) => r.phase === phase).map((r) => [phase, `\`${r.id}\``, t.owner, listensTo(r.trigger), r.doc]))),
+	...[links, GROUPS].flatMap((t) => (t.refusals ?? []).map((r) => ['refuse', `\`${r.id}\``, t.owner, listensTo(r.trigger), r.doc])),
+];
 
 const BLOCKS = {
 	production: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(CLASSIC_LINKS)),
-	network: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(createNetwork().links)),
+	network: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(createNetwork(createTransit()).links)),
 };
 
 function render(current) {

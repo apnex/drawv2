@@ -352,6 +352,9 @@ with no edit to the test -- a list that names its kinds goes stale, which is B22
 const CLEAR = Symbol('clear');
 
 const ONOFF = { on: true, off: CLEAR };
+// F-e (H18.7): transit is stored only where it differs from the type's default, so `default` clears it; on and off are stored
+// as said, and the network refuses one a type does not offer (a host never passes routes)
+const TRANSIT = { on: true, off: false, default: CLEAR };
 // F1 (2026-10-03): the words ARE the stored values now; was `flow`, true or false
 const DIRECTION = { forward: 'forward', reverse: 'reverse', none: CLEAR };
 
@@ -362,6 +365,7 @@ export const SETTABLE = {
 		shape: { about: 'circle or square', check: (v) => ['circle', 'square'].includes(v) || 'shape is circle or square' },
 		cols: { about: 'width in cells', span: true },
 		rows: { about: 'height in cells', span: true },
+		transit: { about: 'on, off or default -- whether what arrives passes through it', words: TRANSIT },
 	},
 	// `via` and `closed` are the ROUTE, minted and shaped by `draw link`, not scalar properties
 	link: {
@@ -372,6 +376,7 @@ export const SETTABLE = {
 	waypoint: {
 		name: { about: 'the label it draws' },
 		pinned: { about: 'on or off -- placed deliberately, not derived from a link', words: ONOFF },
+		transit: { about: 'on, off or default -- whether what arrives passes through it', words: TRANSIT },
 	},
 	zone: { name: { about: 'the label it draws' } },
 	group: { name: { about: 'the label it draws' } },

@@ -9,54 +9,77 @@ import assert from 'node:assert/strict';
 import { createNetworkSession } from '../network/session.mjs';
 import { networkInput } from '../network/keys.mjs';
 import { composeRules, resolveInput } from '../kernel/input-rules.mjs';
+import { applyOps } from '../model/ops.mjs';
 
 const wp = { id: 'node-000001', kind: 'node', type: null, name: 'w1' };
 const node = (type, n = 2) => ({ id: `node-00000${n}`, kind: 'node', type, name: `${type}-${n}` });
 
-test('a bare anchor passes by default; x turns its transit off, which it declares, and x again turns it back on', () => {
+/*
+F-e (H18.7): `x` is an EDIT now -- the session hands over a set of each anchor's `transit`, and the value lives on the anchor.
+`toggleIn` does what the page does with it: hands the session the anchors as the model holds them, and applies the edit.
+*/
+const asOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e);
+function transitModel(entities) {
 	const s = createNetworkSession();
-	assert.equal(s.network.declaresNoTransit(wp.id), false, 'nothing declared, nothing marked');
-	s.toggleTransit([wp]);
-	assert.equal(s.network.declaresNoTransit(wp.id), true);
+	const m = new Model({ network: s.network, kinds: KINDS });
+	entities.forEach((e, i) => { const { kind: _k, type, ...rest } = e; m.put('node', { ...rest, ...(type ? { type, shape: 'circle' } : {}), x: 120 * i, y: 0 }); });
+	return { s, m };
+}
+function toggleIn(s, m, ids) {
+	let edit = null;
+	const off = s.onTransitChange((_ids, entries) => { edit = entries; });
+	s.toggleTransit(ids.map((id) => ({ ...(m.get('node', id) ?? m.get('link', id)), kind: id.split('-')[0] })));
+	if (edit?.length) applyOps(m, edit.map(asOp));
+	return edit;
+}
+
+test('a bare anchor passes by default; x turns its transit off, which it declares and stores, and x again turns it back on', () => {
+	const { s, m } = transitModel([wp]);
+	assert.equal(m.declaresNoTransit(wp.id), false, 'nothing declared, nothing marked');
+	const off = toggleIn(s, m, [wp.id]);
+	assert.deepEqual(off, [{ op: 'set', kind: 'node', id: wp.id, after: { transit: false } }], 'the edit stores the choice on the anchor');
+	assert.equal(m.get('node', wp.id).transit, false);
+	assert.equal(m.declaresNoTransit(wp.id), true);
 	assert.match(s.takeNotice(), /transit off at w1/);
-	s.toggleTransit([wp]);
-	assert.equal(s.network.declaresNoTransit(wp.id), false, 'two states: back to the default, declaring nothing');
+	const on = toggleIn(s, m, [wp.id]);
+	assert.equal(on[0].op, 'put', 'back to the default is a whole put without the field -- a clearing set would leave undefined (B220)');
+	assert.equal('transit' in m.get('node', wp.id), false, 'two states: back to the default, storing and declaring nothing');
 	assert.match(s.takeNotice(), /transit on at w1/);
 });
 
 test('the table, as ruled (TR-6): routers, firewalls and vxlans offer the choice; load balancers, servers and hosts do not', () => {
 	for (const type of ['router', 'firewall', 'vxlan']) {
-		const s = createNetworkSession();
-		s.toggleTransit([node(type)]);
-		assert.equal(s.network.declaresNoTransit('node-000002'), true, `${type} offers the choice`);
+		const { s, m } = transitModel([node(type)]);
+		toggleIn(s, m, ['node-000002']);
+		assert.equal(m.declaresNoTransit('node-000002'), true, `${type} offers the choice`);
 	}
 	for (const type of ['loadbalancer', 'server', 'host', 'text']) {
-		const s = createNetworkSession();
-		s.toggleTransit([node(type)]);
-		assert.equal(s.network.declaresNoTransit('node-000002'), false, `${type} offers none, so nothing is declared and no ring drawn`);
+		const { s, m } = transitModel([node(type)]);
+		assert.equal(toggleIn(s, m, ['node-000002']).length, 0, `${type} offers none, so there is nothing to store`);
+		assert.equal(m.declaresNoTransit('node-000002'), false, `${type} offers none, so nothing is declared and no ring drawn`);
 		assert.match(s.takeNotice(), new RegExp(`is a ${type}, which never passes routes`));
 	}
 });
 
 test('many at once, each flipped on its own, with the refused named beside the flipped', () => {
-	const s = createNetworkSession();
-	s.toggleTransit([wp]);
+	const { s, m } = transitModel([wp, node('router'), node('host', 3)]);
+	toggleIn(s, m, [wp.id]);
 	s.takeNotice();
-	s.toggleTransit([wp, node('router'), node('host', 3)]);
-	assert.equal(s.network.declaresNoTransit(wp.id), false, 'the anchor came back on');
-	assert.equal(s.network.declaresNoTransit('node-000002'), true, 'the router went off');
+	toggleIn(s, m, [wp.id, 'node-000002', 'node-000003']);
+	assert.equal(m.declaresNoTransit(wp.id), false, 'the anchor came back on');
+	assert.equal(m.declaresNoTransit('node-000002'), true, 'the router went off');
 	assert.equal(s.takeNotice(), 'transit on at w1, off at router-2; host-3 is a host, which never passes routes -- its transit stays off');
 });
 
 test('only anchors are flipped; a selection with none changes nothing and tells no one', () => {
 	const s = createNetworkSession();
 	const heard = [];
-	s.onTransitChange((ids) => heard.push(ids));
+	s.onTransitChange((ids, entries) => heard.push([ids, entries.length]));
 	s.toggleTransit([{ id: 'link-000001', kind: 'link', type: null, name: 'l' }]);
 	assert.deepEqual(heard, []);
 	assert.equal(s.takeNotice(), null);
 	s.toggleTransit([wp, node('host')]);
-	assert.deepEqual(heard, [[wp.id]], 'watchers hear the anchors that changed, not the refused');
+	assert.deepEqual(heard, [[[wp.id], 1]], 'watchers hear the anchors that changed and their one edit, not the refused');
 });
 
 test('x means transit only with an anchor or node selected, and never mid-drag', () => {
@@ -84,7 +107,7 @@ import { PIPE_ROW } from '../network/pipe-kind.mjs';
 
 // pipes are entities since H17.22 N-c: a board's model holds the network's pipe kind, and a fixed board's pipes go into it
 const KINDS = productKinds(PIPE_ROW);
-const lay = (s, m, pipes, ids) => { for (const op of s.seed(pipes, ids)) m.put('pipe', op.entity); };
+const lay = (s, m, pipes) => { for (const op of s.seed(pipes)) m.put('pipe', op.entity); };
 
 const hand = (...pairs) => pairs.map(([a, b]) => ({ a, b, laid: 'hand' }));
 
@@ -107,7 +130,7 @@ function board() {
 	put('node', { id: 'node-00000c', name: 'H', type: 'host', x: 0, y: 0, shape: 'circle' });
 	put('node', { id: 'node-00000d', name: 'w', x: 0, y: -240 });
 	put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
-	lay(s, m, [['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand'], ['node-00000a', 'node-00000d', 'hand'], ['node-00000d', 'node-00000b', 'hand']], ['link-000001']);
+	lay(s, m, [['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand'], ['node-00000a', 'node-00000d', 'hand'], ['node-00000d', 'node-00000b', 'hand']]);
 	return { s, m, link: m.get('link', 'link-000001') };
 }
 const W = { id: 'node-00000d', kind: 'node', type: null, name: 'w' };
@@ -120,10 +143,10 @@ test('a host never passes a route (TR-6): the link takes the way over the bare a
 
 test('turning the anchor off downs the link and says why; turning it on heals it (TR-1, TR-4)', () => {
 	const { s, m, link } = board();
-	s.toggleTransit([W]);
+	toggleIn(s, m, [W.id]);
 	assert.equal(m.isLinkDown(link), true, 'the host blocks one way and the anchor the other');
 	assert.equal(whyDown(m, [link.id], s.network), 'link-000001 is down: its way passes w, whose transit is off -- it heals when transit is turned back on');
-	s.toggleTransit([W]);
+	toggleIn(s, m, [W.id]);
 	assert.equal(m.isLinkDown(link), false);
 });
 
@@ -153,49 +176,78 @@ test('a drag is judged with the same stops: a plain link drawn A to B runs over 
 /*
 X3 -- pins and guides at a non-transiting anchor (TR-2, TR-2b, TR-3).
 */
-import { cutAt, joinAt } from '../network/transit.mjs';
-import { applyOps } from '../model/ops.mjs';
 import { plan } from '../planner/txn.mjs';
+import { createTransit } from '../network/transit.mjs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 
+/*
+F-e: the cut and the join are the PLANNER'S, set off by a change of a waypoint's `transit` (network/transit.mjs
+`transitReactions`; the join is `link-join`, woken by it). Held by planning that change over the network's own tenant.
+*/
+const NET = createNetwork(createTransit());
 function pinned() {
-	const m = new Model();
+	const m = new Model({ network: NET, kinds: KINDS });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
-	m.put('node', { id: 'node-00000p', name: 'P', x: 0, y: -120 });
-	m.put('node', { id: 'node-00000q', name: 'Q', x: 120, y: -120 });
-	m.put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['node-00000p', 'node-00000q'] });
+	m.put('node', { id: 'node-0000f1', name: 'P', x: 0, y: -120 });
+	m.put('node', { id: 'node-0000f2', name: 'Q', x: 120, y: -120 });
+	m.put('link', { id: 'link-000001', name: 'l', order: 1, src: 'node-00000a', dst: 'node-00000b', via: ['node-0000f1', 'node-0000f2'] });
 	return m;
 }
-// a command's entries as the ops applyOps takes (`after` is the command spelling of `patch`)
-const apply = (m, cmd) => applyOps(m, cmd.entries.map((e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e)));
+// set each anchor's transit, as `x` does, and apply what the planner answers
+const transitOf = (m, sets) => {
+	const r = plan(m, sets.map(([id, on]) => (on ? { op: 'put', kind: 'node', entity: (({ transit: _t, ...e }) => e)(m.get('node', id)) } : { op: 'set', kind: 'node', id, patch: { transit: false } })), { links: NET.links, kinds: KINDS });
+	assert.equal(r.ok, true, r.error);
+	applyOps(m, r.ops);
+	return r;
+};
+const shape = (m) => m.all('link').map((l) => [l.src, l.dst, l.via ?? []]).sort();
 
-test('cutAt divides a link bending at the waypoint into two ending there; the src half keeps the id, the pins split between them', () => {
+test('turning a waypoint off cuts the link bending there into two ending there; the src half keeps the id and its order, the new half is newest', () => {
 	const m = pinned();
-	const cmd = cutAt(m, 'node-00000p');
-	assert.equal(cmd.cut, 1);
-	apply(m, cmd);
-	const links = m.all('link').map((l) => [l.src, l.dst, l.via ?? []]);
-	assert.deepEqual(m.get('link', 'link-000001') && [m.get('link', 'link-000001').src, m.get('link', 'link-000001').dst], ['node-00000a', 'node-00000p']);
-	assert.deepEqual(links.sort(), [['node-00000a', 'node-00000p', []], ['node-00000p', 'node-00000b', ['node-00000q']]].sort());
-	assert.equal(cutAt(m, 'node-00000p'), null, 'nothing bends there now: nothing to cut');
+	const r = transitOf(m, [['node-0000f1', false]]);
+	assert.deepEqual([m.get('link', 'link-000001').src, m.get('link', 'link-000001').dst, m.get('link', 'link-000001').order], ['node-00000a', 'node-0000f1', 1]);
+	assert.deepEqual(shape(m), [['node-00000a', 'node-0000f1', []], ['node-0000f1', 'node-00000b', ['node-0000f2']]].sort());
+	const piece = m.all('link').find((l) => l.id !== 'link-000001');
+	assert.equal(piece.order, 2, 'the new piece is drawn newest');
+	assert.match(piece.name, /^link-\d+$/, 'and named, as every link is (B187)');
+	assert.deepEqual(r.called.filter((id) => id === 'transit-cut'), ['transit-cut']);
+	const again = plan(m, [{ op: 'put', kind: 'node', entity: m.get('node', 'node-0000f2') }], { links: NET.links, kinds: KINDS });
+	assert.deepEqual(again.ops, [], 'an edit that does not change transit cuts nothing');
 });
 
-test('joinAt merges the two links left ending at the waypoint, restoring the link the author drew', () => {
+test('the piece a cut mints has the same id on every peer: derived from the link and the waypoint, never drawn at random', () => {
+	const ids = [pinned(), pinned()].map((m) => { transitOf(m, [['node-0000f1', false]]); return m.all('link').map((l) => l.id).sort(); });
+	assert.deepEqual(ids[0], ids[1]);
+});
+
+test('turning it back on joins the two left ending there, restoring the link the author drew -- and undo would do as much', () => {
 	const m = pinned();
-	apply(m, cutAt(m, 'node-00000p'));
-	apply(m, joinAt(m, 'node-00000p'));
+	transitOf(m, [['node-0000f1', false]]);
+	const r = transitOf(m, [['node-0000f1', true]]);
 	assert.equal(m.all('link').length, 1);
-	assert.deepEqual(m.get('link', 'link-000001').via, ['node-00000p', 'node-00000q']);
-	assert.equal(joinAt(m, 'node-00000q'), null, 'a bend, not two ends: nothing to join');
+	assert.deepEqual(m.get('link', 'link-000001').via, ['node-0000f1', 'node-0000f2']);
+	assert.ok(r.ops.some((o) => o.op === 'del' && o.kind === 'link' && o.into === 'link-000001'), 'the join names what the piece joined into');
 });
 
-test('joinAt declines where more than two links meet: a junction stays a junction', () => {
+test('a junction stays a junction: turning transit back on joins nothing where more than two links meet', () => {
 	const m = pinned();
-	apply(m, cutAt(m, 'node-00000p'));
+	transitOf(m, [['node-0000f1', false]]);
 	m.put('node', { id: 'node-00000c', name: 'C', type: 'router', x: 0, y: -360, shape: 'circle' });
-	m.put('link', { id: 'link-000009', name: 'x', src: 'node-00000c', dst: 'node-00000p' });
-	assert.equal(joinAt(m, 'node-00000p'), null);
+	m.put('link', { id: 'link-000009', name: 'x', src: 'node-00000c', dst: 'node-0000f1' });
+	transitOf(m, [['node-0000f1', true]]);
+	assert.equal(m.all('link').length, 3);
+});
+
+test('the network refuses a transit a type does not offer -- from any door, the CLI and REST included (TR-6)', () => {
+	const m = pinned();
+	m.put('node', { id: 'node-0000f3', name: 'H', type: 'host', x: 0, y: 240, shape: 'circle' });
+	const r = plan(m, [{ op: 'set', kind: 'node', id: 'node-0000f3', patch: { transit: true } }], { links: NET.links, kinds: KINDS });
+	assert.equal(r.ok, false);
+	assert.match(r.error, /H is a host, which never passes routes/);
+	assert.equal(plan(m, [{ op: 'set', kind: 'node', id: 'node-0000f3', patch: { transit: false } }], { links: NET.links, kinds: KINDS }).ok, true, 'off is what it offers');
+	const retype = plan(m, [{ op: 'set', kind: 'node', id: 'node-00000a', patch: { transit: true } }, { op: 'set', kind: 'node', id: 'node-00000a', patch: { type: 'server' } }], { links: NET.links, kinds: KINDS });
+	assert.equal(retype.ok, false, 'nor may a retype leave a node holding a value its new type does not offer');
 });
 
 const drag = (o) => ({ pins: [], guides: [], placed: [], pressed: { w: true, g: false }, endPressed: false, srcKey: false, ...o });
@@ -251,7 +303,7 @@ test('X4: the network lets two links join at a waypoint only where its transit i
 		m.put('link', { id: 'link-000002', name: 'aw', src: 'node-00000a', dst: 'node-00000d' });
 		m.put('link', { id: 'link-000003', name: 'wb', src: 'node-00000d', dst: 'node-00000b' });
 		m.put('link', { id: 'link-000004', name: 'wh', src: 'node-00000d', dst: 'node-00000c' });
-		if (off) s.toggleTransit([W]);
+		if (off) toggleIn(s, m, [W.id]);
 		const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-000004' }], { links: s.network.links, kinds: KINDS });
 		assert.equal(r.ok, true);
 		return r.ops.some((o) => o.op === 'set' && o.kind === 'link' && 'src' in o.patch);
@@ -268,7 +320,7 @@ test('X5: every type routes as the table says -- routers, firewalls and vxlans p
 		m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });
 		m.put('node', { id: 'node-00000c', name: 'M', type, x: 0, y: 0, shape: 'circle' });
 		m.put('link', { id: 'link-000001', name: 'l', src: 'node-00000a', dst: 'node-00000b' });
-		lay(s, m, [['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand']], ['link-000001']);
+		lay(s, m, [['node-00000a', 'node-00000c', 'hand'], ['node-00000c', 'node-00000b', 'hand']]);
 		assert.equal(m.isLinkDown(m.get('link', 'link-000001')), !passes, `${type} ${passes ? 'passes' : 'never passes'} a route`);
 	}
 });
@@ -280,15 +332,15 @@ offers no choice: a host stops what arrives and declares nothing, so it draws no
 */
 test('B278: stopsAt answers, anchor by anchor, what routing blocks -- and differs from the declaration only where a type offers no choice', () => {
 	const s = createNetworkSession();
-	const m = new Model({ kinds: KINDS });
+	const m = new Model({ network: s.network, kinds: KINDS });
 	m.put('node', { id: wp.id, name: 'w1', x: 0, y: 0 });
 	for (const [n, type] of [[2, 'router'], [3, 'host'], [4, 'firewall'], [5, 'server']]) m.put('node', { id: `node-00000${n}`, name: `${type}-${n}`, type, x: 120 * n, y: 0, shape: 'circle' });
-	s.toggleTransit([wp, node('firewall', 4)]);
+	toggleIn(s, m, [wp.id, 'node-000004']);
 	const anchors = [wp.id, 'node-000002', 'node-000003', 'node-000004', 'node-000005'];
 	const blocked = s.network.view.of(m);
 	for (const id of anchors) assert.equal(s.network.stopsAt(id, m), !blocked.passes(id), `${id}: stopsAt and routing agree`);
 	assert.deepEqual(anchors.filter((id) => s.network.stopsAt(id, m)), [wp.id, 'node-000003', 'node-000004', 'node-000005']);
-	assert.deepEqual(anchors.filter((id) => s.network.declaresNoTransit(id)), [wp.id, 'node-000004'], 'the host and the server stop, and declare nothing');
+	assert.deepEqual(anchors.filter((id) => s.network.declaresNoTransit(id, m)), [wp.id, 'node-000004'], 'the host and the server stop, and declare nothing');
 	assert.equal(s.network.stopsAt('node-00000f', m), false, 'an id the model does not hold is no anchor, and stops nothing');
 });
 
@@ -315,26 +367,26 @@ pieces -- a piece an earlier cut made is traced back to its drawn link, so one l
 pieces", not "2 links cut in two".
 */
 test('a transit change counts the drawn links it cut and the pieces they became, and the pieces it joined', async () => {
-	const { transitEdit } = await import('../network/transit.mjs');
-	const m = new Model();
+	const { transitSummary } = await import('../network/transit.mjs');
 	const [S, A, B, E, F] = ['node-e0000a', 'node-e0000b', 'node-e0000c', 'node-00000d', 'node-00000e'];
-	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120], [F, 120, 0]].forEach(([id, x, y]) => m.put('node', { id, name: id, x, y }));
-	m.put('link', { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] });
-	assert.deepEqual(transitEdit(m, [A], () => true).cut, { links: 1, pieces: 2 });
-	assert.deepEqual(transitEdit(m, [A, B], () => true).cut, { links: 1, pieces: 3 }, 'one drawn link, cut twice');
-	m.put('link', { id: 'link-000002', name: 'k', src: S, dst: F, via: [A] });
-	assert.deepEqual(transitEdit(m, [A, B], () => true).cut, { links: 2, pieces: 5 }, 'two drawn links: three pieces and two');
-	assert.equal(transitEdit(m, [A, B], () => false), null, 'turned on where nothing is cut, nothing to join: no edit');
+	const fresh = (links) => {
+		const m = new Model({ network: NET, kinds: KINDS });
+		[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120], [F, 120, 0]].forEach(([id, x, y]) => m.put('node', { id, name: id, x, y }));
+		links.forEach((l, i) => m.put('link', { order: i + 1, ...l }));
+		return m;
+	};
+	const one = { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] };
+	const summary = (m, sets) => transitSummary(transitOf(m, sets).ops);
+	assert.deepEqual(summary(fresh([one]), [[A, false]]).cut, { links: 1, pieces: 2 });
+	assert.deepEqual(summary(fresh([one]), [[A, false], [B, false]]).cut, { links: 1, pieces: 3 }, 'one drawn link, cut twice');
+	assert.deepEqual(summary(fresh([one, { id: 'link-000002', name: 'k', src: F, dst: E, via: [A] }]), [[A, false], [B, false]]).cut, { links: 2, pieces: 5 }, 'two drawn links: three pieces and two');
 	// and back: the pieces of one cut link, joined at both waypoints, are three pieces into one link
-	const one = new Model();
-	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => one.put('node', { id, name: id, x, y }));
-	one.put('link', { id: 'link-000001', name: 'l', src: S, dst: A });
-	one.put('link', { id: 'link-000002', name: 'm', src: A, dst: B });
-	one.put('link', { id: 'link-000003', name: 'n', src: B, dst: E });
-	const back = transitEdit(one, [A, B], () => false);
+	const m = fresh([one]);
+	transitOf(m, [[A, false], [B, false]]);
+	const back = summary(m, [[A, true], [B, true]]);
 	assert.deepEqual(back.joined, { links: 1, pieces: 3 }, 'three pieces joined into one link');
 	assert.equal(back.cut, null);
-	assert.deepEqual(transitEdit(one, [A], () => false).joined, { links: 1, pieces: 2 });
+	assert.equal(m.all('link').length, 1, 'and the link the author drew is whole again');
 });
 
 /*
@@ -342,22 +394,35 @@ B284 -- the director's report (2026-10-02): a link drawn w, w, w, made a control
 regressed to data. A cut keeps a link's declarations, its plane and its direction, on both halves.
 */
 test('B284: transit\'s cut keeps the control plane and the direction on both halves', () => {
-	const m = new Model();
+	const m = new Model({ network: NET, kinds: KINDS });
 	['a', 'b', 'c'].forEach((h, i) => m.put('node', { id: `node-e0000${h}`, name: h, x: i * 120, y: 0 }));
-	m.put('link', { id: 'link-000001', name: 'l', src: 'node-e0000a', dst: 'node-e0000c', via: ['node-e0000b'], control: true, direction: 'reverse' });
-	const halves = cutAt(m, 'node-e0000b').entries.filter((e) => e.op === 'put').map((e) => e.entity);
-	assert.equal(halves.length, 2);
-	for (const l of halves) assert.deepEqual([l.control, l.direction], [true, 'reverse'], `${l.id} keeps both`);
+	m.put('link', { id: 'link-000001', name: 'l', order: 1, src: 'node-e0000a', dst: 'node-e0000c', via: ['node-e0000b'], control: true, direction: 'reverse' });
+	transitOf(m, [['node-e0000b', false]]);
+	assert.equal(m.all('link').length, 2);
+	for (const l of m.all('link')) assert.deepEqual([l.control, l.direction], [true, 'reverse'], `${l.id} keeps both`);
 	// and back: the two control halves join into the one control link -- a control half beside a data half never could (H15.15)
-	const cut = cutAt(m, 'node-e0000b');
-	applyOps(m, cut.entries.map((e) => (e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e)));
-	const join = joinAt(m, 'node-e0000b');
-	assert.ok(join, 'the halves join again');
-	applyOps(m, join.entries.map((e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : { op: 'del', kind: e.kind, id: e.entity.id })));
+	transitOf(m, [['node-e0000b', true]]);
 	assert.deepEqual(m.all('link').map((l) => [l.id, l.control, l.direction, l.via]), [['link-000001', true, 'reverse', ['node-e0000b']]], 'one control link, as drawn');
-	m.put('link', { id: 'link-000002', name: 'k', src: 'node-e0000a', dst: 'node-e0000c', via: ['node-e0000b'] });
+	m.put('link', { id: 'link-000002', name: 'k', order: 2, src: 'node-e0000a', dst: 'node-e0000c', via: ['node-e0000b'] });
 	m.del('link', 'link-000001');
-	for (const l of cutAt(m, 'node-e0000b').entries.filter((e) => e.op === 'put').map((e) => e.entity)) {
-		assert.ok(!('control' in l) && !('direction' in l), 'an undeclared link stays undeclared: no field is invented');
-	}
+	transitOf(m, [['node-e0000b', false]]);
+	for (const l of m.all('link')) assert.ok(!('control' in l) && !('direction' in l), 'an undeclared link stays undeclared: no field is invented');
+});
+
+test('F-e: only a waypoint turned OFF is cut -- a change that leaves what arrives passing cuts nothing', () => {
+	const m = pinned();
+	const r = transitOf(m, [['node-0000f1', true]]);   // a put without the field: the default, on
+	assert.equal(r.ops.filter((o) => o.kind === 'link').length, 0);
+	const said = plan(m, [{ op: 'set', kind: 'node', id: 'node-0000f1', patch: { transit: true } }], { links: NET.links, kinds: KINDS });
+	assert.equal(said.ok, true);
+	assert.equal(said.ops.filter((o) => o.kind === 'link').length, 0, 'declared on, explicitly: the link still bends there');
+});
+
+test('F-e: a host may store the off it always has, and declares nothing by it -- no ring (TR-6)', () => {
+	const m = pinned();
+	m.put('node', { id: 'node-0000f3', name: 'H', type: 'host', x: 0, y: 240, shape: 'circle', transit: false });
+	assert.equal(m.declaresNoTransit('node-0000f3'), false, 'a type with no choice declares nothing');
+	assert.equal(m.stopsAt('node-0000f3'), true, 'and still stops what arrives');
+	m.put('node', { id: 'node-0000f4', name: 'R', type: 'router', x: 120, y: 240, shape: 'circle', transit: false });
+	assert.equal(m.declaresNoTransit('node-0000f4'), true, 'a router that chose off declares it');
 });

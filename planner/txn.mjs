@@ -212,7 +212,7 @@ The order is meaning -- today's sequence, held by the planner corpus -- so it is
 order code happens to run in. Within one run of a phase, two reactions changing one entity is a fault (PD-3), thrown,
 so a test meets it; never a silent winner.
 */
-export const PHASES = ['clear', 'follow', 'stranded', 'sweep', 'join'];   // read by tools/reaction-table.mjs, which documents them
+export const PHASES = ['clear', 'follow', 'cut', 'stranded', 'sweep', 'join'];   // read by tools/reaction-table.mjs, which documents them
 const PER_OP = new Set(['clear', 'follow']);
 
 /*
@@ -244,8 +244,21 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 	for (const x of extensions) if (!x || typeof x.field !== 'string' || typeof x.refuse !== 'function' || typeof x.next !== 'function') throw new Error(`${who}: a record extension is { id, field, refuse, next } (PL-4)`);
 	const rows = Object.fromEntries(PHASES.map((p) => [p, []]));
 	const ids = new Set();
+	const refusals = [];
 	for (const tenant of [links, GROUPS]) {
 		if (!tenant || typeof tenant.owner !== 'string' || !Array.isArray(tenant.reactions)) throw new Error(`${who}: a tenant is { owner, reactions } (PL-3)`);
+		/*
+		F-e (H18.7) -- A TENANT'S REFUSALS: rules the tenant holds on the result, as data like its reactions -- an id, a
+		trigger, a doc and `refuse({ before, doc, matches }) -> error | null`, judged once the phases have run, before the
+		document rules. The network's first: a transit value a node's type does not offer. A refusal changes nothing; it
+		names why the transaction is refused.
+		*/
+		for (const r of tenant.refusals ?? []) {
+			if (!r || typeof r.refuse !== 'function' || !validTrigger(r.trigger)) throw new Error(`${who}: ${tenant.owner}: a refusal is { id, trigger, doc, refuse } (F-e)`);
+			if (ids.has(r.id)) throw new Error(`${who}: two reactions are named ${r.id}`);
+			ids.add(r.id);
+			refusals.push({ ...r, owner: tenant.owner });
+		}
 		// a tenant names the kinds its reactions read -- the network's pipes -- and a composition without one is half-composed (N-d)
 		const lacking = (tenant.kinds ?? []).filter((k) => !kinds.has(k));
 		if (lacking.length) throw new Error(`${who}: ${tenant.owner} needs the kind ${lacking.join(', ')}, which this composition does not include (H17.22 N-d)`);
@@ -274,7 +287,7 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 		const hear = new Set(kinds.flatMap((k) => listening[phase].get(k) ?? []));
 		return rows[phase].filter((r) => hear.has(r));
 	};
-	return { rows, listeners, place, now, extensions, kinds };
+	return { rows, listeners, place, now, extensions, kinds, refusals };
 }
 
 // the model must be composed with the planner's kinds, in the same order (N-a)
@@ -288,7 +301,7 @@ const asMutation = (op) => ({ action: op.op, kind: op.kind, entity: op.op === 'd
 const subjectOf = (op) => (op.op === 'meta' ? 'meta' : `${op.kind}:${op.op === 'put' ? op.entity.id : op.id}`);
 
 export function plan(model, ops, options = {}) {
-	const { rows, listeners, place, kinds } = composition(options, 'plan');
+	const { rows, listeners, place, kinds, refusals } = composition(options, 'plan');
 	const called = [];   // the reactions this plan called, in order (TG-4) -- what an edit cost
 	sameKinds(model, kinds, 'plan');
 	if (!Array.isArray(ops) || ops.length < 1 || ops.length > MAX_OPS) {
@@ -366,6 +379,14 @@ export function plan(model, ops, options = {}) {
 	}
 	const ctx = { before: model, doc: proj, ops: out, changes, refuses: (op) => validateMutation(proj, asMutation(op), kinds) };
 	for (const phase of PHASES) if (!PER_OP.has(phase)) runPhase(phase, ctx);
+	// the tenants' refusals, on the result, each handed the changes its trigger hears (F-e)
+	for (const r of refusals) {
+		const matches = changes.list().filter((c) => changeMatches(r.trigger, c));
+		if (!matches.length) continue;
+		called.push(r.id);
+		const why = r.refuse({ before: model, doc: proj, matches });
+		if (why) return { ok: false, error: why, opIndex: -1 };
+	}
 
 	/*
 	B81 -- the document invariants, checked once against the state this transaction would produce.

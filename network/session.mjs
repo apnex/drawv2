@@ -59,18 +59,19 @@ export function createNetworkSession() {
 
 		/*
 		THE TRANSIT TOGGLE (`x`, TRANSIT.md section 12, X1): flip each selected anchor's transit on its own, and say what
-		happened -- the next settle says it. `selected` is plain data from the host: id, kind, type, name. Watchers hear
-		which anchors changed, so the composition can redraw them.
+		happened -- the next settle says it. `selected` is the selected entities as the host holds them, with their kind.
+		Watchers hear which anchors changed and the edit that stores it (F-e: a set of each anchor's `transit`), which the
+		composition commits -- the planner cuts and joins from it.
 		*/
 		toggleTransit(selected) {
 			const anchors = selected.filter((e) => ANCHOR_KINDS.includes(e.kind));
 			if (!anchors.length) return;
-			const { flipped, refused } = transit.flip(anchors);
+			const { flipped, refused, entries } = transit.flip(anchors);
 			const said = [];
 			if (flipped.length) said.push(`transit ${flipped.map((e) => `${e.transit ? 'on' : 'off'} at ${e.name || e.id}`).join(', ')}`);
 			if (refused.length) said.push(`${refused.map((e) => `${e.name || e.id} is a ${e.type}`).join(', ')}, which never passes routes -- its transit stays off`);
 			pendingNotice = said.join('; ');
-			for (const w of watchers) w(flipped.map((e) => e.id));
+			for (const w of watchers) w(flipped.map((e) => e.id), entries);
 		},
 
 		// hear which anchors' transit changed

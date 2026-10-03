@@ -156,6 +156,7 @@ const FIELDS = {
 		span: (v) => dims(v),    // optional multi-cell footprint (W1); absent ⇒ 1×1
 		content: (v) => content(v),   // optional content regions (W2); absent ⇒ the type glyph
 		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
+		transit: (v) => typeof v === 'boolean',   // whether what arrives passes through: the network's to read (F-e, TR-7)
 		// a WAYPOINT'S own fields -- a node with no type (F-c, H18.5); a typed node carries neither (REFERS.node). Its name is
 		// every node's (B187: naming is schema-wide, and a waypoint was the gap)
 		/*

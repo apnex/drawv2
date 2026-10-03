@@ -16,6 +16,7 @@ import { applyOps } from '../model/ops.mjs';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
+import { plan } from '../planner/txn.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW } from '../network/pipe-kind.mjs';
 
@@ -93,30 +94,39 @@ test('the pipes repaint on every model change, and a transit change settles', ()
 });
 
 /*
-B278 -- THE TOGGLE ASKS WHAT EVERY RULE ASKS: whether what arrives at the waypoint now stops there, not whether the author
-declared it. A stand-in network where the two differ -- the anchor stops, declaring nothing -- tells the two apart.
+F-e (H18.7) -- A TRANSIT CHANGE IS AN EDIT: the host commits the session's set of each anchor's transit, as one edit labelled
+`transit`, and builds no cut or join of its own -- those are the planner's (network/transit.mjs `transitReactions`). B278's
+rule, that a cut asks whether what arrives stops rather than what was declared, is the cut reaction's, held below.
 */
-test('B278: a transit change cuts the links pinned at a waypoint where what arrives stops, whatever was declared', () => {
-	const model = new Model({ kinds: productKinds(PIPE_ROW) });   // the host paints the model's pipes (N-c)
-	attachRelations(model, { cellOf });
-	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
-	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+test('F-e: a transit change commits the session\'s edit as given, and no edit of the host\'s own', () => {
+	const model = new Model({ kinds: productKinds(PIPE_ROW) });
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
-	model.put('link', { id: 'link-000004', src: 'node-000001', dst: 'node-000002', via: ['node-000003'] });
 	const commits = [];
 	let onTransit = null;
-	const network = { stopsAt: (id) => id === 'node-000003', declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } };
 	attachNetwork({
-		session: { pipes: { list: () => [] }, network, tidy: () => {}, takeNotice: () => null, onTransitChange: (fn) => { onTransit = fn; } },
-		model, authority: { all: () => [] },
-		renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		session: { network: { stopsAt: () => false, declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } }, takeNotice: () => 'transit off at P', onTransitChange: (fn) => { onTransit = fn; } },
+		model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: (c) => commits.push(c) }, ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
-	onTransit(['node-000003']);
-	assert.equal(commits.length, 1, 'one commit');
-	assert.equal(commits[0].label, 'transit');
-	assert.deepEqual(commits[0].entries.map((e) => `${e.op} ${e.entity?.id ?? e.id}`).sort(), ['del link-000004', 'put link-000004', `put ${commits[0].entries.find((e) => e.op === 'put' && e.entity.id !== 'link-000004').entity.id}`].sort(), 'the pinned link cut in two there');
+	const edit = [{ op: 'set', kind: 'node', id: 'node-000003', after: { transit: false } }];
+	onTransit(['node-000003'], edit);
+	assert.deepEqual(commits, [{ label: 'transit', entries: edit }]);
+});
+
+test('B278: the cut asks whether what arrives stops, whatever was declared', async () => {
+	const { transitReactions } = await import('../network/transit.mjs');
+	const { plan } = await import('../planner/txn.mjs');
+	// a stand-in transit where the two questions differ: P stops what arrives, and nothing is declared
+	const [cut] = transitReactions({ stopsAt: (id) => id === 'node-000003' }).reactions;
+	const model = new Model({ kinds: productKinds(PIPE_ROW) });
+	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
+	model.put('link', { id: 'link-000004', name: 'l', order: 1, src: 'node-000001', dst: 'node-000002', via: ['node-000003'] });
+	const r = plan(model, [{ op: 'set', kind: 'node', id: 'node-000003', patch: { transit: true } }], { links: { owner: 'probe', reactions: [cut] }, kinds: productKinds(PIPE_ROW) });
+	assert.equal(r.ok, true, r.error);
+	assert.equal(r.ops.filter((o) => o.op === 'put' && o.kind === 'link').length, 2, 'declared on, yet what arrives stops: the pinned link is cut in two there');
 });
 
 /*
@@ -133,24 +143,32 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('node', { id, name: id, x, y }));
 	model.put('link', { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] });
 	for (const [a, b] of [[S, A], [A, B], [B, E]]) model.put('pipe', pipeEntity(a, b, 'link'));
-	// the canvas's history, applying each commit to the model as the tab does
+	// the canvas's history and the planner's answer, as the lab's door gives them: the edit planned over the network's tenant,
+	// the answer applied, and handed to the host's answer step -- where the transit notice is said (F-e)
 	const toOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e.op === 'del' ? { op: 'del', kind: e.kind, id: e.entity.id } : e);
-	const commits = [];
-	attachNetwork({
+	const commits = [], said = [];
+	let net = null;
+	net = attachNetwork({
 		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
-		history: { commit: (c) => { commits.push(c); applyOps(model, c.entries.map(toOp)); } },
-		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
+		history: { commit: (c) => {
+			commits.push(c);
+			const r = plan(model, c.entries.map(toOp), { links: session.network.links, kinds: productKinds(PIPE_ROW) });
+			net.answered(c, { ok: r.ok, error: r.error, version: commits.length, ops: r.ops }, () => applyOps(model, r.ops));
+		} },
+		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: (t) => said.push(t),
 	});
-	const anchors = [{ id: A, kind: 'node' }, { id: B, kind: 'node' }];
+	const anchors = [A, B].map((id) => ({ ...model.get('node', id), kind: 'node' }));
 	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${model.isLinkDown(l) ? ' down' : ''}`).sort();
 
 	session.toggleTransit(anchors);
 	assert.equal(commits.length, 1, 'one edit');
 	assert.deepEqual(shape(), [`${A}>${B}[]`, `${B}>${E}[]`, `${S}>${A}[]`].sort(), 'three straight pieces, none down');
 	assert.equal(model.get('link', 'link-000001').src, S, 'the first piece keeps the id the author drew');
+	assert.equal(said.at(-1), `transit off at ${A}, off at ${B} -- 1 link cut into 3 pieces`, 'said when the planner answers, from its ops');
 
-	session.toggleTransit(anchors);
+	session.toggleTransit([A, B].map((id) => ({ ...model.get('node', id), kind: 'node' })));
+	assert.equal(said.at(-1), `transit on at ${A}, on at ${B} -- 3 pieces joined into 1 link`);
 	assert.deepEqual(shape(), [`${S}>${E}[${A},${B}]`], 'turned back on, they join into the one link, pinned at both');
 	assert.ok(model.get('link', 'link-000001'), 'with the id it was drawn with');
 });
