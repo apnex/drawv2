@@ -460,16 +460,22 @@ export class Session {
 				// on disk is not the client's to overwrite (that was `push`, and B2 with it).
 				const model = this.store.get(body.diagram);
 				if (!model) return this.error(`unknown diagram: ${body.diagram}`, 'unknown-diagram');
+				// B290: read as an `open` is, so a diagram the caller may not read is refused, typed -- it threw inside
+				// `snapshotBody`'s defence, which the session can only log
+				if (!this.store.canRead(body.diagram, this.principal)) return this.error('forbidden: no access to this diagram', 'forbidden');
 				this.diagramId = body.diagram;
+				// B290: a template, held from the image, has no log and no history: it is at version 0, as `syncBody` says.
+				// Read as `log.version`, a tab left open on a template threw here on every reconnect -- production, every five minutes
 				const log = this.store.log(this.diagramId);
+				const at = log ? log.version : 0;
 				// I11: the client's number is a BELIEF, never an authority. It selects which reply
 				// to send and is otherwise discarded — it can neither set nor advance the version.
 				const believed = Number.isInteger(body.version) ? body.version : null;
-				if (believed === log.version) return this.send('sync', syncBody(model, this.store, this.locks));
+				if (believed === at) return this.send('sync', syncBody(model, this.store, this.locks));
 				// D29: the client is AHEAD of us — it holds acked changes we lost (a restart before
 				// the flush). Say so. A bare snapshot here would revert its work in silence.
-				const rewound = believed !== null && believed > log.version
-					? { from: believed, to: log.version } : null;
+				const rewound = believed !== null && believed > at
+					? { from: believed, to: at } : null;
 				const payload = snapshotBody(model, this.store, this.locks, this.principal);
 				return this.send('snapshot', rewound ? { ...payload, rewound } : payload);
 			}

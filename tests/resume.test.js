@@ -27,7 +27,7 @@ import { Session } from '../server/protocol.js';
 import { Selection } from '../app/src/selection.js';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
-import { OWNER, openStore } from './fixtures/app.mjs';
+import { OWNER, GUEST, openStore } from './fixtures/app.mjs';
 
 // the browser API Sync persists its outbox through (D30)
 const storage = new Map();
@@ -319,6 +319,42 @@ test('resume: unknown diagram is a typed refusal, and never binds the session', 
 		ws.recv('resume', { diagram: 'diagram-ffffff', version: 0 });
 		assert.equal(ws.last('error').body.code, 'unknown-diagram');
 		assert.equal(session.diagramId, null, 'a refused resume leaves the session unbound');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+/*
+B290 -- A RESUME AGAINST A TEMPLATE IS ANSWERED, not thrown on. Found in production's logs during the 2026-10-02 audit, every
+five minutes: a tab left open on a template reconnects with `resume`, and the server read `log.version` of a template, which
+the store holds as a model from the image with no log -- "internal error handling resume". A template has no history, so it
+is at version 0, as `syncBody` already answers. And a resume reads like an `open`: a diagram the caller may not read is a
+typed refusal, as `open` and `hello` give, where it threw inside `snapshotBody`'s defence.
+*/
+test('B290: a resume against a template is answered at version 0, and the session binds to it', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
+	try {
+		const store = await openStore(dir, { flushMs: 3_600_000, templatesDir: new URL('../templates', import.meta.url).pathname });
+		const ws = fakeWs();
+		const session = new Session(ws, store, null, null, OWNER);
+		ws.recv('resume', { diagram: 'template-1ced1f', version: 0 });
+		assert.equal(ws.last('error'), undefined, `no error: ${JSON.stringify(ws.last('error')?.body)}`);
+		assert.equal(ws.last('sync').body.version, 0, 'in step: a template is at version 0');
+		assert.equal(session.diagramId, 'template-1ced1f');
+		ws.recv('resume', { diagram: 'template-1ced1f', version: null });
+		assert.ok(ws.last('snapshot'), 'a tab that holds nothing gets the template');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('B290: a resume against a diagram the caller may not read is a typed refusal, and never binds the session', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
+	try {
+		const store = await openStore(dir, { flushMs: 3_600_000, authz: true });
+		const id = store.list(OWNER)[0].id;
+		const ws = fakeWs();
+		const session = new Session(ws, store, null, null, GUEST);
+		ws.recv('resume', { diagram: id, version: 0 });
+		assert.equal(ws.last('error')?.body.code, 'forbidden', 'refused as `open` refuses, not an internal error');
+		assert.equal(session.diagramId, null);
+		assert.equal(ws.last('snapshot'), undefined);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

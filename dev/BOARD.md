@@ -236,6 +236,7 @@ AMENDED 2026-10-02: TG-3 done -- the transaction-phase reactions are called by t
 AMENDED 2026-10-02: TG-4 done, and H17.28 with it (B287 closed) -- the planner is an event-triggered, declarative reaction graph: one change set, declared triggers, dispatch by index, a shadow guard; about a fifth of the reaction calls, every corpus unchanged. Next by the triage: production on current `main` (P0), the director's call.\
 AMENDED 2026-10-02: the production upgrade audited (`dev/PRODUCTION-UPGRADE.md`, "Audit 2026-10-02") and the bucket backed up; the director approved the deploy. Found while auditing: B290, a resume against a template throwing in production since before `2814d8d`.\
 AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`) -- promotion's P0 done; verified at boot, at the edge and in its logs; rollback to `2814d8d` held. Owed to the director: a look at the page (PU11, PU12, PU24). Next by the triage: start promotion (B266), when the director says.\
+AMENDED 2026-10-02: B290 fixed at the director's word (H17.29) -- a resume against a template is answered at version 0, and one against a diagram the caller may not read is refused, typed (PU30).\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -1005,7 +1006,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.26 | A join is woken by a declaration that CHANGED, however the edit is written -- a set, or the whole-entity put that clears a direction | **B286** | S2 | `DONE` |
 | H17.27 | A selected link that a join absorbs hands its selection to the link it joined into, in the lab and in production alike | **B288** | S3 | `DONE` |
 | H17.28 | The planner on declared triggers: one change set per transaction with succession (TG-1, TG-1b), every reaction's trigger declared as data (TG-2), the transaction phases fed their matches under a shadow guard (TG-3), and dispatch by index (TG-4) -- no visible change | **B287** | S3 | `DONE` |
-| H17.29 | A tab resuming against a template is answered as for any template, instead of the server throwing on its missing log | **B290** | S3 | `TODO` |
+| H17.29 | A tab resuming against a template is answered as for any template, instead of the server throwing on its missing log | **B290** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
