@@ -19,6 +19,7 @@ Session-scoped, like the pipe set: a few recent derivations are kept, so the tab
 projection of one edit do not evict each other.
 */
 import { deriveNetwork } from './pipes.mjs';
+import { bareAnchor } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const KEEP = 4;   // the tab, the authority, and a planner projection before and after, at most
 
@@ -31,7 +32,7 @@ export function createNetworkView(pipesOf, rankOf = () => 0, transit = null) {
 	let recent = [];
 	return {
 		of(model) {
-			const alive = (id) => !!(model.get('node', id) || model.get('waypoint', id));
+			const alive = (id) => !!(model.get('node', id) || bareAnchor(model, id));
 			const pipes = pipesOf(model).filter((p) => alive(p.a) && alive(p.b));
 			const links = model.all('link');
 			// the anchors no route may pass (TRANSIT.md section 12, TR-1): an input to every route, so a part of the key

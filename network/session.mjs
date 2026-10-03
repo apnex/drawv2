@@ -27,6 +27,7 @@ import { createNetwork } from './network.mjs';
 import { judgeDrag } from './guide.mjs';
 import { createTransit } from './transit.mjs';
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 What a drag's legs change in a model, as entries the canvas's history takes: a pipe new to its pair is put; a link pipe
@@ -61,7 +62,7 @@ export function createNetworkSession() {
 		which anchors changed, so the composition can redraw them.
 		*/
 		toggleTransit(selected) {
-			const anchors = selected.filter((e) => e.kind === 'node' || e.kind === 'waypoint');
+			const anchors = selected.filter((e) => ANCHOR_KINDS.includes(e.kind));
 			if (!anchors.length) return;
 			const { flipped, refused } = transit.flip(anchors);
 			const said = [];

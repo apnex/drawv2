@@ -51,6 +51,7 @@ import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with t
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../kernel/network-roles.mjs';
+import { BARE_KIND, ANCHOR_KINDS, bareAnchor, bareAnchors } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -641,7 +642,7 @@ export class Input {
 		const moved = [];
 		this.selection.list().forEach((id) => {
 			const kind = kindOf(id);
-			if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;
+			if (!ANCHOR_KINDS.includes(kind) && kind !== 'zone') return;
 			const entity = this.model.get(kind, id);
 			if (entity) moved.push({ kind, id, before: { x: entity.x, y: entity.y } });
 		});
@@ -687,7 +688,7 @@ export class Input {
 	the canvas; if both axes clamp to zero it refuses rather than overlap.
 	*/
 	duplicateSelection() {
-		const seeds = this.selection.list().filter((id) => ['node', 'zone', 'waypoint'].includes(kindOf(id)));   // B30
+		const seeds = this.selection.list().filter((id) => [...ANCHOR_KINDS, 'zone'].includes(kindOf(id)));   // B30
 		if (seeds.length === 0) return;
 		// clamp the pitch against the ORIGINALS (clones start at the same spots)
 		const refs = seeds.map((id) => {
@@ -820,7 +821,7 @@ export class Input {
 		if (type === 'waypoint') {
 			if (occupiedAnyAt(this.model, snapped)) return false;
 			const wp = this.model.makeWaypoint(snapped);
-			this.history.commit(commands.createEntity('waypoint', wp));
+			this.history.commit(commands.createEntity(BARE_KIND, wp));
 			this.selection.set([wp.id]);
 			this.labels.setFocus(wp.id);
 			return true;
@@ -860,7 +861,7 @@ export class Input {
 		to exist". Threading a link through it clears it -- from then on it shares the link's fate.
 		*/
 		const wp = { ...this.model.makeWaypoint(snapped), pinned: true };
-		this.history.commit(commands.createEntity('waypoint', wp));
+		this.history.commit(commands.createEntity(BARE_KIND, wp));
 		this.state = track(this.state, { type: 'armed', id: wp.id });   // may count as the next drag's first key (see press)
 		this.selection.set([wp.id]);
 		this.labels.setFocus(wp.id);
@@ -918,7 +919,7 @@ export class Input {
 		} else {
 			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse
 			const wp = this.model.makeWaypoint(snapped);
-			this.model.put('waypoint', wp);            // live (visible); committed on release
+			this.model.put(BARE_KIND, wp);            // live (visible); committed on release
 			if (pin) ctx.via.push(wp.id);
 			ctx.route.push(wp.id);
 			ctx.placed.push(wp);
@@ -987,7 +988,7 @@ export class Input {
 		const originals = new Map();     // original id -> { original, pieces: [] }
 
 		for (const w of ends) {
-			if (!this.model.get('waypoint', w)) continue;
+			if (!bareAnchor(this.model, w)) continue;
 			for (const other of this.model.linksAt?.(w) || []) {
 				if (other.id === link.id) continue;
 				const g = originals.get(other.id) || { original: other, pieces: [other] };
@@ -1015,7 +1016,7 @@ export class Input {
 
 	// abandon an in-progress route: drop any waypoints placed during this draw
 	cleanupRoute(ctx) {
-		[...(ctx.placed || [])].reverse().forEach((wp) => this.model.del('waypoint', wp.id));
+		[...(ctx.placed || [])].reverse().forEach((wp) => this.model.del(BARE_KIND, wp.id));
 	}
 
 	/*
@@ -1183,7 +1184,7 @@ export class Input {
 				const keep = new Set(verdict?.keep ?? []);
 				const kept = ctx.placed.filter((w) => keep.has(w.id));
 				this.cleanupRoute({ placed: ctx.placed.filter((w) => !keep.has(w.id)) });
-				const command = commands.withJudged(kept.length ? commands.keepAnchors(kept.map((w) => this.model.get('waypoint', w.id) ?? w)) : null, verdict?.entries);
+				const command = commands.withJudged(kept.length ? commands.keepAnchors(kept.map((w) => bareAnchor(this.model, w.id) ?? w)) : null, verdict?.entries);
 				if (command) this.history.commit(command);
 				return false;
 			}
@@ -1247,7 +1248,7 @@ export class Input {
 	pickedIn(box) {
 		const picked = [];
 		this.model.all('node').forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
-		this.model.all('waypoint').forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
+		bareAnchors(this.model).forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
 		const inBox = new Set(picked);
 		this.model.all('link').forEach((l) => { if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id); });
 		return picked;
@@ -1567,7 +1568,7 @@ export class Input {
 		/*
 		`chainHop`, not `routeLink` -- the kinds are named rather than assumed.
 
-		`routeLink` maps everything in `placed` to `kind: 'waypoint'`, which is correct for a route
+		`routeLink` maps everything in `placed` to `kind: BARE_KIND`, which is correct for a route
 		and wrong for a hop, because a hop lands on a NODE. Passing the node through that list built
 		a `put/waypoint` carrying a node's fields: the browser applied it locally and the server
 		answered `commit rejected - invalid`. B87's shape exactly -- an entry whose kind and payload

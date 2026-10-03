@@ -12,6 +12,7 @@ import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { CORE_KINDS } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a)
+import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -55,7 +56,7 @@ function entityIn(model, id) {
 	return null;
 }
 
-const inside = (model, z) => ['node', 'waypoint'].flatMap((kind) => model.all(kind)
+const inside = (model, z) => [...ANCHOR_KINDS].flatMap((kind) => model.all(kind)
 	.filter((e) => e.x >= z.x && e.x <= z.x + z.w && e.y >= z.y && e.y <= z.y + z.h)
 	.map((e) => ({ kind, id: e.id, name: e.name, x: e.x, y: e.y })));
 
@@ -84,12 +85,12 @@ function contextOf(model, kind, e) {
 	const STRUCTURAL = new Set(['id', 'name', 'x', 'y', 'src', 'dst', 'via', 'members']);
 	const fields = Object.fromEntries(Object.entries(e).filter(([k]) => !STRUCTURAL.has(k)));
 	if (Object.keys(fields).length) out.fields = fields;
-	if (kind === 'node' || kind === 'waypoint') {
+	if (ANCHOR_KINDS.includes(kind)) {
 		out.at = { x: e.x, y: e.y };
-		const links = kind === 'node' ? model.linksOf(e.id) : model.linksAt(e.id);
+		const links = isBareEntity(kind, e) ? model.linksAt(e.id) : model.linksOf(e.id);
 		out.links = links.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
 		out.neighbours = [...new Set(links.flatMap((l) => [l.src, l.dst]).filter((n) => n !== e.id))];
-		out.group = kind === 'node' ? (model.groupOf(e.id)?.id ?? null) : null;
+		out.group = isBareEntity(kind, e) ? null : (model.groupOf(e.id)?.id ?? null);
 		out.zones = model.all('zone')
 			.filter((z) => e.x >= z.x && e.x <= z.x + z.w && e.y >= z.y && e.y <= z.y + z.h)
 			.map((z) => z.id);
@@ -114,7 +115,7 @@ function contextOf(model, kind, e) {
 }
 
 function occupantAt(model, anchor) {
-	for (const kind of ['node', 'waypoint']) {
+	for (const kind of [...ANCHOR_KINDS]) {
 		const hit = model.all(kind).find((e) => e.x === anchor.x && e.y === anchor.y);
 		if (hit) return hit.id;
 	}
@@ -641,7 +642,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		const within = Number(url.searchParams.get('within')) || 120;
 		const doc = model.toJSON();
 		const hits = [];
-		for (const kind of ['node', 'waypoint']) {
+		for (const kind of [...ANCHOR_KINDS]) {
 			for (const e of model.all(kind)) {
 				const d = Math.hypot(e.x - x, e.y - y);
 				if (d <= within) hits.push({ kind, id: e.id, name: e.name, x: e.x, y: e.y, distance: Math.round(d) });

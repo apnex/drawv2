@@ -9,6 +9,7 @@ import { spanExtent, LAYOUTS, snapLayout } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode/snapZone/grid-points reference NODE_EXT/ZONE_EXT locally.
 import { SURFACE, NODE_EXT, ZONE_EXT } from '../../model/surface.mjs';
+import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
 export const HALF = GAP / 2;
 export const NODE_R = L_STD.frame.ext;            // node frame half-extent — from the kernel spec (20)
@@ -86,8 +87,8 @@ re-quantised to the grid so the group lands on cells rather than against the wal
 export function clampDelta(model, moved, delta) {
 	let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
 	moved.forEach((m) => {
-		if (m.kind === 'node' || m.kind === 'waypoint') {
-			const n = m.kind === 'node' ? model.get('node', m.id) : null;
+		if (ANCHOR_KINDS.includes(m.kind)) {
+			const n = model.get(m.kind, m.id);   // a bare anchor has no span, so its footprint is one cell
 			const { sw, sh } = spanExtent(n && n.span);
 			minX = Math.max(minX, -NODE_EXT.x - m.before.x); maxX = Math.min(maxX, NODE_EXT.x - sw - m.before.x);
 			minY = Math.max(minY, -NODE_EXT.y - m.before.y); maxY = Math.min(maxY, NODE_EXT.y - sh - m.before.y);

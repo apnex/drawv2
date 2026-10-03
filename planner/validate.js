@@ -10,6 +10,7 @@ import { NAME_MAX, CAPTION_MAX } from '../model/limits.mjs';
 // Validation reads the composition it is handed, the product's five when nothing else is passed.
 import { PRODUCT_KINDS } from './kinds.mjs';
 import { SCHEMA } from '../model/shape.mjs';   // the document generation, one owner (H18.3)
+import { bareAnchor, bareAnchorsOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -140,7 +141,7 @@ export function validateMutation(model, mutation, kinds = PRODUCT_KINDS) {
 		// whether an entity of a kind exists -- the generic question a plugin row asks; the four below are the link's
 		has: (k, eid) => kinds.has(k) && !!model.get(k, eid),
 		hasNode: (eid) => !!model.get('node', eid),
-		hasWaypoint: (eid) => !!model.get('waypoint', eid),
+		hasWaypoint: (eid) => !!bareAnchor(model, eid),
 		// built ONCE per mutation. This was a rescan of every link for every waypoint, which is
 		// O(waypoints x links) on each write for a predicate that does not change within the call.
 		ownersOf: (() => {
@@ -232,7 +233,7 @@ export function validateDoc(doc, { kinds = PRODUCT_KINDS } = {}) {
 	disagreement means a document the wire refuses can be loaded from disk, or the reverse.
 	*/
 	const nodeIds = new Set((doc.nodes || []).map((n) => n.id));
-	const waypointIds = new Set((doc.waypoints || []).map((w) => w.id));
+	const waypointIds = new Set(bareAnchorsOf(doc).map((w) => w.id));
 	const owners = waypointOwners(doc.links || []);
 	const byId = new Map((doc.links || []).map((l) => [l.id, l]));
 	const ids = Object.fromEntries(kinds.list.map((k) => [k, new Set((doc[kinds.collection[k]] || []).map((e) => e.id))]));

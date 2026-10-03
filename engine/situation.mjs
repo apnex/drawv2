@@ -26,6 +26,7 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
+import { isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 K5 (dev/design/h17/PLAN.md) -- CORE, so every layer that decides what an input means may read it: the canvas (Input),
@@ -71,9 +72,11 @@ export function situationOf(access, ctx = {}, t = null) {
 // What the gesture is ON. Null when it is on nothing, which is a real answer and not an absence.
 function describeTarget(access, id) {
 	if (!id) return null;
-	const kind = kindOf(id);
-	const entity = access.get ? access.get(kind, id) : null;
+	const stored = kindOf(id);
+	const entity = access.get ? access.get(stored, id) : null;
 	if (!entity) return null;
+	// a bare anchor is a `waypoint` to every rule that reads a situation -- the word F4 keeps, whatever kind stores it
+	const kind = isBareEntity(stored, entity) ? 'waypoint' : stored;
 	const t = { kind, id };
 	if (kind === 'waypoint') {
 		/*

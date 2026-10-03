@@ -94,6 +94,7 @@ export const LAYER = {
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
+		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4); F-c changes its answers
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
 		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
@@ -171,7 +172,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
-			'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
+			'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
 	},
 	lab: {
@@ -207,7 +208,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
-			'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
@@ -220,7 +221,7 @@ export const ENTRIES = {
 		modules: [
 			'planner/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 
-			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs',
+			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
@@ -607,7 +608,8 @@ export const UNUSED_EXPORTS = {
 		*/
 		// K4 moved the planner's files to `planner/`: paths K0 never knew, so arrivals too (its frozen list names their old places)
 		arrived: ['model/link-reactions.mjs', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js', 'planner/policy.mjs',
-			'planner/kinds.mjs'],   // H17.22 N-a: the product's kind rows, split out of planner/validate.js
+			'planner/kinds.mjs',   // H17.22 N-a: the product's kind rows, split out of planner/validate.js
+			'model/anchors.mjs'],  // H18.4 F-b: the bare anchor, asked in one place
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a

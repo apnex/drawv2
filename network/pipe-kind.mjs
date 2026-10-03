@@ -18,7 +18,10 @@ Not named (N5): most pipes are laid by the system, so a name would record no int
 only hand pipes, by its picking; another door may delete any pipe by id.
 */
 
-const ANCHOR = /^(node|waypoint)-[0-9a-f]{6}$/;
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+
+// an anchor's id, of any anchor kind (model/anchors.mjs, F-b)
+const ANCHOR = new RegExp(`^(${ANCHOR_KINDS.join('|')})-[0-9a-f]{6}$`);
 const hexOf = (anchorId) => anchorId.slice(anchorId.indexOf('-') + 1);
 
 // the id of the pipe joining two anchors, in either order
@@ -42,7 +45,7 @@ const PIPE_CAP = 4000;
 export const PIPE_ROW = {
 	kind: 'pipe', owner: 'the network', collection: 'pipes',
 	selectable: true, named: false, anchor: false,
-	composite: [], optional: [], references: ['node', 'waypoint'],
+	composite: [], optional: [], references: [...ANCHOR_KINDS],
 	fields: {
 		id: (v) => typeof v === 'string' && /^pipe-[0-9a-f]{6}-[0-9a-f]{6}$/.test(v),
 		a: (v) => typeof v === 'string' && ANCHOR.test(v),
@@ -54,7 +57,7 @@ export const PIPE_ROW = {
 	anchors, not one; the id is the one its ends make; and a hand pipe never becomes a link pipe.
 	*/
 	refers: (pipe, access, patch, before) => {
-		for (const end of [pipe.a, pipe.b]) if (!access.has('node', end) && !access.has('waypoint', end)) return `pipe end does not exist: ${end}`;
+		for (const end of [pipe.a, pipe.b]) if (!ANCHOR_KINDS.some((k) => access.has(k, end))) return `pipe end does not exist: ${end}`;
 		if (!(hexOf(pipe.a) < hexOf(pipe.b))) return `pipe ends are stored lower hex first, and are two anchors: ${pipe.a}, ${pipe.b}`;
 		if (pipe.id !== pipeId(pipe.a, pipe.b)) return `pipe id ${pipe.id} is not the one its ends make, ${pipeId(pipe.a, pipe.b)}`;
 		if (before?.laid === 'hand' && pipe.laid === 'link') return `a pipe laid by hand stays a hand pipe: ${pipe.id}`;

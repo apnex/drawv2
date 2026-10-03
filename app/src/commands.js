@@ -22,6 +22,7 @@ import { kindOf, newId, projection } from '../../model/model.mjs';
 import { pairHolders } from '../../model/invariants.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
+import { BARE_KIND, ANCHOR_KINDS, bareAnchor } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history
@@ -40,7 +41,7 @@ link fails"). They were placed live during the drag and exist only in the tab; t
 takes them to the planner. Built here, not in Input, because commands are built in one place.
 */
 export function keepAnchors(waypoints) {
-	return { label: 'guide anchors', entries: waypoints.map((w) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', w) })) };
+	return { label: 'guide anchors', entries: waypoints.map((w) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, w) })) };
 }
 
 /*
@@ -78,7 +79,7 @@ export function deleteSelection(model, ids) {
 
 	ids.forEach((id) => {
 		if (model.get('node', id)) deletedNodes.add(id);
-		if (model.get('waypoint', id)) deletedWaypoints.add(id);
+		if (bareAnchor(model, id)) deletedWaypoints.add(id);
 	});
 
 	// cascade: links touching a deleted node OR a deleted waypoint-ENDPOINT, plus selected links
@@ -139,7 +140,7 @@ export function deleteSelection(model, ids) {
 
 	deletedNodes.forEach((id) => entries.push({ op: 'del', kind: 'node', entity: clone('node', model.get('node', id)) }));
 	// waypoints last (leaf entities → restored FIRST on undo, before via-restore + link-restore)
-	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: 'waypoint', entity: clone('waypoint', model.get('waypoint', id)) }));
+	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: BARE_KIND, entity: clone(BARE_KIND, bareAnchor(model, id)) }));
 
 	/*
 	H17.22 N-c2 -- A SELECTED ENTITY THE CASCADE ABOVE DOES NOT REACH is deleted as itself: a kind a plugin brings -- the
@@ -359,7 +360,7 @@ export function routeLink(placed, link, splits = [], unpins = []) {
 	return {
 		label: link.via?.length ? 'route' : 'link',   // a NAME for the undo entry, not the pair rule (that is `pairHolders`)
 		entries: [
-			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...(placed || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
 			...unpinEntries(unpins),
 			...splitEntries,
 			{ op: 'put', kind: 'link', entity: clone('link', link) }
@@ -370,7 +371,7 @@ export function routeLink(placed, link, splits = [], unpins = []) {
 /*
 One hop of a chained link run -- B147.
 
-`routeLink` above maps everything in `placed` to `kind: 'waypoint'`, which is right for what it was
+`routeLink` above maps everything in `placed` to `kind: BARE_KIND`, which is right for what it was
 built for and wrong for a hop: a hop lands on a NODE. Passing the node through that list produced a
 `put/waypoint` carrying a node's fields, which the browser applied happily and the server refused
 with `commit rejected - invalid` -- caught by the director in the editor, not by any test here.
@@ -384,7 +385,7 @@ B245 -- threading a PINNED waypoint clears its pin (B162: the link becomes its s
 SAME commit as the link. It used to be written into the tab's model the moment `w` threaded it: the request carried no
 unpin, so the planner kept the pin the tab had dropped, and a cancelled drag left the pin cleared on the tab alone.
 */
-const unpinEntries = (ids) => (ids || []).map((id) => ({ op: 'set', kind: 'waypoint', id, after: { pinned: false } }));
+const unpinEntries = (ids) => (ids || []).map((id) => ({ op: 'set', kind: BARE_KIND, id, after: { pinned: false } }));
 
 /*
 Several links from one drag, as ONE undo step -- what `routeLink` is for a single link. A drag judge may cut the drawn link
@@ -399,7 +400,7 @@ export function routeLinks(placed, links, splits = [], unpins = []) {
 	return {
 		label: 'route',
 		entries: [
-			...(placed || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...(placed || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
 			...unpinEntries(unpins),
 			...splitEntries,
 			...links.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })),
@@ -411,7 +412,7 @@ export function chainHop(waypoints, node, link, unpins = []) {
 	return {
 		label: 'chain',
 		entries: [
-			...(waypoints || []).map((wp) => ({ op: 'put', kind: 'waypoint', entity: clone('waypoint', wp) })),
+			...(waypoints || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
 			...unpinEntries(unpins),
 			{ op: 'put', kind: 'node', entity: clone('node', node) },
 			{ op: 'put', kind: 'link', entity: clone('link', link) },
@@ -468,7 +469,7 @@ export function nudgeSelection(model, ids, dx, dy) {
 	const moved = [];
 	ids.forEach((id) => {
 		const kind = kindOf(id);
-		if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;
+		if (!ANCHOR_KINDS.includes(kind) && kind !== 'zone') return;
 		const e = model.get(kind, id);
 		if (e) moved.push({ kind, id, before: { x: e.x, y: e.y } });
 	});
@@ -549,7 +550,7 @@ export function cloneSubgraph(model, seedIds) {
 
 	seedIds.forEach((id) => {
 		const kind = kindOf(id);
-		if (kind !== 'node' && kind !== 'zone' && kind !== 'waypoint') return;   // B30: waypoints are placeable
+		if (!ANCHOR_KINDS.includes(kind) && kind !== 'zone') return;   // B30: waypoints are placeable
 		const src = model.get(kind, id);
 		if (src) cloneEntity(kind, src);
 	});
@@ -569,8 +570,8 @@ export function cloneSubgraph(model, seedIds) {
 		const via = Array.isArray(link.via) ? link.via : [];
 		via.forEach((wid) => {
 			if (idMap.has(wid)) return;
-			const w = model.get('waypoint', wid);
-			if (w) cloneEntity('waypoint', w);
+			const w = bareAnchor(model, wid);
+			if (w) cloneEntity(BARE_KIND, w);
 		});
 		// B187 -- the copy is named from the SCRATCH model, so a duplicated subgraph does not collide
 		// with the names already in it
@@ -611,11 +612,11 @@ that read the wall clock would put a local instant into a shared document, and e
 would compute departures from a phase that was never theirs.
 */
 export function toggleSpawn(model, waypointId, now, opts = {}) {
-	const wp = model.get('waypoint', waypointId);
+	const wp = bareAnchor(model, waypointId);
 	if (!wp) return null;
 	if (wp.spawn) {
 		const { spawn, ...without } = wp;
-		return { label: 'stop spawning', entries: [{ op: 'put', kind: 'waypoint', entity: clone('waypoint', without) }] };
+		return { label: 'stop spawning', entries: [{ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, without) }] };
 	}
 	/*
 	RED by default, per the director. It is DOCUMENT state rather than a stylesheet rule, because a
@@ -635,5 +636,5 @@ export function toggleSpawn(model, waypointId, now, opts = {}) {
 	// NESTED, not spread. `after` is the patch applied to the WAYPOINT, so a bare spread would
 	// write interval/speed/colour as top-level waypoint fields and the server would refuse them --
 	// which is exactly what it did, and what the test below caught before it ever reached a wire.
-	return { label: 'spawn', entries: [{ op: 'set', kind: 'waypoint', id: waypointId, after: { spawn } }] };
+	return { label: 'spawn', entries: [{ op: 'set', kind: BARE_KIND, id: waypointId, after: { spawn } }] };
 }

@@ -21,6 +21,8 @@ Sovereign: imports nothing. `model/` is the substrate both the server and the br
 depend on, so the rule has one home and neither side restates it.
 */
 
+import { ANCHOR_KINDS } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
+
 /*
 How many straight links a pair of endpoints may carry.
 
@@ -354,7 +356,7 @@ export function violations(model, { groupAfterRemoval = null, facts = false } = 
 	`cellOf` would collapse them.
 	*/
 	const at = new Map();
-	for (const kind of ['node', 'waypoint']) {
+	for (const kind of [...ANCHOR_KINDS]) {
 		for (const e of model.all(kind)) {
 			const key = `${e.x},${e.y}`;
 			const held = at.get(key);

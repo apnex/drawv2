@@ -22,6 +22,7 @@ import { whyDown, downSummary } from './resolve.mjs';
 import { transitEdit } from './transit.mjs';
 import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
 import { pipeId } from './pipe-kind.mjs';
+import { kindOf } from '../model/model.mjs';
 
 /*
 H17.22 N-d -- IT TAKES THE PAGE'S MODEL AND NO OTHER. It took the lab's in-page planner model too, and read it in three
@@ -123,7 +124,7 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	Which, it asks as every rule does: whether what arrives now stops there (`stopsAt`, B278), not what was declared.
 	*/
 	session.onTransitChange((ids) => {
-		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(e.type ? 'node' : 'waypoint', e); }
+		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(kindOf(id), e); }
 		const said = session.takeNotice() ?? '';
 		// one edit, each waypoint's cut or join built on the board the ones before it leave (B283)
 		const edit = transitEdit(model, ids, (id) => network.stopsAt(id, model));

@@ -18,6 +18,7 @@ first of the three units INPUT.md §8 names.
 
 import { NODE_R, dist, spanExtent } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
+import { bareAnchors } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // ---- footprint predicates: a node occupies a RECTANGLE, not a point ----
 
@@ -91,7 +92,7 @@ waypoint". A predicate every caller answers `true` is not a predicate.
 export function endpointAt(model, pos) {
 	const n = nodeAt(model, pos);
 	if (n) return n;
-	return model.all('waypoint').find((w) => dist(w, pos) <= NODE_R) || null;
+	return bareAnchors(model).find((w) => dist(w, pos) <= NODE_R) || null;
 }
 
 // cell occupancy (the engine's O(1) index, not a scan): a node rests here / anything rests here

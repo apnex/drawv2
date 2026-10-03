@@ -149,6 +149,14 @@ The dry run, `tools/migrate-schema.mjs`, boots a real store on a copy and compar
 Corpora: the planner corpus differs in 6 cases, each only by the rename and its input digest; the gesture corpus by 5 lines and the matrix corpus by 3 notices, each only by the rename.\
 Mutants: 21 -- 20 killed by the tests as written; the survivor, a migrated file not written back, killed once its test stopped booting through a helper that marks every adopted diagram dirty; the dry run's own undo check shown to fail by disabling the history step.
 
+AMENDED 2026-10-03 -- **F-b done** (H18.4).\
+`model/anchors.mjs` says how a bare anchor is stored, and every reader asks it: `BARE_KIND`, the kind an op names; `ANCHOR_KINDS`, read from the kind table's anchor rows; `isBareEntity(kind, entity)`; `bareAnchor` and `bareAnchors` over anything answering `get` and `all`; `anchorOf`, which the Model's `endpointOf` now is; and `bareAnchorsOf` over a plain document.\
+Fifty readers in 22 modules moved behind it -- the canvas's commands, input, renderer, snap, palette and pick; the Model; the planner's reactions, tenants and validation; the relations index, spawners and situation; the network's view, keys, session, host, transit, pipe row and tenant; REST and the anchor resolver.\
+Where a reader told a waypoint from a node by its kind alone, it asks of the entity now -- the relations index's buckets, REST's links and group, the renderer's two paths, the stranded reaction, transit's offers, the situation's target -- so F-c can make the answer depend on `type`.\
+What still names the kind does so for a reason, recorded per file in `tests/bare-anchor.test.js`, which ratchets the literal in every product module: the kind's own rows, the loader's repairs, the CLI (standalone, B138), `kernel/` (which may not import `model/`, C9), and the canvas's and scene's word for what is drawn, which F4 keeps.\
+The planner, gesture and matrix corpora are unchanged, byte for byte; the estate dry run unchanged.\
+Mutants: 14 on the module and the readers that now ask of the entity, 13 killed by the tests as written; the survivor -- REST reading a waypoint's links as a node's, which misses a bend -- killed by a new test of `about` on a bend.
+
 Each stage is one gate and one lab deploy.
 
 **Size, by judgement:** F-b and F-c are most of it -- the word appears 514 times in product code and 4,172 in tests and the lab.

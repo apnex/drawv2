@@ -22,6 +22,7 @@ reversed.
 import { prepareSpawner } from './movers.mjs';
 import { BEND_R } from '../kernel/spec.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
+import { bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 `model` is anything answering `all('waypoint')`, `linksAt(id)` and `pathOf(link)` -- the live client
@@ -31,7 +32,7 @@ class is what lets both peers call this without either becoming the other.
 export function spawnersOf(model) {
 	const out = [];
 	// B246: in id order, and from `linksAt`, which answers in id order -- so every peer arms the same link, in one order
-	for (const wp of [...model.all('waypoint')].sort(byId)) {
+	for (const wp of [...bareAnchors(model)].sort(byId)) {
 		if (!wp.spawn) continue;
 		const links = model.linksAt?.(wp.id) || [];
 		const link = links.find((l) => (l.src === wp.id || l.dst === wp.id) && !l.closed);

@@ -7,6 +7,7 @@ they go and writes their inverses (PL-2).
 */
 import { groupAfterRemoval } from './policy.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 Production's link tenant: the shared link reactions with production's conditions -- no stranded pass (a link that
@@ -33,7 +34,7 @@ const GROUP_TRIM = {
 	id: 'group-trim',
 	phase: 'clear',
 	doc: 'deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241)',
-	trigger: { deleted: ['node', 'waypoint'] },
+	trigger: { deleted: [...ANCHOR_KINDS] },
 	run: ({ op, doc }, emit) => {
 		const ops = [];
 		for (const group of doc.all('group')) {

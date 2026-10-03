@@ -19,6 +19,7 @@ import { preferredRoute, pipeKey } from './pipes.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './resolve.mjs';
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 H17.22 N-b -- THE PIPES' OWN REACTIONS, where the model holds pipes (the network's `pipe` kind, network/pipe-kind.mjs):
@@ -41,7 +42,7 @@ function pipeReactions(view) {
 			id: 'pipe-cascade',
 			phase: 'clear',
 			doc: 'an anchor deleted takes every pipe that ends at it, hand pipes included: a pipe is its pair (SD7)',
-			trigger: { deleted: ['node', 'waypoint'] },   // the anchor kinds
+			trigger: { deleted: [...ANCHOR_KINDS] },   // the anchor kinds
 			run: ({ op, doc }, emit) => emit(doc.all('pipe').filter((p) => endsAt(p, op.id)).map((p) => ({ op: 'del', kind: 'pipe', id: p.id }))),
 		},
 		{

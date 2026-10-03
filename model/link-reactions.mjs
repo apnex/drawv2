@@ -23,6 +23,7 @@ Network-layer code (tools/layers.mjs): it reads the model and the link invariant
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
 import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './invariants.mjs';
+import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 
@@ -42,7 +43,7 @@ const WAYPOINT_LINKS = {
 	id: 'waypoint-links',
 	phase: 'clear',
 	doc: 'deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81)',
-	trigger: { deleted: ['waypoint'] },
+	trigger: { deleted: [BARE_KIND] },
 	run: ({ op, doc }, emit) => {
 		const id = op.id;
 		const ops = [];
@@ -105,13 +106,13 @@ A pinned link that lost a pin to this transaction is deleted whole -- the networ
 const STRANDED_LINKS = {
 	id: 'stranded-links',
 	phase: 'stranded',
-	trigger: { deleted: ['waypoint'] },   // a pin is a waypoint: only losing one strands a link
+	trigger: { deleted: [BARE_KIND] },   // a pin is a waypoint: only losing one strands a link
 	doc: 'a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins',
 	// TG-3: handed the waypoints deleted; the links that pinned one, still standing, go whole. It reads what each change is
 	// rather than trusting its trigger to have filtered -- the shadow guard hands a reaction every change, and caught this
 	// one taking a moved waypoint for a deleted one
 	run: ({ before, doc, matches }, emit) => {
-		const gone = new Set(matches.filter((c) => c.kind === 'waypoint' && !c.after).map((c) => c.id));
+		const gone = new Set(matches.filter((c) => !c.after && isBareEntity(c.kind, c.before)).map((c) => c.id));
 		for (const was of before.all('link')) {
 			if (!(was.via || []).some((w) => gone.has(w))) continue;
 			if (doc.get('link', was.id)) emit([{ op: 'del', kind: 'link', id: was.id }]);
@@ -211,10 +212,10 @@ function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {
 			const wasReferenced = refs(before);
 			const nowReferenced = refs(doc);
 			const bendOnly = wasBendOnly(before);
-			const debris = doc.all('waypoint').filter((w) => !nowReferenced.has(w.id)
+			const debris = bareAnchors(doc).filter((w) => !nowReferenced.has(w.id)
 				&& wasReferenced.has(w.id)                       // it arrived unreferenced; not ours to remove
 				&& !keepsOrphan(w, { wasBendOnly: bendOnly.has(w.id) }));
-			for (const w of debris) emit([{ op: 'del', kind: 'waypoint', id: w.id }]);
+			for (const w of debris) emit([{ op: 'del', kind: BARE_KIND, id: w.id }]);
 		},
 	};
 }
@@ -278,11 +279,11 @@ function linkJoin({ joinsAt = () => true, says }) {
 			for (const { kind, before: was, after: now, fields } of matches) {
 				if (kind !== 'link') continue;
 				if (now && LINK_DECLARATIONS.some((k) => fields.has(k))) {
-					for (const end of [now.src, now.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
+					for (const end of [now.src, now.dst]) if (bareAnchor(doc, end)) { touched.add(end); redeclared.add(end); }
 					continue;
 				}
 				if (now) continue;
-				for (const end of [was.src, was.dst]) if (doc.get('waypoint', end)) touched.add(end);
+				for (const end of [was.src, was.dst]) if (bareAnchor(doc, end)) touched.add(end);
 			}
 			/*
 	B269 -- ONLY WHERE A LINK LEFT. A deleted link that is replaced at the same waypoint -- a split puts its half back,

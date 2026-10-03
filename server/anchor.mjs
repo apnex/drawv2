@@ -28,6 +28,7 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 
 import { LAYOUTS, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // The four directions a caller may ask for, as unit steps on the grid. Screen coordinates, so `up`
 // is negative y -- the same mapping `cli/verbs.mjs` shipped, kept identical so moving the rule
@@ -45,7 +46,7 @@ const fail = (error) => ({ ok: false, error });
 // that holding. A waypoint counts because a waypoint IS a node for placement (B112).
 function takenSet(model) {
 	const taken = new Set();
-	for (const kind of ['node', 'waypoint']) {
+	for (const kind of [...ANCHOR_KINDS]) {
 		for (const e of model.all(kind)) taken.add(`${e.x},${e.y}`);
 	}
 	return taken;

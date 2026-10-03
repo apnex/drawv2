@@ -14,6 +14,7 @@ import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
+import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
 const SOCKET = STD.socket;             // glyph box (26)
@@ -280,7 +281,7 @@ export class Renderer {
 			const link = this.model.get('link', id);
 			if (!link) continue;
 			for (const w of [link.src, link.dst, ...(link.via || [])]) {
-				if (this.model.get('waypoint', w)) lit.add(w);
+				if (bareAnchor(this.model, w)) lit.add(w);
 			}
 		}
 		this.pathLit?.forEach((id) => { if (!lit.has(id)) this.setState(id, 'on-selected-path', false); });
@@ -320,7 +321,7 @@ export class Renderer {
 		this.model.all('zone').forEach((z) => this.render('zone', z));
 		this.model.all('group').forEach((g) => this.render('group', g));
 		this.model.all('link').forEach((l) => this.render('link', l));
-		this.model.all('waypoint').forEach((w) => this.render('waypoint', w));
+		bareAnchors(this.model).forEach((w) => this.render(BARE_KIND, w));
 		this.model.all('node').forEach((n) => this.render('node', n));
 	}
 
@@ -354,7 +355,8 @@ export class Renderer {
 
 	render(kind, entity) {
 		this.remove(entity.id);             // put is create-or-replace
-		if (kind === 'node') {
+		const bare = isBareEntity(kind, entity);   // drawn as a waypoint, whatever kind stores it (model/anchors.mjs)
+		if (kind === 'node' && !bare) {
 			const g = el('g', { id: entity.id, class: 'node' }, this.layers.nodes);
 			const { sw, sh } = spanExtent(entity.span), sig = spanSig(entity), csig = contentSig(entity);
 			if (sig || csig) {   // a panel (content) or multi-cell node → a sized rounded-rect frame (same .frame styling)
@@ -416,7 +418,7 @@ export class Renderer {
 			el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
 			applyLook(g, groupLook(b), GROUP_PARTS);
 		}
-		if (kind === 'waypoint') {
+		if (bare) {
 			/*
 			The role comes from the KERNEL's rule, not from a second copy of it here.
 
@@ -487,15 +489,16 @@ export class Renderer {
 
 	refreshWaypointsOf(link) {
 		for (const id of [link.src, link.dst, ...(link.via || [])]) {
-			const w = this.model.get('waypoint', id);
-			if (w) this.render('waypoint', w);
+			const w = bareAnchor(this.model, id);
+			if (w) this.render(BARE_KIND, w);
 		}
 	}
 
 	update(kind, entity) {
 		const dom = this.elementOf(entity.id);
 		if (!dom) return this.render(kind, entity);
-		if (kind === 'node') {
+		const bare = isBareEntity(kind, entity);
+		if (kind === 'node' && !bare) {
 			// a footprint OR content change (resize, 1×1↔span, content set) → re-render (always correct); a
 			// pure move keeps the fast path (frame/content/selBox are all local to the translate → only transform).
 			const sig = spanSig(entity), csig = contentSig(entity);
@@ -547,7 +550,7 @@ export class Renderer {
 			if (dom.querySelector('.group-hull')) applyLook(dom, groupLook(b), GROUP_PARTS);
 			else this.render('group', entity);
 		}
-		if (kind === 'waypoint') {
+		if (bare) {
 			applyLook(dom, waypointLook(entity));
 			this.model.linksAt(entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
 			this.refreshRoutedThrough(entity.id);

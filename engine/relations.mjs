@@ -16,6 +16,7 @@ grid operands (the parity guarantee) and the engine imports no spatial-kernel mo
 
 import { maintainIndex } from './ivm.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
+import { ANCHOR_KINDS, isBareEntity, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // the entity ids a link occupies in the incidence index: src, dst, and every via waypoint.
 const linkRefs = (l) => Array.isArray(l.via) ? [l.src, l.dst, ...l.via] : [l.src, l.dst];
@@ -44,7 +45,8 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 	const member = maintainIndex({ refsOf: (g) => g.members, kind: 'single' });   // memberId → groupId (re-ownership-guarded)
 	const cellNode = maintainIndex({ refsOf: cellsOf, kind: 'set' });             // cellKey → Set<nodeId>
 	const cellWaypoint = maintainIndex({ refsOf: cellsOf, kind: 'set' });         // cellKey → Set<waypointId>
-	const occ = (kind) => (kind === 'node' ? cellNode : cellWaypoint);
+	// a bare anchor's bucket or a node's; from F-c both are nodes, told apart by their entity (model/anchors.mjs)
+	const occ = (kind, entity) => (isBareEntity(kind, entity) ? cellWaypoint : cellNode);
 
 	return {
 		// maintenance: apply ONE model change. link → incidence; group → membership; node/waypoint → the
@@ -59,8 +61,8 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 				if (action === 'put') member.put(entity);
 				else if (action === 'set') member.set(entity);
 				else if (action === 'del') member.del(entity.id);
-			} else if (kind === 'node' || kind === 'waypoint') {
-				const o = occ(kind);
+			} else if (ANCHOR_KINDS.includes(kind)) {
+				const o = occ(kind, entity);
 				if (action === 'put') o.put(entity);
 				else if (action === 'set') o.set(entity);
 				else if (action === 'del') o.del(entity.id);
@@ -72,7 +74,7 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			model.all('link').forEach((l) => incident.put(l));
 			model.all('group').forEach((g) => member.put(g));
 			model.all('node').forEach((n) => cellNode.put(n));
-			model.all('waypoint').forEach((w) => cellWaypoint.put(w));
+			bareAnchors(model).forEach((w) => cellWaypoint.put(w));
 		},
 
 		// ---- the query helpers — semantics AND ORDER mirror model/model.mjs exactly: ascending id (B246) ----
@@ -122,7 +124,7 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			const s = cellWaypoint.get(keyOf(p));
 			if (!s || !s.size) return undefined;
 			if (s.size === 1) return s.values().next().value;                       // O(1) — the real case
-			for (const w of model.all('waypoint')) if (s.has(w.id)) return w.id;    // co-occupancy: old find() order
+			for (const w of bareAnchors(model)) if (s.has(w.id)) return w.id;    // co-occupancy: old find() order
 			return undefined;
 		}
 	};

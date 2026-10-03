@@ -301,6 +301,27 @@ test('place reads inside a zone and between two nodes, linking both ends', async
 });
 
 /*
+H18.4 (F-b) -- `about` a BEND lists the link that bends there. A waypoint's links are read with `linksAt`, which sees a `via`;
+a node's with `linksOf`, which sees ends only. F-b put the choice behind model/anchors.mjs's question, and no test drove a
+bend -- the mutant reading a waypoint like a node survived every other test.
+*/
+test('F-b: about a bend names the link that bends through it, and its two ends as neighbours', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'about-bend')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00001', name: 'a', type: 'host', x: -240, y: -120 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00002', name: 'b', type: 'host', x: 180, y: -120 } },
+			{ op: 'put', kind: 'waypoint', entity: { id: 'waypoint-a00003', name: 'bend', x: 0, y: 60 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-a00004', name: 'l', src: 'node-a00001', dst: 'node-a00002', via: ['waypoint-a00003'] } }] }));
+		const bend = JSON.parse(await run('about', 'bend', '--diagram', id, '--json'));
+		assert.deepEqual(bend.links.map((l) => l.id), ['link-a00004'], 'the link through the bend');
+		assert.deepEqual(bend.neighbours.sort(), ['node-a00001', 'node-a00002']);
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+/*
 B120 -- every verb a message names is a verb that exists.
 
 `add` told the caller to run `draw anchor nearest`, which did not exist. Worse than a vague

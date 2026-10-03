@@ -14,6 +14,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 import { CORE_KINDS, SCHEMA } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId } from './order.mjs';
+import { BARE_KIND, bareAnchor, bareAnchors, anchorOf } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state
@@ -206,7 +207,7 @@ export class Model {
 	// a link endpoint resolves to a node OR a waypoint — the single authority for "is this a live
 	// endpoint" (truthy = the entity, else undefined). Used by render/selection/group liveness.
 	endpointOf(id) {
-		return this.get('node', id) || this.get('waypoint', id);
+		return anchorOf(this, id);
 	}
 
 	/*
@@ -271,7 +272,7 @@ export class Model {
 		if (!src || !dst) return null;
 		const path = [[src.x, src.y]];
 		for (const id of link.via || []) {
-			const w = this.get('waypoint', id);
+			const w = bareAnchor(this, id);
 			if (!w) return null;                    // a missing BEND is as dangling as a missing end
 			path.push([w.x, w.y]);
 		}
@@ -314,12 +315,12 @@ export class Model {
 	occupiedAnyAt(p) {
 		if (this.index) return this.index.occupiedAnyAt(p);
 		return this.all('node').some((n) => n.x === p.x && n.y === p.y)
-			|| this.all('waypoint').some((w) => w.x === p.x && w.y === p.y);
+			|| bareAnchors(this).some((w) => w.x === p.x && w.y === p.y);
 	}
 
 	waypointAt(p) {
-		if (this.index) { const id = this.index.waypointAt(p); return id ? this.get('waypoint', id) : undefined; }
-		return this.all('waypoint').find((w) => w.x === p.x && w.y === p.y);
+		if (this.index) { const id = this.index.waypointAt(p); return id ? bareAnchor(this, id) : undefined; }
+		return bareAnchors(this).find((w) => w.x === p.x && w.y === p.y);
 	}
 
 	/*
@@ -389,7 +390,8 @@ export class Model {
 	makeWaypoint(pos) {
 		// B187 -- named like every other entity. A waypoint is minted from a position rather than
 		// from a request for a named thing, so the name is generated rather than asked for.
-		return { id: this.freshId('waypoint'), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
+		// named with the word people use (F4), whatever kind stores it
+		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
 	}
 
 	makeZone(box) {
