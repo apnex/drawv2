@@ -259,12 +259,19 @@ function linkJoin({ joinsAt = () => true, says }) {
 	So the ends of such a link are candidates whatever the count did. Nothing else that sets a link is: a rename or a move
 	of a pin decides nothing, and a second link drawn to a terminus still never joins (B214).
 	*/
+			/*
+	B286 -- A DECLARATION THAT CHANGED, however the edit was written: compared on the link before the edit and after it,
+	not read off a `set`'s patch -- clearing a direction is a whole-entity put (app/src/commands.js `cycleFlow`), and the
+	patch test missed it. A link the edit created is not compared: a second link drawn to a terminus never joins (B214).
+	*/
 			const redeclared = new Set();
+			const declares = (was, now) => LINK_DECLARATIONS.some((k) => was[k] !== now[k]);
 			for (const op of ops) {
 				if (op.kind !== 'link') continue;
-				if (op.op === 'set' && LINK_DECLARATIONS.some((k) => k in op.patch)) {
-					const e = doc.get('link', op.id);
-					if (e) for (const end of [e.src, e.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
+				if (op.op === 'set' || op.op === 'put') {
+					const id = op.op === 'set' ? op.id : op.entity.id;
+					const was = before.get('link', id), now = doc.get('link', id);
+					if (was && now && declares(was, now)) for (const end of [now.src, now.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
 					continue;
 				}
 				if (op.op !== 'del') continue;

@@ -3836,6 +3836,229 @@
 			"built": "yes"
 		},
 		{
+			"id": "TRN-31",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "Make the link control, cut at P, set the left half forward and the right half reverse -- both arriving at P -- and turn P back on.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Two control links whose directions both arrive at P are not compatible: P is left a junction, transit on.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"controls": 2,
+				"rings": []
+			},
+			"rule": "The director's report, 2026-10-02 (B286); DECISIONS: \"Two links at a junction join when an edit makes them compatible\" (2026-10-02).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-32",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "As TRN-31, then press f on the right half, which clears its direction.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				]
+			],
+			"intent": "An undeclared link opposes nothing, so the two are compatible and join in that edit -- the clear is a declaration changed, though written as a whole-entity put.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"controls": 1,
+				"pins": {
+					"only": 1
+				}
+			},
+			"rule": "The director's report, 2026-10-02 (B286); DECISIONS: \"Two links at a junction join when an edit makes them compatible\" (2026-10-02).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-33",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "As TRN-31, then press f on the left half, which reverses it to match.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"k"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"key",
+					"f"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"f"
+				]
+			],
+			"intent": "Now one leaves P and one arrives: compatible, they join in that edit.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"controls": 1,
+				"pins": {
+					"only": 1
+				}
+			},
+			"rule": "The director's report, 2026-10-02 (B286); DECISIONS: \"Two links at a junction join when an edit makes them compatible\" (2026-10-02).",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "PIPE-01",
 			"state": "routed",
 			"gesture": "select pipe",

@@ -1127,6 +1127,16 @@ test('B285: two links at a junction join when an edit to one makes their planes 
 	const other = board();
 	assert.equal(commit(other.m, other.log, set({ control: false }, 'link-00000a'), 'x', 'x').ok, true);
 	assert.equal(other.m.all('link').length, 1, 'or the other way: both data');
+	// B286 -- a direction CLEARED is a declaration changed too, though `f` writes it as a whole-entity put
+	const cleared = board();
+	assert.equal(commit(cleared.m, cleared.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, flow: true } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { flow: false } }] }, 'x', 'x').ok, true);
+	assert.equal(cleared.m.all('link').length, 2, 'both arriving: incompatible');
+	const { flow: _f, ...undirected } = cleared.m.get('link', 'link-00000b');
+	assert.equal(commit(cleared.m, cleared.log, { label: 'flow cleared', ops: [{ op: 'put', kind: 'link', entity: undirected }] }, 'x', 'x').ok, true);
+	assert.equal(cleared.m.all('link').length, 1, 'one direction cleared, a put: an undeclared link opposes nothing, so they join');
+	const same = board();
+	assert.equal(commit(same.m, same.log, { label: 'noop', ops: [{ op: 'put', kind: 'link', entity: { ...same.m.get('link', 'link-00000b'), name: 'renamed' } }] }, 'x', 'x').ok, true);
+	assert.equal(same.m.all('link').length, 2, 'a put that changes no declaration decides nothing');
 	const opposed = board();
 	assert.equal(commit(opposed.m, opposed.log, { label: 'dirs', ops: [{ op: 'set', kind: 'link', id: 'link-00000a', patch: { control: false, flow: true } }, { op: 'set', kind: 'link', id: 'link-00000b', patch: { flow: false } }] }, 'x', 'x').ok, true);
 	assert.equal(opposed.m.all('link').length, 2, 'planes match but both arrive at E: incompatible, still two');

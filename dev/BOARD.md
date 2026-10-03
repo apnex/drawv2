@@ -216,6 +216,7 @@ AMENDED 2026-10-02: B284 fixed at the director's report (H17.24) -- a link cut i
 AMENDED 2026-10-02: B285 fixed at the director's report and ruling (H17.25) -- two links at a junction join as soon as an edit makes them compatible, no transit toggle needed (PU27).\
 AMENDED 2026-10-02: the fields that decide whether two links join are one list, `LINK_DECLARATIONS`, read by the cut and the join, held to the join's comparison by a test; the transit toggle's join becoming a planner reaction recorded for P2.\
 AMENDED 2026-10-02: the link's whole path through promotion gathered in `PROMOTION.md` by stage -- transit reactions (P2), one link tenant and `link` the network's kind (P3, B280), the rules into `network/` (K13b), the browser preview (PL-6), the Model's link methods (K13d) -- each pointing at the row that carries it.\
+AMENDED 2026-10-02: B286 fixed at the director's report (H17.26) -- clearing a direction with `f` now joins two links it makes compatible, as reversing one does; the join compares declarations before and after, not a patch.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -982,6 +983,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.23 | A transit change at several anchors at once builds each anchor's edit on the board the ones before it leave, so cutting two pins of one link makes three straight pieces and turning them back on rejoins them | **B283** | S2 | `DONE` |
 | H17.24 | A link cut in two keeps its declarations -- its plane (control) and its direction (flow) -- on both halves, whichever cut made them | **B284** | S2 | `DONE` |
 | H17.25 | Two links at a junction join when an edit to one makes them compatible -- a change of plane or direction -- as they join when a link leaves; a second link drawn to a terminus still never joins (B214) | **B285** | S2 | `DONE` |
+| H17.26 | A join is woken by a declaration that CHANGED, however the edit is written -- a set, or the whole-entity put that clears a direction | **B286** | S2 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
