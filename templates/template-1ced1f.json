@@ -12,7 +12,8 @@
 			"type": "router",
 			"x": -720,
 			"y": -300,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 1
 		},
 		{
 			"id": "node-ff4cf3",
@@ -20,7 +21,8 @@
 			"type": "firewall",
 			"x": -720,
 			"y": -180,
-			"shape": "square"
+			"shape": "square",
+			"order": 2
 		},
 		{
 			"id": "node-351577",
@@ -28,28 +30,32 @@
 			"type": "loadbalancer",
 			"x": -720,
 			"y": -60,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 3
 		},
 		{
 			"id": "node-673e18",
 			"name": "a-web-1",
 			"type": "server",
 			"x": -840,
-			"y": 60
+			"y": 60,
+			"order": 4
 		},
 		{
 			"id": "node-d667d3",
 			"name": "a-web-2",
 			"type": "server",
 			"x": -720,
-			"y": 60
+			"y": 60,
+			"order": 5
 		},
 		{
 			"id": "node-a96657",
 			"name": "a-web-3",
 			"type": "server",
 			"x": -600,
-			"y": 60
+			"y": 60,
+			"order": 6
 		},
 		{
 			"id": "node-b01f45",
@@ -57,7 +63,8 @@
 			"type": "host",
 			"x": -720,
 			"y": 180,
-			"shape": "square"
+			"shape": "square",
+			"order": 7
 		},
 		{
 			"id": "node-801bd9",
@@ -65,7 +72,8 @@
 			"type": "router",
 			"x": 720,
 			"y": -300,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 8
 		},
 		{
 			"id": "node-61fdbb",
@@ -73,7 +81,8 @@
 			"type": "firewall",
 			"x": 720,
 			"y": -180,
-			"shape": "square"
+			"shape": "square",
+			"order": 9
 		},
 		{
 			"id": "node-c7a09a",
@@ -81,28 +90,32 @@
 			"type": "loadbalancer",
 			"x": 720,
 			"y": -60,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 10
 		},
 		{
 			"id": "node-45bbad",
 			"name": "b-web-1",
 			"type": "server",
 			"x": 600,
-			"y": 60
+			"y": 60,
+			"order": 11
 		},
 		{
 			"id": "node-07f101",
 			"name": "b-web-2",
 			"type": "server",
 			"x": 720,
-			"y": 60
+			"y": 60,
+			"order": 12
 		},
 		{
 			"id": "node-b6360e",
 			"name": "b-web-3",
 			"type": "server",
 			"x": 840,
-			"y": 60
+			"y": 60,
+			"order": 13
 		},
 		{
 			"id": "node-9fda0b",
@@ -110,7 +123,8 @@
 			"type": "host",
 			"x": 720,
 			"y": 180,
-			"shape": "square"
+			"shape": "square",
+			"order": 14
 		},
 		{
 			"id": "node-92e37b",
@@ -118,7 +132,8 @@
 			"type": "router",
 			"x": -180,
 			"y": -300,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 15
 		},
 		{
 			"id": "node-f0878b",
@@ -126,7 +141,8 @@
 			"type": "router",
 			"x": 180,
 			"y": -300,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 16
 		},
 		{
 			"id": "node-0e030b",
@@ -134,7 +150,8 @@
 			"type": "router",
 			"x": 0,
 			"y": -480,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 17
 		},
 		{
 			"id": "node-d547bf",
@@ -142,7 +159,8 @@
 			"type": "vxlan",
 			"x": 0,
 			"y": -180,
-			"shape": "circle"
+			"shape": "circle",
+			"order": 18
 		},
 		{
 			"id": "node-1b03d0",
@@ -214,7 +232,8 @@
 					"fill": "#aed581"
 				}
 			],
-			"shape": "square"
+			"shape": "square",
+			"order": 19
 		},
 		{
 			"id": "node-14e380",
@@ -288,55 +307,64 @@
 					"rx": 3
 				}
 			],
-			"shape": "square"
+			"shape": "square",
+			"order": 20
 		},
 		{
 			"id": "node-7d093e",
 			"x": -480,
 			"y": -420,
-			"name": "waypoint-1"
+			"name": "waypoint-1",
+			"order": 21
 		},
 		{
 			"id": "node-2512fa",
 			"x": 480,
 			"y": -420,
-			"name": "waypoint-2"
+			"name": "waypoint-2",
+			"order": 22
 		},
 		{
 			"id": "node-337063",
 			"x": -420,
 			"y": -180,
-			"name": "waypoint-3"
+			"name": "waypoint-3",
+			"order": 23
 		},
 		{
 			"id": "node-c7897a",
 			"x": 480,
 			"y": -180,
-			"name": "waypoint-4"
+			"name": "waypoint-4",
+			"order": 24
 		},
 		{
 			"id": "node-625b2b",
 			"x": -120,
 			"y": -60,
-			"name": "waypoint-5"
+			"name": "waypoint-5",
+			"order": 25
 		},
 		{
 			"id": "node-9f5472",
 			"x": 0,
 			"y": 60,
-			"name": "waypoint-6"
+			"name": "waypoint-6",
+			"order": 26
 		},
 		{
 			"id": "node-e2db5e",
 			"x": 120,
 			"y": -60,
-			"name": "waypoint-7"
+			"name": "waypoint-7",
+			"order": 27
 		},
 		{
 			"id": "node-9831c2",
 			"x": -60,
 			"y": 240,
-			"name": "waypoint-8"
+			"name": "waypoint-8",
+			"order": 28
 		}
 	],
 	"links": [
@@ -344,91 +372,106 @@
 			"id": "link-3f0e62",
 			"src": "node-3b2eb6",
 			"dst": "node-ff4cf3",
-			"name": "link-1"
+			"name": "link-1",
+			"order": 1
 		},
 		{
 			"id": "link-d3883e",
 			"src": "node-ff4cf3",
 			"dst": "node-351577",
-			"name": "link-2"
+			"name": "link-2",
+			"order": 2
 		},
 		{
 			"id": "link-c4c4d9",
 			"src": "node-351577",
 			"dst": "node-673e18",
-			"name": "link-3"
+			"name": "link-3",
+			"order": 3
 		},
 		{
 			"id": "link-afc356",
 			"src": "node-351577",
 			"dst": "node-d667d3",
-			"name": "link-4"
+			"name": "link-4",
+			"order": 4
 		},
 		{
 			"id": "link-415333",
 			"src": "node-351577",
 			"dst": "node-a96657",
-			"name": "link-5"
+			"name": "link-5",
+			"order": 5
 		},
 		{
 			"id": "link-0719f0",
 			"src": "node-d667d3",
 			"dst": "node-b01f45",
-			"name": "link-6"
+			"name": "link-6",
+			"order": 6
 		},
 		{
 			"id": "link-eba513",
 			"src": "node-801bd9",
 			"dst": "node-61fdbb",
-			"name": "link-7"
+			"name": "link-7",
+			"order": 7
 		},
 		{
 			"id": "link-a48a0f",
 			"src": "node-61fdbb",
 			"dst": "node-c7a09a",
-			"name": "link-8"
+			"name": "link-8",
+			"order": 8
 		},
 		{
 			"id": "link-250373",
 			"src": "node-c7a09a",
 			"dst": "node-45bbad",
-			"name": "link-9"
+			"name": "link-9",
+			"order": 9
 		},
 		{
 			"id": "link-f8d434",
 			"src": "node-c7a09a",
 			"dst": "node-07f101",
-			"name": "link-10"
+			"name": "link-10",
+			"order": 10
 		},
 		{
 			"id": "link-8d187c",
 			"src": "node-c7a09a",
 			"dst": "node-b6360e",
-			"name": "link-11"
+			"name": "link-11",
+			"order": 11
 		},
 		{
 			"id": "link-ba9939",
 			"src": "node-07f101",
 			"dst": "node-9fda0b",
-			"name": "link-12"
+			"name": "link-12",
+			"order": 12
 		},
 		{
 			"id": "link-5589ad",
 			"src": "node-92e37b",
 			"dst": "node-f0878b",
-			"name": "link-13"
+			"name": "link-13",
+			"order": 13
 		},
 		{
 			"id": "link-924977",
 			"src": "node-92e37b",
 			"dst": "node-0e030b",
-			"name": "link-14"
+			"name": "link-14",
+			"order": 14
 		},
 		{
 			"id": "link-90cf44",
 			"src": "node-0e030b",
 			"dst": "node-f0878b",
-			"name": "link-15"
+			"name": "link-15",
+			"order": 15
 		},
 		{
 			"id": "link-753b8c",
@@ -437,7 +480,8 @@
 			"via": [
 				"node-7d093e"
 			],
-			"name": "link-16"
+			"name": "link-16",
+			"order": 16
 		},
 		{
 			"id": "link-009dee",
@@ -446,7 +490,8 @@
 			"via": [
 				"node-2512fa"
 			],
-			"name": "link-17"
+			"name": "link-17",
+			"order": 17
 		},
 		{
 			"id": "link-4d045e",
@@ -455,7 +500,8 @@
 			"via": [
 				"node-337063"
 			],
-			"name": "link-18"
+			"name": "link-18",
+			"order": 18
 		},
 		{
 			"id": "link-3989e9",
@@ -464,7 +510,8 @@
 			"via": [
 				"node-c7897a"
 			],
-			"name": "link-19"
+			"name": "link-19",
+			"order": 19
 		},
 		{
 			"id": "link-b2e213",
@@ -475,7 +522,8 @@
 				"node-9f5472"
 			],
 			"closed": true,
-			"name": "link-20"
+			"name": "link-20",
+			"order": 20
 		},
 		{
 			"id": "link-6377ed",
@@ -484,7 +532,8 @@
 			"via": [
 				"node-9831c2"
 			],
-			"name": "link-21"
+			"name": "link-21",
+			"order": 21
 		}
 	],
 	"zones": [
@@ -494,7 +543,8 @@
 			"x": -930,
 			"y": -390,
 			"w": 420,
-			"h": 660
+			"h": 660,
+			"order": 1
 		},
 		{
 			"id": "zone-dd2291",
@@ -502,7 +552,8 @@
 			"x": 510,
 			"y": -390,
 			"w": 420,
-			"h": 660
+			"h": 660,
+			"order": 2
 		},
 		{
 			"id": "zone-327d78",
@@ -510,7 +561,8 @@
 			"x": -270,
 			"y": -510,
 			"w": 540,
-			"h": 300
+			"h": 300,
+			"order": 3
 		}
 	],
 	"groups": [

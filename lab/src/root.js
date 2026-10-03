@@ -62,7 +62,7 @@ Its network is ONE object (T1), handed to the tab's Model -- where a link runs, 
 whether it is down, what blocks it -- and to the planner -- what else references an anchor, which orphans survive, which
 links are stranded. Production constructs `new Model()` and commits with no network; nothing here reaches production.
 */
-const session = createNetworkSession(), { order, network } = session;
+const session = createNetworkSession(), { network } = session;
 // THE KINDS (H17.22): the product's five and the network's pipe, one composition handed to both models and the planner
 const kinds = productKinds(PIPE_ROW);
 /*
@@ -196,7 +196,7 @@ if (wanted) {
 	if (!board) { if (Object.keys(boards).length) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`); }
 	else {
 		// the board's pipes ride in its own commit (N-c); the product's tenant, so the board is laid as listed and nothing swept
-		const answer = net.seed(board.pipes, board.ops.filter((o) => o.kind === 'link').map((o) => o.entity.id), (pipeOps) => {
+		const answer = net.seed(board.pipes, (pipeOps) => {
 			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { kinds });
 			if (a.ok) applyOps(model, a.change?.ops ?? []);
 			return a;
@@ -218,4 +218,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, order, network, history, log, input, capture, routeHook: net.judge };
+window.lab = { model, authority, network, history, log, input, capture, routeHook: net.judge };

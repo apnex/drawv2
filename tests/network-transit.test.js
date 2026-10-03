@@ -295,7 +295,7 @@ test('B278: stopsAt answers, anchor by anchor, what routing blocks -- and differ
 test('B278: the planner refuses a join where what arrives stops, whatever was declared', () => {
 	// a stand-in transit where the two questions differ: w stops what arrives, and nothing is declared
 	const transit = { declaredOff: () => false, blockedIn: () => ['node-00000d'], stopsAt: (id) => id === 'node-00000d' };
-	const network = createNetwork(() => 0, transit);
+	const network = createNetwork(transit);
 	const m = new Model({ network, kinds: KINDS });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -360, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 360, y: 0, shape: 'circle' });

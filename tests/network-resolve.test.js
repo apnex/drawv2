@@ -18,7 +18,7 @@ H17.22 N-d: the network reads the model's own pipes, so each board is a model co
 `pipesIn(m)` lays and removes pipes in it -- the session's pipe set these tests drove is deleted.
 */
 const KINDS = productKinds(PIPE_ROW);
-const model = (rankOf) => new Model({ network: createNetwork(rankOf), kinds: KINDS });
+const model = () => new Model({ network: createNetwork(), kinds: KINDS });   // links aged by their stored order (F-d)
 const pipesIn = (m) => ({
 	lay: (a, b, laid = 'hand') => { if (!m.get('pipe', pipeId(a, b))) m.put('pipe', pipeEntity(a, b, laid)); },
 	remove: (a, b) => m.del('pipe', pipeId(a, b)),
@@ -145,13 +145,13 @@ ONE LINK PER PIPE (2026-09-30): where a link is drawn, whether it is down, and w
 the one assignment -- so a link blocked by another is drawn along its intent, called down, and names its blocker.
 */
 test('the Model\'s companions answer from the one assignment: a blocked link is down and names its blocker', async () => {
-	const rankOf = (id) => (id === 'link-00000u' ? 0 : 1);
-	const m = model(rankOf), s = pipesIn(m);
+	const m = model(), s = pipesIn(m);
 	for (const [a, b] of [['node-00000a', 'node-000001'], ['node-00000c', 'node-000001'], ['node-000001', 'node-000002'], ['node-000002', 'node-00000b'], ['node-000002', 'node-00000d']]) s.lay(a, b, 'hand');
 	for (const [id, x, y] of [['node-00000a', -480, -180], ['node-00000b', 480, -180], ['node-00000c', -480, 180], ['node-00000d', 480, 180]]) m.put('node', { id, name: id, type: 'router', x, y, shape: 'circle' });
 	m.put('node', { id: 'node-000001', name: 't1', x: -240, y: 0 });
 	m.put('node', { id: 'node-000002', name: 't2', x: 240, y: 0 });
-	const upper = { id: 'link-00000u', name: 'u', src: 'node-00000a', dst: 'node-00000b' }, lower = { id: 'link-00000l', name: 'l', src: 'node-00000c', dst: 'node-00000d' };
+	// the upper link is the older: its drawing order is lower (F-d) -- where the session's record once said so
+	const upper = { id: 'link-00000u', name: 'u', order: 1, src: 'node-00000a', dst: 'node-00000b' }, lower = { id: 'link-00000l', name: 'l', order: 2, src: 'node-00000c', dst: 'node-00000d' };
 	m.put('link', upper); m.put('link', lower);
 	assert.deepEqual(m.pathOf(upper), [[-480, -180], [-240, 0], [240, 0], [480, -180]], 'the older link runs the trunk');
 	assert.equal(m.isLinkDown(lower), true, 'the younger one is down');

@@ -38,6 +38,7 @@ import { groupAfterRemoval } from './policy.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { PRODUCT_KINDS } from './kinds.mjs';   // H17.22 N-a: the kinds a composition brings, each a whole row
 import { violations } from '../model/invariants.mjs';
+import { nextOrder } from '../model/order.mjs';   // a creation without a drawing order is given one (F-d)
 import { CLASSIC_LINKS, GROUPS } from './tenants.mjs';
 import { BEATS, wallClock } from './edges.mjs';
 
@@ -97,11 +98,13 @@ PL-2 -- THE ONE PLACE AN OP REACHES THE PROJECTION. Each op is applied in turn a
 inverse list is the exact reverse of the ops whoever produced them: a requested op, a cascade, the stranded pass, the
 sweep, the join. `out` and `inv` are the transaction's lists; `inv` is kept pre-reversed, since undo replays it in order.
 */
-function track(proj, ops, out, inv, changes) {
+// `covered`: the op's inverse is already in `inv` whole -- a drawing order given right after the put it completes, which
+// the put's own inverse (a delete, or the item as it was) undoes with it (F-d)
+function track(proj, ops, out, inv, changes, covered = false) {
 	for (const op of ops) {
 		changes.note(op);   // before it applies, so the change set holds the entity as it stood (TG-1)
 		changes.absorbed(op);
-		const back = inverseOf(proj, op);
+		const back = covered ? null : inverseOf(proj, op);
 		applyOps(proj, [op]);
 		out.push(op);
 		if (back) inv.unshift(back);
@@ -331,12 +334,12 @@ export function plan(model, ops, options = {}) {
 		}
 	};
 	// one op to the projection: a delete of something present clears what depends on it first; a put is followed after
-	const apply = (op) => {
+	const apply = (op, covered = false) => {
 		if (op.op === 'del') {
 			if (!proj.get(op.kind, op.id)) return;   // already gone -- accepted, no-op
 			runPhase('clear', { op, doc: proj, changes });
 		}
-		track(proj, [op], out, inv, changes);
+		track(proj, [op], out, inv, changes, covered);
 		if (op.op === 'put') runPhase('follow', { op, doc: proj, changes });
 	};
 	// what a put would set off, asked without applying anything -- whether an unchanged put still does something
@@ -359,6 +362,7 @@ export function plan(model, ops, options = {}) {
 		if (!step.op) continue;                                    // narrowed to nothing
 		if (step.unchanged && !follows(step.op)) continue;         // an unchanged put that displaces nothing
 		apply(step.op);
+		if (step.then) apply(step.then, true);                     // its drawing order, when it came without -- undone with the put (F-d)
 	}
 	const ctx = { before: model, doc: proj, ops: out, changes, refuses: (op) => validateMutation(proj, asMutation(op), kinds) };
 	for (const phase of PHASES) if (!PER_OP.has(phase)) runPhase(phase, ctx);
@@ -427,6 +431,25 @@ function planOne(model, op, place, kinds) {
 		const before = model.get(op.kind, op.entity.id);
 		if (!before && model.all(op.kind).length >= kinds.row(op.kind).cap) return { ok: false, error: `${op.kind} collection limit reached` };
 		const put = { op: 'put', kind: op.kind, entity: clone(op.kind, op.entity) };
+		/*
+		F-d (H18.6) -- AN ITEM KEEPS ITS DRAWING ORDER, and a creation without one is given one. A tab's factories stamp
+		it (model/order.mjs); an agent's or the CLI's creation arrives without, and the planner gives it one above the
+		highest of its kind in the document as this transaction has it, so it is drawn newest and is the youngest link. A
+		put that replaces an item and omits it keeps the item's own -- a whole-entity put clearing a field must not move
+		the item in the stack. Only for a kind whose row checks an `order`.
+
+		As a SET after the put, never by rewriting it: the put the caller sent comes back as it was sent, so a tab knows
+		its own echo, and the order arrives as a derived op on one field -- which lands under a drag without pulling the
+		dragged item back (tests/b242-reconcile.test.js C4; rewriting the put did exactly that).
+		*/
+		let order;
+		if (put.entity.order === undefined && kinds.row(op.kind).fields.order) {
+			if (before?.order !== undefined) order = before.order;
+			else if (!before) order = nextOrder(model, op.kind);
+		}
+		// a put that changes nothing once the item's own order is carried is no change, as it was before orders (I6)
+		if (order !== undefined && before && same(before, { ...put.entity, order })) return { ok: true, op: put, unchanged: true };
+		if (order !== undefined) return { ok: true, op: put, unchanged: false, then: { op: 'set', kind: op.kind, id: put.entity.id, patch: { order } } };
 	// A put of an entity already present unchanged, with no group to steal from, changes nothing.
 	// Narrow it away — the same no-op rule a set and a delete follow (I6). This is what makes an
 	// outbox replay free: a request the server already accepted costs a no-op ack, not a second

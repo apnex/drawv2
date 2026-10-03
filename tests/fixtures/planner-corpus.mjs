@@ -272,7 +272,7 @@ function compose(c) {
 	// as the session hands them over: an anchor with its kind, which is what the transit table reads
 	const { refused } = transit.flip((c.off || []).map((id) => ({ ...model.get('node', id), kind: 'node' })));
 	if (refused.length) throw new Error(`${c.id}: transit refused to turn off ${refused.map((e) => e.id)}`);
-	const plugin = createNetwork(() => 0, transit);
+	const plugin = createNetwork(transit);
 	// counted, not changed: how many ops the network's stranded pass emitted
 	const reached = { stranded: 0 };
 	const links = { ...plugin.links, reactions: plugin.links.reactions.map((r) => (r.phase !== 'stranded' ? r

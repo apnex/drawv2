@@ -71,7 +71,7 @@ test('F-a: the version kept is the high-water mark -- a log whose records run pa
 test('F-a: the document is stamped schema 2, and every step is named in what the function reports', () => {
 	const { doc, steps } = migrateFormatBatch(schema1(), log1());
 	assert.equal(doc.meta.schema, 2);
-	assert.deepEqual(steps, ['history', 'anchors', 'direction', 'schema']);
+	assert.deepEqual(steps, ['history', 'anchors', 'order', 'direction', 'schema']);
 });
 
 test('F-a: pure -- the input document and log are untouched', () => {
@@ -164,7 +164,8 @@ test('F-a: every document the store validates was admitted first -- the restore 
 	const src = fs.readFileSync(new URL('../server/store.js', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 	const count = (re) => (src.match(re) || []).length;
 	assert.equal(count(/\bshedRetired\(/g), 2, 'the old repairs are called only by admit (one definition, one call)');
-	assert.equal(count(/\badmit\(/g) - 1, count(/\bvalidateDoc\(/g), 'one admit per validation: boot, examples, create, templates, restore');
+	// one admit per validation -- boot, examples, create, templates, restore -- and the programmatic seed, which needs none (F-d)
+	assert.equal(count(/\badmit\(/g) - 2, count(/\bvalidateDoc\(/g), 'one admit per validation: boot, examples, create, templates, restore');
 });
 
 // ---- the dry run (tools/migrate-schema.mjs) -- its checks shown able to fail ----
@@ -191,7 +192,7 @@ test('F-a dry run: a directory of schema 1 files passes, through a real store bo
 	const r = await dryRun(dir, { say: () => {} });
 	assert.deepEqual(r.problems, []);
 	assert.equal(r.booted, 2);
-	assert.deepEqual(r.ran, { history: 1, renumber: 0, anchors: 2, direction: 2, schema: 2 });
+	assert.deepEqual(r.ran, { history: 1, renumber: 0, anchors: 2, order: 2, direction: 2, schema: 2 });
 	assert.equal(r.directions, 4);
 	assert.equal(r.records, 3);
 	assert.equal(fs.readFileSync(path.join(dir, 'diagram-a1a1a1.json'), 'utf8'), before, 'the dry run never writes the data directory');
@@ -230,7 +231,7 @@ const withWaypoints = () => ({
 
 test('F-c: each waypoint joins the nodes after them, with no type, keeping its hex, name, place, pin and spawner', () => {
 	const { doc, steps } = migrateFormatBatch(withWaypoints(), null);
-	assert.deepEqual(steps, ['renumber', 'anchors', 'schema']);
+	assert.deepEqual(steps, ['renumber', 'anchors', 'order', 'schema']);
 	assert.equal('waypoints' in doc, false, 'the collection is gone');
 	assert.deepEqual(doc.nodes.map((n) => n.id).slice(0, 2), ['node-0000aa', 'node-0000bb'], 'the nodes first, untouched');
 	const spawner = doc.nodes.find((n) => n.name === 'spawner');
@@ -331,4 +332,20 @@ test('F-c: an unnamed old waypoint is named around the names its fellow waypoint
 	await store.init();
 	const names = store.diagrams.get('diagram-c1c1c1').model.all('node').filter((n) => !n.type).map((n) => n.name).sort();
 	assert.deepEqual(names, ['waypoint-1', 'waypoint-2'], 'not a second waypoint-1');
+});
+
+test('F-d dry run: the order check sees an item left without one, a reordering, and an order that moved', async () => {
+	const { orderProblem } = await import('../tools/migrate-schema.mjs');
+	const source = withWaypoints();
+	const { doc } = migrateFormatBatch(source, null);
+	const { waypointMap } = await import('../tools/migrate-schema.mjs');
+	const map = waypointMap(source, doc);
+	assert.equal(orderProblem(source, doc, map), null);
+	const missing = structuredClone(doc); delete missing.links[0].order;
+	assert.match(orderProblem(source, missing, map), /without a drawing order/);
+	const swapped = structuredClone(doc); [swapped.nodes[0].order, swapped.nodes[1].order] = [swapped.nodes[1].order, swapped.nodes[0].order];
+	assert.match(orderProblem(source, swapped, map), /out of the order they were listed in/);
+	const kept = structuredClone(source); kept.zones = [{ id: 'zone-0000ab', name: 'z', x: -90, y: -90, w: 180, h: 180, order: 7 }];
+	const keptDoc = migrateFormatBatch(kept, null).doc; keptDoc.zones[0].order = 8;
+	assert.match(orderProblem(kept, keptDoc, waypointMap(kept, keptDoc)), /changed its drawing order/);
 });

@@ -14,7 +14,8 @@ import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
-import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../model/anchors.mjs';
+import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-d)   // the bare anchor, asked in one place (F-b)
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
 const SOCKET = STD.socket;             // glyph box (26)
@@ -139,6 +140,7 @@ function pillWidth(name) {
 
 export class Renderer {
 	constructor(model, svg) {
+		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
 		this.model = model;
 		this.svg = svg;
 		// declared back→front to mirror the DOM layer order (region decorations behind the graph):
@@ -318,11 +320,13 @@ export class Renderer {
 		// selection reconcile itself is owned by Model.load.
 		this.selectedSet.clear();
 		Object.values(this.layers).forEach((layer) => { layer.innerHTML = ''; });
-		this.model.all('zone').forEach((z) => this.render('zone', z));
+		// each stacked kind in its drawing order, so every item lands on top of the ones before it (F-d)
+		const inOrder = (list) => [...list].sort(byDrawingOrder);
+		inOrder(this.model.all('zone')).forEach((z) => this.render('zone', z));
 		this.model.all('group').forEach((g) => this.render('group', g));
-		this.model.all('link').forEach((l) => this.render('link', l));
-		bareAnchors(this.model).forEach((w) => this.render(BARE_KIND, w));
-		typedNodes(this.model).forEach((n) => this.render('node', n));
+		inOrder(this.model.all('link')).forEach((l) => this.render('link', l));
+		inOrder(bareAnchors(this.model)).forEach((w) => this.render(BARE_KIND, w));
+		inOrder(typedNodes(this.model)).forEach((n) => this.render('node', n));
 	}
 
 	// the routed path of a link: src → its via-waypoint centres → dst, rounded at the kernel bend.
@@ -353,7 +357,45 @@ export class Renderer {
 		return groupHull(members, L_STD.group.ext);   // one authority shared with the kernel resolve (now footprint-aware)
 	}
 
+	/*
+	F-d (H18.6; B249, B10) -- DRAWN IN ITS PLACE, not on top. Each drawn kind's layer is stacked by the stored drawing order
+	(model/order.mjs): newest on top for every peer, and an item put back -- by undo, by another writer's answer, by a
+	re-render -- returns to its place rather than to the top, which is what B10 was. Drawn, then moved among its layer's
+	items to the first place an older one precedes it; the newest, the common case, stops at the first look.
+	*/
 	render(kind, entity) {
+		this.draw(kind, entity);
+		this.place(kind, entity);
+	}
+
+	// the layer a drawn kind is stacked in, or null for one that is not stacked (a group's hull)
+	stackOf(kind, entity) {
+		if (kind === 'link') return this.layers.links;
+		if (kind === 'zone') return this.layers.zones;
+		if (kind === 'node') return isBareEntity(kind, entity) ? this.layers.waypoints : this.layers.nodes;
+		return null;
+	}
+
+	place(kind, entity) {
+		const layer = this.stackOf(kind, entity);
+		if (!layer) return;
+		this.stackedAt.set(entity.id, entity.order);   // what it was placed by, so a later change of order restacks it
+		const own = [this.elementOf(entity.id), kind === 'link' ? this.hitTwinOf(entity.id) : null].filter((e) => e && e.parentNode === layer);
+		if (!own.length) return;
+		const ownerOf = (c) => c.getAttribute('id') || c.getAttribute('data-link');   // a link's hit twin names its link (B268)
+		let ref = null;
+		for (let i = layer.children.length - 1; i >= 0; i--) {
+			const c = layer.children[i];
+			const id = ownerOf(c);
+			if (id === entity.id) continue;
+			const other = id && this.model.get(kind, id);
+			if (!other) continue;
+			if (byDrawingOrder(other, entity) > 0) ref = c; else break;   // drawn after it, so it goes beneath
+		}
+		for (const e of own) layer.insertBefore(e, ref);
+	}
+
+	draw(kind, entity) {
 		this.remove(entity.id);             // put is create-or-replace
 		const bare = isBareEntity(kind, entity);   // drawn as a waypoint, whatever kind stores it (model/anchors.mjs)
 		if (kind === 'node' && !bare) {
@@ -497,6 +539,8 @@ export class Renderer {
 	update(kind, entity) {
 		const dom = this.elementOf(entity.id);
 		if (!dom) return this.render(kind, entity);
+		// its drawing order changed -- the planner's order for a creation that came without one arrives as a set (F-d)
+		if (this.stackedAt.get(entity.id) !== entity.order) this.place(kind, entity);
 		const bare = isBareEntity(kind, entity);
 		if (kind === 'node' && !bare) {
 			// a footprint OR content change (resize, 1×1↔span, content set) → re-render (always correct); a

@@ -601,7 +601,7 @@ export class Store {
 	seed(owner = null) {
 		const fromExamples = this.#seedFromExamples(owner);
 		if (fromExamples) return fromExamples;
-		const doc = seedDoc();
+		const { doc } = admit(seedDoc());   // through the one door, like every other document (F-d stamps its drawing order)
 		const entry = this.install(doc.meta.id, doc);
 		// AFTER install, never before. `install` passes no `file` for a seed, so `cleanMeta` treats
 		// the document as untrusted and drops `meta.owner` -- which is H9.1 doing its job: an owner

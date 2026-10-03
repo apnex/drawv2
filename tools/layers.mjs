@@ -98,6 +98,7 @@ export const LAYER = {
 		'model/anchor-words.mjs', // the drawn word for an anchor -- waypoint or node (F4); apart, because the planner reads none
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
+		'model/stacking.mjs',    // the drawing order as readers compare it -- the canvas, the network's ages (F-d)
 		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
 		'engine/situation.mjs',  // K5: what is true right now, as a value -- read by whatever decides what an input means, browser or server; it imports only core
 	],
@@ -173,7 +174,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
-			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
+			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 		],
 	},
 	lab: {
@@ -194,7 +195,6 @@ export const ENTRIES = {
 			'network/appearance.mjs',
 			'network/guide.mjs',
 			'network/resolve.mjs',
-			'network/order.mjs',   // which link is older: one link per pipe, the older keeps it (ruled 2026-09-30)
 			'network/view.mjs',    // one derivation per board state (RULESET-AUDIT T2)
 			'network/network.mjs', // the one network interface, handed to the Model and the planner (RULESET-AUDIT T1)
 			'network/session.mjs', // the network's session state and the order one edit changes it in (RULESET-AUDIT T5)
@@ -209,7 +209,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
-			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)

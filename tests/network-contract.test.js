@@ -113,7 +113,7 @@ test('the retired planner hooks, and the retired network option, are refused by 
 });
 
 test('the plugin builds ONE object: the Model reads it, and the planner takes its link tenant', () => {
-	const network = createNetwork(() => 0);
+	const network = createNetwork();
 	for (const name of MODEL_READS) assert.equal(typeof network[name], 'function', `network.${name}`);
 	for (const old of RETIRED_PLANNER_HOOKS) assert.equal(network[old], undefined, `network.${old} is retired: the tenant holds it`);
 	const m = new Model({ network });
@@ -135,7 +135,7 @@ serves its purpose". The network tenant's stranded pass deletes a link whose pin
 -- a free one, one another link holds, or none.
 */
 test('the network strands every link that lost a pin, whatever ways remain', () => {
-	const network = createNetwork(() => 0);
+	const network = createNetwork();
 	const { m, log } = board(KINDS);
 	assert.equal(commit(m, log, { label: 'setup', ops: [
 		{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },

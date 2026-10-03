@@ -13,7 +13,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 // validator now reads the composition it is handed.
 import { CORE_KINDS, SCHEMA } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
-import { byId } from './order.mjs';
+import { byId, nextOrder } from './order.mjs';
 import { BARE_KIND, bareAnchor, bareAnchors, typedNodes, anchorOf } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
@@ -342,6 +342,11 @@ export class Model {
 		return newId(kind, (id) => shared.some((k) => this.get(k, `${k}-${hex(id)}`)));
 	}
 
+	// the drawing order a new item of this kind takes: one above the highest (F-d, model/order.mjs)
+	nextOrder(kind) {
+		return nextOrder(this, kind);
+	}
+
 	nextName(prefix) {
 		// the NAMED kinds, one namespace (B187): a kind opts in by its row, and the product's five all do (N5)
 		const taken = new Set(this.kinds.named.flatMap((k) => this.all(k).map((e) => e.name)));
@@ -355,6 +360,7 @@ export class Model {
 		return {
 			id: this.freshId('node'),
 			name: this.nextName(type),
+			order: this.nextOrder('node'),   // newest on top (F-d)
 			type,
 			shape, // the outer frame (circle, square, …): independent of the glyph `type`
 			x: pos.x,
@@ -382,7 +388,7 @@ export class Model {
 	makeLink(src, dst) {
 		// B187 -- a link is named like everything else. Minted from its two ends rather than from a
 		// request for a named thing, so the name is generated.
-		return { id: newId('link', this.collection('link')), name: this.nextName('link'), src, dst };
+		return { id: newId('link', this.collection('link')), name: this.nextName('link'), order: this.nextOrder('link'), src, dst };
 	}
 
 	// a placeable ANCHOR — a cell-centre point a link's route can thread through and bend at
@@ -390,13 +396,14 @@ export class Model {
 		// B187 -- named like every other entity. A waypoint is minted from a position rather than
 		// from a request for a named thing, so the name is generated rather than asked for.
 		// a node with no type since F-c (P-10), named with the word people use (F4)
-		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), x: pos.x, y: pos.y };
+		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), order: this.nextOrder(BARE_KIND), x: pos.x, y: pos.y };
 	}
 
 	makeZone(box) {
 		return {
 			id: newId('zone', this.collection('zone')),
 			name: this.nextName('zone'),
+			order: this.nextOrder('zone'),
 			x: box.x,
 			y: box.y,
 			w: box.w,

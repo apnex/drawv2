@@ -171,6 +171,18 @@ P-5 is CORRECTED (`dev/DECISIONS.md`): a node with no type is still a waypoint t
 Found on the way: the loader's naming repair read the kind table's collections, which no longer list `waypoints`, so two unnamed old waypoints could both be named `waypoint-1`; it now reads the old collection by name, and a test that failed without the fix holds it.\
 Mutants: 27, on the module, the node row, the put view, the clear reactions, the migration's steps, the adapter, the CLI's view, the occupancy index and the canvas readers -- all 27 killed.
 
+AMENDED 2026-10-03 -- **F-d done** (H18.6; B249, B10, B259 closed).\
+Every node, link and zone stores `order`, a positive integer: one above the highest of its kind, stamped by whoever creates the item -- the Model's factories in a tab, the planner for a creation that arrives without one, the migration for a stored document, in the order each collection lists its items.\
+The planner gives a creation its order as a `set` after the put it was sent, never by rewriting the put: a tab must know its own echo, and rewriting it made the answer pull a dragged node back (tests/b242-reconcile.test.js C4); the set's inverse is the put's, so undo carries no extra op.\
+A put that replaces an item and omits its order keeps the item's own, and one that changes nothing else is still no change.\
+One comparator, `byDrawingOrder` (model/stacking.mjs; restated in kernel/adapt.mjs), stacks the canvas's layers and the export and ages the network's links; an item without an order is the oldest -- first written as the newest, which made a link the planner had just stamped older than every unstamped link on a board and changed which pipe one corpus case swept.\
+The canvas places each item among its layer's on every render, and again when its order changes, so undo, another writer's answer and a re-render leave it in its place (B10); a clone and a cut's new piece are drawn newest, the piece that keeps a link's id keeps its order.\
+A link's age is its order (network/view.mjs `ageIn`): the session record, `network/order.mjs`, is deleted, and the drag judge ages links as the canvas does.\
+**On the estate backup: every node, link and zone of 42 diagrams is given its collection position; the dry run checks each collection rising in the order it was listed, and nothing else changed.** The templates are migrated in source, each differing only by its orders, 1 to n per collection.\
+Corpora: the planner corpus differs in 304 of 2,090 cases, each only by the orders given -- inverses equal once order fields are set aside; the gesture corpus only by the orders the factories stamp (269 fields); the matrix corpus in 21 rows only by the DOM order of the waypoints layer, whose rings never overlap, and in 3 by the stacking of links: CAP-06's undone link returns beneath the other (B10), and in SRC-01 and TRN-15 the piece that keeps a cut link's id keeps its place under the newer piece.\
+Measured in Chrome on the lab: a link deleted and undone returns beneath the link drawn after it, though the planner's collection lists it last.\
+Mutants: 23 -- 20 killed by the tests as written; two survivors killed by new tests (the migration's ordering of a collection that already holds an order, and the drag judge's ages); the dry run's wiring of its order check survives, its check itself shown to fail three ways.
+
 Each stage is one gate and one lab deploy.
 
 **Size, by judgement:** F-b and F-c are most of it -- the word appears 514 times in product code and 4,172 in tests and the lab.

@@ -1697,8 +1697,9 @@ test('B237: the CLI can set every scalar optional field a link carries', async (
 	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
 	const { SETTABLE } = await import('../cli/verbs.mjs');
 
-	// the route fields are the route verb's business; every other optional field must be settable
-	const ROUTE = new Set(['via', 'closed']);
+	// the route fields are the route verb's business; every other optional field must be settable -- but the drawing order,
+	// which whoever creates an item stamps and nothing declares: no person can set it either (F-d, A5)
+	const ROUTE = new Set(['via', 'closed', 'order']);
 	const scalars = [...OPTIONAL.link].filter((f) => !ROUTE.has(f));
 	assert.ok(scalars.length > 0, 'if this is empty the test proves nothing -- the taxonomy moved');
 
@@ -1799,7 +1800,8 @@ test('B237: the settable table matches the taxonomy for every kind, not just lin
 	A LIST THAT NAMES ITS KINDS GOES STALE -- B224. This sweeps the taxonomy instead, so a kind
 	gaining an optional scalar field is caught here with no edit to this test.
 	*/
-	const NOT_SCALAR = new Set(['via', 'closed', 'span', 'content', 'members', 'spawn']);
+	// `order` is minted by whoever creates an item, never declared, and no person sets it either (F-d)
+	const NOT_SCALAR = new Set(['via', 'closed', 'span', 'content', 'members', 'spawn', 'order']);
 	let checked = 0;
 	for (const [kind, fields] of Object.entries(OPTIONAL)) {
 		for (const f of fields) {

@@ -15,6 +15,8 @@ was not ruled to change:
        anchors    each waypoint is a node with no type, found by its name and place (names are unique, B187) rather than
                   by the migration's own id rule, so a renumbered hex is checked like any other: every reference to it
                   must follow it, and no two anchors may share a hex (P-10)
+       order      every node, link and zone carries a drawing order, and within each collection the items that had none
+                  take orders rising in the order the source listed them -- the stacking and ages they had (F-d)
        schema     `meta.schema` is 2
      Every other field of every entity, the selection and the meta identity must be equal.
   4. every log keeps its version and, for a schema 1 source, holds no record (P-6); the document's version is its log's.
@@ -46,6 +48,7 @@ export function canonical(doc, idMap = new Map()) {
 	};
 	const byId = (list) => [...(list || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)));
 	const to = (id) => idMap.get(id) ?? id;
+	const unordered = (e) => { const { order, ...rest } = e; return rest; };   // F-d: checked apart, below
 	const link = (l0) => {
 		const l = { ...l0, src: to(l0.src), dst: to(l0.dst), ...(Array.isArray(l0.via) ? { via: l0.via.map(to) } : {}) };
 		const { flow, direction, ...rest } = l;
@@ -53,11 +56,11 @@ export function canonical(doc, idMap = new Map()) {
 		return said === undefined ? rest : { ...rest, direction: said };
 	};
 	// P-10: the waypoints join the nodes, through the map
-	const anchors = [...(doc.nodes || []), ...(doc.waypoints || []).map((w) => ({ ...w, id: to(w.id) }))];
+	const anchors = [...(doc.nodes || []), ...(doc.waypoints || []).map((w) => ({ ...w, id: to(w.id) }))].map(unordered);
 	return JSON.stringify(sorted({
 		id: doc.meta?.id, name: doc.meta?.name,
-		nodes: byId(anchors), links: byId(doc.links).map(link),
-		zones: byId(doc.zones), groups: byId(doc.groups).map((g) => ({ ...g, members: (g.members || []).map(to) })),
+		nodes: byId(anchors), links: byId(doc.links).map(unordered).map(link),
+		zones: byId(doc.zones).map(unordered), groups: byId(doc.groups).map((g) => ({ ...g, members: (g.members || []).map(to) })),
 		selection: [...(doc.selection || [])].map(to).sort(),
 		reveal: doc.reveal ? { ...doc.reveal, beats: (doc.reveal.beats || []).map((b) => ({ ...b, ids: (b.ids || []).map(to) })) } : null,
 	}));
@@ -67,6 +70,22 @@ export function canonical(doc, idMap = new Map()) {
 Each source waypoint's id in the migrated document: the node with no type carrying its name and place. Found, not computed --
 so the dry run checks the migration's renumbering instead of repeating it.
 */
+/*
+F-d: every item has an order, and the ones the source left without take rising orders in the order it listed them --
+nodes first, then the waypoints that joined them -- so a stacking or an age is never reordered. Answers a problem or null.
+*/
+export function orderProblem(source, migrated, map) {
+	const lists = { nodes: [...(source.nodes || []), ...(source.waypoints || []).map((w) => ({ ...w, id: map.get(w.id) ?? w.id }))], links: source.links || [], zones: source.zones || [] };
+	for (const [k, list] of Object.entries(lists)) {
+		const now = new Map((migrated[k] || []).map((e) => [e.id, e.order]));
+		if ([...now.values()].some((o) => !Number.isInteger(o) || o < 1)) return `a ${k.slice(0, -1)} without a drawing order`;
+		const given = list.filter((e) => !Number.isInteger(e.order)).map((e) => now.get(e.id));
+		if (given.some((o, i) => i > 0 && !(o > given[i - 1]))) return `the ${k} were given orders out of the order they were listed in`;
+		for (const e of list) if (Number.isInteger(e.order) && now.get(e.id) !== e.order) return `${e.id} changed its drawing order`;
+	}
+	return null;
+}
+
 export function waypointMap(source, migrated) {
 	const map = new Map();
 	const bare = (migrated.nodes || []).filter((n) => !n.type);
@@ -121,6 +140,8 @@ export async function dryRun(dataDir, { say = console.log } = {}) {
 		waypointsLeft += (loaded.waypoints || []).length;
 		nodes += (loaded.nodes || []).length;
 		if (canonical(loaded) !== canonical(doc, map)) problems.push(`${id}: an entity changed beyond the ruled changes`);
+		const ordering = orderProblem(doc, loaded, map);
+		if (ordering) problems.push(`${id}: ${ordering}`);
 		if (loaded.meta.schema !== MIGRATION_TARGET) problems.push(`${id}: meta.schema is ${loaded.meta.schema}`);
 		const top = log?.records?.length ? log.records[log.records.length - 1].seq : 0;
 		const kept = Math.max(Number.isInteger(log?.version) ? log.version : (doc.meta.version ?? 0), top);

@@ -487,7 +487,8 @@ test('B16: a multi-op transaction is ONE change and ONE version bump', async () 
 			method: 'POST', headers: H(lock.token), body: JSON.stringify({ ops, label: 'wire pair' }) });
 		assert.equal(r.status, 200);
 		const body = await r.json();
-		assert.equal(body.ops.length, 3, 'three ops travelled as one transaction');
+		// three puts, each with the drawing order the planner gives a creation that came without one (F-d)
+		assert.equal(body.ops.filter((o) => o.op === 'put').length, 3, 'three ops travelled as one transaction');
 		assert.equal(body.version, before + 1, 'one version bump, not three — no window for an interleave');
 	} finally { await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'DELETE', headers: H(lock.token) }); }
 });

@@ -72,6 +72,14 @@ export function fakeEl(tag = 'div', id = '') {
 		getAttribute(k) { return this.attrs[k] ?? null; },
 		removeAttribute(k) { delete this.attrs[k]; },
 		appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+		// F-d: the renderer stacks an item among its layer's (app/src/renderer.js `place`); `ref` null appends
+		insertBefore(c, ref) {
+			if (c.parentNode) c.parentNode.children = c.parentNode.children.filter((x) => x !== c);
+			c.parentNode = this;
+			const at = ref ? this.children.indexOf(ref) : -1;
+			if (at < 0) this.children.push(c); else this.children.splice(at, 0, c);
+			return c;
+		},
 		removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
 		// a real detach: setDatumMarker removes its marker and re-adds, so a no-op remove() would
 		// leave every datum ever placed in the layer and the count assertions would be meaningless

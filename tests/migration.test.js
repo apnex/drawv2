@@ -144,7 +144,9 @@ test('CS5 gate: a migrated corpus boots, and every entity is deep-equal through 
 
 		for (const { id } of store.list(OWNER)) {
 			const loaded = store.get(id).toJSON();
-			assert.equal(invariant(loaded), before.get(id), `${id}: every entity survived`);
+			// the format batch's own additions set aside: each item's drawing order, stamped as the store loads it (F-d)
+			const unordered = JSON.parse(JSON.stringify(loaded, (k, v) => (k === 'order' ? undefined : v)));
+			assert.equal(invariant(unordered), before.get(id), `${id}: every entity survived`);
 			assert.equal(loaded.meta.version, store.diagrams.get(id).log.version, 'GR9: meta.version === log.version');
 			assert.equal(loaded.meta.schema, 2, 'CS5 stamps 1, and the store carries it on to the current generation as it loads (H18.3)');
 			assert.equal('rev' in loaded.meta, false);

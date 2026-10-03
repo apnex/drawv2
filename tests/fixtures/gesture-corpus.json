@@ -15,6 +15,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -33,6 +34,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -41,6 +43,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -52,6 +55,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -81,6 +85,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -89,6 +94,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -100,6 +106,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -127,6 +134,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 3,
 							"x": 180,
 							"y": 120
 						}
@@ -137,6 +145,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2",
 							"via": [
@@ -158,6 +167,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -166,6 +176,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -176,6 +187,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -184,6 +196,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -216,6 +229,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-2",
+							"order": 2,
 							"src": "node#1",
 							"dst": "node#2",
 							"via": [
@@ -237,6 +251,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -245,6 +260,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -255,6 +271,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -263,6 +280,7 @@
 				{
 					"id": "link#2",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -272,6 +290,7 @@
 				{
 					"id": "link#1",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -312,6 +331,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2",
 							"via": [
@@ -333,6 +353,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -341,6 +362,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -351,6 +373,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120,
 					"pinned": false
@@ -360,6 +383,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -393,6 +417,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -401,6 +426,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -411,6 +437,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120,
 					"pinned": true
@@ -440,6 +467,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 3,
 							"x": 180,
 							"y": 120
 						}
@@ -450,6 +478,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "waypoint#1"
 						}
@@ -468,6 +497,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -476,6 +506,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -486,6 +517,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -494,6 +526,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "waypoint#1"
 				}
@@ -523,6 +556,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -531,6 +565,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -562,6 +597,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -580,6 +616,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -588,6 +625,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -596,6 +634,7 @@
 				{
 					"id": "node#2",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -607,6 +646,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -636,6 +676,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -654,6 +695,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -662,6 +704,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -673,6 +716,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -703,6 +747,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -718,6 +763,7 @@
 						"entity": {
 							"id": "link#2",
 							"name": "link-2",
+							"order": 2,
 							"src": "node#2",
 							"dst": "node#3"
 						}
@@ -736,6 +782,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -744,6 +791,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -752,6 +800,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -763,12 +812,14 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				},
 				{
 					"id": "link#2",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#2",
 					"dst": "node#3"
 				}
@@ -800,6 +851,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -815,6 +867,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 4,
 							"x": 480,
 							"y": 180
 						}
@@ -825,6 +878,7 @@
 						"entity": {
 							"id": "link#2",
 							"name": "link-2",
+							"order": 2,
 							"src": "node#2",
 							"dst": "node#3",
 							"via": [
@@ -846,6 +900,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -854,6 +909,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -862,6 +918,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -872,6 +929,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 4,
 					"x": 480,
 					"y": 180
 				}
@@ -880,12 +938,14 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				},
 				{
 					"id": "link#2",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#2",
 					"dst": "node#3",
 					"via": [
@@ -918,6 +978,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "server-1",
+							"order": 3,
 							"type": "server",
 							"shape": "circle",
 							"x": 180,
@@ -930,6 +991,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#2",
 							"dst": "node#1"
 						}
@@ -945,6 +1007,7 @@
 						"entity": {
 							"id": "link#2",
 							"name": "link-2",
+							"order": 2,
 							"src": "node#1",
 							"dst": "node#3"
 						}
@@ -963,6 +1026,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -971,6 +1035,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -979,6 +1044,7 @@
 				{
 					"id": "node#1",
 					"name": "server-1",
+					"order": 3,
 					"type": "server",
 					"shape": "circle",
 					"x": 180,
@@ -990,12 +1056,14 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#2",
 					"dst": "node#1"
 				},
 				{
 					"id": "link#2",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#1",
 					"dst": "node#3"
 				}
@@ -1024,6 +1092,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "server-1",
+							"order": 3,
 							"type": "server",
 							"shape": "circle",
 							"x": 180,
@@ -1036,6 +1105,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#2",
 							"dst": "node#1"
 						}
@@ -1059,6 +1129,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1067,6 +1138,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1075,6 +1147,7 @@
 				{
 					"id": "node#1",
 					"name": "server-1",
+					"order": 3,
 					"type": "server",
 					"shape": "circle",
 					"x": 180,
@@ -1086,6 +1159,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#2",
 					"dst": "node#1"
 				}
@@ -1116,6 +1190,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1124,6 +1199,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1184,6 +1260,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -1202,6 +1279,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1210,6 +1288,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1218,6 +1297,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1229,6 +1309,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -1259,6 +1340,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -1277,6 +1359,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1285,6 +1368,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1293,6 +1377,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1304,6 +1389,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -1332,6 +1418,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -1350,6 +1437,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1358,6 +1446,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1369,6 +1458,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -1401,6 +1491,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-2",
+							"order": 1,
 							"src": "node#1",
 							"dst": "waypoint#1"
 						}
@@ -1411,6 +1502,7 @@
 						"entity": {
 							"id": "link#2",
 							"name": "link-2",
+							"order": 2,
 							"src": "waypoint#1",
 							"dst": "node#2"
 						}
@@ -1421,6 +1513,7 @@
 						"entity": {
 							"id": "link#3",
 							"name": "link-2",
+							"order": 2,
 							"src": "node#2",
 							"dst": "waypoint#1"
 						}
@@ -1439,6 +1532,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1447,6 +1541,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1457,6 +1552,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -1465,18 +1561,21 @@
 				{
 					"id": "link#1",
 					"name": "link-2",
+					"order": 1,
 					"src": "node#1",
 					"dst": "waypoint#1"
 				},
 				{
 					"id": "link#2",
 					"name": "link-2",
+					"order": 2,
 					"src": "waypoint#1",
 					"dst": "node#2"
 				},
 				{
 					"id": "link#3",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#2",
 					"dst": "waypoint#1"
 				}
@@ -1505,6 +1604,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1513,6 +1613,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1545,6 +1646,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1553,6 +1655,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1605,6 +1708,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "router",
 					"shape": "circle",
 					"x": 0,
@@ -1613,6 +1717,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1645,6 +1750,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1653,6 +1759,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1663,6 +1770,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -1671,6 +1779,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -1718,6 +1827,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 120,
@@ -1726,6 +1836,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1774,6 +1885,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1782,6 +1894,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1794,6 +1907,7 @@
 				{
 					"id": "zone#1",
 					"name": "zone-1",
+					"order": 1,
 					"x": -30,
 					"y": 30,
 					"w": 240,
@@ -1824,6 +1938,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1832,6 +1947,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1843,6 +1959,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -1889,6 +2006,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 120,
@@ -1897,6 +2015,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1928,6 +2047,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "host-3",
+							"order": 3,
 							"type": "host",
 							"shape": "circle",
 							"x": 120,
@@ -1948,6 +2068,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -1956,6 +2077,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -1964,6 +2086,7 @@
 				{
 					"id": "node#1",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 120,
@@ -1996,6 +2119,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2004,6 +2128,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2037,6 +2162,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2045,6 +2171,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2076,6 +2203,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "host-3",
+							"order": 3,
 							"type": "host",
 							"shape": "circle",
 							"x": 120,
@@ -2096,6 +2224,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2104,6 +2233,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2112,6 +2242,7 @@
 				{
 					"id": "node#1",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 120,
@@ -2160,6 +2291,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2191,6 +2323,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2199,6 +2332,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2231,6 +2365,7 @@
 						"entity": {
 							"id": "zone#1",
 							"name": "zone-1",
+							"order": 1,
 							"x": -30,
 							"y": -30,
 							"w": 120,
@@ -2251,6 +2386,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2259,6 +2395,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2267,6 +2404,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2279,6 +2417,7 @@
 				{
 					"id": "zone#1",
 					"name": "zone-1",
+					"order": 1,
 					"x": -30,
 					"y": -30,
 					"w": 120,
@@ -2309,6 +2448,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2317,6 +2457,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2328,6 +2469,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -2357,6 +2499,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2365,6 +2508,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2376,6 +2520,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -2406,6 +2551,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2414,6 +2560,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2442,6 +2589,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "router-1",
+							"order": 1,
 							"type": "router",
 							"shape": "circle",
 							"x": 120,
@@ -2467,6 +2615,7 @@
 				{
 					"id": "node#1",
 					"name": "router-1",
+					"order": 1,
 					"type": "router",
 					"shape": "circle",
 					"x": 120,
@@ -2498,6 +2647,7 @@
 						"entity": {
 							"id": "zone#1",
 							"name": "zone-1",
+							"order": 1,
 							"x": 30,
 							"y": 30,
 							"w": 240,
@@ -2521,6 +2671,7 @@
 				{
 					"id": "zone#1",
 					"name": "zone-1",
+					"order": 1,
 					"x": 30,
 					"y": 30,
 					"w": 240,
@@ -2589,6 +2740,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2597,6 +2749,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2609,6 +2762,7 @@
 				{
 					"id": "zone#1",
 					"name": "zone-1",
+					"order": 1,
 					"x": -120,
 					"y": -120,
 					"w": 390,
@@ -2654,6 +2808,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2662,6 +2817,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2670,6 +2826,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2681,6 +2838,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -2710,6 +2868,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2718,6 +2877,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2726,6 +2886,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2737,12 +2898,14 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				},
 				{
 					"id": "link#2",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#3",
 					"dst": "node#2"
 				}
@@ -2871,6 +3034,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2879,6 +3043,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2913,6 +3078,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2921,6 +3087,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2951,6 +3118,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -2959,6 +3127,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -2991,6 +3160,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 3,
 							"x": 180,
 							"y": 240,
 							"pinned": true
@@ -3007,6 +3177,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "waypoint#1",
 							"dst": "node#1"
 						}
@@ -3025,6 +3196,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3033,6 +3205,7 @@
 				{
 					"id": "node#1",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3043,6 +3216,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 240,
 					"pinned": true
@@ -3052,6 +3226,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "waypoint#1",
 					"dst": "node#1"
 				}
@@ -3110,6 +3285,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3118,6 +3294,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3128,6 +3305,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -3136,6 +3314,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -3169,6 +3348,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3177,6 +3357,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3188,6 +3369,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -3215,6 +3397,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3223,6 +3406,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3234,6 +3418,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -3301,6 +3486,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3309,6 +3495,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3320,6 +3507,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"direction": "reverse",
@@ -3349,6 +3537,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -3359,6 +3548,7 @@
 						"entity": {
 							"id": "link#2",
 							"name": "link-2",
+							"order": 2,
 							"src": "node#2",
 							"dst": "node#3"
 						}
@@ -3378,6 +3568,7 @@
 						"entity": {
 							"id": "link#3",
 							"name": "link-3",
+							"order": 3,
 							"src": "node#1",
 							"dst": "node#3"
 						}
@@ -3399,6 +3590,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3407,6 +3599,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 180,
@@ -3415,6 +3608,7 @@
 				{
 					"id": "node#3",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3426,18 +3620,21 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				},
 				{
 					"id": "link#2",
 					"name": "link-2",
+					"order": 2,
 					"src": "node#2",
 					"dst": "node#3"
 				},
 				{
 					"id": "link#3",
 					"name": "link-3",
+					"order": 3,
 					"src": "node#1",
 					"dst": "node#3"
 				}
@@ -3494,6 +3691,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3502,6 +3700,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3565,6 +3764,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3595,6 +3795,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3603,6 +3804,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3674,6 +3876,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 120,
@@ -3682,6 +3885,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3694,6 +3898,7 @@
 				{
 					"id": "zone#1",
 					"name": "zone-1",
+					"order": 1,
 					"x": -120,
 					"y": -120,
 					"w": 240,
@@ -3720,6 +3925,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "host-3",
+							"order": 3,
 							"type": "host",
 							"shape": "circle",
 							"x": 60,
@@ -3742,6 +3948,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3750,6 +3957,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3758,6 +3966,7 @@
 				{
 					"id": "node#1",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 60,
@@ -3788,6 +3997,7 @@
 						"entity": {
 							"id": "zone#1",
 							"name": "zone-1",
+							"order": 1,
 							"x": -30,
 							"y": -30,
 							"w": 420,
@@ -3823,6 +4033,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "square",
 					"x": 0,
@@ -3831,6 +4042,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3843,6 +4055,7 @@
 				{
 					"id": "zone#1",
 					"name": "zone-1",
+					"order": 1,
 					"x": -30,
 					"y": -30,
 					"w": 420,
@@ -3871,6 +4084,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "router-1",
+							"order": 3,
 							"type": "router",
 							"shape": "circle",
 							"x": 120,
@@ -3900,6 +4114,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3908,6 +4123,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3916,6 +4132,7 @@
 				{
 					"id": "node#1",
 					"name": "router-1",
+					"order": 3,
 					"type": "router",
 					"shape": "circle",
 					"x": 120,
@@ -3954,6 +4171,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3962,6 +4180,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -3991,6 +4210,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -3999,6 +4219,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4009,6 +4230,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -4017,6 +4239,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2",
 					"via": [
@@ -4056,6 +4279,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4064,6 +4288,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4075,6 +4300,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -4105,6 +4331,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4113,6 +4340,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4157,6 +4385,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4165,6 +4394,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4176,6 +4406,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -4216,6 +4447,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4224,6 +4456,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4254,6 +4487,7 @@
 						"entity": {
 							"id": "node#1",
 							"name": "loadbalancer-1",
+							"order": 3,
 							"type": "loadbalancer",
 							"shape": "circle",
 							"x": 180,
@@ -4274,6 +4508,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4282,6 +4517,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4290,6 +4526,7 @@
 				{
 					"id": "node#1",
 					"name": "loadbalancer-1",
+					"order": 3,
 					"type": "loadbalancer",
 					"shape": "circle",
 					"x": 180,
@@ -4327,6 +4564,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4335,6 +4573,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4366,6 +4605,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 3,
 							"x": 180,
 							"y": 120
 						}
@@ -4376,6 +4616,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -4417,6 +4658,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4425,6 +4667,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4435,6 +4678,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 120
 				}
@@ -4443,6 +4687,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -4474,6 +4719,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-2",
+							"order": 4,
 							"x": 240,
 							"y": 120
 						}
@@ -4519,6 +4765,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4527,6 +4774,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4537,6 +4785,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-2",
+					"order": 4,
 					"x": 240,
 					"y": 120
 				}
@@ -4565,6 +4814,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "node#1",
 							"dst": "node#2"
 						}
@@ -4602,6 +4852,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4610,6 +4861,7 @@
 				{
 					"id": "node#3",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4618,6 +4870,7 @@
 				{
 					"id": "node#2",
 					"name": "host-3",
+					"order": 3,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4629,6 +4882,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -4676,6 +4930,7 @@
 				{
 					"id": "node#1",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4684,6 +4939,7 @@
 				{
 					"id": "node#2",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4695,6 +4951,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
 				}
@@ -4723,6 +4980,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 3,
 							"x": 180,
 							"y": 240,
 							"pinned": true
@@ -4739,6 +4997,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "waypoint#1",
 							"dst": "node#1"
 						}
@@ -4775,6 +5034,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4783,6 +5043,7 @@
 				{
 					"id": "node#1",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4793,6 +5054,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 240,
 					"pinned": true
@@ -4802,6 +5064,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "waypoint#1",
 					"dst": "node#1"
 				}
@@ -4830,6 +5093,7 @@
 						"entity": {
 							"id": "waypoint#1",
 							"name": "waypoint-1",
+							"order": 3,
 							"x": 180,
 							"y": 240,
 							"pinned": true
@@ -4846,6 +5110,7 @@
 						"entity": {
 							"id": "link#1",
 							"name": "link-1",
+							"order": 1,
 							"src": "waypoint#1",
 							"dst": "node#1"
 						}
@@ -4882,6 +5147,7 @@
 				{
 					"id": "node#2",
 					"name": "host-1",
+					"order": 1,
 					"type": "host",
 					"shape": "circle",
 					"x": 0,
@@ -4890,6 +5156,7 @@
 				{
 					"id": "node#1",
 					"name": "host-2",
+					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
@@ -4900,6 +5167,7 @@
 				{
 					"id": "waypoint#1",
 					"name": "waypoint-1",
+					"order": 3,
 					"x": 180,
 					"y": 240,
 					"pinned": true
@@ -4909,6 +5177,7 @@
 				{
 					"id": "link#1",
 					"name": "link-1",
+					"order": 1,
 					"src": "waypoint#1",
 					"dst": "node#1"
 				}

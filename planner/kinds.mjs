@@ -23,6 +23,8 @@ import { STD } from '../kernel/spec.mjs';
 import { collectionCap } from './policy.mjs';
 import { isTypedEntity } from '../model/anchors.mjs';   // the two shapes of node (F-c)
 
+// a drawing order is a positive integer; the ceiling only keeps it an exact one (F-d)
+const ORDER_MAX = Number.MAX_SAFE_INTEGER;
 const SHAPES = ['circle', 'square']; // the node frame (outer shell), independent of `type`
 // center-origin coordinates: [0,0] is the canvas/slide center
 /*
@@ -153,6 +155,7 @@ const FIELDS = {
 		y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
 		span: (v) => dims(v),    // optional multi-cell footprint (W1); absent ⇒ 1×1
 		content: (v) => content(v),   // optional content regions (W2); absent ⇒ the type glyph
+		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
 		// a WAYPOINT'S own fields -- a node with no type (F-c, H18.5); a typed node carries neither (REFERS.node). Its name is
 		// every node's (B187: naming is schema-wide, and a waypoint was the gap)
 		/*
@@ -200,7 +203,8 @@ const FIELDS = {
 		direction: (v) => v === 'forward' || v === 'reverse',
 		// H15.15 -- a CONTROL-PLANE link carries no data-plane packets. Absent is an ordinary data
 		// link, so every document written before this field reads exactly as it did.
-		control: (v) => typeof v === 'boolean'
+		control: (v) => typeof v === 'boolean',
+		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order, and the link's age (F-d, B259)
 	},
 	zone: {
 		id: (v) => id(v, 'zone'),
@@ -209,7 +213,8 @@ const FIELDS = {
 		x: (v) => num(v, -ZEXT.x, ZEXT.x) && onGrid('zone', v),
 		y: (v) => num(v, -ZEXT.y, ZEXT.y) && onGrid('zone', v),
 		w: (v) => num(v, PITCH, 2 * ZEXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
-		h: (v) => num(v, PITCH, 2 * ZEXT.y) && onGrid('node', v)
+		h: (v) => num(v, PITCH, 2 * ZEXT.y) && onGrid('node', v),
+		order: (v) => int(v, 1, ORDER_MAX)   // the drawing order (F-d)
 	},
 	group: {
 		id: (v) => id(v, 'group'),

@@ -104,7 +104,12 @@ function makeMutation(r, doc) {
 
 // The two planners emit the same ops in different shapes ({action,kind,entity|id|patch} vs
 // {op,kind,entity|id|patch}). Normalise to compare the DECISION, not the encoding.
-const norm = (ops) => ops.map((o) => {
+/*
+The SIXTH deliberate divergence (F-d, H18.6): plan() gives a creation without a drawing order one, as a `set` of `order`
+after the put, and the frozen oracle has no orders. Set aside -- exactly that op, a set whose only field is `order` -- so
+everything else is still compared.
+*/
+const norm = (ops) => ops.filter((o) => !((o.op === 'set' || o.action === 'set') && Object.keys(o.patch || {}).join() === 'order')).map((o) => {
 	const kind = o.kind, act = o.action || o.op;
 	if (act === 'del') return `del ${kind} ${o.id}`;
 	if (act === 'set') return `set ${kind} ${o.id} ${JSON.stringify(Object.fromEntries(Object.entries(o.patch).filter(([k]) => k !== 'id').sort()))}`;

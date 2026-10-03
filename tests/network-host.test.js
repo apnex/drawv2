@@ -29,7 +29,7 @@ function rig({ commits = true, accepts = true } = {}) {
 		takeNotice: () => null,
 		judge: rec('judge', { verdict: 'v', commits }),
 		answered: (answer, authority, apply) => { calls.push(['answered']); if (accepts) apply(); return accepts; },
-		seed: (pipes, ids) => { calls.push(['seed', pipes, ids]); return [{ op: 'put', kind: 'pipe', entity: { id: 'pipe-00000a-00000b' } }]; },
+		seed: (pipes) => { calls.push(['seed', pipes]); return [{ op: 'put', kind: 'pipe', entity: { id: 'pipe-00000a-00000b' } }]; },
 		onTransitChange: (fn) => { onTransit = fn; },
 	};
 	const model = { onChange: (fn) => { onChange = fn; }, all: (kind) => (kind === 'pipe' ? [] : [{ id: 'link-000001' }]), endpointOf: () => null, get: () => null, isLinkDown: () => false };
@@ -77,9 +77,9 @@ test('a drag that commits nothing settles at once, to say why; one that commits 
 
 test('a fixed board: its links aged and its pipes made ops first, then the page commits them with the board, then it is drawn again whole', () => {
 	const r = rig();
-	const answer = r.net.seed([['node-000001', 'node-000002', 'hand']], ['link-000001'], (pipeOps) => { r.calls.push(['run', pipeOps]); return { ok: true }; });
+	const answer = r.net.seed([['node-000001', 'node-000002', 'hand']], (pipeOps) => { r.calls.push(['run', pipeOps]); return { ok: true }; });
 	assert.deepEqual(r.names(), ['seed', 'run', 'paint', 'update', 'reflect'], 'and the board is drawn again whole: its links over the pipes it laid');
-	assert.deepEqual(r.calls[0], ['seed', [['node-000001', 'node-000002', 'hand']], ['link-000001']]);
+	assert.deepEqual(r.calls[0], ['seed', [['node-000001', 'node-000002', 'hand']]]);
 	assert.deepEqual(r.calls[1][1], [{ op: 'put', kind: 'pipe', entity: { id: 'pipe-00000a-00000b' } }], 'the page commits the session\'s pipe ops');
 	assert.deepEqual(answer, { ok: true }, 'and the page\'s answer comes back');
 });

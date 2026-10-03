@@ -65,8 +65,9 @@ function pipeReactions(view) {
 H17.22 N-d -- THE NETWORK READS THE MODEL IT IS ASKED ABOUT: its pipes are that model's `pipe` entities, always. It took
 a pipe source while the lab still kept pipes in the session; that source, and the session's set, are deleted.
 */
-export function createNetwork(rankOf = () => 0, transit = null) {
-	const view = createNetworkView((model) => model.all('pipe'), rankOf, transit);
+export function createNetwork(transit = null) {
+	// each model's links aged by their own stored drawing order (network/view.mjs `ageIn`, F-d)
+	const view = createNetworkView((model) => model.all('pipe'), null, transit);
 	/*
 	The network's LINK TENANT (PL-3, PD-2), in place of production's classic one, with the pipes' own reactions after it.
 	Each condition is judged against the model the planner hands over, so only pipes that survive the edit count.

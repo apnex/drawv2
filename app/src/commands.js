@@ -532,6 +532,8 @@ export function cloneSubgraph(model, seedIds) {
 	// server rejects makes the clone apply locally and then be refused on the wire.
 	const cloneEntity = (kind, src) => {
 		const copy = { ...src, id: scratch.freshId(kind) };   // an anchor's hex unique across anchor kinds (N2)
+		// a copy is a new item, drawn newest -- not at its original's place (F-d)
+		if (scratch.kinds.optional[kind]?.has('order')) copy.order = scratch.nextOrder(kind);
 		/*
 		B187 -- EVERY clone is renamed, by kind rather than by a list of kinds.
 

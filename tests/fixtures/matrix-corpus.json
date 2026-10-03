@@ -332,18 +332,6 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -358,6 +346,18 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [],
@@ -755,6 +755,14 @@
 		"rings": [],
 		"waypointRoles": [
 			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
 				"id": "waypoint#2",
 				"drawn": [],
 				"junctionRing": false,
@@ -764,14 +772,6 @@
 			},
 			{
 				"id": "waypoint#3",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
-				"id": "waypoint#1",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -1781,7 +1781,7 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#2",
+				"id": "waypoint#1",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -1789,7 +1789,7 @@
 				"judged": []
 			},
 			{
-				"id": "waypoint#1",
+				"id": "waypoint#2",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -2321,15 +2321,15 @@
 			}
 		],
 		"paths": {
-			"link#1": {
-				"d": "M-480 180 L480 180",
-				"stroke": "rgb(174, 213, 129)",
-				"dotted": true
-			},
 			"link#2": {
 				"d": "M-480 -180 L-256 -12 Q-240 0 -220 0 L220 0 Q240 0 256 -12 L480 -180",
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": false
+			},
+			"link#1": {
+				"d": "M-480 180 L480 180",
+				"stroke": "rgb(174, 213, 129)",
+				"dotted": true
 			}
 		},
 		"drawnPipes": 2
@@ -2760,6 +2760,30 @@
 		"rings": [],
 		"waypointRoles": [
 			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -2814,30 +2838,6 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
-			},
-			{
-				"id": "waypoint#1",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
 			}
 		],
 		"stretches": [
@@ -2985,6 +2985,30 @@
 		"rings": [],
 		"waypointRoles": [
 			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -3031,30 +3055,6 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
-			},
-			{
-				"id": "waypoint#1",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
 			}
 		],
 		"stretches": [
@@ -3200,15 +3200,31 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#6",
-				"drawn": [],
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
 				"junctionRing": false,
-				"endpointRing": false,
+				"endpointRing": true,
 				"transitOff": false,
-				"judged": []
+				"judged": [
+					"endpoint"
+				]
 			},
 			{
-				"id": "waypoint#1",
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#5",
 				"drawn": [
 					"endpoint"
 				],
@@ -3236,28 +3252,12 @@
 				"judged": []
 			},
 			{
-				"id": "waypoint#5",
-				"drawn": [
-					"endpoint"
-				],
+				"id": "waypoint#6",
+				"drawn": [],
 				"junctionRing": false,
-				"endpointRing": true,
+				"endpointRing": false,
 				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
+				"judged": []
 			}
 		],
 		"stretches": [
@@ -3373,12 +3373,28 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#5",
-				"drawn": [],
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
 				"junctionRing": false,
-				"endpointRing": false,
+				"endpointRing": true,
 				"transitOff": false,
-				"judged": []
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#1",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
 			},
 			{
 				"id": "waypoint#3",
@@ -3397,28 +3413,12 @@
 				"judged": []
 			},
 			{
-				"id": "waypoint#1",
-				"drawn": [
-					"endpoint"
-				],
+				"id": "waypoint#5",
+				"drawn": [],
 				"junctionRing": false,
-				"endpointRing": true,
+				"endpointRing": false,
 				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
+				"judged": []
 			}
 		],
 		"stretches": [
@@ -3491,14 +3491,6 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#3",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
 				"id": "waypoint#1",
 				"drawn": [],
 				"junctionRing": false,
@@ -3508,6 +3500,14 @@
 			},
 			{
 				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -3600,14 +3600,6 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#4",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
 				"id": "waypoint#1",
 				"drawn": [
 					"endpoint"
@@ -3630,6 +3622,14 @@
 				"judged": [
 					"endpoint"
 				]
+			},
+			{
+				"id": "waypoint#4",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
 			},
 			{
 				"id": "waypoint#3",
@@ -3766,22 +3766,6 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#5",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
-				"id": "waypoint#6",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
 				"id": "waypoint#1",
 				"drawn": [
 					"endpoint"
@@ -3828,6 +3812,22 @@
 				"judged": [
 					"endpoint"
 				]
+			},
+			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
 			}
 		],
 		"stretches": [
@@ -4001,15 +4001,15 @@
 				]
 			},
 			{
-				"id": "waypoint#3",
+				"id": "waypoint#2",
 				"drawn": [
-					"endpoint"
+					"junction"
 				],
-				"junctionRing": false,
-				"endpointRing": true,
+				"junctionRing": true,
+				"endpointRing": false,
 				"transitOff": false,
 				"judged": [
-					"endpoint"
+					"junction"
 				]
 			},
 			{
@@ -4029,7 +4029,7 @@
 				"judged": []
 			},
 			{
-				"id": "waypoint#6",
+				"id": "waypoint#3",
 				"drawn": [
 					"endpoint"
 				],
@@ -4041,15 +4041,15 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
+				"id": "waypoint#6",
 				"drawn": [
-					"junction"
+					"endpoint"
 				],
-				"junctionRing": true,
-				"endpointRing": false,
+				"junctionRing": false,
+				"endpointRing": true,
 				"transitOff": false,
 				"judged": [
-					"junction"
+					"endpoint"
 				]
 			}
 		],
@@ -4081,14 +4081,14 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			},
-			"link#2": {
-				"d": "M-240 -120 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
-				"stroke": "rgb(79, 195, 247)",
-				"dotted": false
-			},
 			"link#3": {
 				"d": "M-240 240 L-240 -120",
 				"stroke": "rgb(174, 213, 129)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M-240 -120 L-134.142 -14.142 Q-120 0 -105.858 -14.142 L-14.142 -105.858 Q0 -120 14.142 -105.858 L120 0",
+				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
 		},
@@ -4236,15 +4236,15 @@
 				]
 			},
 			{
-				"id": "waypoint#3",
+				"id": "waypoint#2",
 				"drawn": [
-					"endpoint"
+					"junction"
 				],
-				"junctionRing": false,
-				"endpointRing": true,
+				"junctionRing": true,
+				"endpointRing": false,
 				"transitOff": false,
 				"judged": [
-					"endpoint"
+					"junction"
 				]
 			},
 			{
@@ -4264,7 +4264,7 @@
 				"judged": []
 			},
 			{
-				"id": "waypoint#6",
+				"id": "waypoint#3",
 				"drawn": [
 					"endpoint"
 				],
@@ -4276,15 +4276,15 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
+				"id": "waypoint#6",
 				"drawn": [
-					"junction"
+					"endpoint"
 				],
-				"junctionRing": true,
-				"endpointRing": false,
+				"junctionRing": false,
+				"endpointRing": true,
 				"transitOff": false,
 				"judged": [
-					"junction"
+					"endpoint"
 				]
 			}
 		],
@@ -4446,35 +4446,7 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#6",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
-				"id": "waypoint#7",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
 				"id": "waypoint#1",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
-				"id": "waypoint#2",
 				"drawn": [
 					"endpoint"
 				],
@@ -4503,6 +4475,34 @@
 			},
 			{
 				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
+			},
+			{
+				"id": "waypoint#6",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
+				"id": "waypoint#7",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -4869,18 +4869,6 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -4903,6 +4891,18 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [
@@ -6056,19 +6056,19 @@
 		],
 		"waypointRoles": [
 			{
-				"id": "waypoint#2",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
-			},
-			{
 				"id": "waypoint#1",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
 				"transitOff": true,
+				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
 				"judged": []
 			}
 		],
@@ -6160,7 +6160,7 @@
 		"rings": [],
 		"waypointRoles": [
 			{
-				"id": "waypoint#2",
+				"id": "waypoint#1",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -6168,7 +6168,7 @@
 				"judged": []
 			},
 			{
-				"id": "waypoint#1",
+				"id": "waypoint#2",
 				"drawn": [],
 				"junctionRing": false,
 				"endpointRing": false,
@@ -6677,13 +6677,13 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			},
-			"link#2": {
-				"d": "M-360 0 L0 -240",
+			"link#3": {
+				"d": "M0 -240 L0 240",
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			},
-			"link#3": {
-				"d": "M0 -240 L0 240",
+			"link#2": {
+				"d": "M-360 0 L0 -240",
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
@@ -7795,6 +7795,14 @@
 				]
 			},
 			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
 				"id": "waypoint#4",
 				"drawn": [
 					"endpoint"
@@ -7805,14 +7813,6 @@
 				"judged": [
 					"endpoint"
 				]
-			},
-			{
-				"id": "waypoint#5",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
 			}
 		],
 		"stretches": [
@@ -7967,18 +7967,6 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -8001,6 +7989,18 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [
@@ -8366,18 +8366,6 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -8400,6 +8388,18 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [
@@ -8573,6 +8573,14 @@
 				]
 			},
 			{
+				"id": "waypoint#5",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			},
+			{
 				"id": "waypoint#4",
 				"drawn": [
 					"endpoint"
@@ -8583,14 +8591,6 @@
 				"judged": [
 					"endpoint"
 				]
-			},
-			{
-				"id": "waypoint#5",
-				"drawn": [],
-				"junctionRing": false,
-				"endpointRing": false,
-				"transitOff": false,
-				"judged": []
 			}
 		],
 		"stretches": [
@@ -8734,18 +8734,6 @@
 				]
 			},
 			{
-				"id": "waypoint#2",
-				"drawn": [
-					"endpoint"
-				],
-				"junctionRing": false,
-				"endpointRing": true,
-				"transitOff": false,
-				"judged": [
-					"endpoint"
-				]
-			},
-			{
 				"id": "waypoint#3",
 				"drawn": [],
 				"junctionRing": false,
@@ -8768,6 +8756,18 @@
 				"endpointRing": false,
 				"transitOff": false,
 				"judged": []
+			},
+			{
+				"id": "waypoint#2",
+				"drawn": [
+					"endpoint"
+				],
+				"junctionRing": false,
+				"endpointRing": true,
+				"transitOff": false,
+				"judged": [
+					"endpoint"
+				]
 			}
 		],
 		"stretches": [

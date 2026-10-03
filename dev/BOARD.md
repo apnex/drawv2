@@ -1027,7 +1027,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.3 | F-a, the frame: one migration keyed on content, run on every load path and by a dry-run tool; `meta.schema` 2; undo history truncated (P-6); `link.flow` becomes `direction` (F1) | feature | S2 | `DONE` |
 | H18.4 | F-b: every reader asks one question for "a bare anchor"; no format change, every corpus unchanged | feature | S2 | `DONE` |
 | H18.5 | F-c: the waypoint kind goes -- a waypoint is a node with no type, ids keep their hex, 3 renumbered; `pinned` goes at P3 (P-10, P-5 corrected) | feature | S2 | `DONE` |
-| H18.6 | F-d: every node, link and zone stores its drawing order; newest on top for every peer; undo restores place; link ages read it | **B249** | S2 | `TODO` |
+| H18.6 | F-d: every node, link and zone stores its drawing order; newest on top for every peer; undo restores place; link ages read it | **B249** | S2 | `DONE` |
 | H18.7 | F-e: transit stored on the anchor (TR-7); a toggle is a `set`, its cut and join planner reactions; the export reads it | feature | S2 | `TODO` |
 | H18.8 | F-f: a ring's closing leg is routed like any leg (P-3) | feature | S2 | `TODO` |
 | H18.9 | F-g: the batch closed -- the estate dry run on every step, the production-upgrade register, the backlog rows | **B266** | S2 | `TODO` |
@@ -1036,6 +1036,7 @@ AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.m
 AMENDED 2026-10-03: H18.3 (F-a) done -- `server/migrate.mjs`, run by the store on every path in; `meta.schema` 2; undo history truncated; `direction`; the estate dry run passes (`tools/migrate-schema.mjs`). Production stays on `draw:2538ab8` from here (F3, PU31).\
 AMENDED 2026-10-03: H18.4 (F-b) done -- `model/anchors.mjs` is the one place that says how a bare anchor is stored; the corpora are unchanged, byte for byte.\
 AMENDED 2026-10-03: H18.5 (F-c) done -- a waypoint is a node with no type; the kinds are four; the estate dry run migrates 475 waypoints into 1,005 nodes, renumbering 3; P-5 corrected (`dev/DECISIONS.md`): `pinned` goes at P3.\
+AMENDED 2026-10-03: H18.6 (F-d) done -- every node, link and zone stores its drawing order; newest on top for every peer, undo restores an item to its place, and a link's age is its order; B10, B249 and B259 closed.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
@@ -1049,7 +1050,6 @@ Scored so the comparison is a judgement, not an omission.\
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
 | **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
-| **B10** | **S2** | Put-based inverse loses intra-kind ordering -> stacking can swap across delete+undo | promotion's format batch (stored drawing order, ruled with B249 2026-10-01) |
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
@@ -1065,13 +1065,11 @@ Scored so the comparison is a judgement, not an omission.\
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
-| **B249** | S4 | all() iteration and renderer stacking stay insertion-ordered after K15 (F-ORDER, G5 partial) | promotion's format batch -- ruled 2026-10-01: newest drawn on top, stored drawing order |
 | **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag | a user reports a node jumping during a drag |
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors |
-| **B259** | S3 | Link ages are session state in the lab; storing them is untracked | the stored-format batch is built, alongside storing pipes |
 | **B262** | S4 | Bindings cannot override one another (Q3, held for now, DG2) | a binding must shadow another and disjoint conditions are measurably worse, or a plugin must replace a product binding |
 | **B264** | S4 | A double click finds a zone without Shift; a press needs Shift (kept for now) | the director re-evaluates it in the lab, or an author double-clicks a zone meaning the node beneath |
 | **B265** | S3 | The context panel (a fixed panel following the situation) is not designed; gesture system stage 7 parked | the director opens the context panel's design |

@@ -396,7 +396,7 @@ test('B30: duplicating a routed link keeps its route', () => {
 		Every entity is named now, so the hazard is the opposite: a spread copy carries the ORIGINAL's
 		name, and two waypoints sharing one makes `resolveId` refuse them both as ambiguous.
 		*/
-		assert.deepEqual(Object.keys(wp[0]).sort(), ['id', 'name', 'x', 'y'], 'a cloned waypoint carries a name');
+		assert.deepEqual(Object.keys(wp[0]).sort(), ['id', 'name', 'order', 'x', 'y'], 'a cloned waypoint carries a name, and a drawing order of its own');
 		assert.notEqual(wp[0].name, w.name, 'and it is a FRESH name, not the original\'s');
 	} finally { h.restore(); }
 });

@@ -75,7 +75,9 @@ test('commit: a batch of N ops is ONE change', () => {
 		put('link', { id: 'link-bb0003', name: 'link-bb0003', src: 'node-bb0001', dst: 'node-bb0002' }),
 	] }, 'server', 't');
 	assert.equal(r.version, 1, 'one transaction, one version');
-	assert.equal(r.change.ops.length, 3);
+	// three puts, each followed by the drawing order the planner gives a creation without one (F-d)
+	assert.equal(r.change.ops.filter((o) => o.op === 'put').length, 3);
+	assert.equal(r.change.ops.length, 6);
 });
 
 test('plan: op k is validated against the state left by op k-1', () => {
@@ -1297,7 +1299,8 @@ test('PL-4: the store hands the planner its own clock and its placement', async 
 			{ op: 'place', kind: 'node', entity: { id: 'node-00000b', name: 'web', type: 'server', shape: 'circle' }, at: { near: 'lb-1', dir: 'right' } }] });
 		assert.equal(r.ok, true, r.error);
 		assert.equal(r.change.at, 4242, 'the record is stamped by the store\'s clock');
-		assert.deepEqual([r.change.ops[1].entity.x, r.change.ops[1].entity.y], [60, 0], 'and the place op resolved through the store\'s placement');
+		const placed = r.change.ops.find((o) => o.op === 'put' && o.entity.id === 'node-00000b').entity;   // each put is followed by its order (F-d)
+		assert.deepEqual([placed.x, placed.y], [60, 0], 'and the place op resolved through the store\'s placement');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

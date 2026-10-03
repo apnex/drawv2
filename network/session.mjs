@@ -22,9 +22,9 @@ THE ORDER OF ONE EDIT:
   2. `answered` -- the planner's answer. Accepted: the page applies it, and ages are noted AFTER -- a link seen for the
      first time is the newest, and one seen before keeps its age, so undo restores its place.
 */
-import { createLinkOrder } from './order.mjs';
 import { createNetwork } from './network.mjs';
 import { judgeDrag } from './guide.mjs';
+import { ageIn } from './view.mjs';
 import { createTransit } from './transit.mjs';
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
@@ -48,13 +48,14 @@ function pipeEntries(legs, model) {
 }
 
 export function createNetworkSession() {
-	const order = createLinkOrder(), transit = createTransit();
-	const network = createNetwork(order.rankOf, transit);   // it reads the models' own pipes (N-c, N-d)
+	const transit = createTransit();
+	// it reads the models' own pipes (N-c, N-d), and their links' ages -- each link's stored drawing order (F-d, B259)
+	const network = createNetwork(transit);
 	const watchers = [];
 	let pendingNotice = null;
 
 	return {
-		order, network,
+		network,
 
 		/*
 		THE TRANSIT TOGGLE (`x`, TRANSIT.md section 12, X1): flip each selected anchor's transit on its own, and say what
@@ -82,7 +83,7 @@ export function createNetworkSession() {
 		judge(drag, links, model) {
 			// in the model the drag is judged against, the anchors no route may pass (TR-1)
 			const stops = new Set(transit.blockedIn(model));
-			const judged = judgeDrag(model.all('pipe'), drag, { links, rankOf: order.rankOf, passes: (id) => !stops.has(id),
+			const judged = judgeDrag(model.all('pipe'), drag, { links, rankOf: ageIn(model), passes: (id) => !stops.has(id),
 				nameOf: (id) => model.endpointOf(id)?.name || id });   // notices name anchors as the author does
 			pendingNotice = judged.notice ?? null;
 			const verdict = { ...judged, entries: pipeEntries(judged.legs, model) };
@@ -94,7 +95,6 @@ export function createNetworkSession() {
 		answered(answer, model, apply) {
 			if (!answer.ok) return false;
 			apply();
-			order.note(model.all('link').map((l) => l.id).sort());   // the model `apply` brought to the answer
 			return true;
 		},
 
@@ -105,11 +105,11 @@ export function createNetworkSession() {
 		},
 
 		/*
-		A fixed board: each link as old as it is listed, and each pipe -- with the lifetime its gesture would give it
-		(2026-09-29) -- as an op for the board's own commit, so the board's pipes are in the document like an author's.
+		A fixed board: each pipe -- with the lifetime its gesture would give it (2026-09-29) -- as an op for the board's own
+		commit, so the board's pipes are in the document like an author's. Its links are as old as they are listed: the
+		planner stamps their drawing order in that order (F-d).
 		*/
-		seed(pipeTriples, linkIds) {
-			order.note(linkIds);
+		seed(pipeTriples) {
 			return pipeTriples.filter(([a, b]) => a !== b).map(([a, b, laid]) => ({ op: 'put', kind: 'pipe', entity: pipeEntity(a, b, laid) }));
 		},
 	};

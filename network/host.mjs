@@ -10,8 +10,8 @@ of the ordering, the drift K8 removed for the canvas. So a page ATTACHES the net
   judge(drag)                 the drag judge Input asks once per finished drag (network/keys.mjs `networkInput`)
   answered(request, answer, apply)   the page's commit door hands it the planner's answer; true when accepted
   refused(answer)             after the page has taken the planner's document back on a refusal
-  seed(pipes, linkIds, run)          a fixed board: its links aged, its pipes handed to the page's `run` as ops for the board's
-                                     own commit, then the pipes drawn
+  seed(pipes, run)                   a fixed board: its pipes handed to the page's `run` as ops for the board's own commit,
+                                     then the pipes drawn; its links are aged by the drawing order the planner stamps (F-d)
   paint()                            draw the pipes now
 
 The page keeps what is its own: where the planner runs (the lab's authority model, production's server), how a refusal
@@ -148,11 +148,11 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); };
 
 	/*
-	A fixed board: its links aged first, so they are routed by age; its pipes go to the page's `run` as ops for the board's
-	own commit (N-c); and once it lands the board is drawn again whole -- the commit lists its links before its pipes, so
+	A fixed board: its pipes go to the page's `run` as ops for the board's own commit (N-c), and its links are aged by the
+	drawing order the planner stamps on them, in the order the board lists them (F-d); and once it lands the board is drawn again whole -- the commit lists its links before its pipes, so
 	each link was drawn before the pipes it runs over existed in the tab. Answers the page's answer.
 	*/
-	const seed = (boardPipes, linkIds, run) => { const answer = run(session.seed(boardPipes, linkIds)); redraw(); return answer; };
+	const seed = (boardPipes, run) => { const answer = run(session.seed(boardPipes)); redraw(); return answer; };
 
 	return { judge, answered, refused, seed, paint };
 }

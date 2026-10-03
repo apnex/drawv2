@@ -25,6 +25,9 @@ stored document, the rollback backups included, being schema 2.
 // tests/migrate.test.js holds it equal to `SCHEMA` while the two are the same generation.
 export const MIGRATION_TARGET = 2;
 
+// the collections whose items carry a drawing order, as stored (F-d)
+const ORDERED = ['nodes', 'links', 'zones'];
+
 const hexOf = (id) => String(id).slice(String(id).indexOf('-') + 1);
 
 // waypoints whose hex a node holds, or an earlier waypoint took -- id -> hex, in collection order
@@ -121,6 +124,23 @@ const STEPS = [
 			doc.nodes = [...(doc.nodes || []), ...moved];
 			delete doc.waypoints;
 			rewriteReferences(doc, map);
+		},
+	},
+	/*
+	F-d (H18.6; B249, B10, B259) -- every node, link and zone stores its drawing order. An item without one takes the next
+	above the highest of its kind, in the order its collection lists it: a document that has none gets 1, 2, 3 ... in each
+	collection, which is the stacking and the link ages it had, since both followed that order. Keyed on an item lacking
+	one, so it also repairs a document stamped 2 before this step existed. After `anchors`, so the nodes are one collection.
+	*/
+	{
+		id: 'order',
+		needs: (doc) => ORDERED.some((k) => (doc[k] || []).some((e) => e && !Number.isInteger(e.order))),
+		run: (doc) => {
+			for (const k of ORDERED) {
+				const list = doc[k] || [];
+				let top = list.reduce((m, e) => (e && Number.isInteger(e.order) && e.order > m ? e.order : m), 0);
+				for (const e of list) if (e && !Number.isInteger(e.order)) e.order = ++top;
+			}
 		},
 	},
 	/*

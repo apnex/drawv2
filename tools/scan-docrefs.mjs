@@ -82,6 +82,8 @@ const ALLOW = {
 	'*:server/log.mjs': 'moved to planner/log.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:server/validate.js': 'moved to planner/validate.js at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:server/tenants.mjs': 'moved to planner/tenants.mjs at K4 (H17-D5); a record written while it lived here cites it here',
+	'*:network/order.mjs': 'the session record of link ages, deleted at H18.6 (F-d) once a link\'s age was its stored drawing order (network/view.mjs `ageIn`); records written while it lived cite it',
+	'*:tests/network-order.test.js': 'its test, deleted with it at H18.6; its properties are held by tests/drawing-order.test.js',
 	'*:network/pipeset.mjs': 'the session pipe set, deleted at H17.22 N-d once pipes were entities in the model (network/pipe-kind.mjs); records written while it lived cite it',
 	'*:server/edges.mjs': 'moved to planner/edges.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:engine/policy.mjs': 'moved to planner/policy.mjs at K4 (H17-D5); a record written while it lived here cites it here',

@@ -62,9 +62,10 @@ const TABLE = {
 	Which of the fields a node may carry follows whether it has a type, held by the node row's cross-entity check
 	(planner/kinds.mjs).
 	*/
-	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn'] },
-	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control'] },
-	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: [] },
+	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn', 'order'] },
+	// `order` (F-d, H18.6): the drawing order of every drawn kind, model/order.mjs; optional, so a hand-made board still loads
+	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control', 'order'] },
+	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: ['order'] },
 	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };
 

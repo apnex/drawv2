@@ -437,23 +437,27 @@ test('a seed that cannot be fetched is reported, and the lab still works', { ski
 });
 
 /*
-WHICH LINK IS OLDER is recorded, not inferred (ruled 2026-09-30: "the older link keeps a contested hand-laid pipe").
-Link ids are random, so the door notes each link the first time the planner accepts it, and never forgets it --
-so an undone delete gives the link back its place. Asserted on the page, since the noting is the door's wiring.
+WHICH LINK IS OLDER is stored, not inferred (ruled 2026-09-30: "the older link keeps a contested hand-laid pipe"; F-d, B259):
+a link's age is its drawing order, stamped when it is made and restored by undo -- in the document, so the tab and the
+planner's model agree on it, and a reload keeps it. It was the door's session record until H18.6. Asserted on the page,
+since the stamping is the page's and the planner's.
 */
-test('a drawn link is given its age when the planner accepts it, and keeps it through delete and undo', { skip: SKIP }, async () => {
+test('a drawn link is given its age when it is made, the same in the tab and the planner, and keeps it through delete and undo', { skip: SKIP }, async () => {
 	const p = await open('cross');
+	const ages = (id) => `[lab.model.get('link', '${id}')?.order ?? null, lab.authority.get('link', '${id}')?.order ?? null]`;
 	try {
-		// the seed's links are aged as they load, in the order listed -- before any edit gives the door a chance
-		assert.deepEqual(await p.run(`[lab.order.rankOf('link-000001'), lab.order.rankOf('link-000002')]`), [0, 1], 'a loaded board is aged in the order it lists its links');
+		// the seed's links are aged as they load, in the order listed
+		const [one] = await p.run(ages('link-000001')), [two] = await p.run(ages('link-000002'));
+		assert.ok(Number.isInteger(one) && two > one, `a loaded board is aged in the order it lists its links: ${one}, ${two}`);
 		await p.drag([-360, 0], [0, 240], [['w', -240, 120]]);   // A to D, pinned below the centre: a new link
 		const id = await p.run(`lab.authority.all('link').find((l) => l.src === 'node-000001' && l.dst === 'node-000004')?.id ?? null`);
 		assert.ok(id, 'the drag must make a link, or this proves nothing');
-		const rank = await p.run(`lab.order.rankOf('${id}')`);
-		assert.ok(Number.isFinite(rank) && rank > (await p.run(`lab.order.rankOf('link-000002')`)), `the new link is ranked, and younger than the seed's links: ${rank}`);
+		const [tab, held] = await p.run(ages(id));
+		assert.ok(Number.isInteger(tab) && tab > two, `the new link is aged, and younger than the seed's links: ${tab}`);
+		assert.equal(held, tab, 'and the planner holds the same age');
 		await p.run(`lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'link', entity: lab.model.get('link', '${id}') }] })`);
 		await p.run('lab.history.undo()');
-		assert.equal(await p.run(`lab.order.rankOf('${id}')`), rank, 'undo gives it back its place');
+		assert.deepEqual(await p.run(ages(id)), [tab, tab], 'undo gives it back its age, in both');
 	} finally { await p.close(); }
 });
 

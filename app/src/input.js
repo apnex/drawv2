@@ -1006,8 +1006,10 @@ export class Input {
 		for (const { original, pieces } of originals.values()) {
 			if (pieces.length < 2) continue;                       // nothing was cut
 			// index 0 is the src end of the original route, wherever the cuts fell
+			// the src piece is the original re-ended: its id, and its drawing order -- its age (F-d); the others are new, and newest
+			const keep = (l) => { if (original.order === undefined) delete l.order; else l.order = original.order; return l; };
 			const halves = pieces.map((p, i) => (i === 0
-				? { ...this.model.makeLink(p.src, p.dst), ...p, id: original.id }
+				? keep({ ...this.model.makeLink(p.src, p.dst), ...p, id: original.id })
 				: { ...this.model.makeLink(p.src, p.dst), ...p, id: newId('link', this.model.collection('link')) }));
 			out.push({ original, halves });
 		}
