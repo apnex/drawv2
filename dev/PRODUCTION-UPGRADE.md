@@ -4,7 +4,8 @@ What a production upgrade must check, gathered as the work that creates each con
 Read in full at a **production audit**: before production moves off the revision it runs, and again before promotion's cutover.
 
 Production runs `2814d8d`.\
-Every entry below is true of `main` and not yet of production.
+Every entry below is true of `main` and not yet of production.\
+AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`), deployed after the audit at the end of this file; entries PU1 to PU16 and PU24 to PU29 are now true of production, PU17 to PU23 still wait for promotion's cutover. The register continues: an entry is added for each change production does not yet have, and it is read again before the cutover.
 
 ## How to use it
 
@@ -85,7 +86,7 @@ AMENDED 2026-10-02: PU19's mechanism is built (H17.22 N-a, PU25), and `pipe` is 
 
 ## Audit 2026-10-02 -- production `2814d8d` to `d58816c`
 
-At the director's word ("Approved. Proceed as recommended", the re-triage's step 2), read in full before the deploy.\
+At the director's word, approving the re-triage's step 2 and to proceed as recommended, read in full before the deploy.\
 Production ran `draw-00153-4sj` on `draw:2814d8d`; the bucket `gs://diagrams.apnex.io` was copied first, 45 objects, 1,110,578 bytes, matching, into the private archive (`drawv2-archive/backups/2026-10-02-pre-d58816c/`).\
 CI's gate passed on `d58816c`; the local gate passed 1716 of 1716.\
 Production sits behind IAP, which a headless browser cannot sign into, so an entry whose check is looking at the page is marked for the director's eye after the deploy.
@@ -117,3 +118,10 @@ Production sits behind IAP, which a headless browser cannot sign into, so an ent
 | PU17 to PU23 | CARRIED | deferred to promotion's cutover by ruling; not in this deploy |
 
 **Found while auditing, not caused by this deploy:** production logs "internal error handling resume: Cannot read properties of undefined (reading 'version')" every five minutes -- a tab resuming against a template, whose model the store holds and whose log it does not (`server/protocol.js` `resume`, `server/store.js` `log`). The code is unchanged since `2814d8d`, so the deploy carries it as it was; registered B290.
+
+**Deployed 2026-10-02:** `draw-00154-cfn` serving `draw:d58816c` (digest `c7d7f283`), 100% of traffic; minimum and maximum one instance and CPU throttling off, as before.\
+Verified, not assumed: the revision booted against `gs://diagrams.apnex.io` and loaded 43 diagrams, 4 templates, 11 workspace grants across 4 owners and the agents' connection codes; the bucket still holds 45 objects, so it reloaded rather than reseeded.\
+At the edge: `/` and `/api/v1/diagrams` answer 302 to sign-in, `/about` and `/privacy` 200 -- IAP and the public pages as they were.\
+No warning, error or 5xx in the new revision's logs in its first minutes.\
+Rollback, held: redeploy `draw:2814d8d` (revision `draw-00153-4sj`), which reads everything written since (PU13), with the bucket's copy as the last resort.\
+Owed to the director's eye: PU11, PU12 and PU24 -- the page's colours, its network panel, the undelete card.
