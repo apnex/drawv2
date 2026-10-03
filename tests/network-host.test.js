@@ -9,6 +9,7 @@ sweeps nothing -- the planner does, in the edit -- and paints the tab's own pipe
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { attachNetwork } from '../network/host.mjs';
+import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { createNetworkSession } from '../network/session.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';
 import { applyOps } from '../model/ops.mjs';
@@ -23,7 +24,8 @@ function rig({ commits = true, accepts = true } = {}) {
 	const rec = (name, ret) => (...a) => { calls.push([name, ...a]); return ret; };
 	let onChange = null, onTransit = null;
 	const session = {
-		network: { declaresNoTransit: () => false, stopsAt: () => false, view: { of: () => ({ route: () => null }) } },
+		// each paint reads the board's derivation once -- the rig's sign that a paint happened (the layer is kept, not cleared)
+		network: { declaresNoTransit: () => false, stopsAt: () => false, view: { of: () => { calls.push(['paint']); return { route: () => null }; } } },
 		takeNotice: () => null,
 		judge: rec('judge', { verdict: 'v', commits }),
 		answered: (answer, authority, apply) => { calls.push(['answered']); if (accepts) apply(); return accepts; },
@@ -36,7 +38,7 @@ function rig({ commits = true, accepts = true } = {}) {
 		renderer: { update: rec('update'), reflectSelection: rec('reflect'), render: rec('render') },
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: rec('commit') },
-		pipeLayer: { replaceChildren: rec('paint') }, el: () => {}, say: rec('say'),
+		pipeLayer: fakeLayer().root, el: fakeLayer().el, say: rec('say'),
 	});
 	return { net, calls, names: () => calls.map((c) => c[0]), onChange: () => onChange, onTransit: () => onTransit };
 }
@@ -109,7 +111,7 @@ test('B278: a transit change cuts the links pinned at a waypoint where what arri
 		model, authority: { all: () => [] },
 		renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
-		history: { commit: (c) => commits.push(c) }, pipeLayer: { replaceChildren: () => {} }, el: () => {}, say: () => {},
+		history: { commit: (c) => commits.push(c) }, ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
 	onTransit(['waypoint-000003']);
 	assert.equal(commits.length, 1, 'one commit');
@@ -138,7 +140,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: (c) => { commits.push(c); applyOps(model, c.entries.map(toOp)); } },
-		pipeLayer: { replaceChildren: () => {} }, el: () => {}, say: () => {},
+		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
 	const anchors = [{ id: A, kind: 'waypoint' }, { id: B, kind: 'waypoint' }];
 	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${model.isLinkDown(l) ? ' down' : ''}`).sort();

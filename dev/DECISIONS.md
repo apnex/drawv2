@@ -1643,3 +1643,6 @@ The director: "Pipes should be invisible in "r" read mode - just like anchors. A
 - In run (read) mode no pipe is drawn or clickable, as the anchor ring is hidden there: pipes are authoring geometry.
 - A pipe an up link runs over is not drawn -- the link is drawn along it. What counts as run over is the network's own route for each link, so what is hidden is exactly what is drawn over; a down link is drawn along its intent, so its own pipes stay visible, the way it would heal onto. A hidden hand pipe cannot be clicked, as ruled for a covered pipe (N6).
 - Held by matrix invariant I8, after every row: a pipe is drawn exactly when no up link runs over it.
+AMENDED 2026-10-02: a pipe under a link is kept in the page and hidden, not removed -- the director: "I'm thinking we unify such that the DOM doesnt change, but just marks pipes not visible / hidden. when we move to "infinite canvas" we can unload objects out of our viewable area from the dom."
+- Each pipe has one element, made when the pipe appears and removed only when the pipe is deleted; each paint reconciles them against the model and updates ends, class and visibility in place, rather than redrawing the layer. Under a link and in run mode alike, it is hidden by the stylesheet.
+- Unloading what is out of view, on an infinite canvas, is held as B289.

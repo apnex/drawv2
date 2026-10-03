@@ -222,6 +222,7 @@ AMENDED 2026-10-02: its design written and held -- `PLANNER-SYSTEM.md` section 1
 AMENDED 2026-10-02: B288 fixed at the director's report (H17.27) -- a selected link that a join absorbs hands its selection to the joined link; it depended on which half was selected, not on control (PU28).\
 AMENDED 2026-10-02: succession added to the held planner design (section 14.2, TG-1b): the change set records what an entity was absorbed into, retiring `applyAnswer`'s recogniser and covering joins the page makes itself.\
 AMENDED 2026-10-02: pipes are hidden in run mode and under an up link, as ruled; matrix invariant I8 holds the second after every row.\
+AMENDED 2026-10-02: a pipe is never removed from the page to hide it -- one element per pipe, kept and updated in place, hidden by class; I8 also holds one element per pipe. Unloading off-screen objects on an infinite canvas held as B289.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -1012,6 +1013,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
 | **B282** | S3 | Anchors unified and type as composition (ruled 2026-09-22): the waypoint kind goes, and `type` becomes the name of a composition of packs | promotion's format batch (P2), packs composing earned by composing two |
 | **B287** | S3 | The planner as an event-triggered declarative graph: one change set per transaction, declared triggers, dispatch only where they match (`PLANNER-SYSTEM.md` section 13) | the director schedules it, in the lab or with promotion |
+| **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |

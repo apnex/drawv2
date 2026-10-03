@@ -35,23 +35,23 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	/*
 	PIPES ARE DRAWN, beneath the links routed over them.
 
-	Redrawn whole on every change. The pipe set is small and redrawing it is cheap, and a painter that tried to reconcile
-	incrementally would need to know which pipes changed -- a second index over the pipe set, which is exactly the kind of
-	second authority this programme exists to remove. How a pipe LOOKS is the plugin's own (network/appearance.mjs),
-	applied as attributes: the first painter left colour to the stylesheet's `currentColor`, which inherited black and made
-	pipes invisible, and one measured authority in the plugin replaced it.
-	*/
-	/*
-	Each pipe is drawn under its own id, so the canvas's selection reaches it (the renderer marks an id it can find), and a
-	repaint keeps it marked. A HAND pipe also gets an invisible hit line naming it (`data-select`), which is how the canvas
+	ONE ELEMENT PER PIPE, made when the pipe first appears and kept until the pipe is deleted (the director, 2026-10-02: "the
+	DOM doesnt change, but just marks pipes not visible / hidden"). Each paint reads every pipe from the model and reconciles
+	the elements against it -- creates the new, removes the gone, and updates every kept one's ends, class and visibility --
+	so the model stays the one authority and nothing tracks which pipes changed. What is kept is only the elements, by id,
+	as the canvas renderer keeps its own. It was redrawn whole on every change until then. Elements leaving the DOM only with
+	their pipe is also what an infinite canvas needs, to unload what is out of view (B289).
+
+	Each pipe is a group, `.pipe-of`: its visible line, under the pipe's own id so the canvas's selection reaches it (the
+	renderer marks an id it can find); and for a HAND pipe an invisible hit line naming it (`data-select`), how the canvas
 	picks a plugin's mark (app/src/pick.js) -- so a hand pipe can be selected and deleted (N6, B281). A pipe laid with a link
 	gets none: it follows its links, and is never offered.
-	*/
-	/*
-	A PIPE A LINK RUNS OVER IS NOT DRAWN (the director, 2026-10-02): the link is drawn along it, so the pipe beneath only
-	shows at its edges, and the dashes of a `w` pipe peeked out beside the link. Read off the network's one derivation for
-	this board (cached, network/view.mjs), so what is hidden is exactly what is drawn over: an UP link's route. A down link
-	is drawn along its intent, not its legs, so its own pipes stay visible -- the way it would heal onto.
+
+	A PIPE A LINK RUNS OVER IS HIDDEN, not removed (the director, 2026-10-02): the link is drawn along it. Its group is marked
+	`under`, which network/network.css hides, line and hit line alike. What counts is read off the network's one derivation
+	for this board (cached, network/view.mjs): an UP link's route. A down link is drawn along its intent, not its legs, so
+	its own pipes stay shown -- the way it would heal onto. How a pipe LOOKS is the plugin's own (network/appearance.mjs),
+	applied as attributes: the first painter left colour to `currentColor`, which inherited black and made pipes invisible.
 	*/
 	const occupied = () => {
 		const view = network.view.of(model), on = new Set();
@@ -61,16 +61,29 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 		}
 		return on;
 	};
+	const drawn = new Map();   // pipe id -> { group, line, hit, laid }: the elements, never a second record of the pipes
+	const setEnds = (node, p, q) => { for (const [k, v] of [['x1', p.x], ['y1', p.y], ['x2', q.x], ['y2', q.y]]) node.setAttribute(k, v); };
+	const make = (id, laid) => {
+		const group = el('g', { class: 'pipe-of', 'data-pipe': id }, pipeLayer);
+		const line = el('line', { id, ...pipeAttributes(laid) }, group);
+		const hit = laid === 'hand' ? el('line', { class: 'pipe-hit', 'data-select': id, ...pipeHitAttributes() }, group) : null;
+		return { group, line, hit, laid };
+	};
 	const paint = () => {
-		pipeLayer.replaceChildren();
-		const selected = new Set(selection.list()), under = occupied();
+		const selected = new Set(selection.list()), under = occupied(), live = new Set();
 		for (const { id, a, b, laid } of model.all('pipe')) {   // the tab's pipes, as it holds them (N-c)
-			if (under.has(id)) continue;   // a link is drawn over it
 			const p = model.endpointOf(a), q = model.endpointOf(b);
 			if (!p || !q) continue;   // an anchor the pipe names has gone; the planner removes the pipe in the same edit
-			el('line', { id, x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}${selected.has(id) ? ' selected' : ''}`, ...pipeAttributes(laid) }, pipeLayer);
-			if (laid === 'hand') el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: 'pipe-hit', 'data-select': id, ...pipeHitAttributes() }, pipeLayer);
+			live.add(id);
+			let d = drawn.get(id);
+			if (d && d.laid !== laid) { d.group.remove(); d = null; }   // a link pipe laid again by hand: its look and its hit line change
+			if (!d) { d = make(id, laid); drawn.set(id, d); }
+			setEnds(d.line, p, q);
+			if (d.hit) setEnds(d.hit, p, q);
+			d.line.setAttribute('class', `pipe pipe-${laid}${selected.has(id) ? ' selected' : ''}`);
+			d.group.setAttribute('class', `pipe-of${under.has(id) ? ' under' : ''}`);
 		}
+		for (const [id, d] of drawn) if (!live.has(id)) { d.group.remove(); drawn.delete(id); }   // the pipe is gone
 	};
 	model.onChange(paint);
 	// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30). The selected LOOK is

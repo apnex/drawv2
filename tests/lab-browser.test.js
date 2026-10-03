@@ -654,7 +654,10 @@ const SNAPSHOT = `(() => {
 		pipes: lab.authority.all('pipe').map(({ a, b, laid }) => ({ a, b, laid })),
 		// whether the tab holds exactly the authority's pipes -- a verdict, not the ids, which carry minted anchors' random hex
 		// the pipes drawn, and the pipes an up link runs over -- from the network's own routes (2026-10-02: one is never the other)
-		drawnPipes: [...document.querySelectorAll('#pipes line.pipe')].map((l) => l.id).sort(),
+		// SEEN, not merely present: a pipe under a link stays in the page, hidden (2026-10-02)
+		// Chrome's checkVisibility() does not look up through a hidden SVG group, so the ancestors are walked here
+		drawnPipes: [...document.querySelectorAll('#pipes line.pipe')].filter((l) => { for (let n = l; n && n.id !== 'container'; n = n.parentElement) if (getComputedStyle(n).display === 'none') return false; return true; }).map((l) => l.id).sort(),
+		pipeElements: [...document.querySelectorAll('#pipes .pipe-of')].map((g) => g.getAttribute('data-pipe')).sort(),
 		underLinks: (() => { const v = lab.network.view.of(lab.model), on = new Set();
 			for (const l of lab.model.all('link')) { const r = v.route(l.id); if (r) for (let i = 0; i < r.length - 1; i++) on.add([r[i], r[i + 1]].sort().join('|')); }
 			return lab.model.all('pipe').filter((p) => on.has([p.a, p.b].sort().join('|'))).map((p) => p.id).sort(); })(),
@@ -707,7 +710,8 @@ const INVARIANT = {
 	// 2026-10-02: a pipe is drawn exactly when no up link runs over it
 	I8: (s) => {
 		const want = s.allPipes.filter((id) => !s.underLinks.includes(id));
-		return same(s.drawnPipes, want) || `drawn pipes ${s.drawnPipes.length}, where the pipes no up link runs over are ${want.length}`;
+		if (!same(s.pipeElements, s.allPipes)) return `${s.pipeElements.length} pipe elements in the page for ${s.allPipes.length} pipes: one each, kept, hidden or not`;
+		return same(s.drawnPipes, want) || `seen pipes ${s.drawnPipes.length}, where the pipes no up link runs over are ${want.length}`;
 	},
 	// B277: transit off admits endpoints only -- no junction class, no junction ring, and Input never judges one
 	I7: (s) => {
@@ -833,7 +837,7 @@ id is numbered before the pipes appear in the snapshot, so orienting them afterw
 */
 const corpusForm = (s) => {
 	// the drawn and occupied pipe lists carry pipe ids, made of minted anchors' random hex; I8 judges them, so they are counted here
-	const { drawnPipes, underLinks, allPipes, ...rest } = s;
+	const { drawnPipes, underLinks, allPipes, pipeElements, ...rest } = s;
 	const c = canonical({ ...rest, drawnPipes: drawnPipes.length });
 	c.pipes = c.pipes.map((q) => { const [a, b] = [q.a, q.b].sort(); return { ...q, a, b }; });
 	return c;
@@ -881,7 +885,7 @@ test('in run mode pipes are hidden, as anchors are, and come back when it ends',
 	const p = await open('cross');
 	try {
 		await p.run(pipesIn(`lay([['node-000001', 'node-000003', 'hand']]);`));   // a free pipe, drawn in the edit view
-		const shown = `[...document.querySelectorAll('#pipes line')].filter((l) => getComputedStyle(l).display !== 'none').length`;
+		const shown = `[...document.querySelectorAll('#pipes line')].filter((l) => { for (let n = l; n && n.id !== 'container'; n = n.parentElement) if (getComputedStyle(n).display === 'none') return false; return true; }).length`;
 		const anchors = `[...document.querySelectorAll('.wp-anchor')].filter((c) => getComputedStyle(c).display !== 'none').length`;
 		assert.ok(await p.run(shown) > 0, 'drawn before');
 		await p.click(600, 400);

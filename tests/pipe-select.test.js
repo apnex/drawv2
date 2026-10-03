@@ -18,6 +18,7 @@ import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { pipeHitAttributes } from '../network/appearance.mjs';
 import { linkWidth } from '../kernel/network-appearance.mjs';
 import { attachNetwork } from '../network/host.mjs';
+import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { hitOf } from '../app/src/pick.js';
 import { PRESS_DRAGS } from '../app/src/releases.js';
 import { deleteSelection } from '../app/src/commands.js';
@@ -34,29 +35,54 @@ function board() {
 }
 
 test('N-c2: the painter draws each pipe under its id, and gives only a hand pipe a hit line, the thinnest link\'s width', () => {
-	const m = board(), drawn = [];
+	const m = board(), f = fakeLayer();
 	let selected = [];
-	attachNetwork({
+	const net = attachNetwork({
 		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
-		model: m, authority: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => selected }, history: { commit: () => {} },
-		pipeLayer: { replaceChildren: () => { drawn.length = 0; } }, el: (tag, attrs) => drawn.push(attrs), say: () => {},
-	}).paint();
+		pipeLayer: f.root, el: f.el, say: () => {},
+	});
+	net.paint();
 	const hand = pipeEntity(A, W, 'hand').id, link = pipeEntity(W, B, 'link').id;
-	assert.deepEqual(drawn.filter((a) => a.id).map((a) => a.id).sort(), [hand, link].sort(), 'every pipe is drawn under its own id');
-	const hits = drawn.filter((a) => a.class === 'pipe-hit');
-	assert.deepEqual(hits.map((a) => a['data-select']), [hand], 'only the hand pipe can be clicked; a link pipe is never offered');
-	assert.equal(hits[0]['stroke-width'], linkWidth({ control: true }), 'its click area is the thinnest link\'s width, so a link drawn over it covers it');
+	const lines = () => f.all().filter((n) => n.tag === 'line' && n.attrs.id);
+	assert.deepEqual(lines().map((n) => n.attrs.id).sort(), [hand, link].sort(), 'every pipe is drawn under its own id');
+	const hits = f.all().filter((n) => n.attrs.class === 'pipe-hit');
+	assert.deepEqual(hits.map((n) => n.attrs['data-select']), [hand], 'only the hand pipe can be clicked; a link pipe is never offered');
+	assert.equal(hits[0].attrs['stroke-width'], linkWidth({ control: true }), 'its click area is the thinnest link\'s width, so a link drawn over it covers it');
 	assert.deepEqual(pipeHitAttributes(), { stroke: 'transparent', 'stroke-width': linkWidth({ control: true }), fill: 'none' });
 	selected = [hand];
-	attachNetwork({
+	net.paint();
+	assert.match(lines().find((n) => n.attrs.id === hand).attrs.class, /\bselected\b/, 'a repaint keeps a selected pipe marked');
+	assert.doesNotMatch(lines().find((n) => n.attrs.id === link).attrs.class, /\bselected\b/);
+});
+
+/*
+ONE ELEMENT PER PIPE, KEPT (the director, 2026-10-02): a repaint updates elements in place and makes none; an anchor moved
+moves its pipe's element; a pipe deleted takes its element; a pipe laid again by hand gains its hit line.
+*/
+test('the painter keeps one element per pipe across paints, updating it in place, and removes it only with its pipe', () => {
+	const m = board(), f = fakeLayer();
+	const net = attachNetwork({
 		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
-		model: m, authority: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
-		selection: { subscribe: () => {}, list: () => selected }, history: { commit: () => {} },
-		pipeLayer: { replaceChildren: () => { drawn.length = 0; } }, el: (tag, attrs) => drawn.push(attrs), say: () => {},
-	}).paint();
-	assert.match(drawn.find((a) => a.id === hand).class, /\bselected\b/, 'a repaint keeps a selected pipe marked');
-	assert.doesNotMatch(drawn.find((a) => a.id === link).class, /\bselected\b/);
+		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
+	});
+	const hand = pipeEntity(A, W, 'hand').id, link = pipeEntity(W, B, 'link').id;
+	const nodes = () => new Set(f.all());
+	net.paint();
+	const before = nodes();
+	assert.equal(before.size, 5, 'two groups, two lines, one hit line');
+	net.paint(); net.paint();
+	assert.deepEqual(nodes(), before, 'a repaint makes no element and drops none');
+	const line = f.all().find((n) => n.attrs.id === hand);
+	m.set('waypoint', W, { x: 60, y: -60 });
+	assert.equal(f.all().find((n) => n.attrs.id === hand), line, 'the same element');
+	assert.deepEqual([line.attrs.x2, line.attrs.y2], [60, -60], 'moved with its anchor, in place');
+	m.del('pipe', hand);
+	assert.equal(f.all().some((n) => n.attrs.id === hand || n.attrs['data-select'] === hand), false, 'a deleted pipe takes its element and its hit line');
+	m.set('pipe', link, { laid: 'hand' });
+	assert.ok(f.all().some((n) => n.attrs['data-select'] === link), 'a link pipe laid again by hand gains its hit line');
 });
 
 test('N-c2: an element naming what a click selects is a mark, its kind read off the id', () => {
@@ -85,7 +111,7 @@ test('N-c2: a selected entity the cascade does not reach is deleted as itself, f
 A PIPE A LINK RUNS OVER IS NOT DRAWN (the director, 2026-10-02): hidden exactly where an UP link's route runs, read off the
 network's derivation; a free pipe, and a down link's own legs, are drawn.
 */
-test('the painter draws no pipe an up link runs over, and every other pipe', async () => {
+test('the painter marks hidden every pipe an up link runs over, keeping it in the page, and no other', async () => {
 	const { createNetworkSession } = await import('../network/session.mjs');
 	const session = createNetworkSession();
 	const m = new Model({ kinds: productKinds(PIPE_ROW), network: session.network });
@@ -95,12 +121,14 @@ test('the painter draws no pipe an up link runs over, and every other pipe', asy
 	m.put('link', { id: 'link-000001', name: 'up', src: A, dst: B, via: [W] });
 	for (const [a, b, laid] of [[A, W, 'link'], [W, B, 'link'], [A, C, 'hand']]) m.put('pipe', pipeEntity(a, b, laid));
 	m.put('link', { id: 'link-000002', name: 'down', src: C, dst: D });   // no way: down
-	const drawn = [];
+	const f = fakeLayer();
 	attachNetwork({
 		session, model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
-		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} },
-		pipeLayer: { replaceChildren: () => { drawn.length = 0; } }, el: (tag, attrs) => drawn.push(attrs), say: () => {},
+		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
 	}).paint();
 	assert.equal(m.isLinkDown(m.get('link', 'link-000002')), true);
-	assert.deepEqual(drawn.filter((a) => a.id).map((a) => a.id), [pipeEntity(A, C, 'hand').id], 'the up link\'s two pipes are hidden; the free hand pipe is drawn');
+	const groups = f.all().filter((n) => n.attrs.class?.startsWith('pipe-of'));
+	assert.equal(groups.length, 3, 'every pipe has its element in the page');
+	const hidden = groups.filter((g) => g.attrs.class.includes('under')).map((g) => g.attrs['data-pipe']).sort();
+	assert.deepEqual(hidden, [pipeEntity(A, W, 'link').id, pipeEntity(W, B, 'link').id].sort(), 'the up link\'s two pipes are marked hidden; the free hand pipe is not');
 });
