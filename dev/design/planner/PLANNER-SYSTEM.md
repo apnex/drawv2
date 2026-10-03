@@ -361,6 +361,12 @@ change  { kind, id, before, after, fields }
 It is computed however the op was written: a whole-entity put that clears a field reports that field changed, as B286 needed.\
 Reactions' own ops feed it, so a consequence's consequence is seen like any other change.
 
+AMENDED 2026-10-02 -- **SUCCESSION** (B288, at the director's word).\
+A change may also record what an entity was absorbed into -- `into`, set by the reaction that absorbed it: a join deletes one link and keeps the other, so the deleted one's change says `into: <the kept link>`.\
+The answer carries it, so a page reads "B became A" as a fact, instead of recognising the join's op shape.\
+It replaces the recogniser `applyAnswer` uses today (app/src/changes.js `joinsIn`), a second statement of the join held to the planner by a test, and serves everything that follows an entity -- the selection, the label being edited, focus.\
+Two gaps it closes: the twin itself; and joins the page makes for itself -- the transit toggle's (`transitEdit`), applied optimistically, whose answer is only an echo, so a link selected beside the toggled anchor still loses its selection -- closed when that toggle becomes a planner reaction at P2.
+
 ### 14.3 Declared triggers
 
 Every reaction declares what it listens to, as data, in every phase; `on` is replaced:
@@ -394,6 +400,7 @@ A trigger that misses a kind of change fails there, before any behaviour can dep
 | stage | what lands | exit criterion |
 |---|---|---|
 | **TG-1** | the change set, built in `track`, handed to every phase; no reaction reads it yet | a test holds it to before and after for every op shape (set, put, put clearing a field, delete, cascade); every corpus unchanged |
+| **TG-1b** | succession: the join records `into`, the answer carries it, and `applyAnswer` reads it instead of recognising the join (`joinsIn` deleted) | tests/apply-answer.test.js and matrix row TRN-34 unchanged; no recogniser left |
 | **TG-2** | declared triggers on the five per-op reactions, `on` retired, the composition refusing a reaction with none | every corpus unchanged; the reaction table shows each trigger |
 | **TG-3** | the four transaction-phase reactions take their matches instead of scanning, with the shadow guard (14.4) | every corpus unchanged; the shadow equal on every case |
 | **TG-4** | the dispatch index, and a count of reactions called per edit | an edit that touches only a zone calls no link or pipe reaction; a rename calls no join; counts recorded on the corpus |
