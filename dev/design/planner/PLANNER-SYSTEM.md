@@ -331,6 +331,7 @@ Tracked as B287, held.
 
 > **Proposes; decides nothing.** Written at the director's word ("Write the design then hold") against `2acd3d1`, to reach section 13's target in the lab before promotion, as recommended.
 > Nothing here is built until the director rules TG-D1 to TG-D4 and schedules it (B287).
+> RULED 2026-10-02: TG-D1 to TG-D4 as recommended, and scheduled first (`dev/DECISIONS.md`); built as H17.28.
 
 ### 14.1 The reactions today -- measured
 

@@ -1646,3 +1646,10 @@ The director: "Pipes should be invisible in "r" read mode - just like anchors. A
 AMENDED 2026-10-02: a pipe under a link is kept in the page and hidden, not removed -- the director: "I'm thinking we unify such that the DOM doesnt change, but just marks pipes not visible / hidden. when we move to "infinite canvas" we can unload objects out of our viewable area from the dom."
 - Each pipe has one element, made when the pipe appears and removed only when the pipe is deleted; each paint reconciles them against the model and updates ends, class and visibility in place, rather than redrawing the layer. Under a link and in run mode alike, it is hidden by the stylesheet.
 - Unloading what is out of view, on an infinite canvas, is held as B289.
+
+**The planner on declared triggers: TG-D1 to TG-D4 ruled as recommended -- 2026-10-02 (B287).**\
+Re-triaged first by the director, its decisions asked one at a time (`dev/design/planner/PLANNER-SYSTEM.md` section 14.6).
+- TG-D1: a reaction declares its trigger as data -- which kinds deleted or created, which fields of a kind changed -- over a predicate per reaction, so the core can index it, the reaction table show it, and the shadow check it.
+- TG-D2: the shadow -- each triggered reaction also run untriggered, the two required to emit the same ops -- runs in the tests only, over every corpus case, not at run time in the lab.
+- TG-D3: `pipe-sweep` is triggered, running only when links or pipes change, and judges the whole board over the cached derivation; bounding it further is the read side's incremental work.
+- TG-D4: built now, in the lab, before promotion; behaviour identical, proven by the corpora, and recorded for the production audit.

@@ -228,6 +228,7 @@ AMENDED 2026-10-02: re-triaged at the director's word ("revisit our unification 
 2 -- production on current `main` (promotion's P0), the director's call, before promotion begins, so the upgrade audit stops growing (`dev/PRODUCTION-UPGRADE.md`, 28 entries).\
 3 -- promotion started (B266): P-3 to P-9 ruled at its start, then P2.\
 4 -- features alongside or after: H15.5; H15.7 dropped from the board and held under B282. H17.3's remaining cuts all travel with promotion; H10.30 is the director's call.\
+AMENDED 2026-10-02: TG-D1 to TG-D4 ruled as recommended; B287 is built now, in the lab, as H17.28.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -996,6 +997,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.25 | Two links at a junction join when an edit to one makes them compatible -- a change of plane or direction -- as they join when a link leaves; a second link drawn to a terminus still never joins (B214) | **B285** | S2 | `DONE` |
 | H17.26 | A join is woken by a declaration that CHANGED, however the edit is written -- a set, or the whole-entity put that clears a direction | **B286** | S2 | `DONE` |
 | H17.27 | A selected link that a join absorbs hands its selection to the link it joined into, in the lab and in production alike | **B288** | S3 | `DONE` |
+| H17.28 | The planner on declared triggers: one change set per transaction with succession (TG-1, TG-1b), every reaction's trigger declared as data (TG-2), the transaction phases fed their matches under a shadow guard (TG-3), and dispatch by index (TG-4) -- no visible change | **B287** | S3 | `WIP` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
@@ -1063,7 +1065,6 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B287** | TG-D1 to TG-D4 of `dev/design/planner/PLANNER-SYSTEM.md` section 14.6, one at a time: triggers as data, where the shadow runs, `pipe-sweep` at scale, and when | the planner is shared with production, and TG-D4 decides whether its code changes before promotion |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
