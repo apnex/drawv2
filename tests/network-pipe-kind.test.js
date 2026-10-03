@@ -10,12 +10,12 @@ the session's prune and sweep across every network case.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { composeKinds } from '../model/shape.mjs';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { PRODUCT_KINDS } from '../planner/kinds.mjs';
-import { commit, plan, undo } from '../planner/txn.mjs';
+import { commit, plan, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { PIPE_ROW, pipeId, pipeEntity } from '../network/pipe-kind.mjs';
@@ -99,6 +99,10 @@ test('N-d: a link crossing a pipe in either direction is using it -- the sweep k
 	assert.deepEqual(m.all('pipe').map((p) => p.id).sort(), [pipeId(A, W), pipeId(B, W)].sort(), 'both pipes stay: B to A runs them backwards, and still runs them');
 });
 
-test('N-b: the product refuses a pipe -- it composes its five', () => {
-	assert.equal(plan(new Model(), [putPipe(A, B, 'hand')]).error, 'unknown kind: pipe');
+// AMENDED 2026-10-03 (S-b): the product composes the network now; a composition WITHOUT its rows refuses a pipe
+test('N-b: a composition without the network\'s rows refuses a pipe', async () => {
+	const { Model: Bare } = await import('../model/model.mjs');
+	const { plan: bare } = await import('../planner/txn.mjs');
+	const { linkTenant } = await import('../model/link-reactions.mjs');
+	assert.equal(bare(new Bare(), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }) }).error, 'unknown kind: pipe');
 });

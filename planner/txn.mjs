@@ -39,7 +39,7 @@ import { validateMutation, validateMetaPatch } from './validate.js';
 import { PRODUCT_KINDS } from './kinds.mjs';   // H17.22 N-a: the kinds a composition brings, each a whole row
 import { violations } from '../model/invariants.mjs';
 import { nextOrder } from '../model/order.mjs';   // a creation without a drawing order is given one (F-d)
-import { CLASSIC_LINKS, GROUPS } from './tenants.mjs';
+import { GROUPS } from './tenants.mjs';
 import { BEATS, wallClock } from './edges.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
@@ -234,7 +234,7 @@ product's five (planner/kinds.mjs) if none are given. Every row must carry its c
 be composed with the same kinds -- a model holding a kind the planner cannot validate, or the reverse, is a half-composed
 plugin, refused by name rather than met as an `unknown kind` later.
 */
-function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, extensions = [BEATS], kinds = PRODUCT_KINDS, network, ...rest } = {}, who) {
+function composition({ links = null, place = null, now = wallClock, extensions = [BEATS], kinds = PRODUCT_KINDS, network, ...rest } = {}, who) {
 	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- the network plugs in as its link tenant, { links: network.links } (PL-3)`);
 	const stray = Object.keys(rest);
 	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links, place, now, extensions, kinds } (PL-4, N-a)`);
@@ -245,7 +245,14 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 	const rows = Object.fromEntries(PHASES.map((p) => [p, []]));
 	const ids = new Set();
 	const refusals = [];
-	for (const tenant of [links, GROUPS]) {
+	/*
+	S-b (H18.12) -- NO DEFAULT LINK TENANT. A plan names the link tenant it runs: the network's, the only one since the classic
+	tenant was deleted (SERVER-COMPOSES-NETWORK.md). So no path plans links by a rule nobody chose. Undo and redo plan nothing
+	-- they replay stored inverses -- and take none.
+	*/
+	const plans = who === 'plan' || who === 'commit';
+	if (plans && links === null) throw new Error(`${who}: no link tenant -- a composition passes the network's, { links: network.links } (S-b)`);
+	for (const tenant of [...(links ? [links] : []), GROUPS]) {
 		if (!tenant || typeof tenant.owner !== 'string' || !Array.isArray(tenant.reactions)) throw new Error(`${who}: a tenant is { owner, reactions } (PL-3)`);
 		/*
 		F-e (H18.7) -- A TENANT'S REFUSALS: rules the tenant holds on the result, as data like its reactions -- an id, a
@@ -595,7 +602,8 @@ function stamp(model, log) {
 // broadcast. It appends no record — appending an inverse would truncate the redo tail it just
 // created, which is why version cannot be the ring's length.
 export function undo(model, log, to = null, options = {}) {
-	const { extensions } = composition(options, 'undo');
+	const { extensions, kinds } = composition(options, 'undo');
+	sameKinds(model, kinds, 'undo');   // replays inverses of the kinds it was composed with (S-b)
 	if (!log.canUndo()) return { ok: false, error: 'nothing to undo', version: log.version };
 	// D21 — `to` names the OLDEST record to reverse, and it must name one that is currently
 	// applied. Unvalidated, `undo {to: 0}` reverses the entire ring: the destructive verb would
@@ -634,7 +642,8 @@ export function undo(model, log, to = null, options = {}) {
 }
 
 export function redo(model, log, options = {}) {
-	const { extensions } = composition(options, 'redo');
+	const { extensions, kinds } = composition(options, 'redo');
+	sameKinds(model, kinds, 'redo');
 	if (!log.canRedo()) return { ok: false, error: 'nothing to redo', version: log.version };
 	const record = log.records[log.cursor];
 	applyOps(model, record.ops);

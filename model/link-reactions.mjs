@@ -22,7 +22,7 @@ stranded pass production does not have. Promotion deletes the classic tenant (PR
 Network-layer code (tools/layers.mjs): it reads the model and the link invariants, and nothing of the planner. What it
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
-import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './invariants.mjs';
+import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './link-rules.mjs';
 import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
@@ -279,7 +279,7 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 			const touched = new Set();
 			/*
 	B285 -- A CHANGE OF DECLARATION decides a join too (ruled 2026-10-02): an edit that changes one of a link's declarations
-	(`LINK_DECLARATIONS`, model/invariants.mjs -- its plane, its direction) can make the two links at a junction compatible, and two links remaining compatible after a mutation join (2026-09-28).
+	(`LINK_DECLARATIONS`, model/link-rules.mjs -- its plane, its direction) can make the two links at a junction compatible, and two links remaining compatible after a mutation join (2026-09-28).
 	So the ends of such a link are candidates whatever the count did. Nothing else that sets a link is: a rename or a move
 	of a pin decides nothing, and a second link drawn to a terminus still never joins (B214).
 	*/

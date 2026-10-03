@@ -15,22 +15,11 @@ The reactions run in the phases declared in `server/txn.mjs`, in this order:
 
 Within a phase the rows run top to bottom, and two rows changing one entity in one run of a phase is a fault (PD-3).\
 Every reaction only emits ops: the core applies each at once, so the next row sees it, and writes every inverse (PL-2).\
-A composition holds one link tenant (PD-2), so production and the lab differ only in the link rows.
+A composition holds one link tenant (PD-2): the network's, in production and the lab alike since S-b.
 
 ## Production
 
-Production's composition: the classic link tenant and the groups.
-
-<!-- BEGIN GENERATED: production. Run node tools/reaction-table.mjs --write; do not edit by hand. -->
-| phase | reaction | tenant | listens to | what follows |
-|---|---|---|---|---|
-| clear | `node-links` | classic links | node deleted | deleting a typed node deletes every link ending at it |
-| clear | `waypoint-links` | classic links | node deleted | deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81) |
-| clear | `group-trim` | groups | node deleted | deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241) |
-| follow | `group-steal` | groups | group created; or group members changed | putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group |
-| sweep | `orphan-sweep` | classic links | link, pipe deleted; or link src, dst, via changed | a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); only links reference an anchor, and a pinned anchor or a link's end is kept (B216) |
-| join | `link-join` | classic links | link deleted; or link control, direction changed | two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); at any waypoint |
-<!-- END GENERATED: production -->
+AMENDED 2026-10-03 (S-b, H18.12): production composes the network's tenant, below; the classic link tenant -- no stranded pass, any waypoint a join, a pinned waypoint or a link's end kept by the sweep -- is deleted under the cutover ruling, and its table with it.
 
 ## The network plugin
 

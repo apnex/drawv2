@@ -5,9 +5,10 @@ here by a probe reaction in the last phase, as the transaction-phase reactions w
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
-import { plan } from '../planner/txn.mjs';
-import { CLASSIC_LINKS } from '../planner/tenants.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
+import { plan } from './fixtures/composed.mjs';
+import { NETWORK } from './fixtures/composed.mjs';
+const CLASSIC_LINKS = NETWORK.links;   // the link tenant production composes (S-b), as the base a probe extends
 import { PRODUCT_KINDS } from '../planner/kinds.mjs';
 
 // a probe listens to everything: every kind created or deleted, and every field of every kind changed

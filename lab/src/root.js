@@ -196,9 +196,9 @@ if (wanted) {
 	const board = boards[wanted];
 	if (!board) { if (Object.keys(boards).length) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`); }
 	else {
-		// the board's pipes ride in its own commit (N-c); the product's tenant, so the board is laid as listed and nothing swept
+		// the board's pipes ride in its own commit (N-c), under the network's tenant like every edit -- the one tenant since S-b
 		const answer = net.seed(board.pipes, (pipeOps) => {
-			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { kinds });
+			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { links: network.links, kinds });
 			if (a.ok) applyOps(model, a.change?.ops ?? []);
 			return a;
 		});

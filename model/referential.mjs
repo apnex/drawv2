@@ -116,7 +116,7 @@ Two links both TERMINATING at one waypoint is a star -- a junction, legal howeve
 
 A same-pair link that does NOT bend at this point is a different shape on the canvas: one detours
 through the waypoint, the other does not, so they are distinguishable and neither is invisible.
-Whether a SECOND STRAIGHT one may exist is `straightCapacity` in `model/invariants.mjs`, which caps
+Whether a SECOND STRAIGHT one may exist is `straightCapacity` in `model/pair-capacity.mjs`, which caps
 straight links between a pair at one for the same reason this function exists -- two straight links
 between one pair render along the identical path. That is an invariant rather than a referential
 check, so it is enforced in a different layer and reported differently; it is named here so the two

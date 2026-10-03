@@ -12,7 +12,7 @@ batch (F-e, H18.7; TR-7) -- only where it differs from the type's default, so an
 was session state in the lab, which a reload lost and undo did not move; now it is the document's, every peer reads the same
 value, and undo restores it with everything else. The network refuses a value the type does not offer.
 */
-import { splitAtBend } from '../model/invariants.mjs';
+import { splitAtBend } from '../model/link-rules.mjs';
 import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const BOTH = [true, false], OFF = [false];

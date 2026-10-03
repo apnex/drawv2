@@ -16,6 +16,7 @@ import { composeKinds, CORE_KINDS } from '../model/shape.mjs';
 import { Model } from '../model/model.mjs';
 import { PRODUCT_KINDS, productKinds } from '../planner/kinds.mjs';
 import { commit, plan } from '../planner/txn.mjs';
+import { linkTenant } from '../model/link-reactions.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc, validateSelectionIds, validateEntity } from '../planner/validate.js';
 
@@ -30,6 +31,8 @@ const PROBE = {
 const productRows = () => PRODUCT_KINDS.list.map((k) => PRODUCT_KINDS.row(k));
 const WITH_PROBE = composeKinds([...productRows(), PROBE], 'a test composition');
 const NODE = { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' };
+// a plan names its link tenant since S-b (H18.12); these tests are about kinds, so a bare one serves
+const BARE = linkTenant({ owner: 'bare links', keepsOrphan: () => false, says: {} });
 
 test('N-a: a composition lists its kinds and what each opts into', () => {
 	assert.deepEqual(WITH_PROBE.list, ['node', 'link', 'zone', 'group', 'probe']);   // four since F-c: a waypoint is a node with no type
@@ -72,7 +75,7 @@ test('N-a: a Model composed with a plugin kind stores, round-trips and selects i
 });
 
 test('N-a: the planner composed with the plugin kind validates it by its row -- fields, cross-entity check, cap', () => {
-	const m = new Model({ kinds: WITH_PROBE }), log = new Log(), opts = { kinds: WITH_PROBE };
+	const m = new Model({ kinds: WITH_PROBE }), log = new Log(), opts = { kinds: WITH_PROBE, links: BARE };
 	const put = (entity) => ({ op: 'put', kind: 'probe', entity });
 	assert.equal(commit(m, log, { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'test', 'test', opts).ok, true);
 	assert.equal(commit(m, log, { ops: [put({ id: 'probe-00000b', at: NODE.id })] }, 'test', 'test', opts).ok, true);
@@ -87,11 +90,14 @@ test('N-a: the planner composed with the plugin kind validates it by its row -- 
 
 test('N-a: the product\'s planner refuses the plugin kind, and a model and planner composed differently are refused by name', () => {
 	const product = new Model();
-	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }]).error, 'unknown kind: probe');
-	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }]),
+	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }], { links: BARE }).error, 'unknown kind: probe');
+	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }], { links: BARE }),
 		/plan: the model is composed with kinds node, link, zone, group, probe and the planner with node, link, zone, group/);
-	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE }), /plan: the model is composed with kinds/);
-	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS }), /kinds is a composition whose every row carries its checks/);
+	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE, links: BARE }), /plan: the model is composed with kinds/);
+	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS, links: BARE }), /kinds is a composition whose every row carries its checks/);
+	// S-b: and no plan runs without a link tenant -- none is a default
+	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }]), /plan: no link tenant/);
+	assert.throws(() => commit(product, new Log(), { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x'), /commit: no link tenant/);
 });
 
 test('N-a: a document with the plugin kind validates against its composition, and not against the product\'s', () => {
@@ -157,4 +163,12 @@ test('S-a: the network brings transit, and the product names none; a tenant read
 	const withPipesOnly = productKinds(NETWORK_ROWS.find((r) => r.kind === 'pipe'));
 	const m = new Model({ kinds: withPipesOnly });
 	assert.throws(() => plan(m, [{ op: 'del', kind: 'node', id: 'node-00000a' }], { links: createNetwork(createTransit()).links, kinds: withPipesOnly }), /needs the field node\.transit/);
+});
+
+test('S-b: undo and redo replay only over a model composed with their kinds -- a mismatch is refused by name', async () => {
+	const { undo, redo } = await import('../planner/txn.mjs');
+	const product = new Model(), log = new Log();
+	assert.equal(commit(product, log, { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x', { links: BARE }).ok, true);
+	assert.throws(() => undo(product, log, null, { kinds: WITH_PROBE }), /undo: the model is composed with kinds/);
+	assert.throws(() => redo(product, log, { kinds: WITH_PROBE }), /redo: the model is composed with kinds/);
 });

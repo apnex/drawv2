@@ -19,7 +19,7 @@ inverse-building, not the closure.
 import { groupAfterRemoval } from '../../planner/policy.mjs';
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
-import { pairHolders } from '../../model/invariants.mjs';
+import { pairHolders } from '../../model/link-rules.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
 import { BARE_KIND, ANCHOR_KINDS, bareAnchor, isTypedEntity } from '../../model/anchors.mjs';

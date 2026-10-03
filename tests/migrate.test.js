@@ -295,8 +295,8 @@ test('F-c dry run: the waypoint map is found by name and place, so a renumbering
 // ---- F-c: the node row keeps the line the kind boundary kept ----
 
 test('F-c: whether a node has a type is fixed when it is made, and each shape keeps its own fields', async () => {
-	const { plan } = await import('../planner/txn.mjs');
-	const { Model } = await import('../model/model.mjs');
+	const { plan } = await import('./fixtures/composed.mjs');
+	const { Model } = await import('./fixtures/composed.mjs');
 	const m = new Model();
 	m.put('node', { id: 'node-0000aa', name: 'r', type: 'router', x: 0, y: 0 });
 	m.put('node', { id: 'node-0000bb', name: 'w', x: 120, y: 0 });
@@ -313,8 +313,8 @@ test('F-c: whether a node has a type is fixed when it is made, and each shape ke
 });
 
 test('F-c: a link bends only at a waypoint -- a typed node in a via is refused, as a node id there always was', async () => {
-	const { plan } = await import('../planner/txn.mjs');
-	const { Model } = await import('../model/model.mjs');
+	const { plan } = await import('./fixtures/composed.mjs');
+	const { Model } = await import('./fixtures/composed.mjs');
 	const m = new Model();
 	for (const [id, x] of [['node-0000aa', 0], ['node-0000bb', 240], ['node-0000cc', 120]]) m.put('node', { id, name: id, type: 'host', x, y: 0 });
 	const r = plan(m, [{ op: 'put', kind: 'link', entity: { id: 'link-0000dd', name: 'l', src: 'node-0000aa', dst: 'node-0000bb', via: ['node-0000cc'] } }]);

@@ -696,7 +696,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 		const model = new Model({ kinds });
 		attachRelations(model, { cellOf });
 		const pipeOps = createNetworkSession().seed(boards[name].pipes ?? [], []);
-		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds });
+		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds, links: createNetworkSession().network.links });   // the network's tenant, as the lab seeds (S-b)
 		assert.equal(answer.ok, true, `seed '${name}' is refused by the planner: ${answer.error} -- it would fail silently in the browser`);
 		assert.ok((answer.change?.ops ?? []).length >= boards[name].ops.length + pipeOps.length, `seed '${name}' committed fewer ops than it asked for`);
 		assert.ok(boards[name].about, `seed '${name}' must say what it is for`);

@@ -13,7 +13,6 @@ every accepted plan must restore the board (PR8; collection order aside, which i
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CASES, record, readGolden, GENERATED_PER_COMPOSITION } from './fixtures/planner-corpus.mjs';
-import { CLASSIC_LINKS } from '../planner/tenants.mjs';
 
 const golden = readGolden();
 const runs = new Map(CASES.map((c) => [c.id, record(c)]));
@@ -32,7 +31,7 @@ for (const c of CASES.filter((x) => !x.id.includes('/gen-'))) {
 }
 
 // the generated cases per composition, naming the first that differ and whether its input or its result moved
-for (const compose of ['production', 'network']) {
+for (const compose of ['network']) {   // the one composition since S-b retired production's
 	test(`planner corpus: ${GENERATED_PER_COMPOSITION} generated ${compose} requests replay exactly`, () => {
 		const moved = generated(compose).filter((c) => JSON.stringify(runs.get(c.id).golden) !== JSON.stringify(golden[c.id]));
 		const say = moved.slice(0, 5).map((c) => `${c.id}: ${runs.get(c.id).golden.input === golden[c.id].input ? 'the result changed' : 'the INPUT changed (the generator moved)'}`);
@@ -54,7 +53,6 @@ fail on a pass that stopped firing, not on a tuned generator.
 test('the generated cases reach the stranded pass, the sweep and the join, in each composition', () => {
 	const count = (compose, f) => generated(compose).filter((c) => f(runs.get(c.id))).length;
 	const floors = {
-		production: { swept: 30, joined: 25, multiOpAccepted: 300, refused: 200 },
 		network: { stranded: 60, swept: 100, joined: 20, joinDeclined: 30, multiOpAccepted: 300, refused: 200 },
 	};
 	const measure = {
@@ -71,19 +69,16 @@ test('the generated cases reach the stranded pass, the sweep and the join, in ea
 			assert.ok(n >= floor, `${compose}: ${name} in ${n} generated cases, under the floor of ${floor}`);
 		}
 	}
-	assert.ok(!CLASSIC_LINKS.reactions.some((r) => r.phase === 'stranded'), 'production strands nothing: its tenant has no stranded pass');
 });
 
 test('the named cases fire the pass each is named for', () => {
 	const r = (id) => runs.get(id).reach;
 	assert.ok(r('network/stranded-pin-deleted').stranded > 0);
-	assert.equal(r('production/stranded-pin-deleted').stranded, 0, 'production strands nothing');
-	assert.ok(r('production/sweep-bend-released').swept > 0);
+	assert.ok(r('network/sweep-bend-released').swept > 0);
 	assert.equal(r('network/sweep-sheltered-by-hand-pipe').swept, 0, 'a hand pipe shelters its anchor');
-	assert.ok(r('production/join-at-junction').joined > 0);
+	assert.ok(r('network/join-at-junction').joined > 0);
 	assert.equal(r('network/join-off-transit').joined, 0, 'no join where transit is off (TR-5)');
-	assert.equal(r('production/join-off-transit').joined, 1, 'production has no transit, and joins');
-	for (const id of ['production/join-declined-duplicate-bend', 'production/join-declined-self-conflict']) {
+	for (const id of ['network/join-declined-duplicate-bend', 'network/join-declined-self-conflict']) {
 		assert.equal(r(id).joined, 0, `${id}: declined`);
 		assert.equal(r(id).joinSkipped, 1, `${id}: and counted as skipped`);
 	}

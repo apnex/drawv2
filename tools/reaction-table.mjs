@@ -16,7 +16,7 @@ Usage: node tools/reaction-table.mjs --check | --write
 import fs from 'node:fs';
 import path from 'node:path';
 import { PHASES } from '../planner/txn.mjs';
-import { CLASSIC_LINKS, GROUPS } from '../planner/tenants.mjs';
+import { GROUPS } from '../planner/tenants.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';   // the lab's network composes transit, so its table shows transit's rows (F-e)
 
@@ -37,7 +37,6 @@ const composition = (links) => [
 ];
 
 const BLOCKS = {
-	production: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(CLASSIC_LINKS)),
 	network: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(createNetwork(createTransit()).links)),
 };
 

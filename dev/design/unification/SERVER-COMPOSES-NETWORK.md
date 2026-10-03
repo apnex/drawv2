@@ -155,6 +155,16 @@ A tenant may name the fields it reads on another owner's kind, as it names the k
 **A stated consequence, designed:** until S-b composes the network in the server, the store refuses a stored `transit`, naming the field -- so an agent's `draw set <ref> transit` is refused there meanwhile. Held both ways by the CLI and store tests, which assert the round trip again once S-b lands. Production is frozen and the lab composes the network, so no one meets it.\
 Corpora unchanged; the estate holds no transit. Mutants: 9, all killed.
 
+AMENDED 2026-10-03 -- **S-b done** (H18.12), in two commits, each gated.\
+**The server composes the network:** `server/store.js` builds one composition -- `productKinds(...NETWORK_ROWS)` and the network's tenant, with transit -- and every Model it holds, every document it validates (boot, examples, `create`, templates, restore) and every commit, undo and redo use it; its Models are given no network to draw with, so the server's path consumers keep their straight drawing until P4. `/network/` is served, and the incubator boundary admits `server/store.js` and `app/src/main.js` -- the promotion's widening, in the diff where a reviewer sees it.\
+**The product page composes the network's rows** (G1) and holds pipes; it attaches no network drawing until P5.\
+**No default link tenant:** `plan` and `commit` refuse a composition without one, so no path plans links by a rule nobody chose; undo and redo, which replay inverses, refuse a model composed with other kinds.\
+**Deleted under the cutover ruling:** `CLASSIC_LINKS` and its condition -- B162's pinned orphan and B216's kept end -- with its reaction table. The planner corpus's 1,045 production cases are retired with that composition; the 1,045 network cases are unchanged, byte for byte.\
+**Split, so the planner loads only what it checks:** `model/invariants.mjs` keeps the document invariants; the pair capacity moved to `model/pair-capacity.mjs` (the invariant and the link rules both read it), and the link rules -- `pairHolders`, `collapseAtWaypoint`, `splitAtBend`, `LINK_DECLARATIONS` -- to `model/link-rules.mjs`, on their way into `network/` at S-e.\
+**Tests moved with the ruling:** a shared fixture, `tests/fixtures/composed.mjs`, plans as production does; tests that held the classic tenant's rules now hold the network's, each citing its ruling -- a pinned link goes with its only bend (P-7), an endpoint waypoint goes with its last link (2026-09-29), a pinned bend is swept (P-5 corrected), two links' terminus goes with the last of them; the sweep's own tests keep the classic condition as a tenant they build, since a condition is the tenant's to state; the frozen oracle of the GR5 differential composes the oracle's rules as a tenant of its own.\
+**Held by a new test file,** `tests/server-network.test.js`: a pin deleted over the server deletes its link; a document with pipes round-trips through the store's write, boot, commit and undo -- P2's deferred exit criterion; the server refuses a transit a host does not offer. The transit round trip through the CLI and the store asserts storage again.\
+Gate: lab matrix and its corpus unchanged; the lab's boards seed under the network's tenant, checked in Chrome. Mutants: 6, all killed -- one, undo replaying over another composition, by a new test.
+
 ---
 
 ## 10. Axiom alignment audit (M7)

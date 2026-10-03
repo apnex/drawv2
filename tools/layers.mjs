@@ -105,7 +105,9 @@ export const LAYER = {
 	network: [
 		'kernel/network-roles.mjs',        // K13a: what a waypoint or link IS -- split from kernel/geometry.mjs, whose core grid exported network names (L5)
 		'kernel/network-appearance.mjs',   // K13a: how the network is DRAWN -- waypoint rings and layers, link width, dash, arrowhead, appearance
-		'model/invariants.mjs', 'model/referential.mjs',   // the link rules and references; to network/ at K13b
+		'model/invariants.mjs',   // the document invariants the planner checks
+		'model/pair-capacity.mjs',   // how many straight links a pair may carry: the invariant's and the link rules' one home (S-b)
+		'model/link-rules.mjs', 'model/referential.mjs',   // the link rules and references; to network/ at S-e (K13b)
 		'model/link-reactions.mjs',   // the link reactions the planner runs, and `linkTenant`, which builds production's and the network's (PL-3)
 		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
 		'engine/ivm.mjs',                                  // the index's generic mechanism; relations.mjs is its only user
@@ -173,7 +175,7 @@ export const ENTRIES = {
 			'engine/kinds.mjs', 'engine/movers.mjs', 'planner/policy.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
-			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/limits.mjs',
+			'kernel/spec.mjs', 'kernel/theme.mjs', 'model/link-rules.mjs', 'model/pair-capacity.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
 			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows, held until P5 draws them
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
@@ -212,7 +214,7 @@ export const ENTRIES = {
 			'engine/ivm.mjs', 'planner/policy.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
-			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs',
+			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'model/link-rules.mjs', 'model/pair-capacity.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
@@ -228,7 +230,8 @@ export const ENTRIES = {
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
-			'model/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
+			'planner/tenants.mjs',   // the planner's tenant, the groups (PL-3); the link tenant is the composition's (S-b)
+			'model/pair-capacity.mjs',   // the pair rule's one home, which the document invariant reads (S-b)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 		],
 	},
@@ -333,7 +336,7 @@ export const RULES = {
 	*/
 	L9: {
 		layers: ['canvas', 'chrome', 'lab'],
-		primitives: { splitAtBend: 'model/invariants.mjs', collapseAtWaypoint: 'model/invariants.mjs', violations: 'model/invariants.mjs', groupAfterRemoval: 'planner/policy.mjs' },
+		primitives: { splitAtBend: 'model/link-rules.mjs', collapseAtWaypoint: 'model/link-rules.mjs', violations: 'model/invariants.mjs', groupAfterRemoval: 'planner/policy.mjs' },
 	},
 	// C2(d): the only two tags, and the layers whose imports make "serves-a-server-door" true
 	L10: { tags: ['rebuild-debt', 'serves-a-server-door'], doors: ['server-only'] },
@@ -616,7 +619,8 @@ export const UNUSED_EXPORTS = {
 		// K4 moved the planner's files to `planner/`: paths K0 never knew, so arrivals too (its frozen list names their old places)
 		arrived: ['model/link-reactions.mjs', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js', 'planner/policy.mjs',
 			'planner/kinds.mjs',   // H17.22 N-a: the product's kind rows, split out of planner/validate.js
-			'model/anchors.mjs'],  // H18.4 F-b: the bare anchor, asked in one place
+			'model/anchors.mjs',   // H18.4 F-b: the bare anchor, asked in one place
+			'model/pair-capacity.mjs'],   // S-b: the pair rule's one home, split out of model/invariants.mjs
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a
@@ -643,8 +647,8 @@ export const UNUSED_EXPORTS = {
 				'rebuild-debt': [],
 				'serves-a-server-door': [],
 			},
-			'model/invariants.mjs': {
-				'rebuild-debt': ['splitAtBend'],
+			'model/anchors.mjs': {
+				'rebuild-debt': ['isBareEntity'],   // S-b: its planner consumers, the link rules, left with the classic tenant; the network reads it
 			},
 			'model/model.mjs': {
 				'serves-a-server-door': ['Model', 'newId'],

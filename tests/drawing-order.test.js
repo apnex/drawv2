@@ -5,10 +5,10 @@ dev/design/unification/FORMAT-BATCH.md section 6.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { nextOrder } from '../model/order.mjs';
 import { byDrawingOrder, orderOf } from '../model/stacking.mjs';
-import { plan, commit, undo } from '../planner/txn.mjs';
+import { plan, commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { migrateFormatBatch } from '../server/migrate.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';

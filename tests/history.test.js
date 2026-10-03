@@ -11,9 +11,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { Log, LOG_MAX, LOG_HARD_MAX } from '../planner/log.mjs';
-import { commit, undo } from '../planner/txn.mjs';
+import { commit, undo } from './fixtures/composed.mjs';
 import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 

@@ -20,10 +20,10 @@ sweep is where a casual change does the most damage: it deletes.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
-import { commit, undo } from '../planner/txn.mjs';
+import { commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
 
@@ -95,10 +95,19 @@ function ended() {
 const deleteIt = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'link', id: 'link-0000d4' }] }, 'lab', 'lab', opts);
 const left = (m) => m.all('node').filter((n) => !n.type).map((w) => w.id).sort();
 
-test('production is unchanged: the bend goes, and the pinned start and the end stay (B162, B216)', () => {
+// AMENDED 2026-10-03 (S-b, H18.12): production runs the network's tenant; the classic one, which kept the pinned start and the
+// end (B162, B216), is deleted under the cutover ruling. A tenant built with that condition still keeps them -- the
+// condition is the tenant's to state, which is what this file holds.
+test('a tenant whose condition keeps a pinned waypoint and a link\'s end keeps them; the bend goes', () => {
+	const b = ended();
+	assert.equal(deleteIt(b, net()).ok, true);
+	assert.deepEqual(left(b.m), ['node-0000a1', 'node-0000c3']);
+});
+
+test('production -- the network\'s tenant -- takes all three with the link (ruled 2026-09-29)', () => {
 	const b = ended();
 	assert.equal(deleteIt(b).ok, true);
-	assert.deepEqual(left(b.m), ['node-0000a1', 'node-0000c3']);
+	assert.deepEqual(left(b.m), []);
 });
 
 test('the network plugin\'s rule: with nothing but references keeping an anchor, all three go', () => {
@@ -139,10 +148,14 @@ function pinned() {
 }
 const deleteP = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'node', id: WP }] }, 'lab', 'lab', opts);
 
-test('production is unchanged: a link that loses a pin keeps the rest of its intent', () => {
-	const b = pinned();
-	assert.equal(deleteP(b).ok, true);
-	assert.deepEqual(b.m.get('link', PINNED)?.via, [WQ], 'the pin is dropped and the link stays, as it always has');
+// AMENDED 2026-10-03 (S-b): a tenant with no stranded pass keeps a link that loses a pin; production's -- the network's -- has one
+test('a tenant with no stranded pass keeps a link that loses a pin; production\'s deletes it (P-7)', () => {
+	const kept = pinned();
+	assert.equal(deleteP(kept, net()).ok, true);
+	assert.deepEqual(kept.m.get('link', PINNED)?.via, [WQ], 'the pin is dropped and the link stays');
+	const prod = pinned();
+	assert.equal(deleteP(prod).ok, true);
+	assert.equal(prod.m.get('link', PINNED), undefined, 'a pinned link lives and dies with its pins');
 });
 
 test('the stranded pass removes the link WHOLE in the same transaction, and one undo restores it', () => {
@@ -214,7 +227,8 @@ test('B244: the sweep and the role derivation agree on where a link ends, rings 
 		const endpoint = waypointRoles(W, [l]).includes('endpoint');
 		const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 		assert.equal(commit(m, log, { label: 'set', ops: [wp(W, 0, 0), wp(P, -3, 0), wp(Q, 3, 2), { op: 'put', kind: 'link', entity: l }] }, 'lab', 'lab').ok, true, name);
-		assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: l.id }] }, 'lab', 'lab').ok, true, name);
+		// a tenant keeping what was a link's end -- the condition the sweep is told through `wasBendOnly`, whose endsAt is the twin
+		assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: l.id }] }, 'lab', 'lab', net({ keepsOrphan: (_w, { wasBendOnly }) => !wasBendOnly })).ok, true, name);
 		assert.equal(!!m.get('node', W), endpoint, `${name}: the derivation says ${endpoint ? 'endpoint' : 'bend'}, so the sweep must ${endpoint ? 'keep' : 'take'} w`);
 	}
 });

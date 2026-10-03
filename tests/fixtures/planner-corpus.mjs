@@ -3,11 +3,14 @@ THE PLANNER CORPUS -- stage PL-1 of the planner as a sovereign system (dev/desig
 
 The safety net the restructuring stands on. Stages PL-2 to PL-5 move the inverses, the passes, placement and the kind
 tables out of `planner/txn.mjs` and change NO outcome; this holds every outcome, so a change nobody wrote a test for
-still fails. Each case is one request planned against one board, in one of two compositions:
+still fails. Each case is one request planned against one board, in the one composition there is:
 
-  production  no network -- what draw.apnex.io runs
   network     the network plugin's object (`createNetwork`), with transit, over a model holding its pipes as entities of the
-              network's `pipe` kind -- what the lab runs (H17.22 N-d; until then the pipes were a session set beside it)
+              network's `pipe` kind -- what the lab runs, and the server since S-b (H18.12)
+
+AMENDED 2026-10-03 (S-b): the `production` composition -- no network, the classic link tenant -- is retired with that
+tenant, under the cutover ruling ("Full cutover ... No legacy", 2026-09-30). Its 1,045 cases planned boards the network
+cases plan too, under rules production no longer runs; they are deleted, and the network cases are unchanged.
 
 and records exactly what `plan()` answers: accepted with its ops and inverse, or refused with its error and opIndex.
 
@@ -81,7 +84,7 @@ const junction = () => ({
 const bent = (pinned) => ({ nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 2, pinned)], links: [link(0, N(0), N(1), [W(0)])] });
 
 const NAMED = [];
-for (const compose of ['production', 'network']) {
+for (const compose of ['network']) {
 	const c = (id, board, ops, extra) => NAMED.push(named(`${compose}/${id}`, compose, board, ops, extra));
 	// requested ops
 	c('put-node', {}, [put('node', node(0, 0, 0))]);
@@ -217,7 +220,7 @@ function genOp(r, board, i) {
 
 export const GENERATED_PER_COMPOSITION = 1000;
 const GENERATED = [];
-for (const compose of ['production', 'network']) {
+for (const compose of ['network']) {
 	const r = rng(compose === 'production' ? 20261001 : 20261002);
 	for (let i = 0; i < GENERATED_PER_COMPOSITION; i++) {
 		const board = genBoard(r);
@@ -261,14 +264,14 @@ function pipesOf(c) {
 export function composeCase(c) { return compose(c); }
 
 function compose(c) {
-	const network = c.compose === 'network';
-	const model = new Model(network ? { kinds: WITH_PIPES } : {});
+	if (c.compose !== 'network') throw new Error(`${c.id}: the only composition is the network's (S-b)`);
+	const network = true;
+	const model = new Model({ kinds: WITH_PIPES });
 	attachRelations(model, { cellOf });
 	// a case keeps its waypoints apart to describe the board; the document holds them among the nodes (F-c)
 	const { waypoints = [], ...board } = c.board;
 	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...board, nodes: [...(board.nodes || []), ...waypoints], ...(network ? { pipes: pipesOf(c) } : {}) });
-	// placement is the server door's edge (PL-4): both compositions are planned as the store would plan them
-	if (!network) return { model, options: { place: resolveAnchor }, reached: { stranded: 0 } };
+	// placement is the server door's edge (PL-4): planned as the store plans it
 	const transit = createTransit();
 	// as the session hands them over: an anchor with its kind, which is what the transit table reads
 	const { refused, entries } = transit.flip((c.off || []).map((id) => ({ ...model.get('node', id), kind: 'node' })));

@@ -3,12 +3,12 @@ import fs from 'node:fs';
 import { collectionCap } from '../planner/policy.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { violations } from '../model/invariants.mjs';
-import { commit } from '../planner/txn.mjs';
+import { commit } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import { validateSelectionIds, validateDoc, validateMutation } from '../planner/validate.js';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 
 // MS1: the persisted selection (model-state / status) is SHAPE-validated only — never
 // existence-checked — so a deleted-but-selected id can't make the diagram vanish on boot.
@@ -361,7 +361,7 @@ someone unshared it.
 */
 test('B83: the document door and the mutation door reach the same verdict', async () => {
 	const { validateDoc, validateMutation } = await import('../planner/validate.js');
-	const { Model } = await import('../model/model.mjs');
+	const { Model } = await import('./fixtures/composed.mjs');
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
 	const W = (n, y) => ({ id: `node-ea000${n}`, name: `w${n}`, x: 60, y });   // a waypoint: a node with no type (F-c)
@@ -568,7 +568,7 @@ trust boundary refuses would be a gesture that cannot be committed -- and every 
 was refused until two commits ago, so this is not hypothetical.
 */
 test('B210: a split turns a bend into a junction, and the result validates', async () => {
-	const { splitAtBend } = await import('../model/invariants.mjs');
+	const { splitAtBend } = await import('../model/link-rules.mjs');
 	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
 	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 
@@ -637,7 +637,7 @@ The src half keeping the original id is what makes it a ROUND TRIP rather than a
 before the split is pointing at a stranger afterwards.
 */
 test('B213: a split then a collapse restores the original link, id included', async () => {
-	const { splitAtBend, collapseAtWaypoint } = await import('../model/invariants.mjs');
+	const { splitAtBend, collapseAtWaypoint } = await import('../model/link-rules.mjs');
 
 	const orig = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] };
 	const [srcHalf, dstHalf] = splitAtBend(orig, 'node-ea0001');
@@ -703,7 +703,7 @@ stays a junction. That is a rule about meaning the author asserted, not about fi
 */
 test('B214: three terminations is the smallest junction, and the collapse rule agrees', async () => {
 	const { waypointRoles } = await import('../kernel/network-roles.mjs');
-	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
+	const { collapseAtWaypoint } = await import('../model/link-rules.mjs');
 
 	const shapes = {
 		'in and out': [{ id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'w', dst: 'b' }],
@@ -873,7 +873,7 @@ test('H15.4: `facing` and `waypointRoles` read a declaration identically', async
 	// The MODEL twin, reached through the collapse that is its only caller. `facing` is not
 	// exported -- two importable spellings of one rule is how a pair starts to drift -- so the
 	// agreement is driven through `collapseAtWaypoint`, which is the behaviour that would break.
-	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
+	const { collapseAtWaypoint } = await import('../model/link-rules.mjs');
 
 	const cases = [];
 	for (const direction of ['forward', 'reverse', undefined]) {
@@ -934,7 +934,7 @@ and the guard was written from the code rather than from the ruled table. Two ru
 */
 test('H15.15: a control link and a data link meeting is a junction, not a bend', async () => {
 	const { waypointRoles } = await import('../kernel/network-roles.mjs');
-	const { collapseAtWaypoint } = await import('../model/invariants.mjs');
+	const { collapseAtWaypoint } = await import('../model/link-rules.mjs');
 	const w = 'w';
 
 	// the four combinations of (directions agree?) x (planes match?)

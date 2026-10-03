@@ -4,8 +4,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
-import { plan, commit, undo, redo, MAX_OPS } from '../planner/txn.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
+import { plan, commit, undo, redo } from './fixtures/composed.mjs';
+import { MAX_OPS } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc } from '../planner/validate.js';
 
@@ -270,14 +271,17 @@ test('B81: deleting the only bend of a routed link deletes the link when a strai
 	assert.ok(m.get('link', 'link-aa0003'), 'the ORIGINAL straight link survives — it outranks the route');
 });
 
-test('B81: with no straight link on the pair, the same deletion merely strips the bend', () => {
+/*
+AMENDED 2026-10-03 (S-b, H18.12): with no straight link on the pair, the classic tenant stripped the bend and kept the link.
+Production runs the network's tenant now, and a pinned link lives and dies with its pins (ruled 2026-09-30; P-7 for the
+estate): deleting its only bend deletes it whole, collision or none.
+*/
+test('B81, P-7: with no straight link on the pair, deleting the bend deletes the pinned link too -- it lives and dies with its pins', () => {
 	const { m, log } = pairWithBoth();
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
 
 	commit(m, log, { ops: [{ op: 'del', kind: 'node', id: 'node-eb0001' }] }, 'server', 't');
-	const survivor = m.get('link', 'link-bb0002');
-	assert.ok(survivor, 'the link survives, because nothing collides with it');
-	assert.deepEqual(survivor.via, [], 'stripped to straight, which is the unchanged behaviour');
+	assert.equal(m.get('link', 'link-bb0002'), undefined, 'the pinned link goes with its pin (P-7)');
 });
 
 test('B81: the deletion is ONE undoable step, and undo restores both', () => {
@@ -451,33 +455,28 @@ What it becomes is a plain anchor. `waypointRoles` returns the empty set for a w
 links, so it draws as anchor plus dot with no sub-type layer -- which needed no change, because the
 roles were already derived from the links rather than remembered.
 */
-test('B216: an endpoint waypoint survives its link and becomes a plain anchor', async () => {
+/*
+AMENDED 2026-10-03 (S-b, H18.12): B216 kept an endpoint waypoint when its link went. Production runs the network's tenant now,
+under which "deliberate" means held by the pipes laid with g, and a waypoint made with w goes with its last link, ends
+included (ruled 2026-09-29, "No - it goes just as ruled"; PU40). A bend goes too, as it always did.
+*/
+test('B216 retired (2026-09-29): an endpoint waypoint goes with its last link, as a bend does; a node stays', async () => {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	m.put('node', { id: 'node-ea0003', name: 'node-ea0003', x: 120, y: 0 });
 	m.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'node-ea0003' });
 
 	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
-	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false,
-		'the waypoint a link TERMINATED at must survive it, as the node at the other end does');
-	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false, 'and so must the node');
+	assert.ok(r.ops.some((o) => o.kind === 'node' && o.id === 'node-ea0003' && o.op === 'del'), 'the waypoint a link ended at goes with it');
+	assert.equal(r.ops.some((o) => o.kind === 'node' && o.id === 'node-aa0001' && o.op === 'del'), false, 'the node stays: only a waypoint is swept');
 
-	// a BEND is still debris: that is what the sweep was written for
 	const m2 = new Model();
 	m2.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
 	m2.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
 	m2.put('node', { id: 'node-ea0003', name: 'node-ea0003', x: 120, y: 0 });
 	m2.put('link', { id: 'link-aa0002', name: 'link-aa0002', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0003'] });
 	const r2 = plan(m2, [{ op: 'del', kind: 'link', id: 'link-aa0002' }]);
-	assert.ok(r2.ops.some((o) => o.kind === 'node' && o.id === 'node-ea0003' && o.op === 'del'),
-		'a bend still goes with its link -- it exists only to shape one');
-
-	// and what survives renders as a plain anchor: no links, so no sub-type
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
-	const { waypointRoles } = await import('../kernel/network-roles.mjs');
-	assert.deepEqual(waypointRoles('node-ea0003', []), [], 'no links means no sub-type layer');
-	assert.deepEqual(waypointLayers([], 20).map((l) => l.cls), ['wp-anchor', 'wp-dot'],
-		'a plain anchor: the ring and the grid dot, nothing else');
+	assert.ok(r2.ops.some((o) => o.kind === 'node' && o.id === 'node-ea0003' && o.op === 'del'), 'a bend goes with its link');
 });
 
 /*
@@ -508,99 +507,19 @@ test('B162: a lone waypoint is safe by SCOPE, not by the pin', () => {
 	assert.equal(r2.ops.some((o) => o.kind === 'node' && o.op === 'del'), false, 'pinned or not');
 });
 
-test('B162: the pin outranks the sweep when a BEND loses its link', () => {
-	/*
-	B216 -- the foil is a BEND now. This test used an endpoint as its control, and endpoints are no
-	longer swept at all, so "the same shape without the pin IS swept" would have been false and the
-	pin assertion would have proved nothing -- it would have passed whether the pin was consulted or
-	not. The pin only ever does work on a waypoint the sweep would otherwise take.
-	*/
-	const bent = (wp, link, extra = {}) => {
-		const m = new Model();
-		m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-		m.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
-		m.put('node', { id: wp, name: wp, x: 120, y: 0, ...extra });
-		m.put('link', { id: link, name: link, src: 'node-aa0001', dst: 'node-aa0002', via: [wp] });
-		return plan(m, [{ op: 'del', kind: 'link', id: link }]);
-	};
-
-	const pinned = bent('node-eb0003', 'link-bb0001', { pinned: true });
-	assert.equal(pinned.ops.some((o) => o.kind === 'node' && o.id === 'node-eb0003'), false,
-		'the author said keep it, so the sweep leaves it');
-
-	// the same shape without the pin IS swept, or the assertion above proves nothing
-	const loose = bent('node-bb0004', 'link-bb0002');
-	assert.ok(loose.ops.some((o) => o.kind === 'node' && o.id === 'node-bb0004'), 'unpinned goes');
-});
-
 /*
-ONLY WHAT THIS TRANSACTION ORPHANED, which is the rule the B81 invariant check already uses.
-
-Sweeping every unreferenced waypoint would make an unrelated commit quietly delete debris its caller
-never mentioned, and would put those deletions in its inverse -- so undoing "move a node" would
-resurrect someone else's litter. The GR5 differential found this: the corpus contains documents with
-pre-existing orphans, and every unrelated mutation diverged from the frozen oracle.
+AMENDED 2026-10-03 (S-b, H18.12): the classic tenant let `pinned` outrank the sweep. Production runs the network's tenant, which
+keeps no orphan beyond what its pipes hold (ruled 2026-09-29), and `pinned` is retired (P-5 corrected; dropped from stored
+documents at S-d): a pinned bend goes with its link like any other.
 */
-test('B162: pre-existing debris is left alone -- a commit removes only what it orphaned', () => {
+test('B162 retired (P-5): a pinned bend goes with its link -- the pin no longer outranks the sweep', () => {
 	const m = new Model();
-	m.put('node', { id: 'node-ec0001', name: 'node-ec0001', x: 60, y: 60 });          // already unreferenced
 	m.put('node', { id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' });
-	const r = plan(m, [{ op: 'set', kind: 'node', id: 'node-aa0001', patch: { x: 180 } }]);
-	assert.equal(r.ops.some((o) => o.kind === 'node' && o.op === 'del'), false,
-		'moving a node does not sweep litter it did not create');
-	assert.equal(r.inverse.some((o) => o.kind === 'node' && o.op === 'put'), false,
-		'and its undo does not resurrect any');
-});
-
-/*
-B215: a junction reverts to a bend on DELETE and on UNDO alike, because the rule lives here.
-
-A waypoint left with one link in and one out is a path passing through, which is a bend -- so the
-two survivors rejoin and the inbound link's id survives, which is the id the split kept.
-
-It was first written in `app/src/commands.js`, and that was the defect the director found. Undo and
-redo are computed by this planner and never run a client command, so an undone split stayed split;
-the CLI and REST doors write through here too, without touching `commands.js` at all. One rule, one
-place, every door -- which is why the undo case below is the load-bearing half of this test.
-*/
-test('B215: deleting the third link from a junction rejoins the other two into a bend', () => {
-	const { m, log } = fresh();
-	commit(m, log, { ops: [
-		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
-		put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 }),
-		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-ea0001' }),
-		put('link', { id: 'link-aa0002', name: 'l2', src: 'node-ea0001', dst: 'node-aa0002' }),
-		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'node-ea0001' }),
-	] }, 'server', 't');
-	assert.equal(m.all('link').length, 3, 'precondition: a three-way junction');
-
-	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
-
-	const links = m.all('link');
-	assert.equal(links.length, 1, 'one in and one out is a BEND, so they rejoin');
-	assert.equal(links[0].id, 'link-aa0001', 'and the INBOUND id survives -- the one a split would have kept');
-	assert.equal(links[0].src, 'node-aa0001');
-	assert.equal(links[0].dst, 'node-aa0002');
-	assert.deepEqual(links[0].via, ['node-ea0001'], 'bending through the waypoint');
-});
-
-test('B215: UNDOING the collapse restores the junction exactly', () => {
-	const { m, log } = fresh();
-	commit(m, log, { ops: [
-		put('node', node('node-aa0001', -120)), put('node', node('node-aa0002', 120)), put('node', node('node-aa0003', 240)),
-		put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 }),
-		put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-ea0001' }),
-		put('link', { id: 'link-aa0002', name: 'l2', src: 'node-ea0001', dst: 'node-aa0002' }),
-		put('link', { id: 'link-aa0003', name: 'l3', src: 'node-aa0003', dst: 'node-ea0001' }),
-	] }, 'server', 't');
-	const before = shape(m);
-
-	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0003' }] }, 'server', 't');
-	assert.equal(m.all('link').length, 1, 'precondition: it collapsed');
-
-	undo(m, log);
-	assert.equal(shape(m), before,
-		'undo must restore the junction whole -- the collapse rides in the same transaction, so its inverse does too');
+	m.put('node', { id: 'node-aa0002', type: 'host', x: 240, y: 0, name: 'b' });
+	m.put('node', { id: 'node-eb0003', name: 'node-eb0003', x: 120, y: 0, pinned: true });
+	m.put('link', { id: 'link-bb0001', name: 'link-bb0001', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-eb0003'] });
+	const r = plan(m, [{ op: 'del', kind: 'link', id: 'link-bb0001' }]);
+	assert.ok(r.ops.some((o) => o.kind === 'node' && o.id === 'node-eb0003' && o.op === 'del'));
 });
 
 /*
@@ -627,12 +546,12 @@ test('B217: two links meeting at a waypoint survive being drawn', () => {
 	assert.equal(m.all('link').length, 2,
 		'creating two links at one waypoint must NOT collapse them -- a collapse reacts to a shape being left behind');
 
-	// and the whole point: removing them both leaves the anchor, not nothing
+	// removing one leaves the terminus; removing the last takes it (AMENDED 2026-10-03, S-b: ruled 2026-09-29, PU40)
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0001' }] }, 'server', 't');
 	assert.equal(m.all('node').filter((n) => !n.type).length, 1, 'the terminus survives losing one link');
 	commit(m, log, { ops: [{ op: 'del', kind: 'link', id: 'link-aa0002' }] }, 'server', 't');
 	assert.equal(m.all('link').length, 0);
-	assert.equal(m.all('node').filter((n) => !n.type).length, 1, 'and losing the last one leaves a plain anchor');
+	assert.equal(m.all('node').filter((n) => !n.type).length, 0, 'and goes with its last one, ends included (ruled 2026-09-29)');
 });
 
 test('B217: a collapse still fires when a junction LOSES a link', () => {
@@ -1213,8 +1132,10 @@ test('PL1: the planner core names no entity kind -- the kinds are the tenants\''
 
 {
 	const pl3 = async () => {
-		const { plan: p } = await import('../planner/txn.mjs');
-		const { CLASSIC_LINKS } = await import('../planner/tenants.mjs');
+		const { plan: p } = await import('./fixtures/composed.mjs');
+		// the network's link tenant, the one production composes since S-b, as the base a test tenant extends
+		const { NETWORK } = await import('./fixtures/composed.mjs');
+		const CLASSIC_LINKS = NETWORK.links;
 		const m = new Model();
 		m.put('node', { id: 'node-00000a', name: 'a', type: 'router', x: 0, y: 0, shape: 'circle' });
 		m.put('node', { id: 'node-00000b', name: 'b', type: 'router', x: 240, y: 0, shape: 'circle' });

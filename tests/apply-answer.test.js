@@ -6,8 +6,8 @@ saying so, this fails rather than the selection quietly emptying again.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
-import { plan } from '../planner/txn.mjs';
+import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
+import { plan } from './fixtures/composed.mjs';
 import { Selection } from '../app/src/selection.js';
 import { applyAnswer } from '../app/src/changes.js';
 

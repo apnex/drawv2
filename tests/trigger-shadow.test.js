@@ -9,7 +9,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CASES, composeCase } from './fixtures/planner-corpus.mjs';
 import { plan, PHASES } from '../planner/txn.mjs';
-import { CLASSIC_LINKS } from '../planner/tenants.mjs';
 import { PRODUCT_KINDS } from '../planner/kinds.mjs';
 
 const PER_OP = new Set(['clear', 'follow']);
@@ -28,7 +27,7 @@ test('TG-3 shadow: every corpus case answers the same with its triggers as with 
 		const a = composeCase(c), b = composeCase(c);
 		const kinds = a.options.kinds ?? PRODUCT_KINDS;
 		const triggered = plan(a.model, structuredClone(c.ops), a.options);
-		const shadow = plan(b.model, structuredClone(c.ops), { ...b.options, links: shadowOf(b.options.links ?? CLASSIC_LINKS, kinds) });
+		const shadow = plan(b.model, structuredClone(c.ops), { ...b.options, links: shadowOf(b.options.links, kinds) });
 		planned++;
 		// what the planner decides, not which reactions it called -- the shadow calls every one by design (TG-4's `called`)
 		const decided = ({ called: _c, ...rest }) => rest;

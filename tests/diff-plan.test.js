@@ -9,7 +9,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { plan } from '../planner/txn.mjs';
+import { plan as realPlan } from '../planner/txn.mjs';
+import { linkTenant } from '../model/link-reactions.mjs';
+/*
+AMENDED 2026-10-03 (S-b, H18.12): the frozen oracle is the pre-CS1 planner, whose rules are the classic tenant's -- a link that
+loses a bend keeps the rest of its intent, a pinned waypoint and a link's end survive the sweep. Production no longer runs
+them (the cutover ruling); the differential still holds the planner's machinery to the oracle, so it composes a tenant with
+those conditions, stated here, where they belong to the test rather than to the product.
+*/
+const ORACLE_RULES = linkTenant({ owner: 'the oracle\'s rules', keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, says: {} });
+const plan = (model, ops, options = {}) => realPlan(model, ops, { links: ORACLE_RULES, ...options });
 import { applyOps } from '../model/ops.mjs';
 import { planMutation } from './fixtures/plan-reference.mjs';
 

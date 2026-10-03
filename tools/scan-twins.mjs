@@ -47,7 +47,7 @@ const ALLOW = {
 		+ 'actually does. The 57% start() pair reported alongside this one WAS real and was extracted '
 		+ 'to paintloop.js:loop.',
 
-	'kernel/network-roles.mjs:linkFacing <-> model/invariants.mjs:facing':
+	'kernel/network-roles.mjs:linkFacing <-> model/link-rules.mjs:facing':
 		'H15.4 -- one rule, two layers that deliberately do not import each other. `kernel/` reaches '
 		+ 'for no `model/` and `model/` reaches for no `kernel/`: the kernel draws and the model '
 		+ 'rules, and every other shared fact between them travels as DATA. Extracting this would '

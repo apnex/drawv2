@@ -1,24 +1,14 @@
 /*
-THE PRODUCT'S TENANTS of the planner (PL-3, dev/design/planner/PLANNER-SYSTEM.md section 6.2): GROUPS, which every
-composition holds, and CLASSIC_LINKS, production's link tenant until promotion deletes it (PROMOTION.md).
+THE PRODUCT'S TENANT of the planner (PL-3, dev/design/planner/PLANNER-SYSTEM.md section 6.2): GROUPS, which every
+composition holds. CLASSIC_LINKS, production's link tenant -- no stranded pass, and B162 and B216's orphan rule, a pinned
+waypoint or a link's end kept -- was deleted at S-b (H18.12), when the server composed the network's tenant; the link tenant a
+composition holds is the network's (`network/network.mjs`), passed in, never a default.
 
 Rows in the shape the core runs -- `{ id, phase, on, run(ctx, emit) }` -- emitting ops only; the core applies them as
 they go and writes their inverses (PL-2).
 */
 import { groupAfterRemoval } from './policy.mjs';
-import { linkTenant } from '../model/link-reactions.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-
-/*
-Production's link tenant: the shared link reactions with production's conditions -- no stranded pass (a link that
-loses a pin keeps the rest of its intent), only links reference anchors, and B162 and B216: an orphaned anchor
-survives if its author pinned it or a link ended at it. A composition holds it or the network's, never both (PD-2).
-*/
-export const CLASSIC_LINKS = linkTenant({
-	owner: 'classic links',
-	keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly,
-	says: { sweep: 'only links reference an anchor, and a pinned anchor or a link\'s end is kept (B216)', join: 'at any waypoint' },
-});
 
 /*
 A group loses a member: trimmed, or dissolved when it falls below two -- a reaction in the `clear` phase, so it runs
