@@ -255,6 +255,9 @@ function pipesOf(c) {
 	return [...out.values()];
 }
 
+// a case's model and plan options, as `record` builds them -- exported for the shadow guard (tests/trigger-shadow.test.js)
+export function composeCase(c) { return compose(c); }
+
 function compose(c) {
 	const network = c.compose === 'network';
 	const model = new Model(network ? { kinds: WITH_PIPES } : {});

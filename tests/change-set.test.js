@@ -28,6 +28,8 @@ function changesOf(m, ops) {
 	const probe = { id: 'probe', phase: 'join', doc: 'test probe', trigger: EVERYTHING, run: ({ changes }) => { seen = changes.list(); } };
 	const r = plan(m, ops, { links: { ...CLASSIC_LINKS, reactions: [...CLASSIC_LINKS.reactions, probe] } });
 	assert.equal(r.ok, true, r.error);
+	// since TG-3 a transaction-phase reaction is called only when its trigger hears a change: no call, no change
+	if (seen === null) return {};
 	return Object.fromEntries(seen.map((c) => [`${c.kind}:${c.id}`, { created: !c.before, deleted: !c.after, fields: [...c.fields].sort() }]));
 }
 

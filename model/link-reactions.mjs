@@ -107,9 +107,13 @@ const STRANDED_LINKS = {
 	phase: 'stranded',
 	trigger: { deleted: ['waypoint'] },   // a pin is a waypoint: only losing one strands a link
 	doc: 'a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins',
-	run: ({ before, doc }, emit) => {
+	// TG-3: handed the waypoints deleted; the links that pinned one, still standing, go whole. It reads what each change is
+	// rather than trusting its trigger to have filtered -- the shadow guard hands a reaction every change, and caught this
+	// one taking a moved waypoint for a deleted one
+	run: ({ before, doc, matches }, emit) => {
+		const gone = new Set(matches.filter((c) => c.kind === 'waypoint' && !c.after).map((c) => c.id));
 		for (const was of before.all('link')) {
-			if (!(was.via || []).some((w) => before.get('waypoint', w) && !doc.get('waypoint', w))) continue;
+			if (!(was.via || []).some((w) => gone.has(w))) continue;
 			if (doc.get('link', was.id)) emit([{ op: 'del', kind: 'link', id: was.id }]);
 		}
 	},
@@ -256,7 +260,8 @@ function linkJoin({ joinsAt = () => true, says }) {
 		// a link leaving a waypoint, or a link's declarations changing there (B269, B285, B286)
 		trigger: [{ deleted: ['link'] }, { changed: { kind: 'link', fields: LINK_DECLARATIONS } }],
 		doc: `two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); ${says}`,
-		run: ({ before, doc, ops, refuses }, emit) => {
+		// TG-3: handed the links its trigger heard -- deleted, or a declaration changed -- instead of scanning the ops
+		run: ({ before, doc, matches, refuses }, emit) => {
 			const touched = new Set();
 			/*
 	B285 -- A CHANGE OF DECLARATION decides a join too (ruled 2026-10-02): an edit that changes one of a link's declarations
@@ -270,19 +275,14 @@ function linkJoin({ joinsAt = () => true, says }) {
 	patch test missed it. A link the edit created is not compared: a second link drawn to a terminus never joins (B214).
 	*/
 			const redeclared = new Set();
-			const declares = (was, now) => LINK_DECLARATIONS.some((k) => was[k] !== now[k]);
-			for (const op of ops) {
-				if (op.kind !== 'link') continue;
-				if (op.op === 'set' || op.op === 'put') {
-					const id = op.op === 'set' ? op.id : op.entity.id;
-					const was = before.get('link', id), now = doc.get('link', id);
-					if (was && now && declares(was, now)) for (const end of [now.src, now.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
+			for (const { kind, before: was, after: now, fields } of matches) {
+				if (kind !== 'link') continue;
+				if (now && LINK_DECLARATIONS.some((k) => fields.has(k))) {
+					for (const end of [now.src, now.dst]) if (doc.get('waypoint', end)) { touched.add(end); redeclared.add(end); }
 					continue;
 				}
-				if (op.op !== 'del') continue;
-				const e = op.entity || before.get('link', op.id);
-				if (!e) continue;
-				for (const end of [e.src, e.dst]) if (doc.get('waypoint', end)) touched.add(end);
+				if (now) continue;
+				for (const end of [was.src, was.dst]) if (doc.get('waypoint', end)) touched.add(end);
 			}
 			/*
 	B269 -- ONLY WHERE A LINK LEFT. A deleted link that is replaced at the same waypoint -- a split puts its half back,

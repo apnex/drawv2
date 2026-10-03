@@ -173,6 +173,15 @@ function validTrigger(trigger) {
 		&& (c.created === undefined || (Array.isArray(c.created) && c.created.length))
 		&& (c.changed === undefined || (typeof c.changed.kind === 'string' && Array.isArray(c.changed.fields) && c.changed.fields.length)));
 }
+/*
+TG-3 -- whether a transaction-phase reaction's trigger matches a change in the change set: an entity deleted (`before`
+only), created (`after` only), or changed in one of the named fields.
+*/
+function changeMatches(trigger, change) {
+	return [].concat(trigger).some((c) => (!change.after && c.deleted?.includes(change.kind))
+		|| (!change.before && c.created?.includes(change.kind))
+		|| (change.before && change.after && c.changed?.kind === change.kind && c.changed.fields.some((f) => change.fields.has(f))));
+}
 // whether a per-op reaction's trigger matches this op; `created` says whether the transaction created the op's entity
 function opMatches(trigger, op, created) {
 	const named = op.op === 'put' ? Object.keys(op.entity) : op.op === 'set' ? Object.keys(op.patch) : [];
@@ -281,8 +290,16 @@ export function plan(model, ops, options = {}) {
 	const runPhase = (phase, ctx) => {
 		const claimed = new Map();
 		for (const r of rows[phase]) {
-			if (ctx.op && !opMatches(r.trigger, ctx.op, isCreated(ctx.op))) continue;   // a per-op reaction, by its trigger (TG-2)
-			r.run(ctx, (emitted) => {
+			let call = ctx;
+			if (ctx.op) { if (!opMatches(r.trigger, ctx.op, isCreated(ctx.op))) continue; }   // a per-op reaction, by its trigger (TG-2)
+			else {
+				// a transaction-phase reaction: called only if its trigger hears a change, and handed what it heard (TG-3) -- read
+				// when it is called, so it hears what the reactions before it in the phase did
+				const matches = changes.list().filter((c) => changeMatches(r.trigger, c));
+				if (!matches.length) continue;
+				call = { ...ctx, matches };
+			}
+			r.run(call, (emitted) => {
 				for (const op of emitted) {
 					const subject = subjectOf(op);
 					const holder = claimed.get(subject);

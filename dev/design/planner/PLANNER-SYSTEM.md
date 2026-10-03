@@ -421,6 +421,13 @@ Every reaction declares its trigger as data (`trigger`), the nine of section 14.
 One refinement on 14.3: `stranded-links` listens only to a waypoint deleted, since a pin is a waypoint and only losing one strands a link.\
 Every corpus unchanged; six mutants killed, among them each per-op reaction listening to too little and the matching rule broken.
 
+AMENDED 2026-10-02 -- **TG-3 done.**\
+A transaction-phase reaction is called only when its trigger hears a change, and handed what it heard (`matches`), read when it is called so it hears what the reactions before it did (`changeMatches`, planner/txn.mjs).\
+`link-join` and `stranded-links` read their matches instead of scanning the ops or every link; `orphan-sweep` and `pipe-sweep` are called by their triggers and still judge the whole board -- the sweep's shelter, the pipes links run over, is a property of every route, so narrowing them further belongs with the read side's incremental work (TG-D3).\
+`pipe-sweep` also hears a pipe created or re-laid: a new hand pipe can shorten a route and leave a link pipe unused.\
+The shadow (tests/trigger-shadow.test.js): every planner corpus case, both compositions, planned with the triggers and again with each transaction reaction forced and handed every change, the two required equal. On its first run it caught `stranded-links` taking every change it was handed for a deleted waypoint, trusting its trigger; it now reads what each change is. Narrowing any one of the four triggers fails it, in 84 to 206 cases.\
+Every corpus unchanged.
+
 ### 14.6 Decisions for the director -- one at a time
 
 - **TG-D1 -- triggers as data or as predicates.** Recommended: data, as in 14.3 -- the core can index it, the reaction table can show it, and the shadow can check it -- rather than a predicate per reaction, which hides what it listens to.

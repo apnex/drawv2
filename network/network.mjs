@@ -47,8 +47,9 @@ function pipeReactions(view) {
 		{
 			id: 'pipe-sweep',
 			phase: 'join',
-			// anything that can move a route: a link made, deleted, re-ended or re-pinned, or a pipe deleted (TG-D3: whole board)
-			trigger: [{ deleted: ['link', 'pipe'] }, { created: ['link'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }],
+			// anything that can move a route: a link made, deleted, re-ended or re-pinned; a pipe made, deleted or re-laid -- a new
+			// hand pipe can shorten a route and leave a link pipe unused (TG-D3: judged over the whole board)
+			trigger: [{ deleted: ['link', 'pipe'] }, { created: ['link', 'pipe'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }, { changed: { kind: 'pipe', fields: ['laid'] } }],
 			doc: 'after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27)',
 			run: ({ doc }, emit) => {
 				const used = new Set();
