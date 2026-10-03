@@ -58,7 +58,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"DEL-02": {
 		"notice": "v2 delete",
@@ -127,7 +128,8 @@
 			}
 		],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 3
 	},
 	"DEL-03": {
 		"notice": "v2 delete",
@@ -147,7 +149,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-04": {
 		"notice": "v3 delete",
@@ -164,7 +167,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-05": {
 		"notice": "v3 delete",
@@ -181,7 +185,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-06": {
 		"notice": "v3 delete",
@@ -198,7 +203,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-07": {
 		"notice": "v3 delete",
@@ -215,7 +221,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-08": {
 		"notice": "v3 delete",
@@ -232,7 +239,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-09": {
 		"notice": "v3 delete -- 1 link down, ready to heal",
@@ -359,7 +367,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"DEL-10": {
 		"notice": "v2 delete",
@@ -508,7 +517,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"DEL-11": {
 		"notice": "v2 delete",
@@ -527,7 +537,8 @@
 		"rings": [],
 		"waypointRoles": [],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 0
 	},
 	"DEL-12": {
 		"notice": "v2 delete",
@@ -611,7 +622,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 1
 	},
 	"DEL-13": {
 		"notice": "v2 delete -- 2 links down, ready to heal",
@@ -804,7 +816,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"DEL-14": {
 		"notice": "v3 delete",
@@ -861,7 +874,8 @@
 			}
 		],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 1
 	},
 	"DEL-15": {
 		"notice": "v3 delete -- 1 link down, ready to heal",
@@ -903,7 +917,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"DEL-16": {
 		"notice": "v2 delete",
@@ -993,7 +1008,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"LOOK-01": {
 		"notice": "v2 delete -- 2 links down, ready to heal",
@@ -1054,7 +1070,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"HEAL-01": {
 		"notice": "2 pipes laid by hand -- g lays pipes, not links; link#1 healed",
@@ -1152,7 +1169,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"HEAL-02": {
 		"notice": "1 pipe laid by hand -- g lays pipes, not links; link#1 healed",
@@ -1226,7 +1244,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"HEAL-03": {
 		"notice": "link#1 already joins these two, and a pair takes one unpinned link -- pin a bend with w to draw another",
@@ -1287,7 +1306,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"HEAL-04": {
 		"notice": "v3 route -- 2 links down, ready to heal",
@@ -1409,7 +1429,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"HEAL-05": {
 		"notice": "v4 delete -- 1 link down, ready to heal",
@@ -1507,7 +1528,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"CAP-01": {
 		"notice": "link#1 is down: its way is held by link#2, link#3 -- a pipe carries one link, and the older link keeps it",
@@ -1642,7 +1664,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"CAP-02": {
 		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
@@ -1800,7 +1823,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 3
 	},
 	"CAP-03": {
 		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
@@ -1931,7 +1955,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"CAP-04": {
 		"notice": "v2 delete",
@@ -2042,7 +2067,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"CAP-05": {
 		"notice": "seed trunk -- 8 entities, 5 pipes",
@@ -2173,7 +2199,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"CAP-06": {
 		"notice": "v3 undo -- 1 link down, ready to heal",
@@ -2304,7 +2331,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"GST-01": {
 		"notice": "2 pipes laid by hand -- g lays pipes, not links",
@@ -2444,7 +2472,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"GST-02": {
 		"notice": "2 pipes laid by hand -- g lays pipes, not links",
@@ -2584,7 +2613,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"ALT-01": {
 		"notice": "v5 link",
@@ -2827,7 +2857,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 5
 	},
 	"ALT-02": {
 		"notice": "v6 delete",
@@ -3044,7 +3075,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"WP-01": {
 		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
@@ -3249,7 +3281,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"WP-02": {
 		"notice": "v7 delete",
@@ -3405,7 +3438,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"HP-01": {
 		"notice": "v5 delete",
@@ -3482,7 +3516,8 @@
 			}
 		],
 		"stretches": [],
-		"paths": {}
+		"paths": {},
+		"drawnPipes": 2
 	},
 	"HP-02": {
 		"notice": "v5 delete -- 1 link down, ready to heal",
@@ -3612,7 +3647,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 3
 	},
 	"SUP-01": {
 		"notice": "link#1 is down: its way is held by link#2 -- a pipe carries one link, and the older link keeps it",
@@ -3815,7 +3851,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"SRC-01": {
 		"notice": "v4 link",
@@ -4054,7 +4091,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"SRC-02": {
 		"notice": "link#1 is down: no way over the pipes it may use -- it heals when one is laid",
@@ -4282,7 +4320,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"SRC-03": {
 		"notice": "2 pipes laid by hand -- g lays pipes, not links",
@@ -4488,7 +4527,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"DIR-01": {
 		"notice": "v2 link",
@@ -4634,7 +4674,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"RFS-01": {
 		"notice": "refused: two links with the same endpoints bend at the same waypoint: waypoint#1",
@@ -4716,7 +4757,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"UNDO-01": {
 		"notice": "v4 undo",
@@ -4880,7 +4922,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"UNDO-02": {
 		"notice": "v3 undo",
@@ -4995,7 +5038,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"UNDO-03": {
 		"notice": "v4 redo",
@@ -5135,7 +5179,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-01": {
 		"notice": "transit off at w5 -- 1 link down, ready to heal",
@@ -5216,7 +5261,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-02": {
 		"notice": "transit on at w5",
@@ -5298,7 +5344,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-03": {
 		"notice": "transit off at R",
@@ -5387,7 +5434,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-04": {
 		"notice": "H is a host, which never passes routes -- its transit stays off",
@@ -5469,7 +5517,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-05": {
 		"notice": "transit on at w5, off at R",
@@ -5559,7 +5608,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-06": {
 		"notice": "transit off at w5 -- 1 link down, ready to heal",
@@ -5640,7 +5690,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-07": {
 		"notice": "transit on at w5",
@@ -5722,7 +5773,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-08": {
 		"notice": "link#1 is down: its way passes w5, whose transit is off -- it heals when transit is turned back on",
@@ -5803,7 +5855,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-09": {
 		"notice": "H is a host, which never passes routes -- its transit stays off",
@@ -5915,7 +5968,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-10": {
 		"notice": "transit off at w6 -- 1 link down, ready to heal",
@@ -6025,7 +6079,8 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 5
 	},
 	"TRN-11": {
 		"notice": "transit on at w6",
@@ -6137,7 +6192,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-12": {
 		"notice": "transit off at P -- 1 link cut into 2 pieces",
@@ -6251,7 +6307,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-13": {
 		"notice": "transit on at P -- 2 pieces joined into 1 link",
@@ -6335,7 +6392,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-14": {
 		"notice": "cut at w5, whose transit is off -- 2 links",
@@ -6480,7 +6538,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"TRN-15": {
 		"notice": "cut at R, whose transit is off -- 2 links",
@@ -6628,7 +6687,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-16": {
 		"notice": "link#1 is down: its way passes w5, whose transit is off -- it heals when transit is turned back on",
@@ -6761,7 +6821,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": true
 			}
-		}
+		},
+		"drawnPipes": 5
 	},
 	"TRN-17": {
 		"notice": "transit off at Q -- 1 link cut into 2 pieces",
@@ -6929,7 +6990,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-18": {
 		"notice": "transit on at P -- 2 pieces joined into 1 link",
@@ -7068,7 +7130,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-19": {
 		"notice": "v2 delete",
@@ -7186,7 +7249,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 1
 	},
 	"TRN-20": {
 		"notice": "v2 delete",
@@ -7274,7 +7338,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 1
 	},
 	"TRN-21": {
 		"notice": "transit off at P",
@@ -7418,7 +7483,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-22": {
 		"notice": "transit on at P",
@@ -7555,7 +7621,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-23": {
 		"notice": "transit off at waypoint-2, off at waypoint-3 -- 1 link cut into 3 pieces",
@@ -7785,7 +7852,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-24": {
 		"notice": "transit on at waypoint-2, on at waypoint-3 -- 3 pieces joined into 1 link",
@@ -7952,7 +8020,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-25": {
 		"notice": "transit off at waypoint-2, off at waypoint-4 -- 1 link cut into 3 pieces",
@@ -8182,7 +8251,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-26": {
 		"notice": "transit on at waypoint-2, on at waypoint-4 -- 3 pieces joined into 1 link",
@@ -8349,7 +8419,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-27": {
 		"notice": "transit off at waypoint-3 -- 1 link cut into 2 pieces",
@@ -8549,7 +8620,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-28": {
 		"notice": "transit on at waypoint-3 -- 2 pieces joined into 1 link",
@@ -8715,7 +8787,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-29": {
 		"notice": "transit on at P",
@@ -8822,7 +8895,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-30": {
 		"notice": "v4 control plane",
@@ -8906,7 +8980,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-31": {
 		"notice": "transit on at P",
@@ -9013,7 +9088,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-32": {
 		"notice": "v7 flow cleared",
@@ -9097,7 +9173,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-33": {
 		"notice": "v7 flow reverse",
@@ -9181,7 +9258,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"TRN-34": {
 		"notice": "v7 flow cleared",
@@ -9265,7 +9343,8 @@
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"PIPE-01": {
 		"notice": "2 pipes laid by hand -- g lays pipes, not links",
@@ -9407,7 +9486,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"PIPE-02": {
 		"notice": "seed cross -- 7 entities, 4 pipes",
@@ -9524,7 +9604,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	},
 	"PIPE-03": {
 		"notice": "v3 delete",
@@ -9659,7 +9740,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 1
 	},
 	"PIPE-04": {
 		"notice": "v4 undo",
@@ -9799,7 +9881,8 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 2
 	},
 	"PIPE-05": {
 		"notice": "v4 delete",
@@ -9914,6 +9997,7 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			}
-		}
+		},
+		"drawnPipes": 0
 	}
 }

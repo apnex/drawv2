@@ -370,6 +370,8 @@ author actually sees.
 test('pipes are drawn in the plugin\'s one colour, and it is visible on the canvas', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {
+		// a pipe no link runs over -- the cross board's are all under its links, and those are not drawn (2026-10-02)
+		await p.run(pipesIn(`lay([['node-000001', 'node-000003', 'hand']]);`));
 		const seen = await p.run(`(async () => {
 			const { pipeAttributes } = await import('/network/appearance.mjs');
 			const PIPE_STROKE = pipeAttributes('hand').stroke;   // through the painter's own door
@@ -651,6 +653,12 @@ const SNAPSHOT = `(() => {
 		// pipes are entities in both models since N-c: what the planner holds, and whether the tab holds the same (I1)
 		pipes: lab.authority.all('pipe').map(({ a, b, laid }) => ({ a, b, laid })),
 		// whether the tab holds exactly the authority's pipes -- a verdict, not the ids, which carry minted anchors' random hex
+		// the pipes drawn, and the pipes an up link runs over -- from the network's own routes (2026-10-02: one is never the other)
+		drawnPipes: [...document.querySelectorAll('#pipes line.pipe')].map((l) => l.id).sort(),
+		underLinks: (() => { const v = lab.network.view.of(lab.model), on = new Set();
+			for (const l of lab.model.all('link')) { const r = v.route(l.id); if (r) for (let i = 0; i < r.length - 1; i++) on.add([r[i], r[i + 1]].sort().join('|')); }
+			return lab.model.all('pipe').filter((p) => on.has([p.a, p.b].sort().join('|'))).map((p) => p.id).sort(); })(),
+		allPipes: lab.model.all('pipe').map((p) => p.id).sort(),
 		pipesAgree: JSON.stringify(lab.model.all('pipe').map((p) => p.id).sort()) === JSON.stringify(lab.authority.all('pipe').map((p) => p.id).sort()),
 		tabPipeCount: lab.model.all('pipe').length,
 		// a selected pipe spelled by its two ends (N-c2): its id is made of a minted anchor's random hex, which the corpus's
@@ -695,6 +703,11 @@ const INVARIANT = {
 		for (const { id, keys } of s.stretches) for (const k of new Set(keys)) on.set(k, [...(on.get(k) ?? []), id]);
 		const stacked = [...on].filter(([, ids]) => ids.length > 1);
 		return !stacked.length || stacked.map(([k, ids]) => `${ids.join(' and ')} are both drawn along ${k}`).join('; ');
+	},
+	// 2026-10-02: a pipe is drawn exactly when no up link runs over it
+	I8: (s) => {
+		const want = s.allPipes.filter((id) => !s.underLinks.includes(id));
+		return same(s.drawnPipes, want) || `drawn pipes ${s.drawnPipes.length}, where the pipes no up link runs over are ${want.length}`;
 	},
 	// B277: transit off admits endpoints only -- no junction class, no junction ring, and Input never judges one
 	I7: (s) => {
@@ -819,7 +832,9 @@ a pipe's ends sorted by id, and ids are random, so which end prints first is not
 id is numbered before the pipes appear in the snapshot, so orienting them afterwards cannot shift the numbering.
 */
 const corpusForm = (s) => {
-	const c = canonical(s);
+	// the drawn and occupied pipe lists carry pipe ids, made of minted anchors' random hex; I8 judges them, so they are counted here
+	const { drawnPipes, underLinks, allPipes, ...rest } = s;
+	const c = canonical({ ...rest, drawnPipes: drawnPipes.length });
 	c.pipes = c.pipes.map((q) => { const [a, b] = [q.a, q.b].sort(); return { ...q, a, b }; });
 	return c;
 };
@@ -857,3 +872,23 @@ for (const row of MATRIX.rows) {
 		} finally { await p.close(); }
 	});
 }
+
+/*
+IN RUN (READ) MODE PIPES ARE NOT DRAWN, like the anchor ring -- the director, 2026-10-02. Read on the page: with `r` on, no
+pipe and no pipe's click area is displayed; with it off again, they are.
+*/
+test('in run mode pipes are hidden, as anchors are, and come back when it ends', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	try {
+		await p.run(pipesIn(`lay([['node-000001', 'node-000003', 'hand']]);`));   // a free pipe, drawn in the edit view
+		const shown = `[...document.querySelectorAll('#pipes line')].filter((l) => getComputedStyle(l).display !== 'none').length`;
+		const anchors = `[...document.querySelectorAll('.wp-anchor')].filter((c) => getComputedStyle(c).display !== 'none').length`;
+		assert.ok(await p.run(shown) > 0, 'drawn before');
+		await p.click(600, 400);
+		await p.key('r');
+		assert.equal(await p.run(shown), 0, 'run mode: no pipe drawn or clickable');
+		assert.equal(await p.run(anchors), 0, 'as no anchor ring is');
+		await p.key('r');
+		assert.ok(await p.run(shown) > 0, 'and back when run mode ends');
+	} finally { await p.close(); }
+});

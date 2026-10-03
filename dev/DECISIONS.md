@@ -1637,3 +1637,9 @@ Asked "When an edit changes a link's plane or direction (k, f) so that the two l
 - The planner's join fires at the ends of a link whose plane or direction an edit changed, as it fires where an edit removed a link -- where exactly two links end, transit is on, and they are compatible. It is the 2026-09-28 ruling, "If 2 links are remaining on an anchor post some mutation, and they are compatible types and direction, they are to be joined", applied to one more mutation.
 - Drawing a second link to a point where a link already ends still never joins (B214): the two-link terminus stays buildable.
 - One rule, in the shared join reaction, for the lab and for production (`dev/PRODUCTION-UPGRADE.md`).
+
+**Pipes are hidden in run mode, and under a link -- ruled 2026-10-02.**\
+The director: "Pipes should be invisible in "r" read mode - just like anchors. And Pipes should not be rendered when they are occupied by a link."
+- In run (read) mode no pipe is drawn or clickable, as the anchor ring is hidden there: pipes are authoring geometry.
+- A pipe an up link runs over is not drawn -- the link is drawn along it. What counts as run over is the network's own route for each link, so what is hidden is exactly what is drawn over; a down link is drawn along its intent, so its own pipes stay visible, the way it would heal onto. A hidden hand pipe cannot be clicked, as ruled for a covered pipe (N6).
+- Held by matrix invariant I8, after every row: a pipe is drawn exactly when no up link runs over it.

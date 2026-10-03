@@ -221,6 +221,7 @@ AMENDED 2026-10-02: the planner's target set -- an event-triggered, declarative 
 AMENDED 2026-10-02: its design written and held -- `PLANNER-SYSTEM.md` section 14, stages TG-1 to TG-4, decisions TG-D1 to TG-D4 owed (B287).\
 AMENDED 2026-10-02: B288 fixed at the director's report (H17.27) -- a selected link that a join absorbs hands its selection to the joined link; it depended on which half was selected, not on control (PU28).\
 AMENDED 2026-10-02: succession added to the held planner design (section 14.2, TG-1b): the change set records what an entity was absorbed into, retiring `applyAnswer`'s recogniser and covering joins the page makes itself.\
+AMENDED 2026-10-02: pipes are hidden in run mode and under an up link, as ruled; matrix invariant I8 holds the second after every row.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\

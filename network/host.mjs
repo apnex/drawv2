@@ -21,6 +21,7 @@ code -- with the painter's `el`.
 import { whyDown, downSummary } from './resolve.mjs';
 import { transitEdit } from './transit.mjs';
 import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
+import { pipeId } from './pipe-kind.mjs';
 
 /*
 H17.22 N-d -- IT TAKES THE PAGE'S MODEL AND NO OTHER. It took the lab's in-page planner model too, and read it in three
@@ -46,10 +47,25 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	picks a plugin's mark (app/src/pick.js) -- so a hand pipe can be selected and deleted (N6, B281). A pipe laid with a link
 	gets none: it follows its links, and is never offered.
 	*/
+	/*
+	A PIPE A LINK RUNS OVER IS NOT DRAWN (the director, 2026-10-02): the link is drawn along it, so the pipe beneath only
+	shows at its edges, and the dashes of a `w` pipe peeked out beside the link. Read off the network's one derivation for
+	this board (cached, network/view.mjs), so what is hidden is exactly what is drawn over: an UP link's route. A down link
+	is drawn along its intent, not its legs, so its own pipes stay visible -- the way it would heal onto.
+	*/
+	const occupied = () => {
+		const view = network.view.of(model), on = new Set();
+		for (const l of model.all('link')) {
+			const r = view.route(l.id);
+			if (r) for (let i = 0; i < r.length - 1; i++) on.add(pipeId(r[i], r[i + 1]));
+		}
+		return on;
+	};
 	const paint = () => {
 		pipeLayer.replaceChildren();
-		const selected = new Set(selection.list());
+		const selected = new Set(selection.list()), under = occupied();
 		for (const { id, a, b, laid } of model.all('pipe')) {   // the tab's pipes, as it holds them (N-c)
+			if (under.has(id)) continue;   // a link is drawn over it
 			const p = model.endpointOf(a), q = model.endpointOf(b);
 			if (!p || !q) continue;   // an anchor the pipe names has gone; the planner removes the pipe in the same edit
 			el('line', { id, x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: `pipe pipe-${laid}${selected.has(id) ? ' selected' : ''}`, ...pipeAttributes(laid) }, pipeLayer);

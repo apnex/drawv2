@@ -64,6 +64,7 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | I5 | Nothing is thrown in the page. |
 | I6 | No two links that are up are drawn along the same stretch: a pipe carries one link (2026-09-30). |
 | I7 | An anchor whose transit is off is never a junction, drawn or judged: what arrives there stops, so it is an endpoint (2026-10-02, B277). |
+| I8 | A pipe is drawn exactly when no link that is up runs over it: the link is drawn along it (2026-10-02). |
 <!-- END GENERATED: invariants -->
 
 ---

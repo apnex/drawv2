@@ -23,7 +23,7 @@ function rig({ commits = true, accepts = true } = {}) {
 	const rec = (name, ret) => (...a) => { calls.push([name, ...a]); return ret; };
 	let onChange = null, onTransit = null;
 	const session = {
-		network: { declaresNoTransit: () => false, stopsAt: () => false },
+		network: { declaresNoTransit: () => false, stopsAt: () => false, view: { of: () => ({ route: () => null }) } },
 		takeNotice: () => null,
 		judge: rec('judge', { verdict: 'v', commits }),
 		answered: (answer, authority, apply) => { calls.push(['answered']); if (accepts) apply(); return accepts; },
@@ -103,7 +103,7 @@ test('B278: a transit change cuts the links pinned at a waypoint where what arri
 	model.put('link', { id: 'link-000004', src: 'node-000001', dst: 'node-000002', via: ['waypoint-000003'] });
 	const commits = [];
 	let onTransit = null;
-	const network = { stopsAt: (id) => id === 'waypoint-000003', declaresNoTransit: () => false };
+	const network = { stopsAt: (id) => id === 'waypoint-000003', declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } };
 	attachNetwork({
 		session: { pipes: { list: () => [] }, network, tidy: () => {}, takeNotice: () => null, onTransitChange: (fn) => { onTransit = fn; } },
 		model, authority: { all: () => [] },

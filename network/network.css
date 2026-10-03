@@ -16,3 +16,9 @@ product's selection colour. A pipe laid with a link has no hit line, and is neve
 */
 .pipe.selected { stroke: var(--tok-network-pipe-selected); }
 .pipe-hit { pointer-events: stroke; cursor: pointer; }   /* its width and colour are network/appearance.mjs pipeHitAttributes */
+
+/*
+In RUN (read) mode pipes are not drawn, nor can they be clicked: they are authoring geometry, as the anchor ring is, and run
+mode hides those (app/style.css, `.wp-anchor`) -- the director, 2026-10-02.
+*/
+#container.run-mode .pipe, #container.run-mode .pipe-hit { display: none; }

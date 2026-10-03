@@ -37,7 +37,7 @@ test('N-c2: the painter draws each pipe under its id, and gives only a hand pipe
 	const m = board(), drawn = [];
 	let selected = [];
 	attachNetwork({
-		session: { network: {}, takeNotice: () => null, onTransitChange: () => {} },
+		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
 		model: m, authority: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => selected }, history: { commit: () => {} },
 		pipeLayer: { replaceChildren: () => { drawn.length = 0; } }, el: (tag, attrs) => drawn.push(attrs), say: () => {},
@@ -50,7 +50,7 @@ test('N-c2: the painter draws each pipe under its id, and gives only a hand pipe
 	assert.deepEqual(pipeHitAttributes(), { stroke: 'transparent', 'stroke-width': linkWidth({ control: true }), fill: 'none' });
 	selected = [hand];
 	attachNetwork({
-		session: { network: {}, takeNotice: () => null, onTransitChange: () => {} },
+		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
 		model: m, authority: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
 		selection: { subscribe: () => {}, list: () => selected }, history: { commit: () => {} },
 		pipeLayer: { replaceChildren: () => { drawn.length = 0; } }, el: (tag, attrs) => drawn.push(attrs), say: () => {},
@@ -79,4 +79,28 @@ test('N-c2: a selected entity the cascade does not reach is deleted as itself, f
 	assert.ok(cmd.entries.some((e) => e.op === 'del' && e.kind === 'node' && e.entity.id === A), 'and the product\'s own cascade runs as before');
 	assert.equal(cmd.entries.filter((e) => e.op === 'del' && e.entity.id === A).length, 1, 'nothing is deleted twice');
 	assert.equal(deleteSelection(m, new Set(['pipe-0000ff-0000fe'])).entries.length, 0, 'an id that names nothing deletes nothing');
+});
+
+/*
+A PIPE A LINK RUNS OVER IS NOT DRAWN (the director, 2026-10-02): hidden exactly where an UP link's route runs, read off the
+network's derivation; a free pipe, and a down link's own legs, are drawn.
+*/
+test('the painter draws no pipe an up link runs over, and every other pipe', async () => {
+	const { createNetworkSession } = await import('../network/session.mjs');
+	const session = createNetworkSession();
+	const m = new Model({ kinds: productKinds(PIPE_ROW), network: session.network });
+	const C = 'node-00000d', D = 'node-00000e';
+	for (const [id, x] of [[A, -240], [B, 240], [C, -240], [D, 240]]) m.put('node', { id, name: id, type: 'router', x, y: id === C || id === D ? 240 : 0, shape: 'circle' });
+	m.put('waypoint', { id: W, name: 'w', x: 0, y: -120 });
+	m.put('link', { id: 'link-000001', name: 'up', src: A, dst: B, via: [W] });
+	for (const [a, b, laid] of [[A, W, 'link'], [W, B, 'link'], [A, C, 'hand']]) m.put('pipe', pipeEntity(a, b, laid));
+	m.put('link', { id: 'link-000002', name: 'down', src: C, dst: D });   // no way: down
+	const drawn = [];
+	attachNetwork({
+		session, model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} },
+		pipeLayer: { replaceChildren: () => { drawn.length = 0; } }, el: (tag, attrs) => drawn.push(attrs), say: () => {},
+	}).paint();
+	assert.equal(m.isLinkDown(m.get('link', 'link-000002')), true);
+	assert.deepEqual(drawn.filter((a) => a.id).map((a) => a.id), [pipeEntity(A, C, 'hand').id], 'the up link\'s two pipes are hidden; the free hand pipe is drawn');
 });
