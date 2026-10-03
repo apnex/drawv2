@@ -40,6 +40,9 @@ import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { networkInput } from '../../network/keys.mjs';
+import { productKinds } from '../../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../../network/kinds.mjs';
+const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // ---- the smallest DOM the client's constructors actually touch ----
 
@@ -157,7 +160,7 @@ can show a gesture did not, say, open the label editor, without asserting on pix
 export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null } = {}) {
 	const restore = installDom();
 
-	const model = new Model();
+	const model = new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
 	attachRelations(model, { cellOf });
 	const history = new Changes(model);
 	const selection = new Selection(model);

@@ -16,6 +16,8 @@ import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { productKinds } from '../../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and field, held until P5 draws them (G1)
 
 const svg = document.getElementById('container');
 
@@ -39,8 +41,14 @@ defs, both grids, the model and its index, the commit boundary, the renderer, th
 crosshair (B36), the held tools (K7) and the gesture machine. What is this page's own is handed in: its readout, its run
 mode (K5) and its clock.
 */
+/*
+S-b (H18.12; ruled 2026-10-03, G1) -- the page composes the network's ROWS, so it loads, holds and applies the pipes the
+server's planner now answers with; it does not yet attach the network's drawing, so links are drawn straight through their
+stops as before. A named stopgap: P5 attaches the network (pipe painter, drag judge, routes) and removes it.
+*/
 const { model, history, renderer, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
 	svg,
+	kinds: productKinds(...NETWORK_ROWS),
 	defs: document.getElementById('kdefs'),
 	host: window,
 	readoutEl: document.getElementById('readout-bottom'),

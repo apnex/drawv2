@@ -26,9 +26,26 @@ import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { CORE_KINDS, SCHEMA } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a), and the document generation
+import { productKinds } from '../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork } from '../network/network.mjs';
+import { createTransit } from '../network/transit.mjs';
 import { migrateFormatBatch } from './migrate.mjs';
 
 const FLUSH_MS = 200;
+
+/*
+S-b (H18.12; PROMOTION.md P3, SERVER-COMPOSES-NETWORK.md) -- THE SERVER COMPOSES THE NETWORK. Every Model the store holds
+carries the product's kinds and the network's rows -- its `pipe` kind and the `transit` it brings to the node -- and every
+commit, undo and redo plans with the network's link tenant: pipes, a pinned link living and dying with its pins, the sweep
+the lab runs, transit's cut and join. One composition, built once; the lab composes the same rows and tenant.
+
+The Models are given no network to DRAW with: the server's path consumers keep their straight drawing until P4 routes them
+through one shared function (SERVER-COMPOSES-NETWORK.md section 4). Only the planner reads the network here.
+*/
+const KINDS = productKinds(...NETWORK_ROWS);
+const NETWORK = createNetwork(createTransit());
+const PLAN = { links: NETWORK.links, kinds: KINDS };
 
 // The store's own filename rule. ONE definition: the boot loader and the example seeder must agree
 // on what counts as a diagram file, or a name one accepts and the other ignores becomes a file that
@@ -307,7 +324,7 @@ export class Store {
 			try {
 				const read = parse(await this.files.read(file));
 				const { doc, log, changed: shed } = admit(read.doc, read.log);
-				const err = validateDoc(doc);
+				const err = validateDoc(doc, { kinds: KINDS });
 				if (err) {
 					failures.push(`${file}: ${err}`);
 					console.warn(`[ store ] skipping ${file}: ${err}`);
@@ -633,7 +650,7 @@ export class Store {
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
 			try {
 				const { doc } = admit(parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8')).doc);
-				const err = validateDoc(doc);
+				const err = validateDoc(doc, { kinds: KINDS });
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
 				const entry = this.install(doc.meta.id, doc);
@@ -652,7 +669,7 @@ export class Store {
 	// document wholesale rather than deriving it from ops, so it is the single allow-listed
 	// model.load caller (GR3) and it replaces the Log in the same call.
 	install(id, doc, log = new Log(0), file = null) {
-		const model = new Model();
+		const model = new Model({ kinds: KINDS });
 		model.load(doc);
 		// `file` means this document came off our own storage, which is the only source allowed to
 		// carry authorization -- init() passes it, create() does not (ACCESS.md).
@@ -776,7 +793,7 @@ export class Store {
 			// store then discards. Nothing is installed unless it passes (I1, by purity).
 			// H18.3: admitted first, so an open tab from before the cutover posting its old document is migrated, not refused
 			const { doc: candidate } = admit({ ...doc, meta: { ...doc.meta, id, name } });
-			const err = validateDoc(candidate);
+			const err = validateDoc(candidate, { kinds: KINDS });
 			if (err) return { ok: false, error: err };
 			/*
 			B25 — version is minted by the LOG and is never carried in from the wire.
@@ -796,7 +813,7 @@ export class Store {
 			this.markDirty(id);
 			return { ok: true, model: entry.model };
 		}
-		const model = new Model();
+		const model = new Model({ kinds: KINDS });
 		model.state.meta.id = id;
 		model.state.meta.name = name;
 		this.#attribute(model, principal);
@@ -842,10 +859,10 @@ export class Store {
 		for (const file of fs.readdirSync(this.templatesDir).filter((f) => f.endsWith('.json')).sort()) {
 			try {
 				const { doc } = admit(JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8')));
-				const why = validateDoc(doc);
+				const why = validateDoc(doc, { kinds: KINDS });
 				if (why) throw new Error(why);
 				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
-				const model = new Model();
+				const model = new Model({ kinds: KINDS });
 				model.load(doc);
 				this.templates.set(doc.meta.id, model);
 			} catch (err) {
@@ -1083,7 +1100,7 @@ export class Store {
 		await this.files.restore(`${id}.json`, hit.generation);
 		const read = parse(await this.files.read(`${id}.json`));
 		const { doc, log } = admit(read.doc, read.log);
-		const err = validateDoc(doc);
+		const err = validateDoc(doc, { kinds: KINDS });
 		if (err) return `restored file is not a valid document: ${err}`;
 		/*
 		`Log.from`, exactly as `init` does it -- and the first version passed the parsed object
@@ -1256,7 +1273,7 @@ export class Store {
 		`place` op's relationship into an anchor, and its own clock -- the one it was constructed with -- for the record's
 		time and a beat's origin.
 		*/
-		const res = txnCommit(entry.model, entry.log, request, by, actor, { place: resolveAnchor, now: this.now });
+		const res = txnCommit(entry.model, entry.log, request, by, actor, { place: resolveAnchor, now: this.now, ...PLAN });
 		if (res.ok && request.txnId) {
 			entry.seen = entry.seen || new Map();
 			// `res.version` is the log's version after the commit -- `change` carries `seq`/`from`
@@ -1282,7 +1299,7 @@ export class Store {
 		if (!entry) return { ok: false, error: 'unknown diagram' };
 		const denied = this.#mayWrite(id, principal);
 		if (denied) return { ok: false, error: denied, forbidden: true };
-		const res = txnUndo(entry.model, entry.log, to);
+		const res = txnUndo(entry.model, entry.log, to, { kinds: KINDS });
 		if (res.ok) this.markDirty(id);
 		return res;
 	}
@@ -1294,7 +1311,7 @@ export class Store {
 		if (!entry) return { ok: false, error: 'unknown diagram' };
 		const denied = this.#mayWrite(id, principal);
 		if (denied) return { ok: false, error: denied, forbidden: true };
-		const res = txnRedo(entry.model, entry.log);
+		const res = txnRedo(entry.model, entry.log, { kinds: KINDS });
 		if (res.ok) this.markDirty(id);
 		return res;
 	}
@@ -1306,7 +1323,7 @@ export class Store {
 		if (!model) return 'unknown diagram';
 		const denied = this.#mayWrite(id, principal);
 		if (denied) return denied;
-		const err = validateSelectionIds(ids);
+		const err = validateSelectionIds(ids, KINDS);
 		if (err) return err;
 		model.setSelection(ids);
 		this.markDirty(id);

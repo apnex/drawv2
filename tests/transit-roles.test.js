@@ -109,9 +109,7 @@ test('F-e: transit survives a reload -- stored in the document, written by the s
 		await store.init();
 		const id = store.create('fe').model.state.meta.id;
 		const set = store.commit(id, { label: 'transit', ops: [{ op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 0, y: 0 } }, { op: 'set', kind: 'node', id: W, patch: { transit: false } }] });
-		// S-a (H18.11, G3): the network's field, refused by a store that does not compose the network; S-b composes it there
-		if (!store.composesNetwork) { assert.match(set.error ?? '', /unknown field node\.transit/); return; }
-		assert.equal(set.ok, true);
+		assert.equal(set.ok, true, set.error);   // the network's field (S-a), stored by a server that composes the network (S-b)
 		await store.flush(id);
 		const again = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await again.init();
