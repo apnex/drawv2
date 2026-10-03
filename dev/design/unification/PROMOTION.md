@@ -232,6 +232,9 @@ AMENDED 2026-10-03 -- **Section 10 ruled** (`dev/DECISIONS.md`, "Promotion's sta
 So P2's single migration carries: the pipe kind and its stored pipes, every item's drawing order (link ages, B249, B10, B259), transit on the anchor (TR-7), the `link.flow` rename (name to be asked), a ring's closing pipe (P-3), splitting any shared leg (P-4), `pinned` retired and waypoints become nodes with ids keeping their hex (P-5, P-10), undo history truncated (P-6), and `meta.schema` 2.\
 Rollback after it is the backup (P-8).
 
+AMENDED 2026-10-03 -- **P2's design** is `FORMAT-BATCH.md`, proposed.\
+Measuring for it found that the product cannot hold stored pipes before P3 composes the network's tenant: the pipe step of the one migration is proposed to land with P3 (its decision F2).
+
 ---
 
 ## 11. Axiom alignment audit (M7)

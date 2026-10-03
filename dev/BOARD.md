@@ -1023,7 +1023,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H18.1 | Rule promotion's start-of-work decisions, P-3 to P-9 and the format batch's scope, one at a time, against the measured estate | feature | S2 | `DONE` |
-| H18.2 | Design P2, the format batch, for approval before any code: the stored pipe kind, drawing order, transit on the anchor, the flow rename, waypoints into nodes, the migration and its dry run on the estate | **B266** | S2 | `TODO` |
+| H18.2 | Design P2, the format batch, for approval before any code: the stored pipe kind, drawing order, transit on the anchor, the flow rename, waypoints into nodes, the migration and its dry run on the estate | **B266** | S2 | `WIP` |
+AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
