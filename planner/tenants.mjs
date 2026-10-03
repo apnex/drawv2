@@ -33,7 +33,7 @@ const GROUP_TRIM = {
 	id: 'group-trim',
 	phase: 'clear',
 	doc: 'deleting a node or waypoint takes it out of its group, dissolving the group below two members -- whoever emitted the delete (B241)',
-	on: (op) => op.kind === 'node' || op.kind === 'waypoint',
+	trigger: { deleted: ['node', 'waypoint'] },
 	run: ({ op, doc }, emit) => {
 		const ops = [];
 		for (const group of doc.all('group')) {
@@ -54,7 +54,7 @@ const GROUP_STEAL = {
 	id: 'group-steal',
 	phase: 'follow',
 	doc: 'putting a group takes its members from every other group, dissolving one left below two: a node belongs to one group',
-	on: (op) => op.kind === 'group' && Array.isArray(op.entity.members),
+	trigger: [{ created: ['group'] }, { changed: { kind: 'group', fields: ['members'] } }],
 	run: ({ op, doc }, emit) => {
 		const { entity } = op;
 		const ops = [];

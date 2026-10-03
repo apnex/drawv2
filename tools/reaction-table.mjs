@@ -26,11 +26,14 @@ const cell = (text) => String(text).replace(/\|/g, '\\|');
 const table = (head, rows) => [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.map(cell).join(' | ')} |`)].join('\n');
 
 // the rows a composition runs, in the order the core runs them: by declared phase, then link tenant before groups
-const composition = (links) => PHASES.flatMap((phase) => [links, GROUPS].flatMap((t) => t.reactions.filter((r) => r.phase === phase).map((r) => [phase, `\`${r.id}\``, t.owner, r.doc])));
+// a reaction's trigger as words: what it listens to (TG-2)
+const listensTo = (trigger) => [].concat(trigger).map((c) => [c.deleted && `${c.deleted.join(', ')} deleted`, c.created && `${c.created.join(', ')} created`,
+	c.changed && `${c.changed.kind} ${c.changed.fields.join(', ')} changed`].filter(Boolean).join('; ')).join('; or ');
+const composition = (links) => PHASES.flatMap((phase) => [links, GROUPS].flatMap((t) => t.reactions.filter((r) => r.phase === phase).map((r) => [phase, `\`${r.id}\``, t.owner, listensTo(r.trigger), r.doc])));
 
 const BLOCKS = {
-	production: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(CLASSIC_LINKS)),
-	network: () => table(['phase', 'reaction', 'tenant', 'what follows'], composition(createNetwork().links)),
+	production: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(CLASSIC_LINKS)),
+	network: () => table(['phase', 'reaction', 'tenant', 'listens to', 'what follows'], composition(createNetwork().links)),
 };
 
 function render(current) {

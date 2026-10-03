@@ -1224,7 +1224,7 @@ test('PL1: the planner core names no entity kind -- the kinds are the tenants\''
 	test('acceptance 5: a new reaction lands in a tenant with no edit to the core, and runs in its phase', async () => {
 		const { p, CLASSIC_LINKS, m } = await pl3();
 		const seen = [];
-		const tagged = { id: 'note-renames', phase: 'sweep', run: ({ doc }, emit) => { seen.push(doc.all('node').length); emit([{ op: 'set', kind: 'node', id: 'node-00000b', patch: { name: 'alone' } }]); } };
+		const tagged = { id: 'note-renames', phase: 'sweep', trigger: { deleted: ['node'] }, run: ({ doc }, emit) => { seen.push(doc.all('node').length); emit([{ op: 'set', kind: 'node', id: 'node-00000b', patch: { name: 'alone' } }]); } };
 		const r = p(m, del, { links: { owner: 'with a note', reactions: [...CLASSIC_LINKS.reactions, tagged] } });
 		assert.equal(r.ok, true);
 		assert.deepEqual(seen, [1], 'it ran once, in the sweep, after the requested delete and its cascade');
@@ -1235,14 +1235,14 @@ test('PL1: the planner core names no entity kind -- the kinds are the tenants\''
 	test('PL4: phases run in the declared order, whatever order the tenant lists its reactions in', async () => {
 		const { p, m } = await pl3();
 		const order = [];
-		const row = (phase) => ({ id: `r-${phase}`, phase, ...(phase === 'clear' ? { on: (op) => op.kind === 'node' } : {}), run: () => order.push(phase) });
+		const row = (phase) => ({ id: `r-${phase}`, phase, trigger: { deleted: ['node'] }, run: () => order.push(phase) });
 		p(m, del, { links: { owner: 'shuffled', reactions: ['join', 'sweep', 'clear', 'stranded'].map(row) } });
 		assert.deepEqual(order, ['clear', 'stranded', 'sweep', 'join']);
 	});
 
 	test('PL4 / PD-3: two reactions changing one entity in one phase is a fault, thrown, never a silent winner', async () => {
 		const { p, CLASSIC_LINKS, m } = await pl3();
-		const rival = { id: 'rival-cascade', phase: 'clear', on: (op) => op.kind === 'node', run: (_, emit) => emit([{ op: 'set', kind: 'link', id: 'link-000001', patch: { name: 'x' } }]) };
+		const rival = { id: 'rival-cascade', phase: 'clear', trigger: { deleted: ['node'] }, run: (_, emit) => emit([{ op: 'set', kind: 'link', id: 'link-000001', patch: { name: 'x' } }]) };
 		assert.throws(() => p(m, del, { links: { owner: 'rivals', reactions: [...CLASSIC_LINKS.reactions, rival] } }), /node-links and rival-cascade both change link:link-000001 in the clear phase/);
 	});
 

@@ -41,12 +41,14 @@ function pipeReactions(view) {
 			id: 'pipe-cascade',
 			phase: 'clear',
 			doc: 'an anchor deleted takes every pipe that ends at it, hand pipes included: a pipe is its pair (SD7)',
-			on: (op, doc) => op.op === 'del' && doc.kinds.anchors.includes(op.kind),
+			trigger: { deleted: ['node', 'waypoint'] },   // the anchor kinds
 			run: ({ op, doc }, emit) => emit(doc.all('pipe').filter((p) => endsAt(p, op.id)).map((p) => ({ op: 'del', kind: 'pipe', id: p.id }))),
 		},
 		{
 			id: 'pipe-sweep',
 			phase: 'join',
+			// anything that can move a route: a link made, deleted, re-ended or re-pinned, or a pipe deleted (TG-D3: whole board)
+			trigger: [{ deleted: ['link', 'pipe'] }, { created: ['link'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }],
 			doc: 'after the edit and its join, a pipe laid with a link that no link runs over goes; hand pipes stay (ruled 2026-09-27)',
 			run: ({ doc }, emit) => {
 				const used = new Set();

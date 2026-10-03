@@ -8,6 +8,11 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { plan } from '../planner/txn.mjs';
 import { CLASSIC_LINKS } from '../planner/tenants.mjs';
+import { PRODUCT_KINDS } from '../planner/kinds.mjs';
+
+// a probe listens to everything: every kind created or deleted, and every field of every kind changed
+const EVERYTHING = [{ deleted: PRODUCT_KINDS.list }, { created: PRODUCT_KINDS.list },
+	...PRODUCT_KINDS.list.map((kind) => ({ changed: { kind, fields: Object.keys(PRODUCT_KINDS.row(kind).fields) } }))];
 
 const P = 60;
 function board() {
@@ -20,7 +25,7 @@ function board() {
 // plan with a probe in the join phase, answering the change set it was handed
 function changesOf(m, ops) {
 	let seen = null;
-	const probe = { id: 'probe', phase: 'join', doc: 'test probe', run: ({ changes }) => { seen = changes.list(); } };
+	const probe = { id: 'probe', phase: 'join', doc: 'test probe', trigger: EVERYTHING, run: ({ changes }) => { seen = changes.list(); } };
 	const r = plan(m, ops, { links: { ...CLASSIC_LINKS, reactions: [...CLASSIC_LINKS.reactions, probe] } });
 	assert.equal(r.ok, true, r.error);
 	return Object.fromEntries(seen.map((c) => [`${c.kind}:${c.id}`, { created: !c.before, deleted: !c.after, fields: [...c.fields].sort() }]));
@@ -60,7 +65,7 @@ test('TG-1b: a link the join absorbs records what it joined into; nothing else c
 	m.put('link', { id: 'link-00000a', name: 'a', src: 'node-00000a', dst: 'waypoint-00000e', control: true });
 	m.put('link', { id: 'link-00000b', name: 'b', src: 'waypoint-00000e', dst: 'node-00000b' });
 	let seen = null;
-	const probe = { id: 'probe', phase: 'join', doc: 'test probe', run: ({ changes }) => { seen = changes.list(); } };
+	const probe = { id: 'probe', phase: 'join', doc: 'test probe', trigger: EVERYTHING, run: ({ changes }) => { seen = changes.list(); } };
 	// the probe runs after the classic join, in the same phase
 	plan(m, [{ op: 'set', kind: 'link', id: 'link-00000b', patch: { control: true } }], { links: { ...CLASSIC_LINKS, reactions: [...CLASSIC_LINKS.reactions, probe] } });
 	const b = seen.find((c) => c.id === 'link-00000b'), a = seen.find((c) => c.id === 'link-00000a');

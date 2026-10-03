@@ -152,6 +152,36 @@ function changeSet(proj) {
 }
 
 /*
+TG-2 (H17.28; PLANNER-SYSTEM.md section 14.3; TG-D1 ruled 2026-10-02) -- A REACTION'S TRIGGER, as data: what it listens to.
+One clause, or a list of them, any of which matching suffices:
+
+  { deleted: [kinds] }                    an entity of one of these kinds deleted
+  { created: [kinds] }                    one created
+  { changed: { kind, fields: [fields] } } one of these fields of an entity of that kind changed
+
+A per-op reaction (`clear`, `follow`) is called for an op its trigger matches: a delete matches `deleted`; a put or set of
+an entity this transaction created matches `created`, and of one it did not, `changed` -- by the fields the op names. It
+replaces the predicate `on` each reaction carried (retired; a reaction still naming one is refused, as is one with no
+trigger). The transaction phases' reactions declare theirs too; they are called by it from TG-3.
+*/
+const TRIGGER_KEYS = ['deleted', 'created', 'changed'];
+function validTrigger(trigger) {
+	const clauses = [].concat(trigger ?? []);
+	if (!clauses.length) return false;
+	return clauses.every((c) => c && typeof c === 'object' && Object.keys(c).length && Object.keys(c).every((k) => TRIGGER_KEYS.includes(k))
+		&& (c.deleted === undefined || (Array.isArray(c.deleted) && c.deleted.length))
+		&& (c.created === undefined || (Array.isArray(c.created) && c.created.length))
+		&& (c.changed === undefined || (typeof c.changed.kind === 'string' && Array.isArray(c.changed.fields) && c.changed.fields.length)));
+}
+// whether a per-op reaction's trigger matches this op; `created` says whether the transaction created the op's entity
+function opMatches(trigger, op, created) {
+	const named = op.op === 'put' ? Object.keys(op.entity) : op.op === 'set' ? Object.keys(op.patch) : [];
+	return [].concat(trigger).some((c) => (op.op === 'del' && c.deleted?.includes(op.kind))
+		|| (op.op !== 'del' && created && c.created?.includes(op.kind))
+		|| (op.op !== 'del' && !created && c.changed?.kind === op.kind && c.changed.fields.some((f) => named.includes(f))));
+}
+
+/*
 PL-3 -- THE PHASES, declared in order (PLANNER-SYSTEM.md section 6.2; PD-3). A request passes through three:
 
   1  the requested ops, each validated and narrowed here, in order
@@ -208,7 +238,9 @@ function composition({ links = CLASSIC_LINKS, place = null, now = wallClock, ext
 		const lacking = (tenant.kinds ?? []).filter((k) => !kinds.has(k));
 		if (lacking.length) throw new Error(`${who}: ${tenant.owner} needs the kind ${lacking.join(', ')}, which this composition does not include (H17.22 N-d)`);
 		for (const r of tenant.reactions) {
-			if (!r || !PHASES.includes(r.phase) || typeof r.run !== 'function') throw new Error(`${who}: ${tenant.owner}: a reaction is { id, phase, run } with a phase of ${PHASES.join(', ')}`);
+			if (!r || !PHASES.includes(r.phase) || typeof r.run !== 'function') throw new Error(`${who}: ${tenant.owner}: a reaction is { id, phase, trigger, run } with a phase of ${PHASES.join(', ')}`);
+			if (r.on !== undefined) throw new Error(`${who}: ${tenant.owner}: ${r.id} carries \`on\`, retired by TG-2 -- a reaction declares its trigger as data (H17.28)`);
+			if (!validTrigger(r.trigger)) throw new Error(`${who}: ${tenant.owner}: ${r.id} declares no trigger -- { deleted: [kinds] }, { created: [kinds] } or { changed: { kind, fields } }, or a list of them (TG-2)`);
 			if (ids.has(r.id)) throw new Error(`${who}: two reactions are named ${r.id}`);
 			ids.add(r.id);
 			rows[r.phase].push({ ...r, owner: tenant.owner });
@@ -237,6 +269,8 @@ export function plan(model, ops, options = {}) {
 	const out = [];
 	const inv = [];
 	const changes = changeSet(proj);   // TG-1
+	// whether this transaction created the entity an op names: not there before it began
+	const isCreated = (op) => op.op !== 'del' && !model.get(op.kind, op.op === 'put' ? op.entity.id : op.id);
 
 	/*
 	Run one phase. Each reaction EMITS ops, and each is applied at once through `apply`, so the next decision -- its own or
@@ -247,7 +281,7 @@ export function plan(model, ops, options = {}) {
 	const runPhase = (phase, ctx) => {
 		const claimed = new Map();
 		for (const r of rows[phase]) {
-			if (r.on && !r.on(ctx.op, proj)) continue;
+			if (ctx.op && !opMatches(r.trigger, ctx.op, isCreated(ctx.op))) continue;   // a per-op reaction, by its trigger (TG-2)
 			r.run(ctx, (emitted) => {
 				for (const op of emitted) {
 					const subject = subjectOf(op);
@@ -271,7 +305,7 @@ export function plan(model, ops, options = {}) {
 	// what a put would set off, asked without applying anything -- whether an unchanged put still does something
 	const follows = (op) => {
 		let n = 0;
-		for (const r of rows.follow) if (!r.on || r.on(op, proj)) r.run({ op, doc: proj }, (emitted) => { n += emitted.length; });
+		for (const r of rows.follow) if (opMatches(r.trigger, op, isCreated(op))) r.run({ op, doc: proj, changes }, (emitted) => { n += emitted.length; });
 		return n > 0;
 	};
 

@@ -416,6 +416,11 @@ AMENDED 2026-10-02 -- **TG-1b done.**\
 The planner's join marks the link it deletes with the link it joined into (`into` on the delete), the change set records it, and the answer carries it; `applyAnswer` (app/src/changes.js) reads it, and its recogniser `joinsIn` is deleted.\
 Accepted only because the planner corpus differed in nothing but 86 join deletes gaining `into`; the matrix and gesture corpora are unchanged, TRN-34 among them. Without `into`, the B288 tests, TRN-34 and the succession test fail.
 
+AMENDED 2026-10-02 -- **TG-2 done.**\
+Every reaction declares its trigger as data (`trigger`), the nine of section 14.1 among them, and the reaction table shows it (`dev/design/planner/REACTIONS.md`, "listens to"); the per-op phases call a reaction only for an op its trigger matches (`opMatches`), and `on` is retired -- the composition refuses a reaction carrying it, or declaring no trigger.\
+One refinement on 14.3: `stranded-links` listens only to a waypoint deleted, since a pin is a waypoint and only losing one strands a link.\
+Every corpus unchanged; six mutants killed, among them each per-op reaction listening to too little and the matching rule broken.
+
 ### 14.6 Decisions for the director -- one at a time
 
 - **TG-D1 -- triggers as data or as predicates.** Recommended: data, as in 14.3 -- the core can index it, the reaction table can show it, and the shadow can check it -- rather than a predicate per reaction, which hides what it listens to.

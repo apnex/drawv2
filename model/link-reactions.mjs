@@ -33,7 +33,7 @@ const NODE_LINKS = {
 	id: 'node-links',
 	phase: 'clear',
 	doc: 'deleting a node deletes every link ending at it',
-	on: (op) => op.kind === 'node',
+	trigger: { deleted: ['node'] },
 	run: ({ op, doc }, emit) => emit(doc.linksOf(op.id).map((link) => ({ op: 'del', kind: 'link', id: link.id }))),
 };
 
@@ -42,7 +42,7 @@ const WAYPOINT_LINKS = {
 	id: 'waypoint-links',
 	phase: 'clear',
 	doc: 'deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81)',
-	on: (op) => op.kind === 'waypoint',
+	trigger: { deleted: ['waypoint'] },
 	run: ({ op, doc }, emit) => {
 		const id = op.id;
 		const ops = [];
@@ -105,6 +105,7 @@ A pinned link that lost a pin to this transaction is deleted whole -- the networ
 const STRANDED_LINKS = {
 	id: 'stranded-links',
 	phase: 'stranded',
+	trigger: { deleted: ['waypoint'] },   // a pin is a waypoint: only losing one strands a link
 	doc: 'a link that lost a pin to this edit is deleted whole: a pinned link lives and dies with its pins',
 	run: ({ before, doc }, emit) => {
 		for (const was of before.all('link')) {
@@ -199,6 +200,8 @@ function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {
 	return {
 		id: 'orphan-sweep',
 		phase: 'sweep',
+		// what stops referencing an anchor: a link or pipe deleted, or a link re-ended or re-pinned
+		trigger: [{ deleted: ['link', 'pipe'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via'] } }],
 		doc: `a waypoint this edit left referenced by nothing is deleted, its groups trimmed first (B162, B241); ${says}`,
 		run: ({ before, doc }, emit) => {
 			const wasReferenced = refs(before);
@@ -250,6 +253,8 @@ function linkJoin({ joinsAt = () => true, says }) {
 	return {
 		id: 'link-join',
 		phase: 'join',
+		// a link leaving a waypoint, or a link's declarations changing there (B269, B285, B286)
+		trigger: [{ deleted: ['link'] }, { changed: { kind: 'link', fields: LINK_DECLARATIONS } }],
 		doc: `two links this edit left alone at a waypoint, or made compatible there by changing a plane or direction (B285), become one, the inbound id surviving, unless the result would break a rule a requested write meets (B215, B239); ${says}`,
 		run: ({ before, doc, ops, refuses }, emit) => {
 			const touched = new Set();

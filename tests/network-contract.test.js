@@ -81,7 +81,13 @@ test('a malformed link tenant is refused by plan() and commit(), saying what is 
 		[{ reactions: [] }, /owner, reactions/],
 		[run({ id: 'x', phase: 'later', run: () => {} }), /phase of clear, follow, stranded, sweep, join/],
 		[run({ id: 'x', phase: 'sweep' }), /a reaction is/],
-		[{ owner: 'twice', reactions: [{ id: 'group-trim', phase: 'clear', run: () => {} }] }, /two reactions are named group-trim/],
+		[{ owner: 'twice', reactions: [{ id: 'group-trim', phase: 'clear', trigger: { deleted: ['node'] }, run: () => {} }] }, /two reactions are named group-trim/],
+		// TG-2: a reaction declares its trigger as data; `on` is retired, and a trigger must say something
+		[run({ id: 'x', phase: 'clear', run: () => {} }), /x declares no trigger/],
+		[run({ id: 'x', phase: 'clear', trigger: {}, run: () => {} }), /x declares no trigger/],
+		[run({ id: 'x', phase: 'clear', trigger: { removed: ['node'] }, run: () => {} }), /x declares no trigger/],
+		[run({ id: 'x', phase: 'clear', trigger: { changed: { kind: 'link', fields: [] } }, run: () => {} }), /x declares no trigger/],
+		[run({ id: 'x', phase: 'clear', on: () => true, trigger: { deleted: ['node'] }, run: () => {} }), /x carries `on`, retired by TG-2/],
 	]) {
 		const { m, log } = board();
 		assert.throws(() => commit(m, log, request, 'lab', 'lab', { links }), says);
