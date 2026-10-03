@@ -5,7 +5,8 @@ Read in full at a **production audit**: before production moves off the revision
 
 Production runs `2814d8d`.\
 Every entry below is true of `main` and not yet of production.\
-AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`), deployed after the audit at the end of this file; entries PU1 to PU16 and PU24 to PU29 are now true of production, PU17 to PU23 still wait for promotion's cutover. The register continues: an entry is added for each change production does not yet have, and it is read again before the cutover.
+AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`), deployed after the audit at the end of this file; entries PU1 to PU16 and PU24 to PU29 are now true of production, PU17 to PU23 still wait for promotion's cutover.\
+The register continues: an entry is added for each change production does not yet have, and it is read again before the cutover.
 
 ## How to use it
 
