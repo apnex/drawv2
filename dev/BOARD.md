@@ -223,6 +223,11 @@ AMENDED 2026-10-02: B288 fixed at the director's report (H17.27) -- a selected l
 AMENDED 2026-10-02: succession added to the held planner design (section 14.2, TG-1b): the change set records what an entity was absorbed into, retiring `applyAnswer`'s recogniser and covering joins the page makes itself.\
 AMENDED 2026-10-02: pipes are hidden in run mode and under an up link, as ruled; matrix invariant I8 holds the second after every row.\
 AMENDED 2026-10-02: a pipe is never removed from the page to hide it -- one element per pipe, kept and updated in place, hidden by class; I8 also holds one element per pipe. Unloading off-screen objects on an infinite canvas held as B289.\
+AMENDED 2026-10-02: re-triaged at the director's word ("revisit our unification program ... re-triage next best actions"), agreed as proposed:\
+1 -- B287, the planner on declared triggers (`PLANNER-SYSTEM.md` section 14, TG-1 to TG-4 with TG-1b), its decisions TG-D1 to TG-D4 ruled first: the consolidation promotion is held for, removing the defect class of B285, B286 and B288.\
+2 -- production on current `main` (promotion's P0), the director's call, before promotion begins, so the upgrade audit stops growing (`dev/PRODUCTION-UPGRADE.md`, 28 entries).\
+3 -- promotion started (B266): P-3 to P-9 ruled at its start, then P2.\
+4 -- features alongside or after: H15.5; H15.7 dropped from the board and held under B282. H17.3's remaining cuts all travel with promotion; H10.30 is the director's call.\
 AMENDED 2026-10-02: dashes fitted to their shape (`evenDash`, a target size adjusted to divide a closed shape exactly); the transit ring dashes about 4, gaps about 2, seven equal dashes.\
 AMENDED 2026-10-02: B282 widened to the 2026-09-22 model -- anchors unified, and a type the name of a composition of packs; its wording corrected.\
 Validated in the lab; no production deploy until the director says.\
@@ -886,7 +891,7 @@ Designed in [`../docs/spec/ATOMICS.md`](../docs/spec/ATOMICS.md).
 | H15.3 | `flow`, the declared direction: an optional boolean, validated, surviving a collapse that flips the link | feature | S3 | `DONE` |
 | H15.4 | The collapse matrix -- declarations decide a bend from a junction, revising B214 so `waypointRoles` reads direction | feature | S3 | `DONE` |
 | H15.6 | The gesture and the arrowhead -- declaring a direction from the canvas, and seeing it | feature | S3 | `DONE` |
-| H15.7 | The permission table: a composition declares which anchor variants it permits, and the validator refuses the rest | feature | S3 | `TODO` |
+| H15.7 | The permission table: a composition declares which anchor variants it permits, and the validator refuses the rest -- **dropped from the board 2026-10-02, held under B282**: it is the pack permission table of the 2026-09-22 ruling, which B282 carries to the format batch; built alone now it would be one more type-keyed table to migrate | **B282** | S3 | `DROPPED` |
 | H15.8 | The ghost draws the ladder from the kernel, and the parity guard stops naming files | **B224** | S4 | `DONE` |
 | H15.10 | The declaration survives every door to the export, not only the four that were right | **B225** | S3 | `DONE` |
 | H15.11 | The head PAINTS, and the readout says the relation rather than the step | **B226**, **B227** | S3 | `DONE` |
@@ -1012,7 +1017,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
 | **B282** | S3 | Anchors unified and type as composition (ruled 2026-09-22): the waypoint kind goes, and `type` becomes the name of a composition of packs | promotion's format batch (P2), packs composing earned by composing two |
-| **B287** | S3 | The planner as an event-triggered declarative graph: one change set per transaction, declared triggers, dispatch only where they match (`PLANNER-SYSTEM.md` section 13) | the director schedules it, in the lab or with promotion |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
@@ -1055,12 +1059,11 @@ The deployment that fired its trigger is also the one that answered it: object s
 
 ## Decisions required
 
-**None.**\
-Wrong twice before, and now checked rather than trusted.\
 B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B287** | TG-D1 to TG-D4 of `dev/design/planner/PLANNER-SYSTEM.md` section 14.6, one at a time: triggers as data, where the shadow runs, `pipe-sweep` at scale, and when | the planner is shared with production, and TG-D4 decides whether its code changes before promotion |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
