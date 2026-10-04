@@ -1038,7 +1038,12 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | feature | S2 | `DONE` |
 | H18.15 | S-e: the link kind and its model-side rules move into `network/` (G5, B280, K13b) | feature | S2 | `DONE` |
 | H18.16 | S-f: P3 closed -- estate dry run, register, records | feature | S2 | `DONE` |
-| H18.17 | Design P4 for approval before any code: every path consumer routes -- the SVG export, REST paths, `draw movers` and `draw combat` compose the network through one shared function; spawners skip down links | **B266** | S2 | `TODO` |
+| H18.17 | Design P4 for approval before any code: every path consumer routes -- the SVG export, REST paths, `draw movers` and `draw combat` compose the network through one shared function; spawners skip down links | feature | S2 | `DONE` |
+| H18.19 | R-a: one read composition -- `readModel(doc)` in `network/`; the CLI's two verbs and the dry run use it; the store's Models each draw with a network | **B266** | S2 | `TODO` |
+| H18.20 | R-b: REST and the CLI answer routes -- `path` along the route, `route`, `down` and a down link's blockers (H1); B292 fixed | **B266** | S2 | `TODO` |
+| H18.21 | R-c: the SVG export draws run mode's picture -- each link along its route, a down link with the down look, no pipe, no anchor ring, no bend dot (H2, refined) | **B266** | S2 | `TODO` |
+| H18.22 | R-d: spawners skip down links at every door | **B266** | S2 | `TODO` |
+| H18.23 | R-e: P4 closed -- the parity test over every consumer, the register, the records | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1058,6 +1063,8 @@ AMENDED 2026-10-04: H18.14 (S-d) done -- the migration splits a shared leg (P-4)
 AMENDED 2026-10-04: H18.15 (S-e) done -- the link is the network's kind: its row, references, invariant and rules live in `network/`, the product composes node, zone and group, and no core or planner module imports `network/`; every corpus unchanged.\
 AMENDED 2026-10-04: H18.16 (S-f) done -- P3 is closed on `main`: the planner and the validator take no default composition, the estate dry run passes on the final tree, and every change has its production-upgrade entry; next H18.17, P4's design.\
 AMENDED 2026-10-04: H18.17's design is `dev/design/unification/CONSUMERS-ROUTE.md`, proposed; its decisions H1 and H2 are asked one at a time before any code. B292, found while measuring, is H18.18.\
+AMENDED 2026-10-04: H1 ruled as recommended and H2 against it -- the SVG download never draws pipes (`dev/DECISIONS.md`); H18.17 DONE, the build is H18.19 to H18.23.\
+AMENDED 2026-10-04: H2 refined by the director -- the SVG download draws what run mode (`r`) shows; H18.21 carries it.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

@@ -3,6 +3,8 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-04 against `e3f1440`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-04: H1 ruled as recommended; H2 ruled against the recommendation -- the SVG download never draws pipes (section 9).
+> AMENDED 2026-10-04: H2 refined -- the SVG download draws what run mode (`r`) shows (section 9).
 
 ## 1. Status
 
@@ -31,7 +33,9 @@
 - **One function composes the network for any reader:** given a document, a Model that draws with it.
 - **The store's Models draw with the network,** so every answer REST gives about a path is the route the lab draws.
 - **REST and the CLI say when a link is down,** and which anchors its route runs through.
-- **The SVG export draws what the lab canvas draws:** routes, down links as down, and the pipes no up link runs over.
+- **The SVG export draws what the lab canvas draws:** routes, down links as down, and the pipes no up link runs over.\
+  CORRECTED 2026-10-04 by H2: the export draws links only -- routes, and down links as down -- and never a pipe.\
+  CORRECTED again 2026-10-04 by H2 refined: the export draws what run mode shows -- routes, down links as down, no pipe, no waypoint anchor ring, no bend dot.
 - **Movers run along routes and never along a down link,** in `draw movers`, `draw combat` and every page.
 
 ---
@@ -92,12 +96,12 @@ Filed as B292; fixed in R-b, where that answer changes anyway.
 |---|---|---|
 | **R-a** | **One read composition:** `readModel(doc)` in `network/`; the CLI's `combat` and `movers` and the dry run use it; the store's Models each get a network | the CLI's two verbs and the dry run unchanged in what they report on today's tests; no consumer composes the network's kinds by hand |
 | **R-b** | **REST and the CLI answer routes:** `path` along the route; `route`, the anchors it runs through; `down`; the blockers of a down link; `draw about` and `draw link path` print them (B292 fixed) | on one board, each answer equals the lab's derivation; a down link reports `down` and its blockers |
-| **R-c** | **The SVG export draws the lab's picture:** each link along its route; a down link with the canvas's down look; the pipes no up link runs over, a link's dashed and a hand pipe solid | on one board, the export's link paths and pipes equal the lab's derivation; the estate's exports change only where a link is down or a hand pipe is free |
+| **R-c** | **The SVG export draws run mode's picture** (H2 refined): each link along its route; a down link with the canvas's down look; no pipe; no waypoint anchor ring; a bend draws nothing; an endpoint's pad and dot, a junction's mark and the transit ring kept; no socket grid | on one board, the export's link paths equal the lab's derivation; it holds no pipe, no anchor ring and no bend dot, and keeps every endpoint pad, junction and transit ring |
 | **R-d** | **Spawners skip down links,** at every door | a spawner at the end of a down link emits nothing in `draw movers`, `draw combat` and the lab |
 | **R-e** | **P4 closed:** the parity test over every consumer on one board; the production-upgrade register; `PROMOTION.md` amended | the four consumers and the lab's tab agree on every link of one board; every change in section 7 has a PU entry |
 
 Each stage is one gate and one lab deploy.
-**Size, by judgement:** smaller than P3. R-c is most of it -- the kernel takes a route and a down flag per link and draws pipes, all as data, since the kernel imports no network.
+**Size, by judgement:** smaller than P3. R-c is most of it -- the kernel takes a route and a down flag per link, as data, since the kernel imports no network.
 
 ---
 
@@ -109,7 +113,8 @@ Each stage is one gate and one lab deploy.
 - **`draw about <link>` prints its path** (B292).
 
 **For anyone downloading the SVG:**
-- **Links follow their routes; a down link looks down;** pipes no up link runs over are drawn. On the estate after migration, every link runs along its stored stops (S-d), so a download changes only where a hand pipe is free or a link has gone down since.
+- **Links follow their routes; a down link looks down;** no pipe is drawn (H2). On the estate after migration, every link runs along its stored stops (S-d), so the links change only where a link has gone down since.
+- **A download shows what run mode shows** (H2 refined): no waypoint anchor ring, and nothing at a bend but the corner its route turns; endpoints keep their pads, junctions their marks, anchors their transit ring. Every download with a waypoint changes -- today's draws every anchor ring and every bend dot.
 
 **For movers:** a spawner on a down link emits nothing.
 
@@ -126,7 +131,7 @@ Each stage is one gate and one lab deploy.
 
 **Named costs and non-claims (judgement):**
 - **REST answers grow by three fields** on a link; nothing is removed or renamed.
-- **The export grows a pipe layer,** empty on every estate diagram after migration unless a link is down or a hand pipe free.
+- **The export draws no pipe** (H2): a download does not show a free hand pipe or the way a down link would heal onto, though the canvas does -- the screen and a download differ there, by ruling.
 - **It does not change what production users see** until the cutover, and does not make the product page route: P5.
 
 ---
@@ -136,12 +141,18 @@ Each stage is one gate and one lab deploy.
 - **H1 -- how a down link is shown at every door but the canvas.** Recommended: as the lab shows it -- along its intent, marked down: REST and the CLI say `down` and name its blockers, and the export draws it with the canvas's down look. The alternative: answer no path for a down link, which every caller would have to special-case, and which the export could only draw by leaving the link out.
 - **H2 -- whether the export draws pipes.** Recommended: yes, the pipes no up link runs over, as the lab canvas does and the product page will at P5 -- so a hand pipe laid with `g` and the way a down link would heal onto appear in a download. The alternative: no pipes until P5, or never; a download would then not show the diagram's free pipes at all.
 
+
+AMENDED 2026-10-04 -- **H2 refined by the director:** "The SVG download should reflect READ mode "r"". Key `r` toggles run mode (`app/src/keymap.js:85`); no mode is named read, so this is taken as run mode, and the record says so.\
+Run mode, measured: it hides every pipe (`network/network.css:24`), each waypoint's anchor ring (`app/style.css:453`) and a bend's centre dot (`:471`); it keeps an endpoint's pad and dot, a junction's mark and the transit ring, and shows no socket grid (`app/src/renderer.js` `renderOpts`).\
+So R-c draws that picture.\
+The waypoint layers are the kernel's, shared with the canvas (`kernel/network-appearance.mjs` `waypointLayers`), so the export asks for run mode's subset rather than restating it: one list of what run mode hides, read by the canvas's stylesheet rule and the export alike, is R-c's to settle.
 ---
 
 ## 10. Axiom alignment audit (M7)
 
 **Identity:** this delta, against `e3f1440`, measured against mission-kit A1-A14 and the director's target state.\
-**Verdict: pass-with-guardrails** -- H1 and H2 ruled before R-b and R-c.
+**Verdict: pass-with-guardrails** -- H1 and H2 ruled before R-b and R-c.\
+AMENDED 2026-10-04: both ruled.
 
 | axiom | weight | how the delta holds it |
 |---|---|---|
@@ -152,4 +163,5 @@ Each stage is one gate and one lab deploy.
 | A1, A4, A6, A7, A9-A14 | not materially implicated | |
 
 **Tension:** the export showing pipes (H2) against a download that only ever showed links -- resolved by drawing only what the canvas draws, so a download and the screen agree.\
+CORRECTED 2026-10-04: resolved the other way by the director (H2) -- a download shows links only, and differs from the canvas where a pipe is free; A5 is held for agents by REST (H1), which a download does not serve.\
 **Guardrail:** no consumer composes the network's kinds or its network except through the shared function or the store's constructor; held by a test in R-a.

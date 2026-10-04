@@ -1696,3 +1696,9 @@ Asked one at a time against `dev/design/unification/SERVER-COMPOSES-NETWORK.md` 
 - G4: the half of P3's exit criterion saying the tab agrees before the answer, and PL-6, move to P5; the tab converges on the answer meanwhile.
 - G5: the link kind and its model-side rules move into `network/` at P3 (B280, K13b's model half); the kernel's roles and appearance follow at P5 with the canvas.
 
+
+**P4's design decisions, H1 and H2 -- 2026-10-04 (B266, H18.17).**\
+Asked one at a time against `dev/design/unification/CONSUMERS-ROUTE.md` section 9.
+- H1, as recommended: a down link is shown at every door as the lab shows it -- along its stops, marked down. REST and the CLI say `down` and name the links blocking it; the SVG download draws it with the canvas's down look.
+- H2, against the recommendation: the SVG download never draws pipes. A download shows links only -- routed, or marked down -- and a free hand pipe, or the way a down link would heal onto, does not appear in it, now or after P5.
+- H2, refined by the director the same day: "The SVG download should reflect READ mode "r"". Key `r` toggles RUN mode (`app/src/keymap.js:85`; there is no mode named read), so a download draws what run mode shows: no pipe; no waypoint anchor ring; a bend draws nothing but the corner its route turns; an endpoint keeps its pad and dot, a junction its mark, and an anchor its transit ring; no socket grid. Links along their routes, a down link marked down (H1). Today's download draws every waypoint's anchor ring and every bend's dot, so every download with a waypoint changes.
