@@ -130,6 +130,7 @@ Writing
   select <id...>                                                  set the authoritative selection
   link <src> [<dst>] [--via <cx>,<cy>...] [--closed]              join two things that already exist, bending the route through cells you name
   spawn <waypoint> [--interval ms] [--speed px] [--colour #hex] [--off] arm an endpoint waypoint to emit movers along its path, or stop it
+  pipe <a> <b> [--off]                                            lay a pipe by hand between two anchors, as g does -- or take it away with --off
   panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]  a node that spans cells and can carry content regions
   zone <name> from <cx>,<cy> to <cx>,<cy>                         enclose a rectangle of CELLS -- the half-pitch offset is the tool's problem, not yours
   group <name> <ref> <ref> [ref...]                               name a set of nodes as one thing

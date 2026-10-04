@@ -48,9 +48,6 @@ const PENDING = {
 	'diagrams/:id/zones/:entity': 'PATCH partly superseded by `draw rename`; resizing and DELETE have no verb (B133 remainder)',
 	'diagrams/:id/groups': 'superseded by `draw group <name> <ref> <ref>` (B133)',
 	'diagrams/:id/groups/:entity': 'PATCH partly superseded by `draw rename`; membership changes and DELETE have no verb (B133 remainder)',
-	// P6: REST serves pipes at W-a (H18.31); the CLI's verbs for them are W-b (H18.32) -- `draw pipe`, and `draw rm` by id or ends
-	'diagrams/:id/pipes': 'no verb YET: `draw pipe <a> <b>` lands at P6 W-b (H18.32)',
-	'diagrams/:id/pipes/:entity': 'no verb YET: `draw rm` takes a pipe at P6 W-b (H18.32)',
 };
 
 

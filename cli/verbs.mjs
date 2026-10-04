@@ -251,6 +251,8 @@ async function resolveId(ctx, diagramId, ref, known = null) {
 	// PU33: a waypoint's id became a node's with the same hex at the format batch; an old one is named as such, not "not found"
 	if (/^waypoint-[0-9a-f]{6}$/.test(ref)) die(`${ref} is a waypoint id from before the format batch -- waypoints are nodes now: node-${ref.slice(9)}`);
 	if (/^(node|link|zone|group)-[0-9a-f]{6}$/.test(ref)) return ref;
+	// P6 W-b (H18.32): a pipe has no name, only an id -- its two ends' hex (network/pipe-kind.mjs) -- so it is taken as given
+	if (/^pipe-[0-9a-f]{6}-[0-9a-f]{6}$/.test(ref)) return ref;
 	// `known` lets a verb that has already fetched the document reuse it. `place` used to avoid the
 	// second read by reimplementing the lookup inline, four times, which is how the ambiguity
 	// refusal below got dropped from three of them (B143).
@@ -2416,11 +2418,61 @@ finding; two extra reads buy a report that is true by construction.
 */
 const census = (doc) => {
 	const m = new Map();
-	for (const k of ['nodes', 'links', 'zones', 'groups']) {
+	// pipes too since P6 W-b: deleting an anchor takes its pipes, and the report says so
+	for (const k of ['nodes', 'links', 'zones', 'groups', 'pipes']) {
 		for (const e of doc[k] || []) m.set(e.id, e.name || e.id);
 	}
 	return m;
 };
+
+/*
+P6 W-b (H18.32) -- `pipe`: lay a pipe BY HAND between two anchors, as `g` does on the canvas, or take one away. A hand pipe
+outlives any link (2026-09-27); a link that lays its own pipes is `draw link --lay` (K1). Laid through REST's `/pipes`, so the
+server builds the pipe -- its id is its two ends' hex, the network's rule (network/pipe-kind.mjs) -- and this file, which ships
+alone (B138), restates nothing. For the same reason it does not stage into a draft: a staged op would have to carry an id the
+tool would build itself.
+
+`--off` removes the pipe joining the two, found by its ends: `rm a b` already means "remove a and b". A pipe's id also works
+with `draw rm`. What the pipe does to the links over it is said back: which came up, or went down.
+*/
+VERBS.push({
+	name: 'pipe', group: 'Writing', usage: 'draw pipe <a> <b> [--off]',
+	route: '/diagrams/<id>/pipes', method: 'POST', also: ['DELETE /diagrams/<id>/pipes/<pipe>', 'GET /diagrams/<id>'],
+	summary: 'lay a pipe by hand between two anchors, as g does -- or take it away with --off',
+	example: 'draw pipe spine-1 w-3',
+	args: [{ name: 'a', about: 'an anchor -- a node or a waypoint -- by id or name' }, { name: 'b', about: 'the other' }],
+	flags: [{ name: '--off', about: 'remove the pipe joining the two instead' }, { name: '--diagram', about: 'target by id or name' }],
+	async run(ctx, args) {
+		if (args.length !== 2) die('usage: draw pipe <a> <b> [--off]');
+		const id = await activeId(ctx, ctx.flags);
+		const doc = ok(await request(ctx, `/diagrams/${id}`), 'pipe');
+		const [a, b] = [await resolveId(ctx, id, args[0], doc), await resolveId(ctx, id, args[1], doc)];
+		const downBefore = await downLinks(ctx, id, doc);
+		let r, said;
+		if (ctx.flags.off) {
+			const pipe = (doc.pipes || []).find((p) => (p.a === a && p.b === b) || (p.a === b && p.b === a));
+			if (!pipe) die(`no pipe joins ${args[0]} and ${args[1]}`);
+			r = ok(await request(ctx, `/diagrams/${id}/pipes/${pipe.id}`, { method: 'DELETE', headers: await held(ctx, id, 'pipe') }), 'pipe');
+			said = `removed ${pipe.id}`;
+			r.id = pipe.id;
+		} else {
+			r = ok(await request(ctx, `/diagrams/${id}/pipes`, { method: 'POST', headers: await held(ctx, id, 'pipe'), body: { a, b } }), 'pipe');
+			said = `laid ${r.id} by hand`;
+		}
+		const downAfter = await downLinks(ctx, id);
+		const up = downBefore.filter((l) => !downAfter.includes(l)), down = downAfter.filter((l) => !downBefore.includes(l));
+		return { json: { pipe: r.id, up, down, version: r.version },
+			text: [said, ...(up.length ? [`up again: ${up.join(' ')}`] : []), ...(down.length ? [`now down: ${down.join(' ')}`] : []), `v${r.version}`].join('  ') };
+	},
+});
+
+// the ids of the links that are down -- REST's own answer per link (H1), so a verb reports what a pipe changed
+async function downLinks(ctx, id, known = null) {
+	const doc = known || ok(await request(ctx, `/diagrams/${id}`), 'down');
+	const out = [];
+	for (const l of doc.links || []) if (ok(await request(ctx, `/diagrams/${id}/links/${l.id}/path`), 'down').down) out.push(l.id);
+	return out;
+}
 
 VERBS.push(
 	{

@@ -75,7 +75,7 @@ The store already composes the product's kinds with the network's (`server/store
 | stage | what lands | proven by |
 |---|---|---|
 | **W-a** | **REST serves pipes:** its collections read from the model's composition; `GET /pipes` and `/pipes/<id>`; `POST /pipes {a, b}` lays a hand pipe through `pipeEntity`; `DELETE /pipes/<id>` | each answer read against the store's document; a `POST` refused for an end that does not exist, and for ends a pipe already joins, as the planner refuses them |
-| **W-b** | **The CLI lays and removes pipes:** `draw pipe <a> <b>` lays a hand pipe; `draw rm` takes a pipe id or a pipe's two ends; `resolveId` accepts a pipe id | the CLI suite: a pipe laid between two anchors heals a down link through it, as HEAL-02 does on the page; removed, the link goes down again |
+| **W-b** | **The CLI lays and removes pipes:** `draw pipe <a> <b>` lays a hand pipe; `draw rm` takes a pipe id or a pipe's two ends; `resolveId` accepts a pipe id (CORRECTED: by its ends is `draw pipe a b --off`, below) | the CLI suite: a pipe laid between two anchors heals a down link through it, as HEAL-02 does on the page; removed, the link goes down again |
 | **W-c** | **The CLI reads pipes:** `draw get pipes`, and pipes in `show`, `dump` and `map` | each verb's output on one board holds every pipe, laid by hand or with a link, and nothing else |
 | **W-d** | **A link that lays its own pipe** (K1) | the CLI suite: `draw link a b` with the chosen form on an empty board comes up up, its pipe laid with it, and the pipe goes when the link is deleted; plain `draw link a b` still lays none |
 | **W-e** | **P6 closed:** the parity test -- each thing a person does with pipes, done through the CLI, makes the document the gesture makes; the register; `PROMOTION.md` amended | for each of the five things in section 2, the CLI's document equals the gesture corpus's or the matrix's for the same board |
@@ -120,6 +120,11 @@ AMENDED 2026-10-04 -- **K1 RULED as recommended** (`dev/DECISIONS.md`, "P6's des
 AMENDED 2026-10-04 -- **W-a done** (H18.31).\
 REST's collections are read from the model's composition (`kindOfCollection`), so the network's `pipes` is served like any other, and REST holds no list of kinds. `POST /pipes {a, b}` builds a hand pipe through the network's `pipeEntity`; which ends a pipe may join is the planner's to judge, so REST checks only that two are named. `docs/spec/API.md` amended.\
 Held by `tests/rest-pipes.test.js` against the real server -- a pipe laid heals a down link, refused to a missing end and to one anchor, laid twice once, deleted and the link down again, and every composed collection served -- all four failing on the code before. Mutants: 3; 2 killed, the third the self-pipe check REST had copied from the planner, which was removed.
+
+AMENDED 2026-10-04 -- **W-b done** (H18.32).\
+`draw pipe <a> <b>` lays a hand pipe through `POST /pipes`, so the server builds it and the standalone CLI (B138) restates no pipe rule; it says which links came up or went down, read from REST's own answer per link. It does not stage into a draft, which would need an id the tool builds itself.\
+**CORRECTED from section 6:** removal by a pipe's two ends is `draw pipe <a> <b> --off`, not `draw rm <a> <b>` -- `rm a b` already means remove a and b, and reading it as a pipe would make it ambiguous. `draw rm` takes a pipe by its id, which `resolveId` now accepts, and rm's cascade report names the pipes an anchor's deletion takes.\
+The CLI now reaches both pipe routes, so `scan-cli`'s pending entries for them are gone. Held by a CLI test -- HEAL-02 through `draw pipe`, `--off` by ends in either order, `rm` by id, an anchor's pipe in rm's report -- failing on the code before; mutants 4, all killed, one after the test passed its ends reversed.
 ---
 
 ## 10. Axiom alignment audit (M7)

@@ -1842,6 +1842,40 @@ test('V-c: draw link onto another link\'s bend cuts that link there (B243), its 
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+/*
+P6 W-b (H18.32; A5) -- an agent lays and removes pipes, as a person does with `g` and Delete. `draw pipe a b` lays a hand pipe
+between two anchors -- HEAL-02 on the canvas: a down link heals over it, and the verb says so -- `--off` takes it away, and
+`draw rm` takes a pipe by its id. Deleting an anchor takes its pipes, and rm's report names them.
+*/
+test('W-b: draw pipe lays a hand pipe that heals a down link; --off and rm take one away; rm reports an anchor\'s pipes', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'pipes')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e20001', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e20002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e200f0', name: 'w', x: 0, y: -240 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e20003', name: 'l', src: 'node-e20001', dst: 'node-e20002' } }] }));
+		const laid = JSON.parse(await run('pipe', 'b', 'a', '--diagram', id, '--json'));
+		assert.equal(laid.pipe, 'pipe-e20001-e20002', 'laid, by names, under the id its ends make');
+		assert.deepEqual(laid.up, ['link-e20003'], 'and the down link came up over it -- said back');
+		const shown = JSON.parse(await run('show', '--diagram', id, '--json'));
+		assert.deepEqual(shown.pipes.map((p) => `${p.id}:${p.laid}`), ['pipe-e20001-e20002:hand'], 'a hand pipe, as g lays');
+		const off = JSON.parse(await run('pipe', 'b', 'a', '--off', '--diagram', id, '--json'));   // its ends in either order
+		assert.deepEqual([off.pipe, off.down], ['pipe-e20001-e20002', ['link-e20003']], '--off removes it, and the link goes down');
+		assert.match(await captureExit(() => run('pipe', 'a', 'b', '--off', '--diagram', id)), /no pipe joins a and b/);
+		// a route through w over two hand pipes; rm by a pipe's id downs the link; rm of w takes its other pipe, and says so
+		await run('pipe', 'a', 'w', '--diagram', id);
+		await run('pipe', 'w', 'b', '--diagram', id);
+		assert.equal(JSON.parse(await run('link', 'path', 'l', '--diagram', id, '--json')).down, false);
+		await run('rm', 'pipe-e20002-e200f0', '--diagram', id);
+		assert.equal(JSON.parse(await run('link', 'path', 'l', '--diagram', id, '--json')).down, true, 'rm takes a pipe by id');
+		const gone = JSON.parse(await run('rm', 'w', '--diagram', id, '--json'));
+		assert.deepEqual(gone.cascade, ['pipe-e20001-e200f0'], 'deleting the anchor took its pipe, and rm names it');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
 	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');
