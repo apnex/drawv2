@@ -20,7 +20,8 @@ const withPlan = (options = {}) => ({ ...PLAN, ...options });
 const withKinds = (options = {}) => ({ kinds: KINDS, ...options });
 
 export class Model extends RealModel {
-	constructor(options = {}) { super({ kinds: KINDS, ...options }); }
+	// with a network of its own unless one is passed: a Model holding links is given one (V-e, J2)
+	constructor(options = {}) { super({ kinds: KINDS, network: createNetwork(createTransit()), ...options }); }
 }
 export const plan = (model, ops, options) => realPlan(model, ops, withPlan(options));
 export const commit = (model, log, request, by, actor, options) => realCommit(model, log, request, by, actor, withPlan(options));

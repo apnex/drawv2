@@ -12,10 +12,13 @@ import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork } from '../network/network.mjs';
 import { CASES, composeCase } from './fixtures/planner-corpus.mjs';
+import { createNetwork as netFor } from '../network/network.mjs';
+import { createTransit as transitFor } from '../network/transit.mjs';
+const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const P = 60, KINDS = productKinds(...NETWORK_ROWS);
 function board() {
-	const m = new Model({ kinds: KINDS });
+	const m = new Model({ kinds: KINDS, network: aNetwork() });
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000e', name: 'E', x: 0, y: -2 * P });

@@ -29,14 +29,22 @@ const seeded = (opts) => {
 const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, stopsAt: () => false, ...over } });
 const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['node-00000c'] };
 
-test('production is unchanged: new Model() still draws the straight polyline through via', () => {
-	const m = seeded();
-	assert.deepEqual(m.pathOf(LINK), [[0, 0], [120, -60], [240, 0]],
-		'the default resolver must be exactly the behaviour production has always had');
+/*
+AMENDED 2026-10-04 (V-e, H18.29; ruled J2): the default this file held -- "new Model() still draws the straight polyline through
+via" -- is retired. Only the network draws a link: a Model holding links is given one, and a Model with none draws no link.
+The straight polyline is what the network draws a DOWN link along, reached through the `straight` it is handed (below).
+*/
+test('J2: a Model with no network draws no link -- the straight polyline is no fallback', () => {
+	assert.equal(seeded().pathOf(LINK), null);
+	assert.deepEqual(seeded({}).pathOf(LINK), seeded().pathOf(LINK), 'a Model with no options is one with an empty options object');
 });
 
-test('a Model constructed with no options is identical to one constructed with an empty options object', () => {
-	assert.deepEqual(seeded({}).pathOf(LINK), seeded().pathOf(LINK));
+test('J2: a Model whose composition holds a kind the network draws is refused without a network, naming it', async () => {
+	const { KINDS } = await import('./fixtures/composed.mjs');
+	assert.throws(() => new Model({ kinds: KINDS }), /Model: kind link is drawn by the network \(pathOf, .*\) -- a Model holding it is given one/);
+	assert.ok(new Model({ kinds: KINDS, ...net() }), 'and accepted with one');
+	const { composeKinds } = await import('../model/shape.mjs');
+	assert.throws(() => composeKinds([{ kind: 'probe', owner: 't', collection: 'probes', drawnBy: [] }], 't'), /drawnBy names the Model reads that draw it/);
 });
 
 test('an injected resolver replaces the path, and receives the link and the model', () => {

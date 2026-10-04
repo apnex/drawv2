@@ -12,6 +12,7 @@ slowly is a number; a tower that kills a different creep on two machines is the 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
+import { pipeEntity } from '../network/pipe-kind.mjs';
 import { worldOf, combatAt, factsAt, aimAt, DERIVATIONS } from '../engine/rules.mjs';
 import { tickAt, TICK_MS } from '../engine/kinds.mjs';
 import { moversAt } from '../engine/movers.mjs';
@@ -21,6 +22,9 @@ function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
 	const m = new Model();
 	m.put('node', { id: 'node-aa0001', name: 'node-aa0001', x: 0, y: 0, spawn: { interval, speed, kind: 'packet', since: 0 } });
 	m.put('node', { id: 'node-aa0002', name: 'node-aa0002', x: 1200, y: 0 });
+	// AMENDED 2026-10-04 (V-e, J2): with its pipe, so the link is up -- this Model draws with the network, and a down link carries
+	// no movers (R-d)
+	m.put('pipe', pipeEntity('node-aa0001', 'node-aa0002', 'link'));
 	m.put('link', { id: 'link-aa0003', name: 'link-aa0003', src: 'node-aa0001', dst: 'node-aa0002' });
 	towers.forEach(([x, y], i) => m.put('node', { id: `node-bb00${i}1`, type: 'loadbalancer', x, y }));
 	return m;

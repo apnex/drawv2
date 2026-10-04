@@ -100,7 +100,7 @@ F-e (H18.7) -- A TRANSIT CHANGE IS AN EDIT: the host commits the session's set o
 rule, that a cut asks whether what arrives stops rather than what was declared, is the cut reaction's, held below.
 */
 test('F-e: a transit change commits the session\'s edit as given, and no edit of the host\'s own', () => {
-	const model = new Model({ kinds: productKinds(...NETWORK_ROWS) });
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetworkSession().network });   // V-e, J2
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
 	const commits = [];
 	let onTransit = null;
@@ -120,7 +120,7 @@ test('B278: the cut asks whether what arrives stops, whatever was declared', asy
 	const { plan } = await import('../planner/txn.mjs');
 	// a stand-in transit where the two questions differ: P stops what arrives, and nothing is declared
 	const [cut] = transitReactions({ stopsAt: (id) => id === 'node-000003' }).reactions;
-	const model = new Model({ kinds: productKinds(...NETWORK_ROWS) });
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetworkSession().network });   // V-e, J2
 	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });

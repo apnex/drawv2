@@ -38,6 +38,9 @@ import { OWNER, openStore } from './fixtures/app.mjs';
 import { makeInput, pointer } from './fixtures/client-harness.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork as netFor } from '../network/network.mjs';
+import { createTransit as transitFor } from '../network/transit.mjs';
+const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // the browser storage the outbox persists through (D30); one tab at a time uses it, as one page would.
@@ -101,7 +104,7 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 		id, up, down,
 		// a page: its Model, Changes and Sync, wired as app/src/main.js wires them, hydrated by `hello`
 		mount(parts = null) {
-			w.tab = parts?.model || new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
+			w.tab = parts?.model || new Model({ kinds: PAGE_KINDS, network: aNetwork() });   // the kinds the product page composes (S-b, G1)
 			// a window that never closes by itself: a test closes it, standing in for the 600 ms timer
 			w.changes = parts?.changes || new Changes(w.tab, { coalesceMs: 3_600_000 });
 			w.sync = new Sync({ model: w.tab, net, history: w.changes, selection: parts?.selection || { subscribe() {}, list: () => [] }, onState() {} });
@@ -505,7 +508,7 @@ const previewing = async () => {
 	const { createNetwork } = await import('../network/network.mjs');
 	const { createTransit } = await import('../network/transit.mjs');
 	const tenant = createNetwork(createTransit()).links;
-	const model = new Model({ kinds: PAGE_KINDS });
+	const model = new Model({ kinds: PAGE_KINDS, network: aNetwork() });
 	return { model, changes: new Changes(model, { coalesceMs: 3_600_000, preview: (m, ops) => plan(m, ops, { links: tenant, kinds: PAGE_KINDS }) }) };
 };
 const PINNED = [

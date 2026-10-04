@@ -23,10 +23,13 @@ import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { hitOf } from '../app/src/pick.js';
 import { PRESS_DRAGS } from '../app/src/releases.js';
 import { deleteSelection } from '../app/src/commands.js';
+import { createNetwork as netFor } from '../network/network.mjs';
+import { createTransit as transitFor } from '../network/transit.mjs';
+const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 function board() {
-	const m = new Model({ kinds: productKinds(...NETWORK_ROWS) });
+	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: aNetwork() });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });

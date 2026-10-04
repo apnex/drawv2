@@ -162,7 +162,7 @@ function genBoard(r) {
 	const nodes = Array.from({ length: 2 + Math.floor(r() * 3) }, (_, i) => node(i, ...take()));
 	// the draw that once said `pinned` is still taken and discarded, so every case after it is generated as before (S-d)
 	const waypoints = Array.from({ length: 1 + Math.floor(r() * 4) }, (_, i) => { const at = take(); r(); return way(i, ...at); });
-	const scratch = new Model({ kinds: WITH_PIPES });   // the link is the network's kind (S-e)
+	const scratch = new Model({ kinds: WITH_PIPES, network: createNetwork(createTransit()) });   // the link is the network's kind (S-e)
 	for (const e of nodes) scratch.put('node', e);
 	for (const e of waypoints) scratch.put('node', e);
 	const anchors = [...nodes, ...waypoints].map((e) => e.id);
@@ -271,7 +271,7 @@ export function composeCase(c) { return compose(c); }
 function compose(c) {
 	if (c.compose !== 'network') throw new Error(`${c.id}: the only composition is the network's (S-b)`);
 	const network = true;
-	const model = new Model({ kinds: WITH_PIPES });
+	const model = new Model({ kinds: WITH_PIPES, network: createNetwork(createTransit()) });   // V-e, J2
 	attachRelations(model, { cellOf });
 	// a case keeps its waypoints apart to describe the board; the document holds them among the nodes (F-c)
 	const { waypoints = [], ...board } = c.board;
@@ -317,7 +317,7 @@ export function record(c) {
 			if (o.op === 'del' && o.kind === 'node' && !asked.has(`del node ${o.id}`)) reach.swept++;   // only a waypoint is ever swept
 			if (o.op === 'set' && o.kind === 'link' && 'src' in o.patch && !asked.has(`set link ${o.id}`)) reach.joined++;
 		}
-		const scratch = new Model({ kinds: model.kinds });   // the case's kinds, so undo is judged on its pipes too
+		const scratch = new Model({ kinds: model.kinds, network: model.network });   // the case's kinds, so undo is judged on its pipes too
 		scratch.load(JSON.parse(before));
 		applyOps(scratch, res.ops);
 		/*

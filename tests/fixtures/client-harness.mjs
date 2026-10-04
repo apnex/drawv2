@@ -163,11 +163,13 @@ can show a gesture did not, say, open the label editor, without asserting on pix
 export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null } = {}) {
 	const restore = installDom();
 
-	const model = new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
+	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2)
+	const pageNetwork = createNetwork(createTransit());
+	const model = new Model({ kinds: PAGE_KINDS, network: pageNetwork });
 	attachRelations(model, { cellOf });
 	const selection = new Selection(model);
 	// V-d (H18.28; PL-6): the commit boundary previews with the planner, composed as the product page composes it
-	const tenant = createNetwork(createTransit()).links;
+	const tenant = pageNetwork.links;
 	const history = new Changes(model, { preview: (m, ops) => plan(m, ops, { links: tenant, kinds: PAGE_KINDS }), apply: (ops) => applyAnswer(model, selection, ops) });
 
 	const calls = [];

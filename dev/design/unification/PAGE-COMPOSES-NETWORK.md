@@ -167,6 +167,17 @@ AMENDED 2026-10-04 -- **V-d done** (H18.28; PL-6, PD-5; G4; B221).\
 **Defects the preview exposed, in fixtures:** the gesture corpus's `zone` board, and three input tests' zones, sat off the zone grid, so every edit to them was one the server refuses -- moved onto the grid; a test bent a link through a waypoint that did not exist, and three command tests used ids that are not hex.\
 **Gesture corpus:** 7 scenarios differ, each reviewed -- two send the delete alone; one gains the drawing order the planner stamps; two show the tab refusing what the server refuses (a duplicate bend, a second straight link after the cut); and the three zone scenarios, on the corrected board, move and grow the zone by the same steps.\
 Mutants: 8, all killed, four by tests added for them.
+
+AMENDED 2026-10-04 -- **V-e done** (H18.29; J2): **P5 is closed on `main`.**\
+**A kind the network draws needs the network:** a row may declare `drawnBy`, the Model reads that draw it, and the link's row does; a Model composed with such a kind and no network is refused by name. The core names no kind -- it reads the rows.\
+**No straight fallback:** `pathOf` with no network answers null; `straightPath` is only what the network draws a down link along. `projection` carries the model's network.\
+**Every Model that holds links draws with the network:** the store's, the CLI's and the dry run's (R-a), the page's and the lab tab's (V-b), and now the lab's authority, which holds the same network as its tab. The tests' shared fixtures build theirs with one; two oracle compositions that held the link without the pipe compose the network's rows whole; two spawner boards lay their links' pipes, since a link without one is down and carries no movers (R-d).\
+Held by `tests/path-injection.test.js` -- a Model with no network draws no link, and one holding links without a network is refused -- failing on the code before; mutants 5, all killed.\
+**The estate dry run** passes on the final tree, as at S-d.
+
+**P5 against its exit criteria** (`PROMOTION.md` section 6): the product page draws pipes and routed links, and `g` works there -- met (V-b, in Chrome against a real server); the lab root holds no network orchestration -- met, both roots compose the network through `network/page.mjs`. What P3 and P4 handed it: the tab agrees before the answer (G4) and PL-6 -- met (V-d); the network's look in `network/` (PU22) -- met (V-a); the Model's `network = null` default -- removed (V-e).\
+**Against section 7:** criterion 1 -- no production path constructs a Model or runs the planner without the network -- holds; criterion 7's last item, `straightPath` as a default, is gone; criterion 5, the matrix on the product page, is P7's.\
+**Stopgaps left:** an agent's plain link can come up down (G2), removed at P6. Every stopgap due at P5 is removed: G1, PL-6's copies, and the null default.
 ---
 
 ## 10. Axiom alignment audit (M7)

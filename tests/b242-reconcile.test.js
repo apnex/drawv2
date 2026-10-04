@@ -45,6 +45,9 @@ import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork as netFor } from '../network/network.mjs';
+import { createTransit as transitFor } from '../network/transit.mjs';
+const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // ---- the two ends, joined by queues the test drains ----
@@ -73,7 +76,7 @@ async function world(seed) {
 		status: 'open', subscribe: (fn) => { receive = fn; }, onStatus() {}, isOpen: () => true,
 		send: (cmd, body) => { up.push({ cmd, body: JSON.parse(JSON.stringify(body)) }); return true; },
 	};
-	const tab = new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
+	const tab = new Model({ kinds: PAGE_KINDS, network: aNetwork() });   // the kinds the product page composes (S-b, G1)
 	// a window that never closes by itself: the test closes it, standing in for the 600ms timer
 	const changes = new Changes(tab, { coalesceMs: 3_600_000 });
 	const sync = new Sync({ model: tab, net, history: changes, selection: { subscribe() {}, list: () => [], has: () => false, add() {} }, onState() {} });

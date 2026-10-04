@@ -41,7 +41,8 @@ const complete = () => Object.fromEntries(MODEL_READS.map((k) => [k, () => undef
 const without = (name) => { const n = complete(); delete n[name]; return n; };
 
 const request = { label: 'add', ops: [{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } }] };
-const board = (kinds) => { const m = new Model(kinds ? { kinds } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
+// a board with the network's kinds draws with a network (V-e, J2)
+const board = (kinds) => { const m = new Model(kinds ? { kinds, network: createNetwork() } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
 // the network's composition: the product's kinds and its pipe, which its tenant needs (H17.22 N-d)
 const KINDS = productKinds(...NETWORK_ROWS);
 // the product's own kinds, for a board with no network: a plan names its kinds since S-f, so a tenant error is the one met

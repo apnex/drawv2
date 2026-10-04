@@ -203,9 +203,9 @@ test('the lab boots, and a seeded board arrives through the planner', { skip: SK
 		assert.deepEqual([c.nodes, c.waypoints, c.links], [2, 1, 1], `the bend board did not arrive: ${JSON.stringify(c)}`);
 		assert.equal(await p.run('lab.authority.all("link").length'), 1, 'the AUTHORITY model must hold the board too -- the planner is what put it there');
 		// ONE network (RULESET-AUDIT T1): the tab's Model holds the very object whose link tenant the planner is handed
-		// (PL-3), and the authority model holds none -- it only stores what the planner rules, and draws nothing
+		// (PL-3); AMENDED 2026-10-04 (V-e, J2): the authority holds it too -- a Model holding links is given the network
 		assert.equal(await p.run('lab.model.network === lab.network && lab.network.links.owner === "network links"'), true, 'the tab must draw from the network the planner judges with');
-		assert.equal(await p.run('lab.authority.network'), null);
+		assert.equal(await p.run('lab.authority.network === lab.network'), true, 'and the authority holds the same one');
 	} finally { await p.close(); }
 });
 

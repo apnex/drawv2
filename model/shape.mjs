@@ -98,6 +98,8 @@ Every kind is a ROW of one shape, whoever brings it -- the product's three or a 
   refers      its cross-entity check, `(entity, access, patch, before) -> error | null`, `before` the stored entity or
               null -- the planner's half too
   cap         the most of it one document may hold -- the planner's half too
+  drawnBy     the Model reads that draw it -- `['pathOf', ...]` -- answered only by a network the Model is given; a Model
+              composed with such a kind and no network is refused (V-e, H18.29; ruled J2: no Model draws links straight)
   invariants  the properties every document holds about it, `(model, report)` -> calls `report(sentence, key, measure)` for each
               breach: checked on a transaction's result and reported at boot (model/invariants.mjs) -- the planner's half
               too. Added at S-e (H18.15) for the link's straight-pair rule, which the core had held for it.
@@ -109,7 +111,7 @@ network's (`network/link-kind.mjs`, S-e). `new Model()` takes `CORE_KINDS`; the 
 
 Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).
 */
-const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants'];
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'drawnBy'];
 /*
 S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
 whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
@@ -146,6 +148,7 @@ export function composeKinds(given, who = 'a composition') {
 			}
 			if (row.named && !names.includes('name')) throw new Error(`${who}: kind ${row.kind} is named but has no check for a name`);
 		}
+		if (row.drawnBy !== undefined && !(Array.isArray(row.drawnBy) && row.drawnBy.length && row.drawnBy.every((r) => typeof r === 'string'))) throw new Error(`${who}: kind ${row.kind}: drawnBy names the Model reads that draw it`);
 		if (row.invariants !== undefined && typeof row.invariants !== 'function') throw new Error(`${who}: kind ${row.kind}: its invariants are a function, (model, report)`);
 		byName.set(row.kind, row);
 		byCollection.set(row.collection, row.kind);

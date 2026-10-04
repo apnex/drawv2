@@ -31,7 +31,7 @@ passes, paid at gesture rate on the client and per request on the server — nev
 rate, which is why the browser sends one request per command.
 */
 export function projection(model) {
-	const scratch = new Model({ kinds: model.kinds });   // the same kinds, or a plugin's would not load into it
+	const scratch = new Model({ kinds: model.kinds, network: model.network });   // the same kinds and network (J2), or a plugin's would not load into it
 	scratch.load(model.toJSON());
 	return scratch;
 }
@@ -116,6 +116,14 @@ export class Model {
 		this.kinds = kinds;
 		// null in production, which draws, depends and never goes down exactly as it always has -- a test holds it byte for byte
 		this.network = requireNetwork(network, MODEL_READS, 'Model');
+		/*
+		V-e (H18.29; ruled J2) -- A KIND THE NETWORK DRAWS NEEDS THE NETWORK. A row says which of the Model's reads draw it
+		(`drawnBy`, model/shape.mjs) -- the network's link does -- and a Model composed with one and no network is refused, so
+		no Model draws such a kind by a fallback: the straight line through a link's stops is now only what the network draws a
+		DOWN link along (network/resolve.mjs). The core names no kind here; it reads the rows.
+		*/
+		const drawn = kinds.list.filter((k) => kinds.row(k).drawnBy?.length);
+		if (drawn.length && !this.network) throw new Error(`Model: kind ${drawn.join(', ')} is drawn by the network (${kinds.row(drawn[0]).drawnBy.join(', ')}) -- a Model holding it is given one, { network } (J2)`);
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -231,8 +239,12 @@ export class Model {
 	*/
 	pathOf(link) {
 		if (!link) return null;
-		if (this.network) return this.network.pathOf(link, this, (l) => this.straightPath(l));
-		return this.straightPath(link);
+		/*
+		V-e (H18.29; ruled J2): only the network draws a link. A Model holding links is given one (the constructor refuses
+		otherwise), so a Model with no network has no link to draw, and draws none: the straight line through a link's stops is
+		no fallback, only what the network draws a DOWN link along, through the `straight` it is handed here.
+		*/
+		return this.network ? this.network.pathOf(link, this, (l) => this.straightPath(l)) : null;
 	}
 
 	// the links drawn THROUGH an anchor they do not name -- empty unless a network is plugged in
@@ -260,8 +272,8 @@ export class Model {
 		return !!(this.network && this.network.stopsAt(id, this));
 	}
 
-	// the DEFAULT path: src, then each via's centre, then dst -- the polyline production has always
-	// drawn. Named so a network can defer to it (see MODEL_READS above the class).
+	// the straight path: src, then each via's centre, then dst -- the polyline production drew until the network did. Since
+	// V-e (J2) it is no default: it is what the network draws a DOWN link along, handed to it by `pathOf` (MODEL_READS above)
 	straightPath(link) {
 		if (!link) return null;
 		// An anchor is an entity REFERENCE or a bare position. The kernel's resolveRoute already

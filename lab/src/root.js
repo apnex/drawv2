@@ -86,7 +86,7 @@ So the lab holds both, in one page. The authority model starts empty and is fed 
 the planner's answer is what the tab applies. The seam is identical to production's; only the
 transport is gone.
 */
-const authority = new Model({ kinds });
+const authority = new Model({ kinds, network });   // a Model holding links draws with the network (V-e, J2)
 attachRelations(authority, { cellOf });
 const log = new Log();
 

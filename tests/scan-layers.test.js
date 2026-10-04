@@ -24,6 +24,9 @@ import crypto from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
 import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES } from '../tools/layers.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createNetwork as netFor } from '../network/network.mjs';
+import { createTransit as transitFor } from '../network/transit.mjs';
+const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const root = path.resolve(import.meta.dirname, '..');
 const SCANNER = path.join(root, 'tools/scan-layers.mjs');
@@ -694,7 +697,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 		// with its pipes, in the lab's composition, as the lab commits it (H17.22 N-c): a pipe between a node and a waypoint
 		// sharing their hex is no pipe, which the 'compare' board did until its waypoints were renumbered
 		const kinds = productKinds(...NETWORK_ROWS);
-		const model = new Model({ kinds });
+		const model = new Model({ kinds, network: aNetwork() });
 		attachRelations(model, { cellOf });
 		const pipeOps = createNetworkSession().seed(boards[name].pipes ?? [], []);
 		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds, links: createNetworkSession().network.links });   // the network's tenant, as the lab seeds (S-b)

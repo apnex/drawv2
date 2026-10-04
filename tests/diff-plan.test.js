@@ -10,7 +10,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model as RealModel } from '../model/model.mjs';
 import { productKinds } from '../planner/kinds.mjs';
-import { LINK_ROW } from '../network/link-kind.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork } from '../network/network.mjs';
+import { createTransit } from '../network/transit.mjs';
 import { plan as realPlan } from '../planner/txn.mjs';
 import { linkTenant } from '../network/link-reactions.mjs';
 /*
@@ -22,8 +24,10 @@ those conditions, stated here, where they belong to the test rather than to the 
 const ORACLE_RULES = linkTenant({ owner: 'the oracle\'s rules', keepsOrphan: (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, says: {} });
 // AMENDED 2026-10-04 (S-e, H18.15): the link is the network's kind, so the oracle's board composes the product's kinds and
 // the link's row -- no pipe, which the oracle predates and its tenant does not lay
-const ORACLE_KINDS = productKinds(LINK_ROW);
-class Model extends RealModel { constructor(options = {}) { super({ kinds: ORACLE_KINDS, ...options }); } }
+// AMENDED 2026-10-04 (V-e, J2): the network's rows whole, and a network to draw with -- a Model holding links is given one;
+// the oracle's tenant lays no pipe, so its links are down, which the planner's rules under test never read
+const ORACLE_KINDS = productKinds(...NETWORK_ROWS);
+class Model extends RealModel { constructor(options = {}) { super({ kinds: ORACLE_KINDS, network: createNetwork(createTransit()), ...options }); } }
 const plan = (model, ops, options = {}) => realPlan(model, ops, { links: ORACLE_RULES, kinds: ORACLE_KINDS, ...options });
 import { applyOps } from '../model/ops.mjs';
 import { planMutation } from './fixtures/plan-reference.mjs';

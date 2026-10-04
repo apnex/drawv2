@@ -1049,7 +1049,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.26 | V-b: the page composes the network as the lab does -- routes, pipes, `g`, `x`, down links; what the network says in the banner (J3) | feature | S2 | `DONE` |
 | H18.27 | V-c: a link landing on another link's bend is cut by a planner reaction at every door, its piece's id derived (B243) | **B243** | S2 | `DONE` |
 | H18.28 | V-d: one preview (PL-6) -- the browser plans with the planner, sends intent only, and its rule copies go (B221) | **B221** | S2 | `DONE` |
-| H18.29 | V-e: P5 closed -- a Model holding links requires the network (J2); the register; the records | **B266** | S2 | `TODO` |
+| H18.29 | V-e: P5 closed -- a Model holding links requires the network (J2); the register; the records | feature | S2 | `DONE` |
+| H18.30 | Design P6 for approval before any code: CLI and REST for pipes -- list, lay and remove; `show`, `dump`, `map`, `get` carry pipes; an agent can do with pipes everything a person can (A5) | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1082,6 +1083,7 @@ AMENDED 2026-10-04: H18.25 (V-a) done -- the network's roles and appearance are 
 AMENDED 2026-10-04: H18.26 (V-b) done -- the product page composes the network as the lab does (`network/page.mjs`): routes, pipes, `g`, `x`, down links and why, in the banner; held in Chrome against a real server.\
 AMENDED 2026-10-04: H18.27 (V-c) done -- a link landing on another link's bend is cut by the planner at every door (B243 closed), its piece's id derived from the cut; the browser's split is deleted.\
 AMENDED 2026-10-04: H18.28 (V-d) done -- one preview (PL-6): the browser plans each commit with the planner and sends intent only; its last rule copies are deleted; a pin deleted on the page takes its link before the answer (G4); B221 closed.\
+AMENDED 2026-10-04: H18.29 (V-e) done -- P5 is closed on `main`: a Model holding links requires the network (J2), and no Model draws links straight; the estate dry run passes. Next H18.30, P6's design.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

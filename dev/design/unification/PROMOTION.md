@@ -245,6 +245,9 @@ Production stays on `draw:2538ab8` (F3); next is P4, designed for approval befor
 AMENDED 2026-10-04 -- **P4 is done on `main`** (H18.17 to H18.23; `CONSUMERS-ROUTE.md`, R-a to R-e): one read composition (`network/read-model.mjs`); the store's Models draw with the network; REST and the CLI answer a link's route, whether it is down and what holds it (H1); the SVG download is what run mode shows, one rendering decided in one place (H2, refined), with each link along its route and a down link marked down; a spawner on a down link emits nothing.\
 Its exit criterion is met, held by one board read through every door (`tests/consumer-parity.test.js`); section 7's criterion 4 holds for every consumer but the product page, which is P5.\
 Production stays on `draw:2538ab8` (F3); next is P5, designed for approval before any code.\
+AMENDED 2026-10-04 -- **P5 is done on `main`** (H18.24 to H18.29; `PAGE-COMPOSES-NETWORK.md`, V-a to V-e): the network's look is in `network/` and the incubator boundary is retired (J1); the product page composes the network as the lab does, through one function, and says what it says in its banner (J3); a link landing on another link's bend is cut by the planner at every door (B243); the browser previews every commit with the planner and sends intent only, keeping no copy of a planner rule (PL-6, B221); a Model holding links requires the network (J2).\
+Section 7's criteria 1 and 7 now hold; criterion 5 is P7's.\
+Production stays on `draw:2538ab8` (F3); next is P6, designed for approval before any code.\
 
 ---
 

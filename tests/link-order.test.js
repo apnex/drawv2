@@ -16,6 +16,7 @@ import { Model } from './fixtures/composed.mjs';   // the network's kinds, the l
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { spawnersOf } from '../engine/spawners.mjs';
+import { pipeEntity, pipeId } from '../network/pipe-kind.mjs';
 
 const N = (i) => `node-00000${i}`, W = (i) => `node-0000e${i}`   /* a waypoint: a node with no type (F-c) */, L = (h) => `link-${h}`;
 const entities = [
@@ -38,6 +39,12 @@ function peer(order, indexed) {
 	// reversed whole: the waypoints too, or the spawners' own order is never put to the test (a surviving mutant found this)
 	const list = order === 'forward' ? entities : [...entities].reverse();
 	for (const [kind, e] of list) m.put(kind, structuredClone(e));
+	// AMENDED 2026-10-04 (V-e, J2): each link's legs piped, so every link is up -- this Model draws with the network, and a
+	// down link carries no movers (R-d); pipes are not ordered, so they cannot hide the order under test
+	for (const l of entities.filter(([k]) => k === 'link').map(([, e]) => e)) {
+		const stops = [l.src, ...(l.via ?? []), l.dst];
+		for (let i = 0; i < stops.length - 1; i++) if (!m.get('pipe', pipeId(stops[i], stops[i + 1]))) m.put('pipe', pipeEntity(stops[i], stops[i + 1], 'link'));
+	}
 	return m;
 }
 const ids = (links) => (Array.isArray(links) ? links.map((l) => l.id) : links?.id);

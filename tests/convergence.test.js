@@ -21,6 +21,9 @@ import { createEntity, moveEntities, deleteSelection, createGroup } from '../app
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { productKinds } from '../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork as netFor } from '../network/network.mjs';
+import { createTransit as transitFor } from '../network/transit.mjs';
+const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 function rng(seed) {
@@ -44,7 +47,7 @@ const shape = (m) => {
 // A participant: its own Model, its own Changes boundary, wired to a shared server Store the way
 // main.js wires the real one. `deliver` is the hub's fan-out, which the faults interfere with.
 function participant(store, id, name, world) {
-	const model = new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
+	const model = new Model({ kinds: PAGE_KINDS, network: aNetwork() });   // the kinds the product page composes (S-b, G1)
 	model.load(store.get(id).toJSON());
 	const changes = new Changes(model);
 	const p = { name, model, changes, version: 0, gesture: false, deferred: [], dropped: 0 };
