@@ -1268,7 +1268,7 @@ test('PL-5: the kind table is the one list of kinds, and what still states them 
 	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's
-	const { PRODUCT_KINDS } = await import('../planner/kinds.mjs');
+	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
 	assert.deepEqual(PRODUCT_KINDS.list, KINDS, 'the product composes exactly the table\'s kinds');
 	for (const k of KINDS) for (const other of KINDS) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
 	// a Model's collections are the table's, in its order

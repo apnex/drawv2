@@ -11,7 +11,8 @@ import { Model as CoreModel } from '../model/model.mjs';
 import { CORE_KINDS, composeKinds } from '../model/shape.mjs';
 import { clone } from '../model/ops.mjs';
 import { violations } from '../model/invariants.mjs';
-import { PRODUCT_KINDS, productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { validateEntity as productValidateEntity } from '../planner/validate.js';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
@@ -48,7 +49,23 @@ test('S-e: no core or planner module imports network/ -- the link reaches them o
 
 test('S-e: a composition without the network has no links -- a Model refuses one, and so does the product\'s validator', () => {
 	assert.throws(() => new CoreModel().put('link', straight('000001', '000001', '000002')), /link is not a kind this model was composed with/);
-	assert.match(productValidateEntity('link', straight('000001', '000001', '000002')), /unknown kind: link/);
+	assert.match(productValidateEntity('link', straight('000001', '000001', '000002'), { kinds: PRODUCT_KINDS }), /unknown kind: link/);
+});
+
+/*
+S-f (H18.16) -- THE VALIDATOR TAKES NO DEFAULT. With the product's kinds as the default, a document's `links` -- a key no
+composed kind owned -- passed unread: a link to nowhere was accepted. Every entry point now requires its composition.
+*/
+test('S-f: the validator takes no default composition -- each entry point refuses to run without one', async () => {
+	const real = await import('../planner/validate.js');
+	const broken = { meta: { id: 'diagram-000001', name: 'd' }, nodes: [node('000001', -4, 0)], links: [straight('000001', '000001', '00000f')] };
+	assert.throws(() => real.validateDoc(broken), /validateDoc: kinds is the composition to validate against/);
+	assert.throws(() => real.validateEntity('node', node('000001', 0, 0)), /validateEntity: kinds is/);
+	assert.throws(() => real.validateMutation(new Model(), { action: 'put', kind: 'node', entity: node('000001', 0, 0) }), /validateMutation: kinds is/);
+	assert.throws(() => real.validateSelectionIds([]), /validateSelectionIds: kinds is/);
+	assert.match(real.validateDoc(broken, { kinds: KINDS }), /link dst does not exist: node-00000f/, 'and with the composition, the link is judged');
+	// the core's storage half carries no checks, so it is not a composition to validate against
+	assert.throws(() => real.validateDoc(broken, { kinds: CORE_KINDS }), /validateDoc: kinds is the composition to validate against, every row carrying its checks/);
 });
 
 // ---- the link row's references and invariant, through the composition ----

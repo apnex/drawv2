@@ -9,7 +9,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CASES, composeCase } from './fixtures/planner-corpus.mjs';
 import { plan, PHASES } from '../planner/txn.mjs';
-import { PRODUCT_KINDS } from '../planner/kinds.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 
 const PER_OP = new Set(['clear', 'follow']);
 // a trigger that hears every change of every kind a composition holds

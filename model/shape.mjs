@@ -102,10 +102,10 @@ Every kind is a ROW of one shape, whoever brings it -- the product's three or a 
               breach: checked on a transaction's result and reported at boot (model/invariants.mjs) -- the planner's half
               too. Added at S-e (H18.15) for the link's straight-pair rule, which the core had held for it.
 
-This module is CORE, so it holds the mechanism and the four rows' STORAGE half, and treats checks as opaque. The
-product's full rows -- checks, cross-entity checks, caps -- are the planner's (`planner/kinds.mjs`), because the link's
-cross-entity check is network-layer code the core may not import. `new Model()` takes `CORE_KINDS`, the planner takes
-`PRODUCT_KINDS`, and the planner refuses a model composed with different kinds.
+This module is CORE, so it holds the mechanism and the product rows' STORAGE half, and treats checks as opaque. The
+product's full rows -- checks, cross-entity checks, caps -- are the planner's (`planner/kinds.mjs`); the link's are the
+network's (`network/link-kind.mjs`, S-e). `new Model()` takes `CORE_KINDS`; the planner takes the composition it is handed
+-- required since S-f -- and refuses a model composed with different kinds.
 
 Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).
 */

@@ -6,9 +6,18 @@ pushed document is validated for shape, ranges, and referential integrity.
 
 import { NAME_MAX, CAPTION_MAX } from '../model/limits.mjs';
 // H17.22 N-a: every kind is a ROW -- its field checks, its cross-entity check and its cap travel with it (planner/kinds.mjs).
-// Validation reads the composition it is handed, the product's when nothing else is passed (no links since S-e: a caller that
-// validates links passes the network's composition, as the store does).
-import { PRODUCT_KINDS } from './kinds.mjs';
+// Validation reads the composition it is handed, and is handed one every time.
+/*
+S-f (H18.16) -- NO DEFAULT COMPOSITION. Each entry point took the product's kinds when none were passed. Since S-e the
+product's kinds hold no link, and a document key no composed kind owns is passed over unread -- deliberately, so a reader
+ignores a key it does not know (the log, CS2) -- so `validateDoc(doc)` with no kinds accepted a document's links without
+checking one. A trap no production caller fell into, and one nothing stopped the next from falling into. So the composition
+is required, as the planner requires its link tenant (S-b): a caller that forgets it is told, not quietly given fewer rules.
+*/
+const composed = (kinds, who) => {
+	if (!kinds || !Array.isArray(kinds.list) || !kinds.checked) throw new Error(`${who}: kinds is the composition to validate against, every row carrying its checks -- productKinds(...NETWORK_ROWS) where links are held (S-f)`);
+	return kinds;
+};
 import { SCHEMA } from '../model/shape.mjs';   // the document generation, one owner (H18.3)
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
@@ -92,7 +101,8 @@ export function validPrincipal(s) {
 	return typeof s === 'string' && PRINCIPAL.test(s);
 }
 
-export function validateEntity(kind, entity, { full = true, kinds = PRODUCT_KINDS } = {}) {
+export function validateEntity(kind, entity, { full = true, kinds } = {}) {
+	composed(kinds, 'validateEntity');
 	const fields = typeof kind === 'string' && kinds.has(kind) ? kinds.row(kind).fields : null;
 	if (!fields) return `unknown kind: ${kind}`;
 	if (!entity || typeof entity !== 'object' || Array.isArray(entity)) return 'entity is not an object';
@@ -113,7 +123,8 @@ export function validateEntity(kind, entity, { full = true, kinds = PRODUCT_KIND
 }
 
 // mutation = { action: 'put'|'set'|'del', kind, entity }
-export function validateMutation(model, mutation, kinds = PRODUCT_KINDS) {
+export function validateMutation(model, mutation, kinds) {
+	composed(kinds, 'validateMutation');
 	if (!mutation || typeof mutation !== 'object') return 'mutation is not an object';
 	const { action, kind, entity } = mutation;
 	if (!ACTIONS.includes(action)) return `unknown action: ${action}`;
@@ -171,7 +182,8 @@ from disk at boot, or a `create {doc}` arriving from the wire. Nothing validates
 `validateModel` would therefore name something that does not happen. Every call site takes `parse()`
 output; a Model has never reached this function and should not.
 */
-export function validateDoc(doc, { kinds = PRODUCT_KINDS } = {}) {
+export function validateDoc(doc, { kinds } = {}) {
+	composed(kinds, 'validateDoc');
 	if (!doc || typeof doc !== 'object') return 'doc is not an object';
 	if (!doc.meta || typeof doc.meta !== 'object') return 'invalid meta';
 	// a document is a diagram or a template; both validate identically, and which one it is comes
@@ -294,7 +306,8 @@ export function validateDoc(doc, { kinds = PRODUCT_KINDS } = {}) {
 // A selected entity may have been deleted (the common case); rejecting the doc for that would make
 // the diagram vanish on boot (store skips invalid docs at load). Stale ids load, then reconcile
 // away (Model.load filter + Model.del net). (MS1)
-export function validateSelectionIds(ids, kinds = PRODUCT_KINDS) {
+export function validateSelectionIds(ids, kinds) {
+	composed(kinds, 'validateSelectionIds');
 	if (!Array.isArray(ids)) return 'selection is not an array';
 	if (ids.length > 10000) return 'selection exceeds limit';
 	for (const sid of ids) {

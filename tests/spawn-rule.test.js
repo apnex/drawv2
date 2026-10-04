@@ -16,7 +16,7 @@ import { Model } from './fixtures/composed.mjs';   // the network's kinds, the l
 import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
 import { waypointRoles } from '../kernel/network-roles.mjs';
 import { toggleSpawn } from '../app/src/commands.js';
-import { validateEntity } from '../planner/validate.js';
+import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { applyOps } from '../model/ops.mjs';
 
 const NOW = 1_700_000_000_000;

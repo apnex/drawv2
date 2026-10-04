@@ -222,8 +222,13 @@ export const ENTRIES = {
 		],
 	},
 	planner: {
-		roots: ['planner/txn.mjs', 'planner/log.mjs'],
-		// `productKinds`: the kinds a composition hands plan and commit, the product's five and a plugin's rows (H17.22 N-c)
+		/*
+		S-f (H18.16): `planner/kinds.mjs` is a root. It was reached through txn's and validate's default kinds; those are gone,
+		so a composition imports it itself -- `productKinds(...NETWORK_ROWS)` -- as the store and the lab do, and it is the
+		entry's surface, as it already declared.
+		*/
+		roots: ['planner/txn.mjs', 'planner/log.mjs', 'planner/kinds.mjs'],
+		// `productKinds`: the kinds a composition hands plan and commit, the product's and a plugin's rows (H17.22 N-c)
 		surface: { 'planner/txn.mjs': ['plan', 'commit', 'undo', 'redo', 'PHASES'], 'planner/log.mjs': ['Log'], 'planner/kinds.mjs': ['productKinds'] },
 		modules: [
 			'planner/policy.mjs',

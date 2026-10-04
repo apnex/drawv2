@@ -14,7 +14,8 @@ import { Model } from './fixtures/composed.mjs';   // the composition production
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { applyOps } from '../model/ops.mjs';
-import { PRODUCT_KINDS } from '../planner/kinds.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { commit, plan, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { createNetwork } from '../network/network.mjs';
@@ -105,5 +106,5 @@ test('N-b: a composition without the network\'s rows refuses a pipe', async () =
 	const { Model: Bare } = await import('../model/model.mjs');
 	const { plan: bare } = await import('../planner/txn.mjs');
 	const { linkTenant } = await import('../network/link-reactions.mjs');
-	assert.equal(bare(new Bare(), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }) }).error, 'unknown kind: pipe');
+	assert.equal(bare(new Bare(), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }), kinds: PRODUCT_KINDS }).error, 'unknown kind: pipe');
 });

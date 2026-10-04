@@ -14,11 +14,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { composeKinds, CORE_KINDS } from '../model/shape.mjs';
 import { Model } from '../model/model.mjs';
-import { PRODUCT_KINDS, productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { commit, plan } from '../planner/txn.mjs';
 import { linkTenant } from '../network/link-reactions.mjs';
 import { Log } from '../planner/log.mjs';
-import { validateDoc, validateSelectionIds, validateEntity } from '../planner/validate.js';
+import { validateDoc as realValidateDoc, validateSelectionIds as realValidateSelectionIds, validateEntity as realValidateEntity } from '../planner/validate.js';
+// the validator takes no default since S-f (H18.16): "the product's" below is named, the product's own kinds
+const validateDoc = (doc, o = {}) => realValidateDoc(doc, { kinds: PRODUCT_KINDS, ...o });
+const validateEntity = (kind, e, o = {}) => realValidateEntity(kind, e, { kinds: PRODUCT_KINDS, ...o });
+const validateSelectionIds = (ids, kinds = PRODUCT_KINDS) => realValidateSelectionIds(ids, kinds);
 
 // a plugin's kind: a probe sits at a node, is selectable, unnamed, and one document holds at most three
 const PROBE = {
@@ -91,16 +96,22 @@ test('N-a: the planner composed with the plugin kind validates it by its row -- 
 	assert.equal(commit(m, log, { ops: [put({ id: 'probe-00000e', at: NODE.id })] }, 'test', 'test', opts).error, 'probe collection limit reached', 'its cap is its row\'s');
 });
 
-test('N-a: the product\'s planner refuses the plugin kind, and a model and planner composed differently are refused by name', () => {
+test('N-a: the product\'s planner refuses the plugin kind, and a model and planner composed differently are refused by name', async () => {
 	const product = new Model();
-	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }], { links: BARE }).error, 'unknown kind: probe');
-	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }], { links: BARE }),
+	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }], { links: BARE, kinds: PRODUCT_KINDS }).error, 'unknown kind: probe');
+	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }], { links: BARE, kinds: PRODUCT_KINDS }),
 		/plan: the model is composed with kinds node, zone, group, probe and the planner with node, zone, group/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE, links: BARE }), /plan: the model is composed with kinds/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS, links: BARE }), /kinds is a composition whose every row carries its checks/);
 	// S-b: and no plan runs without a link tenant -- none is a default
-	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }]), /plan: no link tenant/);
-	assert.throws(() => commit(product, new Log(), { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x'), /commit: no link tenant/);
+	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: PRODUCT_KINDS }), /plan: no link tenant/);
+	assert.throws(() => commit(product, new Log(), { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x', { kinds: PRODUCT_KINDS }), /commit: no link tenant/);
+	// S-f: nor without its kinds -- none is a default either; plan, commit, undo and redo alike
+	const { undo, redo } = await import('../planner/txn.mjs');
+	const log = new Log();
+	for (const call of [() => plan(product, [], { links: BARE }), () => commit(product, log, { ops: [] }, 'x', 'x', { links: BARE }), () => undo(product, log), () => redo(product, log)]) {
+		assert.throws(call, /kinds is a composition whose every row carries its checks/);
+	}
 });
 
 test('N-a: a document with the plugin kind validates against its composition, and not against the product\'s', () => {
@@ -171,7 +182,7 @@ test('S-a: the network brings transit, and the product names none; a tenant read
 test('S-b: undo and redo replay only over a model composed with their kinds -- a mismatch is refused by name', async () => {
 	const { undo, redo } = await import('../planner/txn.mjs');
 	const product = new Model(), log = new Log();
-	assert.equal(commit(product, log, { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x', { links: BARE }).ok, true);
+	assert.equal(commit(product, log, { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x', { links: BARE, kinds: PRODUCT_KINDS }).ok, true);
 	assert.throws(() => undo(product, log, null, { kinds: WITH_PROBE }), /undo: the model is composed with kinds/);
 	assert.throws(() => redo(product, log, { kinds: WITH_PROBE }), /redo: the model is composed with kinds/);
 });

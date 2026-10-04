@@ -224,6 +224,24 @@ No module in `model/` or `planner/` imports `network/`.
 Two tests that composed a kind list by hand compose the link's row with the product's: the GR5 oracle and the pair-capacity guard.\
 Mutants: 12; 11 killed, one only by the full suite until a direct test was added (a link bends only at a node with no type).\
 The 12th is equivalent: removing `linkAccess`'s memo changes cost, not answers.
+
+AMENDED 2026-10-04 -- **S-f done** (H18.16): **P3 is closed on `main`.**\
+**No default composition.** The planner's `plan`, `commit`, `undo` and `redo`, and the validator's four entry points, take their kinds or refuse by name -- as the planner takes its link tenant since S-b.\
+The default was the product's kinds, which hold no link since S-e, and a document key no composed kind owns is passed over unread (CS2, so a reader ignores what it does not know). So `validateDoc(doc)` accepted a document's links without judging one: a trap no production caller fell into, and one nothing kept the next from.\
+`PRODUCT_KINDS` went with the defaults it served; `planner/kinds.mjs` is a root of the planner's entry, since a composition imports it itself.\
+**The estate dry run** passes on the final tree: 43 diagrams, 1,005 nodes, 783 pipes, 17 rings closed, 0 shared legs, 104 `pinned` dropped, every link up along its stored stops.\
+**The register:** every change section 7 lists has its entry -- PU39, PU40, PU41, PU42 and PU43.\
+Tests: two, each failing on the code before it -- the validator's four entry points without kinds, and the planner's four.\
+Mutants: 5, all killed, one by an assertion added for it.
+
+**P3 against its exit criteria** (`PROMOTION.md` section 6):
+- **A pin deleted over the server deletes its link:** met (S-b, `tests/server-network.test.js`).
+- **The tab agrees before the answer arrives:** moved to P5 with PL-6 (G4).
+- **No `network = null` path in model or planner:** met for the planner -- no default link tenant (S-b), no default kinds (S-f). Not met for the Model: `new Model()` still takes no network and draws `straightPath`, because no production Model draws with one yet -- the store's and the CLI's until P4, the page's until P5 (G1). The default is deleted with the last of them, at P5; it is the stopgap G1 and P4 already name, not a new one.
+- **What P2 handed it:** stored pipes and the P-4 split (F2) -- met (S-d); a document with pipes round-trips through store, snapshot, sync, undo and the log -- met (S-b).
+- **The decisions it carried:** `pinned` and the classic tenant deleted (P-5 corrected, S-b, S-d); `link` the network's kind with its model-side rules (G5, B280's link step, K13b's model half; S-e); `transit` the network's field (G3, S-a); one pipe rule for every door (G2, S-c).
+
+**Named stopgaps left by P3, each with the stage that removes it:** the product page holds pipes it does not draw (G1, P5); an agent's plain link can come up down (G2, P6); the Model's `network = null` default and `straightPath` fallback (P4, P5); the browser's two rule copies, reading `network/` (PL-6, P5).
 ---
 
 ## 10. Axiom alignment audit (M7)

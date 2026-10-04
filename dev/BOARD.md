@@ -1037,7 +1037,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.13 | S-c: `link-legs` -- a pinned link lays the legs it has no way over, from any door; `ring-pipe` folded in (G2) | feature | S2 | `DONE` |
 | H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | feature | S2 | `DONE` |
 | H18.15 | S-e: the link kind and its model-side rules move into `network/` (G5, B280, K13b) | feature | S2 | `DONE` |
-| H18.16 | S-f: P3 closed -- estate dry run, register, records | **B266** | S2 | `TODO` |
+| H18.16 | S-f: P3 closed -- estate dry run, register, records | feature | S2 | `DONE` |
+| H18.17 | Design P4 for approval before any code: every path consumer routes -- the SVG export, REST paths, `draw movers` and `draw combat` compose the network through one shared function; spawners skip down links | **B266** | S2 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
 AMENDED 2026-10-03: H18.3 (F-a) done -- `server/migrate.mjs`, run by the store on every path in; `meta.schema` 2; undo history truncated; `direction`; the estate dry run passes (`tools/migrate-schema.mjs`). Production stays on `draw:2538ab8` from here (F3, PU31).\
@@ -1054,6 +1055,7 @@ AMENDED 2026-10-03: H18.12 (S-b) done -- the server composes the network's rows 
 AMENDED 2026-10-03: H18.13 (S-c) done -- `link-legs`: a pinned link or a ring lays a link pipe for each leg no pipes join, from any door; a plain link lays none; `ring-pipe` folded in.\
 AMENDED 2026-10-04: H18.14 (S-d) done -- the migration splits a shared leg (P-4), lays every stored link's pipes and drops `pinned`; the estate dry run passes with every link up along its stops: 783 pipes, 17 closing legs, 0 shared, 104 `pinned` dropped; the templates carry their pipes.\
 AMENDED 2026-10-04: H18.15 (S-e) done -- the link is the network's kind: its row, references, invariant and rules live in `network/`, the product composes node, zone and group, and no core or planner module imports `network/`; every corpus unchanged.\
+AMENDED 2026-10-04: H18.16 (S-f) done -- P3 is closed on `main`: the planner and the validator take no default composition, the estate dry run passes on the final tree, and every change has its production-upgrade entry; next H18.17, P4's design.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

@@ -22,7 +22,7 @@ import { situationOf, inReadView, onOpenGround, onEndpoint } from '../engine/sit
 import { waypointRoles } from '../kernel/network-roles.mjs';
 import { worldOf } from '../engine/rules.mjs';
 import { createEntity } from '../app/src/commands.js';
-import { validateEntity } from '../planner/validate.js';
+import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { applyOps } from '../model/ops.mjs';
 import { TOWERS } from '../engine/kinds.mjs';
 

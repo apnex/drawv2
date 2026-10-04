@@ -44,6 +44,8 @@ const request = { label: 'add', ops: [{ op: 'put', kind: 'node', entity: { id: '
 const board = (kinds) => { const m = new Model(kinds ? { kinds } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
 // the network's composition: the product's kinds and its pipe, which its tenant needs (H17.22 N-d)
 const KINDS = productKinds(...NETWORK_ROWS);
+// the product's own kinds, for a board with no network: a plan names its kinds since S-f, so a tenant error is the one met
+const PRODUCT = productKinds();
 
 test('the Model reads the network under its OWN method names', () => {
 	for (const name of MODEL_READS) assert.equal(typeof Model.prototype[name], 'function', `Model.${name} is the question network.${name} answers`);
@@ -91,15 +93,15 @@ test('a malformed link tenant is refused by plan() and commit(), saying what is 
 		[run({ id: 'x', phase: 'clear', on: () => true, trigger: { deleted: ['node'] }, run: () => {} }), /x carries `on`, retired by TG-2/],
 	]) {
 		const { m, log } = board();
-		assert.throws(() => commit(m, log, request, 'lab', 'lab', { links }), says);
-		assert.throws(() => plan(m, request.ops, { links }), says);
+		assert.throws(() => commit(m, log, request, 'lab', 'lab', { links, kinds: PRODUCT }), says);
+		assert.throws(() => plan(m, request.ops, { links, kinds: PRODUCT }), says);
 		assert.equal(m.all('node').length, 0, 'and nothing was written');
 	}
 });
 
 test('commit() checks the composition before it judges the request, so a composition error is never hidden by a refusal', () => {
 	const { m, log } = board();
-	assert.throws(() => commit(m, log, { ...request, expect: 99 }, 'lab', 'lab', { links: { reactions: [] } }), /owner, reactions/);
+	assert.throws(() => commit(m, log, { ...request, expect: 99 }, 'lab', 'lab', { links: { reactions: [] }, kinds: PRODUCT }), /owner, reactions/);
 });
 
 test('the retired planner hooks, and the retired network option, are refused by plan() and commit()', () => {
@@ -126,7 +128,7 @@ test('the plugin builds ONE object: the Model reads it, and the planner takes it
 	assert.equal(commit(authority, log, request, 'lab', 'lab', { links: network.links, kinds: KINDS }).ok, true, 'and the planner accepts its tenant');
 	// its tenant names the kind its reactions read, so a planner composed without pipes refuses it outright (N-d)
 	const { m: product, log: plog } = board();
-	assert.throws(() => commit(product, plog, request, 'lab', 'lab', { links: network.links }), /network links needs the kind pipe, which this composition does not include/);
+	assert.throws(() => commit(product, plog, request, 'lab', 'lab', { links: network.links, kinds: PRODUCT }), /network links needs the kind pipe, which this composition does not include/);
 });
 
 /*

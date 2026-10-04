@@ -317,7 +317,7 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	// H17.22 N-a: it reads the composition's map, which the rows carry from the one table in model/shape.mjs
 	assert.match(src, /kinds\.optional\[kind\]/, 'it reads the composition\'s one map');
 	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;
-	const { PRODUCT_KINDS } = await import('../planner/kinds.mjs');
+	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
 	assert.deepEqual(PRODUCT_KINDS.optional, OPTIONAL, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,

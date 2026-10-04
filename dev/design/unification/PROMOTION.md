@@ -239,6 +239,9 @@ AMENDED 2026-10-03 -- **P3's first exit criterion is met** (H18.12): the server 
 AMENDED 2026-10-03 -- **P3's design** is `SERVER-COMPOSES-NETWORK.md`, approved with G1 to G5: the server composes the network; the product page holds pipes until P5 draws them; one pipe rule for every door; `transit` and the link become the network's; PL-6 and the tab agreeing before the answer move to P5.\
 AMENDED 2026-10-03 (H18.7): the B277 note on P2 above is met -- the export reads the stored transit.\
 AMENDED 2026-10-03: F1 to F4 ruled as recommended; so **P3 also carries** the migration's pipe step -- every link's pipes, closing legs included -- and the P-4 split, and production stays on `draw:2538ab8` from P2's first stage until P9.
+AMENDED 2026-10-04 -- **P3 is done on `main`** (H18.10 to H18.16; `SERVER-COMPOSES-NETWORK.md`, S-a to S-f): the server composes the network's rows and tenant, with no default tenant or kinds; every door lays a link's pipes by one rule; the migration lays every stored link's pipes, splits a shared leg and drops `pinned`; `pinned` and the classic tenant are deleted; `transit` and the link are the network's, the link with its rules, references and invariant in `network/`.\
+Of its exit criteria, the tab agreeing before the answer moved to P5 (G4), and the Model's `network = null` default stays until P4 and P5 give the server's and the page's Models the network; section 7's criterion 7 holds but for that default's `straightPath` fallback, removed with it.\
+Production stays on `draw:2538ab8` (F3); next is P4, designed for approval before any code.\
 
 ---
 

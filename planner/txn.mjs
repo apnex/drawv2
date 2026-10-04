@@ -36,7 +36,6 @@ import { projection } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
 import { groupAfterRemoval } from './policy.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
-import { PRODUCT_KINDS } from './kinds.mjs';   // H17.22 N-a: the kinds a composition brings, each a whole row
 import { violations } from '../model/invariants.mjs';
 import { nextOrder } from '../model/order.mjs';   // a creation without a drawing order is given one (F-d)
 import { GROUPS } from './tenants.mjs';
@@ -229,16 +228,17 @@ PL-4 -- THE EDGES are passed in too (PLANNER-SYSTEM.md section 6.4):
   extensions the record extensions run around each commit; production's, BEATS, if none are given.
 */
 /*
-H17.22 N-a -- THE KINDS are passed in too: `kinds`, a composition of whole rows (model/shape.mjs `composeKinds`), the
-product's (planner/kinds.mjs) if none are given -- three since S-e, so no links; every production composition passes the network's. Every row must carry its checks, and the model planned against must
+H17.22 N-a -- THE KINDS are passed in too: `kinds`, a composition of whole rows (model/shape.mjs `composeKinds`). REQUIRED
+since S-f (H18.16), as the link tenant is since S-b: the product's own kinds hold no link since S-e, so a default would plan
+by fewer rules than any production composition runs. Every row must carry its checks, and the model planned against must
 be composed with the same kinds -- a model holding a kind the planner cannot validate, or the reverse, is a half-composed
 plugin, refused by name rather than met as an `unknown kind` later.
 */
-function composition({ links = null, place = null, now = wallClock, extensions = [BEATS], kinds = PRODUCT_KINDS, network, ...rest } = {}, who) {
+function composition({ links = null, place = null, now = wallClock, extensions = [BEATS], kinds = null, network, ...rest } = {}, who) {
 	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- the network plugs in as its link tenant, { links: network.links } (PL-3)`);
 	const stray = Object.keys(rest);
 	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links, place, now, extensions, kinds } (PL-4, N-a)`);
-	if (!kinds || !Array.isArray(kinds.list) || !kinds.checked) throw new Error(`${who}: kinds is a composition whose every row carries its checks -- composeKinds(rows) (model/shape.mjs, N-a)`);
+	if (!kinds || !Array.isArray(kinds.list) || !kinds.checked) throw new Error(`${who}: kinds is a composition whose every row carries its checks -- productKinds(...NETWORK_ROWS), which production composes (N-a; required since S-f)`);
 	if (place !== null && typeof place !== 'function') throw new Error(`${who}: place is a resolver, (model, at) -> anchor (PL-4)`);
 	if (typeof now !== 'function') throw new Error(`${who}: now is a clock, () -> milliseconds (PL-4)`);
 	for (const x of extensions) if (!x || typeof x.field !== 'string' || typeof x.refuse !== 'function' || typeof x.next !== 'function') throw new Error(`${who}: a record extension is { id, field, refuse, next } (PL-4)`);

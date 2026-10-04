@@ -10,8 +10,8 @@ the composition's code -- core and plugins alike -- guarded by `composeKinds`: e
 kind and a missing referenced kind are refused.
 
 PLANNER layer, not core, because the link's cross-entity check was network-layer code (model/referential.mjs) the core may
-not import. `PRODUCT_KINDS` is what the planner and `validateDoc` take when nothing else is passed; a composition with a
-plugin's kinds is `productKinds(...rows)`, below.
+not import. A composition is `productKinds(...rows)`, below -- the network's rows in every production one; the planner and
+the validator take no default since S-f (H18.16).
 
 AMENDED 2026-10-04 (S-e, H18.15; G5, B280): three kinds -- node, zone and group. The link's row left for the network
 (network/link-kind.mjs) with its cross-entity check and its invariant, so this module names no link; every production
@@ -239,4 +239,3 @@ The product's composition, and a plugin's rows after its five: the one way a com
 the lab's, with the network's `pipe` (H17.22 N-c), and the product page's at promotion.
 */
 export const productKinds = (...pluginRows) => composeKinds([...PRODUCT_ROWS, ...pluginRows], pluginRows.length ? `the product with ${pluginRows.map((r) => r.kind).join(', ')}` : 'the product');
-export const PRODUCT_KINDS = productKinds();

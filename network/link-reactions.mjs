@@ -13,11 +13,10 @@ hooks for one plugin. Now each is a declared REACTION, a row the planner's core 
 reaction before it did (B240, B241), and the core writes every inverse (PL-2). A reaction never refuses (PL5): what it
 cannot do it declines, and the document rules judge the result in the core's last phase.
 
-A TENANT is an owner and its rows. A composition holds one link tenant (PD-2): production's CLASSIC_LINKS
-(`planner/tenants.mjs`), or the network plugin's (`network/network.mjs`), each built with `linkTenant` and its own
-conditions --
-pipes that reference anchors, a sweep that keeps nothing deliberate, a join that stops where transit is off, and a
-stranded pass production does not have. Promotion deletes the classic tenant (PROMOTION.md).
+A TENANT is an owner and its rows. A composition holds one link tenant (PD-2): the network plugin's (`network/network.mjs`),
+built with `linkTenant` and its conditions -- pipes that reference anchors, a sweep that keeps nothing deliberate, a join
+that stops where transit is off, and a stranded pass. Production's classic tenant, CLASSIC_LINKS, was deleted at S-b
+(H18.12); a test may still build a tenant of its own with other conditions.
 
 Network-layer code (tools/layers.mjs): it reads the model and the link invariants, and nothing of the planner. What it
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
