@@ -1,5 +1,5 @@
 // P4 R-c (H18.21; ruled H2, refined 2026-10-04) -- run mode and the SVG download are ONE rendering, decided in one place in code
-// (kernel/network-appearance.mjs RUN_PICTURE): the canvas in run mode and the export draw the same picture, and the export
+// (network/appearance.mjs RUN_PICTURE): the canvas in run mode and the export draw the same picture, and the export
 // draws each link along its route, a down link with the canvas's down look (H1). CONSUMERS-ROUTE.md, stage R-c.
 
 import { test } from 'node:test';
@@ -13,7 +13,7 @@ import { svgDocument } from '../server/svg.mjs';
 import { readModel } from '../network/read-model.mjs';
 import { attachNetwork } from '../network/host.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';
-import { RUN_PICTURE, waypointLayers, downStroke } from '../kernel/network-appearance.mjs';
+import { RUN_PICTURE, waypointLayers, downStroke } from '../network/appearance.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
 
 /*

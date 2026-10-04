@@ -50,7 +50,7 @@ import { splitAtBend, pairHolders } from '../../network/link-rules.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
-import { waypointRolesIn } from '../../kernel/network-roles.mjs';
+import { waypointRolesIn } from '../../network/roles.mjs';
 import { BARE_KIND, ANCHOR_KINDS, bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 

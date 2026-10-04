@@ -192,7 +192,7 @@ test('a link that ENDS at the deleted anchor is not the stranded pass\'s: it goe
 /*
 B244 (H17.4, K14a) -- A RING HAS NO ENDS, so deleting one sweeps every waypoint it ran through. The sweep kept a closed
 ring's `src` and `dst` as termini (B216), because it counted every link's ends as terminals; the role derivation
-(kernel/network-roles.mjs) calls them bends, which is what they are on the canvas. Production composition: the classic
+(network/roles.mjs) calls them bends, which is what they are on the canvas. Production composition: the classic
 tenant, which keeps a link's END and sweeps a bend.
 */
 test('B244: deleting a closed ring sweeps all its waypoints, its src and dst included', () => {
@@ -213,7 +213,7 @@ in the test: for a waypoint carrying one link, the derivation calls it an endpoi
 it after that link is deleted (B216), over every shape a single link can take through it.
 */
 test('B244: the sweep and the role derivation agree on where a link ends, rings included', async () => {
-	const { waypointRoles } = await import('../kernel/network-roles.mjs');
+	const { waypointRoles } = await import('../network/roles.mjs');
 	const W = 'node-0000e9', [P, Q] = ['node-0000f1', 'node-0000f2'];
 	const shapes = {
 		'open, ending at w': { src: P, dst: W },

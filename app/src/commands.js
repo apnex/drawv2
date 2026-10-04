@@ -273,7 +273,7 @@ in model/shape.mjs, so the set-inverse rule turns the removing patch into a whol
 undoing the last step restores a link byte-identical to one never declared.
 
 Direction is stored relative to `src`/`dst` and NOT as an end-name, so this never has to look at
-which end is which -- see `linkFacing` in kernel/network-roles.mjs for what reads it.
+which end is which -- see `linkFacing` in network/roles.mjs for what reads it.
 */
 export function cycleDirection(link) {
 	if (link.direction !== 'forward' && link.direction !== 'reverse') {

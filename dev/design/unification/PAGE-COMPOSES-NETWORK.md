@@ -134,6 +134,12 @@ Each stage is one gate and one lab deploy.
 
 AMENDED 2026-10-04 -- **J1 to J3 RULED as recommended** (`dev/DECISIONS.md`, "P5's design decisions, J1 to J3").\
 The incubator boundary retires at V-a; a Model holding links requires the network from V-e; the page says what the network says in its header banner.
+
+AMENDED 2026-10-04 -- **V-a done** (H18.25; PU22; J1).\
+`kernel/network-roles.mjs` is `network/roles.mjs`; `kernel/network-appearance.mjs` is merged into `network/appearance.mjs`, the pipes' look at its end, so one module says how everything the network draws looks. Every importer is re-pointed; the canvas and the export read the network's look from `network/`.\
+**The incubator boundary is retired** (J1): its test is deleted and recorded; the layer rules judge every edge into the `network` layer.\
+**Three copies deleted, which the move made possible:** the link rules restated `linkFacing` as `facing`, the plane check as an inline comparison, and the orphan sweep restated `linkEndsAt`, because `kernel/` and `model/` could not share by import (C9). All three now read `network/roles.mjs`, and `scan-twins` drops the exemption it carried for the first.\
+Every corpus unchanged; the export's and the canvas's tests unchanged but for the paths they read.
 ---
 
 ## 10. Axiom alignment audit (M7)

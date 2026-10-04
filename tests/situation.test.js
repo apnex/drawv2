@@ -9,7 +9,7 @@ disagree with the document it describes.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { situationOf, onEndpoint, inReadView } from '../engine/situation.mjs';
-import { waypointRoles } from '../kernel/network-roles.mjs';
+import { waypointRoles } from '../network/roles.mjs';
 
 // the small accessor the situation asks its questions through -- the browser hands it a live model,
 // the server a stored document, and neither has to become the other
@@ -114,7 +114,7 @@ through and another terminates at holds BOTH roles; under a single value the old
 `bend` on sight of a via, so a T-junction would silently lose its spawner pad.
 */
 test('B208: a waypoint holds every role that applies, and onEndpoint reads the set', async () => {
-	const { waypointRoles } = await import('../kernel/network-roles.mjs');
+	const { waypointRoles } = await import('../network/roles.mjs');
 
 	/*
 	B211 -- a junction is where links TERMINATE, and threading is invisible to it. Two links bending

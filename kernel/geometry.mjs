@@ -5,8 +5,8 @@
 // units (cell · pitch). The single per-cell ANCHOR is the cell CENTRE (cellPx) — routes
 // thread cell centres; a Waypoint is a placeable anchor that bends a path between cells.
 //
-// K13a (dev/design/h17/PLAN.md): what a waypoint or a link IS moved to kernel/network-roles.mjs, and how the network is
-// DRAWN to kernel/network-appearance.mjs -- both in the network layer, so this core module exports no network name.
+// K13a (dev/design/h17/PLAN.md): what a waypoint or a link IS moved to network/roles.mjs, and how the network is
+// DRAWN to network/appearance.mjs -- both in the network layer, so this core module exports no network name.
 import { STD, L_STD } from './spec.mjs';
 
 // ---- the grid: cell (logical, integer) ↔ px (resolved, center-origin) ----
@@ -108,7 +108,7 @@ renderers drew a hardcoded 2.2 -- the kernel computed spacing for a dot neither 
 Three copies of one number, and the two that mattered were invisible to the guard, which read its
 own literal and agreed with the kernel.
 */
-// the dot's radius: the floor of the waypoint ring ladder (kernel/network-appearance.mjs, B200), which reads it here
+// the dot's radius: the floor of the waypoint ring ladder (network/appearance.mjs, B200), which reads it here
 const DOT_RADIUS = 2;
 export const gridDot = () => ({ radius: DOT_RADIUS });
 

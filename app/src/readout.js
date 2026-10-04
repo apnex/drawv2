@@ -9,7 +9,7 @@ clicking any mount toggles, persisted.
 
 import { kindOf } from '../../model/model.mjs';
 import { GAP, spanExtent } from './snap.js';
-import { linkMarker } from '../../kernel/network-appearance.mjs';
+import { linkMarker } from '../../network/appearance.mjs';
 import { isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const UNITS_KEY = 'draw.units';

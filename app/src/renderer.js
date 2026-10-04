@@ -7,8 +7,8 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
-import { waypointRolesIn } from '../../kernel/network-roles.mjs';
-import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../kernel/network-appearance.mjs';
+import { waypointRolesIn } from '../../network/roles.mjs';
+import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
 import { groupHull, spanExtent } from '../../kernel/geometry.mjs';
 import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';

@@ -6,7 +6,7 @@ Two levels, and this is the lower one:
   the palette   the colours that exist -- here, owned by the core
   roles         which palette colour each thing uses -- declared by whoever owns the thing: the product's in
                 kernel/theme.mjs (`TOKENS`, `CHROME`), the network plugin's beside its appearance
-                (kernel/network-appearance.mjs `NETWORK_COLOURS`)
+                (network/appearance.mjs `NETWORK_COLOURS`)
 
 A role names a palette entry, never a value, so a plugin owns its decision ("pipes are blue grey 400") and cannot invent
 a colour: one it needs that is missing is added here, which is the one review point for the whole picture's colours.

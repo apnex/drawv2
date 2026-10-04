@@ -60,15 +60,12 @@ A predicate rather than a raw field read, because two rules consult it -- the ro
 and the collapse in network/link-rules.mjs -- and B232 shipped because one place implemented the
 matrix and another disagreed about it.
 */
-const samePlane = (a, b) => !!a.control === !!b.control;
+export const samePlane = (a, b) => !!a.control === !!b.control;   // read by the collapse too since V-a (network/link-rules.mjs)
 
 /*
 Which way a link faces at a point: `in`, `out`, or null for an undeclared link or a point it merely
-threads. The twin of `facing` in network/link-rules.mjs, which cannot be imported here -- `kernel/`
-depends on no `model/` and the reverse, an independence worth more than one boolean.
-
-Exported so the agreement between the twins is driven against THIS function rather than a copy
-re-typed in a test, which would pass while the real one drifted.
+threads. It had a twin, `facing` in the link rules, while this module lived in `kernel/` and the rules in `model/`, which
+could not share by import (C9). V-a (H18.25) moved both into `network/`, and the twin is deleted: the collapse reads this.
 */
 export const linkFacing = (link, pointId) => {
 	if (link.direction !== 'forward' && link.direction !== 'reverse') return null;
@@ -81,11 +78,11 @@ export const linkFacing = (link, pointId) => {
 
 /*
 B244 (K14a) -- WHETHER A LINK ENDS AT A POINT: at its `src` or `dst`, unless it is closed, because a ring has no ends. The
-statement the role derivation reads. Its twin is `endsAt` in the planner's orphan sweep (network/link-reactions.mjs), which
-`kernel/` and `model/` may not share by import (C9); the sweep's copy lacked the ring clause, and so kept a deleted ring's
-`src` and `dst` as termini. tests/sweep-references.test.js holds the two to one answer.
+statement the role derivation reads, and since V-a (H18.25) the orphan sweep too (network/link-reactions.mjs), whose twin of
+it -- restated while `kernel/` and `model/` could not share by import (C9) -- is deleted. The copy once lacked the ring
+clause, and so kept a deleted ring's `src` and `dst` as termini.
 */
-const linkEndsAt = (link, pointId) => !link.closed && (link.src === pointId || link.dst === pointId);
+export const linkEndsAt = (link, pointId) => !link.closed && (link.src === pointId || link.dst === pointId);
 
 /*
 B277 -- TRANSIT OFF ADMITS ENDPOINTS ONLY. An anchor whose transit is off stops what arrives (TRANSIT.md section 4, TR-5),

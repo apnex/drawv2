@@ -5,7 +5,7 @@ colour-tokens -- one palette, roles per owner, and the gate that holds them. H15
 
 TWO LEVELS. The palette (kernel/palette.mjs) holds every colour value, owned by the core, named by Google Material where a
 colour is one. Roles say which palette colour each thing uses, declared by its owner: the product's in kernel/theme.mjs
-(`CANVAS_ROLES`, `CHROME_ROLES`), the network plugin's in kernel/network-appearance.mjs (`NETWORK_COLOURS`).
+(`CANVAS_ROLES`, `CHROME_ROLES`), the network plugin's in network/appearance.mjs (`NETWORK_COLOURS`).
 
 ONE VIEW PER OWNER (mission-kit P3): `--write` generates app/tokens.css from the product's roles (`--tok-<role>`) and
 network/tokens.css from the network's (`--tok-network-<role>`). A page loads the token files of the owners it composes:
@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { resolveRole } from '../kernel/palette.mjs';
 import { CANVAS_ROLES, CHROME_ROLES } from '../kernel/theme.mjs';
-import { NETWORK_COLOURS } from '../kernel/network-appearance.mjs';
+import { NETWORK_COLOURS } from '../network/appearance.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const COLOUR = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g;

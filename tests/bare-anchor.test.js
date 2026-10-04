@@ -101,7 +101,7 @@ const RECORD = {
 	'kernel/engine.mjs': [2, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'kernel/fixtures.mjs': [3, 'the spec viewer\'s scenes, in the scene\'s vocabulary'],
 	'kernel/geometry.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
-	'kernel/network-appearance.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
+	'network/appearance.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'kernel/svg-scene.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'engine/situation.mjs': [3, 'the situation\'s word for what the pointer is over, derived through the module (F4)'],
 	'app/src/pick.js': [1, 'a hit on a drawn waypoint -- the canvas\'s word, F4'],

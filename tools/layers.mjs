@@ -63,10 +63,12 @@ export const FOLDERS = [
 	{ dir: 'server' },
 	{ dir: 'cli' },
 	/*
-	The network plugin INCUBATES here (ruled 2026-09-28). Its layer is `network`, and production is
+	The network plugin INCUBATED here (ruled 2026-09-28). Its layer is `network`, and production is
 	allowed to import that layer -- correctly, permanently -- because today the layer also names code
 	inside kernel/, model/ and engine/. So the layer table cannot keep production out of THIS folder
 	before promotion; `tests/scan-layers.test.js` holds that as a separate folder rule.
+	AMENDED 2026-10-04 (V-a, H18.25; ruled J1): promotion made `network/` a product folder, so the separate folder rule is
+	retired; the layer rules judge every edge into the `network` layer, as they judge every other.
 	*/
 	{ dir: 'planner', layer: 'planner' },   // K4 (H17-D5): the planner, served whole to the lab, never `server/`
 	{ dir: 'network', layer: 'network' },
@@ -103,8 +105,7 @@ export const LAYER = {
 		'engine/situation.mjs',  // K5: what is true right now, as a value -- read by whatever decides what an input means, browser or server; it imports only core
 	],
 	network: [
-		'kernel/network-roles.mjs',        // K13a: what a waypoint or link IS -- split from kernel/geometry.mjs, whose core grid exported network names (L5)
-		'kernel/network-appearance.mjs',   // K13a: how the network is DRAWN -- waypoint rings and layers, link width, dash, arrowhead, appearance
+		// V-a (H18.25, PU22): the network's roles and appearance moved from kernel/ into network/, whose folder layer is this one
 		'model/invariants.mjs',   // the document invariants the planner checks
 		// S-e (H18.15): the link rules, the link reactions with `linkTenant`, and the pair capacity moved into network/ (G5)
 		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
@@ -172,7 +173,7 @@ export const ENTRIES = {
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'engine/kinds.mjs', 'engine/movers.mjs', 'planner/policy.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
-			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
+			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
 			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows, held until P5 draws them
@@ -194,10 +195,9 @@ export const ENTRIES = {
 		*/
 		modules: [
 			'lab/src/root.js',
-			'network/pipes.mjs',   // the incubating plugin (ruled 2026-09-28)
+			'network/pipes.mjs',   // the network plugin (incubated from 2026-09-28; a product folder since V-a, J1)
 			'network/pipe-kind.mjs',   // the network's pipe kind, a row of the one shape (H17.22 N-b); the lab composes it from N-c
 			'network/kinds.mjs',   // the network's rows: its pipe kind and the transit field it contributes to the node (S-a)
-			'network/appearance.mjs',
 			'network/guide.mjs',
 			'network/resolve.mjs',
 			'network/view.mjs',    // one derivation per board state (RULESET-AUDIT T2)
@@ -212,7 +212,7 @@ export const ENTRIES = {
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'planner/policy.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
-			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
+			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
 			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
@@ -648,7 +648,7 @@ export const UNUSED_EXPORTS = {
 				'serves-a-server-door': ['anchorAt', 'nearestAnchor'],   // anchorAt: server/anchor.mjs left the planner at PL-4, passed in by the store
 			},
 			'kernel/spec.mjs': {
-				'rebuild-debt': ['derive', 'BEND_R'],   // BEND_R: its consumer, `path`, left geometry for kernel/network-appearance.mjs at K13a
+				'rebuild-debt': ['derive', 'BEND_R'],   // BEND_R: its consumer, `path`, left geometry for network/appearance.mjs at K13a
 			},
 			'kernel/theme.mjs': {
 				'rebuild-debt': [],

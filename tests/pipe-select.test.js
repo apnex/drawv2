@@ -17,7 +17,7 @@ import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { pipeHitAttributes } from '../network/appearance.mjs';
-import { linkWidth } from '../kernel/network-appearance.mjs';
+import { linkWidth } from '../network/appearance.mjs';
 import { attachNetwork } from '../network/host.mjs';
 import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { hitOf } from '../app/src/pick.js';

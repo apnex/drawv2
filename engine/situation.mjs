@@ -45,7 +45,7 @@ browser hands it a live model's methods, the server hands it a stored document's
 become the other. It is the same shape the link's references use for the same reason (network/link-references.mjs; model/referential.mjs until S-e).
 
 	access.get(kind, id)   -> entity or null
-	access.rolesOf(id)     -> a waypoint's roles: `waypointRoles` (kernel/network-roles.mjs) over the links touching it
+	access.rolesOf(id)     -> a waypoint's roles: `waypointRoles` (network/roles.mjs) over the links touching it
 
 `ctx` is the transient part -- the things that are true of this moment rather than of the document:
 which mode the surface is in, whether it is refusing writes, what the gesture is on, what is

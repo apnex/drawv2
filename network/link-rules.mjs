@@ -7,6 +7,7 @@ link kind at S-e (G5, K13b).
 */
 
 import { straightCapacity, isStraight, pairKey } from './pair-capacity.mjs';
+import { linkFacing, samePlane } from './roles.mjs';   // one statement of each, read by the roles and the collapse (V-a)
 
 /*
 B72, ASKED -- the straight links holding a pair against this link: EMPTY when the pair has room for it. ONE HOME for
@@ -107,19 +108,9 @@ Returns `in`, `out`, or null. Null covers two different absences and deliberatel
 distinguish them: an undeclared link has no direction anywhere, and a declared link has none at a
 point it merely threads. Both mean "this point imposes no direction", which is all a caller needs.
 
-NOT EXPORTED. `collapseAtWaypoint` below is its only caller, and the twin every other module reaches
-for is `linkFacing` in kernel/network-roles.mjs -- exported there because the test holding the two to
-agreement must drive the real function rather than a copy. Exporting this one as well would offer
-two importable spellings of one rule, which is how the pair starts to drift.
+V-a (H18.25): this was `facing`, a twin of `linkFacing` restated while the two lived in `model/` and `kernel/`; both are
+in `network/` now, so the collapse reads the one statement (network/roles.mjs).
 */
-function facing(link, pointId) {
-	if (link.direction !== 'forward' && link.direction !== 'reverse') return null;   // undeclared: symmetric, no direction
-	const head = link.direction === 'forward' ? link.dst : link.src;               // where the flow is going
-	const tail = link.direction === 'forward' ? link.src : link.dst;
-	if (pointId === head) return 'in';
-	if (pointId === tail) return 'out';
-	return null;                                            // a via, not an end
-}
 
 /*
 Flipping carries `direction` with it. A flipped link stores its ends the other way round, so a
@@ -152,17 +143,16 @@ export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	the matrix in docs/spec/ATOMICS.md is where that is decided (H15.4). Until the matrix lands
 	this cannot be reached: the planner only offers pairs it already believes are a bend.
 	*/
-	const fa = facing(a, waypointId), fb = facing(b, waypointId);
+	const fa = linkFacing(a, waypointId), fb = linkFacing(b, waypointId);
 	if (fa && fb && fa === fb) return null;                     // both arriving or both leaving
 	/*
 	H15.15 -- A CONTROL LINK AND A DATA LINK DO NOT MERGE.
 
 	A bend requires the planes to match as well as the directions, because a bend means flow passes
-	through unchanged and these two carry different things. The twin of `samePlane` in
-	kernel/geometry.mjs, held to it by the test that asserts both rules over the same pairs -- one
-	place implementing the matrix while another disagreed is exactly what B232 was.
+	through unchanged and these two carry different things. `samePlane` is the role derivation's own (network/roles.mjs),
+	read here since V-a rather than restated -- one place implementing the matrix while another disagreed was B232.
 	*/
-	if (!!a.control !== !!b.control) return null;
+	if (!samePlane(a, b)) return null;
 	const direction = fa ? a.direction : (fb ? b.direction : undefined);
 	const via = [...(a.via || []), waypointId, ...(b.via || [])];
 	const merged = { ...a, src: a.src, dst: b.dst, via };

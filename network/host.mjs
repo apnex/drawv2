@@ -20,8 +20,7 @@ code -- with the painter's `el`.
 */
 import { whyDown, downSummary } from './resolve.mjs';
 import { transitSummary } from './transit.mjs';
-import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
-import { RUN_PICTURE } from '../kernel/network-appearance.mjs';   // what run mode draws, one rule with the download (R-c)
+import { pipeAttributes, pipeHitAttributes, RUN_PICTURE } from './appearance.mjs';   // the pipes' look, and what run mode draws (R-c)
 import { pipeId } from './pipe-kind.mjs';
 import { kindOf } from '../model/model.mjs';
 

@@ -29,7 +29,7 @@ export function render(schema, pad) {
 
 /*
 R-c (H18.21) -- the download is what run mode shows (ruled H2, refined): each link along its route over pipes, a down link with
-the canvas's down look (H1), and the waypoints in the run picture's layers (kernel/network-appearance.mjs RUN_PICTURE). The
+the canvas's down look (H1), and the waypoints in the run picture's layers (network/appearance.mjs RUN_PICTURE). The
 routes are the network's, read through its read composition; the kernel is handed them as data.
 */
 export function svgDocument(doc) {

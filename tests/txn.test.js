@@ -684,7 +684,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	const { m, log } = fresh();
 	// the kernel twin -- the model's own `facing` is internal, and these two are held to agree in
 	// tests/validate.test.js, so either spelling reads the same declaration
-	const { linkFacing: facing } = await import('../kernel/network-roles.mjs');
+	const { linkFacing: facing } = await import('../network/roles.mjs');
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// `fresh()` mints no document id, and validateDoc checks meta first -- without this the round
 	// trip would fail on the fixture rather than on the field under test
@@ -886,7 +886,7 @@ test('B240: a declared convergence is judged against the link the earlier collap
 	// stale, the second waypoint paired against the pre-merge undeclared link and merged the
 	// convergence away. Which waypoint merges follows the deleted link's stored order, so the
 	// property is asserted in BOTH orientations rather than naming the survivor (H16 review).
-	const { linkFacing } = await import('../kernel/network-roles.mjs');
+	const { linkFacing } = await import('../network/roles.mjs');
 	for (const flipParallel of [false, true]) {
 		const { m, log } = twoJunctions({ flipParallel, a: { direction: 'forward' }, cSrc: 'node-aa0002', cDst: 'node-aa0012', c: { direction: 'forward' } });
 		assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');

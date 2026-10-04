@@ -374,8 +374,8 @@ test('B38: every element kind the kernel handles is a kind resolve() can emit', 
 	// constructor still declares its kind, so testing against geometry.mjs would have passed while
 	// the dead kind sat there. Measured from the importer, the only thing that can emit.
 	const eng = fs.readFileSync('kernel/engine.mjs', 'utf8');
-	// K13a: the core elements come from geometry, the network's (waypoint, path) from network-appearance
-	const imported = [...eng.matchAll(/import \{([^}]*)\} from '\.\/(?:geometry|network-appearance)\.mjs'/g)].map((m) => m[1]).join(',');
+	// K13a: the core elements come from geometry, the network's (waypoint, path) from its appearance -- network/ since V-a
+	const imported = [...eng.matchAll(/import \{([^}]*)\} from '(?:\.\/geometry|\.\.\/network\/appearance)\.mjs'/g)].map((m) => m[1]).join(',');
 	const constructible = new Set(imported.split(',').map((n) => n.trim()).filter(Boolean));
 
 	/*
@@ -473,7 +473,7 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { waypointStyle } = await import('../kernel/network-appearance.mjs');
+	const { waypointStyle } = await import('../network/appearance.mjs');
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
@@ -486,7 +486,7 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	authoring -- is read from the one layer list both renderers walk.
 	*/
 	const exported = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => [role, [...body.matchAll(/<circle[^>]*?r="([\d.]+)"/g)].map((m) => Number(m[1]))]));
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	assert.deepEqual(exported.bend, [], 'the export draws nothing at a bend: the corner is in the path');
 	assert.deepEqual(exported.endpoint, waypointLayers(['endpoint'], 20, null, null, { run: true }).map((l) => l.radius), 'and an endpoint as the run picture has it');
 	assert.ok(!exported.endpoint.includes(20), 'with no anchor ring');
@@ -532,7 +532,7 @@ This is the twin guard: if either renderer grows its own copy of the rule, or st
 shared one, this fails.
 */
 test('B162: one rule, consumed by the client renderer and the kernel alike', async () => {
-	const { waypointRole } = await import('../kernel/network-roles.mjs');
+	const { waypointRole } = await import('../network/roles.mjs');
 	assert.equal(typeof waypointRole, 'function', 'the rule is exported from the kernel');
 
 	// the four cases, asserted on the rule itself rather than through either renderer
@@ -625,7 +625,7 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
@@ -651,7 +651,7 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	}));
 	// AMENDED 2026-10-04 (R-c): the export draws the run picture, where a bend draws nothing at all; while authoring, the
 	// canvas draws it as its anchor, read from the one layer list the canvas walks
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	assert.equal(fills.bend, undefined, 'the export draws no ring at a bend');
 	fills.bend = waypointLayers([], 20).find((l) => l.radius === want.bend).fill;
 	/*
@@ -677,7 +677,7 @@ way and the client imports every one of them: the kernel owns the numbers, each 
 its emission. The waypoint style was the outlier.
 */
 test('B162: the waypoint style has one owner, and neither renderer restates it', async () => {
-	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	const end = waypointStyle('endpoint', 20);
 	const bend = waypointStyle('bend', 20);
 
@@ -714,7 +714,7 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 test('B162: the two renderers agree, value for value', async () => {
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { waypointAnchor, waypointStyle } = await import('../kernel/network-appearance.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	// what the export emits, parsed back out of the SVG it produced
 	const svg = render(docToSchema({
 		meta: { id: 'diagram-aa0001', name: 't' },
@@ -767,7 +767,7 @@ hardcoded 2.2 that nothing could see.
 */
 test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the centre', async () => {
 	const { gridDot } = await import('../kernel/geometry.mjs');
-	const { waypointAnchor, waypointJunction, waypointStyle } = await import('../kernel/network-appearance.mjs');
+	const { waypointAnchor, waypointJunction, waypointStyle } = await import('../network/appearance.mjs');
 
 	/*
 	The junction rung is RESERVED rather than exported -- nothing draws it yet, and an export with no
@@ -867,7 +867,7 @@ gesture that makes a junction was refused at the pointer before the validator ev
 relaxed the validator; without this the feature is still undrawable.
 */
 test('B209: each role combination draws its own layers, in both renderers', async () => {
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
@@ -981,7 +981,7 @@ The endpoint pad already fills for exactly this reason, so the two now agree: a 
 at is opaque, and a circle a line passes through is not.
 */
 test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
@@ -1024,8 +1024,8 @@ consumed by every renderer without any of them deciding again.
 export can emit. An undeclared link has no head, because it asserts nothing.
 */
 test('H15.6: the arrowhead follows the declaration, from one source', async () => {
-	const { linkFacing } = await import('../kernel/network-roles.mjs');
-	const { linkMarker } = await import('../kernel/network-appearance.mjs');
+	const { linkFacing } = await import('../network/roles.mjs');
+	const { linkMarker } = await import('../network/appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 
@@ -1099,7 +1099,7 @@ The plane is the same shape of field travelling the same five doors, so it is gu
 that failed rather than trusted because the code looks right.
 */
 test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
-	const { linkDash, linkWidth } = await import('../kernel/network-appearance.mjs');
+	const { linkDash, linkWidth } = await import('../network/appearance.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 	const mk = (control) => ({
@@ -1189,7 +1189,7 @@ renderer decides for itself. The ring needs the links to know which plane it ser
 `waypointLayers` takes them -- a role set alone cannot say.
 */
 test('H15.16: a control link and its endpoint ring are thinner than a data one', async () => {
-	const { linkWidth, waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { linkWidth, waypointLayers } = await import('../network/appearance.mjs');
 	const { L_STD, STD } = await import('../kernel/spec.mjs');
 
 	// the LINK
@@ -1337,7 +1337,7 @@ what makes the canvas and the export unable to disagree.
 The defence is structural rather than a new guard: there is no longer a second place to forget.
 */
 test('H15.9: linkAppearance is the whole answer, and it is attributes rather than advice', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../kernel/network-appearance.mjs');
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../network/appearance.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 
 	const plain = linkAppearance({ id: 'l', src: 'a', dst: 'b' });
@@ -1385,7 +1385,7 @@ not the control dash -- which a down link must not be mistaken for. A down contr
 thinner weight, so its plane stays legible while it is down.
 */
 test('a DOWN link is dotted: round dots spaced in stroke widths, never the control dash', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../kernel/network-appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../network/appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
 	const dots = (link, w, extra) => linkAppearance(link, w, { down: true, ...extra });
 	const plain = { id: 'l', src: 'a', dst: 'b' };
 
@@ -1423,7 +1423,7 @@ on the junction's rung -- its radius and its width, dashed, light red. Asserted 
 before: the rule is "the junction's ring, dashed, each dash at least as long as the stroke is thick", not "radius 7".
 */
 test('the transit ring sits where the junction would, at its radius and width, dashed, clear of the endpoint ring', async () => {
-	const { waypointLayers, waypointJunction } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers, waypointJunction } = await import('../network/appearance.mjs');
 	const ext = 12;
 
 	const all = waypointLayers(['endpoint'], ext, null, { transit: false });
@@ -1448,7 +1448,7 @@ test('the transit ring sits where the junction would, at its radius and width, d
 });
 
 test('the transit ring draws only when the author declared it, at any link count', async () => {
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	const has = (roles, opts) => waypointLayers(roles, 12, null, opts).some((l) => l.cls === 'wp-transit');
 
 	assert.equal(has(['endpoint'], { transit: false }), true, 'declared, one link: the mark shows');
@@ -1461,8 +1461,8 @@ test('the transit ring draws only when the author declared it, at any link count
 });
 
 test('the transit ring takes its colour from the network\'s role over the palette, not a literal', async () => {
-	// the ring is the network plugin's, so its role is too (kernel/network-appearance.mjs, ruled 2026-10-01)
-	const { NETWORK_COLOURS, waypointLayers } = await import('../kernel/network-appearance.mjs');
+	// the ring is the network plugin's, so its role is too (network/appearance.mjs, ruled 2026-10-01)
+	const { NETWORK_COLOURS, waypointLayers } = await import('../network/appearance.mjs');
 	const { colour } = await import('../kernel/palette.mjs');
 	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
 	assert.equal(ring.stroke, colour(NETWORK_COLOURS.transitRing), 'drawn in the network\'s transit-ring role');
@@ -1472,7 +1472,7 @@ test('the transit ring takes its colour from the network\'s role over the palett
 	instruction will be switched off rather than obeyed. Comments are stripped first, so the
 	assertion is about what the module DOES.
 	*/
-	const src = fs.readFileSync(new URL('../kernel/network-appearance.mjs', import.meta.url), 'utf8')
+	const src = fs.readFileSync(new URL('../network/appearance.mjs', import.meta.url), 'utf8')
 		.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 	assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'the network appearance carries no colour value in code; the palette is the authority (B255)');
 });
@@ -1483,7 +1483,7 @@ makes it an endpoint, and the endpoint ring's opaque fill, drawn after the trans
 seen (ruled 2026-09-28), so no filled layer wide enough to cover radius 10 may come after it.
 */
 test('the transit ring is drawn after every filled layer that would cover it', async () => {
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	for (const roles of [['endpoint'], ['junction'], ['endpoint', 'junction'], []]) {
 		const all = waypointLayers(roles, 20, null, { transit: false });
 		const at = all.findIndex((l) => l.cls === 'wp-transit');
@@ -1512,7 +1512,7 @@ test('evenDash fits a whole number of dashes, nearest the target, at least one',
 });
 
 test('a fitted dash is drawn as fitted, by the canvas and the export alike', async () => {
-	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	const { waypointLayers } = await import('../network/appearance.mjs');
 	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
 	assert.ok(ring.pathLength, 'the transit ring carries its fitted length');
 	const canvas = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');

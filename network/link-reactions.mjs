@@ -22,6 +22,7 @@ Network-layer code (tools/layers.mjs): it reads the model and the link invariant
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
 import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './link-rules.mjs';
+import { linkEndsAt } from './roles.mjs';   // whether a link ends at a point (B244), one statement with the roles (V-a)
 import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
@@ -193,14 +194,9 @@ function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {
 		}
 		return set;
 	};
-	/*
-	B244 -- whether a link ENDS at a point: at its `src` or `dst`, unless it is closed, because a ring has no ends. The
-	twin of `linkEndsAt` in kernel/network-roles.mjs, which the role derivation reads; `model/` imports no `kernel/` (C9),
-	so it is restated here, as `facing` is beside `linkFacing`. Without the ring clause a deleted ring's `src` and `dst`
-	were kept as termini while the canvas drew them as bends. tests/sweep-references.test.js "B244: the sweep and the role
-	derivation agree" holds the two together, driving the real derivation and the real sweep.
-	*/
-	const endsAt = (l, id) => !l.closed && (l.src === id || l.dst === id);
+	// B244 -- whether a link ENDS at a point, a ring having no ends: the role derivation's statement (network/roles.mjs
+	// `linkEndsAt`), read here since V-a rather than restated as it had to be while the two could not share by import (C9)
+	const endsAt = linkEndsAt;
 	const wasBendOnly = (m) => {
 		const bend = new Set();
 		const terminal = new Set();

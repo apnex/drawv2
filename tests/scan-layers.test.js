@@ -727,69 +727,16 @@ test('H17 K10 (G3): the lab reconciles through derivedToApply, the product\'s on
 });
 
 /*
-The network plugin INCUBATES in `network/`, and production must not reach it until promotion.
-
-Ruled 2026-09-28: the lab is the prototype of the unification and routing subsystem, and production
-takes it by promotion once it is proven. The layer table cannot hold that on its own -- it already
-lets planner, canvas, chrome and the CLI import the `network` LAYER, correctly and permanently,
-because today that layer names code living inside kernel/, model/ and engine/. The incubator is a
-FOLDER, and the rule is about the folder.
-
-So this is a separate check: only the incubator itself, the lab and the tests may import from
-`network/`. Widening that list IS the promotion, and it has to be done here, in a diff a reviewer
-sees -- never as a side effect of somebody adding a convenient import.
-
-It sweeps every scanned module rather than naming the product's folders, because a guard with a
-file list goes stale (B224).
+RETIRED 2026-10-04 (V-a, H18.25; ruled J1): "the network incubator is reachable only from itself, the lab and the tests". It
+held that production reached `network/` only through a list widened one file at a time, "widening that list IS the
+promotion". Promotion widened it eleven times through P3 and P4, and moving the network's look into `network/` (PU22) put it
+under the canvas and the export too; the director ruled the boundary's job done. `network/` is a product folder, and the
+layer rules (`tools/layers.mjs`, L2) judge every edge into the `network` layer, as they judge every other. Recorded in
+dev/COMMIT-DELETIONS.md.
 */
-const INCUBATOR = 'network/';
-// `tools/gesture-table.mjs` by exact path, added with T3: it generates the network's gesture table in the design docs
-// from the plugin's own rows (P3), and nothing served imports it -- a reader of the incubator, not a promotion of it
-// and `tools/reaction-table.mjs`, added with PL-3: it generates the planner's reaction table, the network tenant's included
-// S-b (H18.12, PROMOTION.md P3): the promotion widens this list, as the comment above says it must -- the store composes the
-// network's rows and tenant, and the product page its rows (G1); P5 widens it again for the page's drawing
-// S-d (H18.14): `tools/migrate-schema.mjs`, the format batch's dry run, composes the network as the store does to check every
-// estate link comes up along its stored stops -- it is run by hand against a backup, and nothing served imports it
-// S-e (H18.15, G5): the link rules live in network/ now, so the browser's two copies of planner rules read them there until
-// PL-6 deletes the copies at P5 (G4) -- `app/src/commands.js` and `app/src/input.js`; and `model/invariants.mjs` reads the pair
-// capacity until the link row carries its own invariant (S-e, part 2) -- which it does now, so model/invariants.mjs left again;
-// and `cli/verbs.mjs`, whose `combat` and `movers` read a document into a Model with the network's kinds, the link among them
-const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs',
-	'app/src/commands.js', 'app/src/input.js', 'cli/verbs.mjs',
-	// P4 R-b (H18.20): REST tells a reader a link's route, whether it is down and what holds it (network/read-model.mjs)
-	'server/rest.js',
-	// P4 R-c (H18.21): the SVG export draws each link as the network routes it
-	'server/svg.mjs'];
 
-test('the network incubator is reachable only from itself, the lab and the tests', () => {
-	const offenders = [];
-	let scanned = 0;
-	const walk = (dir) => {
-		for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
-			const rel = path.join(dir, e.name);
-			if (e.isDirectory()) {
-				if (['node_modules', '.git', 'tests/fixtures'].some((x) => rel === x || rel.startsWith(`${x}/`))) continue;
-				walk(rel);
-			} else if (/\.(m?js)$/.test(e.name)) {
-				scanned++;
-				if (MAY_REACH_THE_INCUBATOR.some((ok) => rel.startsWith(ok))) continue;
-				const src = fs.readFileSync(path.join(root, rel), 'utf8');
-				for (const m of src.matchAll(/(?:from|import\()\s*['"]([^'"]+)['"]/g)) {
-					if (!m[1].startsWith('.')) continue;
-					const target = path.relative(root, path.resolve(path.dirname(path.join(root, rel)), m[1]));
-					if (target.startsWith(INCUBATOR)) offenders.push(`${rel} -> ${target}`);
-				}
-			}
-		}
-	};
-	walk('.');
-	assert.ok(scanned > 100, `the sweep must actually find modules, found ${scanned}`);
-	assert.deepEqual(offenders, [],
-		`production reaches the incubator before promotion -- nothing incubating may reach draw.apnex.io:\n  ${offenders.join('\n  ')}`);
-});
-
-test('the incubator exists and the lab composes it', () => {
-	assert.ok(fs.existsSync(path.join(root, INCUBATOR)), 'network/ is where the plugin incubates (SD11b, ruled 2026-09-28)');
+test('the network plugin exists and the lab composes it', () => {
+	assert.ok(fs.existsSync(path.join(root, 'network/')), 'network/ is the plugin (SD11b, ruled 2026-09-28; a product folder since V-a, J1)');
 	const lab = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
 	assert.match(lab, /from '\.\.\/\.\.\/network\//, 'the lab must compose the incubator, or nothing is being tested');
 });

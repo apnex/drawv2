@@ -10,8 +10,8 @@ The other half is that nothing changes where transit is on or undeclared -- whic
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { waypointRoles, waypointRolesIn } from '../kernel/network-roles.mjs';
-import { waypointLayers } from '../kernel/network-appearance.mjs';
+import { waypointRoles, waypointRolesIn } from '../network/roles.mjs';
+import { waypointLayers } from '../network/appearance.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const W = 'node-e00001';
