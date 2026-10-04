@@ -1727,6 +1727,8 @@ test('S-e: draw movers reads the links -- its Model composes the network\'s kind
 		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
 			{ op: 'put', kind: 'node', entity: { id: 'node-e00001', name: 'a', type: 'host', shape: 'square', x: 360, y: 0 } },
 			{ op: 'put', kind: 'node', entity: { id: 'node-e00002', name: 'w', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since } } },
+			// AMENDED 2026-10-04 (R-d): with its pipe, so the link is up -- a plain link lays none (G2), and a down link carries nothing
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e00001-e00002', a: 'node-e00001', b: 'node-e00002', laid: 'link' } },
 			{ op: 'put', kind: 'link', entity: { id: 'link-e00003', name: 'l', src: 'node-e00002', dst: 'node-e00001' } }] }));
 		const out = JSON.parse(await run('movers', '--diagram', id, '--at', String(since + 5000), '--json'));
 		assert.equal(out.spawners.length, 1, 'the armed endpoint is found on its link');
