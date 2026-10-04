@@ -150,6 +150,7 @@ const STRANDED_LINKS = {
 	link an endpoint; at `src`/`dst` of a CLOSED link a bend again, because a ring has no ends; and
 	referenced nowhere, an orphan. Only `pinned` is written down, because a waypoint placed
 	deliberately with no link has no structure to read an intention off.
+	AMENDED 2026-10-04 (S-d, H18.14): `pinned` is retired -- nothing about a waypoint's role is written down now.
 	*/
 /*
 	B216 -- only a BEND is swept. A waypoint an author TERMINATED a link at survives losing it.
@@ -178,8 +179,9 @@ const STRANDED_LINKS = {
 	*/
 /*
 `alsoReferenced(model) -> ids` names what ELSE references an anchor (the network's pipes); `keepsOrphan(w, { wasBendOnly })`
-says which orphans survive. Production's rule is B162 and B216: kept if pinned or a link's end. The network keeps none
+says which orphans survive. Production's rule was B162 and B216: kept if pinned or a link's end. The network keeps none
 (ruled 2026-09-29: "deliberate" means held by the pipes laid with g, which reach the sweep through `alsoReferenced`).
+S-d (H18.14): `pinned` is retired, and the network's is the only rule a composition runs.
 The deletes are emitted one at a time, so each waypoint's groups are trimmed against what the previous trim left (B241).
 */
 function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {

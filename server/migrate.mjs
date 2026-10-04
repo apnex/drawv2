@@ -28,6 +28,70 @@ export const MIGRATION_TARGET = 2;
 // the collections whose items carry a drawing order, as stored (F-d)
 const ORDERED = ['nodes', 'links', 'zones'];
 
+// a link's stops as routing reads them: its ends and pins, and a ring back to its start (network/pipes.mjs, P-3) -- restated,
+// since a migration reads documents by the rule as ruled
+const stopsOf = (l) => [l.src, ...(Array.isArray(l.via) ? l.via : []), l.dst, ...(l.closed ? [l.src] : [])];
+const pairOf = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+const ageOf = (l) => (Number.isInteger(l.order) ? l.order : 0);
+const byAge = (x, y) => ageOf(x) - ageOf(y) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
+
+// every (younger link, leg index) whose leg an older link already runs, oldest first
+function sharedLegs(doc) {
+	const claimed = new Map(), out = [];
+	for (const l of [...(doc.links || [])].filter(Boolean).sort(byAge)) {
+		const stops = stopsOf(l);
+		let mine = [];
+		for (let i = 0; i < stops.length - 1; i++) {
+			const k = pairOf(stops[i], stops[i + 1]);
+			if (claimed.has(k) && claimed.get(k) !== l.id) out.push({ link: l.id, leg: i, with: claimed.get(k) });
+			else mine.push(k);
+		}
+		for (const k of mine) claimed.set(k, l.id);
+	}
+	return out;
+}
+
+const DRAWN = ['id', 'name', 'src', 'dst', 'via', 'order', 'closed'];   // a piece is open: a ring cut once is a path
+function splitShared(doc, report) {
+	const unsplittable = new Set();
+	for (let guard = 0; guard < 1000; guard++) {
+		const next = sharedLegs(doc).find((s) => !unsplittable.has(s.link));
+		if (!next) return;
+		const l = doc.links.find((x) => x.id === next.link);
+		const stops = stopsOf(l), i = next.leg;
+		// a ring has no ends: cut at the shared leg it is one open path, from the leg's far end round to its near one
+		const before = l.closed ? [] : stops.slice(0, i + 1);
+		const after = l.closed ? [...stops.slice(i + 1, -1), ...stops.slice(0, i + 1)] : stops.slice(i + 1);
+		if (before.length < 2 && after.length < 2) {
+			unsplittable.add(l.id);
+			report.push({ kind: 'unsplittable', link: l.id, shares: next.with, leg: [stops[i], stops[i + 1]] });
+			continue;
+		}
+		const declared = Object.fromEntries(Object.entries(l).filter(([k]) => !DRAWN.includes(k)));
+		const top = (doc.links || []).reduce((m, x) => Math.max(m, ageOf(x)), 0);
+		const names = new Set([...(doc.nodes || []), ...(doc.links || []), ...(doc.zones || []), ...(doc.groups || [])].map((e) => e?.name));
+		const freshName = (base) => { let n = 2; while (names.has(`${base}-${n}`)) n++; names.add(`${base}-${n}`); return `${base}-${n}`; };
+		const freshId = () => { let n = parseInt(hexOf(l.id), 16); let id; do { n = (n + 1) % 0x1000000; id = `link-${n.toString(16).padStart(6, '0')}`; } while (doc.links.some((x) => x.id === id)); return id; };
+		const piece = (ss, first) => ({ ...declared, id: first ? l.id : freshId(), name: first ? l.name : freshName(l.name || 'link'), src: ss[0], dst: ss[ss.length - 1],
+			...(ss.length > 2 ? { via: ss.slice(1, -1) } : {}), order: first ? l.order : top + 1 });
+		/*
+		A link bends only at a waypoint (F-c), and a ring's stops may be typed: opened, one can fall inside a piece. A typed
+		node is where links end, so a piece is cut there too -- an open link's own pins are waypoints already, so this only
+		ever cuts a ring.
+		*/
+		const typed = new Set((doc.nodes || []).filter((n) => n?.type).map((n) => n.id));
+		const atNodes = (ss) => {
+			const out = [[ss[0]]];
+			for (let k = 1; k < ss.length; k++) { out[out.length - 1].push(ss[k]); if (k < ss.length - 1 && typed.has(ss[k])) out.push([ss[k]]); }
+			return out;
+		};
+		const pieces = [];
+		for (const ss of [before, after].filter((x) => x.length >= 2).flatMap(atNodes)) pieces.push(piece(ss, pieces.length === 0));
+		doc.links = doc.links.flatMap((x) => (x.id === l.id ? pieces : [x]));
+		report.push({ kind: 'split', link: l.id, shares: next.with, leg: [stops[i], stops[i + 1]], into: pieces.map((p) => p.id) });
+	}
+}
+
 const hexOf = (id) => String(id).slice(String(id).indexOf('-') + 1);
 
 // waypoints whose hex a node holds, or an earlier waypoint took -- id -> hex, in collection order
@@ -108,7 +172,7 @@ const STEPS = [
 	},
 	/*
 	ANCHORS: each waypoint joins the nodes after them, `waypoint-<hex>` becoming `node-<hex>`, keeping its name, place,
-	`spawn` and `pinned` (retired at P3 with production's orphan rule, ruled 2026-10-03); the collection goes. Every
+	`spawn` and `pinned` (dropped by the `unpin` step, S-d); the collection goes. Every
 	reference is rewritten: links' ends and bends, groups' members, the stored selection, and the reveal's beats.
 	*/
 	{
@@ -144,6 +208,56 @@ const STEPS = [
 		},
 	},
 	/*
+	P-4 (S-d, H18.14) -- A SHARED LEG IS SPLIT INTO A JUNCTION, before the pipes are laid. Pipes carry one link each (ruled
+	2026-09-30), so a consecutive stop pair two stored links both run would leave the younger down. The links are taken
+	oldest first (by drawing order, then id); a younger link whose leg an older one already runs is cut at that leg's ends
+	where they are bends (B210: a junction is where links end), the piece along the shared leg dropped -- the older link draws
+	that line -- and the pieces keep the link's declarations; the first keeps its id and order, a new piece is the newest.
+	A ring is cut open there, one path round its other legs, and again at any typed node inside it. A link that is nothing but the shared leg cannot be split
+	without losing it: it is left, and REPORTED, and the dry run does not pass while one exists. Keyed with the pipes step:
+	a document that never held pipes.
+	*/
+	{
+		id: 'split',
+		needs: (doc) => !Array.isArray(doc.pipes) && sharedLegs(doc).length > 0,
+		run: (doc, _log, report) => splitShared(doc, report),
+	},
+	/*
+	F2, P-3 (S-d, H18.14) -- EVERY STORED LINK'S PIPES. A document written before the network has links and no pipes, and
+	under the network's routing every link would come up down. One link pipe per consecutive stop pair, a ring's closing
+	leg included -- plain links too, since they were drawn under a rule that needed no pipe (unlike a new plain link, G2).
+	Keyed on the document never having held a pipe collection: a document the network wrote holds one, empty or not, and a
+	plain link it holds without pipes is down by the network's own rule, not the migration's to repair.
+	*/
+	{
+		id: 'pipes',
+		needs: (doc) => !Array.isArray(doc.pipes),
+		run: (doc) => {
+			const pipes = new Map();
+			for (const l of doc.links || []) {
+				if (!l) continue;
+				const stops = stopsOf(l);
+				for (let i = 0; i < stops.length - 1; i++) {
+					const [a, b] = stops[i] < stops[i + 1] ? [stops[i], stops[i + 1]] : [stops[i + 1], stops[i]];
+					if (a === b) continue;
+					const [lo, hi] = [hexOf(a), hexOf(b)].sort();
+					const id = `pipe-${lo}-${hi}`;
+					if (!pipes.has(id)) pipes.set(id, { id, a: hexOf(a) === lo ? a : b, b: hexOf(a) === lo ? b : a, laid: 'link' });
+				}
+			}
+			doc.pipes = [...pipes.values()];
+		},
+	},
+	/*
+	P-5 corrected (S-d, H18.14) -- `pinned` is retired: the network keeps no orphan beyond what its pipes hold (ruled
+	2026-09-29), so the field means nothing; dropped from every node that carries it -- 104 in the estate.
+	*/
+	{
+		id: 'unpin',
+		needs: (doc) => (doc.nodes || []).some((n) => n && 'pinned' in n),
+		run: (doc) => { for (const n of doc.nodes || []) if (n && 'pinned' in n) delete n.pinned; },
+	},
+	/*
 	F1 -- `link.flow` becomes `direction`, stored as `forward` or `reverse`, absent meaning none: the words the CLI and the
 	help already used for it, and a stored value that says what it means. Frees `flow` for stored flows (SD10).
 
@@ -176,14 +290,14 @@ null when there was none), and the ids of the steps that ran, in order -- empty 
 export function migrateFormatBatch(doc, log = null) {
 	let out = structuredClone(doc);
 	let outLog = log;
-	const steps = [];
+	const steps = [], report = [];   // what a step must say: a shared leg split, or one it could not (P-4)
 	for (const step of STEPS) {
 		if (!step.needs(out, outLog)) continue;
-		const next = step.run(out, outLog);
+		const next = step.run(out, outLog, report);
 		if (next !== undefined) outLog = next;
 		steps.push(step.id);
 	}
-	return { doc: out, log: outLog, steps };
+	return { doc: out, log: outLog, steps, report };
 }
 
 // the step ids, in order -- what the dry run reports against

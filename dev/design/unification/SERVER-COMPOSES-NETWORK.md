@@ -175,6 +175,30 @@ Corpora: the matrix and gesture corpora unchanged. The planner corpus differs in
 Two txn tests moved with it: B81's undo compares collections as sets (the laid pipes come back in reverse order; pipes carry no drawing order), and B241's re-route lifts the bend's pipes too, since a straightened link otherwise still runs over them -- a route is derived from the pipes (2026-09-26).\
 Mutants: 7, all killed -- one by a new test.
 
+AMENDED 2026-10-04 -- **S-d done** (H18.14; F2, P-3, P-4, P-5 corrected).\
+Three steps in the migration, before `direction` and `schema`:
+- **`split` (P-4).** Links are taken oldest first by drawing order, then id. A younger link whose leg an older one already runs is cut at that leg's ends, and the piece along it dropped, since the older link draws that line. The pieces keep the link's declarations; the first keeps its id and order, and a new piece is the newest. A ring is cut open there, one path round its other legs, and again at any typed node inside it, since a link bends only at a waypoint (F-c). A link that is nothing but the shared leg is left and reported, and the dry run fails while one exists. The store says each split, or refused split, in its log.
+- **`pipes` (F2, P-3).** One link pipe per distinct leg of every stored link, a ring's closing leg and a plain link included, since both were drawn under a rule that needed no pipe. Keyed on the document never having held a pipe collection: one the network wrote holds one, empty or not.
+- **`unpin` (P-5 corrected).** `pinned` is dropped from every node.
+
+**`pinned` retired from the tree:** the node row and its waypoint-only list, `draw set ... pinned`, the drag's unpin entries (B245) and `w`'s placement. A waypoint placed with no link stays until deleted, since the sweep takes only what an edit orphaned.\
+**The dry run** composes the network as the store does, and checks every link is up along exactly its stored stops, every pipe is some leg's and laid `link`, and no node carries `pinned`.\
+Against the estate backup: 783 pipes, 17 rings with a closing leg, 0 shared legs split, 104 `pinned` dropped; PASS.\
+A split diagram's links are checked by the network rather than against their source, since the split is the ruled change.\
+Adding the network to the dry run widens the incubator list by `tools/migrate-schema.mjs`, which nothing served imports.\
+**Templates migrated in source:** the four gain their pipes (29, 14, 6 and 34) and nothing else. The lab's seeds already carry pipes.\
+**Beyond the design, which did not say:** a ring can share a leg too. Cut open at the shared leg it loses nothing, so it is split like an open link. A link that is nothing but the shared leg is listed and blocks the cutover, as `FORMAT-BATCH.md` section 4 rules.\
+**Restated, not imported:** `FORMAT-BATCH.md` section 4 named `splitAtBend` and `LINK_DECLARATIONS`. The split runs before the `direction` step, so a link there may still hold `flow`, which `LINK_DECLARATIONS` does not name, and `splitAtBend` refuses a ring. The step keeps every field but the drawn ones, as the migration restates its other rules; it is deleted after the cutover with the rest of `server/migrate.mjs`.\
+Corpora:
+- The gesture corpus changed in 5 scenarios, only by `pinned` gone and the unpin `set` gone. The `pinned` board is now `free`, a waypoint no link uses, so the threading cases stay.
+- The planner corpus lost `sweep-keeps-pinned`, which without `pinned` was `sweep-bend-released` again, so it has 1,044 cases. 387 cases differ only by `pinned` and their input hash; the generator still takes the draw that set `pinned`, so every other case is generated as before.
+- The matrix is unchanged.
+
+Tests: `tests/migrate-pipes.test.js`, 13 tests, 10 of them RED before the change.\
+B245's acceptance test now holds that threading a free waypoint commits the link alone.\
+Mutants: 12; 11 killed, two by tests added for them (age by drawing order, the ring cut at a typed node).\
+The 12th is equivalent: putting `pinned` back on the waypoint-only list changes nothing, since the row refuses the field first.
+
 ---
 
 ## 10. Axiom alignment audit (M7)

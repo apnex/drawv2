@@ -305,7 +305,7 @@
 			]
 		}
 	},
-	"link-w-thread-pinned": {
+	"link-w-thread-free": {
 		"claims": [
 			false,
 			false,
@@ -317,14 +317,6 @@
 		"commits": [
 			{
 				"ops": [
-					{
-						"op": "set",
-						"kind": "node",
-						"id": "waypoint#1",
-						"patch": {
-							"pinned": false
-						}
-					},
 					{
 						"op": "put",
 						"kind": "link",
@@ -375,8 +367,7 @@
 					"name": "waypoint-1",
 					"order": 3,
 					"x": 180,
-					"y": 120,
-					"pinned": false
+					"y": 120
 				}
 			],
 			"links": [
@@ -398,7 +389,7 @@
 			]
 		}
 	},
-	"link-w-pinned-cancelled": {
+	"link-w-free-cancelled": {
 		"claims": [
 			false,
 			false,
@@ -439,8 +430,7 @@
 					"name": "waypoint-1",
 					"order": 3,
 					"x": 180,
-					"y": 120,
-					"pinned": true
+					"y": 120
 				}
 			],
 			"links": [],
@@ -3162,8 +3152,7 @@
 							"name": "waypoint-1",
 							"order": 3,
 							"x": 180,
-							"y": 240,
-							"pinned": true
+							"y": 240
 						}
 					}
 				],
@@ -3218,8 +3207,7 @@
 					"name": "waypoint-1",
 					"order": 3,
 					"x": 180,
-					"y": 240,
-					"pinned": true
+					"y": 240
 				}
 			],
 			"links": [
@@ -4982,8 +4970,7 @@
 							"name": "waypoint-1",
 							"order": 3,
 							"x": 180,
-							"y": 240,
-							"pinned": true
+							"y": 240
 						}
 					}
 				],
@@ -5056,8 +5043,7 @@
 					"name": "waypoint-1",
 					"order": 3,
 					"x": 180,
-					"y": 240,
-					"pinned": true
+					"y": 240
 				}
 			],
 			"links": [
@@ -5095,8 +5081,7 @@
 							"name": "waypoint-1",
 							"order": 3,
 							"x": 180,
-							"y": 240,
-							"pinned": true
+							"y": 240
 						}
 					}
 				],
@@ -5169,8 +5154,7 @@
 					"name": "waypoint-1",
 					"order": 3,
 					"x": 180,
-					"y": 240,
-					"pinned": true
+					"y": 240
 				}
 			],
 			"links": [

@@ -852,16 +852,9 @@ export class Input {
 		if (!this.state.pointer.at) return false;
 		const snapped = snapNode(this.state.pointer.at);
 		if (occupiedAnyAt(this.model, snapped)) return false;
-		/*
-		B162: placed deliberately, with no link -- so it carries `pinned`.
-
-		Every other waypoint is part of a path and its role is derived from the links: a bend in
-		`via`, an endpoint at `src`/`dst`, a bend again on a closed ring because a ring has no ends.
-		This one has no link to read an intention off, and the orphan sweep would take it. `pinned`
-		is the only fact about a waypoint worth storing, and it means exactly "the author meant this
-		to exist". Threading a link through it clears it -- from then on it shares the link's fate.
-		*/
-		const wp = { ...this.model.makeWaypoint(snapped), pinned: true };
+		// a waypoint with no link: the sweep takes only what an edit orphaned, so it stays until deleted (`pinned`, B162, is
+		// retired -- S-d, H18.14)
+		const wp = this.model.makeWaypoint(snapped);
 		this.history.commit(commands.createEntity(BARE_KIND, wp));
 		this.state = track(this.state, { type: 'armed', id: wp.id });   // may count as the next drag's first key (see press)
 		this.selection.set([wp.id]);
@@ -879,7 +872,7 @@ export class Input {
 	*/
 	linkDrag(src, pos, { shift = false, srcKey = false } = {}) {
 		return { src, path: previewPath(this.overlay), target: null, start: pos, shift, srcKey,
-			via: [], route: [], placed: [], steps: [], unpin: [] };
+			via: [], route: [], placed: [], steps: [] };
 	}
 
 	/*
@@ -906,13 +899,7 @@ export class Input {
 			waypoint joins `via` like any other and the route carries on, so several bends in one drag still work. The
 			split is computed on RELEASE, in commitRoute, because until the button comes up there is no link to make a
 			junction with.
-
-			B162 -- threading a PINNED waypoint clears the pin. The pin means "the author placed this deliberately, with no
-			link". Once a link runs through it, it is part of that link's shape and should go when the link goes; leaving
-			the pin would strand it on the canvas forever, the debris the sweep exists to prevent. A stop that is not a pin
-			leaves the flag alone: the link does not become that anchor's structure.
 			*/
-			if (existing.pinned && !ctx.unpin.includes(existing.id)) ctx.unpin.push(existing.id);   // sent with the link (B245)
 			if (!ctx.via.includes(existing.id)) { ctx.via.push(existing.id); ctx.route.push(existing.id); }
 		} else if (existing) {
 			if (existing.id === ctx.src.id || ctx.route.includes(existing.id)) return;
@@ -949,7 +936,7 @@ export class Input {
 	// `extra`: the entries a drag judge adds (N-c), after the drag's own
 	commitRoute(ctx, dstId, via, extra = []) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
-		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link, this.splitsFor(link), ctx.unpin), extra));
+		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link, this.splitsFor(link)), extra));
 		this.selection.set([link.id]);
 	}
 
@@ -1215,7 +1202,7 @@ export class Input {
 			links.push({ ...this.model.makeLink(a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
 		}
 		const splits = [...new Map(links.flatMap((l) => this.splitsFor(l)).map((s) => [s.original.id, s])).values()];
-		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links, splits, ctx.unpin), extra));
+		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links, splits), extra));
 		this.selection.set(links.map((l) => l.id));
 	}
 
@@ -1577,7 +1564,7 @@ export class Input {
 		answered `commit rejected - invalid`. B87's shape exactly -- an entry whose kind and payload
 		disagree, accepted by the optimistic apply and refused at the boundary.
 		*/
-		this.history.commit(commands.chainHop(this.ctx.placed, node, link, this.ctx.unpin));
+		this.history.commit(commands.chainHop(this.ctx.placed, node, link));
 		/*
 		Retire THIS hop's preview before starting the next one.
 

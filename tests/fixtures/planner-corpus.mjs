@@ -56,7 +56,7 @@ const W = (i) => `node-${hex(0xb00 + i)}`;   // a waypoint: a node with no type 
 const L = (i) => `link-${hex(0xc00 + i)}`;
 const G = (i) => `group-${hex(0xd00 + i)}`;
 const node = (i, x, y) => ({ id: N(i), name: `n${i}`, type: 'router', x: x * P, y: y * P, shape: 'circle' });
-const way = (i, x, y, pinned) => ({ id: W(i), name: `w${i}`, x: x * P, y: y * P, ...(pinned ? { pinned: true } : {}) });
+const way = (i, x, y) => ({ id: W(i), name: `w${i}`, x: x * P, y: y * P });   // `pinned` retired at S-d (H18.14)
 const link = (i, src, dst, via) => ({ id: L(i), name: `l${i}`, src, dst, ...(via ? { via } : {}) });
 const group = (i, members) => ({ id: G(i), name: `g${i}`, members });
 const put = (kind, entity) => ({ op: 'put', kind, entity });
@@ -81,7 +81,7 @@ const junction = () => ({
 	links: [link(0, N(0), W(0)), link(1, W(0), N(1)), link(2, W(0), N(2))],
 });
 // n0 -> n1 bent through w0
-const bent = (pinned) => ({ nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 2, pinned)], links: [link(0, N(0), N(1), [W(0)])] });
+const bent = () => ({ nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 2)], links: [link(0, N(0), N(1), [W(0)])] });
 
 const NAMED = [];
 for (const compose of ['network']) {
@@ -113,12 +113,12 @@ for (const compose of ['network']) {
 	c('del-waypoint-endpoint-link-dies', junction(), [del('node', W(0))]);
 	c('del-waypoint-strips-bend', bent(), [del('node', W(0))]);
 	c('del-waypoint-strip-collides-deletes', { ...bent(), links: [link(0, N(0), N(1), [W(0)]), link(1, N(0), N(1))] }, [del('node', W(0))]);
-	c('del-waypoint-trims-group', { ...bent(true), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)], groups: [group(0, [W(0), N(0), N(2)])] }, [del('node', W(0))]);
+	c('del-waypoint-trims-group', { ...bent(), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)], groups: [group(0, [W(0), N(0), N(2)])] }, [del('node', W(0))]);
 	// the stranded pass: a pin deleted under a link that keeps another way
 	c('stranded-pin-deleted', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 2), way(1, 0, -2)], links: [link(0, N(0), N(1), [W(0), W(1)])] }, [del('node', W(0))]);
 	// the sweep
 	c('sweep-bend-released', bent(), [del('link', L(0))]);
-	c('sweep-keeps-pinned', bent(true), [del('link', L(0))]);
+	// `sweep-keeps-pinned` retired at S-d (H18.14): with `pinned` gone it was `sweep-bend-released` again
 	c('sweep-terminus', { nodes: [node(0, -4, 0)], waypoints: [way(0, 4, 0)], links: [link(0, N(0), W(0))] }, [del('link', L(0))]);
 	c('sweep-sheltered-by-hand-pipe', bent(), [del('link', L(0))], { pipes: [[N(0), W(0), 'hand'], [W(0), N(1), 'hand']] });
 	c('sweep-trims-group', { ...bent(), nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, -4)], groups: [group(0, [W(0), N(2)])] }, [del('link', L(0))]);
@@ -132,7 +132,7 @@ for (const compose of ['network']) {
 	c('join-at-junction', junction(), [del('link', L(2))]);
 	c('join-both-stored-as-src', { ...junction(), links: [link(0, W(0), N(0)), link(1, W(0), N(1)), link(2, W(0), N(2))] }, [del('link', L(2))]);
 	c('join-carries-flow', { ...junction(), links: [{ ...link(0, N(0), W(0)), direction: 'forward' }, { ...link(1, W(0), N(1)), direction: 'forward' }, link(2, W(0), N(2))] }, [del('link', L(2))]);
-	c('join-not-on-create', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 0, true)] }, [put('link', link(0, N(0), W(0))), put('link', link(1, W(0), N(1)))]);
+	c('join-not-on-create', { nodes: [node(0, -4, 0), node(1, 4, 0)], waypoints: [way(0, 0, 0)] }, [put('link', link(0, N(0), W(0))), put('link', link(1, W(0), N(1)))]);
 	c('join-not-where-count-unchanged', junction(), [del('link', L(2)), put('link', link(3, W(0), N(2)))]);
 	c('join-declined-duplicate-bend', { nodes: [node(0, -4, 0), node(1, 4, 0), node(2, 0, 4)], waypoints: [way(0, 0, 0), way(1, -2, -2)], links: [link(0, N(0), W(0), [W(1)]), link(1, W(0), N(1)), link(2, W(0), N(2)), link(3, N(0), N(1), [W(1)])] }, [del('link', L(2))]);
 	// x -> w joined to w -> n1 via [x] would name x twice
@@ -160,7 +160,8 @@ function genBoard(r) {
 	for (let x = -6; x <= 6; x += 2) for (let y = -4; y <= 4; y += 2) cells.push([x, y]);
 	const take = () => cells.splice(Math.floor(r() * cells.length) % cells.length, 1)[0];
 	const nodes = Array.from({ length: 2 + Math.floor(r() * 3) }, (_, i) => node(i, ...take()));
-	const waypoints = Array.from({ length: 1 + Math.floor(r() * 4) }, (_, i) => way(i, ...take(), r() < 0.2));
+	// the draw that once said `pinned` is still taken and discarded, so every case after it is generated as before (S-d)
+	const waypoints = Array.from({ length: 1 + Math.floor(r() * 4) }, (_, i) => { const at = take(); r(); return way(i, ...at); });
 	const scratch = new Model();
 	for (const e of nodes) scratch.put('node', e);
 	for (const e of waypoints) scratch.put('node', e);

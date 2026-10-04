@@ -27,7 +27,7 @@ test('H12.5: a waypoint may carry spawn, and the two peers agree that it may', (
 
 test('H12.5: absent spawn is the normal case and stays legal', () => {
 	assert.equal(validateEntity('node', wp({})), null);
-	assert.equal(validateEntity('node', wp({ pinned: true })), null, 'B162 pinned is undisturbed');
+	assert.notEqual(validateEntity('node', wp({ pinned: true })), null, 'B162 pinned is retired (S-d, H18.14), so a node carrying it is refused');
 });
 
 test('H12.5: a spawner is WHOLE or absent -- a partial one is not a state', () => {

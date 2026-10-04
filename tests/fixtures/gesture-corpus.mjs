@@ -41,7 +41,8 @@ const BOARDS = {
 	three: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['n2', 'node', 360, 360]],
 	straight: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['l0', 'link', 'n0', 'n1']],
 	bent: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['w0', 'waypoint', 180, 120], ['l0', 'link', 'n0', 'n1', ['w0']]],
-	pinned: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['w0', 'waypoint', 180, 120, true]],
+	// a waypoint no link uses (it was `pinned` until S-d retired the field, H18.14)
+	free: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['w0', 'waypoint', 180, 120]],
 	zone: () => [['z0', 'zone', -120, -120, 240, 240], ['n0', 'node', 0, 0], ['n1', 'node', 360, 0]],
 	chain: () => [['n0', 'node', 0, 0], ['n1', 'node', 180, 0], ['n2', 'node', 360, 0]],
 };
@@ -51,7 +52,7 @@ function seed(h, board) {
 	for (const [alias, kind, ...a] of BOARDS[board]()) {
 		let e;
 		if (kind === 'node') e = h.model.makeNode('host', { x: a[0], y: a[1] });
-		else if (kind === 'waypoint') e = { ...h.model.makeWaypoint({ x: a[0], y: a[1] }), ...(a[2] ? { pinned: true } : {}) };
+		else if (kind === 'waypoint') e = h.model.makeWaypoint({ x: a[0], y: a[1] });
 		else if (kind === 'zone') e = h.model.makeZone({ x: a[0], y: a[1], w: a[2], h: a[3] });
 		else { e = h.model.makeLink(ids[a[0]], ids[a[1]]); if (a[2]) e.via = a[2].map((w) => ids[w]); }
 		h.model.put(kind === 'waypoint' ? 'node' : kind, e);   // a waypoint is a node with no type (F-c)
@@ -106,8 +107,8 @@ export const SCENARIOS = [
 	{ id: 'link-duplicate-straight', board: 'straight', steps: drag([0, 0], [360, 0], 'n0', 'n1') },
 	{ id: 'link-w-bend', board: 'pair', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['w', 180, 120]]) },
 	{ id: 'link-w-thread-existing', board: 'bent', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['w', 180, 120, 'w0']]) },
-	{ id: 'link-w-thread-pinned', board: 'pinned', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['w', 180, 120, 'w0']]) },
-	{ id: 'link-w-pinned-cancelled', board: 'pinned', steps: [['down', 0, 0, 'n0'], ['move', 180, 120, 'w0'], ['key', 'w'], ['key', 'Escape']] },
+	{ id: 'link-w-thread-free', board: 'free', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['w', 180, 120, 'w0']]) },
+	{ id: 'link-w-free-cancelled', board: 'free', steps: [['down', 0, 0, 'n0'], ['move', 180, 120, 'w0'], ['key', 'w'], ['key', 'Escape']] },
 	{ id: 'link-release-ground-after-w', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 120], ['key', 'w'], ['move', 240, 240], ['up', 240, 240, null, { up: true }]] },
 	{ id: 'link-release-ground-no-key', board: 'pair', steps: drag([0, 0], [240, 240], 'n0', null) },
 	{ id: 'link-w-on-node-production', board: 'three', steps: drag([0, 0], [360, 360], 'n0', 'n2', {}, [['w', 360, 0, 'n1']]) },

@@ -375,7 +375,6 @@ export const SETTABLE = {
 	},
 	waypoint: {
 		name: { about: 'the label it draws' },
-		pinned: { about: 'on or off -- placed deliberately, not derived from a link', words: ONOFF },
 		transit: { about: 'on, off or default -- whether what arrives passes through it', words: TRANSIT },
 	},
 	zone: { name: { about: 'the label it draws' } },

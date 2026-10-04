@@ -168,5 +168,91 @@
 				"node-cf3412"
 			]
 		}
+	],
+	"pipes": [
+		{
+			"id": "pipe-735fd4-c6f2f8",
+			"a": "node-735fd4",
+			"b": "node-c6f2f8",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-8a4dd5-c6f2f8",
+			"a": "node-8a4dd5",
+			"b": "node-c6f2f8",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-8a4dd5-cf3412",
+			"a": "node-8a4dd5",
+			"b": "node-cf3412",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-cf3412-dcf3e2",
+			"a": "node-cf3412",
+			"b": "node-dcf3e2",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-9d6de2-dcf3e2",
+			"a": "node-9d6de2",
+			"b": "node-dcf3e2",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-9d6de2-ce9ff2",
+			"a": "node-9d6de2",
+			"b": "node-ce9ff2",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-735fd4-ce9ff2",
+			"a": "node-735fd4",
+			"b": "node-ce9ff2",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-23a639-e734e7",
+			"a": "node-23a639",
+			"b": "node-e734e7",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-23a639-241f2d",
+			"a": "node-23a639",
+			"b": "node-241f2d",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-1a3d0f-241f2d",
+			"a": "node-1a3d0f",
+			"b": "node-241f2d",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-1a3d0f-e734e7",
+			"a": "node-1a3d0f",
+			"b": "node-e734e7",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-23a639-ddf675",
+			"a": "node-23a639",
+			"b": "node-ddf675",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-6a746f-ddf675",
+			"a": "node-6a746f",
+			"b": "node-ddf675",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-6a746f-e734e7",
+			"a": "node-6a746f",
+			"b": "node-e734e7",
+			"laid": "link"
+		}
 	]
 }

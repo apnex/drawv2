@@ -1035,7 +1035,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.11 | S-a: a plugin contributes fields to a kind it does not own; the network brings `transit` (G3) | feature | S2 | `DONE` |
 | H18.12 | S-b: the server composes the network; the planner requires a tenant; the product page holds pipes (G1); the classic tenant and the pinned-orphan rule deleted | feature | S2 | `DONE` |
 | H18.13 | S-c: `link-legs` -- a pinned link lays the legs it has no way over, from any door; `ring-pipe` folded in (G2) | feature | S2 | `DONE` |
-| H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | **B266** | S2 | `TODO` |
+| H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | feature | S2 | `DONE` |
 | H18.15 | S-e: the link kind and its model-side rules move into `network/` (G5, B280, K13b) | **B280** | S2 | `TODO` |
 | H18.16 | S-f: P3 closed -- estate dry run, register, records | **B266** | S2 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
@@ -1052,6 +1052,7 @@ AMENDED 2026-10-03: approved and G1 to G5 ruled as recommended (`dev/DECISIONS.m
 AMENDED 2026-10-03: H18.11 (S-a) done -- a plugin contributes fields to a kind it does not own; the network brings `transit`, and the product's node row names none.\
 AMENDED 2026-10-03: H18.12 (S-b) done -- the server composes the network's rows and tenant; the planner has no default link tenant; the classic tenant and its pinned-orphan rule are deleted; the product page holds pipes until P5 (G1).\
 AMENDED 2026-10-03: H18.13 (S-c) done -- `link-legs`: a pinned link or a ring lays a link pipe for each leg no pipes join, from any door; a plain link lays none; `ring-pipe` folded in.\
+AMENDED 2026-10-04: H18.14 (S-d) done -- the migration splits a shared leg (P-4), lays every stored link's pipes and drops `pinned`; the estate dry run passes with every link up along its stops: 783 pipes, 17 closing legs, 0 shared, 104 `pinned` dropped; the templates carry their pipes.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

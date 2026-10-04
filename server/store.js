@@ -159,6 +159,8 @@ Returns the document and log to install, and whether either differs from what wa
 function admit(raw, log = null) {
 	const shed = shedRetired(raw);
 	const migrated = migrateFormatBatch(raw, log);
+	// P-4 (S-d): a shared leg split, or one that could not be, is said where an operator reads -- the dry run refuses the latter
+	for (const r of migrated.report) console.log(`[ store ] ${raw?.meta?.id}: ${r.link} shared the leg ${r.leg.join('-')} with ${r.shares}; ${r.kind === 'split' ? `split into ${r.into.join(', ')}` : 'left down -- it cannot be split'}`);
 	return { doc: migrated.doc, log: migrated.log, changed: shed || migrated.steps.length > 0 };
 }
 

@@ -158,20 +158,8 @@ const FIELDS = {
 		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
 		// a WAYPOINT'S own fields -- a node with no type (F-c, H18.5); a typed node carries neither (REFERS.node). Its name is
 		// every node's (B187: naming is schema-wide, and a waypoint was the gap)
-		/*
-		B162 -- INTENT, and the only thing about a waypoint worth storing.
-
-		Its ROLE is derived and never written down: in a link's `via` it is a bend, at `src`/`dst`
-		of an open link an endpoint, at `src`/`dst` of a CLOSED link a bend again because a ring has
-		no ends, and referenced nowhere an orphan. A stored role would be a twin of the links, to be
-		rewritten every time a path is closed and wrong the first time that is missed.
-
-		What cannot be derived is a waypoint placed deliberately with no link at all -- there is no
-		structure to read an intention off. `pinned` says the author meant it to exist, so the sweep
-		leaves it alone. Threading a link through it clears the pin: from then on it is part of that
-		link's shape and shares its fate.
-		*/
-		pinned: (v) => typeof v === 'boolean',   // retired at P3 with production's orphan rule (ruled 2026-10-03)
+		// `pinned` (B162) is retired: the network keeps no orphan beyond what its pipes hold (ruled 2026-09-29), so it meant nothing;
+		// the migration drops it (S-d, H18.14; P-5 corrected)
 		/*
 		H12.5 -- this endpoint EMITS movers along its link.
 
@@ -229,14 +217,14 @@ EACH KIND'S CROSS-ENTITY CHECK -- `(entity, access, patch, before)`, `entity` be
 shared with `validateDoc`; what each row adds is the part that was the mutation path's own -- a link is judged on the
 `src`, `dst` and `via` it keeps, and a group only when the op names its members.
 */
-const WAYPOINT_ONLY = ['pinned', 'spawn'];
+const WAYPOINT_ONLY = ['spawn'];
 const TYPED_ONLY = ['shape', 'span', 'content'];
 const REFERS = {
 	/*
 	F-c (H18.5) -- ONE NODE KIND, TWO SHAPES, told apart by `type`. A waypoint became a node with no type (P-10), and every
 	rule that read "a waypoint" reads "a node with no type" -- so the line between them is held here, where the kind boundary
 	held it before: whether a node has a type is fixed when it is made, so a bend can never become a router or the reverse
-	(FORMAT-BATCH.md section 4); `pinned` and `spawn` are a waypoint's alone, and `shape`, `span` and `content` a typed
+	(FORMAT-BATCH.md section 4); `spawn` is a waypoint's alone, and `shape`, `span` and `content` a typed
 	node's alone -- exactly the fields each kind had. Relaxing the first belongs to B282's type-as-composition half.
 	*/
 	node: (entity, access, patch, before) => {

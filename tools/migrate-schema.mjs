@@ -17,9 +17,13 @@ was not ruled to change:
                   must follow it, and no two anchors may share a hex (P-10)
        order      every node, link and zone carries a drawing order, and within each collection the items that had none
                   take orders rising in the order the source listed them -- the stacking and ages they had (F-d)
+       unpin      no node carries `pinned` (P-5 corrected)
        schema     `meta.schema` is 2
      Every other field of every entity, the selection and the meta identity must be equal.
   4. every log keeps its version and, for a schema 1 source, holds no record (P-6); the document's version is its log's.
+  5. THE PIPES (F2, P-3, P-4; S-d): every stored link is up under the network's own routing, along exactly its stored
+     stops, and the pipes are exactly one per distinct leg, laid as `link` -- no pipe nobody's leg needed. A shared leg the
+     migration split is reported with its pieces; one it could not split is a difference, and blocks the cutover.
 
 Prints what each step changed, and exits 1 on any difference. The backup stays where it is and is never copied into the
 repository.
@@ -32,6 +36,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { migrateFormatBatch, MIGRATION_STEPS, MIGRATION_TARGET } from '../server/migrate.mjs';
 import { parse } from '../server/docfile.mjs';
+import { Model } from '../model/model.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork } from '../network/network.mjs';
+import { createTransit } from '../network/transit.mjs';
 
 // the store's own filename rule, restated as tools/migrate-version.mjs does: a migration selects by the rule as it was
 const FILE = /^diagram-[0-9a-f]{6}\.json$/;
@@ -49,6 +58,7 @@ export function canonical(doc, idMap = new Map()) {
 	const byId = (list) => [...(list || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)));
 	const to = (id) => idMap.get(id) ?? id;
 	const unordered = (e) => { const { order, ...rest } = e; return rest; };   // F-d: checked apart, below
+	const unpinned = (e) => { const { pinned, ...rest } = e; return rest; };   // P-5 corrected: retired
 	const link = (l0) => {
 		const l = { ...l0, src: to(l0.src), dst: to(l0.dst), ...(Array.isArray(l0.via) ? { via: l0.via.map(to) } : {}) };
 		const { flow, direction, ...rest } = l;
@@ -56,7 +66,7 @@ export function canonical(doc, idMap = new Map()) {
 		return said === undefined ? rest : { ...rest, direction: said };
 	};
 	// P-10: the waypoints join the nodes, through the map
-	const anchors = [...(doc.nodes || []), ...(doc.waypoints || []).map((w) => ({ ...w, id: to(w.id) }))].map(unordered);
+	const anchors = [...(doc.nodes || []), ...(doc.waypoints || []).map((w) => ({ ...w, id: to(w.id) }))].map(unordered).map(unpinned);
 	return JSON.stringify(sorted({
 		id: doc.meta?.id, name: doc.meta?.name,
 		nodes: byId(anchors), links: byId(doc.links).map(unordered).map(link),
@@ -86,6 +96,38 @@ export function orderProblem(source, migrated, map) {
 	return null;
 }
 
+/*
+S-d: the migrated board under the NETWORK -- every link up, along exactly its stored stops, and every pipe one some leg
+needed. Answers { problems, pipes, closing }. Read through a Model composed as the server and the lab compose it, so the
+answer is the network's own, not a restatement.
+*/
+const KINDS = productKinds(...NETWORK_ROWS);
+export function pipeProblems(migrated) {
+	const network = createNetwork(createTransit());
+	const model = new Model({ kinds: KINDS, network });
+	model.load(migrated);
+	const routes = network.view.of(model);   // the network's own derivation: each link's route as anchor ids
+	const problems = [], legs = new Set();
+	const key = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+	let closing = 0;
+	for (const l of migrated.links || []) {
+		const stops = [l.src, ...(l.via || []), l.dst, ...(l.closed ? [l.src] : [])];
+		for (let i = 0; i < stops.length - 1; i++) legs.add(key(stops[i], stops[i + 1]));
+		if (l.closed) closing++;
+		if (model.isLinkDown(model.get('link', l.id))) { problems.push(`${l.id} is down`); continue; }
+		const path = routes.route(l.id);
+		if (!path || path.join(',') !== stops.join(',')) problems.push(`${l.id} runs ${path?.join(',')}, not its stops ${stops.join(',')}`);
+	}
+	const pipes = migrated.pipes || [];
+	for (const p of pipes) {
+		if (!legs.has(key(p.a, p.b))) problems.push(`${p.id} is no stored link's leg`);
+		if (p.laid !== 'link') problems.push(`${p.id} is laid ${p.laid}, not link`);
+	}
+	if (new Set(pipes.map((p) => key(p.a, p.b))).size !== legs.size) problems.push(`${pipes.length} pipe(s) for ${legs.size} distinct leg(s)`);
+	if ((migrated.nodes || []).some((n) => 'pinned' in n)) problems.push('a node still carries pinned');
+	return { problems, pipes: pipes.length, closing };
+}
+
 export function waypointMap(source, migrated) {
 	const map = new Map();
 	const bare = (migrated.nodes || []).filter((n) => !n.type);
@@ -112,11 +154,15 @@ export async function dryRun(dataDir, { say = console.log } = {}) {
 	// what the migration reports per step, read from the function the store calls -- counted, not trusted: step 3 checks it
 	const sources = new Map();
 	const ran = Object.fromEntries(MIGRATION_STEPS.map((s) => [s, 0]));
-	let records = 0, directions = 0;
+	let records = 0, directions = 0, pinned = 0;
+	const reported = [];
 	for (const f of files) {
 		const { doc, log } = parse(fs.readFileSync(path.join(dataDir, f), 'utf8'));
 		sources.set(doc.meta.id, { doc, log });
-		for (const s of migrateFormatBatch(doc, log).steps) ran[s]++;
+		const migrated = migrateFormatBatch(doc, log);
+		for (const s of migrated.steps) ran[s]++;
+		for (const r of migrated.report) reported.push({ diagram: doc.meta.id, ...r });
+		pinned += [...(doc.nodes || []), ...(doc.waypoints || [])].filter((n) => n && 'pinned' in n).length;
 		if (doc.meta?.schema !== MIGRATION_TARGET) records += log?.records?.length ?? 0;
 		directions += (doc.links || []).filter((l) => typeof l.flow === 'boolean').length;
 	}
@@ -125,7 +171,9 @@ export async function dryRun(dataDir, { say = console.log } = {}) {
 	const store = new Store(staging, { flushMs: 3_600_000, authz: false });
 	await store.init();
 	const problems = [];
-	let renumbered = 0, waypointsLeft = 0, nodes = 0;
+	let renumbered = 0, waypointsLeft = 0, nodes = 0, pipes = 0, closing = 0;
+	const split = reported.filter((r) => r.kind === 'split');
+	for (const r of reported) if (r.kind === 'unsplittable') problems.push(`${r.diagram}: ${r.link} shares the leg ${r.leg.join('-')} with ${r.shares} and cannot be split (P-4)`);
 	if (store.diagrams.size !== files.length) problems.push(`booted ${store.diagrams.size} diagram(s) of ${files.length}`);
 	for (const [id, { doc, log }] of sources) {
 		const entry = store.diagrams.get(id);
@@ -139,7 +187,13 @@ export async function dryRun(dataDir, { say = console.log } = {}) {
 		if ('waypoints' in loaded) problems.push(`${id}: still holds a waypoint collection`);
 		waypointsLeft += (loaded.waypoints || []).length;
 		nodes += (loaded.nodes || []).length;
-		if (canonical(loaded) !== canonical(doc, map)) problems.push(`${id}: an entity changed beyond the ruled changes`);
+		// a split diagram's links are checked by the network below, not against its source: the split is the ruled change
+		const splitHere = split.some((r) => r.diagram === id);
+		const linkless = (d) => ({ ...d, links: [] });
+		if (canonical(splitHere ? linkless(loaded) : loaded) !== canonical(splitHere ? linkless(doc) : doc, map)) problems.push(`${id}: an entity changed beyond the ruled changes`);
+		const piped = pipeProblems(loaded);
+		for (const p of piped.problems) problems.push(`${id}: ${p}`);
+		pipes += piped.pipes; closing += piped.closing;
 		const ordering = orderProblem(doc, loaded, map);
 		if (ordering) problems.push(`${id}: ${ordering}`);
 		if (loaded.meta.schema !== MIGRATION_TARGET) problems.push(`${id}: meta.schema is ${loaded.meta.schema}`);
@@ -155,9 +209,11 @@ export async function dryRun(dataDir, { say = console.log } = {}) {
 	say(`  steps: ${MIGRATION_STEPS.map((s) => `${s} ${ran[s]}`).join(', ')} (diagrams each changed)`);
 	say(`  ${directions} declared direction(s) renamed; ${records} undo record(s) dropped`);
 	say(`  ${nodes} node(s) after, ${waypointsLeft} waypoint collection entries left; ${renumbered} waypoint(s) renumbered`);
+	say(`  ${pipes} pipe(s) laid, ${closing} ring(s) with a closing leg; ${split.length} shared leg(s) split; ${pinned} pinned dropped`);
+	for (const r of split) say(`  - ${r.diagram}: ${r.link} shared ${r.leg.join('-')} with ${r.shares}; now ${r.into.join(', ')}`);
 	for (const p of problems) say(`  ✗ ${p}`);
 	say(problems.length ? `  FAIL -- ${problems.length} difference(s)` : '  PASS -- every diagram boots, and nothing changed that was not ruled');
-	return { files: files.length, booted: store.diagrams.size, ran, directions, records, nodes, renumbered, problems };
+	return { files: files.length, booted: store.diagrams.size, ran, directions, records, nodes, renumbered, pipes, closing, split: split.length, pinned, problems };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

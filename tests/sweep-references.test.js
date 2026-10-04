@@ -32,9 +32,9 @@ const nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, typ
 const wp = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, x: x * P, y: y * P } });
 const lk = (id, s, d, via) => ({ op: 'put', kind: 'link', entity: { id, name: id, src: s, dst: d, ...(via ? { via } : {}) } });
 const W = 'node-00000f';
-// a link tenant built like production's -- the rule B162/B216 stated here -- so each test changes only the condition it
-// is about; `stranded` adds the network's stranded pass, and `onStranded` hears what it emits
-const net = ({ alsoReferenced = null, keepsOrphan = (w, { wasBendOnly }) => !!w.pinned || !wasBendOnly, stranded = false, onStranded = null } = {}) => {
+// a link tenant built like production's -- the rule B216 stated here (B162's `pinned` retired, S-d) -- so each test changes only
+// the condition it is about; `stranded` adds the network's stranded pass, and `onStranded` hears what it emits
+const net = ({ alsoReferenced = null, keepsOrphan = (w, { wasBendOnly }) => !wasBendOnly, stranded = false, onStranded = null } = {}) => {
 	const t = linkTenant({ owner: 'test links', stranded, alsoReferenced, keepsOrphan, says: {} });
 	if (onStranded) t.reactions = t.reactions.map((r) => (r.phase !== 'stranded' ? r : { ...r, run: (ctx, emit) => r.run(ctx, (ops) => { onStranded(ops, ctx); emit(ops); }) }));
 	return { links: t };
@@ -83,10 +83,10 @@ So the rule is the tenant's, `linkTenant({ keepsOrphan(waypoint, { wasBendOnly }
 production's. The first test is the one that matters most: absent, production sweeps exactly as ruled.
 */
 function ended() {
-	// a link from a PINNED anchor, through a bend, to an unpinned END anchor
+	// a link from a start anchor, through a bend, to an END anchor (the start carried `pinned` until S-d retired it)
 	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
 	const ok = commit(m, log, { label: 'setup', ops: [
-		{ op: 'put', kind: 'node', entity: { id: 'node-0000a1', name: 's', x: -360, y: 0, pinned: true } },
+		wp('node-0000a1', -6, 0),
 		wp('node-0000b2', 0, -2), wp('node-0000c3', 6, 0),
 		lk('link-0000d4', 'node-0000a1', 'node-0000c3', ['node-0000b2'])] }, 'lab', 'lab');
 	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
@@ -98,6 +98,7 @@ const left = (m) => m.all('node').filter((n) => !n.type).map((w) => w.id).sort()
 // AMENDED 2026-10-03 (S-b, H18.12): production runs the network's tenant; the classic one, which kept the pinned start and the
 // end (B162, B216), is deleted under the cutover ruling. A tenant built with that condition still keeps them -- the
 // condition is the tenant's to state, which is what this file holds.
+// AMENDED 2026-10-04 (S-d, H18.14): `pinned` is retired; the condition keeps a link's ends, which is all it can still read.
 test('a tenant whose condition keeps a pinned waypoint and a link\'s end keeps them; the bend goes', () => {
 	const b = ended();
 	assert.equal(deleteIt(b, net()).ok, true);
@@ -113,7 +114,7 @@ test('production -- the network\'s tenant -- takes all three with the link (rule
 test('the network plugin\'s rule: with nothing but references keeping an anchor, all three go', () => {
 	const b = ended();
 	assert.equal(deleteIt(b, net({ keepsOrphan: () => false })).ok, true);
-	assert.deepEqual(left(b.m), [], 'the pinned start and the end go with the link: only links and hand pipes keep an anchor');
+	assert.deepEqual(left(b.m), [], 'the start and the end go with the link: only links and hand pipes keep an anchor');
 });
 
 test('the rule is told whether the orphan was only ever a bend, and sees the waypoint itself', () => {

@@ -51,8 +51,7 @@ const TABLE = {
 	F-c (H18.5, P-10) -- ONE ANCHOR KIND. A waypoint is a node with no `type` (model/anchors.mjs); it was a kind of its own,
 	`waypoint`, stored under `waypoints`, until the format batch. So `type` is optional, and the waypoint's own fields join:
 
-	B162: `pinned` says the author placed this waypoint deliberately, with no link to derive a role from. Optional because
-	almost none carry it -- a bend never does. Retired at P3 with production's orphan rule (ruled 2026-10-03).
+	B162's `pinned` is retired (S-d, H18.14; P-5 corrected): the network keeps no orphan beyond what its pipes hold.
 
 	H12.5: `spawn` says this endpoint EMITS along its link. One composite field rather than four loose ones, because absent
 	means "not a spawner" and that is a single fact -- four independent optional numbers would make a half-configured spawner
@@ -65,7 +64,7 @@ const TABLE = {
 	`transit` is not the product's: the network plugin contributes it to the node (S-a, H18.11, G3; network/kinds.mjs), so a
 	composition without the network refuses it.
 	*/
-	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'pinned', 'spawn', 'order'] },
+	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'spawn', 'order'] },
 	// `order` (F-d, H18.6): the drawing order of every drawn kind, model/order.mjs; optional, so a hand-made board still loads
 	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control', 'order'] },
 	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: ['order'] },

@@ -206,8 +206,8 @@ function keptOnRefusal(verdict, { guides = [], placed = [] }) {
 /*
 Which orphaned anchors the network model keeps beyond what references them: NONE -- ruled 2026-09-29.
 
-The network's `keepsOrphan`, the condition inside its tenant's orphan sweep (PL-3). Production keeps an orphaned anchor if the author pinned it
-(B162) or it was a link's end (B216). The director ruled that in the network model "deliberate" means
+The network's `keepsOrphan`, the condition inside its tenant's orphan sweep (PL-3). Production kept an orphaned anchor if the author pinned it
+(B162) or it was a link's end (B216); `pinned` is retired (S-d, H18.14). The director ruled that in the network model "deliberate" means
 HELD BY THE PIPES LAID WITH g, so anchors made with w go when their last link goes -- ends included, the
 director confirming: "No - it goes just as ruled." A g anchor survives because its hand pipes reference
 it, which reaches the sweep as one of the anchors the pipes reference; nothing else needs to shelter anything.

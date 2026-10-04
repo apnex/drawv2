@@ -71,7 +71,7 @@ test('F-a: the version kept is the high-water mark -- a log whose records run pa
 test('F-a: the document is stamped schema 2, and every step is named in what the function reports', () => {
 	const { doc, steps } = migrateFormatBatch(schema1(), log1());
 	assert.equal(doc.meta.schema, 2);
-	assert.deepEqual(steps, ['history', 'anchors', 'order', 'direction', 'schema']);
+	assert.deepEqual(steps, ['history', 'anchors', 'order', 'pipes', 'direction', 'schema']);   // pipes since S-d
 });
 
 test('F-a: pure -- the input document and log are untouched', () => {
@@ -192,7 +192,7 @@ test('F-a dry run: a directory of schema 1 files passes, through a real store bo
 	const r = await dryRun(dir, { say: () => {} });
 	assert.deepEqual(r.problems, []);
 	assert.equal(r.booted, 2);
-	assert.deepEqual(r.ran, { history: 1, renumber: 0, anchors: 2, order: 2, direction: 2, schema: 2 });
+	assert.deepEqual(r.ran, { history: 1, renumber: 0, anchors: 2, order: 2, split: 0, pipes: 2, unpin: 0, direction: 2, schema: 2 });
 	assert.equal(r.directions, 4);
 	assert.equal(r.records, 3);
 	assert.equal(fs.readFileSync(path.join(dir, 'diagram-a1a1a1.json'), 'utf8'), before, 'the dry run never writes the data directory');
@@ -229,16 +229,17 @@ const withWaypoints = () => ({
 	reveal: { origin: 1790000000000, beats: [{ interval: 250, ids: ['waypoint-0000cc', 'link-0000ee'] }] },
 });
 
+// AMENDED 2026-10-04 (S-d, H18.14): the pin no longer rides -- the `unpin` step drops it, and `pipes` lays the links' legs
 test('F-c: each waypoint joins the nodes after them, with no type, keeping its hex, name, place, pin and spawner', () => {
 	const { doc, steps } = migrateFormatBatch(withWaypoints(), null);
-	assert.deepEqual(steps, ['renumber', 'anchors', 'order', 'schema']);
+	assert.deepEqual(steps, ['renumber', 'anchors', 'order', 'pipes', 'unpin', 'schema']);
 	assert.equal('waypoints' in doc, false, 'the collection is gone');
 	assert.deepEqual(doc.nodes.map((n) => n.id).slice(0, 2), ['node-0000aa', 'node-0000bb'], 'the nodes first, untouched');
 	const spawner = doc.nodes.find((n) => n.name === 'spawner');
 	assert.equal(spawner.id, 'node-0000cc', 'a waypoint keeps its hex');
 	assert.equal('type' in spawner, false);
 	assert.equal(spawner.spawn.interval, 900, 'its spawner rides with it');
-	assert.equal(doc.nodes.find((n) => n.name === 'clash').pinned, true, 'its pin rides with it, until P3 (ruled 2026-10-03)');
+	assert.equal('pinned' in doc.nodes.find((n) => n.name === 'clash'), false, 'its pin is dropped at S-d (P-5 corrected)');
 	assert.equal(validateDoc(doc), null, 'and the result is a valid schema 2 document');
 });
 
@@ -303,13 +304,13 @@ test('F-c: whether a node has a type is fixed when it is made, and each shape ke
 	const refused = (ops, re) => { const r = plan(m, ops); assert.equal(r.ok, false, JSON.stringify(ops)); assert.match(r.error, re); };
 	refused([{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { type: 'router' } }], /type is fixed when it is made/);
 	refused([{ op: 'put', kind: 'node', entity: { id: 'node-0000aa', name: 'r', x: 0, y: 0 } }], /type is fixed when it is made/);
-	refused([{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { pinned: true } }], /a typed node has no pinned/);
+	refused([{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { pinned: true } }], /unknown field node.pinned/);   // retired at S-d
 	refused([{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { spawn: { interval: 900, speed: 1.4, kind: 'packet', since: Date.now() } } }], /a typed node has no spawn/);
 	refused([{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { shape: 'square' } }], /a waypoint \(a node with no type\) has no shape/);
 	refused([{ op: 'put', kind: 'node', entity: { id: 'node-0000cc', name: 'p', x: 240, y: 0, span: { cols: 2, rows: 1 } } }], /has no span/);
 	assert.equal(plan(m, [{ op: 'set', kind: 'node', id: 'node-0000aa', patch: { type: 'firewall' } }]).ok, true, 'a typed node may change its type');
-	assert.equal(plan(m, [{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { pinned: true } }]).ok, true, 'a waypoint may be pinned');
-	assert.equal(validateDoc({ meta: { id: 'diagram-0000dd', name: 'd' }, nodes: [{ id: 'node-0000aa', name: 'r', type: 'router', x: 0, y: 0, pinned: true }] })?.includes('a typed node has no pinned'), true, 'and a stored one is refused at load');
+	refused([{ op: 'set', kind: 'node', id: 'node-0000bb', patch: { pinned: true } }], /unknown field node.pinned/);   // a waypoint too, since S-d
+	assert.equal(validateDoc({ meta: { id: 'diagram-0000dd', name: 'd' }, nodes: [{ id: 'node-0000aa', name: 'r', type: 'router', x: 0, y: 0, spawn: { interval: 900, speed: 1.4, kind: 'packet', since: Date.now() } }] })?.includes('a typed node has no spawn'), true, 'and a stored one is refused at load');
 });
 
 test('F-c: a link bends only at a waypoint -- a typed node in a via is refused, as a node id there always was', async () => {

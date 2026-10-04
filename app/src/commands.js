@@ -342,7 +342,7 @@ export function linkNodes(model, nodeIds, star) {
 
 // a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the
 // link never references a bend that does not exist yet.
-export function routeLink(placed, link, splits = [], unpins = []) {
+export function routeLink(placed, link, splits = []) {
 	/*
 	B210 -- the SPLITS ride in the same entry list, so one drag is one undo.
 
@@ -363,7 +363,6 @@ export function routeLink(placed, link, splits = [], unpins = []) {
 		label: link.via?.length ? 'route' : 'link',   // a NAME for the undo entry, not the pair rule (that is `pairHolders`)
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
-			...unpinEntries(unpins),
 			...splitEntries,
 			{ op: 'put', kind: 'link', entity: clone('link', link) }
 		]
@@ -383,18 +382,11 @@ segment lands on, and the link, as ONE entry list: undoing a chain should step b
 unpick a node from its link.
 */
 /*
-B245 -- threading a PINNED waypoint clears its pin (B162: the link becomes its structure), and the clearing rides in the
-SAME commit as the link. It used to be written into the tab's model the moment `w` threaded it: the request carried no
-unpin, so the planner kept the pin the tab had dropped, and a cancelled drag left the pin cleared on the tab alone.
-*/
-const unpinEntries = (ids) => (ids || []).map((id) => ({ op: 'set', kind: BARE_KIND, id, after: { pinned: false } }));
-
-/*
 Several links from one drag, as ONE undo step -- what `routeLink` is for a single link. A drag judge may cut the drawn link
 at stops it names (transit, TRANSIT.md section 12, TR-2b: a w on an anchor whose transit is off makes two links ending
 there), and the pieces arrive together, with the anchors the drag placed and the splits each piece's ends make.
 */
-export function routeLinks(placed, links, splits = [], unpins = []) {
+export function routeLinks(placed, links, splits = []) {
 	const splitEntries = splits.flatMap(({ original, halves }) => [
 		{ op: 'del', kind: 'link', entity: clone('link', original) },
 		...halves.map((h) => ({ op: 'put', kind: 'link', entity: clone('link', h) })),
@@ -403,19 +395,17 @@ export function routeLinks(placed, links, splits = [], unpins = []) {
 		label: 'route',
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
-			...unpinEntries(unpins),
 			...splitEntries,
 			...links.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })),
 		],
 	};
 }
 
-export function chainHop(waypoints, node, link, unpins = []) {
+export function chainHop(waypoints, node, link) {
 	return {
 		label: 'chain',
 		entries: [
 			...(waypoints || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
-			...unpinEntries(unpins),
 			{ op: 'put', kind: 'node', entity: clone('node', node) },
 			{ op: 'put', kind: 'link', entity: clone('link', link) },
 		],

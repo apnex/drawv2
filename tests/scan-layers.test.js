@@ -747,7 +747,9 @@ const INCUBATOR = 'network/';
 // and `tools/reaction-table.mjs`, added with PL-3: it generates the planner's reaction table, the network tenant's included
 // S-b (H18.12, PROMOTION.md P3): the promotion widens this list, as the comment above says it must -- the store composes the
 // network's rows and tenant, and the product page its rows (G1); P5 widens it again for the page's drawing
-const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js'];
+// S-d (H18.14): `tools/migrate-schema.mjs`, the format batch's dry run, composes the network as the store does to check every
+// estate link comes up along its stored stops -- it is run by hand against a backup, and nothing served imports it
+const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

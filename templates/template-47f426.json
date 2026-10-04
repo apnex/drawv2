@@ -118,5 +118,43 @@
 			"order": 1
 		}
 	],
-	"groups": []
+	"groups": [],
+	"pipes": [
+		{
+			"id": "pipe-019130-a0ba87",
+			"a": "node-019130",
+			"b": "node-a0ba87",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-6cb30d-a0ba87",
+			"a": "node-6cb30d",
+			"b": "node-a0ba87",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-25404c-a0ba87",
+			"a": "node-25404c",
+			"b": "node-a0ba87",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-40c596-8eff76",
+			"a": "node-40c596",
+			"b": "node-8eff76",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-8eff76-e7cc7e",
+			"a": "node-8eff76",
+			"b": "node-e7cc7e",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-a0ba87-e7cc7e",
+			"a": "node-a0ba87",
+			"b": "node-e7cc7e",
+			"laid": "link"
+		}
+	]
 }
