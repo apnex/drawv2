@@ -64,7 +64,14 @@ export function docToSchema(doc, opts = {}) {
 	// H15.6 -- `flow` travels with the route, or the exported SVG loses the arrowhead the canvas
 	// draws. The adapter is a THIRD door on this field, after the commit and the boot, and it was
 	// the one that silently dropped it: markers were defined in the export and used by nothing.
-	drawn(doc.links).forEach((l) => relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed, ...(l.direction !== undefined ? { direction: l.direction } : {}), ...(l.control ? { control: true } : {}) } }));
+	// R-c (H18.21): `opts.lines`, id -> { through, down }, is how each link is DRAWN -- its route over pipes, or down -- handed in
+	// by whoever composed the network (server/svg.mjs), since kernel/ imports none; the stops stay, for the waypoints' roles
+	const lines = opts.lines || new Map();
+	drawn(doc.links).forEach((l) => {
+		const line = lines.get(l.id);
+		relations.push({ id: l.id, route: { src: l.src, dst: l.dst, via: l.via || [], closed: !!l.closed, ...(l.direction !== undefined ? { direction: l.direction } : {}), ...(l.control ? { control: true } : {}),
+			...(line?.through ? { through: line.through } : {}), ...(line?.down ? { down: true } : {}) } });
+	});
 	return { variant: 'standard', entities, relations };
 }
 

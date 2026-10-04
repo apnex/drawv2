@@ -131,12 +131,15 @@ function resolveRoute(rt, byId, V) {
 		const b = byId[ref];
 		return b ? [b.cx, b.cy] : null;            // unresolved entity ref
 	};
-	const pts = [rt.src, ...(rt.via || []), rt.dst].map(anchor);
+	// R-c (H18.21): `through` is the anchors the link is drawn through -- its route over pipes, handed in by the export door,
+	// since the kernel imports no network; absent, the link is drawn through its stops, as a down link is
+	const pts = (rt.through ?? [rt.src, ...(rt.via || []), rt.dst]).map(anchor);
 	if (pts.some((p) => p == null)) return null;   // a dangling route degrades to nothing, never throws
 	// H15.6 -- the declaration travels with the route, so the renderer can derive its arrowhead
 	// from the same field the model reads. Absent stays absent: an undeclared route has no head.
 	const el = path(gridSnap(pts, V.pitch / 2), { radius: rt.radius ?? BEND_R, closed: !!rt.closed });
 	if (rt.direction !== undefined) el.direction = rt.direction;
 	if (rt.control) el.control = true;              // H15.15 -- the plane travels with the route too
+	if (rt.down) el.down = true;                    // R-c (H1) -- and whether it is down, for its look
 	return el;
 }

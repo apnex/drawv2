@@ -46,3 +46,19 @@ export function linkReading(model, link) {
 	const route = !down && model.network ? model.network.view.of(model).route(link.id) : null;
 	return { path: model.pathOf(link), route, down, blockers: down ? model.blockersOf(link) : [] };
 }
+
+/*
+HOW EACH LINK IS DRAWN, for a renderer handed data (P4 R-c, H18.21): the export's kernel imports no network, so the export door
+reads every link here and hands the kernel, per link id, `{ through, down }` -- the anchors its route runs through, a ring's
+without the return to its start since the drawing closes itself (as network/resolve.mjs draws it), or null for a down link,
+which is drawn through its stops and marked down (H1).
+*/
+export function linesOf(model) {
+	const out = new Map();
+	for (const link of model.all('link')) {
+		const { route, down } = linkReading(model, link);
+		const through = route && link.closed && route.length > 2 && route[route.length - 1] === route[0] ? route.slice(0, -1) : route;
+		out.set(link.id, { through, down });
+	}
+	return out;
+}

@@ -576,13 +576,17 @@ endpoint is guaranteed on screen.
 test('B199: an endpoint on the live canvas draws the anchor beneath its pad', { skip: SKIP }, async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 
+	// AMENDED 2026-10-04 (R-c): the harness runs in run mode, which draws the run picture -- no anchor -- so this reads the
+	// waypoint in view mode, where the anchor is the authoring aid it asserts, and puts the mode back
 	const shape = await until(tab, `(() => {
+		const was = window.draw.renderer.mode;
+		window.draw.renderer.setMode('view');
 		const g = document.querySelector('#waypoints .waypoint.endpoint');
-		if (!g) return null;
-		const circles = [...g.querySelectorAll('circle')]
+		const circles = g ? [...g.querySelectorAll('circle')]
 			.map((c) => ({ cls: c.getAttribute('class'), r: Number(c.getAttribute('r')) }))
-			.filter((c) => c.cls !== 'select-box');
-		return JSON.stringify(circles);
+			.filter((c) => c.cls !== 'select-box') : null;
+		window.draw.renderer.setMode(was);
+		return circles && JSON.stringify(circles);
 	})()`);
 
 	const circles = JSON.parse(shape);
@@ -675,28 +679,26 @@ test('B202: run mode hides the anchor and keeps the pad clickable', { skip: SKIP
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 
 	const probe = await until(tab, `(() => {
-		const svg = document.getElementById('container');
-		const g = document.querySelector('#waypoints .waypoint.endpoint');
-		if (!svg || !g) return null;
-		const box = g.getBoundingClientRect();
-		const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
-		const was = svg.classList.contains('run-mode');
-
+		// AMENDED 2026-10-04 (R-c): run mode DRAWS the run picture (kernel RUN_PICTURE) rather than hiding by stylesheet, so this
+		// switches the real mode and reads what is drawn -- the waypoint's element is re-made on the switch, so found each time
+		const r = window.draw.renderer, was = r.mode;
+		if (!document.querySelector('#waypoints .waypoint.endpoint')) return null;
 		const read = () => {
+			const g = document.querySelector('#waypoints .waypoint.endpoint');
+			const box = g.getBoundingClientRect();
+			const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
 			const anchor = g.querySelector('.wp-anchor'), pad = g.querySelector('.wp-ring');
-			// the anchor's box collapses once hidden, so the scale comes from the PAD, which stays
 			const u = (pad.getBoundingClientRect().height / 2) / 14;
 			const hit = (r) => document.elementsFromPoint(cx, cy + r * u)
 				.map((e) => e.getAttribute('class') || e.tagName)
 				.find((c) => typeof c === 'string' && c.startsWith('wp-')) || 'NOTHING';
-			return { anchor: getComputedStyle(anchor).display, pad: getComputedStyle(pad).display, padHit: hit(8) };
+			return { anchor: anchor ? getComputedStyle(anchor).display : 'none', pad: getComputedStyle(pad).display, padHit: hit(8) };
 		};
-
-		svg.classList.remove('run-mode');
+		r.setMode('view');
 		const author = read();
-		svg.classList.add('run-mode');
+		r.setMode('run');
 		const run = read();
-		svg.classList.toggle('run-mode', was);
+		r.setMode(was);
 		return JSON.stringify({ author, run });
 	})()`);
 
@@ -730,33 +732,30 @@ test('B202: run mode unhighlights a bend, and keeps the endpoint dot that shows 
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 
 	const probe = await until(tab, `(() => {
-		const svg = document.getElementById('container');
-		const end = document.querySelector('#waypoints .waypoint.endpoint');
-		if (!svg || !end) return null;
+		if (!document.querySelector('#waypoints .waypoint.endpoint')) return null;
 		/*
 		The fixture's link runs waypoint to waypoint with no via, so it has no bend and reshaping
-		it would disturb the tests that share it. The rule under test is a CSS selector matching
-		the .bend .wp-dot selector, so a representative bend proves it: same classes, same structure,
-		appended to the same layer so it inherits the same cascade. Removed before returning.
+		it would disturb the tests that share it. AMENDED 2026-10-04 (R-c): run mode now DRAWS the run picture rather than
+		hiding a dot by stylesheet, so the bend must be one the renderer draws -- a waypoint no link touches draws as a bend.
+		Put into this tab's model only (a direct model write reaches no server, B16), and deleted before returning.
 		*/
-		const bend = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-		bend.setAttribute('class', 'waypoint bend');
-		const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-		dot.setAttribute('class', 'wp-dot');
-		bend.appendChild(dot);
-		document.getElementById('waypoints').appendChild(bend);
-		const was = svg.classList.contains('run-mode');
-		const read = () => ({
-			bendDot: getComputedStyle(bend.querySelector('.wp-dot')).display,
-			endDot: getComputedStyle(end.querySelector('.wp-dot')).display,
-			endPad: getComputedStyle(end.querySelector('.wp-ring')).display,
-		});
-		svg.classList.remove('run-mode');
+		const r = window.draw.renderer, m = window.draw.model, was = r.mode;
+		m.put('node', { id: 'node-fe0b01', name: 'probe-bend', x: 840, y: -420 });
+		const read = () => {
+			const bend = document.getElementById('node-fe0b01'), end = document.querySelector('#waypoints .waypoint.endpoint');
+			const bendDot = bend.querySelector('.wp-dot');
+			return {
+				bendDot: bendDot ? getComputedStyle(bendDot).display : 'none',
+				endDot: getComputedStyle(end.querySelector('.wp-dot')).display,
+				endPad: getComputedStyle(end.querySelector('.wp-ring')).display,
+			};
+		};
+		r.setMode('view');
 		const author = read();
-		svg.classList.add('run-mode');
+		r.setMode('run');
 		const run = read();
-		svg.classList.toggle('run-mode', was);
-		bend.remove();
+		r.setMode(was);
+		m.del('node', 'node-fe0b01');
 		// the grid must still be drawing dots, or "unhighlighted" is really "deleted"
 		const grid = document.querySelectorAll('#grid-nodes circle').length;
 		const gridR = grid ? document.querySelector('#grid-nodes circle').getAttribute('r') : null;

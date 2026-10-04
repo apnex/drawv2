@@ -757,7 +757,9 @@ const INCUBATOR = 'network/';
 const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs',
 	'app/src/commands.js', 'app/src/input.js', 'cli/verbs.mjs',
 	// P4 R-b (H18.20): REST tells a reader a link's route, whether it is down and what holds it (network/read-model.mjs)
-	'server/rest.js'];
+	'server/rest.js',
+	// P4 R-c (H18.21): the SVG export draws each link as the network routes it
+	'server/svg.mjs'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

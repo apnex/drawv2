@@ -480,19 +480,19 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
 	}));
-	// each waypoint group, with EVERY circle it drew -- the composition is the subject here, so
-	// matching only the first one would have missed the whole change
-	const groups = [...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => ({
-		role,
-		circles: [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?\/>/g)].map((m) => ({
-			r: Number(m[1]),
-			// the dot carries no stroke at all, which is how it is told apart from a ring
-			w: Number((m[0].match(/stroke-width="([\d.]+)"/) || [, 0])[1]),
-		})),
-	}));
-	const end = groups.find((d) => d.role === 'endpoint');
-	const bend = groups.find((d) => d.role === 'bend');
-	assert.ok(end && bend, 'both roles are drawn');
+	/*
+	AMENDED 2026-10-04 (R-c, H18.21; H2 refined): the export draws the RUN PICTURE, which leaves out the anchor ring and a bend's
+	dot (kernel RUN_PICTURE). So the export is held to that, and the whole composition -- what the canvas draws while
+	authoring -- is read from the one layer list both renderers walk.
+	*/
+	const exported = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => [role, [...body.matchAll(/<circle[^>]*?r="([\d.]+)"/g)].map((m) => Number(m[1]))]));
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	assert.deepEqual(exported.bend, [], 'the export draws nothing at a bend: the corner is in the path');
+	assert.deepEqual(exported.endpoint, waypointLayers(['endpoint'], 20, null, null, { run: true }).map((l) => l.radius), 'and an endpoint as the run picture has it');
+	assert.ok(!exported.endpoint.includes(20), 'with no anchor ring');
+	// the authoring composition, from the layer list the canvas walks
+	const circlesOf = (roles) => waypointLayers(roles, 20).map((l) => ({ r: l.radius, w: l.width ?? 0 }));
+	const end = { circles: circlesOf(['endpoint']) }, bend = { circles: circlesOf([]) };
 
 	/*
 	A BEND IS ITS ANCHOR. It adds no layer, so it draws exactly two circles: the ring at the extent
@@ -647,8 +647,13 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	const fills = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => {
 		const ring = [...body.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]*)"[^>]*?\/>/g)]
 			.find((m) => Number(m[1]) === want[role]);
-		return [role, ring[2]];
+		return [role, ring?.[2]];
 	}));
+	// AMENDED 2026-10-04 (R-c): the export draws the run picture, where a bend draws nothing at all; while authoring, the
+	// canvas draws it as its anchor, read from the one layer list the canvas walks
+	const { waypointLayers } = await import('../kernel/network-appearance.mjs');
+	assert.equal(fills.bend, undefined, 'the export draws no ring at a bend');
+	fills.bend = waypointLayers([], 20).find((l) => l.radius === want.bend).fill;
 	/*
 	The pad hides the trace beneath it, which is what makes a line read as TERMINATING rather than
 	passing under. A bend must stay hollow for the opposite reason: the path goes through it and has
@@ -727,22 +732,19 @@ test('B162: the two renderers agree, value for value', async () => {
 		// B200 -- by radius, not by position: a stacked preview layer made "last" the wrong ring
 		const m = [...body.matchAll(/<circle[^>]*?r="([\d.]+)" fill="([^"]*)"[^>]*?stroke-width="([\d.]+)" stroke-opacity="([\d.]+)"[^>]*?\/>/g)]
 			.find((x) => Number(x[1]) === target[role]);
-		return [role, { radius: Number(m[1]), fill: m[2], width: Number(m[3]), opacity: Number(m[4]) }];
+		return [role, m && { radius: Number(m[1]), fill: m[2], width: Number(m[3]), opacity: Number(m[4]) }];
 	}));
 
-	// and the anchor itself is emitted identically for BOTH roles -- the first ring in either group
-	const anchors = [...svg.matchAll(/class="waypoint \w+"><circle[^>]*?r="([\d.]+)"[^>]*?stroke-width="([\d.]+)"/g)]
-		.map(([, r, w]) => ({ radius: Number(r), width: Number(w) }));
-	assert.equal(anchors.length, 2, 'both waypoints were drawn');
-	assert.deepEqual(anchors[0], anchors[1], 'the anchor is the same ring whatever the sub-type');
-	assert.deepEqual(anchors[0], { radius: waypointAnchor(20).radius, width: waypointAnchor(20).width },
-		'and it is the kernel anchor, not a lookalike');
+	/*
+	AMENDED 2026-10-04 (R-c, H18.21; H2 refined): the export draws the run picture -- no anchor ring, nothing at a bend -- so the
+	anchor is not in it to compare; the canvas and the export are held to the same run picture by tests/run-picture.test.js.
+	*/
+	assert.equal(drawn.bend, undefined, 'the export draws no ring at a bend');
+	assert.equal([...svg.matchAll(new RegExp(`r="${waypointAnchor(20).radius}"`, 'g'))].length, 0, 'nor any anchor ring');
 
 	// the live renderer sets exactly these attributes from the same call, so comparing the export
 	// against the shared source proves both sides emit one set of numbers
-	for (const role of ['endpoint', 'bend']) {
-		assert.deepEqual(drawn[role], waypointStyle(role, 20), `${role} is drawn as the kernel specifies`);
-	}
+	assert.deepEqual(drawn.endpoint, waypointStyle('endpoint', 20), 'endpoint is drawn as the kernel specifies');
 });
 
 /*
@@ -905,17 +907,18 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 		return { cls: m[1], circles: (m[2].match(/<circle/g) || []).length };
 	};
 
-	assert.deepEqual(drawn(bend), { cls: 'bend', circles: 2 }, 'a bend is the anchor and the dot');
+	// AMENDED 2026-10-04 (R-c; H2 refined): the export draws the run picture -- no anchor ring, and nothing at a bend
+	assert.deepEqual(drawn(bend), { cls: 'bend', circles: 0 }, 'a bend draws nothing: its corner is in the path');
 	/*
 	B211 -- threading does not make a junction, and a junction shows only its own ring.
 	*/
 	assert.deepEqual(drawn([...bend, { id: 'link-aa0002', name: 'm', src: 'node-aa0003', dst: 'node-aa0004', via: ['node-ea0001'] }]),
-		{ cls: 'bend', circles: 2 }, 'two links THREADED through one point is two bends, not a junction');
+		{ cls: 'bend', circles: 0 }, 'two links THREADED through one point is two bends, not a junction');
 	// B214 -- THREE terminations is the smallest meet; two is a bend, a fan, or a terminus reached twice
 	assert.deepEqual(drawn([{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-ea0001' },
 		{ id: 'link-aa0002', name: 'm', src: 'node-ea0001', dst: 'node-aa0002' },
 		{ id: 'link-aa0003', name: 'n', src: 'node-aa0003', dst: 'node-ea0001' }]),
-		{ cls: 'junction', circles: 3 }, 'three terminations is a junction, and it draws the ring rather than the pad');
+		{ cls: 'junction', circles: 2 }, 'three terminations is a junction, and it draws the ring rather than the pad -- and its dot');
 });
 
 test('B209: a waypoint that already has links is a valid link target', async () => {

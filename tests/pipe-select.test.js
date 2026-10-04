@@ -40,7 +40,7 @@ test('N-c2: the painter draws each pipe under its id, and gives only a hand pipe
 	let selected = [];
 	const net = attachNetwork({
 		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
-		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => selected }, history: { commit: () => {} },
 		pipeLayer: f.root, el: f.el, say: () => {},
 	});
@@ -66,7 +66,7 @@ test('the painter keeps one element per pipe across paints, updating it in place
 	const m = board(), f = fakeLayer();
 	const net = attachNetwork({
 		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
-		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
 	});
 	const hand = pipeEntity(A, W, 'hand').id, link = pipeEntity(W, B, 'link').id;
@@ -124,7 +124,7 @@ test('the painter marks hidden every pipe an up link runs over, keeping it in th
 	m.put('link', { id: 'link-000002', name: 'down', src: C, dst: D });   // no way: down
 	const f = fakeLayer();
 	attachNetwork({
-		session, model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		session, model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
 	}).paint();
 	assert.equal(m.isLinkDown(m.get('link', 'link-000002')), true);

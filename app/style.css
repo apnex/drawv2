@@ -450,7 +450,7 @@ waypoint. A bend therefore becomes invisible in run mode except where the path b
 which is the honest rendering -- a bend IS pure authoring geometry, and in run mode a route that
 turns a corner is all there is to show.
 */
-#container.run-mode .wp-anchor { display: none; }
+/* R-c (H18.21): run mode no longer hides this by stylesheet -- it draws the run picture, kernel/network-appearance.mjs RUN_PICTURE */
 
 /*
 B202 -- and a BEND leaves nothing behind but the grid it sits on.
@@ -468,7 +468,7 @@ ENDPOINTS KEEP THEIRS. An endpoint is not scaffolding in run mode: it is where m
 diagram, its pad stays clickable to arm a spawner, and `.spawning` and `.armed` recolour precisely
 this dot to say so. Hiding it there would remove the only indicator that a spawner is live.
 */
-#container.run-mode .bend .wp-dot { display: none; }
+/* R-c (H18.21): run mode no longer hides this by stylesheet -- it draws the run picture, kernel/network-appearance.mjs RUN_PICTURE */
 .waypoint.linkband { cursor: crosshair; }
 .waypoint .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
 .waypoint.selected .select-box { display: block; }

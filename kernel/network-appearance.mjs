@@ -193,12 +193,41 @@ export const waypointJunction = () => ({
 });
 
 /*
+THE RUN PICTURE -- what run mode shows and the SVG download draws, ONE rendering decided here (P4 R-c, H18.21; ruled H2, refined
+2026-10-04: "there is no separation between their rendering (unified when a static image) and therefore one place for code.
+We can adjust what is in and out later").
+
+Run mode is for watching, and a download is the diagram as finished; neither shows authoring geometry. Leaving out, today:
+  pipes      every pipe, a link's or a hand one -- the way a route is laid, not the route (the director, 2026-10-02; H2)
+  anchor     each waypoint's anchor ring, which is also its grab target, so nothing is dragged while the diagram runs (B201)
+  bend dot   a bend's centre dot: a bend is a corner its route turns, and the turn is already in the path (B202). An
+             endpoint keeps its dot -- where movers enter, and what `spawning` and `armed` colour
+
+These were three stylesheet rules over elements the canvas still drew (app/style.css, network/network.css), and the export
+drew every layer; now the canvas in run mode and the export both draw this subset, and nothing is hidden after drawing.
+What is in or out changes HERE, and both follow.
+*/
+// the colour a down link is drawn in where no stylesheet colours it -- the export (on the canvas, network/network.css)
+export const downStroke = () => colour(NETWORK_COLOURS.down);
+
+export const RUN_PICTURE = Object.freeze({
+	pipes: false,
+	// whether a waypoint layer is left out of the run picture, given the waypoint's roles
+	leavesOut: (layer, roles) => layer.cls === 'wp-anchor' || (layer.cls === 'wp-dot' && !roles.length),
+});
+
+/*
 B209 -- every layer a waypoint draws, innermost last so the opaque pad cannot bury what sits inside
 it. The anchor is the floor and is always present; the rest are the sub-types `waypointRoles`
 derived. One list, walked by both renderers, so the canvas and the export cannot disagree about
 what a role looks like.
+R-c (H18.21): `{ run: true }` asks for the run picture's layers (`RUN_PICTURE`), which the export always draws.
 */
-export const waypointLayers = (roles, ext, links = null, anchor = null) => {
+export const waypointLayers = (roles, ext, links = null, anchor = null, { run = false } = {}) => {
+	const all = layersOf(roles, ext, links, anchor);
+	return run ? all.filter((l) => !RUN_PICTURE.leavesOut(l, roles)) : all;
+};
+const layersOf = (roles, ext, links, anchor) => {
 	const out = [{ cls: 'wp-anchor', ...waypointAnchor(ext) }];
 	/*
 	The transit ring is the one layer here that is NOT derived from the role set.

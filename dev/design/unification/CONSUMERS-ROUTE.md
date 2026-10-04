@@ -167,6 +167,16 @@ REST's `context/<link>` and `links/<link>/path` both answer it; `draw link path`
 B292 fixed: `draw about` read a point as `{x, y}`, and points are `[x, y]` pairs.\
 REST imports the network, so the incubator list widens by `server/rest.js`; `docs/spec/API.md` amended.\
 Held by a CLI test on one board -- an up link's route, and a younger link down, held by the older one holding its pipe -- failing on the code before; mutants 5, all killed.
+
+AMENDED 2026-10-04 -- **R-c done** (H18.21; H1; H2 refined).\
+**One rendering, decided in one place:** `RUN_PICTURE` in `kernel/network-appearance.mjs` says what run mode and the download leave out -- pipes, each waypoint's anchor ring, a bend's dot -- and `waypointLayers(..., { run })` answers the run picture's layers.\
+The canvas in run mode draws that subset and re-draws its waypoints on a mode change; the network's painter draws no pipe in run mode and hears the change (`renderer.watchMode`, which also replaced the single `onMode` hook the movers used); the export draws the subset always.\
+The three stylesheet rules that hid those layers are deleted, so nothing decides the picture after drawing.\
+**The download's links:** the export door reads each link through the network's read composition (`linesOf`, `network/read-model.mjs`) and hands the kernel, as data, the anchors its route runs through and whether it is down; the kernel draws the route, and a down link dotted and in the down colour, which a standalone file carries itself.\
+**Seen in the lab, in Chrome:** on the detour board, run mode draws no anchor ring, no bend dot and no pipe. The two waypoints held only by hand pipes draw nothing in run mode -- a waypoint no link touches is a bend, and the run picture leaves a bend out; adjustable in `RUN_PICTURE`, as the director said.\
+**Tests:** `tests/run-picture.test.js` -- the canvas in run mode and the download draw every waypoint alike on one board (an endpoint, a bend, a junction, a transit-off anchor); authoring loses nothing; no stylesheet hides a layer in run mode; run mode draws no pipe and leaving it draws them again; the download draws a route its stops never name, a down link dotted and orange, and a ring closed once.\
+Five export and browser tests that asserted the anchor ring in the download, or toggled the run-mode class by hand, now read the authoring layers from the one list and switch the real mode.\
+The new file cannot load on the code before (it imports `RUN_PICTURE`), so its strength is shown by mutants: 11, all killed, one by a test added for it.
 ---
 
 ## 10. Axiom alignment audit (M7)

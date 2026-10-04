@@ -154,6 +154,7 @@ export class Renderer {
 		};
 		this.selectedSet = new Set();   // the renderer OWNS the 'selected' visual state (Selection is renderer-free)
 		this.labels = true;             // node and zone names, Tab-toggled; visible by default
+		this.modeWatchers = [];         // who hears a mode change (watchMode)
 		this.mode = 'view';             // W4/W5 — view | edit | run (client/session, ephemeral). edit shows the
 		model.onChange((action, kind, entity) => this.handle(action, kind, entity));   // socket grid; run makes clickable regions act
 	}
@@ -221,11 +222,17 @@ export class Renderer {
 		// every node, not only the panels. Gating a plain node's socket on the mode is pointless if
 		// switching mode never re-renders it -- the change would appear on the next unrelated edit.
 		typedNodes(this.model).forEach((n) => this.render('node', n));
-		// H12.8 -- one hook, so the composition root can start or stop the movers without the
-		// renderer knowing they exist. The renderer draws the document; movers are not in it.
-		this.onMode?.(this.mode);
+		// R-c (H18.21): and every waypoint, since run mode draws the run picture's layers (kernel RUN_PICTURE) rather than hiding
+		// the rest by stylesheet
+		bareAnchors(this.model).forEach((w) => this.render(BARE_KIND, w));
+		// H12.8 -- the composition root starts or stops the movers, and the network's painter draws the run picture's pipes,
+		// without the renderer knowing either exists. The renderer draws the document; movers and pipes are not its own.
+		for (const fn of this.modeWatchers) fn(this.mode);
 		return this.mode;
 	}
+
+	// hear every mode change -- `fn(mode)` (R-c: the movers and the network's painter both do)
+	watchMode(fn) { this.modeWatchers.push(fn); }
 
 	// reflect the current selection onto entity DOM — the SINGLE owner of the 'selected' class.
 	// Diffs against the last reflection so only the delta toggles; the set also lets render() re-apply
@@ -490,7 +497,8 @@ export class Renderer {
 			// the anchor as drawn: whether it declares transit off comes from the network (the Model's `declaresNoTransit`),
 			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
 			const anchor = { transit: this.model.declaresNoTransit(entity.id) ? false : undefined };
-			for (const l of waypointLayers(roles, FE, this.model.linksAt?.(entity.id) || [], anchor)) layerCircle(l, g);
+			// in run mode, the run picture -- what the download draws too, decided in one place (RUN_PICTURE, R-c)
+			for (const l of waypointLayers(roles, FE, this.model.linksAt?.(entity.id) || [], anchor, { run: this.mode === 'run' })) layerCircle(l, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)

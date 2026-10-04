@@ -15,6 +15,7 @@ import { renderScene } from '../kernel/svg-scene.mjs';
 import { resolve } from '../kernel/engine.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
 import { KERNEL_CSS } from '../kernel/theme.mjs';
+import { readModel, linesOf } from '../network/read-model.mjs';   // each link as the network draws it (R-c)
 
 /*
 A schema as an SVG string: the kernel's deterministic core (`resolve`) handed to its scene renderer. K2c moved this here
@@ -26,8 +27,13 @@ export function render(schema, pad) {
 	return renderScene(scene, V, L, pad);
 }
 
+/*
+R-c (H18.21) -- the download is what run mode shows (ruled H2, refined): each link along its route over pipes, a down link with
+the canvas's down look (H1), and the waypoints in the run picture's layers (kernel/network-appearance.mjs RUN_PICTURE). The
+routes are the network's, read through its read composition; the kernel is handed them as data.
+*/
 export function svgDocument(doc) {
-	const body = render(docToSchema(doc));
+	const body = render(docToSchema(doc, { lines: linesOf(readModel(doc)) }));
 	// inject styles + defs immediately after the root tag, so the file stands alone
 	const at = body.indexOf('>') + 1;
 	return body.slice(0, at) + `\n<style>${KERNEL_CSS}</style>\n${sharedDefs()}\n` + body.slice(at);

@@ -71,7 +71,7 @@ the movers do not listen to the renderer. The root connects them, which is the o
 legitimately knows about both.
 */
 const movers = new Movers({ model, renderer, layer: svg.querySelector('#movers'), now: () => clock.now() });
-renderer.onMode = () => movers.sync();
+renderer.watchMode(() => movers.sync());
 model.onChange(() => movers.sync());
 
 /*

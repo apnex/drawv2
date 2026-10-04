@@ -21,6 +21,7 @@ code -- with the painter's `el`.
 import { whyDown, downSummary } from './resolve.mjs';
 import { transitSummary } from './transit.mjs';
 import { pipeAttributes, pipeHitAttributes } from './appearance.mjs';
+import { RUN_PICTURE } from '../kernel/network-appearance.mjs';   // what run mode draws, one rule with the download (R-c)
 import { pipeId } from './pipe-kind.mjs';
 import { kindOf } from '../model/model.mjs';
 
@@ -72,7 +73,9 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	};
 	const paint = () => {
 		const selected = new Set(selection.list()), under = occupied(), live = new Set();
-		for (const { id, a, b, laid } of model.all('pipe')) {   // the tab's pipes, as it holds them (N-c)
+		// R-c (H18.21): run mode draws the run picture, which holds no pipe -- none is drawn, so none can be clicked either
+		const pipes = renderer.mode === 'run' && !RUN_PICTURE.pipes ? [] : model.all('pipe');
+		for (const { id, a, b, laid } of pipes) {   // the tab's pipes, as it holds them (N-c)
 			const p = model.endpointOf(a), q = model.endpointOf(b);
 			if (!p || !q) continue;   // an anchor the pipe names has gone; the planner removes the pipe in the same edit
 			live.add(id);
@@ -87,6 +90,7 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 		for (const [id, d] of drawn) if (!live.has(id)) { d.group.remove(); drawn.delete(id); }   // the pipe is gone
 	};
 	model.onChange(paint);
+	renderer.watchMode(paint);   // entering or leaving run mode changes which pipes are drawn (R-c)
 	// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30). The selected LOOK is
 	// composeCanvas's subscriber, so a page attaches the network AFTER composing the canvas, and that one runs first
 	selection.subscribe(() => { const why = whyDown(model, selection.list(), network); if (why) say(why); });

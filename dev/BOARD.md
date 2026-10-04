@@ -1041,7 +1041,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.17 | Design P4 for approval before any code: every path consumer routes -- the SVG export, REST paths, `draw movers` and `draw combat` compose the network through one shared function; spawners skip down links | feature | S2 | `DONE` |
 | H18.19 | R-a: one read composition -- `readModel(doc)` in `network/`; the CLI's two verbs and the dry run use it; the store's Models each draw with a network | feature | S2 | `DONE` |
 | H18.20 | R-b: REST and the CLI answer routes -- `path` along the route, `route`, `down` and a down link's blockers (H1); B292 fixed | feature | S2 | `DONE` |
-| H18.21 | R-c: run mode and the SVG export are one rendering, decided in one place -- each link along its route, a down link with the down look, and what a static picture holds (H2, refined) | **B266** | S2 | `TODO` |
+| H18.21 | R-c: run mode and the SVG export are one rendering, decided in one place -- each link along its route, a down link with the down look, and what a static picture holds (H2, refined) | feature | S2 | `DONE` |
 | H18.22 | R-d: spawners skip down links at every door | **B266** | S2 | `TODO` |
 | H18.23 | R-e: P4 closed -- the parity test over every consumer, the register, the records | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
@@ -1067,6 +1067,7 @@ AMENDED 2026-10-04: H1 ruled as recommended and H2 against it -- the SVG downloa
 AMENDED 2026-10-04: H2 refined by the director -- the SVG download draws what run mode (`r`) shows; H18.21 carries it.\
 AMENDED 2026-10-04: H18.19 (R-a) done -- one read composition, `readModel`; the CLI and the dry run read through it, and the store's Models draw with a network each, so REST's paths and `draw movers` follow routes.\
 AMENDED 2026-10-04: H18.20 (R-b) done -- REST's `path` and `context` answer a link's `route`, `down` and `blockers` (H1), and `draw link path` and `draw about` print them; H18.18, B292, fixed with it.\
+AMENDED 2026-10-04: H18.21 (R-c) done -- run mode and the SVG download are one rendering: `RUN_PICTURE` in the kernel decides what both leave out, the run-mode stylesheet rules are deleted, and the download draws each link along its route and a down link down.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

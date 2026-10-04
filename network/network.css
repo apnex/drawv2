@@ -18,10 +18,10 @@ product's selection colour. A pipe laid with a link has no hit line, and is neve
 .pipe-hit { pointer-events: stroke; cursor: pointer; }   /* its width and colour are network/appearance.mjs pipeHitAttributes */
 
 /*
-In RUN (read) mode pipes are not drawn, nor can they be clicked: they are authoring geometry, as the anchor ring is, and run
-mode hides those (app/style.css, `.wp-anchor`) -- the director, 2026-10-02.
+In RUN (read) mode pipes are not drawn, nor can they be clicked: they are authoring geometry, as the anchor ring is -- the
+director, 2026-10-02. R-c (H18.21): not hidden here any more; the painter draws the run picture (network/host.mjs), which
+holds no pipe, one rule with the download (kernel/network-appearance.mjs RUN_PICTURE).
 */
-#container.run-mode .pipe, #container.run-mode .pipe-hit { display: none; }
 
 /* a pipe an up link runs over is kept in the page and hidden: the link is drawn along it (network/host.mjs, 2026-10-02) */
 #pipes .pipe-of.under { display: none; }

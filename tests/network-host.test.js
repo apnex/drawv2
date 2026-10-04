@@ -37,7 +37,7 @@ function rig({ commits = true, accepts = true } = {}) {
 	const model = { onChange: (fn) => { onChange = fn; }, all: (kind) => (kind === 'pipe' ? [] : [{ id: 'link-000001' }]), endpointOf: () => null, get: () => null, isLinkDown: () => false };
 	const net = attachNetwork({
 		session, model, authority: { all: () => [] },
-		renderer: { update: rec('update'), reflectSelection: rec('reflect'), render: rec('render') },
+		renderer: { update: rec('update'), reflectSelection: rec('reflect'), render: rec('render'), watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: rec('commit') },
 		pipeLayer: fakeLayer().root, el: fakeLayer().el, say: rec('say'),
@@ -106,7 +106,7 @@ test('F-e: a transit change commits the session\'s edit as given, and no edit of
 	let onTransit = null;
 	attachNetwork({
 		session: { network: { stopsAt: () => false, declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } }, takeNotice: () => 'transit off at P', onTransitChange: (fn) => { onTransit = fn; } },
-		model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: (c) => commits.push(c) }, ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
@@ -150,7 +150,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 	const commits = [], said = [];
 	let net = null;
 	net = attachNetwork({
-		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {} },
+		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
 		history: { commit: (c) => {
 			commits.push(c);
