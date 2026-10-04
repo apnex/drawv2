@@ -1024,7 +1024,11 @@ VERBS.push(
 					? Object.entries(v).map(([kk, vv]) => `${kk}=${vv}`).join(' ') : String(v)]);
 			}
 			if (b.contents?.length) rows.push(['contents', b.contents.map((c) => nm(c.id)).join(' ')]);
-			if (b.path) rows.push(['path', b.path.map((p) => `${p.x},${p.y}`).join(' -> ')]);
+			// B292: a path's points are [x, y] pairs -- this read p.x and p.y, and printed every link's path as undefined
+			if (b.path) rows.push(['path', b.path.map((p) => p.join(',')).join(' -> ')]);
+			// R-b (H1): the anchors its route runs through, or that it is down and what holds its way
+			if (b.route) rows.push(['route', b.route.map(nm).join(' -> ')]);
+			if (b.down) rows.push(['down', b.blockers?.length ? `held by ${b.blockers.map(nm).join(' ')}` : 'no way over its pipes -- it heals when one is laid']);
 			return { json: b, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
 		},
 	},
@@ -1062,7 +1066,7 @@ VERBS.push(
 	},
 	{
 		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link>', route: '/diagrams/<id>/links/<link>/path', method: 'GET',
-		summary: 'the resolved route -- what the renderer would draw', example: 'draw link path link-aa00ff',
+		summary: 'the resolved route -- what the renderer would draw, and whether the link is down', example: 'draw link path link-aa00ff',
 		args: [{ name: 'link', about: 'the link to resolve, by id or name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
@@ -1074,7 +1078,9 @@ VERBS.push(
 			if (!lid.startsWith('link-')) die(`${args[0]} is a ${lid.split('-')[0]}, not a link -- \`draw about ${args[0]}\` lists the links that touch it`);
 			const b = ok(await request(ctx, `/diagrams/${id}/links/${lid}/path`), 'link path');
 			if (!b.path) die(`link ${b.link} does not resolve -- a dangling endpoint or a missing bend`);
-			return { json: b, text: `${b.src} -> ${b.dst}${b.via.length ? ` via ${b.via.join(' ')}` : ''}\n${b.path.map((p) => p.join(',')).join('  ')}` };
+			// R-b (H1): a down link says so, and what holds its way; an up one, the anchors its route runs through
+			const state = b.down ? `down${b.blockers?.length ? ` -- held by ${b.blockers.join(' ')}` : ' -- no way over its pipes'}` : `route ${(b.route ?? []).join(' -> ')}`;
+			return { json: b, text: `${b.src} -> ${b.dst}${b.via.length ? ` via ${b.via.join(' ')}` : ''}\n${b.path.map((p) => p.join(',')).join('  ')}\n${state}` };
 		},
 	},
 );

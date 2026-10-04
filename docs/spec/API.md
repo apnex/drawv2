@@ -305,7 +305,9 @@ For a node or waypoint it answers where it sits, the links touching it, its neig
 One says where placement is legal and the other says what is close enough to matter, and an agent that only asks the first can still draw on top of something meaningful.
 
 `path` resolves a route into coordinates -- the identities of `src`, `via` and `dst` become the line the renderer would draw.\
-It is the only way to ask whether a link visually crosses something.
+It is the only way to ask whether a link visually crosses something.\
+AMENDED 2026-10-04 (P4): a link is drawn along its route over pipes, so `path` follows that route, and both `path` and `context` also answer `route`, the anchor ids it runs through; `down`, whether it has no route right now; and `blockers`, the links holding a down link's way.\
+A down link's `path` is its intent -- straight through its stops, as the canvas draws it, marked down -- and its `route` is null.
 
 All four are composed from methods the model already owns, so they cannot disagree with the document they describe.
 

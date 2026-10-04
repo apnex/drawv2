@@ -160,6 +160,13 @@ The CLI's `combat` and `movers` and the dry run read through it; the store's thr
 No REST test changed: every existing test's links run along their stops, or have no pipes and are down, which `pathOf` draws along the same intent.\
 Held by `tests/read-model.test.js` and a CLI test: a link whose route bends through a waypoint its stops never name is answered along that route by REST and run along it by `draw movers` -- both failing on the code before; a reader honours transit; a booted diagram draws as a created one does; and no module but the store, the lab, the product page and the reaction table composes the network -- failing before on the CLI and the dry run.\
 Mutants: 4, all killed, two by tests added for them.
+
+AMENDED 2026-10-04 -- **R-b done** (H18.20; H1; B292).\
+`linkReading(model, link)` in `network/read-model.mjs` is the one answer about a link: its `path`, its `route` as anchor ids, whether it is `down`, and a down link's `blockers`.\
+REST's `context/<link>` and `links/<link>/path` both answer it; `draw link path` prints the route or that the link is down and what holds it, and `draw about` prints its path, route or down state in names.\
+B292 fixed: `draw about` read a point as `{x, y}`, and points are `[x, y]` pairs.\
+REST imports the network, so the incubator list widens by `server/rest.js`; `docs/spec/API.md` amended.\
+Held by a CLI test on one board -- an up link's route, and a younger link down, held by the older one holding its pipe -- failing on the code before; mutants 5, all killed.
 ---
 
 ## 10. Axiom alignment audit (M7)

@@ -755,7 +755,9 @@ const INCUBATOR = 'network/';
 // capacity until the link row carries its own invariant (S-e, part 2) -- which it does now, so model/invariants.mjs left again;
 // and `cli/verbs.mjs`, whose `combat` and `movers` read a document into a Model with the network's kinds, the link among them
 const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs',
-	'app/src/commands.js', 'app/src/input.js', 'cli/verbs.mjs'];
+	'app/src/commands.js', 'app/src/input.js', 'cli/verbs.mjs',
+	// P4 R-b (H18.20): REST tells a reader a link's route, whether it is down and what holds it (network/read-model.mjs)
+	'server/rest.js'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

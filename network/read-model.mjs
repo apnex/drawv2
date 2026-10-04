@@ -29,3 +29,20 @@ export function readModel(doc) {
 	model.load(doc);
 	return model;
 }
+
+/*
+WHAT A READER IS TOLD ABOUT ONE LINK (P4 R-b, H18.20; ruled H1): where it is drawn, the anchors its route runs through,
+whether it is down, and -- for a down link -- the links holding its way. A down link has no route: it is drawn along its
+intent, as the lab draws it, and says so, so a caller never takes its path for a live link's (A5). One answer, read by REST
+and through it by the CLI, so a door cannot tell an agent less than another.
+
+  path      the points the link is drawn along: its route, or a down link's intent
+  route     the anchor ids its route runs through, a ring's back to its start -- null when it is down
+  down      whether it has no route right now
+  blockers  the ids of the links holding the way it would take -- empty unless it is down and held
+*/
+export function linkReading(model, link) {
+	const down = model.isLinkDown(link);
+	const route = !down && model.network ? model.network.view.of(model).route(link.id) : null;
+	return { path: model.pathOf(link), route, down, blockers: down ? model.blockersOf(link) : [] };
+}

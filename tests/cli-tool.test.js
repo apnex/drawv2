@@ -1760,6 +1760,44 @@ test('R-a: REST\'s path and draw movers follow a link\'s route over its pipes, n
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+/*
+P4 R-b (H18.20; ruled H1) -- REST and the CLI tell a reader what the canvas shows: an up link's route through its anchors, and a
+down link as down, with the link holding its way. Pipes carry one link each, so a younger link wanting a pipe an older one
+runs over is down, held by it (2026-09-30). And B292: `draw about` printed every link's path as undefined.
+*/
+test('R-b: REST and the CLI give a link\'s route, or say it is down and what holds it; draw about prints its path (B292)', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'held')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00001', name: 'a', type: 'host', shape: 'square', x: 0, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00004', name: 'w', x: 180, y: 240 } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e00001-e00004', a: 'node-e00001', b: 'node-e00004', laid: 'hand' } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e00002-e00004', a: 'node-e00002', b: 'node-e00004', laid: 'hand' } }] }));
+		// the older link takes both pipes; the younger wants the first of them, and is down
+		await run('commit', '--diagram', id, '--label', 'older', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00010', name: 'older', src: 'node-e00001', dst: 'node-e00002' } }] }));
+		await run('commit', '--diagram', id, '--label', 'younger', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00011', name: 'younger', src: 'node-e00001', dst: 'node-e00004' } }] }));
+
+		const up = JSON.parse(await run('link', 'path', 'older', '--diagram', id, '--json'));
+		assert.deepEqual([up.route, up.down, up.blockers], [['node-e00001', 'node-e00004', 'node-e00002'], false, []]);
+		const down = JSON.parse(await run('link', 'path', 'younger', '--diagram', id, '--json'));
+		assert.deepEqual([down.route, down.down, down.blockers], [null, true, ['link-e00010']], 'down, held by the older link');
+		assert.deepEqual(down.path, [[0, 0], [180, 240]], 'drawn along its intent');
+		assert.match(await run('link', 'path', 'younger', '--diagram', id), /down -- held by link-e00010/);
+
+		const ctx = JSON.parse(await run('about', 'younger', '--diagram', id, '--json'));
+		assert.deepEqual([ctx.down, ctx.blockers, ctx.route], [true, ['link-e00010'], null], 'context answers the same');
+		const about = await run('about', 'older', '--diagram', id);
+		assert.match(about, /path\s+0,0 -> 180,240 -> 360,0/, 'B292: the path, readable');
+		assert.match(about, /route\s+a -> w -> b/, 'the route, in names');
+		assert.match(await run('about', 'younger', '--diagram', id), /down\s+held by older/);
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
 	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');

@@ -12,6 +12,7 @@ import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
 
@@ -94,7 +95,8 @@ function contextOf(model, kind, e) {
 			.filter((z) => e.x >= z.x && e.x <= z.x + z.w && e.y >= z.y && e.y <= z.y + z.h)
 			.map((z) => z.id);
 	}
-	if (kind === 'link') { out.endpoints = { src: e.src, dst: e.dst }; out.via = e.via || []; out.path = model.pathOf(e); }
+	// R-b (H18.20, H1): the route, whether the link is down, and what holds its way -- beside the path it is drawn along
+	if (kind === 'link') { out.endpoints = { src: e.src, dst: e.dst }; out.via = e.via || []; Object.assign(out, linkReading(model, e)); }
 	if (kind === 'zone') { out.bounds = { x: e.x, y: e.y, w: e.w, h: e.h }; out.contents = inside(model, e); }
 	if (kind === 'group') {
 		out.members = e.members || [];
@@ -661,7 +663,8 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		if (!l) return json(res, 404, { error: `unknown link: ${parts[5]}` }), true;
 		// pathOf resolves a ROUTE (identities) into a PATH (coordinates) -- the semantic routing
 		// question an agent cannot otherwise ask: what would the renderer actually draw
-		return json(res, 200, { link: l.id, src: l.src, dst: l.dst, via: l.via || [], path: model.pathOf(l) }), true;
+		// R-b (H18.20, H1): and its route, whether it is down, and the links holding a down link's way
+		return json(res, 200, { link: l.id, src: l.src, dst: l.dst, via: l.via || [], ...linkReading(model, l) }), true;
 	}
 	if (parts[4] === 'history' && parts.length === 5) {
 		const log = store.log(parts[3]);
