@@ -1041,7 +1041,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.17 | Design P4 for approval before any code: every path consumer routes -- the SVG export, REST paths, `draw movers` and `draw combat` compose the network through one shared function; spawners skip down links | feature | S2 | `DONE` |
 | H18.19 | R-a: one read composition -- `readModel(doc)` in `network/`; the CLI's two verbs and the dry run use it; the store's Models each draw with a network | **B266** | S2 | `TODO` |
 | H18.20 | R-b: REST and the CLI answer routes -- `path` along the route, `route`, `down` and a down link's blockers (H1); B292 fixed | **B266** | S2 | `TODO` |
-| H18.21 | R-c: the SVG export draws run mode's picture -- each link along its route, a down link with the down look, no pipe, no anchor ring, no bend dot (H2, refined) | **B266** | S2 | `TODO` |
+| H18.21 | R-c: run mode and the SVG export are one rendering, decided in one place -- each link along its route, a down link with the down look, and what a static picture holds (H2, refined) | **B266** | S2 | `TODO` |
 | H18.22 | R-d: spawners skip down links at every door | **B266** | S2 | `TODO` |
 | H18.23 | R-e: P4 closed -- the parity test over every consumer, the register, the records | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `TODO` |

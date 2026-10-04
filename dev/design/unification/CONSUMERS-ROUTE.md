@@ -146,6 +146,13 @@ AMENDED 2026-10-04 -- **H2 refined by the director:** "The SVG download should r
 Run mode, measured: it hides every pipe (`network/network.css:24`), each waypoint's anchor ring (`app/style.css:453`) and a bend's centre dot (`:471`); it keeps an endpoint's pad and dot, a junction's mark and the transit ring, and shows no socket grid (`app/src/renderer.js` `renderOpts`).\
 So R-c draws that picture.\
 The waypoint layers are the kernel's, shared with the canvas (`kernel/network-appearance.mjs` `waypointLayers`), so the export asks for run mode's subset rather than restating it: one list of what run mode hides, read by the canvas's stylesheet rule and the export alike, is R-c's to settle.
+
+AMENDED 2026-10-04 -- **H2 refined again by the director:** run mode and the download are one rendering, decided in one place in code; what is in and out may be adjusted later, there.\
+Today they are two: run mode hides by stylesheet rules (`app/style.css:453`, `:471`; `network/network.css:24`) over elements the canvas still draws, and the export draws its own strings from the kernel's layers (`kernel/svg-scene.mjs`).\
+**R-c, so:** one rule in the kernel says what a static picture holds -- which waypoint layers, whether pipes -- and both read it.\
+The canvas in run mode draws that subset rather than hiding the rest, re-rendering its waypoints and pipes on a mode change as it already re-renders nodes (`app/src/renderer.js` `setMode`), and the network's painter asks the same rule.\
+The export draws the same subset always.\
+The three stylesheet rules are deleted, and a test holds the canvas in run mode and the export to the same layers for every waypoint role.
 ---
 
 ## 10. Axiom alignment audit (M7)
