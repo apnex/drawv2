@@ -1734,6 +1734,32 @@ test('S-e: draw movers reads the links -- its Model composes the network\'s kind
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+/*
+P4 R-a (H18.19) -- the server's Models and the CLI's draw with the network: a link whose route over its pipes bends through a
+waypoint its stops never name is answered, and its movers run, along that route -- 600 px over the waypoint, where the
+straight line through its stops is 360.
+*/
+test('R-a: REST\'s path and draw movers follow a link\'s route over its pipes, not its stops', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'routed')).trim();
+		await run('lock', '--diagram', id);
+		const since = Date.now();
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00001', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00002', name: 'a', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since } } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00004', name: 'w', x: 180, y: 240 } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e00002-e00004', a: 'node-e00002', b: 'node-e00004', laid: 'hand' } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e00001-e00004', a: 'node-e00001', b: 'node-e00004', laid: 'hand' } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00003', name: 'l', src: 'node-e00002', dst: 'node-e00001' } }] }));
+		const p = JSON.parse(await run('link', 'path', 'l', '--diagram', id, '--json'));
+		assert.deepEqual(p.path, [[0, 0], [180, 240], [360, 0]], 'the store\'s Model draws with the network');
+		const out = JSON.parse(await run('movers', '--diagram', id, '--at', String(since + 5000), '--json'));
+		// ten cells over the waypoint, less a little where the corner is rounded (BEND_R); the stops' straight line is six
+		assert.ok(out.spawners[0].cells > 9.5 && out.spawners[0].cells <= 10, `the movers run the route, not the stops: ${out.spawners[0].cells} cells`);
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
 	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');

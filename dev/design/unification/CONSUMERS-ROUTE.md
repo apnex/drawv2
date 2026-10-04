@@ -153,6 +153,13 @@ Today they are two: run mode hides by stylesheet rules (`app/style.css:453`, `:4
 The canvas in run mode draws that subset rather than hiding the rest, re-rendering its waypoints and pipes on a mode change as it already re-renders nodes (`app/src/renderer.js` `setMode`), and the network's painter asks the same rule.\
 The export draws the same subset always.\
 The three stylesheet rules are deleted, and a test holds the canvas in run mode and the export to the same layers for every waypoint role.
+
+AMENDED 2026-10-04 -- **R-a done** (H18.19).\
+`network/read-model.mjs`: `readModel(doc)`, a Model of the core's storage rows and the network's that draws with a network of its own, and `readerNetwork()`, that network's constructor.\
+The CLI's `combat` and `movers` and the dry run read through it; the store's three Model constructions each take `readerNetwork()`, so every path the server answers is the network's route.\
+No REST test changed: every existing test's links run along their stops, or have no pipes and are down, which `pathOf` draws along the same intent.\
+Held by `tests/read-model.test.js` and a CLI test: a link whose route bends through a waypoint its stops never name is answered along that route by REST and run along it by `draw movers` -- both failing on the code before; a reader honours transit; a booted diagram draws as a created one does; and no module but the store, the lab, the product page and the reaction table composes the network -- failing before on the CLI and the dry run.\
+Mutants: 4, all killed, two by tests added for them.
 ---
 
 ## 10. Axiom alignment audit (M7)

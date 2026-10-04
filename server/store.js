@@ -29,6 +29,7 @@ import { SCHEMA } from '../model/shape.mjs';   // the document generation
 import { productKinds } from '../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
+import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)
 import { createTransit } from '../network/transit.mjs';
 import { migrateFormatBatch } from './migrate.mjs';
 
@@ -42,6 +43,8 @@ the lab runs, transit's cut and join. One composition, built once; the lab compo
 
 The Models are given no network to DRAW with: the server's path consumers keep their straight drawing until P4 routes them
 through one shared function (SERVER-COMPOSES-NETWORK.md section 4). Only the planner reads the network here.
+AMENDED 2026-10-04 (P4 R-a, H18.19): each Model draws with a network of its own (`readerNetwork`, network/read-model.mjs), so
+every path the server answers is the route the lab draws. One per Model, as the network caches one derivation per board.
 */
 const KINDS = productKinds(...NETWORK_ROWS);
 const NETWORK = createNetwork(createTransit());
@@ -671,7 +674,7 @@ export class Store {
 	// document wholesale rather than deriving it from ops, so it is the single allow-listed
 	// model.load caller (GR3) and it replaces the Log in the same call.
 	install(id, doc, log = new Log(0), file = null) {
-		const model = new Model({ kinds: KINDS });
+		const model = new Model({ kinds: KINDS, network: readerNetwork() });
 		model.load(doc);
 		// `file` means this document came off our own storage, which is the only source allowed to
 		// carry authorization -- init() passes it, create() does not (ACCESS.md).
@@ -815,7 +818,7 @@ export class Store {
 			this.markDirty(id);
 			return { ok: true, model: entry.model };
 		}
-		const model = new Model({ kinds: KINDS });
+		const model = new Model({ kinds: KINDS, network: readerNetwork() });
 		model.state.meta.id = id;
 		model.state.meta.name = name;
 		this.#attribute(model, principal);
@@ -864,7 +867,7 @@ export class Store {
 				const why = validateDoc(doc, { kinds: KINDS });
 				if (why) throw new Error(why);
 				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
-				const model = new Model({ kinds: KINDS });
+				const model = new Model({ kinds: KINDS, network: readerNetwork() });
 				model.load(doc);
 				this.templates.set(doc.meta.id, model);
 			} catch (err) {

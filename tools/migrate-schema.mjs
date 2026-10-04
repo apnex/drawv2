@@ -36,11 +36,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { migrateFormatBatch, MIGRATION_STEPS, MIGRATION_TARGET } from '../server/migrate.mjs';
 import { parse } from '../server/docfile.mjs';
-import { Model } from '../model/model.mjs';
-import { productKinds } from '../planner/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { readModel } from '../network/read-model.mjs';   // the network's read composition (R-a)
 
 // the store's own filename rule, restated as tools/migrate-version.mjs does: a migration selects by the rule as it was
 const FILE = /^diagram-[0-9a-f]{6}\.json$/;
@@ -98,15 +94,12 @@ export function orderProblem(source, migrated, map) {
 
 /*
 S-d: the migrated board under the NETWORK -- every link up, along exactly its stored stops, and every pipe one some leg
-needed. Answers { problems, pipes, closing }. Read through a Model composed as the server and the lab compose it, so the
-answer is the network's own, not a restatement.
+needed. Answers { problems, pipes, closing }. Read through the network's read composition (network/read-model.mjs, R-a), so
+the answer is the network's own, not a restatement.
 */
-const KINDS = productKinds(...NETWORK_ROWS);
 export function pipeProblems(migrated) {
-	const network = createNetwork(createTransit());
-	const model = new Model({ kinds: KINDS, network });
-	model.load(migrated);
-	const routes = network.view.of(model);   // the network's own derivation: each link's route as anchor ids
+	const model = readModel(migrated);
+	const routes = model.network.view.of(model);   // the network's own derivation: each link's route as anchor ids
 	const problems = [], legs = new Set();
 	const key = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 	let closing = 0;

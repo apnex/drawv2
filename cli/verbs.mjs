@@ -396,12 +396,12 @@ Held by a test: every `request()` a handler issues must appear in `route` or `al
 S-e (H18.15) -- the Model `combat` and `movers` read a document into: the product's kinds and the network's, since the link is
 the network's kind and a Model composed with the core's alone would drop every link. Imported when one of the two runs,
 as the Model always was, so the file still ships alone for every other verb (B138).
+R-a (H18.19): the network's read composition (network/read-model.mjs), so the Model draws with the network -- movers run
+along each link's route -- and the CLI composes nothing by hand.
 */
-async function modelOf() {
-	const { Model } = await import('../model/model.mjs');
-	const { CORE_ROWS, composeKinds } = await import('../model/shape.mjs');
-	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
-	return new Model({ kinds: composeKinds([...CORE_ROWS, ...NETWORK_ROWS], 'the CLI') });
+async function modelOf(doc) {
+	const { readModel } = await import('../network/read-model.mjs');
+	return readModel(doc);
 }
 
 export const VERBS = [
@@ -1491,8 +1491,7 @@ VERBS.push({
 		const id = await activeId(ctx, ctx.flags);
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'combat');
 		const { worldOf, combatAt } = await import('../engine/rules.mjs');
-		const model = await modelOf();
-		model.load(doc);
+		const model = await modelOf(doc);
 		const at = ctx.flags.at && ctx.flags.at !== true ? Number(ctx.flags.at) : Date.now();
 		if (!Number.isFinite(at)) die(`--at takes epoch milliseconds, not ${ctx.flags.at}`);
 
@@ -1526,8 +1525,7 @@ VERBS.push({
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'movers');
 		const { spawnersOf } = await import('../engine/spawners.mjs');
 		const { moversAt } = await import('../engine/movers.mjs');
-		const model = await modelOf();
-		model.load(doc);
+		const model = await modelOf(doc);
 		let prepared = spawnersOf(model);
 		if (ctx.flags.spawner && ctx.flags.spawner !== true) {
 			const want = await resolveId(ctx, id, ctx.flags.spawner, doc);
