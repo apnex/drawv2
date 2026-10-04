@@ -51,8 +51,9 @@ The guardrail (section 10): no consumer composes the network by hand. A reader u
 the store and the lab -- composes the checked kinds, and the product page holds them until P5 draws with them (G1). Read by
 source, as the incubator boundary is (tests/scan-layers.test.js).
 */
-test('R-a: no module outside the network composes the network but the store, the lab, the product page and the reaction table', () => {
-	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs'];
+test('R-a: no module outside the network composes the network but the store, the lab, the product page, the reaction table and the route inventory', () => {
+	// W-a (H18.31): the route inventory reads the collections the server composes, which REST serves
+	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs'];
 	const found = [];
 	const walk = (dir) => {
 		for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {

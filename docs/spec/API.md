@@ -401,6 +401,7 @@ curl -s localhost:8080/api/v1/diagrams/<id>/nodes | jq
 curl -s localhost:8080/api/v1/diagrams/<id>/links | jq
 curl -s localhost:8080/api/v1/diagrams/<id>/zones | jq
 curl -s localhost:8080/api/v1/diagrams/<id>/groups | jq
+curl -s localhost:8080/api/v1/diagrams/<id>/pipes | jq
 curl -s localhost:8080/api/v1/diagrams/<id>/selection | jq
 curl -s localhost:8080/api/v1/diagrams/<id>/history | jq
 ```
@@ -437,6 +438,10 @@ curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/nodes      -H "X-Draw-Lock
 curl -s -X PATCH  localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock: $TOK" -d '{"x":240}'
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/nodes/<id> -H "X-Draw-Lock: $TOK"
 ```
+
+AMENDED 2026-10-04 (P6): every collection the server composes is served this way, the network's `pipes` among them.\
+`POST .../pipes -d '{"a":"node-...","b":"node-..."}'` lays a pipe by hand between two anchors, as `g` does on the canvas, and it outlives any link; its id is the one its two ends make.\
+`DELETE .../pipes/<id>` removes it, and a link it held goes down until another way is laid.
 
 `expect` is an optional compare-and-swap on any forward write and travels as the `X-Draw-Expect` header, because a forward write's body is an entity payload where a reserved key would collide with field validation.\
 A stale one answers `409` and writes nothing.

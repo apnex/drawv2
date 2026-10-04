@@ -59,6 +59,8 @@ export const ROUTES = [
 	{ path: 'diagrams/:id/zones/:entity',      methods: ['PATCH', 'DELETE'], about: 'high-level patch and remove' },
 	{ path: 'diagrams/:id/groups',             methods: ['POST'],           about: 'high-level create' },
 	{ path: 'diagrams/:id/groups/:entity',     methods: ['PATCH', 'DELETE'], about: 'high-level patch and remove' },
+	{ path: 'diagrams/:id/pipes',              methods: ['POST'],           about: 'lay a pipe by hand between two anchors (P6 W-a)' },
+	{ path: 'diagrams/:id/pipes/:entity',      methods: ['DELETE'],         about: 'remove a pipe (P6 W-a)' },
 
 	{ path: 'workspace/agents',                methods: ['GET'],            about: 'what every agent is doing' },
 	{ path: 'workspace/viewers',               methods: ['GET'],            about: 'who is looking at what' },

@@ -116,6 +116,10 @@ Each stage is one gate and one lab deploy.
 
 
 AMENDED 2026-10-04 -- **K1 RULED as recommended** (`dev/DECISIONS.md`, "P6's design decision, K1"): `draw link ... --lay` lays the link's legs with it; a plain link lays none.
+
+AMENDED 2026-10-04 -- **W-a done** (H18.31).\
+REST's collections are read from the model's composition (`kindOfCollection`), so the network's `pipes` is served like any other, and REST holds no list of kinds. `POST /pipes {a, b}` builds a hand pipe through the network's `pipeEntity`; which ends a pipe may join is the planner's to judge, so REST checks only that two are named. `docs/spec/API.md` amended.\
+Held by `tests/rest-pipes.test.js` against the real server -- a pipe laid heals a down link, refused to a missing end and to one anchor, laid twice once, deleted and the link down again, and every composed collection served -- all four failing on the code before. Mutants: 3; 2 killed, the third the self-pipe check REST had copied from the planner, which was removed.
 ---
 
 ## 10. Axiom alignment audit (M7)

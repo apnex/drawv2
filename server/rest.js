@@ -13,8 +13,14 @@ import { NODE_EXT } from '../model/surface.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
+import { pipeEntity } from '../network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
 
-const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
+/*
+P6 W-a (H18.31) -- THE COLLECTIONS ARE THE MODEL'S COMPOSITION, read rather than listed. This was a hand-kept list of the
+product's four, so the network's `pipes` answered "unknown collection" -- a second list of the kinds the store composes,
+which a plugin's kind could not reach. Now every composed kind is served under its collection, the network's pipe among them.
+*/
+const kindOfCollection = (model, collection) => model.kinds.list.find((k) => model.kinds.collection[k] === collection) ?? null;
 
 /*
 No `Access-Control-Allow-Origin` -- H9.28/B33. It used to answer `*` on every response.
@@ -199,6 +205,10 @@ function buildEntity(model, kind, d) {
 	if (kind === 'link') return model.makeLink(d.src, d.dst);
 	if (kind === 'zone') return model.makeZone({ x: d.x, y: d.y, w: d.w, h: d.h });
 	if (kind === 'group') return Array.isArray(d.members) ? model.makeGroup(d.members) : null;
+	// W-a: a pipe from its two ends, LAID BY HAND -- what a person lays with `g`, which outlives any link (2026-09-27); the id
+	// and the order of its ends are the network's rule, never built here. A link's own pipes are laid with it (`--lay`, K1)
+	// which ends a pipe may join is the planner's to judge (the pipe row), so this checks only that two are named
+	if (kind === 'pipe') return typeof d.a === 'string' && typeof d.b === 'string' ? pipeEntity(d.a, d.b, 'hand') : null;
 	return null;
 }
 
@@ -683,7 +693,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	if (parts.length === 5 && parts[4] === 'selection') {
 		return json(res, 200, { selection: [...model.state.selection] }), true;
 	}
-	const kind = COLLECTIONS[parts[4]];
+	const kind = kindOfCollection(model, parts[4]);
 	if (!kind) return json(res, 404, { error: `unknown collection: ${parts[4]}` }), true;
 	if (parts.length === 5) {
 		return json(res, 200, model.all(kind)), true;
@@ -1084,8 +1094,8 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 		return commitWrite(res, store, hub, locks, id, token, body.ops, body.label || '', undefined, expectOf(req), principal, beat);
 	}
 
-	// high-level verbs on a collection
-	const kind = COLLECTIONS[parts[4]];
+	// high-level verbs on a collection -- the model's own composition (W-a)
+	const kind = kindOfCollection(model, parts[4]);
 	if (!kind) return json(res, 404, { error: `unknown collection: ${parts[4]}` });
 
 	if (req.method === 'POST' && parts.length === 5) {

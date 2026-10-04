@@ -182,7 +182,7 @@ test('GR10/B118: the inventory sees all three shapes the router routes on', () =
 	assert.ok(names.includes('health'), 'a literal url.pathname route');
 	assert.ok(names.includes('diagrams'), 'a NEGATIVE parts[n] !== guard');
 	assert.ok(names.includes('lock'), 'a positive parts[n] === guard');
-	assert.ok(names.includes('nodes'), 'a COLLECTIONS entry');
+	assert.ok(names.includes('nodes') && names.includes('pipes'), 'a collection of the composition, the network\'s among them (W-a)');
 	for (const prefix of ['v1', 'api', 'connect']) {
 		assert.ok(!names.includes(prefix), `${prefix} is a path prefix, not a route anyone drives`);
 	}

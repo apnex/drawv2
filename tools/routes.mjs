@@ -23,19 +23,25 @@ flow, and that is a change to `server/rest.js` rather than to this file. Until t
 what it can prove: which route families exist. B119 records the gap.
 */
 import fs from 'node:fs';
+import { productKinds } from '../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';
 
 const SRC = 'server/rest.js';
+/*
+P6 W-a (H18.31) -- THE COLLECTIONS ARE THE COMPOSITION'S. REST read them from a literal, which this read too; REST now serves
+every collection the store composes (`productKinds(...NETWORK_ROWS)`, server/store.js), so the inventory reads that same
+composition rather than a source line.
+*/
+const SERVED = (() => { const k = productKinds(...NETWORK_ROWS); return k.list.map((kind) => k.collection[kind]); })();
 // prefixes every path carries; they name a version and a family, not an operation anyone drives
 const NOT_ROUTES = new Set(['v1', 'api', 'connect']);
 
-export function inventory(src = fs.readFileSync(SRC, 'utf8')) {
+export function inventory(src = fs.readFileSync(SRC, 'utf8'), collections = SERVED) {
 	const found = new Set();
 	const add = (name) => { if (!NOT_ROUTES.has(name)) found.add(name); };
 
-	// the entity collections the router dispatches on
-	for (const key of (src.match(/const COLLECTIONS = \{([^}]*)\}/)?.[1].match(/(\w+):/g) || [])) {
-		add(key.slice(0, -1));
-	}
+	// the entity collections the router dispatches on: the composition's
+	for (const c of collections) add(c);
 	// named segments, positive AND negative -- the negative form guards the diagram family
 	for (const m of src.matchAll(/parts\[\d+\] [!=]== '([a-z0-9]+)'/g)) add(m[1]);
 	// literal pathname routes, which carry no `parts` at all
