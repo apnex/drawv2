@@ -1044,7 +1044,12 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.21 | R-c: run mode and the SVG export are one rendering, decided in one place -- each link along its route, a down link with the down look, and what a static picture holds (H2, refined) | feature | S2 | `DONE` |
 | H18.22 | R-d: spawners skip down links at every door | feature | S2 | `DONE` |
 | H18.23 | R-e: P4 closed -- the parity test over every consumer, the register, the records | feature | S2 | `DONE` |
-| H18.24 | Design P5 for approval before any code: the product page composes the network -- draws pipes and routed links, `g` works there, the browser previews with the planner (PL-6), the kernel's network roles and appearance move into `network/` | **B266** | S2 | `TODO` |
+| H18.24 | Design P5 for approval before any code: the product page composes the network -- draws pipes and routed links, `g` works there, the browser previews with the planner (PL-6), the kernel's network roles and appearance move into `network/` | feature | S2 | `DONE` |
+| H18.25 | V-a: the network's look is the network's -- roles and appearance move from `kernel/` into `network/`; the incubator boundary retired (J1) | **B266** | S2 | `TODO` |
+| H18.26 | V-b: the page composes the network as the lab does -- routes, pipes, `g`, `x`, down links; what the network says in the banner (J3) | **B266** | S2 | `TODO` |
+| H18.27 | V-c: a link landing on another link's bend is cut by a planner reaction at every door, its piece's id derived (B243) | **B266** | S2 | `TODO` |
+| H18.28 | V-d: one preview (PL-6) -- the browser plans with the planner, sends intent only, and its rule copies go (B221) | **B266** | S2 | `TODO` |
+| H18.29 | V-e: P5 closed -- a Model holding links requires the network (J2); the register; the records | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1072,6 +1077,7 @@ AMENDED 2026-10-04: H18.21 (R-c) done -- run mode and the SVG download are one r
 AMENDED 2026-10-04: H18.22 (R-d) done -- a spawner on a down link emits nothing, in every door that derives spawners.\
 AMENDED 2026-10-04: H18.23 (R-e) done -- P4 is closed on `main`: every path consumer draws the route the lab's tab draws, held by one board read through every door; the estate's 464 links export with none down. Next H18.24, P5's design.\
 AMENDED 2026-10-04: H18.24's design is `dev/design/unification/PAGE-COMPOSES-NETWORK.md`, proposed; its decisions J1 to J3 are asked one at a time before any code.\
+AMENDED 2026-10-04: approved and J1 to J3 ruled as recommended (`dev/DECISIONS.md`); H18.24 DONE, the build is H18.25 to H18.29.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

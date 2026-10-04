@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-04 against `ac5579f`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-04: approved; J1 to J3 ruled as recommended (section 9).
 
 ## 1. Status
 
@@ -130,6 +131,9 @@ Each stage is one gate and one lab deploy.
 - **J2 -- a Model without the network.** Recommended: a Model whose composition holds the link kind must be given the network, so no Model draws links straight; `straightPath` stays only as a down link's intent, drawn by the network. The alternative: keep the null default as core behaviour, which every production Model would then simply not use.
 - **J3 -- where the page says what the network says** (a down link and why, a transit cut, what an edit left down). Recommended: the header banner, where the page already says what sync says, transient as the lab's notice is. The alternatives: the readout line at the bottom, or say nothing on the page and draw it only.
 
+
+AMENDED 2026-10-04 -- **J1 to J3 RULED as recommended** (`dev/DECISIONS.md`, "P5's design decisions, J1 to J3").\
+The incubator boundary retires at V-a; a Model holding links requires the network from V-e; the page says what the network says in its header banner.
 ---
 
 ## 10. Axiom alignment audit (M7)
