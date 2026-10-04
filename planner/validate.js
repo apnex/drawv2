@@ -4,13 +4,12 @@ radically narrowed). The server never trusts the wire: every mutation and every
 pushed document is validated for shape, ranges, and referential integrity.
 */
 
-import { waypointOwners } from '../model/referential.mjs';
 import { NAME_MAX, CAPTION_MAX } from '../model/limits.mjs';
 // H17.22 N-a: every kind is a ROW -- its field checks, its cross-entity check and its cap travel with it (planner/kinds.mjs).
-// Validation reads the composition it is handed, the product's five when nothing else is passed.
+// Validation reads the composition it is handed, the product's when nothing else is passed (no links since S-e: a caller that
+// validates links passes the network's composition, as the store does).
 import { PRODUCT_KINDS } from './kinds.mjs';
 import { SCHEMA } from '../model/shape.mjs';   // the document generation, one owner (H18.3)
-import { bareAnchor, bareAnchorsOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // A principal is `user:<email>` or `code:<id>`, namespaced so the two kinds can never be
 // confused for one another. Length-capped like every other free string the wire accepts.
@@ -131,26 +130,21 @@ export function validateMutation(model, mutation, kinds = PRODUCT_KINDS) {
 	/*
 	Referential integrity, against the CURRENT model state and under a post-merge view for `set`.
 
-	The rules themselves live in `model/referential.mjs` and are shared with `validateDoc`, which
+	The rules themselves live in each kind's row -- the link's in `network/link-references.mjs` since S-e -- and are shared with `validateDoc`, which
 	used to carry a second hand-written copy of all five (B83). What stays here is the part that is
 	genuinely about MUTATION: merging the patch over the stored entity, so a `set` that touches only
 	`via` is still checked against the `src` and `dst` it is keeping.
 	*/
 	if (!row.refers) return null;
+	/*
+	S-e (H18.15) -- ONE GENERIC ACCESS, naming no kind: whether an entity exists, the entity, and every entity of a kind. It
+	carried four questions of the link's own (`hasNode`, `hasWaypoint`, `ownersOf`, `linkById`) and built the link's owners
+	index; the link's row builds those from this, once per access (network/link-references.mjs `linkAccess`).
+	*/
 	const access = {
-		// whether an entity of a kind exists -- the generic question a plugin row asks; the four below are the link's
 		has: (k, eid) => kinds.has(k) && !!model.get(k, eid),
-		hasNode: (eid) => !!model.get('node', eid),
-		hasWaypoint: (eid) => !!bareAnchor(model, eid),
-		// built ONCE per mutation. This was a rescan of every link for every waypoint, which is
-		// O(waypoints x links) on each write for a predicate that does not change within the call.
-		ownersOf: (() => {
-			let owners = null;
-			return (w) => (owners ??= waypointOwners(model.all('link'))).get(w) || [];
-		})(),
-		// B207 -- the duplicate-bend check needs the OTHER link's endpoints, not just its id, so it
-		// can compare the pair. The model is already indexed by id; this is a lookup, not a scan.
-		linkById: (lid) => model.get('link', lid),
+		get: (k, eid) => (kinds.has(k) ? model.get(k, eid) : undefined),
+		all: (k) => (kinds.has(k) ? model.all(k) : []),
 	};
 	// the kind's own cross-entity check (its row), judged on the entity as it would stand -- a `set` merged over what is
 	// stored -- and told what the op carried; it was two hard-coded branches here, for the link and the group (N-a)
@@ -228,23 +222,18 @@ export function validateDoc(doc, { kinds = PRODUCT_KINDS } = {}) {
 	}
 	/*
 	Referential integrity within the document -- the SAME five rules the mutation path applies,
-	from `model/referential.mjs`, reached through a lookup over these arrays instead of a Model.
+	from each kind's row (the link's `network/link-references.mjs` since S-e), reached through a lookup over these arrays instead of a Model.
 
 	This block used to be a second hand-written implementation of all of them, with its own error
 	vocabulary and its own complexity class (B83). Nothing forced the pair to agree, and a
 	disagreement means a document the wire refuses can be loaded from disk, or the reverse.
 	*/
-	const nodeIds = new Set((doc.nodes || []).map((n) => n.id));
-	const waypointIds = new Set(bareAnchorsOf(doc).map((w) => w.id));
-	const owners = waypointOwners(doc.links || []);
-	const byId = new Map((doc.links || []).map((l) => [l.id, l]));
-	const ids = Object.fromEntries(kinds.list.map((k) => [k, new Set((doc[kinds.collection[k]] || []).map((e) => e.id))]));
+	// the same generic access as the mutation path's (S-e), over these arrays: each kind indexed by id once
+	const byKind = Object.fromEntries(kinds.list.map((k) => [k, new Map((doc[kinds.collection[k]] || []).map((e) => [e.id, e]))]));
 	const access = {
-		has: (k, eid) => !!ids[k]?.has(eid),
-		hasNode: (eid) => nodeIds.has(eid),
-		hasWaypoint: (eid) => waypointIds.has(eid),
-		ownersOf: (w) => owners.get(w) || [],
-		linkById: (lid) => byId.get(lid),   // B207 -- built once, beside the owners index
+		has: (k, eid) => !!byKind[k]?.has(eid),
+		get: (k, eid) => byKind[k]?.get(eid),
+		all: (k) => [...(byKind[k]?.values() ?? [])],
 	};
 	// each kind's own cross-entity check, from its row, in the order the composition lists its kinds (N-a)
 	for (const kind of kinds.list) {

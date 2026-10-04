@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { migrateFormatBatch } from '../server/migrate.mjs';
-import { validateDoc } from '../planner/validate.js';
+import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { pipeProblems } from '../tools/migrate-schema.mjs';
 import { Model, plan } from './fixtures/composed.mjs';
 

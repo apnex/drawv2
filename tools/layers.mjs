@@ -106,7 +106,6 @@ export const LAYER = {
 		'kernel/network-roles.mjs',        // K13a: what a waypoint or link IS -- split from kernel/geometry.mjs, whose core grid exported network names (L5)
 		'kernel/network-appearance.mjs',   // K13a: how the network is DRAWN -- waypoint rings and layers, link width, dash, arrowhead, appearance
 		'model/invariants.mjs',   // the document invariants the planner checks
-		'model/referential.mjs',   // the link's references and the group's; the link's half to network/ at S-e (K13b)
 		// S-e (H18.15): the link rules, the link reactions with `linkTenant`, and the pair capacity moved into network/ (G5)
 		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
 		'engine/ivm.mjs',                                  // the index's generic mechanism; relations.mjs is its only user
@@ -178,7 +177,8 @@ export const ENTRIES = {
 			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
 			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows, held until P5 draws them
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
-			'planner/kinds.mjs', 'model/referential.mjs',   // the product's rows, composed with the network's
+			'planner/kinds.mjs',   // the product's rows, composed with the network's
+			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
 		],
 	},
 	lab: {
@@ -214,7 +214,8 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'kernel/network-roles.mjs', 'kernel/network-appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs',
-			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/referential.mjs', 'model/shape.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
+			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'network/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
@@ -227,10 +228,11 @@ export const ENTRIES = {
 		modules: [
 			'planner/policy.mjs',
 			'kernel/geometry.mjs', 'kernel/spec.mjs', 
-			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/referential.mjs',
+			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs',
 			'model/shape.mjs', 'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'planner/tenants.mjs',   // the planner's tenant, the groups (PL-3); the link tenant is the composition's (S-b)
-			'network/pair-capacity.mjs',   // the pair rule's one home, which the document invariant reads (S-b)
+			// S-e (H18.15): the planner loads no network module -- the link's references and its straight-pair invariant are the
+			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 		],
 	},
@@ -285,7 +287,8 @@ export const RULES = {
 	*/
 	L7k: {
 		// F-c (H18.5, P-10): four -- a waypoint is a node with no type
-		kinds: ['node', 'link', 'zone', 'group'],
+		// S-e (H18.15, G5): three -- the link is the network's kind (network/link-kind.mjs), composed by composing the network
+		kinds: ['node', 'zone', 'group'],
 		/*
 		AMENDED by H17.22 N-a (ruled 2026-10-02, amending C3): the id grammar is no longer a literal. Each kind's row carries
 		its id check and planner/validate.js builds the grammar from the composition's rows, so there is no regex here to

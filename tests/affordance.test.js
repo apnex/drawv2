@@ -137,7 +137,7 @@ is plain logic over the model, and this tests the logic.
 */
 test('a selected link lights its waypoints, and releases them when selection moves', async () => {
 	const { Renderer } = await import('../app/src/renderer.js');
-	const { Model } = await import('../model/model.mjs');
+	const { Model } = await import('./fixtures/composed.mjs');   // the network's kinds, the link among them (S-e)
 	const model = new Model();
 	model.put('node', { id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' });
 	model.put('node', { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 });

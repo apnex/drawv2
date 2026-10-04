@@ -28,7 +28,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Store } from '../server/store.js';
-import { validateDoc } from '../planner/validate.js';
+import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { OWNER, makeApp } from './fixtures/app.mjs';
 import { WebSocket } from 'ws';
 

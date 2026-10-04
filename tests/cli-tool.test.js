@@ -1544,7 +1544,7 @@ guarding: if the CLI and a tab disagreed about who is being burned, one of them 
 the parity claim says neither can be. Tested by deriving both here from one document.
 */
 test('B179: draw combat derives the same answer the browser would', async () => {
-	const { Model } = await import('../model/model.mjs');
+	const { Model } = await import('./fixtures/composed.mjs');   // the network's kinds, as `draw combat` composes them (S-e)
 	const { worldOf, combatAt } = await import('../engine/rules.mjs');
 	const m = new Model();
 	m.put('node', { id: 'node-ca0001', name: 'node-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
@@ -1714,8 +1714,28 @@ cannot import a sibling -- and a restated table is a drift risk, which is what t
 for. `via` is excluded deliberately: it is a route, minted by `draw link --via`, not a scalar
 property, and `closed` likewise belongs to the shape of the route.
 */
+/*
+S-e (H18.15) -- `combat` and `movers` read the document into a Model of their own, and the link is the network's kind now: a
+Model of the core's kinds alone would drop every link, and an armed endpoint would have nothing to emit along.
+*/
+test('S-e: draw movers reads the links -- its Model composes the network\'s kinds', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'movers-link')).trim();
+		await run('lock', '--diagram', id);
+		const since = Date.now();
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00001', name: 'a', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00002', name: 'w', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since } } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00003', name: 'l', src: 'node-e00002', dst: 'node-e00001' } }] }));
+		const out = JSON.parse(await run('movers', '--diagram', id, '--at', String(since + 5000), '--json'));
+		assert.equal(out.spawners.length, 1, 'the armed endpoint is found on its link');
+		assert.equal(out.spawners[0].link, 'link-e00003');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
-	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
+	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');
 
 	// the route fields are the route verb's business; every other optional field must be settable -- but the drawing order,
@@ -1814,7 +1834,7 @@ test('B237: a link can be declared at creation, in one call', async () => {
 });
 
 test('B237: the settable table matches the taxonomy for every kind, not just links', async () => {
-	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
+	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');
 
 	/*

@@ -33,6 +33,10 @@ THE ACCESS CONTRACT:
   hasNode(id)       -> boolean
   hasWaypoint(id)   -> boolean
   ownersOf(wpId)    -> iterable of link ids referencing that waypoint in ANY role
+AMENDED 2026-10-04 (S-e, H18.15; G5): the link's references are the network's, beside its row (network/link-kind.mjs), and
+the planner hands every row's check one GENERIC access -- `has(kind, id)`, `get(kind, id)`, `all(kind)` -- naming no kind.
+`linkAccess` builds the four above from it, the owners index once per access object, so the planner holds no link index.
+The group's check, which needs only `has`, is the product's (planner/kinds.mjs).
 
 `ownersOf` is an INDEX, built once by the caller, and that is a complexity fix as well as a
 deduplication. `validateMutation` used to rescan `model.all('link')` for every waypoint in every
@@ -40,8 +44,10 @@ link mutation -- a document-wide predicate wearing a per-mutation costume, O(way
 every write. Built once it is O(links), and the document path is unchanged at O(links).
 */
 
+import { isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+
 // Index every waypoint reference in a set of links. One pass, and the shape both callers need.
-export function waypointOwners(links) {
+function waypointOwners(links) {
 	const owners = new Map();
 	const note = (w, id) => {
 		if (!w) return;
@@ -54,6 +60,24 @@ export function waypointOwners(links) {
 		for (const w of Array.isArray(l.via) ? l.via : []) note(w, l.id);
 	}
 	return owners;
+}
+
+// the link's view of a row check's generic access, built once per access object -- so the owners index is one pass per
+// mutation or document, as it was when the planner built it
+const VIEWS = new WeakMap();
+export function linkAccess(access) {
+	let view = VIEWS.get(access);
+	if (view) return view;
+	let owners = null;
+	view = {
+		hasNode: (id) => access.has('node', id),
+		hasWaypoint: (id) => isBareEntity('node', access.get('node', id)),
+		ownersOf: (w) => (owners ??= waypointOwners(access.all('link'))).get(w) || [],
+		// B207 -- the duplicate-bend check needs the OTHER link's endpoints, not just its id
+		linkById: (id) => access.get('link', id),
+	};
+	VIEWS.set(access, view);
+	return view;
 }
 
 /*
@@ -142,15 +166,6 @@ function duplicateThroughBend(link, via, access) {
 				return `two links with the same endpoints bend at the same waypoint: ${w}`;
 			}
 		}
-	}
-	return null;
-}
-
-// A group's members must exist. Nodes and waypoints both qualify; a group of groups does not.
-export function groupReferential(group, access) {
-	const { hasNode, hasWaypoint } = access;
-	for (const m of Array.isArray(group.members) ? group.members : []) {
-		if (!hasNode(m) && !hasWaypoint(m)) return `group member does not exist: ${m}`;
 	}
 	return null;
 }

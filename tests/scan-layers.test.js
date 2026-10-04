@@ -302,7 +302,7 @@ const MUTANTS = [
 	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/movers.mjs')).moversAt; }\n" }] },
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
 	// PL-5: the kind list's one literal is model/shape.mjs's table now, so the planted sixth kind goes there
-	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["const KINDS = ['node', 'link', 'zone', 'group'];", "const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
+	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["const KINDS = ['node', 'zone', 'group'];", "const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
 	{ id: 'M5', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/all.mjs', create: "export * from './geometry.mjs';\nexport * from './spec.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf } from '../../kernel/all.mjs';\n" }] },
 	{ id: 'M6', rule: 'L11', edits: [{ file: 'app/src/input.js', append: '\nexport function __m6() { return window.draw.sync.submit({ ops: [] }); }\n' }] },
@@ -550,10 +550,11 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 	for (const k of arrivals) {
 		const mod = k.slice(0, k.lastIndexOf(':')), name = k.slice(k.lastIndexOf(':') + 1);
 		// K2c deleted the three barrels (H17-D4), K12 the design-rule checker (ruled), and K4 moved the planner's K0 files to
-		// planner/ (H17-D5), so they are departed and gone from their K0 paths; every other departed module still exists
+		// planner/ (H17-D5), so they are departed and gone from their K0 paths; every other departed module still exists.
+		// S-e (H18.15, G5) moved model/referential.mjs to network/link-references.mjs, the link's references the network's
 		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
 		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'engine/policy.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs',
-			'server/log.mjs', 'server/txn.mjs', 'server/validate.js'], 'only the modules deleted or moved by ruling may be missing');
+			'model/referential.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js'], 'only the modules deleted or moved by ruling may be missing');
 		// a deleted module's source is gone, so its frozen K0 export record stands in for it: a name it exported is a name
 		// its departure justifies (K11 moved the renderer text that used to mention `bboxOf`; the barrel exported it)
 		const src = departed.filter((m) => !gone.includes(m)).map((m) => fs.readFileSync(path.join(root, m), 'utf8'))
@@ -751,9 +752,10 @@ const INCUBATOR = 'network/';
 // estate link comes up along its stored stops -- it is run by hand against a backup, and nothing served imports it
 // S-e (H18.15, G5): the link rules live in network/ now, so the browser's two copies of planner rules read them there until
 // PL-6 deletes the copies at P5 (G4) -- `app/src/commands.js` and `app/src/input.js`; and `model/invariants.mjs` reads the pair
-// capacity until the link row carries its own invariant (S-e, part 2)
+// capacity until the link row carries its own invariant (S-e, part 2) -- which it does now, so model/invariants.mjs left again;
+// and `cli/verbs.mjs`, whose `combat` and `movers` read a document into a Model with the network's kinds, the link among them
 const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs',
-	'app/src/commands.js', 'app/src/input.js', 'model/invariants.mjs'];
+	'app/src/commands.js', 'app/src/input.js', 'cli/verbs.mjs'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

@@ -38,6 +38,6 @@ const anchors = (ext, pitch) => (Math.floor(ext.x / pitch) * 2 + 1) * (Math.floo
 export function collectionCap({ nodeExt, zoneExt, pitch }) {
 	return {
 		node: anchors(nodeExt, pitch), zone: anchors(zoneExt, pitch),   // one occupant per anchor cell, typed or not (F-c)
-		link: 2000, group: 2000,
+		group: 2000,   // the link's 2000 is the network's row's own since S-e (network/link-kind.mjs)
 	};
 }

@@ -394,7 +394,7 @@ test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-
 		await s.flush(id);
 		const raw = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
 		assert.ok(raw.log, 'the file carries a log');
-		const { validateDoc } = await import('../planner/validate.js');
+		const { validateDoc } = await import('./fixtures/composed.mjs');
 		assert.equal(validateDoc(raw), null, 'a validator that knows nothing of `log` still accepts the file');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -569,7 +569,7 @@ unloadable -- including a backup taken last week. The loader strips first, which
 both can be true.
 */
 test('Phase 2: the schema refuses meta.slides, and a pre-purge file still loads', async () => {
-	const { validateDoc } = await import('../planner/validate.js');
+	const { validateDoc } = await import('./fixtures/composed.mjs');
 	const legacy = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 1, owner: '', grants: {},
 		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
 		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };

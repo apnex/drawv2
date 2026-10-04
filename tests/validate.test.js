@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
 import { collectionCap } from '../planner/policy.mjs';
+import { LINK_ROW } from '../network/link-kind.mjs';
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
-import { validateSelectionIds, validateDoc, validateMutation } from '../planner/validate.js';
+import { validateSelectionIds, validateDoc, validateMutation } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 
 // MS1: the persisted selection (model-state / status) is SHAPE-validated only — never
@@ -203,7 +204,8 @@ test('B113: the positioned cap is DERIVED from the grid, not a flat constant', (
 	assert.equal(cap.waypoint, undefined, 'a waypoint is a node since F-c, so the node ceiling is the one it shares');
 	assert.notEqual(cap.node, 2000, 'a flat 2000 is unreachable for a positioned kind and so is not a limit');
 	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
-	assert.equal(cap.link, 2000);
+	assert.equal(cap.link, undefined, 'the link is the network\'s kind, its cap its row\'s (S-e)');
+	assert.equal(LINK_ROW.cap, 2000);
 	assert.equal(cap.group, 2000);
 });
 
@@ -243,7 +245,7 @@ that becomes one" -- it becomes one exactly when the numbers diverge, which is w
 */
 test('B86: the name cap is one number, and truncation lands where rejection begins', async () => {
 	const { NAME_MAX } = await import('../model/limits.mjs');
-	const { validateDoc } = await import('../planner/validate.js');
+	const { validateDoc } = await import('./fixtures/composed.mjs');
 	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, node: {}, link: {}, group: {}, zone: {}, waypoint: {} });
 
 	assert.equal(validateDoc(doc('x'.repeat(NAME_MAX))), null, 'exactly at the cap is legal');
@@ -260,7 +262,7 @@ test('B86: the name cap is one number, and truncation lands where rejection begi
 
 test('B86: the span and content caps are one number across both peers', async () => {
 	const { SPAN_MAX, CONTENT_VALUE_MAX } = await import('../model/limits.mjs');
-	const { validateEntity } = await import('../planner/validate.js');
+	const { validateEntity } = await import('./fixtures/composed.mjs');
 	const node = (span) => ({ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'n', span });
 
 	assert.equal(validateEntity('node', node({ cols: SPAN_MAX, rows: SPAN_MAX }), { full: false }), null);
@@ -297,8 +299,10 @@ never used it -- so every angle except the consuming one made the tree look sing
 "MUST match planner/validate.js SELECTABLE".
 */
 test('B86: the selectable kinds are derived from the model, not restated beside it', async () => {
-	const SELECTABLE_KINDS = (await import('../model/shape.mjs')).CORE_KINDS.selectable;
-	const { validateSelectionIds } = await import('../planner/validate.js');
+	const { KINDS } = await import('./fixtures/composed.mjs');
+	// the product's and the network's (S-e), each whose id takes the 6-hex form -- a pipe's is made of its two ends
+	const SELECTABLE_KINDS = KINDS.selectable.filter((k) => KINDS.row(k).fields.id(`${k}-aa0001`));
+	const { validateSelectionIds } = await import('./fixtures/composed.mjs');
 	for (const kind of SELECTABLE_KINDS) {
 		assert.equal(validateSelectionIds([`${kind}-aa0001`]), null, `${kind} is selectable in both`);
 	}
@@ -333,7 +337,7 @@ would start refusing the smallest zone the client can draw -- and this fails.
 */
 test('B86: the smallest legal zone is one grid cell, wherever the pitch is set', async () => {
 	const { STD } = await import('../kernel/spec.mjs');
-	const { validateEntity } = await import('../planner/validate.js');
+	const { validateEntity } = await import('./fixtures/composed.mjs');
 	const off = STD.pitch / 2;                                    // the zone grid's half-pitch offset
 	const zone = (w) => ({ id: 'zone-aa0001', x: off, y: off, w, h: STD.pitch, name: 'z' });
 
@@ -360,7 +364,7 @@ VERDICTS are compared. Sharing the predicate is what makes them agree; this is w
 someone unshared it.
 */
 test('B83: the document door and the mutation door reach the same verdict', async () => {
-	const { validateDoc, validateMutation } = await import('../planner/validate.js');
+	const { validateDoc, validateMutation } = await import('./fixtures/composed.mjs');
 	const { Model } = await import('./fixtures/composed.mjs');
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
@@ -438,7 +442,7 @@ The four shipped templates are validated as the documents they are, so a malform
 failure rather than a boot failure.
 */
 test('H9.9: a template id is a valid document id, and a made-up kind is not', async () => {
-	const { validateDoc } = await import('../planner/validate.js');
+	const { validateDoc } = await import('./fixtures/composed.mjs');
 	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, nodes: [], links: [], groups: [], zones: [], waypoints: [] });
 
 	assert.equal(validateDoc(doc('template-4f2c11')), null, 'a template is a document');
@@ -452,7 +456,7 @@ test('H9.9: a template id is a valid document id, and a made-up kind is not', as
 });
 
 test('H9.9: every shipped template is a valid document', async () => {
-	const { validateDoc } = await import('../planner/validate.js');
+	const { validateDoc } = await import('./fixtures/composed.mjs');
 	const dir = new URL('../templates/', import.meta.url);
 	const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
 	assert.ok(files.length >= 4, 'the template set is present — otherwise this passes vacuously');
@@ -487,15 +491,22 @@ test is what makes step 2 safe: it pins which half is which, so relaxing sharing
 take self-conflict with it -- and a self-conflict that stopped being refused would be a link whose
 rendered shape is undefined, which no test above would notice.
 */
+// the generic access a row's check is handed (planner/validate.js, S-e): typed nodes, waypoints (nodes with no type) and links
+const genericAccess = (nodes, wps, links) => {
+	const byId = new Map(links.map((l) => [l.id, l]));
+	const node = (i) => (nodes.has(i) ? { id: i, type: 'host' } : wps.has(i) ? { id: i } : undefined);
+	return {
+		has: (k, i) => (k === 'node' ? !!node(i) : k === 'link' ? byId.has(i) : false),
+		get: (k, i) => (k === 'node' ? node(i) : k === 'link' ? byId.get(i) : undefined),
+		all: (k) => (k === 'link' ? links : []),
+	};
+};
+
 test('B206: self-conflict and sharing are independent checks', async () => {
-	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
+	const { linkReferential, linkAccess } = await import('../network/link-references.mjs');   // the network's since S-e
 	const nodes = new Set(['n1', 'n2', 'n3', 'n4']);
 	const wps = new Set(['w1', 'w2']);
-	const access = (links) => {
-		const owners = waypointOwners(links);
-		const byId = new Map(links.map((l) => [l.id, l]));
-		return { hasNode: (i) => nodes.has(i), hasWaypoint: (i) => wps.has(i), ownersOf: (w) => owners.get(w) || [], linkById: (i) => byId.get(i) };
-	};
+	const access = (links) => linkAccess(genericAccess(nodes, wps, links));
 
 	// SELF-CONFLICT: one link, no other links exist at all -- so sharing cannot be what refuses it
 	for (const [why, link] of [
@@ -535,7 +546,7 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 	/*
 	A same-pair link that does NOT bend there is a different shape on the canvas -- one detours
 	through the waypoint, the other does not -- so it is accepted here. Whether a SECOND STRAIGHT
-	one may join is `straightCapacity` in model/invariants.mjs, a separate rule in a separate layer.
+	one may join is `straightCapacity` in network/pair-capacity.mjs, a separate rule in a separate layer.
 	Asserted together so the boundary between them is pinned: if either starts covering the other's
 	case, one of these two lines fails.
 	*/
@@ -544,7 +555,8 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 		'a same-pair link that does not bend at the waypoint is not a duplicate through it');
 
 	const { violations } = await import('../model/invariants.mjs');
-	const asModel = (links) => ({ all: (k) => (k === 'link' ? links : []), get: () => null });
+	const { KINDS } = await import('./fixtures/composed.mjs');   // the straight-pair rule is the link row's own since S-e
+	const asModel = (links) => ({ kinds: KINDS, all: (k) => (k === 'link' ? links : []), get: () => null });
 	assert.deepEqual(violations(asModel(parallel)), [],
 		'one routed and one straight between a pair is legal -- they render differently');
 	assert.equal(violations(asModel([...parallel, { id: 'l3', src: 'n1', dst: 'n2' }])).length, 1,
@@ -569,7 +581,7 @@ was refused until two commits ago, so this is not hypothetical.
 */
 test('B210: a split turns a bend into a junction, and the result validates', async () => {
 	const { splitAtBend } = await import('../network/link-rules.mjs');
-	const { linkReferential, waypointOwners } = await import('../model/referential.mjs');
+	const { linkReferential, linkAccess } = await import('../network/link-references.mjs');   // the network's since S-e
 	const { waypointRoles } = await import('../kernel/network-roles.mjs');
 
 	// the arithmetic, including a link with bends either side of the cut
@@ -603,12 +615,7 @@ test('B210: a split turns a bend into a junction, and the result validates', asy
 
 	const nodes = new Set(['node-aa0001', 'node-aa0002', 'node-aa0003']);
 	const wps = new Set(['node-ea0001']);
-	const owners = waypointOwners(after);
-	const byId = new Map(after.map((l) => [l.id, l]));
-	const access = {
-		hasNode: (i) => nodes.has(i), hasWaypoint: (i) => wps.has(i),
-		ownersOf: (w) => owners.get(w) || [], linkById: (i) => byId.get(i),
-	};
+	const access = linkAccess(genericAccess(nodes, wps, after));
 	for (const l of after) {
 		assert.equal(linkReferential(l, access), null, `the split produced a document the validator refuses: ${l.id}`);
 	}

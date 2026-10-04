@@ -199,6 +199,31 @@ B245's acceptance test now holds that threading a free waypoint commits the link
 Mutants: 12; 11 killed, two by tests added for them (age by drawing order, the ring cut at a typed node).\
 The 12th is equivalent: putting `pinned` back on the waypoint-only list changes nothing, since the row refuses the field first.
 
+
+AMENDED 2026-10-04 -- **S-e done** (H18.15; G5, B280's link step, K13b's model half), in two commits, each gated.\
+**Part 1 moved the link's rules:** `network/link-rules.mjs`, `network/link-reactions.mjs` with `linkTenant`, and `network/pair-capacity.mjs`, from `model/`.\
+**Part 2 moved the link kind:** its row is `network/link-kind.mjs`, first in `NETWORK_ROWS`, holding its storage, field checks, cross-entity check, cap and invariant.\
+Its references are `network/link-references.mjs`, which was `model/referential.mjs`; the group's check moved to the group's row in `planner/kinds.mjs`.\
+The product composes three kinds, node, zone and group, and every production composition brings the link by composing the network.\
+No module in `model/` or `planner/` imports `network/`.
+
+**Four mechanisms the design did not name, each needed to keep the core free of the link:**
+- **A row may carry its own document invariants** (`invariants`, `model/shape.mjs`). The straight-pair rule (B81) was written in `model/invariants.mjs`; it is the link row's now, and `violations` asks each composed kind's row.
+- **One generic access for every row's cross-entity check:** `has`, `get` and `all`, naming no kind. The planner built four link questions and the link's owners index; the link's row builds them from the generic access, once per access (`linkAccess`).
+- **`clone` copies every nested value.** It walked the core's `COMPOSITE` table, so a plugin kind could not nest a field, and the network's link would have shared its `via`. The table's export and the rule refusing a plugin's nested field are deleted.
+- **The relations index attaches to a model without links,** for a composition without the network.
+
+**Consumers that read the core's kinds** now read their own composition: REST's `entityIn`, the store's name repair, and the CLI's `combat` and `movers`, which compose the network's rows into their Model.\
+**The incubator list widens** by `cli/verbs.mjs`, for those two verbs, and by `app/src/commands.js` and `app/src/input.js`, whose copies of planner rules read the link rules in `network/` until PL-6 deletes the copies at P5 (G4).\
+**L7k re-recorded:** the product's kind list is `node`, `zone`, `group`; its consumer ratchets are unchanged.\
+**What stays, as the design placed it:** the kernel's roles and appearance (P5, PU22); the Model's link methods and the relations index's link incidence (K13d, the rebuild); the group and occupancy invariants in `model/invariants.mjs`, which are the core's.
+
+**Corpora:** planner, gesture and matrix unchanged, byte for byte. The estate dry run passes as at S-d.\
+**Tests:** `tests/link-kind.test.js`, 9 tests, and a CLI test that `draw movers` reads links. They cannot load on the code before the change, which has no `network/link-kind.mjs`, so their strength is shown by mutants rather than by a RED run.\
+35 test files changed; 29 of them now build their Model or validate through `tests/fixtures/composed.mjs`, which composes as production does and now also wraps the validator.\
+Two tests that composed a kind list by hand compose the link's row with the product's: the GR5 oracle and the pair-capacity guard.\
+Mutants: 12; 11 killed, one only by the full suite until a direct test was added (a link bends only at a node with no type).\
+The 12th is equivalent: removing `linkAccess`'s memo changes cost, not answers.
 ---
 
 ## 10. Axiom alignment audit (M7)

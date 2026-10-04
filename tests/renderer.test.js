@@ -9,7 +9,7 @@ a different substrate, a tested implementation standing in for the one that runs
 import { test } from 'node:test';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Renderer } from '../app/src/renderer.js';
 import { renderElement } from '../kernel/svg-scene.mjs';
 import { resolve } from '../kernel/engine.mjs';

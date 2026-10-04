@@ -11,7 +11,7 @@ export // S1b: the mutation PLANNER — pure (reads the model, applies NOTHING).
 // keeps the reject-writes-nothing guarantee without a rollback (atomicity by purity). load-consuming —
 // this is what makes apply() a genuine 2nd consumer of prism.commit's load->mutate->validate->save.
 function planMutation(model, mutation) {
-	const err = validateMutation(model, mutation);
+	const err = validateMutation(model, mutation, model.kinds);   // AMENDED 2026-10-04 (S-e): the model's kinds, the link the network's
 	if (err) return { ok: false, error: err };
 	const { action, kind, entity } = mutation;
 	const ops = [];

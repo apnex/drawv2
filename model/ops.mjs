@@ -18,17 +18,17 @@ fails on any model.put/set/del outside it, because an out-of-band write corrupts
 inverse below it with no error at the time of corruption.
 */
 
-import { COMPOSITE } from './shape.mjs';
-
-// A copy deep enough that the result shares no mutable structure with the original. Walks the
-// COMPOSITE table rather than an if-ladder, so a new nested field is declared in one place.
+// A copy deep enough that the result shares no mutable structure with the original.
 // Load-bearing twice over: a stored inverse must not alias the live model (undo would replay a
 // value that has since changed under it), and a `put` must not alias the wire payload.
+// S-e (H18.15): EVERY nested value is copied, whatever the kind. It walked the core's COMPOSITE table, which knew the
+// product's kinds alone -- so a plugin's kind could not nest a field, and the link, once the network's, would have shared
+// its `via` with the wire. `kind` is kept for the callers, which name one.
 export function clone(kind, entity) {
 	const copy = { ...entity };
-	for (const field of COMPOSITE[kind] ?? []) {
+	for (const field of Object.keys(copy)) {
 		const v = copy[field];
-		if (v === undefined) continue;
+		if (!v || typeof v !== 'object') continue;
 		if (Array.isArray(v)) copy[field] = v.map((x) => (x && typeof x === 'object' ? structuredClone(x) : x));
 		else if (v && typeof v === 'object') copy[field] = structuredClone(v);
 	}

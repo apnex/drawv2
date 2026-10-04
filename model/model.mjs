@@ -9,7 +9,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 */
 
 // the kinds, their collections and which are selectable: a composition of kind rows (model/shape.mjs, H17.22 N-a), the
-// product's five unless one is passed. The selectable list was re-exported here for planner/validate.js's id regex; the
+// core's three unless one is passed (no links since S-e). The selectable list was re-exported here for planner/validate.js's id regex; the
 // validator now reads the composition it is handed.
 import { CORE_KINDS, SCHEMA } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
@@ -110,7 +110,8 @@ const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf',
 export class Model {
 	constructor({ network = null, kinds = CORE_KINDS, ...rest } = {}) {
 		refuseStrayOptions(rest, 'Model');
-		// the kinds this model stores (H17.22 N-a): the product's five unless a composition brings its own (model/shape.mjs)
+		// the kinds this model stores (H17.22 N-a): the core's three unless a composition brings its own (model/shape.mjs) --
+		// so no links without the network's rows (S-e)
 		if (!kinds || !Array.isArray(kinds.list) || typeof kinds.has !== 'function') throw new Error('Model: kinds is a composition -- composeKinds(rows) (model/shape.mjs)');
 		this.kinds = kinds;
 		// null in production, which draws, depends and never goes down exactly as it always has -- a test holds it byte for byte
@@ -348,7 +349,7 @@ export class Model {
 	}
 
 	nextName(prefix) {
-		// the NAMED kinds, one namespace (B187): a kind opts in by its row, and the product's five all do (N5)
+		// the NAMED kinds, one namespace (B187): a kind opts in by its row, and the product's kinds and the link all do (N5)
 		const taken = new Set(this.kinds.named.flatMap((k) => this.all(k).map((e) => e.name)));
 		let n = 1;
 		while (taken.has(`${prefix}-${n}`)) n++;

@@ -17,7 +17,7 @@ of seconds because a stamp crossed a machine boundary.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
-import { validateDoc } from '../planner/validate.js';
+import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { revealedAt, beatsOf } from '../model/reveal.mjs';
 
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });

@@ -162,13 +162,13 @@ function genBoard(r) {
 	const nodes = Array.from({ length: 2 + Math.floor(r() * 3) }, (_, i) => node(i, ...take()));
 	// the draw that once said `pinned` is still taken and discarded, so every case after it is generated as before (S-d)
 	const waypoints = Array.from({ length: 1 + Math.floor(r() * 4) }, (_, i) => { const at = take(); r(); return way(i, ...at); });
-	const scratch = new Model();
+	const scratch = new Model({ kinds: WITH_PIPES });   // the link is the network's kind (S-e)
 	for (const e of nodes) scratch.put('node', e);
 	for (const e of waypoints) scratch.put('node', e);
 	const anchors = [...nodes, ...waypoints].map((e) => e.id);
 	const links = [];
 	const add = (l) => {
-		if (validateMutation(scratch, { action: 'put', kind: 'link', entity: l })) return;   // a well-formed board
+		if (validateMutation(scratch, { action: 'put', kind: 'link', entity: l }, WITH_PIPES)) return;   // a well-formed board
 		scratch.put('link', l);
 		links.push(l);
 	};
@@ -218,6 +218,10 @@ function genOp(r, board, i) {
 	if (roll < 0.95) return put('group', group(1, anchors.filter(() => r() < 0.5)));
 	return set('node', N(0x3f), { x: 0 });   // deliberately refused: no such node
 }
+
+// the network composition's kinds: the product's and the network's -- its link and its pipe (H17.22; S-e). Declared before the
+// generated boards, which validate their links against it
+export const WITH_PIPES = productKinds(...NETWORK_ROWS);
 
 export const GENERATED_PER_COMPOSITION = 1000;
 const GENERATED = [];
@@ -332,8 +336,6 @@ export function record(c) {
 
 export const readGolden = () => JSON.parse(fs.readFileSync(GOLDEN, 'utf8'));
 
-// the network composition's kinds: the product's five and the network's pipe (H17.22)
-export const WITH_PIPES = productKinds(...NETWORK_ROWS);
 
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1] && process.argv[2] === '--write') {

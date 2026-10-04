@@ -8,7 +8,7 @@ import { Model } from './fixtures/composed.mjs';   // the composition production
 import { plan, commit, undo, redo } from './fixtures/composed.mjs';
 import { MAX_OPS } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
-import { validateDoc } from '../planner/validate.js';
+import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -631,7 +631,7 @@ Asserted as a round trip rather than against 256, so changing the limit cannot r
 divergence. If a future edit loosens one door, the other fails here.
 */
 test('B220: a caption the commit accepts survives a reload', async () => {
-	const { validateDoc } = await import('../planner/validate.js');
+	const { validateDoc } = await import('./fixtures/composed.mjs');
 	const { CAPTION_MAX } = await import('../model/limits.mjs');
 
 	const withCaption = (caption) => {
@@ -685,7 +685,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	// the kernel twin -- the model's own `facing` is internal, and these two are held to agree in
 	// tests/validate.test.js, so either spelling reads the same declaration
 	const { linkFacing: facing } = await import('../kernel/network-roles.mjs');
-	const { validateDoc } = await import('../planner/validate.js');
+	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// `fresh()` mints no document id, and validateDoc checks meta first -- without this the round
 	// trip would fail on the fixture rather than on the field under test
 	const loadable = () => { const d = m.toJSON(); d.meta.id = 'diagram-cc0001'; d.meta.name = 'flow'; return d; };
@@ -1255,12 +1255,16 @@ Every list of the kinds in the planner and the server reads it; the id grammar i
 and it must agree with the table. The thresholds keep their own authority (planner/policy.mjs) but cover the same kinds.
 */
 test('PL-5: the kind table is the one list of kinds, and what still states them agrees with it', async () => {
-	const { CORE_KINDS, COMPOSITE } = await import('../model/shape.mjs');
-	const { list: KINDS, collection: COLLECTION, selectable: SELECTABLE_KINDS, optional: OPTIONAL } = CORE_KINDS;
+	const { CORE_KINDS } = await import('../model/shape.mjs');
+	const { list: KINDS, collection: COLLECTION, selectable: SELECTABLE_KINDS, optional: OPTIONAL, composite: COMPOSITE } = CORE_KINDS;
 	const { collectionCap } = await import('../planner/policy.mjs');
-	assert.deepEqual(KINDS, ['node', 'link', 'zone', 'group']);
+	// three since S-e (H18.15): the link is the network's kind (network/link-kind.mjs), composed by composing the network
+	assert.deepEqual(KINDS, ['node', 'zone', 'group']);
+	const { LINK_ROW } = await import('../network/link-kind.mjs');
+	assert.equal(LINK_ROW.kind, 'link');
+	assert.equal(LINK_ROW.owner, 'the network');
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
-	assert.deepEqual(SELECTABLE_KINDS, ['node', 'link', 'zone'], 'a group is never selected directly');
+	assert.deepEqual(SELECTABLE_KINDS, ['node', 'zone'], 'a group is never selected directly');
 	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's

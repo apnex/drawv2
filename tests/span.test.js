@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { resolve } from '../kernel/engine.mjs';
 import { selBox, isPanel, frameRadius, showsSockets } from '../kernel/renderer.mjs';
@@ -9,7 +9,7 @@ import { renderElement, renderContentRegion } from '../kernel/svg-scene.mjs';
 import { bboxOf, cellOf } from '../kernel/geometry.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
-import { validateEntity, validateDoc } from '../planner/validate.js';
+import { validateEntity, validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
 import { controlBarDoc } from './fixtures/control-bar-doc.mjs';
 

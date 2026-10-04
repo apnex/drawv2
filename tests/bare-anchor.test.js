@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { BARE_KIND, ANCHOR_KINDS, isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes, anchorOf, bareAnchorsOf } from '../model/anchors.mjs';
+import { BARE_KIND, ANCHOR_KINDS, isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes, anchorOf } from '../model/anchors.mjs';
 import { drawnKind, isAnchorWord } from '../model/anchor-words.mjs';
 import { Model } from '../model/model.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
@@ -49,8 +49,8 @@ test('F-b: the functions answer over a model, and over a plain document', () => 
 	assert.equal(anchorOf(m, 'node-00000b').name, 'w');
 	assert.equal(anchorOf(m, 'link-00000c'), undefined);
 	assert.equal(m.endpointOf('node-00000b').name, 'w', 'the Model resolves an end through the same question');
-	assert.deepEqual(bareAnchorsOf(m.toJSON()).map((w) => w.id), ['node-00000b']);
-	assert.deepEqual(bareAnchorsOf({}), [], 'a document without them has none');
+	// `bareAnchorsOf`, the question asked of a plain document, went at S-e (H18.15) with its one caller, the link's references
+	// in planner/validate.js -- the link's row reads the generic access, a Model or a document alike, through `isBareEntity`
 });
 
 /*
@@ -61,10 +61,12 @@ until the adapter changes with it.
 test('F-b: the export\'s adapter draws exactly the document\'s bare anchors as waypoints, and the CLI reads the same', async () => {
 	const doc = board().toJSON();
 	const scene = docToSchema(doc).entities.filter((e) => e.kind === 'waypoint').map((e) => e.id);
-	assert.deepEqual(scene, bareAnchorsOf(doc).map((w) => w.id));
+	const bare = doc.nodes.filter((n) => isBareEntity('node', n)).map((w) => w.id);   // the module's question, per stored node
+	assert.ok(bare.length > 0, 'the board has bare anchors, so the comparison is not vacuous');
+	assert.deepEqual(scene, bare);
 	// the CLI ships standalone (B138) and restates the question too
 	const { isWaypoint } = await import('../cli/verbs.mjs');
-	assert.deepEqual(doc.nodes.filter(isWaypoint).map((n) => n.id), bareAnchorsOf(doc).map((w) => w.id));
+	assert.deepEqual(doc.nodes.filter(isWaypoint).map((n) => n.id), bare);
 });
 
 // ---- the ratchet ----

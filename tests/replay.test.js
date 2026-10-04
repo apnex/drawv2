@@ -38,7 +38,7 @@ it is not addressed here.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { applyOps } from '../model/ops.mjs';
 import * as commands from '../app/src/commands.js';
 

@@ -1,5 +1,5 @@
 /*
-THE PRODUCT'S KIND ROWS -- each of its five kinds whole: its storage (model/shape.mjs), a check for every field, its
+THE PRODUCT'S KIND ROWS -- each of its kinds whole (three since S-e): its storage (model/shape.mjs), a check for every field, its
 cross-entity check, and the most of it one document may hold (H17.22 N-a; ruled 2026-10-02, "Plugins bring their own
 kinds").
 
@@ -9,14 +9,17 @@ were `FIELDS` in planner/validate.js and the cross-entity checks two hard-coded 
 the composition's code -- core and plugins alike -- guarded by `composeKinds`: every field has a check, a twice-claimed
 kind and a missing referenced kind are refused.
 
-PLANNER layer, not core, because the link's cross-entity check is network-layer code (model/referential.mjs) the core may
+PLANNER layer, not core, because the link's cross-entity check was network-layer code (model/referential.mjs) the core may
 not import. `PRODUCT_KINDS` is what the planner and `validateDoc` take when nothing else is passed; a composition with a
 plugin's kinds is `productKinds(...rows)`, below.
+
+AMENDED 2026-10-04 (S-e, H18.15; G5, B280): three kinds -- node, zone and group. The link's row left for the network
+(network/link-kind.mjs) with its cross-entity check and its invariant, so this module names no link; every production
+composition is `productKinds(...NETWORK_ROWS)`, which brings it.
 */
 
 import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
-import { linkReferential, groupReferential } from '../model/referential.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
@@ -178,22 +181,6 @@ const FIELDS = {
 		*/
 		spawn: (v) => spawn(v)
 	},
-	link: {
-		id: (v) => id(v, 'link'),
-		name: (v) => str(v, NAME_MAX),   // B187 -- naming is schema-wide, and a link was the other gap
-		src: (v) => id(v, 'node'),   // an anchor: a node, typed or not (F-c)
-		dst: (v) => id(v, 'node'),
-		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node')),   // waypoints only: model/referential.mjs
-		closed: (v) => typeof v === 'boolean',            // a routed link looped dst → src (render-only)
-		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; `forward` means the
-		// flow follows the stored order, `reverse` that it runs against it. See `facing` in network/link-rules.mjs.
-		// Was `flow`, a boolean, until the format batch (F1, ruled 2026-10-03): the CLI's words, stored as they are said.
-		direction: (v) => v === 'forward' || v === 'reverse',
-		// H15.15 -- a CONTROL-PLANE link carries no data-plane packets. Absent is an ordinary data
-		// link, so every document written before this field reads exactly as it did.
-		control: (v) => typeof v === 'boolean',
-		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order, and the link's age (F-d, B259)
-	},
 	zone: {
 		id: (v) => id(v, 'zone'),
 		name: (v) => str(v, NAME_MAX),
@@ -216,6 +203,8 @@ EACH KIND'S CROSS-ENTITY CHECK -- `(entity, access, patch, before)`, `entity` be
 `set` merged over what is stored), `patch` what the op itself carried, and `before` what was stored (null for a new one). The two rules are model/referential.mjs's,
 shared with `validateDoc`; what each row adds is the part that was the mutation path's own -- a link is judged on the
 `src`, `dst` and `via` it keeps, and a group only when the op names its members.
+AMENDED 2026-10-04 (S-e): `access` is generic -- `has(kind, id)`, `get(kind, id)`, `all(kind)` (planner/validate.js); the
+link's check is the network's row's now.
 */
 const WAYPOINT_ONLY = ['spawn'];
 const TYPED_ONLY = ['shape', 'span', 'content'];
@@ -234,11 +223,16 @@ const REFERS = {
 		if (wrong.length) return `${typed ? 'a typed node' : 'a waypoint (a node with no type)'} has no ${wrong.join(', ')}: ${entity.id}`;
 		return null;
 	},
-	link: (entity, access) => linkReferential({ id: entity.id, src: entity.src, dst: entity.dst, via: entity.via ?? [] }, access),
-	group: (entity, access, patch) => (patch.members ? groupReferential(entity, access) : null),
+	// a group's members must exist -- nodes, typed or not; a group of groups does not (B83). It was model/referential.mjs's,
+	// beside the link's rules; those left for the network at S-e, and the check needs only the generic access
+	group: (entity, access, patch) => {
+		if (!patch.members) return null;
+		for (const m of Array.isArray(entity.members) ? entity.members : []) if (!access.has('node', m)) return `group member does not exist: ${m}`;
+		return null;
+	},
 };
 
-// the product's four, whole -- in the core's order, which is the order a document lists its collections
+// the product's three, whole -- in the core's order, which is the order a document lists its collections
 const PRODUCT_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: FIELDS[row.kind], cap: CAP[row.kind], ...(REFERS[row.kind] ? { refers: REFERS[row.kind] } : {}) }));
 /*
 The product's composition, and a plugin's rows after its five: the one way a composition with a plugin's kinds is built --

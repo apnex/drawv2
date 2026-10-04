@@ -1036,7 +1036,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.12 | S-b: the server composes the network; the planner requires a tenant; the product page holds pipes (G1); the classic tenant and the pinned-orphan rule deleted | feature | S2 | `DONE` |
 | H18.13 | S-c: `link-legs` -- a pinned link lays the legs it has no way over, from any door; `ring-pipe` folded in (G2) | feature | S2 | `DONE` |
 | H18.14 | S-d: the migration lays every stored link's pipes, splits a shared leg (P-4) and drops `pinned`; the dry run checks every link up | feature | S2 | `DONE` |
-| H18.15 | S-e: the link kind and its model-side rules move into `network/` (G5, B280, K13b) | **B280** | S2 | `TODO` |
+| H18.15 | S-e: the link kind and its model-side rules move into `network/` (G5, B280, K13b) | feature | S2 | `DONE` |
 | H18.16 | S-f: P3 closed -- estate dry run, register, records | **B266** | S2 | `TODO` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1053,6 +1053,7 @@ AMENDED 2026-10-03: H18.11 (S-a) done -- a plugin contributes fields to a kind i
 AMENDED 2026-10-03: H18.12 (S-b) done -- the server composes the network's rows and tenant; the planner has no default link tenant; the classic tenant and its pinned-orphan rule are deleted; the product page holds pipes until P5 (G1).\
 AMENDED 2026-10-03: H18.13 (S-c) done -- `link-legs`: a pinned link or a ring lays a link pipe for each leg no pipes join, from any door; a plain link lays none; `ring-pipe` folded in.\
 AMENDED 2026-10-04: H18.14 (S-d) done -- the migration splits a shared leg (P-4), lays every stored link's pipes and drops `pinned`; the estate dry run passes with every link up along its stops: 783 pipes, 17 closing legs, 0 shared, 104 `pinned` dropped; the templates carry their pipes.\
+AMENDED 2026-10-04: H18.15 (S-e) done -- the link is the network's kind: its row, references, invariant and rules live in `network/`, the product composes node, zone and group, and no core or planner module imports `network/`; every corpus unchanged.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
@@ -1071,7 +1072,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
 | **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | promotion (K18a, scheduled by PD-5), or an agent's landing is reported uncut |
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
-| **B280** | S4 | Every kind brought by a plugin, the core holding none -- the existing kinds still core-owned | a composition that wants to leave out a kind, a second added kind, or promotion's P3 |
+| **B280** | S4 | Every kind brought by a plugin, the core holding none -- the link is the network's since S-e (H18.15); node, zone and group are still core-owned | a composition that wants to leave out a kind, or a second added kind |
 | **B282** | S3 | Type as composition of packs (ruled 2026-09-22) -- its waypoint step ruled into P2 (P-10); this half needs no format change | a second pack composes, or the device table K6 lands |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
 | **B291** | S3 | Delete the schema 2 migration, the loader's repairs and the dry-run tool once nothing stored is older | promotion's cutover has run and every stored document, the rollback backups included, is schema 2 |

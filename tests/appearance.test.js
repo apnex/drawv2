@@ -11,7 +11,7 @@ serialized in its own document, and the two must be identical, element by elemen
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { Renderer } from '../app/src/renderer.js';

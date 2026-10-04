@@ -24,7 +24,11 @@ merged list would be wrong in both directions.
 
 Per kind, the table also holds the collection a document stores it under and whether it can be selected.
 
-Downstream this table is the source for: clone()'s deep-copy walk (model/ops.mjs), the
+AMENDED 2026-10-04 (S-e, H18.15; G5, B280): the product's kinds are three -- node, zone and group. The link is the network
+plugin's kind (network/link-kind.mjs), brought by composing the network, as every production composition does; the core
+names no link. `clone` copies every nested value now, so it no longer reads this table, and a plugin's kind may nest fields.
+
+Downstream this table is the source for: the
 set-inverse absent-key rule (an inverse that must remove a key rather than restore a value uses a
 whole-entity put — see planner/txn.mjs), and validateEntity's optional-field allowance.
 */
@@ -37,8 +41,8 @@ only through the migration, server/migrate.mjs, which every path into the store 
 */
 export const SCHEMA = 2;
 
-// the product's kinds, in the order a document lists its collections
-const KINDS = ['node', 'link', 'zone', 'group'];
+// the product's kinds, in the order a document lists its collections; a plugin's follow (the link is the network's, S-e)
+const KINDS = ['node', 'zone', 'group'];
 
 /*
   collection  the document key the kind is stored under
@@ -66,20 +70,19 @@ const TABLE = {
 	*/
 	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'spawn', 'order'] },
 	// `order` (F-d, H18.6): the drawing order of every drawn kind, model/order.mjs; optional, so a hand-made board still loads
-	link:     { collection: 'links',     selectable: true,  composite: ['via'],             optional: ['via', 'closed', 'direction', 'control', 'order'] },
 	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: ['order'] },
 	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };
 
-// the rest of each of the four's storage half: every one is named (B187, N5), nodes are the anchors (N2), and links and
-// groups point at them
-const REFERENCES = { link: ['node'], group: ['node'] };
+// the rest of each of the three's storage half: every one is named (B187, N5), nodes are the anchors (N2), and groups point
+// at them
+const REFERENCES = { group: ['node'] };
 const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node', references: REFERENCES[k] ?? [] }]));
 
 /*
 H17.22 N-a -- A COMPOSITION BRINGS ITS KINDS (ruled 2026-10-02, "Plugins bring their own kinds"; B273).
 
-Every kind is a ROW of one shape, whoever brings it -- the product's four or a plugin's own, the network's `pipe`:
+Every kind is a ROW of one shape, whoever brings it -- the product's three or a plugin's own, the network's `link` and `pipe`:
 
   kind        the id prefix, and the name the planner and the Model know it by
   owner       who brings it, named when two claim one kind
@@ -95,6 +98,9 @@ Every kind is a ROW of one shape, whoever brings it -- the product's four or a p
   refers      its cross-entity check, `(entity, access, patch, before) -> error | null`, `before` the stored entity or
               null -- the planner's half too
   cap         the most of it one document may hold -- the planner's half too
+  invariants  the properties every document holds about it, `(model, report)` -> calls `report(sentence, key, measure)` for each
+              breach: checked on a transaction's result and reported at boot (model/invariants.mjs) -- the planner's half
+              too. Added at S-e (H18.15) for the link's straight-pair rule, which the core had held for it.
 
 This module is CORE, so it holds the mechanism and the four rows' STORAGE half, and treats checks as opaque. The
 product's full rows -- checks, cross-entity checks, caps -- are the planner's (`planner/kinds.mjs`), because the link's
@@ -103,7 +109,7 @@ cross-entity check is network-layer code the core may not import. `new Model()` 
 
 Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).
 */
-const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap'];
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants'];
 /*
 S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
 whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
@@ -140,8 +146,7 @@ export function composeKinds(given, who = 'a composition') {
 			}
 			if (row.named && !names.includes('name')) throw new Error(`${who}: kind ${row.kind} is named but has no check for a name`);
 		}
-		// `clone` (model/ops.mjs) copies nested fields by the core's table, so a kind the core does not know may not hold one yet
-		if (!Object.hasOwn(TABLE, row.kind) && (row.composite ?? []).length) throw new Error(`${who}: kind ${row.kind}: nested fields are copied by the core's table only, so a plugin kind may not declare one yet`);
+		if (row.invariants !== undefined && typeof row.invariants !== 'function') throw new Error(`${who}: kind ${row.kind}: its invariants are a function, (model, report)`);
 		byName.set(row.kind, row);
 		byCollection.set(row.collection, row.kind);
 	}
@@ -188,11 +193,7 @@ export function composeKinds(given, who = 'a composition') {
 	});
 }
 
-// the four rows' storage half, as the core knows them; the planner adds each one's checks (planner/kinds.mjs)
+// the three rows' storage half, as the core knows them; the planner adds each one's checks (planner/kinds.mjs)
 export const CORE_ROWS = KINDS.map((kind) => ({ kind, owner: 'the product', ...STORAGE[kind] }));
-// what `new Model()` is composed with when nothing else is passed: the product's four
+// what `new Model()` is composed with when nothing else is passed: the product's three, so no links (S-e)
 export const CORE_KINDS = composeKinds(CORE_ROWS, 'the core');
-
-// nested value -> a spread is not enough; what `clone` (model/ops.mjs) copies deeper, read by kind without a composition.
-// The kinds' other facts are read from a composition -- `CORE_KINDS` where nothing else is composed (H17.22 N-a).
-export const COMPOSITE = CORE_KINDS.composite;

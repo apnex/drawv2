@@ -10,7 +10,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { createEntity, moveEntities, deleteSelection, createGroup, ungroupAll,
 	setContentValue, reshapeNodes, renameEntity } from '../app/src/commands.js';
 import { applyOps } from '../model/ops.mjs';
@@ -263,9 +263,8 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	two doors disagreeing with a restart hiding the evidence. The entry must therefore produce an
 	entity the validator accepts, not merely one that looks right when printed.
 	*/
-	const { Model } = await import('../model/model.mjs');
 	const { applyOps } = await import('../model/ops.mjs');
-	const { validateEntity } = await import('../planner/validate.js');
+	const { validateEntity } = await import('./fixtures/composed.mjs');   // the network's kinds (S-e)
 	const m = new Model();
 	const seeded = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', direction: 'reverse' };
 	m.put('link', seeded);

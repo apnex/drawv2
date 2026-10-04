@@ -17,7 +17,7 @@ failed silently and the "finding" was the probe, not the code (B170).
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { situationOf, inReadView, onOpenGround, onEndpoint } from '../engine/situation.mjs';
 import { waypointRoles } from '../kernel/network-roles.mjs';
 import { worldOf } from '../engine/rules.mjs';

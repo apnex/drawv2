@@ -25,7 +25,7 @@ import { Log } from '../planner/log.mjs';
 import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
-import { CORE_KINDS, SCHEMA } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a), and the document generation
+import { SCHEMA } from '../model/shape.mjs';   // the document generation
 import { productKinds } from '../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
@@ -182,7 +182,7 @@ function migrateNames(doc) {
 	let changed = false;
 	const taken = new Set();
 	// `waypoints` by name: a document written before the format batch keeps them apart, and the kind table no longer lists them (F-c)
-	for (const k of [...CORE_KINDS.list.map((kind) => CORE_KINDS.collection[kind]), 'waypoints']) {
+	for (const k of [...KINDS.list.map((kind) => KINDS.collection[kind]), 'waypoints']) {   // the store's composition, links among them (S-e)
 		for (const e of doc[k] || []) if (e && typeof e.name === 'string') taken.add(e.name);
 	}
 	const mint = (prefix) => {

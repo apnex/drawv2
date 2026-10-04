@@ -84,6 +84,7 @@ const ALLOW = {
 	'*:server/tenants.mjs': 'moved to planner/tenants.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:model/link-rules.mjs': 'moved to network/link-rules.mjs at S-e (H18.15, G5); a record written while it lived here cites it here',
 	'*:model/link-reactions.mjs': 'moved to network/link-reactions.mjs at S-e (H18.15, G5); a record written while it lived here cites it here',
+	'*:model/referential.mjs': 'moved to network/link-references.mjs at S-e (H18.15, G5), the group\'s half to planner/kinds.mjs; a record written while it lived here cites it here',
 	'*:model/pair-capacity.mjs': 'moved to network/pair-capacity.mjs at S-e (H18.15, G5); a record written while it lived here cites it here',
 	'*:network/order.mjs': 'the session record of link ages, deleted at H18.6 (F-d) once a link\'s age was its stored drawing order (network/view.mjs `ageIn`); records written while it lived cite it',
 	'*:tests/network-order.test.js': 'its test, deleted with it at H18.6; its properties are held by tests/drawing-order.test.js',

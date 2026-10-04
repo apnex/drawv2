@@ -16,7 +16,7 @@ its row, never asserted as correct and never written around.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
-import { validateEntity } from '../planner/validate.js';
+import { validateEntity } from './fixtures/composed.mjs';   // the network's kinds, as the server validates (S-e)
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';

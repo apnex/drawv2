@@ -62,5 +62,3 @@ export const anchorOf = (model, id) => {
 	return undefined;
 };
 
-// the bare anchors of a plain document -- a stored or wire document, not a Model
-export const bareAnchorsOf = (doc) => (doc?.[CORE_KINDS.collection[BARE_KIND]] || []).filter((e) => e && !e.type);

@@ -13,11 +13,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
-import { validateDoc, validateMetaPatch } from '../planner/validate.js';
+import { validateMetaPatch } from '../planner/validate.js';
+import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { createApp } from '../server/app.js';
 import { Session, snapshotBody } from '../server/protocol.js';
 import { Locks } from '../server/locks.js';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
 

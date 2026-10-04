@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model, newId, kindOf } from '../model/model.mjs';
+import { newId, kindOf } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 
 test('newId produces prefixed 6-hex ids and avoids collisions', () => {
 	const id = newId('node');

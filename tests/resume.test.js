@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Session } from '../server/protocol.js';
 import { Selection } from '../app/src/selection.js';
 import { Changes } from '../app/src/changes.js';

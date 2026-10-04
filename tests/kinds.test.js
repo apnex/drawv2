@@ -35,9 +35,10 @@ const NODE = { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 
 const BARE = linkTenant({ owner: 'bare links', keepsOrphan: () => false, says: {} });
 
 test('N-a: a composition lists its kinds and what each opts into', () => {
-	assert.deepEqual(WITH_PROBE.list, ['node', 'link', 'zone', 'group', 'probe']);   // four since F-c: a waypoint is a node with no type
-	assert.deepEqual(WITH_PROBE.selectable, ['node', 'link', 'zone', 'probe']);
-	assert.deepEqual(WITH_PROBE.named, ['node', 'link', 'zone', 'group'], 'a probe opts out of names (N5)');
+	// three since S-e: a waypoint is a node with no type (F-c), and the link is the network's kind
+	assert.deepEqual(WITH_PROBE.list, ['node', 'zone', 'group', 'probe']);
+	assert.deepEqual(WITH_PROBE.selectable, ['node', 'zone', 'probe']);
+	assert.deepEqual(WITH_PROBE.named, ['node', 'zone', 'group'], 'a probe opts out of names (N5)');
 	assert.deepEqual(WITH_PROBE.anchors, ['node']);
 	assert.equal(WITH_PROBE.checked, true);
 	assert.equal(CORE_KINDS.checked, false, 'the core holds storage only; the checks are the planner\'s');
@@ -52,7 +53,9 @@ test('N-a: a composition is refused when built -- each way a row can be wrong, n
 	refused([...productRows(), { ...PROBE, fields: { at: PROBE.fields.at } }], /kind probe: no check for its id/);
 	refused([...productRows(), { ...PROBE, optional: ['where'] }], /kind probe: optional names where, which it has no check for/);
 	refused([...productRows(), { ...PROBE, named: true }], /kind probe is named but has no check for a name/);
-	refused([...productRows(), { ...PROBE, composite: ['at'] }], /kind probe: nested fields are copied by the core's table only/);
+	// S-e: a plugin's kind may nest a field now -- `clone` copies every nested value -- as the network's link does (`via`)
+	assert.doesNotThrow(() => composeKinds([...productRows(), { ...PROBE, composite: ['at'] }], 't'));
+	refused([...productRows(), { ...PROBE, invariants: true }], /kind probe: its invariants are a function/);
 	refused([...productRows(), { ...PROBE, collection: 'nodes' }], /kinds node and probe are both stored under nodes/);
 	refused([...productRows(), { ...PROBE, kind: 'diagram' }], /diagram is a document id/);
 	refused([...productRows(), { ...PROBE, colour: 'red' }], /kind probe: unknown row key colour/);
@@ -70,7 +73,7 @@ test('N-a: a Model composed with a plugin kind stores, round-trips and selects i
 	again.setSelection(['probe-00000b']);
 	assert.deepEqual([...again.state.selection], ['probe-00000b'], 'a selectable plugin kind joins the selection');
 	assert.equal(m.nextName('probe'), 'probe-1', 'an unnamed kind takes no part in the namespace');
-	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, link, zone, group\)/);
+	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, zone, group\)/);
 	assert.throws(() => new Model({ kinds: { list: ['node'] } }), /Model: kinds is a composition/);
 });
 
@@ -92,7 +95,7 @@ test('N-a: the product\'s planner refuses the plugin kind, and a model and plann
 	const product = new Model();
 	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }], { links: BARE }).error, 'unknown kind: probe');
 	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }], { links: BARE }),
-		/plan: the model is composed with kinds node, link, zone, group, probe and the planner with node, link, zone, group/);
+		/plan: the model is composed with kinds node, zone, group, probe and the planner with node, zone, group/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE, links: BARE }), /plan: the model is composed with kinds/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS, links: BARE }), /kinds is a composition whose every row carries its checks/);
 	// S-b: and no plan runs without a link tenant -- none is a default

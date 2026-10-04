@@ -71,7 +71,8 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 		// full (re)build from the Model's current state — initial attach + on 'load' (document swap).
 		rebuild() {
 			incident.clear(); member.clear(); cellNode.clear(); cellWaypoint.clear();
-			model.all('link').forEach((l) => incident.put(l));
+			// a model composed without the network has no links to index (S-e: the link is the network's kind)
+			if (model.kinds.has('link')) model.all('link').forEach((l) => incident.put(l));
 			model.all('group').forEach((g) => member.put(g));
 			typedNodes(model).forEach((n) => cellNode.put(n));
 			bareAnchors(model).forEach((w) => cellWaypoint.put(w));

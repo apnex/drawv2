@@ -12,7 +12,7 @@ and without it (the Model's own fallback), and every answer must be the same, in
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { spawnersOf } from '../engine/spawners.mjs';

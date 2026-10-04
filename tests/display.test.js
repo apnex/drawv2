@@ -13,7 +13,7 @@ was measured against lives on in `Model#pathOf`, which `tests/model.test.js` hol
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Selection } from '../app/src/selection.js';
 import { Readout } from '../app/src/readout.js';
 import { installDom } from './fixtures/client-harness.mjs';

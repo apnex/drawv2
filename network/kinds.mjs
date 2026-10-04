@@ -1,6 +1,7 @@
 /*
 THE NETWORK'S ROWS -- everything the network plugin brings to a composition's kinds, in one list (S-a, H18.11):
 
+  LINK_ROW        its own kind, `link` (network/link-kind.mjs; S-e, H18.15, G5) -- the product's until P3
   PIPE_ROW        its own kind, `pipe` (network/pipe-kind.mjs; H17.22 N-b)
   TRANSIT_FIELDS  a field it contributes to the product's node: `transit` (ruled 2026-10-03, G3) -- whether what arrives at
                   the anchor passes through it, stored only where the author chose other than the type's default (TR-7).
@@ -9,6 +10,7 @@ THE NETWORK'S ROWS -- everything the network plugin brings to a composition's ki
 
 A composition with the network is `productKinds(...NETWORK_ROWS)`, so adding a row here reaches every one of them.
 */
+import { LINK_ROW } from './link-kind.mjs';
 import { PIPE_ROW } from './pipe-kind.mjs';
 
 const TRANSIT_FIELDS = {
@@ -17,4 +19,4 @@ const TRANSIT_FIELDS = {
 	optional: ['transit'],
 };
 
-export const NETWORK_ROWS = [PIPE_ROW, TRANSIT_FIELDS];
+export const NETWORK_ROWS = [LINK_ROW, PIPE_ROW, TRANSIT_FIELDS];

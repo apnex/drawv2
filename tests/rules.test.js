@@ -11,7 +11,7 @@ slowly is a number; a tower that kills a different creep on two machines is the 
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { worldOf, combatAt, factsAt, aimAt, DERIVATIONS } from '../engine/rules.mjs';
 import { tickAt, TICK_MS } from '../engine/kinds.mjs';
 import { moversAt } from '../engine/movers.mjs';

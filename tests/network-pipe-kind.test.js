@@ -19,8 +19,9 @@ import { commit, plan, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { PIPE_ROW, pipeId, pipeEntity } from '../network/pipe-kind.mjs';
+import { LINK_ROW } from '../network/link-kind.mjs';
 
-const KINDS = composeKinds([...PRODUCT_KINDS.list.map((k) => PRODUCT_KINDS.row(k)), PIPE_ROW], 'a test');
+const KINDS = composeKinds([...PRODUCT_KINDS.list.map((k) => PRODUCT_KINDS.row(k)), LINK_ROW, PIPE_ROW], 'a test');   // the link is the network's (S-e)
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 
 function board() {

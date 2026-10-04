@@ -9,11 +9,11 @@ import { Model } from './fixtures/composed.mjs';   // the composition production
 import { plan } from './fixtures/composed.mjs';
 import { NETWORK } from './fixtures/composed.mjs';
 const CLASSIC_LINKS = NETWORK.links;   // the link tenant production composes (S-b), as the base a probe extends
-import { PRODUCT_KINDS } from '../planner/kinds.mjs';
+import { KINDS } from './fixtures/composed.mjs';   // the product's kinds and the network's, the link among them (S-e)
 
 // a probe listens to everything: every kind created or deleted, and every field of every kind changed
-const EVERYTHING = [{ deleted: PRODUCT_KINDS.list }, { created: PRODUCT_KINDS.list },
-	...PRODUCT_KINDS.list.map((kind) => ({ changed: { kind, fields: Object.keys(PRODUCT_KINDS.row(kind).fields) } }))];
+const EVERYTHING = [{ deleted: KINDS.list }, { created: KINDS.list },
+	...KINDS.list.map((kind) => ({ changed: { kind, fields: Object.keys(KINDS.row(kind).fields) } }))];
 
 const P = 60;
 function board() {

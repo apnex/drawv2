@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
 import fs from 'node:fs';

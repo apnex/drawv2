@@ -11,7 +11,6 @@ import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
-import { CORE_KINDS } from '../model/shape.mjs';   // the product's kinds (PL-5; H17.22 N-a)
 import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const COLLECTIONS = { nodes: 'node', links: 'link', zones: 'zone', groups: 'group' };
@@ -49,7 +48,7 @@ export function announceActivity(hub, store, locks) {
 
 // which collection an id belongs to, without the caller having to say
 function entityIn(model, id) {
-	for (const kind of CORE_KINDS.list) {
+	for (const kind of model.kinds.list) {   // the model's own composition: the network's link and pipe among them (S-e)
 		const entity = model.get(kind, id);
 		if (entity) return { kind, entity };
 	}

@@ -11,7 +11,7 @@ reverse -- fails here.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LINK_DECLARATIONS, collapseAtWaypoint, splitAtBend } from '../network/link-rules.mjs';
-import { PRODUCT_KINDS } from '../planner/kinds.mjs';
+import { LINK_ROW } from '../network/link-kind.mjs';
 
 const STRUCTURAL = ['id', 'name', 'src', 'dst', 'via', 'closed'];
 const W = 'node-00000e';
@@ -21,7 +21,7 @@ const joins = (a, b) => collapseAtWaypoint(a, b, W) !== null;
 const valuesOf = (check) => [true, false, 'a', 'b', 1, 2, 'forward', 'reverse'].filter((v) => { try { return check(v); } catch { return false; } });
 
 test('every link field that can change whether two links join is a declaration, and every declaration can', () => {
-	const fields = PRODUCT_KINDS.row('link').fields;
+	const fields = LINK_ROW.fields;   // the network's row since S-e (H18.15)
 	for (const field of Object.keys(fields).filter((f) => !STRUCTURAL.includes(f))) {
 		const values = valuesOf(fields[field]);
 		assert.ok(values.length >= 2, `${field}: this test needs two values its check accepts to vary it`);

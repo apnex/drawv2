@@ -230,7 +230,7 @@ PL-4 -- THE EDGES are passed in too (PLANNER-SYSTEM.md section 6.4):
 */
 /*
 H17.22 N-a -- THE KINDS are passed in too: `kinds`, a composition of whole rows (model/shape.mjs `composeKinds`), the
-product's five (planner/kinds.mjs) if none are given. Every row must carry its checks, and the model planned against must
+product's (planner/kinds.mjs) if none are given -- three since S-e, so no links; every production composition passes the network's. Every row must carry its checks, and the model planned against must
 be composed with the same kinds -- a model holding a kind the planner cannot validate, or the reverse, is a half-composed
 plugin, refused by name rather than met as an `unknown kind` later.
 */

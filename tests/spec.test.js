@@ -113,7 +113,13 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	// every kind the server validates appears in the block, DERIVED rather than listed here --
 	// a hand-kept list would drift exactly as the heading did
 	// H17.22 N-a: the kinds the server validates are the product's composition (planner/kinds.mjs), each a row with its checks
-	const kinds = (await import('../planner/kinds.mjs')).PRODUCT_KINDS.list;
+	/*
+	S-e (H18.15): the server composes the product's kinds AND the network's (server/store.js), the link being the network's
+	now -- so the kinds it validates are that composition. The pipe is left out here, and only the pipe: it is the network's
+	internal kind, with no verb at any door until P6 gives agents pipe verbs, which documents it (PROMOTION.md section 6).
+	*/
+	const { KINDS } = await import('./fixtures/composed.mjs');
+	const kinds = KINDS.list.filter((k) => k !== 'pipe');
 	assert.ok(kinds.length >= 4, `expected the validator to declare at least four kinds, found ${kinds}`);
 	for (const kind of kinds) {
 		assert.ok(entities.includes(`"${kind}s"`), `${kind} is validated but absent from the entity block`);
@@ -218,13 +224,21 @@ test('B104: the id grammar in API.md is the one validate.js enforces', async () 
 	check) beside the document ids. So the documented grammar is DERIVED from that composition here, and each row's id
 	check is held to it on the edges the document names: uppercase hex, five digits or seven, another kind's prefix.
 	*/
-	const { PRODUCT_KINDS } = await import('../planner/kinds.mjs');
+	/*
+	S-e (H18.15): the server's composition is the product's kinds and the network's (server/store.js), the link the network's;
+	the pipe's id is made of its two ends' hex and is undocumented until P6 gives it verbs. An alternation's order says nothing,
+	so the documented kinds are compared as a set -- the composition lists the network's link after the product's three.
+	*/
+	const { KINDS } = await import('./fixtures/composed.mjs');
 	const { DOCUMENT_ID } = await import('../planner/validate.js');
-	const live = [`^(${[...PRODUCT_KINDS.list, 'diagram', 'template'].join('|')})-[0-9a-f]{6}$`];
-	assert.ok(api.includes(live[0]),
-		`API.md does not carry the enforced id grammar. The product composes ${live[0]}`);
-	for (const k of PRODUCT_KINDS.list) {
-		const check = PRODUCT_KINDS.row(k).fields.id;
+	const SIX_HEX = KINDS.list.filter((k) => k !== 'pipe');
+	const documented = api.match(/The server enforces `\^\(([a-z|]+)\)-\[0-9a-f\]\{6\}\$`/);
+	assert.ok(documented, 'API.md states the grammar the server enforces');
+	assert.deepEqual(documented[1].split('|').sort(), [...SIX_HEX, 'diagram', 'template'].sort(),
+		`API.md does not carry the enforced id grammar. The server composes ${SIX_HEX.join(', ')}, and the documents`);
+	const live = [`^(${documented[1]})-[0-9a-f]{6}$`];
+	for (const k of SIX_HEX) {
+		const check = KINDS.row(k).fields.id;
 		assert.equal(check(`${k}-0a1b2c`), true, `${k}: a lowercase six-hex id`);
 		// another product kind, a plugin's kind, a document id: a row accepts its own prefix and no other
 		for (const bad of [`${k}-0A1B2C`, `${k}-0a1b2`, `${k}-0a1b2c3`, `${k === 'node' ? 'zone' : 'node'}-0a1b2c`, 'pipe-0a1b2c', 'diagram-0a1b2c', `x${k}-0a1b2c`]) assert.equal(check(bad), false, `${k} refuses ${bad}`);

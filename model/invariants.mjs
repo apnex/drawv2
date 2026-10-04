@@ -19,14 +19,14 @@ transaction would produce. Two consequences worth stating, because both are deli
 
 AMENDED 2026-10-03 (S-b, H18.12): the link rules -- splitting, joining, pair holders -- moved to model/link-rules.mjs, and
 the pair capacity to model/pair-capacity.mjs; this module keeps the document invariants the planner checks.
-AMENDED 2026-10-04 (S-e, H18.15): both moved on into network/, the plugin that owns the link (G5).
+AMENDED 2026-10-04 (S-e, H18.15): both moved on into network/, the plugin that owns the link (G5), and the straight-pair
+invariant with them, as the link row's own (`invariants`); this module asks each composed kind's row for its invariant.
 
 Sovereign: imports nothing. `model/` is the substrate both the server and the browser already
 depend on, so the rule has one home and neither side restates it.
 */
 
 import { ANCHOR_KINDS } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { straightCapacity, isStraight, pairKey } from '../network/pair-capacity.mjs';   // the pair rule's one home (S-b)
 
 /*
 Every violated invariant in the document, as sentences. Plural because reporting the first and
@@ -44,7 +44,6 @@ export function violations(model, { groupAfterRemoval = null, facts = false } = 
 	*/
 	const found = [];
 	const out = { push: (sentence, key = sentence, measure = 1) => found.push({ key, measure, sentence }) };
-	const straightByPair = new Map();
 
 	/*
 	B82 -- no entity is a member of two groups.
@@ -91,22 +90,13 @@ export function violations(model, { groupAfterRemoval = null, facts = false } = 
 		}
 	}
 
-	for (const link of model.all('link')) {
-		if (!isStraight(link)) continue;
-		// unordered: a link from a to b and one from b to a join the same pair
-		const key = pairKey(link);
-		const seen = straightByPair.get(key) || [];
-		seen.push(link);
-		straightByPair.set(key, seen);
-	}
+	/*
+	S-e (H18.15) -- EACH KIND'S OWN INVARIANT, from its row (model/shape.mjs `invariants`), in the order the composition lists
+	its kinds. The link's straight-pair rule (B81) was written here, in the core; it is the network's now, beside the link's
+	row (network/link-kind.mjs), and a composition without the network checks no links.
+	*/
+	for (const kind of model.kinds.list) model.kinds.row(kind).invariants?.(model, out.push);
 
-	for (const [key, links] of straightByPair) {
-		const [a, b] = key.split('|');
-		const cap = straightCapacity(model, a, b);
-		if (links.length > cap) {
-			out.push(`${links.length} straight links between ${a} and ${b}, which may carry ${cap}`, `straight-pair:${a}|${b}`, links.length - cap);   // the excess: worse if links grow or capacity shrinks
-		}
-	}
 	/*
 	B112 -- one anchor holds one occupant.
 

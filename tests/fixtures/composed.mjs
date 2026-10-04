@@ -26,3 +26,11 @@ export const plan = (model, ops, options) => realPlan(model, ops, withPlan(optio
 export const commit = (model, log, request, by, actor, options) => realCommit(model, log, request, by, actor, withPlan(options));
 export const undo = (model, log, to = null, options) => realUndo(model, log, to, withKinds(options));
 export const redo = (model, log, options) => realRedo(model, log, withKinds(options));
+
+// the validator as production calls it -- with the network's kinds, since the link is the network's (S-e, H18.15)
+import { validateDoc as realValidateDoc, validateEntity as realValidateEntity, validateMutation as realValidateMutation,
+	validateSelectionIds as realValidateSelectionIds } from '../../planner/validate.js';
+export const validateDoc = (doc, options = {}) => realValidateDoc(doc, withKinds(options));
+export const validateEntity = (kind, entity, options = {}) => realValidateEntity(kind, entity, withKinds(options));
+export const validateMutation = (model, mutation, kinds = KINDS) => realValidateMutation(model, mutation, kinds);
+export const validateSelectionIds = (ids, kinds = KINDS) => realValidateSelectionIds(ids, kinds);

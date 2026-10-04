@@ -12,7 +12,7 @@ failing, not the code. These call the decision directly.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from '../model/model.mjs';
+import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
 import { waypointRoles } from '../kernel/network-roles.mjs';
 import { toggleSpawn } from '../app/src/commands.js';
