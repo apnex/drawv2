@@ -182,6 +182,18 @@ AMENDED 2026-10-04 -- **R-d done** (H18.22).\
 `spawnersOf` (`engine/spawners.mjs`), from which the page, `draw movers` and `draw combat` all derive spawners, skips a link that is down: it has no route, and its intent is no way for a mover. A Model with no network -- the product page's until P5 -- has no down link, so nothing there changes.\
 The lab composes no simulation and arms no spawner (`lab/src/root.js`), so no matrix row is added.\
 Held by a test through the read composition -- quiet while down, emitting once a pipe heals the link -- and by `draw movers` reporting nothing after a pipe of its only way is removed; both fail on the code before.
+
+AMENDED 2026-10-04 -- **R-e done** (H18.23): **P4 is closed on `main`.**\
+**The parity test,** `tests/consumer-parity.test.js`: one board holding a link routed off its stops, a younger link held by it, a link with no way at all, a ring, a free hand pipe, and spawners on an up and a down link, read through every door and each held to the lab's tab -- a Model composed as `lab/src/root.js` composes it.\
+The read composition, REST's `links/<link>/path` and `context/<link>` through the CLI, and the download each answer every link as the tab does: path, route, down and blockers, and in the download the tab's `d`, string for string, with its down mark.\
+`draw movers` emits on the up link alone, and its movers run the tab's path.\
+`draw combat` derives its spawners through the same `spawnersOf` as `draw movers`, and is held through it rather than asserted apart.\
+Mutants on the parity test: 5, all killed, one after the tab's answer was stated from the tab's own methods rather than through `linkReading`.\
+**The estate, migrated and exported:** 43 diagrams, 464 links, none down; every download renders. So at the cutover a download's links do not move; what changes is the run picture's waypoints (PU46).\
+**The register:** PU44 to PU47, one for each change section 7 lists.
+
+**P4 against its exit criterion** (`PROMOTION.md` section 6, "the five consumers of section 3.3 draw the route the tab draws, asserted per consumer on one board"): met for the four left after P3 -- the store's planner Model had the network from S-b. Section 7's criterion 4 is met for every consumer but the product page's tab, which is P5.\
+**Stopgaps left, each with the stage that removes it:** the product page draws links straight and holds pipes it does not draw (G1, P5); the Model's `network = null` default, the product page's (P5); the browser's two rule copies (PL-6, P5); an agent's plain link can come up down (G2, P6).
 ---
 
 ## 10. Axiom alignment audit (M7)

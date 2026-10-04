@@ -242,6 +242,9 @@ AMENDED 2026-10-03: F1 to F4 ruled as recommended; so **P3 also carries** the mi
 AMENDED 2026-10-04 -- **P3 is done on `main`** (H18.10 to H18.16; `SERVER-COMPOSES-NETWORK.md`, S-a to S-f): the server composes the network's rows and tenant, with no default tenant or kinds; every door lays a link's pipes by one rule; the migration lays every stored link's pipes, splits a shared leg and drops `pinned`; `pinned` and the classic tenant are deleted; `transit` and the link are the network's, the link with its rules, references and invariant in `network/`.\
 Of its exit criteria, the tab agreeing before the answer moved to P5 (G4), and the Model's `network = null` default stays until P4 and P5 give the server's and the page's Models the network; section 7's criterion 7 holds but for that default's `straightPath` fallback, removed with it.\
 Production stays on `draw:2538ab8` (F3); next is P4, designed for approval before any code.\
+AMENDED 2026-10-04 -- **P4 is done on `main`** (H18.17 to H18.23; `CONSUMERS-ROUTE.md`, R-a to R-e): one read composition (`network/read-model.mjs`); the store's Models draw with the network; REST and the CLI answer a link's route, whether it is down and what holds it (H1); the SVG download is what run mode shows, one rendering decided in one place (H2, refined), with each link along its route and a down link marked down; a spawner on a down link emits nothing.\
+Its exit criterion is met, held by one board read through every door (`tests/consumer-parity.test.js`); section 7's criterion 4 holds for every consumer but the product page, which is P5.\
+Production stays on `draw:2538ab8` (F3); next is P5, designed for approval before any code.\
 
 ---
 

@@ -1043,7 +1043,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.20 | R-b: REST and the CLI answer routes -- `path` along the route, `route`, `down` and a down link's blockers (H1); B292 fixed | feature | S2 | `DONE` |
 | H18.21 | R-c: run mode and the SVG export are one rendering, decided in one place -- each link along its route, a down link with the down look, and what a static picture holds (H2, refined) | feature | S2 | `DONE` |
 | H18.22 | R-d: spawners skip down links at every door | feature | S2 | `DONE` |
-| H18.23 | R-e: P4 closed -- the parity test over every consumer, the register, the records | **B266** | S2 | `TODO` |
+| H18.23 | R-e: P4 closed -- the parity test over every consumer, the register, the records | feature | S2 | `DONE` |
+| H18.24 | Design P5 for approval before any code: the product page composes the network -- draws pipes and routed links, `g` works there, the browser previews with the planner (PL-6), the kernel's network roles and appearance move into `network/` | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1069,6 +1070,7 @@ AMENDED 2026-10-04: H18.19 (R-a) done -- one read composition, `readModel`; the 
 AMENDED 2026-10-04: H18.20 (R-b) done -- REST's `path` and `context` answer a link's `route`, `down` and `blockers` (H1), and `draw link path` and `draw about` print them; H18.18, B292, fixed with it.\
 AMENDED 2026-10-04: H18.21 (R-c) done -- run mode and the SVG download are one rendering: `RUN_PICTURE` in the kernel decides what both leave out, the run-mode stylesheet rules are deleted, and the download draws each link along its route and a down link down.\
 AMENDED 2026-10-04: H18.22 (R-d) done -- a spawner on a down link emits nothing, in every door that derives spawners.\
+AMENDED 2026-10-04: H18.23 (R-e) done -- P4 is closed on `main`: every path consumer draws the route the lab's tab draws, held by one board read through every door; the estate's 464 links export with none down. Next H18.24, P5's design.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
