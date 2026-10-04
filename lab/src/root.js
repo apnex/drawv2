@@ -32,14 +32,11 @@ import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the ca
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { productKinds } from '../../planner/kinds.mjs';
-// INCUBATED (ruled 2026-09-28): the network plugin, built lab-first and promoted to production once
-// proven. Production does not import network/ until then, and a test holds that boundary.
+// the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
+// product page composes it
 import { routeLink } from '../../network/pipes.mjs';
-import { PIPE_ROW } from '../../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { createNetworkSession } from '../../network/session.mjs';
-import { networkInput } from '../../network/keys.mjs';
-import { attachNetwork } from '../../network/host.mjs';   // the network's choreography around an edit
+import { createPageNetwork } from '../../network/page.mjs';
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -63,7 +60,7 @@ Its network is ONE object (T1), handed to the tab's Model -- where a link runs, 
 whether it is down, what blocks it -- and to the planner -- what else references an anchor, which orphans survive, which
 links are stranded. Production constructs `new Model()` and commits with no network; nothing here reaches production.
 */
-const session = createNetworkSession(), { network } = session;
+const page = createPageNetwork(), { network } = page;   // the network, composed into this page as into the product's (V-b)
 // THE KINDS (H17.22): the product's five and the network's pipe, one composition handed to both models and the planner
 const kinds = productKinds(...NETWORK_ROWS);
 /*
@@ -75,7 +72,7 @@ const { model, history, renderer, selection, input, listen } = composeCanvas({
 	svg, defs: document.getElementById('kdefs'), host: window, network, kinds,
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
-	plugins: [networkInput((drag) => net.judge(drag), session)],   // its own keys, and its judge of a drag (dev/RULES.md section 11)
+	plugins: page.plugins,   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 });
 
 /*
@@ -103,8 +100,7 @@ settle that follows every change -- the plugin's choreography, which promotion a
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
 */
-const net = attachNetwork({ session, model, renderer, selection, history,
-	pipeLayer: svg.querySelector('#pipes'), el, say });
+const net = page.attach({ model, renderer, selection, history, pipeLayer: svg.querySelector('#pipes'), el, say });
 const capture = listen();   // the DOM's events, as input events (L0)
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

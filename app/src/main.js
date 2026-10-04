@@ -17,7 +17,9 @@ import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { productKinds } from '../../planner/kinds.mjs';
-import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and field, held until P5 draws them (G1)
+import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createPageNetwork } from '../../network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
+import { el } from './painter.js';
 
 const svg = document.getElementById('container');
 
@@ -45,10 +47,15 @@ mode (K5) and its clock.
 S-b (H18.12; ruled 2026-10-03, G1) -- the page composes the network's ROWS, so it loads, holds and applies the pipes the
 server's planner now answers with; it does not yet attach the network's drawing, so links are drawn straight through their
 stops as before. A named stopgap: P5 attaches the network (pipe painter, drag judge, routes) and removes it.
+AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the lab does (network/page.mjs): its Model draws
+with it -- routes over pipes, down links -- and Input takes its keys and drag judge, so `g` and `x` work here.
 */
+const pageNetwork = createPageNetwork();
 const { model, history, renderer, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
 	svg,
 	kinds: productKinds(...NETWORK_ROWS),
+	network: pageNetwork.network,
+	plugins: pageNetwork.plugins,
 	defs: document.getElementById('kdefs'),
 	host: window,
 	readoutEl: document.getElementById('readout-bottom'),
@@ -57,6 +64,12 @@ const { model, history, renderer, selection, labels, readout, snap, tools, input
 	now: () => clock.now(),
 	runRules: RUN_PRESSES,
 });
+/*
+THE NETWORK, ATTACHED (V-b): its pipe painter on `#pipes`, its drag judge, its transit edits and the settle after every change.
+What it says goes to the header banner (ruled J3), transient: Sync's next state emit writes the banner again.
+*/
+const networkHost = pageNetwork.attach({ model, renderer, selection, history, pipeLayer: svg.querySelector('#pipes'), el,
+	say: (text) => { const banner = document.getElementById('banner'); if (banner && text) banner.textContent = text; } });
 const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools });
 // capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
 // the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")
@@ -582,6 +595,10 @@ net.onStatus((status) => (status === 'open' ? watchdog.noteOpen() : watchdog.not
 
 const sync = new Sync({
 	model, net, history, selection, clock, watchdog,
+	// V-b: the network settles the board after what the server said is applied (network/host.mjs)
+	onAnswered: (request, answer) => networkHost.settled(request, answer),
+	onChanged: () => networkHost.redraw(),
+	onRefused: (answer) => networkHost.refused(answer),
 	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound, said }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
@@ -769,4 +786,4 @@ menu.del.addEventListener('click', () => {
 
 net.init();
 
-window.draw = { model, history, renderer, selection, input, palette, tools, labels, readout, net, sync, reveal, movers };
+window.draw = { model, history, renderer, selection, input, palette, tools, labels, readout, net, sync, reveal, movers, network: pageNetwork.network, networkHost };

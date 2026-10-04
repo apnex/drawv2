@@ -176,7 +176,10 @@ export const ENTRIES = {
 			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
-			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows, held until P5 draws them
+			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows
+			// V-b (H18.26): the network, composed into the page as into the lab (network/page.mjs) -- routes, pipes, its keys and judge
+			'network/page.mjs', 'network/session.mjs', 'network/network.mjs', 'network/view.mjs', 'network/resolve.mjs', 'network/pipes.mjs',
+			'network/transit.mjs', 'network/link-reactions.mjs', 'network/keys.mjs', 'network/grammar.mjs', 'network/guide.mjs', 'network/host.mjs',
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'planner/kinds.mjs',   // the product's rows, composed with the network's
 			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
@@ -196,6 +199,7 @@ export const ENTRIES = {
 		modules: [
 			'lab/src/root.js',
 			'network/pipes.mjs',   // the network plugin (incubated from 2026-09-28; a product folder since V-a, J1)
+			'network/page.mjs',    // the network composed into a page, the lab's as the product's (V-b)
 			'network/pipe-kind.mjs',   // the network's pipe kind, a row of the one shape (H17.22 N-b); the lab composes it from N-c
 			'network/kinds.mjs',   // the network's rows: its pipe kind and the transit field it contributes to the node (S-a)
 			'network/guide.mjs',

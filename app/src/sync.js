@@ -84,7 +84,15 @@ export function bindGestureDefer(input, sync) {
 }
 
 export class Sync {
-	constructor({ model, net, history, selection, onState, clock, watchdog = null}) {
+	/*
+	V-b (H18.26) -- three hooks, for whoever settles the board after Sync has applied what the server said: `onAnswered(request,
+	answer)` after an accepted answer to this tab's own request, `onChanged()` after another writer's change or a snapshot, and
+	`onRefused(answer)` after a refusal. The network's attach (network/host.mjs) is the page's; Sync knows nothing of it.
+	*/
+	constructor({ model, net, history, selection, onState, clock, watchdog = null, onAnswered = null, onChanged = null, onRefused = null }) {
+		this.onAnswered = onAnswered;
+		this.onChanged = onChanged;
+		this.onRefused = onRefused;
 		this.model = model;
 		this.net = net;
 		this.history = history;
@@ -557,6 +565,7 @@ export class Sync {
 			// `error`/`code` stay in the payload: B28's readout consumer still reads them, and the
 			// durable channel is additive rather than a replacement for a working path.
 			this.emitState({ error: b.message, code: b.code });
+			if (dropped >= 0) this.onRefused?.(b);
 		}
 	}
 
@@ -616,6 +625,8 @@ export class Sync {
 			applyAnswer(this.model, this.selection, derivedToApply(sent?.ops || [], b.ops, this.pendingOps()));
 		}
 		this.emitState({});
+		// after the state emit, so what is said there is not overwritten by it (J3: the banner, transient)
+		if (sent) this.onAnswered?.(sent, b);
 	}
 
 	// Load a snapshot. Split out of `onMessage` so B71's deferral has somewhere to send a held
@@ -711,6 +722,7 @@ export class Sync {
 			for (const m of this.outbox) if (m.answered && typeof m.version === 'number' && m.version > at) m.answered = false;
 			this.replayOutbox({ reapply: true, window: same });
 			this.emitState({ diagrams: msg.body.diagrams, rewound: msg.body.rewound });
+			this.onChanged?.();   // a snapshot is a whole new board (V-b)
 	}
 
 	// Re-open the current diagram: the server answers with a snapshot, which is authoritative.
@@ -764,6 +776,7 @@ export class Sync {
 		*/
 		if (Array.isArray(body.ops)) applyAnswer(this.model, this.selection, derivedToApply([], body.ops, this.pendingOps()));   // B288
 		if (typeof body.version === 'number') this.appliedVersion = body.version;
+		this.onChanged?.();
 	}
 
 	/*

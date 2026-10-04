@@ -148,10 +148,17 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	*/
 	const answered = (request, answer, apply) => {
 		const accepted = session.answered(answer, model, apply);
-		if (accepted) settle(`v${answer.version} ${request.verb ?? request.label ?? ''}`);
-		if (accepted && request.label === 'transit' && pendingTransit !== null) transitNotice(answer);   // the transit edit's own notice (F-e)
+		if (accepted) settled(request, answer);
 		if (!accepted && request.label === 'transit') pendingTransit = null;
 		return accepted;
+	};
+	/*
+	AN ACCEPTED ANSWER THE PAGE HAS ALREADY APPLIED (V-b, H18.26): the product page's Sync applies its answers itself
+	(app/src/sync.js `applyAck`), then hands them here -- the board settles and says so, as `answered` does in the lab.
+	*/
+	const settled = (request, answer) => {
+		settle(`v${answer.version ?? '?'} ${request.verb ?? request.label ?? ''}`);
+		if (request.label === 'transit' && pendingTransit !== null) transitNotice(answer);   // the transit edit's own notice (F-e)
 	};
 	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); };
 
@@ -162,5 +169,6 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	*/
 	const seed = (boardPipes, run) => { const answer = run(session.seed(boardPipes)); redraw(); return answer; };
 
-	return { judge, answered, refused, seed, paint };
+	// another writer's change, or a snapshot, has changed the board: redraw it, saying nothing (V-b)
+	return { judge, answered, settled, refused, redraw, seed, paint };
 }

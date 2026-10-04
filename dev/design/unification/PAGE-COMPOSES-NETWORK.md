@@ -140,6 +140,13 @@ AMENDED 2026-10-04 -- **V-a done** (H18.25; PU22; J1).\
 **The incubator boundary is retired** (J1): its test is deleted and recorded; the layer rules judge every edge into the `network` layer.\
 **Three copies deleted, which the move made possible:** the link rules restated `linkFacing` as `facing`, the plane check as an inline comparison, and the orphan sweep restated `linkEndsAt`, because `kernel/` and `model/` could not share by import (C9). All three now read `network/roles.mjs`, and `scan-twins` drops the exemption it carried for the first.\
 Every corpus unchanged; the export's and the canvas's tests unchanged but for the paths they read.
+
+AMENDED 2026-10-04 -- **V-b done** (H18.26; J3).\
+`network/page.mjs`, `createPageNetwork()`: the network composed into a page in two steps -- its `network` and input `plugins` for the canvas, then `attach` with the canvas's parts. The lab root and the product page both call it; the lab root holds no network wiring of its own (P5's exit criterion).\
+**The page:** its Model draws with the network; Input takes its keys and drag judge, so `g` and `x` work; `app/index.html` has `#pipes` and loads the network's stylesheets; what the network says goes to the header banner (J3), after Sync's state emit so it is not overwritten at once, until the next.\
+**Sync's three hooks:** `onAnswered` after an accepted answer to the tab's own request, `onChanged` after another writer's change or a snapshot, `onRefused` after a refusal; the network's host gained `settled` (an answer the page has already applied) and exposes `redraw`. Sync knows nothing of the network.\
+**Held in real Chrome against a real server** (`tests/browser.test.js`, "V-b"): a link drawn along its route over pipes, its pipes under it; a link with no pipe drawn down, and saying why in the banner when selected; the lab matrix's HEAL-02 on the page -- `g` lays a hand pipe, makes no link, and the down link is drawn up again once the board settles; `x` turns an anchor's transit off through the server, and the link that ran through it is drawn down. Failing on the code before; mutants 4, all killed, two after the test was made to read the page's drawing rather than the model's answer.\
+The K8 DOM snapshot differs only by the new `#pipes` layer. The test's board sorts after the harness's, since the shared tab opens the first diagram.
 ---
 
 ## 10. Axiom alignment audit (M7)

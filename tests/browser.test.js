@@ -30,6 +30,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { teardown } from './fixtures/teardown.mjs';
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
+import { pipeEntity } from '../network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
 
 const SKIP = NO_CHROME;
 const PITCH = 60;
@@ -37,6 +38,24 @@ const DIAGRAM = 'diagram-ba0001';
 // K8: the same fixture under its own id, which no other test edits, so its tests see the page as it boots (K7 found the lock;
 // K8's first full run found an earlier test's link)
 const K8_DIAGRAM = 'diagram-c80001';
+// V-b (H18.26): the network on the product page, on a board of its own, so no other test sees its pipes or edits
+const NET_DIAGRAM = 'diagram-fe0001';   // sorts after the harness's: the shared tab opens the first diagram
+function networkBoard() {
+	const host = (id, x, y) => ({ id, name: id.slice(-2), type: 'host', shape: 'square', x, y });
+	return {
+		meta: { id: NET_DIAGRAM, name: 'network', version: 1, schema: 2 },
+		nodes: [host('node-ab00a1', -360, 0), host('node-ab00a2', 360, 0), { id: 'node-ab00f1', name: 'f', x: 0, y: -240 },
+			host('node-ab00c1', -360, 240), host('node-ab00c2', 360, 240)],
+		links: [
+			// up, routed through f -- a waypoint its stops never name -- over two hand pipes
+			{ id: 'link-ab0001', name: 'routed', src: 'node-ab00a1', dst: 'node-ab00a2', order: 1 },
+			// down: no pipe joins c and d
+			{ id: 'link-ab0002', name: 'down', src: 'node-ab00c1', dst: 'node-ab00c2', order: 2 },
+		],
+		pipes: [pipeEntity('node-ab00a1', 'node-ab00f1', 'hand'), pipeEntity('node-ab00a2', 'node-ab00f1', 'hand')],
+		zones: [], groups: [], selection: [],
+	};
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let dir = null, srv = null, chrome = null, tab = null, port = 0, cdp = 0, booted = null;
@@ -132,6 +151,7 @@ before(async () => {
 	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-harness-'));
 	fs.writeFileSync(path.join(dir, `${DIAGRAM}.json`), JSON.stringify(fixture()));
 	fs.writeFileSync(path.join(dir, `${K8_DIAGRAM}.json`), JSON.stringify({ ...fixture(), meta: { ...fixture().meta, id: K8_DIAGRAM, name: 'k8' } }));
+	fs.writeFileSync(path.join(dir, `${NET_DIAGRAM}.json`), JSON.stringify(networkBoard()));
 	port = 8200 + (process.pid % 300);
 	cdp = 9600 + (process.pid % 300);
 
@@ -1275,5 +1295,63 @@ test('H15.23: the colours the page draws come from the registry, generated from 
 		assert.equal(got.link, rgb(TOKENS.link), 'a link draws the link token');
 		assert.equal(got.label, rgb(TOKENS.label), 'a label draws the label token');
 		assert.equal(got.page, rgb(CHROME.page), 'the page draws the page token');
+	} finally { t.ws.close(); }
+});
+
+/*
+V-b (H18.26; PROMOTION.md P5's exit criterion) -- THE PRODUCT PAGE COMPOSES THE NETWORK, as the lab does: links drawn along their
+routes over pipes, a down link drawn down and saying why in the header banner (ruled J3), `g` laying a hand pipe that heals a
+down link (the lab matrix's HEAL-02, on the page), and `x` turning an anchor's transit off -- each answered by the real
+server's planner and settled on the page.
+*/
+test('V-b: the product page draws routes and pipes, says why a link is down, and g and x work there', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/d/${NET_DIAGRAM}`);
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		const state = () => t.eval(`JSON.stringify((() => { const m = window.draw.model, l = (id) => m.get('link', id);
+			return { routed: m.pathOf(l('link-ab0001')), downs: m.all('link').filter((x) => m.isLinkDown(x)).map((x) => x.id).sort(),
+				under: document.querySelectorAll('#pipes .pipe-of.under').length, pipes: m.all('pipe').map((p) => p.id + ':' + p.laid).sort(),
+				downMark: document.getElementById('link-ab0002')?.hasAttribute('data-down') ?? null,
+				routedMark: document.getElementById('link-ab0001')?.hasAttribute('data-down') ?? null, fTransit: m.get('node', 'node-ab00f1').transit ?? null }; })())`).then(JSON.parse);
+
+		let s = await state();
+		assert.deepEqual(s.routed, [[-360, 0], [0, -240], [360, 0]], 'the routed link is drawn up through f, its route');
+		assert.equal(s.under, 2, 'the two pipes it runs over are under it');
+		assert.deepEqual(s.downs, ['link-ab0002'], 'the link with no pipe is down');
+		assert.equal(s.downMark, true, 'and drawn down');
+
+		await t.eval(`window.draw.selection.set(['link-ab0002']), 1`);
+		assert.match(await until(t, `(document.getElementById('banner').textContent.includes('is down') && document.getElementById('banner').textContent) || ''`, 4000),
+			/link-ab0002 is down/, 'a selected down link says why, in the banner');
+
+		// HEAL-02: drag from c to d, press g on d, release -- g lays the pipe by hand and makes no link, and the down link heals
+		await t.eval(`window.draw.selection.clear(), 1`);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const mouse = async (type, x, y, buttons) => { const [sx, sy] = await screen(x, y); await t.send('Input.dispatchMouseEvent', { type, x: sx, y: sy, button: 'left', buttons, clickCount: 1 }); await sleep(30); };
+		await mouse('mouseMoved', -360, 240, 0);
+		await mouse('mousePressed', -360, 240, 1);
+		await mouse('mouseMoved', 0, 240, 1);
+		await mouse('mouseMoved', 360, 240, 1);
+		await t.key('g');
+		await mouse('mouseReleased', 360, 240, 0);
+		// the pipe is applied at once; the healed link's mark follows the answer, when the board settles -- so wait for both
+		await until(t, `window.draw.model.all('pipe').some((p) => p.laid === 'hand' && p.a === 'node-ab00c1') && !document.getElementById('link-ab0002')?.hasAttribute('data-down') ? 1 : 0`, 6000);
+		s = await state();
+		assert.ok(s.pipes.includes(`${pipeEntity('node-ab00c1', 'node-ab00c2', 'hand').id}:hand`), `g laid the hand pipe from c to d: ${s.pipes}`);
+		assert.deepEqual(s.downs, [], 'and the down link healed over it');
+		// the link itself did not change, only the pipes under it: the page redraws it because the board SETTLES after the answer
+		assert.equal(s.downMark, false, 'drawn up again on the page -- the board settled after the answer');
+		assert.equal(await t.eval(`window.draw.model.all('link').length`), 2, 'g made no link');
+
+		// x on f: its transit off, so no route passes it -- the routed link has no other way, and is down
+		await t.eval(`window.draw.selection.set(['node-ab00f1']), 1`);
+		await t.key('x');
+		// the tab applies the edit at once; the mark follows the server's answer, when the board settles -- so wait for the mark
+		await until(t, `window.draw.model.get('node', 'node-ab00f1').transit === false && document.getElementById('link-ab0001')?.hasAttribute('data-down') ? 1 : 0`, 6000);
+		s = await state();
+		assert.equal(s.fTransit, false, 'x turned f\'s transit off, through the server');
+		assert.deepEqual(s.downs, ['link-ab0001'], 'and the link that ran through f is down');
+		assert.equal(s.routedMark, true, 'drawn down on the page');
 	} finally { t.ws.close(); }
 });

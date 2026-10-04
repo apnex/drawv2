@@ -5,6 +5,8 @@
 		<title>draw — next (kernel)</title>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 		<link rel="stylesheet" href="/tokens.css"><!-- H15.23: the colour registry, generated from kernel/theme.mjs; before the sheet that reads it -->
+		<link rel="stylesheet" href="/network/tokens.css"><!-- V-b: the network plugin's colour roles, generated (tools/colour-tokens.mjs) -->
+		<link rel="stylesheet" href="/network/network.css"><!-- V-b: the network's rules -- before style.css, whose .selected must win -->
 		<link rel="stylesheet" href="/style.css">
 	</head>
 	<body>
@@ -120,6 +122,8 @@
 					<g id="grid-zones"></g>
 					<g id="snaplayer"></g>
 					<g id="zones"></g>
+					<!-- V-b (H18.26): the network's pipes, beneath the links that run over them, as in the lab -->
+					<g id="pipes"></g>
 					<g id="groups"></g>
 					<g id="links"></g>
 					<g id="waypoints"></g>
