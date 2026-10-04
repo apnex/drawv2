@@ -1,0 +1,155 @@
+# Every path consumer routes -- promotion's P4 (DELTA, proposed)
+
+> **Tier 3 -- a design of record, proposed.** Written 2026-10-04 against `e3f1440`.
+> Facts about today's code are measured and cited by file and line; judgements are marked as such.
+> Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+
+## 1. Status
+
+- **Asked for:** the director, 2026-10-04, approving H18.17 -- P4's design before any code ("approved for next").
+- **Is:** stage P4 of `PROMOTION.md` section 6: "the SVG export, REST paths, `draw movers` and `draw combat` compose the network through one shared function; spawners skip down links", proven when "the five consumers of section 3.3 draw the route the tab draws, asserted per consumer on one board".
+- **Judged against the target state** the director stated (`dev/DECISIONS.md`, "Promotion's target state"): clean, deduplicated, modular, in step with the lab. Each stopgap below is named with the stage that removes it.
+- **Found while measuring:**
+  - P3 already gave the store's planner the network (S-b), so of section 3.3's five consumers, four remain: the export, the two REST path answers, and the CLI's two verbs (section 2);
+  - the network is composed by hand in five places, two of them differently (section 5.1);
+  - a down link is drawn along its intent and looks down on the canvas, and no other door can say it is down (section 5.2);
+  - `draw about <link>` prints its path as `undefined,undefined -> undefined,undefined` today, on every link (B292, section 5.3).
+
+---
+
+## 2. From-state -> to-state
+
+**From** (measured at `e3f1440`):
+- **The store's Models hold no network.** They plan with it (`server/store.js:46-48`, `PLAN`) but are built `new Model({ kinds: KINDS })` (`:674`, `:818`, `:867`), so `pathOf` falls back to `straightPath` (`model/model.mjs:232-236`) and `isLinkDown` answers false (`:244-246`).
+- **REST answers the straight polyline** as a link's `path`, in `context/<link>` (`server/rest.js:97`) and `links/<link>/path` (`:664`), and says nothing about whether it is down.
+- **The SVG export draws each link through its stops.** `GET /diagrams/<id>.svg` renders `model.toJSON()` (`server/app.js:254`) through `docToSchema` (`kernel/adapt.mjs:67`), which hands the kernel each link's `src`, `via` and `dst`; the kernel threads those (`kernel/engine.mjs:128-141`). It draws no pipe and no down look (`kernel/svg-scene.mjs:79` asks `linkAppearance` with no `down`).
+- **`draw combat` and `draw movers` load the document into a Model with the network's kinds and no network** (`cli/verbs.mjs:400-405`, S-e), so movers run along the straight polyline.
+- **Spawners arm a down link.** `spawnersOf` takes `pathOf` (`engine/spawners.mjs:40`), and a down link's `pathOf` is its intent (`network/resolve.mjs:55`), so movers would run on a link the canvas shows as down.
+- **The lab draws routes, down links and pipes:** a link along its route over pipes; a down link along its intent, dotted (`network/resolve.mjs:12-17`, `kernel/network-appearance.mjs` `down`); and every pipe no up link runs over, a link's dashed and a hand pipe solid (`network/host.mjs:51-62`, `network/appearance.mjs:20`).
+
+**To** (at the end of P4):
+- **One function composes the network for any reader:** given a document, a Model that draws with it.
+- **The store's Models draw with the network,** so every answer REST gives about a path is the route the lab draws.
+- **REST and the CLI say when a link is down,** and which anchors its route runs through.
+- **The SVG export draws what the lab canvas draws:** routes, down links as down, and the pipes no up link runs over.
+- **Movers run along routes and never along a down link,** in `draw movers`, `draw combat` and every page.
+
+---
+
+## 3. The fence
+
+The shared read composition and every consumer that builds a Model to read a document; the store's Models; REST's two path answers and the CLI verbs that print them; the SVG export's links, down look and pipes; spawners and down links; the tests that hold each consumer to the lab's derivation; the production-upgrade entries for what a reader of those doors will see.
+
+---
+
+## 4. The anti-scope fence
+
+- **No change to the product page.** It draws links straight and does not draw pipes until P5 (G1); its movers keep running along its straight paths until then.
+- **No pipe verbs:** an agent cannot list, lay or remove a pipe until P6. Only what REST already answers about links changes.
+- **No new routing behaviour.** Every route, down link and blocker is the network's, as the lab derives it.
+- **No change to the planner, the stored format or the migration.**
+- **The kernel's network roles and appearance stay in `kernel/`** until P5 moves them with the canvas (PU22).
+- **Production stays on `draw:2538ab8`** (F3).
+
+---
+
+## 5. Three findings that shape the stages
+
+### 5.1 The network is composed by hand in five places
+
+Each of these builds the network's kinds or its network itself:
+- **the store:** `productKinds(...NETWORK_ROWS)` and `createNetwork(createTransit())` (`server/store.js:46-47`);
+- **the CLI:** `composeKinds([...CORE_ROWS, ...NETWORK_ROWS])` (`cli/verbs.mjs:400-405`) -- the core's storage rows, without the product's checks, because the CLI's layer may not import the planner (`tools/layers.mjs`, `cli`);
+- **the dry run:** both, again (`tools/migrate-schema.mjs:104-107`);
+- **the lab:** through `createNetworkSession` (`network/session.mjs:50-53`);
+- **the tests:** `tests/fixtures/composed.mjs:15-16`.
+
+A reader needs a Model that draws; only a planner needs checked kinds.
+**Recommended (judgement):** one function in `network/`, `readModel(doc)` -- the core's storage rows with the network's, a network of the Model's own, the document loaded -- used by the CLI, the export and the dry run.\
+The store keeps its checked kinds, since it plans, and gives each Model a network of its own from the same constructor the function uses.\
+One network per Model rather than one for the store, because the network caches one derivation per board (`network/view.mjs`, `KEEP`), and 43 diagrams sharing it would evict each other's.
+
+### 5.2 Only the canvas can say a link is down
+
+A down link has no route: the lab draws it along its intent, dotted, and a selected one names what blocks it (`network/resolve.mjs:12-17`, `whyDown`).\
+Once the store's Models draw with the network, REST's `path` for a down link is that intent -- a polyline that looks like any other.\
+An agent reading it would take a down link for a live one, which is the failure A5 names: acting on state derived rather than given.\
+The same holds for the export, which would draw it solid.\
+This matters before P6 in particular: until then an agent's plain `draw link a b` lays no pipe (G2), so through REST it will be down wherever no way exists, and today nothing would say so.
+
+### 5.3 `draw about` prints a link's path as undefined
+
+`model.pathOf` answers points as `[x, y]` pairs (`model/model.mjs:274-280`, `network/resolve.mjs:63`); `draw about` prints each as `${p.x},${p.y}` (`cli/verbs.mjs:1027`).\
+Measured: a link between two hosts prints `path   undefined,undefined -> undefined,undefined`.\
+`draw link path` reads the same answer correctly (`:1077`).\
+Filed as B292; fixed in R-b, where that answer changes anyway.
+
+---
+
+## 6. Build order -- each stage provable before the next depends on it
+
+| stage | what lands | proven by |
+|---|---|---|
+| **R-a** | **One read composition:** `readModel(doc)` in `network/`; the CLI's `combat` and `movers` and the dry run use it; the store's Models each get a network | the CLI's two verbs and the dry run unchanged in what they report on today's tests; no consumer composes the network's kinds by hand |
+| **R-b** | **REST and the CLI answer routes:** `path` along the route; `route`, the anchors it runs through; `down`; the blockers of a down link; `draw about` and `draw link path` print them (B292 fixed) | on one board, each answer equals the lab's derivation; a down link reports `down` and its blockers |
+| **R-c** | **The SVG export draws the lab's picture:** each link along its route; a down link with the canvas's down look; the pipes no up link runs over, a link's dashed and a hand pipe solid | on one board, the export's link paths and pipes equal the lab's derivation; the estate's exports change only where a link is down or a hand pipe is free |
+| **R-d** | **Spawners skip down links,** at every door | a spawner at the end of a down link emits nothing in `draw movers`, `draw combat` and the lab |
+| **R-e** | **P4 closed:** the parity test over every consumer on one board; the production-upgrade register; `PROMOTION.md` amended | the four consumers and the lab's tab agree on every link of one board; every change in section 7 has a PU entry |
+
+Each stage is one gate and one lab deploy.
+**Size, by judgement:** smaller than P3. R-c is most of it -- the kernel takes a route and a down flag per link and draws pipes, all as data, since the kernel imports no network.
+
+---
+
+## 7. Behaviour that changes, stated before it is built
+
+**For agents and anyone reading REST** (each a PU entry, reaching production at the cutover):
+- **A link's `path` follows its route over pipes,** not the straight line through its stops; the two differ wherever a route takes another way between stops.
+- **REST says a link is down,** with its route and its blockers; an agent's plain link with no way reports itself down (G2, until P6).
+- **`draw about <link>` prints its path** (B292).
+
+**For anyone downloading the SVG:**
+- **Links follow their routes; a down link looks down;** pipes no up link runs over are drawn. On the estate after migration, every link runs along its stored stops (S-d), so a download changes only where a hand pipe is free or a link has gone down since.
+
+**For movers:** a spawner on a down link emits nothing.
+
+**In the behaviour matrix:** nothing changes; the lab already draws routes. A row for a spawner on a down link, if R-d finds the lab arms one.
+
+---
+
+## 8. Coverage, verification, costs
+
+**Proves:** `PROMOTION.md` section 7's criterion 4 for every consumer but the tab (P5); P4's own exit criterion; B292.\
+**Defers:** the tab (P5), the Model's `network = null` default and `straightPath` fallback (P5, the page being the last Model that draws without the network), pipe verbs (P6).
+
+**Verification targets:** one board -- a routed link, a link whose route differs from its stops, a down link with a blocker, a ring, a free hand pipe and a spawner on each of an up and a down link -- read through REST, the CLI, the export, `draw movers` and `draw combat`, each held to the lab's derivation; the estate dry run unchanged; mutants on the down flag, the export's route, the pipe visibility rule and the spawner skip.
+
+**Named costs and non-claims (judgement):**
+- **REST answers grow by three fields** on a link; nothing is removed or renamed.
+- **The export grows a pipe layer,** empty on every estate diagram after migration unless a link is down or a hand pipe free.
+- **It does not change what production users see** until the cutover, and does not make the product page route: P5.
+
+---
+
+## 9. Decisions for the director -- one at a time
+
+- **H1 -- how a down link is shown at every door but the canvas.** Recommended: as the lab shows it -- along its intent, marked down: REST and the CLI say `down` and name its blockers, and the export draws it with the canvas's down look. The alternative: answer no path for a down link, which every caller would have to special-case, and which the export could only draw by leaving the link out.
+- **H2 -- whether the export draws pipes.** Recommended: yes, the pipes no up link runs over, as the lab canvas does and the product page will at P5 -- so a hand pipe laid with `g` and the way a down link would heal onto appear in a download. The alternative: no pipes until P5, or never; a download would then not show the diagram's free pipes at all.
+
+---
+
+## 10. Axiom alignment audit (M7)
+
+**Identity:** this delta, against `e3f1440`, measured against mission-kit A1-A14 and the director's target state.\
+**Verdict: pass-with-guardrails** -- H1 and H2 ruled before R-b and R-c.
+
+| axiom | weight | how the delta holds it |
+|---|---|---|
+| A2 Isomorphic Specification | load-bearing | every door draws the route the network derives, through one composition, so no door draws what the rules do not say |
+| A5 Perceptual Parity | load-bearing | an agent reading REST is told a link is down and why, as a person sees on the canvas (H1) |
+| A3 Sovereign Composition | supporting | the kernel draws routes, down looks and pipes it is handed as data, and imports no network |
+| A8 Gated Recursive Integrity | supporting | the parity test holds every consumer to one derivation before the cutover depends on it |
+| A1, A4, A6, A7, A9-A14 | not materially implicated | |
+
+**Tension:** the export showing pipes (H2) against a download that only ever showed links -- resolved by drawing only what the canvas draws, so a download and the screen agree.\
+**Guardrail:** no consumer composes the network's kinds or its network except through the shared function or the store's constructor; held by a test in R-a.
