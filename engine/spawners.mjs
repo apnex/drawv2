@@ -25,7 +25,7 @@ import { byId } from '../model/order.mjs';   // B246: the one derivation order
 import { bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 /*
-`model` is anything answering `all('waypoint')`, `linksAt(id)` and `pathOf(link)` -- the live client
+`model` is anything answering `all('waypoint')`, `linksAt(id)`, `pathOf(link)` and `isLinkDown(link)` -- the live client
 Model, or a Model built from a stored document on the server. Passing the shape rather than the
 class is what lets both peers call this without either becoming the other.
 */
@@ -37,6 +37,12 @@ export function spawnersOf(model) {
 		const links = model.linksAt?.(wp.id) || [];
 		const link = links.find((l) => (l.src === wp.id || l.dst === wp.id) && !l.closed);
 		if (!link) continue;                       // a ring has no ends, so it emits nothing
+		/*
+		P4 R-d (H18.22) -- A DOWN LINK CARRIES NOTHING. It has no route right now: it is drawn along its intent and marked down
+		(H1), and a path along that intent is no way for a mover to take. So a spawner on it emits nothing until it heals, in
+		every door that derives spawners -- the page, `draw movers`, `draw combat`. A model with no network has no down link.
+		*/
+		if (model.isLinkDown?.(link)) continue;
 		const pts = model.pathOf(link);
 		if (!pts || pts.length < 2) continue;      // a dangling route resolves to nothing
 		out.push(prepareSpawner({

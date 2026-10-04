@@ -177,6 +177,11 @@ The three stylesheet rules that hid those layers are deleted, so nothing decides
 **Tests:** `tests/run-picture.test.js` -- the canvas in run mode and the download draw every waypoint alike on one board (an endpoint, a bend, a junction, a transit-off anchor); authoring loses nothing; no stylesheet hides a layer in run mode; run mode draws no pipe and leaving it draws them again; the download draws a route its stops never name, a down link dotted and orange, and a ring closed once.\
 Five export and browser tests that asserted the anchor ring in the download, or toggled the run-mode class by hand, now read the authoring layers from the one list and switch the real mode.\
 The new file cannot load on the code before (it imports `RUN_PICTURE`), so its strength is shown by mutants: 11, all killed, one by a test added for it.
+
+AMENDED 2026-10-04 -- **R-d done** (H18.22).\
+`spawnersOf` (`engine/spawners.mjs`), from which the page, `draw movers` and `draw combat` all derive spawners, skips a link that is down: it has no route, and its intent is no way for a mover. A Model with no network -- the product page's until P5 -- has no down link, so nothing there changes.\
+The lab composes no simulation and arms no spawner (`lab/src/root.js`), so no matrix row is added.\
+Held by a test through the read composition -- quiet while down, emitting once a pipe heals the link -- and by `draw movers` reporting nothing after a pipe of its only way is removed; both fail on the code before.
 ---
 
 ## 10. Axiom alignment audit (M7)

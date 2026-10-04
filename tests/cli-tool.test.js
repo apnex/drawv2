@@ -1757,6 +1757,11 @@ test('R-a: REST\'s path and draw movers follow a link\'s route over its pipes, n
 		const out = JSON.parse(await run('movers', '--diagram', id, '--at', String(since + 5000), '--json'));
 		// ten cells over the waypoint, less a little where the corner is rounded (BEND_R); the stops' straight line is six
 		assert.ok(out.spawners[0].cells > 9.5 && out.spawners[0].cells <= 10, `the movers run the route, not the stops: ${out.spawners[0].cells} cells`);
+		// R-d (H18.22): take a pipe of its only way, and the link is down -- its spawner emits nothing until it heals
+		await run('commit', '--diagram', id, '--label', 'cut', '--ops', writeOps({ ops: [{ op: 'del', kind: 'pipe', id: 'pipe-e00001-e00004' }] }));
+		assert.equal(JSON.parse(await run('link', 'path', 'l', '--diagram', id, '--json')).down, true, 'the link is down');
+		const quiet = JSON.parse(await run('movers', '--diagram', id, '--at', String(since + 5000), '--json'));
+		assert.deepEqual([quiet.spawners, quiet.movers], [[], 0], 'and draw movers reports no spawner on it');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
