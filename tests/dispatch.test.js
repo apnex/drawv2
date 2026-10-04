@@ -40,7 +40,7 @@ test('TG-4: a rename calls nothing, and a plane change calls only the join', () 
 });
 
 // F-c (H18.5): a waypoint is a node with no type, so `node-links` hears its delete as well, and does nothing with it -- each
-// clear reaction acts on its own shape of node (model/link-reactions.mjs)
+// clear reaction acts on its own shape of node (network/link-reactions.mjs)
 test('TG-4: deleting a pin calls what listens to a waypoint deleted, and then what its consequences wake', () => {
 	assert.deepEqual(calls([{ op: 'del', kind: 'node', id: 'node-00000e' }]),
 		['node-links', 'waypoint-links', 'pipe-cascade', 'group-trim', 'stranded-links', 'orphan-sweep', 'link-join', 'pipe-sweep']);

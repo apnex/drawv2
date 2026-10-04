@@ -23,7 +23,7 @@ Network-layer code (tools/layers.mjs): it reads the model and the link invariant
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
 import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './link-rules.mjs';
-import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 

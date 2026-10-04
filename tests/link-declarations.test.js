@@ -10,7 +10,7 @@ reverse -- fails here.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LINK_DECLARATIONS, collapseAtWaypoint, splitAtBend } from '../model/link-rules.mjs';
+import { LINK_DECLARATIONS, collapseAtWaypoint, splitAtBend } from '../network/link-rules.mjs';
 import { PRODUCT_KINDS } from '../planner/kinds.mjs';
 
 const STRUCTURAL = ['id', 'name', 'src', 'dst', 'via', 'closed'];

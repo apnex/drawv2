@@ -46,7 +46,7 @@ import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_REL
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
-import { splitAtBend, pairHolders } from '../../model/link-rules.mjs';
+import { splitAtBend, pairHolders } from '../../network/link-rules.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';

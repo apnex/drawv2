@@ -57,14 +57,14 @@ H15.15 -- WHICH PLANE a link belongs to. `control: true` is the control plane; a
 the ordinary data plane, so every document written before the field reads unchanged.
 
 A predicate rather than a raw field read, because two rules consult it -- the role derivation here
-and the collapse in model/link-rules.mjs -- and B232 shipped because one place implemented the
+and the collapse in network/link-rules.mjs -- and B232 shipped because one place implemented the
 matrix and another disagreed about it.
 */
 const samePlane = (a, b) => !!a.control === !!b.control;
 
 /*
 Which way a link faces at a point: `in`, `out`, or null for an undeclared link or a point it merely
-threads. The twin of `facing` in model/link-rules.mjs, which cannot be imported here -- `kernel/`
+threads. The twin of `facing` in network/link-rules.mjs, which cannot be imported here -- `kernel/`
 depends on no `model/` and the reverse, an independence worth more than one boolean.
 
 Exported so the agreement between the twins is driven against THIS function rather than a copy
@@ -81,7 +81,7 @@ export const linkFacing = (link, pointId) => {
 
 /*
 B244 (K14a) -- WHETHER A LINK ENDS AT A POINT: at its `src` or `dst`, unless it is closed, because a ring has no ends. The
-statement the role derivation reads. Its twin is `endsAt` in the planner's orphan sweep (model/link-reactions.mjs), which
+statement the role derivation reads. Its twin is `endsAt` in the planner's orphan sweep (network/link-reactions.mjs), which
 `kernel/` and `model/` may not share by import (C9); the sweep's copy lacked the ring clause, and so kept a deleted ring's
 `src` and `dst` as termini. tests/sweep-references.test.js holds the two to one answer.
 */
@@ -129,7 +129,7 @@ export const waypointRoles = (id, touching, { transit = true } = {}) => {
 	divergence, and neither is a path passing through -- each is a place where flow does something
 	other than continue, which is what a junction is.
 
-	`direction` is read the same way `facing` in model/link-rules.mjs reads it, and the two are held to
+	`direction` is read the same way `facing` in network/link-rules.mjs reads it, and the two are held to
 	agree by test rather than by a shared import: `kernel/` imports no `model/` and `model/` imports
 	no `kernel/`, which is a deliberate independence neither should lose for one boolean.
 

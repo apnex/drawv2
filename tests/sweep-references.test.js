@@ -12,7 +12,7 @@ GUIDE for another is swept when the pinning link is deleted, and the guided link
 guide-only anchor is safe, because it was never referenced and the sweep leaves what arrived
 unreferenced alone.
 
-So the orphan sweep is a REACTION its link tenant declares (PL-3, model/link-reactions.mjs), built with
+So the orphan sweep is a REACTION its link tenant declares (PL-3, network/link-reactions.mjs), built with
 `linkTenant({ alsoReferenced, keepsOrphan })`: `alsoReferenced(model) -> ids` names what else references an anchor.
 They began as hooks the planner asked a `network` object; since PL-3 the network brings its own tenant and the planner
 asks nothing. Production passes nothing and must sweep exactly as before -- the first test holds that, because the
@@ -25,7 +25,7 @@ import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
-import { linkTenant } from '../model/link-reactions.mjs';
+import { linkTenant } from '../network/link-reactions.mjs';
 
 const P = 60;
 const nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });

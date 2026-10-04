@@ -8,7 +8,7 @@ configured in one place; the other five each assumed a capacity of one in their 
 `some(...)`, a `find(...)`. Raising the limit would have changed what the planner accepts and nothing else, so every
 other site would have refused what the planner allows.
 
-T4 gives the five one question to ask, `pairHolders(link, among, model)` in model/link-rules.mjs (model/invariants.mjs until S-b) -- the straight links
+T4 gives the five one question to ask, `pairHolders(link, among, model)` in network/link-rules.mjs (model/invariants.mjs until S-b, model/link-rules.mjs until S-e) -- the straight links
 holding the pair against a link, empty when there is room -- beside the invariant and the capacity it reads. What the sites decide is unchanged: the tests of each (tests/input.test.js B72/B80,
 tests/txn.test.js and tests/commands.test.js B81, tests/guide-gesture.test.js) pass unedited.
 
@@ -24,7 +24,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { makeInput, pointer, seedNodes } from './fixtures/client-harness.mjs';
-import { pairHolders } from '../model/link-rules.mjs';
+import { pairHolders } from '../network/link-rules.mjs';
 
 // admitted = no link holds the pair against it
 const admits = (link, among) => pairHolders(link, among).length === 0;
@@ -116,7 +116,7 @@ import { violations } from './model/invariants.mjs';
 import { attachRelations } from './engine/store.mjs';
 import { cellOf } from './kernel/geometry.mjs';
 import { commit } from './planner/txn.mjs';
-import { linkTenant } from './model/link-reactions.mjs';
+import { linkTenant } from './network/link-reactions.mjs';
 // the strip site, in a tenant with no stranded pass -- production's (the network's) deletes the pinned link anyway (S-b)
 const STRIP = { links: linkTenant({ owner: 'the strip', keepsOrphan: () => false, says: {} }) };
 import { Log } from './planner/log.mjs';
@@ -184,7 +184,7 @@ test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a
 	try {
 		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
-		const inv = path.join(dir, 'model/pair-capacity.mjs');
+		const inv = path.join(dir, 'network/pair-capacity.mjs');
 		const src = fs.readFileSync(inv, 'utf8');
 		assert.equal(src.split(NEEDLE).length, 2, 'the guard is INVALID: straightCapacity no longer reads as it did -- re-point NEEDLE');
 		fs.writeFileSync(inv, src.replace(NEEDLE, NEEDLE.replace('return 1;', 'return 2;')));

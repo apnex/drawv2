@@ -26,7 +26,7 @@ The caller lays them only after the planner accepts the link, so a refused link 
 */
 
 import { pipeKey, assignRoutes, blockersOf } from './pipes.mjs';
-import { pairHolders } from '../model/link-rules.mjs';
+import { pairHolders } from './link-rules.mjs';
 import { kindOf, pipeFor } from './grammar.mjs';
 
 /*

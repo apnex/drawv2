@@ -18,7 +18,7 @@ import { createNetworkView } from './view.mjs';
 import { preferredRoute, pipeKey, route } from './pipes.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './resolve.mjs';
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
-import { linkTenant } from '../model/link-reactions.mjs';
+import { linkTenant } from './link-reactions.mjs';
 import { transitReactions } from './transit.mjs';
 import { ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { pipeId, pipeEntity } from './pipe-kind.mjs';

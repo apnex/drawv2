@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { plan as realPlan } from '../planner/txn.mjs';
-import { linkTenant } from '../model/link-reactions.mjs';
+import { linkTenant } from '../network/link-reactions.mjs';
 /*
 AMENDED 2026-10-03 (S-b, H18.12): the frozen oracle is the pre-CS1 planner, whose rules are the classic tenant's -- a link that
 loses a bend keeps the rest of its intent, a pinned waypoint and a link's end survive the sweep. Production no longer runs

@@ -19,13 +19,14 @@ transaction would produce. Two consequences worth stating, because both are deli
 
 AMENDED 2026-10-03 (S-b, H18.12): the link rules -- splitting, joining, pair holders -- moved to model/link-rules.mjs, and
 the pair capacity to model/pair-capacity.mjs; this module keeps the document invariants the planner checks.
+AMENDED 2026-10-04 (S-e, H18.15): both moved on into network/, the plugin that owns the link (G5).
 
 Sovereign: imports nothing. `model/` is the substrate both the server and the browser already
 depend on, so the rule has one home and neither side restates it.
 */
 
 import { ANCHOR_KINDS } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { straightCapacity, isStraight, pairKey } from './pair-capacity.mjs';   // the pair rule's one home (S-b)
+import { straightCapacity, isStraight, pairKey } from '../network/pair-capacity.mjs';   // the pair rule's one home (S-b)
 
 /*
 Every violated invariant in the document, as sentences. Plural because reporting the first and

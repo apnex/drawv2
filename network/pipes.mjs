@@ -146,7 +146,7 @@ link is drawn, whether it is down, and what blocks it are all read from it, so t
 
 /*
 How many links one pipe may carry. A FUNCTION rather than a constant, for the reason `straightCapacity`
-(model/pair-capacity.mjs) gives: when links can be drawn side by side over one pipe, raising the limit is a change
+(network/pair-capacity.mjs) gives: when links can be drawn side by side over one pipe, raising the limit is a change
 to this body and nowhere else. Taking the pipe leaves room for the limit to depend on it.
 */
 function pipeCapacity(_pipe) {

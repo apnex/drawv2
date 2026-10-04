@@ -749,7 +749,11 @@ const INCUBATOR = 'network/';
 // network's rows and tenant, and the product page its rows (G1); P5 widens it again for the page's drawing
 // S-d (H18.14): `tools/migrate-schema.mjs`, the format batch's dry run, composes the network as the store does to check every
 // estate link comes up along its stored stops -- it is run by hand against a backup, and nothing served imports it
-const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs'];
+// S-e (H18.15, G5): the link rules live in network/ now, so the browser's two copies of planner rules read them there until
+// PL-6 deletes the copies at P5 (G4) -- `app/src/commands.js` and `app/src/input.js`; and `model/invariants.mjs` reads the pair
+// capacity until the link row carries its own invariant (S-e, part 2)
+const MAY_REACH_THE_INCUBATOR = ['network/', 'lab/', 'tests/', 'tools/gesture-table.mjs', 'tools/reaction-table.mjs', 'server/store.js', 'app/src/main.js', 'tools/migrate-schema.mjs',
+	'app/src/commands.js', 'app/src/input.js', 'model/invariants.mjs'];
 
 test('the network incubator is reachable only from itself, the lab and the tests', () => {
 	const offenders = [];

@@ -186,7 +186,7 @@ const FIELDS = {
 		via: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node')),   // waypoints only: model/referential.mjs
 		closed: (v) => typeof v === 'boolean',            // a routed link looped dst → src (render-only)
 		// H15.3 -- the author DECLARED a direction. Absent is undeclared and symmetric; `forward` means the
-		// flow follows the stored order, `reverse` that it runs against it. See `facing` in model/link-rules.mjs.
+		// flow follows the stored order, `reverse` that it runs against it. See `facing` in network/link-rules.mjs.
 		// Was `flow`, a boolean, until the format batch (F1, ruled 2026-10-03): the CLI's words, stored as they are said.
 		direction: (v) => v === 'forward' || v === 'reverse',
 		// H15.15 -- a CONTROL-PLANE link carries no data-plane packets. Absent is an ordinary data

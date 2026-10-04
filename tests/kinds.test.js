@@ -16,7 +16,7 @@ import { composeKinds, CORE_KINDS } from '../model/shape.mjs';
 import { Model } from '../model/model.mjs';
 import { PRODUCT_KINDS, productKinds } from '../planner/kinds.mjs';
 import { commit, plan } from '../planner/txn.mjs';
-import { linkTenant } from '../model/link-reactions.mjs';
+import { linkTenant } from '../network/link-reactions.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc, validateSelectionIds, validateEntity } from '../planner/validate.js';
 

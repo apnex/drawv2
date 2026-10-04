@@ -103,6 +103,6 @@ test('N-d: a link crossing a pipe in either direction is using it -- the sweep k
 test('N-b: a composition without the network\'s rows refuses a pipe', async () => {
 	const { Model: Bare } = await import('../model/model.mjs');
 	const { plan: bare } = await import('../planner/txn.mjs');
-	const { linkTenant } = await import('../model/link-reactions.mjs');
+	const { linkTenant } = await import('../network/link-reactions.mjs');
 	assert.equal(bare(new Bare(), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }) }).error, 'unknown kind: pipe');
 });
