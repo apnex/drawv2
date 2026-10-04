@@ -1047,7 +1047,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.24 | Design P5 for approval before any code: the product page composes the network -- draws pipes and routed links, `g` works there, the browser previews with the planner (PL-6), the kernel's network roles and appearance move into `network/` | feature | S2 | `DONE` |
 | H18.25 | V-a: the network's look is the network's -- roles and appearance move from `kernel/` into `network/`; the incubator boundary retired (J1) | feature | S2 | `DONE` |
 | H18.26 | V-b: the page composes the network as the lab does -- routes, pipes, `g`, `x`, down links; what the network says in the banner (J3) | feature | S2 | `DONE` |
-| H18.27 | V-c: a link landing on another link's bend is cut by a planner reaction at every door, its piece's id derived (B243) | **B266** | S2 | `TODO` |
+| H18.27 | V-c: a link landing on another link's bend is cut by a planner reaction at every door, its piece's id derived (B243) | **B243** | S2 | `DONE` |
 | H18.28 | V-d: one preview (PL-6) -- the browser plans with the planner, sends intent only, and its rule copies go (B221) | **B266** | S2 | `TODO` |
 | H18.29 | V-e: P5 closed -- a Model holding links requires the network (J2); the register; the records | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
@@ -1080,6 +1080,7 @@ AMENDED 2026-10-04: H18.24's design is `dev/design/unification/PAGE-COMPOSES-NET
 AMENDED 2026-10-04: approved and J1 to J3 ruled as recommended (`dev/DECISIONS.md`); H18.24 DONE, the build is H18.25 to H18.29.\
 AMENDED 2026-10-04: H18.25 (V-a) done -- the network's roles and appearance are in `network/`; the incubator boundary is retired (J1); three copies the move made unnecessary are deleted.\
 AMENDED 2026-10-04: H18.26 (V-b) done -- the product page composes the network as the lab does (`network/page.mjs`): routes, pipes, `g`, `x`, down links and why, in the banner; held in Chrome against a real server.\
+AMENDED 2026-10-04: H18.27 (V-c) done -- a link landing on another link's bend is cut by the planner at every door (B243 closed), its piece's id derived from the cut; the browser's split is deleted.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
@@ -1096,7 +1097,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
-| **B243** | S4 | A link drawn to another link's bend through REST or the CLI does not cut the passing link; only the browser cuts. Held for the design phase: where link rules run is stack decision SD2 | promotion (K18a, scheduled by PD-5), or an agent's landing is reported uncut |
 | **B221** | S4 | The client predicts the planner's join: moved to promotion with the browser preview (PL-6, PD-5) | promotion |
 | **B280** | S4 | Every kind brought by a plugin, the core holding none -- the link is the network's since S-e (H18.15); node, zone and group are still core-owned | a composition that wants to leave out a kind, or a second added kind |
 | **B282** | S3 | Type as composition of packs (ruled 2026-09-22) -- its waypoint step ruled into P2 (P-10); this half needs no format change | a second pack composes, or the device table K6 lands |

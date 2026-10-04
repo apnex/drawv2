@@ -12,7 +12,7 @@ batch (F-e, H18.7; TR-7) -- only where it differs from the type's default, so an
 was session state in the lab, which a reload lost and undo did not move; now it is the document's, every peer reads the same
 value, and undo restores it with everything else. The network refuses a value the type does not offer.
 */
-import { splitAtBend } from './link-rules.mjs';
+import { cutAtBend } from './link-rules.mjs';
 import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const BOTH = [true, false], OFF = [false];
@@ -75,15 +75,7 @@ so those see the pieces. Each waypoint is cut on the board the cuts before it le
 A cut re-ends the link the author drew -- its id, its order, its declarations (B213, B284) -- and puts each new piece
 newest, with an id derived from the link and the waypoint, so the planner mints the same piece on every peer.
 */
-const hexOf = (id) => id.slice(id.indexOf('-') + 1);
-const pieceId = (doc, from, at) => {
-	let n = (parseInt(hexOf(from), 16) ^ parseInt(hexOf(at), 16)) & 0xffffff;
-	for (;;) {
-		const id = `link-${n.toString(16).padStart(6, '0')}`;
-		if (!doc.get('link', id)) return id;
-		n = (n + 1) & 0xffffff;
-	}
-};
+// the cut itself -- re-ending, the derived piece id -- is one shape with the junction's (network/link-rules.mjs `cutAtBend`, V-c)
 
 export function transitReactions(transit) {
 	const cut = {
@@ -97,12 +89,8 @@ export function transitReactions(transit) {
 			for (const { id: w, before, after, fields } of matches) {
 				if (!before || !after || !fields.has('transit') || !bareAnchor(doc, w) || !transit.stopsAt(w, doc)) continue;
 				for (const link of [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-					const halves = splitAtBend(link, w);
-					if (!halves) continue;
-					const { via: _drop, ...rest } = link;
-					const [first, second] = halves;
-					const piece = { ...second, id: pieceId(doc, link.id, w), name: doc.nextName('link'), order: doc.nextOrder('link') };
-					emit([{ op: 'put', kind: 'link', entity: { ...rest, ...first } }, { op: 'put', kind: 'link', entity: piece }]);
+					const ops = cutAtBend(doc, link, w);
+					if (ops) emit(ops);
 				}
 			}
 		},

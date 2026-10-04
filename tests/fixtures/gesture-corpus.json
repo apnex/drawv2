@@ -1471,40 +1471,13 @@
 			{
 				"ops": [
 					{
-						"op": "del",
-						"kind": "link",
-						"id": "link#1"
-					},
-					{
 						"op": "put",
 						"kind": "link",
 						"entity": {
 							"id": "link#1",
 							"name": "link-2",
-							"order": 1,
+							"order": 2,
 							"src": "node#1",
-							"dst": "waypoint#1"
-						}
-					},
-					{
-						"op": "put",
-						"kind": "link",
-						"entity": {
-							"id": "link#2",
-							"name": "link-2",
-							"order": 2,
-							"src": "waypoint#1",
-							"dst": "node#2"
-						}
-					},
-					{
-						"op": "put",
-						"kind": "link",
-						"entity": {
-							"id": "link#3",
-							"name": "link-2",
-							"order": 2,
-							"src": "node#2",
 							"dst": "waypoint#1"
 						}
 					}
@@ -1520,7 +1493,7 @@
 		"final": {
 			"nodes": [
 				{
-					"id": "node#1",
+					"id": "node#2",
 					"name": "host-1",
 					"order": 1,
 					"type": "host",
@@ -1529,7 +1502,7 @@
 					"y": 0
 				},
 				{
-					"id": "node#2",
+					"id": "node#1",
 					"name": "host-2",
 					"order": 2,
 					"type": "host",
@@ -1549,31 +1522,27 @@
 			],
 			"links": [
 				{
+					"id": "link#2",
+					"name": "link-1",
+					"order": 1,
+					"src": "node#2",
+					"dst": "node#1",
+					"via": [
+						"waypoint#1"
+					]
+				},
+				{
 					"id": "link#1",
 					"name": "link-2",
-					"order": 1,
+					"order": 2,
 					"src": "node#1",
-					"dst": "waypoint#1"
-				},
-				{
-					"id": "link#2",
-					"name": "link-2",
-					"order": 2,
-					"src": "waypoint#1",
-					"dst": "node#2"
-				},
-				{
-					"id": "link#3",
-					"name": "link-2",
-					"order": 2,
-					"src": "node#2",
 					"dst": "waypoint#1"
 				}
 			],
 			"zones": [],
 			"groups": [],
 			"selection": [
-				"link#3"
+				"link#1"
 			]
 		}
 	},

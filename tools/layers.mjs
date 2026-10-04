@@ -376,7 +376,7 @@ When a rule's record empties, delete its keys; the rule stays.
        names are exports of kernel/geometry.mjs, which K13a splits; the fifteenth is routeGeometry
        in kernel/router.mjs. Model's link methods are not exports, so L5 does not see them (K13d)
   L7k  consumer lines per file (see RULES.L7k)
-  L9   `module:primitive`: input.js reaches splitAtBend, commands.js groupAfterRemoval (K18b)
+  L9   `module:primitive`: commands.js reaches groupAfterRemoval (K18b); input.js's splitAtBend went at V-c
   L11  window/globalThis reads per canvas module: the label editor's three
 */
 
@@ -399,7 +399,7 @@ export const RATCHETS = {
 	},
 	L9: {
 		'app/src/commands.js:groupAfterRemoval': 1,
-		'app/src/input.js:splitAtBend': 1,
+		// V-c (H18.27) lowered app/src/input.js:splitAtBend from 1: the junction cut is the planner's (network/network.mjs)
 	},
 	L11: {
 		'app/src/labeledit.js': 3,

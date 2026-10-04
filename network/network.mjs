@@ -20,7 +20,8 @@ import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './reso
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from './link-reactions.mjs';
 import { transitReactions } from './transit.mjs';
-import { ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS, anchorOf, bareAnchor } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { cutAtBend } from './link-rules.mjs';   // a cut at a bend, its piece's id derived (V-c)
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
 
 /*
@@ -76,6 +77,36 @@ function pipeReactions(view) {
 						const laid = doc.get('pipe', pipeId(a, b));
 						used.add(pipeKey(a, b));
 						if (!laid) emit([{ op: 'put', kind: 'pipe', entity: pipeEntity(a, b, 'link') }]);
+					}
+				}
+			},
+		},
+		/*
+		V-c (H18.27; K18a, B243) -- A NEW LINK LANDING ON ANOTHER LINK'S BEND CUTS THAT LINK THERE, from any door (ruled 2026-09-25,
+		"What a link does at a junction", R1: a junction is terminations only). It was the browser's alone (app/src/input.js
+		`splitsFor`), so a link drawn to a bend through REST or the CLI left the other link bending through the junction (B243).
+		Each end of a link made, that is a waypoint, cuts every link bending there -- re-ended at it, keeping its id, order and
+		declarations, its new piece the newest with an id derived from the cut (H17-D10), so the browser's preview and the server
+		mint the same (PL-6). A piece is cut again if it still bends at the other end. A ring has no ends, so it lands nowhere.
+		Threading a bend leaves it a bend (B211). In the RESHAPE phase, with transit's cut, before the stranded pass and the join.
+		*/
+		{
+			id: 'junction-cut',
+			phase: 'reshape',
+			trigger: { created: ['link'] },
+			doc: 'a link made with an end on another link\'s bend cuts that link there: it is re-ended at the bend and keeps its id, order and declarations, and its new piece is the newest, its id derived from the cut (R1, B243, H17-D10)',
+			run: ({ doc, matches }, emit) => {
+				// it reads what each change is (TG-3): a link MADE in this edit -- one that existed before is not landing anywhere
+				for (const { kind, before, after } of matches) {
+					if (kind !== 'link' || before || !after || after.closed || !doc.get('link', after.id)) continue;
+					for (const end of [after.src, after.dst]) {
+						if (!bareAnchor(doc, end)) continue;
+						// the links bending there NOW -- a piece an earlier cut made is cut again at the other end
+						for (const other of [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+							if (other.id === after.id) continue;
+							const ops = cutAtBend(doc, other, end);
+							if (ops) emit(ops);
+						}
 					}
 				}
 			},

@@ -342,28 +342,15 @@ export function linkNodes(model, nodeIds, star) {
 
 // a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the
 // link never references a bend that does not exist yet.
-export function routeLink(placed, link, splits = []) {
+export function routeLink(placed, link) {
 	/*
-	B210 -- the SPLITS ride in the same entry list, so one drag is one undo.
-
-	Linking to a bend makes a junction, and a junction is terminations only: the link that bent
-	through the waypoint is cut, and both halves terminate there. `splitAtBend` computed the shapes;
-	this turns each into a `del` of the original and two `put`s, ordered so the removal lands before
-	the replacements.
-
-	If the split were a separate commit, an undo would leave the new link attached to halves that no
-	longer exist -- or worse, restore the original alongside them, which is two routes where the
-	author drew one.
+	B210's SPLITS rode in this entry list until V-c (H18.27): linking to a bend cut the link bending there, computed here in the
+	browser. The cut is the planner's now (network/network.mjs `junction-cut`), at every door (B243), and arrives in the answer.
 	*/
-	const splitEntries = (splits || []).flatMap(({ original, halves }) => [
-		{ op: 'del', kind: 'link', entity: clone('link', original) },
-		...halves.map((h) => ({ op: 'put', kind: 'link', entity: clone('link', h) })),
-	]);
 	return {
 		label: link.via?.length ? 'route' : 'link',   // a NAME for the undo entry, not the pair rule (that is `pairHolders`)
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
-			...splitEntries,
 			{ op: 'put', kind: 'link', entity: clone('link', link) }
 		]
 	};
@@ -384,18 +371,13 @@ unpick a node from its link.
 /*
 Several links from one drag, as ONE undo step -- what `routeLink` is for a single link. A drag judge may cut the drawn link
 at stops it names (transit, TRANSIT.md section 12, TR-2b: a w on an anchor whose transit is off makes two links ending
-there), and the pieces arrive together, with the anchors the drag placed and the splits each piece's ends make.
+there), and the pieces arrive together, with the anchors the drag placed; the cuts their ends make are the planner's (V-c).
 */
-export function routeLinks(placed, links, splits = []) {
-	const splitEntries = splits.flatMap(({ original, halves }) => [
-		{ op: 'del', kind: 'link', entity: clone('link', original) },
-		...halves.map((h) => ({ op: 'put', kind: 'link', entity: clone('link', h) })),
-	]);
+export function routeLinks(placed, links) {
 	return {
 		label: 'route',
 		entries: [
 			...(placed || []).map((wp) => ({ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, wp) })),
-			...splitEntries,
 			...links.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })),
 		],
 	};

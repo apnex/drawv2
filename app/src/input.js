@@ -46,7 +46,7 @@ import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_REL
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
-import { splitAtBend, pairHolders } from '../../network/link-rules.mjs';
+import { pairHolders } from '../../network/link-rules.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
@@ -936,73 +936,14 @@ export class Input {
 	// `extra`: the entries a drag judge adds (N-c), after the drag's own
 	commitRoute(ctx, dstId, via, extra = []) {
 		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
-		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link, this.splitsFor(link)), extra));
+		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link), extra));
 		this.selection.set([link.id]);
 	}
 
 	/*
-	B210 -- every existing link this new one turns into a junction, and how it divides.
-
-	A junction is terminations only, so a link that BENT through a waypoint the new route also
-	touches has to be cut there: both halves then terminate at it, and the meet is structural
-	rather than asserted. Only waypoints this link actually touches are considered, and only links
-	that were already bending through one of them -- a link merely terminating there is already
-	part of the meet and needs no change.
-
-	Both halves get NEW ids. The original is replaced rather than edited into one half, so nothing
-	is left holding a route that no longer describes what is on screen.
+	B210 -- a link landing on another's bend was cut here, by the browser's own copy of a planner rule (H17-D11). Deleted at
+	V-c (H18.27): the planner's `junction-cut` (network/network.mjs) cuts at every door, each piece's id derived from the cut.
 	*/
-	splitsFor(link) {
-		/*
-		B213 -- every existing link this new one cuts, and how each divides.
-
-		A junction is terminations only, so a link that BENT through a waypoint the new route ENDS
-		at has to be cut there. Only the new link's ends are considered: threading a bend leaves it
-		a bend (B211).
-
-		THE SRC HALF KEEPS THE ORIGINAL ID. `splitAtBend` returns [src-half, dst-half], so the piece
-		carrying the route's original `src` is index 0 and inherits the identity. That is what makes
-		the collapse deterministic -- rejoining the pair restores the id the author drew rather than
-		minting a third.
-
-		PIECES ARE RE-CUT, not the original. Both ends of the new link may be bends of the SAME link:
-		`a->b via [w1,w2]` dragged from w1 to w2 must cut twice, and the second cut applies to
-		whichever PIECE now carries w2 -- which after the first cut is the dst half, not the one that
-		kept the id. Cutting the dead original twice produced four links describing a route that no
-		longer existed; a `seen` guard against that skipped the second cut instead, leaving the far
-		end a bend, which is what the director saw.
-		*/
-		const ends = [link.src, link.dst];
-		const originals = new Map();     // original id -> { original, pieces: [] }
-
-		for (const w of ends) {
-			if (!bareAnchor(this.model, w)) continue;
-			for (const other of this.model.linksAt?.(w) || []) {
-				if (other.id === link.id) continue;
-				const g = originals.get(other.id) || { original: other, pieces: [other] };
-				originals.set(other.id, g);
-				// the piece that currently bends through w is the one to cut
-				const i = g.pieces.findIndex((p) => (p.via || []).includes(w));
-				if (i === -1) continue;
-				const halves = splitAtBend(g.pieces[i], w);
-				if (!halves) continue;
-				g.pieces.splice(i, 1, ...halves);
-			}
-		}
-
-		const out = [];
-		for (const { original, pieces } of originals.values()) {
-			if (pieces.length < 2) continue;                       // nothing was cut
-			// index 0 is the src end of the original route, wherever the cuts fell
-			// the src piece is the original re-ended: its id, and its drawing order -- its age (F-d); the others are new, and newest
-			const keep = (l) => { if (original.order === undefined) delete l.order; else l.order = original.order; return l; };
-			const halves = pieces.map((p, i) => (i === 0
-				? keep({ ...this.model.makeLink(p.src, p.dst), ...p, id: original.id })
-				: { ...this.model.makeLink(p.src, p.dst), ...p, id: newId('link', this.model.collection('link')) }));
-			out.push({ original, halves });
-		}
-		return out;
-	}
 
 	// abandon an in-progress route: drop any waypoints placed during this draw
 	cleanupRoute(ctx) {
@@ -1201,8 +1142,7 @@ export class Input {
 			const a = stops[bounds[k]], b = stops[bounds[k + 1]];
 			links.push({ ...this.model.makeLink(a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
 		}
-		const splits = [...new Map(links.flatMap((l) => this.splitsFor(l)).map((s) => [s.original.id, s])).values()];
-		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links, splits), extra));
+		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links), extra));
 		this.selection.set(links.map((l) => l.id));
 	}
 

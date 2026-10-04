@@ -147,6 +147,16 @@ AMENDED 2026-10-04 -- **V-b done** (H18.26; J3).\
 **Sync's three hooks:** `onAnswered` after an accepted answer to the tab's own request, `onChanged` after another writer's change or a snapshot, `onRefused` after a refusal; the network's host gained `settled` (an answer the page has already applied) and exposes `redraw`. Sync knows nothing of the network.\
 **Held in real Chrome against a real server** (`tests/browser.test.js`, "V-b"): a link drawn along its route over pipes, its pipes under it; a link with no pipe drawn down, and saying why in the banner when selected; the lab matrix's HEAL-02 on the page -- `g` lays a hand pipe, makes no link, and the down link is drawn up again once the board settles; `x` turns an anchor's transit off through the server, and the link that ran through it is drawn down. Failing on the code before; mutants 4, all killed, two after the test was made to read the page's drawing rather than the model's answer.\
 The K8 DOM snapshot differs only by the new `#pipes` layer. The test's board sorts after the harness's, since the shared tab opens the first diagram.
+
+AMENDED 2026-10-04 -- **V-c done** (H18.27; B243; H17-D10).\
+`junction-cut`, a reaction in the network's tenant (`network/network.mjs`), in the reshape phase beside transit's cut: a link made in the edit, with an end on a waypoint another link bends through, cuts that link there; a piece is cut again if it bends at the other end; a ring has no ends and cuts nothing.\
+Both cuts share one shape, `cutAtBend` in `network/link-rules.mjs`: the cut link re-ended, keeping its id, order and declarations; its new piece the newest, its id derived from the link and the bend (`pieceId`, moved there from transit's cut).\
+The browser's `splitsFor` is deleted, and `routeLink` and `routeLinks` send no split; L9's restatement ratchet falls to one (`groupAfterRemoval`, which goes at V-d).\
+**Corpora, each change reviewed:**
+- **Planner:** 56 of 1,044 cases differ. 23 accepted before and after, now with the cut's two link puts, and in 9 of them the pipe edits that follow from the pieces. 27 accepted before are refused now: the generator lands a straight link on a bend whose pair already holds one, and the cut makes the second straight link the pair may not carry (B81) -- the browser's own split, the rule being moved, refused the same. 6 refused before and after, the first reason reported differing.
+- **Gesture:** one scenario, `link-to-waypoint-end`: the drag sends the link alone, the planner cuts.
+- **Matrix:** SRC-01 and SRC-02 identical but for the canonical numbering of their links, which follows first appearance and moved with the derived id; every row's own check passes.
+Held by a CLI test -- `draw link` to a bend cuts the link there, its piece's id the derived one, and a ring made through a bend cuts nothing -- failing on the planner before. The two input tests of the cut plan what the drag sent, as the server does. Mutants: 5, all killed, one by an assertion added for it.
 ---
 
 ## 10. Axiom alignment audit (M7)

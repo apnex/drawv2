@@ -963,10 +963,11 @@ test('B210: pressing w on an occupied bend threads it, and the split happens on 
 	const at = src.indexOf('\tcommitRoute(ctx, dstId, via, extra = []) {');
 	assert.ok(at > 0, 'commitRoute is where this test looks for it');
 	const commit = src.slice(at, src.indexOf('\tcleanupRoute(ctx) {'));
-	assert.match(commit, /splitsFor\(link\)/, 'the split is computed on release');
-	assert.match(commit, /routeLink\(ctx\.placed, link, /,
-		'and rides in the SAME command, so one drag is one undo -- a separate commit would let undo '
-		+ 'restore the original link alongside the halves that replaced it');
+	// AMENDED 2026-10-04 (V-c, H18.27): the split is the planner's (`junction-cut`), in the same transaction as the link, so one
+	// drag is still one undo -- the drag sends the link alone
+	assert.doesNotMatch(commit, /splitsFor|splitAtBend/, 'the browser computes no split');
+	assert.match(commit, /routeLink\(ctx\.placed, link\)/, 'it commits the placed anchors and the link');
+	assert.match(fs.readFileSync(new URL('../network/network.mjs', import.meta.url), 'utf8'), /id: 'junction-cut'/, 'and the planner cuts');
 });
 
 /*

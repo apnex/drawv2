@@ -1805,6 +1805,43 @@ test('R-b: REST and the CLI give a link\'s route, or say it is down and what hol
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+/*
+P5 V-c (H18.27; B243, K18a) -- A LINK LANDING ON ANOTHER LINK'S BEND IS CUT AT EVERY DOOR. It was the browser's gesture code
+alone, so `draw link` to a bend left the other link bending through the junction. The planner's `junction-cut` cuts it: the
+link re-ended at the bend keeps its id, and its new piece's id is derived from the cut, so every peer mints the same one.
+*/
+test('V-c: draw link onto another link\'s bend cuts that link there (B243), its piece\'s id derived', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'junction')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00001', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e00003', name: 'c', type: 'host', shape: 'square', x: 0, y: 240 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e000f0', name: 'w', x: 0, y: 0 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00010', name: 'ab', src: 'node-e00001', dst: 'node-e00002', via: ['node-e000f0'] } }] }));
+		await run('link', 'c', 'w', '--diagram', id);
+		const doc = JSON.parse(await run('show', '--diagram', id, '--json'));
+		const ends = (l) => `${l.src}>${l.dst}${l.via?.length ? '~' + l.via.join(',') : ''}`;
+		const kept = doc.links.find((l) => l.id === 'link-e00010');
+		assert.equal(ends(kept), 'node-e00001>node-e000f0', 'the bent link is re-ended at the bend, keeping its id');
+		const piece = doc.links.find((l) => l.src === 'node-e000f0' && l.dst === 'node-e00002');
+		assert.ok(piece, `and its other half is a link from the bend: ${doc.links.map(ends)}`);
+		assert.equal(piece.id, `link-${(0xe00010 ^ 0xe000f0).toString(16).padStart(6, '0')}`, 'its id derived from the link cut and the bend (H17-D10)');
+		assert.ok(!doc.links.some((l) => (l.via || []).includes('node-e000f0')), 'nothing bends through the junction now');
+		// a RING has no ends, so a ring made through a bend lands nowhere and cuts nothing
+		await run('commit', '--diagram', id, '--label', 'ring', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e000f1', name: 'v', x: 0, y: -240 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e000f2', name: 'u', x: -240, y: -240 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e000f3', name: 't', x: -240, y: -420 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00020', name: 'cd', src: 'node-e00002', dst: 'node-e00003', via: ['node-e000f1'] } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e00030', name: 'ring', src: 'node-e000f1', dst: 'node-e000f3', via: ['node-e000f2'], closed: true } }] }));
+		const after = JSON.parse(await run('show', '--diagram', id, '--json'));
+		assert.deepEqual(after.links.find((l) => l.id === 'link-e00020')?.via, ['node-e000f1'], 'the ring cut no link at v, which it starts at');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
 	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');

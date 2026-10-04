@@ -754,14 +754,16 @@ const loadsAtBoot = (mm) => {
 };
 
 test('B239: a collapse whose merge would name a waypoint twice is not taken', () => {
+	/*
+	AMENDED 2026-10-04 (V-c, H18.27): the board is loaded rather than committed. Its link-aa0001 ends at w10, which
+	link-aa0002 bends through, and since V-c a link MADE ending on a bend cuts the link there (junction-cut, B243) -- so
+	committed in one edit the board would be cut before the delete under test. Such a board still exists wherever it was
+	stored before the rule, and the collapse guard must hold on it.
+	*/
 	const { m, log } = fresh();
-	commit(m, log, { ops: [
-		put('node', node('node-aa0002', 300)), put('node', node('node-aa0003', 600)),
-		put('node', wpAt('node-aa0010', 120)), put('node', wpAt('node-aa0011', 240)),
-		linkPut('link-aa0001', 'node-aa0010', 'node-aa0011'),
-		linkPut('link-aa0002', 'node-aa0011', 'node-aa0002', { via: ['node-aa0010'] }),
-		linkPut('link-aa0003', 'node-aa0003', 'node-aa0011'),
-	] }, 'server', 't');
+	for (const e of [node('node-aa0002', 300), node('node-aa0003', 600), wpAt('node-aa0010', 120), wpAt('node-aa0011', 240)]) m.put('node', e);
+	for (const [id, src, dst, extra] of [['link-aa0001', 'node-aa0010', 'node-aa0011'], ['link-aa0002', 'node-aa0011', 'node-aa0002', { via: ['node-aa0010'] }],
+		['link-aa0003', 'node-aa0003', 'node-aa0011']]) m.put('link', { id, name: id, src, dst, ...(extra ?? {}) });
 	assert.equal(loadsAtBoot(m), null, 'precondition: the seed is a document the store loads');
 
 	commit(m, log, { ops: [delOp('link', 'link-aa0003')] }, 'server', 't');

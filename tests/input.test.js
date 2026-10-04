@@ -17,6 +17,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the network's kinds, as the server validates (S-e)
+import { Model as PlannedModel, plan as planComposed } from './fixtures/composed.mjs';   // the planner production runs (V-c)
+import { applyOps } from '../model/ops.mjs';
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';
@@ -1637,6 +1639,22 @@ What stays here is the half the gesture owns -- that a drag landing on a bend cu
 piece carrying the route's original `src` inherits the identity. That id is what makes the server's
 collapse a round trip rather than a churn, so it is worth pinning at the point it is decided.
 */
+/*
+AMENDED 2026-10-04 (V-c, H18.27): the cut is the PLANNER's now (network/network.mjs `junction-cut`), at every door (B243) --
+the drag sends the link alone, and the planner cuts. So each test drives the gesture, then plans what it sent, as the server
+does, on the board as it stood.
+*/
+const plannedFrom = (board, h) => {
+	const m = new PlannedModel();
+	for (const [kind, e] of board) m.put(kind, structuredClone(e));
+	const request = h.soleCommit();
+	assert.equal(request.ops.filter((o) => o.kind === 'link').length, 1, 'the drag sends the link it drew, and no split');
+	const r = planComposed(m, request.ops);
+	assert.equal(r.ok, true, r.error);
+	applyOps(m, r.ops);
+	return m;
+};
+
 test('B213: a drag onto a bend splits it, and the src half keeps the original id', () => {
 	const h = makeInput();
 	try {
@@ -1654,9 +1672,11 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
 		h.capture.onUp(at(0, 0, 'node-ea0001'));
+		const planned = plannedFrom([['node', m.get('node', 'node-aa0001')], ['node', m.get('node', 'node-aa0002')], ['node', m.get('node', 'node-aa0003')],
+			['node', m.get('node', 'node-ea0001')], ['link', m.get('link', 'link-aa0001')]], h);
 
-		assert.equal(m.all('link').length, 3, 'the bend split, and the new link joined it');
-		const srcHalf = m.get('link', 'link-aa0001');
+		assert.equal(planned.all('link').length, 3, 'the bend split, and the new link joined it');
+		const srcHalf = planned.get('link', 'link-aa0001');
 		assert.ok(srcHalf, 'the SRC half keeps the original id');
 		assert.equal(srcHalf.src, 'node-aa0001', 'it carries the route original start');
 		assert.equal(srcHalf.dst, 'node-ea0001', 'and ends at the waypoint');
@@ -1680,7 +1700,8 @@ test('B284: a drag onto a bend of a control link with a direction splits it into
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
 		h.capture.onUp(at(0, 0, 'node-ea0001'));
-		const halves = m.all('link').filter((l) => l.src === 'node-aa0001' || l.dst === 'node-aa0002');
+		const planned = plannedFrom(['node-aa0001', 'node-aa0002', 'node-aa0003', 'node-ea0001'].map((id) => ['node', m.get('node', id)]).concat([['link', m.get('link', 'link-aa0001')]]), h);
+		const halves = planned.all('link').filter((l) => l.src === 'node-aa0001' || l.dst === 'node-aa0002');
 		assert.equal(halves.length, 2, 'the bend split in two');
 		for (const l of halves) assert.deepEqual([l.control, l.direction], [true, 'forward'], `${l.id} keeps the control plane and the direction`);
 	} finally { h.restore(); }

@@ -191,3 +191,33 @@ export function splitAtBend(link, waypointId) {
 	const half = (src, dst, v) => ({ ...declared, src, dst, ...(v.length ? { via: v } : {}) });
 	return [half(link.src, waypointId, via.slice(0, at)), half(waypointId, link.dst, via.slice(at + 1))];
 }
+
+/*
+H17-D10 -- A CUT'S NEW PIECE HAS AN ID DERIVED FROM THE CUT: from the link cut and the anchor it is cut at, the next free one
+above on a clash. So every peer that plans the same edit on the same document mints the same piece -- the browser's preview
+and the server's answer agree (PL-6). Transit's cut minted this way first (network/transit.mjs); since V-c (H18.27) the
+junction cut does too, so the rule lives here, beside `splitAtBend`.
+*/
+const hexOf = (id) => id.slice(id.indexOf('-') + 1);
+function pieceId(doc, from, at) {
+	let n = (parseInt(hexOf(from), 16) ^ parseInt(hexOf(at), 16)) & 0xffffff;
+	for (;;) {
+		const id = `link-${n.toString(16).padStart(6, '0')}`;
+		if (!doc.get('link', id)) return id;
+		n = (n + 1) & 0xffffff;
+	}
+}
+
+/*
+A LINK CUT AT A BEND, as ops: the link re-ended at it -- keeping its id, its order and its declarations (B213, B284) -- and
+its new piece, the newest, with a derived id. Null when it does not bend there. One shape for every cut: transit's and the
+junction's.
+*/
+export function cutAtBend(doc, link, at) {
+	const halves = splitAtBend(link, at);
+	if (!halves) return null;
+	const { via: _drop, ...rest } = link;
+	const [first, second] = halves;
+	const piece = { ...second, id: pieceId(doc, link.id, at), name: doc.nextName('link'), order: doc.nextOrder('link') };
+	return [{ op: 'put', kind: 'link', entity: { ...rest, ...first } }, { op: 'put', kind: 'link', entity: piece }];
+}
