@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-04 against `6d88019`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-04: approved; K1 ruled as recommended (section 9).
 
 ## 1. Status
 
@@ -113,6 +114,8 @@ Each stage is one gate and one lab deploy.
 
 - **K1 -- how an agent makes a link that lays its own pipe** (section 5.1). Recommended: a flag on `draw link`, `--lay`, which lays a pipe with the link for each leg no pipes join -- as the keyed drag does, and as a pinned link already does (G2's `link-legs`); without it, a plain link lays none, as ruled. The alternatives: every agent link lays its legs (which would overrule "Direct links without a key lay no pipe" for agents alone), or none does and an agent lays hand pipes first (which outlive the link, unlike the gesture's).
 
+
+AMENDED 2026-10-04 -- **K1 RULED as recommended** (`dev/DECISIONS.md`, "P6's design decision, K1"): `draw link ... --lay` lays the link's legs with it; a plain link lays none.
 ---
 
 ## 10. Axiom alignment audit (M7)

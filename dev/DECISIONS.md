@@ -1709,3 +1709,7 @@ Asked one at a time against `dev/design/unification/PAGE-COMPOSES-NETWORK.md` se
 - J1: the incubator boundary is retired at P5: `network/` becomes a product folder, and the layer manifest keeps judging every edge into the `network` layer.
 - J2: a Model whose composition holds the link kind must be given the network, so no Model draws links straight; the straight line stays only as a down link's intent, drawn by the network.
 - J3: the product page says what the network says -- a down link and why, a transit cut, what an edit left down -- in the header banner, where it says what sync says, transient as the lab's notice.
+
+**P6's design decision, K1, ruled as recommended -- 2026-10-04 (B266, H18.30).**\
+Asked against `dev/design/unification/AGENTS-LAY-PIPES.md` section 9.
+- K1: an agent makes a link that lays its own pipe with a flag, `draw link ... --lay`, which lays a pipe with the link for each leg no pipes join, as a person's keyed drag does; those pipes go when no link is on them. Without the flag a plain link lays none, as ruled ("Direct links without a key lay no pipe", 2026-09-30).
