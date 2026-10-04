@@ -481,14 +481,14 @@ export const VERBS = [
 			because the list carried no counts and `status` answers about one target. Opt-in, since
 			it costs a fetch per diagram and the plain list is what most calls want.
 			*/
-			const KINDS = ['nodes', 'waypoints', 'links', 'zones', 'groups'];
+			const KINDS = ['nodes', 'waypoints', 'links', 'zones', 'groups', 'pipes'];   // pipes since P6 W-c
 			const rows = [];
 			for (const d of b) {
 				const doc = viewOf(ok(await request(ctx, `/diagrams/${d.id}`), 'diagrams'));
 				rows.push([d.id, d.name, d.version, ...KINDS.map((k) => (doc[k] || []).length)]);
 				d.counts = Object.fromEntries(KINDS.map((k) => [k, (doc[k] || []).length]));
 			}
-			return { json: b, text: table(rows, ['ID', 'NAME', 'VER', 'NODES', 'WAYPT', 'LINKS', 'ZONES', 'GROUPS']) };
+			return { json: b, text: table(rows, ['ID', 'NAME', 'VER', 'NODES', 'WAYPT', 'LINKS', 'ZONES', 'GROUPS', 'PIPES']) };
 		},
 	},
 	{
@@ -512,23 +512,33 @@ export const VERBS = [
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			const d = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'status'));
-			const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups'].map((k) => [k, (d[k] || []).length]);
+			const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups', 'pipes'].map((k) => [k, (d[k] || []).length]);
 			return { json: { id, name: d.meta.name, version: d.meta.version, owner: d.meta.owner, counts: Object.fromEntries(counts) },
 				text: `${d.meta.name}  ${d.meta.id}  v${d.meta.version}\n${table(counts, ['KIND', 'COUNT'])}` };
 		},
 	},
 	{
 		name: 'get', group: 'Context', usage: 'draw get <kind> [id|name]', route: '/diagrams/<id>', method: 'GET',
-		summary: 'interrogate nodes, links, zones, groups, waypoints', example: 'draw get nodes',
-		args: [{ name: 'kind', about: 'nodes | links | zones | groups | waypoints (singular accepted)' },
-			{ name: 'id|name', about: 'one entity; omit for all of that kind' }],
+		summary: 'interrogate nodes, links, zones, groups, waypoints, pipes', example: 'draw get nodes',
+		args: [{ name: 'kind', about: 'nodes | links | zones | groups | waypoints | pipes (singular accepted)' },
+			{ name: 'id|name', about: 'one entity; omit for all of that kind -- for pipes, a pipe id or an anchor, every pipe at it' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
-			const kinds = { node: 'nodes', link: 'links', zone: 'zones', group: 'groups', waypoint: 'waypoints' };
+			const kinds = { node: 'nodes', link: 'links', zone: 'zones', group: 'groups', waypoint: 'waypoints', pipe: 'pipes' };
 			const k = args[0] && (kinds[args[0]] || (Object.values(kinds).includes(args[0]) ? args[0] : null));
 			if (!k) die(`unknown kind: ${args[0]} -- one of ${Object.values(kinds).join(', ')}`);
 			const id = await activeId(ctx, ctx.flags);
-			const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'get'));
+			const raw = ok(await request(ctx, `/diagrams/${id}`), 'get');
+			const doc = viewOf(raw);
+			// W-c: pipes have no name -- one is asked for by its id, or by an anchor at either end, which is how an agent thinks of it
+			if (k === 'pipes') {
+				let rows = await pipeRows(ctx, id, raw);
+				if (args[1]) {
+					const at = /^pipe-/.test(args[1]) ? null : await resolveId(ctx, id, args[1], raw);
+					rows = rows.filter((r) => (at ? r.a === at || r.b === at : r.id === args[1]));
+				}
+				return { json: rows.map(({ names, ...r }) => r), text: rows.length ? pipeTable(rows) : 'no pipes' };
+			}
 			let list = doc[k] || [];
 			if (args[1]) list = list.filter((e) => e.id === args[1] || e.name === args[1]);
 			/*
@@ -1407,7 +1417,7 @@ VERBS.push({
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'dump');
-		const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups']
+		const counts = ['nodes', 'waypoints', 'links', 'zones', 'groups', 'pipes']
 			.map((k) => `${(viewOf(doc)[k] || []).length} ${k}`).join('  ');
 		return { json: doc, text: `${JSON.stringify(doc, null, 2)}\n\n${counts}` };
 	},
@@ -1775,6 +1785,8 @@ VERBS.push({
 			const c = columnsFor(k, list);
 			out.push('', k.toUpperCase(), table(list.map((e) => c.map((f) => (Array.isArray(e[f]) ? e[f].join(',') : e[f] ?? ''))), c.map((f) => f.toUpperCase())));
 		}
+		// W-c (H18.33): the pipes, ends by name and the links each carries
+		if ((d.pipes || []).length) out.push('', 'PIPES', pipeTable(await pipeRows(ctx, id, d)));
 		return { json: d, text: out.join('\n') };
 	},
 });
@@ -2386,6 +2398,10 @@ VERBS.push({
 			return `  ${z.name.padEnd(12)}cells ${c.x0},${c.y0} .. ${c.x1},${c.y1}`;
 		});
 
+		// W-c (H18.33): the pipes with an end in the window -- a pipe occupies no cell, so it is listed beneath, not drawn
+		const inside = new Set(used.filter(inWin).map((a) => a.occupant));
+		const pipes = (await pipeRows(ctx, id, doc)).filter((r) => inside.has(r.a) || inside.has(r.b));
+		const pipeKey = pipes.map((r) => `  ${r.names.a} - ${r.names.b}  ${r.laid}${r.carries.length ? `  carries ${r.names.carries.join(',')}` : ''}`);
 		const text = [
 			`${doc.meta.name}  ${scope}  (${layout} grid, ${used.length} occupied of ${anchors.length})`,
 			'',
@@ -2394,10 +2410,12 @@ VERBS.push({
 			`  ${legend || '(nothing placed)'}   . free${boxes.length ? '   \u2502\u2500 zone bounds' : ''}`,
 			...(key.length ? ['', ...key] : []),
 			...(zones.length && layout === 'node' ? ['', 'zones:', ...zones] : []),
+			...(pipeKey.length && layout === 'node' ? ['', 'pipes:', ...pipeKey] : []),
 		].join('\n');
 		return { json: { diagram: id, layout, window: win, scope,
 			occupied: used.filter(inWin).map((a) => ({ cx: a.cx, cy: a.cy, id: a.occupant, name: byId.get(a.occupant)?.name })),
-			zones: (doc.zones || []).map((z) => ({ id: z.id, name: z.name, cells: zoneCells(z) })) }, text };
+			zones: (doc.zones || []).map((z) => ({ id: z.id, name: z.name, cells: zoneCells(z) })),
+			pipes: pipes.map(({ names, ...r }) => r) }, text };
 	},
 });
 
@@ -2465,6 +2483,28 @@ VERBS.push({
 			text: [said, ...(up.length ? [`up again: ${up.join(' ')}`] : []), ...(down.length ? [`now down: ${down.join(' ')}`] : []), `v${r.version}`].join('  ') };
 	},
 });
+
+/*
+P6 W-c (H18.33) -- EVERY PIPE AS AN AGENT READS IT: its two ends by name, how it was laid, and the links that run over it --
+read from REST's own route per link (R-b), so which link a pipe carries is the network's answer, never worked out here. A pipe
+an up link runs over is hidden on the canvas, the link drawn along it; `carries` is how a reader sees that.
+*/
+async function pipeRows(ctx, id, doc) {
+	// every entity the document holds, by name -- the raw document or `viewOf`'s split of it, whichever the caller has
+	const name = new Map(Object.values(doc).filter(Array.isArray).flat().filter((e) => e && e.id).map((e) => [e.id, e.name || e.id]));
+	const key = (x, y) => (x < y ? `${x}|${y}` : `${y}|${x}`);
+	const carries = new Map();
+	for (const l of doc.links || []) {
+		const { route } = ok(await request(ctx, `/diagrams/${id}/links/${l.id}/path`), 'pipes');
+		for (let i = 0; route && i < route.length - 1; i++) {
+			const k = key(route[i], route[i + 1]);
+			carries.set(k, [...(carries.get(k) ?? []), l.id]);
+		}
+	}
+	return (doc.pipes || []).map((p) => ({ id: p.id, a: p.a, b: p.b, laid: p.laid, carries: carries.get(key(p.a, p.b)) ?? [],
+		names: { a: name.get(p.a) ?? p.a, b: name.get(p.b) ?? p.b, carries: (carries.get(key(p.a, p.b)) ?? []).map((l) => name.get(l) ?? l) } }));
+}
+const pipeTable = (rows) => table(rows.map((r) => [r.id, r.names.a, r.names.b, r.laid, r.names.carries.join(',') || '-']), ['ID', 'A', 'B', 'LAID', 'CARRIES']);
 
 // the ids of the links that are down -- REST's own answer per link (H1), so a verb reports what a pipe changed
 async function downLinks(ctx, id, known = null) {

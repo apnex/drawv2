@@ -1053,7 +1053,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.30 | Design P6 for approval before any code: CLI and REST for pipes -- list, lay and remove; `show`, `dump`, `map`, `get` carry pipes; an agent can do with pipes everything a person can (A5) | feature | S2 | `DONE` |
 | H18.31 | W-a: REST serves `/pipes` -- list, read, lay by hand, delete; its collections read from the composition | feature | S2 | `DONE` |
 | H18.32 | W-b: the CLI lays and removes pipes -- `draw pipe`, `draw pipe --off` by ends, `draw rm` by id | feature | S2 | `DONE` |
-| H18.33 | W-c: the CLI reads pipes -- `draw get pipes`, and pipes in `show`, `dump`, `map` | **B266** | S2 | `TODO` |
+| H18.33 | W-c: the CLI reads pipes -- `draw get pipes`, and pipes in `show`, `dump`, `map` | feature | S2 | `DONE` |
 | H18.34 | W-d: `draw link ... --lay` lays the link's legs with it (K1); G2's stopgap removed | **B266** | S2 | `TODO` |
 | H18.35 | W-e: P6 closed -- the parity test of each thing a person does with pipes, the register, the records | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
@@ -1093,6 +1093,7 @@ AMENDED 2026-10-04: H18.30's design is `dev/design/unification/AGENTS-LAY-PIPES.
 AMENDED 2026-10-04: approved and K1 ruled as recommended (`dev/DECISIONS.md`); H18.30 DONE, the build is H18.31 to H18.35.\
 AMENDED 2026-10-04: H18.31 (W-a) done -- REST serves the composition's collections, `/pipes` among them: list, read, lay by hand, delete.\
 AMENDED 2026-10-04: H18.32 (W-b) done -- `draw pipe a b` lays a hand pipe and says what came up; `--off` removes one by its ends, `draw rm` by its id.\
+AMENDED 2026-10-04: the director rules the CLI's shape is the agent's to choose, for what an agent finds most intuitive. H18.33 (W-c) done -- pipes in `get`, `show`, `map`, `dump`, `status` and `diagrams --counts`, ends by name and the links each carries.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

@@ -1876,6 +1876,41 @@ test('W-b: draw pipe lays a hand pipe that heals a down link; --off and rm take 
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+/*
+P6 W-c (H18.33; A5) -- pipes wherever an agent looks: `draw get pipes`, by id or by an anchor at either end, with its ends by
+name, how it was laid, and the links it carries -- which the canvas shows by hiding a pipe under the link drawn along it --
+and in `show`, `map`, `dump`, `status` and `diagrams --counts`.
+*/
+test('W-c: get pipes, show, map, dump and status show every pipe, its ends by name and the links it carries', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'readpipes')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e30001', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e30002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e300f0', name: 'w', x: 0, y: -240 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e300f1', name: 'v', x: 0, y: 240 } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e30001-e300f0', a: 'node-e30001', b: 'node-e300f0', laid: 'hand' } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e30002-e300f0', a: 'node-e30002', b: 'node-e300f0', laid: 'hand' } },
+			{ op: 'put', kind: 'pipe', entity: { id: 'pipe-e30001-e300f1', a: 'node-e30001', b: 'node-e300f1', laid: 'hand' } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-e30003', name: 'l', src: 'node-e30001', dst: 'node-e30002' } }] }));
+		const all = JSON.parse(await run('get', 'pipes', '--diagram', id, '--json'));
+		assert.deepEqual(all.map((p) => `${p.id}:${p.laid}:${p.carries.join(',')}`).sort(),
+			['pipe-e30001-e300f0:hand:link-e30003', 'pipe-e30001-e300f1:hand:', 'pipe-e30002-e300f0:hand:link-e30003'], 'each with the links its route runs over');
+		const atV = await run('get', 'pipe', 'v', '--diagram', id);
+		assert.match(atV, /pipe-e30001-e300f1\s+a\s+v\s+hand\s+-/, 'by an anchor at either end, ends by name');
+		assert.doesNotMatch(atV, /pipe-e30001-e300f0/, 'and only the pipes at it');
+		assert.equal(JSON.parse(await run('get', 'pipes', 'pipe-e30002-e300f0', '--diagram', id, '--json')).length, 1, 'or by its id');
+		assert.match(await run('show', '--diagram', id), /PIPES[\s\S]*pipe-e30001-e300f0\s+a\s+w\s+hand\s+l/, 'show lists them');
+		const map = await run('map', '--diagram', id);
+		assert.match(map, /pipes:[\s\S]*a - w  hand  carries l/, 'map lists them beneath the grid');
+		assert.deepEqual(JSON.parse(await run('map', '--diagram', id, '--json')).pipes.length, 3);
+		assert.match(await run('dump', '--diagram', id), /3 pipes/, 'dump counts them');
+		assert.equal(JSON.parse(await run('status', '--diagram', id, '--json')).counts.pipes, 3, 'and status');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
 	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');

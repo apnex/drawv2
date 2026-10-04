@@ -1713,3 +1713,4 @@ Asked one at a time against `dev/design/unification/PAGE-COMPOSES-NETWORK.md` se
 **P6's design decision, K1, ruled as recommended -- 2026-10-04 (B266, H18.30).**\
 Asked against `dev/design/unification/AGENTS-LAY-PIPES.md` section 9.
 - K1: an agent makes a link that lays its own pipe with a flag, `draw link ... --lay`, which lays a pipe with the link for each leg no pipes join, as a person's keyed drag does; those pipes go when no link is on them. Without the flag a plain link lays none, as ruled ("Direct links without a key lay no pipe", 2026-09-30).
+- The director, on W-b's correction (`draw pipe a b --off` rather than `draw rm a b`): "The cli needs to best fir your workflow - so the most intuitive for an agent would be best approach." So the CLI's shape for pipes -- and its verbs generally -- is chosen for what an agent finds most intuitive, by the agent who uses it; the correction stands on that ground.

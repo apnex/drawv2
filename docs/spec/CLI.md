@@ -93,7 +93,7 @@ Context
   context [id|name]                                                               the default target, persisted
   use [ref]                                                                       choose the diagram other verbs act on, per host; omit to report the current one
   status                                                                          the active diagram in summary
-  get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints
+  get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints, pipes
   history [--limit n]                                                             the change log
   about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones
   zone contents <zone>                                                            what falls inside a zone

@@ -125,6 +125,13 @@ AMENDED 2026-10-04 -- **W-b done** (H18.32).\
 `draw pipe <a> <b>` lays a hand pipe through `POST /pipes`, so the server builds it and the standalone CLI (B138) restates no pipe rule; it says which links came up or went down, read from REST's own answer per link. It does not stage into a draft, which would need an id the tool builds itself.\
 **CORRECTED from section 6:** removal by a pipe's two ends is `draw pipe <a> <b> --off`, not `draw rm <a> <b>` -- `rm a b` already means remove a and b, and reading it as a pipe would make it ambiguous. `draw rm` takes a pipe by its id, which `resolveId` now accepts, and rm's cascade report names the pipes an anchor's deletion takes.\
 The CLI now reaches both pipe routes, so `scan-cli`'s pending entries for them are gone. Held by a CLI test -- HEAL-02 through `draw pipe`, `--off` by ends in either order, `rm` by id, an anchor's pipe in rm's report -- failing on the code before; mutants 4, all killed, one after the test passed its ends reversed.
+
+AMENDED 2026-10-04 -- **the CLI's shape is the agent's to choose** (the director: "the most intuitive for an agent would be best approach"; `dev/DECISIONS.md`). W-b's `--off` stands on that ground, and W-c is shaped by it.
+
+AMENDED 2026-10-04 -- **W-c done** (H18.33).\
+Every pipe as an agent reads it, one helper (`pipeRows`): its ends by name, how it was laid, and the links whose routes run over it -- REST's own route per link, so `carries` is the network's answer. A pipe an up link runs over is hidden on the canvas under the link drawn along it; `carries` is how an agent sees the same thing.\
+`draw get pipes` lists them, and `draw get pipe <ref>` takes a pipe id or an anchor -- every pipe at it, either end -- since a pipe has no name and an agent thinks of one by where it is. `show` has a PIPES table; `map` lists the pipes with an end in its window beneath the grid, since a pipe occupies no cell; `dump`, `status` and `diagrams --counts` count them.\
+Held by a CLI test failing on the code before; mutants 4, all killed.
 ---
 
 ## 10. Axiom alignment audit (M7)
