@@ -1084,6 +1084,7 @@ AMENDED 2026-10-04: H18.26 (V-b) done -- the product page composes the network a
 AMENDED 2026-10-04: H18.27 (V-c) done -- a link landing on another link's bend is cut by the planner at every door (B243 closed), its piece's id derived from the cut; the browser's split is deleted.\
 AMENDED 2026-10-04: H18.28 (V-d) done -- one preview (PL-6): the browser plans each commit with the planner and sends intent only; its last rule copies are deleted; a pin deleted on the page takes its link before the answer (G4); B221 closed.\
 AMENDED 2026-10-04: H18.29 (V-e) done -- P5 is closed on `main`: a Model holding links requires the network (J2), and no Model draws links straight; the estate dry run passes. Next H18.30, P6's design.\
+AMENDED 2026-10-04: H18.30's design is `dev/design/unification/AGENTS-LAY-PIPES.md`, proposed; its one decision, K1, is asked before any code.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
