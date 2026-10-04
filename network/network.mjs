@@ -15,7 +15,7 @@ remain.
 `view` rides along for the one caller that is not a product consumer: the lab's sweep of pipes no link runs over.
 */
 import { createNetworkView } from './view.mjs';
-import { preferredRoute, pipeKey } from './pipes.mjs';
+import { preferredRoute, pipeKey, route } from './pipes.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './resolve.mjs';
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from '../model/link-reactions.mjs';
@@ -41,21 +41,42 @@ const endsAt = (pipe, id) => pipe.a === id || pipe.b === id;
 function pipeReactions(view) {
 	return [
 		/*
-		F-f (H18.8; P-3) -- A RING LAYS ITS CLOSING PIPE. Closing a link (`c`, or a link made closed) adds a leg from its dst
-		back to its src, routed like any leg (network/pipes.mjs `stopsOf`); with no pipe there the ring would be down, so the
-		pipe is laid with it, as a drag lays a link's legs -- a link pipe, swept when the ring is opened and nothing runs over
-		it. In the reshape phase, before the stranded pass, the sweep and the join look.
+		S-c (H18.13; ruled 2026-10-03, G2) -- A PINNED LINK LAYS THE LEGS IT HAS NO WAY OVER, from any door. In the lab a drag
+		lays a link's pipes (network/session.mjs `judge`); a link made through the CLI, REST or a page with no drag judge had
+		none, and under the network's routing came up down. So a link with pins -- or a ring, whose closing leg is a leg (P-3) --
+		that is made or re-pinned lays a link pipe straight between two consecutive stops wherever NO PIPES JOIN THEM AT ALL,
+		the legs judged in order and none reusing a pipe an earlier leg took, as routing judges them (`routeLink`). A plain link
+		lays nothing: "Direct links without a key lay no pipe" (2026-09-30).
+		Pipes at all, not a way a route may take: where pipes join two stops only through an anchor whose transit is off, the
+		link is down by the author's choice (TR-1, TR-3), and laying a pipe round it would overrule that -- measured: the first
+		version asked for a way, and matrix row TRN-16 came up where it is ruled down. So a lab drag is untouched: its judge
+		has laid every leg it draws. It subsumes F-f's `ring-pipe`, which asked the same question of a closing leg alone.
+		In the STRANDED phase, after the stranded pass, so a link that lost a pin and goes whole lays nothing on its way out;
+		before the sweep and the join look.
 		*/
 		{
-			id: 'ring-pipe',
-			phase: 'reshape',
-			trigger: [{ created: ['link'] }, { changed: { kind: 'link', fields: ['closed', 'src', 'dst'] } }],
-			doc: 'a link closed into a ring lays a link pipe from its end back to its start, where none joins them: its closing leg is routed like any leg (P-3)',
-			// it reads what each change is (TG-3): a link that is closed now, and whose closing pair no pipe joins
+			id: 'link-legs',
+			phase: 'stranded',
+			trigger: [{ created: ['link'] }, { changed: { kind: 'link', fields: ['src', 'dst', 'via', 'closed'] } }],
+			doc: 'a link with pins, or a ring, made or re-pinned lays a link pipe for each leg between consecutive stops that no pipes join; a plain link lays none (G2, P-3)',
+			// it reads what each change is (TG-3): a link standing now, pinned or closed, whose stops changed
 			run: ({ doc, matches }, emit) => {
-				for (const { kind, after } of matches) {
-					if (kind !== 'link' || !after?.closed || after.src === after.dst) continue;
-					if (!doc.get('pipe', pipeId(after.src, after.dst)) && anchorOf(doc, after.src) && anchorOf(doc, after.dst)) emit([{ op: 'put', kind: 'pipe', entity: pipeEntity(after.src, after.dst, 'link') }]);
+				for (const { kind, before, after, fields } of matches) {
+					if (kind !== 'link' || !after || !(after.via?.length || after.closed)) continue;
+					if (before && !['src', 'dst', 'via', 'closed'].some((f) => fields.has(f))) continue;
+					const stops = [after.src, ...(after.via ?? []), after.dst, ...(after.closed ? [after.src] : [])];
+					if (stops.some((id) => !anchorOf(doc, id))) continue;
+					const used = new Set();
+					for (let i = 0; i < stops.length - 1; i++) {
+						const [a, b] = [stops[i], stops[i + 1]];
+						if (a === b) continue;
+						const open = doc.all('pipe').filter((p) => !used.has(pipeKey(p.a, p.b)));
+						const leg = route(open, a, b);   // pipes at all: a leg blocked only by transit stays down (TR-1)
+						if (leg) { for (let k = 0; k < leg.length - 1; k++) used.add(pipeKey(leg[k], leg[k + 1])); continue; }
+						const laid = doc.get('pipe', pipeId(a, b));
+						used.add(pipeKey(a, b));
+						if (!laid) emit([{ op: 'put', kind: 'pipe', entity: pipeEntity(a, b, 'link') }]);
+					}
 				}
 			},
 		},

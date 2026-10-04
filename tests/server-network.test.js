@@ -59,3 +59,52 @@ test('S-b: the server refuses what the network refuses -- a transit a host does 
 	assert.equal(r.ok, false);
 	assert.match(r.error, /H is a host, which never passes routes/);
 });
+
+/*
+H18.13 (S-c; ruled 2026-10-03, G2) -- A PINNED LINK LAYS THE LEGS NO PIPES JOIN, from any door; a plain link lays none.
+*/
+import { Model } from '../model/model.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { createNetwork } from '../network/network.mjs';
+import { createTransit } from '../network/transit.mjs';
+
+const nodes = [
+	{ op: 'put', kind: 'node', entity: { id: A, name: 'A', type: 'router', x: -360, y: 0 } },
+	{ op: 'put', kind: 'node', entity: { id: B, name: 'B', type: 'router', x: 360, y: 0 } },
+	{ op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 0, y: -120 } },
+];
+// the stored document, drawn by the network as the lab draws it: is the link up?
+const upIn = (doc, id) => { const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetwork(createTransit()) }); m.load(doc); return !m.isLinkDown(m.get('link', id)); };
+
+test('S-c: an agent\'s pinned link, with no pipes on the board, lays its legs and comes up', async () => {
+	const { store } = await fresh();
+	const id = store.create('sc').model.state.meta.id;
+	const r = store.commit(id, { label: 'link', ops: [...nodes, { op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: A, dst: B, via: [W] } }] });
+	assert.equal(r.ok, true, r.error);
+	assert.deepEqual(store.get(id).all('pipe').map((p) => `${p.id}:${p.laid}`).sort(), [`${pipeId(A, W)}:link`, `${pipeId(W, B)}:link`].sort());
+	assert.equal(upIn(store.get(id).toJSON(), 'link-000001'), true);
+});
+
+test('S-c: a plain link lays nothing -- "direct links without a key lay no pipe" -- and is down where no way exists', async () => {
+	const { store } = await fresh();
+	const id = store.create('sc').model.state.meta.id;
+	assert.equal(store.commit(id, { label: 'link', ops: [...nodes, { op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: A, dst: B } }] }).ok, true);
+	assert.deepEqual(store.get(id).all('pipe'), []);
+	assert.equal(upIn(store.get(id).toJSON(), 'link-000001'), false, 'a named stopgap until P6 gives agents pipe verbs (G2)');
+});
+
+test('S-c: a leg that pipes already join lays nothing, even through an anchor whose transit is off -- that link is down by choice (TR-1)', async () => {
+	const { store } = await fresh();
+	const id = store.create('sc').model.state.meta.id;
+	const H = 'node-00000c';
+	assert.equal(store.commit(id, { label: 'board', ops: [...nodes,
+		{ op: 'put', kind: 'node', entity: { id: H, name: 'h', x: 0, y: 120, transit: false } },
+		{ op: 'put', kind: 'pipe', entity: pipeEntity(A, W, 'hand') },
+		{ op: 'put', kind: 'pipe', entity: pipeEntity(W, H, 'hand') },
+		{ op: 'put', kind: 'pipe', entity: pipeEntity(H, B, 'hand') }] }).ok, true);
+	const r = store.commit(id, { label: 'link', ops: [{ op: 'put', kind: 'link', entity: { id: 'link-000001', name: 'l', src: A, dst: B, via: [W] } }] });
+	assert.equal(r.ok, true, r.error);
+	assert.equal(r.change.ops.some((o) => o.kind === 'pipe'), false, 'W to B is joined, through h');
+	assert.equal(upIn(store.get(id).toJSON(), 'link-000001'), false, 'and h stops what arrives: down, as the author made it');
+});

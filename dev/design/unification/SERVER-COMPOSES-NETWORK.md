@@ -165,6 +165,16 @@ AMENDED 2026-10-03 -- **S-b done** (H18.12), in two commits, each gated.\
 **Held by a new test file,** `tests/server-network.test.js`: a pin deleted over the server deletes its link; a document with pipes round-trips through the store's write, boot, commit and undo -- P2's deferred exit criterion; the server refuses a transit a host does not offer. The transit round trip through the CLI and the store asserts storage again.\
 Gate: lab matrix and its corpus unchanged; the lab's boards seed under the network's tenant, checked in Chrome. Mutants: 6, all killed -- one, undo replaying over another composition, by a new test.
 
+AMENDED 2026-10-03 -- **S-c done** (H18.13; G2).\
+`link-legs`, in the network's tenant: a link with pins, or a ring, that is made or re-pinned lays a link pipe straight between two consecutive stops wherever NO PIPES join them at all -- judged leg by leg, none reusing a pipe an earlier leg took, as routing judges them; a plain link lays nothing. It folds in F-f's `ring-pipe`.\
+**Two corrections to the design, found by the gate:**
+- **"Pipes at all", not "a way".** Section 5.2 proposed laying a leg that "has no way". Matrix row TRN-16 -- a `g` laid on an anchor whose transit is off, the link ruled down (TR-1, TR-3) -- came up, because a pipe was laid round the blocked anchor. A leg joined by pipes only through a non-transiting anchor is down by the author's choice, so the rule asks whether pipes join the stops at all, ignoring transit.
+- **The stranded phase, not reshape.** A link that loses a pin is re-pinned by the waypoint cascade and then deleted by the stranded pass; run before it, `link-legs` laid pipes for a link on its way out. It runs after the stranded pass, before the sweep and the join.
+Held by: an agent's pinned link on an empty board lays its legs and is up; a plain one lays none and is down (the named stopgap until P6); a leg joined only through a non-transiting anchor lays nothing and stays down; a renamed link lays nothing (TG-3); the ring tests, unchanged.\
+Corpora: the matrix and gesture corpora unchanged. The planner corpus differs in 46 of 1,045 cases: 45 only by pipe ops -- legs laid for a generated link with pins over a board without them, their inverses, and what the sweep then does with pipes a now-up link runs over -- and one, `gen-672`, where a waypoint the old answer swept is kept, because the re-pinned link is up now and its route runs through it, and a route shelters what it carries (ruled 2026-09-29).\
+Two txn tests moved with it: B81's undo compares collections as sets (the laid pipes come back in reverse order; pipes carry no drawing order), and B241's re-route lifts the bend's pipes too, since a straightened link otherwise still runs over them -- a route is derived from the pipes (2026-09-26).\
+Mutants: 7, all killed -- one by a new test.
+
 ---
 
 ## 10. Axiom alignment audit (M7)

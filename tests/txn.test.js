@@ -288,7 +288,9 @@ test('B81: the deletion is ONE undoable step, and undo restores both', () => {
 	const { m, log } = pairWithBoth();
 	// content only: undo advances the version by design, so comparing whole documents would
 	// compare the counter and not the restoration
-	const content = () => { const d = m.toJSON(); delete d.meta; return JSON.stringify(d); };
+	// and each collection as a set: undo puts back content, and which order a collection lists it in is not content -- the
+	// link's pipes, laid by link-legs since S-c, come back in the reverse of the order they went (drawn items carry `order`)
+	const content = () => { const d = m.toJSON(); delete d.meta; for (const k of Object.keys(d)) if (Array.isArray(d[k])) d[k] = [...d[k]].sort((a, b) => String(a.id ?? a).localeCompare(String(b.id ?? b))); return JSON.stringify(d); };
 	const before = content();
 	const r = commit(m, log, { ops: [{ op: 'del', kind: 'node', id: 'node-eb0001' }] }, 'server', 't');
 	assert.equal(m.all('link').length, 1, 'the link went with the waypoint');
@@ -986,7 +988,12 @@ test('B241: a re-route that drops a grouped bend reaches the same sweep, and kee
 	// takes it. The reality map found six request shapes that reach the sweep; the fix lives in the
 	// sweep itself rather than at any one of them, and this is the one that deletes nothing by name.
 	const { m, log } = groupedBend(['node-aa0011', 'node-aa0003']);
-	commit(m, log, { ops: [{ op: 'set', kind: 'link', id: 'link-aa0001', patch: { via: [] } }] }, 'server', 't');
+	// AMENDED 2026-10-03 (S-c): the link's pipes were laid with it, and a straightened link still runs over them -- a route is
+	// derived from the pipes (2026-09-26) -- so the bend stays carried. The re-route takes the bend's pipes up with it, which
+	// leaves the bend debris exactly as before.
+	const bendPipes = m.all('pipe').filter((p) => p.a === 'node-aa0011' || p.b === 'node-aa0011').map((p) => ({ op: 'del', kind: 'pipe', id: p.id }));
+	assert.ok(bendPipes.length > 0, 'precondition: the link was laid with its legs');
+	commit(m, log, { ops: [{ op: 'set', kind: 'link', id: 'link-aa0001', patch: { via: [] } }, ...bendPipes] }, 'server', 't');
 	assert.equal(m.get('node', 'node-aa0011'), undefined, 'precondition: the bend was swept');
 	assert.equal(m.get('group', 'group-aa0001'), undefined, 'and its group, left with one member, dissolved');
 	assert.equal(loadsAtBoot(m), null);

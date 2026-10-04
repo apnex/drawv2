@@ -103,3 +103,18 @@ test('F-f: a ring has first call on its closing pipe, ahead of an older link tha
 	assert.equal(m.isLinkDown(m.get('link', 'link-000001')), false, 'the ring keeps its closing leg (rule 2: first call on its own legs)');
 	assert.equal(m.isLinkDown(m.get('link', 'link-000000')), true, 'and the older link, with no other way, is down');
 });
+
+test('S-c: link-legs reads what each change is (TG-3) -- a link renamed is not re-pinned, and lays nothing', () => {
+	const m = new Model({ network: NET, kinds: KINDS });
+	m.put('node', { id: A, name: 'A', type: 'router', x: -360, y: 0 });
+	m.put('node', { id: B, name: 'B', type: 'router', x: 360, y: 0 });
+	m.put('node', { id: W, name: 'w', x: 0, y: -120 });
+	const link = { id: 'link-000001', name: 'l', order: 1, src: A, dst: B, via: [W] };
+	m.put('link', link);   // a board whose pinned link has no pipes: down
+	const legs = NET.links.reactions.find((r) => r.id === 'link-legs');
+	const emitted = [];
+	legs.run({ doc: m, matches: [{ kind: 'link', id: link.id, before: link, after: { ...link, name: 'k' }, fields: new Set(['name']) }] }, (ops) => emitted.push(...ops));
+	assert.deepEqual(emitted, [], 'handed a rename, as the shadow hands every change, it lays nothing');
+	legs.run({ doc: m, matches: [{ kind: 'link', id: link.id, before: { ...link, via: [] }, after: link, fields: new Set(['via']) }] }, (ops) => emitted.push(...ops));
+	assert.equal(emitted.length, 2, 're-pinned, it lays both legs');
+});

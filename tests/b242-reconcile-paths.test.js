@@ -36,6 +36,9 @@ import { Session } from '../server/protocol.js';
 import { Hub } from '../server/hub.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { makeInput, pointer } from './fixtures/client-harness.mjs';
+import { productKinds } from '../planner/kinds.mjs';
+import { NETWORK_ROWS } from '../network/kinds.mjs';
+const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // the browser storage the outbox persists through (D30); one tab at a time uses it, as one page would.
 // A world made with `disk: false` has none, like a private window: nothing is kept or restored.
@@ -98,7 +101,7 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 		id, up, down,
 		// a page: its Model, Changes and Sync, wired as app/src/main.js wires them, hydrated by `hello`
 		mount(parts = null) {
-			w.tab = parts?.model || new Model();
+			w.tab = parts?.model || new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
 			// a window that never closes by itself: a test closes it, standing in for the 600 ms timer
 			w.changes = parts?.changes || new Changes(w.tab, { coalesceMs: 3_600_000 });
 			w.sync = new Sync({ model: w.tab, net, history: w.changes, selection: parts?.selection || { subscribe() {}, list: () => [] }, onState() {} });
