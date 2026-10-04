@@ -1071,6 +1071,7 @@ AMENDED 2026-10-04: H18.20 (R-b) done -- REST's `path` and `context` answer a li
 AMENDED 2026-10-04: H18.21 (R-c) done -- run mode and the SVG download are one rendering: `RUN_PICTURE` in the kernel decides what both leave out, the run-mode stylesheet rules are deleted, and the download draws each link along its route and a down link down.\
 AMENDED 2026-10-04: H18.22 (R-d) done -- a spawner on a down link emits nothing, in every door that derives spawners.\
 AMENDED 2026-10-04: H18.23 (R-e) done -- P4 is closed on `main`: every path consumer draws the route the lab's tab draws, held by one board read through every door; the estate's 464 links export with none down. Next H18.24, P5's design.\
+AMENDED 2026-10-04: H18.24's design is `dev/design/unification/PAGE-COMPOSES-NETWORK.md`, proposed; its decisions J1 to J3 are asked one at a time before any code.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
