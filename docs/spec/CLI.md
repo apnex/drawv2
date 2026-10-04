@@ -128,7 +128,7 @@ Writing
   undo [--to seq]                                                 reverse the last change, or a run
   redo                                                            reapply what undo reversed
   select <id...>                                                  set the authoritative selection
-  link <src> [<dst>] [--via <cx>,<cy>...] [--closed]              join two things that already exist, bending the route through cells you name
+  link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--lay]              join two things that already exist, bending the route through cells you name
   spawn <waypoint> [--interval ms] [--speed px] [--colour #hex] [--off] arm an endpoint waypoint to emit movers along its path, or stop it
   pipe <a> <b> [--off]                                            lay a pipe by hand between two anchors, as g does -- or take it away with --off
   panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]  a node that spans cells and can carry content regions

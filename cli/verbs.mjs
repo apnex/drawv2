@@ -247,6 +247,18 @@ words the verbs have always used. Held to model/anchors.mjs by tests/cli-tool.te
 export const isWaypoint = (e) => !!e && typeof e.id === 'string' && e.id.startsWith('node-') && !e.type;
 const viewOf = (doc) => ({ ...doc, nodes: (doc.nodes || []).filter((n) => !isWaypoint(n)), waypoints: (doc.nodes || []).filter(isWaypoint) });
 
+/*
+P6 W-d (H18.34; K1) -- A PIPE LAID WITH A LINK, for `draw link --lay`. Those pipes must ride in the link's own commit -- a link
+pipe laid alone has no link on it and is swept in the same edit -- so this file builds them, and states the network's rule for
+a pipe's id here, as it states `isWaypoint`: it ships alone (B138) and cannot import network/pipe-kind.mjs. The id is its two
+ends' hex, lower first, and so are its ends. Held to `pipeEntity` by tests/cli-tool.test.js.
+*/
+const linkPipe = (x, y) => {
+	const hex = (id) => id.slice(id.indexOf('-') + 1);
+	const [a, b] = hex(x) < hex(y) ? [x, y] : [y, x];
+	return { id: `pipe-${hex(a)}-${hex(b)}`, a, b, laid: 'link' };
+};
+
 async function resolveId(ctx, diagramId, ref, known = null) {
 	// PU33: a waypoint's id became a node's with the same hex at the format batch; an old one is named as such, not "not found"
 	if (/^waypoint-[0-9a-f]{6}$/.test(ref)) die(`${ref} is a waypoint id from before the format batch -- waypoints are nodes now: node-${ref.slice(9)}`);
@@ -1897,7 +1909,7 @@ async function cellToPx(ctx, id, layout, { cx, cy }, what) {
 
 VERBS.push(
 	{
-		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--direction forward|reverse] [--control]',
+		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--direction forward|reverse] [--control] [--lay]',
 		route: '/diagrams/<id>/commit', method: 'POST',
 		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'join two things that already exist, bending the route through cells you name',
@@ -1908,6 +1920,7 @@ VERBS.push(
 			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
 			{ name: '--direction', about: 'declare a direction: forward (the default if bare) or reverse' },
 			{ name: '--control', about: 'the control plane -- drawn dashed and thinner' },
+			{ name: '--lay', about: 'lay the link\'s own pipes with it, on each leg that has none -- they go when no link is on them. Without it a plain link lays none, and runs over the pipes already there' },
 			{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
 			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
@@ -1972,11 +1985,27 @@ VERBS.push(
 				if (stored !== CLEAR) entity[f] = stored;
 			}
 			ops.push({ op: 'put', kind: 'link', entity });
+			/*
+			K1 (ruled 2026-10-04) -- `--lay` is the keyed drag: a pipe laid with the link on each hop that has no pipe of its own
+			(network/session.mjs `pipeEntries`), a ring's closing hop included; they go when no link runs over them. Without it,
+			"direct links without a key lay no pipe" (2026-09-30) -- a plain link runs over the pipes already there, or is down.
+			*/
+			let laid = [];
+			if (ctx.flags.lay) {
+				const held = new Set((ok(await request(ctx, `/diagrams/${id}`), 'link').pipes || []).map((p) => p.id));
+				const stops = [a, ...via, b, ...(ctx.flags.closed ? [a] : [])];
+				for (let i = 0; i < stops.length - 1; i++) {
+					const p = linkPipe(stops[i], stops[i + 1]);
+					if (held.has(p.id) || laid.some((q) => q.id === p.id)) continue;
+					laid.push(p);
+				}
+				for (const p of laid) ops.push({ op: 'put', kind: 'pipe', entity: p });
+			}
 			return submit(ctx, id, ops, 'link', 'link', (r) => ({
 				json: { id: lid, src: a, dst: b, via, closed: !!ctx.flags.closed,
 					...(entity.direction === undefined ? {} : { direction: entity.direction }),
-					...(entity.control === undefined ? {} : { control: entity.control }), version: r.version },
-				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}${entity.control ? ' (control)' : ''}  v${r.version}`,
+					...(entity.control === undefined ? {} : { control: entity.control }), pipes: laid.map((p) => p.id), version: r.version },
+				text: `${lid}  ${a} -> ${b}${via.length ? ` via ${via.join(' ')}` : ''}${ctx.flags.closed ? ' (closed)' : ''}${entity.control ? ' (control)' : ''}${laid.length ? `  laid ${laid.length} pipe${laid.length === 1 ? '' : 's'}` : ''}  v${r.version}`,
 			}));
 		},
 	},

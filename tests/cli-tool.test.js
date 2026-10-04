@@ -1911,6 +1911,38 @@ test('W-c: get pipes, show, map, dump and status show every pipe, its ends by na
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+/*
+P6 W-d (H18.34; ruled K1) -- `draw link --lay` is the person's keyed drag: the link and a pipe laid with it on each hop that has
+none, which go when no link is on them. Without the flag a plain link lays none, as ruled -- on an empty board it is down. The
+CLI builds those pipes (they must ride in the link's commit), so their ids are held here to the network's own rule.
+*/
+test('W-d: draw link --lay comes up on an empty board with its own pipes, which go with it; a plain link lays none', async () => {
+	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	await boot();
+	try {
+		const id = (await run('create', 'lay')).trim();
+		await run('lock', '--diagram', id);
+		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
+			{ op: 'put', kind: 'node', entity: { id: 'node-e40002', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e40001', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 } },
+			{ op: 'put', kind: 'node', entity: { id: 'node-e40003', name: 'c', type: 'host', shape: 'square', x: 0, y: 240 } }] }));
+		const plain = JSON.parse(await run('link', 'a', 'c', '--diagram', id, '--json'));
+		assert.deepEqual(plain.pipes, [], 'a plain link lays none');
+		assert.equal(JSON.parse(await run('link', 'path', plain.id, '--diagram', id, '--json')).down, true, 'and is down on an empty board (ruled)');
+		const laid = JSON.parse(await run('link', 'a', 'b', '--lay', '--diagram', id, '--json'));
+		assert.deepEqual(laid.pipes, [pipeEntity('node-e40002', 'node-e40001', 'link').id], 'its one leg, under the network\'s id for it');
+		const p = JSON.parse(await run('get', 'pipes', laid.pipes[0], '--diagram', id, '--json'))[0];
+		assert.deepEqual({ a: p.a, b: p.b, laid: p.laid }, { a: 'node-e40001', b: 'node-e40002', laid: 'link' }, 'ends lower hex first, laid with the link, as the network builds it');
+		assert.equal(JSON.parse(await run('link', 'path', laid.id, '--diagram', id, '--json')).down, false, 'and the link is up');
+		// a ring laid with --lay gets its closing leg too (P-3)
+		const ring = JSON.parse(await run('link', 'c', '--closed', '--via', '2,6', '--via', '-2,6', '--lay', '--diagram', id, '--json'));
+		assert.equal(ring.pipes.length, 3, 'a ring of three stops lays three legs, the closing one among them');
+		assert.equal(JSON.parse(await run('link', 'path', ring.id, '--diagram', id, '--json')).down, false);
+		await run('rm', laid.id, '--diagram', id);
+		assert.deepEqual(JSON.parse(await run('get', 'pipes', 'a', '--diagram', id, '--json')).map((x) => x.id), [], 'the link deleted, its own pipe goes with it');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 test('B237: the CLI can set every scalar optional field a link carries', async () => {
 	const OPTIONAL = (await import('./fixtures/composed.mjs')).KINDS.optional;   // the product's kinds and the network's, the link among them (S-e)
 	const { SETTABLE } = await import('../cli/verbs.mjs');

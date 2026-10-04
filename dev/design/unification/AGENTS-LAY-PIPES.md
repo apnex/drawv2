@@ -132,6 +132,12 @@ AMENDED 2026-10-04 -- **W-c done** (H18.33).\
 Every pipe as an agent reads it, one helper (`pipeRows`): its ends by name, how it was laid, and the links whose routes run over it -- REST's own route per link, so `carries` is the network's answer. A pipe an up link runs over is hidden on the canvas under the link drawn along it; `carries` is how an agent sees the same thing.\
 `draw get pipes` lists them, and `draw get pipe <ref>` takes a pipe id or an anchor -- every pipe at it, either end -- since a pipe has no name and an agent thinks of one by where it is. `show` has a PIPES table; `map` lists the pipes with an end in its window beneath the grid, since a pipe occupies no cell; `dump`, `status` and `diagrams --counts` count them.\
 Held by a CLI test failing on the code before; mutants 4, all killed.
+
+AMENDED 2026-10-04 -- **W-d done** (H18.34; K1): **G2's stopgap is removed.**\
+`draw link ... --lay` is the person's keyed drag: the link, and a pipe laid with it on each hop that has no pipe of its own -- a ring's closing hop included -- which go when no link runs over them. It mirrors the drag judge's rule (`network/session.mjs` `pipeEntries`): a hop with no pipe of its own, which refines K1's "each leg no pipes join" to what the gesture actually lays.\
+**One restatement, held by a test:** the pipes must ride in the link's own commit, since a link pipe laid alone is swept in the same edit, so the CLI builds them and states the network's id rule (`linkPipe`), as it states `isWaypoint`, because it ships alone (B138). The CLI test holds each `--lay` pipe to `pipeEntity`: its id, its ends lower hex first, laid `link`. Section 10's guardrail is CORRECTED accordingly: no verb builds a pipe id but `--lay`, which is held to the network's rule.\
+Without the flag a plain link lays none, as ruled, and is down on an empty board -- now the person's plain drag exactly, not a gap: an agent lays with `--lay` or `draw pipe`, as a person keys a drag or presses `g`.\
+Held by a CLI test failing on the code before; mutants 4, all killed.
 ---
 
 ## 10. Axiom alignment audit (M7)
@@ -146,4 +152,5 @@ Held by a CLI test failing on the code before; mutants 4, all killed.
 | A3 Sovereign Composition | supporting | REST's collections are the composition's, so the network's kind is served because it is composed |
 | A1, A4, A6-A14 | not materially implicated | |
 
-**Guardrail:** no verb builds a pipe id or decides a pipe's lifetime itself; held by the parity test in W-e.
+**Guardrail:** no verb builds a pipe id or decides a pipe's lifetime itself; held by the parity test in W-e.\
+CORRECTED 2026-10-04 (W-d): `draw link --lay` builds its link pipes, which must ride in the link's commit, by the network's rule restated in the standalone CLI and held to `pipeEntity` by a test.
