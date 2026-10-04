@@ -210,7 +210,7 @@ export class Sync {
 		const txnId = request.txnId || `${this.txnPrefix}-${++this.txn}`;
 		const msg = request.verb
 			? { verb: request.verb, expect: request.expect, to: request.to ?? null, txnId }
-			: { ops: request.ops, label: request.label, txnId };
+			: { ops: request.ops, label: request.label, txnId, applied: request.applied ?? request.ops };   // what the tab applied (V-d)
 		this.outbox.push(msg);
 		this.persistOutbox();
 		this.drain();
@@ -301,6 +301,7 @@ export class Sync {
 			*/
 			const txnId = m.txnId || `${this.txnPrefix}-r${++this.txn}`;
 			const answered = m.answered === true ? { answered: true, version: Number.isInteger(m.version) ? m.version : undefined } : {};
+			// `applied` is not trusted across a reload: the board is a fresh snapshot, and replay re-plans on it (V-d)
 			this.outbox.push({ ops: m.ops, label: m.label, txnId, tries: Number(m.tries) || 0, ...answered });
 		}
 	}
@@ -353,7 +354,15 @@ export class Sync {
 			this.persistOutbox();
 			this.say(`${abandoned} unsent change${abandoned > 1 ? 's' : ''} could not be delivered and ${abandoned > 1 ? 'were' : 'was'} discarded`, { err: true });
 		}
-		if (reapply) applyOps(this.model, this.pendingOps({ window: withWindow }));
+		/*
+		V-d (H18.28) -- RE-PLANNED, not re-applied: each unanswered request's intent is planned again on the board the snapshot
+		gave, in order, and what that plans becomes what the tab applied for it. Re-applying what an older board made of it --
+		a cascade of entities the snapshot no longer holds -- is the stale replay B242 found, one step further on.
+		*/
+		if (reapply) {
+			for (const m of this.outbox) if (!m.answered && Array.isArray(m.ops)) m.applied = this.changes.applyLocally(m.ops);
+			if (withWindow) applyOps(this.model, this.changes.openWindowOps());
+		}
 		this.drain();
 	}
 
@@ -365,7 +374,7 @@ export class Sync {
 	waits in the outbox to be confirmed durable: it is the server's now. Undo and redo carry no ops.
 	*/
 	pendingOps({ window: withWindow = true } = {}) {
-		const unanswered = this.outbox.filter((m) => !m.answered && Array.isArray(m.ops)).flatMap((m) => m.ops);
+		const unanswered = this.outbox.filter((m) => !m.answered && Array.isArray(m.ops)).flatMap((m) => m.applied ?? m.ops);   // applied (V-d)
 		return withWindow ? [...unanswered, ...this.changes.openWindowOps()] : unanswered;
 	}
 
@@ -622,7 +631,8 @@ export class Sync {
 		*/
 		if (Array.isArray(b.ops)) {
 			// applied with a selection carried across a join (B288)
-			applyAnswer(this.model, this.selection, derivedToApply(sent?.ops || [], b.ops, this.pendingOps()));
+			// what the tab APPLIED for it -- the preview (V-d) -- is what an echo is, not what it sent
+			applyAnswer(this.model, this.selection, derivedToApply(sent?.applied ?? sent?.ops ?? [], b.ops, this.pendingOps()));
 		}
 		this.emitState({});
 		// after the state emit, so what is said there is not overwritten by it (J3: the banner, transient)

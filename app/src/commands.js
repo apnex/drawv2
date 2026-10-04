@@ -14,12 +14,13 @@ The cascade closures below survive on purpose. They are a LOCAL PROJECTION: a di
 must not build a document whose links dangle, and the server's planner re-derives the same cascade
 idempotently over the explicit ops (an already-deleted link yields no further op). What went is the
 inverse-building, not the closure.
+AMENDED 2026-10-04 (P5 V-d, H18.28; PL-6): the closures went too. A command is the author's intent alone; the page previews it
+with the planner (app/src/changes.js), which is the one place a cascade, a strip, a trim or a steal is decided -- and a
+disconnected browser previews with it as well, so it still never builds a document whose links dangle.
 */
 
-import { groupAfterRemoval } from '../../planner/policy.mjs';
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
-import { pairHolders } from '../../network/link-rules.mjs';
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
 import { BARE_KIND, ANCHOR_KINDS, bareAnchor, isTypedEntity } from '../../model/anchors.mjs';
@@ -68,115 +69,29 @@ export function moveEntities(moves) {
 }
 
 /*
-Delete a mixed selection. Computes the full closure so undo restores everything:
- - selected nodes, zones, links
- - links touching a deleted node (cascade)
- - groups: deleted members removed; group dissolves below 2 members
+Delete a selection -- what the author asked, and only that (P5 V-d, H18.28; PL-6, ruled PD-5).
+
+This computed the whole closure in the browser: links touching a deleted node, a deleted pin's strip and B81's delete instead,
+groups trimmed or dissolved -- a "local projection" of the server's rules, which drifted from them (B221, P-7: a pin deleted
+here stripped while the server deleted its link). The planner is the one place those rules live, and the page previews
+with it (app/src/changes.js), so this sends the deletes the author made and the tab shows the planner's consequences.
+Selected entities only, each once, by its kind -- a plugin's too (a hand pipe, B281): dependents first, so the request reads
+as the author would say it.
 */
 export function deleteSelection(model, ids) {
-	const entries = [];
-	const deletedNodes = new Set();
-	const deletedLinks = new Set();
-	const deletedWaypoints = new Set();
-
-	ids.forEach((id) => {
-		if ((isTypedEntity('node', model.get('node', id)) ? model.get('node', id) : undefined)) deletedNodes.add(id);
-		if (bareAnchor(model, id)) deletedWaypoints.add(id);
-	});
-
-	// cascade: links touching a deleted node OR a deleted waypoint-ENDPOINT, plus selected links
-	// (a deleted waypoint used only as a via bend is handled by the via-strip below)
-	model.all('link').forEach((link) => {
-		if (ids.has(link.id) || deletedNodes.has(link.src) || deletedNodes.has(link.dst)
-			|| deletedWaypoints.has(link.src) || deletedWaypoints.has(link.dst)) {
-			deletedLinks.add(link.id);
-		}
-	});
-
-	// strip deleted waypoints from SURVIVING links' via FIRST, so the doc never references a
-	// missing waypoint (links being deleted carry their via away). On undo (reversed) the via is
-	// restored LAST — after the waypoint is put back (waypoint dels are last → restored first).
-	if (deletedWaypoints.size) {
-		/*
-		B81, mirroring planner/txn.mjs: a strip that would leave a link STRAIGHT is a deletion
-		instead when the pair already carries a straight link, because only one may exist. This is
-		a local projection of the server's rule, like the rest of this cascade -- the server is
-		authoritative and its planner refuses the state outright, so a client that guessed wrong
-		would see its optimistic view corrected rather than a wrong document persisted.
-		*/
-		// the document as the strip leaves it, judged by the one predicate (RULESET-AUDIT T4)
-		let standing = model.all('link').filter((l) => !deletedLinks.has(l.id));
-		model.all('link').forEach((link) => {
-			if (deletedLinks.has(link.id) || !Array.isArray(link.via)) return;
-			const remaining = link.via.filter((w) => !deletedWaypoints.has(w));
-			if (remaining.length === link.via.length) return;
-			const after = { ...link, via: remaining };
-			if (pairHolders(after, standing, model).length) {
-				entries.push({ op: 'del', kind: 'link', entity: clone('link', link) });
-				standing = standing.filter((l) => l.id !== link.id);
-				return;
-			}
-			standing = standing.map((l) => (l.id === link.id ? after : l));
-			entries.push({ op: 'set', kind: 'link', id: link.id, after: { via: remaining } });
-		});
-	}
-
-	// entry order matters: undo replays REVERSED, and the server validates
-	// referentially — so dependents (groups, zones, links) are deleted first and
-	// therefore restored LAST, after their nodes exist again
-	model.all('group').forEach((group) => {
-		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => deletedNodes.has(m) || deletedWaypoints.has(m));
-		if (ids.has(group.id) || dissolve) {
-			entries.push({ op: 'del', kind: 'group', entity: clone('group', group) });
-		} else if (remaining.length < group.members.length) {
-			entries.push({
-				op: 'set', kind: 'group', id: group.id,
-				after: { members: remaining }
-			});
-		}
-	});
-	ids.forEach((id) => {
-		if (model.get('zone', id)) entries.push({ op: 'del', kind: 'zone', entity: clone('zone', model.get('zone', id)) });
-	});
-	deletedLinks.forEach((id) => entries.push({ op: 'del', kind: 'link', entity: clone('link', model.get('link', id)) }));
-
-	deletedNodes.forEach((id) => entries.push({ op: 'del', kind: 'node', entity: clone('node', model.get('node', id)) }));
-	// waypoints last (leaf entities → restored FIRST on undo, before via-restore + link-restore)
-	deletedWaypoints.forEach((id) => entries.push({ op: 'del', kind: BARE_KIND, entity: clone(BARE_KIND, bareAnchor(model, id)) }));
-
-	/*
-	H17.22 N-c2 -- A SELECTED ENTITY THE CASCADE ABOVE DOES NOT REACH is deleted as itself: a kind a plugin brings -- the
-	network's hand pipe (B281) -- whose consequences are the planner's reactions, not this browser copy. First, so on undo
-	it is restored last, after anything it references. The canvas names no plugin kind here.
-	*/
-	const named = new Set(entries.filter((e) => e.op === 'del').map((e) => e.entity.id));
-	const theirs = [...ids].filter((id) => !named.has(id) && model.entityExists(id))
-		.map((id) => ({ op: 'del', kind: kindOf(id), entity: clone(kindOf(id), model.get(kindOf(id), id)) }));
-
-	return { label: 'delete', entries: [...theirs, ...entries] };
+	const RANK = { group: 0, zone: 1, link: 2, node: 4 };   // a plugin's kind ranks 3
+	const entries = [...ids].filter((id) => model.entityExists(id))
+		.map((id) => ({ id, kind: kindOf(id) }))
+		.sort((a, b) => (RANK[a.kind] ?? 3) - (RANK[b.kind] ?? 3))
+		.map(({ id, kind }) => ({ op: 'del', kind, entity: clone(kind, model.get(kind, id)) }));
+	return { label: 'delete', entries };
 }
 
+// Group a selection: the group, and nothing else -- the planner's `group-steal` takes its members from any other group (V-d)
 export function createGroup(model, memberIds) {
-	// a node belongs to at most one group: steal members from existing groups
-	const entries = [];
 	const members = memberIds.filter((id) => model.endpointOf(id));
 	if (members.length < 2) return { label: 'group', entries: [] };
-
-	model.all('group').forEach((group) => {
-		const { remaining, dissolve } = groupAfterRemoval(group.members, (m) => members.includes(m));
-		if (remaining.length === group.members.length) return;
-		if (dissolve) {
-			entries.push({ op: 'del', kind: 'group', entity: clone('group', group) });
-		} else {
-			entries.push({
-				op: 'set', kind: 'group', id: group.id,
-				after: { members: remaining }
-			});
-		}
-	});
-
-	entries.push({ op: 'put', kind: 'group', entity: model.makeGroup(members) });
-	return { label: 'group', entries };
+	return { label: 'group', entries: [{ op: 'put', kind: 'group', entity: model.makeGroup(members) }] };
 }
 
 // W6 — live input editing: write a new value into a node's content region (idx). Deep-copies the whole

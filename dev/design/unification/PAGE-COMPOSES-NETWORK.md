@@ -157,6 +157,16 @@ The browser's `splitsFor` is deleted, and `routeLink` and `routeLinks` send no s
 - **Gesture:** one scenario, `link-to-waypoint-end`: the drag sends the link alone, the planner cuts.
 - **Matrix:** SRC-01 and SRC-02 identical but for the canonical numbering of their links, which follows first appearance and moved with the derived id; every row's own check passes.
 Held by a CLI test -- `draw link` to a bend cuts the link there, its piece's id the derived one, and a ring made through a bend cuts nothing -- failing on the planner before. The two input tests of the cut plan what the drag sent, as the server does. Mutants: 5, all killed, one by an assertion added for it.
+
+AMENDED 2026-10-04 -- **V-d done** (H18.28; PL-6, PD-5; G4; B221).\
+**The commit boundary previews** (`app/src/changes.js`): a commit plans the author's intent with `preview(model, ops)` -- the page's composition, the network's tenant and kinds -- and applies what it plans, carrying a selection across a join (B288). Each request carries `ops`, the intent, sent; and `applied`, what the tab applied. A preview the planner refuses applies nothing, and the intent is still sent.\
+**Reconciliation is against what was applied:** Sync's answers and `pendingOps` read `applied`, and so does the lab's door. After a snapshot, replay RE-PLANS each unanswered intent on the new board rather than re-applying what an older board made of it.\
+**The browser keeps no copy of a planner rule:** `deleteSelection` sends the deletes asked for, `createGroup` the group alone; the cascade, the B81 strip, the group trim and the group steal are deleted. L9's restatement ratchet is empty.\
+**PL6, held on the whole gesture corpus** (`tests/one-preview.test.js`): every scenario driven through the real Input, an authority playing the server from the tab's board; on all 57 commits the tab's preview equals the server's answer entity for entity, the answer reconciled changes nothing, and the 2 commits the preview refuses the server refuses too. Compared as documents, not op lists: `w` places a waypoint live, so the preview plans no put for it while the server does.\
+**G4, on the product page** in Chrome against its server: a deleted pin's link is gone in the same script turn, before any answer, with the delete alone sent. Against the real server in node: the answer to a previewed join writes nothing to the tab; another writer's change does not bring back what the tab's unanswered edit removed; a snapshot after a lost connection re-plans on a board another writer changed.\
+**Defects the preview exposed, in fixtures:** the gesture corpus's `zone` board, and three input tests' zones, sat off the zone grid, so every edit to them was one the server refuses -- moved onto the grid; a test bent a link through a waypoint that did not exist, and three command tests used ids that are not hex.\
+**Gesture corpus:** 7 scenarios differ, each reviewed -- two send the delete alone; one gains the drawing order the planner stamps; two show the tab refusing what the server refuses (a duplicate bend, a second straight link after the cut); and the three zone scenarios, on the corrected board, move and grow the zone by the same steps.\
+Mutants: 8, all killed, four by tests added for them.
 ---
 
 ## 10. Axiom alignment audit (M7)

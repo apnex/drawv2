@@ -23,7 +23,8 @@ import { el, crosshair } from './painter.js';
 import { nodePoints, zonePoints, CANVAS, GAP } from './snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
-import { Changes } from './changes.js';
+import { Changes, applyAnswer } from './changes.js';
+import { plan } from '../../planner/txn.mjs';   // the preview: the page plans its own view with the server's planner (V-d, PL-6)
 import { Renderer } from './renderer.js';
 import { Selection } from './selection.js';
 import { LabelEditor } from './labeledit.js';
@@ -64,9 +65,15 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; `cellOf` is
 	// injected here, at a composition root, so engine/ imports no kernel
 	attachRelations(model, { cellOf });
-	const history = new Changes(model);   // the commit boundary: a root's transport subscribes to it, not to the model
-	const renderer = new Renderer(model, svg);
 	const selection = new Selection(model);
+	/*
+	the commit boundary: a root's transport subscribes to it, not to the model. V-d (H18.28; PL-6): it previews each commit
+	with the planner composed as the page is -- the network's link tenant and the page's kinds -- so the tab shows the whole
+	answer at once, and applies it carrying a selection across a join (B288)
+	*/
+	const preview = network && kinds ? (m, ops) => plan(m, ops, { links: network.links, kinds }) : null;
+	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
+	const renderer = new Renderer(model, svg);
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
 	const labels = new LabelEditor({ svg, model, history });
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl] }) : null;

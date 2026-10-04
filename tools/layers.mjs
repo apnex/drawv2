@@ -180,6 +180,8 @@ export const ENTRIES = {
 			// V-b (H18.26): the network, composed into the page as into the lab (network/page.mjs) -- routes, pipes, its keys and judge
 			'network/page.mjs', 'network/session.mjs', 'network/network.mjs', 'network/view.mjs', 'network/resolve.mjs', 'network/pipes.mjs',
 			'network/transit.mjs', 'network/link-reactions.mjs', 'network/keys.mjs', 'network/grammar.mjs', 'network/guide.mjs', 'network/host.mjs',
+			// V-d (H18.28; PL-6): the planner, for the page's preview of every commit
+			'planner/txn.mjs', 'planner/validate.js', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/invariants.mjs',
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'planner/kinds.mjs',   // the product's rows, composed with the network's
 			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
@@ -376,7 +378,7 @@ When a rule's record empties, delete its keys; the rule stays.
        names are exports of kernel/geometry.mjs, which K13a splits; the fifteenth is routeGeometry
        in kernel/router.mjs. Model's link methods are not exports, so L5 does not see them (K13d)
   L7k  consumer lines per file (see RULES.L7k)
-  L9   `module:primitive`: commands.js reaches groupAfterRemoval (K18b); input.js's splitAtBend went at V-c
+  L9   `module:primitive`: none since V-d -- the browser previews with the planner (PL-6)
   L11  window/globalThis reads per canvas module: the label editor's three
 */
 
@@ -397,9 +399,9 @@ export const RATCHETS = {
 		'cli/verbs.mjs': 7,
 		'kernel/adapt.mjs': 2,
 	},
+	// L9 is empty: V-c (H18.27) lowered app/src/input.js:splitAtBend, V-d (H18.28) app/src/commands.js:groupAfterRemoval --
+	// the browser keeps no copy of a planner rule; it previews with the planner (PL-6). The rule stays.
 	L9: {
-		'app/src/commands.js:groupAfterRemoval': 1,
-		// V-c (H18.27) lowered app/src/input.js:splitAtBend from 1: the junction cut is the planner's (network/network.mjs)
 	},
 	L11: {
 		'app/src/labeledit.js': 3,

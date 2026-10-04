@@ -141,7 +141,7 @@ history.onCommit((request) => {
 	Nothing is in flight in the lab, because the planner answers in the same page.
 	*/
 	const accepted = net.answered(request, answer, () => {
-		applyAnswer(model, selection, derivedToApply(request.ops ?? [], answer.change?.ops ?? answer.ops ?? [], []));   // a selection carried across a join (B288)
+		applyAnswer(model, selection, derivedToApply(request.applied ?? request.ops ?? [], answer.change?.ops ?? answer.ops ?? [], []));   // against what the tab applied, the preview (V-d)   // a selection carried across a join (B288)
 	});
 	/*
 	B260 -- A REFUSAL TAKES THE PLANNER'S DOCUMENT BACK. The tab applied the request optimistically, so a refused one

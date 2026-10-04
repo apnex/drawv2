@@ -900,3 +900,30 @@ test('in run mode pipes are hidden, as anchors are, and come back when it ends',
 		assert.ok(await p.run(shown) > 0, 'and back when run mode ends');
 	} finally { await p.close(); }
 });
+
+/*
+P5 V-d (H18.28; PL-6) -- the lab's tab PREVIEWS each commit with the planner, as the product page does, and reconciles the
+in-page answer against what it applied: so the answer to an edit it previewed writes nothing to the tab. A join is the case
+that shows it -- a `set` on the surviving link, which a reconcile against what was SENT (the delete alone) writes again.
+*/
+test('V-d: the lab previews a commit, and its answer writes nothing more to the tab', { skip: SKIP }, async () => {
+	const p = await open('bend');
+	try {
+		const got = JSON.parse(await p.run(`(() => {
+			const m = lab.model, ids = (k) => m.all(k).map((e) => e.id);
+			const a = m.makeNode('host', { x: -360, y: 240 }); const b = m.makeNode('host', { x: 360, y: 240 }); const c = m.makeNode('host', { x: 0, y: 420 });
+			const w = m.makeWaypoint({ x: 0, y: 240 });
+			lab.history.commit({ label: 'seed', entries: [a, b, c].map((e) => ({ op: 'put', kind: 'node', entity: e })).concat([{ op: 'put', kind: 'node', entity: w }]) });
+			const l1 = m.makeLink(a.id, w.id); lab.history.commit({ label: 'l1', entries: [{ op: 'put', kind: 'link', entity: l1 }] });
+			const l2 = m.makeLink(w.id, b.id); lab.history.commit({ label: 'l2', entries: [{ op: 'put', kind: 'link', entity: l2 }] });
+			const l3 = m.makeLink(c.id, w.id); lab.history.commit({ label: 'l3', entries: [{ op: 'put', kind: 'link', entity: l3 }] });
+			const writes = [];
+			m.onChange((action, kind, e) => { if (kind === 'link' && e?.id === l1.id && action === 'set') writes.push(action); });
+			lab.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'link', entity: { ...m.get('link', l3.id) } }] });
+			return JSON.stringify({ writes, joined: !m.get('link', l2.id) && m.get('link', l1.id)?.dst === b.id, agree: JSON.stringify(ids('link').sort()) === JSON.stringify(lab.authority.all('link').map((e) => e.id).sort()) });
+		})()`));
+		assert.equal(got.joined, true, 'the two left at the waypoint joined');
+		assert.deepEqual(got.writes, ['set'], 'the survivor was set ONCE, by the preview -- the answer wrote nothing more');
+		assert.equal(got.agree, true, 'and the tab and the authority agree');
+	} finally { await p.close(); }
+});

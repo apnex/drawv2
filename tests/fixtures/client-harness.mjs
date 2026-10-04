@@ -30,7 +30,10 @@ leaving it to memory.
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { cellOf } from '../../kernel/geometry.mjs';
-import { Changes } from '../../app/src/changes.js';
+import { Changes, applyAnswer } from '../../app/src/changes.js';
+import { plan } from '../../planner/txn.mjs';
+import { createNetwork } from '../../network/network.mjs';
+import { createTransit } from '../../network/transit.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { Tools } from '../../app/src/tools.js';
 import { Selection } from '../../app/src/selection.js';
@@ -162,8 +165,10 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 
 	const model = new Model({ kinds: PAGE_KINDS });   // the kinds the product page composes (S-b, G1)
 	attachRelations(model, { cellOf });
-	const history = new Changes(model);
 	const selection = new Selection(model);
+	// V-d (H18.28; PL-6): the commit boundary previews with the planner, composed as the product page composes it
+	const tenant = createNetwork(createTransit()).links;
+	const history = new Changes(model, { preview: (m, ops) => plan(m, ops, { links: tenant, kinds: PAGE_KINDS }), apply: (ops) => applyAnswer(model, selection, ops) });
 
 	const calls = [];
 	const rec = (name) => (...args) => { calls.push({ name, args }); };

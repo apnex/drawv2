@@ -721,7 +721,8 @@ test('H17 K10 (G3): the lab reconciles through derivedToApply, the product\'s on
 	const src = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
 	assert.match(src, /import \{[^}]*\bderivedToApply\b[^}]*\} from '\.\.\/\.\.\/app\/src\/changes\.js'/,
 		'the lab must mount K1\'s reconcile rule, not write its own (G3)');
-	assert.match(src, /derivedToApply\(request\.ops/, 'and pass it what the tab SENT, or every echo is re-applied');
+	// AMENDED 2026-10-04 (V-d, H18.28): what the tab APPLIED -- the preview -- is what an echo is, since the tab sends intent
+	assert.match(src, /derivedToApply\(request\.applied/, 'and pass it what the tab APPLIED, or every echo is re-applied');
 	assert.match(src, /answer\.change\?\.ops \?\? answer\.ops/,
 		'commit() answers at change.ops and undo()/redo() at ops; reading one shape drops the other');
 });

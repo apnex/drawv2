@@ -1355,3 +1355,33 @@ test('V-b: the product page draws routes and pipes, says why a link is down, and
 		assert.equal(s.routedMark, true, 'drawn down on the page');
 	} finally { t.ws.close(); }
 });
+
+/*
+P5 V-d (H18.28; G4, PL-6) -- THE PRODUCT PAGE PREVIEWS: a pin deleted takes its link in the same script turn the delete is
+committed in, before any answer can arrive over the socket; the request carries the delete alone; and the server's answer
+leaves the tab where the preview put it.
+*/
+test('V-d: on the product page a deleted pin takes its link before the server answers', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/d/${NET_DIAGRAM}`);
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		// a waypoint, and a link pinned at it, through the server
+		await t.eval(`(() => { const m = window.draw.model; const w = m.makeWaypoint({ x: 0, y: 360 });
+			window.draw.history.commit({ label: 'pin', entries: [{ op: 'put', kind: 'node', entity: w }, { op: 'put', kind: 'link', entity: { ...m.makeLink('node-ab00c1', 'node-ab00c2'), via: [w.id] } }] });
+			window.__pin = w.id; return 1; })()`);
+		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		const pinned = await t.eval(`window.draw.model.all('link').find((l) => (l.via || []).includes(window.__pin))?.id ?? null`);
+		assert.ok(pinned, 'precondition: a link is pinned at the waypoint');
+		const now = JSON.parse(await t.eval(`JSON.stringify((() => {
+			window.draw.history.commit({ label: 'delete', entries: [{ op: 'del', kind: 'node', entity: { ...window.draw.model.get('node', window.__pin) } }] });
+			const sent = window.draw.sync.outbox.at(-1);
+			return { linkNow: !!window.draw.model.get('link', '${pinned}'), sent: sent.ops, answered: !!sent.answered };
+		})())`));
+		assert.equal(now.answered, false, 'no answer has arrived yet');
+		assert.equal(now.linkNow, false, 'and the link is already gone: the preview deleted it with its pin (P-7)');
+		assert.deepEqual(now.sent.map((o) => `${o.op}/${o.kind}`), ['del/node'], 'the request is the delete alone');
+		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		assert.equal(await t.eval(`!!window.draw.model.get('link', '${pinned}')`), false, 'and the answer leaves it gone');
+	} finally { t.ws.close(); }
+});

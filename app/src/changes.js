@@ -13,6 +13,14 @@ other subscribers legitimately want to fire on every preview frame.
 
 A commit applies locally first (the gesture must feel instant) and submits the same ops. Undo and
 redo are server round-trips: the reply carries the ops to apply, because the server owns the log.
+
+P5 V-d (H18.28; PL-6, ruled PD-5) -- ONE PREVIEW. A commit sends what the author did -- its INTENT, "delete this node" -- and
+shows the planner's whole answer at once: `preview(model, ops)` plans the intent with the page's own composition, the same
+`plan()` and tenants the server runs, and the tab applies what it plans. So the browser keeps no copy of a planner rule, and
+a pin deleted on the page takes its link before the server answers (G4). Each request carries both: `ops`, sent, and
+`applied`, what the tab applied -- which the answer is reconciled against (`derivedToApply`). A preview the planner refuses
+applies nothing; the intent is still sent, and the server's answer, or its refusal, decides. With no preview (a composition
+without the network), the intent is applied as it stands, as before.
 */
 
 import { applyOps } from '../../model/ops.mjs';
@@ -119,8 +127,15 @@ function echoes(own, planned) {
 const COALESCE_MS = 600;
 
 export class Changes {
-	constructor(model, { coalesceMs = COALESCE_MS, now = () => Date.now() } = {}) {
+	/*
+	`preview(model, ops)`: the planner, composed as the page composes it, answering `{ ok, ops }` (V-d). `apply(ops)`: how the
+	tab applies a planned answer -- the page's carries a selection across a join (`applyAnswer`, B288); a bare model write
+	when none is given.
+	*/
+	constructor(model, { coalesceMs = COALESCE_MS, now = () => Date.now(), preview = null, apply = null } = {}) {
 		this.model = model;
+		this.preview = preview;
+		this.apply = apply ?? ((ops) => applyOps(model, ops));
 		this.coalesceMs = coalesceMs;
 		this.now = now;
 		this.subs = [];
@@ -137,8 +152,21 @@ export class Changes {
 	commit(command) {
 		if (!command || !command.entries || command.entries.length === 0) return;
 		const ops = command.entries.map(toOp);
-		applyOps(this.model, ops);
-		this.#submit({ ops, label: command.label || '' }, command.coalesce === true);
+		const applied = this.applyLocally(ops);
+		this.#submit({ ops, label: command.label || '', applied }, command.coalesce === true);
+	}
+
+	/*
+	The intent, planned and applied to this tab: the ops applied, which the answer is reconciled against. Public, because a
+	tab whose document was just replaced by a snapshot re-plans what is still its own on the new board (app/src/sync.js
+	`replayOutbox`), rather than re-applying what an old board made of it.
+	*/
+	applyLocally(ops) {
+		if (!this.preview) { this.apply(ops); return ops; }
+		const planned = this.preview(this.model, ops);
+		if (!planned.ok) return [];   // refused here: nothing shown, and the server decides
+		this.apply(planned.ops);
+		return planned.ops;
 	}
 
 	// A burst amends the open window rather than opening a new change.
@@ -151,12 +179,13 @@ export class Changes {
 		const t = this.now();
 		if (coalesce && this.window && this.window.label === request.label && t < this.window.until) {
 			this.window.ops.push(...request.ops);
+			this.window.applied.push(...request.applied);
 			this.window.until = t + this.coalesceMs;
 			return;                                   // still open — nothing goes out yet
 		}
 		this.#flushWindow();
 		if (coalesce) {
-			this.window = { label: request.label, ops: [...request.ops], until: t + this.coalesceMs };
+			this.window = { label: request.label, ops: [...request.ops], applied: [...request.applied], until: t + this.coalesceMs };
 			this.timer = setTimeout(() => this.#flushWindow(), this.coalesceMs);
 			if (this.timer.unref) this.timer.unref();
 			return;
@@ -180,13 +209,13 @@ export class Changes {
 	yet submitted, so in no outbox. They are among the tab's unanswered ops that an answer to an earlier
 	request must replay (derivedToApply), or an undo answered mid-burst would revert the nudge.
 	*/
-	openWindowOps() { return this.window ? [...this.window.ops] : []; }
+	openWindowOps() { return this.window ? [...this.window.applied] : []; }   // what the tab applied for it (V-d)
 
 	#flushWindow() {
 		if (!this.window) return;
 		const w = this.window;
 		this.window = null;
-		this.#emit({ ops: w.ops, label: w.label });
+		this.#emit({ ops: w.ops, label: w.label, applied: w.applied });
 	}
 
 	#emit(request) {

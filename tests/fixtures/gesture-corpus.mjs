@@ -43,7 +43,9 @@ const BOARDS = {
 	bent: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['w0', 'waypoint', 180, 120], ['l0', 'link', 'n0', 'n1', ['w0']]],
 	// a waypoint no link uses (it was `pinned` until S-d retired the field, H18.14)
 	free: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['w0', 'waypoint', 180, 120]],
-	zone: () => [['z0', 'zone', -120, -120, 240, 240], ['n0', 'node', 0, 0], ['n1', 'node', 360, 0]],
+	// on the zone grid, which is offset half a cell (planner/kinds.mjs): seeded at -120 until V-d, which no edit could keep --
+	// the preview refused every edit to it, as the server would have (H18.28)
+	zone: () => [['z0', 'zone', -150, -150, 300, 300], ['n0', 'node', 0, 0], ['n1', 'node', 360, 0]],
 	chain: () => [['n0', 'node', 0, 0], ['n1', 'node', 180, 0], ['n2', 'node', 360, 0]],
 };
 
@@ -152,7 +154,7 @@ export const SCENARIOS = [
 	{ id: 'zone-draw', board: 'empty', steps: drag([0, 0], [240, 180], null, null, { shift: true }) },
 	{ id: 'zone-draw-zero', board: 'empty', steps: [['down', 0, 0, null, { shift: true }], ['up', 0, 0, null, { shift: true, up: true }]] },
 	// ---- handles ----
-	{ id: 'resize-zone-corner', board: 'zone', steps: [['select', ['z0']], ...drag([120, 120], [240, 240], { corner: 'se' }, { corner: 'se' })] },
+	{ id: 'resize-zone-corner', board: 'zone', steps: [['select', ['z0']], ...drag([150, 150], [270, 270], { corner: 'se' }, { corner: 'se' })] },
 	{ id: 'replug-straight-to-free-pair', board: 'three', steps: [['link', 'n2', 'n1'], ['selectLast'], ...drag([360, 360], [0, 0], { handle: 'src' }, 'n0')] },
 	{ id: 'replug-straight-to-held-pair', board: 'three', steps: [['link', 'n0', 'n1'], ['link', 'n2', 'n1'], ['selectLast'], ...drag([360, 360], [0, 0], { handle: 'src' }, 'n0')] },
 	// ---- tools, double click, cancel ----
@@ -207,13 +209,15 @@ const JUDGES = {
 	'keep-guides': (f) => ({ ok: false, keep: f.guides }),
 };
 
-export function record(scenario) {
+// `withHarness(h)`: called with the harness before the board is seeded -- for a test that watches the commits as they pass (V-d)
+export function record(scenario, { withHarness = null } = {}) {
 	const realNow = Date.now;
 	Date.now = () => 1790000000000;
 	const judged = [];
 	const judge = scenario.judge ? (facts) => { judged.push(facts); return JUDGES[scenario.judge](facts); } : null;
 	const h = makeInput(judge ? { routeHook: judge } : {});
 	const out = { claims: [], threw: [], commits: h.commits, judged };
+	withHarness?.(h);
 	try {
 		const ids = seed(h, scenario.board);
 		let lastLink = null;
@@ -242,6 +246,8 @@ export function record(scenario) {
 			else throw new Error(`corpus: unknown step ${op}`);
 		});
 		h.history.flush?.();
+		// what the gesture SENT, its intent (V-d): what the tab applied for each is the tab's own, and shows in `final`
+		out.commits = h.commits.map(({ applied, ...request }) => request);
 		const doc = h.model.toJSON();
 		out.said = h.calls.filter((c) => c.name === 'readout.flash').map((c) => c.args[0]);
 		out.editor = h.calls.filter((c) => c.name.startsWith('labels.')).map((c) => [c.name, ...c.args.filter((x) => typeof x !== 'object')]);

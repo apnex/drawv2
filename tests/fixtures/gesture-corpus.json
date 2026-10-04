@@ -286,23 +286,11 @@
 					"via": [
 						"waypoint#1"
 					]
-				},
-				{
-					"id": "link#1",
-					"name": "link-2",
-					"order": 2,
-					"src": "node#1",
-					"dst": "node#2",
-					"via": [
-						"waypoint#1"
-					]
 				}
 			],
 			"zones": [],
 			"groups": [],
-			"selection": [
-				"link#1"
-			]
+			"selection": []
 		}
 	},
 	"link-w-thread-free": {
@@ -1530,20 +1518,11 @@
 					"via": [
 						"waypoint#1"
 					]
-				},
-				{
-					"id": "link#1",
-					"name": "link-2",
-					"order": 2,
-					"src": "node#1",
-					"dst": "waypoint#1"
 				}
 			],
 			"zones": [],
 			"groups": [],
-			"selection": [
-				"link#1"
-			]
+			"selection": []
 		}
 	},
 	"click-node-selects": {
@@ -1826,8 +1805,8 @@
 						"kind": "zone",
 						"id": "zone#1",
 						"patch": {
-							"x": -30,
-							"y": 30
+							"x": -90,
+							"y": -30
 						}
 					}
 				],
@@ -1867,10 +1846,10 @@
 					"id": "zone#1",
 					"name": "zone-1",
 					"order": 1,
-					"x": -30,
-					"y": 30,
-					"w": 240,
-					"h": 240
+					"x": -90,
+					"y": -30,
+					"w": 300,
+					"h": 300
 				}
 			],
 			"groups": [],
@@ -2226,11 +2205,6 @@
 		"commits": [
 			{
 				"ops": [
-					{
-						"op": "del",
-						"kind": "link",
-						"id": "link#1"
-					},
 					{
 						"op": "del",
 						"kind": "node",
@@ -2679,10 +2653,10 @@
 						"kind": "zone",
 						"id": "zone#1",
 						"patch": {
-							"x": -120,
-							"y": -120,
-							"w": 390,
-							"h": 390
+							"x": -150,
+							"y": -150,
+							"w": 420,
+							"h": 420
 						}
 					}
 				],
@@ -2722,10 +2696,10 @@
 					"id": "zone#1",
 					"name": "zone-1",
 					"order": 1,
-					"x": -120,
-					"y": -120,
-					"w": 390,
-					"h": 390
+					"x": -150,
+					"y": -150,
+					"w": 420,
+					"h": 420
 				}
 			],
 			"groups": [],
@@ -2959,7 +2933,8 @@
 							"value": "",
 							"align": "left"
 						}
-					]
+					],
+					"order": 1
 				}
 			],
 			"waypoints": [],
@@ -3687,11 +3662,6 @@
 				"ops": [
 					{
 						"op": "del",
-						"kind": "link",
-						"id": "link#1"
-					},
-					{
-						"op": "del",
 						"kind": "node",
 						"id": "node#1"
 					}
@@ -3813,10 +3783,10 @@
 						"kind": "zone",
 						"id": "zone#1",
 						"patch": {
-							"x": -120,
-							"y": -120,
-							"w": 240,
-							"h": 300
+							"x": -150,
+							"y": -150,
+							"w": 300,
+							"h": 360
 						}
 					}
 				],
@@ -3856,10 +3826,10 @@
 					"id": "zone#1",
 					"name": "zone-1",
 					"order": 1,
-					"x": -120,
-					"y": -120,
-					"w": 240,
-					"h": 300
+					"x": -150,
+					"y": -150,
+					"w": 300,
+					"h": 360
 				}
 			],
 			"groups": [],

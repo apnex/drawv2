@@ -17,8 +17,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the network's kinds, as the server validates (S-e)
-import { Model as PlannedModel, plan as planComposed } from './fixtures/composed.mjs';   // the planner production runs (V-c)
-import { applyOps } from '../model/ops.mjs';
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';
@@ -59,8 +57,12 @@ test('deleting a node carries its links in the SAME change — the cascade is on
 		h.selection.set([a.id]);
 		h.capture.onKeyDown(key('Delete'));
 
-		const ops = h.soleCommit().ops;
-		assert.deepEqual(opKinds(ops), ['del/link', 'del/node'], 'the link goes first: undo replays reversed, and the server validates referentially');
+		// AMENDED 2026-10-04 (V-d, H18.28; PL-6): the request is the author's delete; the planner cascades it -- in the tab's
+		// preview at once, and on the server in the same transaction, so the cascade is still one undo step
+		const c = h.soleCommit();
+		assert.deepEqual(opKinds(c.ops), ['del/node'], 'intent only');
+		assert.deepEqual(opKinds(c.applied).sort(), ['del/link', 'del/node'], 'the preview took the link with it, in the same change');
+		assert.equal(h.model.all('link').length, 0, 'and the tab shows it before any answer');
 	} finally { h.restore(); }
 });
 
@@ -603,23 +605,25 @@ const handle = (corner, x, y) => pointer(x, y, {
 	target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { corner }, closest: () => null },
 });
 
+// AMENDED 2026-10-04 (V-d): the zone sits on the zone grid, offset half a cell; at (0, 0) it was a document the planner
+// refuses, which the preview now shows -- the resize was never one the server would take
 test('B43: a resize commit fires the gesture-end hook exactly once', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		const z = h.model.makeZone({ x: -30, y: -30, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
-		h.capture.onDown(handle('se', 300, 300));
+		h.capture.onDown(handle('se', 270, 270));
 		let fired = 0;
 		h.input.onGestureEnd = () => fired++;
-		h.capture.onMove(handle('se', 480, 480));
+		h.capture.onMove(handle('se', 450, 450));
 		// the live preview moved, so the handle genuinely armed a resize — this test is not vacuous
-		assert.equal(h.model.get('zone', z.id).w, 510, 'the grabbed handle is dragging the zone');
-		h.capture.onUp(handle('se', 480, 480));
+		assert.equal(h.model.get('zone', z.id).w, 480, 'the grabbed handle is dragging the zone');
+		h.capture.onUp(handle('se', 450, 450));
 
 		assert.equal(fired, 1, 'D12 fires once per gesture — a double replay is the latent bug');
-		assert.equal(h.model.get('zone', z.id).w, 510, 'and the resize committed');
+		assert.equal(h.model.get('zone', z.id).w, 480, 'and the resize committed');
 		assert.equal(h.commits.length, 1);
 	} finally { h.restore(); }
 });
@@ -720,8 +724,11 @@ test('B44: the migrated commands still do their jobs', () => {
 		h.input.linkSelectedNodes(false);
 		assert.equal(h.model.all('link').length, 2, 'chain wires n1-n2, n2-n3');
 
+		// AMENDED 2026-10-04 (V-d): bent through a waypoint that exists -- `w1` named none, a link the planner refuses
 		const link = h.model.all('link')[0];
-		h.model.set('link', link.id, { via: ['w1'] });
+		const w = h.model.makeWaypoint({ x: 60, y: 120 });
+		h.model.put('node', w);
+		h.model.set('link', link.id, { via: [w.id] });
 		h.selection.set([link.id]);
 		h.input.toggleClosePath();
 		assert.equal(h.model.get('link', link.id).closed, true, 'C closes a multi-hop route');
@@ -790,22 +797,23 @@ test('B36: Overlay and the held tools share ONE crosshair, so #snaplayer has a s
 	} finally { h.restore(); }
 });
 
+// AMENDED 2026-10-04 (V-d): on the zone grid, as B43 above
 test('B36: a zone resize pins the corner opposite the grabbed handle', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		const z = h.model.makeZone({ x: -30, y: -30, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
 		// grab NW and drag it outward past the origin; SE must not move
-		h.capture.onDown(handle('nw', 0, 0));
-		h.capture.onMove(handle('nw', -180, -180));
-		h.capture.onUp(handle('nw', -180, -180));
+		h.capture.onDown(handle('nw', -30, -30));
+		h.capture.onMove(handle('nw', -210, -210));
+		h.capture.onUp(handle('nw', -210, -210));
 
 		const after = h.model.get('zone', z.id);
-		assert.equal(after.x + after.w, 300, 'the SE corner stayed put in x');
-		assert.equal(after.y + after.h, 300, 'and in y');
-		assert.ok(after.x < 0, 'while NW followed the pointer');
+		assert.equal(after.x + after.w, 270, 'the SE corner stayed put in x');
+		assert.equal(after.y + after.h, 270, 'and in y');
+		assert.ok(after.x < -30, 'while NW followed the pointer');
 	} finally { h.restore(); }
 });
 
@@ -1640,20 +1648,10 @@ piece carrying the route's original `src` inherits the identity. That id is what
 collapse a round trip rather than a churn, so it is worth pinning at the point it is decided.
 */
 /*
-AMENDED 2026-10-04 (V-c, H18.27): the cut is the PLANNER's now (network/network.mjs `junction-cut`), at every door (B243) --
-the drag sends the link alone, and the planner cuts. So each test drives the gesture, then plans what it sent, as the server
-does, on the board as it stood.
+AMENDED 2026-10-04 (V-c, H18.27; V-d, H18.28): the cut is the PLANNER's (network/network.mjs `junction-cut`), at every door
+(B243) -- the drag sends the link alone, and since V-d the tab previews with the planner, so it shows the cut at once.
 */
-const plannedFrom = (board, h) => {
-	const m = new PlannedModel();
-	for (const [kind, e] of board) m.put(kind, structuredClone(e));
-	const request = h.soleCommit();
-	assert.equal(request.ops.filter((o) => o.kind === 'link').length, 1, 'the drag sends the link it drew, and no split');
-	const r = planComposed(m, request.ops);
-	assert.equal(r.ok, true, r.error);
-	applyOps(m, r.ops);
-	return m;
-};
+const sendsLinkAlone = (h) => assert.deepEqual(h.soleCommit().ops.filter((o) => o.kind === 'link').length, 1, 'the drag sends the link it drew, and no split');
 
 test('B213: a drag onto a bend splits it, and the src half keeps the original id', () => {
 	const h = makeInput();
@@ -1672,8 +1670,8 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
 		h.capture.onUp(at(0, 0, 'node-ea0001'));
-		const planned = plannedFrom([['node', m.get('node', 'node-aa0001')], ['node', m.get('node', 'node-aa0002')], ['node', m.get('node', 'node-aa0003')],
-			['node', m.get('node', 'node-ea0001')], ['link', m.get('link', 'link-aa0001')]], h);
+		sendsLinkAlone(h);
+		const planned = m;
 
 		assert.equal(planned.all('link').length, 3, 'the bend split, and the new link joined it');
 		const srcHalf = planned.get('link', 'link-aa0001');
@@ -1700,7 +1698,8 @@ test('B284: a drag onto a bend of a control link with a direction splits it into
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
 		h.capture.onUp(at(0, 0, 'node-ea0001'));
-		const planned = plannedFrom(['node-aa0001', 'node-aa0002', 'node-aa0003', 'node-ea0001'].map((id) => ['node', m.get('node', id)]).concat([['link', m.get('link', 'link-aa0001')]]), h);
+		sendsLinkAlone(h);
+		const planned = m;
 		const halves = planned.all('link').filter((l) => l.src === 'node-aa0001' || l.dst === 'node-aa0002');
 		assert.equal(halves.length, 2, 'the bend split in two');
 		for (const l of halves) assert.deepEqual([l.control, l.direction], [true, 'forward'], `${l.id} keeps the control plane and the direction`);

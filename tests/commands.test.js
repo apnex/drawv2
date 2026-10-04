@@ -15,6 +15,7 @@ import { createEntity, moveEntities, deleteSelection, createGroup, ungroupAll,
 	setContentValue, reshapeNodes, renameEntity } from '../app/src/commands.js';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
+import { plan as planComposed } from './fixtures/composed.mjs';   // the planner production runs (V-d)
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -28,9 +29,10 @@ function seeded() {
 	return m;
 }
 
-// what Changes does with a command, so a builder can be exercised end-to-end
+// what Changes does with a command, so a builder can be exercised end-to-end -- previewing with the planner, composed as the
+// product page composes it (V-d, H18.28; PL-6): a builder sends intent, and the tab shows the planner's consequences
 function apply(model, command) {
-	const changes = new Changes(model);
+	const changes = new Changes(model, { preview: (m, ops) => planComposed(m, ops) });
 	const sent = [];
 	changes.onCommit((r) => sent.push(r));
 	changes.commit(command);
@@ -70,16 +72,14 @@ test('moveEntities carries only the destination', () => {
 	assert.equal(m.get('node', 'node-aa0001').x, 120);
 });
 
-test('deleteSelection keeps the cascade as a local projection', () => {
+// AMENDED 2026-10-04 (V-d, H18.28; PL-6): the cascade is the planner's, previewed -- the request is the author's delete alone
+test('deleteSelection sends the delete asked for, and the preview shows the cascade', () => {
 	const m = seeded();
 	const req = apply(m, deleteSelection(m, new Set(['node-aa0001'])));
+	assert.deepEqual(req.ops, [{ op: 'del', kind: 'node', id: 'node-aa0001' }], 'intent only: what the author deleted');
 	assert.equal(m.get('node', 'node-aa0001'), undefined);
-	assert.equal(m.get('link', 'link-aa0004'), undefined, 'the link went with its endpoint');
-	assert.ok(req.ops.some((o) => o.op === 'del' && o.kind === 'link'), 'and the intent says so explicitly');
-	// referential order: dependents first, so a server validating referentially accepts the batch
-	const linkAt = req.ops.findIndex((o) => o.kind === 'link');
-	const nodeAt = req.ops.findIndex((o) => o.kind === 'node');
-	assert.ok(linkAt < nodeAt, 'the link is removed before the node it depends on');
+	assert.equal(m.get('link', 'link-aa0004'), undefined, 'the link went with its endpoint, in the preview');
+	assert.ok(req.applied.some((o) => o.op === 'del' && o.kind === 'link'), 'which the tab applied, and the answer is held to');
 });
 
 test('deleteSelection shrinks a group, and dissolves it below two members', () => {
@@ -92,13 +92,15 @@ test('deleteSelection shrinks a group, and dissolves it below two members', () =
 	assert.equal(m.get('group', 'group-ca0001'), undefined, 'dissolved below two');
 });
 
-test('deleting a via-waypoint strips it from every routed link', () => {
+// AMENDED 2026-10-04 (V-d): under the network's rules a pinned link lives and dies with its pins (P-7, 2026-09-30) -- the
+// browser's strip was the classic rule; the preview shows the planner's
+test('deleting a via-waypoint deletes the link pinned at it (P-7)', () => {
 	const m = seeded();
 	m.put('node', { id: 'node-da0001', name: 'node-da0001', x: 60, y: 60 });
 	m.set('link', 'link-aa0004', { via: ['node-da0001'] });
 	apply(m, deleteSelection(m, new Set(['node-da0001'])));
 	assert.equal(m.get('node', 'node-da0001'), undefined);
-	assert.deepEqual(m.get('link', 'link-aa0004').via, [], 'the surviving link no longer references it');
+	assert.equal(m.get('link', 'link-aa0004'), undefined, 'the link pinned at it goes with it');
 });
 
 test('deleting a waypoint ENDPOINT deletes the link rather than stripping it', () => {
@@ -109,10 +111,12 @@ test('deleting a waypoint ENDPOINT deletes the link rather than stripping it', (
 	assert.equal(m.get('link', 'link-ea0002'), undefined);
 });
 
-test('createGroup steals members, as a local projection of the server rule', () => {
+// AMENDED 2026-10-04 (V-d): the steal is the planner's group-steal, previewed; createGroup sends the group alone
+test('createGroup steals members, through the planner\'s rule', () => {
 	const m = seeded();
 	m.put('group', { id: 'group-fa0001', name: 'a', members: ['node-aa0001', 'node-aa0002', 'node-aa0003'] });
-	apply(m, createGroup(m, ['node-aa0002', 'node-aa0003']));
+	const req = apply(m, createGroup(m, ['node-aa0002', 'node-aa0003']));
+	assert.deepEqual(req.ops.map((o) => `${o.op}/${o.kind}`), ['put/group'], 'intent only');
 	const membership = m.all('group').flatMap((g) => g.members);
 	assert.equal(new Set(membership).size, membership.length, 'no node in two groups');
 });
@@ -123,29 +127,30 @@ test('createGroup requires at least two endpoints', () => {
 	assert.equal(createGroup(m, []).entries.length, 0);
 });
 
+// AMENDED 2026-10-04 (V-d): the fixture ids are hex -- `ga`, `ha`, `ia` are not, and the preview refuses them as the server would
 test('setContentValue writes one region and does not alias the live array', () => {
 	const m = new Model();
-	m.put('node', node('node-ga0001', 0, { content: [{ at: [0, 0], content: 'text', value: 'old' }] }));
-	const req = apply(m, setContentValue(m, 'node-ga0001', 0, 'new'));
-	assert.equal(m.get('node', 'node-ga0001').content[0].value, 'new');
+	m.put('node', node('node-c10001', 0, { content: [{ at: [0, 0], content: 'text', value: 'old' }] }));
+	const req = apply(m, setContentValue(m, 'node-c10001', 0, 'new'));
+	assert.equal(m.get('node', 'node-c10001').content[0].value, 'new');
 	req.ops[0].patch.content[0].value = 'tampered';
-	assert.equal(m.get('node', 'node-ga0001').content[0].value, 'new', 'the op does not alias the model');
+	assert.equal(m.get('node', 'node-c10001').content[0].value, 'new', 'the op does not alias the model');
 });
 
 test('reshapeNodes toggles circle<->square and skips non-nodes', () => {
 	const m = seeded();
-	m.put('node', node('node-ha0001', 0, { shape: 'square' }));
-	const req = apply(m, reshapeNodes(m, ['node-aa0001', 'node-ha0001', 'link-aa0004', 'node-nope']));
+	m.put('node', node('node-c20001', 240, { shape: 'square' }));
+	const req = apply(m, reshapeNodes(m, ['node-aa0001', 'node-c20001', 'link-aa0004', 'node-nope']));
 	assert.equal(req.ops.length, 2, 'only the two real nodes');
 	assert.equal(m.get('node', 'node-aa0001').shape, 'square');
-	assert.equal(m.get('node', 'node-ha0001').shape, 'circle');
+	assert.equal(m.get('node', 'node-c20001').shape, 'circle');
 });
 
 test('ungroupAll removes every named group in one command', () => {
 	const m = seeded();
-	m.put('group', { id: 'group-ia0001', name: 'a', members: ['node-aa0001', 'node-aa0002'] });
-	m.put('group', { id: 'group-ia0002', name: 'b', members: ['node-aa0002', 'node-aa0003'] });
-	apply(m, ungroupAll(m, ['group-ia0001', 'group-ia0002']));
+	m.put('group', { id: 'group-c30001', name: 'a', members: ['node-aa0001', 'node-aa0002'] });
+	m.put('group', { id: 'group-c30002', name: 'b', members: ['node-aa0002', 'node-aa0003'] });
+	apply(m, ungroupAll(m, ['group-c30001', 'group-c30002']));
 	assert.equal(m.all('group').length, 0);
 });
 
@@ -165,15 +170,14 @@ test('B87: the B81 cascade entry survives the real Changes — it threw, and shi
 	m.put('node', { id: 'node-aa0005', name: 'node-aa0005', x: 30, y: -40 });
 	m.put('link', { id: 'link-aa0006', name: 'link-aa0006', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-aa0005'] });
 
+	// AMENDED 2026-10-04 (V-d): the browser's B81 strip is deleted; the pin's link goes by the planner (P-7), previewed
 	const cmd = deleteSelection(m, new Set(['node-aa0005']));
-	const del = cmd.entries.find((e) => e.op === 'del' && e.kind === 'link');
-	assert.ok(del, 'the colliding link is deleted with the waypoint (B81)');
-	assert.ok(del.entity, 'and the entity rides along, as commands.js:6 requires');
-
+	assert.ok(cmd.entries.every((e) => e.op !== 'del' || e.entity), 'every del carries its entity, as commands.js:6 requires');
 	const sent = apply(m, cmd);
 	assert.ok(sent, 'the command converted and committed rather than throwing');
-	assert.ok(sent.ops.some((o) => o.op === 'del' && o.kind === 'link' && o.id === 'link-aa0006'),
-		'and the op names the link');
+	assert.ok(sent.applied.some((o) => o.op === 'del' && o.kind === 'link' && o.id === 'link-aa0006'),
+		'and the preview deleted the link that bent through the pin (P-7)');
+	assert.equal(m.get('link', 'link-aa0006'), undefined);
 });
 
 test('B87: every del entry a builder emits carries an entity, across every branch here', () => {

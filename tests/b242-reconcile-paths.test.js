@@ -494,3 +494,93 @@ test('a snapshot the tab asked for, arriving mid-drag, ends the drag first: its 
 		} finally { w.close(); }
 	} finally { h.restore(); }
 });
+
+/*
+P5 V-d (H18.28; PL-6, G4) -- ONE PREVIEW, against the real server. The tab sends intent and previews it with the planner
+composed as the page composes it, so the server's cascade shows before the answer, and the answer, reconciled against what
+the tab applied, changes nothing. A snapshot after a lost connection re-plans what is still the tab's own on the new board.
+*/
+const previewing = async () => {
+	const { plan } = await import('../planner/txn.mjs');
+	const { createNetwork } = await import('../network/network.mjs');
+	const { createTransit } = await import('../network/transit.mjs');
+	const tenant = createNetwork(createTransit()).links;
+	const model = new Model({ kinds: PAGE_KINDS });
+	return { model, changes: new Changes(model, { coalesceMs: 3_600_000, preview: (m, ops) => plan(m, ops, { links: tenant, kinds: PAGE_KINDS }) }) };
+};
+const PINNED = [
+	['node', { id: 'node-f10001', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 }],
+	['node', { id: 'node-f10002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 }],
+	['node', { id: 'node-f10003', name: 'w', x: 0, y: -120 }],
+	['link', { id: 'link-f10004', name: 'l', src: 'node-f10001', dst: 'node-f10002', via: ['node-f10003'] }],
+];
+
+test('V-d: a pin deleted on the tab takes its link before the server answers, and the answer changes nothing (G4)', async () => {
+	const w = await world(PINNED, { tab: await previewing() });
+	try {
+		w.changes.commit(deleteSelection(w.tab, new Set(['node-f10003'])));
+		assert.deepEqual(w.up.map((m) => m.body.ops), [[{ op: 'del', kind: 'node', id: 'node-f10003' }]], 'the tab sent the delete it was asked for');
+		assert.equal(w.tab.get('link', 'link-f10004'), undefined, 'and shows the link gone at once: a pinned link dies with its pin (P-7)');
+		w.serve();
+		const before = JSON.stringify(w.tab.toJSON().links);
+		w.deliverTo('ack');
+		assert.equal(JSON.stringify(w.tab.toJSON().links), before, 'the answer, reconciled against what the tab applied, changes nothing');
+		assert.deepEqual(w.diff(), [], 'and the tab and the server agree');
+	} finally { w.close(); }
+});
+
+test('V-d: a snapshot after a lost connection re-plans what is still the tab\'s own on the new board', async () => {
+	const w = await world(PINNED, { tab: await previewing() });
+	try {
+		w.changes.commit(deleteSelection(w.tab, new Set(['node-f10003'])));
+		w.reconnect();                              // the delete is lost in flight
+		// meanwhile another writer pins a SECOND link at the waypoint: a board the tab's preview never saw
+		w.other([{ op: 'put', kind: 'node', entity: { id: 'node-f10005', name: 'c', type: 'host', shape: 'square', x: 0, y: 240 } },
+			{ op: 'put', kind: 'link', entity: { id: 'link-f10006', name: 'm', src: 'node-f10001', dst: 'node-f10005', via: ['node-f10003'] } }]);
+		w.serve();                                  // the tab's resume, and nothing else: the delete was lost
+		w.deliverAll();                             // a snapshot holding the second link
+		assert.ok(w.up.some((m) => m.cmd === 'commit'), 'the delete is resent after the snapshot, not yet answered');
+		assert.equal(w.tab.get('link', 'link-f10004'), undefined, 're-planned on the snapshot: the first link is gone again, not back');
+		assert.equal(w.tab.get('link', 'link-f10006'), undefined, 'and so is the second, which only a re-plan on the new board knows of');
+		w.pump();
+		assert.deepEqual(w.diff(), [], 'and once the resend is answered, the tab and the server agree');
+		assert.equal(w.server().get('link', 'link-f10004'), undefined);
+	} finally { w.close(); }
+});
+
+test('V-d: the answer to an edit the tab previewed writes nothing to the tab -- it is reconciled against what was applied', async () => {
+	// three links at a waypoint; deleting the third leaves two that join -- the join is a `set` on the survivor, which a
+	// reconcile against what was SENT (the delete alone) would write again, and the page would draw again
+	const w = await world([
+		['node', { id: 'node-f20001', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 }],
+		['node', { id: 'node-f20002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 }],
+		['node', { id: 'node-f20003', name: 'c', type: 'host', shape: 'square', x: 0, y: 240 }],
+		['node', { id: 'node-f20004', name: 'w', x: 0, y: 0 }],
+		['link', { id: 'link-f20005', name: 'l1', src: 'node-f20001', dst: 'node-f20004' }],
+		['link', { id: 'link-f20006', name: 'l2', src: 'node-f20004', dst: 'node-f20002' }],
+		['link', { id: 'link-f20007', name: 'l3', src: 'node-f20003', dst: 'node-f20004' }],
+	], { tab: await previewing() });
+	try {
+		w.changes.commit({ label: 'delete', entries: [{ op: 'del', kind: 'link', entity: { ...w.tab.get('link', 'link-f20007') } }] });
+		assert.equal(w.tab.all('link').length, 1, 'the preview joined the two left at the waypoint');
+		w.serve();
+		const writes = [];
+		w.tab.onChange((action, kind, entity) => writes.push(`${action}/${kind}/${entity?.id}`));
+		w.deliverTo('ack');
+		assert.deepEqual(writes, [], 'the answer is the preview, so applying it writes nothing');
+		assert.deepEqual(w.diff(), []);
+	} finally { w.close(); }
+});
+
+test('V-d: another writer\'s change does not bring back what the tab\'s own unanswered edit removed', async () => {
+	const w = await world(PINNED, { tab: await previewing() });
+	try {
+		w.changes.commit(deleteSelection(w.tab, new Set(['node-f10003'])));   // the link goes with its pin, in the preview
+		// before the delete reaches the server, another writer PUTS the link it took -- whole, so applied bare it would bring it back
+		w.other([{ op: 'put', kind: 'link', entity: { id: 'link-f10004', name: 'renamed', src: 'node-f10001', dst: 'node-f10002', via: ['node-f10003'] } }]);
+		w.deliverAll();
+		assert.equal(w.tab.get('link', 'link-f10004'), undefined, 'the tab\'s own consequence stays on top of the change');
+		w.pump();
+		assert.deepEqual(w.diff(), []);
+	} finally { w.close(); }
+});
