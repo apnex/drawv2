@@ -74,7 +74,8 @@ test('the retired Model hooks are refused, so an old composition cannot half-plu
 	assert.throws(() => new Model({ netwrok: complete() }), /netwrok/, 'a misspelt option is an error, not an ignored key');
 });
 
-test('no network is production: new Model({ network: null }) is new Model()', () => {
+// RENAMED 2026-10-04 (P7 X-a): it read "no network is production"; production composes the network now (P3 to P5, J2)
+test('a Model with no network: new Model({ network: null }) is new Model()', () => {
 	assert.equal(new Model({ network: null }).network, null);
 	assert.equal(new Model().network, null);
 });

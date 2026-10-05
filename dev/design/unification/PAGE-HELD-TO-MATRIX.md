@@ -100,6 +100,13 @@ Each stage is one gate and one lab deploy.
 
 
 AMENDED 2026-10-04 -- **L1 and L2 RULED as recommended** (`dev/DECISIONS.md`, "P7's design decisions, L1 and L2"): one record for the lab and the page, the page's own nature named in the runner; the page's matrix in the gate on every push.
+
+AMENDED 2026-10-04 -- **X-a done** (H18.37).\
+**The harness composes the product page's Input:** the network's keys and its real drag judge (`network/session.mjs` `judge`, what `network/page.mjs` attaches), on the session's network, which the Model draws with. A stub judge (`routeHook`) and a whole composition (`plugins`) stay, for tests of the plugin seam.\
+**The gesture corpus, re-recorded and reviewed:** 8 of 75 scenarios differ. Six -- four `w` drags and two keyed drags -- differ only by the pipes their link lays with it, as the drag judge lays them. Two, renamed from `link-w-on-node-production` and `link-g-production` to `link-w-on-node` and `link-g`, now record the page's grammar: `w` on a node makes it a stop with two links ending there, and `g` lays an anchor and hand pipes and makes no link (ruled 2026-09-30).\
+**Made deterministic:** a pipe's id and the order of its ends follow its anchors' random hex, so records varied run to run. The corpus now names a pipe by its ends' canonical names, and pins `Math.random` to a sequence seeded per scenario, as it already pinned `Date.now`; every other scenario is unchanged.\
+**Tests that claimed production's pre-network behaviour, restated under the cutover ruling:** the three `PRODUCTION:` tests of `g` and `w` on a node now hold the page's grammar; six `production:` tests that describe a Model with no network are renamed for what they hold; one sweep test's claim is renamed. A B245 test now sees the drag's pipes ride with its link.\
+Mutants: 2, both killed -- the pre-X-a composition fails 11 tests, and unpinned ids fail the corpus.
 ---
 
 ## 10. Axiom alignment audit (M7)

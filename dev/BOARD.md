@@ -1057,7 +1057,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.34 | W-d: `draw link ... --lay` lays the link's legs with it (K1); G2's stopgap removed | feature | S2 | `DONE` |
 | H18.35 | W-e: P6 closed -- the parity test of each thing a person does with pipes, the register, the records | feature | S2 | `DONE` |
 | H18.36 | Design P7 for approval before any code: the tests move to the product -- the behaviour matrix runs against the product page as well as the lab | feature | S2 | `DONE` |
-| H18.37 | X-a: the client harness composes the product page -- network keys and real judge; the gesture corpus re-recorded; the outdated production tests restated | **B266** | S2 | `TODO` |
+| H18.37 | X-a: the client harness composes the product page -- network keys and real judge; the gesture corpus re-recorded; the outdated production tests restated | feature | S2 | `DONE` |
 | H18.38 | X-b: one matrix runner, two drivers -- the lab's and the product page's against a real server | **B266** | S2 | `TODO` |
 | H18.39 | X-c: every matrix row on the product page, held to the lab's record (L1); each difference registered and fixed | **B266** | S2 | `TODO` |
 | H18.40 | X-d: P7 closed -- the matrix in the gate on both pages (L2); section 7 criterion 5 | **B266** | S2 | `TODO` |
@@ -1103,6 +1103,7 @@ AMENDED 2026-10-04: H18.34 (W-d) done -- `draw link --lay` lays the link's own p
 AMENDED 2026-10-04: H18.35 (W-e) done -- P6 is closed on `main`: an agent does with pipes everything a person can, each held to the gesture's ruled outcome; B293, found by it, fixed. Next H18.36, P7's design.\
 AMENDED 2026-10-04: the path to the cutover stands, P8 gaining a staging rehearsal (`dev/DECISIONS.md`). H18.36's design is `dev/design/unification/PAGE-HELD-TO-MATRIX.md`, proposed; its decisions L1 and L2 are asked one at a time before any code.\
 AMENDED 2026-10-04: approved and L1 and L2 ruled as recommended (`dev/DECISIONS.md`); H18.36 DONE, the build is H18.37 to H18.40.\
+AMENDED 2026-10-04: H18.37 (X-a) done -- the harness composes the product page's Input with the network; the gesture corpus records the page's grammar, deterministically; no test claims a pre-network production behaviour.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

@@ -170,7 +170,8 @@ test('acceptance 6, B245: threading a free waypoint commits the link alone, and 
 	const done = drive((h, over, b) => { h.capture.onMove(over(b.id, 360, 0)); h.capture.onUp(over(b.id, 360, 0)); });
 	try {
 		assert.equal(done.h.commits.length, 1);
-		assert.deepEqual(done.h.commits[0].ops.map((o) => `${o.op}/${o.kind}`), ['put/link'], 'the link, threaded through the waypoint, and no set');
+		// AMENDED 2026-10-04 (P7 X-a): the page's drag judge lays the link's pipes into each stop, in the same commit (N-c)
+		assert.deepEqual(done.h.commits[0].ops.map((o) => `${o.op}/${o.kind}`), ['put/link', 'put/pipe', 'put/pipe'], 'the link, threaded through the waypoint, its pipes, and no set');
 		assert.deepEqual(done.h.commits[0].ops[0].entity.via, [done.w.id]);
 		assert.equal('pinned' in done.h.model.get('node', done.w.id), false);
 	} finally { done.h.restore(); }

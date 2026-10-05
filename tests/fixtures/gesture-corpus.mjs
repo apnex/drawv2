@@ -113,8 +113,9 @@ export const SCENARIOS = [
 	{ id: 'link-w-free-cancelled', board: 'free', steps: [['down', 0, 0, 'n0'], ['move', 180, 120, 'w0'], ['key', 'w'], ['key', 'Escape']] },
 	{ id: 'link-release-ground-after-w', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 120], ['key', 'w'], ['move', 240, 240], ['up', 240, 240, null, { up: true }]] },
 	{ id: 'link-release-ground-no-key', board: 'pair', steps: drag([0, 0], [240, 240], 'n0', null) },
-	{ id: 'link-w-on-node-production', board: 'three', steps: drag([0, 0], [360, 360], 'n0', 'n2', {}, [['w', 360, 0, 'n1']]) },
-	{ id: 'link-g-production', board: 'pair', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['g', 180, 120]]) },
+	// renamed at P7 X-a (H18.37): the page composes the network, so these record its grammar, not production's old no-op
+	{ id: 'link-w-on-node', board: 'three', steps: drag([0, 0], [360, 360], 'n0', 'n2', {}, [['w', 360, 0, 'n1']]) },
+	{ id: 'link-g', board: 'pair', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['g', 180, 120]]) },
 	{ id: 'link-shift-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 360, 360, 'n2'], ['down', 360, 360, 'n2'], ['up', 360, 360, 'n2', { up: true }]] },
 	{ id: 'link-shift-chain-then-w', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 480, 180], ['key', 'w'], ['move', 360, 360, 'n2'], ['up', 360, 360, 'n2', { up: true }]] },
 	{ id: 'link-digit-chain', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 240], ['key', '2'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
@@ -211,8 +212,15 @@ const JUDGES = {
 
 // `withHarness(h)`: called with the harness before the board is seeded -- for a test that watches the commits as they pass (V-d)
 export function record(scenario, { withHarness = null } = {}) {
-	const realNow = Date.now;
+	const realNow = Date.now, realRandom = Math.random;
 	Date.now = () => 1790000000000;
+	/*
+	P7 X-a (H18.37): the random ids pinned too, by a sequence seeded from the scenario's id. A pipe's id and the order of its ends
+	follow its anchors' hex (network/pipe-kind.mjs), so with random ids two runs of one scenario recorded its pipes in different
+	orders, and the record was not a function of behaviour.
+	*/
+	let state = [...scenario.id].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 2166136261);
+	Math.random = () => { state = (state + 0x6d2b79f5) >>> 0; let t = state; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 	const judged = [];
 	const judge = scenario.judge ? (facts) => { judged.push(facts); return JUDGES[scenario.judge](facts); } : null;
 	const h = makeInput(judge ? { routeHook: judge } : {});
@@ -259,6 +267,7 @@ export function record(scenario, { withHarness = null } = {}) {
 		h.history.flush?.();
 		h.restore();
 		Date.now = realNow;
+		Math.random = realRandom;
 	}
 	return canonical(out);
 }
@@ -280,11 +289,14 @@ export function canonical(value) {
 		Object.values(v).forEach(find);
 	};
 	find(value);
-	return JSON.parse(text.replace(/\b(node|waypoint|link|zone|group)-[0-9a-f]{6}\b/g, (id, stored) => {
+	const name = (id, stored) => {
 		const kind = bare.has(id) ? 'waypoint' : stored;
 		if (!seen.has(id)) { count[kind] = (count[kind] ?? 0) + 1; seen.set(id, `${kind}#${count[kind]}`); }
 		return seen.get(id);
-	}));
+	};
+	// P7 X-a: a pipe's id is its two ends' hex (network/pipe-kind.mjs), so it is named by its ends' names, in one pass with them
+	return JSON.parse(text.replace(/\bpipe-([0-9a-f]{6})-([0-9a-f]{6})\b|\b(node|waypoint|link|zone|group)-[0-9a-f]{6}\b/g, (id, lo, hi, stored) => (
+		lo ? `pipe(${name(`node-${lo}`, 'node')},${name(`node-${hi}`, 'node')})` : name(id, stored))));
 }
 
 export const readGolden = () => JSON.parse(fs.readFileSync(GOLDEN, 'utf8'));

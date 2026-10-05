@@ -26,20 +26,25 @@ function drag(h, a, b, hops) {
 	h.capture.onUp(over(b.id, b.x, b.y));
 }
 
-test('PRODUCTION: with no route hook, `g` mid-drag changes nothing -- the commit is identical to no `g`', () => {
-	const plain = makeInput();
-	const withG = makeInput();
+/*
+REWRITTEN 2026-10-04 (P7 X-a, H18.37; the cutover ruling, 2026-09-30 "Full cutover to new routing engine in existing diagrams.
+No legacy"). These two held that the product page, composing no network, left `g` inert and the key the browser's. Since V-b
+the page composes the network as the lab does, and the harness composes the page as app/src/main.js does -- so they now hold
+the page's `g` as ruled: "Each drag action does one thing" (2026-09-30), a g drag lays pipes by hand and makes no link.
+*/
+test('the product page: `g` mid-drag lays an anchor and hand pipes, and makes no link (ruled 2026-09-30)', () => {
+	const h = makeInput();
 	try {
-		const [a1, b1] = seedNodes(plain.model, [[0, 0], [360, 0]]);
-		const [a2, b2] = seedNodes(withG.model, [[0, 0], [360, 0]]);
-		drag(plain, a1, b1, []);
-		drag(withG, a2, b2, [['g', 180, 120]]);
-		const shape = (h) => ({ links: h.model.all('link').map((l) => ({ via: l.via ?? null })), waypoints: h.model.all('node').filter((n) => !n.type).length, commits: h.commits.length });
-		assert.deepEqual(shape(withG), shape(plain), 'g must be inert in production: no anchor, no via, no extra commit');
-	} finally { plain.restore(); withG.restore(); }
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		drag(h, a, b, [['g', 180, 120]]);
+		assert.equal(h.model.all('link').length, 0, 'no link');
+		const g = h.model.all('node').filter((n) => !n.type);
+		assert.equal(g.length, 1, 'the g anchor is kept');
+		assert.deepEqual(h.model.all('pipe').map((p) => p.laid), ['hand', 'hand'], 'and two pipes laid by hand, which outlive any link');
+	} finally { h.restore(); }
 });
 
-test('PRODUCTION: `g` does not claim the key, because it does nothing', () => {
+test('the product page: `g` claims the key, because it does something', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
@@ -48,7 +53,7 @@ test('PRODUCTION: `g` does not claim the key, because it does nothing', () => {
 		let prevented = 0;
 		const e = key('g'); e.preventDefault = () => { prevented++; };
 		h.capture.onKeyDown(e);
-		assert.equal(prevented, 0, 'a key the product does nothing with must stay the browser\'s');
+		assert.equal(prevented, 1, 'the page acts on g, so the browser must not');
 	} finally { h.restore(); }
 });
 
@@ -189,24 +194,23 @@ test('with a route hook, w on a node the drag continues past is a hop the link r
 	} finally { h.restore(); }
 });
 
-test('PRODUCTION: w on a node still does nothing', () => {
+/*
+REWRITTEN 2026-10-04 (P7 X-a, H18.37; the cutover ruling): this held that `w` on a node did nothing on the product page. The page
+composes the network now (V-b), whose grammar makes a node a STOP: a link bends only at a waypoint (F-c), so a drag through a
+node with `w` makes two links that end there (network/guide.mjs), as the lab does.
+*/
+test('the product page: w on a node makes it a stop -- two links ending there', () => {
 	const h = makeInput();
 	try {
-		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const [a, n, b] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
 		h.capture.onDown(over(a.id, 0, 0));
-		h.capture.onMove(empty(360, 0));
+		h.capture.onMove(over(n.id, 360, 0));
 		h.capture.onKeyDown(key('w'));
-		// mid-drag, the cursor moved on: had the node joined the route, the live preview would stop following the cursor
-		// (MEASURED: it froze at the node) -- read from what is drawn, since tests assert at the boundary, not on Input's
-		// internals (scan-writers)
-		h.capture.onMove(empty(360, 240));
-		const live = h.drawn('#overlay', 'link-live')[0]?.attrs.d;
-		assert.ok(live, 'a live preview is drawn');
-		assert.equal(live, 'M0 0 L360 240', 'production\'s preview still runs straight from the source to the cursor');
-		h.capture.onMove(over(b.id, 360, 0));
-		h.capture.onUp(over(b.id, 360, 0));
-		assert.equal(h.model.all('link').length, 1, 'the drag still makes its link');
-		assert.equal(h.model.all('link')[0].via, undefined, 'and nothing is pinned on a node');
+		h.capture.onMove(over(b.id, 360, 360));
+		h.capture.onUp(over(b.id, 360, 360));
+		const ends = h.model.all('link').map((l) => `${l.src}>${l.dst}`).sort();
+		assert.deepEqual(ends, [`${a.id}>${n.id}`, `${n.id}>${b.id}`].sort(), 'two links, each ending at the node');
+		assert.ok(h.model.all('link').every((l) => !l.via?.length), 'and nothing bends at a node');
 	} finally { h.restore(); }
 });
 

@@ -32,8 +32,6 @@ import { attachRelations } from '../../engine/store.mjs';
 import { cellOf } from '../../kernel/geometry.mjs';
 import { Changes, applyAnswer } from '../../app/src/changes.js';
 import { plan } from '../../planner/txn.mjs';
-import { createNetwork } from '../../network/network.mjs';
-import { createTransit } from '../../network/transit.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { Tools } from '../../app/src/tools.js';
 import { Selection } from '../../app/src/selection.js';
@@ -43,6 +41,7 @@ import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { networkInput } from '../../network/keys.mjs';
+import { createNetworkSession } from '../../network/session.mjs';
 import { productKinds } from '../../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
@@ -163,8 +162,10 @@ can show a gesture did not, say, open the label editor, without asserting on pix
 export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null } = {}) {
 	const restore = installDom();
 
-	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2)
-	const pageNetwork = createNetwork(createTransit());
+	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2) -- the
+	// network SESSION's, as the page's is (network/page.mjs), so the real drag judge below judges on the network the Model draws with
+	const session = createNetworkSession();
+	const pageNetwork = session.network;
 	const model = new Model({ kinds: PAGE_KINDS, network: pageNetwork });
 	attachRelations(model, { cellOf });
 	const selection = new Selection(model);
@@ -251,11 +252,14 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
 			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules: RUN_PRESSES,
-				// `routeHook` composes the incubating network plugin as the lab does (lab/src/root.js): its own keys, and
-				// this function as its drag judge, handed the drag's facts (network/keys.mjs `networkInput`). Absent unless a
-				// test asks for it, exactly as production composes no plugin -- so every other test runs as production does.
-				...(routeHook ? { plugins: [networkInput(routeHook)] } : {}),
-				...(plugins ? { plugins } : {}) });   // a composition given whole, for tests of the plugin seam itself
+				/*
+				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
+				drag judge (network/session.mjs `judge`, what network/page.mjs attaches), judging on the board the tab holds. Before
+				X-a this harness composed the network only when a test passed a stub judge, so every other test -- and 69 of the
+				gesture corpus's 75 scenarios -- ran the page as it was before P5, with no g and no x.
+				`routeHook` stays: a STUB judge, for tests of the plugin seam itself; `plugins`, a composition given whole.
+				*/
+				plugins: plugins ?? [networkInput(routeHook ?? ((drag) => session.judge(drag, model.all('link'), model).verdict), session)] });
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events

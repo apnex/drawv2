@@ -50,7 +50,8 @@ function shared() {
 }
 const deletePin = ({ m, log }, opts) => commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'link', id: 'link-00000a' }] }, 'lab', 'lab', opts);
 
-test('production is unchanged: with no extra references, the orphaned pin is swept exactly as before', () => {
+// RENAMED 2026-10-04 (P7 X-a): it read "production is unchanged"; the sweep it holds is the network tenant's, which production runs
+test('the sweep: with no extra references, the orphaned pin is swept', () => {
 	const b = shared();
 	assert.equal(deletePin(b).ok, true);
 	assert.equal(b.m.get('node', W), undefined, 'today\'s sweep removes a bend its last link released');

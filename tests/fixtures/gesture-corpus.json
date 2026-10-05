@@ -152,6 +152,26 @@
 								"waypoint#1"
 							]
 						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#1,waypoint#1)",
+							"a": "node#1",
+							"b": "waypoint#1",
+							"laid": "link"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#2,waypoint#1)",
+							"a": "node#2",
+							"b": "waypoint#1",
+							"laid": "link"
+						}
 					}
 				],
 				"label": "route"
@@ -236,6 +256,26 @@
 								"waypoint#1"
 							]
 						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(waypoint#1,node#1)",
+							"a": "waypoint#1",
+							"b": "node#1",
+							"laid": "link"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#2,waypoint#1)",
+							"a": "node#2",
+							"b": "waypoint#1",
+							"laid": "link"
+						}
 					}
 				],
 				"label": "route"
@@ -317,6 +357,26 @@
 							"via": [
 								"waypoint#1"
 							]
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#1,waypoint#1)",
+							"a": "node#1",
+							"b": "waypoint#1",
+							"laid": "link"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(waypoint#1,node#2)",
+							"a": "waypoint#1",
+							"b": "node#2",
+							"laid": "link"
 						}
 					}
 				],
@@ -460,6 +520,16 @@
 							"src": "node#1",
 							"dst": "waypoint#1"
 						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#1,waypoint#1)",
+							"a": "node#1",
+							"b": "waypoint#1",
+							"laid": "link"
+						}
 					}
 				],
 				"label": "link"
@@ -557,11 +627,11 @@
 			"selection": []
 		}
 	},
-	"link-w-on-node-production": {
+	"link-w-on-node": {
 		"claims": [
 			false,
 			false,
-			false,
+			true,
 			false,
 			false
 		],
@@ -579,9 +649,40 @@
 							"src": "node#1",
 							"dst": "node#2"
 						}
+					},
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#2",
+							"name": "link-1",
+							"order": 1,
+							"src": "node#2",
+							"dst": "node#3"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#1,node#2)",
+							"a": "node#1",
+							"b": "node#2",
+							"laid": "link"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#3,node#2)",
+							"a": "node#3",
+							"b": "node#2",
+							"laid": "link"
+						}
 					}
 				],
-				"label": "link"
+				"label": "route"
 			}
 		],
 		"judged": [],
@@ -601,7 +702,7 @@
 					"y": 0
 				},
 				{
-					"id": "node#3",
+					"id": "node#2",
 					"name": "host-2",
 					"order": 2,
 					"type": "host",
@@ -610,7 +711,7 @@
 					"y": 0
 				},
 				{
-					"id": "node#2",
+					"id": "node#3",
 					"name": "host-3",
 					"order": 3,
 					"type": "host",
@@ -627,20 +728,28 @@
 					"order": 1,
 					"src": "node#1",
 					"dst": "node#2"
+				},
+				{
+					"id": "link#2",
+					"name": "link-1",
+					"order": 1,
+					"src": "node#2",
+					"dst": "node#3"
 				}
 			],
 			"zones": [],
 			"groups": [],
 			"selection": [
-				"link#1"
+				"link#1",
+				"link#2"
 			]
 		}
 	},
-	"link-g-production": {
+	"link-g": {
 		"claims": [
 			false,
 			false,
-			false,
+			true,
 			false,
 			false
 		],
@@ -650,17 +759,37 @@
 				"ops": [
 					{
 						"op": "put",
-						"kind": "link",
+						"kind": "node",
 						"entity": {
-							"id": "link#1",
-							"name": "link-1",
-							"order": 1,
-							"src": "node#1",
-							"dst": "node#2"
+							"id": "waypoint#1",
+							"name": "waypoint-1",
+							"order": 3,
+							"x": 180,
+							"y": 120
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#1,waypoint#1)",
+							"a": "node#1",
+							"b": "waypoint#1",
+							"laid": "hand"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(node#2,waypoint#1)",
+							"a": "node#2",
+							"b": "waypoint#1",
+							"laid": "hand"
 						}
 					}
 				],
-				"label": "link"
+				"label": "guide anchors"
 			}
 		],
 		"judged": [],
@@ -689,21 +818,19 @@
 					"y": 0
 				}
 			],
-			"waypoints": [],
-			"links": [
+			"waypoints": [
 				{
-					"id": "link#1",
-					"name": "link-1",
-					"order": 1,
-					"src": "node#1",
-					"dst": "node#2"
+					"id": "waypoint#1",
+					"name": "waypoint-1",
+					"order": 3,
+					"x": 180,
+					"y": 120
 				}
 			],
+			"links": [],
 			"zones": [],
 			"groups": [],
-			"selection": [
-				"link#1"
-			]
+			"selection": []
 		}
 	},
 	"link-shift-chain": {
@@ -862,6 +989,26 @@
 							"via": [
 								"waypoint#1"
 							]
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(waypoint#1,node#2)",
+							"a": "waypoint#1",
+							"b": "node#2",
+							"laid": "link"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(waypoint#1,node#3)",
+							"a": "waypoint#1",
+							"b": "node#3",
+							"laid": "link"
 						}
 					}
 				],
@@ -3113,6 +3260,16 @@
 							"order": 1,
 							"src": "waypoint#1",
 							"dst": "node#1"
+						}
+					},
+					{
+						"op": "put",
+						"kind": "pipe",
+						"entity": {
+							"id": "pipe(waypoint#1,node#1)",
+							"a": "waypoint#1",
+							"b": "node#1",
+							"laid": "link"
 						}
 					}
 				],

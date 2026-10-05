@@ -75,7 +75,12 @@ So the thing that knows the route also answers who depends on it: `network.links
 Absent in production, where `linksRoutedThrough` is empty and the renderer redraws exactly what it
 always has.
 */
-test('production: linksRoutedThrough is empty, so nothing extra is redrawn', () => {
+/*
+RENAMED 2026-10-04 (P7 X-a, H18.37; the cutover ruling): the five below were named `production:`, for the product as it ran with
+no network. Production composes the network everywhere now (P3 to P5), and a Model holding links must be given it (J2), so what
+they hold is the null network's answers on a Model that has none -- true, and no longer production.
+*/
+test('a Model with no network: linksRoutedThrough is empty, so nothing extra is redrawn', () => {
 	assert.deepEqual(seeded().linksRoutedThrough('node-00000c'), []);
 });
 
@@ -96,7 +101,7 @@ direct connection -- the director read it as a pipe created on its own. Down is 
 over the pipes), known only to whatever routes; so the router's owner answers it, beside the path and
 the dependents. Absent in production, which has no notion of a route to lose.
 */
-test('production: no link is ever down', () => {
+test('a Model with no network: no link is ever down', () => {
 	assert.equal(seeded().isLinkDown(LINK), false);
 });
 
@@ -113,7 +118,7 @@ The fourth companion: WHICH LINKS BLOCK a down link -- ruled 2026-09-30, "when I
 cannot be healed due to another link occupying my preferred path, also highlight that blocking link in orange".
 Who holds which pipe is the router's owner's to say, so it is injected; production has no pipes to hold.
 */
-test('production: no link is ever blocked', () => {
+test('a Model with no network: no link is ever blocked', () => {
 	assert.deepEqual(seeded().blockersOf(LINK), []);
 });
 
@@ -130,7 +135,7 @@ The fifth: WHETHER THE AUTHOR DECLARED AN ANCHOR'S TRANSIT OFF -- what the trans
 section 12). The lab holds that choice in the network's session until promotion stores it, so it is asked of the network;
 production has no transit to declare.
 */
-test('production: no anchor declares transit off', () => {
+test('a Model with no network: no anchor declares transit off', () => {
 	assert.equal(seeded().declaresNoTransit('node-00000c'), false);
 });
 
@@ -146,7 +151,7 @@ The sixth: WHETHER WHAT ARRIVES AT AN ANCHOR STOPS THERE (B278) -- declared off,
 one transit question every rule asks -- routing, the join refusal, the toggle's cut, the roles -- where the declaration
 above only draws the ring. Production has no transit: nothing stops.
 */
-test('production: nothing stops at any anchor', () => {
+test('a Model with no network: nothing stops at any anchor', () => {
 	assert.equal(seeded().stopsAt('node-00000c'), false);
 	assert.equal(seeded().stopsAt('node-00000a'), false);
 });
