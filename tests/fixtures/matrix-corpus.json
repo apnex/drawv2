@@ -2071,7 +2071,7 @@
 		"drawnPipes": 2
 	},
 	"CAP-05": {
-		"notice": "seed trunk -- 8 entities, 5 pipes",
+		"notice": "(the notice as the board arrived)",
 		"links": [
 			{
 				"id": "link#1",
@@ -9950,7 +9950,7 @@
 		"drawnPipes": 2
 	},
 	"PIPE-02": {
-		"notice": "seed cross -- 7 entities, 4 pipes",
+		"notice": "(the notice as the board arrived)",
 		"links": [
 			{
 				"id": "link#1",

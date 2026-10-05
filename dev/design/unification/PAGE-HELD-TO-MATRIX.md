@@ -113,6 +113,18 @@ AMENDED 2026-10-05 -- **X-b done** (H18.38).\
 **Proven:** one row of each step the matrix uses, and one judging the notice, green on the page and held to the lab's corpus. Mutants: no seed (6 of 7 fail), an empty banner (7 of 7), and a settle that does not wait for the server -- which no row can catch on a local server, so a test slows the page's socket 600 ms a send and requires the answer before the read (killed with the wait removed, and with no settle at all).\
 **Stopgap, removed by X-c:** the page runs only those rows (`HELD_SO_FAR`). Run whole, 81 of 89 rows pass on the page; the 8 that differ are X-c's -- seven name the blockers in the lab's notice where the page's banner shows Sync's line, and one a selection.\
 **Found on the way, B294, fixed:** UNDO-03 failed on the page one run in three -- a redo pressed while its undo was on the wire was refused as a version conflict, silently, a defect production carries. An undo or redo now waits for the requests ahead of it and goes out at the version the last answer left (PU55).\
+
+AMENDED 2026-10-05 -- **X-c done** (H18.39).\
+**Every row on the page:** all 89 rows green on the product page, held to the lab's record; the stopgap list is gone, and the page runs every row by default.\
+**Three defects, registered and fixed (PU56):**\
+B296 -- an edit that left its new link down ended on the count of down links, where the lab says why the new one is down: the page selects the link while the edit is on the wire, so the why was said before the answer's count (CAP-01, CAP-02, SRC-02, TRN-16, WP-01).\
+A why said while an edit is pending is said again once every answer is in.\
+B297 -- a refused edit was said as `refused: undefined`: the network read the planner's answer, and the page handed it the server's frame (RFS-01).\
+The frame now carries the planner's reason as `reason`.\
+B298 -- the network's notice was wiped by the next unrelated state emit, so a refusal, whose resync emits three times, lived for milliseconds (RFS-01, and a test of its own).\
+It is held as state now, giving way to the network's next word, to the undo offer when another writer's change tops the log (D21), and to the warnings.\
+**The page's own nature, named in the runner (L1):** the arrival line. Before the network says anything, each page shows its own line for a board arriving -- the lab its seed line, the page its banner on loading -- so a row ending there is recorded as the arrival, not by either page's words. The lab's corpus changed in exactly two notices, CAP-05 and PIPE-02.\
+**Proven:** each fix undone in turn fails exactly the rows it fixes; the arrival rule undone fails CAP-05 and PIPE-02.\
 Mutants: 2, both killed -- the pre-X-a composition fails 11 tests, and unpinned ids fail the corpus.
 ---
 

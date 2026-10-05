@@ -1059,7 +1059,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.36 | Design P7 for approval before any code: the tests move to the product -- the behaviour matrix runs against the product page as well as the lab | feature | S2 | `DONE` |
 | H18.37 | X-a: the client harness composes the product page -- network keys and real judge; the gesture corpus re-recorded; the outdated production tests restated | feature | S2 | `DONE` |
 | H18.38 | X-b: one matrix runner, two drivers -- the lab's and the product page's against a real server | feature | S2 | `DONE` |
-| H18.39 | X-c: every matrix row on the product page, held to the lab's record (L1); each difference registered and fixed | **B266** | S2 | `TODO` |
+| H18.39 | X-c: every matrix row on the product page, held to the lab's record (L1); each difference registered and fixed | feature | S2 | `DONE` |
 | H18.40 | X-d: P7 closed -- the matrix in the gate on both pages (L2); section 7 criterion 5 | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
@@ -1107,6 +1107,8 @@ AMENDED 2026-10-04: H18.37 (X-a) done -- the harness composes the product page's
 AMENDED 2026-10-05: H18.38 (X-b) done -- one matrix runner over two drivers; the lab's rows unchanged, byte for byte; the product page holds one row of each step to the lab's corpus.\
 Whole, 81 of 89 rows pass on the page; the 8 that differ are H18.39's.\
 Found on the way and fixed: B294, a redo pressed before its undo was answered was refused and lost.\
+AMENDED 2026-10-05: H18.39 (X-c) done -- every one of the 89 rows green on the product page, held to the lab's record.\
+The page's differences were three defects, B296 to B298, fixed; and the arrival line, the page's own, named in the runner.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

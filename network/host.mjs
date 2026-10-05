@@ -30,7 +30,7 @@ places: the drag judge's links and transit stops, the sweep, and the ages noted 
 promotion's P5, since the product page holds no such model. The sweep is the planner's now; the judge reads the tab, which
 holds what the planner holds once an answer is applied, and the ages are noted on the tab `apply` has just brought to it.
 */
-export function attachNetwork({ session, model, renderer, selection, history, pipeLayer, el, say }) {
+export function attachNetwork({ session, model, renderer, selection, history, pipeLayer, el, say, pending = () => false }) {
 	const { network } = session;
 
 	/*
@@ -92,7 +92,20 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	renderer.watchMode(paint);   // entering or leaving run mode changes which pipes are drawn (R-c)
 	// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30). The selected LOOK is
 	// composeCanvas's subscriber, so a page attaches the network AFTER composing the canvas, and that one runs first
-	selection.subscribe(() => { const why = whyDown(model, selection.list(), network); if (why) say(why); });
+	/*
+	B296 -- and says it LAST, after the answer to the edit that selected it. In the lab the planner answers in the page, so an
+	edit settles and then Input selects its new link, and the why is the last word. On the product page Input selects it
+	while the edit is on the wire (`pending`, the page's outbox), so the why was said first and the answer's count overwrote
+	it. A why said while an edit is pending is said again once every answer is in, if the selection still has one.
+	*/
+	let whyAwaits = false;
+	selection.subscribe(() => { const why = whyDown(model, selection.list(), network); if (why) { say(why); if (pending()) whyAwaits = true; } });
+	const whyAgain = () => {
+		if (!whyAwaits || pending()) return;
+		whyAwaits = false;
+		const why = whyDown(model, selection.list(), network);
+		if (why) say(why);
+	};
 
 	/*
 	SETTLE THE BOARD after its pipes or links change -- ONE step, so every path that changes them takes all of it. A link's
@@ -159,8 +172,9 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	const settled = (request, answer) => {
 		settle(`v${answer.version ?? '?'} ${request.verb ?? request.label ?? ''}`);
 		if (request.label === 'transit' && pendingTransit !== null) transitNotice(answer);   // the transit edit's own notice (F-e)
+		whyAgain();   // B296
 	};
-	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); };
+	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); whyAwaits = false; };
 
 	/*
 	A fixed board: its pipes go to the page's `run` as ops for the board's own commit (N-c), and its links are aged by the

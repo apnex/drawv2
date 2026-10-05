@@ -294,9 +294,18 @@ const judge = (checks, s) => Object.entries(checks).map(([key, want]) => CHECK[k
 const perform = async (p, steps) => { for (const [verb, ...args] of steps) await STEP[verb](p, ...args); };
 
 
-const corpusForm = (s) => {
+/*
+THE ARRIVAL LINE -- the one notice that is each page's own (P7 X-c, under L1's "the notice read from the banner"). Before the
+network has said anything, each page shows what it shows when a board arrives: the lab its seed line, `seed cross -- 7
+entities, 4 pipes`; the product page its banner on loading a diagram, here the undo offer for the seed REST committed. A
+row whose steps leave the notice where the board arrived is recorded as ARRIVAL, which both pages meet, rather than by
+either page's words. Read after the board opens and before its state's setup, so a notice any step says is never it.
+*/
+const ARRIVAL = '(the notice as the board arrived)';
+const corpusForm = (s, arrival = null) => {
 	// the drawn and occupied pipe lists carry pipe ids, made of minted anchors' random hex; I8 judges them, so they are counted here
 	const { drawnPipes, underLinks, allPipes, pipeElements, ...rest } = s;
+	if (arrival !== null && rest.notice === arrival) rest.notice = ARRIVAL;
 	const c = canonical({ ...rest, drawnPipes: drawnPipes.length });
 	c.pipes = c.pipes.map((q) => { const [a, b] = [q.a, q.b].sort(); return { ...q, a, b }; });
 	return c;
@@ -322,6 +331,7 @@ export function matrixTests({ test, name, skip, driver, corpus, write = null }) 
 			const p = await driver.open(state.board);
 			const t = await driver.theTab();
 			try {
+				const arrival = await p.run(`(async () => { ${driver.prelude} return H.notice(); })()`);
 				await perform(p, [...state.setup, ['settle']]);
 				const unset = judge(state.expect, await p.run(SNAPSHOT));
 				if (row.built === 'todo' && unset.length) return;
@@ -329,8 +339,8 @@ export function matrixTests({ test, name, skip, driver, corpus, write = null }) 
 				await perform(p, [...row.steps, ['settle']]);
 				const s = await p.run(SNAPSHOT);
 				const held = () => {
-					if (write) { write[row.id] = corpusForm(s); return; }
-					assert.deepEqual(corpusForm(s), corpus[row.id], `${row.id}: the board after its steps differs from the matrix corpus -- a change its own checks do not name`);
+					if (write) { write[row.id] = corpusForm(s, arrival); return; }
+					assert.deepEqual(corpusForm(s, arrival), corpus[row.id], `${row.id}: the board after its steps differs from the matrix corpus -- a change its own checks do not name`);
 				};
 				const broken = Object.entries(INVARIANT).map(([id, holds]) => { const r = holds(s, t.thrown); return r === true ? null : `${id}: ${r}`; }).filter(Boolean);
 				if (row.standing === 'open') {

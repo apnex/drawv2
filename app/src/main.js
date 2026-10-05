@@ -66,10 +66,25 @@ const { model, history, renderer, selection, labels, readout, snap, tools, input
 });
 /*
 THE NETWORK, ATTACHED (V-b): its pipe painter on `#pipes`, its drag judge, its transit edits and the settle after every change.
-What it says goes to the header banner (ruled J3), transient: Sync's next state emit writes the banner again.
+What it says goes to the header banner (ruled J3).
+
+B298 -- and STAYS there, held as state that the banner is drawn from (onState below), as B74 held what the server said: it
+was written into the banner and kept nowhere, so the next emit -- an `agents` message, a lock, a resync's snapshot --
+wiped it, and a refusal lived for milliseconds. It gives way to the next thing the network says; to a change of who is
+on top of the undo log since it was said (the undo offer, D21, which must not be hidden by an older notice); and to the
+warnings drawn after it.
+`pending` (B296): an edit of this tab's is on the wire, so the network says a selected link's why again once it lands.
 */
+let networkSaid = null;   // { text, run }: the network's last word, and the undo log's foreign run when it was said
+const foreignKey = () => { const r = history.foreignRun && history.foreignRun(); return r ? `${r.actor}|${r.run}|${r.label}` : ''; };
 const networkHost = pageNetwork.attach({ model, renderer, selection, history, pipeLayer: svg.querySelector('#pipes'), el,
-	say: (text) => { const banner = document.getElementById('banner'); if (banner && text) banner.textContent = text; } });
+	pending: () => sync.outbox.some((m) => !m.answered),
+	say: (text) => {
+		if (!text) return;
+		networkSaid = { text, run: foreignKey() };
+		const banner = document.getElementById('banner');
+		if (banner) banner.textContent = text;
+	} });
 const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools });
 // capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
 // the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")
@@ -598,7 +613,8 @@ const sync = new Sync({
 	// V-b: the network settles the board after what the server said is applied (network/host.mjs)
 	onAnswered: (request, answer) => networkHost.settled(request, answer),
 	onChanged: () => networkHost.redraw(),
-	onRefused: (answer) => networkHost.refused(answer),
+	// B297: the network is handed the planner's reason, as the lab hands it; the server's frame carries it as `reason`
+	onRefused: (b) => networkHost.refused({ error: b.reason ?? b.message }),
 	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound, said }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would
@@ -684,7 +700,7 @@ const sync = new Sync({
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);
 		menu.name.disabled = readOnly;
-		if (onStateLastId && onStateLastId !== meta.id) disarmDelete();
+		if (onStateLastId && onStateLastId !== meta.id) { disarmDelete(); networkSaid = null; }   // B298: a notice belongs to its diagram
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
 		document.title = `draw-next - ${meta.name}`;
@@ -716,7 +732,11 @@ const sync = new Sync({
 		made. A bounded, designed loss that no actor can perceive is not a bounded loss.
 		*/
 		const run = history.foreignRun && history.foreignRun();
-		if (run) {
+		// B298: the network's last word, unless the undo log's top has changed hands since it was said
+		if (networkSaid && networkSaid.run === foreignKey()) {
+			menu.banner.textContent = networkSaid.text;
+			menu.banner.title = '';
+		} else if (run) {
 			menu.banner.textContent = `↶ Ctrl+Shift+Backspace undoes ${run.run} change${run.run === 1 ? '' : 's'} by ${run.actor}`;
 			menu.banner.title = `top of the log: "${run.label || run.by}" by ${run.actor}`;
 		} else {

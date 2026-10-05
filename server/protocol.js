@@ -249,9 +249,10 @@ export class Session {
 
 	// B3/I16: a rejection carries a machine-readable code and the caller's correlation id, so the
 	// client can surface it against the request that caused it instead of dropping it into a log.
-	error(message, code = 'error', txnId = null) {
+	// `extra` adds fields to the frame: a refused commit's `reason`, the planner's own words (B297)
+	error(message, code = 'error', txnId = null, extra = {}) {
 		console.warn(`[ session ] ${message}`);
-		this.send('error', { message, code, txnId });
+		this.send('error', { message, code, txnId, ...extra });
 	}
 
 	snapshot(model) {
@@ -394,7 +395,8 @@ export class Session {
 					this.diagramId = res.forkedTo;
 					this.send('forked', { from: body.from ?? null, diagram: res.forkedTo });
 				}
-				if (!res.ok) return this.error(`commit rejected: ${res.error}`, 'commit-rejected', body.txnId);
+				// B297: the planner's reason as its own field, so a client says it as the lab does, without parsing `message`
+				if (!res.ok) return this.error(`commit rejected: ${res.error}`, 'commit-rejected', body.txnId, { reason: res.error });
 				if (this.locks) this.locks.releaseHold(this.diagramId);   // the human took the wheel
 				/*
 				B184 -- a REPLAY is acknowledged with the version it originally produced.

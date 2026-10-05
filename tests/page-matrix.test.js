@@ -125,11 +125,29 @@ test('page matrix: B294 -- a redo pressed while its undo is on the wire is redon
 });
 
 /*
-STOPGAP, removed by X-c (H18.39): the rows held on the page so far -- one taking each step the matrix uses (click, key, move,
-drag, settle, undo, redo, shiftClick), and one judging the notice. X-c runs every row and deletes this list.
-`PAGE_MATRIX_ONLY=<id,id>` narrows a run by hand; `PAGE_MATRIX_ALL=1` runs every row, as X-c will by default.
+B298 -- the network's notice stays in the banner through state emits that have nothing to do with it, and gives way to the
+undo offer (D21) when someone else's change lands on top of the log: an older notice must never hide that Ctrl+Z would now
+reverse another writer's work.
 */
-const HELD_SO_FAR = ['DEL-01', 'DEL-04', 'HEAL-01', 'HEAL-05', 'CAP-06', 'UNDO-03', 'TRN-05'];
-const only = process.env.PAGE_MATRIX_ONLY?.split(',') ?? (process.env.PAGE_MATRIX_ALL === '1' ? null : HELD_SO_FAR);
+test('page matrix: B298 -- the network\'s notice survives an unrelated emit, and yields to another writer\'s change', { skip: SKIP }, async () => {
+	const p = await open('cross');
+	const banner = `document.getElementById('banner').textContent`;
+	await p.click(0, 0);
+	await p.key('Delete');
+	await p.settle();
+	const said = await p.run(banner);
+	assert.match(said, /^v\d+ delete/, 'the network said what the delete did');
+	await p.run(`window.draw.sync.onMessage({ cmd: 'agents', body: { agents: [] } }), window.draw.sync.onMessage({ cmd: 'viewers', body: { viewers: [] } }), 1`);
+	assert.equal(await p.run(banner), said, 'an agents and a viewers emit leave it where it was');
+	const id = await p.run(`location.pathname.split('/').pop()`);
+	const { token } = await (await api(`/diagrams/${id}/lock`, { method: 'POST' })).json();
+	await api(`/diagrams/${id}/commit`, { method: 'POST', headers: { 'X-Draw-Lock': token }, body: JSON.stringify({ ops: [{ op: 'set', kind: 'node', id: 'node-000001', patch: { name: 'renamed' } }], label: 'rename' }) });
+	await api(`/diagrams/${id}/lock`, { method: 'DELETE', headers: { 'X-Draw-Lock': token } });
+	for (let i = 0; i < 40 && !(await p.run(banner)).startsWith('↶'); i++) await sleep(50);
+	assert.match(await p.run(banner), /^↶ Ctrl\+Shift\+Backspace undoes 1 change by rest-/, 'another writer on top of the log: the undo offer, not the older notice');
+});
+
+// every row, on the product page (X-c, H18.39): `PAGE_MATRIX_ONLY=<id,id>` narrows a run by hand
+const only = process.env.PAGE_MATRIX_ONLY?.split(',') ?? null;
 
 matrixTests({ test, name: 'page matrix', skip: SKIP, corpus: CORPUS, driver: { open, theTab, prelude: PAGE_PRELUDE, only } });
