@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-04 against `79688d7`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-04: approved; L1 and L2 ruled as recommended (section 9).
 
 ## 1. Status
 
@@ -97,6 +98,8 @@ Each stage is one gate and one lab deploy.
 - **L1 -- what the product page is held to.** Recommended: the lab's own record, row for row -- one matrix corpus, so the page and the lab cannot drift; the only differences allowed are the page's own nature, each named in the runner (the notice read from the banner rather than `#lab-notice`, and the authority read from the server rather than in the page). The alternative: a corpus of the page's own, which would record whatever the page does today, differences included.
 - **L2 -- where the page's matrix runs.** Recommended: in the gate, beside the lab's, every push -- about two more minutes, and the page can never fall out of step unnoticed. The alternative: in CI only, or on demand, which keeps the gate's time and lets a difference land unseen until it runs.
 
+
+AMENDED 2026-10-04 -- **L1 and L2 RULED as recommended** (`dev/DECISIONS.md`, "P7's design decisions, L1 and L2"): one record for the lab and the page, the page's own nature named in the runner; the page's matrix in the gate on every push.
 ---
 
 ## 10. Axiom alignment audit (M7)

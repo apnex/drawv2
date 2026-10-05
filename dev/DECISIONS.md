@@ -1719,3 +1719,8 @@ Asked against `dev/design/unification/AGENTS-LAY-PIPES.md` section 9.
 Asked whether P7 puts the unified rules engine into production, the proposer answered that nothing reaches production before P9, and recommended a step before it: deploy `main`'s product page to a staging service holding a copy of the migrated live diagrams, so the director can use it as a user would before anything changes for real users. The director: "Lets proceed correctly as per the recommended path to eventually unify all the things".
 - The remaining stages stand as planned: P7 (the matrix on the product page), P8 (the final dry run), P9 (the cutover, at the director's go-ahead).
 - P8 gains the staging rehearsal: `main` on a staging service, with a copy of the estate migrated by the store's own boot, for the director to use before P9.
+
+**P7's design decisions, L1 and L2, ruled as recommended -- 2026-10-04 (B266, H18.36).**\
+Asked one at a time against `dev/design/unification/PAGE-HELD-TO-MATRIX.md` section 9.
+- L1: the product page is held to the lab's own record, row for row -- one matrix corpus for both. The only differences allowed are the page's own nature, each named in the runner: the notice read from the banner (J3), and the authority read from the server's document.
+- L2: the product page's matrix runs in the gate, beside the lab's, on every push -- about two more minutes -- so the page can never fall out of step with the lab unnoticed.

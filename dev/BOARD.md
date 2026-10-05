@@ -1056,7 +1056,11 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.33 | W-c: the CLI reads pipes -- `draw get pipes`, and pipes in `show`, `dump`, `map` | feature | S2 | `DONE` |
 | H18.34 | W-d: `draw link ... --lay` lays the link's legs with it (K1); G2's stopgap removed | feature | S2 | `DONE` |
 | H18.35 | W-e: P6 closed -- the parity test of each thing a person does with pipes, the register, the records | feature | S2 | `DONE` |
-| H18.36 | Design P7 for approval before any code: the tests move to the product -- the behaviour matrix runs against the product page as well as the lab | **B266** | S2 | `TODO` |
+| H18.36 | Design P7 for approval before any code: the tests move to the product -- the behaviour matrix runs against the product page as well as the lab | feature | S2 | `DONE` |
+| H18.37 | X-a: the client harness composes the product page -- network keys and real judge; the gesture corpus re-recorded; the outdated production tests restated | **B266** | S2 | `TODO` |
+| H18.38 | X-b: one matrix runner, two drivers -- the lab's and the product page's against a real server | **B266** | S2 | `TODO` |
+| H18.39 | X-c: every matrix row on the product page, held to the lab's record (L1); each difference registered and fixed | **B266** | S2 | `TODO` |
+| H18.40 | X-d: P7 closed -- the matrix in the gate on both pages (L2); section 7 criterion 5 | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1098,6 +1102,7 @@ AMENDED 2026-10-04: the director rules the CLI's shape is the agent's to choose,
 AMENDED 2026-10-04: H18.34 (W-d) done -- `draw link --lay` lays the link's own pipes with it, as the keyed drag does; G2's stopgap is removed.\
 AMENDED 2026-10-04: H18.35 (W-e) done -- P6 is closed on `main`: an agent does with pipes everything a person can, each held to the gesture's ruled outcome; B293, found by it, fixed. Next H18.36, P7's design.\
 AMENDED 2026-10-04: the path to the cutover stands, P8 gaining a staging rehearsal (`dev/DECISIONS.md`). H18.36's design is `dev/design/unification/PAGE-HELD-TO-MATRIX.md`, proposed; its decisions L1 and L2 are asked one at a time before any code.\
+AMENDED 2026-10-04: approved and L1 and L2 ruled as recommended (`dev/DECISIONS.md`); H18.36 DONE, the build is H18.37 to H18.40.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
