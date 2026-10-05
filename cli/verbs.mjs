@@ -1697,8 +1697,9 @@ VERBS.push({
 
 		if (type === 'waypoint') {
 			const wid = mint('node');   // a node with no type (F-c)
-			// B187 -- named from its own id: a waypoint minted at a cell was not asked for by name
-			const wops = [{ op: 'put', kind: 'node', entity: { id: wid, name: wid, x: spot.x, y: spot.y } }];
+			// B187 -- named from its own id unless a name is given: `--name` was accepted here and dropped, so an agent could not refer
+			// to the waypoint it had just named -- found by P6's parity test (W-e, H18.35); the typed node below always honoured it
+			const wops = [{ op: 'put', kind: 'node', entity: { id: wid, name: ctx.flags.name || wid, x: spot.x, y: spot.y } }];
 			return submit(ctx, id, wops, 'add waypoint', 'add', (wb) => ({
 				json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
 				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}`,

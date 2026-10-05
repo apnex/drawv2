@@ -138,6 +138,19 @@ AMENDED 2026-10-04 -- **W-d done** (H18.34; K1): **G2's stopgap is removed.**\
 **One restatement, held by a test:** the pipes must ride in the link's own commit, since a link pipe laid alone is swept in the same edit, so the CLI builds them and states the network's id rule (`linkPipe`), as it states `isWaypoint`, because it ships alone (B138). The CLI test holds each `--lay` pipe to `pipeEntity`: its id, its ends lower hex first, laid `link`. Section 10's guardrail is CORRECTED accordingly: no verb builds a pipe id but `--lay`, which is held to the network's rule.\
 Without the flag a plain link lays none, as ruled, and is down on an empty board -- now the person's plain drag exactly, not a gap: an agent lays with `--lay` or `draw pipe`, as a person keys a drag or presses `g`.\
 Held by a CLI test failing on the code before; mutants 4, all killed.
+
+AMENDED 2026-10-04 -- **W-e done** (H18.35): **P6 is closed on `main`.**\
+**The parity test,** `tests/agent-parity.test.js`: each thing a person does with pipes, done through the CLI against the real server, held to what the gesture is ruled to make -- the behaviour matrix's own `expect` for the row, on the same seed board replayed through the agent door with its own ids, read back through `draw show` and `draw link path`:
+- **lay a hand pipe:** HEAL-02, `g` on the end, is `draw pipe A B`;
+- **a plain link:** HEAL-03, a mouseup on the end, is `draw link A B` -- refused as the drag is, a straight link already joining them;
+- **a link with a pin laying its legs:** HEAL-04, a `w` bend, is `draw link A B --via 0,-2`;
+- **remove a pipe:** PIPE-03, a `g` anchor and its hops and one deleted, is `draw add waypoint`, `draw pipe` twice, `draw pipe --off`;
+- **a link that lays its own pipe:** no matrix row draws the keyed drag with no pins, so `draw link A B --lay` is held to the network's own drag judge for a drag started with `w`, on the same board -- the same pipes, laid the same way;
+- **see the pipes:** every pipe in the document is in `draw get pipes`, and each link's route is in the `carries` of every pipe it runs over.
+**A defect it found, B293:** `draw add waypoint ... --name` dropped the name, so the waypoint PIPE-03 lays to could not be named; fixed in the same commit.\
+Mutants: 4, all killed.
+
+**P6 against its exit criterion** ("an agent can do with pipes everything a person can (A5), held by the CLI suite"): met. G2's stopgap was removed at W-d; the promotion holds no named stopgap.
 ---
 
 ## 10. Axiom alignment audit (M7)

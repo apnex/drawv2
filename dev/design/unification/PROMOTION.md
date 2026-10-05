@@ -248,6 +248,8 @@ Production stays on `draw:2538ab8` (F3); next is P5, designed for approval befor
 AMENDED 2026-10-04 -- **P5 is done on `main`** (H18.24 to H18.29; `PAGE-COMPOSES-NETWORK.md`, V-a to V-e): the network's look is in `network/` and the incubator boundary is retired (J1); the product page composes the network as the lab does, through one function, and says what it says in its banner (J3); a link landing on another link's bend is cut by the planner at every door (B243); the browser previews every commit with the planner and sends intent only, keeping no copy of a planner rule (PL-6, B221); a Model holding links requires the network (J2).\
 Section 7's criteria 1 and 7 now hold; criterion 5 is P7's.\
 Production stays on `draw:2538ab8` (F3); next is P6, designed for approval before any code.\
+AMENDED 2026-10-04 -- **P6 is done on `main`** (H18.30 to H18.35; `AGENTS-LAY-PIPES.md`, W-a to W-e): REST serves the composition's collections, `/pipes` among them; the CLI lays (`draw pipe`), removes (`--off`, `rm`), reads (`get pipes`, `show`, `map`, `dump`, `status`) and links with its own pipes (`draw link --lay`, K1); each thing a person does with pipes is held to the gesture's ruled outcome. The CLI's shape is the agent's to choose (the director). No named stopgap remains.\
+Production stays on `draw:2538ab8` (F3); next is P7, designed for approval before any code.\
 
 ---
 
