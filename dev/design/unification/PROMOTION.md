@@ -251,6 +251,10 @@ Production stays on `draw:2538ab8` (F3); next is P6, designed for approval befor
 AMENDED 2026-10-04 -- **P6 is done on `main`** (H18.30 to H18.35; `AGENTS-LAY-PIPES.md`, W-a to W-e): REST serves the composition's collections, `/pipes` among them; the CLI lays (`draw pipe`), removes (`--off`, `rm`), reads (`get pipes`, `show`, `map`, `dump`, `status`) and links with its own pipes (`draw link --lay`, K1); each thing a person does with pipes is held to the gesture's ruled outcome. The CLI's shape is the agent's to choose (the director). No named stopgap remains.\
 Production stays on `draw:2538ab8` (F3); next is P7, designed for approval before any code.\
 AMENDED 2026-10-04 -- **P8 gains a staging rehearsal** (`dev/DECISIONS.md`, "The path to the cutover, with a staging rehearsal"): `main` on a staging service holding a copy of the estate migrated by the store's own boot, for the director to use as a user would before P9.\
+AMENDED 2026-10-05 -- **P7 is done on `main`** (H18.36 to H18.40; `PAGE-HELD-TO-MATRIX.md`, X-a to X-d): the client harness composes the product page; one matrix runner drives the lab and the product page against a real server, both held to one record; all 89 rows pass on the page, in the gate and in CI.\
+Section 7's criterion 5 is met.\
+Four page defects it found are fixed: B294 and B296 to B298.\
+Production stays on `draw:2538ab8` (F3); next is P8, the final dry run and the staging rehearsal, planned for approval before it runs.\
 
 ---
 

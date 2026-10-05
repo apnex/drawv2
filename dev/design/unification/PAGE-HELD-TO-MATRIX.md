@@ -125,6 +125,11 @@ B298 -- the network's notice was wiped by the next unrelated state emit, so a re
 It is held as state now, giving way to the network's next word, to the undo offer when another writer's change tops the log (D21), and to the warnings.\
 **The page's own nature, named in the runner (L1):** the arrival line. Before the network says anything, each page shows its own line for a board arriving -- the lab its seed line, the page its banner on loading -- so a row ending there is recorded as the arrival, not by either page's words. The lab's corpus changed in exactly two notices, CAP-05 and PIPE-02.\
 **Proven:** each fix undone in turn fails exactly the rows it fixes; the arrival rule undone fails CAP-05 and PIPE-02.\
+
+AMENDED 2026-10-05 -- **X-d done, and P7 is closed** (H18.40).\
+**Criterion 5 met:** the behaviour matrix passes on the product page -- all 89 rows, in the gate on every push beside the lab's (L2), and in CI, where a skipped test fails the gate: the run on `5457f9b` passed 1905 tests with none skipped.\
+**The gate's cost, measured:** the suite took 132 seconds without the page's matrix and 149 with it, so the page adds about 17 seconds, not the two minutes section 7 estimated; the test files run in parallel, and the page's 126 seconds overlap the rest. The whole local gate takes about 160 seconds; CI about three minutes.\
+**Read for the director:** L1 allows the notice read from the banner and the authority read from the server; the arrival line is recorded under the first, as the banner's own words for a board arriving.\
 Mutants: 2, both killed -- the pre-X-a composition fails 11 tests, and unpinned ids fail the corpus.
 ---
 
