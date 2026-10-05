@@ -228,8 +228,17 @@ export class Sync {
 		outbox is untouched, so nothing is lost -- the work goes out when the window has passed.
 		*/
 		if (this.throttledUntil && Date.now() < this.throttledUntil) return;
-		for (const msg of this.outbox) {
+		for (const [i, msg] of this.outbox.entries()) {
 			if (msg.sent) continue;
+			/*
+			B294 -- an undo or redo waits for every request ahead of it to be answered, and goes out at the version the
+			last answer left. Its `expect` is the version the tab stood at; pressed while its own earlier request was on
+			the wire, that version is one the request itself moves the server past, so the server refused it as a
+			conflict and the redo was lost. Stamped here, after the answer, it means where the tab stands once its own
+			request lands -- and a write by anyone else in between still moves the server past it, and is refused.
+			*/
+			if (msg.verb && this.outbox.slice(0, i).some((m) => m.sent && !m.answered)) { msg.waited = true; return; }
+			if (msg.verb && msg.waited) msg.expect = this.changes.state.version;
 			const ok = msg.verb
 				? this.net.send(msg.verb, { expect: msg.expect, ...(msg.to != null ? { to: msg.to } : {}), txnId: msg.txnId })
 				: this.net.send('commit', { ops: msg.ops, label: msg.label, txnId: msg.txnId });
@@ -545,6 +554,18 @@ export class Sync {
 				this.say(b.message, { code: b.code, err: true });
 				return;
 			}
+			/*
+			B294 -- an undo or redo waiting behind the refused request was pressed on the premise that it landed, so it
+			goes with it rather than out on its own, reversing something the person did not mean; and the refusal says so.
+			*/
+			let alsoDropped = [];
+			if (dropped >= 0) {
+				alsoDropped = this.outbox.slice(dropped + 1).filter((m) => m.verb && m.waited && !m.sent);
+				if (alsoDropped.length) {
+					this.outbox = this.outbox.filter((m) => !alsoDropped.includes(m));
+					b.message = `${b.message} -- and the ${alsoDropped.map((m) => m.verb).join(' and ')} pressed after it, which waited on it`;
+				}
+			}
 			if (dropped >= 0) {
 				this.outbox.splice(dropped, 1);
 				/*
@@ -637,6 +658,7 @@ export class Sync {
 		this.emitState({});
 		// after the state emit, so what is said there is not overwritten by it (J3: the banner, transient)
 		if (sent) this.onAnswered?.(sent, b);
+		this.drain();   // B294: an undo or redo waiting for this answer goes out now, at the version it left
 	}
 
 	// Load a snapshot. Split out of `onMessage` so B71's deferral has somewhere to send a held

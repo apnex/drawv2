@@ -234,10 +234,16 @@ test('a resync does not put back a move that an undo reversed', async () => {
 	try {
 		w.changes.commit(move(A, 240, 0));
 		w.pump();
+		const refused = [];
+		w.sync.onRefused = (b) => refused.push(b.code);
 		w.changes.undo();
-		w.changes.undo();                                      // both expect one version: the second is refused
-		w.pump();
+		w.changes.undo();                                      // the second waits for the first's answer (B294)
+		w.serve();                                             // the first undo lands
+		w.other(set('node', X, { name: 'moved-on' }));         // and another writer moves the server past it
+		w.pump();                                              // so the second, at the version the first left, is refused
+		assert.equal(refused[0], 'version-conflict', 'the second undo was refused -- the resync this test is about followed');   // a second refusal is B295's replay
 		assert.equal(w.server().get('node', A).x, 0, 'the server undid the move');
+		assert.equal(w.server().get('node', X).name, 'moved-on', 'and the other writer\'s change stands: the second undo was refused');
 		assert.deepEqual(w.diff(), [], CONVERGED);
 	} finally { w.close(); }
 });

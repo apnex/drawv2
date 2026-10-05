@@ -105,6 +105,26 @@ test('page matrix: a step settles when the server has answered, however slow the
 });
 
 /*
+B294 -- a redo pressed before its undo is answered is redone, on the product page against a real server. Pressed in the same
+tick, the redo is certain to leave while the undo is on the wire; before the fix the server refused it, every time, and the
+page said nothing. UNDO-03 caught it one run in three, its keys only nearly as close.
+*/
+test('page matrix: B294 -- a redo pressed while its undo is on the wire is redone', { skip: SKIP }, async () => {
+	const p = await open('');
+	const got = await p.run(`(async () => {
+		const d = window.draw, n = d.model.makeNode('host', { x: 0, y: 0 });
+		d.history.commit({ label: 'put', entries: [{ op: 'put', kind: 'node', entity: n }] });
+		for (let i = 0; i < 40 && !d.sync.outbox.every((m) => m.answered); i++) await new Promise((r) => setTimeout(r, 50));
+		d.history.undo(); d.history.redo();
+		for (let i = 0; i < 40 && !d.sync.outbox.every((m) => m.answered); i++) await new Promise((r) => setTimeout(r, 50));
+		const doc = await (await fetch('/api/v1/diagrams/' + location.pathname.split('/').pop())).json();
+		return { tab: d.model.all('node').length, server: doc.nodes.length, banner: document.getElementById('banner').textContent };
+	})()`);
+	assert.deepEqual({ tab: got.tab, server: got.server }, { tab: 1, server: 1 }, `the node is back on the tab and the server (the banner says "${got.banner}")`);
+	assert.doesNotMatch(got.banner, /conflict|moved on/, 'and nothing was refused');
+});
+
+/*
 STOPGAP, removed by X-c (H18.39): the rows held on the page so far -- one taking each step the matrix uses (click, key, move,
 drag, settle, undo, redo, shiftClick), and one judging the notice. X-c runs every row and deletes this list.
 `PAGE_MATRIX_ONLY=<id,id>` narrows a run by hand; `PAGE_MATRIX_ALL=1` runs every row, as X-c will by default.

@@ -1106,6 +1106,7 @@ AMENDED 2026-10-04: approved and L1 and L2 ruled as recommended (`dev/DECISIONS.
 AMENDED 2026-10-04: H18.37 (X-a) done -- the harness composes the product page's Input with the network; the gesture corpus records the page's grammar, deterministically; no test claims a pre-network production behaviour.\
 AMENDED 2026-10-05: H18.38 (X-b) done -- one matrix runner over two drivers; the lab's rows unchanged, byte for byte; the product page holds one row of each step to the lab's corpus.\
 Whole, 81 of 89 rows pass on the page; the 8 that differ are H18.39's.\
+Found on the way and fixed: B294, a redo pressed before its undo was answered was refused and lost.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
@@ -1134,6 +1135,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
 | **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
+| **B295** | S4 | After a resync the tab re-sends an undo or redo the server already answered; refused, so harmless, but a second spurious conflict | a page row in X-c (H18.39) or a user sees the spurious refusal, or the outbox's replay is next changed |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag | a user reports a node jumping during a drag |
