@@ -1097,6 +1097,7 @@ AMENDED 2026-10-04: H18.32 (W-b) done -- `draw pipe a b` lays a hand pipe and sa
 AMENDED 2026-10-04: the director rules the CLI's shape is the agent's to choose, for what an agent finds most intuitive. H18.33 (W-c) done -- pipes in `get`, `show`, `map`, `dump`, `status` and `diagrams --counts`, ends by name and the links each carries.\
 AMENDED 2026-10-04: H18.34 (W-d) done -- `draw link --lay` lays the link's own pipes with it, as the keyed drag does; G2's stopgap is removed.\
 AMENDED 2026-10-04: H18.35 (W-e) done -- P6 is closed on `main`: an agent does with pipes everything a person can, each held to the gesture's ruled outcome; B293, found by it, fixed. Next H18.36, P7's design.\
+AMENDED 2026-10-04: the path to the cutover stands, P8 gaining a staging rehearsal (`dev/DECISIONS.md`). H18.36's design is `dev/design/unification/PAGE-HELD-TO-MATRIX.md`, proposed; its decisions L1 and L2 are asked one at a time before any code.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

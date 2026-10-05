@@ -1714,3 +1714,8 @@ Asked one at a time against `dev/design/unification/PAGE-COMPOSES-NETWORK.md` se
 Asked against `dev/design/unification/AGENTS-LAY-PIPES.md` section 9.
 - K1: an agent makes a link that lays its own pipe with a flag, `draw link ... --lay`, which lays a pipe with the link for each leg no pipes join, as a person's keyed drag does; those pipes go when no link is on them. Without the flag a plain link lays none, as ruled ("Direct links without a key lay no pipe", 2026-09-30).
 - The director, on W-b's correction (`draw pipe a b --off` rather than `draw rm a b`): "The cli needs to best fir your workflow - so the most intuitive for an agent would be best approach." So the CLI's shape for pipes -- and its verbs generally -- is chosen for what an agent finds most intuitive, by the agent who uses it; the correction stands on that ground.
+
+**The path to the cutover, with a staging rehearsal -- 2026-10-04 (B266).**\
+Asked whether P7 puts the unified rules engine into production, the proposer answered that nothing reaches production before P9, and recommended a step before it: deploy `main`'s product page to a staging service holding a copy of the migrated live diagrams, so the director can use it as a user would before anything changes for real users. The director: "Lets proceed correctly as per the recommended path to eventually unify all the things".
+- The remaining stages stand as planned: P7 (the matrix on the product page), P8 (the final dry run), P9 (the cutover, at the director's go-ahead).
+- P8 gains the staging rehearsal: `main` on a staging service, with a copy of the estate migrated by the store's own boot, for the director to use before P9.
