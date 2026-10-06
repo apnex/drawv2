@@ -168,3 +168,21 @@ Of the 42 diagrams, 41 are identical to the same copy migrated locally by the sa
 Read through the new server's doors: 42 diagrams, 482 links, 805 pipes, none down; every download renders; the director's link is up along its route.
 **The open tab (section 5.4), observed:** its health check saw the new revision a second after it answered, and the tab reloaded itself onto `main` and reconnected; nothing was refused, and the server logged no error.\
 Next in Y-d: the director uses `main` on staging; each finding is a B row, fixed on `main` and redeployed.
+
+AMENDED 2026-10-06 -- **Y-e done** (H18.46): the rollback rehearsed and timed (P-8), and the upgrade run a second time.
+**The rollback, 34 seconds from abort to serving:** writes frozen at the load balancer (3 s), the bucket restored from the pre-migration copy (17 s), `2538ab8` deployed (30 s), reopened (34 s).
+The bucket was then byte-identical to the copy, and the old server healthy on all 42 diagrams.
+**The order is load-bearing:** freeze before restoring, or a running new revision could save a schema 2 file over a restored one.\
+**What a rollback loses:** everything written after the backup -- here, the link the director drew.\
+**The upgrade again, 13 seconds to deploy:** all 42 diagrams on staging identical to the same copy migrated locally, version numbers included; staging is left on `main` for the director.
+
+**P9's runbook, from what ran** (the commands, by name, are in the private deploy runbook):
+1. Freeze writes at the load balancer.
+2. Take the backup, frozen, so a rollback loses nothing written before the upgrade.
+3. Dry-run that exact backup; on any difference, abort -- nothing has changed yet.
+4. Deploy `main`; the store's boot migrates every diagram.
+5. Verify: the bucket equals the backup migrated locally by the same code, health is ok, the log is clean.
+6. Reopen; open tabs reload themselves onto the new version.
+
+**Downtime, by judgement:** a few minutes, most of it the dry run and the check; the deploy itself took 13 to 22 seconds.\
+**For P9, a decision to put to the director:** how long the rollback stays open after step 6, since a rollback then discards every edit users made on the new version (W25).

@@ -1066,7 +1066,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.43 | Y-b: the exit-criteria audit -- `PROMOTION.md` section 7, each criterion with its evidence | feature | S2 | `DONE` |
 | H18.44 | Y-c: staging stood up at production's image, behind the same sign-in, on its own bucket (M1) | feature | S2 | `DONE` |
 | H18.45 | Y-d: the rehearsal of P9 on staging -- an open tab across the deploy, the boot migration, the director's use | **B266** | S2 | `TODO` |
-| H18.46 | Y-e: the rollback rehearsed and timed (P-8); P9's runbook written from what ran | **B266** | S2 | `TODO` |
+| H18.46 | Y-e: the rollback rehearsed and timed (P-8); P9's runbook written from what ran | feature | S2 | `DONE` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1121,6 +1121,8 @@ AMENDED 2026-10-06: H18.41's plan is `dev/design/unification/FINAL-REHEARSAL.md`
 AMENDED 2026-10-06: approved and M1 and M2 ruled as recommended (`dev/DECISIONS.md`); H18.41 DONE, the work is H18.42 to H18.46.\
 AMENDED 2026-10-06: H18.42 and H18.43 done -- today's estate dry-runs clean, 481 links and none down; section 7's seven criteria each met, with evidence in `FINAL-REHEARSAL.md`.\
 AMENDED 2026-10-06: H18.44 done -- staging stands at production's image behind the same sign-in, on its own copy; the shared load balancer's other hostnames unchanged.\
+AMENDED 2026-10-06: H18.46 done -- the rollback rehearsed on staging, 34 seconds from abort to serving; the upgrade run twice, the second identical to the local migration on all 42 diagrams; P9's runbook written from what ran.\
+H18.45 stays open for the director's use of staging.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
