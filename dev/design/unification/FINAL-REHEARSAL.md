@@ -160,3 +160,11 @@ The names, and the teardown M2 calls for, are in the private deploy runbook.
 A probe account, admitted by IAP and holding no grants, reached the server's health route -- status ok, 42 diagrams, no flush or invariant failures -- and saw only the templates, so access is by grant on staging as on production.
 
 **Not verified by the agent:** opening each diagram in a browser as its owner. IAP admits only the director's sign-in to their diagrams, and Google refuses to allowlist the command-line tool's client for programmatic access, so that check is the director's, at the start of Y-d, before `main` is deployed.
+
+AMENDED 2026-10-06 -- **Y-d, the deploy:** P9's path, run on staging.\
+The director signed in on `2538ab8`, checked their diagrams opened as on production, drew a link through four new waypoints on one, and left that tab open.\
+`main` (`9ac031a`, its code the lab's `5457f9b`) was deployed to staging in 22 seconds, and the store's boot migrated the copy: every diagram schema 2, no waypoint collection and no `pinned` left.\
+Of the 42 diagrams, 41 are identical to the same copy migrated locally by the same code; the 42nd differs only by the director's link, drawn and saved in the old format before the deploy, then migrated -- its waypoints made nodes, its three pipes laid, its undo history dropped as ruled (P-6).\
+Read through the new server's doors: 42 diagrams, 482 links, 805 pipes, none down; every download renders; the director's link is up along its route.
+**The open tab (section 5.4), observed:** its health check saw the new revision a second after it answered, and the tab reloaded itself onto `main` and reconnected; nothing was refused, and the server logged no error.\
+Next in Y-d: the director uses `main` on staging; each finding is a B row, fixed on `main` and redeployed.
