@@ -189,3 +189,6 @@ The bucket was then byte-identical to the copy, and the old server healthy on al
 
 AMENDED 2026-10-06 -- **Y-d done, and P8 is closed** (H18.45): the director approved the rehearsal -- "Dont need to maintain rollback. Approved for next best action" (`dev/DECISIONS.md`).\
 So P9's runbook stands with one change: the rollback is an abort, available until step 6 reopens to users; after that, a defect is fixed forward.
+
+AMENDED 2026-10-07 -- **The runbook ran on production** (P9, H18.47): frozen, backed up, dry-run, deployed, verified and reopened in 3 minutes 18 seconds, as rehearsed; every diagram identical to the dry run's migration of the frozen backup.
+Staging is torn down (M2, H18.48).

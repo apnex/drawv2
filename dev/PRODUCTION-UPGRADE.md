@@ -110,6 +110,7 @@ Ruled to land with promotion (`dev/design/unification/PROMOTION.md`), so each is
 
 AMENDED 2026-10-05: PU55 is built on `main` (H18.38, B294), reaching production at the cutover under PU31.\
 AMENDED 2026-10-05: PU56 is built on `main` (H18.39, B296 to B298), reaching production at the cutover under PU31.\
+AMENDED 2026-10-07: **the cutover is done** -- production runs `draw:9ac031a` (H18.47), so every entry built on `main` under PU31 is in production, PU22 and PU35 to PU56 among them; PU31's freeze is lifted.\
 AMENDED 2026-10-04: P6 is built on `main` (H18.30 to H18.35) as PU51 to PU54, reaching production at the cutover under PU31; with it, `draw add waypoint ... --name` names the waypoint (B293), where it dropped the name.\
 AMENDED 2026-10-04: P5 is built on `main` (H18.24 to H18.29) as PU22, PU48, PU49 and PU50, reaching production at the cutover under PU31. V-e changes nothing a user sees: every Model production builds already drew with the network; a caller building one that holds links without it is refused.\
 AMENDED 2026-10-04: PU22 is built on `main` (H18.25, V-a): the network's colour roles and appearance are in `network/`; `network/tokens.css` is generated from there, unchanged.\

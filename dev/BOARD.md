@@ -1014,7 +1014,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
 AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
 
-## H18 -- promotion: the network plugin into production - `WIP`
+## H18 -- promotion: the network plugin into production - `DONE`
 
 Opened 2026-10-03 by the director ("Approved for next best action", the re-triage's step 3), firing B266's trigger.\
 The plan of record is `dev/design/unification/PROMOTION.md`: P0 (production on current `main`) is done, P1 was run in the lab (H17.22), and its start-of-work decisions come first, one at a time, before P2.\
@@ -1067,8 +1067,8 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.44 | Y-c: staging stood up at production's image, behind the same sign-in, on its own bucket (M1) | feature | S2 | `DONE` |
 | H18.45 | Y-d: the rehearsal of P9 on staging -- an open tab across the deploy, the boot migration, the director's use | feature | S2 | `DONE` |
 | H18.46 | Y-e: the rollback rehearsed and timed (P-8); P9's runbook written from what ran | feature | S2 | `DONE` |
-| H18.47 | P9: the cutover, at the director's go-ahead -- `FINAL-REHEARSAL.md`'s runbook on production: freeze, back up, dry-run, deploy, verify, reopen | **B266** | S2 | `TODO` |
-| H18.48 | Staging torn down once P9 is verified (M2) -- the copy deleted, the service, its accounts and its host rule removed, the other hostnames measured | **B266** | S2 | `TODO` |
+| H18.47 | P9: the cutover, at the director's go-ahead -- `FINAL-REHEARSAL.md`'s runbook on production: freeze, back up, dry-run, deploy, verify, reopen | **B266** | S2 | `DONE` |
+| H18.48 | Staging torn down once P9 is verified (M2) -- the copy deleted, the service, its accounts and its host rule removed, the other hostnames measured | feature | S2 | `DONE` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
 AMENDED 2026-10-03: H18.2's design is `dev/design/unification/FORMAT-BATCH.md`, proposed; its decisions F1 to F4 are asked one at a time before any code.\
 AMENDED 2026-10-03: approved and F1 to F4 ruled as recommended (`dev/DECISIONS.md`); H18.2 DONE, the build is H18.3 to H18.9; production stays on `draw:2538ab8` until the cutover (F3).\
@@ -1127,6 +1127,9 @@ AMENDED 2026-10-06: H18.46 done -- the rollback rehearsed on staging, 34 seconds
 H18.45 stays open for the director's use of staging.\
 AMENDED 2026-10-06: H18.45 done -- the director approved the rehearsal, and ruled no rollback window after the cutover reopens (`dev/DECISIONS.md`); P8 is closed.\
 Next H18.47, P9, at the director's go-ahead.\
+AMENDED 2026-10-07: H18.47 done -- production cut over at the director's go-ahead, `draw:9ac031a`, writes frozen for 3 minutes 18 seconds; every diagram identical to the dry run's migration of the frozen backup.\
+H18.48 done -- staging torn down (M2), the shared load balancer back as it was.\
+B266 closed, and H18 with it.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

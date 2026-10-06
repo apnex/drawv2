@@ -259,6 +259,11 @@ AMENDED 2026-10-06 -- **P8's plan proposed:** `FINAL-REHEARSAL.md` -- a fresh dr
 AMENDED 2026-10-06 -- **P8 is done** (H18.41 to H18.46; `FINAL-REHEARSAL.md`, Y-a to Y-e): today's estate dry-runs clean, 481 links and none down; section 7's seven criteria each met, with evidence; `main` rehearsed on staging behind the same sign-in, migrating a copy of the estate as P9 will; an open tab reloaded itself across the deploy; the rollback ran in 34 seconds; the director approved the rehearsal.\
 CORRECTED 2026-10-06: P-8's rollback is held open only until P9 reopens to users, not across a window after it (the director: "Dont need to maintain rollback"); after reopening, a defect is fixed forward.\
 Production stays on `draw:2538ab8` (F3) until the director's go-ahead for P9, which runs `FINAL-REHEARSAL.md`'s runbook.\
+AMENDED 2026-10-07 -- **P9 is done: production is cut over** (H18.47, B266 closed).\
+At the director's go-ahead, `FINAL-REHEARSAL.md`'s runbook ran on production: writes frozen; the backup taken frozen, byte-identical to the copy staging rehearsed on; the dry run on it PASS; `draw:9ac031a` deployed; every one of the 42 diagrams in the bucket identical to the same backup migrated locally, the boot log clean; reopened, every other hostname answering as before.\
+Writes were frozen for 3 minutes 18 seconds.\
+No rollback window is held after reopening (P-8 corrected); staging is torn down (M2).\
+F3's freeze is lifted: production deploys from `main` again.\
 
 ---
 
