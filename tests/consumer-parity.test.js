@@ -15,7 +15,7 @@ import { pipeEntity } from '../network/pipe-kind.mjs';
 import { readModel, linkReading } from '../network/read-model.mjs';
 import { spawnersOf } from '../engine/spawners.mjs';
 import { svgDocument } from '../server/svg.mjs';
-import { serialize } from '../server/docfile.mjs';
+import { serialize, parse } from '../server/docfile.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { makeApp } from './fixtures/app.mjs';
@@ -130,4 +130,26 @@ test('R-e: movers run along the route the tab draws, and never along a down link
 	// armed runs s -> a: its route from its src end
 	const route = tab.pathOf(tab.get('link', 'link-0c0003'));
 	assert.deepEqual(prepared[0].pts, route, 'along the tab\'s path, from the armed end');
+});
+
+/*
+P8 Y-b (H18.43) -- PROMOTION.md section 7, criterion 3: two peers on one document derive identical routes, including after a
+reload, because link ages are stored. Each peer learns the document's collections in its own order, and one reads it back from
+the stored file; every link's reading agrees with the tab's. Then the two contesting links' stored orders are swapped, ids
+unchanged: the other one holds the pipe -- so what decides is the stored age, not the id or the order a peer learned things in.
+*/
+test('criterion 3: two peers and a reload derive the same route for every link, decided by stored ages', () => {
+	const reversed = () => { const d = board(); for (const k of ['nodes', 'links', 'pipes']) d[k].reverse(); return d; };
+	const peers = { reversed: readModel(reversed()), reloaded: readModel(parse(serialize(reversed(), null)).doc) };
+	const tab = lab();
+	for (const [who, peer] of Object.entries(peers)) {
+		for (const id of LINKS) assert.deepEqual(linkReading(peer, peer.get('link', id)), tabSays(tab, id), `${who}: ${id} as the tab derives it`);
+	}
+	assert.equal(tabSays(tab, 'link-0c0002').down, true, 'held, the younger of the two contesting the pipe');
+	const swapped = board();
+	const [routed, held] = swapped.links;
+	[routed.order, held.order] = [held.order, routed.order];
+	const peer = readModel(parse(serialize(swapped, null)).doc);
+	assert.equal(linkReading(peer, peer.get('link', 'link-0c0002')).down, false, 'with the ages swapped, the other link keeps the pipe');
+	assert.equal(linkReading(peer, peer.get('link', 'link-0c0001')).down, true, 'and the first is held');
 });

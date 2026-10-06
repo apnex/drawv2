@@ -130,3 +130,22 @@ Staging is where to watch it: a tab opened on `2538ab8`, left open while `main` 
 **Verdict: pass-with-guardrails** -- production's data is only read; staging can write nothing but its own bucket; M1 and M2 ruled before Y-c.
 
 AMENDED 2026-10-06 -- **M1 and M2 RULED as recommended** (`dev/DECISIONS.md`, "P8's plan decisions, M1 and M2"): staging behind the same sign-in, on its own bucket, admitting the director alone; torn down once P9 is verified.
+
+AMENDED 2026-10-06 -- **Y-a done** (H18.42): the fresh dry run.
+**The copy:** production's bucket read once, 2026-10-06, into the private archive, write-protected there: 44 objects, 42 of them diagrams.\
+**`tools/migrate-schema.mjs` at `9a422fe`: PASS** -- every diagram boots in a real store, and nothing changed that was not ruled.
+**Its counts, beside the 2026-10-03 run:** 42 diagrams (43); 1030 nodes (1005); 802 pipes laid (783); 17 rings with a closing leg (17); 0 shared legs split (0); 104 `pinned` dropped (104); 5 waypoints renumbered; 48 directions renamed; 1947 undo records dropped (P-6).\
+**Read through the product's own doors,** a server booted on a second copy: 481 links, none down, each asked through REST's `path`; all 42 downloads render.\
+So criterion 6 holds on today's estate, with no shared leg to dispose of.
+
+AMENDED 2026-10-06 -- **Y-b done** (H18.43): `PROMOTION.md` section 7, each criterion with its evidence.
+
+| # | criterion | met | evidence |
+|---|---|---|---|
+| 1 | production imports `network/`, and no path builds a Model or runs the planner without it | yes | every production `new Model` passes a network (`server/store.js:677`, `:821`, `:870`; `network/read-model.mjs:28`; `app/src/compose-canvas.js:64`); a Model holding a network-drawn kind with no network throws (`model/model.mjs:126`); the planner has no default link tenant or kinds (`planner/txn.mjs:241`, S-b) |
+| 2 | a pipe is a stored entity through store, snapshot, sync, log, undo and redo | yes | `tests/server-network.test.js` S-b: written, read back at boot, undone with its pipes; on the product page every matrix row requires the tab's pipes to be the server's (I1), the page opening each board from the server's snapshot; UNDO-03 lays pipes, undoes and redoes through the server's log |
+| 3 | two peers derive identical routes, after a reload too -- ages stored | yes | `tests/consumer-parity.test.js` "criterion 3", added here: peers learning the document in another order, and one reading it from the stored file, read every link as the tab does; with two links' stored orders swapped the other holds the pipe. Mutant: ages read from ids -- killed |
+| 4 | the export, REST, `draw movers`, `draw combat` and the tab draw the same route | yes | `tests/consumer-parity.test.js` R-e: REST, the CLI, the download and movers against the tab; `tests/read-model.test.js` R-a: one read composition for every reader, `combat` among them |
+| 5 | the behaviour matrix passes on the product page | yes | P7: `tests/page-matrix.test.js`, all 89 rows, in the gate and in CI, none skipped |
+| 6 | every live diagram migrated, drawing unchanged but for ruled shared legs, each listed | yes | Y-a above: PASS, 0 shared legs, 0 links down |
+| 7 | no pre-network behaviour remains | yes | `KEEPS_ORPHAN_AS_RULED` and `NEVER_STRANDED`: no line of code [V, exhaustive grep]; `pinned` survives only as the English word and the socket's revision pin, the field retired (`model/shape.mjs:58`); `straightPath` is no default -- a Model with no network draws nothing, and the network draws only a down link along it (`model/model.mjs:247`) |
