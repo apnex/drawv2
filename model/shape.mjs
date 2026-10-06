@@ -36,8 +36,8 @@ whole-entity put — see planner/txn.mjs), and validateEntity's optional-field a
 /*
 THE DOCUMENT GENERATION -- one owner, read by the Model's new document, the store's meta, the server's seed and the
 validator, which accepts this generation alone. Was four literals that nothing forced to agree.
-2 is promotion's format batch (dev/design/unification/FORMAT-BATCH.md; ruled 2026-10-03): a schema 1 document enters
-only through the migration, server/migrate.mjs, which every path into the store runs first.
+2 is promotion's format batch (dev/design/unification/FORMAT-BATCH.md; ruled 2026-10-03). Every stored document became 2 at
+the cutover and the migration was deleted (B291), so a schema 1 document is refused at every door, saying so.
 */
 export const SCHEMA = 2;
 

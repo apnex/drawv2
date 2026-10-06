@@ -72,7 +72,7 @@ exist without the harness having to arm them first.
 function fixture() {
 	const wp = (id, x, y, spawn) => ({ id, name: id, x, y, ...(spawn ? { spawn } : {}) });   // a waypoint: a node with no type, named (B187)
 	return {
-		meta: { id: DIAGRAM, name: 'harness', version: 1 },
+		meta: { id: DIAGRAM, name: 'harness', version: 1, schema: 2 },
 		/*
 		The tower sits BESIDE the route, two cells off, not on it.
 
@@ -83,13 +83,15 @@ function fixture() {
 		packet goes by, which is both the honest test and how a player actually places one.
 		*/
 		// the two waypoints are nodes with no type (F-c)
-		nodes: [{ id: 'node-ba0004', name: 'lb', type: 'loadbalancer', x: 6 * PITCH, y: 2 * PITCH, shape: 'circle' },
+		nodes: [{ id: 'node-ba0004', name: 'lb', type: 'loadbalancer', x: 6 * PITCH, y: 2 * PITCH, shape: 'circle', order: 1 },
 			// `since` must be a real stamp: the validator floors it at 2020-09 and a document it refuses is
 		// SKIPPED, not reported -- which is how the first fixture vanished without a word
-		wp('node-ba0002', 0, 0, { interval: 600, speed: 2, kind: 'packet', since: Date.now() - 60_000 }),
-			wp('node-ba0003', 12 * PITCH, 0),
+		{ ...wp('node-ba0002', 0, 0, { interval: 600, speed: 2, kind: 'packet', since: Date.now() - 60_000 }), order: 2 },
+			{ ...wp('node-ba0003', 12 * PITCH, 0), order: 3 },
 		],
-		links: [{ id: 'link-ba0005', name: 'link-ba0005', src: 'node-ba0002', dst: 'node-ba0003' }],
+		links: [{ id: 'link-ba0005', name: 'link-ba0005', src: 'node-ba0002', dst: 'node-ba0003', order: 1 }],
+		// stored complete, as the migration once completed it (B291): the link's leg its pipe, each node its order
+		pipes: [pipeEntity('node-ba0002', 'node-ba0003', 'link')],
 		zones: [], groups: [], selection: [],
 	};
 }

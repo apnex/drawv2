@@ -6,6 +6,7 @@ are stable across reseeds.
 
 import { newId } from '../model/model.mjs';
 import { SCHEMA } from '../model/shape.mjs';
+import { pipeEntity } from '../network/pipe-kind.mjs';   // a link's leg is a pipe (P3), and the seed is stored complete
 
 export function seedDoc() {
 	const taken = {};
@@ -32,6 +33,12 @@ export function seedDoc() {
 	// B187 -- every entity is named, and a link minted from a pair is named from its index
 	].map(([src, dst], i) => ({ id: make('link'), name: `link-${i + 1}`, src: n(src), dst: n(dst) }));
 
+	/*
+	B291 (H19.3) -- WRITTEN COMPLETE, in the current format: each item its drawing order, rising in the order listed (F-d),
+	and each link's leg its pipe, laid with the link (P3), so every seeded link comes up. The migration once filled both in
+	on the way into the store; it is deleted, and nothing completes a document now.
+	*/
+	const ordered = (list) => list.map((e, i) => ({ ...e, order: i + 1 }));
 	return {
 		meta: {
 			id: make('diagram'),
@@ -39,12 +46,13 @@ export function seedDoc() {
 			version: 0,
 			schema: SCHEMA
 		},
-		nodes,
-		links,
-		zones: [
+		nodes: ordered(nodes),
+		links: ordered(links),
+		pipes: links.map((l) => pipeEntity(l.src, l.dst, 'link')),
+		zones: ordered([
 			{ id: make('zone'), name: 'edge', x: -570, y: -90, w: 420, h: 180 },
 			{ id: make('zone'), name: 'web-tier', x: 210, y: -270, w: 180, h: 540 }
-		],
+		]),
 		groups: [
 			{ id: make('group'), name: 'web-servers', members: [n(4), n(5), n(6)] }
 		]

@@ -16,6 +16,7 @@ A browser gesture, a keyboard nudge, a palette stamp, a label edit, a rename, a 
 > is `dev/COMMIT-DELIVERY.md` -- the CS1-CS6 sequence, the deletion tables, the recorded deviations
 > and the backlog seed. A reader wanting to know what a write IS should not have to read the
 > schedule by which it was built.
+> AMENDED 2026-10-07: `tests/migration.test.js` and `tools/migrate-version.mjs` are deleted with the schema 2 migration (B291) -- every stored document is schema 2, and an older one is a named refusal at every door (`tests/older-format.test.js`).
 
 ---
 

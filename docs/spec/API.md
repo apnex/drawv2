@@ -25,6 +25,9 @@ curl -s -X POST localhost:8080/api/v1/diagrams -d '{"name":"topology"}'
 curl -s -X POST localhost:8080/api/v1/diagrams -d '{"doc":{"meta":{"name":"from a file"},"nodes":[]}}'
 ```
 
+AMENDED 2026-10-07 (B291): a document handed to `create` is installed as it is, in the current format -- schema 2, its waypoints nodes with no type, its pipes in `pipes`.\
+Nothing migrates it now: one written before the cutover (`meta.schema` 1) is refused with a sentence that says so, and a link whose ends no pipes join comes up down until a pipe is laid.
+
 An agent's work belongs to whoever authorised the agent (ruled 2026-08-23, **B100**).\
 A diagram created by `agent:planner` is owned by the principal that claimed that agent name, and the agent is left an ordinary `write` grant on it.\
 This document previously said the caller owns what it creates, which was true of a human and produced work nobody could reach when an agent did it: owned by `agent:<name>` with no grants, invisible to the person who authorised the agent, on their own deployment.
@@ -207,6 +210,7 @@ What changed:
   takes over the generation-discriminator role `grid` was accidentally serving. The 17
   live files were migrated by `tools/migrate-version.mjs`; the pre-CS5 binary cannot
   read the result.
+  AMENDED 2026-10-07: that tool is deleted with the schema 2 migration (B291); every stored document is schema 2.
 
 *(Amended 2026-08-19, H4)* - three agent-facing surfaces corrected, none visible to the browser:
 

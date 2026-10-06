@@ -16,8 +16,6 @@ WHAT IS NOT ASKED HERE, and why:
     `waypoint` name what is DRAWN, which F4 keeps; model/anchor-words.mjs derives it from a stored entity, and it is never
     stored -- a module of its own because the planner, which loads this one, reads no drawn word;
   - the kind's own definition -- its row (model/shape.mjs, planner/kinds.mjs);
-  - the loader's repairs of shapes already written (server/store.js) and the migration (server/migrate.mjs): they read
-    documents as they were stored;
   - `kernel/`, which may not import `model/` (C9), and the CLI, which ships standalone (B138): each restates the question
     where it reads a document, held to this module by tests.
 tests/bare-anchor.test.js ratchets the stored kind's old literal in every other product module, each remaining file with its

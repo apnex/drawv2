@@ -92,8 +92,6 @@ const LITERAL = /['"`]waypoints?['"`-]|\.waypoints\b/;
 
 const RECORD = {
 	'model/anchor-words.mjs': [2, 'the drawn word, derived from a stored entity (`drawnKind`, `isAnchorWord`)'],
-	'server/store.js': [3, 'the loader\'s repairs of documents as they were written (B187 names, B172 spawners)'],
-	'server/migrate.mjs': [9, 'the migration, reading documents written before F-c; deleted after the cutover'],
 	'model/model.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4)'],
 	'network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
 	'cli/verbs.mjs': [19, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4)'],

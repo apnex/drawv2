@@ -10,7 +10,6 @@ import { nextOrder } from '../model/order.mjs';
 import { byDrawingOrder, orderOf } from '../model/stacking.mjs';
 import { plan, commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
-import { migrateFormatBatch } from '../server/migrate.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { productKinds } from '../planner/kinds.mjs';
@@ -66,21 +65,6 @@ test('F-d (B10): undoing a delete puts the item back with its order -- in its pl
 	assert.deepEqual([...m.all('node')].sort(byDrawingOrder).map((n) => n.id), ['node-00000a', 'node-00000b', 'node-00000c']);
 });
 
-test('F-d: the migration gives every item its collection position, and keeps any order already there', () => {
-	const { doc } = migrateFormatBatch({
-		meta: { id: 'diagram-000001', name: 'd', schema: 1 },
-		nodes: [router('node-00000b', 0), router('node-00000a', 120)],
-		waypoints: [{ id: 'waypoint-00000c', name: 'w', x: 60, y: 60 }],
-		links: [{ id: 'link-00000e', name: 'e', src: 'node-00000b', dst: 'node-00000a' }, { id: 'link-00000d', name: 'd', src: 'node-00000a', dst: 'node-00000c' }],
-		zones: [{ id: 'zone-00000f', name: 'z', x: -90, y: -90, w: 180, h: 180, order: 5 }],
-		groups: [],
-	}, null);
-	assert.deepEqual(doc.nodes.map((n) => [n.id, n.order]), [['node-00000b', 1], ['node-00000a', 2], ['node-00000c', 3]], 'as listed, not by id');
-	assert.deepEqual(doc.links.map((l) => [l.id, l.order]), [['link-00000e', 1], ['link-00000d', 2]]);
-	assert.equal(doc.zones[0].order, 5);
-	assert.deepEqual(migrateFormatBatch(doc, null).steps, [], 'and it is done once');
-});
-
 test('F-d (B259): a link\'s age is its order -- the older keeps a contested pipe, whatever its id says', () => {
 	const kinds = productKinds(...NETWORK_ROWS);
 	const board = (olderId) => {
@@ -124,10 +108,4 @@ test('F-d (B10): the canvas draws an item put back in its place, and a new one o
 		m.put('zone', zone('zone-00000d', 4));
 		assert.deepEqual(stack().at(-1), 'zone-00000d', 'the newest on top');
 	} finally { restore(); }
-});
-
-test('F-d: the migration puts an item without an order above the highest its collection already holds', () => {
-	const { doc } = migrateFormatBatch({ meta: { id: 'diagram-000001', name: 'd', schema: 2 }, nodes: [], links: [], groups: [],
-		zones: [{ id: 'zone-00000a', name: 'a', x: -90, y: -90, w: 180, h: 180 }, { id: 'zone-00000b', name: 'b', x: -90, y: -90, w: 180, h: 180, order: 5 }] }, null);
-	assert.deepEqual(doc.zones.map((z) => z.order), [6, 5], 'not 1 -- the one listed first still goes on top of an order already there');
 });

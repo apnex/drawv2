@@ -12,10 +12,8 @@ import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
 import { seedDoc } from './seed.js';
 import { validateDoc, validateSelectionIds, validPrincipal } from '../planner/validate.js';
 import crypto from 'node:crypto';
-import { STD } from '../kernel/spec.mjs';
 
 // the grid's own pitch, sourced not restated -- a speed in CELLS is meaningless without it
-const PITCH = STD.pitch;
 import { mintCode, formatCode, hashCode } from './codes.mjs';
 import { groupAfterRemoval } from '../planner/policy.mjs';
 import { violations } from '../model/invariants.mjs';
@@ -31,7 +29,6 @@ import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)
 import { createTransit } from '../network/transit.mjs';
-import { migrateFormatBatch } from './migrate.mjs';
 
 const FLUSH_MS = 200;
 
@@ -52,8 +49,7 @@ const PLAN = { links: NETWORK.links, kinds: KINDS };
 
 // The store's own filename rule. ONE definition: the boot loader and the example seeder must agree
 // on what counts as a diagram file, or a name one accepts and the other ignores becomes a file that
-// exists but is never loaded. tools/migrate-version.mjs deliberately re-states it rather than
-// importing it — a migration must select by the rule as it was, not as it may later become.
+// exists but is never loaded.
 const FILE = /^diagram-[0-9a-f]{6}\.json$/;
 /*
 H9.4c: workspace grants live in their own object, not in any diagram.
@@ -120,18 +116,6 @@ it. Owner and grants are established by `setOwner` and `grant`, never by present
 that claims them (ACCESS.md).
 */
 /*
-Slides Phase 2 -- retired keys are removed BEFORE validation, not tolerated by it.
-
-The schema is now pure: `validateDoc` refuses `meta.slides`, because the feature is gone and a
-validator that still knows the name of a deleted thing is carrying it. But validation runs on the
-raw file, so refusing there alone would make every document written before the purge unloadable --
-including a backup taken last week. Stripping first gives both: a strict schema, and old data that
-still opens once and is written back clean.
-
-One key today. If a second is ever retired it joins this list, and the list is the whole record of
-what the loader forgives.
-*/
-/*
 B184 -- how many recent commit ids a diagram remembers, so a replay is recognised as one.
 
 Counted rather than timed. 200 is generous against any burst a real client produces and trivial in
@@ -140,112 +124,27 @@ has its replay treated as new work.
 */
 const SEEN_MAX = 200;
 
-const RETIRED_META = ['slides'];
-
-function shedRetired(doc) {
-	if (!doc || typeof doc !== 'object' || !doc.meta) return false;
-	let shed = false;
-	for (const key of RETIRED_META) {
-		if (key in doc.meta) { delete doc.meta[key]; shed = true; }
-	}
-	return migrateNames(doc) || migrateSpawn(doc) || shed;
-}
 
 /*
-H18.3 -- EVERY DOCUMENT ENTERS THROUGH HERE, before it is validated: boot, examples, `create`, templates and restore.
+B291 (H19.3) -- A DOCUMENT IS READ IN THE FORMAT IT IS STORED IN, and only the current one.
 
-The loader's earlier repairs first (they read the shape they were written against), then the schema 2 migration
-(server/migrate.mjs), which is pure. Templates skipped the loader until now; a template is shipped content and is migrated
-in source, but a path that skips the migration is a path the validator refuses, so it runs here too.
-Returns the document and log to install, and whether either differs from what was read -- a file to write back once.
+Every stored document became schema 2 at the cutover (P9, 2026-10-07), so the migration that admitted older ones, the
+loader's repairs before it and the dry-run tool were deleted, as the format batch named them -- transform once, then
+delete the transform. A document from before the cutover -- a pre-cutover backup, a deleted diagram's older generation,
+a file kept by hand -- is refused at every door with this sentence rather than the validator's bare one; the backups keep
+those documents as records (ruled 2026-10-07).
 */
-function admit(raw, log = null) {
-	const shed = shedRetired(raw);
-	const migrated = migrateFormatBatch(raw, log);
-	// P-4 (S-d): a shared leg split, or one that could not be, is said where an operator reads -- the dry run refuses the latter
-	for (const r of migrated.report) console.log(`[ store ] ${raw?.meta?.id}: ${r.link} shared the leg ${r.leg.join('-')} with ${r.shares}; ${r.kind === 'split' ? `split into ${r.into.join(', ')}` : 'left down -- it cannot be split'}`);
-	return { doc: migrated.doc, log: migrated.log, changed: shed || migrated.steps.length > 0 };
+function olderFormat(doc) {
+	const n = doc?.meta?.schema;
+	return n !== undefined && n !== SCHEMA
+		? `written before the cutover, in schema ${n}: this version reads schema ${SCHEMA} only and keeps no migration -- the pre-cutover backups hold it as a record (B291)`
+		: null;
 }
 
 /*
-B187 -- every entity carries a name, so documents written before that gain one on read.
-
-Waypoints and links were the two kinds without the field. `resolveId` has always matched on
-`e.name`, so those two were the only addressable entities that could not be referred to in words --
-which cost a demo rehearsal and forced piping JSON through a script to recover two ids.
-
-Named the way a fresh one would be, `<kind>-<n>`, and uniqued against every name already in the
-document rather than against a counter. Two waypoints migrating in the same document must not both
-become `waypoint-1`, and an existing entity may already be holding that name.
-
-TARGET STATE, no compatibility shim: the validator requires the field, this supplies it once on
-read, and the document is written back with it. Nothing downstream needs to tolerate its absence.
-*/
-function migrateNames(doc) {
-	let changed = false;
-	const taken = new Set();
-	// `waypoints` by name: a document written before the format batch keeps them apart, and the kind table no longer lists them (F-c)
-	for (const k of [...KINDS.list.map((kind) => KINDS.collection[kind]), 'waypoints']) {   // the store's composition, links among them (S-e)
-		for (const e of doc[k] || []) if (e && typeof e.name === 'string') taken.add(e.name);
-	}
-	const mint = (prefix) => {
-		let n = 1;
-		while (taken.has(`${prefix}-${n}`)) n++;
-		taken.add(`${prefix}-${n}`);
-		return `${prefix}-${n}`;
-	};
-	for (const [key, prefix] of [['waypoints', 'waypoint'], ['links', 'link']]) {
-		for (const e of doc[key] || []) {
-			if (e && typeof e.name !== 'string') { e.name = mint(prefix); changed = true; }
-		}
-	}
-	return changed;
-}
-
-/*
-B172 -- a spawner's stored shape changed twice, and old documents must still open.
-
-The first `spawn` carried `colour` as a hex string and `speed` in PIXELS per second. Both were
-wrong for the same reason: a hex per spawner meant changing the look required rewriting every
-document that had one -- three repaints proved it -- and pixels contradict this tree's own rule that
-positions are anchors and never pixels (B110), so a stored speed silently changes meaning if the
-pitch ever moves.
-
-Now: `kind` names a class the stylesheet owns, and `speed` is CELLS per second.
-
-STRIPPED AND CONVERTED HERE, BEFORE VALIDATION, exactly as the retired meta key above is. The
-validator is strict -- `spawn` is whole-or-absent and refuses an unknown key -- so a document
-carrying the old shape would be REFUSED at load, and a refused document is SKIPPED. That is not a
-migration failing loudly; it is a diagram disappearing from the list. The one already armed on
-production would have been the first casualty.
-
-Keyed on `colour` rather than on a guess about the magnitude of `speed`. A heuristic like "a value
-above 20 must be pixels" would mis-convert the first person who wants a genuinely fast mover.
-*/
-function migrateSpawn(doc) {
-	let moved = false;
-	for (const w of doc.waypoints || []) {
-		if (!w.spawn || typeof w.spawn !== 'object') continue;
-		if (!('colour' in w.spawn)) continue;              // already the new shape
-		delete w.spawn.colour;
-		w.spawn.kind = 'packet';
-		if (typeof w.spawn.speed === 'number') w.spawn.speed = Math.round((w.spawn.speed / PITCH) * 100) / 100;
-		moved = true;
-	}
-	return moved;
-}
-
-/*
-Slides Phase 1: `meta.slides` is DROPPED here, which is how the estate sheds it.
-
-This function rebuilds meta from a stored document on every load, so omitting the key means a
-document loses it the first time it is read and is written back without it at the next flush. No
-migration tool, no separate pass.
-
-It must stay TOLERATED by `validateDoc` until that has happened everywhere. Validation runs on the
-raw file (`:147`, `:445`) BEFORE this function sees it, so removing the key from the allow-list now
-would refuse every stored diagram at boot -- which is B110's trap, avoided there by migrating first
-and avoided here by stripping on read. Phase 2 removes it from the validator once nothing carries it.
+Meta is REBUILT from a stored document on every load, keeping only the keys the store owns: an unknown key is dropped, and
+an owner or grants are taken only from a trusted file (H9.1). It is how the estate once shed `meta.slides`; the loader's
+other repairs went with the migration (B291).
 */
 function cleanMeta(id, meta = {}, trusted = false) {
 	const str = (v) => typeof v === 'string' ? v.slice(0, 512) : '';
@@ -328,8 +227,8 @@ export class Store {
 			candidates++;
 			try {
 				const read = parse(await this.files.read(file));
-				const { doc, log, changed: shed } = admit(read.doc, read.log);
-				const err = validateDoc(doc, { kinds: KINDS });
+				const { doc, log } = read;
+				const err = olderFormat(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (err) {
 					failures.push(`${file}: ${err}`);
 					console.warn(`[ store ] skipping ${file}: ${err}`);
@@ -349,7 +248,7 @@ export class Store {
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
 				// a filename that does not match, or a retired key removed above: either way the file
 				// on disk is not what we now hold, so write it back once (Slides Phase 2)
-				if (shed || file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
+				if (file !== `${doc.meta.id}.json`) this.markDirty(doc.meta.id);
 			} catch (e) {
 				failures.push(`${file}: ${e.message}`);
 				console.warn(`[ store ] skipping ${file}: ${e.message}`);
@@ -623,7 +522,7 @@ export class Store {
 	seed(owner = null) {
 		const fromExamples = this.#seedFromExamples(owner);
 		if (fromExamples) return fromExamples;
-		const { doc } = admit(seedDoc());   // through the one door, like every other document (F-d stamps its drawing order)
+		const doc = seedDoc();
 		const entry = this.install(doc.meta.id, doc);
 		// AFTER install, never before. `install` passes no `file` for a seed, so `cleanMeta` treats
 		// the document as untrusted and drops `meta.owner` -- which is H9.1 doing its job: an owner
@@ -654,8 +553,8 @@ export class Store {
 		let first = null;
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
 			try {
-				const { doc } = admit(parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8')).doc);
-				const err = validateDoc(doc, { kinds: KINDS });
+				const { doc } = parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8'));
+				const err = olderFormat(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
 				const entry = this.install(doc.meta.id, doc);
@@ -796,9 +695,9 @@ export class Store {
 			// Validate the document as it will be INSTALLED, not as it arrived: the minted id and
 			// the server-side name are substituted first, so validation cannot pass on a value the
 			// store then discards. Nothing is installed unless it passes (I1, by purity).
-			// H18.3: admitted first, so an open tab from before the cutover posting its old document is migrated, not refused
-			const { doc: candidate } = admit({ ...doc, meta: { ...doc.meta, id, name } });
-			const err = validateDoc(candidate, { kinds: KINDS });
+			// B291: a document in the format before the cutover is refused, said plainly -- nothing migrates it now
+			const candidate = { ...doc, meta: { ...doc.meta, id, name } };
+			const err = olderFormat(candidate) ?? validateDoc(candidate, { kinds: KINDS });
 			if (err) return { ok: false, error: err };
 			/*
 			B25 — version is minted by the LOG and is never carried in from the wire.
@@ -863,8 +762,8 @@ export class Store {
 		let bad = 0;
 		for (const file of fs.readdirSync(this.templatesDir).filter((f) => f.endsWith('.json')).sort()) {
 			try {
-				const { doc } = admit(JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8')));
-				const why = validateDoc(doc, { kinds: KINDS });
+				const doc = JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8'));
+				const why = olderFormat(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (why) throw new Error(why);
 				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
 				const model = new Model({ kinds: KINDS, network: readerNetwork() });
@@ -1104,7 +1003,9 @@ export class Store {
 		if (!hit) return 'nothing recoverable by that name';
 		await this.files.restore(`${id}.json`, hit.generation);
 		const read = parse(await this.files.read(`${id}.json`));
-		const { doc, log } = admit(read.doc, read.log);
+		const { doc, log } = read;
+		const old = olderFormat(doc);
+		if (old) return `cannot restore ${id}: it was deleted ${old}`;
 		const err = validateDoc(doc, { kinds: KINDS });
 		if (err) return `restored file is not a valid document: ${err}`;
 		/*

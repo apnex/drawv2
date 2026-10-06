@@ -504,9 +504,9 @@ above -- count it, name it, and let `/health` say `corrupt` rather than `degrade
 test('B83: a document with a cross-entity violation LOADS, and is counted', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-'));
 	const doc = {
-		meta: { id: 'diagram-ee0001', name: 'broken', version: 0, schema: 1, owner: '', grants: {}, slides: {} },
+		meta: { id: 'diagram-ee0001', name: 'broken', version: 0, schema: 2, owner: '', grants: {} },
 		nodes: [0, 1].map((i) => ({ id: `node-ee000${i}`, name: `n${i}`, type: 'host', shape: 'circle', x: i * 60, y: 0 })),
-		waypoints: [], zones: [], groups: [], selection: [],
+		pipes: [], zones: [], groups: [], selection: [],
 		// two straight links on one pair: writable before the rule existed, uncreatable now
 		links: [{ id: 'link-ee0002', name: 'link-ee0002', src: 'node-ee0000', dst: 'node-ee0001' },
 			{ id: 'link-ee0003', name: 'link-ee0003', src: 'node-ee0000', dst: 'node-ee0001' }],
@@ -529,63 +529,16 @@ test('B83: a clean document counts nothing — the check is not always red', asy
 });
 
 /*
-Slides Phase 1 -- a document carrying the retired key is rewritten, once.
-
-Stripping on load made the API correct and left the bucket untouched: loading does not mark a
-document dirty, so a diagram nobody edits would keep `meta.slides` on disk forever and Phase 2
-would wait on an estate that could not turn over. Verified live before this existed -- the API
-served six meta keys while the object still had seven.
+Slides Phase 2 -- the schema refuses the retired key. The loader once stripped it from a file written before the purge, so
+that file still opened; that repair went with the migration (B291), since every stored document is schema 2 and none
+carries it.
 */
-test('a stored doc carrying meta.slides is rewritten without it, and only once', async () => {
-	const dir = tmp();
-	try {
-		const id = 'diagram-51de51';
-		const doc = { meta: { id, name: 'legacy', version: 0, schema: 1, owner: '', grants: {},
-			slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
-			nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
-		fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(doc));
-
-		const a = await openStore(dir, { flushMs: 5 });
-		assert.equal('slides' in a.get(id).toJSON().meta, false, 'stripped in memory');
-		await a.flushAll();
-
-		const onDisk = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
-		assert.equal('slides' in onDisk.meta, false, 'and the FILE lost it -- this is the half that was missing');
-		assert.equal(onDisk.meta.version, 0, 'without a version bump: removing a retired field is nobody\'s change');
-
-		// a clean document must not be rewritten on every boot
-		const b = await openStore(dir, { flushMs: 5 });
-		assert.equal(b.diagrams.get(id).dirty, false, 'nothing to shed, so nothing to write');
-	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
-});
-
-/*
-Slides Phase 2 -- the schema refuses the retired key, and an old file still opens.
-
-These two must both hold, and they pull against each other. A validator that still knows the name
-of a deleted feature is carrying it, so `validateDoc` refuses `meta.slides` outright. But validation
-runs on the raw file, so refusing there alone would make every document written before the purge
-unloadable -- including a backup taken last week. The loader strips first, which is the only reason
-both can be true.
-*/
-test('Phase 2: the schema refuses meta.slides, and a pre-purge file still loads', async () => {
+test('Phase 2: the schema refuses meta.slides', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
-	const legacy = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 1, owner: '', grants: {},
+	const doc = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 2, owner: '', grants: {},
 		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
-		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
-
-	assert.match(validateDoc(JSON.parse(JSON.stringify(legacy))), /unknown meta key: slides/,
-		'the validator no longer knows the name of the deleted feature');
-
-	const dir = tmp();
-	try {
-		fs.writeFileSync(path.join(dir, 'diagram-51de52.json'), JSON.stringify(legacy));
-		const s = await openStore(dir, { flushMs: 5 });
-		assert.ok(s.get('diagram-51de52'), 'and yet the pre-purge file opened -- stripped before validation');
-		await s.flushAll();
-		const onDisk = JSON.parse(fs.readFileSync(path.join(dir, 'diagram-51de52.json'), 'utf8'));
-		assert.equal('slides' in onDisk.meta, false, 'rewritten clean, so it validates on its own next time');
-	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+		nodes: [], pipes: [], links: [], zones: [], groups: [], selection: [] };
+	assert.match(validateDoc(doc), /unknown meta key: slides/, 'the validator no longer knows the name of the deleted feature');
 });
 
 /*

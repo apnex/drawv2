@@ -1735,3 +1735,8 @@ Asked for a verdict on staging and told that a rollback after reopening discards
 - The rehearsal is approved (W24): P8 is closed, and P9 waits only on the director's go-ahead.
 - P-8, CORRECTED: the rollback is held open only until P9 reopens to users -- while writes are frozen, nothing is lost by it. After reopening no rollback is maintained; a defect found then is fixed forward on `main`.
 - The backup is still taken, frozen, at P9's start: the dry run that gates the deploy runs on it, and it is the record of the estate before the cutover.
+
+**B291's backup question, and the deleted-diagram window -- 2026-10-07 (H19.2, H19.3).**\
+Asked one at a time, once every live diagram was schema 2.
+- The migration code is deleted, and the pre-cutover backups are records: kept in the private archive as the estate before the upgrade, not loadable by the current version -- only `2538ab8`, or an older commit's migration tool, reads them. An old-format document posted to the server is refused, not converted.
+- Told that 23 diagrams deleted in the week before the cutover were still restorable until 9 to 12 October, all in the old format, the director chose to deploy the deletion now over waiting for the window to lapse: restoring one of them is refused, with a sentence saying why.

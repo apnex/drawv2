@@ -1066,8 +1066,8 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 	fs.writeFileSync(path.join(dir, 'diagram-bad001.json'), 'not json at all {{{');
 	fs.writeFileSync(path.join(dir, 'diagram-bad002.json'), JSON.stringify({ meta: { id: 'diagram-bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
 	const good = {
-		meta: { id: 'diagram-aaaa11', name: 'good', version: 0, schema: 1, slides: { url: '', presentationId: '', pageId: '' } },
-		nodes: [], links: [], zones: [], groups: []
+		meta: { id: 'diagram-aaaa11', name: 'good', version: 0, schema: 2 },
+		nodes: [], links: [], pipes: [], zones: [], groups: []
 	};
 	fs.writeFileSync(path.join(dir, 'diagram-aaaa11.json'), JSON.stringify(good));
 
