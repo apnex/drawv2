@@ -1064,7 +1064,7 @@ The estate was measured from the production backup of 2026-10-02 (`PROMOTION.md`
 | H18.41 | Plan P8 for approval: the final dry run on the estate, and the staging rehearsal -- `main` on a staging service with a copy of the estate migrated by the store's boot | feature | S2 | `DONE` |
 | H18.42 | Y-a: the fresh dry run -- a read-only copy of production's bucket, `tools/migrate-schema.mjs` on it at `main` | feature | S2 | `DONE` |
 | H18.43 | Y-b: the exit-criteria audit -- `PROMOTION.md` section 7, each criterion with its evidence | feature | S2 | `DONE` |
-| H18.44 | Y-c: staging stood up at production's image, behind the same sign-in, on its own bucket (M1) | **B266** | S2 | `TODO` |
+| H18.44 | Y-c: staging stood up at production's image, behind the same sign-in, on its own bucket (M1) | feature | S2 | `DONE` |
 | H18.45 | Y-d: the rehearsal of P9 on staging -- an open tab across the deploy, the boot migration, the director's use | **B266** | S2 | `TODO` |
 | H18.46 | Y-e: the rollback rehearsed and timed (P-8); P9's runbook written from what ran | **B266** | S2 | `TODO` |
 | H18.18 | B292: `draw about <link>` prints its path as undefined -- fixed in P4's R-b | **B292** | S3 | `DONE` |
@@ -1120,6 +1120,7 @@ Next H18.41, P8's plan.\
 AMENDED 2026-10-06: H18.41's plan is `dev/design/unification/FINAL-REHEARSAL.md`, proposed; its decisions M1 and M2 go to the director one at a time.\
 AMENDED 2026-10-06: approved and M1 and M2 ruled as recommended (`dev/DECISIONS.md`); H18.41 DONE, the work is H18.42 to H18.46.\
 AMENDED 2026-10-06: H18.42 and H18.43 done -- today's estate dry-runs clean, 481 links and none down; section 7's seven criteria each met, with evidence in `FINAL-REHEARSAL.md`.\
+AMENDED 2026-10-06: H18.44 done -- staging stands at production's image behind the same sign-in, on its own copy; the shared load balancer's other hostnames unchanged.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---

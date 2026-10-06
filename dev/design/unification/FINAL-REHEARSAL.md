@@ -149,3 +149,14 @@ AMENDED 2026-10-06 -- **Y-b done** (H18.43): `PROMOTION.md` section 7, each crit
 | 5 | the behaviour matrix passes on the product page | yes | P7: `tests/page-matrix.test.js`, all 89 rows, in the gate and in CI, none skipped |
 | 6 | every live diagram migrated, drawing unchanged but for ruled shared legs, each listed | yes | Y-a above: PASS, 0 shared legs, 0 links down |
 | 7 | no pre-network behaviour remains | yes | `KEEPS_ORPHAN_AS_RULED` and `NEVER_STRANDED`: no line of code [V, exhaustive grep]; `pinned` survives only as the English word and the socket's revision pin, the field retired (`model/shape.mjs:58`); `straightPath` is no default -- a Model with no network draws nothing, and the network draws only a down link along it (`model/model.mjs:247`) |
+
+AMENDED 2026-10-06 -- **Y-c done** (H18.44): staging stands, at production's image, behind the same sign-in (M1).
+**Built as production is:** its own bucket holding Y-a's copy, unmigrated; a service account that can reach that bucket only, with no project role and nothing on production's; the service at `2538ab8`, sized and configured as production, reachable only through the load balancer; IAP admitting the director.
+The names, and the teardown M2 calls for, are in the private deploy runbook.
+
+**The shared load balancer, measured:** every other hostname answered the same before and after -- a host rule and a certificate map entry were added, nothing else changed.
+
+**Verified:** booted at `2538ab8` on the copy, it loaded all 42 diagrams and wrote nothing back -- the bucket is byte-identical to Y-a's copy; anonymous requests are sent to sign-in, and the service's own address is closed from outside.
+A probe account, admitted by IAP and holding no grants, reached the server's health route -- status ok, 42 diagrams, no flush or invariant failures -- and saw only the templates, so access is by grant on staging as on production.
+
+**Not verified by the agent:** opening each diagram in a browser as its owner. IAP admits only the director's sign-in to their diagrams, and Google refuses to allowlist the command-line tool's client for programmatic access, so that check is the director's, at the start of Y-d, before `main` is deployed.
