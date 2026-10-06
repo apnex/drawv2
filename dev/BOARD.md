@@ -1112,6 +1112,7 @@ AMENDED 2026-10-05: H18.39 (X-c) done -- every one of the 89 rows green on the p
 The page's differences were three defects, B296 to B298, fixed; and the arrival line, the page's own, named in the runner.\
 AMENDED 2026-10-05: H18.40 (X-d) done -- P7 is closed: the matrix passes on the product page in the gate and in CI, none skipped; the page adds about 17 seconds to the gate.\
 Next H18.41, P8's plan.\
+AMENDED 2026-10-06: H18.41's plan is `dev/design/unification/FINAL-REHEARSAL.md`, proposed; its decisions M1 and M2 go to the director one at a time.\
 **Exit:** the whole promotion's exit criteria, `PROMOTION.md` section 7.
 
 ---
