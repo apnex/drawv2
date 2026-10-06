@@ -1134,6 +1134,27 @@ B266 closed, and H18 with it.\
 
 ---
 
+## H19 -- after the cutover: deduplicate, harden, unify - `WIP`
+
+Opened 2026-10-07 by the director, re-triaging the board once production ran the network: "Agreed with recommended order. approved."\
+The order: first what the cutover made deletable, then the sync hardening production now depends on, then the next unification arc, each designed for approval before any code.\
+Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17.3 stay in their milestones; B295 stays held.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H19.1 | Re-triage the board after the cutover, the order agreed and recorded here | feature | S3 | `DONE` |
+| H19.2 | Rule B291's backup question: the pre-cutover backups held as records, not as a rollback, so the migration that reads them may go | **B291** | S3 | `TODO` |
+| H19.3 | Delete the schema 2 migration, the loader's repairs and the dry-run tool, as the format batch named them -- transform once, then delete the transform | **B291** | S3 | `TODO` |
+| H19.4 | Close the production-upgrade register: each entry checked against production, or carried forward with its reason | **B276** | S3 | `TODO` |
+| H19.5 | Plan the sync hardening: GR6 extended to route, split, preview correction and undo under disconnect and reorder, with B251 to B253 judged against it | **B247** | S3 | `TODO` |
+| H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
+| H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
+| H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
+
+**Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1146,17 +1167,11 @@ Scored so the comparison is a judgement, not an omission.\
 | **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
-| **B280** | S4 | Every kind brought by a plugin, the core holding none -- the link is the network's since S-e (H18.15); node, zone and group are still core-owned | a composition that wants to leave out a kind, or a second added kind |
-| **B282** | S3 | Type as composition of packs (ruled 2026-09-22) -- its waypoint step ruled into P2 (P-10); this half needs no format change | a second pack composes, or the device table K6 lands |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
-| **B291** | S3 | Delete the schema 2 migration, the loader's repairs and the dry-run tool once nothing stored is older | promotion's cutover has run and every stored document, the rollback backups included, is schema 2 |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
-| **B276** | S3 | The production upgrade's considerations, gathered as work lands: `dev/PRODUCTION-UPGRADE.md` | the director schedules a production deploy or audit |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
-| **B247** | S3 | GR6 extended to route, split, preview correction and undo under disconnect and reorder, before the H17 backport (F-GR6) | the production rebuild on the H17 composition begins |
-| **B248** | S4 | A fixture proving a document listing an unknown plugin is refused (F-SD12); belongs to the stored-format batch | the stored-format batch is built |
 | **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
 | **B295** | S4 | After a resync the tab re-sends an undo or redo the server already answered; refused, so harmless, but a second spurious conflict | a page row in X-c (H18.39) or a user sees the spurious refusal, or the outbox's replay is next changed |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
