@@ -1724,3 +1724,8 @@ Asked whether P7 puts the unified rules engine into production, the proposer ans
 Asked one at a time against `dev/design/unification/PAGE-HELD-TO-MATRIX.md` section 9.
 - L1: the product page is held to the lab's own record, row for row -- one matrix corpus for both. The only differences allowed are the page's own nature, each named in the runner: the notice read from the banner (J3), and the authority read from the server's document.
 - L2: the product page's matrix runs in the gate, beside the lab's, on every push -- about two more minutes -- so the page can never fall out of step with the lab unnoticed.
+
+**P8's plan decisions, M1 and M2, ruled as recommended -- 2026-10-06 (B266, H18.41).**\
+Asked one at a time against `dev/design/unification/FINAL-REHEARSAL.md` section 9.
+- M1: staging sits behind the same sign-in as production, at a staging hostname under the same domain, with its own bucket, a service account that can reach that bucket only, and IAP admitting the director alone -- so it rehearses the path P9 takes, storage and sign-in included.
+- M2: staging is torn down once P9 is verified -- the copy deleted, and the service, its account and its host rule removed -- so users' diagrams live in one place; standing it up again is the plan's Y-c.

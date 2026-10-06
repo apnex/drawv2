@@ -4,6 +4,7 @@
 > Facts about today's code and estate are measured and cited; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
 > Infrastructure names -- the project, the buckets, the load balancer's resources -- stay in the private deploy runbook, not here.
+> AMENDED 2026-10-06: approved; M1 and M2 ruled as recommended (section 9).
 
 ## 1. Status
 
@@ -127,3 +128,5 @@ Staging is where to watch it: a tab opened on `2538ab8`, left open while `main` 
 | A2-A6, A10-A12, A14 | not materially implicated | |
 
 **Verdict: pass-with-guardrails** -- production's data is only read; staging can write nothing but its own bucket; M1 and M2 ruled before Y-c.
+
+AMENDED 2026-10-06 -- **M1 and M2 RULED as recommended** (`dev/DECISIONS.md`, "P8's plan decisions, M1 and M2"): staging behind the same sign-in, on its own bucket, admitting the director alone; torn down once P9 is verified.
