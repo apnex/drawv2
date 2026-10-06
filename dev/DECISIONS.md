@@ -1729,3 +1729,9 @@ Asked one at a time against `dev/design/unification/PAGE-HELD-TO-MATRIX.md` sect
 Asked one at a time against `dev/design/unification/FINAL-REHEARSAL.md` section 9.
 - M1: staging sits behind the same sign-in as production, at a staging hostname under the same domain, with its own bucket, a service account that can reach that bucket only, and IAP admitting the director alone -- so it rehearses the path P9 takes, storage and sign-in included.
 - M2: staging is torn down once P9 is verified -- the copy deleted, and the service, its account and its host rule removed -- so users' diagrams live in one place; standing it up again is the plan's Y-c.
+
+**P8's rehearsal approved, and no rollback window after the cutover reopens -- 2026-10-06 (B266, H18.45).**\
+Asked for a verdict on staging and told that a rollback after reopening discards every edit made on the new version, the director answered: "Dont need to maintain rollback. Approved for next best action".
+- The rehearsal is approved (W24): P8 is closed, and P9 waits only on the director's go-ahead.
+- P-8, CORRECTED: the rollback is held open only until P9 reopens to users -- while writes are frozen, nothing is lost by it. After reopening no rollback is maintained; a defect found then is fixed forward on `main`.
+- The backup is still taken, frozen, at P9's start: the dry run that gates the deploy runs on it, and it is the record of the estate before the cutover.

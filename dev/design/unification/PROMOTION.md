@@ -256,6 +256,9 @@ Section 7's criterion 5 is met.\
 Four page defects it found are fixed: B294 and B296 to B298.\
 Production stays on `draw:2538ab8` (F3); next is P8, the final dry run and the staging rehearsal, planned for approval before it runs.\
 AMENDED 2026-10-06 -- **P8's plan proposed:** `FINAL-REHEARSAL.md` -- a fresh dry run, an audit of section 7, staging behind the same sign-in on a copy of the estate, the director's use of it, and the rollback rehearsed and timed; its decisions M1 and M2 for the director.\
+AMENDED 2026-10-06 -- **P8 is done** (H18.41 to H18.46; `FINAL-REHEARSAL.md`, Y-a to Y-e): today's estate dry-runs clean, 481 links and none down; section 7's seven criteria each met, with evidence; `main` rehearsed on staging behind the same sign-in, migrating a copy of the estate as P9 will; an open tab reloaded itself across the deploy; the rollback ran in 34 seconds; the director approved the rehearsal.\
+CORRECTED 2026-10-06: P-8's rollback is held open only until P9 reopens to users, not across a window after it (the director: "Dont need to maintain rollback"); after reopening, a defect is fixed forward.\
+Production stays on `draw:2538ab8` (F3) until the director's go-ahead for P9, which runs `FINAL-REHEARSAL.md`'s runbook.\
 
 ---
 

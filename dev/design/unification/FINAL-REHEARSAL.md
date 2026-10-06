@@ -186,3 +186,6 @@ The bucket was then byte-identical to the copy, and the old server healthy on al
 
 **Downtime, by judgement:** a few minutes, most of it the dry run and the check; the deploy itself took 13 to 22 seconds.\
 **For P9, a decision to put to the director:** how long the rollback stays open after step 6, since a rollback then discards every edit users made on the new version (W25).
+
+AMENDED 2026-10-06 -- **Y-d done, and P8 is closed** (H18.45): the director approved the rehearsal -- "Dont need to maintain rollback. Approved for next best action" (`dev/DECISIONS.md`).\
+So P9's runbook stands with one change: the rollback is an abort, available until step 6 reopens to users; after that, a defect is fixed forward.
