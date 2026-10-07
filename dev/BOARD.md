@@ -1153,7 +1153,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.16 | U-d: what U-b and U-c leave -- B252 and B253 re-measured, B254, and B305 and B306, each fixed or held with its rate | **B252**, **B253**, **B254**, **B305**, **B306** | S3 | `DONE` |
 | H19.17 | U-e: a bounded fuzz in the gate, its cost measured; B247 closed | **B247** | S3 | `DONE` |
 | H19.6 | A document carrying a collection its composition cannot hold is refused, never dropped -- the refusal B248's plugin list would make, held by the composition; the list itself re-held, its trigger not having fired | **B307** | S3 | `DONE` |
-| H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
+| H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind -- `dev/design/unification/KINDS-AS-PLUGINS.md` | **B280** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
 | H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |
@@ -1202,6 +1202,8 @@ Next H19.6, then the unification designs H19.7 and H19.8.
 AMENDED 2026-10-07: H19.6 done, restated -- B248's plugin list was never built (its trigger had not fired; reviving it was the re-triage's error, corrected), and taking it up found B307: a document with a collection its composition cannot hold was accepted and the collection dropped.\
 Fixed; B248 re-held.\
 Next H19.7, the B280 design.
+
+AMENDED 2026-10-08: H19.7's design is `dev/design/unification/KINDS-AS-PLUGINS.md`, proposed, with its M7 audit; its decisions O1 (what the core keeps) and O2 (when, and how far) go to the director one at a time.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
