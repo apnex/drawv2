@@ -1747,3 +1747,13 @@ Asked what a ring should do, the director chose the proposer's recommendation, "
 - The waypoint becomes an endpoint, never a junction -- as the cut leaves it on an open link (TR-2; "A non-transiting anchor has endpoints only, under one ring").
 - The ring opens at that waypoint into one link that starts there, runs round every other stop and ends there again -- a loop, the one link whose two ends may be one anchor, valid only open and round two or more other stops. The drawing does not move.
 - Turning transit back on closes it into a ring again; undo restores it exactly.
+
+**A device is an endpoint or a junction, by what the network plugin gives it -- 2026-10-07 (B301, H19.10).**\
+Asked what a ring through a device should do when transit goes off at one of its waypoints, the director answered with the model the question had missed: "In my model a device can be either an endpoint OR a junction - depending on capabilities imported from the network plugin. Junction requires transit enabled."
+Shown what it implies, the director confirmed: "Yes this seems to match".
+- A link may pass through -- be pinned at -- a device whose transit is on; the device is a junction there. A ring may pass through one, as two of production's do.
+- Turning transit off at such a device cuts the links passing through it, as at a waypoint (TR-2); the device becomes their endpoint.
+- A device whose type offers no transit can only be an end.
+- So transit off at a waypoint of a ring through a transiting device opens the ring there, as on a ring of waypoints (B299): no rule of its own.
+- Which types offer transit is configuration the network plugin brings, not a fixed fact of a type: "loadbalancer can offer transit too - its configurable and we havent configured them yet". Today's table (router, firewall, vxlan offer it; load balancer, server, host do not) is that configuration as it stands.
+- Asked when it is built: whether `w` on a device whose transit is on pins through it, rather than making two links end there.

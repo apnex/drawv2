@@ -4483,11 +4483,26 @@
 					"x"
 				]
 			],
-			"standing": "open",
-			"today": "P's transit turns off and the ring is left as it was, valid.",
-			"question": "When transit goes off at a waypoint of a ring with a device among its stops -- here, a ring whose ends are routers -- what should happen? It cannot open into a loop: a loop's other stops are its bends, and a bend is a waypoint (B301).",
-			"proposal": "Not yet proposed; asked of the director at H19.10.",
-			"rule": "BACKLOG B301 -- a ruling owed (H19.10)."
+			"standing": "ruled",
+			"today": "P's transit turns off and the ring is left as it was, valid: until H19.10 a pin must be a waypoint, so only a ring of waypoints opens.",
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07), B301; built at H19.10.",
+			"intent": "A ring through two routers whose transit is on passes through them as junctions, so it opens at P like any ring: one link that starts at P, runs round B and A -- pinned through them -- and ends at P again, P its endpoint, drawn where it was.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [
+					"node-000005"
+				],
+				"pins": {
+					"link-000001": 2
+				},
+				"roles": {
+					"node-000005": [
+						"endpoint"
+					]
+				}
+			},
+			"built": "todo"
 		},
 		{
 			"id": "RING-01",
