@@ -419,7 +419,7 @@ export function plan(model, ops, options = {}) {
 		if (!why) continue;
 		const was = model.get(kind, id);
 		if (was && validateMutation(model, { action: 'put', kind, entity: was }, kinds)) continue;   // so before this edit
-		return { ok: false, error: `${by} would leave ${kind} ${now.name ?? id} invalid -- ${why}; the edit is refused, and nothing changed (B302)`, opIndex: -1 };
+		return { ok: false, error: `an automatic rule would break the document: ${by} would leave ${kind} ${now.name ?? id} invalid -- ${why}; the edit is refused, and nothing changed (B302)`, opIndex: -1 };
 	}
 
 	/*

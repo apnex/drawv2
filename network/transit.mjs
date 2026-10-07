@@ -12,7 +12,7 @@ batch (F-e, H18.7; TR-7) -- only where it differs from the type's default, so an
 was session state in the lab, which a reload lost and undo did not move; now it is the document's, every peer reads the same
 value, and undo restores it with everything else. The network refuses a value the type does not offer.
 */
-import { cutAtBend, openRingAt, closeLoop } from './link-rules.mjs';
+import { cutAtBend, openRingIntoLoop, closeLoopIntoRing } from './link-rules.mjs';
 import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const BOTH = [true, false], OFF = [false];
@@ -90,12 +90,12 @@ export function transitReactions(transit) {
 				const links = () => [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1));
 				if (!transit.stopsAt(w, doc)) {
 					// B299: turned back on -- a loop ending here closes into a ring again
-					for (const link of links()) if (link.src === w) { const ops = closeLoop(link); if (ops) emit(ops); }
+					for (const link of links()) if (link.src === w) { const ops = closeLoopIntoRing(link); if (ops) emit(ops); }
 					continue;
 				}
 				// turned off: a ring through it opens here (B299), first, so a second waypoint of the same edit cuts the loop it left;
 				// then every link bending here is cut (TR-2)
-				for (const link of links()) { const ops = openRingAt(link, w, (id) => bareAnchor(doc, id)); if (ops) emit(ops); }
+				for (const link of links()) { const ops = openRingIntoLoop(link, w, (id) => bareAnchor(doc, id)); if (ops) emit(ops); }
 				for (const link of links()) {
 					const ops = cutAtBend(doc, link, w);
 					if (ops) emit(ops);

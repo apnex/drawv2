@@ -134,7 +134,7 @@ delete the transform. A document from before the cutover -- a pre-cutover backup
 a file kept by hand -- is refused at every door with this sentence rather than the validator's bare one; the backups keep
 those documents as records (ruled 2026-10-07).
 */
-function olderFormat(doc) {
+function refusalForOlderSchema(doc) {
 	const n = doc?.meta?.schema;
 	return n !== undefined && n !== SCHEMA
 		? `written before the cutover, in schema ${n}: this version reads schema ${SCHEMA} only and keeps no migration -- the pre-cutover backups hold it as a record (B291)`
@@ -228,7 +228,7 @@ export class Store {
 			try {
 				const read = parse(await this.files.read(file));
 				const { doc, log } = read;
-				const err = olderFormat(doc) ?? validateDoc(doc, { kinds: KINDS });
+				const err = refusalForOlderSchema(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (err) {
 					failures.push(`${file}: ${err}`);
 					console.warn(`[ store ] skipping ${file}: ${err}`);
@@ -554,7 +554,7 @@ export class Store {
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
 			try {
 				const { doc } = parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8'));
-				const err = olderFormat(doc) ?? validateDoc(doc, { kinds: KINDS });
+				const err = refusalForOlderSchema(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
 				const entry = this.install(doc.meta.id, doc);
@@ -697,7 +697,7 @@ export class Store {
 			// store then discards. Nothing is installed unless it passes (I1, by purity).
 			// B291: a document in the format before the cutover is refused, said plainly -- nothing migrates it now
 			const candidate = { ...doc, meta: { ...doc.meta, id, name } };
-			const err = olderFormat(candidate) ?? validateDoc(candidate, { kinds: KINDS });
+			const err = refusalForOlderSchema(candidate) ?? validateDoc(candidate, { kinds: KINDS });
 			if (err) return { ok: false, error: err };
 			/*
 			B25 — version is minted by the LOG and is never carried in from the wire.
@@ -763,7 +763,7 @@ export class Store {
 		for (const file of fs.readdirSync(this.templatesDir).filter((f) => f.endsWith('.json')).sort()) {
 			try {
 				const doc = JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8'));
-				const why = olderFormat(doc) ?? validateDoc(doc, { kinds: KINDS });
+				const why = refusalForOlderSchema(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (why) throw new Error(why);
 				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
 				const model = new Model({ kinds: KINDS, network: readerNetwork() });
@@ -1004,7 +1004,7 @@ export class Store {
 		await this.files.restore(`${id}.json`, hit.generation);
 		const read = parse(await this.files.read(`${id}.json`));
 		const { doc, log } = read;
-		const old = olderFormat(doc);
+		const old = refusalForOlderSchema(doc);
 		if (old) return `cannot restore ${id}: it was deleted ${old}`;
 		const err = validateDoc(doc, { kinds: KINDS });
 		if (err) return `restored file is not a valid document: ${err}`;
