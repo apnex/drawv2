@@ -103,17 +103,20 @@ keeps a tab with no preview, whose applied ops are what it asked, from fetching 
 the answer are one plan of one board (PL-6), and this is empty.
 */
 export function unconfirmedPreviewOps(applied, planned, asked = []) {
-	const answer = new Map();          // entity -> the answer's ops on it, not yet matched, in order
-	for (const op of planned) {
-		const at = entityOf(op);
-		if (!answer.has(at)) answer.set(at, []);
-		answer.get(at).push(op);
-	}
+	/*
+	B305 (H19.16) -- FIELD BY FIELD. The echo rule an answer is applied by (`echoes`) takes an answer setting fewer fields than the
+	tab did as an echo, narrowed; confirming a preview needs every field the tab set, set to that value by the answer -- or asked
+	for by the tab and already so on the server. A join's merged link carrying a direction the server's board did not have was
+	counted confirmed by an answer setting the same ends without it (the sync fuzz, seed 147).
+	*/
+	const on = (list, op) => list.filter((p) => entityOf(p) === entityOf(op));
+	const sets = (ops, f, v) => ops.some((p) => ((p.op === 'set' || p.op === 'meta') ? Object.hasOwn(p.patch || {}, f) && sameValue(p.patch[f], v)
+		: p.op === 'put' && !!p.entity && sameValue(p.entity[f], v)));
+	const same = (ops, op) => ops.some((p) => p.op === op.op && (op.op === 'del' || sameValue(p.entity, op.entity)));
 	return applied.filter((op) => {
-		const theirs = answer.get(entityOf(op));
-		const i = theirs ? theirs.findIndex((p) => echoes(op, p)) : -1;
-		if (i >= 0) { theirs.splice(i, 1); return false; }
-		return !asked.some((a) => entityOf(a) === entityOf(op) && echoes(a, op));   // what it asked for, narrowed away
+		const theirs = on(planned, op), mine = on(asked, op);
+		if (op.op === 'del' || op.op === 'put') return !same(theirs, op) && !same(mine, op);
+		return Object.entries(op.patch || {}).some(([f, v]) => !sets(theirs, f, v) && !sets(mine, f, v));
 	});
 }
 

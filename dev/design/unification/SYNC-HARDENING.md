@@ -176,3 +176,10 @@ AMENDED 2026-10-07 -- **U-c done** (H19.15): B304 ruled re-fetch and built; B251
 **Left, each registered with its seeds:** B305, an undo's answer leaving a link's direction as the tab had it (seed 147, default; present at U-b); B306, a converged tab on shared storage giving a down link a blocker the server's document does not (seeds 400, 538, 553), the page's live network keeping a stale reason -- newly visible because those runs used to end apart.
 
 **For U-d:** B252's give-ups are 0 in every profile, so U2 is not needed; B253's two-tab divergence is 0 in 600 runs, so U1 may not be; B254's snapbacks stand (6 and 2 own-pending in 600 undo-heavy runs).
+
+AMENDED 2026-10-07 -- **U-d done** (H19.16).
+**B305, fixed:** a preview is confirmed field by field. The echo rule an answer is applied by takes an answer setting fewer fields than the tab did as an echo, narrowed; confirming a preview needs every field the tab set (seed 147: a join's merged link kept a direction the server's board did not have).\
+**B306, fixed:** the network's derived board keeps a snapshot of each link's id and stops. The Model edits an entity in place, the view caches a board by a key of those values, and a cached board read an object edited after it was derived -- the stale blocker on a converged tab.\
+**B252, closed** on its re-measurement; **B253 and B254, held** with their rates and revival triggers -- U1 and U2 were not needed.
+
+**Measured at the committed code, 600 seeded runs per profile:** no run ends with a tab apart from the server, an invalid document, a link drawn otherwise or a change unanswered, in any of five profiles; no change is given up; a dragged entity is moved by an inbound answer in 1 to 6 runs of 600 (B254).

@@ -204,7 +204,13 @@ two of the answers disagreed (B257). `network/view.mjs` keeps one of these per b
 
 Answers are ids and routes, never link objects, so a caller always reads the link itself from its own model.
 */
-export function deriveNetwork(pipes, links, opts) {
+export function deriveNetwork(pipes, rawLinks, opts) {
+	/*
+	B306 (H19.16) -- A SNAPSHOT of what it reads from each link, its id and stops: the Model edits an entity in place (`set`),
+	and the view caches this board by a key of those values, so a board keeping the live objects answered a later board with
+	the same key from an object edited after it was derived -- `blockers`, worked out lazily, read the edited stops.
+	*/
+	const links = rawLinks.map((l) => ({ id: l.id, src: l.src, dst: l.dst, ...(l.via ? { via: [...l.via] } : {}), ...(l.closed ? { closed: true } : {}) }));
 	const { routes, held, called } = assign(pipes, links, opts);
 	const byId = new Map(links.map((l) => [l.id, l]));
 	return {

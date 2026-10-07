@@ -734,3 +734,19 @@ test('B295: after a reload, a request answered before it is not sent again -- it
 		assert.deepEqual(w.diff(), [], CONVERGED);
 	} finally { w.close(); }
 });
+
+/*
+B305 (H19.16) -- a preview's op is confirmed only field by field. The echo rule an answer is applied by counts an answer that sets
+FEWER fields than the tab did as an echo (it was narrowed); confirming a preview needs every field the tab set. Found by the sync
+fuzz, seed 147: the tab's transit edit joined two pieces into a link carrying `direction: forward` from the tab's board; the
+server, where an undo had cleared it, joined without one -- and the answer, setting the same ends without a direction, counted as
+confirming it.
+*/
+test('B305: an answer setting fewer fields than the tab\'s preview did confirms only those -- the rest asks for the document', async () => {
+	const { unconfirmedPreviewOps } = await import('../app/src/changes.js');
+	const applied = [{ op: 'set', kind: 'link', id: 'link-1', patch: { src: 'a', dst: 'b', direction: 'forward' } }];
+	const answer = [{ op: 'set', kind: 'link', id: 'link-1', patch: { src: 'a', dst: 'b' } }];
+	assert.equal(unconfirmedPreviewOps(applied, answer).length, 1, 'direction unconfirmed');
+	assert.equal(unconfirmedPreviewOps(applied, [{ op: 'set', kind: 'link', id: 'link-1', patch: { src: 'a', dst: 'b', direction: 'forward' } }]).length, 0, 'all confirmed');
+	assert.equal(unconfirmedPreviewOps(applied, answer, [{ op: 'set', kind: 'link', id: 'link-1', patch: { direction: 'forward' } }]).length, 0, 'unless the tab asked for it, and the server found it so');
+});

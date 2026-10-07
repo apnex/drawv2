@@ -148,3 +148,21 @@ test('a link never runs the same pipe twice: a pin left on a spur is no way', ()
 	assert.equal(assignRoutes(spur, [{ id: 'k', src: 'A', dst: 'B', via: ['P'] }]).get('k'), null, 'so the link is down');
 	assert.deepEqual(routeLink([...spur, hand('P', 'B')], { src: 'A', dst: 'B', via: ['P'] }), ['A', 'X', 'P', 'B'], 'with a way on from P, it takes it');
 });
+
+/*
+B306 (H19.16) -- A DERIVATION IS A SNAPSHOT of the links it was derived from. The Model edits an entity in place (`set`), and the
+network's view caches a derivation by a key of the links' values; a derivation that kept the live objects answered a later board
+with the same key from an object edited after it was derived -- `blockers`, worked out lazily, read the edited stops. Found by the
+sync fuzz (shared storage, seeds 400, 538, 553): a converged tab named a blocker the server's document did not.
+*/
+test('B306: a derived board answers from the links as they were when derived, not as an object edited in place later reads', async () => {
+	const { deriveNetwork } = await import('../network/pipes.mjs');
+	const held = { id: 'link-h', src: 'A', dst: 'B' };
+	const down = { id: 'link-d', src: 'C', dst: 'D' };
+	const board = deriveNetwork(TRUNK, [UPPER, held, down], { rankOf: (id) => ({ 'link-u': 1, 'link-h': 2, 'link-d': 3 })[id] });
+	const before = board.blockers('link-d');
+	assert.deepEqual(before, ['link-u'], 'held by the upper link -- the case under test');
+	down.dst = 't1';   // the same object, edited in place after the board was derived: C-t1 is held by nothing
+	assert.deepEqual(board.blockers('link-d'), before, 'the board still answers for the link it derived');
+	assert.equal(board.isDown('link-d'), true);
+});
