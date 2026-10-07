@@ -242,6 +242,19 @@ export function closeLoopIntoRing(link) {
 }
 
 /*
+Whether two links are the two pieces of one link cut at a point -- a cut's pieces, told by lineage (H19.10, Z1). The first
+keeps the link's id and ends at the point; the second starts there, its id derived from the first and the point
+(`pieceId`, the next free one above on a clash -- a small window). A device rejoins only a cut's pieces when its transit
+returns: links that end at a device keep ending there (Z1), so two links an author drew to a router never merge.
+*/
+const CLASH_WINDOW = 64;
+export function areCutPieces(first, second, at) {
+	const one = (a, b) => a.dst === at && b.src === at
+		&& ((parseInt(hexOf(b.id), 16) - (parseInt(hexOf(a.id), 16) ^ parseInt(hexOf(at), 16))) & 0xffffff) < CLASH_WINDOW;
+	return !!first && !!second && (one(first, second) || one(second, first));
+}
+
+/*
 A LINK CUT AT A BEND, as ops: the link re-ended at it -- keeping its id, its order and its declarations (B213, B284) -- and
 its new piece, the newest, with a derived id. Null when it does not bend there. One shape for every cut: transit's and the
 junction's.

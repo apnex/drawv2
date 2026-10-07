@@ -149,20 +149,20 @@ test('B300: both back on in one edit, the ring is whole', () => {
 });
 
 /*
-B301 -- a ring with a device among its stops is NOT opened: a loop's other stops are its bends, and a bend is a waypoint, so
-opening it would save a document the validator refuses -- a reaction's ops are not validated again -- and the store would
-skip the diagram at its next boot. Left as it was, valid, until its opening is ruled.
+B301, restated at H19.10 (ruled 2026-10-07, "A device is an endpoint or a junction"): a ring through routers whose transit is on
+passes them as junctions, so it opens like any ring -- the routers pins of the loop. Until H19.10 such a ring was left as it
+was, since a pin had to be a waypoint and opening it would have saved a document the validator refused.
 */
-test('B301: a ring whose ends are routers is left as it was, and the document stays valid', () => {
+test('B301, H19.10: a ring whose ends are routers opens at its waypoint, the routers pinned through, and the document stays valid', () => {
 	const m = new Model({ network: NET, kinds: KINDS });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: P, name: 'P', x: 0, y: -120 });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('link', { id: 'link-000001', name: 'ring', order: 1, src: A, via: [P], dst: B, closed: true });
 	for (const [a, b] of [[A, P], [P, B], [B, A]]) m.put('pipe', pipeEntity(a, b, 'link'));
-	const was = structuredClone(m.get('link', 'link-000001'));
 	transit(m, [[P, false]]);
-	assert.deepEqual(m.get('link', 'link-000001'), was, 'the ring unchanged');
+	const l = m.get('link', 'link-000001');
+	assert.deepEqual([l.src, l.via, l.dst, !!l.closed], [P, [B, A], P, false], 'opened at P, through B and A');
 	const d = m.toJSON();
 	assert.equal(validateDoc({ ...d, meta: { ...d.meta, id: 'diagram-0f0003', name: 'r' } }), null, 'and the document valid');
 });

@@ -19,7 +19,7 @@ import { preferredRoute, pipeKey, route } from './pipes.mjs';
 import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './resolve.mjs';
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from './link-reactions.mjs';
-import { transitReactions } from './transit.mjs';
+import { transitReactions, stopsBlockedOn, stopAtBlockedStop } from './transit.mjs';
 import { ANCHOR_KINDS, anchorOf, bareAnchor } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { cutAtBend } from './link-rules.mjs';   // a cut at a bend, its piece's id derived (V-c)
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
@@ -39,7 +39,7 @@ the session's pipe set, and the guard that let these run over a model with no pi
 */
 const endsAt = (pipe, id) => pipe.a === id || pipe.b === id;
 
-function pipeReactions(view) {
+function pipeReactions(view, transit = null) {
 	return [
 		/*
 		S-c (H18.13; ruled 2026-10-03, G2) -- A PINNED LINK LAYS THE LEGS IT HAS NO WAY OVER, from any door. In the lab a drag
@@ -93,12 +93,20 @@ function pipeReactions(view) {
 		{
 			id: 'junction-cut',
 			phase: 'reshape',
-			trigger: { created: ['link'] },
-			doc: 'a link made with an end on another link\'s bend cuts that link there: it is re-ended at the bend and keeps its id, order and declarations, and its new piece is the newest, its id derived from the cut (R1, B243, H17-D10)',
+			// a link made; and (B303) a link re-pinned, which arrives at its new pins as a made one does
+			trigger: [{ created: ['link'] }, { changed: { kind: 'link', fields: ['via', 'closed'] } }],
+			doc: 'a link made with an end on another link\'s bend cuts that link there: it is re-ended at the bend and keeps its id, order and declarations, and its new piece is the newest, its id derived from the cut (R1, B243, H17-D10); and a link made or re-pinned through a stop whose transit is off is cut there, as a drag pressing w on it is (TR-2b, B303)',
 			run: ({ doc, matches }, emit) => {
-				// it reads what each change is (TG-3): a link MADE in this edit -- one that existed before is not landing anywhere
 				for (const { kind, before, after } of matches) {
-					if (kind !== 'link' || before || !after || after.closed || !doc.get('link', after.id)) continue;
+					if (kind !== 'link' || !after || !doc.get('link', after.id)) continue;
+					/*
+					B303 (H19.10) -- A LINK ARRIVING PINNED WHERE WHAT ARRIVES STOPS is cut there, from any door: made through REST or the
+					CLI with such a pin, or re-pinned onto one. A drag cuts for itself (TR-2b), so what it makes never arrives so pinned.
+					In this reaction, beside the landing cut, so one reaction owns every cut of a link at its arrival (PD-3).
+					*/
+					if (transit) for (const w of stopsBlockedOn(doc.get('link', after.id), doc, transit)) stopAtBlockedStop(doc, w, emit);
+					// the landing cut: a link MADE in this edit -- one that existed before is not landing anywhere (TG-3)
+					if (before || after.closed) continue;
 					for (const end of [after.src, after.dst]) {
 						if (!bareAnchor(doc, end)) continue;
 						// the links bending there NOW -- a piece an earlier cut made is cut again at the other end
@@ -186,6 +194,6 @@ export function createNetwork(transit = null) {
 		},
 		// the link tenant, the pipes' reactions after its own (N-b)
 		// and transit's cut and its refusal of a value a type does not offer (F-e)
-		links: { owner: tenant.owner, kinds: ['pipe'], ...(transit ? { fields: { node: ['transit'] } } : {}), reactions: [...tenant.reactions, ...(edits?.reactions ?? []), ...pipeReactions(view)], refusals: edits?.refusals ?? [] },
+		links: { owner: tenant.owner, kinds: ['pipe'], ...(transit ? { fields: { node: ['transit'] } } : {}), reactions: [...tenant.reactions, ...(edits?.reactions ?? []), ...pipeReactions(view, transit)], refusals: edits?.refusals ?? [] },
 	};
 }

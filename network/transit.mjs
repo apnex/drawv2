@@ -13,6 +13,7 @@ was session state in the lab, which a reload lost and undo did not move; now it 
 value, and undo restores it with everything else. The network refuses a value the type does not offer.
 */
 import { cutAtBend, openRingIntoLoop, closeLoopIntoRing } from './link-rules.mjs';
+import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 // the table of what each type offers is the plugin's configuration, in a module of its own (H19.10)
@@ -74,29 +75,48 @@ newest, with an id derived from the link and the waypoint, so the planner mints 
 */
 // the cut itself -- re-ending, the derived piece id -- is one shape with the junction's (network/link-rules.mjs `cutAtBend`, V-c)
 
+/*
+B303 (H19.10) -- WHERE A LINK MAY NOT BE PINNED: the stops of `link` at which what arrives stops, by the transit rule (TR-1).
+A link written pinned through one -- from REST, the CLI, any door -- is cut there, as a drag pressing `w` on it cuts (TR-2b);
+the network's landing reaction asks this of each link an edit makes or re-pins, so one reaction owns every cut of a link at its
+arrival and two never cut one link in one phase (PD-3).
+*/
+export function stopsBlockedOn(link, doc, transit) {
+	const stops = [...(link.via ?? []), ...(link.closed ? [link.src, link.dst] : [])];
+	// a stop that could pass routes and is set not to -- a waypoint or a router with transit off; a host never passes routes, and
+	// a ring cornered at one is left as it was
+	return stops.filter((w) => nodeOffersTransit(doc.get('node', w)) && transit.stopsAt(w, doc));
+}
+
+// where what arrives stops: a ring through it opens there (B299), first, so a second stop of the same edit cuts the loop it left;
+// then every link pinned there is cut (TR-2). The one statement of the cut at a stop, for a transit change and a link's arrival.
+export function stopAtBlockedStop(doc, w, emit) {
+	const links = () => [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1));
+	const passable = (id) => nodeOffersTransit(doc.get('node', id));   // H19.10: a waypoint, or a device that passes routes
+	for (const link of links()) { const ops = openRingIntoLoop(link, w, passable); if (ops) emit(ops); }
+	for (const link of links()) { const ops = cutAtBend(doc, link, w); if (ops) emit(ops); }
+}
+
 export function transitReactions(transit) {
 	const cut = {
 		id: 'transit-cut',
 		phase: 'reshape',
+		// a node's transit changing -- a waypoint's, or since H19.10 a device's that passes routes
 		trigger: { changed: { kind: BARE_KIND, fields: ['transit'] } },
 		doc: 'a waypoint whose transit this edit turned off cuts every link bending there into links that end there, the first keeping the link\'s id, its order and its declarations, each new piece the newest (TR-2, B283, B284); a ring through it opens there into a loop that starts and ends at it, and turning it back on closes the loop into a ring again (B299)',
 		run: ({ doc, matches }, emit) => {
-			// it reads what each change is, not trusting its trigger to have filtered (TG-3): a waypoint whose transit changed
-			for (const { id: w, before, after, fields } of matches) {
-				if (!before || !after || !fields.has('transit') || !bareAnchor(doc, w)) continue;
-				const links = () => [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1));
-				if (!transit.stopsAt(w, doc)) {
+			const links = () => [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1));
+			const passable = (id) => nodeOffersTransit(doc.get('node', id));   // H19.10: a waypoint, or a device that passes routes
+			// it reads what each change is, not trusting its trigger to have filtered (TG-3)
+			for (const { id, before, after, fields } of matches) {
+				// a node whose transit changed -- a waypoint, or since H19.10 a device that passes routes
+				if (!before || !after || !fields.has('transit') || !passable(id)) continue;
+				if (!transit.stopsAt(id, doc)) {
 					// B299: turned back on -- a loop ending here closes into a ring again
-					for (const link of links()) if (link.src === w) { const ops = closeLoopIntoRing(link); if (ops) emit(ops); }
+					for (const link of links()) if (link.src === id) { const ops = closeLoopIntoRing(link); if (ops) emit(ops); }
 					continue;
 				}
-				// turned off: a ring through it opens here (B299), first, so a second waypoint of the same edit cuts the loop it left;
-				// then every link bending here is cut (TR-2)
-				for (const link of links()) { const ops = openRingIntoLoop(link, w, (id) => bareAnchor(doc, id)); if (ops) emit(ops); }
-				for (const link of links()) {
-					const ops = cutAtBend(doc, link, w);
-					if (ops) emit(ops);
-				}
+				stopAtBlockedStop(doc, id, emit);
 			}
 		},
 	};

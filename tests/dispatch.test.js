@@ -46,7 +46,9 @@ test('TG-4: a rename calls nothing, and a plane change calls only the join', () 
 // clear reaction acts on its own shape of node (network/link-reactions.mjs)
 test('TG-4: deleting a pin calls what listens to a waypoint deleted, and then what its consequences wake', () => {
 	assert.deepEqual(calls([{ op: 'del', kind: 'node', id: 'node-00000e' }]),
-		['node-links', 'waypoint-links', 'pipe-cascade', 'group-trim', 'stranded-links', 'orphan-sweep', 'link-join', 'pipe-sweep']);
+		// junction-cut since H19.10 (B303): the strip re-pins a link, and a link re-pinned is asked whether it now passes a stop
+		// whose transit is off -- here it does not, and nothing is cut
+		['node-links', 'waypoint-links', 'pipe-cascade', 'group-trim', 'junction-cut', 'stranded-links', 'orphan-sweep', 'link-join', 'pipe-sweep']);
 });
 
 test('TG-4: over the planner corpus, dispatch calls far fewer reactions than calling every one would', () => {

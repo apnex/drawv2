@@ -1167,6 +1167,9 @@ AMENDED 2026-10-07: H19.11 done -- no reaction can commit what a requested write
 
 AMENDED 2026-10-07: H19.10's design is `dev/design/unification/DEVICE-JUNCTIONS.md`, proposed, with its M7 audit; its decision Z1 goes to the director. Writing it found B303, folded into its build.
 
+AMENDED 2026-10-07: Z1 ruled, transit rules only; H19.10's stages Z-a and Z-b done -- a router may be pinned through, transit off at it cuts and back on rejoins its cut's pieces, a ring through it opens; B303 closed.\
+Next Z-c, `w` on a transiting device storing it as a pin.
+
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
 ---

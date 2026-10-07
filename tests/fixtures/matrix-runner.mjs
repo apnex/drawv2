@@ -306,7 +306,9 @@ const corpusForm = (s, arrival = null) => {
 	// the drawn and occupied pipe lists carry pipe ids, made of minted anchors' random hex; I8 judges them, so they are counted here
 	const { drawnPipes, underLinks, allPipes, pipeElements, ...rest } = s;
 	if (arrival !== null && rest.notice === arrival) rest.notice = ARRIVAL;
-	const c = canonical({ ...rest, drawnPipes: drawnPipes.length });
+	// the typed nodes: every node alive, less the bare anchors -- so a router a link is pinned through is named a node (H19.10)
+	const typed = new Set(rest.alive.filter((id) => !rest.anchors.some((a) => a.id === id)));
+	const c = canonical({ ...rest, drawnPipes: drawnPipes.length }, { typed });
 	c.pipes = c.pipes.map((q) => { const [a, b] = [q.a, q.b].sort(); return { ...q, a, b }; });
 	return c;
 };

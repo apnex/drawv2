@@ -152,3 +152,9 @@ Each stage is one gate and one lab deploy; production deploys at Z-d.
 **Closeout hooks:** acceptance tests 1 to 8; the deferred role drawing recorded with a revival trigger (RU3).
 
 **Verdict: pass-with-guardrails** -- Z1 ruled before Z-a; the drawing tension recorded, not hidden.
+
+AMENDED 2026-10-07 -- **Z-a and Z-b done.**
+**Z-a:** what each type offers is the plugin's capability table in its own module, `network/transit-offers.mjs` (`nodeOffersTransit`); the validator accepts a pin that offers transit and refuses one that does not, naming it.\
+**Z-b:** the cut at a device, the rejoin of its cut's pieces only (Z1, told by lineage, `areCutPieces`), and the ring opening all read the one predicate; deleting a device takes the links pinned through it (P-7); a link written pinned through a stop whose transit is off is cut there from any door (B303).\
+**Found on the way:** placing B303's cut in transit's reaction made two reactions cut one link in one phase (PD-3), so it lives in the landing reaction, which now owns every cut a link meets on arriving; and the corpora's naming took any id in a `via` for a waypoint, which a router pin now contradicts -- the matrix's corpus form tells it which nodes are typed.\
+**Proven:** 12 unit tests, failing 5 of 12 on the code before Z-b; five mutants killed; matrix rows TRN-42 promoted and TRN-44 to TRN-46 new, green on the lab and the product page; the planner corpus's 37 changes each the B303 cut alone.

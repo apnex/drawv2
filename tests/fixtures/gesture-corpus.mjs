@@ -273,19 +273,20 @@ export function record(scenario, { withHarness = null } = {}) {
 }
 
 // ids by kind and first appearance, so a record is a function of behaviour, not of the random ids a run minted
-export function canonical(value) {
+export function canonical(value, { typed = new Set() } = {}) {
 	const text = JSON.stringify(value);
 	const seen = new Map(), count = {};
 	// F-c: a waypoint is a node with no type, so its id says `node`; it is still named `waypoint#n` here, read off any entity
 	// in the record that carries a place and no type, or listed where a drag lists the waypoints it placed, pinned, guided
-	// through or bent at -- so the record names what was drawn
+	// through or bent at -- so the record names what was drawn. `typed`, the ids a caller knows are typed nodes: since H19.10 a
+	// link may be pinned through a router, so a `via` lists devices too, and a record that can say which is named truly
 	const bare = new Set();
 	const WAYPOINT_LISTS = ['placed', 'pins', 'guides', 'via'];
 	const find = (v) => {
 		if (Array.isArray(v)) return v.forEach(find);
 		if (!v || typeof v !== 'object') return;
 		if (typeof v.id === 'string' && v.id.startsWith('node-') && 'x' in v && !('type' in v)) bare.add(v.id);
-		for (const k of WAYPOINT_LISTS) if (Array.isArray(v[k])) for (const id of v[k]) if (typeof id === 'string') bare.add(id);
+		for (const k of WAYPOINT_LISTS) if (Array.isArray(v[k])) for (const id of v[k]) if (typeof id === 'string' && !typed.has(id)) bare.add(id);
 		Object.values(v).forEach(find);
 	};
 	find(value);

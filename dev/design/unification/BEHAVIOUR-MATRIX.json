@@ -928,6 +928,23 @@
 					"link-000001": 2
 				}
 			}
+		},
+		"transit router pin": {
+			"about": "Hosts A and B, a link between them pinned through the router R, whose transit is on, over its legs' pipes.",
+			"board": "transit-router-pin",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 2
+				},
+				"pins": {
+					"link-000001": 1
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -4484,8 +4501,7 @@
 				]
 			],
 			"standing": "ruled",
-			"today": "P's transit turns off and the ring is left as it was, valid: until H19.10 a pin must be a waypoint, so only a ring of waypoints opens.",
-			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07), B301; built at H19.10.",
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) and \"Z1 -- a device pin follows transit's rules only\", B301; H19.10.",
 			"intent": "A ring through two routers whose transit is on passes through them as junctions, so it opens at P like any ring: one link that starts at P, runs round B and A -- pinned through them -- and ends at P again, P its endpoint, drawn where it was.",
 			"expect": {
 				"links": 1,
@@ -4502,7 +4518,7 @@
 					]
 				}
 			},
-			"built": "todo"
+			"built": "yes"
 		},
 		{
 			"id": "TRN-43",
@@ -4544,6 +4560,103 @@
 				}
 			},
 			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) -- w on a transiting device; already the behaviour when ruled.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-44",
+			"state": "transit router pin",
+			"gesture": "transit `x`",
+			"does": "Select the router R, and press x.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A device whose transit goes off stops what arrives, so the link pinned through it is cut there, as at a waypoint: two links ending at R, each up over its own pipe.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"linksBetween": {
+					"node-000001|node-000003": 1,
+					"node-000003|node-000002": 1
+				},
+				"pins": {
+					"link-000001": 0
+				},
+				"notice": "transit off at R -- 1 link cut into 2 pieces"
+			},
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) and \"Z1 -- a device pin follows transit's rules only\", B301; H19.10.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-45",
+			"state": "transit router pin",
+			"gesture": "transit `x`",
+			"does": "Select the router R, and press x twice.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turned back on, R passes routes again, and the two pieces its cut made rejoin into one link through it -- only a cut's pieces; links an author drew to R keep ending there (Z1).",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"link-000001": 1
+				},
+				"notice": "transit on at R -- 2 pieces joined into 1 link"
+			},
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) and \"Z1 -- a device pin follows transit's rules only\", B301; H19.10.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-46",
+			"state": "transit router pin",
+			"gesture": "undo",
+			"does": "Select the router R, press x, and undo.",
+			"steps": [
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "Undo restores the link through R exactly, R's transit on again.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pins": {
+					"link-000001": 1
+				}
+			},
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) and \"Z1 -- a device pin follows transit's rules only\", B301; H19.10.",
 			"standing": "ruled",
 			"built": "yes"
 		},

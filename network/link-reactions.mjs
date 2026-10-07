@@ -21,7 +21,8 @@ that stops where transit is off, and a stranded pass. Production's classic tenan
 Network-layer code (tools/layers.mjs): it reads the model and the link invariants, and nothing of the planner. What it
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
-import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS, closeLoopIntoRing } from './link-rules.mjs';
+import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS, closeLoopIntoRing, areCutPieces } from './link-rules.mjs';
+import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 import { isLinkLoop } from './link-references.mjs';   // B300: a join may leave a loop
 import { linkEndsAt } from './roles.mjs';   // whether a link ends at a point (B244), one statement with the roles (V-a)
 import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
@@ -38,11 +39,12 @@ and acts on its own, as the two kinds' triggers kept them apart before.
 const NODE_LINKS = {
 	id: 'node-links',
 	phase: 'clear',
-	doc: 'deleting a typed node deletes every link ending at it',
+	doc: 'deleting a typed node deletes every link ending at it, and every link pinned through it -- a pinned link lives and dies with its pins (P-7, H19.10)',
 	trigger: { deleted: ['node'] },
 	run: ({ op, doc }, emit) => {
 		if (isBareEntity(op.kind, doc.get(op.kind, op.id))) return;   // a waypoint: WAYPOINT_LINKS
-		emit(doc.linksOf(op.id).map((link) => ({ op: 'del', kind: 'link', id: link.id })));
+		const through = (l) => l.src === op.id || l.dst === op.id || (l.via ?? []).includes(op.id);
+		emit(doc.all('link').filter(through).sort((a, b) => (a.id < b.id ? -1 : 1)).map((link) => ({ op: 'del', kind: 'link', id: link.id })));
 	},
 };
 
@@ -290,7 +292,8 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 			const woken = new Set();   // B300: waypoints whose own declaration -- transit -- set this join off; only there may a loop result
 			for (const { kind, id, before: was, after: now, fields } of matches) {
 				// a waypoint whose own declaration changed -- its transit turned back on, say (F-e): a candidate as a redeclared link's end is
-				if (kind === BARE_KIND) { if (now && isBareEntity(kind, now) && wakesAt.some((f) => fields.has(f))) { touched.add(id); redeclared.add(id); woken.add(id); } continue; }
+				// H19.10: a device that passes routes is woken by its transit too, so the pieces its cut made rejoin (Z1)
+				if (kind === BARE_KIND) { if (now && nodeOffersTransit(now) && wakesAt.some((f) => fields.has(f))) { touched.add(id); redeclared.add(id); woken.add(id); } continue; }
 				if (kind !== 'link') continue;
 				if (now && LINK_DECLARATIONS.some((k) => fields.has(k))) {
 					for (const end of [now.src, now.dst]) if (bareAnchor(doc, end)) { touched.add(end); redeclared.add(end); }
@@ -324,6 +327,8 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 		*/
 				const src = at.find((l) => l.dst === w) || at[0];
 				const other = at.find((l) => l !== src);
+				// Z1 (H19.10): at a device, only a cut's pieces rejoin -- links that END at a device keep ending there
+				if (!bareAnchor(doc, w) && !areCutPieces(src, other, w)) continue;
 				let merged = other ? collapseAtWaypoint(src, other, w, { loop: woken.has(w) }) : null;
 				if (!merged) continue;
 				/*
