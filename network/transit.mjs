@@ -12,7 +12,7 @@ batch (F-e, H18.7; TR-7) -- only where it differs from the type's default, so an
 was session state in the lab, which a reload lost and undo did not move; now it is the document's, every peer reads the same
 value, and undo restores it with everything else. The network refuses a value the type does not offer.
 */
-import { cutAtBend } from './link-rules.mjs';
+import { cutAtBend, openRingAt, closeLoop } from './link-rules.mjs';
 import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 const BOTH = [true, false], OFF = [false];
@@ -82,13 +82,21 @@ export function transitReactions(transit) {
 		id: 'transit-cut',
 		phase: 'reshape',
 		trigger: { changed: { kind: BARE_KIND, fields: ['transit'] } },
-		doc: 'a waypoint whose transit this edit turned off cuts every link bending there into links that end there, the first keeping the link\'s id, its order and its declarations, each new piece the newest (TR-2, B283, B284)',
+		doc: 'a waypoint whose transit this edit turned off cuts every link bending there into links that end there, the first keeping the link\'s id, its order and its declarations, each new piece the newest (TR-2, B283, B284); a ring through it opens there into a loop that starts and ends at it, and turning it back on closes the loop into a ring again (B299)',
 		run: ({ doc, matches }, emit) => {
-			// it reads what each change is, not trusting its trigger to have filtered (TG-3): a waypoint whose transit changed, and
-			// that stops what arrives now
+			// it reads what each change is, not trusting its trigger to have filtered (TG-3): a waypoint whose transit changed
 			for (const { id: w, before, after, fields } of matches) {
-				if (!before || !after || !fields.has('transit') || !bareAnchor(doc, w) || !transit.stopsAt(w, doc)) continue;
-				for (const link of [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+				if (!before || !after || !fields.has('transit') || !bareAnchor(doc, w)) continue;
+				const links = () => [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1));
+				if (!transit.stopsAt(w, doc)) {
+					// B299: turned back on -- a loop ending here closes into a ring again
+					for (const link of links()) if (link.src === w) { const ops = closeLoop(link); if (ops) emit(ops); }
+					continue;
+				}
+				// turned off: a ring through it opens here (B299), first, so a second waypoint of the same edit cuts the loop it left;
+				// then every link bending here is cut (TR-2)
+				for (const link of links()) { const ops = openRingAt(link, w); if (ops) emit(ops); }
+				for (const link of links()) {
 					const ops = cutAtBend(doc, link, w);
 					if (ops) emit(ops);
 				}
@@ -122,6 +130,7 @@ export function transitSummary(ops) {
 	const into = new Map();
 	const survivor = (id) => (into.has(id) ? survivor(into.get(id)) : id);
 	let pieces = 0;
+	const opened = new Set(), closedRings = new Set();
 	// a cut is two link puts in a row (`transit-cut`): the link re-ended, then its new piece
 	for (let i = 0; i < ops.length; i++) {
 		const op = ops[i], next = ops[i + 1];
@@ -132,11 +141,15 @@ export function transitSummary(ops) {
 			continue;
 		}
 		if (op.op === 'del' && op.kind === 'link' && op.into) into.set(op.id, op.into);
+		// B299: a ring opened into a loop, or a loop closed into a ring -- one put of the link
+		if (op.op === 'put' && op.kind === 'link' && op.entity.closed === true) closedRings.add(op.entity.id);
+		else if (op.op === 'put' && op.kind === 'link' && op.entity.src === op.entity.dst) opened.add(op.entity.id);
 	}
 	const cutLinks = new Set(drawnAs.values()).size;
 	const joinedLinks = new Set([...into.keys()].map(survivor)).size;
 	return {
 		cut: cutLinks ? { links: cutLinks, pieces: cutLinks + pieces } : null,
 		joined: joinedLinks ? { links: joinedLinks, pieces: joinedLinks + into.size } : null,
+		opened: opened.size, closed: closedRings.size,
 	};
 }

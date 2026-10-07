@@ -134,6 +134,8 @@ Still pending from the same amendment and not yet built: a grant may name an OWN
   waypoints and is drawn with rounded corners (`BEND_R` on the grid pitch); `closed` makes it
   a ring with no ends; `direction`, `forward` or `reverse`, is a declared direction. `src`/`dst`/`closed`
   is the one vocabulary, kernel and model alike (B166).
+  AMENDED 2026-10-07 (B299): a link's two ends may be one anchor only as a LOOP -- open, and running round two or more other
+  stops between; it is what a ring becomes when transit is turned off at one of its waypoints, opened there.
 - zone: grid-aligned rectangle on the half-offset grid, with label. Purely visual.
 - group: logical member set; selecting/moving any member moves all. Not rendered, not synced
   as a shape.

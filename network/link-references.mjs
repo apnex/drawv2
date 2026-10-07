@@ -81,6 +81,15 @@ export function linkAccess(access) {
 }
 
 /*
+B299 (ruled 2026-10-07) -- A LOOP: an open link that begins and ends at one anchor, running round two or more other stops
+between. It is what a ring becomes when transit goes off at one of its waypoints -- opened there, so it ends there -- and
+the only link whose two ends may be one anchor. Closed, it would be a ring with no ends to begin from; round a single stop
+it would draw back over itself (as `draw link --closed` refuses a ring of one bend).
+*/
+export const isLoop = (link) => !link.closed && link.src === link.dst
+	&& Array.isArray(link.via) && link.via.length >= 2 && !link.via.includes(link.src);
+
+/*
 One link against everything else. Returns the first failure as a string, or null.
 
 The order is deliberate: existence before identity before occupancy. A self-link between two ids
@@ -93,12 +102,13 @@ export function linkReferential(link, access) {
 
 	if (!exists(link.src)) return `link src does not exist: ${link.src}`;
 	if (!exists(link.dst)) return `link dst does not exist: ${link.dst}`;
-	if (link.src === link.dst) return `link is a self-link: ${link.src}`;
+	if (link.src === link.dst && !isLoop(link)) return `link is a self-link: ${link.src}`;
 
 	const via = Array.isArray(link.via) ? link.via : [];
 	for (const w of via) if (!hasWaypoint(w)) return `link via waypoint does not exist: ${w}`;
 
-	const refs = [link.src, link.dst, ...via].filter(hasWaypoint);
+	// a loop's one end is named twice, as its src and its dst -- one role (B299)
+	const refs = [link.src, ...(isLoop(link) ? [] : [link.dst]), ...via].filter(hasWaypoint);
 	return selfConflict(link, refs) || duplicateThroughBend(link, via, access);
 }
 

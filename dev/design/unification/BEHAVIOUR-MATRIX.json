@@ -4207,6 +4207,148 @@
 			"built": "yes"
 		},
 		{
+			"id": "TRN-37",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "Close the link into a ring with c, then select the pin P and press x.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"c"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A ring has no ends to cut toward, so it opens at P: one link that starts at P, runs round B and A, and ends at P again -- P its endpoint, never a junction, with the transit ring; drawn where it was, up over the ring's own pipes.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 3
+				},
+				"rings": [
+					"node-000005"
+				],
+				"pins": {
+					"link-000001": 2
+				},
+				"roles": {
+					"node-000005": [
+						"endpoint"
+					]
+				},
+				"notice": "transit off at P -- 1 ring opened"
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-38",
+			"state": "transit pin",
+			"gesture": "transit `x`",
+			"does": "As TRN-37, then press x again.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"c"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turning transit back on closes the loop into a ring again, through P.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 3
+				},
+				"rings": [],
+				"pins": {
+					"link-000001": 1
+				},
+				"notice": "transit on at P -- 1 ring closed again"
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-39",
+			"state": "transit pin",
+			"gesture": "undo",
+			"does": "As TRN-37, then undo.",
+			"steps": [
+				[
+					"click",
+					-180,
+					-60
+				],
+				[
+					"key",
+					"c"
+				],
+				[
+					"click",
+					0,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "Undo restores the ring exactly, P's transit on again.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 3
+				},
+				"rings": [],
+				"pins": {
+					"link-000001": 1
+				}
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "RING-01",
 			"state": "pinned",
 			"gesture": "close `c`",

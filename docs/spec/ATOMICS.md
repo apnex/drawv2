@@ -194,6 +194,7 @@ The old rule refused any waypoint already owned by another link, which rejected 
 It was two checks under one name and only one moved.
 
 - **Self-conflict stays.** One link naming a waypoint twice across its own `src`, `dst` and `via` visits a point twice and the geometry is undefined.
+  AMENDED 2026-10-07 (B299): but for a loop, whose `src` and `dst` are one anchor -- an open link round two or more other stops, a ring opened where transit went off -- and which names that end once, in one role.
 - **Sharing relaxed.** Two links meeting at one waypoint is the junction.
 - **A repeated endpoint pair is refused.** Two links that bend at the same waypoint may not carry the same `src`/`dst` pair, compared unordered.
 

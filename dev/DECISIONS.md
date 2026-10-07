@@ -1740,3 +1740,10 @@ Asked for a verdict on staging and told that a rollback after reopening discards
 Asked one at a time, once every live diagram was schema 2.
 - The migration code is deleted, and the pre-cutover backups are records: kept in the private archive as the estate before the upgrade, not loadable by the current version -- only `2538ab8`, or an older commit's migration tool, reads them. An old-format document posted to the server is refused, not converted.
 - Told that 23 diagrams deleted in the week before the cutover were still restorable until 9 to 12 October, all in the old format, the director chose to deploy the deletion now over waiting for the window to lapse: restoring one of them is refused, with a sentence saying why.
+
+**Transit off at a ring's pin opens the ring there -- 2026-10-07 (B299).**\
+The director reported transit having no effect on the bends of a pinned link, and asked whether turning it off should leave an endpoint; it was a ring, which the cut skipped as having no ends.
+Asked what a ring should do, the director chose the proposer's recommendation, "Open the ring there", over refusing with a message or the ring going down.
+- The waypoint becomes an endpoint, never a junction -- as the cut leaves it on an open link (TR-2; "A non-transiting anchor has endpoints only, under one ring").
+- The ring opens at that waypoint into one link that starts there, runs round every other stop and ends there again -- a loop, the one link whose two ends may be one anchor, valid only open and round two or more other stops. The drawing does not move.
+- Turning transit back on closes it into a ring again; undo restores it exactly.

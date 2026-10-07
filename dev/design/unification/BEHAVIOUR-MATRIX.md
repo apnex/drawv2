@@ -89,11 +89,11 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
 | transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 | TRN-14, TRN-15 | TRN-16 | . | . | . |
 | transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . | . | . | . |
-| transit pin | . | . | . | . | . | . | . | . | TRN-35, TRN-36 | . | TRN-12, TRN-13, TRN-29, TRN-30, TRN-31, TRN-32, TRN-33, TRN-34 | . | . | . | . | . |
+| transit pin | . | . | . | . | . | . | . | . | TRN-35, TRN-36, TRN-39 | . | TRN-12, TRN-13, TRN-29, TRN-30, TRN-31, TRN-32, TRN-33, TRN-34, TRN-37, TRN-38 | . | . | . | . | . |
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . | . | . | . |
 | transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . | . | . | . |
 
-89 rows: 89 built, 0 todo, 0 open.\
+92 rows: 92 built, 0 todo, 0 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -225,6 +225,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-34 | transit pin x transit `x` | As TRN-31, then select the right half -- the one a join gives up -- and press f. | They join into the link drawn first, and the selection follows: the joined link is selected, as the half that was. | The director's report, 2026-10-02 (B288); DECISIONS: "A join keeps the earlier-drawn link's name and identity" (2026-09-26). | ruled, built |
 | TRN-35 | transit pin x undo | Select the pin P, press x, and undo. | Transit is stored on the anchor, so the cut and the setting are one edit: undo turns P back on and restores the one link pinned at P, with the id it was drawn with -- the session's setting could not be undone. | DECISIONS: "Transit with pipes" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch ("P2's design decisions", 2026-10-03; FORMAT-BATCH.md F-e). | ruled, built |
 | TRN-36 | transit pin x undo | As TRN-35, then redo. | Redo replays the edit whole: P off again, and the link cut into the same two links ending there. | DECISIONS: "Transit with pipes" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch ("P2's design decisions", 2026-10-03; FORMAT-BATCH.md F-e). | ruled, built |
+| TRN-37 | transit pin x transit `x` | Close the link into a ring with c, then select the pin P and press x. | A ring has no ends to cut toward, so it opens at P: one link that starts at P, runs round B and A, and ends at P again -- P its endpoint, never a junction, with the transit ring; drawn where it was, up over the ring's own pipes. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
+| TRN-38 | transit pin x transit `x` | As TRN-37, then press x again. | Turning transit back on closes the loop into a ring again, through P. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
+| TRN-39 | transit pin x undo | As TRN-37, then undo. | Undo restores the ring exactly, P's transit on again. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
 | RING-01 | pinned x close `c` | Select the link on its left leg, and press c. | The ring's closing leg, from B back to A, is routed like any leg: a link pipe is laid there in the same edit, and the ring is up over it, drawn closed as before -- the drawing joins B to A itself, along that pipe. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
 | RING-02 | pinned x close `c` | As RING-01, then press c again. | Opened, nothing runs over the closing pipe, so it is swept as any link pipe a link stops using is; the link is as drawn. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
 | RING-03 | pinned x undo | As RING-01, then undo. | One edit closed the ring and laid its pipe, so one undo opens it and takes the pipe back. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |

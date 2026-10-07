@@ -150,8 +150,9 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 	});
 	const transitNotice = (answer) => {
 		const said = pendingTransit; pendingTransit = null;
-		const { cut, joined } = transitSummary(answer.change?.ops ?? answer.ops ?? []);
-		say(`${said}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ` -- ${joined.pieces} pieces joined into ${joined.links} link${joined.links === 1 ? '' : 's'}` : ''}${downSummary(model)}`);
+		const { cut, joined, opened, closed } = transitSummary(answer.change?.ops ?? answer.ops ?? []);
+		const rings = (n, did) => (n ? ` -- ${n} ring${n === 1 ? '' : 's'} ${did}` : '');   // B299
+		say(`${said}${rings(opened, 'opened')}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ` -- ${joined.pieces} pieces joined into ${joined.links} link${joined.links === 1 ? '' : 's'}` : ''}${rings(closed, 'closed again')}${downSummary(model)}`);
 	};
 
 	/*

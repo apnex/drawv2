@@ -1150,10 +1150,13 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
+| H19.9 | Transit off at a ring's pin opens the ring there, as ruled -- the director's report from production | **B299** | S2 | `DONE` |
 
 AMENDED 2026-10-07: H19.2 ruled -- the backups are records, and the deletion deploys now though 23 pre-cutover deletions stay restorable until 12 October (`dev/DECISIONS.md`).\
 H19.3 done -- the migrations, the loader's repairs and both tools deleted, with their tests; an older document is refused at every door, said plainly.\
 B291 closed.
+
+AMENDED 2026-10-07: H19.9 added and done -- the director found transit doing nothing at a ring's pins on production (B299); ruled, the ring opens there into a loop ending at it, and closes again when transit returns.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

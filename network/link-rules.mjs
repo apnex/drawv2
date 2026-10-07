@@ -8,6 +8,7 @@ link kind at S-e (G5, K13b).
 
 import { straightCapacity, isStraight, pairKey } from './pair-capacity.mjs';
 import { linkFacing, samePlane } from './roles.mjs';   // one statement of each, read by the roles and the collapse (V-a)
+import { isLoop } from './link-references.mjs';   // the one link whose two ends are one anchor (B299)
 
 /*
 B72, ASKED -- the straight links holding a pair against this link: EMPTY when the pair has room for it. ONE HOME for
@@ -206,6 +207,28 @@ function pieceId(doc, from, at) {
 		if (!doc.get('link', id)) return id;
 		n = (n + 1) & 0xffffff;
 	}
+}
+
+/*
+B299 (ruled 2026-10-07) -- A RING OPENED AT ONE OF ITS STOPS, and a loop closed again: transit's answer for a ring, which has
+no ends to cut toward. Opened at `at`, the ring's stops are turned to start there and the link becomes a LOOP that starts
+and ends at it (network/link-references.mjs `isLoop`), running every leg of the ring, its closing leg among them, so it is
+drawn where it was. Closed again, the loop becomes a ring through the same stops, starting at its end. Each is one put of
+the link the author drew: its id, its order, its name and its declarations kept -- a direction reads the same, since the
+stops keep their order round the ring. Null when there is nothing to do.
+*/
+export function openRingAt(link, at) {
+	if (!link.closed) return null;
+	const stops = [link.src, ...(Array.isArray(link.via) ? link.via : []), link.dst];
+	const i = stops.indexOf(at);
+	if (i === -1 || stops.length < 3) return null;
+	const round = [...stops.slice(i), ...stops.slice(0, i)];   // `at` first, the rest in the ring's order
+	const { closed: _c, ...rest } = link;
+	return [{ op: 'put', kind: 'link', entity: { ...rest, src: at, via: round.slice(1), dst: at } }];
+}
+export function closeLoop(link) {
+	if (!isLoop(link)) return null;
+	return [{ op: 'put', kind: 'link', entity: { ...link, via: link.via.slice(0, -1), dst: link.via[link.via.length - 1], closed: true } }];
 }
 
 /*

@@ -76,7 +76,7 @@ export const LINK_ROW = {
 		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order, and the link's age (F-d, B259)
 	},
 	// judged on the `src`, `dst` and `via` it keeps -- a `set` merged over what is stored (the planner's mutation path)
-	refers: (entity, access) => linkReferential({ id: entity.id, src: entity.src, dst: entity.dst, via: entity.via ?? [] }, linkAccess(access)),
+	refers: (entity, access) => linkReferential({ id: entity.id, src: entity.src, dst: entity.dst, via: entity.via ?? [], closed: !!entity.closed }, linkAccess(access)),
 	invariants: straightPairs,
 	// where a link is drawn, and whether it is down, are the network's answers: a Model holding links is given one (V-e, J2)
 	drawnBy: ['pathOf', 'isLinkDown', 'blockersOf', 'linksRoutedThrough'],
