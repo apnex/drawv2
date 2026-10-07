@@ -226,3 +226,5 @@ Production sits behind IAP, which a headless browser cannot sign into, so what i
 | PU58 | CHECKED, live | tests/ring-transit.test.js; matrix rows TRN-37 to TRN-41 on both pages; the director's own test of the arrow on production; `draw-00159` (`3737b9e`) |
 | PU59 | CHECKED, live | tests/reaction-guard.test.js; `draw-00160-prc` (`eb9e0e5`) |
 | PU60 | CHECKED, live | tests/device-junctions.test.js; matrix rows TRN-42 to TRN-46 on both pages; a copy of production's `castle` opened and closed; `draw-00161-d86` (`844c2b7`) |
+
+AMENDED 2026-10-07: PU11, PU12 and PU24 CHECKED -- the director looked at the page on `draw.apnex.io`: the colours, the network panel and the undelete card, "all three look right" (H19.12).
