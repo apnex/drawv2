@@ -6677,13 +6677,13 @@
 				"stroke": "rgb(79, 195, 247)",
 				"dotted": false
 			},
-			"link#2": {
-				"d": "M-360 0 L0 -240",
+			"link#3": {
+				"d": "M0 -240 L0 240",
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			},
-			"link#3": {
-				"d": "M0 -240 L0 240",
+			"link#2": {
+				"d": "M-360 0 L0 -240",
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
@@ -10370,7 +10370,7 @@
 		"drawnPipes": 0
 	},
 	"TRN-43": {
-		"notice": "v2 link",
+		"notice": "v2 route",
 		"links": [
 			{
 				"id": "link#1",
@@ -10383,7 +10383,9 @@
 				"id": "link#2",
 				"src": "node#1",
 				"dst": "node#3",
-				"via": [],
+				"via": [
+					"node#4"
+				],
 				"down": false
 			}
 		],
@@ -10399,7 +10401,9 @@
 				"id": "link#2",
 				"src": "node#1",
 				"dst": "node#3",
-				"via": []
+				"via": [
+					"node#4"
+				]
 			}
 		],
 		"anchors": [

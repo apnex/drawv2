@@ -882,7 +882,8 @@ export class Input {
 
 	  key     the key that made the step, recorded in `steps`
 	  pin     whether the stop joins `via` -- the link connects there -- or only the route it passes
-	  nodes   whether a node may be the stop; a pin never is one, since a pin is always a waypoint
+	  nodes   whether a node may be the stop -- a pin may be one since H19.10: a device that passes routes is a junction, and
+	          the plugin's judge cuts the drag at one that does not (TR-2b)
 
 	An EXISTING anchor at the step is threaded; an empty cell gets a new waypoint, live so it renders, committed on
 	release; a cell a node occupies is refused.

@@ -23,7 +23,7 @@ Each table has exactly one row for every case: the Rules engine reads them, and 
 | row | what it means |
 |---|---|
 | `guide` | g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it |
-| `stop-on-node` | w on a node during a link drag: a stop the link routes over, never a pin; released on it, the node is the destination |
+| `stop-on-node` | w on a node during a link drag: a pin, the node a junction if it passes routes, cut there if it does not; released on it, the node is the destination |
 | `transit` | x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice |
 <!-- END GENERATED: keys -->
 

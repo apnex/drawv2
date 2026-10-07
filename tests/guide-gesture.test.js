@@ -184,13 +184,15 @@ test('with a route hook, w pressed ON the destination node makes a direct link, 
 	} finally { h.restore(); }
 });
 
-test('with a route hook, w on a node the drag continues past is a hop the link routes over, never a pin', () => {
+// RESTATED at H19.10 (Z1, ruled 2026-10-07): `w` on a node is a PIN, as on a waypoint; the network's judge keeps it if the node
+// passes routes and cuts there if not (the next test). This held "a hop the link routes over, never a pin" until then.
+test('with a route hook, w on a node the drag continues past is a pin, handed to the judge to keep or cut', () => {
 	const calls = [];
 	const h = makeInput({ routeHook: (r) => { calls.push(r); return { ok: true }; } });
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [360, 240]]);
 		drag(h, a, c, [['w', 360, 0]]);
-		assert.deepEqual([calls[0].stops, calls[0].pins], [[a.id, b.id, c.id], []], 'b is a stop, not a pin');
+		assert.deepEqual([calls[0].stops, calls[0].pins], [[a.id, b.id, c.id], [b.id]], 'b is a stop and a pin');
 	} finally { h.restore(); }
 });
 
@@ -198,6 +200,8 @@ test('with a route hook, w on a node the drag continues past is a hop the link r
 REWRITTEN 2026-10-04 (P7 X-a, H18.37; the cutover ruling): this held that `w` on a node did nothing on the product page. The page
 composes the network now (V-b), whose grammar makes a node a STOP: a link bends only at a waypoint (F-c), so a drag through a
 node with `w` makes two links that end there (network/guide.mjs), as the lab does.
+CORRECTED 2026-10-07 (H19.10, Z1): a link may be pinned through a node that passes routes now; these are HOSTS, which never do,
+so the judge cuts the drag there (TR-2b) -- the outcome stands, for that reason. A router with transit on is pinned (TRN-43).
 */
 test('the product page: w on a node makes it a stop -- two links ending there', () => {
 	const h = makeInput();

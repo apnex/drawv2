@@ -4545,7 +4545,7 @@
 					]
 				]
 			],
-			"intent": "A router whose transit is on is a junction, so w there carries the drag on through it: one link from A to H, up, routed through R over the two pipes the w laid -- TRN-15's companion, where R's transit is off and two links end at it. R is passed by the link's route, not stored as a pin.",
+			"intent": "A router whose transit is on is a junction, so w there pins the link through it and the drag carries on (Z1): one link from A to H, up, pinned at R over the two pipes the w laid -- TRN-15's companion, where R's transit is off and the drag judge cuts there, two links ending at it.",
 			"expect": {
 				"links": 2,
 				"down": 0,
@@ -4559,7 +4559,7 @@
 					"node-000003|node-000004": 0
 				}
 			},
-			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) -- w on a transiting device; already the behaviour when ruled.",
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" and \"Z1 -- a device pin follows transit's rules only\" (2026-10-07); H19.10 stage Z-c.",
 			"standing": "ruled",
 			"built": "yes"
 		},

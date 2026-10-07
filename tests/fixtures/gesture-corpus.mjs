@@ -290,6 +290,16 @@ export function canonical(value, { typed = new Set() } = {}) {
 		Object.values(v).forEach(find);
 	};
 	find(value);
+	// an id the record itself shows with a type is a node, wherever else it is listed (H19.10: a pin may be a device)
+	const shownTyped = new Set();
+	const findTyped = (v) => {
+		if (Array.isArray(v)) return v.forEach(findTyped);
+		if (!v || typeof v !== 'object') return;
+		if (typeof v.id === 'string' && v.id.startsWith('node-') && typeof v.type === 'string') shownTyped.add(v.id);
+		Object.values(v).forEach(findTyped);
+	};
+	findTyped(value);
+	for (const id of shownTyped) bare.delete(id);
 	const name = (id, stored) => {
 		const kind = bare.has(id) ? 'waypoint' : stored;
 		if (!seen.has(id)) { count[kind] = (count[kind] ?? 0) + 1; seen.set(id, `${kind}#${count[kind]}`); }

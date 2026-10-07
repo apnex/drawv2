@@ -9,8 +9,10 @@ route hook that production never passed.
 
   g during a link drag        a GUIDE: the route passes this anchor and the link does not pin it. A node may be one,
                               since a pipe may end at a node (ruled 2026-09-30, "Each drag action does one thing")
-  w on a node during a drag   a stop the link routes over, never a pin: a pin is always a waypoint. Released on it, the
-                              node is the link's destination, reached with w (ruled 2026-09-30)
+  w on a node during a drag   a PIN, as on a waypoint (H19.10, Z1): a device that passes routes is a junction, and the drag
+                              carries on through it; one that does not -- transit off, or a host -- is cut there by the
+                              drag judge (TR-2b). Released on it, the node is the link's destination, reached with w
+                              (ruled 2026-09-30)
 
 Each run asks the host for ONE thing, the product's generic drag step: add a stop, pinned or not. The host records
 which key made it; what that step MEANS for pipes and links is the network's drag grammar, read when the drag ends.
@@ -38,10 +40,10 @@ const networkKeys = (session) => [
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'g') && plain(e), when: drawingALink,
 		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'g', pin: false, nodes: true }); } },
-	{ id: 'stop-on-node', input: ['w'], context: 'over a node while drawing a link', doc: 'w on a node during a link drag: a stop the link routes over, never a pin; released on it, the node is the destination',
+	{ id: 'stop-on-node', input: ['w'], context: 'over a node while drawing a link', doc: 'w on a node during a link drag: a pin, the node a junction if it passes routes, cut there if it does not; released on it, the node is the destination',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'w') && plain(e), when: (s) => drawingALink(s) && overANode(s),
-		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'w', pin: false, nodes: true }); } },
+		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'w', pin: true, nodes: true }); } },
 	// TRANSIT (ruled 2026-09-28; TRANSIT.md section 12, X1): `x` flips each selected anchor's transit on its own -- `x` for
 	// ergonomics, beside the wasd keys. Not during a drag: it is a declaration about anchors, not a step of a gesture
 	{ id: 'transit', input: ['x'], context: 'anchors or nodes selected', doc: 'x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice',

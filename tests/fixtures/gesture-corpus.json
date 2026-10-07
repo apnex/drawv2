@@ -4900,18 +4900,23 @@
 							"name": "link-1",
 							"order": 1,
 							"src": "node#1",
-							"dst": "node#2"
+							"dst": "node#2",
+							"via": [
+								"node#3"
+							]
 						}
 					}
 				],
-				"label": "link"
+				"label": "route"
 			}
 		],
 		"judged": [
 			{
 				"src": "node#1",
 				"dst": "node#2",
-				"pins": [],
+				"pins": [
+					"node#3"
+				],
 				"placed": [],
 				"srcKey": false,
 				"guides": [],
@@ -4962,20 +4967,10 @@
 				}
 			],
 			"waypoints": [],
-			"links": [
-				{
-					"id": "link#1",
-					"name": "link-1",
-					"order": 1,
-					"src": "node#1",
-					"dst": "node#2"
-				}
-			],
+			"links": [],
 			"zones": [],
 			"groups": [],
-			"selection": [
-				"link#1"
-			]
+			"selection": []
 		}
 	},
 	"plugin-duplicate-reaches-judge": {
