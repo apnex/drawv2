@@ -1146,7 +1146,12 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.2 | Rule B291's backup question: the pre-cutover backups held as records, not as a rollback, so the migration that reads them may go | feature | S3 | `DONE` |
 | H19.3 | Delete the schema 2 migration, the loader's repairs and the dry-run tool, as the format batch named them -- transform once, then delete the transform | **B291** | S3 | `DONE` |
 | H19.4 | Close the production-upgrade register: each entry checked against production, or carried forward with its reason | **B276** | S3 | `DONE` |
-| H19.5 | Plan the sync hardening: GR6 extended to route, split, preview correction and undo under disconnect and reorder, with B251 to B253 judged against it -- `dev/design/unification/SYNC-HARDENING.md` | **B247** | S3 | `TODO` |
+| H19.5 | Plan the sync hardening: GR6 extended to route, split, preview correction and undo under disconnect and reorder, with B251 to B253 judged against it -- `dev/design/unification/SYNC-HARDENING.md` | feature | S3 | `DONE` |
+| H19.13 | U-a: the K1 fuzz in the repository, ported to today's composition and extended to the network's edits | **B247** | S3 | `TODO` |
+| H19.14 | U-b: the open sync defects re-measured on it, each failure classified | **B247** | S3 | `TODO` |
+| H19.15 | U-c: replay after reconnect and resync -- B251 as ruled, B295 | **B251**, **B295** | S3 | `TODO` |
+| H19.16 | U-d: what U-b finds of B252, B253 and B254, each fixed or held with its rate | **B252**, **B253**, **B254** | S3 | `TODO` |
+| H19.17 | U-e: a bounded fuzz in the gate, its cost measured; B247 closed | **B247** | S3 | `TODO` |
 | H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
@@ -1177,6 +1182,7 @@ Next H19.4, the production-upgrade register.
 AMENDED 2026-10-07: H19.4 done -- the register audited and, at the director's ruling, retired; B276 closed; the look it owed the director is H19.12.\
 Next H19.5, the sync-hardening plan.
 AMENDED 2026-10-07: H19.12 done -- the director looked at the page: "all three look right".
+AMENDED 2026-10-07: H19.5 done -- the plan approved as proposed; the build is H19.13 to H19.17.\
 AMENDED 2026-10-07: H19.5's plan is `dev/design/unification/SYNC-HARDENING.md`, proposed: port the K1 fuzz to today's composition and measure before ruling; no decision before the measurement.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
