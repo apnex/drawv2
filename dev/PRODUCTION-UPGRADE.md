@@ -7,6 +7,7 @@ Production runs `2814d8d`.\
 Every entry below is true of `main` and not yet of production.\
 AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`), deployed after the audit at the end of this file; entries PU1 to PU16 and PU24 to PU29 are now true of production, PU17 to PU23 still wait for promotion's cutover.\
 The register continues: an entry is added for each change production does not yet have, and it is read again before the cutover.
+AMENDED 2026-10-07: production runs `844c2b7` (`draw-00161-d86`), tracking `main` since the cutover; the audit at the end of this file gives every entry from PU16 a verdict, each true of production but PU16 and PU23, carried with their reasons, and three entries owed to the director's eye.\
 
 ## How to use it
 
@@ -175,3 +176,50 @@ Owed to the director's eye: PU11, PU12 and PU24 -- the page's colours, its netwo
 Booted against the bucket with the same 43 diagrams and 4 templates; the edge unchanged (`/` 302, `/about` 200).\
 PU30 CHECKED by its tests (tests/resume.test.js "B290"), not by the logs: none of the error in the new revision's first ten minutes, but none in the previous revision's last two hours either -- its last occurrence was 2026-10-02 07:22 UTC, so the tab that met it had already closed, and production could not have shown the fix.\
 Rollback: redeploy `draw:d58816c`.
+
+---
+
+## Audit 2026-10-07 -- after the cutover, production `844c2b7`
+
+At the director's word, approving the re-triage after the cutover (H19.4).\
+Production has tracked `main` since the cutover (`dev/design/unification/PROMOTION.md`, P9), so an entry is true of production when the revision serving it carries its commit; each verdict names the test that holds the behaviour and, where it went live after the cutover, the revision.\
+Production sits behind IAP, which a headless browser cannot sign into, so what is checked by looking at the page stays the director's.
+
+| # | Verdict | Evidence |
+|---|---|---|
+| PU11, PU12, PU24 | DIRECTOR'S EYE, still owed | owed since the 2026-10-02 deploy: the page's colours, its network panel, the undelete card, seen on `draw.apnex.io`; the page's matrix and the palette gate hold them by test |
+| PU16 | CARRIED | the director's call, H10.30, independent of any upgrade |
+| PU17 | CHECKED, live | tests/drawing-order.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU18 | CHECKED, live | tests/server-network.test.js S-b round trip; tests/consumer-parity.test.js criterion 3; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU19 | CHECKED, live | tests/kinds.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU20 | CHECKED, live | tests/one-preview.test.js PL6 and V-d; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU21 | CHECKED, live | tests/cli-tool.test.js and tests/input.test.js B243; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU22 | CHECKED, live | tests/appearance.test.js; the colour-tokens gate; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU23 | CARRIED | not built: K6, one device table in `network/`, is among H17.3's remaining cuts -- the palette still carries `NODE_TYPES` (`app/src/palette.js:14`); it reaches production when built |
+| PU30 | CHECKED | at the 2026-10-03 deploy, above |
+| PU31 | CHECKED, lifted | the freeze ended at P9: production deploys from `main`, now `844c2b7` |
+| PU32 | CHECKED, live | tests/appearance.test.js and tests/change-set.test.js direction; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU33, PU34, PU35 | CHECKED, live | the cutover migrated every stored diagram, the 42 files in the bucket identical to the dry run's migration of the frozen backup (`dev/design/unification/FINAL-REHEARSAL.md`); the migration itself deleted since (H19.3, PU57) |
+| PU36 | CHECKED, live | tests/drawing-order.test.js F-d (B10); draw-00156-l5n, the cutover (`9ac031a`) |
+| PU37 | CHECKED, live | tests/transit-roles.test.js F-e; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU38 | CHECKED, live | matrix rows RING-01 to RING-03 on the lab and the page; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU39 | CHECKED, live | tests/server-network.test.js S-b, a pin deleted over the server deletes its link; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU40 | CHECKED, live | tests/network-contract.test.js and the lab's matrix; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU41 | CHECKED, live | tests/server-network.test.js S-c; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU42 | CHECKED, live | the cutover: every link up after migration, 482 links and none down on staging's rehearsal, the production bucket identical to the dry run's migration |
+| PU43 | CHECKED, live | tests/link-kind.test.js S-e; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU44 | CHECKED, live | tests/cli-tool.test.js R-a; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU45 | CHECKED, live | tests/consumer-parity.test.js R-e; tests/cli-tool.test.js R-b; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU46 | CHECKED, live | tests/run-picture.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU47 | CHECKED, live | tests/consumer-parity.test.js, movers never along a down link; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU48 | CHECKED, live | tests/browser.test.js V-b and the page's matrix, every row; the director using the page since the cutover; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU49 | CHECKED, live | tests/cli-tool.test.js V-c; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU50 | CHECKED, live | tests/one-preview.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU51 | CHECKED, live | tests/rest-pipes.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU52, PU53, PU54 | CHECKED, live | tests/cli-tool.test.js W-b, W-c, W-d; tests/agent-parity.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU55 | CHECKED, live | tests/b294-chained-verbs.test.js and the page's B294 test; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU56 | CHECKED, live | tests/page-matrix.test.js, the page's matrix and its B298 test; draw-00156-l5n, the cutover (`9ac031a`) |
+| PU57 | CHECKED, live | tests/older-format.test.js; `draw-00157-xdb` (`b10a3b5`) |
+| PU58 | CHECKED, live | tests/ring-transit.test.js; matrix rows TRN-37 to TRN-41 on both pages; the director's own test of the arrow on production; `draw-00159` (`3737b9e`) |
+| PU59 | CHECKED, live | tests/reaction-guard.test.js; `draw-00160-prc` (`eb9e0e5`) |
+| PU60 | CHECKED, live | tests/device-junctions.test.js; matrix rows TRN-42 to TRN-46 on both pages; a copy of production's `castle` opened and closed; `draw-00161-d86` (`844c2b7`) |
