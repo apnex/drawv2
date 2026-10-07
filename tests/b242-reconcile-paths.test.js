@@ -85,7 +85,7 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 	connectOther();
 
 	// the tab's socket: what it sends waits in `up`, what the server answers waits in `down`
-	const up = [], down = [];
+	const up = [], down = [], sent = [];   // `sent`: every message the tab sent, never drained (B304)
 	let open = true, receive = () => {}, status = () => {}, server = null;
 	const connect = () => {
 		const on = {};
@@ -97,11 +97,11 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 		get status() { return open ? 'open' : 'closed'; },
 		subscribe: (fn) => { receive = fn; }, onStatus: (fn) => { status = fn; },
 		isOpen: () => open,
-		send: (cmd, body) => { if (!open) return false; up.push({ cmd, body: JSON.parse(JSON.stringify(body ?? {})) }); return true; },
+		send: (cmd, body) => { if (!open) return false; const m = { cmd, body: JSON.parse(JSON.stringify(body ?? {})) }; up.push(m); sent.push(m); return true; },
 	};
 
 	const w = {
-		id, up, down,
+		id, up, down, sent,
 		// a page: its Model, Changes and Sync, wired as app/src/main.js wires them, hydrated by `hello`
 		mount(parts = null) {
 			w.tab = parts?.model || new Model({ kinds: PAGE_KINDS, network: aNetwork() });   // the kinds the product page composes (S-b, G1)
@@ -241,7 +241,7 @@ test('a resync does not put back a move that an undo reversed', async () => {
 		w.serve();                                             // the first undo lands
 		w.other(set('node', X, { name: 'moved-on' }));         // and another writer moves the server past it
 		w.pump();                                              // so the second, at the version the first left, is refused
-		assert.equal(refused[0], 'version-conflict', 'the second undo was refused -- the resync this test is about followed');   // a second refusal is B295's replay
+		assert.equal(refused[0], 'version-conflict', 'the second undo was refused -- the resync this test is about followed');   // a second refusal was B295's replay, fixed at H19.15 (its own test, below)
 		assert.equal(w.server().get('node', A).x, 0, 'the server undid the move');
 		assert.equal(w.server().get('node', X).name, 'moved-on', 'and the other writer\'s change stands: the second undo was refused');
 		assert.deepEqual(w.diff(), [], CONVERGED);
@@ -344,7 +344,11 @@ test('acks arriving behind a snapshot held for a gesture are applied after it, n
 	try {
 		refusedMove(w, B, A);
 		refusedMove(w, B, A);
-		w.serve(); w.deliverAll();                             // two refusals: two resyncs in flight
+		w.serve(); w.deliverAll();                             // two refusals...
+		// RESTATED at H19.15: one re-fetch at a time -- two refusals ask for the document ONCE; the second snapshot this test is
+		// about, unsolicited, stands for one the server sends unasked (a lock handoff, a reclaim)
+		assert.equal(w.up.filter((m) => m.cmd === 'open').length, 1, '...ask for the document once');
+		w.sync.net.send('open', { id: w.tab.state.meta.id });
 		w.serve();                                             // two snapshots wait
 		w.changes.commit(renameEntity('group', G, 'g1', 'mine'));
 		w.serve();                                             // answered after both snapshots...
@@ -414,24 +418,57 @@ test('B181: a rate-limited commit stays in the outbox and goes out again when th
 
 // ---- the tab's version ----
 
+/*
+RESTATED at H19.15: this made its `replayed` answer by a snapshot re-sending a request already answered, which B295 stopped; a
+replayed answer now comes as it does in use -- the request landed and its answer was lost with the socket. B251 (ruled
+2026-09-28): the tab then fetches the document again, one `open`; B184's property is unchanged -- the version does not move
+back, so the next change in order is applied and asks for nothing more.
+*/
 test('B184: a replayed answer does not move the tab\'s version back, so the next change in order is applied', async () => {
 	const w = await world(LONE);
 	try {
 		w.changes.commit(move(A, 240, 0));
-		w.pump();
+		w.serve();                                             // it lands...
 		w.other(set('node', X, { name: 'o1' }));
+		w.reconnect();                                         // ...and its answer is lost with the socket
 		w.pump();
-		w.sync.requestResync();                                // the answered move is re-sent with the snapshot...
-		w.serve();
-		w.deliverTo('snapshot');
-		w.serve();
-		assert.equal(w.deliverTo('ack').body.replayed, true, '...and answered `replayed`, with its first version');
+		assert.ok(w.sent.some((m) => m.cmd === 'commit' && m.body.txnId === w.sent[0].body.txnId) && w.sent.filter((m) => m.cmd === 'commit').length === 2, 'the move was sent again, unanswered as far as the tab knew');
 		assert.equal(w.sync.appliedVersion, w.version(), 'the model is where the server is');
 		assert.equal(w.changes.state.version, w.version(), 'and so is the undo counter, or Ctrl+Z expects a stale version');
+		const opens = w.sent.filter((m) => m.cmd === 'open').length;
 		w.other(set('node', X, { name: 'o2' }));
 		w.deliverAll();
-		assert.deepEqual(w.up.map((m) => m.cmd), [], 'the next change was taken in order, not answered with a resync');
+		assert.equal(w.sent.filter((m) => m.cmd === 'open').length, opens, 'the next change was taken in order, not answered with a resync');
 		assert.equal(w.tab.get('node', X).name, 'o2');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	} finally { w.close(); }
+});
+
+/*
+B251 (H19.15; ruled 2026-09-28, H17-B251) -- A REQUEST WHOSE ANSWER WAS LOST, ANSWERED `replayed`, IS FOLLOWED BY THE DOCUMENT AGAIN.
+After a reconnect the tab cannot tell whether a request whose answer was lost reached the server; it keeps showing it and sends
+it again. When the server answers `replayed` -- it had landed -- the tab re-fetches, so whatever it re-applied on top of a
+document that already held it is replaced by the server's. The K1 fuzz measured 16 such breaks in 300 runs; the sync fuzz 6.
+*/
+test('B251: a replayed answer to a request the tab did not know had landed asks for the document again', async () => {
+	const w = await world(LONE);
+	try {
+		w.changes.commit(move(A, 240, 0));
+		w.serve();
+		w.reconnect();
+		let replayed = false;
+		while (w.up.length || w.down.length) {
+			w.serve();
+			while (w.down.length) {
+				const m = w.deliver();
+				if (m.cmd === 'ack' && m.body.replayed) {
+					replayed = true;
+					assert.equal(w.up.at(-1)?.cmd, 'open', 'the replayed answer is followed by an open');
+				}
+			}
+		}
+		assert.ok(replayed, 'answered replayed -- the case under test');
+		assert.deepEqual(w.diff(), [], CONVERGED);
 	} finally { w.close(); }
 });
 
@@ -591,5 +628,109 @@ test('V-d: another writer\'s change does not bring back what the tab\'s own unan
 		assert.equal(w.tab.get('link', 'link-f10004'), undefined, 'the tab\'s own consequence stays on top of the change');
 		w.pump();
 		assert.deepEqual(w.diff(), []);
+	} finally { w.close(); }
+});
+
+/*
+B304 (H19.15; ruled 2026-10-07, "re-fetch") -- A PREVIEW THE SERVER DID NOT CONFIRM IS CORRECTED by fetching the document again.
+The tab previews an edit's consequences on its own board; another writer's edit reached the server first, so the server plans
+the request on a different board and answers otherwise. Found by the sync fuzz (seed 7): one tab deletes a waypoint, its preview
+taking both links ending there; the other writer re-plugs one of them away first; the server deletes only the other, and the
+tab kept the re-plugged link deleted for good. Now the answer's mismatch with what the tab applied asks for the document again.
+*/
+const STAR = [
+	['node', { id: 'node-f20001', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 }],
+	['node', { id: 'node-f20002', name: 'b', type: 'host', shape: 'square', x: 360, y: 0 }],
+	['node', { id: 'node-f20003', name: 'c', type: 'host', shape: 'square', x: 0, y: 240 }],
+	['node', { id: 'node-f20004', name: 'w', x: 0, y: -120 }],
+	['link', { id: 'link-f20005', name: 'l1', src: 'node-f20001', dst: 'node-f20004' }],
+	['link', { id: 'link-f20006', name: 'l2', src: 'node-f20004', dst: 'node-f20002' }],
+];
+
+test('B304: a preview the server answered otherwise -- another writer re-plugged a link away first -- is corrected', async () => {
+	const w = await world(STAR, { tab: await previewing() });
+	try {
+		w.changes.commit(deleteSelection(w.tab, new Set(['node-f20004'])));
+		assert.equal(w.tab.get('link', 'link-f20006'), undefined, 'the preview takes both links ending at w');
+		w.other([{ op: 'set', kind: 'link', id: 'link-f20006', patch: { src: 'node-f20003' } }]);   // the other writer, first
+		w.pump();
+		assert.ok(w.server().get('link', 'link-f20006'), 'the server kept l2, re-plugged to c -- the case under test');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	} finally { w.close(); }
+});
+
+test('B304: a preview the server confirms asks for nothing more -- no extra fetch in ordinary use', async () => {
+	const w = await world(STAR, { tab: await previewing() });
+	try {
+		w.changes.commit(deleteSelection(w.tab, new Set(['node-f20004'])));
+		w.pump();
+		assert.equal(w.up.length + w.down.length, 0, 'settled');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+		assert.equal(w.sent.filter((m) => m.cmd === 'open').length, 0, 'and no open was sent for it');
+	} finally { w.close(); }
+});
+
+/*
+B295 (H19.15) -- A REQUEST THE SERVER HAS ANSWERED IS NOT SENT AGAIN AT A SNAPSHOT, nor counted toward the replay limit. It
+waits in the outbox only until an ack says it is durable (B148); the snapshot holds it -- one that does not, a restarted
+server's loss, is made the tab's own again first (D29). Every snapshot re-sent it: an answered undo was refused a second time,
+an answered commit drew a `replayed` answer, and each re-send counted toward MAX_REPLAYS, so the re-fetches B304 adds would
+have given up more changes (measured by the sync fuzz: give-ups doubled until this).
+*/
+test('B295: after a resync an undo already answered is not sent again -- one refusal, not two', async () => {
+	const w = await world(LONE);
+	try {
+		w.changes.commit(move(A, 240, 0));
+		w.pump();
+		const refused = [];
+		w.sync.onRefused = (b) => refused.push(b.code);
+		w.changes.undo();
+		w.changes.undo();
+		w.serve();
+		w.other(set('node', X, { name: 'moved-on' }));
+		w.pump();
+		assert.deepEqual(refused, ['version-conflict'], 'the second undo refused once');
+		assert.equal(w.sent.filter((m) => m.cmd === 'undo').length, 2, 'and each undo sent once');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	} finally { w.close(); }
+});
+
+test('B295: an answered commit waiting to be durable is neither re-sent at a snapshot nor counted toward the replay limit', async () => {
+	const w = await world(LONE);
+	try {
+		w.changes.commit(move(A, 240, 0));
+		w.pump();
+		const entry = w.sync.outbox.find((m) => m.answered);
+		assert.ok(entry, 'answered, not yet known durable -- the case under test');
+		for (let i = 0; i < 3; i++) { w.sync.requestResync(); w.pump(); }
+		assert.equal(w.sent.filter((m) => m.cmd === 'commit').length, 1, 'sent once');
+		assert.equal(entry.tries ?? 0, 0, 'and no snapshot counted it');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	} finally { w.close(); }
+});
+
+test('B304: a no-op answer to a request whose preview did something -- another writer had done it first, its own way -- is corrected', async () => {
+	const w = await world(STAR, { tab: await previewing() });
+	try {
+		w.changes.commit(deleteSelection(w.tab, new Set(['node-f20004'])));   // the tab previews the delete of w and both links
+		w.other([{ op: 'del', kind: 'link', id: 'link-f20005' }, { op: 'del', kind: 'link', id: 'link-f20006' }, { op: 'del', kind: 'node', id: 'node-f20004' }]);
+		w.other([{ op: 'put', kind: 'link', entity: { id: 'link-f20006', name: 'again', src: 'node-f20001', dst: 'node-f20002' } }]);
+		w.serve();
+		assert.equal(w.down.find((m) => m.cmd === 'ack')?.body.noop, true, 'the server held it already -- answered no-op');
+		w.pump();
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	} finally { w.close(); }
+});
+
+test('B295: after a reload, a request answered before it is not sent again -- it came back from disk answered, not sent', async () => {
+	const w = await world(LONE);
+	try {
+		w.changes.commit(move(A, 240, 0));
+		w.pump();
+		assert.ok(w.sync.outbox.some((m) => m.answered), 'answered, waiting to be durable -- the case under test');
+		w.reload();
+		w.pump();
+		assert.equal(w.sent.filter((m) => m.cmd === 'commit').length, 1, 'sent once, before the reload');
+		assert.deepEqual(w.diff(), [], CONVERGED);
 	} finally { w.close(); }
 });

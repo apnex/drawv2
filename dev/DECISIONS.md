@@ -1768,3 +1768,8 @@ Asked what becomes of the register now that production follows `main` on every p
 - It stays as the record of the upgrade, audited after the cutover, and takes no new entries: with production tracking `main` there is no gap between them for it to list.
 - A change a user or an agent will notice is recorded where it already is -- its backlog row and its commit.
 - Its open items move to the board: Cloud Armor stays H10.30; the device table stays with H17.3's remaining cuts; the director's look at the page's colours, network panel and undelete card becomes an item of its own.
+
+**B304 -- a tab whose preview the server answered otherwise fetches the document again -- 2026-10-07 (H19.15).**\
+Shown that a tab's preview of an edit is never corrected when another writer's edit reached the server first and the server answered otherwise (18 runs in 300 of the sync fuzz, with only ordinary edits), the director chose the proposer's recommendation: "agree with refetch".
+- When an answer does not confirm every op the tab derived for its request -- a no-op answer included; an op it asked for that the server found already so proves nothing -- the tab fetches the document again and re-plans its own unanswered requests on top, as B251's ruling does for a lost answer.
+- Correcting in place, undoing the unconfirmed part without a fetch, was declined: more code in the most delicate part of sync.

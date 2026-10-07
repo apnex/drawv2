@@ -59,15 +59,29 @@ test('B183: a queued change is not replayed forever', () => {
 	for (let i = 0; i < MAX_REPLAYS + 3; i++) sync.replayOutbox({ reapply: false });
 
 	assert.equal(sync.outbox.length, 0, 'an undeliverable change must eventually be abandoned');
+	// RESTATED at H19.15: the bound counts REPLAYS of a request already sent; its first send, from the outbox where it was
+	// queued unsent, is no replay -- so it goes out once and is replayed at most MAX_REPLAYS times
 	const commits = sent.filter((m) => m.cmd === 'commit').length;
-	assert.ok(commits <= MAX_REPLAYS, `sent ${commits} times against a bound of ${MAX_REPLAYS}`);
+	assert.ok(commits <= MAX_REPLAYS + 1, `sent ${commits} times against a bound of one send and ${MAX_REPLAYS} replays`);
+});
+
+// H19.15 -- the bound counts attempts: a request never sent -- held behind an undo waiting for its answer (B294), or with the
+// socket closed -- is not counted, however many snapshots pass, and is not given up
+test('B183, H19.15: a request never sent is not counted toward the bound, however many snapshots pass', () => {
+	const { sync, sent } = harness();
+	sync.net.isOpen = () => false;   // nothing can go out
+	sync.outbox.push({ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete', txnId: 't1' });
+	for (let i = 0; i < MAX_REPLAYS + 3; i++) sync.replayOutbox({ reapply: false });
+	assert.equal(sent.length, 0, 'never sent');
+	assert.equal(sync.outbox.length, 1, 'and still the tab\'s, not given up');
+	assert.equal(sync.said, null, 'nothing said of it');
 });
 
 test('B183: giving up is said out loud, never silent', () => {
 	// discarding a user's change quietly is the I15 failure this whole arc keeps meeting
 	const { sync } = harness();
 	sync.outbox.push({ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete', txnId: 't1' });
-	for (let i = 0; i < MAX_REPLAYS + 1; i++) sync.replayOutbox({ reapply: false });
+	for (let i = 0; i < MAX_REPLAYS + 2; i++) sync.replayOutbox({ reapply: false });   // its first send, then the replays (H19.15)
 	assert.ok(sync.said, 'nothing was said');
 	assert.match(String(sync.said.text), /discarded/, `said: ${JSON.stringify(sync.said)}`);
 	assert.equal(sync.said.err, true, 'losing a change is not good news and must not read as routine');

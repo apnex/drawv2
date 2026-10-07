@@ -92,6 +92,32 @@ export function derivedToApply(sent, planned, pending) {
 }
 
 /*
+Which of the ops a tab applied for a request the server's answer does not confirm -- the preview's unconfirmed part.
+B304 (H19.15; ruled 2026-10-07, "re-fetch"): the tab previews each request's consequences on its own board (V-d); when another
+writer's edit reached the server first, the server plans the request on a different board and can answer otherwise -- delete
+less, join differently, mint a piece another way. `derivedToApply` adds what the answer holds that the tab lacks, and cannot
+take back what the tab applied that the answer lacks; so an op the tab DERIVED for its request with no echo in the answer means
+the tab shows something the server does not hold, and the tab fetches the document again. An op the tab ASKED for (`asked`, the
+request's own ops) that the answer leaves out was already so on the server -- narrowed to nothing -- and proves nothing, which
+keeps a tab with no preview, whose applied ops are what it asked, from fetching on every no-op. In ordinary use the preview and
+the answer are one plan of one board (PL-6), and this is empty.
+*/
+export function unconfirmedPreviewOps(applied, planned, asked = []) {
+	const answer = new Map();          // entity -> the answer's ops on it, not yet matched, in order
+	for (const op of planned) {
+		const at = entityOf(op);
+		if (!answer.has(at)) answer.set(at, []);
+		answer.get(at).push(op);
+	}
+	return applied.filter((op) => {
+		const theirs = answer.get(entityOf(op));
+		const i = theirs ? theirs.findIndex((p) => echoes(op, p)) : -1;
+		if (i >= 0) { theirs.splice(i, 1); return false; }
+		return !asked.some((a) => entityOf(a) === entityOf(op) && echoes(a, op));   // what it asked for, narrowed away
+	});
+}
+
+/*
 B288 -- AN ANSWER, APPLIED: the derived ops (`derivedToApply`) onto the model, and a selected entity that a reaction
 absorbed handing its selection to what it was absorbed into -- read off the delete's `into` (TG-1b, succession), which the
 planner's join sets -- a join keeps the earlier-drawn link's id (ruled 2026-09-26), so the

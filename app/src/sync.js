@@ -30,7 +30,7 @@ to sustain a loop. Losing an undeliverable change is the lesser harm, and the us
 */
 const MAX_REPLAYS = 5;
 import * as commands from './commands.js';
-import { derivedToApply, applyAnswer } from './changes.js';
+import { derivedToApply, applyAnswer, unconfirmedPreviewOps } from './changes.js';
 import { NAME_MAX } from '../../model/limits.mjs';
 import { Clock } from './clock.js';
 
@@ -229,7 +229,7 @@ export class Sync {
 		*/
 		if (this.throttledUntil && Date.now() < this.throttledUntil) return;
 		for (const [i, msg] of this.outbox.entries()) {
-			if (msg.sent) continue;
+			if (msg.sent || msg.answered) continue;   // B295: an answered request is the server's; it is never sent again
 			/*
 			B294 -- an undo or redo waits for every request ahead of it to be answered, and goes out at the version the
 			last answer left. Its `expect` is the version the tab stood at; pressed while its own earlier request was on
@@ -244,6 +244,7 @@ export class Sync {
 				: this.net.send('commit', { ops: msg.ops, label: msg.label, txnId: msg.txnId });
 			if (!ok) return;                            // socket closed mid-drain; retry on reconnect
 			msg.sent = true;
+			msg.attempted = true;   // since the last snapshot -- what B183 counts (replayOutbox)
 		}
 	}
 
@@ -352,7 +353,20 @@ export class Sync {
 		*/
 		const kept = [];
 		for (const m of this.outbox) {
-			m.tries = (m.tries || 0) + 1;
+			/*
+			B295 (H19.15) -- AN ANSWERED REQUEST IS NOT REPLAYED: the server holds it, and it waits here only until an ack says it
+			is durable (B148). One a snapshot does not hold -- a restarted server's loss -- was made unanswered just before this
+			(D29), and is replayed like any other. Re-sending the rest drew a second refusal for an undo and a `replayed` answer
+			for a commit, and counted each toward MAX_REPLAYS, so every snapshot -- B304's re-fetch among them -- gave up changes.
+			*/
+			if (m.answered) { kept.push(m); continue; }
+			/*
+			H19.15 -- B183 COUNTS ATTEMPTS: a request sent since the last snapshot and not answered. One never sent -- held behind
+			an undo waiting for its answer (B294), or behind a throttle -- has not been attempted, and counting it gave up changes
+			the server never saw, more of them with every re-fetch B304 and B251 ask for. A reconnect resets `sent` (D6) and not
+			this, so a socket that keeps dropping is still bounded.
+			*/
+			if (m.attempted) { m.tries = (m.tries || 0) + 1; m.attempted = false; }
 			if (m.tries > MAX_REPLAYS) continue;      // given up on: dropped below, with a word to the user
 			kept.push(m);
 			m.sent = false;
@@ -620,11 +634,13 @@ export class Sync {
 			undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
 		if (typeof version === 'number') this.appliedVersion = version;   // our own ops are already in the model
 		const sent = this.outbox.find((m) => m.txnId === b.acked);
+		const knewAnswered = sent?.answered === true;   // B251: whether the tab already knew this request had landed
 		/*
 		`answered` rather than `version`: a no-op ack carries no version, and a request the server
 		has answered is the server's now -- it must never be replayed as one of ours (pendingOps).
 		*/
-		if (sent) { sent.version = b.version; sent.answered = true; }
+		// answered is sent, whatever a snapshot set meanwhile: drain never sends it again, and pruneOutbox can retire it (B295)
+		if (sent) { sent.version = b.version; sent.answered = true; sent.sent = true; }
 		/*
 		B184 -- a replay is acknowledged, and that acknowledgement RETIRES the entry.
 
@@ -655,9 +671,26 @@ export class Sync {
 			// what the tab APPLIED for it -- the preview (V-d) -- is what an echo is, not what it sent
 			applyAnswer(this.model, this.selection, derivedToApply(sent?.applied ?? sent?.ops ?? [], b.ops, this.pendingOps()));
 		}
+		/*
+		B304 (H19.15; ruled 2026-10-07, "re-fetch") -- an answer that does not confirm what the tab applied for it: another
+		writer's edit reached the server first, and the server planned the request on a different board. The tab shows
+		something the server does not hold, which the answer cannot take back, so it fetches the document again; the snapshot
+		re-plans what is still its own on top (replayOutbox).
+		*/
+		// a no-op answer confirms nothing the tab applied: the server already held it -- or held another writer's version of it,
+		// a piece another tab's cut named differently (the sync fuzz, seed 382)
+		const answer = Array.isArray(b.ops) ? b.ops : (b.noop ? [] : null);
+		const mismatch = !!sent && !b.replayed && answer !== null && unconfirmedPreviewOps(sent.applied ?? sent.ops ?? [], answer, sent.ops ?? []).length > 0;
+		/*
+		B251 (ruled 2026-09-28, H17-B251) -- a `replayed` answer to a request the tab did not know had landed: its answer was lost
+		with a socket, so the tab kept showing it and may have re-applied it on top of a document that already held it. It fetches
+		the document again. Since B295 no answered request is sent again, so a replayed answer means exactly this.
+		*/
+		const lost = !!sent && b.replayed === true && !knewAnswered;
 		this.emitState({});
 		// after the state emit, so what is said there is not overwritten by it (J3: the banner, transient)
 		if (sent) this.onAnswered?.(sent, b);
+		if (mismatch || lost) this.requestResync();
 		this.drain();   // B294: an undo or redo waiting for this answer goes out now, at the version it left
 	}
 
@@ -724,6 +757,7 @@ export class Sync {
 			const switched = this.hydrated && this.diagramId !== doc.meta.id;
 			this.hydrated = true;
 			this.expectLoad = false;
+			this.resyncAsked = false;   // the snapshot asked for has come
 			this.diagramId = doc.meta.id;
 			// the loaded diagram's lock state is authoritative — drop any pending dwell
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
@@ -762,6 +796,9 @@ export class Sync {
 	// `from` is ahead of us (we missed one).
 	requestResync() {
 		if (!this.hydrated || !this.net.isOpen()) return;
+		// H19.15 -- one at a time: a snapshot already asked for answers this too, and each replays the outbox
+		if (this.resyncAsked) return;
+		this.resyncAsked = true;
 		this.expectLoad = true;
 		this.requestSentAt = Date.now();   // B177 -- a resync is the commonest source of a late snapshot
 		this.net.send('open', { id: this.model.state.meta.id });
@@ -895,6 +932,7 @@ export class Sync {
 				later edit lost. The server answers a request it did receive `replayed`.
 				*/
 				for (const m of this.outbox) if (!m.answered) m.sent = false;
+				this.resyncAsked = false;   // a snapshot asked for on the dropped socket will not come
 				this.requestSentAt = Date.now();   // H12.4 -- same on reconnect
 				this.net.send('resume', {
 					diagram: this.model.state.meta.id,

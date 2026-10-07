@@ -151,3 +151,28 @@ AMENDED 2026-10-07 -- **U-b done** (H19.14): the measurement, 300 seeded runs of
 - **B295:** not counted by the fuzz; its unit test stands.
 
 **So the order changes:** B304 first, since every profile shows it and two people editing one diagram reach it; then B253, whose decision (U1) is now needed; then B252 (U2), B251 and B295 as planned.
+
+AMENDED 2026-10-07 -- **U-c done** (H19.15): B304 ruled re-fetch and built; B251 built as ruled; B295 fixed; and three refinements the measurement showed the re-fetches needed.
+
+**What changed in `app/src/sync.js`:**
+- **B304:** an answer that does not confirm every op the tab derived for its request -- a no-op answer included -- asks for the document again; an op it asked for that the server found already so proves nothing (`unconfirmedPreviewOps`, beside `derivedToApply` in `app/src/changes.js`).
+- **B251:** a `replayed` answer to a request the tab did not know had landed asks for the document again.
+- **B295:** an answered request is never sent again, at a snapshot or by the drain, and counts as sent, so it is pruned once durable.
+- **Tries count attempts:** B183's limit counts a request sent since the last snapshot and not answered; one held unsent behind a waiting undo (B294) is not counted.
+- **One re-fetch at a time:** a re-fetch already asked for is not asked again until its snapshot comes or the socket drops.
+
+**Why the refinements, measured step by step on 300 seeds each:** the re-fetch alone took divergence from 18 runs to 0 with ordinary edits, but doubled the changes given up, since every snapshot counted a try against every unanswered request; B295 and counting attempts took STUCK to 0 and the give-ups below baseline; asking one re-fetch at a time took them to 0.
+
+**Measured after, 600 seeded runs per profile at the committed code:**
+
+| profile | runs diverged (U-b, of 300) | runs diverged (now, of 600) | changes given up (U-b, 300 runs) | given up (now, 600 runs) |
+|---|---|---|---|---|
+| default | 2 | 1 | 208 | 0 |
+| undo-heavy | 3 | 0 | 843 | 0 |
+| two tabs on one storage | 24 | 0 | 941 | 0 |
+| no reconnects | 6 | 0 | 175 | 0 |
+| ordinary edits only | 18 | 0 | 65 | 0 |
+
+**Left, each registered with its seeds:** B305, an undo's answer leaving a link's direction as the tab had it (seed 147, default; present at U-b); B306, a converged tab on shared storage giving a down link a blocker the server's document does not (seeds 400, 538, 553), the page's live network keeping a stale reason -- newly visible because those runs used to end apart.
+
+**For U-d:** B252's give-ups are 0 in every profile, so U2 is not needed; B253's two-tab divergence is 0 in 600 runs, so U1 may not be; B254's snapbacks stand (6 and 2 own-pending in 600 undo-heavy runs).

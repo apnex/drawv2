@@ -1149,8 +1149,8 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.5 | Plan the sync hardening: GR6 extended to route, split, preview correction and undo under disconnect and reorder, with B251 to B253 judged against it -- `dev/design/unification/SYNC-HARDENING.md` | feature | S3 | `DONE` |
 | H19.13 | U-a: the K1 fuzz in the repository, ported to today's composition and extended to the network's edits | feature | S3 | `DONE` |
 | H19.14 | U-b: the open sync defects re-measured on it, each failure classified | feature | S3 | `DONE` |
-| H19.15 | U-c: a tab's preview reconciled with an answer that differs (B304), then replay after reconnect and resync -- B251 as ruled, B295 | **B304**, **B251**, **B295** | S2 | `TODO` |
-| H19.16 | U-d: what U-b finds of B252, B253 and B254, each fixed or held with its rate | **B252**, **B253**, **B254** | S3 | `TODO` |
+| H19.15 | U-c: a tab's preview reconciled with an answer that differs (B304), then replay after reconnect and resync -- B251 as ruled, B295 | **B304**, **B251**, **B295** | S2 | `DONE` |
+| H19.16 | U-d: what U-b and U-c leave -- B252 and B253 re-measured, B254, and B305 and B306, each fixed or held with its rate | **B252**, **B253**, **B254**, **B305**, **B306** | S3 | `TODO` |
 | H19.17 | U-e: a bounded fuzz in the gate, its cost measured; B247 closed | **B247** | S3 | `TODO` |
 | H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
@@ -1190,6 +1190,9 @@ Next H19.14, the measurement.
 
 AMENDED 2026-10-07: H19.14 (U-b) done -- measured over six profiles; a new defect, B304, the largest in ordinary use, leads U-c; B253 is worse than on 2026-09-28.
 
+AMENDED 2026-10-07: H19.15 (U-c) done -- B304 ruled re-fetch and built, B251 built, B295 fixed, with the refinements the measurement asked for; over 600 runs a profile, divergence 0 or 1 and no change given up; B305 and B306 found.\
+Next H19.16.
+
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
 ---
@@ -1211,8 +1214,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
-| **B251** | S3 | After a reconnect, a request whose answer was lost may be re-applied on a document that holds it; ruled 2026-09-28: keep showing it, and re-fetch on a `replayed` answer | the next H17 sync cut is scheduled, or divergence after a reconnect is reported |
-| **B295** | S4 | After a resync the tab re-sends an undo or redo the server already answered; refused, so harmless, but a second spurious conflict | a page row in X-c (H18.39) or a user sees the spurious refusal, or the outbox's replay is next changed |
 | **B252** | S3 | Snapshot storms push outbox entries past the replay limit, answered ones included | B247's extended GR6 is built, or a user reports changes "could not be delivered" |
 | **B253** | S4 | Two same-origin tabs share one outbox key | B247's extended GR6 is built, or two-tab divergence is reported |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag | a user reports a node jumping during a drag |
