@@ -52,14 +52,27 @@ test('U-a: a converged tab drawing a link otherwise than the server is reported'
 });
 
 /*
-A BOUNDED SET OF SEEDS, every profile's edits on: no tab ends apart from the server, the server's document stays valid, every
-tab draws what the server draws, and nothing a tab committed is left unanswered. U-e sets the gate's final bound.
+THE GATE'S BOUND (H19.17, U-e): fixed seeds in each profile the measurement ran, every one held to the quiescent oracles -- no tab
+apart from the server, no invalid document, no link drawn otherwise, nothing a tab committed left unanswered -- and to no change
+given up as undeliverable (B252). At H19.16 these held over 600 runs a profile; here a bounded set keeps every later change to
+them on every push. A failure prints the seed and the profile that replay it.
 */
-test('U-a: over 20 seeded runs no tab ends apart from the server, invalid, drawn otherwise, or with a change unanswered', async () => {
-	const failures = [];
-	for (let seed = 1000; seed < 1020; seed++) {
-		const res = await runSeed(seed, { steps: 160 });
-		for (const v of quiescentFaults(res)) failures.push(`seed ${seed}: ${v.kind} tab${v.tab} ${v.detail.slice(0, 200)}`);
-	}
-	assert.deepEqual(failures, [], `replay any with: node tests/fixtures/sync-fuzz.mjs --trace <seed>`);
-});
+const PROFILES = [
+	{ name: 'default', flags: [], from: 2000, runs: 30 },
+	{ name: 'undo-heavy', flags: ['--undo-weight', '12'], from: 2100, runs: 20 },
+	{ name: 'two tabs on one storage', flags: ['--shared-storage'], from: 2200, runs: 20 },
+	{ name: 'no reconnects', flags: ['--no-reconnect'], from: 2300, runs: 15 },
+	{ name: 'ordinary edits only', flags: ['--no-reconnect', '--no-undo', '--no-network'], from: 2400, runs: 15 },
+];
+for (const p of PROFILES) {
+	test(`U-e, ${p.name}: ${p.runs} seeded runs -- no tab ends apart, invalid, drawn otherwise or unanswered, and no change given up`, async () => {
+		const failures = [];
+		for (let seed = p.from; seed < p.from + p.runs; seed++) {
+			const res = await runSeed(seed, { steps: 160, flags: p.flags });
+			for (const v of quiescentFaults(res)) failures.push(`seed ${seed}: ${v.kind} tab${v.tab} ${v.detail.slice(0, 200)}`);
+			const lost = res.stats['B183 changes abandoned'] ?? 0;
+			if (lost) failures.push(`seed ${seed}: ${lost} change(s) given up as undeliverable`);
+		}
+		assert.deepEqual(failures, [], `replay any with: node tests/fixtures/sync-fuzz.mjs --trace <seed> ${p.flags.join(' ')}`);
+	});
+}

@@ -20,7 +20,8 @@ import url from 'node:url';
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const MAIN = process.argv[1] && url.fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 const argv = MAIN ? process.argv.slice(2) : [];
-const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
+let ARGV = argv;   // what `opt` reads: the command line, or a run's own flags (runSeed)
+const opt = (k, d) => { const i = ARGV.indexOf(k); return i >= 0 ? ARGV[i + 1] : d; };
 let FLAGS = new Set(argv.filter((a) => a.startsWith('--')));
 const flag = (k) => FLAGS.has(k);
 const FROM = Number(opt('--from', 0)), RUNS = Number(opt('--runs', 200));
@@ -251,9 +252,9 @@ One run, for a test (U-a): `options` -- steps, tabs, and flags as the command li
 -- a function handed the world once the run has quiesced and before the oracles read it, to plant a fault an oracle must report.
 */
 export async function runSeed(seed, { steps = 160, tabs = 2, flags = [], plant = null } = {}) {
-	const was = { FLAGS, STEPS, TABS, PLANT };
-	FLAGS = new Set(flags); STEPS = steps; TABS = flags.includes('--no-second-writer') ? 1 : tabs; PLANT = plant;
-	try { return await run(seed, false); } finally { ({ FLAGS, STEPS, TABS, PLANT } = was); }
+	const was = { FLAGS, STEPS, TABS, PLANT, ARGV };
+	FLAGS = new Set(flags); ARGV = flags; STEPS = steps; TABS = flags.includes('--no-second-writer') ? 1 : tabs; PLANT = plant;
+	try { return await run(seed, false); } finally { ({ FLAGS, STEPS, TABS, PLANT, ARGV } = was); }
 }
 let PLANT = null;
 

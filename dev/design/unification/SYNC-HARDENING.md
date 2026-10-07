@@ -183,3 +183,9 @@ AMENDED 2026-10-07 -- **U-d done** (H19.16).
 **B252, closed** on its re-measurement; **B253 and B254, held** with their rates and revival triggers -- U1 and U2 were not needed.
 
 **Measured at the committed code, 600 seeded runs per profile:** no run ends with a tab apart from the server, an invalid document, a link drawn otherwise or a change unanswered, in any of five profiles; no change is given up; a dragged entity is moved by an inbound answer in 1 to 6 runs of 600 (B254).
+
+AMENDED 2026-10-07 -- **U-e done, and the plan is closed** (H19.17; B247 closed).
+**In the gate:** `tests/sync-fuzz.test.js` runs 100 fixed seeds over the five profiles -- 30 default, 20 undo-heavy, 20 with two tabs on one storage, 15 without reconnects, 15 with ordinary edits only -- each held to the quiescent oracles and to no change given up; a failure prints the seed and the flags that replay it.
+A run's options, the undo weight among them, now reach it through `runSeed` as on the command line (shown: 133 undo or redo actions over ten seeds at weight 12, against 50 by default).
+**Its cost, as far as measured:** the file takes about 18 seconds of test time on its own; test files run in parallel, and what it adds to the gate's wall time was not measured reliably -- the gate's one run with it took 203 seconds on a machine running other work at the same time.\
+**Exit, against section 7:** invariants 1 to 4 hold on every seed of the bound, and held over 600 runs a profile at H19.16; every open sync defect is closed with a test (B251, B252, B295, B304, B305, B306) or held with its measured rate and a revival trigger (B253, B254).
