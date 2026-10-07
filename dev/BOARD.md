@@ -1148,8 +1148,8 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.4 | Close the production-upgrade register: each entry checked against production, or carried forward with its reason | **B276** | S3 | `DONE` |
 | H19.5 | Plan the sync hardening: GR6 extended to route, split, preview correction and undo under disconnect and reorder, with B251 to B253 judged against it -- `dev/design/unification/SYNC-HARDENING.md` | feature | S3 | `DONE` |
 | H19.13 | U-a: the K1 fuzz in the repository, ported to today's composition and extended to the network's edits | feature | S3 | `DONE` |
-| H19.14 | U-b: the open sync defects re-measured on it, each failure classified | **B247** | S3 | `TODO` |
-| H19.15 | U-c: replay after reconnect and resync -- B251 as ruled, B295 | **B251**, **B295** | S3 | `TODO` |
+| H19.14 | U-b: the open sync defects re-measured on it, each failure classified | feature | S3 | `DONE` |
+| H19.15 | U-c: a tab's preview reconciled with an answer that differs (B304), then replay after reconnect and resync -- B251 as ruled, B295 | **B304**, **B251**, **B295** | S2 | `TODO` |
 | H19.16 | U-d: what U-b finds of B252, B253 and B254, each fixed or held with its rate | **B252**, **B253**, **B254** | S3 | `TODO` |
 | H19.17 | U-e: a bounded fuzz in the gate, its cost measured; B247 closed | **B247** | S3 | `TODO` |
 | H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
@@ -1187,6 +1187,8 @@ AMENDED 2026-10-07: H19.5's plan is `dev/design/unification/SYNC-HARDENING.md`, 
 
 AMENDED 2026-10-07: H19.13 (U-a) done -- the K1 fuzz in the repository on today's composition, its oracles proven, 20 seeds in the gate; first 30 runs: no tab ended apart from the server.\
 Next H19.14, the measurement.
+
+AMENDED 2026-10-07: H19.14 (U-b) done -- measured over six profiles; a new defect, B304, the largest in ordinary use, leads U-c; B253 is worse than on 2026-09-28.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

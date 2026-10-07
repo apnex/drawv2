@@ -130,3 +130,24 @@ AMENDED 2026-10-07 -- **U-a done** (H19.13).
 **A run replays exactly from its seed:** ids and transaction prefixes are drawn from `Math.random`, pinned per run as the gesture corpus pins it.\
 **First measurement, 30 runs** (INFERRED representative until U-b runs the profiles): no tab ended apart from the server, no invalid document, no route drawn otherwise, nothing left unanswered; one change given up as undeliverable (B252's symptom); and transient strict-oracle mismatches in 26 runs, which U-b classifies -- some may be the oracle re-planning on a newer document than the tab's preview saw.
 **In the gate now:** 20 seeded runs held to the quiescent oracles, about 2.6 seconds.
+
+AMENDED 2026-10-07 -- **U-b done** (H19.14): the measurement, 300 seeded runs of 160 steps per profile, at `db36a2e`.
+
+| profile | runs a tab ended apart from the server | changes given up | other |
+|---|---|---|---|
+| default | 2 | 208 | 1 run with a change unanswered |
+| undo-heavy (undo weight 12) | 3 | 843 | 10 runs with changes unanswered; 1 snapback of a tab's own undo mid-drag |
+| two tabs on one storage | 24 | 941 | |
+| no reconnects | 6 | 175 | |
+| no reconnects, no undo | 26 | 101 | |
+| no reconnects, no undo, none of the network's edits | 18 | 65 | |
+
+**Classified, each with seeds that replay it:**
+- **B304, new and the largest in ordinary use:** a tab previews an edit's consequences on its own document -- a delete's cascade, a join, a cut -- and when another writer's edit reaches the server first, the server plans the request on a different document and answers otherwise; nothing undoes the preview's unconfirmed part. Seed 7 traced: one tab deletes waypoint `w2`, its preview taking the three links ending there; the other re-plugs one of them away first; the server deletes two, and the first tab has lost the third for good. It needs no reconnect, no undo and none of the network's edits (18 runs of 300 with only the product's edits); seed 38 is the same shape through a cut's derived piece.
+- **B253, worse than measured on 2026-09-28:** two tabs on one origin's storage diverge in 24 runs of 300, where they had in 2 of 150.
+- **B252:** 208 changes given up in the default profile, 843 undo-heavy (1,898 on 2026-09-28, before B294); undo-heavy leaves a tab with changes unanswered in 10 runs.
+- **B251:** 6 replay breaks after a reconnect in 300 runs, each healed by quiescence; no divergence at quiescence attributable to it apart from B304.
+- **B254:** one snapback of a tab's own undo mid-drag in 300 undo-heavy runs, as on 2026-09-28.
+- **B295:** not counted by the fuzz; its unit test stands.
+
+**So the order changes:** B304 first, since every profile shows it and two people editing one diagram reach it; then B253, whose decision (U1) is now needed; then B252 (U2), B251 and B295 as planned.
