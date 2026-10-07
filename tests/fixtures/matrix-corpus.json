@@ -6528,13 +6528,13 @@
 				"stroke": "rgb(255, 152, 0)",
 				"dotted": true
 			},
-			"link#2": {
-				"d": "M0 -240 L0 0",
+			"link#3": {
+				"d": "M0 0 L0 240",
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			},
-			"link#3": {
-				"d": "M0 0 L0 240",
+			"link#2": {
+				"d": "M0 -240 L0 0",
 				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
@@ -10357,6 +10357,124 @@
 			"link#1": {
 				"d": "M-340 0 Q-360 0 -341.026 -6.325 L-18.974 -113.675 Q0 -120 18.974 -113.675 L341.026 -6.325 Q360 0 340 0 Z",
 				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			}
+		},
+		"drawnPipes": 0
+	},
+	"TRN-43": {
+		"notice": "v2 link",
+		"links": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": [],
+				"down": false
+			},
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#3",
+				"via": [],
+				"down": false
+			}
+		],
+		"controls": 0,
+		"tabLinks": [
+			{
+				"id": "link#1",
+				"src": "node#1",
+				"dst": "node#2",
+				"via": []
+			},
+			{
+				"id": "link#2",
+				"src": "node#1",
+				"dst": "node#3",
+				"via": []
+			}
+		],
+		"anchors": [
+			{
+				"id": "waypoint#1",
+				"x": 0,
+				"y": 0
+			}
+		],
+		"tabAnchors": [
+			"waypoint#1"
+		],
+		"alive": [
+			"node#1",
+			"node#2",
+			"node#4",
+			"node#3",
+			"waypoint#1"
+		],
+		"pipes": [
+			{
+				"a": "node#1",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#2",
+				"b": "waypoint#1",
+				"laid": "hand"
+			},
+			{
+				"a": "node#1",
+				"b": "node#4",
+				"laid": "link"
+			},
+			{
+				"a": "node#3",
+				"b": "node#4",
+				"laid": "link"
+			}
+		],
+		"pipesAgree": true,
+		"tabPipeCount": 4,
+		"selected": [
+			"link#2"
+		],
+		"rings": [],
+		"waypointRoles": [
+			{
+				"id": "waypoint#1",
+				"drawn": [],
+				"junctionRing": false,
+				"endpointRing": false,
+				"transitOff": false,
+				"judged": []
+			}
+		],
+		"stretches": [
+			{
+				"id": "link#1",
+				"keys": [
+					"-360,0|0,0",
+					"0,0|360,0"
+				]
+			},
+			{
+				"id": "link#2",
+				"keys": [
+					"-360,0|0,-240",
+					"0,-240|0,240"
+				]
+			}
+		],
+		"paths": {
+			"link#1": {
+				"d": "M-360 0 L-20 0 Q0 0 20 0 L360 0",
+				"stroke": "rgb(79, 195, 247)",
+				"dotted": false
+			},
+			"link#2": {
+				"d": "M-360 0 L-16.641 -228.906 Q0 -240 0 -220 L0 240",
+				"stroke": "rgb(174, 213, 129)",
 				"dotted": false
 			}
 		},

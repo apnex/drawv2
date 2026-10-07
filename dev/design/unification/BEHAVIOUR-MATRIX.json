@@ -4505,6 +4505,49 @@
 			"built": "todo"
 		},
 		{
+			"id": "TRN-43",
+			"state": "transit board",
+			"gesture": "draw: `w` on a non-transiting anchor",
+			"does": "Drag from A, press w on the router R, whose transit is on, and release on H.",
+			"steps": [
+				[
+					"drag",
+					[
+						-360,
+						0
+					],
+					[
+						0,
+						240
+					],
+					[
+						[
+							"w",
+							0,
+							-240
+						]
+					]
+				]
+			],
+			"intent": "A router whose transit is on is a junction, so w there carries the drag on through it: one link from A to H, up, routed through R over the two pipes the w laid -- TRN-15's companion, where R's transit is off and two links end at it. R is passed by the link's route, not stored as a pin.",
+			"expect": {
+				"links": 2,
+				"down": 0,
+				"pipes": {
+					"hand": 2,
+					"link": 2
+				},
+				"linksBetween": {
+					"node-000001|node-000004": 1,
+					"node-000001|node-000003": 0,
+					"node-000003|node-000004": 0
+				}
+			},
+			"rule": "DECISIONS: \"A device is an endpoint or a junction, by what the network plugin gives it\" (2026-10-07) -- w on a transiting device; already the behaviour when ruled.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
 			"id": "RING-01",
 			"state": "pinned",
 			"gesture": "close `c`",

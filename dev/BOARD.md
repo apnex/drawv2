@@ -1151,7 +1151,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
-| H19.10 | Build the ruled model: a link may be pinned through a device whose transit is on (a junction there); transit off there cuts it; so a ring through one opens like any other -- after H19.11 | **B301** | S3 | `TODO` |
+| H19.10 | Build the ruled model: a link may be pinned through a device whose transit is on (a junction there); transit off there cuts it (`w` there already carries the drag through it, TRN-43); so a ring through one opens like any other -- after H19.11 | **B301** | S3 | `TODO` |
 | H19.11 | Guard the planner so no reaction commits a document a requested write could not -- B301's class of loss | **B302** | S2 | `TODO` |
 
 AMENDED 2026-10-07: H19.2 ruled -- the backups are records, and the deletion deploys now though 23 pre-cutover deletions stay restorable until 12 October (`dev/DECISIONS.md`).\
