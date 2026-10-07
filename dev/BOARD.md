@@ -1145,7 +1145,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.1 | Re-triage the board after the cutover, the order agreed and recorded here | feature | S3 | `DONE` |
 | H19.2 | Rule B291's backup question: the pre-cutover backups held as records, not as a rollback, so the migration that reads them may go | feature | S3 | `DONE` |
 | H19.3 | Delete the schema 2 migration, the loader's repairs and the dry-run tool, as the format batch named them -- transform once, then delete the transform | **B291** | S3 | `DONE` |
-| H19.4 | Close the production-upgrade register: each entry checked against production, or carried forward with its reason | **B276** | S3 | `TODO` |
+| H19.4 | Close the production-upgrade register: each entry checked against production, or carried forward with its reason | **B276** | S3 | `DONE` |
 | H19.5 | Plan the sync hardening: GR6 extended to route, split, preview correction and undo under disconnect and reorder, with B251 to B253 judged against it | **B247** | S3 | `TODO` |
 | H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
@@ -1153,6 +1153,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
 | H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |
 | H19.11 | Guard the planner so no reaction commits a document a requested write could not -- B301's class of loss | **B302** | S2 | `DONE` |
+| H19.12 | The director looks at the page on `draw.apnex.io` -- its colours, the network panel, the undelete card -- owed since the 2026-10-02 deploy | feature | S4 | `TODO` |
 
 AMENDED 2026-10-07: H19.2 ruled -- the backups are records, and the deletion deploys now though 23 pre-cutover deletions stay restorable until 12 October (`dev/DECISIONS.md`).\
 H19.3 done -- the migrations, the loader's repairs and both tools deleted, with their tests; an older document is refused at every door, said plainly.\
@@ -1172,6 +1173,9 @@ Next Z-c, `w` on a transiting device storing it as a pin.
 
 AMENDED 2026-10-07: H19.10 done -- Z-c (`w` on a device is a pin) and Z-d (closed, deployed): the director's device model is built; B301 and B303 closed.\
 Next H19.4, the production-upgrade register.
+
+AMENDED 2026-10-07: H19.4 done -- the register audited and, at the director's ruling, retired; B276 closed; the look it owed the director is H19.12.\
+Next H19.5, the sync-hardening plan.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

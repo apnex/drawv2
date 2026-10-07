@@ -1,5 +1,8 @@
 # Production upgrade -- considerations register
 
+> RETIRED 2026-10-07 (`dev/DECISIONS.md`, "The production-upgrade register is retired"): production tracks `main`, so the register takes no new entries.
+> It stays as the record of the upgrade to the network, audited after the cutover at the end of this file; its open items are board items.
+
 What a production upgrade must check, gathered as the work that creates each consideration lands rather than reconstructed at deploy time.\
 Read in full at a **production audit**: before production moves off the revision it runs, and again before promotion's cutover.
 

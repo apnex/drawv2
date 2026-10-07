@@ -1762,3 +1762,9 @@ Shown what it implies, the director confirmed: "Yes this seems to match".
 Asked against `dev/design/unification/DEVICE-JUNCTIONS.md` section 9, the director chose the proposer's recommendation, "transit rules only".
 - A device a link is pinned through is cut when its transit goes off and rejoined when it returns; a ring through it opens like any ring; `w` on a device whose transit is on stores it as a pin, as on a waypoint.
 - A link that ENDS at a device keeps ending there: a delete never joins two links at a device, and a link landing on a device never cuts one passing it.
+
+**The production-upgrade register is retired -- 2026-10-07 (B276, H19.4).**\
+Asked what becomes of the register now that production follows `main` on every push, the director chose the proposer's recommendation, "retire it".
+- It stays as the record of the upgrade, audited after the cutover, and takes no new entries: with production tracking `main` there is no gap between them for it to list.
+- A change a user or an agent will notice is recorded where it already is -- its backlog row and its commit.
+- Its open items move to the board: Cloud Armor stays H10.30; the device table stays with H17.3's remaining cuts; the director's look at the page's colours, network panel and undelete card becomes an item of its own.
