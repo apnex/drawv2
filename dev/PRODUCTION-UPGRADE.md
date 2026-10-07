@@ -7,7 +7,7 @@ Production runs `2814d8d`.\
 Every entry below is true of `main` and not yet of production.\
 AMENDED 2026-10-02: production runs `d58816c` (`draw-00154-cfn`), deployed after the audit at the end of this file; entries PU1 to PU16 and PU24 to PU29 are now true of production, PU17 to PU23 still wait for promotion's cutover.\
 The register continues: an entry is added for each change production does not yet have, and it is read again before the cutover.\
-AMENDED 2026-10-07: production runs `844c2b7` (`draw-00161-d86`), tracking `main` since the cutover; the audit at the end of this file gives every entry from PU16 a verdict, each true of production but PU16 and PU23, carried with their reasons, and three entries owed to the director's eye.\
+AMENDED 2026-10-07: production runs `844c2b7` (`draw-00161-d86`), tracking `main` since the cutover; the audit at the end of this file gives every entry from PU16 a verdict, each true of production but PU16 and PU23, carried with their reasons, and three entries owed to the director's eye.
 
 ## How to use it
 
