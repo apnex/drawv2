@@ -123,3 +123,10 @@ Two may be needed at U-d, each only if U-b shows its row still reproduces:
 | A2-A4, A6, A10-A12, A14 | not materially implicated | |
 
 **Verdict: pass-with-guardrails** -- measure before ruling; the oracle never reads the code under test; the gate's cost measured at U-e.
+
+AMENDED 2026-10-07 -- **U-a done** (H19.13).
+**In the repository:** the K1 fuzz's world (`tests/fixtures/sync-world.mjs`) and runner (`tests/fixtures/sync-fuzz.mjs`), ported to schema 2; each tab composed as the page composes it, the network drawing and the planner previewing every commit; the network's edits added -- a hand pipe laid and removed, transit flipped, a link landing on a bend -- beside the ones it had.\
+**Its oracles:** the quiescent ones -- every tab equal to the server, the server's document valid, every tab drawing what the server draws, nothing a tab committed left unanswered -- each shown to report its fault, planted, and each killed as a mutant; the strict one replays a tab's unanswered requests through the planner onto the server's document, since the page applies a request as its plan.\
+**A run replays exactly from its seed:** ids and transaction prefixes are drawn from `Math.random`, pinned per run as the gesture corpus pins it.\
+**First measurement, 30 runs** (INFERRED representative until U-b runs the profiles): no tab ended apart from the server, no invalid document, no route drawn otherwise, nothing left unanswered; one change given up as undeliverable (B252's symptom); and transient strict-oracle mismatches in 26 runs, which U-b classifies -- some may be the oracle re-planning on a newer document than the tab's preview saw.
+**In the gate now:** 20 seeded runs held to the quiescent oracles, about 2.6 seconds.
