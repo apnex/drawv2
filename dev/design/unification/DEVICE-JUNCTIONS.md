@@ -163,3 +163,7 @@ AMENDED 2026-10-07 -- **Z-c done.**\
 `w` on a node is a pin, as on a waypoint: Input threads it into the link's stops, and the drag judge decides as it does for a waypoint -- a node that passes routes stays a pin, a junction; one that does not, transit off or a host, is cut there (TR-2b).\
 Released on the node, it is the destination, as before.\
 TRN-43 records the router stored as a pin; TRN-15 and DIR-01 unchanged; the gesture corpus changes only in its stub-judge seam scenario, which accepts what any judge would, and the corpora now name a typed node in a stop list as a node.
+
+AMENDED 2026-10-07 -- **Z-d done; H19.10 is closed.**\
+Acceptance test 5 on copies of production: `castle`, a ring through the router `gatehouse`, opens at a waypoint into a loop pinned through the router, up, through the same points, valid, and closes again; `multi-site`'s link through `overlay` is no longer a ring in production, so it does not apply.\
+The specs say a stop may be a device that passes routes; B301 and B303 are closed.

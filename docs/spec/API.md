@@ -136,6 +136,9 @@ Still pending from the same amendment and not yet built: a grant may name an OWN
   is the one vocabulary, kernel and model alike (B166).
   AMENDED 2026-10-07 (B299): a link's two ends may be one anchor only as a LOOP -- open, and running round two or more other
   stops between; it is what a ring becomes when transit is turned off at one of its waypoints, opened there.
+  AMENDED 2026-10-07 (H19.10): a `via` stop is any node whose type offers transit -- a waypoint, or a router, firewall or vxlan,
+  a junction there; a host, server or load balancer is refused there. A link written pinned through a stop whose transit is off
+  is cut there, arriving as two links ending at it.
 - zone: grid-aligned rectangle on the half-offset grid, with label. Purely visual.
 - group: logical member set; selecting/moving any member moves all. Not rendered, not synced
   as a shape.

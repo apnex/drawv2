@@ -1151,7 +1151,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
-| H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `TODO` |
+| H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |
 | H19.11 | Guard the planner so no reaction commits a document a requested write could not -- B301's class of loss | **B302** | S2 | `DONE` |
 
 AMENDED 2026-10-07: H19.2 ruled -- the backups are records, and the deletion deploys now though 23 pre-cutover deletions stay restorable until 12 October (`dev/DECISIONS.md`).\
@@ -1169,6 +1169,9 @@ AMENDED 2026-10-07: H19.10's design is `dev/design/unification/DEVICE-JUNCTIONS.
 
 AMENDED 2026-10-07: Z1 ruled, transit rules only; H19.10's stages Z-a and Z-b done -- a router may be pinned through, transit off at it cuts and back on rejoins its cut's pieces, a ring through it opens; B303 closed.\
 Next Z-c, `w` on a transiting device storing it as a pin.
+
+AMENDED 2026-10-07: H19.10 done -- Z-c (`w` on a device is a pin) and Z-d (closed, deployed): the director's device model is built; B301 and B303 closed.\
+Next H19.4, the production-upgrade register.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
