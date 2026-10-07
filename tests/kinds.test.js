@@ -120,8 +120,12 @@ test('N-a: a document with the plugin kind validates against its composition, an
 	assert.equal(validateDoc(doc, { kinds: WITH_PROBE }), null);
 	assert.equal(validateDoc({ ...doc, probes: [{ id: 'probe-00000b', at: 'node-0000ff' }] }, { kinds: WITH_PROBE }), 'probe at a node that does not exist: node-0000ff (probe-00000b)');
 	assert.equal(validateDoc({ ...doc, probes: Array.from({ length: 4 }, (_, i) => ({ id: `probe-00000${i}`, at: NODE.id })) }, { kinds: WITH_PROBE }), 'probes exceeds entity limit');
-	assert.equal(validateDoc(doc), 'invalid selection id: probe-00000b', 'the product selects no probe');
-	assert.equal(validateDoc({ ...doc, selection: [] }), 'invalid beat id: probe-00000b', 'and its grammar has no probe ids');
+	// RESTATED at B307 (H19.6): the product's composition refuses the plugin's collection first, by name -- it held it silently
+	// and failed later, on the selection and the beat, until a collection it cannot hold was refused
+	assert.match(validateDoc(doc), /unknown collection: probes/, 'the product holds no probes');
+	const { probes, ...without } = doc;
+	assert.equal(validateDoc(without), 'invalid selection id: probe-00000b', 'and selects none');
+	assert.equal(validateDoc({ ...without, selection: [] }), 'invalid beat id: probe-00000b', 'and its grammar has no probe ids');
 	assert.equal(validateSelectionIds(['probe-00000b']), 'invalid selection id: probe-00000b');
 	assert.equal(validateSelectionIds(['probe-00000b'], WITH_PROBE), null);
 });

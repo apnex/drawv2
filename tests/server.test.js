@@ -221,7 +221,7 @@ test('I11: `create {doc}` mints the id, and a body `version` is ignored', async 
 	const doc = {
 		meta: { id: 'diagram-ffffff', name: 'claimed' },
 		nodes: [{ id: 'node-cccc01', name: 'a', type: 'host', x: 60, y: 60 }],
-		waypoints: [], links: [], zones: [], groups: []
+		links: [], zones: [], groups: []
 	};
 	c.send('create', { name: 'adopted', doc });
 	const made = await c.expect('snapshot');

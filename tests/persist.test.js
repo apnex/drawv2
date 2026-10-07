@@ -32,7 +32,7 @@ async function storeWith(dir) {
 
 test('I10: parse(serialize(doc, log)) deep-equals the input, including a large record', () => {
 	const doc = { meta: { id: 'diagram-aaaaaa', name: 'x' },
-		nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
+		nodes: [], links: [], zones: [], groups: [], selection: [] };
 	const log = new Log(0);
 	// a delete-all of a 65-entity diagram is the largest record the design admits
 	const ops = Array.from({ length: 65 }, (_, i) => ({ op: 'del', kind: 'node', id: `node-${String(i).padStart(6, '0')}` }));
@@ -66,7 +66,7 @@ const ADVERSARIAL = ['a$&b', "a$'b", 'a$`b', 'a$1b', 'a$$b', '$&', '$`'];
 test('B13: a replacement-pattern entity name round-trips through the file', () => {
 	for (const name of ADVERSARIAL) {
 		const doc = { meta: { id: 'diagram-aaaaaa', name: 'x' },
-			nodes: [], waypoints: [], links: [], zones: [], groups: [], selection: [] };
+			nodes: [], links: [], zones: [], groups: [], selection: [] };
 		const log = new Log(0);
 		log.version++;
 		log.append({ seq: 1, from: 0, at: 1, by: 'client', actor: 'a', label: 'rename',
@@ -386,7 +386,9 @@ test('B4: a failed write retries without a further edit, and is counted', async 
 
 // ---- reversibility: a pre-CS2 reader must still load a CS2 file ----
 
-test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-level key', async () => {
+// RESTATED at B307 (H19.6): CS2 kept `log` invisible to a reader that knows nothing of it by gating no top-level key; the
+// validator now refuses every collection its composition cannot hold, and keeps `log` -- the store's own record -- named
+test('the log key is invisible to a pre-CS2 reader -- validateDoc passes `log`, and refuses an unknown collection (B307)', async () => {
 	const dir = tmp();
 	try {
 		const { s, id } = await storeWith(dir);
@@ -395,7 +397,8 @@ test('the log key is invisible to a pre-CS2 reader — validateDoc gates no top-
 		const raw = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'));
 		assert.ok(raw.log, 'the file carries a log');
 		const { validateDoc } = await import('./fixtures/composed.mjs');
-		assert.equal(validateDoc(raw), null, 'a validator that knows nothing of `log` still accepts the file');
+		assert.equal(validateDoc(raw), null, 'the file, its log included, is accepted');
+		assert.match(validateDoc({ ...raw, gizmos: [] }) || '', /unknown collection: gizmos/, 'a collection nothing holds is not');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

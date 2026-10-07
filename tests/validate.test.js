@@ -26,7 +26,7 @@ test('validateSelectionIds is shape-only over selectable kinds', () => {
 
 const baseDoc = (selection) => ({
 	meta: { id: 'diagram-abc123', name: 'd' },
-	nodes: [], waypoints: [], links: [], zones: [], groups: [], selection
+	nodes: [], links: [], zones: [], groups: [], selection
 });
 
 test('validateDoc TOLERATES a dangling selection id (status must not invalidate config)', () => {
@@ -59,7 +59,7 @@ test('B95: a Model is not a doc, and toJSON is the boundary between them', () =>
 	const model = new Model();
 	model.load({
 		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2 },
-		nodes: [], waypoints: [], links: [], zones: [], groups: [],
+		nodes: [], links: [], zones: [], groups: [],
 	});
 
 	assert.equal(validateDoc(model.toJSON()), null, 'what toJSON produces IS a doc');
@@ -246,7 +246,8 @@ that becomes one" -- it becomes one exactly when the numbers diverge, which is w
 test('B86: the name cap is one number, and truncation lands where rejection begins', async () => {
 	const { NAME_MAX } = await import('../model/limits.mjs');
 	const { validateDoc } = await import('./fixtures/composed.mjs');
-	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, node: {}, link: {}, group: {}, zone: {}, waypoint: {} });
+	// collections by their names: the fixture carried singular keys -- `node: {}` and the like -- that the validator ignored until B307
+	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, nodes: [], links: [], groups: [], zones: [] });
 
 	assert.equal(validateDoc(doc('x'.repeat(NAME_MAX))), null, 'exactly at the cap is legal');
 	assert.match(validateDoc(doc('x'.repeat(NAME_MAX + 1))) || '', /meta\.name/, 'one past it is refused');
@@ -369,7 +370,7 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
 	const W = (n, y) => ({ id: `node-ea000${n}`, name: `w${n}`, x: 60, y });   // a waypoint: a node with no type (F-c)
-	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, zones: [], groups: [], waypoints: [] };
+	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, zones: [], groups: [] };
 
 	const cases = {
 		'clean, two nodes and a link':
@@ -443,7 +444,7 @@ failure rather than a boot failure.
 */
 test('H9.9: a template id is a valid document id, and a made-up kind is not', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
-	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, nodes: [], links: [], groups: [], zones: [], waypoints: [] });
+	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, nodes: [], links: [], groups: [], zones: [] });
 
 	assert.equal(validateDoc(doc('template-4f2c11')), null, 'a template is a document');
 	assert.equal(validateDoc(doc('diagram-4f2c11')), null, 'and so is a diagram, unchanged');

@@ -24,7 +24,7 @@ const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
 function doc(nodes = [], extra = {}) {
 	return {
 		meta: { id: 'diagram-aa0001', name: 'r', version: 1, schema: 2 },
-		nodes, links: [], waypoints: [], zones: [], groups: [], selection: [], ...extra,
+		nodes, links: [], zones: [], groups: [], selection: [], ...extra,
 	};
 }
 // one beat: three entities paced 200ms apart, starting at t=1000

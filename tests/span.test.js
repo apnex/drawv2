@@ -113,7 +113,7 @@ test('validateEntity accepts an optional span; rejects malformed; 1×1 (no span)
 test('validateDoc accepts a document containing a span node', () => {
 	const doc = { meta: { id: 'diagram-000000', name: 'd' },
 		nodes: [{ id: 'node-000006', name: 'p', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } }],
-		waypoints: [], links: [], zones: [], groups: [] };
+		links: [], zones: [], groups: [] };
 	assert.equal(validateDoc(doc), null);
 });
 
@@ -1259,7 +1259,7 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 	// and the EXPORT carries the thin frame, or a saved diagram disagrees with the canvas
 	const doc = {
 		nodes: [{ ...panel, name: 't', x: 0, y: 0, span: { cols: 2, rows: 1 } }],
-		links: [], waypoints: [], zones: [], groups: [],
+		links: [], zones: [], groups: [],
 	};
 	assert.match(render(docToSchema(doc)), /stroke-width="1"/,
 		'the exported panel frame must be thin too -- CSS alone would leave the export heavy');
@@ -1287,7 +1287,7 @@ test('B234: an exported node and zone carry their names', async () => {
 	const doc = {
 		nodes: [{ id: 'node-aa0001', name: 'spine1', type: 'router', x: 0, y: 0 }],
 		zones: [{ id: 'zone-aa0001', name: 'core', x: -120, y: -120, w: 240, h: 240 }],
-		links: [], waypoints: [], groups: [],
+		links: [], groups: [],
 	};
 
 	// the ADAPTER must carry the name, or nothing downstream can draw it
@@ -1305,7 +1305,7 @@ test('B234: an exported node and zone carry their names', async () => {
 	// an UNNAMED entity draws nothing rather than an empty text element
 	const bare = render(docToSchema({
 		nodes: [{ id: 'node-aa0002', type: 'router', x: 0, y: 0 }],
-		zones: [], links: [], waypoints: [], groups: [],
+		zones: [], links: [], groups: [],
 	}));
 	assert.doesNotMatch(bare, /<text/, 'an unnamed node emits no text element at all');
 
@@ -1313,7 +1313,7 @@ test('B234: an exported node and zone carry their names', async () => {
 	// break the document, and a diagram is user content
 	const nasty = render(docToSchema({
 		nodes: [{ id: 'node-aa0003', name: 'a<b&c', type: 'router', x: 0, y: 0 }],
-		zones: [], links: [], waypoints: [], groups: [],
+		zones: [], links: [], groups: [],
 	}));
 	assert.doesNotMatch(nasty, /a<b&c/, 'a name carrying markup must be escaped, not emitted raw');
 	assert.match(nasty, /a&lt;b&amp;c/, 'and escaped correctly');

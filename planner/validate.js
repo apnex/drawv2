@@ -196,6 +196,19 @@ export function validateDoc(doc, { kinds } = {}) {
 		if (!['id', 'name', 'version', 'schema', 'owner', 'grants'].includes(key)) return `unknown meta key: ${key}`;
 	}
 	if ('schema' in doc.meta && doc.meta.schema !== SCHEMA) return `unsupported meta.schema: ${doc.meta.schema}`;
+	/*
+	B307 (H19.6) -- A COLLECTION THE COMPOSITION CANNOT HOLD IS REFUSED, NOT DROPPED. Every collection known was checked and the
+	rest ignored, and the Model writes back only what its kinds name, so a document with one more was accepted and lost it at
+	the next save -- an agent's old-shape `waypoints`, or a plugin's kind on a peer composed without that plugin. GR8 refuses a
+	document that cannot be told apart from a valid one, and this is the refusal SD12 rules for a plugin a peer lacks, held by
+	the composition; SD12's stored plugin list stays deferred (B248). The top level is `meta`, each kind's collection, the
+	selection and a reveal -- and `log`, the store's own undo record in its file, which its reader takes off (server/docfile.mjs
+	`parse`) and which CS2 kept invisible to a reader that knows nothing of it (tests/persist.test.js).
+	*/
+	const held = new Set(['meta', 'selection', 'reveal', 'log', ...kinds.list.map((k) => kinds.collection[k])]);
+	for (const key of Object.keys(doc)) {
+		if (!held.has(key)) return `unknown collection: ${key} -- this composition holds ${[...held].filter((k) => !['meta', 'selection', 'reveal', 'log'].includes(k)).join(', ')}; a document carrying what it cannot hold is refused, never dropped (B307)`;
+	}
 	if ('version' in doc.meta && !(Number.isInteger(doc.meta.version) && doc.meta.version >= 0)) return 'invalid meta.version';
 	/*
 	Authorization, validated as strictly as geometry -- ACCESS.md.

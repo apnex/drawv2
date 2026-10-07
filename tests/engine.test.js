@@ -121,7 +121,7 @@ test('occupancy rebuilds on document load with no carry-over', () => {
 	const m = new Model(); attachRelations(m, { cellOf });
 	m.put('node', m.makeNode('router', { x: 240, y: 120 }));
 	assert.equal(m.occupiedAt({ x: 240, y: 120 }), true);
-	m.load({ meta: { id: '' }, nodes: [{ id: 'node-ffff01', type: 'host', x: -120, y: -60 }], waypoints: [], links: [], zones: [], groups: [] });
+	m.load({ meta: { id: '' }, nodes: [{ id: 'node-ffff01', type: 'host', x: -120, y: -60 }], links: [], zones: [], groups: [] });
 	assert.equal(m.occupiedAt({ x: 240, y: 120 }), false, 'prior document cleared');
 	assert.equal(m.occupiedAt({ x: -120, y: -60 }), true, 'loaded document indexed');
 });

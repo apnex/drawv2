@@ -155,7 +155,7 @@ test('H9.1: a client cannot grant itself access through a meta patch', () => {
 test('H9.1: the document validator refuses a malformed principal or level', () => {
 	const doc = (meta) => ({
 		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2, ...meta },
-		nodes: [], waypoints: [], links: [], zones: [], groups: [],
+		nodes: [], links: [], zones: [], groups: [],
 	});
 	assert.equal(validateDoc(doc({})), null, 'legacy documents carry neither key and still load');
 	assert.equal(validateDoc(doc({ owner: OWNER, grants: { [CODE]: 'read' } })), null);
@@ -180,7 +180,7 @@ test('H9.1: a created diagram cannot carry its own ownership in from the wire', 
 		await s.init();
 		const res = s.create('hostile', {
 			meta: { owner: 'user:attacker@evil.example', grants: { 'user:attacker@evil.example': 'write' } },
-			nodes: [], waypoints: [], links: [], zones: [], groups: [],
+			nodes: [], links: [], zones: [], groups: [],
 		});
 		assert.ok(res.ok, 'the document is otherwise valid, so it is accepted');
 		const id = res.model.state.meta.id;
@@ -939,7 +939,7 @@ and will not accept as an identity, and narrowing a grammar later is the change 
 */
 const principalDoc = (owner) => ({
 	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2, owner },
-	nodes: [], waypoints: [], links: [], zones: [], groups: [],
+	nodes: [], links: [], zones: [], groups: [],
 });
 const acceptsPrincipal = (p) => validateDoc(principalDoc(p)) === null;
 
@@ -1230,7 +1230,7 @@ test('H9.21: the id is minted by the server, never taken from the body', async (
 		const before = t.app.store.get(t.id).state.meta.name;
 		const res = await fetch(api, {
 			method: 'POST',
-			body: JSON.stringify({ doc: { meta: { id: t.id, name: 'impostor' }, nodes: [], links: [], zones: [], groups: [], waypoints: [] } }),
+			body: JSON.stringify({ doc: { meta: { id: t.id, name: 'impostor' }, nodes: [], links: [], zones: [], groups: [] } }),
 		});
 		assert.equal(res.status, 201);
 		const { id } = await res.json();
@@ -1296,7 +1296,7 @@ test('H9.21: ownership comes from the identity, and a body cannot override it', 
 
 		const nested = await fetch(api, {
 			method: 'POST',
-			body: JSON.stringify({ doc: { meta: { name: 'b', owner: OWNER }, nodes: [], links: [], zones: [], groups: [], waypoints: [] } }),
+			body: JSON.stringify({ doc: { meta: { name: 'b', owner: OWNER }, nodes: [], links: [], zones: [], groups: [] } }),
 		});
 		const b = await nested.json();
 		assert.equal(b.doc.meta.owner, AGENT,

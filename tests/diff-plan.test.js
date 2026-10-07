@@ -310,7 +310,7 @@ test('GR5/X8: an identical put that ALSO steals group members is NOT narrowed aw
 	const model = new Model();
 	model.load({ meta: { id: 'diagram-aa0001', name: 'd' },
 		nodes: [1, 2, 3].map((n) => ({ id: `node-aa000${n}`, name: `n${n}`, type: 'host', shape: 'circle', x: n * 60, y: 0 })),
-		waypoints: [], links: [], zones: [],
+		links: [], zones: [],
 		groups: [
 			{ id: 'group-aa0004', name: 'a', members: ['node-aa0001', 'node-aa0002'] },
 			{ id: 'group-aa0005', name: 'b', members: ['node-aa0002', 'node-aa0003'] },

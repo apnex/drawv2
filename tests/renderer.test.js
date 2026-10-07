@@ -260,7 +260,7 @@ canvas in `#ddddff` (TOKENS.label) from the day the export was written; ruled 20
 test('B275: the SVG export draws a node or zone name in the canvas label colour', async () => {
 	const { svgDocument } = await import('../server/svg.mjs');
 	const { TOKENS } = await import('../kernel/theme.mjs');
-	const svg = svgDocument({ meta: { id: 'diagram-000001', name: 'x' }, waypoints: [], links: [], groups: [],
+	const svg = svgDocument({ meta: { id: 'diagram-000001', name: 'x' }, links: [], groups: [],
 		nodes: [{ id: 'node-000001', name: 'edge-router', type: 'router', x: 0, y: 0, shape: 'circle' }],
 		zones: [{ id: 'zone-000002', name: 'dmz', x: -90, y: -90, w: 300, h: 240 }] });
 	for (const name of ['edge-router', 'dmz']) {

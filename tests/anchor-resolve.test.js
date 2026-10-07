@@ -19,7 +19,7 @@ what two round trips buy today.
 
 function doc(nodes = [], extra = {}) {
 	const m = new Model();
-	m.load({ nodes, links: [], waypoints: [], zones: [], groups: [], ...extra });
+	m.load({ nodes, links: [], zones: [], groups: [], ...extra });
 	return m;
 }
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });

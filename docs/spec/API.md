@@ -26,7 +26,8 @@ curl -s -X POST localhost:8080/api/v1/diagrams -d '{"doc":{"meta":{"name":"from 
 ```
 
 AMENDED 2026-10-07 (B291): a document handed to `create` is installed as it is, in the current format -- schema 2, its waypoints nodes with no type, its pipes in `pipes`.\
-Nothing migrates it now: one written before the cutover (`meta.schema` 1) is refused with a sentence that says so, and a link whose ends no pipes join comes up down until a pipe is laid.
+Nothing migrates it now: one written before the cutover (`meta.schema` 1) is refused with a sentence that says so, and a link whose ends no pipes join comes up down until a pipe is laid.\
+AMENDED 2026-10-07 (B307): a top-level key the server's composition does not hold -- `waypoints`, or a plugin's collection it is not composed with -- is refused, `unknown collection: <key>`, where it was accepted and dropped.
 
 An agent's work belongs to whoever authorised the agent (ruled 2026-08-23, **B100**).\
 A diagram created by `agent:planner` is owned by the principal that claimed that agent name, and the agent is left an ordinary `write` grant on it.\
