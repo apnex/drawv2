@@ -325,6 +325,7 @@ export function plan(model, ops, options = {}) {
 	const changes = changeSet(proj);   // TG-1
 	// whether this transaction created the entity an op names: not there before it began
 	const isCreated = (op) => op.op !== 'del' && !model.get(op.kind, op.op === 'put' ? op.entity.id : op.id);
+	const wrote = new Map();   // B302: each entity a reaction wrote -> the reaction that last wrote it
 
 	/*
 	Run one phase. Each reaction EMITS ops, and each is applied at once through `apply`, so the next decision -- its own or
@@ -353,6 +354,7 @@ export function plan(model, ops, options = {}) {
 					const holder = claimed.get(subject);
 					if (holder && holder !== r.id) throw new Error(`plan: ${holder} and ${r.id} both change ${subject} in the ${phase} phase (PD-3)`);
 					claimed.set(subject, r.id);
+					if (op.op !== 'del' && op.op !== 'meta') wrote.set(subject, r.id);
 					apply(op);
 				}
 			});
@@ -398,6 +400,26 @@ export function plan(model, ops, options = {}) {
 		called.push(r.id);
 		const why = r.refuse({ before: model, doc: proj, matches });
 		if (why) return { ok: false, error: why, opIndex: -1 };
+	}
+
+	/*
+	B302 (H19.11) -- NO REACTION COMMITS WHAT A REQUESTED WRITE COULD NOT. A requested op is validated before it is applied
+	(`planOne`); an op a reaction emits was applied as it came, and only the invariants below were checked -- so a reaction
+	writing a link the referential rules refuse (B301: a ring opened with routers among its bends) was answered and saved,
+	and the store skipped the diagram at its next boot. Each entity a reaction wrote is held, as it stands in the result, to
+	the rules a requested write of it meets; the edit is refused, naming the reaction, if one fails. Only what this edit
+	INTRODUCES, as the invariants are judged (B271): an entity that already failed them before may still be touched, or a
+	document that reached a bad state could never be repaired.
+	*/
+	for (const [subject, by] of wrote) {
+		const at = subject.indexOf(':'), kind = subject.slice(0, at), id = subject.slice(at + 1);
+		const now = proj.get(kind, id);
+		if (!now) continue;   // written, then deleted by the edit
+		const why = validateMutation(proj, { action: 'put', kind, entity: now }, kinds);
+		if (!why) continue;
+		const was = model.get(kind, id);
+		if (was && validateMutation(model, { action: 'put', kind, entity: was }, kinds)) continue;   // so before this edit
+		return { ok: false, error: `${by} would leave ${kind} ${now.name ?? id} invalid -- ${why}; the edit is refused, and nothing changed (B302)`, opIndex: -1 };
 	}
 
 	/*
