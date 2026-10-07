@@ -1138,5 +1138,87 @@
 				"hand"
 			]
 		]
+	},
+	"transit-ring": {
+		"about": "Transit on a ring of waypoints (B299, B300; the director's arrow): a closed link through W, P, Q and V, every stop a waypoint, over the pipes of its legs, the closing leg among them.",
+		"ops": [
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000005",
+					"name": "P",
+					"x": -120,
+					"y": -120
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000006",
+					"name": "Q",
+					"x": 120,
+					"y": -120
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000007",
+					"name": "V",
+					"x": 120,
+					"y": 120
+				}
+			},
+			{
+				"op": "put",
+				"kind": "node",
+				"entity": {
+					"id": "node-000008",
+					"name": "W",
+					"x": -120,
+					"y": 120
+				}
+			},
+			{
+				"op": "put",
+				"kind": "link",
+				"entity": {
+					"id": "link-000001",
+					"name": "ring",
+					"src": "node-000008",
+					"via": [
+						"node-000005",
+						"node-000006"
+					],
+					"dst": "node-000007",
+					"closed": true
+				}
+			}
+		],
+		"pipes": [
+			[
+				"node-000008",
+				"node-000005",
+				"link"
+			],
+			[
+				"node-000005",
+				"node-000006",
+				"link"
+			],
+			[
+				"node-000006",
+				"node-000007",
+				"link"
+			],
+			[
+				"node-000007",
+				"node-000008",
+				"link"
+			]
+		]
 	}
 }

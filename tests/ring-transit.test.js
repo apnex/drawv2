@@ -107,3 +107,62 @@ test('B299: the transit edit says what it did to the ring -- opened, or closed a
 	const on = transitSummary(transit(m, [[P, true]]).ops);
 	assert.deepEqual([on.opened, on.closed, on.joined], [0, 1, null], 'closed again, and nothing joined');
 });
+
+/*
+B300 -- the pieces of a ring cut at two waypoints rejoin when transit returns, whatever the order (the director, testing the
+fix on the arrow: "no longer re-joins into corners"). The two links ran between P and B, one each way round; turning B back
+on joined nothing, since the join refused a result beginning and ending at one anchor. A loop may come of a join now, and a
+loop whose end passes what arrives closes into a ring -- a loop exists only while its end's transit is off.
+*/
+const cutTwice = () => { const m = ring(); transit(m, [[P, false]]); transit(m, [[B, false]]); assert.equal(m.all('link').length, 2, 'cut into two -- the state under test'); return m; };
+const isRing = (m) => m.all('link').length === 1 && m.all('link')[0].closed === true && new Set(stops(m.all('link')[0])).size === 4;
+
+test('B300: B back on joins the two pieces into one loop, still ending at P, whose transit is off', () => {
+	const m = cutTwice();
+	transit(m, [[B, true]]);
+	assert.equal(m.all('link').length, 1, 'joined at B');
+	const l = m.all('link')[0];
+	assert.deepEqual([l.src, l.dst, !!l.closed], [P, P, false], 'a loop at P');
+	assert.ok(stops(l).includes(B), 'B a corner again');
+});
+
+test('B300: then P back on closes it -- the ring is whole', () => {
+	const m = cutTwice();
+	transit(m, [[B, true]]);
+	transit(m, [[P, true]]);
+	assert.ok(isRing(m), JSON.stringify(m.all('link')));
+});
+
+test('B300: in the other order, P on then B on, the ring is whole', () => {
+	const m = cutTwice();
+	transit(m, [[P, true]]);
+	assert.equal(m.all('link').length, 1, 'joined at P, a loop at B');
+	transit(m, [[B, true]]);
+	assert.ok(isRing(m), JSON.stringify(m.all('link')));
+});
+
+test('B300: both back on in one edit, the ring is whole', () => {
+	const m = cutTwice();
+	transit(m, [[P, true], [B, true]]);
+	assert.ok(isRing(m), JSON.stringify(m.all('link')));
+	assert.equal(m.isLinkDown(m.all('link')[0]), false);
+});
+
+/*
+B301 -- a ring with a device among its stops is NOT opened: a loop's other stops are its bends, and a bend is a waypoint, so
+opening it would save a document the validator refuses -- a reaction's ops are not validated again -- and the store would
+skip the diagram at its next boot. Left as it was, valid, until its opening is ruled.
+*/
+test('B301: a ring whose ends are routers is left as it was, and the document stays valid', () => {
+	const m = new Model({ network: NET, kinds: KINDS });
+	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
+	m.put('node', { id: P, name: 'P', x: 0, y: -120 });
+	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
+	m.put('link', { id: 'link-000001', name: 'ring', order: 1, src: A, via: [P], dst: B, closed: true });
+	for (const [a, b] of [[A, P], [P, B], [B, A]]) m.put('pipe', pipeEntity(a, b, 'link'));
+	const was = structuredClone(m.get('link', 'link-000001'));
+	transit(m, [[P, false]]);
+	assert.deepEqual(m.get('link', 'link-000001'), was, 'the ring unchanged');
+	const d = m.toJSON();
+	assert.equal(validateDoc({ ...d, meta: { ...d.meta, id: 'diagram-0f0003', name: 'r' } }), null, 'and the document valid');
+});

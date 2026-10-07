@@ -517,6 +517,7 @@ test('every seed pipe carries the lifetime its gesture would give it', () => {
 		for (const l of links) {
 			const stops = [l.src, ...(l.via ?? []), l.dst];
 			for (let i = 0; i < stops.length - 1; i++) legs.add([stops[i], stops[i + 1]].sort().join('|'));
+			if (l.closed) legs.add([l.dst, l.src].sort().join('|'));   // a ring's closing leg is a leg like any other (P-3)
 		}
 		for (const pipe of board.pipes) {
 			assert.equal(pipe.length, 3, `${name}: ${JSON.stringify(pipe)} must state its lifetime, not default to one`);

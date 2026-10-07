@@ -1150,13 +1150,16 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.6 | A fixture proving a document naming an unknown plugin is refused | **B248** | S4 | `TODO` |
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind | **B280** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
-| H19.9 | Transit off at a ring's pin opens the ring there, as ruled -- the director's report from production | **B299** | S2 | `DONE` |
+| H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
+| H19.10 | Rule what a ring with a device among its stops does when transit goes off at one of its waypoints -- it cannot open into a loop, whose other stops are bends | **B301** | S3 | `TODO` |
+| H19.11 | Guard the planner so no reaction commits a document a requested write could not -- B301's class of loss | **B302** | S2 | `TODO` |
 
 AMENDED 2026-10-07: H19.2 ruled -- the backups are records, and the deletion deploys now though 23 pre-cutover deletions stay restorable until 12 October (`dev/DECISIONS.md`).\
 H19.3 done -- the migrations, the loader's repairs and both tools deleted, with their tests; an older document is refused at every door, said plainly.\
 B291 closed.
 
-AMENDED 2026-10-07: H19.9 added and done -- the director found transit doing nothing at a ring's pins on production (B299); ruled, the ring opens there into a loop ending at it, and closes again when transit returns.
+AMENDED 2026-10-07: H19.9 added and done -- the director found transit doing nothing at a ring's pins on production (B299); ruled, the ring opens there into a loop ending at it, and closes again when transit returns.\
+AMENDED 2026-10-07: the director's next test found the pieces of a ring cut twice not rejoining (B300), fixed under H19.9; and fixing it found that a ring with a device among its stops would have opened into a document the validator refuses (B301) -- now left as it was, its opening H19.10 to rule -- because no reaction's ops are validated again (B302, H19.11).
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

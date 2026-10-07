@@ -911,6 +911,23 @@
 					"link": 0
 				}
 			}
+		},
+		"transit ring": {
+			"about": "A closed link through W, P, Q and V, every stop a waypoint, over the pipes of its legs; no transit declared.",
+			"board": "transit-ring",
+			"setup": [],
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"anchors": 4,
+				"pipes": {
+					"hand": 0,
+					"link": 4
+				},
+				"pins": {
+					"link-000001": 2
+				}
+			}
 		}
 	},
 	"gestures": {
@@ -4208,6 +4225,241 @@
 		},
 		{
 			"id": "TRN-37",
+			"state": "transit ring",
+			"gesture": "transit `x`",
+			"does": "Select the pin P, and press x.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "A ring has no ends to cut toward, so it opens at P: one link that starts at P, runs round Q, V and W, and ends at P again -- P its endpoint, never a junction, with the transit ring; drawn where it was, up over the ring's own pipes.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 4
+				},
+				"rings": [
+					"node-000005"
+				],
+				"pins": {
+					"link-000001": 3
+				},
+				"roles": {
+					"node-000005": [
+						"endpoint"
+					]
+				},
+				"notice": "transit off at P -- 1 ring opened"
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-38",
+			"state": "transit ring",
+			"gesture": "transit `x`",
+			"does": "As TRN-37, then press x again.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "Turning transit back on closes the loop into a ring again, through P.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 4
+				},
+				"rings": [],
+				"pins": {
+					"link-000001": 2
+				},
+				"notice": "transit on at P -- 1 ring closed again"
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-39",
+			"state": "transit ring",
+			"gesture": "undo",
+			"does": "As TRN-37, then undo.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"undo"
+				]
+			],
+			"intent": "Undo restores the ring exactly, P's transit on again.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"pipes": {
+					"hand": 0,
+					"link": 4
+				},
+				"rings": [],
+				"pins": {
+					"link-000001": 2
+				}
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-40",
+			"state": "transit ring",
+			"gesture": "transit `x`",
+			"does": "Turn P's transit off, then Q's; then Q's back on, then P's.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "The ring opens at P and is cut at Q into two links between them; Q back on joins them into a loop still ending at P, and P back on closes it: the ring is whole again, both corners passing (B300).",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [],
+				"pins": {
+					"link-000001": 2
+				},
+				"pipes": {
+					"hand": 0,
+					"link": 4
+				}
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299; B300 -- a loop exists only while its end's transit is off.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-41",
+			"state": "transit ring",
+			"gesture": "transit `x`",
+			"does": "As TRN-40, but turn P back on first, then Q.",
+			"steps": [
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					-120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				],
+				[
+					"click",
+					120,
+					-120
+				],
+				[
+					"key",
+					"x"
+				]
+			],
+			"intent": "In the other order the ring is whole too: P back on joins the two into a loop ending at Q, and Q back on closes it (B300). Which piece keeps its id follows the order the corners return, and is not ruled; the row holds the shape.",
+			"expect": {
+				"links": 1,
+				"down": 0,
+				"rings": [],
+				"pins": {
+					"only": 2
+				},
+				"pipes": {
+					"hand": 0,
+					"link": 4
+				}
+			},
+			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299; B300 -- a loop exists only while its end's transit is off.",
+			"standing": "ruled",
+			"built": "yes"
+		},
+		{
+			"id": "TRN-42",
 			"state": "transit pin",
 			"gesture": "transit `x`",
 			"does": "Close the link into a ring with c, then select the pin P and press x.",
@@ -4231,122 +4483,11 @@
 					"x"
 				]
 			],
-			"intent": "A ring has no ends to cut toward, so it opens at P: one link that starts at P, runs round B and A, and ends at P again -- P its endpoint, never a junction, with the transit ring; drawn where it was, up over the ring's own pipes.",
-			"expect": {
-				"links": 1,
-				"down": 0,
-				"pipes": {
-					"hand": 0,
-					"link": 3
-				},
-				"rings": [
-					"node-000005"
-				],
-				"pins": {
-					"link-000001": 2
-				},
-				"roles": {
-					"node-000005": [
-						"endpoint"
-					]
-				},
-				"notice": "transit off at P -- 1 ring opened"
-			},
-			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
-			"standing": "ruled",
-			"built": "yes"
-		},
-		{
-			"id": "TRN-38",
-			"state": "transit pin",
-			"gesture": "transit `x`",
-			"does": "As TRN-37, then press x again.",
-			"steps": [
-				[
-					"click",
-					-180,
-					-60
-				],
-				[
-					"key",
-					"c"
-				],
-				[
-					"click",
-					0,
-					-120
-				],
-				[
-					"key",
-					"x"
-				],
-				[
-					"key",
-					"x"
-				]
-			],
-			"intent": "Turning transit back on closes the loop into a ring again, through P.",
-			"expect": {
-				"links": 1,
-				"down": 0,
-				"pipes": {
-					"hand": 0,
-					"link": 3
-				},
-				"rings": [],
-				"pins": {
-					"link-000001": 1
-				},
-				"notice": "transit on at P -- 1 ring closed again"
-			},
-			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
-			"standing": "ruled",
-			"built": "yes"
-		},
-		{
-			"id": "TRN-39",
-			"state": "transit pin",
-			"gesture": "undo",
-			"does": "As TRN-37, then undo.",
-			"steps": [
-				[
-					"click",
-					-180,
-					-60
-				],
-				[
-					"key",
-					"c"
-				],
-				[
-					"click",
-					0,
-					-120
-				],
-				[
-					"key",
-					"x"
-				],
-				[
-					"undo"
-				]
-			],
-			"intent": "Undo restores the ring exactly, P's transit on again.",
-			"expect": {
-				"links": 1,
-				"down": 0,
-				"pipes": {
-					"hand": 0,
-					"link": 3
-				},
-				"rings": [],
-				"pins": {
-					"link-000001": 1
-				}
-			},
-			"rule": "DECISIONS: \"Transit off at a ring's pin opens the ring there\" (2026-10-07), B299.",
-			"standing": "ruled",
-			"built": "yes"
+			"standing": "open",
+			"today": "P's transit turns off and the ring is left as it was, valid.",
+			"question": "When transit goes off at a waypoint of a ring with a device among its stops -- here, a ring whose ends are routers -- what should happen? It cannot open into a loop: a loop's other stops are its bends, and a bend is a waypoint (B301).",
+			"proposal": "Not yet proposed; asked of the director at H19.10.",
+			"rule": "BACKLOG B301 -- a ruling owed (H19.10)."
 		},
 		{
 			"id": "RING-01",

@@ -95,7 +95,7 @@ export function transitReactions(transit) {
 				}
 				// turned off: a ring through it opens here (B299), first, so a second waypoint of the same edit cuts the loop it left;
 				// then every link bending here is cut (TR-2)
-				for (const link of links()) { const ops = openRingAt(link, w); if (ops) emit(ops); }
+				for (const link of links()) { const ops = openRingAt(link, w, (id) => bareAnchor(doc, id)); if (ops) emit(ops); }
 				for (const link of links()) {
 					const ops = cutAtBend(doc, link, w);
 					if (ops) emit(ops);

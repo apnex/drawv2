@@ -21,7 +21,8 @@ that stops where transit is off, and a stranded pass. Production's classic tenan
 Network-layer code (tools/layers.mjs): it reads the model and the link invariants, and nothing of the planner. What it
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
-import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS } from './link-rules.mjs';
+import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS, closeLoop } from './link-rules.mjs';
+import { isLoop } from './link-references.mjs';   // B300: a join may leave a loop
 import { linkEndsAt } from './roles.mjs';   // whether a link ends at a point (B244), one statement with the roles (V-a)
 import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
@@ -286,9 +287,10 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 	patch test missed it. A link the edit created is not compared: a second link drawn to a terminus never joins (B214).
 	*/
 			const redeclared = new Set();
+			const woken = new Set();   // B300: waypoints whose own declaration -- transit -- set this join off; only there may a loop result
 			for (const { kind, id, before: was, after: now, fields } of matches) {
 				// a waypoint whose own declaration changed -- its transit turned back on, say (F-e): a candidate as a redeclared link's end is
-				if (kind === BARE_KIND) { if (now && isBareEntity(kind, now) && wakesAt.some((f) => fields.has(f))) { touched.add(id); redeclared.add(id); } continue; }
+				if (kind === BARE_KIND) { if (now && isBareEntity(kind, now) && wakesAt.some((f) => fields.has(f))) { touched.add(id); redeclared.add(id); woken.add(id); } continue; }
 				if (kind !== 'link') continue;
 				if (now && LINK_DECLARATIONS.some((k) => fields.has(k))) {
 					for (const end of [now.src, now.dst]) if (bareAnchor(doc, end)) { touched.add(end); redeclared.add(end); }
@@ -322,8 +324,14 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 		*/
 				const src = at.find((l) => l.dst === w) || at[0];
 				const other = at.find((l) => l !== src);
-				const merged = other ? collapseAtWaypoint(src, other, w) : null;
+				let merged = other ? collapseAtWaypoint(src, other, w, { loop: woken.has(w) }) : null;
 				if (!merged) continue;
+				/*
+		B300 -- A LOOP EXISTS ONLY WHILE ITS END STOPS WHAT ARRIVES (ruled 2026-10-07, B299). A join that leaves one -- the two
+		pieces of a ring cut at two waypoints, rejoined at one -- closes it into a ring where its end lets links join, so turning
+		a ring's waypoints back on makes it whole in whatever order.
+		*/
+				if (isLoop(merged) && joinsAt(merged.src, doc)) merged = closeLoop(merged)[0].entity;
 				const inbound = src, outbound = other;
 		// `patch`, not `after` -- `after` is the COMMAND vocabulary and applyOps reads `patch`. The
 		// first version used the command spelling, so the del landed and the merge silently did not.
@@ -336,7 +344,7 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 		// leaves the document declaring the opposite of what the author meant -- silently, since
 		// every other field looks right. Omitted only when the link was undeclared.
 				const patch = { src: merged.src, dst: merged.dst, via: merged.via,
-					...(merged.direction !== undefined ? { direction: merged.direction } : {}) };
+					...(merged.direction !== undefined ? { direction: merged.direction } : {}), ...(merged.closed ? { closed: true } : {}) };
 				/*
 		B239 -- a merge is TAKEN only if the link it produces passes the rules a requested write does.
 

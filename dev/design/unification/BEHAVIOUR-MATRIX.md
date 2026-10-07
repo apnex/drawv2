@@ -89,11 +89,12 @@ A refused drag that left the tab disagreeing with the planner was found by exact
 | older beside a younger route | . | SUP-01 | . | . | . | . | . | . | . | . | . | . | . | . | . | . |
 | transit board | . | . | . | . | . | . | . | . | . | TRN-08 | TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07 | TRN-14, TRN-15 | TRN-16 | . | . | . |
 | transit detour | . | . | . | . | . | . | . | . | . | . | TRN-09, TRN-10, TRN-11 | . | . | . | . | . |
-| transit pin | . | . | . | . | . | . | . | . | TRN-35, TRN-36, TRN-39 | . | TRN-12, TRN-13, TRN-29, TRN-30, TRN-31, TRN-32, TRN-33, TRN-34, TRN-37, TRN-38 | . | . | . | . | . |
+| transit pin | . | . | . | . | . | . | . | . | TRN-35, TRN-36 | . | TRN-12, TRN-13, TRN-29, TRN-30, TRN-31, TRN-32, TRN-33, TRN-34, TRN-42 (open) | . | . | . | . | . |
 | transit two pins | . | . | . | . | . | . | . | . | . | . | TRN-17, TRN-18 | . | . | . | . | . |
 | transit junction | . | . | . | TRN-19, TRN-20 | . | . | . | . | . | . | TRN-21, TRN-22 | . | . | . | . | . |
+| transit ring | . | . | . | . | . | . | . | . | TRN-39 | . | TRN-37, TRN-38, TRN-40, TRN-41 | . | . | . | . | . |
 
-92 rows: 92 built, 0 todo, 0 open.\
+95 rows: 94 built, 0 todo, 1 open.\
 A `.` is a permutation nobody has specified yet; `n/a` is one the board gives nothing to act on.
 
 | state | board | what it is |
@@ -116,6 +117,7 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | transit pin | `?seed=transit-pin` | A link from A to B pinned at P, over the pipes its w drag laid; no transit declared. |
 | transit two pins | `?seed=transit-two-pins` | A link from A to B pinned at P then Q; no transit declared. |
 | transit junction | `?seed=transit-junction` | Three links end at P, from A, B and C; no transit declared. |
+| transit ring | `?seed=transit-ring` | A closed link through W, P, Q and V, every stop a waypoint, over the pipes of its legs; no transit declared. |
 
 | gesture | what the author does |
 |---|---|
@@ -225,9 +227,12 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 | TRN-34 | transit pin x transit `x` | As TRN-31, then select the right half -- the one a join gives up -- and press f. | They join into the link drawn first, and the selection follows: the joined link is selected, as the half that was. | The director's report, 2026-10-02 (B288); DECISIONS: "A join keeps the earlier-drawn link's name and identity" (2026-09-26). | ruled, built |
 | TRN-35 | transit pin x undo | Select the pin P, press x, and undo. | Transit is stored on the anchor, so the cut and the setting are one edit: undo turns P back on and restores the one link pinned at P, with the id it was drawn with -- the session's setting could not be undone. | DECISIONS: "Transit with pipes" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch ("P2's design decisions", 2026-10-03; FORMAT-BATCH.md F-e). | ruled, built |
 | TRN-36 | transit pin x undo | As TRN-35, then redo. | Redo replays the edit whole: P off again, and the link cut into the same two links ending there. | DECISIONS: "Transit with pipes" (2026-09-30), TR-7 -- the setting is stored with promotion's format batch ("P2's design decisions", 2026-10-03; FORMAT-BATCH.md F-e). | ruled, built |
-| TRN-37 | transit pin x transit `x` | Close the link into a ring with c, then select the pin P and press x. | A ring has no ends to cut toward, so it opens at P: one link that starts at P, runs round B and A, and ends at P again -- P its endpoint, never a junction, with the transit ring; drawn where it was, up over the ring's own pipes. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
-| TRN-38 | transit pin x transit `x` | As TRN-37, then press x again. | Turning transit back on closes the loop into a ring again, through P. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
-| TRN-39 | transit pin x undo | As TRN-37, then undo. | Undo restores the ring exactly, P's transit on again. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
+| TRN-37 | transit ring x transit `x` | Select the pin P, and press x. | A ring has no ends to cut toward, so it opens at P: one link that starts at P, runs round Q, V and W, and ends at P again -- P its endpoint, never a junction, with the transit ring; drawn where it was, up over the ring's own pipes. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
+| TRN-38 | transit ring x transit `x` | As TRN-37, then press x again. | Turning transit back on closes the loop into a ring again, through P. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
+| TRN-39 | transit ring x undo | As TRN-37, then undo. | Undo restores the ring exactly, P's transit on again. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299. | ruled, built |
+| TRN-40 | transit ring x transit `x` | Turn P's transit off, then Q's; then Q's back on, then P's. | The ring opens at P and is cut at Q into two links between them; Q back on joins them into a loop still ending at P, and P back on closes it: the ring is whole again, both corners passing (B300). | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299; B300 -- a loop exists only while its end's transit is off. | ruled, built |
+| TRN-41 | transit ring x transit `x` | As TRN-40, but turn P back on first, then Q. | In the other order the ring is whole too: P back on joins the two into a loop ending at Q, and Q back on closes it (B300). Which piece keeps its id follows the order the corners return, and is not ruled; the row holds the shape. | DECISIONS: "Transit off at a ring's pin opens the ring there" (2026-10-07), B299; B300 -- a loop exists only while its end's transit is off. | ruled, built |
+| TRN-42 | transit pin x transit `x` | Close the link into a ring with c, then select the pin P and press x. | OPEN: When transit goes off at a waypoint of a ring with a device among its stops -- here, a ring whose ends are routers -- what should happen? It cannot open into a loop: a loop's other stops are its bends, and a bend is a waypoint (B301). Proposed: Not yet proposed; asked of the director at H19.10. Today: P's transit turns off and the ring is left as it was, valid. | BACKLOG B301 -- a ruling owed (H19.10). | OPEN |
 | RING-01 | pinned x close `c` | Select the link on its left leg, and press c. | The ring's closing leg, from B back to A, is routed like any leg: a link pipe is laid there in the same edit, and the ring is up over it, drawn closed as before -- the drawing joins B to A itself, along that pipe. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
 | RING-02 | pinned x close `c` | As RING-01, then press c again. | Opened, nothing runs over the closing pipe, so it is swept as any link pipe a link stops using is; the link is as drawn. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
 | RING-03 | pinned x undo | As RING-01, then undo. | One edit closed the ring and laid its pipe, so one undo opens it and takes the pipe back. | DECISIONS: "Promotion's start-of-work decisions, P-3 to P-10" (2026-10-03), P-3 -- a ring's closing leg is routed like any leg; FORMAT-BATCH.md F-f. | ruled, built |
@@ -243,7 +248,9 @@ A `.` is a permutation nobody has specified yet; `n/a` is one the board gives no
 ## 7. Open -- waiting for a ruling
 
 <!-- BEGIN GENERATED: open. Run node tools/lab-matrix.mjs --write; do not edit by hand. -->
-Nothing is waiting for a ruling.
+| id | the question | proposed | today |
+|---|---|---|---|
+| TRN-42 | When transit goes off at a waypoint of a ring with a device among its stops -- here, a ring whose ends are routers -- what should happen? It cannot open into a loop: a loop's other stops are its bends, and a bend is a waypoint (B301). | Not yet proposed; asked of the director at H19.10. | P's transit turns off and the ring is left as it was, valid. |
 <!-- END GENERATED: open -->
 
 ---

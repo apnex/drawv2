@@ -120,7 +120,7 @@ makes the B222 orientation safe to keep once declarations exist.
 */
 const flip = (l) => ({ ...l, src: l.dst, dst: l.src, ...(l.direction !== undefined ? { direction: l.direction === 'forward' ? 'reverse' : 'forward' } : {}), ...(l.via ? { via: [...l.via].reverse() } : {}) });
 
-export function collapseAtWaypoint(inbound, outbound, waypointId) {
+export function collapseAtWaypoint(inbound, outbound, waypointId, { loop = false } = {}) {
 	if (!inbound || !outbound || inbound.id === outbound.id) return null;
 	if (inbound.closed || outbound.closed) return null;
 	// both must actually TERMINATE here -- a link merely threading the point as a via is not a
@@ -130,7 +130,9 @@ export function collapseAtWaypoint(inbound, outbound, waypointId) {
 	// face them through the point: the src side ends at it, the dst side leaves it
 	const a = inbound.dst === waypointId ? inbound : flip(inbound);
 	const b = outbound.src === waypointId ? outbound : flip(outbound);
-	if (a.src === b.dst) return null;                           // would be a self-link
+	// would be a self-link -- unless the caller allows a LOOP and it runs round two or more other stops (B300): the pieces of a
+	// ring cut twice rejoin when transit returns; a join set off by anything else stays as it was
+	if (a.src === b.dst && !(loop && isLoop({ src: a.src, dst: b.dst, via: [...(a.via || []), waypointId, ...(b.via || [])] }))) return null;
 	/*
 	H15.3 -- THE MERGED LINK'S DECLARATION, decided by what the two halves declare rather than by
 	whichever happened to keep its id.
@@ -217,11 +219,18 @@ drawn where it was. Closed again, the loop becomes a ring through the same stops
 the link the author drew: its id, its order, its name and its declarations kept -- a direction reads the same, since the
 stops keep their order round the ring. Null when there is nothing to do.
 */
-export function openRingAt(link, at) {
+export function openRingAt(link, at, isBareStop) {
 	if (!link.closed) return null;
 	const stops = [link.src, ...(Array.isArray(link.via) ? link.via : []), link.dst];
 	const i = stops.indexOf(at);
 	if (i === -1 || stops.length < 3) return null;
+	/*
+	B301 -- ONLY A RING OF WAYPOINTS OPENS. A loop's every other stop becomes a bend, and a bend is a waypoint: a ring with a
+	device among its stops (its ends, say, at two routers) would put the device in `via`, a document the validator refuses --
+	and a reaction's ops are not validated again, so the store would save it and skip the diagram at its next boot. Such a
+	ring is left as it was until its opening is ruled (BACKLOG B301).
+	*/
+	if (stops.some((s) => s !== at && !isBareStop(s))) return null;
 	const round = [...stops.slice(i), ...stops.slice(0, i)];   // `at` first, the rest in the ring's order
 	const { closed: _c, ...rest } = link;
 	return [{ op: 'put', kind: 'link', entity: { ...rest, src: at, via: round.slice(1), dst: at } }];
