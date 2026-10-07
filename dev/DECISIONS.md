@@ -1757,3 +1757,8 @@ Shown what it implies, the director confirmed: "Yes this seems to match".
 - So transit off at a waypoint of a ring through a transiting device opens the ring there, as on a ring of waypoints (B299): no rule of its own.
 - Which types offer transit is configuration the network plugin brings, not a fixed fact of a type: "loadbalancer can offer transit too - its configurable and we havent configured them yet". Today's table (router, firewall, vxlan offer it; load balancer, server, host do not) is that configuration as it stands.
 - `w` on a device whose transit is on makes it a junction and the drag continues -- the device a pin of the link being drawn, not two links ending there (the director: "I think w through a device with transit enabled becomes a junction, and the drag continues"). With its transit off, two links end there, as TR-2b rules. Measured once ruled: already the behaviour -- `w` on a router whose transit is on lays its pipes and the one link is routed through it (matrix row TRN-43).
+
+**Z1 -- a device pin follows transit's rules only -- 2026-10-07 (H19.10).**\
+Asked against `dev/design/unification/DEVICE-JUNCTIONS.md` section 9, the director chose the proposer's recommendation, "transit rules only".
+- A device a link is pinned through is cut when its transit goes off and rejoined when it returns; a ring through it opens like any ring; `w` on a device whose transit is on stores it as a pin, as on a waypoint.
+- A link that ENDS at a device keeps ending there: a delete never joins two links at a device, and a link landing on a device never cuts one passing it.

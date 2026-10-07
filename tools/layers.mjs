@@ -183,7 +183,7 @@ export const ENTRIES = {
 			'planner/txn.mjs', 'planner/validate.js', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/invariants.mjs',
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'planner/kinds.mjs',   // the product's rows, composed with the network's
-			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
+			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
 	lab: {
@@ -220,7 +220,7 @@ export const ENTRIES = {
 			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
-			'network/link-kind.mjs', 'network/link-references.mjs',   // S-e (H18.15, G5): the network's link row and its references
+			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'network/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)

@@ -45,6 +45,7 @@ every write. Built once it is O(links), and the document path is unchanged at O(
 */
 
 import { isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 
 // Index every waypoint reference in a set of links. One pass, and the shape both callers need.
 function waypointOwners(links) {
@@ -72,6 +73,9 @@ export function linkAccess(access) {
 	view = {
 		hasNode: (id) => access.has('node', id),
 		hasWaypoint: (id) => isBareEntity('node', access.get('node', id)),
+		// H19.10: a node a link may pass -- pinned through it, a junction -- by what its type offers (a waypoint, or a router)
+		passable: (id) => nodeOffersTransit(access.get('node', id)),
+		nodeOf: (id) => access.get('node', id),
 		ownersOf: (w) => (owners ??= waypointOwners(access.all('link'))).get(w) || [],
 		// B207 -- the duplicate-bend check needs the OTHER link's endpoints, not just its id
 		linkById: (id) => access.get('link', id),
@@ -98,7 +102,7 @@ that do not exist should say the endpoint is missing, because that is the fault 
 on, and reporting "self-link" for a pair of typos sends them looking in the wrong place.
 */
 export function linkReferential(link, access) {
-	const { hasNode, hasWaypoint } = access;
+	const { hasNode, hasWaypoint, passable = hasWaypoint, nodeOf = () => null } = access;
 	const exists = (id) => hasNode(id) || hasWaypoint(id);
 
 	if (!exists(link.src)) return `link src does not exist: ${link.src}`;
@@ -106,10 +110,18 @@ export function linkReferential(link, access) {
 	if (link.src === link.dst && !isLinkLoop(link)) return `link is a self-link: ${link.src}`;
 
 	const via = Array.isArray(link.via) ? link.via : [];
-	for (const w of via) if (!hasWaypoint(w)) return `link via waypoint does not exist: ${w}`;
+	for (const w of via) {
+		if (!exists(w)) return `link via waypoint does not exist: ${w}`;
+		/*
+		H19.10 (ruled 2026-10-07) -- a link may be pinned through a node whose type offers transit: a waypoint, or a device that
+		passes routes, a junction there. A device that never passes routes is only ever a link's end.
+		*/
+		if (!passable(w)) { const n = nodeOf(w); return `link via a node that never passes routes: ${n?.name ?? w} is a ${n?.type ?? 'node'} -- a link may end there, not pass it`; }
+	}
 
-	// a loop's one end is named twice, as its src and its dst -- one role (B299)
-	const refs = [link.src, ...(isLinkLoop(link) ? [] : [link.dst]), ...via].filter(hasWaypoint);
+	// one node in two roles of one link -- its end and a pin, or two pins -- whatever its kind (H19.10); a loop's one end is
+	// named twice, as its src and its dst -- one role (B299)
+	const refs = [link.src, ...(isLinkLoop(link) ? [] : [link.dst]), ...via].filter(exists);
 	return selfConflict(link, refs) || duplicateThroughBend(link, via, access);
 }
 
@@ -126,7 +138,7 @@ sharing a comment and a code block with the half that does, and "XOR occupancy" 
 them apart as "one waypoint in two roles on one link" against "one waypoint shared by two links".
 */
 function selfConflict(link, refs) {
-	return new Set(refs).size !== refs.length ? 'link uses a waypoint in two roles' : null;
+	return new Set(refs).size !== refs.length ? 'link uses a waypoint in two roles' : null;   // the message predates device pins (H19.10); a node, whatever its kind
 }
 
 /*

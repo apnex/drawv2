@@ -15,14 +15,11 @@ value, and undo restores it with everything else. The network refuses a value th
 import { cutAtBend, openRingIntoLoop, closeLoopIntoRing } from './link-rules.mjs';
 import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
-const BOTH = [true, false], OFF = [false];
-const OFFERS = { router: BOTH, firewall: BOTH, vxlan: BOTH, loadbalancer: OFF, server: OFF, host: OFF };
-
-// the values a node offers, its default first: a bare anchor offers both
-const transitOffers = (entity) => (isBareEntity(BARE_KIND, entity) ? BOTH : OFFERS[entity.type] ?? OFF);
+// the table of what each type offers is the plugin's configuration, in a module of its own (H19.10)
+import { transitOffersOf } from './transit-offers.mjs';
 
 // an anchor's transit: what it stores, or its type's default
-const valueOf = (entity) => (typeof entity.transit === 'boolean' ? entity.transit : transitOffers(entity)[0]);
+const valueOf = (entity) => (typeof entity.transit === 'boolean' ? entity.transit : transitOffersOf(entity)[0]);
 
 /*
 The transit rules, read off the model each is asked about -- nothing is kept here (F-e). The one rule (B278): what arrives at
@@ -33,7 +30,7 @@ export function createTransit() {
 		// whether the author declared transit off here -- what the ring marks, and nothing else; a type with no choice declares nothing
 		declaredOff: (id, model) => {
 			const e = model.get('node', id);
-			return !!e && e.transit === false && transitOffers(e).length > 1;
+			return !!e && e.transit === false && transitOffersOf(e).length > 1;
 		},
 		// the anchors in a model where what arrives stops, sorted, so a board's derivation can be keyed on them -- the rule as a set
 		blockedIn: (model) => model.all('node').filter((e) => valueOf(e) === false).map((e) => e.id).sort(),
@@ -51,7 +48,7 @@ export function createTransit() {
 		flip(entities) {
 			const flipped = [], refused = [], entries = [];
 			for (const e of entities) {
-				const offers = transitOffers(e);
+				const offers = transitOffersOf(e);
 				if (offers.length < 2) { refused.push(e); continue; }
 				const next = !valueOf(e);
 				const { kind: _k, ...stored } = e;
@@ -109,7 +106,7 @@ export function transitReactions(transit) {
 		doc: 'a node may store only a transit its type offers: a load balancer, a server and a host never pass routes (TR-6)',
 		refuse: ({ matches }) => {
 			for (const { after } of matches) {
-				if (!after || typeof after.transit !== 'boolean' || transitOffers(after).includes(after.transit)) continue;
+				if (!after || typeof after.transit !== 'boolean' || transitOffersOf(after).includes(after.transit)) continue;
 				return `${after.name || after.id} is a ${after.type}, which never passes routes -- its transit cannot be turned on`;
 			}
 			return null;

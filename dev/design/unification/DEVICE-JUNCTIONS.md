@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-07 against `3b21b6b`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-07: approved; Z1 ruled as recommended, transit rules only (section 9).
 
 ## 1. Status
 

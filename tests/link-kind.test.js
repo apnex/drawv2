@@ -79,10 +79,14 @@ test('S-e: the link\'s references are its row\'s, judged through the generic acc
 	assert.match(r.error, /link dst does not exist: node-000003/, 'and a mutation');
 });
 
-test('S-e: a link bends only at a waypoint -- the generic access tells a typed node from a node with no type', () => {
+// RESTATED at H19.10 (ruled 2026-10-07, "A device is an endpoint or a junction"): a link bent only at a waypoint until then; a
+// node whose type offers transit may be passed now, and the generic access still tells the kinds apart, by what each offers
+test('S-e, H19.10: a link bends at a node that passes routes -- the generic access tells a host from a router from a node with no type', () => {
 	const doc = { meta: { id: 'diagram-000001', name: 'd' }, nodes: [node('000001', -4, 0), node('000002', 4, 0), node('000003', 0, 2)],
 		links: [{ ...straight('000001', '000001', '000002'), via: ['node-000003'] }] };
-	assert.equal(validateDoc(doc), 'link via waypoint does not exist: node-000003 (link-000001)', 'a router in a via is refused');
+	assert.equal(validateDoc(doc), null, 'a router in a via is a junction there');
+	const host = structuredClone(doc); host.nodes[2].type = 'host';
+	assert.match(validateDoc(host), /never passes routes/, 'a host in a via is refused');
 	const bent = structuredClone(doc); delete bent.nodes[2].type; delete bent.nodes[2].shape;
 	assert.equal(validateDoc(bent), null, 'and a node with no type is a bend');
 });

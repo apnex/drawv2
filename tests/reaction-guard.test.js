@@ -42,8 +42,9 @@ test('B302: a reaction writing a link to a node that does not exist is refused, 
 	assert.match(r.error, /does not exist/, 'and saying what is wrong');
 });
 
-test('B302: B301\'s shape -- a link with routers among its bends -- is refused, not saved', () => {
-	const r = plan(board(), rename, withRogue((doc) => [{ op: 'put', kind: 'link', entity: { ...doc.get('link', 'link-000001'), src: P, via: [B, A], dst: P } }]));
+// B301's shape, restated at H19.10: routers may be passed now, so the bend that no requested write could make is a host
+test('B302: a link with a host among its bends -- B301\'s shape -- is refused, not saved', () => {
+	const r = plan(board(), [...rename, { op: 'set', kind: 'node', id: B, patch: { type: 'host' } }], withRogue((doc) => [{ op: 'put', kind: 'link', entity: { ...doc.get('link', 'link-000001'), src: P, via: [B, A], dst: P } }]));
 	assert.equal(r.ok, false, 'refused');
 	assert.match(r.error, /rogue/);
 });
