@@ -7,6 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { el, setAttrs } from './painter.js';
+import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
 import { groupHull, spanExtent } from '../../kernel/geometry.mjs';
@@ -559,7 +560,7 @@ export class Renderer {
 			applyLook(dom, nodeLook(entity), NODE_PARTS);
 			this.model.linksOf(entity.id).forEach((link) => this.update('link', link));
 			this.refreshRoutedThrough(entity.id);
-			const grp = this.model.groupOf(entity.id);
+			const grp = groupOf(this.model, entity.id);
 			if (grp) this.update('group', grp);   // the hull hugs its members → follow the move
 		}
 		if (kind === 'link') {
@@ -606,7 +607,7 @@ export class Renderer {
 			applyLook(dom, waypointLook(entity));
 			this.model.linksAt(entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
 			this.refreshRoutedThrough(entity.id);
-			const grp = this.model.groupOf(entity.id);
+			const grp = groupOf(this.model, entity.id);
 			if (grp) this.update('group', grp);                                      // reflow a group it belongs to
 		}
 	}

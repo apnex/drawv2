@@ -26,6 +26,7 @@ Per kind, the table also holds the collection a document stores it under and whe
 
 AMENDED 2026-10-08 (O-b1, H19.19; O1): the core's kinds are two -- node and group; the zone is the zones plugin's
 (zones/zone-kind.mjs), composed between them (planner/kinds.mjs `productKinds`).
+AMENDED 2026-10-08 (O-c, H19.20; O3): the core's kind is the node alone; the group is the groups plugin's (groups/group-kind.mjs).
 AMENDED 2026-10-04 (S-e, H18.15; G5, B280): the product's kinds are three -- node, zone and group. The link is the network
 plugin's kind (network/link-kind.mjs), brought by composing the network, as every production composition does; the core
 names no link. `clone` copies every nested value now, so it no longer reads this table, and a plugin's kind may nest fields.
@@ -43,9 +44,9 @@ the cutover and the migration was deleted (B291), so a schema 1 document is refu
 */
 export const SCHEMA = 2;
 
-// the core's kinds, in the order a document lists its collections; a plugin's are composed among and after them -- the
-// zones plugin's between these two (O-b1), the network's after (S-e)
-const KINDS = ['node', 'group'];
+// the core's kind; a plugin's are composed after it -- the zones plugin's (O-b1), the groups plugin's (O-c), the network's
+// (S-e) -- in the order a document lists its collections
+const KINDS = ['node'];
 
 /*
   collection  the document key the kind is stored under
@@ -72,13 +73,10 @@ const TABLE = {
 	composition without the network refuses it.
 	*/
 	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'spawn', 'order'] },
-	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };
 
-// the rest of each of the two's storage half: every one is named (B187, N5), nodes are the anchors (N2), and groups point
-// at them
-const REFERENCES = { group: ['node'] };
-const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node', references: REFERENCES[k] ?? [] }]));
+// the rest of the node's storage half: it is named (B187, N5), and nodes are the anchors (N2)
+const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node', references: [] }]));
 
 /*
 H17.22 N-a -- A COMPOSITION BRINGS ITS KINDS (ruled 2026-10-02, "Plugins bring their own kinds"; B273).
@@ -117,7 +115,12 @@ O-a (H19.18; KINDS-AS-PLUGINS.md) -- A ROW MAY CARRY ITS TENANT: `{ owner, react
 kind, as the group's steal and trim maintain a group. The planner runs the composition's tenants -- these, after the link
 tenant it is passed -- and appends none of its own, so a kind and its rules are composed together or not at all.
 */
-const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'drawnBy', 'tenant'];
+/*
+O-c (H19.20) -- A ROW MAY GATHER: `gathers` names one of its list fields, and the entity listing an id is the id's gatherer
+-- found by the Model (`gathererOf`), and selecting the id selects the whole list. It is how the core does for a group what it
+did by name -- the 2026-10-02 ruling's "a group's membership is stated in those terms, not by naming kinds".
+*/
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'drawnBy', 'tenant', 'gathers'];
 /*
 S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
 whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
@@ -157,6 +160,7 @@ export function composeKinds(given, who = 'a composition') {
 		if (row.drawnBy !== undefined && !(Array.isArray(row.drawnBy) && row.drawnBy.length && row.drawnBy.every((r) => typeof r === 'string'))) throw new Error(`${who}: kind ${row.kind}: drawnBy names the Model reads that draw it`);
 		if (row.invariants !== undefined && typeof row.invariants !== 'function') throw new Error(`${who}: kind ${row.kind}: its invariants are a function, (model, report)`);
 		if (row.tenant !== undefined && !(typeof row.tenant?.owner === 'string' && Array.isArray(row.tenant.reactions))) throw new Error(`${who}: kind ${row.kind}: its tenant is { owner, reactions } (O-a)`);
+		if (row.gathers !== undefined && !(row.composite ?? []).includes(row.gathers)) throw new Error(`${who}: kind ${row.kind} gathers ${row.gathers}, which is not one of its list fields (O-c)`);
 		byName.set(row.kind, row);
 		byCollection.set(row.collection, row.kind);
 	}
@@ -198,6 +202,8 @@ export function composeKinds(given, who = 'a composition') {
 		optional: of((r) => new Set(r.optional ?? [])),
 		// whether every row carries its checks -- what the planner requires of a composition it validates against
 		checked: rows.every((r) => r.fields !== undefined),
+		// the kinds that gather, and the list field each gathers by (O-c)
+		gathers: Object.fromEntries(rows.filter((r) => r.gathers).map((r) => [r.kind, r.gathers])),
 		// the tenants the rows bring, in the composition's order -- what the planner runs after the link tenant (O-a)
 		tenants: rows.filter((r) => r.tenant).map((r) => r.tenant),
 		// who brought a field another owner's kind carries (S-a): `kind.field` -> owner

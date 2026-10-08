@@ -4,7 +4,8 @@ reaction-table -- the planner's reactions, phase by phase, generated from the te
 
 ONE MASTER, ONE GENERATED VIEW (mission-kit P3), as tools/gesture-table.mjs is for the drag grammar. The master is the
 rows the planner runs: its declared phases (`PHASES`, planner/txn.mjs) and each tenant's reactions with their `doc` --
-the product's (planner/tenants.mjs) and the network plugin's (`network.links`, network/network.mjs). The readable view is
+the groups plugin's (groups/group-rules.mjs, carried by its row since O-a) and the network plugin's (`network.links`,
+network/network.mjs). The readable view is
 `dev/design/planner/REACTIONS.md`, whose charter is hand-written and whose tables are GENERATED here. A reaction changes
 by editing its row; the table follows, and `--check` in the gate fails when the two differ. Order is meaning in the
 planner (PLANNER-SYSTEM.md section 10), so the order is what this shows: the phases as declared, and within each the

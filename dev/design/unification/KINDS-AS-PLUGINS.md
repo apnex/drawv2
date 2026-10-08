@@ -218,3 +218,16 @@ The choice of how to proceed is the director's.
 AMENDED 2026-10-08 -- **O3 RULED: the core first, the canvas designed after** (`dev/DECISIONS.md`, "O3").\
 The stages now: O-c, the group out of the core and the planner (H19.20); O-e, the node (H19.21); O-d, closed with a rule that the core and the planner name no kind (H19.22); then the canvas plugin contract, designed for zone, group, node and link together (B308, H19.23).\
 O-b closed at O-b1; its canvas, export and CLI steps are H19.23's.
+
+---
+
+## 15. O-c done -- the group out of the core and the planner
+
+AMENDED 2026-10-08 -- **O-c done** (H19.20).
+**What moved:** the group row, whole -- storage facts, checks, its members-exist check, its two invariants, its tenant and its cap -- to `groups/group-kind.mjs`; its rules and the threshold they and its invariants ask, `groupAfterRemoval`, to `groups/group-rules.mjs`, where `planner/tenants.mjs` and part of `planner/policy.mjs` were (the first deleted); `makeGroup` and `groupOf` from the Model to `groups/make-group.mjs` and `groups/group-of.mjs`.
+The core composes the node alone; `planner/kinds.mjs` composes node, the zones plugin's row, the groups plugin's row, so a document lists its collections as before.
+**One row capability added, as the 2026-10-02 ruling anticipated:** a row may gather one of its list fields (`model/shape.mjs` `gathers`).
+The Model's `gathererOf` finds the entity listing an id, of any kind that gathers, and its selection pulls in the whole list -- so it does for a group what it did by name, and names no group.\
+The relations index keys membership the same way (`engine/relations.mjs`), so a composition without groups rebuilds its index rather than failing on a kind it does not hold.
+**Held by:** `tests/group-plugin.test.js` -- the core composes the node alone; the core, the planner and the index name no group; `makeGroup` and `groupOf` answer as the Model did, from the index and from the scan; a group row that gathers nothing selects a member alone; a composition without the plugin refuses a group and its index holds (a Model selecting by name, and an index rebuilding by name, each fail it -- both mutants killed, the second only once the test attached the index as the page does, which it had not).
+Tests that pinned the core as node and group, built a bare Model to hold groups, or imported the moved policy, restated; every corpus unchanged.

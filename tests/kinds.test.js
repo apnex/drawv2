@@ -48,7 +48,8 @@ test('N-a: a composition lists its kinds and what each opts into', () => {
 	assert.equal(WITH_PROBE.checked, true);
 	assert.equal(CORE_KINDS.checked, false, 'the core holds storage only; the checks are the planner\'s');
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
-	assert.deepEqual(CORE_KINDS.list, ['node', 'group']);
+	// RESTATED at O-c (H19.20): the group left the core too -- the node alone is the core's kind
+	assert.deepEqual(CORE_KINDS.list, ['node']);
 	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group']);
 });
 
@@ -80,7 +81,7 @@ test('N-a: a Model composed with a plugin kind stores, round-trips and selects i
 	again.setSelection(['probe-00000b']);
 	assert.deepEqual([...again.state.selection], ['probe-00000b'], 'a selectable plugin kind joins the selection');
 	assert.equal(m.nextName('probe'), 'probe-1', 'an unnamed kind takes no part in the namespace');
-	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, group\)/);   // the core's Model: node and group (O-b1)
+	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node\)/);   // the core's Model: the node alone (O-c)
 	assert.throws(() => new Model({ kinds: { list: ['node'] } }), /Model: kinds is a composition/);
 });
 

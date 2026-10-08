@@ -11,6 +11,8 @@ import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
+import { makeGroup } from '../groups/make-group.mjs';   // the groups plugin's factory (O-c)
+import { groupOf } from '../groups/group-of.mjs';   // and its lookup (O-c)
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
@@ -97,7 +99,7 @@ function contextOf(model, kind, e) {
 		const links = isBareEntity(kind, e) ? model.linksAt(e.id) : model.linksOf(e.id);
 		out.links = links.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
 		out.neighbours = [...new Set(links.flatMap((l) => [l.src, l.dst]).filter((n) => n !== e.id))];
-		out.group = isBareEntity(kind, e) ? null : (model.groupOf(e.id)?.id ?? null);
+		out.group = isBareEntity(kind, e) ? null : (groupOf(model, e.id)?.id ?? null);
 		out.zones = model.all('zone')
 			.filter((z) => e.x >= z.x && e.x <= z.x + z.w && e.y >= z.y && e.y <= z.y + z.h)
 			.map((z) => z.id);
@@ -205,7 +207,7 @@ function buildEntity(model, kind, d) {
 	if (kind === 'node') return model.makeNode(d.type, { x: d.x, y: d.y }, d.shape);
 	if (kind === 'link') return model.makeLink(d.src, d.dst);
 	if (kind === 'zone') return makeZone(model, { x: d.x, y: d.y, w: d.w, h: d.h });
-	if (kind === 'group') return Array.isArray(d.members) ? model.makeGroup(d.members) : null;
+	if (kind === 'group') return Array.isArray(d.members) ? makeGroup(model, d.members) : null;
 	// W-a: a pipe from its two ends, LAID BY HAND -- what a person lays with `g`, which outlives any link (2026-09-27); the id
 	// and the order of its ends are the network's rule, never built here. A link's own pipes are laid with it (`--lay`, K1)
 	// which ends a pipe may join is the planner's to judge (the pipe row), so this checks only that two are named

@@ -1,14 +1,22 @@
 /*
-THE PRODUCT'S TENANT of the planner (PL-3, dev/design/planner/PLANNER-SYSTEM.md section 6.2): GROUPS, which the group's row
-carries (planner/kinds.mjs, O-a) -- every composition holding groups holds it, and the planner appends it to none. CLASSIC_LINKS, production's link tenant -- no stranded pass, and B162 and B216's orphan rule, a pinned
-waypoint or a link's end kept -- was deleted at S-b (H18.12), when the server composed the network's tenant; the link tenant a
-composition holds is the network's (`network/network.mjs`), passed in, never a default.
+THE GROUPS PLUGIN'S RULES -- O-c (H19.20; dev/design/unification/KINDS-AS-PLUGINS.md): the group's planner tenant and the
+policy it and the group's invariants ask. They were the planner's -- the tenant in planner/tenants.mjs, appended to every
+composition until O-a put it on the group's row, and the threshold in planner/policy.mjs -- and are the plugin's now, beside
+its row (groups/group-kind.mjs). Moved unchanged.
 
-Rows in the shape the core runs -- `{ id, phase, on, run(ctx, emit) }` -- emitting ops only; the core applies them as
+Rows in the shape the core runs -- `{ id, phase, trigger, run(ctx, emit) }` -- emitting ops only; the core applies them as
 they go and writes their inverses (PL-2).
 */
-import { groupAfterRemoval } from './policy.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+
+// A group after some members are removed: the survivors, and whether it must DISSOLVE
+// (< 2 members ⇒ no longer a group). The single authority for the dissolve/trim threshold,
+// shared by the delete cascade (client + server) and group-member stealing. `isRemoved` is a
+// predicate over member ids so callers supply their own removed-set (a Set, a single id, …).
+export function groupAfterRemoval(members, isRemoved) {
+	const remaining = members.filter((m) => !isRemoved(m));
+	return { remaining, dissolve: remaining.length < 2 };
+}
 
 /*
 A group loses a member: trimmed, or dissolved when it falls below two -- a reaction in the `clear` phase, so it runs

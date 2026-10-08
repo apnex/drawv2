@@ -198,7 +198,7 @@ B113 -- the number in the code is the number that binds, and the server bounds w
 
 Two separate claims, both previously unasserted, and a mutant walked through each.
 */
-test('B113: the positioned cap is DERIVED from the grid, not a flat constant', () => {
+test('B113: the positioned cap is DERIVED from the grid, not a flat constant', async () => {
 	// RESTATED at O-b1 (H19.19): the zone's cap is its row's own, derived from its extent as the node's is from its own
 	const cap = collectionCap({ nodeExt: NODE_EXT, pitch: STD.pitch });
 	assert.equal(cap.zone, undefined, 'the zone is the zones plugin\'s kind, its cap its row\'s');
@@ -211,7 +211,10 @@ test('B113: the positioned cap is DERIVED from the grid, not a flat constant', (
 	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
 	assert.equal(cap.link, undefined, 'the link is the network\'s kind, its cap its row\'s (S-e)');
 	assert.equal(LINK_ROW.cap, 2000);
-	assert.equal(cap.group, 2000);
+	// RESTATED at O-c: the group's cap is its row's own, as the link's is
+	const { GROUP_ROWS } = await import('../groups/group-kind.mjs');
+	assert.equal(cap.group, undefined);
+	assert.equal(GROUP_ROWS[0].cap, 2000);
 });
 
 test('B113: the server refuses what the editor could never have produced', () => {
@@ -326,7 +329,7 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them: each core kind's map is the table's, the zone's its plugin row's
 	const { ZONE_ROWS: ZR } = await import('../zones/zone-kind.mjs');
-	assert.deepEqual(PRODUCT_KINDS.optional, { node: OPTIONAL.node, zone: new Set(ZR[0].optional), group: OPTIONAL.group }, 'and the product\'s composition carries the table\'s map, unchanged');
+	assert.deepEqual(PRODUCT_KINDS.optional, { node: OPTIONAL.node, zone: new Set(ZR[0].optional), group: new Set((await import('../groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');

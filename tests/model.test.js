@@ -1,4 +1,6 @@
 import { test } from 'node:test';
+import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
+import { groupOf } from '../groups/group-of.mjs';   // O-c: the groups plugin's lookup
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { newId, kindOf } from '../model/model.mjs';
@@ -69,10 +71,10 @@ test('groupOf finds membership', () => {
 	const b = model.makeNode('host', { x: 60, y: 0 });
 	model.put('node', a);
 	model.put('node', b);
-	const group = model.makeGroup([a.id, b.id]);
+	const group = makeGroup(model, [a.id, b.id]);
 	model.put('group', group);
-	assert.equal(model.groupOf(a.id).id, group.id);
-	assert.equal(model.groupOf('node-zzzzzz'), undefined);
+	assert.equal(groupOf(model, a.id).id, group.id);
+	assert.equal(groupOf(model, 'node-zzzzzz'), undefined);
 });
 
 test('toJSON/load roundtrip preserves the document', () => {
@@ -83,7 +85,7 @@ test('toJSON/load roundtrip preserves the document', () => {
 	model.put('node', b);
 	model.put('link', model.makeLink(a.id, b.id));
 	model.put('zone', makeZone(model, { x: -90, y: -90, w: 240, h: 180 }));
-	model.put('group', model.makeGroup([a.id, b.id]));
+	model.put('group', makeGroup(model, [a.id, b.id]));
 	model.state.meta.name = 'demo';
 
 	const doc = model.toJSON();
@@ -161,7 +163,7 @@ test('kindOf derives the kind from the id of each kind', () => {
 	const wp = model.makeWaypoint({ x: 0, y: 0 });
 	const link = model.makeLink(node.id, wp.id);
 	const zone = makeZone(model, { x: 30, y: 30, w: 60, h: 60 });
-	const group = model.makeGroup([node.id]);
+	const group = makeGroup(model, [node.id]);
 	assert.equal(kindOf(node.id), 'node');
 	assert.equal(kindOf(wp.id), 'node', 'a waypoint is a node with no type (F-c)');
 	assert.equal(kindOf(link.id), 'link');

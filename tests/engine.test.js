@@ -1,4 +1,6 @@
 import { test } from 'node:test';
+import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
+import { groupOf } from '../groups/group-of.mjs';   // O-c: the groups plugin's lookup
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -27,7 +29,7 @@ function seeded() {
 	const w = m.makeWaypoint({ x: 0, y: 180 });          m.put('node', w);
 	const l = m.makeLink(n.id, w.id);                    m.put('link', l);
 	const z = makeZone(m, { x: 30, y: 30, w: 60, h: 60 }); m.put('zone', z);
-	const g = m.makeGroup([n.id]);                       m.put('group', g);
+	const g = makeGroup(m, [n.id]);                       m.put('group', g);
 	return { m, n, w, l, z, g };
 }
 
@@ -173,13 +175,13 @@ test('membership re-ownership: a member reassigned (add-to-B before remove-from-
 	const ids = [];
 	for (let i = 0; i < 4; i++) { const n = m.makeNode('host', { x: i * 60, y: 0 }); m.put('node', n); ids.push(n.id); }
 	const [a, b, c, d] = ids;
-	const A = m.makeGroup([a, b]); m.put('group', A);
-	const B = m.makeGroup([c, d]); m.put('group', B);
+	const A = makeGroup(m, [a, b]); m.put('group', A);
+	const B = makeGroup(m, [c, d]); m.put('group', B);
 	m.set('group', B.id, { members: [c, d, a] });   // B owns `a` FIRST
 	m.set('group', A.id, { members: [b] });          // A drops `a` — the guard must NOT un-own it (it's B's now)
-	const idxOwner = m.groupOf(a)?.id;                                     // index path
+	const idxOwner = groupOf(m, a)?.id;                                     // index path
 	detach();                                                              // SAME model → scan path (the oracle)
 	assert.equal(m.index, null);
-	assert.equal(idxOwner, m.groupOf(a)?.id, 'groupOf(a) index === scan');
+	assert.equal(idxOwner, groupOf(m, a)?.id, 'groupOf(a) index === scan');
 	assert.equal(idxOwner, B.id);            // owned by B, NOT undefined
 });

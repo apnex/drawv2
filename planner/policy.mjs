@@ -8,15 +8,6 @@ cascade controller). Until then this is a small, behaviour-identical extraction.
 
 import { anchorCellsWithin } from '../model/surface.mjs';   // the grid's cell count, the core's (O-b1)
 
-// A group after some members are removed: the survivors, and whether it must DISSOLVE
-// (< 2 members ⇒ no longer a group). The single authority for the dissolve/trim threshold,
-// shared by the delete cascade (client + server) and group-member stealing. `isRemoved` is a
-// predicate over member ids so callers supply their own removed-set (a Set, a single id, …).
-export function groupAfterRemoval(members, isRemoved) {
-	const remaining = members.filter((m) => !isRemoved(m));
-	return { remaining, dissolve: remaining.length < 2 };
-}
-
 /*
 B113 -- how many of a kind one diagram may hold. The single authority for the number.
 
@@ -39,6 +30,6 @@ backstop against a pathological document, not the real constraint.
 export function collectionCap({ nodeExt, pitch }) {
 	return {
 		node: anchorCellsWithin(nodeExt, pitch),   // one occupant per anchor cell, typed or not (F-c)
-		group: 2000,   // the link's 2000 is the network's row's own since S-e (network/link-kind.mjs)
+		// the group's 2000 is its row's own since O-c (groups/group-kind.mjs), as the link's is since S-e
 	};
 }

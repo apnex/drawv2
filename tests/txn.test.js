@@ -407,14 +407,14 @@ test('B85: the threshold comes from policy, not from a number the invariant inve
 	invariants without it, and a caller still passing it is refused rather than ignored. What it guards is unchanged: the
 	threshold is the policy's, agreeing with it member for member, and the row restates no number.
 	*/
-	const { groupAfterRemoval } = await import('../planner/policy.mjs');
+	const { groupAfterRemoval } = await import('../groups/group-rules.mjs');   // the groups plugin's policy since O-c
 	assert.equal(groupAfterRemoval(['node-cc0009'], () => false).dissolve, true, 'the policy dissolves a one-member group');
 	assert.ok(violations(m).some((v) => /group-dd0006 holds 1 member\(s\), too few/.test(v)), 'and the row reports exactly that group');
 	assert.equal(violations(m).filter((v) => /too few/.test(v)).length, 1, 'and no group the policy keeps');
 	assert.throws(() => violations(m, { groupAfterRemoval }), /unknown option groupAfterRemoval/, 'a policy passed in is refused, not ignored');
 	const fs = await import('node:fs');
-	const src = fs.readFileSync(new URL('../planner/kinds.mjs', import.meta.url), 'utf8');
-	const fn = src.slice(src.indexOf('function groupInvariants'), src.indexOf('// the rows that bring their own rules'));
+	const src = fs.readFileSync(new URL('../groups/group-kind.mjs', import.meta.url), 'utf8');   // the group's row, the groups plugin's since O-c
+	const fn = src.slice(src.indexOf('function groupInvariants'), src.indexOf('const GROUP_ROW = {'));
 	assert.match(fn, /groupAfterRemoval\(/, 'the row asks the policy');
 	assert.doesNotMatch(fn.replace(/\/\*[\s\S]*?\*\//g, ''), /length\s*[<>]=?\s*\d/, 'and restates no threshold');
 });
@@ -1269,17 +1269,18 @@ test('PL-5: the kind table is the one list of kinds, and what still states them 
 	const { collectionCap } = await import('../planner/policy.mjs');
 	// three since S-e (H18.15): the link is the network's kind (network/link-kind.mjs), composed by composing the network
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
-	assert.deepEqual(KINDS, ['node', 'group']);
+	// RESTATED at O-c (H19.20): the group left the core too -- the node alone is the core's kind
+	assert.deepEqual(KINDS, ['node']);
 	const { LINK_ROW } = await import('../network/link-kind.mjs');
 	assert.equal(LINK_ROW.kind, 'link');
 	assert.equal(LINK_ROW.owner, 'the network');
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
-	assert.deepEqual(SELECTABLE_KINDS, ['node'], 'a group is never selected directly');
+	assert.deepEqual(SELECTABLE_KINDS, ['node'], 'the core\'s node is selectable');
 	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's
 	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
-	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group'], 'the product composes the table\'s kinds and the zones plugin\'s, between them');
+	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group'], 'the product composes the table\'s kind, the zones plugin\'s and the groups plugin\'s');
 	for (const k of PRODUCT_KINDS.list) for (const other of PRODUCT_KINDS.list) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
 	// a Model's collections are the table's, in its order
 	const m = new Model();

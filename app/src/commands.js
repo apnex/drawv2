@@ -22,6 +22,7 @@ disconnected browser previews with it as well, so it still never builds a docume
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
 import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
+import { makeGroup } from '../../groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
 import { BARE_KIND, ANCHOR_KINDS, bareAnchor, isTypedEntity } from '../../model/anchors.mjs';
@@ -92,7 +93,7 @@ export function deleteSelection(model, ids) {
 export function createGroup(model, memberIds) {
 	const members = memberIds.filter((id) => model.endpointOf(id));
 	if (members.length < 2) return { label: 'group', entries: [] };
-	return { label: 'group', entries: [{ op: 'put', kind: 'group', entity: model.makeGroup(members) }] };
+	return { label: 'group', entries: [{ op: 'put', kind: 'group', entity: makeGroup(model, members) }] };
 }
 
 // W6 — live input editing: write a new value into a node's content region (idx). Deep-copies the whole
@@ -480,7 +481,7 @@ export function cloneSubgraph(model, seedIds) {
 	// groups fully contained in the clone set
 	model.all('group').forEach((group) => {
 		if (group.members.length > 0 && group.members.every((m) => idMap.has(m))) {
-			const copy = scratch.makeGroup(group.members.map((m) => idMap.get(m)));
+			const copy = makeGroup(scratch, group.members.map((m) => idMap.get(m)));
 			scratch.put('group', copy);
 			clones.push({ kind: 'group', entity: copy });
 		}

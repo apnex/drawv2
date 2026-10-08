@@ -28,7 +28,8 @@ test('O-b1: production composes node, zone, group, link, pipe -- the state under
 });
 
 test('O-b1: the core composes no zone, and the zone row is the zones plugin\'s', async () => {
-	assert.deepEqual(CORE_KINDS.list, ['node', 'group']);
+	// RESTATED at O-c (H19.20): the group left the core too -- the node alone is the core's
+	assert.deepEqual(CORE_KINDS.list, ['node']);
 	const { ZONE_ROWS } = await zones();
 	assert.equal(KINDS.row('zone'), ZONE_ROWS[0], 'the product composes the plugin\'s row');
 	assert.equal(ZONE_ROWS[0].owner, 'zones');

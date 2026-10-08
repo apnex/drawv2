@@ -24,8 +24,8 @@ import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { collectionCap, groupAfterRemoval } from './policy.mjs';
-import { GROUPS } from './tenants.mjs';   // the group's rules, carried by its row (O-a)
+import { collectionCap } from './policy.mjs';
+import { GROUP_ROWS } from '../groups/group-kind.mjs';   // the groups plugin's kind, composed after the zones plugin's (O-c)
 import { isTypedEntity } from '../model/anchors.mjs';   // the two shapes of node (F-c)
 
 // a drawing order is a positive integer; the ceiling only keeps it an exact one (F-d)
@@ -182,11 +182,7 @@ const FIELDS = {
 		*/
 		spawn: (v) => spawn(v)
 	},
-	group: {
-		id: (v) => id(v, 'group'),
-		name: (v) => str(v, NAME_MAX),
-		members: (v) => Array.isArray(v) && v.length <= 500 && v.every((m) => id(m, 'node'))
-	}
+
 };
 
 /*
@@ -214,69 +210,16 @@ const REFERS = {
 		if (wrong.length) return `${typed ? 'a typed node' : 'a waypoint (a node with no type)'} has no ${wrong.join(', ')}: ${entity.id}`;
 		return null;
 	},
-	// a group's members must exist -- nodes, typed or not; a group of groups does not (B83). It was model/referential.mjs's,
-	// beside the link's rules; those left for the network at S-e, and the check needs only the generic access
-	group: (entity, access, patch) => {
-		if (!patch.members) return null;
-		for (const m of Array.isArray(entity.members) ? entity.members : []) if (!access.has('node', m)) return `group member does not exist: ${m}`;
-		return null;
-	},
+
 };
 
-/*
-O-a (H19.18; KINDS-AS-PLUGINS.md) -- THE GROUP'S INVARIANTS, ITS OWN. They were the core's (model/invariants.mjs) and the policy
-was injected by each caller; the row asks planner/policy.mjs itself, so no caller can run them without it. Moved whole,
-reported in the order they were: B82, then B85, then the link's straight pairs, then occupancy.
-*/
-function groupInvariants(model, report) {
-	/*
-	B82 -- no entity is a member of two groups.
-
-	The rule already existed, in `planPut`, as a repair: putting a group STEALS overlapping members
-	from any other. But a repair attached to one op kind is not a property of the document, and
-	`planSet` has no group handling at all, so a `set` patching `members` walked past it. The
-	document that results does not merely look wrong, it MEANS different things to the two peers:
-	the client's relational index declares membership single-valued and answers last-write-wins,
-	while the server has no index and falls back to a first-match scan. `groupOf` drives selection
-	expansion and the renderer hull, so a click selects one thing in the browser and another on the
-	server, and neither is wrong by its own reading.
-	*/
-	const owner = new Map();
-	for (const g of model.all('group')) {
-		for (const m of new Set(g.members || [])) {
-			const held = owner.get(m);
-			if (held && held !== g.id) report(`${m} is a member of both ${held} and ${g.id}`, `two-groups:${m}`);
-			else owner.set(m, g.id);
-		}
-	}
-	/*
-	B85 -- a group holds at least two distinct members.
-
-	The threshold is NOT restated here: `planner/policy.mjs` is the single authority for it, and asking whether a group would
-	dissolve with NOTHING removed is the same question as whether it is under the minimum, phrased in the vocabulary that
-	owns the number. It was injected into model/invariants.mjs by each caller, and skipped when one passed none; the row
-	asks the policy itself since O-a, so no caller runs the group's invariants without it.
-	*/
-	for (const g of model.all('group')) {
-		const members = g.members || [];
-		const distinct = [...new Set(members)];
-		if (distinct.length !== members.length) report(`${g.id} lists the same member twice`, `repeated-member:${g.id}`);
-		if (groupAfterRemoval(distinct, () => false).dissolve) {
-			report(`${g.id} holds ${distinct.length} member(s), too few to be a group`, `too-few:${g.id}`);
-		}
-	}
-}
-
-// the rows that bring their own rules: a tenant the planner runs, and the invariants the backstop checks (O-a)
-const RULES = { group: { tenant: GROUPS, invariants: groupInvariants } };
-
-// the core's two, whole (O-b1: the zone is the zones plugin's)
-const PRODUCT_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: FIELDS[row.kind], cap: CAP[row.kind], ...(REFERS[row.kind] ? { refers: REFERS[row.kind] } : {}), ...RULES[row.kind] }));
+// the core's one, whole (O-b1: the zone is the zones plugin's; O-c: the group the groups plugin's)
+const PRODUCT_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: FIELDS[row.kind], cap: CAP[row.kind], ...(REFERS[row.kind] ? { refers: REFERS[row.kind] } : {}) }));
 /*
 The product's composition, and a plugin's rows after its five: the one way a composition with a plugin's kinds is built --
 the lab's, with the network's `pipe` (H17.22 N-c), and the product page's at promotion.
 */
-// the shipped kinds in the order a document lists its collections: the node, the zones plugin's, the group (O-b1)
+// the shipped kinds in the order a document lists its collections: the node, the zones plugin's, the groups plugin's (O-b1, O-c)
 const byKind = Object.fromEntries(PRODUCT_ROWS.map((r) => [r.kind, r]));
-const SHIPPED = [byKind.node, ...ZONE_ROWS, byKind.group];
+const SHIPPED = [byKind.node, ...ZONE_ROWS, ...GROUP_ROWS];
 export const productKinds = (...pluginRows) => composeKinds([...SHIPPED, ...pluginRows], pluginRows.length ? `the product with ${pluginRows.map((r) => r.kind).join(', ')}` : 'the product');

@@ -1,7 +1,7 @@
 /*
 Model — pure entity store for one diagram. No DOM, no layout knowledge.
-Entities: whatever kinds the Model is composed with -- node and group the core's, zone the zones plugin's, link and pipe
-the network's (`docs/spec/API.md`). IDs are '<kind>-<6hex>' (graph lineage).
+Entities: whatever kinds the Model is composed with -- the node the core's, zone the zones plugin's, group the groups
+plugin's, link and pipe the network's (`docs/spec/API.md`). IDs are '<kind>-<6hex>' (graph lineage).
 Mutations are primitive (put/set/del); cascade semantics live in commands.js so that
 every committed change is capturable and undoable.
 
@@ -310,9 +310,19 @@ export class Model {
 			(l.src === a && l.dst === b) || (l.src === b && l.dst === a)).sort(byId);
 	}
 
-	groupOf(nodeId) {
-		if (this.index) return this.index.groupOf(nodeId);
-		return this.all('group').find((g) => g.members.includes(nodeId));
+	/*
+	O-c (H19.20) -- THE ENTITY THAT GATHERS AN ID: of the kinds whose row gathers a list field (model/shape.mjs `gathers`), the
+	one listing `id`, else undefined. It was `groupOf`, which named the group; the group asks it now (groups/group-of.mjs).
+	The index answers when attached, keyed as the group's membership was; the scan, in the composition's order and each
+	kind's id order, otherwise.
+	*/
+	gathererOf(id) {
+		if (this.index) return this.index.gathererOf(id);
+		for (const [kind, field] of Object.entries(this.kinds.gathers)) {
+			const found = this.all(kind).find((e) => (e[field] || []).includes(id));
+			if (found) return found;
+		}
+		return undefined;
 	}
 
 	// occupancy by grid CELL — `p` is a snapped grid-px point. occupiedAt = a node rests on p's cell;
@@ -413,14 +423,6 @@ export class Model {
 		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), order: this.nextOrder(BARE_KIND), x: pos.x, y: pos.y };
 	}
 
-	makeGroup(members) {
-		return {
-			id: newId('group', this.collection('group')),
-			name: this.nextName('group'),
-			members: [...members]
-		};
-	}
-
 	// ---- selection (model-state / status, MS1) — single-sourced here so client + server agree ----
 	// does the entity for this id exist? kind is inferred from the id; safe for ids of unknown kind.
 	entityExists(id) {
@@ -436,14 +438,15 @@ export class Model {
 		return this.kinds.selectable.includes(kindOf(id)) && this.entityExists(id);
 	}
 
-	// expand to the group-as-one rule: a grouped node/waypoint pulls in its whole group.
+	// expand to the gathered-as-one rule: an anchor a gathering kind lists pulls in that whole list -- a grouped node or
+	// waypoint its whole group (O-c: the row declares it, model/shape.mjs `gathers`; the Model names no group)
 	expandSelection(ids) {
 		const out = new Set();
 		ids.forEach((id) => {
 			out.add(id);
 			if (this.endpointOf(id)) {
-				const group = this.groupOf(id);
-				if (group) group.members.forEach((m) => out.add(m));
+				const gatherer = this.gathererOf(id);
+				if (gatherer) gatherer[this.kinds.gathers[kindOf(gatherer.id)]].forEach((m) => out.add(m));
 			}
 		});
 		return out;

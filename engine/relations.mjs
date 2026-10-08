@@ -5,7 +5,8 @@ snapshot-diff + fast-path) lives once in engine/ivm.mjs (maintainIndex); here we
 exist and inject draw's KEYING (linkRefs, cellsOf, keyOf). The three views the engine inlined separately
 are now three maintainIndex instances:
   • link incidence   entityId -> Set<linkId>   (any role: src/dst/via)      — refsOf = linkRefs, kind 'set'
-  • group membership memberId -> groupId        (a member belongs to ≤1 group) — refsOf = g.members, kind 'single'
+  • gathering        memberId -> gathererId     (an id is gathered by ≤1 entity) — refsOf = the row's `gathers` field, kind 'single'
+                     (O-c: a group's membership, read from its row rather than named -- model/shape.mjs `gathers`)
   • cell occupancy   cellKey  -> Set<id>        (eager R13 index)             — refsOf = cellsOf, kind 'set', TWO instances
 
 Pure maintenance — reads the Model only to resolve id→entity at query time, never mutates it. Backs the
@@ -42,22 +43,23 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 
 	// ---- the maintained views (engine/ivm.mjs) — one per relation, keyed by the config above ----
 	const incident = maintainIndex({ refsOf: linkRefs, kind: 'set' });            // entityId → Set<linkId>
-	const member = maintainIndex({ refsOf: (g) => g.members, kind: 'single' });   // memberId → groupId (re-ownership-guarded)
+	const kindOfId = (id) => id.slice(0, id.indexOf('-'));
+	const member = maintainIndex({ refsOf: (e) => e[model.kinds.gathers[kindOfId(e.id)]], kind: 'single' });   // memberId → gathererId (re-ownership-guarded)
 	const cellNode = maintainIndex({ refsOf: cellsOf, kind: 'set' });             // cellKey → Set<nodeId>
 	const cellWaypoint = maintainIndex({ refsOf: cellsOf, kind: 'set' });         // cellKey → Set<waypointId>
 	// a bare anchor's bucket or a node's; from F-c both are nodes, told apart by their entity (model/anchors.mjs)
 	const occ = (kind, entity) => (isBareEntity(kind, entity) ? cellWaypoint : cellNode);
 
 	return {
-		// maintenance: apply ONE model change. link → incidence; group → membership; node/waypoint → the
+		// maintenance: apply ONE model change. link → incidence; a gathering kind → membership; node/waypoint → the
 		// occupancy index (a position set moves the entity between cell buckets; incidence/membership are
-		// untouched — a move never changes which links/groups reference an id).
+		// untouched — a move never changes which links or gatherers reference an id).
 		apply(action, kind, entity) {
 			if (kind === 'link') {
 				if (action === 'put') incident.put(entity);
 				else if (action === 'set') incident.set(entity);
 				else if (action === 'del') incident.del(entity.id);
-			} else if (kind === 'group') {
+			} else if (model.kinds.gathers[kind]) {
 				if (action === 'put') member.put(entity);
 				else if (action === 'set') member.set(entity);
 				else if (action === 'del') member.del(entity.id);
@@ -73,7 +75,7 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			incident.clear(); member.clear(); cellNode.clear(); cellWaypoint.clear();
 			// a model composed without the network has no links to index (S-e: the link is the network's kind)
 			if (model.kinds.has('link')) model.all('link').forEach((l) => incident.put(l));
-			model.all('group').forEach((g) => member.put(g));
+			for (const kind of Object.keys(model.kinds.gathers)) model.all(kind).forEach((e) => member.put(e));   // O-c: none, if no kind gathers
 			typedNodes(model).forEach((n) => cellNode.put(n));
 			bareAnchors(model).forEach((w) => cellWaypoint.put(w));
 		},
@@ -102,9 +104,9 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			for (const lid of s) { const l = model.get('link', lid); if (l && ((l.src === a && l.dst === b) || (l.src === b && l.dst === a))) out.push(l); }
 			return out.sort(byId);
 		},
-		groupOf(id) {                                             // the group whose members include id, else undefined
+		gathererOf(id) {                                          // the entity whose gathered list includes id, else undefined (O-c)
 			const gid = member.get(id);
-			return gid ? model.get('group', gid) : undefined;
+			return gid ? model.get(kindOfId(gid), gid) : undefined;
 		},
 
 		// the logical grid cell an entity occupies — DERIVED on read via the injected cellOf, never stored

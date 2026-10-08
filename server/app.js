@@ -118,6 +118,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const plannerDir = path.resolve(root, '..', 'planner'); // K4 (H17-D5): the planner, served whole (mounted at /planner); `server/` never is
 	const networkDir = path.resolve(root, '..', 'network'); // S-b (H18.12): the network plugin, which the product page composes (mounted at /network)
 	const zonesDir = path.resolve(root, '..', 'zones'); // O-b1 (H19.19): the zones plugin, which the product page composes (mounted at /zones)
+	const groupsDir = path.resolve(root, '..', 'groups'); // O-c (H19.20): the groups plugin, which the product page composes (mounted at /groups)
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
 	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
@@ -218,6 +219,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const hasPlanner = fs.existsSync(plannerDir);
 	const hasNetwork = fs.existsSync(networkDir);
 	const hasZones = fs.existsSync(zonesDir);
+	const hasGroups = fs.existsSync(groupsDir);
 
 	const server = http.createServer(async (req, res) => {
 		req.url = throughTheAgentDoor(req.url);
@@ -285,6 +287,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (hasPlanner && url.pathname.startsWith('/planner/')) return serveFrom(req, res, plannerDir, '/planner');
 		if (hasNetwork && url.pathname.startsWith('/network/')) return serveFrom(req, res, networkDir, '/network');
 		if (hasZones && url.pathname.startsWith('/zones/')) return serveFrom(req, res, zonesDir, '/zones');
+		if (hasGroups && url.pathname.startsWith('/groups/')) return serveFrom(req, res, groupsDir, '/groups');
 		if (!hasClient) {
 			res.writeHead(404, { 'Content-Type': 'application/json' });
 			return res.end(JSON.stringify({ error: 'API-only mode; editor client not bundled' }) + '\n');

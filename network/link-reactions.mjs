@@ -407,8 +407,8 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 /*
 Every link tenant is the same rows in the same order, differing in its CONDITIONS -- which the tenant's author states
 at composition, and the planner never asks: whether links that lost a pin are stranded, what else references an
-anchor, which orphans survive, where links may join. `says` puts the last two in words, for the generated table. Production states its own (`planner/tenants.mjs`), and so does
-the network (`network/network.mjs`).
+anchor, which orphans survive, where links may join. `says` puts the last two in words, for the generated table. Production stated its own (`planner/tenants.mjs`) until S-b
+deleted the classic tenant; the network states its own (`network/network.mjs`).
 */
 export function linkTenant({ owner, stranded = false, alsoReferenced = null, keepsOrphan, joinsAt = () => true, joinWakesAt = [], says }) {
 	return {

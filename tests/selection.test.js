@@ -1,6 +1,8 @@
 import { test } from 'node:test';
+import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
+import { productKinds } from '../planner/kinds.mjs';   // O-c: groups are the groups plugin's, which the product composes
 import { Selection } from '../app/src/selection.js';
 
 // R7 salvage — Selection is a PURE model concept: renderer-free (no mock needed) and auto-prunes
@@ -77,10 +79,10 @@ test('Model.load tolerates a stale selection id (reconcile-to-live)', () => {
 });
 
 test('setSelection expands a grouped member to the whole group', () => {
-	const m = new Model();
+	const m = new Model({ kinds: productKinds() });   // RESTATED at O-c: a Model holding groups is composed with them
 	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
 	const b = m.makeNode('host', { x: 60, y: 0 });  m.put('node', b);
-	const g = m.makeGroup([a.id, b.id]);            m.put('group', g);
+	const g = makeGroup(m, [a.id, b.id]);            m.put('group', g);
 	const sel = new Selection(m);
 	sel.set([a.id]);                                  // selecting one member pulls in the group
 	assert.ok(sel.has(a.id) && sel.has(b.id), 'group-as-one expansion');
@@ -99,9 +101,9 @@ test('selection preserves insertion order (link-chaining relies on it)', () => {
 });
 
 test('selection admits only selectable kinds — a group id cannot enter or persist', () => {
-	const m = new Model();
+	const m = new Model({ kinds: productKinds() });   // RESTATED at O-c: a Model holding groups is composed with them
 	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
-	const g = m.makeGroup([a.id]);                  m.put('group', g);
+	const g = makeGroup(m, [a.id]);                  m.put('group', g);
 	const sel = new Selection(m);
 	sel.add([g.id]);                                 // attempt to select the GROUP entity directly
 	assert.equal(sel.has(g.id), false, 'group id refused (not a selectable kind)');

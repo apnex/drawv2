@@ -46,6 +46,7 @@ const MOUNTS = {
 	'/planner/': 'planner',   // K4 (H17-D5): the planner, whole -- the page commits through it
 	'/network/': 'network',   // the incubating plugin (ruled 2026-09-28)
 	'/zones/': 'zones',       // the zones plugin (O-b1, H19.19)
+	'/groups/': 'groups',     // the groups plugin (O-c, H19.20)
 };
 
 function send(res, code, body) {

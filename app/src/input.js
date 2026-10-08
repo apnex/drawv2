@@ -47,6 +47,7 @@ import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
 import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
+import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { pairHolders } from '../../network/link-rules.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
@@ -1585,7 +1586,7 @@ export class Input {
 	}
 
 	onUngroupKey() {
-		const groups = new Set(this.selection.groupable().map((id) => this.model.groupOf(id)).filter(Boolean).map((g) => g.id));
+		const groups = new Set(this.selection.groupable().map((id) => groupOf(this.model, id)).filter(Boolean).map((g) => g.id));
 		this.history.commit(commands.ungroupAll(this.model, [...groups]));
 	}
 

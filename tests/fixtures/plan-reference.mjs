@@ -2,7 +2,7 @@
 // commit f31ff79 and kept only as the differential oracle for planner/txn.mjs#plan. It is not
 // wired into anything. GR5: the old implementation is deleted only in the commit that lands its
 // own green differential, so the oracle must outlive the code it replaced.
-import { groupAfterRemoval } from '../../planner/policy.mjs';
+import { groupAfterRemoval } from '../../groups/group-rules.mjs';   // the groups plugin's policy since O-c
 import { validateMutation } from '../../planner/validate.js';
 
 export // S1b: the mutation PLANNER — pure (reads the model, applies NOTHING). Runs the validateMutation gate,
