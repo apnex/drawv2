@@ -1792,3 +1792,14 @@ Shown at O-b2 that the canvas has no seam through which a plugin brings a kind -
 - The group and then the node leave the core and the planner now, through the seams O-a and O-b1 proved: rows, the tenants they carry, their invariants, their factories.
 - Then a canvas plugin contract is designed, for approval, for the four kinds it would serve -- zone, group, node and the network's link -- rather than shaped by one (B308, H19.23).
 - Until then the canvas, the export and the CLI name the shipped kinds, as they do today; O-d's rule holds the core and the planner.
+
+**O4 -- the core holds only the anchor; a node is what plugins compose onto it -- 2026-10-08 (B280, B282; H19.21).**\
+Walked through O-e as planned -- the whole node row into a plugin, the core holding no kind -- the director asked: "Maybe an "anchor" is a core concept, and a "node" is a plugin? i.e a node composes and injects multiple capabilities including behaviour and appearance etc from other plugins on top of entity anchor?"; then "Why do anchors have "types" ?"; then "Are anchors and nodes separate things? Can core hold anchor, and plugin bring "node" that composes on top?"
+Then ruled: "The core holds only the anchor. An anchor occupies a single cell on a grid. A wide device that occupies multiple cells has multiple anchors. A wide device that occupies a single cell has a single anchor."
+Shown that this keeps the core's duty exact, and the system's clean only if a wide device becomes a stored thing gathering stored anchors -- 144 wide devices in 22 of 40 production diagrams, 1,337 anchors to add, a change to the stored format -- the director agreed to build the core's half now and the multi-anchor device in B282's design: "Yes agreed."
+Asked "Zones do not target anchors though, only grid cells - correct?", it was confirmed by measurement.
+- **The core holds one kind, the anchor:** identity and one cell. It is stored as `node`; no stored name changes. This amends O1's "the core holds no kind".
+- **An anchor carries no type.** A device -- type, shape, span, content -- is composed onto an anchor by the devices plugin, which answers whether a device is composed; the simulation adds `spawn`, the network `transit`.
+- **A wide device is several anchors,** built in B282's design with its migration; until then the core's one-per-cell rule reads a device's `span`, the one recorded exception.
+- **Zones target grid cells, not anchors.**
+The design: `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approval before code.

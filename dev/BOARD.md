@@ -1157,7 +1157,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.18 | O-a: the group's rules off the planner and the core -- its tenant and its invariants ride its row; the planner appends no tenant | feature | S4 | `DONE` |
 | H19.19 | O-b: the zone plugin -- its row, checks, extent and factory in a folder of its own, composed by the page, the lab, the server and the CLI's reader, which composes no kinds of its own (O-b1); its canvas, export and CLI moved to H19.23 by O3, the canvas having no plugin seam (B308) | feature | S4 | `DONE` |
 | H19.20 | O-c: the group plugin -- its row, tenant, invariants, policy, factory and `groupOf` in a folder of its own; the selection rule and the index's membership read a row's `gathers`, naming no group; its canvas is H19.23's (O3) | feature | S4 | `DONE` |
-| H19.21 | O-e: the node plugin -- the core's anchor capability generic over the kinds that declare it; the network, zones and groups depending on the node plugin by reference | feature | S4 | `TODO` |
+| H19.21 | O-e, re-shaped by O4: the core holds only the anchor -- the devices plugin composes type, shape, span and content onto it and owns the device vocabulary and factories, the simulation adds `spawn`; one exception recorded, the one-per-cell rule reading `span` until B282 -- design `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approval | feature | S4 | `TODO` |
 | H19.22 | O-d: closed -- a layer rule that the core and the planner name no kind, B280 closed for them; the canvas's half is B308's | **B280** | S4 | `TODO` |
 | H19.23 | Design, for approval: a canvas plugin contract -- how a plugin's kind enters the page (press rows, gestures, releases, handles, picking, drawing, snapping, moving) -- for zone, group, node and the network's link together | **B308** | S4 | `TODO` |
 | H19.24 | A down link pinned through a device is drawn along its intent, as one through a waypoint is -- found writing O-e's design | **B309** | S2 | `DONE` |
@@ -1227,6 +1227,10 @@ Next H19.20, the group out of the core and the planner.
 AMENDED 2026-10-08: O-c done -- the group is the groups plugin's kind (`groups/`); the core composes the node alone, and selects a gathered list by a row's declaration rather than by naming the group.\
 Next H19.21, the node.
 
+AMENDED 2026-10-08: O4 ruled -- the core holds only the anchor, an anchor occupies one cell, and a wide device is several anchors (B282's, with its migration); H19's exit reads "the core holds only the anchor" where it read "the core holds no kind".\
+B309 fixed and deployed: a down link pinned through a device is drawn along its intent.\
+Next: the O-e design (section 16) for approval.
+
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
 ---
@@ -1249,6 +1253,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
 | **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a second plugin, or a peer composed without one |
+| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | B282's design, or an agent misreading the word |
 | **B253** | S4 | Two same-origin tabs share one outbox key; no divergence in 600 two-tab runs since the re-fetch (H19.16) | two-tab divergence is reported, or the outbox's storage is next changed |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors |

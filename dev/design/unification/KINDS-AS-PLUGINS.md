@@ -231,3 +231,96 @@ The Model's `gathererOf` finds the entity listing an id, of any kind that gather
 The relations index keys membership the same way (`engine/relations.mjs`), so a composition without groups rebuilds its index rather than failing on a kind it does not hold.
 **Held by:** `tests/group-plugin.test.js` -- the core composes the node alone; the core, the planner and the index name no group; `makeGroup` and `groupOf` answer as the Model did, from the index and from the scan; a group row that gathers nothing selects a member alone; a composition without the plugin refuses a group and its index holds (a Model selecting by name, and an index rebuilding by name, each fail it -- both mutants killed, the second only once the test attached the index as the page does, which it had not).
 Tests that pinned the core as node and group, built a bare Model to hold groups, or imported the moved policy, restated; every corpus unchanged.
+
+---
+
+## 16. O-e, re-shaped -- the core holds only the anchor (DELTA, proposed)
+
+AMENDED 2026-10-08 -- **proposed for approval; no code until then.**\
+Written against `dfc3d51`.
+
+### 16.1 What the director ruled
+
+Asked to walk through O-e as section 11 planned it -- the whole node row into a plugin, the core holding no kind -- the director asked: "Maybe an "anchor" is a core concept, and a "node" is a plugin? i.e a node composes and injects multiple capabilities including behaviour and appearance etc from other plugins on top of entity anchor?"; then "Why do anchors have "types" ?"; then "Are anchors and nodes separate things?\
+Can core hold anchor, and plugin bring "node" that composes on top?"\
+Then: "The core holds only the anchor.\
+An anchor occupies a single cell on a grid.\
+A wide device that occupies multiple cells has multiple anchors.\
+A wide device that occupies a single cell has a single anchor."\
+Shown that the split keeps the core's duty exact, and keeps the system's clean only if a wide device becomes a stored thing of its own that gathers stored anchors -- a change to the stored format, so B282's -- the director agreed to O-e now with the width exception below, and the multi-anchor device in B282's design: "Yes agreed."\
+And confirmed, measured: "Zones do not target anchors though, only grid cells" (section 16.5).\
+Recorded as O4 (`dev/DECISIONS.md`); it amends O1's "the core holds no kind" to "the core holds only the anchor".
+
+### 16.2 From-state -> to-state
+
+**From** (measured at `dfc3d51`):
+- **The core's one kind is the node,** whose row holds the anchor's facts and the device's: id, name, x, y and order, and type, shape, span, content and spawn (`model/shape.mjs` `TABLE`; checks in `planner/kinds.mjs`); the network adds `transit` (`network/kinds.mjs`).
+- **`type` does two jobs:** it names what a device is, and -- since F-c merged waypoints into nodes (P-10) -- it marks a device apart from a waypoint, which 30 product modules ask through `model/anchors.mjs` (`isBareEntity`, `isTypedEntity`, `typedNodes`, `bareAnchors`, `bareAnchor`).
+- **The core Model makes devices and waypoints** (`makeNode`, `makeTextBox`, `makeWaypoint`) and answers two cell questions by device-ness (`occupiedAt`, `waypointAt`); `engine/situation.mjs` and `model/anchor-words.mjs`, core modules, name the thing under the pointer by the drawn word, waypoint or node (F4).
+- **Occupancy reads a device field:** a wide device covers several cells, and the one-per-cell rule and its index read `span` to know which (`engine/relations.mjs` `cellsOf`).
+- **Production holds 144 wide devices** in 22 of its 40 diagrams -- 135 text panels and 9 hosts -- covering 1,481 cells.
+
+**To:**
+- **The core holds one kind, the anchor:** identity and one cell -- id, name, x, y and drawing order.
+  It is stored as `node`, so ids (`node-<hex>`) and the collection keep their names and no stored document changes.
+- **An anchor carries no type.**
+  The devices plugin (`devices/`) composes a device onto an anchor: it adds `type`, `shape`, `span` and `content`, with their cross-field rules -- a device is composed when the anchor is made and stays (today's "a node's type is fixed when it is made"), and shape, span and content belong to a device alone.
+  It owns the factories (`makeNode`, `makeTextBox`, `makeWaypoint`), the question whether a device is composed on an anchor, and the drawn word.
+- **The simulation adds `spawn`,** with its rule that a spawner sits on an anchor no device is composed on; the network adds `transit`, as now, reading the device's type.
+  Each depends on the devices plugin, checked when the app is assembled (O1).
+- **The core keeps the anchor capability:** resolving a reference to an anchor of any anchor kind (`endpointOf`), the shared id space (`freshId`), one occupant to a cell (B112), and which anchor is on a cell (`occupiedAnyAt`).
+  "Which device" and "which waypoint" on a cell are the devices plugin's, over that.
+
+### 16.3 The width exception, recorded
+
+The ruling's anchor occupies one cell; today's wide device is one anchor covering several.\
+Until B282 makes a wide device several anchors, the one-per-cell rule and its index keep reading the device's `span` -- the one place the core reads a plugin's field.\
+It is named in the layer rule that holds the core (O-d), so it cannot spread, and it ends in B282's build.
+
+### 16.4 Two additions to the field contract
+
+A plugin that adds fields to another plugin's kind brings a check per field today (S-a, `model/shape.mjs` `EXTENSION_KEYS`).\
+The devices plugin also needs:
+- **nested fields** (`span`, `content`), which a copy must copy deeply -- an extension may declare its `composite` fields;
+- **cross-field rules** over the entity -- an extension may bring its `refers`, run beside the owner's, each in its plugin.
+
+No footprint hook is added: section 16.3's exception stands in for it until B282.
+
+### 16.5 Zones, and the word "anchor"
+
+Measured: a zone's row is no anchor and references nothing, nothing references a zone, and the one-per-cell rule counts anchors only.\
+What relates a zone to anchors is geometry, computed when read -- REST's contents and enclosing zones (`server/rest.js`), and "place inside a zone", which picks the free anchor nearest the zone's centre within it (`server/anchor.mjs` `at.inside`).\
+The zones plugin needs the grid, the core's, and nothing of the anchor's.
+
+The REST API calls a grid point an "anchor" on both grids -- `GET .../anchors`, `nearestAnchor`, "a zone anchor".\
+Once the core's anchor is the entity on one cell, that sense needs its own name; renaming it changes what agents call, so it is recorded (B310) rather than done here.
+
+### 16.6 Build order
+
+| stage | what lands | proven by |
+|---|---|---|
+| **O-e1** | **The device vocabulary and factories to `devices/`:** whether a device is composed, the drawn word, `makeNode`, `makeTextBox`, `makeWaypoint`; the Model's device-ness cell questions to the plugin; `engine/situation.mjs` to the plugin rung, its readers being the canvas and the network; the index asking the plugin | every corpus identical; the core's modules name no device vocabulary |
+| **O-e2** | **The device fields off the core's row:** `type`, `shape`, `span`, `content` as the devices plugin's extension, with its `composite` and `refers` (section 16.4); `spawn` as the simulation's | every corpus identical; a composition without the devices plugin refuses a device field by name, one without the simulation `spawn` |
+
+Then O-d closes the arc: the layer rule that the core and the planner name no kind but the anchor, with section 16.3's exception named; the product's composition moved below the planner, and with it the CLI's interim allowance.
+**Size, by judgement:** O-e1 large -- about 30 modules re-pointed and some 125 test lines; O-e2 moderate.
+
+### 16.7 Acceptance tests
+
+1. The core composes one kind, `node`, whose row checks id, name, x, y and order and nothing else; production composes node, zone, group, link, pipe, in that order.
+2. A composition without the devices plugin refuses `type`, `shape`, `span` and `content` on an anchor, naming each; without the simulation, `spawn`.
+3. The core's modules name no device field and no device vocabulary, but for section 16.3's `span`.
+4. The planner, gesture, matrix and K8 DOM corpora are byte-identical before and after each stage.
+
+### 16.8 Axiom alignment audit (M7)
+
+| axiom | weight | how it holds |
+|---|---|---|
+| A3 Sovereign Composition | load-bearing | the anchor's duty in the core, the device's in its plugin, each composed through rows and extensions; one named exception, bounded and ended by B282 |
+| A2 Isomorphic Specification | load-bearing | one statement of whether a device is composed, in the devices plugin; the export's restatement (`kernel/adapt.mjs`) held to it by test |
+| A8 Gated Recursive Integrity | load-bearing | each stage gated on byte-identical corpora |
+| A4 Zero-Loss Knowledge | supporting | the director's words recorded whole (O4) |
+| A13 Director Intent Amplification | supporting | the shape is the director's; the format change it implies is routed to B282 rather than taken here |
+| the rest | not materially implicated | nothing stored, deployed or perceived changes |
+
+**Verdict: pass-with-guardrails** -- the width exception named in the layer rule; no stored change; corpora identical at every stage.
