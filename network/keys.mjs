@@ -24,7 +24,7 @@ THE SITUATION TERMS are the plugin's own, over the fields the host's situation d
 `gesture` and `step`. The plugin cannot import the product's predicates, and should not -- it names what it asks.
 */
 import { dragFacts } from './grammar.mjs';
-import { isAnchorWord } from '../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
+import { isAnchorWord } from '../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
    // the bare anchor, asked in one place (F-b)
 
 const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;

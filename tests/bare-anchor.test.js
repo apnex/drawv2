@@ -13,8 +13,9 @@ import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed i
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { BARE_KIND, ANCHOR_KINDS, isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes, anchorOf } from '../model/anchors.mjs';
-import { drawnKind, isAnchorWord } from '../model/anchor-words.mjs';
+import { BARE_KIND, ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';
+import { isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes } from '../devices/device-shapes.mjs';
+import { drawnKind, isAnchorWord } from '../devices/anchor-words.mjs';
 import { Model } from '../model/model.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
 
@@ -72,7 +73,7 @@ test('F-b: the export\'s adapter draws exactly the document\'s bare anchors as w
 
 // ---- the ratchet ----
 
-const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src'];
+const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src', 'devices', 'zones', 'groups'];   // O-e1: and the plugins
 const walk = (d) => fs.readdirSync(path.join(root, d), { withFileTypes: true })
 	.flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.m?js$/.test(e.name) ? [path.join(d, e.name)] : []));
 // code lines only: block comments and whole-line comments are prose, which may say "waypoint" freely
@@ -92,8 +93,8 @@ function codeLines(text) {
 const LITERAL = /['"`]waypoints?['"`-]|\.waypoints\b/;
 
 const RECORD = {
-	'model/anchor-words.mjs': [2, 'the drawn word, derived from a stored entity (`drawnKind`, `isAnchorWord`)'],
-	'model/model.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4)'],
+	'devices/anchor-words.mjs': [2, 'the drawn word, derived from a stored entity (`drawnKind`, `isAnchorWord`) -- moved from model/ at O-e1'],
+	'devices/make-node.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4); moved with `makeWaypoint` from model/model.mjs at O-e1'],
 	'network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
 	'cli/verbs.mjs': [19, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4)'],
 	'kernel/adapt.mjs': [3, 'the scene\'s `waypoint` kind -- what is drawn, F4; kernel/ may not import model/ (C9)'],

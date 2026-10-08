@@ -1,4 +1,8 @@
 /*
+AMENDED 2026-10-08 (O-e1, H19.21; O4): THE ANCHOR, the core's -- its stored kind, the anchor kinds, and resolving a reference
+to one. Whether a device is composed on an anchor -- the questions below that read `type` -- moved to the devices plugin
+(devices/device-shapes.mjs), and the drawn word with them (devices/anchor-words.mjs): "The core holds only the anchor".
+
 THE BARE ANCHOR -- one place that says how it is stored, so every reader asks here (promotion's format batch, F-b, H18.4;
 dev/design/unification/FORMAT-BATCH.md section 6).
 
@@ -13,7 +17,7 @@ never changes under a reader that cached it.
 WHAT IS NOT ASKED HERE, and why:
   - the word `waypoint` people and agents see -- keys, help, the palette's hand, the CLI's verbs: kept by F4;
   - the canvas's hit and scene vocabulary -- a hit `{ kind: 'waypoint' }` from the picker and a kernel scene entity of kind
-    `waypoint` name what is DRAWN, which F4 keeps; model/anchor-words.mjs derives it from a stored entity, and it is never
+    `waypoint` name what is DRAWN, which F4 keeps; devices/anchor-words.mjs derives it from a stored entity, and it is never
     stored -- a module of its own because the planner, which loads this one, reads no drawn word;
   - the kind's own definition -- its row (model/shape.mjs, planner/kinds.mjs);
   - `kernel/`, which may not import `model/` (C9), and the CLI, which ships standalone (B138): each restates the question
@@ -32,24 +36,6 @@ export const BARE_KIND = 'node';
 
 // the anchor kinds -- what a link may end at, a group may hold, a pipe may join: the composition's own list
 export const ANCHOR_KINDS = CORE_KINDS.anchors;
-
-// whether an entity of a kind is a bare anchor: a node with no type
-export const isBareEntity = (kind, entity) => kind === BARE_KIND && !!entity && !entity.type;
-
-// whether an entity of a kind is a typed node -- what draws a glyph, carries content, and is never a bend
-export const isTypedEntity = (kind, entity) => kind === 'node' && !!entity && !!entity.type;
-
-// the bare anchor with this id, or undefined
-export const bareAnchor = (model, id) => {
-	const e = model.get(BARE_KIND, id);
-	return e && !e.type ? e : undefined;
-};
-
-// every bare anchor
-export const bareAnchors = (model) => model.all(BARE_KIND).filter((e) => !e.type);
-
-// every typed node
-export const typedNodes = (model) => model.all('node').filter((e) => !!e.type);
 
 // the anchor of any kind with this id, or undefined -- what a link's end or bend resolves to
 export const anchorOf = (model, id) => {

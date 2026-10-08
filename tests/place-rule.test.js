@@ -25,6 +25,7 @@ import { createEntity } from '../app/src/commands.js';
 import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { applyOps } from '../model/ops.mjs';
 import { TOWERS } from '../engine/kinds.mjs';
+import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const NOW = 1_700_000_000_000;
 const WP_A = 'node-aaaaaa', WP_B = 'node-bbbbbb', LINK = 'link-cccccc';
@@ -90,7 +91,7 @@ test('H13.1: placement produces an ordinary committable entry -- this is what tr
 	bespoke here would be a second channel, and a second channel is the thing the design refuses.
 	*/
 	const m = doc();
-	const node = m.makeNode('loadbalancer', { x: 120, y: 0 });
+	const node = makeNode(m, 'loadbalancer', { x: 120, y: 0 });
 	const cmd = createEntity('node', node);
 	assert.equal(cmd.entries.length, 1);
 	assert.equal(cmd.entries[0].op, 'put', 'a put, exactly like any other node');
@@ -108,7 +109,7 @@ test('H13.1: a peer given only the placement op derives the same tower', () => {
 	come from the kind table on the receiving side.
 	*/
 	const author = doc();
-	const node = author.makeNode('loadbalancer', { x: 120, y: 0 });
+	const node = makeNode(author, 'loadbalancer', { x: 120, y: 0 });
 	const cmd = createEntity('node', node);
 
 	const peer = doc();

@@ -31,6 +31,7 @@ const resolveKey = (e, guards, s = sit()) => resolveInput(PRODUCT_KEYS, e, s, gu
 import { GAP, NODE_EXT } from '../app/src/snap.js';
 import { Tools } from '../app/src/tools.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
+import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -371,7 +372,7 @@ field the server rejects — the clone would apply locally and then be refused o
 
 const routed = (h) => {
 	const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
-	const w = h.model.makeWaypoint({ x: 60, y: 60 });
+	const w = makeWaypoint(h.model, { x: 60, y: 60 });
 	h.model.put('node', w);
 	const link = { ...h.model.makeLink(a.id, b.id), via: [w.id] };
 	h.model.put('link', link);
@@ -727,7 +728,7 @@ test('B44: the migrated commands still do their jobs', () => {
 
 		// AMENDED 2026-10-04 (V-d): bent through a waypoint that exists -- `w1` named none, a link the planner refuses
 		const link = h.model.all('link')[0];
-		const w = h.model.makeWaypoint({ x: 60, y: 120 });
+		const w = makeWaypoint(h.model, { x: 60, y: 120 });
 		h.model.put('node', w);
 		h.model.set('link', link.id, { via: [w.id] });
 		h.selection.set([link.id]);
@@ -1129,7 +1130,7 @@ test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const wp = h.model.makeWaypoint({ x: 180, y: 60 });
+		const wp = makeWaypoint(h.model, { x: 180, y: 60 });
 		h.model.put('node', wp);
 		const link = { ...h.model.makeLink(a.id, b.id), via: [wp.id], closed: true };
 		h.model.put('link', link);
@@ -1317,7 +1318,7 @@ test('B80: linksBetween reports every link joining a pair, where linkBetween rep
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const w = h.model.makeWaypoint({ x: 180, y: -40 }); h.model.put('node', w);
+		const w = makeWaypoint(h.model, { x: 180, y: -40 }); h.model.put('node', w);
 		const straight = h.model.makeLink(a.id, b.id); h.model.put('link', straight);
 		const bent = h.model.makeLink(a.id, b.id); bent.via = [w.id]; h.model.put('link', bent);
 

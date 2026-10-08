@@ -38,7 +38,7 @@ import { moversAt } from './movers.mjs';
 import { spawnersOf } from './spawners.mjs';
 import { towerFor, moverFor, tickAt, cycleOf, TICK_MS } from './kinds.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { typedNodes } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { typedNodes } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 const PITCH = STD.pitch;
 

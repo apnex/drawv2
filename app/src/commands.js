@@ -25,8 +25,9 @@ import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's fa
 import { makeGroup } from '../../groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
-import { BARE_KIND, ANCHOR_KINDS, bareAnchor, isTypedEntity } from '../../model/anchors.mjs';
-import { drawnKind } from '../../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';
+import { bareAnchor, isTypedEntity } from '../../devices/device-shapes.mjs';
+import { drawnKind } from '../../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history

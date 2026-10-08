@@ -18,7 +18,8 @@ first of the three units INPUT.md §8 names.
 
 import { NODE_R, dist, spanExtent } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
-import { bareAnchors, typedNodes } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { bareAnchors, typedNodes } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
+import { occupiedAt as deviceOn } from '../../devices/occupancy.mjs';
 
 // ---- footprint predicates: a node occupies a RECTANGLE, not a point ----
 
@@ -96,5 +97,5 @@ export function endpointAt(model, pos) {
 }
 
 // cell occupancy (the engine's O(1) index, not a scan): a node rests here / anything rests here
-export const occupiedAt = (model, p) => model.occupiedAt(p);
+export const occupiedAt = (model, p) => deviceOn(model, p);   // a device on the cell: the devices plugin's question (O-e1)
 export const occupiedAnyAt = (model, p) => model.occupiedAnyAt(p);

@@ -17,6 +17,7 @@ import { productKinds } from '../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { makeRenderer } from './fixtures/client-harness.mjs';
+import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const router = (id, x, extra = {}) => ({ id, name: id, type: 'router', x, y: 0, ...extra });
 
@@ -29,8 +30,8 @@ test('F-d: one comparator -- lower order first, an item without one the oldest, 
 
 test('F-d: whoever creates an item stamps it one above the highest of its kind -- the Model\'s factories', () => {
 	const m = new Model();
-	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
-	const w = m.makeWaypoint({ x: 60, y: 0 }); m.put('node', w);
+	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
+	const w = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w);
 	const l = m.makeLink(a.id, w.id); m.put('link', l);
 	const z = makeZone(m, { x: -90, y: -90, w: 180, h: 180 });
 	assert.deepEqual([a.order, w.order, l.order, z.order], [1, 2, 1, 1], 'nodes count together, typed or not; each kind its own');

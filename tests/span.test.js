@@ -12,6 +12,8 @@ import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
 import { validateEntity, validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
 import { controlBarDoc } from './fixtures/control-bar-doc.mjs';
+import { makeNode, makeTextBox } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { occupiedAt } from '../devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
 
 // W1 — multi-cell span foundation. A node gains an optional span = {cols,rows} (cell counts, default
 // 1×1); it anchors at its cell and grows +col/+row. Both absent ⇒ byte-identical to today's 1-cell node.
@@ -78,23 +80,23 @@ test('docToSchema/schemaToDoc round-trip span as cell counts; 1×1 stays span-fr
 // ---- span-aware occupancy (R13 index) ----
 test('a span node occupies every covered cell; move/resize/del maintain the index', () => {
 	const m = new Model(); attachRelations(m, { cellOf });
-	const n = m.makeNode('host', { x: 2 * P, y: 0 }); n.span = { cols: 3, rows: 2 }; m.put('node', n);
-	for (let c = 2; c <= 4; c++) for (let r = 0; r <= 1; r++) assert.equal(m.occupiedAt({ x: c * P, y: r * P }), true, `covers ${c},${r}`);
-	assert.equal(m.occupiedAt({ x: 1 * P, y: 0 }), false, 'left neighbour free');
-	assert.equal(m.occupiedAt({ x: 5 * P, y: 0 }), false, 'right neighbour free');
-	assert.equal(m.occupiedAt({ x: 2 * P, y: 2 * P }), false, 'below the footprint free');
+	const n = makeNode(m, 'host', { x: 2 * P, y: 0 }); n.span = { cols: 3, rows: 2 }; m.put('node', n);
+	for (let c = 2; c <= 4; c++) for (let r = 0; r <= 1; r++) assert.equal(occupiedAt(m, { x: c * P, y: r * P }), true, `covers ${c},${r}`);
+	assert.equal(occupiedAt(m, { x: 1 * P, y: 0 }), false, 'left neighbour free');
+	assert.equal(occupiedAt(m, { x: 5 * P, y: 0 }), false, 'right neighbour free');
+	assert.equal(occupiedAt(m, { x: 2 * P, y: 2 * P }), false, 'below the footprint free');
 
 	m.set('node', n.id, { x: 0, y: 0 });                                    // move anchor → footprint follows
-	assert.equal(m.occupiedAt({ x: 4 * P, y: 1 * P }), false, 'old far cell freed');
-	assert.equal(m.occupiedAt({ x: 0, y: 0 }), true);
-	assert.equal(m.occupiedAt({ x: 2 * P, y: 1 * P }), true, 'new footprint occupied');
+	assert.equal(occupiedAt(m, { x: 4 * P, y: 1 * P }), false, 'old far cell freed');
+	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true);
+	assert.equal(occupiedAt(m, { x: 2 * P, y: 1 * P }), true, 'new footprint occupied');
 
 	m.set('node', n.id, { span: { cols: 1, rows: 1 } });                    // shrink to 1×1
-	assert.equal(m.occupiedAt({ x: 1 * P, y: 0 }), false, 'shrink frees grown cells');
-	assert.equal(m.occupiedAt({ x: 0, y: 0 }), true, 'anchor still occupied');
+	assert.equal(occupiedAt(m, { x: 1 * P, y: 0 }), false, 'shrink frees grown cells');
+	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true, 'anchor still occupied');
 
 	m.del('node', n.id);
-	assert.equal(m.occupiedAt({ x: 0, y: 0 }), false, 'del frees the footprint');
+	assert.equal(occupiedAt(m, { x: 0, y: 0 }), false, 'del frees the footprint');
 });
 
 // ---- server gate ----
@@ -278,7 +280,7 @@ test('span-aware group hull: the hull encloses a multi-cell member\'s full footp
 
 test('A1: makeTextBox builds a valid text-box node (span + a single text region); renders via W1/W2', () => {
 	const m = new Model();
-	const tb = m.makeTextBox({ x: 0, y: 0 }, { cols: 3, rows: 2 });
+	const tb = makeTextBox(m, { x: 0, y: 0 }, { cols: 3, rows: 2 });
 	assert.deepEqual(tb.span, { cols: 3, rows: 2 });
 	assert.equal(tb.content.length, 1);
 	assert.equal(tb.content[0].content, 'text');

@@ -8,6 +8,7 @@ import { Model, plan } from './fixtures/composed.mjs';
 import { derivedToApply, applyAnswer } from '../app/src/changes.js';
 import { applyOps } from '../model/ops.mjs';
 import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
+import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const entities = (m) => { const d = m.toJSON(); return JSON.stringify(['nodes', 'links', 'zones', 'groups', 'pipes'].map((k) => [...(d[k] || [])].sort((a, b) => (a.id < b.id ? -1 : 1)))); };
 
@@ -78,7 +79,7 @@ test('B221: deleting the third link at a waypoint shows the other two joined at 
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[-360, 0], [360, 0], [0, 240]]);
-		const w = h.model.makeWaypoint({ x: 0, y: 0 });
+		const w = makeWaypoint(h.model, { x: 0, y: 0 });
 		h.model.put('node', w);
 		const l1 = h.model.makeLink(a.id, w.id), l2 = h.model.makeLink(w.id, b.id), l3 = h.model.makeLink(c.id, w.id);
 		for (const l of [l1, l2, l3]) h.model.put('link', l);

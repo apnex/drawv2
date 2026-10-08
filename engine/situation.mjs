@@ -26,8 +26,8 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { isBareEntity } from '../model/anchors.mjs';
-import { drawnKind } from '../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
+import { isBareEntity } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
+import { drawnKind } from '../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 /*
 K5 (dev/design/h17/PLAN.md) -- CORE, so every layer that decides what an input means may read it: the canvas (Input),

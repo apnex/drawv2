@@ -17,7 +17,8 @@ grid operands (the parity guarantee) and the engine imports no spatial-kernel mo
 
 import { maintainIndex } from './ivm.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
-import { ANCHOR_KINDS, isBareEntity, bareAnchors, typedNodes } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity, bareAnchors, typedNodes } from '../devices/device-shapes.mjs';
 
 // the entity ids a link occupies in the incidence index: src, dst, and every via waypoint.
 const linkRefs = (l) => Array.isArray(l.via) ? [l.src, l.dst, ...l.via] : [l.src, l.dst];

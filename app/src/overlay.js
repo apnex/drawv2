@@ -24,7 +24,7 @@ import { el } from './painter.js';
 import { CANVAS, GAP, NODE_R, dist, zoneCorners } from './snap.js';
 import { inFootprint } from './pick.js';
 import { kindOf } from '../../model/model.mjs';
-import { isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 const HANDLE = 12;
 

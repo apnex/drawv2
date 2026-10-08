@@ -1088,9 +1088,10 @@ So this asserts getComputedStyle -- what the browser resolved -- rather than wha
 */
 test('B235: the panel frame the browser DRAWS is the derived one', { skip: SKIP }, async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
-	const seen = await tab.eval(`(() => {
+	const seen = await tab.eval(`(async () => {
+		const { makeTextBox } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
 		const app = window.draw;
-		const tb = app.model.makeTextBox({ x: 300, y: 300 }, { cols: 3, rows: 1 });
+		const tb = makeTextBox(app.model, { x: 300, y: 300 }, { cols: 3, rows: 1 });
 		tb.content[0].value = 'panel';
 		app.model.put('node', tb);
 		app.renderer.handle('put', 'node', tb);
@@ -1369,7 +1370,8 @@ test('V-d: on the product page a deleted pin takes its link before the server an
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
 		// a waypoint, and a link pinned at it, through the server
-		await t.eval(`(() => { const m = window.draw.model; const w = m.makeWaypoint({ x: 0, y: 360 });
+		await t.eval(`(async () => { const { makeWaypoint } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
+			const m = window.draw.model; const w = makeWaypoint(m, { x: 0, y: 360 });
 			window.draw.history.commit({ label: 'pin', entries: [{ op: 'put', kind: 'node', entity: w }, { op: 'put', kind: 'link', entity: { ...m.makeLink('node-ab00c1', 'node-ab00c2'), via: [w.id] } }] });
 			window.__pin = w.id; return 1; })()`);
 		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);

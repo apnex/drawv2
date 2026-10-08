@@ -14,7 +14,8 @@ value, and undo restores it with everything else. The network refuses a value th
 */
 import { cutAtBend, openRingIntoLoop, closeLoopIntoRing } from './link-rules.mjs';
 import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
-import { isBareEntity, bareAnchor, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity, bareAnchor } from '../devices/device-shapes.mjs';
 
 // the table of what each type offers is the plugin's configuration, in a module of its own (H19.10)
 import { transitOffersOf } from './transit-offers.mjs';

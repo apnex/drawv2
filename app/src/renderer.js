@@ -15,7 +15,8 @@ import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
-import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../model/anchors.mjs';
+import { BARE_KIND } from '../../model/anchors.mjs';
+import { isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../devices/device-shapes.mjs';
 import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-d)   // the bare anchor, asked in one place (F-b)
 
 const FE = L_STD.frame.ext;            // node frame half-extent (20)

@@ -237,7 +237,8 @@ Tests that pinned the core as node and group, built a bare Model to hold groups,
 ## 16. O-e, re-shaped -- the core holds only the anchor (DELTA, proposed)
 
 AMENDED 2026-10-08 -- **proposed for approval; no code until then.**\
-Written against `dfc3d51`.
+Written against `dfc3d51`.\
+AMENDED 2026-10-08 -- **APPROVED** by the director after a walk-through of the field split, the two contract additions and the width exception: "approved, build O-e1".
 
 ### 16.1 What the director ruled
 
@@ -324,3 +325,11 @@ Then O-d closes the arc: the layer rule that the core and the planner name no ki
 | the rest | not materially implicated | nothing stored, deployed or perceived changes |
 
 **Verdict: pass-with-guardrails** -- the width exception named in the layer rule; no stored change; corpora identical at every stage.
+
+AMENDED 2026-10-08 -- **O-e1 done** (H19.21 stays open until O-e2).
+**What moved:** whether a device is composed on an anchor -- `isBareEntity`, `isTypedEntity`, `bareAnchor`, `bareAnchors`, `typedNodes` -- from `model/anchors.mjs` to `devices/device-shapes.mjs`; the drawn word, `model/anchor-words.mjs`, to `devices/anchor-words.mjs`; `makeNode`, `makeTextBox` and `makeWaypoint` from the Model to `devices/make-node.mjs`; the Model's `occupiedAt` and `waypointAt` to `devices/occupancy.mjs`.
+`model/anchors.mjs` holds the anchor alone -- `BARE_KIND`, `ANCHOR_KINDS`, `anchorOf` -- and the core Model reads no `type`; its `occupiedAnyAt` asks for the anchor's stored kind by name rather than by literal.\
+`engine/situation.mjs` left the core layer for the network's rung, since it names what is under the pointer by the drawn word.\
+The node row's typed test in `planner/kinds.mjs` is restated locally, as a row's checks are, until O-e2 moves that rule to the devices plugin.
+**Held by:** `tests/devices-plugin.test.js` -- the core's anchor module holds the anchor alone and the core Model asks no device question; the plugin's factories mint as the Model did; its cell questions answer from the index and from the scan alike (a scan that counts any anchor as a device, and an index asked the wrong question, each fail it -- both mutants killed).
+In-page test strings that called the Model's factories import the plugin's from the served folder; tests that called the moved methods call the plugin's functions; every corpus unchanged.

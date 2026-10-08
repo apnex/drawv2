@@ -25,7 +25,8 @@ import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS, closeLoopIntoRing, 
 import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 import { isLinkLoop } from './link-references.mjs';   // B300: a join may leave a loop
 import { linkEndsAt } from './roles.mjs';   // whether a link ends at a point (B244), one statement with the roles (V-a)
-import { BARE_KIND, isBareEntity, bareAnchor, bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity, bareAnchor, bareAnchors } from '../devices/device-shapes.mjs';
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 

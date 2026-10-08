@@ -22,7 +22,7 @@ reversed.
 import { prepareSpawner } from './movers.mjs';
 import { BEND_R } from '../kernel/spec.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
-import { bareAnchors } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { bareAnchors } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 /*
 `model` is anything answering `all('waypoint')`, `linksAt(id)`, `pathOf(link)` and `isLinkDown(link)` -- the live client

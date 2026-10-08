@@ -19,12 +19,13 @@ import { KEYMAP } from '../app/src/keymap.js';
 import { Input } from '../app/src/input.js';
 import { nodeAt, occupiedAt } from '../app/src/pick.js';
 import { snapNode, GAP, NODE_EXT } from '../app/src/snap.js';
+import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 function board(bends) {
 	const h = makeInput();
 	const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 	const link = h.model.makeLink(a.id, b.id);
-	if (bends) { const w = h.model.makeWaypoint({ x: 180, y: 120 }); h.model.put('node', w); link.via = [w.id]; }
+	if (bends) { const w = makeWaypoint(h.model, { x: 180, y: 120 }); h.model.put('node', w); link.via = [w.id]; }
 	h.model.put('link', link);
 	return { h, link };
 }
@@ -92,7 +93,7 @@ test('a pointer anywhere over a node snaps to a cell that node occupies, whateve
 		const placed = [[null, -10 * GAP, -2 * GAP], [{ cols: 2, rows: 1 }, -4 * GAP, -2 * GAP], [{ cols: 3, rows: 2 }, 3 * GAP, -2 * GAP],
 			[{ cols: 2, rows: 2 }, NODE_EXT.x - GAP, NODE_EXT.y - GAP]];
 		for (const [span, x, y] of placed) {
-			const n = h.model.makeNode('host', { x, y });
+			const n = makeNode(h.model, 'host', { x, y });
 			if (span) n.span = span;
 			h.model.put('node', n);
 		}

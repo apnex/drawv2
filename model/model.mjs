@@ -15,7 +15,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 import { CORE_KINDS, SCHEMA } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId, nextOrder } from './order.mjs';
-import { BARE_KIND, bareAnchor, bareAnchors, typedNodes, anchorOf } from './anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, anchorOf } from './anchors.mjs';   // the anchor's stored kind, and resolving one (O-e1: whether a device is composed is devices/device-shapes.mjs's)
 
 /*
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state
@@ -336,19 +336,11 @@ export class Model {
 	// px-equality. The two agree only when BOTH p AND the stored entity are grid-aligned — true for all
 	// in-app data (every gesture snaps); off-grid coords exist only in hand-edited/legacy wire docs.
 	// Keeps doc.js free of any kernel import.
-	occupiedAt(p) {
-		if (this.index) return this.index.occupiedAt(p);
-		return typedNodes(this).some((n) => n.x === p.x && n.y === p.y);
-	}
-
+	// O-e1 (H19.21): which anchor is on a cell is the core's; which DEVICE or which WAYPOINT is the devices plugin's
+	// (devices/occupancy.mjs `occupiedAt`, `waypointAt`), over this and the index
 	occupiedAnyAt(p) {
 		if (this.index) return this.index.occupiedAnyAt(p);
-		return this.all('node').some((n) => n.x === p.x && n.y === p.y);   // every anchor, typed or not
-	}
-
-	waypointAt(p) {
-		if (this.index) { const id = this.index.waypointAt(p); return id ? bareAnchor(this, id) : undefined; }
-		return bareAnchors(this).find((w) => w.x === p.x && w.y === p.y);
+		return this.all(BARE_KIND).some((n) => n.x === p.x && n.y === p.y);   // every anchor, a device composed on it or not
 	}
 
 	/*
@@ -385,35 +377,9 @@ export class Model {
 	}
 
 	// ---- entity factories ----
-	makeNode(type, pos, shape = 'circle') {
-		return {
-			id: this.freshId('node'),
-			name: this.nextName(type),
-			order: this.nextOrder('node'),   // newest on top (F-d)
-			type,
-			shape, // the outer frame (circle, square, …): independent of the glyph `type`
-			x: pos.x,
-			y: pos.y
-		};
-	}
-
 	// a TEXT BOX (authoring A1): a node whose content is a single text region filling its footprint. No new
 	// kind — it's a node with span + content (W1/W2 render it). type 'text' is a sentinel (unused while
 	// content is present); name empty (the text IS its content). Authored on-canvas via hold-t + drag.
-	makeTextBox(pos, span = { cols: 1, rows: 1 }) {
-		const cols = span.cols, rows = span.rows;
-		return {
-			id: this.freshId('node'),
-			name: '',
-			type: 'text',
-			shape: 'circle',   // a panel's corner follows shape: 'circle' = rounded (rx=circle radius); 's' toggles to 'square'
-			x: pos.x,
-			y: pos.y,
-			span: { cols, rows },
-			content: [{ at: [0, 0], cols, rows, content: 'text', value: '', align: 'left' }]
-		};
-	}
-
 	makeLink(src, dst) {
 		// B187 -- a link is named like everything else. Minted from its two ends rather than from a
 		// request for a named thing, so the name is generated.
@@ -421,13 +387,6 @@ export class Model {
 	}
 
 	// a placeable ANCHOR — a cell-centre point a link's route can thread through and bend at
-	makeWaypoint(pos) {
-		// B187 -- named like every other entity. A waypoint is minted from a position rather than
-		// from a request for a named thing, so the name is generated rather than asked for.
-		// a node with no type since F-c (P-10), named with the word people use (F4)
-		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), order: this.nextOrder(BARE_KIND), x: pos.x, y: pos.y };
-	}
-
 	// ---- selection (model-state / status, MS1) — single-sourced here so client + server agree ----
 	// does the entity for this id exist? kind is inferred from the id; safe for ids of unknown kind.
 	entityExists(id) {

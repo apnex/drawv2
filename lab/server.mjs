@@ -47,6 +47,7 @@ const MOUNTS = {
 	'/network/': 'network',   // the incubating plugin (ruled 2026-09-28)
 	'/zones/': 'zones',       // the zones plugin (O-b1, H19.19)
 	'/groups/': 'groups',     // the groups plugin (O-c, H19.20)
+	'/devices/': 'devices',   // the devices plugin (O-e1, H19.21)
 };
 
 function send(res, code, body) {

@@ -614,10 +614,11 @@ that shows it -- a `set` on the surviving link, which a reconcile against what w
 test('V-d: the lab previews a commit, and its answer writes nothing more to the tab', { skip: SKIP }, async () => {
 	const p = await open('bend');
 	try {
-		const got = JSON.parse(await p.run(`(() => {
+		const got = JSON.parse(await p.run(`(async () => {
+			const { makeNode, makeWaypoint } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
 			const m = lab.model, ids = (k) => m.all(k).map((e) => e.id);
-			const a = m.makeNode('host', { x: -360, y: 240 }); const b = m.makeNode('host', { x: 360, y: 240 }); const c = m.makeNode('host', { x: 0, y: 420 });
-			const w = m.makeWaypoint({ x: 0, y: 240 });
+			const a = makeNode(m, 'host', { x: -360, y: 240 }); const b = makeNode(m, 'host', { x: 360, y: 240 }); const c = makeNode(m, 'host', { x: 0, y: 420 });
+			const w = makeWaypoint(m, { x: 0, y: 240 });
 			lab.history.commit({ label: 'seed', entries: [a, b, c].map((e) => ({ op: 'put', kind: 'node', entity: e })).concat([{ op: 'put', kind: 'node', entity: w }]) });
 			const l1 = m.makeLink(a.id, w.id); lab.history.commit({ label: 'l1', entries: [{ op: 'put', kind: 'link', entity: l1 }] });
 			const l2 = m.makeLink(w.id, b.id); lab.history.commit({ label: 'l2', entries: [{ op: 'put', kind: 'link', entity: l2 }] });

@@ -37,6 +37,7 @@ it is not addressed here.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { applyOps } from '../model/ops.mjs';
@@ -95,7 +96,7 @@ test('F5: replaying a create does not create a second entity', () => {
 	// rather than inserting. That is the property that makes `put` safe to repeat.
 	// The id is minted ONCE here: `makeNode` mints a fresh one per call, so building the command
 	// twice would compare two documents that differ by id and prove nothing about replay.
-	const minted = doc().makeNode('router', { x: 300, y: 300 });
+	const minted = makeNode(doc(), 'router', { x: 300, y: 300 });   // the devices plugin's factory (O-e1)
 	const r = twiceEqualsOnce(() => commands.createEntity('node', minted));
 	assert.equal(r.twice, r.once);
 	const after = doc();

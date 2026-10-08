@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from '../app/src/releases.js';
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
+import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const table = (rules) => composeRules({ owner: 'product', rules });
 const UP = { type: 'up' };
@@ -160,7 +161,7 @@ test('acceptance 6, B245: threading a free waypoint commits the link alone, and 
 	const drive = (finish) => {
 		const h = makeInput();
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const w = h.model.makeWaypoint({ x: 180, y: 120 });
+		const w = makeWaypoint(h.model, { x: 180, y: 120 });
 		h.model.put('node', w);
 		const over = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(id.split('-')[0]) ? { id } : null) } });
 		h.capture.onDown(over(a.id, 0, 0)); h.capture.onMove(over(w.id, 180, 120)); h.capture.onKeyDown(key('w'));

@@ -53,7 +53,10 @@ import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with t
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../network/roles.mjs';
-import { BARE_KIND, ANCHOR_KINDS, bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../devices/device-shapes.mjs';
+import { makeNode, makeWaypoint, makeTextBox } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { waypointAt } from '../../devices/occupancy.mjs';   // which waypoint is on a cell: the devices plugin's (O-e1)
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -331,7 +334,7 @@ const GESTURES = {
 		commit: (i, ctx, pos) => {
 			ctx.rect.remove();
 			const f = frameSpan(ctx.p1, snapNode(pos));   // origin + span counts (a click → 1×1)
-			const tb = i.model.makeTextBox(f.origin, { cols: f.cols, rows: f.rows });
+			const tb = makeTextBox(i.model, f.origin, { cols: f.cols, rows: f.rows });
 			i.history.commit(commands.createEntity('node', tb));
 			i.selection.set([tb.id]);
 			i.tools.setTextTool(false);   // one box per arm — re-tap 't' for another
@@ -606,7 +609,7 @@ export class Input {
 		const snapped = snapNode(evt.at);
 		if (occupiedAnyAt(this.model, snapped)) return;   // a taken cell places nothing
 		evt.claimed = true;
-		const node = this.model.makeNode('loadbalancer', snapped);
+		const node = makeNode(this.model, 'loadbalancer', snapped);
 		this.history.commit(commands.createEntity('node', node));
 		this.afterHistory();
 	}
@@ -823,14 +826,14 @@ export class Input {
 		const snapped = snapNode(pos);
 		if (type === 'waypoint') {
 			if (occupiedAnyAt(this.model, snapped)) return false;
-			const wp = this.model.makeWaypoint(snapped);
+			const wp = makeWaypoint(this.model, snapped);
 			this.history.commit(commands.createEntity(BARE_KIND, wp));
 			this.selection.set([wp.id]);
 			this.labels.setFocus(wp.id);
 			return true;
 		}
 		if (occupiedAt(this.model, snapped)) return false;
-		const node = this.model.makeNode(type, snapped);
+		const node = makeNode(this.model, type, snapped);
 		this.history.commit(commands.createEntity('node', node));
 		this.selection.set([node.id]); // the hand stays armed; selection follows
 		this.labels.setFocus(node.id);
@@ -856,7 +859,7 @@ export class Input {
 		if (occupiedAnyAt(this.model, snapped)) return false;
 		// a waypoint with no link: the sweep takes only what an edit orphaned, so it stays until deleted (`pinned`, B162, is
 		// retired -- S-d, H18.14)
-		const wp = this.model.makeWaypoint(snapped);
+		const wp = makeWaypoint(this.model, snapped);
 		this.history.commit(commands.createEntity(BARE_KIND, wp));
 		this.state = track(this.state, { type: 'armed', id: wp.id });   // may count as the next drag's first key (see press)
 		this.selection.set([wp.id]);
@@ -894,7 +897,7 @@ export class Input {
 		if (!this.state.pointer.at) return;
 		const ctx = this.ctx;
 		const snapped = snapNode(this.state.pointer.at);
-		const existing = this.model.waypointAt(snapped) ?? (nodes ? nodeAt(this.model, this.state.pointer.at) : null);   // occupancy index (R13)
+		const existing = waypointAt(this.model, snapped) ?? (nodes ? nodeAt(this.model, this.state.pointer.at) : null);   // occupancy index (R13)
 		if (existing && pin) {
 			if (existing.id === ctx.src.id) return;        // don't thread the source itself
 			/*
@@ -909,7 +912,7 @@ export class Input {
 			ctx.route.push(existing.id);
 		} else {
 			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse
-			const wp = this.model.makeWaypoint(snapped);
+			const wp = makeWaypoint(this.model, snapped);
 			this.model.put(BARE_KIND, wp);            // live (visible); committed on release
 			if (pin) ctx.via.push(wp.id);
 			ctx.route.push(wp.id);
@@ -1367,7 +1370,7 @@ export class Input {
 	*/
 	stepUnderPointer() {
 		if (!this.state.pointer.at) return null;
-		if (this.model.waypointAt(snapNode(this.state.pointer.at))) return 'waypoint';
+		if (waypointAt(this.model, snapNode(this.state.pointer.at))) return 'waypoint';
 		return nodeAt(this.model, this.state.pointer.at) ? 'node' : 'ground';
 	}
 
@@ -1494,7 +1497,7 @@ export class Input {
 		// write a link to nothing
 		if (!this.model.endpointOf(this.ctx.src.id)) return;
 
-		const node = this.model.makeNode(type, snapped);
+		const node = makeNode(this.model, type, snapped);
 		this.model.put('node', node);          // live, so the preview and the next segment can see it
 		const via = [...(this.ctx.via || [])];
 		const link = { ...this.model.makeLink(this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };

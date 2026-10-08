@@ -90,6 +90,7 @@ const ALLOW = {
 	'*:server/validate.js': 'moved to planner/validate.js at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:server/tenants.mjs': 'moved to planner/tenants.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:planner/tenants.mjs': 'moved to groups/group-rules.mjs at O-c (H19.20); a record written while it lived here cites it here',
+	'*:model/anchor-words.mjs': 'moved to devices/anchor-words.mjs at O-e1 (H19.21); a record written while it lived here cites it here',
 	'*:kernel/network-roles.mjs': 'moved to network/roles.mjs at V-a (H18.25, PU22); a record written while it lived here cites it here',
 	'*:kernel/network-appearance.mjs': 'merged into network/appearance.mjs at V-a (H18.25, PU22); a record written while it lived here cites it here',
 	'*:model/link-rules.mjs': 'moved to network/link-rules.mjs at S-e (H18.15, G5); a record written while it lived here cites it here',

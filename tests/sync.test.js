@@ -25,7 +25,7 @@ function harness() {
 
 test('R2: a selection change forwards a ws select on the next pulse', () => {
 	const { sent, model, selection, sync } = harness();
-	const n = model.makeNode('router', { x: 0, y: 0 }); model.put('node', n);
+	const n = makeNode(model, 'router', { x: 0, y: 0 }); model.put('node', n);
 	selection.set([n.id]);
 	assert.equal(sync.selectionDirty, true, 'selection change marked dirty');
 	sync.flush();
@@ -38,7 +38,7 @@ test('R2: a selection change forwards a ws select on the next pulse', () => {
 test('R2: selection is NOT forwarded while Server-Locked (read-only)', () => {
 	const { sent, model, selection, sync } = harness();
 	sync.locked = true;
-	const n = model.makeNode('router', { x: 0, y: 0 }); model.put('node', n);
+	const n = makeNode(model, 'router', { x: 0, y: 0 }); model.put('node', n);
 	selection.set([n.id]);
 	assert.equal(sync.selectionDirty, false, 'locked → change not marked dirty');
 	sync.flush();
@@ -47,7 +47,7 @@ test('R2: selection is NOT forwarded while Server-Locked (read-only)', () => {
 
 test('R2: a selection-only change still flushes (empty entity queue)', () => {
 	const { sent, model, selection, sync } = harness();
-	const n = model.makeNode('router', { x: 0, y: 0 }); model.put('node', n);
+	const n = makeNode(model, 'router', { x: 0, y: 0 }); model.put('node', n);
 	sync.flush();                       // drain the put
 	const before = sent.length;
 	selection.set([n.id]);              // selection changes, no entity change
@@ -107,6 +107,7 @@ sat empty against a server that was holding the documents. The bug was unreachab
 until the first HTTPS deployment, so the fix is a pure function specifically to make it reachable.
 */
 import { wsUrl } from '../app/src/net.js';
+import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 test('B60: an https page gets wss, and an http page still gets ws', () => {
 	assert.equal(wsUrl({ protocol: 'https:', host: 'draw.apnex.io' }), 'wss://draw.apnex.io/ws',

@@ -5,6 +5,7 @@ import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's
 import assert from 'node:assert/strict';
 import { newId, kindOf } from '../model/model.mjs';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
+import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 test('newId produces prefixed 6-hex ids and avoids collisions', () => {
 	const id = newId('node');
@@ -22,7 +23,7 @@ test('put/get/set/del roundtrip with change events', () => {
 	const events = [];
 	model.onChange((action, kind, entity) => events.push([action, kind, entity.id]));
 
-	const node = model.makeNode('host', { x: 0, y: 0 });
+	const node = makeNode(model, 'host', { x: 0, y: 0 });
 	model.put('node', node);
 	assert.equal(model.get('node', node.id).type, 'host');
 
@@ -43,8 +44,8 @@ test('set/del on missing entities are no-ops', () => {
 
 test('linksOf and linkBetween find connections both ways', () => {
 	const model = new Model();
-	const a = model.makeNode('host', { x: 0, y: 0 });
-	const b = model.makeNode('router', { x: 60, y: 0 });
+	const a = makeNode(model, 'host', { x: 0, y: 0 });
+	const b = makeNode(model, 'router', { x: 60, y: 0 });
 	model.put('node', a);
 	model.put('node', b);
 	const link = model.makeLink(a.id, b.id);
@@ -58,8 +59,8 @@ test('linksOf and linkBetween find connections both ways', () => {
 
 test('nextName counts per prefix without collisions', () => {
 	const model = new Model();
-	model.put('node', { ...model.makeNode('host', { x: 0, y: 0 }) });
-	model.put('node', { ...model.makeNode('host', { x: 60, y: 0 }) });
+	model.put('node', { ...makeNode(model, 'host', { x: 0, y: 0 }) });
+	model.put('node', { ...makeNode(model, 'host', { x: 60, y: 0 }) });
 	const names = model.all('node').map((n) => n.name).sort();
 	assert.deepEqual(names, ['host-1', 'host-2']);
 	assert.equal(model.nextName('router'), 'router-1');
@@ -67,8 +68,8 @@ test('nextName counts per prefix without collisions', () => {
 
 test('groupOf finds membership', () => {
 	const model = new Model();
-	const a = model.makeNode('host', { x: 0, y: 0 });
-	const b = model.makeNode('host', { x: 60, y: 0 });
+	const a = makeNode(model, 'host', { x: 0, y: 0 });
+	const b = makeNode(model, 'host', { x: 60, y: 0 });
 	model.put('node', a);
 	model.put('node', b);
 	const group = makeGroup(model, [a.id, b.id]);
@@ -79,8 +80,8 @@ test('groupOf finds membership', () => {
 
 test('toJSON/load roundtrip preserves the document', () => {
 	const model = new Model();
-	const a = model.makeNode('host', { x: 0, y: 0 });
-	const b = model.makeNode('router', { x: 120, y: 60 });
+	const a = makeNode(model, 'host', { x: 0, y: 0 });
+	const b = makeNode(model, 'router', { x: 120, y: 60 });
 	model.put('node', a);
 	model.put('node', b);
 	model.put('link', model.makeLink(a.id, b.id));
@@ -98,9 +99,9 @@ test('toJSON/load roundtrip preserves the document', () => {
 
 test('node shape is a first-class field, defaults to circle, survives roundtrip', () => {
 	const model = new Model();
-	const a = model.makeNode('host', { x: 0, y: 0 });
+	const a = makeNode(model, 'host', { x: 0, y: 0 });
 	assert.equal(a.shape, 'circle'); // the frame is independent of the glyph type
-	const b = model.makeNode('server', { x: 60, y: 0 }, 'square');
+	const b = makeNode(model, 'server', { x: 60, y: 0 }, 'square');
 	assert.equal(b.shape, 'square');
 	model.put('node', a);
 	model.put('node', b);
@@ -115,7 +116,7 @@ test('node shape is a first-class field, defaults to circle, survives roundtrip'
 // F-c (H18.5, P-10): a waypoint is a node with no type, stored among the nodes
 test('waypoints are nodes with no type, and round-trip put/get + toJSON/load', () => {
 	const model = new Model();
-	const w = model.makeWaypoint({ x: 60, y: -120 });
+	const w = makeWaypoint(model, { x: 60, y: -120 });
 	assert.match(w.id, /^node-[0-9a-f]{6}$/);
 	assert.equal('type' in w, false, 'a waypoint carries no type');
 	model.put('node', w);
@@ -139,11 +140,11 @@ test('waypoints are nodes with no type, and round-trip put/get + toJSON/load', (
 
 test("a link's via:[waypointId] bend array survives toJSON/load", () => {
 	const model = new Model();
-	const a = model.makeNode('host', { x: 0, y: 0 });
-	const b = model.makeNode('router', { x: 240, y: 0 });
+	const a = makeNode(model, 'host', { x: 0, y: 0 });
+	const b = makeNode(model, 'router', { x: 240, y: 0 });
 	model.put('node', a);
 	model.put('node', b);
-	const w = model.makeWaypoint({ x: 120, y: 60 });
+	const w = makeWaypoint(model, { x: 120, y: 60 });
 	model.put('node', w);
 	const link = model.makeLink(a.id, b.id);
 	link.via = [w.id]; // route threads through the waypoint pivot
@@ -159,8 +160,8 @@ test("a link's via:[waypointId] bend array survives toJSON/load", () => {
 
 test('kindOf derives the kind from the id of each kind', () => {
 	const model = new Model();
-	const node = model.makeNode('host', { x: 0, y: 0 });
-	const wp = model.makeWaypoint({ x: 0, y: 0 });
+	const node = makeNode(model, 'host', { x: 0, y: 0 });
+	const wp = makeWaypoint(model, { x: 0, y: 0 });
 	const link = model.makeLink(node.id, wp.id);
 	const zone = makeZone(model, { x: 30, y: 30, w: 60, h: 60 });
 	const group = makeGroup(model, [node.id]);
@@ -189,9 +190,9 @@ the straight src→dst line.
 
 const linked = () => {
 	const m = new Model();
-	const a = m.makeNode('host', { x: 0, y: 0 });
-	const b = m.makeNode('host', { x: 120, y: 0 });
-	const w = m.makeWaypoint({ x: 60, y: 60 });
+	const a = makeNode(m, 'host', { x: 0, y: 0 });
+	const b = makeNode(m, 'host', { x: 120, y: 0 });
+	const w = makeWaypoint(m, { x: 60, y: 60 });
 	[['node', a], ['node', b], ['node', w]].forEach(([k, e]) => m.put(k, e));
 	return { m, a, b, w };
 };
@@ -237,8 +238,8 @@ test('B187: every factory mints a named entity, and the names do not collide', (
 	*/
 	const m = new Model();
 	const made = [
-		m.makeNode('host', { x: 0, y: 0 }),
-		m.makeWaypoint({ x: 60, y: 0 }),
+		makeNode(m, 'host', { x: 0, y: 0 }),
+		makeWaypoint(m, { x: 60, y: 0 }),
 		makeZone(m, { x: 30, y: 30, w: 120, h: 120 }),
 	];
 	for (const e of made) assert.ok(typeof e.name === 'string' && e.name, `${e.id} was minted unnamed`);
@@ -248,13 +249,13 @@ test('B187: every factory mints a named entity, and the names do not collide', (
 	assert.ok(link.name, 'makeLink minted an unnamed link');
 	m.put('link', link);
 
-	const w2 = m.makeWaypoint({ x: 120, y: 0 });
+	const w2 = makeWaypoint(m, { x: 120, y: 0 });
 	assert.notEqual(w2.name, made[1].name, 'two waypoints share a name');
 
 	// a node squatting on the waypoint namespace must push the next mint past it
-	const squat = m.makeNode('host', { x: 180, y: 0 });
+	const squat = makeNode(m, 'host', { x: 180, y: 0 });
 	squat.name = 'waypoint-9';
 	m.put('node', squat);
-	const w3 = m.makeWaypoint({ x: 240, y: 0 });
+	const w3 = makeWaypoint(m, { x: 240, y: 0 });
 	assert.notEqual(w3.name, 'waypoint-9', 'nextName does not scan every named kind');
 });

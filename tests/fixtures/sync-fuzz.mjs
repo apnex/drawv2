@@ -16,6 +16,7 @@ From the command line, a tally over many seeds:
 import { loadCode, makeWorld, clock, shape, shapeDoc, diffDocs } from './sync-world.mjs';
 import path from 'node:path';
 import url from 'node:url';
+import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const MAIN = process.argv[1] && url.fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
@@ -128,13 +129,13 @@ async function runSeeded(seed, trace) {
 				t.changes.commit(C.deleteSelection(m, new Set([e.id]))); note = e.id; break;
 			}
 			case 'create': {
-				const n = m.makeNode('host', cell()); selectOnly([n.id]);
+				const n = makeNode(m, 'host', cell()); selectOnly([n.id]);
 				t.changes.commit(C.createEntity('node', n)); note = `${n.id} ${n.x},${n.y}`; break;
 			}
 			case 'route': {
 				if (nodes.length < 2) return;
 				const a = pick(nodes), b = pick(nodes); if (a === b) return;
-				const wp = m.makeWaypoint(cell());
+				const wp = makeWaypoint(m, cell());
 				const link = { ...m.makeLink(a.id, b.id), via: [wp.id] };
 				selectOnly([link.id]);
 				t.changes.commit(C.routeLink([wp], link)); note = `${link.id} ${a.id}->${b.id} via ${wp.id}`; break;

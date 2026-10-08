@@ -20,6 +20,7 @@ import { commit, plan } from '../planner/txn.mjs';
 import { linkTenant } from '../network/link-reactions.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc as realValidateDoc, validateSelectionIds as realValidateSelectionIds, validateEntity as realValidateEntity } from '../planner/validate.js';
+import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 // the validator takes no default since S-f (H18.16): "the product's" below is named, the product's own kinds
 const validateDoc = (doc, o = {}) => realValidateDoc(doc, { kinds: PRODUCT_KINDS, ...o });
 const validateEntity = (kind, e, o = {}) => realValidateEntity(kind, e, { kinds: PRODUCT_KINDS, ...o });
@@ -142,7 +143,7 @@ test('N-a (N2): an anchor\'s 6-hex part is unique across both anchor kinds, and 
 	const drawing = (fn) => { const seq = [...draws]; Math.random = () => (seq.shift() ?? 0x333333) / 0xffffff; try { return fn(); } finally { Math.random = real; } };
 	assert.equal(drawing(() => m.freshId('node')), 'node-222222', 'and so does a node');
 	assert.equal(drawing(() => m.freshId('zone')), 'zone-111111', 'a zone is no anchor: its own collection is all it avoids');
-	assert.equal(drawing(() => m.makeWaypoint({ x: 0, y: 0 }).id), 'node-222222', 'a waypoint skips the hex a node holds: the Model mints anchors through it');
+	assert.equal(drawing(() => makeWaypoint(m, { x: 0, y: 0 }).id), 'node-222222', 'a waypoint skips the hex a node holds: the Model mints anchors through it');
 });
 
 /*

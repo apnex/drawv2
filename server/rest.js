@@ -14,9 +14,11 @@ import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's facto
 import { makeGroup } from '../groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { groupOf } from '../groups/group-of.mjs';   // and its lookup (O-c)
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
-import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity } from '../devices/device-shapes.mjs';
 import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
 import { pipeEntity } from '../network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
+import { makeNode } from '../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 
 /*
 P6 W-a (H18.31) -- THE COLLECTIONS ARE THE MODEL'S COMPOSITION, read rather than listed. This was a hand-kept list of the
@@ -204,7 +206,7 @@ function bodyRejected(req, res, value) {
 // build a full entity from the high-level verb payload, via the model's factories
 // (which mint the id/name); the planner then validates it like any other op
 function buildEntity(model, kind, d) {
-	if (kind === 'node') return model.makeNode(d.type, { x: d.x, y: d.y }, d.shape);
+	if (kind === 'node') return makeNode(model, d.type, { x: d.x, y: d.y }, d.shape);
 	if (kind === 'link') return model.makeLink(d.src, d.dst);
 	if (kind === 'zone') return makeZone(model, { x: d.x, y: d.y, w: d.w, h: d.h });
 	if (kind === 'group') return Array.isArray(d.members) ? makeGroup(model, d.members) : null;

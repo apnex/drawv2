@@ -31,26 +31,27 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
 
 export const ALLOWED = {
 	core: ['core'],
-	network: ['core', 'network'],
+	network: ['core', 'devices', 'network'],
 	zones: ['core', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; it imports the core and itself
 	groups: ['core', 'groups'],   // O-c (H19.20): the groups plugin -- the group kind and its rules; it imports the core and itself
+	devices: ['core', 'devices'],   // O-e1 (H19.21; O4): the devices plugin -- whether a device is composed on an anchor; it imports the core and itself
 	planner: ['core', 'network', 'zones', 'groups', 'planner'],
-	canvas: ['core', 'network', 'zones', 'groups', 'planner', 'canvas'],
-	chrome: ['core', 'network', 'zones', 'groups', 'planner', 'canvas', 'simulation', 'export', 'chrome'],
-	simulation: ['core', 'network', 'simulation'],
+	canvas: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas'],
+	chrome: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas', 'simulation', 'export', 'chrome'],
+	simulation: ['core', 'devices', 'network', 'simulation'],
 	export: ['core', 'network', 'export'],
-	'server-only': ['core', 'network', 'zones', 'groups', 'planner', 'simulation', 'export', 'server-only', 'serve'],
+	'server-only': ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'simulation', 'export', 'server-only', 'serve'],
 	serve: [],   // K9: it imports nothing but Node's own modules
 	// O-b1 (H19.19): `planner` is INTERIM -- the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`), which
 	// lives in planner/kinds.mjs until the node stage moves it below the planner (O-e), when this allowance goes
-	cli: ['core', 'network', 'zones', 'groups', 'planner', 'simulation', 'cli'],
-	lab: ['core', 'network', 'zones', 'groups', 'planner', 'canvas', 'lab', 'serve'],
-	tools: ['core', 'network', 'zones', 'groups', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
-	tests: ['core', 'network', 'zones', 'groups', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
+	cli: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'simulation', 'cli'],
+	lab: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas', 'lab', 'serve'],
+	tools: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
+	tests: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
 };
 
 // the layers that ship: what L7k calls "the product"
-export const PRODUCT_LAYERS = ['core', 'network', 'zones', 'groups', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
+export const PRODUCT_LAYERS = ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
 
 /*
 The folders scan-layers walks. A folder with a `layer` gives every module in it that layer, so a new
@@ -78,6 +79,7 @@ export const FOLDERS = [
 	{ dir: 'network', layer: 'network' },
 	{ dir: 'zones', layer: 'zones' },   // O-b1 (H19.19): the zones plugin (KINDS-AS-PLUGINS.md)
 	{ dir: 'groups', layer: 'groups' },   // O-c (H19.20): the groups plugin (KINDS-AS-PLUGINS.md)
+	{ dir: 'devices', layer: 'devices' },   // O-e1 (H19.21): the devices plugin (KINDS-AS-PLUGINS.md section 16)
 	{ dir: 'lab', layer: 'lab' },   // K10: composition only, held to that by L8
 	{ dir: 'tools', layer: 'tools' },
 	// the fixture trees are synthetic repositories that break these rules on purpose
@@ -103,12 +105,11 @@ export const LAYER = {
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
 		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4; F-c, H18.5)
-		'model/anchor-words.mjs', // the drawn word for an anchor -- waypoint or node (F4); apart, because the planner reads none
+		// the drawn word for an anchor -- waypoint or node (F4); apart, because the planner reads none
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
 		'model/stacking.mjs',    // the drawing order as readers compare it -- the canvas, the network's ages (F-d)
 		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
-		'engine/situation.mjs',  // K5: what is true right now, as a value -- read by whatever decides what an input means, browser or server; it imports only core
 	],
 	network: [
 		// V-a (H18.25, PU22): the network's roles and appearance moved from kernel/ into network/, whose folder layer is this one
@@ -116,6 +117,7 @@ export const LAYER = {
 		// S-e (H18.15): the link rules, the link reactions with `linkTenant`, and the pair capacity moved into network/ (G5)
 		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
 		'engine/ivm.mjs',                                  // the index's generic mechanism; relations.mjs is its only user
+		'engine/situation.mjs',  // K5: what is true right now, as a value; O-e1 (H19.21): out of the core, since it names what is under the pointer by the devices plugin's drawn word
 	],
 	planner: [
 		// K4 (H17-D5): the planner is its own folder now, `planner/`, whose folder layer is this one (FOLDERS)
@@ -180,7 +182,7 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs', 'model/limits.mjs',
-			'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
+			'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
 			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows
 			// V-b (H18.26): the network, composed into the page as into the lab (network/page.mjs) -- routes, pipes, its keys and judge
 			'network/page.mjs', 'network/session.mjs', 'network/network.mjs', 'network/view.mjs', 'network/resolve.mjs', 'network/pipes.mjs',
@@ -191,6 +193,7 @@ export const ENTRIES = {
 			'planner/kinds.mjs',   // the product's rows, composed with the network's
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
+			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
@@ -227,13 +230,14 @@ export const ENTRIES = {
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs',
-			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/anchor-words.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
+			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
 			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
+			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 		],
 	},
 	planner: {
@@ -675,7 +679,8 @@ export const UNUSED_EXPORTS = {
 				'serves-a-server-door': [],
 			},
 			'model/anchors.mjs': {
-				'rebuild-debt': ['isBareEntity'],   // S-b: its planner consumers, the link rules, left with the classic tenant; the network reads it
+				// O-e1 (H19.21): isBareEntity left for the devices plugin (devices/device-shapes.mjs), so the debt it carried here is paid
+				'rebuild-debt': [],
 			},
 			'model/model.mjs': {
 				'serves-a-server-door': ['Model', 'newId'],
@@ -738,9 +743,9 @@ keeps the order it had in its scanner. L1 checks that every entry is a folder in
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'zones', 'groups'],   // scan-dead PROD: where a consumer counts as production
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'zones', 'groups', 'devices'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
-	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'zones', 'groups'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
+	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'zones', 'groups', 'devices'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
 	twins: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner'],     // scan-twins ROOTS: where shared arithmetic is compared
 	writers: ['server', 'planner', 'model'],     // scan-writers ROOTS: where the one-writer rule is held
 };

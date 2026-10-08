@@ -1231,6 +1231,9 @@ AMENDED 2026-10-08: O4 ruled -- the core holds only the anchor, an anchor occupi
 B309 fixed and deployed: a down link pinned through a device is drawn along its intent.\
 Next: the O-e design (section 16) for approval.
 
+AMENDED 2026-10-08: the O-e design approved; O-e1 done -- whether a device is composed on an anchor, the drawn word, the device factories and the device cell questions are the devices plugin's (`devices/`); the core's anchor module holds the anchor alone.\
+Next O-e2, the device fields off the core's row.
+
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
 ---

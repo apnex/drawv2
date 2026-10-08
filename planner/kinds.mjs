@@ -26,7 +26,9 @@ import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { collectionCap } from './policy.mjs';
 import { GROUP_ROWS } from '../groups/group-kind.mjs';   // the groups plugin's kind, composed after the zones plugin's (O-c)
-import { isTypedEntity } from '../model/anchors.mjs';   // the two shapes of node (F-c)
+// O-e1 (H19.21): whether a device is composed, restated LOCALLY as a row's checks are (B110) -- the rule below is the devices
+// plugin's, and moves to it with the device's fields at O-e2
+const isTypedEntity = (kind, entity) => kind === 'node' && !!entity && !!entity.type;
 
 // a drawing order is a positive integer; the ceiling only keeps it an exact one (F-d)
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;

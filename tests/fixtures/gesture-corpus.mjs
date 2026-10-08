@@ -31,6 +31,7 @@ in the commit that makes it:
 import fs from 'node:fs';
 import { makeZone } from '../../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import { makeInput } from './client-harness.mjs';
+import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const GOLDEN = new URL('./gesture-corpus.json', import.meta.url);
 
@@ -54,8 +55,8 @@ function seed(h, board) {
 	const ids = {};
 	for (const [alias, kind, ...a] of BOARDS[board]()) {
 		let e;
-		if (kind === 'node') e = h.model.makeNode('host', { x: a[0], y: a[1] });
-		else if (kind === 'waypoint') e = h.model.makeWaypoint({ x: a[0], y: a[1] });
+		if (kind === 'node') e = makeNode(h.model, 'host', { x: a[0], y: a[1] });
+		else if (kind === 'waypoint') e = makeWaypoint(h.model, { x: a[0], y: a[1] });
 		else if (kind === 'zone') e = makeZone(h.model, { x: a[0], y: a[1], w: a[2], h: a[3] });
 		else { e = h.model.makeLink(ids[a[0]], ids[a[1]]); if (a[2]) e.via = a[2].map((w) => ids[w]); }
 		h.model.put(kind === 'waypoint' ? 'node' : kind, e);   // a waypoint is a node with no type (F-c)

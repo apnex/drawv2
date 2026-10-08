@@ -7,7 +7,7 @@ import { NODE_R } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX } from '../../model/limits.mjs';
 import * as commands from './commands.js';
-import { drawnKind } from '../../model/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
+import { drawnKind } from '../../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // the caps are the model's, shared with the server rather than restated here (B86)
 

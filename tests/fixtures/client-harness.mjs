@@ -44,6 +44,7 @@ import { networkInput } from '../../network/keys.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
 import { productKinds } from '../../planner/kinds.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';
+import { makeNode } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // ---- the smallest DOM the client's constructors actually touch ----
@@ -304,7 +305,7 @@ export const pointer = (x, y, mod = {}) => ({
 
 export function seedNodes(model, specs) {
 	return specs.map(([x, y, type = 'host']) => {
-		const n = model.makeNode(type, { x, y });
+		const n = makeNode(model, type, { x, y });
 		model.put('node', n);
 		return n;
 	});

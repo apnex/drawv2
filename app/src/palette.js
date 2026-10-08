@@ -15,6 +15,7 @@ import { NODE_TYPES } from './tools.js';
 import { GLYPH_BB } from '../../kernel/theme.mjs';
 import { STD } from '../../kernel/spec.mjs';
 import { BARE_KIND } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 
 
 /*
@@ -191,7 +192,7 @@ export class Palette {
 			return;
 		}
 		const snapped = snapNode(pos);
-		const entity = type === 'waypoint' ? this.model.makeWaypoint(snapped) : this.model.makeNode(type, snapped);
+		const entity = type === 'waypoint' ? makeWaypoint(this.model, snapped) : makeNode(this.model, type, snapped);
 		this.history.commit(commands.createEntity(type === 'waypoint' ? BARE_KIND : 'node', entity));
 		this.selection.set([entity.id]);
 	}

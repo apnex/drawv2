@@ -11,7 +11,8 @@ the link's references (network/link-references.mjs) both read it without one imp
 PASSED -- pinned, a junction -- is decided here by what its type offers, not by whether it has a type (ruled 2026-10-07, "A
 device is an endpoint or a junction, by what the network plugin gives it").
 */
-import { isBareEntity, BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity } from '../devices/device-shapes.mjs';
 
 const BOTH = [true, false], OFF = [false];
 const OFFERS = { router: BOTH, firewall: BOTH, vxlan: BOTH, loadbalancer: OFF, server: OFF, host: OFF };

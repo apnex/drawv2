@@ -44,7 +44,7 @@ link mutation -- a document-wide predicate wearing a per-mutation costume, O(way
 every write. Built once it is O(links), and the document path is unchanged at O(links).
 */
 
-import { isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isBareEntity } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 
 // Index every waypoint reference in a set of links. One pass, and the shape both callers need.

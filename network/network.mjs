@@ -20,7 +20,8 @@ import { pipeResolver, pipeDependents, pipeLinkDown, pipeBlockers } from './reso
 import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from './link-reactions.mjs';
 import { transitReactions, stopsBlockedOn, stopAtBlockedStop } from './transit.mjs';
-import { ANCHOR_KINDS, anchorOf, bareAnchor } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { bareAnchor } from '../devices/device-shapes.mjs';
 import { cutAtBend } from './link-rules.mjs';   // a cut at a bend, its piece's id derived (V-c)
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
 

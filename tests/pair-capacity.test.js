@@ -25,6 +25,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { makeInput, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { pairHolders } from '../network/link-rules.mjs';
+import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 // admitted = no link holds the pair against it
 const admits = (link, among) => pairHolders(link, among).length === 0;
@@ -95,7 +96,7 @@ test('replug: a ROUTED link may be moved onto a pair that holds a straight one',
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 360]]);
-		const w = h.model.makeWaypoint({ x: 180, y: 180 }); h.model.put('node', w);
+		const w = makeWaypoint(h.model, { x: 180, y: 180 }); h.model.put('node', w);
 		const held = h.model.makeLink(a.id, b.id); h.model.put('link', held);
 		const l = h.model.makeLink(c.id, b.id); l.via = [w.id]; h.model.put('link', l);
 		replug(h, l, 'src', a.x, a.y);
@@ -189,7 +190,7 @@ const NEEDLE = 'export function straightCapacity(_model, _a, _b) {\n\treturn 1;\
 test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a second straight link', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pair-capacity-'));
 	try {
-		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'zones', 'groups', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
+		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'zones', 'groups', 'devices', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
 		const inv = path.join(dir, 'network/pair-capacity.mjs');
 		const src = fs.readFileSync(inv, 'utf8');

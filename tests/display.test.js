@@ -21,9 +21,9 @@ import { installDom } from './fixtures/client-harness.mjs';
 // a right-angle route: (0,0) → bend (60,60) → (120,0). Straight-line 120; threaded 2·√7200 ≈ 169.7.
 function routed() {
 	const m = new Model();
-	const a = m.makeNode('host', { x: 0, y: 0 });
-	const b = m.makeNode('host', { x: 120, y: 0 });
-	const w = m.makeWaypoint({ x: 60, y: 60 });
+	const a = makeNode(m, 'host', { x: 0, y: 0 });
+	const b = makeNode(m, 'host', { x: 120, y: 0 });
+	const w = makeWaypoint(m, { x: 60, y: 60 });
 	[['node', a], ['node', b], ['node', w]].forEach(([k, e]) => m.put(k, e));
 	const link = { ...m.makeLink(a.id, b.id), via: [w.id] };
 	m.put('link', link);
@@ -77,6 +77,7 @@ the SAME coordinates. That is what the copy silently threatened and what a share
 
 import { contentLayout } from '../kernel/renderer.mjs';
 import { renderContentRegion } from '../kernel/svg-scene.mjs';
+import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const REGIONS = [
 	{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' },

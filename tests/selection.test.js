@@ -4,13 +4,14 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../planner/kinds.mjs';   // O-c: groups are the groups plugin's, which the product composes
 import { Selection } from '../app/src/selection.js';
+import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 // R7 salvage — Selection is a PURE model concept: renderer-free (no mock needed) and auto-prunes
 // against the model. The 'selected' visual reflection lives in the renderer (via subscribe()).
 
 test('Selection constructs and operates with NO renderer (sovereign / testable in isolation)', () => {
 	const m = new Model();
-	const n = m.makeNode('router', { x: 0, y: 0 }); m.put('node', n);
+	const n = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', n);
 	const sel = new Selection(m);                     // model only — no renderer arg, no mock
 	sel.set([n.id]);
 	assert.equal(sel.has(n.id), true);
@@ -21,7 +22,7 @@ test('Selection constructs and operates with NO renderer (sovereign / testable i
 
 test('Selection auto-prunes a deleted entity (no manual prune needed)', () => {
 	const m = new Model();
-	const n = m.makeNode('router', { x: 0, y: 0 }); m.put('node', n);
+	const n = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', n);
 	const sel = new Selection(m);
 	sel.set([n.id]);
 	m.del('node', n.id);                              // delete → auto-prune drops it
@@ -31,7 +32,7 @@ test('Selection auto-prunes a deleted entity (no manual prune needed)', () => {
 
 test('Selection auto-prunes stale ids on document load', () => {
 	const m = new Model();
-	const n = m.makeNode('router', { x: 60, y: 0 }); m.put('node', n);
+	const n = makeNode(m, 'router', { x: 60, y: 0 }); m.put('node', n);
 	const sel = new Selection(m);
 	sel.set([n.id]);
 	m.load({ meta: { id: '' }, nodes: [], links: [], zones: [], groups: [] });
@@ -40,8 +41,8 @@ test('Selection auto-prunes stale ids on document load', () => {
 
 test('subscribers fire on real changes; a live id survives an unrelated delete', () => {
 	const m = new Model();
-	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
-	const b = m.makeNode('host', { x: 60, y: 0 });  m.put('node', b);
+	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
+	const b = makeNode(m, 'host', { x: 60, y: 0 });  m.put('node', b);
 	const sel = new Selection(m);
 	sel.set([a.id]);
 	let fired = 0; sel.subscribe(() => { fired++; });
@@ -57,8 +58,8 @@ test('subscribers fire on real changes; a live id survives an unrelated delete',
 
 test('Model round-trips selection through toJSON/load (model-state persistence)', () => {
 	const m = new Model();
-	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
-	const b = m.makeNode('host', { x: 60, y: 0 });  m.put('node', b);
+	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
+	const b = makeNode(m, 'host', { x: 60, y: 0 });  m.put('node', b);
 	const sel = new Selection(m);
 	sel.set([a.id, b.id]);
 	const json = m.toJSON();
@@ -72,7 +73,7 @@ test('Model round-trips selection through toJSON/load (model-state persistence)'
 
 test('Model.load tolerates a stale selection id (reconcile-to-live)', () => {
 	const m = new Model();
-	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
+	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
 	m.load({ meta: { id: '' }, nodes: [{ id: a.id, type: 'router', x: 0, y: 0 }], links: [], zones: [], groups: [], selection: [a.id, 'node-deadbe'] });
 	assert.equal(m.state.selection.has(a.id), true, 'live id kept');
 	assert.equal(m.state.selection.has('node-deadbe'), false, 'stale id dropped');
@@ -80,8 +81,8 @@ test('Model.load tolerates a stale selection id (reconcile-to-live)', () => {
 
 test('setSelection expands a grouped member to the whole group', () => {
 	const m = new Model({ kinds: productKinds() });   // RESTATED at O-c: a Model holding groups is composed with them
-	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
-	const b = m.makeNode('host', { x: 60, y: 0 });  m.put('node', b);
+	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
+	const b = makeNode(m, 'host', { x: 60, y: 0 });  m.put('node', b);
 	const g = makeGroup(m, [a.id, b.id]);            m.put('group', g);
 	const sel = new Selection(m);
 	sel.set([a.id]);                                  // selecting one member pulls in the group
@@ -90,9 +91,9 @@ test('setSelection expands a grouped member to the whole group', () => {
 
 test('selection preserves insertion order (link-chaining relies on it)', () => {
 	const m = new Model();
-	const a = m.makeNode('router', { x: 0, y: 0 });   m.put('node', a);
-	const b = m.makeNode('host', { x: 60, y: 0 });    m.put('node', b);
-	const c = m.makeNode('switch', { x: 120, y: 0 }); m.put('node', c);
+	const a = makeNode(m, 'router', { x: 0, y: 0 });   m.put('node', a);
+	const b = makeNode(m, 'host', { x: 60, y: 0 });    m.put('node', b);
+	const c = makeNode(m, 'switch', { x: 120, y: 0 }); m.put('node', c);
 	const sel = new Selection(m);
 	sel.set([c.id, a.id, b.id]);                      // selection order, NOT creation order
 	assert.deepEqual(sel.list(), [c.id, a.id, b.id]);
@@ -102,7 +103,7 @@ test('selection preserves insertion order (link-chaining relies on it)', () => {
 
 test('selection admits only selectable kinds — a group id cannot enter or persist', () => {
 	const m = new Model({ kinds: productKinds() });   // RESTATED at O-c: a Model holding groups is composed with them
-	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
+	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
 	const g = makeGroup(m, [a.id]);                  m.put('group', g);
 	const sel = new Selection(m);
 	sel.add([g.id]);                                 // attempt to select the GROUP entity directly

@@ -43,7 +43,7 @@ import { createTransit } from '../../network/transit.mjs';
 import { productKinds } from '../../planner/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { bareAnchor } from '../../model/anchors.mjs';
+import { bareAnchor } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 const GOLDEN = new URL('./planner-corpus.json', import.meta.url);
 const P = 60;

@@ -10,7 +10,7 @@ clicking any mount toggles, persisted.
 import { kindOf } from '../../model/model.mjs';
 import { GAP, spanExtent } from './snap.js';
 import { linkMarker } from '../../network/appearance.mjs';
-import { isTypedEntity } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
+import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 const UNITS_KEY = 'draw.units';
 

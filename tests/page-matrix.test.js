@@ -112,7 +112,8 @@ page said nothing. UNDO-03 caught it one run in three, its keys only nearly as c
 test('page matrix: B294 -- a redo pressed while its undo is on the wire is redone', { skip: SKIP }, async () => {
 	const p = await open('');
 	const got = await p.run(`(async () => {
-		const d = window.draw, n = d.model.makeNode('host', { x: 0, y: 0 });
+		const { makeNode } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
+		const d = window.draw, n = makeNode(d.model, 'host', { x: 0, y: 0 });
 		d.history.commit({ label: 'put', entries: [{ op: 'put', kind: 'node', entity: n }] });
 		for (let i = 0; i < 40 && !d.sync.outbox.every((m) => m.answered); i++) await new Promise((r) => setTimeout(r, 50));
 		d.history.undo(); d.history.redo();
