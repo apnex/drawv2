@@ -63,5 +63,5 @@ const TRANSIT = {
 	},
 };
 
-// the network's canvas part (C-a: its appearances on the anchor; its link painter follows)
-export const NETWORK_CANVAS = { owner: 'network', appearances: [MARKS, TRANSIT] };
+// the network's appearances on the anchor, composed into its canvas part (network/canvas.mjs) with its link painter
+export const NETWORK_APPEARANCES = [MARKS, TRANSIT];

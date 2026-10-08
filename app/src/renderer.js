@@ -1,34 +1,22 @@
 /*
-Renderer — reconciles model state into the SVG layers (a plugin's painted layers → links → nodes), incrementally.
+Renderer — reconciles model state into the SVG layers the plugins draw into (painters, then appearances), incrementally.
 Same DOM shape + state-class interface the legacy renderer exposed (so input/selection/CSS port
 unchanged), but every geometry NUMBER and glyph def comes from the KERNEL — no hardcoded sizes.
 Draws nodes at their EXACT entity px (so live drag stays smooth); the committed positions are
 always on-grid. The kernel's resolve()/renderScene() remain the headless/export authority.
 */
 
-import { pathOf, linksRoutedThrough, isLinkDown, blockersOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
+import { isLinkDown, blockersOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { el, setAttrs } from './painter.js';
-import { linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
-import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
+import { L_STD } from '../../kernel/spec.mjs';
 import { selBox } from '../../kernel/renderer.mjs';
-import { roundedPath } from '../../kernel/router.mjs';
 import { BARE_KIND } from '../../model/anchors.mjs';
 import { kindOf } from '../../model/model.mjs';
 import { bareAnchor } from '../../devices/device-shapes.mjs';
 import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-d)   // the bare anchor, asked in one place (F-b)
 
-const LINK_W = STD.linkW;              // link/path stroke width (6)
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
 
-/*
-B268 -- A LINK'S CLICK AREA, apart from how it looks. The browser hit-tests a stroke's dashes and not its gaps, so a down
-link (dotted) or a control link (dashed) was selected only where a click landed on a dot -- measured, 10 of 29 clicks.
-Each link therefore has an invisible twin drawn just after it: the same path and the same width and caps, never dashed,
-never seen, taking the click for the link (`app/src/pick.js` reads its `data-link`). The click area is exactly the link's
-own outline, gaps filled -- no wider -- and the visible link is untouched.
-*/
-const hitOf = (d, look) => ({ d, fill: 'none', stroke: 'transparent', 'stroke-width': look['stroke-width'],
-	...(look['stroke-linecap'] ? { 'stroke-linecap': look['stroke-linecap'] } : {}) });
 
 
 
@@ -134,9 +122,8 @@ export class Renderer {
 		this.svg = svg;
 		// declared back→front to mirror the DOM layer order (region decorations behind the graph): groups → links → waypoints →
 		// nodes -- and behind them, each painter's own layer (C-a: the zones plugin's, the groups plugin's)
-		this.layers = {
-			links: svg.querySelector('#links'),
-		};
+		// C-a: every layer an entity is drawn into is a painter's or an appearance's; the renderer keeps none of its own
+		this.layers = {};
 		this.selectedSet = new Set();   // the renderer OWNS the 'selected' visual state (Selection is renderer-free)
 		this.labels = true;             // node and zone names, Tab-toggled; visible by default
 		this.modeWatchers = [];         // who hears a mode change (watchMode)
@@ -249,7 +236,7 @@ export class Renderer {
 			const link = this.model.get('link', id);
 			if (link && isLinkDown(this.model, link)) for (const by of blockersOf(this.model, link)) blocking.add(by);
 		}
-		for (const path of this.layers.links.querySelectorAll('path.link')) path.classList.toggle('blocking', blocking.has(path.id));
+		for (const path of this.svg.querySelector('#links').querySelectorAll('path.link')) path.classList.toggle('blocking', blocking.has(path.id));   // C-e moves this reflection to the network
 	}
 
 	/*
@@ -303,7 +290,7 @@ export class Renderer {
 		*/
 		if (action === 'del') {
 			this.remove(entity.id);
-			if (kind === 'link') this.refreshWaypointsOf(entity);
+			this.redrawAfter(kind, entity);   // from the DELETED entity -- the model no longer knows what it touched (B218)
 		}
 	}
 
@@ -324,30 +311,10 @@ export class Renderer {
 			const all = this.model.all(p.kind);
 			(p.stacked ? inOrder(all) : all).forEach((e) => this.render(p.kind, e));
 		}
-		inOrder(this.model.all('link')).forEach((l) => this.render('link', l));
 		// D3: the kinds drawn by appearances, each in its drawing order -- every item lands in its winner's layer
 		for (const kind of this.appearances.keys()) if (this.model.kinds.has(kind)) inOrder(this.model.all(kind)).forEach((e) => this.render(kind, e));
 	}
 
-	// the routed path of a link: src → its via-waypoint centres → dst, rounded at the kernel bend.
-	// A link with no via is a 2-point path (straight) — visually identical to the old line. When
-	// `closed`, the route loops dst → src as a rounded polygon (the router's close arg rounds the
-	// src/dst corners too) — a multi-hop route turned into a ring.
-	// route → path → curve. `pathOf` resolves the anchors (document); `roundedPath` bends it (kernel).
-	linkPath(entity) {
-		const path = pathOf(this.model, entity);
-		return path && roundedPath(path, BEND_R, !!entity.closed);
-	}
-
-	/*
-	How a link looks: the ONE derivation (H15.9), fed the derived state the link itself does not carry --
-	whether it is DOWN, which only the model's router knows (always false in production). Create and
-	update both call this, rather than each passing the state to `linkAppearance`: two call sites
-	assembling the same arguments is exactly how B228 shipped, one of them forgetting what the other set.
-	*/
-	linkAppearanceOf(entity) {
-		return linkAppearance(entity, LINK_W, { down: isLinkDown(this.model, entity) });
-	}
 
 	/*
 	F-d (H18.6; B249, B10) -- DRAWN IN ITS PLACE, not on top. Each drawn kind's layer is stacked by the stored drawing order
@@ -362,7 +329,6 @@ export class Renderer {
 
 	// the layer a drawn kind is stacked in, or null for one that is not stacked (a group's hull)
 	stackOf(kind, entity) {
-		if (kind === 'link') return this.layers.links;
 		const painter = this.painters.get(kind);
 		if (painter) return painter.stacked ? painter.layerEl : null;   // C-a: a painted kind's own layer
 		if (this.appearances.has(kind)) return this.drawnLayer.get(entity.id) ?? null;   // D3: the layer its winner drew it into
@@ -373,9 +339,10 @@ export class Renderer {
 		const layer = this.stackOf(kind, entity);
 		if (!layer) return;
 		this.stackedAt.set(entity.id, entity.order);   // what it was placed by, so a later change of order restacks it
-		const own = [this.elementOf(entity.id), kind === 'link' ? this.hitTwinOf(entity.id) : null].filter((e) => e && e.parentNode === layer);
+		const painter = this.painters.get(kind);
+		const own = [this.elementOf(entity.id), ...(painter?.companions?.(entity.id, layer) ?? [])].filter((e) => e && e.parentNode === layer);
 		if (!own.length) return;
-		const ownerOf = (c) => c.getAttribute('id') || c.getAttribute('data-link');   // a link's hit twin names its link (B268)
+		const ownerOf = (c) => c.getAttribute('id') || painter?.ownerOf?.(c);   // a companion names its entity -- a link's click twin (B268)
 		let ref = null;
 		for (let i = layer.children.length - 1; i >= 0; i--) {
 			const c = layer.children[i];
@@ -392,56 +359,12 @@ export class Renderer {
 		this.remove(entity.id);             // put is create-or-replace
 		// C-a: a kind a plugin paints, its painter draws
 		const painter = this.painters.get(kind);
-		if (painter) { painter.create(entity, this.kit(painter)); this.reapplyStates(entity.id); return; }   // B314: its session states too
+		if (painter) { painter.create(entity, this.kit(painter)); this.reapplyStates(entity.id); this.redrawAfter(kind, entity); return; }   // B314: its session states too
 		// D3: a kind several plugins draw on, composed from their appearances
 		if (this.appearances.has(kind)) { this.drawComposed(kind, entity); this.reapplyStates(entity.id); return; }
-		if (kind === 'link') {
-			const d = this.linkPath(entity);
-			if (!d) return;
-			// H15.9 -- ONE derivation, emitted as given. The marker, the weight and the dash were
-			// three calls assembled by hand here and again in `update`, which is how B228 shipped.
-			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...this.linkAppearanceOf(entity) }, this.layers.links);
-			el('path', { class: 'link-hit', 'data-link': entity.id, ...hitOf(d, this.linkAppearanceOf(entity)) }, this.layers.links);   // its click area (B268)
-			this.refreshWaypointsOf(entity);
-		}
 		this.reapplyStates(entity.id);
 	}
 
-	/*
-	A link change can change what its WAYPOINTS are.
-
-	A waypoint's role is derived from the links touching it, so creating, re-routing or closing a
-	link makes its terminals and bends draw differently. Only the link's own path was being updated,
-	so a waypoint kept whatever ring it was first drawn with.
-
-	Invisible on a fresh load, because every link already exists and the initial render is correct.
-	It only showed while AUTHORING -- place a waypoint, link to it, and nothing redrew it. Called from render,
-	update AND delete. A NEW link is what turns a lone waypoint into an endpoint, and fixing only
-	the update path left that case broken; B218 was the mirror -- a DELETED link leaves its endpoint
-	drawing a pad for a link that is gone.
-
-	Re-rendered rather than patched: the role decides fill, radius, stroke width and class together,
-	and setting those four from here would be a second copy of the drawing.
-	*/
-	/*
-	Redraw the links drawn THROUGH an anchor that does not appear in them -- a routed link passing it.
-
-	The branches above redraw the links the incidence index names (ends and pins). Under a plugged-in
-	network a link can also run through an anchor it does not name, and moving that anchor must
-	redraw it too, or the pipes follow the anchor and the link stays behind -- the director's report. The
-	model answers from the same authority that draws the path (the network's `linksRoutedThrough`, beside `pathOf`).
-	In production it answers nothing, so nothing extra is redrawn.
-	*/
-	refreshRoutedThrough(anchorId) {
-		for (const link of linksRoutedThrough(this.model, anchorId) ?? []) this.update('link', link);
-	}
-
-	refreshWaypointsOf(link) {
-		for (const id of [link.src, link.dst, ...(link.via || [])]) {
-			const w = bareAnchor(this.model, id);
-			if (w) this.render(BARE_KIND, w);
-		}
-	}
 
 	update(kind, entity) {
 		const dom = this.elementOf(entity.id);
@@ -452,8 +375,9 @@ export class Renderer {
 		const painter = this.painters.get(kind);
 		if (painter) {
 			const asked = painter.update(entity, dom, this.kit(painter));
-			if (asked === 'rerender') this.render(kind, entity);
-			else if (asked === 'remove') this.remove(entity.id);
+			if (asked === 'rerender') return this.render(kind, entity);
+			if (asked === 'remove') this.remove(entity.id);
+			this.redrawAfter(kind, entity);
 			return;
 		}
 		// D3: a kind drawn by appearances -- a fresh render when its composition or structure changed, otherwise the looks; then
@@ -467,37 +391,6 @@ export class Renderer {
 			this.refreshGatherer(entity.id);   // a hull hugs its members, follow the move
 			return;
 		}
-		if (kind === 'link') {
-			const d = this.linkPath(entity);
-			if (d) setAttrs(dom, { d });
-			/*
-			B228 -- THE MARKER IS PART OF THE LINK, so an update must re-derive it.
-
-			`render` set it and `update` set only `d`, so the first press of `f` drew an arrow and
-			every press afterwards changed the document and nothing else: the element already
-			existed, so it never went back through `render`.
-
-			Set-or-remove rather than set-if-present. Clearing a declaration has to REMOVE the
-			attribute, and an update that only ever adds would strand the last head on a link the
-			author has since made symmetric.
-
-			B218 was this shape one branch over -- create and update refreshed a waypoint's role and
-			delete did not. A rule wired into one branch of `handle` is wired into none of the others.
-			*/
-			/*
-			H15.9 -- the SAME derivation create uses, applied as set-or-remove over the declared
-			key set. B228 was an update that set some of these and forgot others; there is now no
-			list to forget, because `APPEARANCE_KEYS` is what the derivation itself declares.
-			*/
-			const want = this.linkAppearanceOf(entity);
-			for (const attr of APPEARANCE_KEYS) {
-				if (attr in want) dom.setAttribute(attr, want[attr]);
-				else dom.removeAttribute(attr);
-			}
-			const twin = this.hitTwinOf(entity.id);
-			if (twin) setAttrs(twin, hitOf(dom.getAttribute('d'), want));
-			this.refreshWaypointsOf(entity);
-		}
 	}
 
 	// fresh DOM loses the session states: re-apply 'selected' if this entity is selected (undo/redo/load), and the highlight of
@@ -510,7 +403,7 @@ export class Renderer {
 	// C-a: what a painter or an appearance is handed -- the canvas's element builder and look applier, the label pill's width, its
 	// layer, the model, and the session the drawing may read (the mode, and the render options it implies)
 	kit(painter = null) {
-		return { el, applyLook, pillWidth, layer: painter?.layerEl ?? null, model: this.model, mode: this.mode, renderOpts: () => this.renderOpts() };
+		return { el, setAttrs, applyLook, pillWidth, layer: painter?.layerEl ?? null, model: this.model, mode: this.mode, renderOpts: () => this.renderOpts() };
 	}
 
 	/*
@@ -555,6 +448,13 @@ export class Renderer {
 		this.drawnLayer.set(entity.id, w.a.layerEl);
 	}
 
+	// C-a: what a painter names to draw afresh once its entity is created, changed or deleted -- a link's waypoints, whose roles it
+	// changes (B218); called from all three, so no branch forgets
+	redrawAfter(kind, entity) {
+		const painter = this.painters.get(kind);
+		for (const [k, e] of painter?.redraws?.(entity, this.kit(painter)) ?? []) this.render(k, e);
+	}
+
 	// C-a: the entity gathering this one -- a group its member -- redrawn when the member moves, asked of the core (`gathers`,
 	// model/shape.mjs) so the renderer names no group
 	refreshGatherer(id) {
@@ -565,12 +465,7 @@ export class Renderer {
 	remove(id) {
 		const dom = this.elementOf(id);
 		if (dom) dom.remove();
-		this.hitTwinOf(id)?.remove();   // a link's click area goes with it (B268)
-	}
-
-	// a link's invisible hit twin, found by the link it stands for (B268)
-	hitTwinOf(id) {
-		return [...this.layers.links.querySelectorAll('.link-hit')].find((t) => t.getAttribute('data-link') === id) ?? null;
+		for (const p of this.painters.values()) p.companions?.(id, p.layerEl).forEach((c) => c.remove());   // a link's click twin goes with it (B268)
 	}
 
 	elementOf(id) {

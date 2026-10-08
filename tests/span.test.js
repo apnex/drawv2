@@ -601,25 +601,15 @@ And fixing only `update` left the common case broken: a NEW link is exactly what
 waypoint into an endpoint, and a new link goes through `render`. Both call the same helper now.
 */
 test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
-	const src = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
-	/*
-	B218 -- THREE now. A waypoint's role is derived from the links at it, so every event that
-	changes which links those are has to re-derive: a new link makes a lone waypoint an endpoint, a
-	re-route changes a bend, and a DELETED link leaves its endpoint drawing a pad for a link that no
-	longer exists. That last one was missing, and the document was right while the canvas was a
-	frame behind it.
-
-	Counted rather than named because the call sites are branches of one dispatch; what matters is
-	that no branch which changes a link forgets to ask.
-	*/
-	const calls = (src.match(/this\.refreshWaypointsOf\(/g) || []).length;
-	assert.equal(calls, 3, 'render(), update() and the del branch must ALL refresh');
-	assert.match(src, /if \(kind === 'link'\) this\.refreshWaypointsOf\(entity\);/,
-		'the delete branch refreshes from the DELETED entity -- the model no longer knows what it touched');
-	assert.match(src, /refreshWaypointsOf\(link\)\s*\{/, 'and the refresh is one helper, not two copies');
-
+	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs): the painter names the waypoints to
+	// redraw once (`redraws`), and the renderer runs a painter's redraws from create, update AND delete -- what this counted as three
+	// call sites of one helper
+	const painter = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
+	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	assert.equal((renderer.match(/this\.redrawAfter\(kind, entity\)/g) || []).length, 3, 'render(), update() and the del branch must ALL refresh');
+	assert.match(renderer, /this\.remove\(entity\.id\);\n\t\t\tthis\.redrawAfter\(kind, entity\);/, 'the delete branch refreshes from the DELETED entity -- the model no longer knows what it touched');
 	// it must cover every role a waypoint can hold on a link, or one of them stays stale
-	const body = src.slice(src.indexOf('refreshWaypointsOf(link) {'));
+	const body = painter.slice(painter.indexOf('	redraws: (link'));
 	assert.match(body.slice(0, 400), /link\.src/, 'a src terminal');
 	assert.match(body.slice(0, 400), /link\.dst/, 'a dst terminal');
 	assert.match(body.slice(0, 400), /link\.via/, 'and the bends');
@@ -1064,7 +1054,8 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	*/
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
-	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs)
+	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
 	assert.match(clientRenderer, /linkAppearance\(/, 'and so must the canvas');
 
 	/*
@@ -1165,20 +1156,15 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	*/
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
-	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
-	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(kind, entity)'));
-	/*
-	2026-09-29 -- a DOWN link's look depends on state the link does not carry, so the renderer feeds it in.
-	It does so in ONE method both branches call, rather than passing it at each call site: two sites
-	assembling the same arguments is the shape B228 shipped as. So the property is now that update calls
-	the same assembly create calls, and that the assembly is the one derivation.
-	*/
-	assert.match(updateBranch, /this\.linkAppearanceOf\(entity\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
-	const createBranch = clientRenderer.slice(0, clientRenderer.indexOf('\tupdate(kind, entity)'));
-	assert.match(createBranch, /class: 'link'[^\n]*\.\.\.this\.linkAppearanceOf\(entity\)/, 'and CREATE must use it too, or the two can disagree');
-	const assembly = clientRenderer.slice(clientRenderer.indexOf('\tlinkAppearanceOf(entity)'));
-	assert.match(assembly.slice(0, assembly.indexOf('\n\t}')), /linkAppearance\(entity, LINK_W, \{ down: isLinkDown\(this\.model, entity\) \}\)/,   // RESTATED at Q-a: the network's question over the Model
-
+	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs): create and update both call one
+	// assembly, `lookOf`, which is the one derivation fed the down state -- the property this held of the renderer's two branches
+	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
+	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(link, dom'));
+	assert.match(updateBranch, /lookOf\(model, link\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
+	const createBranch = clientRenderer.slice(clientRenderer.indexOf('\tcreate(link'), clientRenderer.indexOf('\tupdate(link, dom'));
+	assert.match(createBranch, /const look = lookOf\(model, link\)/, 'and CREATE must use it too, or the two can disagree');
+	assert.match(createBranch, /class: 'link'[^\n]*\.\.\.look/, 'and emit it');
+	assert.match(clientRenderer, /const lookOf = \(model, link\) => linkAppearance\(link, LINK_W, \{ down: isLinkDown\(model, link\) \}\)/,
 		'the assembly is the one derivation, fed the down state');
 	assert.match(updateBranch, /APPEARANCE_KEYS/,
 		'and iterate the DECLARED keys, so a key it no longer sets is removed rather than stranded');
@@ -1374,8 +1360,9 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 
 	// both renderers must go through it, or the pipeline is advisory
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
-	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
-	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['app/src/renderer.js', clientRenderer]]) {
+	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs)
+	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
+	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['network/link-painter.mjs', clientRenderer]]) {
 		assert.match(src, /linkAppearance\(/, `${name} must derive a link's appearance in one call`);
 		assert.doesNotMatch(src, /linkMarker\(|linkDash\(|linkWidth\(/,
 			`${name} still asks the sub-questions directly, so there are two ways to draw a link`);

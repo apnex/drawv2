@@ -1168,7 +1168,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.35 | An anchor's change redraws what it changes: a link pinned through a moved device, a waypoint's spawning mark -- found reading the anchor's drawing for C-a | **B312**, **B313** | S3 | `DONE` |
 | H19.36 | A selected zone drawn again keeps its selected look -- a regression of C-a's first step | **B314** | S3 | `DONE` |
 | H19.37 | A reveal beat withholds a zone or a group again -- the renderer finds the element of every drawn kind; a regression of C-a's first two steps | **B315** | S3 | `DONE` |
-| H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `TODO` |
+| H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `TODO` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `TODO` |
 | H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `TODO` |
@@ -1273,6 +1273,8 @@ AMENDED 2026-10-09: D3 ruled -- the appearance pipeline's composition half (2026
 Next: the pipeline, then the anchor's and the link's drawing on it.
 AMENDED 2026-10-09: C-a's third step done -- the anchor is drawn through the appearance pipeline: the devices plugin's device, the network's marks and transit ring, the simulation's spawning mark, ranked and layered by the product's order; the renderer draws no device and no waypoint of its own.\
 Next: the link's painter, which closes C-a.
+AMENDED 2026-10-09: C-a done -- the network's link painter; every entity is drawn by a plugin's painter or appearances, and the renderer keeps no layer of its own.\
+Next H19.30, C-b, picking.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

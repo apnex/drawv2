@@ -142,3 +142,67 @@ test('B315: the renderer finds the element of every drawn kind, a painted one or
 		for (const id of [ZONE.id, GROUP.id, NODES[0].id, 'node-0c0b09']) assert.equal(r.byId(id)?.getAttribute('id'), id, `${id} found`);
 	} finally { restore(); }
 });
+
+// ---- the link (C-a, step four): drawn by the network's painter, with its invisible click twin, redrawing its waypoints ----
+
+const LINKED = [
+	['node', { id: 'node-0c0c01', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 }],
+	['node', { id: 'node-0c0c02', name: 'w', x: 120, y: 0 }],
+	['link', { id: 'link-0c0c03', name: 'l', src: 'node-0c0c01', dst: 'node-0c0c02' }],
+];
+const linked = (renderParts, fn) => {
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		const r = new Renderer(m, svg, { parts: renderParts });
+		for (const [k, e] of LINKED) m.put(k, e);
+		const twins = () => svg.querySelector('#links').children.filter((c) => c.getAttribute('data-link') === 'link-0c0c03');
+		fn({ m, r, el: (id) => svg.ownerDocument.getElementById(id), twins });
+	} finally { restore(); }
+};
+
+test('C-a: the product\'s canvas draws a link with its click twin, and a link deleted re-derives the waypoint it ended at', async () => {
+	linked(await parts(), ({ m, el, twins }) => {
+		assert.ok(el('link-0c0c03'), 'drawn');
+		assert.equal(twins().length, 1, 'with its invisible click twin (B268)');
+		assert.ok(el('node-0c0c02').getAttribute('class').split(' ').includes('endpoint'), 'the waypoint it ends at is an endpoint');
+		m.del('link', 'link-0c0c03');
+		assert.equal(twins().length, 0, 'the twin goes with it');
+		assert.ok(!el('node-0c0c02').getAttribute('class').split(' ').includes('endpoint'), 'and the waypoint is a bend again (B218)');
+	});
+});
+
+test('C-a: a canvas composed without the network\'s painter draws no link', async () => {
+	const { NETWORK_APPEARANCES } = await import('../network/anchor-appearance.mjs');
+	const without = (await parts()).map((p) => (p.owner === 'network' ? { owner: 'network', appearances: NETWORK_APPEARANCES } : p));
+	linked(without, ({ el, twins }) => {
+		assert.equal(el('link-0c0c03'), null);
+		assert.equal(twins().length, 0);
+	});
+});
+
+test('C-a: the network brings the link\'s painter, and the renderer draws no link of its own', async () => {
+	const { NETWORK_CANVAS } = await import('../network/canvas.mjs');
+	assert.equal(NETWORK_CANVAS.owner, 'network');
+	assert.deepEqual(NETWORK_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['link', 'links', true]]);
+	assert.ok((await parts()).includes(NETWORK_CANVAS));
+	// its selection reflections -- a selected path lit, the links blocking a down link -- are session decorations, C-e's
+	assert.doesNotMatch(code('app/src/renderer.js'), /linkPath|linkAppearance|APPEARANCE_KEYS|hitOf|hitTwin|refreshWaypointsOf|roundedPath|'link-hit'/, 'the renderer draws no link of its own');
+});
+
+test('C-a: a link put back in its place keeps its click twin just after it (B268, F-d)', async () => {
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		new Renderer(m, svg, { parts: await parts() });
+		for (const [k, e] of LINKED.slice(0, 2)) m.put(k, e);
+		m.put('node', { id: 'node-0c0c04', name: 'b', type: 'host', shape: 'circle', x: 0, y: 120 });
+		const l1 = { id: 'link-0c0c05', name: 'l1', src: 'node-0c0c01', dst: 'node-0c0c02', order: 1 };
+		const l2 = { id: 'link-0c0c06', name: 'l2', src: 'node-0c0c04', dst: 'node-0c0c02', order: 2 };
+		m.put('link', l1); m.put('link', l2);
+		const stack = () => svg.querySelector('#links').children.map((c) => c.getAttribute('id') || `twin:${c.getAttribute('data-link')}`);
+		assert.deepEqual(stack(), [l1.id, `twin:${l1.id}`, l2.id, `twin:${l2.id}`]);
+		m.del('link', l1.id); m.put('link', l1);   // what undo does
+		assert.deepEqual(stack(), [l1.id, `twin:${l1.id}`, l2.id, `twin:${l2.id}`], 'back in its place, its twin with it');
+	} finally { restore(); }
+});

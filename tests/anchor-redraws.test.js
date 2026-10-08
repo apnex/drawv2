@@ -14,6 +14,9 @@ import { Model } from './fixtures/composed.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { makeRenderer } from './fixtures/client-harness.mjs';
+import { pathOf } from '../network/network-queries.mjs';
+import { roundedPath } from '../kernel/router.mjs';
+import { BEND_R } from '../kernel/spec.mjs';
 
 const SPAWN = { interval: 1000, speed: 1, kind: 'packet', since: 1_700_000_000_000 };
 const board = (fn) => {
@@ -28,7 +31,9 @@ const board = (fn) => {
 		fn({ m, r, el: (id) => svg.ownerDocument.getElementById(id) });
 	} finally { restore(); }
 };
-const fresh = (r, m, id) => r.linkPath(m.get('link', id));
+// where a fresh render draws a link -- the network's path, rounded at the kernel's bend (RESTATED at C-a step four: the renderer's
+// `linkPath` is the network painter's now)
+const fresh = (r, m, id) => { const l = m.get('link', id), p = pathOf(m, l); return p && roundedPath(p, BEND_R, !!l.closed); };
 
 test('B312: moving a device a link ENDS at redraws the link -- the state under test', () => board(({ m, r, el }) => {
 	m.put('link', { id: 'link-0d1004', name: 'l', src: 'node-0d1001', dst: 'node-0d1002' });

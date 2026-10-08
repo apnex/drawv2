@@ -13,7 +13,7 @@ Named lists rather than integer priorities -- the ruling's own caution: "priorit
 import { ZONES_CANVAS } from '../zones/zone-painter.mjs';
 import { GROUPS_CANVAS } from '../groups/group-painter.mjs';
 import { DEVICES_CANVAS } from '../devices/device-appearance.mjs';
-import { NETWORK_CANVAS } from '../network/anchor-appearance.mjs';
+import { NETWORK_CANVAS } from '../network/canvas.mjs';
 import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
 
 const ANCHOR_ORDER = {
@@ -21,5 +21,5 @@ const ANCHOR_ORDER = {
 	orders: { node: { layers: ['frame', 'sockets', 'body', 'marks', 'transit', 'select', 'label'], ranks: ['device', 'marks'] } },
 };
 
-// painters back to front on a full render: zones, then group hulls, behind everything the renderer still draws itself
+// painters back to front on a full render: zones, group hulls, links -- and the anchors over them, by appearances
 export const PRODUCT_CANVAS = [ANCHOR_ORDER, ZONES_CANVAS, GROUPS_CANVAS, DEVICES_CANVAS, NETWORK_CANVAS, SIMULATION_CANVAS];

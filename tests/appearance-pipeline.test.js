@@ -46,7 +46,7 @@ test('C-a: a device draws its frame and glyph with the network\'s transit ring a
 test('C-a: each plugin brings its appearances, and the product composes them with the anchor\'s order', async () => {
 	const parts = await canvas();
 	const { DEVICES_CANVAS } = await import('../devices/device-appearance.mjs');
-	const { NETWORK_CANVAS } = await import('../network/anchor-appearance.mjs');
+	const { NETWORK_CANVAS } = await import('../network/canvas.mjs');   // RESTATED at C-a step four: the network's whole part
 	const { SIMULATION_CANVAS } = await import('../engine/spawn-appearance.mjs');
 	assert.deepEqual(DEVICES_CANVAS.appearances.map((a) => a.id), ['device']);
 	assert.deepEqual(NETWORK_CANVAS.appearances.map((a) => a.id), ['marks', 'transit']);
