@@ -59,6 +59,10 @@ The board's exit for H19 says "the core holds no kind", which reads the second m
 A zone plugin needs no new seam on the page or in the planner: rows, tenant, key rows and painter are how the network already contributes.\
 Two consumers have no plugin seam: the CLI, which ships standalone and restates what it reads, held to the source by tests (B138); and the export (`kernel/adapt.mjs` `docToSchema`, `kernel/engine.mjs`), which reads `doc.zones` and `doc.groups` by name.
 **Recommended (judgement):** the CLI keeps its restatements, each held to the plugin's row by a test, as it holds the network's today; the export reads collections through the composition it is handed, as REST does.
+CORRECTED 2026-10-08, taking up O-b2: "a zone plugin needs no new seam on the page" is wrong.\
+Input's plugin seam is `{ owner, keys, judgeDrag }`, and a plugin's key rows act only through `addStop` and `selected` (`app/src/input.js` `PLUGINS`); press rows, gestures, releases, handles, picking and per-kind drawing have no plugin seam.\
+The network's own kind is no exception: the link is drawn by `app/src/renderer.js` and made by the product's link gesture, and the network judges a finished drag, adds two keys and paints its pipes.\
+So moving a kind's canvas into its plugin needs a canvas plugin contract first, which this design does not hold (section 14).
 
 ### 5.3 Earned exposure says wait; the target state says go
 
@@ -200,3 +204,17 @@ The cell count a positioned kind's cap derives from moved to the core's grid mod
 
 **Held by:** `tests/zone-plugin.test.js` -- the core composes no zone and names none; the product composes the plugin's row; `makeZone` mints as the Model did; a composition without the plugin refuses a zone at the validator, the planner and the Model; the reader composes none (a reader given its own composition back, and a Model given `makeZone` back, each fail it -- both mutants killed).
 Tests that pinned the core's list as three kinds, or paired a bare Model with the product's planner, restated, each saying why; every corpus unchanged.
+
+---
+
+## 14. Finding at O-b2 -- the canvas has no seam for a plugin's kind
+
+AMENDED 2026-10-08 -- **O-b2 stopped before code.**\
+Measured at `c20ad2a`: the zone's canvas spans Input's own machinery -- Shift as the zone layer (`app/src/pick.js`), the draw gesture and its release (`app/src/input.js`, `app/src/releases.js`), corner handles (`app/src/overlay.js`), the `Z` and Shift+arrow keys, move and clone treating a zone as positioned, zone snapping (`app/src/snap.js`), drawing (`app/src/renderer.js`) and the zone grid (`app/src/compose-canvas.js`).\
+None of it reaches Input through a plugin seam, and none of the link's does either (section 5.2, corrected).\
+Building one for zones alone would be a contract shaped by one consumer; the kinds that would use it are four -- zone, group, node and the network's link.\
+The choice of how to proceed is the director's.
+
+AMENDED 2026-10-08 -- **O3 RULED: the core first, the canvas designed after** (`dev/DECISIONS.md`, "O3").\
+The stages now: O-c, the group out of the core and the planner (H19.20); O-e, the node (H19.21); O-d, closed with a rule that the core and the planner name no kind (H19.22); then the canvas plugin contract, designed for zone, group, node and link together (B308, H19.23).\
+O-b closed at O-b1; its canvas, export and CLI steps are H19.23's.

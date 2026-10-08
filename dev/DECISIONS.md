@@ -1786,3 +1786,9 @@ Shown that it does -- three ways of composing kinds become one; the anchor becom
 Asked "Build the move now, staged, or something smaller, or hold it?", with earned exposure's case for holding shown beside the target state's case for building, the director chose "staged, zones-groups-node" (the proposer's recommendation) over "planner and model only" and "hold it, go to H19.8".
 - Five stages, each gated on every corpus byte-identical: O-a, the group's rules off the planner and the core; O-b, the zone plugin; O-c, the group plugin; O-e, the node plugin; O-d, closed with a layer rule that the core names no kind.
 - Nothing a user or an agent sees changes; a difference in any corpus is a defect in the move.
+
+**O3 -- the core first, the canvas designed after -- 2026-10-08 (B280, B308; H19.19).**\
+Shown at O-b2 that the canvas has no seam through which a plugin brings a kind -- Input's plugin seam is a plugin's keys, a drag stop and the judge of a link drag, and even the network's link is drawn and made by product code (`dev/design/unification/KINDS-AS-PLUGINS.md` section 14) -- and asked how to proceed, the director chose "core first, canvas later" (the proposer's recommendation) over "design the canvas contract now" and "the canvas stays product code".
+- The group and then the node leave the core and the planner now, through the seams O-a and O-b1 proved: rows, the tenants they carry, their invariants, their factories.
+- Then a canvas plugin contract is designed, for approval, for the four kinds it would serve -- zone, group, node and the network's link -- rather than shaped by one (B308, H19.23).
+- Until then the canvas, the export and the CLI name the shipped kinds, as they do today; O-d's rule holds the core and the planner.
