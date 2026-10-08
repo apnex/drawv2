@@ -6,33 +6,19 @@ Draws nodes at their EXACT entity px (so live drag stays smooth); the committed 
 always on-grid. The kernel's resolve()/renderScene() remain the headless/export authority.
 */
 
-import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
-import { linksAt } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
+import { pathOf, linksRoutedThrough, isLinkDown, blockersOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { el, setAttrs } from './painter.js';
-import { waypointRolesIn } from '../../network/roles.mjs';
-import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
-import { spanExtent } from '../../kernel/geometry.mjs';
+import { linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
 import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
-import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
+import { selBox } from '../../kernel/renderer.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
-import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 import { BARE_KIND } from '../../model/anchors.mjs';
 import { kindOf } from '../../model/model.mjs';
-import { isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../devices/device-shapes.mjs';
+import { bareAnchor } from '../../devices/device-shapes.mjs';
 import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-d)   // the bare anchor, asked in one place (F-b)
 
-const FE = L_STD.frame.ext;            // node frame half-extent (20)
-const SOCKET = STD.socket;             // glyph box (26)
 const LINK_W = STD.linkW;              // link/path stroke width (6)
-const NODE_LABEL_Y = FE + STD.labelDy; // label baseline below the frame -- B236, the spec owns the offset
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
-const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // unknown glyph → host fit-box (no crash)
-// a node's multi-cell footprint (W1): px extent beyond a 1×1 frame (+x/+y from the origin cell), and a
-// cheap signature for change-detect. No span / 1×1 → {0,0} / null, so a 1×1 node renders byte-identically.
-const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.span.cols}x${e.span.rows}` : null;
-// W2 content regions: a node carries content (text/glyph in its socket grid). contentSig drives re-render
-// on a content change; absent ⇒ no attr (plain node stays byte-identical). hexColor keeps SVG attrs safe.
-const contentSig = (e) => (isPanel(e) ? JSON.stringify(e.content) : null);   // one owner for 'is a panel'
 
 /*
 B268 -- A LINK'S CLICK AREA, apart from how it looks. The browser hit-tests a stroke's dashes and not its gaps, so a down
@@ -44,41 +30,7 @@ own outline, gaps filled -- no wider -- and the visible link is untouched.
 const hitOf = (d, look) => ({ d, fill: 'none', stroke: 'transparent', 'stroke-width': look['stroke-width'],
 	...(look['stroke-linecap'] ? { 'stroke-linecap': look['stroke-linecap'] } : {}) });
 
-// one layer of the kernel's waypoint rings, as a circle -- a layer may carry its own stroke and dash, as the transit ring
-// does, and is drawn as it says; the canvas and the export draw the same list the same way
-function layerCircle(l, g) {
-	el('circle', l.fill === 'solid'
-		? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
-		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}), ...(l.pathLength ? { pathLength: l.pathLength } : {}) }, g);   // a fitted dash (evenDash)
-}
 
-// render ONE content region into a node's <g> (node-local px) — mirrors kernel/renderer.mjs
-// renderContentRegion. Text via textContent (XSS-safe); multi-row wraps as a paragraph.
-function contentDom(r, parent, idx = 0) {
-	// LAYOUT is the kernel's (contentLayout); EMISSION is ours. The two renderers have different
-	// duties — live addressable elements here, a complete document there — but shared arithmetic was
-	// a copy waiting to drift (B40).
-	const { x0, y0, w, h, cx, cy, tx, anchor, fill, lines, size } = contentLayout(r);
-	const S = SOCKET;
-	// W5/W6 — an interactive region gets a transparent hit rect on top; CSS gives it pointer-events +
-	// cursor ONLY in run mode, so view/edit clicks pass through to the node. Appended LAST.
-	const addHit = () => {
-		if (r.action && /^[a-z0-9-]+$/.test(r.action)) el('rect', { class: 'clickable', 'data-action': r.action, x: x0, y: y0, width: w, height: h, fill: 'transparent' }, parent);
-		else if (r.input) el('rect', { class: 'clickable', 'data-input': '', 'data-idx': String(idx), x: x0, y: y0, width: w, height: h, fill: 'transparent' }, parent);
-	};
-	if (r.content === 'glyph') {
-		const [bx, by, bw, bh] = FIT(r.glyph);
-		const svg = el('svg', { x: cx - S / 2, y: cy - S / 2, width: S, height: S, viewBox: `${bx} ${by} ${bw} ${bh}`, preserveAspectRatio: 'xMidYMid meet' }, parent);
-		el('use', { 'data-layer': 'glyph', href: `#glyph-${r.glyph}` }, svg);
-		addHit(); return;
-	}
-	if (r.outline) el('rect', { class: 'content-box', x: x0, y: y0, width: w, height: h, rx: (typeof r.rx === 'number' ? r.rx : 3), fill: hexColor(r.bg) || TOKENS.contentBg, stroke: hexColor(r.accent) || TOKENS.port, 'stroke-width': 1.3 }, parent);
-	for (const ln of lines) {
-		const t = el('text', { class: 'content-text', x: tx, y: ln.y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-family': 'ui-monospace,monospace', 'font-size': size, fill }, parent);
-		t.textContent = ln.text;
-	}
-	addHit();
-}
 
 // opaque backing sized to the text (15px monospace: ~9px/char, CJK wide ~15px)
 /*
@@ -92,29 +44,6 @@ Links have had this since H15.9's first rung (`linkAppearance`, with `APPEARANCE
 rings stay a LIST of layers (`waypointLayers`): it draws several circles rather than one element, so its roles re-render.
 tests/appearance.test.js holds the property for every kind: an update equals a fresh render, in two separate documents.
 */
-const nodeLook = (entity) => {
-	const csig = contentSig(entity), sig = spanSig(entity);
-	const look = { root: { transform: `translate(${entity.x},${entity.y})` } };
-	// a panel or span draws a sized rect, whose corner follows its shape; a plain node `<use>`s the circle or square def
-	look.frame = (sig || csig) ? { rx: frameRadius(entity, L_STD), 'stroke-width': frameWidth(entity) } : { href: `#m-${entity.shape || 'circle'}` };
-	if (!csig) {   // a content node is labelled by its content and its regions own the glyphs
-		const [bx, by, bw, bh] = FIT(entity.type);
-		const pw = pillWidth(entity.name), { sw } = spanExtent(entity.span);
-		look.fit = { viewBox: `${bx} ${by} ${bw} ${bh}` };   // the glyph fitted to its own box (B205)
-		look.glyph = { href: `#glyph-${entity.type}` };
-		look.pill = { x: sw / 2 - pw / 2, width: pw };
-		look.label = { x: sw / 2, text: entity.name || '' };
-	}
-	return look;
-};
-const NODE_PARTS = {
-	frame: (g) => g.querySelector('[data-layer="frame"]'),
-	glyph: (g) => g.querySelector('[data-layer="glyph"]'),
-	fit: (g) => g.querySelector('[data-layer="glyph"]')?.parentNode ?? null,
-	pill: (g) => g.querySelector('.label-pill'),
-	label: (g) => g.querySelector('.label'),
-};
-const waypointLook = (entity) => ({ root: { transform: `translate(${entity.x},${entity.y})` } });
 
 // emit a look onto an element: each part found by its finder, each attribute set, `text` as the element's content
 function applyLook(dom, look, parts = {}) {
@@ -141,11 +70,48 @@ refreshes its kind's elements through the kit the renderer hands it, since a plu
 canvas is built: a painter missing a part, a layer the page lacks, or a kind painted twice is refused, naming the owner.
 */
 const PAINTER_PARTS = ['create', 'update'];
+/*
+D3 (C-a, step three) -- A PART MAY ALSO BRING APPEARANCES for a kind several plugins draw on, and ORDERS for such a kind: the
+named layers its parts land in, back to front, and the competing appearances' ranks, highest first. An appearance is
+`{ id, kind, state(entity, kit) -> derived state | null, composes, root?, rootAttrs?, addClass?, parts?, structure?, look?,
+selectBox?, redraws? }`: when its state is not null it applies, and either composes -- drawn alongside the others -- or competes,
+the highest-ranked alone drawn, its root the element (`root: { layer, class }`). Checked when the canvas is built.
+*/
+const SESSION_LAYER = 'select';   // the canvas's own layer in an order: the selection brackets, session state, no pack (2026-09-22)
+function composeParts(parts, svg) {
+	const painters = new Map(), appearances = new Map(), orders = new Map(), byId = new Map();
+	for (const part of parts) {
+		if (!part || typeof part.owner !== 'string') throw new Error('Renderer: a canvas part is { owner, painters, appearances, orders }');
+		for (const [kind, order] of Object.entries(part.orders ?? {})) {
+			if (orders.has(kind)) throw new Error(`Renderer: the order for ${kind} is declared by ${orders.get(kind).owner} and by ${part.owner}`);
+			orders.set(kind, { ...order, owner: part.owner });
+		}
+	}
+	for (const part of parts) {
+		for (const a of part.appearances ?? []) {
+			if (byId.has(a.id)) throw new Error(`Renderer: appearance ${a.id} is brought by ${byId.get(a.id)} and by ${part.owner}`);
+			byId.set(a.id, part.owner);
+			const order = orders.get(a.kind);
+			if (!order) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} is for ${a.kind}, for which no part orders appearances`);
+			if (typeof a.state !== 'function') throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} has no state`);
+			const stray = Object.keys(a.parts ?? {}).filter((l) => !order.layers.includes(l) || l === SESSION_LAYER);
+			if (stray.length) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} draws into layer ${stray.join(', ')}, which the order for ${a.kind} does not list`);
+			if (!a.composes) {
+				if (!a.root || typeof a.root.class !== 'function') throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} competes and names no root`);
+				if (!order.ranks.includes(a.id)) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} competes and the order for ${a.kind} does not rank it`);
+				const layer = svg.querySelector(`#${a.root.layer}`);
+				if (!layer) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} draws into #${a.root.layer}, which the page does not have`);
+			}
+			if (!appearances.has(a.kind)) appearances.set(a.kind, []);
+			appearances.get(a.kind).push({ ...a, owner: part.owner, layerEl: a.composes ? null : svg.querySelector(`#${a.root.layer}`) });
+		}
+	}
+	return { painters: composePainters(parts, svg), appearances, orders };
+}
 function composePainters(parts, svg) {
 	const painters = new Map();
 	for (const part of parts) {
-		if (!part || typeof part.owner !== 'string' || !Array.isArray(part.painters)) throw new Error('Renderer: a canvas part is { owner, painters }');
-		for (const p of part.painters) {
+		for (const p of part.painters ?? []) {
 			const missing = PAINTER_PARTS.filter((k) => typeof p?.[k] !== 'function');
 			if (missing.length) throw new Error(`Renderer: ${part.owner}'s painter for ${p?.kind} has no ${missing.join(', ')}`);
 			const layer = svg.querySelector(`#${p.layer}`);
@@ -159,8 +125,10 @@ function composePainters(parts, svg) {
 
 export class Renderer {
 	constructor(model, svg, { parts = [] } = {}) {
-		// C-a: the kinds a plugin paints, from the canvas parts the page was composed with
-		this.painters = composePainters(parts, svg);
+		// C-a: the kinds a plugin paints, and those several plugins draw by appearances (D3), from the page's canvas parts
+		({ painters: this.painters, appearances: this.appearances, orders: this.orders } = composeParts(parts, svg));
+		this.drawnSig = new Map();     // id -> the composition it was drawn by (D3), so an update knows when to render afresh
+		this.drawnLayer = new Map();   // id -> the page layer its winning appearance drew it into
 		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
 		this.model = model;
 		this.svg = svg;
@@ -168,8 +136,6 @@ export class Renderer {
 		// nodes -- and behind them, each painter's own layer (C-a: the zones plugin's, the groups plugin's)
 		this.layers = {
 			links: svg.querySelector('#links'),
-			waypoints: svg.querySelector('#waypoints'),
-			nodes: svg.querySelector('#nodes')
 		};
 		this.selectedSet = new Set();   // the renderer OWNS the 'selected' visual state (Selection is renderer-free)
 		this.labels = true;             // node and zone names, Tab-toggled; visible by default
@@ -214,7 +180,7 @@ export class Renderer {
 	a legend, or an off-canvas copy of the same id.
 	*/
 	glyphOf(id) {
-		const node = this.layers.nodes.querySelector(`[id="${id}"]`);
+		const node = this.svg.querySelector('#nodes').querySelector(`[id="${id}"]`);   // the devices plugin's layer
 		return node ? node.querySelector('[data-layer="glyph"]') : null;
 	}
 
@@ -227,9 +193,12 @@ export class Renderer {
 	reveal names ids without regard to kind -- a beat may withhold a link as readily as a node.
 	*/
 	byId(id) {
-		for (const layer of Object.values(this.layers)) {
+		// B315: every layer an entity may be drawn into -- the renderer's own, its painters', its appearances' roots
+		const roots = [...this.painters.values()].map((p) => p.layerEl);
+		for (const list of this.appearances.values()) for (const a of list) if (a.layerEl) roots.push(a.layerEl);
+		for (const layer of new Set([...Object.values(this.layers), ...roots])) {
 			const hit = layer?.querySelector?.(`[id="${id}"]`);
-			if (hit) return hit;
+			if (hit?.getAttribute?.('id') === id) return hit;   // the entity's own element -- never a stand-in a layer offers
 		}
 		return null;
 	}
@@ -240,10 +209,9 @@ export class Renderer {
 		this.svg.classList.toggle('run-mode', mode === 'run');
 		// every node, not only the panels. Gating a plain node's socket on the mode is pointless if
 		// switching mode never re-renders it -- the change would appear on the next unrelated edit.
-		typedNodes(this.model).forEach((n) => this.render('node', n));
-		// R-c (H18.21): and every waypoint, since run mode draws the run picture's layers (kernel RUN_PICTURE) rather than hiding
-		// the rest by stylesheet
-		bareAnchors(this.model).forEach((w) => this.render(BARE_KIND, w));
+		// R-c (H18.21): and every waypoint, since run mode draws the run picture's layers rather than hiding the rest by stylesheet
+		// -- every entity of a kind drawn by appearances, whose parts may read the mode (D3)
+		for (const kind of this.appearances.keys()) if (this.model.kinds.has(kind)) this.model.all(kind).forEach((e) => this.render(kind, e));
 		// H12.8 -- the composition root starts or stops the movers, and the network's painter draws the run picture's pipes,
 		// without the renderer knowing either exists. The renderer draws the document; movers and pipes are not its own.
 		for (const fn of this.modeWatchers) fn(this.mode);
@@ -347,6 +315,7 @@ export class Renderer {
 		this.selectedSet.clear();
 		Object.values(this.layers).forEach((layer) => { layer.innerHTML = ''; });
 		for (const p of this.painters.values()) p.layerEl.innerHTML = '';
+		for (const list of this.appearances.values()) for (const a of list) if (a.layerEl) a.layerEl.innerHTML = '';
 		// each stacked kind in its drawing order, so every item lands on top of the ones before it (F-d)
 		const inOrder = (list) => [...list].sort(byDrawingOrder);
 		// C-a: the painted kinds first, in the order the canvas parts were composed -- the back of the page (the zones plugin's)
@@ -356,8 +325,8 @@ export class Renderer {
 			(p.stacked ? inOrder(all) : all).forEach((e) => this.render(p.kind, e));
 		}
 		inOrder(this.model.all('link')).forEach((l) => this.render('link', l));
-		inOrder(bareAnchors(this.model)).forEach((w) => this.render(BARE_KIND, w));
-		inOrder(typedNodes(this.model)).forEach((n) => this.render('node', n));
+		// D3: the kinds drawn by appearances, each in its drawing order -- every item lands in its winner's layer
+		for (const kind of this.appearances.keys()) if (this.model.kinds.has(kind)) inOrder(this.model.all(kind)).forEach((e) => this.render(kind, e));
 	}
 
 	// the routed path of a link: src → its via-waypoint centres → dst, rounded at the kernel bend.
@@ -396,7 +365,7 @@ export class Renderer {
 		if (kind === 'link') return this.layers.links;
 		const painter = this.painters.get(kind);
 		if (painter) return painter.stacked ? painter.layerEl : null;   // C-a: a painted kind's own layer
-		if (kind === 'node') return isBareEntity(kind, entity) ? this.layers.waypoints : this.layers.nodes;
+		if (this.appearances.has(kind)) return this.drawnLayer.get(entity.id) ?? null;   // D3: the layer its winner drew it into
 		return null;
 	}
 
@@ -424,46 +393,8 @@ export class Renderer {
 		// C-a: a kind a plugin paints, its painter draws
 		const painter = this.painters.get(kind);
 		if (painter) { painter.create(entity, this.kit(painter)); this.reapplyStates(entity.id); return; }   // B314: its session states too
-		const bare = isBareEntity(kind, entity);   // drawn as a waypoint, whatever kind stores it (model/anchors.mjs)
-		if (kind === 'node' && !bare) {
-			const g = el('g', { id: entity.id, class: 'node' }, this.layers.nodes);
-			const { sw, sh } = spanExtent(entity.span), sig = spanSig(entity), csig = contentSig(entity);
-			if (sig || csig) {   // a panel (content) or multi-cell node → a sized rounded-rect frame (same .frame styling)
-				if (sig) g.setAttribute('data-span', sig);
-				// a panel's corner FOLLOWS its shape (like a 1×1 node, toggled by 's'): circle → the circle radius
-				// (frame.ext=20; a 1×1 panel == the circle, a row → a pill), square → the sharp frame radius (5)
-				el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh }, g);
-			} else {
-				el('use', { 'data-layer': 'frame' }, g);
-			}
-			if (csig) {   // content node (W2): the content regions, + (W4) the per-cell socket grid only in edit mode
-				g.setAttribute('data-content', csig);
-				if (showsSockets(this.renderOpts())) {   // one rule; the client says yes by being in edit mode
-					const gc = entity.span ? entity.span.cols : 1, gr = entity.span ? entity.span.rows : 1;
-					for (let j = 0; j < gr; j++) for (let i = 0; i < gc; i++)
-						el('rect', { class: 'socket', x: i * STD.pitch - SOCKET / 2, y: j * STD.pitch - SOCKET / 2, width: SOCKET, height: SOCKET }, g);
-				}
-				entity.content.forEach((r, i) => contentDom(r, g, i));
-			} else {
-				// W4: a plain node's socket is an editing aid too, and was the one that never obeyed the
-				// mode. A panel's grid appeared on `e` while every node kept its dashed square on in
-				// view and run -- the same cue meaning "you may align to this" was permanent on one
-				// kind and toggled on the other.
-				if (showsSockets(this.renderOpts())) {
-					el('rect', { class: 'socket', x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET }, g);
-				}
-				const fit = el('svg', { x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET, preserveAspectRatio: 'xMidYMid meet' }, g);
-				el('use', { 'data-layer': 'glyph' }, fit);
-			}
-			// a node declaring transit off shows the same ring an anchor does, at its anchor point (TRANSIT.md section 12, X1)
-			if (declaresNoTransit(this.model, entity.id)) layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'), g);
-			el('path', { class: 'select-box', d: sig ? selBox(L_STD, sw, sh) : SELECT_BOX }, g);
-			if (!csig) {   // a content node (text box / panel) is self-labelled by its content — no name sub-title
-				el('rect', { class: 'label-pill', rx: 4, y: NODE_LABEL_Y - 13 + sh, height: STD.labelH }, g);
-				el('text', { class: 'label', y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize }, g);
-			}
-			applyLook(g, nodeLook(entity), NODE_PARTS);   // H15.9: what can change, from the one derivation update uses too
-		}
+		// D3: a kind several plugins draw on, composed from their appearances
+		if (this.appearances.has(kind)) { this.drawComposed(kind, entity); this.reapplyStates(entity.id); return; }
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
 			if (!d) return;
@@ -472,38 +403,6 @@ export class Renderer {
 			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...this.linkAppearanceOf(entity) }, this.layers.links);
 			el('path', { class: 'link-hit', 'data-link': entity.id, ...hitOf(d, this.linkAppearanceOf(entity)) }, this.layers.links);   // its click area (B268)
 			this.refreshWaypointsOf(entity);
-		}
-		if (bare) {
-			/*
-			The role comes from the KERNEL's rule, not from a second copy of it here.
-
-			The live editor and the SVG export are deliberately separate renderers (B28): one keeps
-			addressable DOM for a person editing, the other produces a finished document. What must
-			NOT differ is the rule for what a waypoint IS -- and it did, because the role landed in
-			`resolve()`, which only the export walks. The canvas kept drawing every waypoint as a
-			bend while the download drew endpoints correctly, so checking the export said it worked.
-
-			`linksAt` is the engine's maintained incidence index, so this is O(1) and re-derives on
-			every render -- closing a path with `c` changes the drawing with nothing stored.
-			*/
-			// B166 -- model links go straight to the kernel. This used to map src/dst/closed into
-			// from/to/close inline, and the situation needed the same mapping, which is what turned
-			// a four-word detail into a twin. Unifying the vocabulary removed both copies.
-			const roles = waypointRolesIn(this.model, entity.id);   // B277: its transit too -- off admits endpoints only
-			// the numbers are the kernel's, shared with the SVG export; this only emits them
-			/*
-			B209 -- walk the kernel's layer list. Which sub-type draws what lives in
-			`waypointLayers`, so the canvas and the SVG export cannot disagree and a new sub-type is
-			one change rather than two.
-			*/
-			const g = el('g', { id: entity.id, class: this.waypointClass(entity, roles) }, this.layers.waypoints);
-			applyLook(g, waypointLook(entity));
-			// the anchor as drawn: whether it declares transit off comes from the network (the Model's `declaresNoTransit`),
-			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
-			const anchor = { transit: declaresNoTransit(this.model, entity.id) ? false : undefined };
-			// in run mode, the run picture -- what the download draws too, decided in one place (RUN_PICTURE, R-c)
-			for (const l of waypointLayers(roles, FE, linksAt(this.model, entity.id), anchor, { run: this.mode === 'run' })) layerCircle(l, g);
-			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		this.reapplyStates(entity.id);
 	}
@@ -533,11 +432,6 @@ export class Renderer {
 	model answers from the same authority that draws the path (the network's `linksRoutedThrough`, beside `pathOf`).
 	In production it answers nothing, so nothing extra is redrawn.
 	*/
-	// a waypoint's class: its roles (or a bend), and whether it spawns -- one derivation, for its render and its update (B313)
-	waypointClass(entity, roles = waypointRolesIn(this.model, entity.id)) {
-		return `waypoint ${roles.length ? roles.join(' ') : 'bend'}${entity.spawn ? ' spawning' : ''}`;
-	}
-
 	refreshRoutedThrough(anchorId) {
 		for (const link of linksRoutedThrough(this.model, anchorId) ?? []) this.update('link', link);
 	}
@@ -562,19 +456,16 @@ export class Renderer {
 			else if (asked === 'remove') this.remove(entity.id);
 			return;
 		}
-		const bare = isBareEntity(kind, entity);
-		if (kind === 'node' && !bare) {
-			// a footprint OR content change (resize, 1×1↔span, content set) → re-render (always correct); a
-			// pure move keeps the fast path (frame/content/selBox are all local to the translate → only transform).
-			const sig = spanSig(entity), csig = contentSig(entity);
-			if ((dom.getAttribute('data-span') || null) !== sig || (dom.getAttribute('data-content') || null) !== csig) return this.render('node', entity);
-			// H15.9: the move, the glyph and its fit box, the frame's def or corner, the label and its pill -- the one look
-			applyLook(dom, nodeLook(entity), NODE_PARTS);
-			// B312: every link naming it, end or bend -- since H19.10 a link may be pinned through a device, and redrawing only the
-			// links ending at it left such a link drawn along the device's old place
-			linksAt(this.model, entity.id).forEach((link) => this.update('link', link));
-			this.refreshRoutedThrough(entity.id);
-			this.refreshGatherer(entity.id);   // a hull hugs its members → follow the move
+		// D3: a kind drawn by appearances -- a fresh render when its composition or structure changed, otherwise the looks; then
+		// what its appearances name to redraw, and whatever gathers it
+		if (this.appearances.has(kind)) {
+			const c = this.compose(kind, entity);
+			if (!c) this.remove(entity.id);
+			else if (this.sigOf(c, entity) !== this.drawnSig.get(entity.id)) this.render(kind, entity);
+			else for (const x of [c.winner, ...c.composers]) this.applyLookOf(x.a, entity, dom);
+			for (const a of this.appearances.get(kind)) for (const [k, e] of a.redraws?.(entity, this.kit()) ?? []) this.update(k, e);
+			this.refreshGatherer(entity.id);   // a hull hugs its members, follow the move
+			return;
 		}
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
@@ -607,15 +498,6 @@ export class Renderer {
 			if (twin) setAttrs(twin, hitOf(dom.getAttribute('d'), want));
 			this.refreshWaypointsOf(entity);
 		}
-		if (bare) {
-			// B313: its marks derive from it -- a spawner set or cleared changes them -- so a change to them renders afresh, where only
-			// the position was re-applied and the `spawning` mark stayed as it was until the next full render
-			if (dom.getAttribute('class') !== this.waypointClass(entity)) this.render(BARE_KIND, entity);
-			else applyLook(dom, waypointLook(entity));
-			linksAt(this.model, entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
-			this.refreshRoutedThrough(entity.id);
-			this.refreshGatherer(entity.id);                                         // reflow a group it belongs to
-		}
 	}
 
 	// fresh DOM loses the session states: re-apply 'selected' if this entity is selected (undo/redo/load), and the highlight of
@@ -625,9 +507,52 @@ export class Renderer {
 		if (this.pathLit?.has(id)) this.setState(id, 'on-selected-path', true);
 	}
 
-	// C-a: what a painter is handed -- the canvas's element builder and look applier, the label pill's width, and its layer
-	kit(painter) {
-		return { el, applyLook, pillWidth, layer: painter.layerEl, model: this.model };
+	// C-a: what a painter or an appearance is handed -- the canvas's element builder and look applier, the label pill's width, its
+	// layer, the model, and the session the drawing may read (the mode, and the render options it implies)
+	kit(painter = null) {
+		return { el, applyLook, pillWidth, layer: painter?.layerEl ?? null, model: this.model, mode: this.mode, renderOpts: () => this.renderOpts() };
+	}
+
+	/*
+	D3 -- THE COMPOSITION of a kind's appearances for one entity (the 2026-09-22 ruling): those whose state applies; of the
+	competing ones, the highest-ranked alone (the order's `ranks`); every composing one with it. Null when nothing competes.
+	*/
+	compose(kind, entity) {
+		const kit = this.kit(), ranks = this.orders.get(kind).ranks;
+		const applying = this.appearances.get(kind).map((a) => ({ a, state: a.state(entity, kit) })).filter((x) => x.state != null);
+		const composes = (x) => (typeof x.a.composes === 'function' ? x.a.composes(x.state) : !!x.a.composes);
+		const winner = applying.filter((x) => !composes(x)).sort((p, q) => ranks.indexOf(p.a.id) - ranks.indexOf(q.a.id))[0];
+		return winner ? { winner, composers: applying.filter(composes) } : null;
+	}
+
+	// what an entity was drawn by: its winner and state, the composers and theirs, and the winner's structure
+	sigOf(c, entity) {
+		return `${c.winner.a.id}:${c.winner.state}|${c.composers.map((x) => `${x.a.id}:${x.state}`).join(',')}|${c.winner.a.structure?.(entity) ?? ''}`;
+	}
+
+	applyLookOf(a, entity, dom) {
+		if (!a.look) return;
+		const [look, finders] = a.look(entity, this.kit());
+		applyLook(dom, look, finders);
+	}
+
+	// D3: the root its winner names, in its layer, with the composers' classes; each named layer of the order in turn, the
+	// winner's part then the composers'; the canvas's selection brackets in its own; then the looks
+	drawComposed(kind, entity) {
+		const c = this.compose(kind, entity);
+		this.drawnSig.delete(entity.id); this.drawnLayer.delete(entity.id);
+		if (!c) return;
+		const kit = this.kit(), drawers = [c.winner, ...c.composers], w = c.winner;
+		const cls = [w.a.root.class(entity, kit, w.state), ...c.composers.map((x) => x.a.addClass).filter(Boolean)].join(' ');
+		const g = el('g', { id: entity.id, class: cls }, w.a.layerEl);
+		for (const [k, v] of w.a.rootAttrs?.(entity) ?? []) g.setAttribute(k, v);
+		for (const layer of this.orders.get(kind).layers) {
+			if (layer === SESSION_LAYER) { el('path', { class: 'select-box', d: w.a.selectBox?.(entity) ?? SELECT_BOX }, g); continue; }
+			for (const x of drawers) x.a.parts?.[layer]?.(entity, g, kit, x.state);
+		}
+		for (const x of drawers) this.applyLookOf(x.a, entity, g);
+		this.drawnSig.set(entity.id, this.sigOf(c, entity));
+		this.drawnLayer.set(entity.id, w.a.layerEl);
 	}
 
 	// C-a: the entity gathering this one -- a group its member -- redrawn when the member moves, asked of the core (`gathers`,

@@ -56,7 +56,7 @@ test('C-a: a malformed canvas part is refused when the canvas is built, naming i
 		// a page with no such layer -- the harness's svg answers any selector with a fresh element, so a bare one stands in
 		const page = { querySelector: () => null };
 		assert.throws(() => new Renderer(m, page, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'nowhere', create() {}, update() {} }] }] }), /Renderer: p's painter for zone draws into #nowhere, which the page does not have/);
-		const z = (await parts())[0];
+		const z = (await parts()).find((p) => p.owner === 'zones');   // RESTATED at D3: the product's order part comes first now
 		assert.throws(() => new Renderer(m, svg, { parts: [z, { ...z, owner: 'again' }] }), /Renderer: zone is painted by zones and by again/);
 	} finally { restore(); }
 });
@@ -124,5 +124,21 @@ test('B314: a selected zone drawn again keeps its selected look', async () => {
 		assert.equal(selected(), true, 'selected');
 		m.put('zone', { ...ZONE, name: 'dmz-2' });
 		assert.equal(selected(), true, 'and still, once drawn again');
+	} finally { restore(); }
+});
+
+// B315 -- the reveal marks an entity through `renderer.byId`, which searched the renderer's own layers; each painter took its
+// kind's layer off that list, so a zone (from C-a step one) and a group (step two) could no longer be withheld by a beat
+test('B315: the renderer finds the element of every drawn kind, a painted one or an appearance\'s included', async () => {
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		const r = new Renderer(m, svg, { parts: await parts() });
+		m.put('zone', ZONE);
+		for (const n of NODES) m.put('node', n);
+		m.put('group', GROUP);
+		m.put('node', { id: 'node-0c0b09', name: 'w', x: 240, y: 240 });
+		// by its id: the harness answers an unmatched selector with a stand-in element, so finding something proves nothing
+		for (const id of [ZONE.id, GROUP.id, NODES[0].id, 'node-0c0b09']) assert.equal(r.byId(id)?.getAttribute('id'), id, `${id} found`);
 	} finally { restore(); }
 });

@@ -112,7 +112,7 @@ const RECORD = {
 	'app/src/help.js': [1, 'the help overlay\'s waypoint situation, F4'],
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
 	'app/src/releases.js': [1, 'the palette hand, F4'],
-	'app/src/renderer.js': [2, 'the drawn waypoint\'s class and layer, and the layer it is stacked in, F4'],
+	'network/anchor-appearance.mjs': [1, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3)'],
 	'lab/src/root.js': [1, 'the page\'s waypoint layer id'],
 };
 

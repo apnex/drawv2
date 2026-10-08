@@ -556,7 +556,8 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	What the negative guard cannot do, the shared function does structurally: there is one
 	`waypointRole`, and a renderer that stopped calling it would fail the assertion below.
 	*/
-	const client = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	const client = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
 	const engine = fs.readFileSync(new URL('../kernel/engine.mjs', import.meta.url), 'utf8');
 
 	/*
@@ -704,7 +705,8 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 	drift the first time one side changed.
 	*/
 	// K11: the kernel's waypoint drawing is in the SVG scene half (kernel/svg-scene.mjs)
-	for (const f of ['../app/src/renderer.js', '../kernel/svg-scene.mjs']) {
+	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	for (const f of ['../network/anchor-appearance.mjs', '../kernel/svg-scene.mjs']) {
 		const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
 		assert.match(src, /waypointLayers\(/, `${f} must ASK for the layer list (B209), not restate which role draws what`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*5\s*:\s*1\.6/, `${f} restates the stroke weight`);
@@ -818,7 +820,8 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	const { gridDot } = await import('../kernel/geometry.mjs');
 	// K8: the grid is drawn by the one canvas composition (app/src/compose-canvas.js), for the product page and the lab
 	const main = fs.readFileSync(new URL('../app/src/compose-canvas.js', import.meta.url), 'utf8');
-	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	const renderer = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
 
 	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
@@ -1253,8 +1256,9 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 	stylesheets -- which is the B121 and B200 shape, and why this is derived at all.
 	*/
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
-	const clientRenderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
-	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['app/src/renderer.js', clientRenderer]]) {
+	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	const clientRenderer = fs.readFileSync(new URL('../devices/device-appearance.mjs', import.meta.url), 'utf8');
+	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['devices/device-appearance.mjs', clientRenderer]]) {
 		assert.match(src, /frameWidth\(/, `${name} must derive the frame weight rather than hardcode it`);
 		assert.doesNotMatch(src, /'font-size':\s*15|font-size="15"/, `${name} still carries a literal font size`);
 	}
@@ -1519,7 +1523,8 @@ test('a fitted dash is drawn as fitted, by the canvas and the export alike', asy
 	const { waypointLayers } = await import('../network/appearance.mjs');
 	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
 	assert.ok(ring.pathLength, 'the transit ring carries its fitted length');
-	const canvas = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
+	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	const canvas = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
 	const scene = fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8');
 	assert.match(canvas, /pathLength: l\.pathLength/, 'the canvas emits it');
 	assert.match(scene, /pathLength="\$\{l\.pathLength\}"/, 'and so does the export');

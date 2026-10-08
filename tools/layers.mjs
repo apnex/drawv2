@@ -36,7 +36,7 @@ export const ALLOWED = {
 	groups: ['core', 'groups'],   // O-c (H19.20): the groups plugin -- the group kind and its rules; it imports the core and itself
 	devices: ['core', 'devices'],   // O-e1 (H19.21; O4): the devices plugin -- whether a device is composed on an anchor; it imports the core and itself
 	planner: ['core', 'network', 'planner'],   // O-d (H19.22): it composes nothing, so it imports no plugin
-	product: ['core', 'devices', 'zones', 'groups', 'simulation', 'product'],   // O-d (H19.22): the product's composition -- the anchor and the shipped plugins
+	product: ['core', 'devices', 'network', 'zones', 'groups', 'simulation', 'product'],   // C-a (D3): the network's appearances on the anchor among the product's canvas parts   // O-d (H19.22): the product's composition -- the anchor and the shipped plugins
 	canvas: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas'],
 	chrome: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'devices', 'network', 'simulation'],
@@ -145,6 +145,7 @@ export const LAYER = {
 	simulation: [
 		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs',
 		'engine/spawn-field.mjs',   // O-e2 (H19.21): the spawner's field, composed onto the anchor
+		'engine/spawn-appearance.mjs',   // C-a (H19.29, D3): the spawning mark, composed onto the anchor's drawing
 		'model/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
 	],
 	export: [
@@ -197,6 +198,7 @@ export const ENTRIES = {
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
+			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
@@ -246,6 +248,7 @@ export const ENTRIES = {
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
+			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
