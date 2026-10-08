@@ -9,15 +9,15 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksOf, linksAt } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { el, setAttrs } from './painter.js';
-import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
-import { groupHull, spanExtent } from '../../kernel/geometry.mjs';
+import { spanExtent } from '../../kernel/geometry.mjs';
 import { STD, L_STD, BEND_R } from '../../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../../kernel/renderer.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
 import { GLYPH_BB, TOKENS } from '../../kernel/theme.mjs';
 import { BARE_KIND } from '../../model/anchors.mjs';
+import { kindOf } from '../../model/model.mjs';
 import { isBareEntity, bareAnchor, bareAnchors, typedNodes } from '../../devices/device-shapes.mjs';
 import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-d)   // the bare anchor, asked in one place (F-b)
 
@@ -114,8 +114,6 @@ const NODE_PARTS = {
 	pill: (g) => g.querySelector('.label-pill'),
 	label: (g) => g.querySelector('.label'),
 };
-const groupLook = (box) => ({ hull: { x: box.x, y: box.y, width: box.w, height: box.h } });
-const GROUP_PARTS = { hull: (g) => g.querySelector('.group-hull') };
 const waypointLook = (entity) => ({ root: { transform: `translate(${entity.x},${entity.y})` } });
 
 // emit a look onto an element: each part found by its finder, each attribute set, `text` as the element's content
@@ -167,9 +165,8 @@ export class Renderer {
 		this.model = model;
 		this.svg = svg;
 		// declared back→front to mirror the DOM layer order (region decorations behind the graph): groups → links → waypoints →
-		// nodes -- and behind them, each painter's own layer (C-a: the zones plugin's)
+		// nodes -- and behind them, each painter's own layer (C-a: the zones plugin's, the groups plugin's)
 		this.layers = {
-			groups: svg.querySelector('#groups'),
 			links: svg.querySelector('#links'),
 			waypoints: svg.querySelector('#waypoints'),
 			nodes: svg.querySelector('#nodes')
@@ -358,7 +355,6 @@ export class Renderer {
 			const all = this.model.all(p.kind);
 			(p.stacked ? inOrder(all) : all).forEach((e) => this.render(p.kind, e));
 		}
-		this.model.all('group').forEach((g) => this.render('group', g));
 		inOrder(this.model.all('link')).forEach((l) => this.render('link', l));
 		inOrder(bareAnchors(this.model)).forEach((w) => this.render(BARE_KIND, w));
 		inOrder(typedNodes(this.model)).forEach((n) => this.render('node', n));
@@ -382,14 +378,6 @@ export class Renderer {
 	*/
 	linkAppearanceOf(entity) {
 		return linkAppearance(entity, LINK_W, { down: isLinkDown(this.model, entity) });
-	}
-
-	// group hull = the bbox of member node centres, padded to ±group.ext (the kernel spec).
-	// null when no member resolves (avoids ±Infinity), matching the kernel's empty-group guard.
-	groupBox(entity) {
-		const members = entity.members.map((id) => this.model.endpointOf(id)).filter(Boolean)
-			.map((m) => { const { sw, sh } = spanExtent(m.span); return { x: m.x, y: m.y, w: sw, h: sh }; });   // span-aware footprint
-		return groupHull(members, L_STD.group.ext);   // one authority shared with the kernel resolve (now footprint-aware)
 	}
 
 	/*
@@ -485,13 +473,6 @@ export class Renderer {
 			el('path', { class: 'link-hit', 'data-link': entity.id, ...hitOf(d, this.linkAppearanceOf(entity)) }, this.layers.links);   // its click area (B268)
 			this.refreshWaypointsOf(entity);
 		}
-		if (kind === 'group') {
-			const b = this.groupBox(entity);
-			if (!b) return;                 // no resolvable members → no hull
-			const g = el('g', { id: entity.id, class: 'group' }, this.layers.groups);
-			el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
-			applyLook(g, groupLook(b), GROUP_PARTS);
-		}
 		if (bare) {
 			/*
 			The role comes from the KERNEL's rule, not from a second copy of it here.
@@ -576,7 +557,12 @@ export class Renderer {
 		if (this.stackedAt.get(entity.id) !== entity.order) this.place(kind, entity);
 		// C-a: a kind a plugin paints, its painter refreshes -- or asks for a fresh render when its structure changed
 		const painter = this.painters.get(kind);
-		if (painter) { if (painter.update(entity, dom, this.kit(painter)) === 'rerender') this.render(kind, entity); return; }
+		if (painter) {
+			const asked = painter.update(entity, dom, this.kit(painter));
+			if (asked === 'rerender') this.render(kind, entity);
+			else if (asked === 'remove') this.remove(entity.id);
+			return;
+		}
 		const bare = isBareEntity(kind, entity);
 		if (kind === 'node' && !bare) {
 			// a footprint OR content change (resize, 1×1↔span, content set) → re-render (always correct); a
@@ -587,8 +573,7 @@ export class Renderer {
 			applyLook(dom, nodeLook(entity), NODE_PARTS);
 			linksOf(this.model, entity.id).forEach((link) => this.update('link', link));
 			this.refreshRoutedThrough(entity.id);
-			const grp = groupOf(this.model, entity.id);
-			if (grp) this.update('group', grp);   // the hull hugs its members → follow the move
+			this.refreshGatherer(entity.id);   // a hull hugs its members → follow the move
 		}
 		if (kind === 'link') {
 			const d = this.linkPath(entity);
@@ -621,24 +606,24 @@ export class Renderer {
 			if (twin) setAttrs(twin, hitOf(dom.getAttribute('d'), want));
 			this.refreshWaypointsOf(entity);
 		}
-		if (kind === 'group') {
-			const b = this.groupBox(entity);
-			if (!b) return this.remove(entity.id);                 // shrank below a member → drop the hull
-			if (dom.querySelector('.group-hull')) applyLook(dom, groupLook(b), GROUP_PARTS);
-			else this.render('group', entity);
-		}
 		if (bare) {
 			applyLook(dom, waypointLook(entity));
 			linksAt(this.model, entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
 			this.refreshRoutedThrough(entity.id);
-			const grp = groupOf(this.model, entity.id);
-			if (grp) this.update('group', grp);                                      // reflow a group it belongs to
+			this.refreshGatherer(entity.id);                                         // reflow a group it belongs to
 		}
 	}
 
 	// C-a: what a painter is handed -- the canvas's element builder and look applier, the label pill's width, and its layer
 	kit(painter) {
-		return { el, applyLook, pillWidth, layer: painter.layerEl };
+		return { el, applyLook, pillWidth, layer: painter.layerEl, model: this.model };
+	}
+
+	// C-a: the entity gathering this one -- a group its member -- redrawn when the member moves, asked of the core (`gathers`,
+	// model/shape.mjs) so the renderer names no group
+	refreshGatherer(id) {
+		const gatherer = this.model.gathererOf(id);
+		if (gatherer) this.update(kindOf(gatherer.id), gatherer);
 	}
 
 	remove(id) {

@@ -60,3 +60,53 @@ test('C-a: a malformed canvas part is refused when the canvas is built, naming i
 		assert.throws(() => new Renderer(m, svg, { parts: [z, { ...z, owner: 'again' }] }), /Renderer: zone is painted by zones and by again/);
 	} finally { restore(); }
 });
+
+// ---- the group (C-a, step two): its hull, drawn by the groups plugin's painter, following its members ----
+
+const NODES = [
+	{ id: 'node-0c0b01', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 },
+	{ id: 'node-0c0b02', name: 'b', type: 'host', shape: 'circle', x: 120, y: 0 },
+];
+const GROUP = { id: 'group-0c0b03', name: 'g', members: ['node-0c0b01', 'node-0c0b02'] };
+const grouped = (renderParts) => {
+	const { svg, restore } = makeRenderer();
+	const m = new Model();
+	const r = new Renderer(m, svg, { parts: renderParts });
+	for (const n of NODES) m.put('node', n);
+	m.put('group', GROUP);
+	const hull = () => { const g = svg.ownerDocument.getElementById(GROUP.id); return g ? g.querySelector('.group-hull') : null; };
+	return { m, r, hull, restore };
+};
+
+test('C-a: the product\'s canvas draws a group\'s hull around its members, and moves it when a member moves', async () => {
+	const { m, hull, restore } = grouped(await parts());
+	try {
+		assert.ok(hull(), 'drawn');
+		const before = hull().getAttribute('width');
+		m.set('node', 'node-0c0b02', { x: 240 });
+		assert.notEqual(hull().getAttribute('width'), before, 'the hull follows its member');
+	} finally { restore(); }
+});
+
+test('C-a: a canvas composed without the groups plugin draws no group', async () => {
+	const { hull, restore } = grouped((await parts()).filter((p) => p.owner !== 'groups'));
+	try { assert.equal(hull(), null); } finally { restore(); }
+});
+
+test('C-a: the groups plugin brings the group\'s painter, and the renderer names no group', async () => {
+	const { GROUPS_CANVAS } = await import('../groups/group-painter.mjs');
+	assert.equal(GROUPS_CANVAS.owner, 'groups');
+	assert.deepEqual(GROUPS_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['group', 'groups', false]]);
+	assert.ok((await parts()).includes(GROUPS_CANVAS));
+	assert.doesNotMatch(code('app/src/renderer.js'), /'groups?'|groupOf|groupBox|groupLook|GROUP_/, 'the renderer draws no group of its own');
+});
+
+test('C-a: a group none of whose members resolves loses its hull on its next update -- the painter asks for its removal', async () => {
+	const { m, hull, restore } = grouped(await parts());
+	try {
+		assert.ok(hull(), 'drawn while its members stand');
+		for (const n of NODES) m.del('node', n.id);   // the model alone, no planner to trim the group
+		m.set('group', GROUP.id, { name: 'g2' });
+		assert.equal(hull(), null, 'no member, no hull');
+	} finally { restore(); }
+});

@@ -1264,6 +1264,8 @@ Next H19.29, C-a, drawing.
 
 AMENDED 2026-10-08: C-a's first step done -- the painter seam, and the zones plugin's painter: the renderer draws no zone of its own.\
 Next: the group's, the devices', and the network's painters.
+AMENDED 2026-10-09: C-a's second step done -- the groups plugin's painter; the renderer redraws a member's group through the core's `gathererOf`, naming no group.\
+Next: the devices' and the network's painters.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

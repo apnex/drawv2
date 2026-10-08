@@ -7,5 +7,7 @@ none of its kinds.
 */
 
 import { ZONES_CANVAS } from '../zones/zone-painter.mjs';
+import { GROUPS_CANVAS } from '../groups/group-painter.mjs';
 
-export const PRODUCT_CANVAS = [ZONES_CANVAS];
+// back to front on a full render: zones, then group hulls, behind everything the renderer still draws itself
+export const PRODUCT_CANVAS = [ZONES_CANVAS, GROUPS_CANVAS];

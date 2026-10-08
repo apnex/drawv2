@@ -155,3 +155,9 @@ A canvas part is `{ owner, painters }`; a painter is `{ kind, layer, stacked, cr
 The renderer draws, refreshes, stacks and fully re-renders a painted kind through its painter, the painted kinds first in the order the parts were composed; a malformed part, a layer the page lacks, or a kind painted twice is refused when the canvas is built, naming the owner.\
 The zones plugin brings the zone's painter (`zones/zone-painter.mjs` `ZONES_CANVAS`), building the elements the renderer built; `product/canvas.mjs` composes the product's parts, which the product page, the lab and the tests that build a renderer hand it.
 **Held by:** `tests/canvas-painters.test.js` -- the product's canvas draws a zone; a canvas composed without the zones plugin draws none; the renderer names no zone; malformed parts refused (a renderer that skips a painter fails it and two other files -- mutant killed); the page's DOM record, the matrix and every corpus unchanged.
+
+AMENDED 2026-10-09 -- **C-a, step two: the group's painter** (H19.29 stays open for devices and links).\
+The groups plugin brings the group's painter (`groups/group-painter.mjs` `GROUPS_CANVAS`): its hull, built and refreshed as the renderer built it, not stacked.\
+A painter's `update` may now ask for its element's removal as well as a fresh render -- a group none of whose members resolves loses its hull.\
+When an anchor moves, the renderer redraws whatever gathers it by asking the core (`Model#gathererOf`, the row's `gathers`), so it imports no groups module and names no group.
+**Held by:** `tests/canvas-painters.test.js` -- the hull drawn and following a member's move; none drawn without the groups plugin; the renderer naming no group; a hull dropped when no member resolves (a renderer that does not redraw the gatherer, and one that ignores a removal, each fail it -- both mutants killed, the second only once that test was added).
