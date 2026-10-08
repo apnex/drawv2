@@ -1819,3 +1819,11 @@ Asked against `dev/design/unification/CANVAS-PLUGINS.md` how far the canvas plug
 Asked how a plugin brings its gestures, the director chose "rows for shared gestures" (the proposer's recommendation) over "whole gestures via a host".
 - Built C-a to C-f, zones first at each stage, until the canvas names no plugin's kind beyond a record that may only fall; every corpus byte-identical, nothing a user sees changing.
 - The product keeps a small set of gestures that span kinds -- draw a box, drag a handle, move or clone what is placed, draw a link -- and a plugin brings rows saying when each starts and what its result means; verbs as data (mission-kit P5), as the link drag already is (the product's gesture, the network's judge).
+
+**D3 -- several plugins draw one kind through the appearance pipeline, its composition half built -- 2026-10-09 (B308; H19.29).**\
+Shown at C-a that an anchor's drawing is several plugins' -- the devices plugin's device, the network's rings and transit ring, the simulation's spawning mark -- the director asked: "So this is the "unified appearance pipeline" we discussed earlier in our programme?"
+It is: the composition half of the 2026-09-22 ruling ("How two derived appearances resolve"), unbuilt since H15.9 built one look per kind.
+Asked to build it as the way several plugins draw one kind, the director chose "A, build the ruled pipeline" (the proposer's recommendation) over "B, painters split by shape" and "C, the canvas keeps drawing nodes".
+- Each plugin brings appearances for a kind, each declaring per derived state whether it composes or competes, ordered by a list of named layers rather than an integer priority (the ruling's own caution).
+- The network's anchor marks compete under the device, so a device emits none, by the rule rather than by a branch; the transit ring and the spawning mark compose; session state decorates.
+- An appearance names what else to redraw when its entity changes.

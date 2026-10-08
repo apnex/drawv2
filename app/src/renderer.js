@@ -7,7 +7,7 @@ always on-grid. The kernel's resolve()/renderScene() remain the headless/export 
 */
 
 import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
-import { linksOf, linksAt } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
+import { linksAt } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { el, setAttrs } from './painter.js';
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { waypointLayers, linkAppearance, APPEARANCE_KEYS } from '../../network/appearance.mjs';
@@ -496,9 +496,7 @@ export class Renderer {
 			`waypointLayers`, so the canvas and the SVG export cannot disagree and a new sub-type is
 			one change rather than two.
 			*/
-			const armed = entity.spawn ? ' spawning' : '';
-			const cls = roles.length ? roles.join(' ') : 'bend';
-			const g = el('g', { id: entity.id, class: `waypoint ${cls}${armed}` }, this.layers.waypoints);
+			const g = el('g', { id: entity.id, class: this.waypointClass(entity, roles) }, this.layers.waypoints);
 			applyLook(g, waypointLook(entity));
 			// the anchor as drawn: whether it declares transit off comes from the network (the Model's `declaresNoTransit`),
 			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
@@ -539,6 +537,11 @@ export class Renderer {
 	model answers from the same authority that draws the path (the network's `linksRoutedThrough`, beside `pathOf`).
 	In production it answers nothing, so nothing extra is redrawn.
 	*/
+	// a waypoint's class: its roles (or a bend), and whether it spawns -- one derivation, for its render and its update (B313)
+	waypointClass(entity, roles = waypointRolesIn(this.model, entity.id)) {
+		return `waypoint ${roles.length ? roles.join(' ') : 'bend'}${entity.spawn ? ' spawning' : ''}`;
+	}
+
 	refreshRoutedThrough(anchorId) {
 		for (const link of linksRoutedThrough(this.model, anchorId) ?? []) this.update('link', link);
 	}
@@ -571,7 +574,9 @@ export class Renderer {
 			if ((dom.getAttribute('data-span') || null) !== sig || (dom.getAttribute('data-content') || null) !== csig) return this.render('node', entity);
 			// H15.9: the move, the glyph and its fit box, the frame's def or corner, the label and its pill -- the one look
 			applyLook(dom, nodeLook(entity), NODE_PARTS);
-			linksOf(this.model, entity.id).forEach((link) => this.update('link', link));
+			// B312: every link naming it, end or bend -- since H19.10 a link may be pinned through a device, and redrawing only the
+			// links ending at it left such a link drawn along the device's old place
+			linksAt(this.model, entity.id).forEach((link) => this.update('link', link));
 			this.refreshRoutedThrough(entity.id);
 			this.refreshGatherer(entity.id);   // a hull hugs its members → follow the move
 		}
@@ -607,7 +612,10 @@ export class Renderer {
 			this.refreshWaypointsOf(entity);
 		}
 		if (bare) {
-			applyLook(dom, waypointLook(entity));
+			// B313: its marks derive from it -- a spawner set or cleared changes them -- so a change to them renders afresh, where only
+			// the position was re-applied and the `spawning` mark stayed as it was until the next full render
+			if (dom.getAttribute('class') !== this.waypointClass(entity)) this.render(BARE_KIND, entity);
+			else applyLook(dom, waypointLook(entity));
 			linksAt(this.model, entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
 			this.refreshRoutedThrough(entity.id);
 			this.refreshGatherer(entity.id);                                         // reflow a group it belongs to

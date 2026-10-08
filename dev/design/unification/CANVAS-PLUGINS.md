@@ -195,3 +195,5 @@ H15.9 built one look per kind applied by both create and update; the composition
 - The network's anchor marks (endpoint pad, junction rings) are offered for every anchor and compete low; the devices plugin's device competes high -- so on a device the marks are not emitted and on a bare anchor they are, today's drawing reached by the rule rather than by a branch on whether a device is composed.
 - The network's transit ring and the simulation's spawning mark compose.
 - An appearance names what else to redraw when its entity changes.
+
+AMENDED 2026-10-09 -- **D3 RULED: A, the appearance pipeline's composition half** (`dev/DECISIONS.md`, "D3"); C-a continues on it.

@@ -1165,6 +1165,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.26 | Design, for approval: the Model's six questions to a plugin it names (`MODEL_READS`) become queries a plugin brings -- `dev/design/unification/PLUGIN-QUERIES.md` | feature | S4 | `DONE` |
 | H19.27 | Q-a: the Model's six questions and its straight path are the network's functions; the Model holds an attached network it does not read; the link row `needs` the network -- K13d done | feature | S4 | `DONE` |
 | H19.28 | Duplicating or clone-dragging a selection with a waypoint or a bent link copies it, and a refused duplicate says so -- found surveying the canvas for H19.23 | **B311** | S2 | `DONE` |
+| H19.35 | An anchor's change redraws what it changes: a link pinned through a moved device, a waypoint's spawning mark -- found reading the anchor's drawing for C-a | **B312**, **B313** | S3 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `TODO` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `TODO` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `TODO` |
@@ -1266,6 +1267,8 @@ AMENDED 2026-10-08: C-a's first step done -- the painter seam, and the zones plu
 Next: the group's, the devices', and the network's painters.
 AMENDED 2026-10-09: C-a's second step done -- the groups plugin's painter; the renderer redraws a member's group through the core's `gathererOf`, naming no group.\
 The anchor's drawing is several plugins' -- the devices plugin's device, the network's rings -- which one painter per kind does not cover: D3 goes to the director before the devices' and the network's painters.
+AMENDED 2026-10-09: D3 ruled -- the appearance pipeline's composition half (2026-09-22), built at C-a for the anchor: appearances that compose or compete per derived state, in named layers.\
+Next: the pipeline, then the anchor's and the link's drawing on it.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
