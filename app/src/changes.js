@@ -178,11 +178,14 @@ export class Changes {
 
 	// Apply locally and submit. `command` is { label, entries } — the shape the builders already
 	// produce. An empty command is not a change.
+	// B311: it answers what this tab applied -- empty when the planner refused it here, which is what the person sees -- so a
+	// caller reporting the edit (Ctrl+D's readout) does not report a copy nobody was shown
 	commit(command) {
 		if (!command || !command.entries || command.entries.length === 0) return;
 		const ops = command.entries.map(toOp);
 		const applied = this.applyLocally(ops);
 		this.#submit({ ops, label: command.label || '', applied }, command.coalesce === true);
+		return applied;
 	}
 
 	/*

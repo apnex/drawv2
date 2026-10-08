@@ -357,6 +357,9 @@ const GESTURES = {
 	},
 };
 
+// a kind placed on the grid, which a move, a duplicate or a clone offsets: an anchor (a waypoint or a device) or a zone (B30, B311)
+const isPositioned = (kind) => ANCHOR_KINDS.includes(kind) || kind === 'zone';
+
 export class Input {
 	/*
 	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
@@ -682,12 +685,14 @@ export class Input {
 		// I-IN5, live preview writes the shared Model. Ctrl+D never materialises them at all.
 		clones.forEach((c) => this.model.put(c.kind, c.entity));
 
+		// B311: every positioned copy moves with the drag -- a copied bend with its link -- as Ctrl+D moves them
 		const moved = clones
-			.filter((c) => isTypedEntity(c.kind, c.entity) || c.kind === 'zone')
+			.filter((c) => isPositioned(c.kind))
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
+		const picked = this.selection.list().filter((id) => isPositioned(kindOf(id))).map((id) => idMap.get(id)).filter(Boolean);
 		this.mode = 'clone';
 		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId: idMap.get(hit.id) };
-		this.selection.set(moved.map((m) => m.id));
+		this.selection.set(picked);   // the copies of what was selected
 	}
 
 	/*
@@ -696,7 +701,7 @@ export class Input {
 	the canvas; if both axes clamp to zero it refuses rather than overlap.
 	*/
 	duplicateSelection() {
-		const seeds = this.selection.list().filter((id) => [...ANCHOR_KINDS, 'zone'].includes(kindOf(id)));   // B30
+		const seeds = this.selection.list().filter((id) => isPositioned(kindOf(id)));   // B30
 		if (seeds.length === 0) return;
 		// clamp the pitch against the ORIGINALS (clones start at the same spots)
 		const refs = seeds.map((id) => {
@@ -716,11 +721,18 @@ export class Input {
 		// the clones are inert objects, so the pitch is applied to them directly. This used to put
 		// them live, model.set each one, then read every position back out — three steps to do what
 		// the commit does anyway.
+		/*
+		B311 -- EVERY POSITIONED COPY MOVES BY THE PITCH: an anchor with or without a device, and a zone. Only devices and zones
+		did -- a filter from before waypoints were nodes (F-c) -- so a waypoint's copy, a bend's among them, stayed on its
+		original's cell, the planner refused two anchors on one cell (B112), and nothing was copied while the readout said it was.
+		*/
 		result.clones.forEach((c) => {
-			if (isTypedEntity(c.kind, c.entity) || c.kind === 'zone') { c.entity.x += delta.x; c.entity.y += delta.y; }
+			if (isPositioned(c.kind)) { c.entity.x += delta.x; c.entity.y += delta.y; }
 		});
-		this.history.commit(commands.cloneEntities(result.clones));
-		const placed = result.clones.filter((c) => isTypedEntity(c.kind, c.entity) || c.kind === 'zone');
+		const ops = this.history.commit(commands.cloneEntities(result.clones));
+		if (!ops || ops.length === 0) { this.readout.flash(`✗ duplicate refused Δ[${cells(delta.x)}, ${cells(delta.y)}]`); return; }   // B311: a refusal is not a copy
+		// the copies of what was selected
+		const placed = seeds.map((id) => result.idMap.get(id)).filter(Boolean).map((id) => ({ entity: { id } }));
 		this.selection.set(placed.map((c) => c.entity.id));
 		this.afterHistory();
 		this.lastDelta = delta; // tap-tap-tap repeats the same pitch

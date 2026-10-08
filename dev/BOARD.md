@@ -1164,6 +1164,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.25 | K13d: the Model's link methods -- `linksOf`, `linksAt`, `linkBetween`, `linksBetween`, `makeLink` -- move to the network (`network/link-queries.mjs`); the core names no kind but the anchor | feature | S4 | `DONE` |
 | H19.26 | Design, for approval: the Model's six questions to a plugin it names (`MODEL_READS`) become queries a plugin brings -- `dev/design/unification/PLUGIN-QUERIES.md` | feature | S4 | `DONE` |
 | H19.27 | Q-a: the Model's six questions and its straight path are the network's functions; the Model holds an attached network it does not read; the link row `needs` the network -- K13d done | feature | S4 | `DONE` |
+| H19.28 | Duplicating or clone-dragging a selection with a waypoint or a bent link copies it, and a refused duplicate says so -- found surveying the canvas for H19.23 | **B311** | S2 | `DONE` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
 | H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |
