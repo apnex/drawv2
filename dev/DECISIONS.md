@@ -1813,3 +1813,9 @@ Asked against `dev/design/unification/PLUGIN-QUERIES.md` how a plugin's question
 - The six questions the Model forwarded to the network -- where a link is drawn, whether it is down, what blocks it, which links pass through an anchor, whether an anchor declares its transit off, whether what arrives stops -- are the network's functions over a Model, each giving the answer a Model with no network gave; with them the straight path a down link is drawn along.
 - The Model holds what a plugin attaches to it (`attached`) and reads none of it; a row names the attachment its kind needs (`needs`).
 - No caller asks with an optional call, which turned a moved method into a silent wrong answer at H19.25.
+
+**D1, D2 -- the whole canvas contract, and gestures as rows for shared gestures -- 2026-10-08 (B308; H19.23).**\
+Asked against `dev/design/unification/CANVAS-PLUGINS.md` how far the canvas plugin contract goes, the director chose "the whole contract" (the proposer's recommendation) over "drawing, picking and placement only" and "hold B308".
+Asked how a plugin brings its gestures, the director chose "rows for shared gestures" (the proposer's recommendation) over "whole gestures via a host".
+- Built C-a to C-f, zones first at each stage, until the canvas names no plugin's kind beyond a record that may only fall; every corpus byte-identical, nothing a user sees changing.
+- The product keeps a small set of gestures that span kinds -- draw a box, drag a handle, move or clone what is placed, draw a link -- and a plugin brings rows saying when each starts and what its result means; verbs as data (mission-kit P5), as the link drag already is (the product's gesture, the network's judge).

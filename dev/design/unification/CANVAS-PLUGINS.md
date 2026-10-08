@@ -142,3 +142,10 @@ Zones go first at every stage, as the smallest self-contained kind; the link goe
 | the rest | not materially implicated | nothing stored or deployed changes in kind |
 
 **Verdict: pass-with-guardrails** -- D1 and D2 ruled before C-a; corpora byte-identical at every stage; the export's deferral carries its trigger.
+
+---
+
+## 10. Ruled
+
+AMENDED 2026-10-08 -- **D1 RULED: the whole contract; D2 RULED: rows for shared gestures** (`dev/DECISIONS.md`, "D1, D2").\
+The stages: C-a (H19.29), C-b (H19.30), C-c (H19.31), C-d (H19.32), C-e (H19.33), C-f (H19.34).
