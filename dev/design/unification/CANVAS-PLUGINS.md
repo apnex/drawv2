@@ -161,3 +161,26 @@ The groups plugin brings the group's painter (`groups/group-painter.mjs` `GROUPS
 A painter's `update` may now ask for its element's removal as well as a fresh render -- a group none of whose members resolves loses its hull.\
 When an anchor moves, the renderer redraws whatever gathers it by asking the core (`Model#gathererOf`, the row's `gathers`), so it imports no groups module and names no group.
 **Held by:** `tests/canvas-painters.test.js` -- the hull drawn and following a member's move; none drawn without the groups plugin; the renderer naming no group; a hull dropped when no member resolves (a renderer that does not redraw the gatherer, and one that ignores a removal, each fail it -- both mutants killed, the second only once that test was added).
+
+---
+
+## 11. Finding at C-a, step three -- one kind drawn by several plugins (D3)
+
+AMENDED 2026-10-09 -- **stopped before the anchor's painter.**\
+Measured at `0830ed0`:
+- **A device's drawing is two plugins':** the devices plugin's frame, glyph, content regions and label, and the network's transit ring when the anchor declares its transit off (`app/src/renderer.js` `draw`, `declaresNoTransit`).
+- **A waypoint's drawing is the network's:** its roles and rings (`waypointRolesIn`, `waypointLayers`), with the simulation's `spawning` mark; devices draw into `#nodes`, waypoints into `#waypoints`.
+- **Redraws cross kinds:** an anchor's change redraws the links at it and the links routed through it (the network's) and what gathers it (done at step two); a link's put, set or delete redraws the anchors at its ends and bends, whose roles it changes (`refreshWaypointsOf`).
+- **A link is two elements** -- its path and its invisible hit twin (B268) -- and its selection reflections (blockers, the selected path) are the network's.
+
+Section 3's "a painter per kind" covers neither a kind whose drawing several plugins contribute to, nor a redraw that crosses kinds.
+
+**D3 -- how several plugins draw one kind.**
+- **A -- a base and decorations, as fields are composed (recommended, judgement).** The canvas keeps a generic anchor painter -- an element at the anchor's point, in the layer a decoration claims -- and a plugin brings decorations for a kind, each applying when its test holds: the devices plugin its device (frame, glyph, content, label; `#nodes`), the network its waypoint rings (`#waypoints`) and its transit ring on a device, the simulation its spawning mark.
+  A painter or a decoration also names what else to redraw when its entity changes -- a link its anchors, an anchor's network decoration its links.
+  It mirrors field extensions (S-a) and O4's "a node composes appearance from plugins on top of the anchor".
+  Cost: a second seam beside painters, its decorations applied in composition order.
+- **B -- whole painters, split by shape.** The devices plugin paints anchors carrying a device, the network paints bare ones, each choosing by a test; the network's transit ring on a device is handed to the device's painter through the kit.
+  Cost: two painters for one kind, and the network's look on a device stays an exception.
+- **C -- the canvas keeps drawing anchors.** Zones, groups and links are painted by their plugins; the canvas draws devices and waypoints itself, calling the plugins' look functions as it does now.
+  Cost: the canvas keeps naming whether a device is composed and the network's waypoint look, recorded in C-f's ratchet.
