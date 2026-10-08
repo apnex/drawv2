@@ -110,3 +110,19 @@ test('C-a: a group none of whose members resolves loses its hull on its next upd
 		assert.equal(hull(), null, 'no member, no hull');
 	} finally { restore(); }
 });
+
+// B314 -- C-a step one returned from `draw` for a painted kind before re-applying the session states, so a selected zone put
+// again (undo, redo, an answer) lost its selected look until the selection next changed
+test('B314: a selected zone drawn again keeps its selected look', async () => {
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		const r = new Renderer(m, svg, { parts: await parts() });
+		m.put('zone', ZONE);
+		r.reflectSelection([ZONE.id]);
+		const selected = () => svg.ownerDocument.getElementById(ZONE.id).classList.contains('selected');
+		assert.equal(selected(), true, 'selected');
+		m.put('zone', { ...ZONE, name: 'dmz-2' });
+		assert.equal(selected(), true, 'and still, once drawn again');
+	} finally { restore(); }
+});

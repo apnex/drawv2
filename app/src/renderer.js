@@ -423,7 +423,7 @@ export class Renderer {
 		this.remove(entity.id);             // put is create-or-replace
 		// C-a: a kind a plugin paints, its painter draws
 		const painter = this.painters.get(kind);
-		if (painter) { painter.create(entity, this.kit(painter)); return; }
+		if (painter) { painter.create(entity, this.kit(painter)); this.reapplyStates(entity.id); return; }   // B314: its session states too
 		const bare = isBareEntity(kind, entity);   // drawn as a waypoint, whatever kind stores it (model/anchors.mjs)
 		if (kind === 'node' && !bare) {
 			const g = el('g', { id: entity.id, class: 'node' }, this.layers.nodes);
@@ -505,11 +505,7 @@ export class Renderer {
 			for (const l of waypointLayers(roles, FE, linksAt(this.model, entity.id), anchor, { run: this.mode === 'run' })) layerCircle(l, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
-		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)
-		if (this.selectedSet.has(entity.id)) this.setState(entity.id, 'selected', true);
-		// and the same for a waypoint lit by a selected path -- render() replaces the DOM, so a
-		// re-render during a live selection would drop the highlight without this
-		if (this.pathLit?.has(entity.id)) this.setState(entity.id, 'on-selected-path', true);
+		this.reapplyStates(entity.id);
 	}
 
 	/*
@@ -620,6 +616,13 @@ export class Renderer {
 			this.refreshRoutedThrough(entity.id);
 			this.refreshGatherer(entity.id);                                         // reflow a group it belongs to
 		}
+	}
+
+	// fresh DOM loses the session states: re-apply 'selected' if this entity is selected (undo/redo/load), and the highlight of
+	// one lit by a selected path, since render() replaces the DOM -- for every drawn kind, a painted one too (B314)
+	reapplyStates(id) {
+		if (this.selectedSet.has(id)) this.setState(id, 'selected', true);
+		if (this.pathLit?.has(id)) this.setState(id, 'on-selected-path', true);
 	}
 
 	// C-a: what a painter is handed -- the canvas's element builder and look applier, the label pill's width, and its layer

@@ -1166,6 +1166,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.27 | Q-a: the Model's six questions and its straight path are the network's functions; the Model holds an attached network it does not read; the link row `needs` the network -- K13d done | feature | S4 | `DONE` |
 | H19.28 | Duplicating or clone-dragging a selection with a waypoint or a bent link copies it, and a refused duplicate says so -- found surveying the canvas for H19.23 | **B311** | S2 | `DONE` |
 | H19.35 | An anchor's change redraws what it changes: a link pinned through a moved device, a waypoint's spawning mark -- found reading the anchor's drawing for C-a | **B312**, **B313** | S3 | `DONE` |
+| H19.36 | A selected zone drawn again keeps its selected look -- a regression of C-a's first step | **B314** | S3 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `TODO` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `TODO` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `TODO` |
