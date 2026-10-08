@@ -34,11 +34,9 @@ out, as the Store's injected {flushMs, writeDoc, now}.
 
 import { projection } from '../model/model.mjs';
 import { applyOps, clone } from '../model/ops.mjs';
-import { groupAfterRemoval } from './policy.mjs';
 import { validateMutation, validateMetaPatch } from './validate.js';
 import { violations } from '../model/invariants.mjs';
 import { nextOrder } from '../model/order.mjs';   // a creation without a drawing order is given one (F-d)
-import { GROUPS } from './tenants.mjs';
 import { BEATS, wallClock } from './edges.mjs';
 
 export const MAX_OPS = 2000;              // per REQUEST
@@ -252,7 +250,8 @@ function composition({ links = null, place = null, now = wallClock, extensions =
 	*/
 	const plans = who === 'plan' || who === 'commit';
 	if (plans && links === null) throw new Error(`${who}: no link tenant -- a composition passes the network's, { links: network.links } (S-b)`);
-	for (const tenant of [...(links ? [links] : []), GROUPS]) {
+	// O-a (H19.18): the link tenant passed, then the tenants the composition's rows bring -- the group's -- and none of the planner's own
+	for (const tenant of [...(links ? [links] : []), ...kinds.tenants]) {
 		if (!tenant || typeof tenant.owner !== 'string' || !Array.isArray(tenant.reactions)) throw new Error(`${who}: a tenant is { owner, reactions } (PL-3)`);
 		/*
 		F-e (H18.7) -- A TENANT'S REFUSALS: rules the tenant holds on the result, as data like its reactions -- an id, a
@@ -434,7 +433,7 @@ export function plan(model, ops, options = {}) {
 	the path nobody thought about -- `set` clearing a `via` directly, which reaches no cascade and
 	no authoring guard, and which is the reason the rule could not stay at the call sites.
 	*/
-	const after = violations(proj, { groupAfterRemoval });
+	const after = violations(proj);
 	if (after.length) {
 		/*
 		Only what this transaction INTRODUCES. Refusing on the post-state alone would mean a
@@ -444,8 +443,8 @@ export function plan(model, ops, options = {}) {
 		a case I would not have thought of, and a lockout rather than a mere inconvenience.
 		*/
 		// B271 -- by identity and measure, not sentence: a violation this transaction introduced, or made worse
-		const before = new Map(violations(model, { groupAfterRemoval, facts: true }).map((v) => [v.key, v.measure]));
-		const introduced = violations(proj, { groupAfterRemoval, facts: true }).filter((v) => !before.has(v.key) || v.measure > before.get(v.key));
+		const before = new Map(violations(model, { facts: true }).map((v) => [v.key, v.measure]));
+		const introduced = violations(proj, { facts: true }).filter((v) => !before.has(v.key) || v.measure > before.get(v.key));
 		if (introduced.length) return { ok: false, error: introduced[0].sentence, opIndex: -1 };
 	}
 	return { ok: true, ops: out, inverse: inv, called };

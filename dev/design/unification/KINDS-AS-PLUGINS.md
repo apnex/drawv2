@@ -164,3 +164,17 @@ It is entirely feasible that different plugins may leverage other plugins going 
 
 O-d, the close-out, moves after O-e; its layer rule then holds that the core names no kind at all.
 **Acceptance test 1, amended:** the core composes no kind; production composes node, zone, group, link, pipe, in that order, from four plugins.
+
+---
+
+## 12. O2, ruled; O-a done
+
+AMENDED 2026-10-08 -- **O2 RULED: built now, staged** (`dev/DECISIONS.md`, "O2"): O-a (H19.18), O-b (H19.19), O-c (H19.20), O-e (H19.21), O-d (H19.22).
+
+AMENDED 2026-10-08 -- **O-a done** (H19.18).
+**How a tenant reaches the planner, chosen in the build:** a row may carry its tenant, as it carries its checks and its invariants (`model/shape.mjs` `tenant`); the composition lists its rows' tenants, and the planner runs the link tenant it is passed, then those, and appends none of its own.
+The other way, a `tenants` option each caller passes, was not taken: 66 call sites would carry it, and one that forgot would compose groups without their rules and say nothing.\
+The network's tenant stays passed as `links`, since it is made with each network; whether it rides its row too is O-e's or O-d's to settle.
+**What moved:** the group's tenant, from the planner's own list (`planner/txn.mjs`) to the group row; its two invariants, B82 and B85, from `model/invariants.mjs` to the group row, asking `planner/policy.mjs` itself rather than having each caller inject it -- a caller still passing the policy is refused, not ignored.
+`model/invariants.mjs` keeps the anchor capability's own rule, one occupant to an anchor (B112).
+**Held by:** `tests/tenant-from-row.test.js` -- a group row stripped of its rules runs none, and a planner appending the group tenant itself, or ignoring the rows' tenants, fails it (both mutants killed); the planner, gesture and matrix corpora and the generated reaction table are unchanged; one test restated (`tests/txn.test.js`, B85's policy).

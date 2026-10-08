@@ -111,7 +111,12 @@ network's (`network/link-kind.mjs`, S-e). `new Model()` takes `CORE_KINDS`; the 
 
 Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).
 */
-const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'drawnBy'];
+/*
+O-a (H19.18; KINDS-AS-PLUGINS.md) -- A ROW MAY CARRY ITS TENANT: `{ owner, reactions }`, the planner's rules that maintain the
+kind, as the group's steal and trim maintain a group. The planner runs the composition's tenants -- these, after the link
+tenant it is passed -- and appends none of its own, so a kind and its rules are composed together or not at all.
+*/
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'drawnBy', 'tenant'];
 /*
 S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
 whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
@@ -150,6 +155,7 @@ export function composeKinds(given, who = 'a composition') {
 		}
 		if (row.drawnBy !== undefined && !(Array.isArray(row.drawnBy) && row.drawnBy.length && row.drawnBy.every((r) => typeof r === 'string'))) throw new Error(`${who}: kind ${row.kind}: drawnBy names the Model reads that draw it`);
 		if (row.invariants !== undefined && typeof row.invariants !== 'function') throw new Error(`${who}: kind ${row.kind}: its invariants are a function, (model, report)`);
+		if (row.tenant !== undefined && !(typeof row.tenant?.owner === 'string' && Array.isArray(row.tenant.reactions))) throw new Error(`${who}: kind ${row.kind}: its tenant is { owner, reactions } (O-a)`);
 		byName.set(row.kind, row);
 		byCollection.set(row.collection, row.kind);
 	}
@@ -191,6 +197,8 @@ export function composeKinds(given, who = 'a composition') {
 		optional: of((r) => new Set(r.optional ?? [])),
 		// whether every row carries its checks -- what the planner requires of a composition it validates against
 		checked: rows.every((r) => r.fields !== undefined),
+		// the tenants the rows bring, in the composition's order -- what the planner runs after the link tenant (O-a)
+		tenants: rows.filter((r) => r.tenant).map((r) => r.tenant),
 		// who brought a field another owner's kind carries (S-a): `kind.field` -> owner
 		contributed: (kind, field) => contributedBy.get(`${kind}.${field}`) ?? null,
 	});

@@ -21,6 +21,8 @@ AMENDED 2026-10-03 (S-b, H18.12): the link rules -- splitting, joining, pair hol
 the pair capacity to model/pair-capacity.mjs; this module keeps the document invariants the planner checks.
 AMENDED 2026-10-04 (S-e, H18.15): both moved on into network/, the plugin that owns the link (G5), and the straight-pair
 invariant with them, as the link row's own (`invariants`); this module asks each composed kind's row for its invariant.
+AMENDED 2026-10-08 (O-a, H19.18): the group's two -- no node in two groups (B82), two distinct members (B85) -- went the
+same way, to the group row (planner/kinds.mjs); what stays is the anchor capability's own, one occupant to an anchor (B112).
 
 Sovereign: imports nothing. `model/` is the substrate both the server and the browser already
 depend on, so the rule has one home and neither side restates it.
@@ -35,7 +37,10 @@ a repair tool wants the whole set.
 
 Returns [] for a clean document, so a caller reads emptiness as health without a sentinel.
 */
-export function violations(model, { groupAfterRemoval = null, facts = false } = {}) {
+export function violations(model, { facts = false, ...rest } = {}) {
+	// O-a: the group policy is the group row's to ask now; an option this no longer reads is refused, never ignored
+	const stray = Object.keys(rest);
+	if (stray.length) throw new Error(`violations: unknown option ${stray.join(', ')} -- a kind's invariants ride its row since O-a (H19.18)`);
 	/*
 	B271 -- each violation has an IDENTITY (its rule and subject) and a MEASURE, as well as its sentence. The planner's
 	backstop refuses a transaction for a violation it introduces or worsens; comparing sentences, which embed counts,
@@ -44,51 +49,6 @@ export function violations(model, { groupAfterRemoval = null, facts = false } = 
 	*/
 	const found = [];
 	const out = { push: (sentence, key = sentence, measure = 1) => found.push({ key, measure, sentence }) };
-
-	/*
-	B82 -- no entity is a member of two groups.
-
-	The rule already existed, in `planPut`, as a repair: putting a group STEALS overlapping members
-	from any other. But a repair attached to one op kind is not a property of the document, and
-	`planSet` has no group handling at all, so a `set` patching `members` walked past it. The
-	document that results does not merely look wrong, it MEANS different things to the two peers:
-	the client's relational index declares membership single-valued and answers last-write-wins,
-	while the server has no index and falls back to a first-match scan. `groupOf` drives selection
-	expansion and the renderer hull, so a click selects one thing in the browser and another on the
-	server, and neither is wrong by its own reading.
-	*/
-	const owner = new Map();
-	for (const g of model.all('group')) {
-		for (const m of new Set(g.members || [])) {
-			const held = owner.get(m);
-			if (held && held !== g.id) out.push(`${m} is a member of both ${held} and ${g.id}`, `two-groups:${m}`);
-			else owner.set(m, g.id);
-		}
-	}
-
-	/*
-	B85 -- a group holds at least two distinct members.
-
-	The threshold is NOT restated here. `planner/policy.mjs` declares itself the single authority
-	for it, and `model/` and `engine/` are sovereign peers -- neither imports the other -- so the
-	rule is injected by the composition point that already depends on both, exactly as `cellOf` is
-	injected into `attachRelations` so that engine imports no kernel. Asking whether a group would
-	dissolve with NOTHING removed is the same question as whether it is under the minimum, phrased
-	in the vocabulary that owns the number.
-
-	Skipped rather than guessed when no policy is supplied: a caller that cannot provide the rule
-	gets the checks that need no rule, and never a threshold this file invented.
-	*/
-	if (groupAfterRemoval) {
-		for (const g of model.all('group')) {
-			const members = g.members || [];
-			const distinct = [...new Set(members)];
-			if (distinct.length !== members.length) out.push(`${g.id} lists the same member twice`, `repeated-member:${g.id}`);
-			if (groupAfterRemoval(distinct, () => false).dissolve) {
-				out.push(`${g.id} holds ${distinct.length} member(s), too few to be a group`, `too-few:${g.id}`);
-			}
-		}
-	}
 
 	/*
 	S-e (H18.15) -- EACH KIND'S OWN INVARIANT, from its row (model/shape.mjs `invariants`), in the order the composition lists

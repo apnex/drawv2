@@ -15,7 +15,6 @@ import crypto from 'node:crypto';
 
 // the grid's own pitch, sourced not restated -- a speed in CELLS is meaningless without it
 import { mintCode, formatCode, hashCode } from './codes.mjs';
-import { groupAfterRemoval } from '../planner/policy.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo } from '../planner/txn.mjs';
 import { resolveAnchor } from './anchor.mjs';
@@ -597,7 +596,7 @@ export class Store {
 		the treatment GR9 already gets a few methods below: count it, name it, and let `/health`
 		distinguish `corrupt` from `degraded`.
 		*/
-		const broken = violations(model, { groupAfterRemoval });
+		const broken = violations(model);   // each kind's invariants, its row's own -- the group's policy included (O-a)
 		if (broken.length) {
 			entry.invariantFailures = broken.length;
 			console.error(`[ store ] ${id} loaded with ${broken.length} invariant violation(s): ${broken.join('; ')}`);

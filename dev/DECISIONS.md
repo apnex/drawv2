@@ -1781,3 +1781,8 @@ Shown that it does -- three ways of composing kinds become one; the anchor becom
 - The core keeps what spans kinds -- ids, selection, names, ops, undo, the log, the planner's phases, the document envelope, the grid -- and the anchor capability: identity, position, occupancy and resolving a reference, for any kind whose row declares itself an anchor. SD11b's "the core is anchors" is read as that capability.
 - A plugin may depend on another's kind, brokered at composition as `references` broker it today; a plugin-level requirement is added only as a plugin needs one.
 - The node moves last, once zones and groups have proven the contract.
+
+**O2 -- built now, staged: zones, then groups, then the node -- 2026-10-08 (B280, H19.7).**\
+Asked "Build the move now, staged, or something smaller, or hold it?", with earned exposure's case for holding shown beside the target state's case for building, the director chose "staged, zones-groups-node" (the proposer's recommendation) over "planner and model only" and "hold it, go to H19.8".
+- Five stages, each gated on every corpus byte-identical: O-a, the group's rules off the planner and the core; O-b, the zone plugin; O-c, the group plugin; O-e, the node plugin; O-d, closed with a layer rule that the core names no kind.
+- Nothing a user or an agent sees changes; a difference in any corpus is a defect in the move.
