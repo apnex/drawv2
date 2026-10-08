@@ -120,6 +120,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const zonesDir = path.resolve(root, '..', 'zones'); // O-b1 (H19.19): the zones plugin, which the product page composes (mounted at /zones)
 	const groupsDir = path.resolve(root, '..', 'groups'); // O-c (H19.20): the groups plugin, which the product page composes (mounted at /groups)
 	const devicesDir = path.resolve(root, '..', 'devices'); // O-e1 (H19.21): the devices plugin, which the product page composes (mounted at /devices)
+	const productDir = path.resolve(root, '..', 'product'); // O-d (H19.22): the product's composition, which the page imports (mounted at /product)
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
 	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
@@ -222,6 +223,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const hasZones = fs.existsSync(zonesDir);
 	const hasGroups = fs.existsSync(groupsDir);
 	const hasDevices = fs.existsSync(devicesDir);
+	const hasProduct = fs.existsSync(productDir);
 
 	const server = http.createServer(async (req, res) => {
 		req.url = throughTheAgentDoor(req.url);
@@ -291,6 +293,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (hasZones && url.pathname.startsWith('/zones/')) return serveFrom(req, res, zonesDir, '/zones');
 		if (hasGroups && url.pathname.startsWith('/groups/')) return serveFrom(req, res, groupsDir, '/groups');
 		if (hasDevices && url.pathname.startsWith('/devices/')) return serveFrom(req, res, devicesDir, '/devices');
+		if (hasProduct && url.pathname.startsWith('/product/')) return serveFrom(req, res, productDir, '/product');
 		if (!hasClient) {
 			res.writeHead(404, { 'Content-Type': 'application/json' });
 			return res.end(JSON.stringify({ error: 'API-only mode; editor client not bundled' }) + '\n');

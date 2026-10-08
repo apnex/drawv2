@@ -102,7 +102,7 @@ import { judgeDrag } from '../network/guide.mjs';
 import { whyDown } from '../network/resolve.mjs';
 import { Model } from '../model/model.mjs';
 import { createNetwork } from '../network/network.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 

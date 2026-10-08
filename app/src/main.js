@@ -16,7 +16,7 @@ import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { typedNodes } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
-import { productKinds } from '../../planner/kinds.mjs';
+import { productKinds } from '../../product/kinds.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
 import { el } from './painter.js';

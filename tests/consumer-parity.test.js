@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Model } from '../model/model.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetworkSession } from '../network/session.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';

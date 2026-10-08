@@ -118,7 +118,7 @@ import { attachRelations } from './engine/store.mjs';
 import { cellOf } from './kernel/geometry.mjs';
 import { commit } from './planner/txn.mjs';
 import { linkTenant } from './network/link-reactions.mjs';
-import { productKinds } from './planner/kinds.mjs';
+import { productKinds } from './product/kinds.mjs';
 import { NETWORK_ROWS } from './network/kinds.mjs';
 import { createNetwork } from './network/network.mjs';
 import { createTransit } from './network/transit.mjs';
@@ -190,7 +190,7 @@ const NEEDLE = 'export function straightCapacity(_model, _a, _b) {\n\treturn 1;\
 test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a second straight link', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pair-capacity-'));
 	try {
-		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'zones', 'groups', 'devices', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
+		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'zones', 'groups', 'devices', 'product', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
 		const inv = path.join(dir, 'network/pair-capacity.mjs');
 		const src = fs.readFileSync(inv, 'utf8');

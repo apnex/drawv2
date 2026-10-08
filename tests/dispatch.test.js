@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { plan } from '../planner/txn.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork } from '../network/network.mjs';

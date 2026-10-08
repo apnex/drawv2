@@ -30,7 +30,7 @@ import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { commit, plan } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork } from '../network/network.mjs';

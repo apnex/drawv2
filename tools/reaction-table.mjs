@@ -17,7 +17,7 @@ Usage: node tools/reaction-table.mjs --check | --write
 import fs from 'node:fs';
 import path from 'node:path';
 import { PHASES } from '../planner/txn.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';   // the lab's network composes transit, so its table shows transit's rows (F-e)

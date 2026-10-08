@@ -11,7 +11,7 @@ import { applyOps } from '../model/ops.mjs';
 import { routeLink } from '../network/pipes.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 

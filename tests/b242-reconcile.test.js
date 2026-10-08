@@ -43,7 +43,7 @@ import { Sync } from '../app/src/sync.js';
 import { createEntity, deleteSelection, renameEntity, replugLink, nudgeSelection, moveEntities } from '../app/src/commands.js';
 import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork as netFor } from '../network/network.mjs';
 import { createTransit as transitFor } from '../network/transit.mjs';

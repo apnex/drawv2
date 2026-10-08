@@ -36,7 +36,8 @@ test('O-b1: the core composes no zone, and the zone row is the zones plugin\'s',
 });
 
 test('O-b1: the core and the planner name no zone -- no literal, no factory, no extent', () => {
-	for (const f of ['model/shape.mjs', 'model/model.mjs', 'model/surface.mjs', 'planner/policy.mjs', 'planner/kinds.mjs']) {
+	// RESTATED at O-d (H19.22): planner/kinds.mjs and planner/policy.mjs are gone -- the planner composes nothing; every planner module is held
+	for (const f of ['model/shape.mjs', 'model/model.mjs', 'model/surface.mjs', ...fs.readdirSync(new URL('../planner/', import.meta.url)).filter((n) => /\.m?js$/.test(n)).map((n) => `planner/${n}`)]) {
 		assert.doesNotMatch(code(f), /'zones?'|makeZone|ZONE_EXT|zoneExt/, `${f} names a zone`);
 	}
 });

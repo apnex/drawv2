@@ -42,7 +42,7 @@ import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { networkInput } from '../../network/keys.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
-import { productKinds } from '../../planner/kinds.mjs';
+import { productKinds } from '../../product/kinds.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';
 import { makeNode } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);

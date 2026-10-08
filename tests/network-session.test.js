@@ -12,7 +12,7 @@ Held here as behaviour, in Node. The lab's browser suite and the matrix hold the
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { createNetworkSession } from '../network/session.mjs';
 import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)

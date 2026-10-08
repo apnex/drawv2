@@ -11,7 +11,7 @@ import { Model as CoreModel } from '../model/model.mjs';
 import { CORE_KINDS, composeKinds } from '../model/shape.mjs';
 import { clone } from '../model/ops.mjs';
 import { violations } from '../model/invariants.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { validateEntity as productValidateEntity } from '../planner/validate.js';
 import { attachRelations } from '../engine/store.mjs';

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { productKinds } from '../planner/kinds.mjs';   // O-c: groups are the groups plugin's, which the product composes
+import { productKinds } from '../product/kinds.mjs';   // O-c: groups are the groups plugin's, which the product composes
 import { Selection } from '../app/src/selection.js';
 import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 

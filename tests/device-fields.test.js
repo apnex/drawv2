@@ -42,7 +42,8 @@ test('O-e2: production\'s node is the anchor\'s row with the devices plugin\'s, 
 	for (const f of ['id', 'name', 'x', 'y', 'order']) assert.equal(KINDS.contributed('node', f), null, `${f} is the anchor's own`);
 	assert.deepEqual([...KINDS.composite.node].sort(), ['content', 'span'], 'the nested fields, declared by the plugin that brings them');
 	assert.deepEqual(DEVICE_FIELDS.composite, ['span', 'content']);
-	const checks = code('planner/kinds.mjs').split('\n').filter((l) => !/^import /.test(l)).join('\n');   // it imports the plugins it composes
+	// RESTATED at O-d (H19.22): the anchor's checks are composed by the product (product/kinds.mjs), the planner's no more
+	const checks = code('product/kinds.mjs').split('\n').filter((l) => !/^import /.test(l)).join('\n');   // it imports the plugins it composes
 	assert.doesNotMatch(checks, /\b(shape|span|content|spawn|SPAWN|SHAPES)\b|type:/, 'the anchor\'s checks name no device or spawner field');
 	assert.deepEqual(CORE_ROWS[0].optional, ['order'], 'the core\'s anchor row: order alone is optional');
 	assert.deepEqual(CORE_ROWS[0].composite, [], 'and nests nothing');

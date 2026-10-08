@@ -13,7 +13,7 @@ import { plan, commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
 import { createNetwork } from '../network/network.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { makeRenderer } from './fixtures/client-harness.mjs';

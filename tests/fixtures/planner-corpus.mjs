@@ -40,7 +40,7 @@ import { resolveAnchor } from '../../server/anchor.mjs';
 import { validateMutation } from '../../planner/validate.js';
 import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';
-import { productKinds } from '../../planner/kinds.mjs';
+import { productKinds } from '../../product/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../../network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { bareAnchor } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)

@@ -344,3 +344,22 @@ The anchor's row checks id, name, x, y and order, and the core's storage row dec
 Every message a writer meets is unchanged -- the type rule first, then the device's fields, then the spawner, as the one rule ran them.
 **Held by:** `tests/device-fields.test.js` -- the three refusals word for word; production's node fields owned by the devices plugin, the simulation and the network; an anchor composed without the devices plugin refusing a device field by name; an extension's malformed nesting or rule refused when built; an edit setting a nested field to what it holds writing nothing (an extension rule run before the owner's, and the nesting dropped, each fail it -- both mutants killed, the second only once the behaviour was tested rather than the declaration).
 Two tests that read the optional fields from the core's map restated; every corpus unchanged.
+
+---
+
+## 17. O-d done -- the arc closed
+
+AMENDED 2026-10-08 -- **O-d done** (H19.22); B280 closed.
+**The product's composition is its own:** `product/kinds.mjs` composes the core's anchor, the zones and groups plugins' kinds, the fields the devices plugin and the simulation compose onto the anchor, and a plugin's rows after them; the store, the product page, the lab, the CLI's reader and the tools compose through it.
+`planner/kinds.mjs` moved there, and `planner/policy.mjs` was deleted, every kind's cap being its row's own.\
+The planner composes nothing and imports no plugin, and its layer may import the core, the network's rung and itself; the CLI's interim allowance (O-b1) is gone.
+**Held by:** `tests/core-names-no-plugin.test.js` -- no core or planner module names a plugin's kind or reads a device's field beyond a record that may only fall: `model/model.mjs`'s link methods (K13d), and the kernel's zone and group drawing words and its drawing of a device's frame and content (B308) (a zone literal planted in the core, and a plugin imported by the planner, each fail it -- both mutants killed).
+
+**Two corrections, measured in the build:**
+- CORRECTED: section 16 and the test first said the anchor's row would be whole in the core, its checks with it. The checks read the grid, and `model/` and `kernel/` import nothing from each other (C9), so they are composed onto the core's storage row by the product, as the planner composed them; the core holds the anchor's storage row.
+- The planner's entry keeps `product/kinds.mjs` as a root -- the planner and the kinds it is handed -- since without it nine core exports would sit unused in the entry and the list of unused names may only fall (L10); the planner's own modules import no plugin, which the test holds.
+
+**The director's note, approving O-d (O4, refined):** "a multi-cell node may have any number of anchors, and not strictly all cells will get them. I.e a large panel might just have anchors at corners".
+B282's measure is corrected with it: none, 242 or 1,337 anchors to add, as one per device, one per corner or one per cell.
+
+**Deferred, each with its trigger (RU3):** the canvas plugin contract (B308, H19.23, next after this arc); the multi-anchor device and its migration (B282, H19.8); the Model's link methods (K13d, at the rebuild); the API's word "anchor" (B310, held for B282's design); the Model's questions to the network (`MODEL_READS`, recorded in B280's history).

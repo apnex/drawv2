@@ -23,7 +23,7 @@ import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { SCHEMA } from '../model/shape.mjs';   // the document generation
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)

@@ -52,7 +52,8 @@ test('O-c: the core composes the node alone, and the group row is the groups plu
 });
 
 test('O-c: the core, the planner and the index name no group', () => {
-	for (const f of ['model/shape.mjs', 'model/model.mjs', 'model/invariants.mjs', 'model/surface.mjs', 'planner/policy.mjs', 'planner/kinds.mjs', 'planner/txn.mjs', 'planner/validate.js', 'engine/relations.mjs']) {
+	// RESTATED at O-d (H19.22): planner/kinds.mjs and planner/policy.mjs are gone -- the planner composes nothing
+	for (const f of ['model/shape.mjs', 'model/model.mjs', 'model/invariants.mjs', 'model/surface.mjs', 'planner/txn.mjs', 'planner/validate.js', 'engine/relations.mjs']) {
 		assert.doesNotMatch(code(f), /'groups?'|makeGroup|groupOf|GROUPS|groupAfterRemoval/, `${f} names a group`);
 	}
 	assert.equal(fs.existsSync(new URL('../planner/tenants.mjs', import.meta.url)), false, 'the group\'s rules left the planner');

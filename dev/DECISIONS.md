@@ -1803,3 +1803,7 @@ Asked "Zones do not target anchors though, only grid cells - correct?", it was c
 - **A wide device is several anchors,** built in B282's design with its migration; until then the core's one-per-cell rule reads a device's `span`, the one recorded exception.
 - **Zones target grid cells, not anchors.**
 The design: `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approval before code.
+
+AMENDED 2026-10-08 -- **O4, refined by the director**, approving O-d: "Just a note that a multi-cell node may have any number of anchors, and not strictly all cells will get them. I.e a large panel might just have anchors at corners".
+A wide device has as many anchors as it needs, at cells it chooses, not one per cell; which cells get anchors is B282's to design.
+The measure recorded with O4 (1,337 anchors to add) assumed one per cell; measured again, production's 144 wide devices would gain none with one anchor each, 242 with anchors at their corners, and 1,337 with one per cell.

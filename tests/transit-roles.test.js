@@ -79,7 +79,7 @@ where the canvas drew endpoints.
 test('F-e: the export and the canvas give a waypoint whose transit is off the same roles, and both draw its ring', async () => {
 	const { Model } = await import('../model/model.mjs');
 	const { createNetworkSession } = await import('../network/session.mjs');
-	const { productKinds } = await import('../planner/kinds.mjs');
+	const { productKinds } = await import('../product/kinds.mjs');
 	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { resolve } = await import('../kernel/engine.mjs');

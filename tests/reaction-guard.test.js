@@ -14,7 +14,7 @@ import { Model } from '../model/model.mjs';
 import { plan } from '../planner/txn.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 
 const KINDS = productKinds(...NETWORK_ROWS);

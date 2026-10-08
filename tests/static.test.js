@@ -46,7 +46,7 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 		const tokens = await ask('/tokens.css');   // H15.23: the colour registry the stylesheet reads
 		assert.equal(tokens.status, 200, 'the lab serves the colour registry');
 		assert.match(tokens.type, /^text\/css/);
-		for (const p of ['/kernel/geometry.mjs', '/planner/txn.mjs', '/planner/policy.mjs', '/network/network.mjs']) {
+		for (const p of ['/kernel/geometry.mjs', '/planner/txn.mjs', '/planner/log.mjs', '/network/network.mjs']) {
 			const r = await ask(p);
 			assert.equal(r.status, 200, p);
 			assert.match(r.type, /^text\/javascript/, p);

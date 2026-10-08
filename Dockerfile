@@ -49,6 +49,9 @@ COPY groups/ groups/
 # the DEVICES plugin (O-e1, H19.21; O4): whether a device is composed on an anchor, its factories and its drawn word
 COPY devices/ devices/
 
+# the PRODUCT's composition (O-d, H19.22): the kinds production ships, composed in one place
+COPY product/ product/
+
 # the shipped TEMPLATE set (H9.9). Read straight from the image and never written: a template is
 # listed to everyone, owned by nobody, and forks into a real diagram on first write. It replaced the
 # example corpus, which was COPIED into $DATA_DIR on first boot and became shared mutable state that

@@ -64,7 +64,7 @@ test('S-b: the server refuses what the network refuses -- a transit a host does 
 H18.13 (S-c; ruled 2026-10-03, G2) -- A PINNED LINK LAYS THE LEGS NO PIPES JOIN, from any door; a plain link lays none.
 */
 import { Model } from '../model/model.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';

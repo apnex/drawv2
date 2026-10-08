@@ -309,9 +309,9 @@ const MUTANTS = [
 	{ id: 'M5', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/all.mjs', create: "export * from './geometry.mjs';\nexport * from './spec.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { cellOf } from '../../kernel/all.mjs';\n" }] },
 	{ id: 'M6', rule: 'L11', edits: [{ file: 'app/src/input.js', append: '\nexport function __m6() { return window.draw.sync.submit({ ops: [] }); }\n' }] },
-	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { collectionCap } from '../planner/policy.mjs';\n" }] },
+	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { Log } from '../planner/log.mjs';\n" }] },
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
-	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { collectionCap as __c } from '../planner/policy.mjs?v';\n" }] },
+	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { Log as __c } from '../planner/log.mjs?v';\n" }] },
 	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/movers.mjs')).moversAt; }\n" }] },
 	// K2c: no barrel is left to re-point, so the attack plants one and imports it through a suffix; the new file also fails L1
 	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { cellOf } from './geometry.mjs';\n" },
@@ -684,7 +684,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	const { cellOf } = await import('../kernel/geometry.mjs');
 	const { commit } = await import('../planner/txn.mjs');
 	const { Log } = await import('../planner/log.mjs');
-	const { productKinds } = await import('../planner/kinds.mjs');
+	const { productKinds } = await import('../product/kinds.mjs');
 	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
 	const { createNetworkSession } = await import('../network/session.mjs');
 

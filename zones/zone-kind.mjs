@@ -4,7 +4,7 @@ THE ZONES PLUGIN'S KIND -- O-b1 (H19.19; dev/design/unification/KINDS-AS-PLUGINS
 A zone is a named box drawn behind the board: it bounds cells, so its edges fall between them, on the grid offset by half a
 pitch. It was the core's kind -- its storage facts in model/shape.mjs, its checks and its cap in the planner, its factory on
 the Model and its extent on the surface -- and is this plugin's now, whole, as the link is the network's
-(network/link-kind.mjs). The product composes it between the node and the group (planner/kinds.mjs `productKinds`), so a
+(network/link-kind.mjs). The product composes it between the node and the group (product/kinds.mjs `productKinds`), so a
 document lists its collections as it always has. Its fields are what they were as the product's row: only the owner moved.
 Its extent is zones/zone-extent.mjs and its factory zones/make-zone.mjs, apart so a composition that plans -- the planner
 entry -- loads the row alone (tools/layers.mjs L10).
@@ -18,7 +18,7 @@ import { ZONE_EXT } from './zone-extent.mjs';
 
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;
 const PITCH = STD.pitch;
-// the checks are LOCAL, as every row's are: the trust boundary is never delegated (planner/kinds.mjs, B110, B113)
+// the checks are LOCAL, as every row's are: the trust boundary is never delegated (model/shape.mjs, B110, B113)
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

@@ -18,7 +18,7 @@ import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { plan } from '../planner/txn.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW } from '../network/pipe-kind.mjs';
 
 function rig({ commits = true, accepts = true } = {}) {

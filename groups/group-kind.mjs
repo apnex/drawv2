@@ -4,7 +4,7 @@ THE GROUPS PLUGIN'S KIND -- O-c (H19.20; dev/design/unification/KINDS-AS-PLUGINS
 A group is a named set of nodes, selected together and never alone. It was the core's kind -- its storage facts in
 model/shape.mjs, its checks, its cross-entity check and its invariants in planner/kinds.mjs, its rules and policy in the
 planner, its factory and lookup on the Model -- and is this plugin's now, whole. The product composes it after the node and
-the zones plugin's kind (planner/kinds.mjs `productKinds`), so a document lists its collections as it always has. Its fields
+the zones plugin's kind (product/kinds.mjs `productKinds`), so a document lists its collections as it always has. Its fields
 are what they were as the product's row: only the owner moved.
 
 `gathers: 'members'` is the one thing the core does for a group, and it does it for any kind that opts in (model/shape.mjs):
@@ -15,7 +15,7 @@ ruling's "a group's membership is stated in those terms, not by naming kinds".
 import { NAME_MAX } from '../model/limits.mjs';
 import { GROUPS, groupAfterRemoval } from './group-rules.mjs';
 
-// the checks are LOCAL, as every row's are: the trust boundary is never delegated (planner/kinds.mjs, B110, B113)
+// the checks are LOCAL, as every row's are: the trust boundary is never delegated (model/shape.mjs, B110, B113)
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const id = (v, kind) => typeof v === 'string' && new RegExp(`^${kind}-[0-9a-f]{6}$`).test(v);
 

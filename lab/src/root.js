@@ -31,7 +31,7 @@ import { derivedToApply, applyAnswer } from '../../app/src/changes.js';
 import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
-import { productKinds } from '../../planner/kinds.mjs';
+import { productKinds } from '../../product/kinds.mjs';
 // the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
 // product page composes it
 import { routeLink } from '../../network/pipes.mjs';

@@ -15,7 +15,7 @@ import { CONTENT_VALUE_MAX, SPAN_MAX, FONT_MIN, FONT_MAX } from '../model/limits
 // whether a device is composed on an anchor: it carries a type, which a bare anchor -- a waypoint -- never does
 export const hasDevice = (entity) => !!entity && !!entity.type;
 
-// the checks are LOCAL, as every row's are: the trust boundary is never delegated (planner/kinds.mjs, B110)
+// the checks are LOCAL, as every row's are: the trust boundary is never delegated (model/shape.mjs, B110)
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

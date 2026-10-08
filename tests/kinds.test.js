@@ -14,7 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { composeKinds, CORE_KINDS } from '../model/shape.mjs';
 import { Model } from '../model/model.mjs';
-import { productKinds } from '../planner/kinds.mjs';
+import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { commit, plan } from '../planner/txn.mjs';
 import { linkTenant } from '../network/link-reactions.mjs';
@@ -56,7 +56,7 @@ test('N-a: a composition lists its kinds and what each opts into', () => {
 
 test('N-a: a composition is refused when built -- each way a row can be wrong, named', () => {
 	const refused = (rows, re) => assert.throws(() => composeKinds(rows, 't'), re);
-	refused([...productRows(), { ...PROBE, kind: 'node', collection: 'more' }], /kind node is claimed by the product and by a test plugin/);
+	refused([...productRows(), { ...PROBE, kind: 'node', collection: 'more' }], /kind node is claimed by the core and by a test plugin/);
 	refused([...productRows(), { ...PROBE, references: ['node', 'pipe'] }], /kind probe references pipe, which this composition does not include/);
 	refused([...productRows(), { ...PROBE, fields: { ...PROBE.fields, at: true } }], /kind probe: field at has no check/);
 	refused([...productRows(), { ...PROBE, fields: { at: PROBE.fields.at } }], /kind probe: no check for its id/);
@@ -166,7 +166,8 @@ test('S-a: an extension\'s fields join the kind it extends -- checked, optional,
 
 test('S-a: an extension is refused when built -- each way it can be wrong, named', () => {
 	const refused = (rows, re) => assert.throws(() => composeKinds(rows, 't'), re);
-	refused([...productRows(), EXT({ type: () => true })], /field node\.type is claimed by the product and by a test plugin/);
+	// RESTATED at O-d (H19.22): `type` is the devices plugin's since O-e2, so the owner's field claimed twice is the anchor's own `name`
+	refused([...productRows(), EXT({ name: () => true })], /field node\.name is claimed by the core and by a test plugin/);
 	refused([...productRows(), EXT(), { ...EXT(), owner: 'another' }], /field node\.colour is claimed by a test plugin and by another/);
 	refused([...productRows(), EXT(undefined, { kind: 'probe' })], /adds fields to probe, which this composition does not include/);
 	refused([...productRows(), EXT(undefined, { optional: [] })], /must be optional/);

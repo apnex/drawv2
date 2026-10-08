@@ -25,7 +25,7 @@ merged list would be wrong in both directions.
 Per kind, the table also holds the collection a document stores it under and whether it can be selected.
 
 AMENDED 2026-10-08 (O-b1, H19.19; O1): the core's kinds are two -- node and group; the zone is the zones plugin's
-(zones/zone-kind.mjs), composed between them (planner/kinds.mjs `productKinds`).
+(zones/zone-kind.mjs), composed between them (product/kinds.mjs `productKinds`).
 AMENDED 2026-10-08 (O-c, H19.20; O3): the core's kind is the node alone; the group is the groups plugin's (groups/group-kind.mjs).
 AMENDED 2026-10-04 (S-e, H18.15; G5, B280): the product's kinds are three -- node, zone and group. The link is the network
 plugin's kind (network/link-kind.mjs), brought by composing the network, as every production composition does; the core
@@ -225,6 +225,6 @@ export function composeKinds(given, who = 'a composition') {
 }
 
 // the three rows' storage half, as the core knows them; the planner adds each one's checks (planner/kinds.mjs)
-export const CORE_ROWS = KINDS.map((kind) => ({ kind, owner: 'the product', ...STORAGE[kind] }));
+export const CORE_ROWS = KINDS.map((kind) => ({ kind, owner: 'the core', ...STORAGE[kind] }));
 // what `new Model()` is composed with when nothing else is passed: the product's three, so no links (S-e)
 export const CORE_KINDS = composeKinds(CORE_ROWS, 'the core');

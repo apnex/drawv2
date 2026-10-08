@@ -1318,7 +1318,7 @@ test('K9: a template deep link serves the editor, as a diagram one does', async 
 });
 
 test('K9: one module per mount, as JavaScript and never cached', async () => {
-	for (const p of ['/next/src/main.js', '/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs', '/planner/policy.mjs']) {
+	for (const p of ['/next/src/main.js', '/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs', '/planner/log.mjs']) {
 		const res = await fetch(base + p);
 		assert.equal(res.status, 200, p);
 		assert.match(res.headers.get('content-type'), /^text\/javascript/, `${p} as a module`);

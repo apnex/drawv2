@@ -1266,7 +1266,6 @@ and it must agree with the table. The thresholds keep their own authority (plann
 test('PL-5: the kind table is the one list of kinds, and what still states them agrees with it', async () => {
 	const { CORE_KINDS } = await import('../model/shape.mjs');
 	const { list: KINDS, collection: COLLECTION, selectable: SELECTABLE_KINDS, optional: OPTIONAL, composite: COMPOSITE } = CORE_KINDS;
-	const { collectionCap } = await import('../planner/policy.mjs');
 	// three since S-e (H18.15): the link is the network's kind (network/link-kind.mjs), composed by composing the network
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
 	// RESTATED at O-c (H19.20): the group left the core too -- the node alone is the core's kind
@@ -1276,10 +1275,11 @@ test('PL-5: the kind table is the one list of kinds, and what still states them 
 	assert.equal(LINK_ROW.owner, 'the network');
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
 	assert.deepEqual(SELECTABLE_KINDS, ['node'], 'the core\'s node is selectable');
-	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
+	// RESTATED at O-d (H19.22): planner/policy.mjs's cap table is gone -- every composed kind carries its own cap on its row
+	for (const k of (await import('../product/kinds.mjs')).productKinds().list) assert.equal(typeof (await import('../product/kinds.mjs')).productKinds().row(k).cap, 'number', `${k} carries its cap`);
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's
-	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
+	const PRODUCT_KINDS = (await import('../product/kinds.mjs')).productKinds();
 	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group'], 'the product composes the table\'s kind, the zones plugin\'s and the groups plugin\'s');
 	for (const k of PRODUCT_KINDS.list) for (const other of PRODUCT_KINDS.list) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
 	// a Model's collections are the table's, in its order

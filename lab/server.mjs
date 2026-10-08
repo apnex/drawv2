@@ -48,6 +48,7 @@ const MOUNTS = {
 	'/zones/': 'zones',       // the zones plugin (O-b1, H19.19)
 	'/groups/': 'groups',     // the groups plugin (O-c, H19.20)
 	'/devices/': 'devices',   // the devices plugin (O-e1, H19.21)
+	'/product/': 'product',   // the product's composition (O-d, H19.22)
 };
 
 function send(res, code, body) {

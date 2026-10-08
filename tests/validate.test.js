@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
-import { collectionCap } from '../planner/policy.mjs';
 import { LINK_ROW } from '../network/link-kind.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { ZONE_EXT } from '../zones/zone-extent.mjs';
@@ -199,21 +198,21 @@ B113 -- the number in the code is the number that binds, and the server bounds w
 Two separate claims, both previously unasserted, and a mutant walked through each.
 */
 test('B113: the positioned cap is DERIVED from the grid, not a flat constant', async () => {
-	// RESTATED at O-b1 (H19.19): the zone's cap is its row's own, derived from its extent as the node's is from its own
-	const cap = collectionCap({ nodeExt: NODE_EXT, pitch: STD.pitch });
-	assert.equal(cap.zone, undefined, 'the zone is the zones plugin\'s kind, its cap its row\'s');
-	assert.equal(ZONE_ROWS[0].cap, (Math.floor(ZONE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(ZONE_EXT.y / STD.pitch) * 2 + 1), 'derived from the zone extent');
-	const anchors = (Math.floor(NODE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(NODE_EXT.y / STD.pitch) * 2 + 1);
-	assert.equal(cap.node, anchors, 'the node cap IS the number of node anchors');
-	assert.equal(cap.node, 527);
-	assert.equal(cap.waypoint, undefined, 'a waypoint is a node since F-c, so the node ceiling is the one it shares');
-	assert.notEqual(cap.node, 2000, 'a flat 2000 is unreachable for a positioned kind and so is not a limit');
-	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
-	assert.equal(cap.link, undefined, 'the link is the network\'s kind, its cap its row\'s (S-e)');
-	assert.equal(LINK_ROW.cap, 2000);
-	// RESTATED at O-c: the group's cap is its row's own, as the link's is
+	/*
+	RESTATED at O-d (H19.22): every kind's cap is its row's own -- the anchor's composed by the product (product/kinds.mjs),
+	each plugin's in its plugin -- and planner/policy.mjs, which held the anchor's and the zone's arithmetic, is gone. What it
+	guards is unchanged: a positioned kind's cap is its anchor-cell count, and a flat 2000 only for a kind with no anchor.
+	*/
+	const { productKinds } = await import('../product/kinds.mjs');
 	const { GROUP_ROWS } = await import('../groups/group-kind.mjs');
-	assert.equal(cap.group, undefined);
+	const node = productKinds().row('node').cap;
+	const anchors = (Math.floor(NODE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(NODE_EXT.y / STD.pitch) * 2 + 1);
+	assert.equal(node, anchors, 'the node cap IS the number of node anchors');
+	assert.equal(node, 527);
+	assert.notEqual(node, 2000, 'a flat 2000 is unreachable for a positioned kind and so is not a limit');
+	assert.equal(ZONE_ROWS[0].cap, (Math.floor(ZONE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(ZONE_EXT.y / STD.pitch) * 2 + 1), 'derived from the zone extent');
+	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
+	assert.equal(LINK_ROW.cap, 2000);
 	assert.equal(GROUP_ROWS[0].cap, 2000);
 });
 
@@ -326,7 +325,7 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	// H17.22 N-a: it reads the composition's map, which the rows carry from the one table in model/shape.mjs
 	assert.match(src, /kinds\.optional\[kind\]/, 'it reads the composition\'s one map');
 	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;
-	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
+	const PRODUCT_KINDS = (await import('../product/kinds.mjs')).productKinds();
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them: each core kind's map is the table's, the zone's its plugin row's
 	const { ZONE_ROWS: ZR } = await import('../zones/zone-kind.mjs');
 	// RESTATED at O-e2 (H19.21): the node's optional fields are the anchor's (order) and those the devices plugin and the simulation compose on

@@ -8,7 +8,7 @@ planner/kinds.mjs unchanged, check and message alike.
 import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { hasDevice } from '../devices/device-fields.mjs';   // whether a device is composed: the devices plugin's
 
-// the check is LOCAL, as every row's is (planner/kinds.mjs, B110)
+// the check is LOCAL, as every row's is (model/shape.mjs, B110)
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 /*
 H12.5 -- a spawner's configuration, whole or absent.
