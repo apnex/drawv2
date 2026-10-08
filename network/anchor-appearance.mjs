@@ -36,6 +36,7 @@ const MARKS = {
 	state: (entity, { model }) => { const roles = waypointRolesIn(model, entity.id); return roles.length ? roles.join(' ') : 'bend'; },
 	composes: false,
 	root: { layer: 'waypoints', class: (entity, kit, state) => `waypoint ${state}` },
+	picks: [{ closest: 'g.waypoint', word: 'waypoint' }],   // C-b: hit by the word people use (F4)
 	parts: {
 		marks(entity, g, { el, model, mode }, state) {
 			const roles = state === 'bend' ? [] : state.split(' ');

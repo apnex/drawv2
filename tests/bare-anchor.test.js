@@ -104,7 +104,7 @@ const RECORD = {
 	'network/appearance.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'kernel/svg-scene.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'engine/situation.mjs': [3, 'the situation\'s word for what the pointer is over, derived through the module (F4)'],
-	'app/src/pick.js': [1, 'a hit on a drawn waypoint -- the canvas\'s word, F4'],
+	// app/src/pick.js's one -- the waypoint's hit -- moved to the network's marks at C-b (H19.30)
 	'app/src/recognize.js': [4, 'the gesture rows\' hit words, F4'],
 	'app/src/input.js': [4, 'the hit, the palette hand and the step words, F4'],
 	'app/src/palette.js': [2, 'the palette\'s waypoint tile, F4'],
@@ -112,7 +112,7 @@ const RECORD = {
 	'app/src/help.js': [1, 'the help overlay\'s waypoint situation, F4'],
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
 	'app/src/releases.js': [1, 'the palette hand, F4'],
-	'network/anchor-appearance.mjs': [1, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3)'],
+	'network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],
 	'lab/src/root.js': [1, 'the page\'s waypoint layer id'],
 };
 

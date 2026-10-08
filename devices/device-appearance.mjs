@@ -83,6 +83,7 @@ const DEVICE = {
 	state: (entity) => (hasDevice(entity) ? 'device' : null),
 	composes: false,
 	root: { layer: 'nodes', class: () => 'node' },
+	picks: [{ closest: 'g.node:not(.ghost)', word: 'node' }],   // C-b: a held tool's ghost is no device
 	rootAttrs: (entity) => [['data-span', spanSig(entity)], ['data-content', contentSig(entity)]].filter(([, v]) => v),
 	// what changes the structure -- a footprint or the content -- renders afresh; a move keeps the look's fast path
 	structure: (entity) => `${spanSig(entity)}|${contentSig(entity)}`,

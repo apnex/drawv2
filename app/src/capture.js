@@ -26,7 +26,7 @@ WHAT NEVER REACHES THE INPUT LAYERS. Keys typed into a field (the header's input
 do not apply there. The context menu: suppressed everywhere but a field, which is the browser's question, not a
 gesture's (B75).
 */
-import { hitOf } from './pick.js';
+import { hitWith } from './pick.js';
 import { toCanvas } from './painter.js';
 
 const FIELD = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
@@ -52,7 +52,7 @@ function regionOf(target) {
 }
 
 // one DOM event as an input event -- plain data, and the only place a DOM event is read
-function inputEvent(evt, svg, type) {
+function inputEvent(evt, svg, type, hitOf) {
 	const pointer = type !== 'key-down' && type !== 'key-up';
 	return {
 		type,
@@ -73,8 +73,9 @@ The listeners, and the round trip: convert, hand over, then act on what came bac
 Input today -- and receives only input events.
 */
 export class Capture {
-	constructor({ svg, host, sink }) {
-		this.svg = svg; this.sink = sink;
+	// C-b: `picks`, the canvas parts' (app/src/pick.js `picksOf`) -- what a press lands on is answered by the plugin that drew it
+	constructor({ svg, host, sink, picks = [] }) {
+		this.svg = svg; this.sink = sink; this.hitOf = hitWith(picks);
 		svg.addEventListener('pointerleave', () => sink.leave());
 		svg.addEventListener('pointerdown', (e) => this.onDown(e));
 		svg.addEventListener('pointermove', (e) => this.onMove(e));
@@ -92,7 +93,7 @@ export class Capture {
 
 	// hand one event over, then claim it and take the pointer if the input layers said to
 	#round(evt, type, deliver) {
-		const e = inputEvent(evt, this.svg, type);
+		const e = inputEvent(evt, this.svg, type, this.hitOf);
 		try { deliver(e); } finally {
 			if (e.claimed) evt.preventDefault();
 			if (e.capture) { try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ } }

@@ -31,6 +31,7 @@ import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
 import { Input } from './input.js';
 import { Capture } from './capture.js';
+import { picksOf } from './pick.js';
 import { Readout } from './readout.js';
 
 /*
@@ -85,6 +86,6 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 		host, help, now, snap, plugins, runRules });
 	let capture = null;
 	// the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0) -- once the root's own listeners are in
-	const listen = () => (capture ??= new Capture({ svg, host, sink: input }));
+	const listen = () => (capture ??= new Capture({ svg, host, sink: input, picks: picksOf(parts) }));   // C-b: the plugins' picks
 	return { model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }

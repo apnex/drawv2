@@ -21,7 +21,10 @@ import { pipeHitAttributes } from '../network/appearance.mjs';
 import { linkWidth } from '../network/appearance.mjs';
 import { attachNetwork } from '../network/host.mjs';
 import { fakeLayer } from './fixtures/fake-svg.mjs';
-import { hitOf } from '../app/src/pick.js';
+import { picksOf, hitWith } from '../app/src/pick.js';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+// RESTATED at C-b (H19.30): the picker is composed from the plugins' picks; a mark is still the canvas's own rule
+const hitOf = hitWith(picksOf(PRODUCT_CANVAS));
 import { PRESS_DRAGS } from '../app/src/releases.js';
 import { deleteSelection } from '../app/src/commands.js';
 import { createNetwork as netFor } from '../network/network.mjs';

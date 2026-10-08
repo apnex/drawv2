@@ -5,6 +5,10 @@ Capture is the only code that reads a browser event. It turns each one into an I
 the input layers, and then does on the real event what they asked for and cannot do themselves: claim it, and take the
 pointer. These hold that contract, and G1 itself: the input layers read no DOM.
 */
+// RESTATED at C-b (H19.30): what a press lands on is answered by the plugins' picks, which the page hands Capture
+import { picksOf } from '../app/src/pick.js';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+const PICKS = picksOf(PRODUCT_CANVAS);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -23,7 +27,7 @@ const quietHost = { addEventListener() {} };
 // the input event a sink is handed for one DOM event -- seen as the input layers see it, through a Capture
 function seen(svg, method, evt) {
 	const { got, sink } = probe();
-	new Capture({ svg, host: quietHost, sink })[method](evt);
+	new Capture({ svg, host: quietHost, sink, picks: PICKS })[method](evt);
 	return got[0][1];
 }
 
@@ -50,7 +54,7 @@ test('a target that cannot be asked gives no region -- run mode places nothing t
 test('what the input layers ask for is done on the real event: a claim is preventDefault, a capture takes the pointer', () => {
 	const svg = quietSvg();
 	const { sink } = probe({ claim: true, capture: true });
-	const c = new Capture({ svg, host: quietHost, sink });
+	const c = new Capture({ svg, host: quietHost, sink, picks: PICKS });
 	let prevented = 0;
 	c.onDown({ clientX: 0, clientY: 0, pointerId: 7, target: {}, preventDefault: () => { prevented++; } });
 	assert.equal(prevented, 1);
@@ -102,7 +106,7 @@ test('B268: a press on a link\'s hit twin is a press on the link', () => {
 	const svg = { addEventListener() {}, setPointerCapture() {}, getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) };
 	const got = [];
 	const sink = new Proxy({}, { get: () => (e) => got.push(e) });
-	const c = new Capture({ svg, host: { addEventListener() {} }, sink });
+	const c = new Capture({ svg, host: { addEventListener() {} }, sink, picks: PICKS });
 	const twin = { tagName: 'path', id: '', dataset: { link: 'link-000001' }, classList: { contains: (k) => k === 'link-hit' }, closest: () => null };
 	c.onDown({ clientX: 0, clientY: 0, button: 0, target: twin, preventDefault() {} });
 	assert.deepEqual(got[0].on, { kind: 'link', id: 'link-000001' });

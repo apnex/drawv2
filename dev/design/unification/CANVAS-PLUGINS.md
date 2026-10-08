@@ -215,3 +215,12 @@ A painter may now name companions drawn with its element -- moved and removed wi
 The renderer keeps no layer of its own: every entity is drawn by a painter or by the appearance pipeline.
 **Left in the renderer, for C-e:** the selection reflections -- a selected path lit through its waypoints, the links blocking a down link -- which are session decorations, not drawing; they name the link and read the links layer.\
 **Held by:** `tests/canvas-painters.test.js` -- a link drawn with its twin, a deleted link's waypoint re-derived, no link without the network's painter, the renderer drawing no link, a link put back keeping its twin just after it (the twin not removed, no redraw after a delete, and the twin not restacked each fail -- three mutants killed, the last once its test was added); four source-reading tests pointed at the painter; the page's DOM record, the matrix and every corpus unchanged.
+
+AMENDED 2026-10-09 -- **C-b done: picking** (H19.30).\
+A painter or an appearance declares how its element is picked -- `picks: [{ closest, word, modifier? } | { self, word, id? }]` -- and the picker is composed from the page's canvas parts (`app/src/pick.js` `picksOf`, `hitWith`), handed to `Capture` by the composition.\
+The zones plugin's pick is under Shift and passes a plain press through (U1); the devices plugin's answers `g.node` but not a held tool's ghost; the network's answers a waypoint, a link's path and its click twin.\
+A backdrop -- a pick under a modifier -- is tried after everything drawn over it, which restores the old precedence by rule.\
+The canvas keeps what spans kinds: a plugin's mark, the canvas -- and the handles, C-d's.
+**A refinement chosen in the build:** no new attribute. Every entity's element already carries its id (a link's twin as `data-link`) and the DOM is held byte for byte, so each drawer declares how its element is found.\
+**Left for later stages:** the picks by coordinate -- which device or waypoint is at a point (`nodeAt`, `endpointAt`), read by the gestures -- C-c's and C-d's; run mode's regions (`app/src/capture.js` `regionOf`) -- C-e's.\
+**Held by:** `tests/canvas-picks.test.js` -- the product's picks answer every kind as before; without the zones plugin a zone is never picked; the picker names no plugin's kind; malformed picks refused; a backdrop last (the modifier ignored, and the backdrop not last, each fail -- two mutants killed); `Capture`'s tests and one pipe test restated to hand it the product's picks; the gesture corpus and every browser run unchanged.

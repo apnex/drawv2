@@ -38,35 +38,58 @@ export const footprintHits = (n, box, pad = 0) => {
 // ---- from a DOM event: what did the pointer land on? ----
 
 /*
-Zones are deliberately absent unless Shift is held. They are an inert backdrop on their own layer
-(DESIGN U1), so a plain click or marquee passes THROUGH them to the canvas — which is what makes
-marquee-select work inside a zone at all.
+C-b (H19.30; CANVAS-PLUGINS.md, D1) -- THE PLUGINS' PICKS. A painter or an appearance declares how its element is picked --
+`picks: [{ closest, word, modifier? } | { self, word, id? }]`: the selector its element answers to, or the class the target
+itself carries (a link's path, its click twin); the word the hit is called by; and a modifier it is picked under. A pick under a
+modifier not held passes the press through to the canvas -- the zone, an inert backdrop on its own layer, picked only with
+Shift, so a plain click or marquee passes THROUGH it, which is what makes marquee-select work inside a zone at all (DESIGN U1).
+Composed from the page's canvas parts in their order, a backdrop's after the rest -- what is drawn over a backdrop takes the
+press first; a pick naming no word, or answering to nothing, is refused.
 */
-export function hitOf(evt) {
-	const target = evt.target;
-	if (!target.closest) return { kind: 'canvas', id: null };
-	if (target.classList && target.classList.contains('handle')) {
-		// link endpoint handles carry data-end; zone corner handles carry data-corner
-		if (target.dataset.end) return { kind: 'lhandle', end: target.dataset.end };
-		return { kind: 'handle', id: target.dataset.corner };
+export function picksOf(parts) {
+	const picks = [];
+	for (const part of parts) {
+		for (const d of [...(part.painters ?? []), ...(part.appearances ?? [])]) {
+			for (const p of d.picks ?? []) {
+				if (typeof p.word !== 'string') throw new Error(`pick: ${part.owner}'s pick for ${d.kind} names no word`);
+				if (!p.closest && !p.self) throw new Error(`pick: ${part.owner}'s pick for ${d.kind} answers to no selector and no class`);
+				picks.push({ ...p, owner: part.owner, kind: d.kind });
+			}
+		}
 	}
-	const nodeG = target.closest('g.node:not(.ghost)');
-	if (nodeG) return { kind: 'node', id: nodeG.id };
-	const wpG = target.closest('g.waypoint');
-	if (wpG) return { kind: 'waypoint', id: wpG.id };
-	const zoneG = target.closest('g.zone');
-	if (zoneG) return evt.shiftKey ? { kind: 'zone', id: zoneG.id } : { kind: 'canvas', id: null };
-	if (target.classList && target.classList.contains('link')) return { kind: 'link', id: target.id };
-	// a link's invisible hit twin takes the click wherever its dotted or dashed stroke has a gap (B268)
-	if (target.classList && target.classList.contains('link-hit')) return { kind: 'link', id: target.dataset.link };
-	/*
-	H17.22 N-c2 -- A MARK a plugin drew names what a click on it selects (`data-select`): the network's hand pipes (B281). The
-	kind is read off the id, as everywhere; `mark` says the canvas draws no handle of its own for it, so a press selects it and
-	a drag never moves it (app/src/releases.js PRESS_DRAGS). The canvas names no plugin kind.
-	*/
-	const mark = target.dataset?.select;
-	if (mark) return { kind: kindOf(mark), id: mark, mark: true };
-	return { kind: 'canvas', id: null };
+	// a backdrop -- a pick under a modifier, passing a plain press through -- is tried after everything drawn over it
+	return [...picks.filter((p) => !p.modifier), ...picks.filter((p) => p.modifier)];
+}
+
+// what the pointer landed on, by the composed picks -- a handle, a plugin's element, a plugin's mark, or the canvas
+export function hitWith(picks) {
+	return (evt) => {
+		const target = evt.target;
+		if (!target.closest) return { kind: 'canvas', id: null };
+		if (target.classList && target.classList.contains('handle')) {
+			// link endpoint handles carry data-end; zone corner handles carry data-corner (the handles are C-d's)
+			if (target.dataset.end) return { kind: 'lhandle', end: target.dataset.end };
+			return { kind: 'handle', id: target.dataset.corner };
+		}
+		for (const p of picks) {
+			if (p.self) {
+				if (target.classList && target.classList.contains(p.self)) return { kind: p.word, id: p.id ? p.id(target) : target.id };
+				continue;
+			}
+			const found = target.closest(p.closest);
+			if (!found) continue;
+			if (p.modifier && !evt[p.modifier]) return { kind: 'canvas', id: null };   // a backdrop passes the press through (U1)
+			return { kind: p.word, id: found.id };
+		}
+		/*
+		H17.22 N-c2 -- A MARK a plugin drew names what a click on it selects (`data-select`): the network's hand pipes (B281). The
+		kind is read off the id, as everywhere; `mark` says the canvas draws no handle of its own for it, so a press selects it and
+		a drag never moves it (app/src/releases.js PRESS_DRAGS). The canvas names no plugin kind.
+		*/
+		const mark = target.dataset?.select;
+		if (mark) return { kind: kindOf(mark), id: mark, mark: true };
+		return { kind: 'canvas', id: null };
+	};
 }
 
 // ---- from a coordinate: what occupies this point? ----
