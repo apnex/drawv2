@@ -1159,7 +1159,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.20 | O-c: the group plugin -- its row, tenant, invariants, policy, factory and `groupOf` in a folder of its own; the selection rule and the index's membership read a row's `gathers`, naming no group; its canvas is H19.23's (O3) | feature | S4 | `DONE` |
 | H19.21 | O-e, re-shaped by O4: the core holds only the anchor -- the devices plugin composes type, shape, span and content onto it and owns the device vocabulary and factories, the simulation adds `spawn`; one exception recorded, the one-per-cell rule reading `span` until B282 -- design `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approval | feature | S4 | `DONE` |
 | H19.22 | O-d: closed -- a layer rule that the core and the planner name no kind, B280 closed for them; the canvas's half is B308's | **B280** | S4 | `DONE` |
-| H19.23 | Design, for approval: a canvas plugin contract -- how a plugin's kind enters the page (press rows, gestures, releases, handles, picking, drawing, snapping, moving) -- for zone, group, node and the network's link together | **B308** | S4 | `TODO` |
+| H19.23 | Design, for approval: a canvas plugin contract -- how a plugin's kind enters the page (press rows, gestures, releases, handles, picking, drawing, snapping, moving) -- for zone, group, node and the network's link together -- `dev/design/unification/CANVAS-PLUGINS.md` | **B308** | S4 | `TODO` |
 | H19.24 | A down link pinned through a device is drawn along its intent, as one through a waypoint is -- found writing O-e's design | **B309** | S2 | `DONE` |
 | H19.25 | K13d: the Model's link methods -- `linksOf`, `linksAt`, `linkBetween`, `linksBetween`, `makeLink` -- move to the network (`network/link-queries.mjs`); the core names no kind but the anchor | feature | S4 | `DONE` |
 | H19.26 | Design, for approval: the Model's six questions to a plugin it names (`MODEL_READS`) become queries a plugin brings -- `dev/design/unification/PLUGIN-QUERIES.md` | feature | S4 | `DONE` |
@@ -1250,6 +1250,8 @@ Next H19.26, that design.
 
 AMENDED 2026-10-08: Q1 ruled A; H19.27 (Q-a) done, and K13d with it -- the core Model asks no plugin anything: the network's questions are its own functions over a Model, and a Model holds what a plugin attaches without reading it.\
 Next H19.23, the canvas plugin contract, then H19.8.
+
+AMENDED 2026-10-08: H19.23's design is `dev/design/unification/CANVAS-PLUGINS.md`, proposed, with its M7 audit; D1 (how far) and D2 (how a plugin brings gestures) go to the director one at a time. B311 fixed on the way (H19.28).
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
