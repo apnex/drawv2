@@ -13,6 +13,7 @@ refactor can prove it unchanged. Where today's behaviour is a known defect it is
 its row, never asserted as correct and never written around.
 */
 
+import { linkBetween, linksBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
@@ -55,7 +56,7 @@ test('deleting a node carries its links in the SAME change — the cascade is on
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
-		h.model.put('link', h.model.makeLink(a.id, b.id));
+		h.model.put('link', makeLink(h.model, a.id, b.id));
 		h.selection.set([a.id]);
 		h.capture.onKeyDown(key('Delete'));
 
@@ -111,7 +112,7 @@ test('L skips a pair that is already linked — no duplicate', () => {
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [60, 0]]);
-		h.model.put('link', h.model.makeLink(a.id, b.id));
+		h.model.put('link', makeLink(h.model, a.id, b.id));
 		h.selection.set([a.id, b.id]);
 		h.capture.onKeyDown(key('l'));
 		assert.equal(h.commits.length, 0, 'nothing to do is not a change');
@@ -374,7 +375,7 @@ const routed = (h) => {
 	const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
 	const w = makeWaypoint(h.model, { x: 60, y: 60 });
 	h.model.put('node', w);
-	const link = { ...h.model.makeLink(a.id, b.id), via: [w.id] };
+	const link = { ...makeLink(h.model, a.id, b.id), via: [w.id] };
 	h.model.put('link', link);
 	return { a, b, w, link };
 };
@@ -663,7 +664,7 @@ test('H6.4: a right-button release during link mode does not commit a segment', 
 		// and the gesture is still LIVE, not silently dead: the real release still lands the link
 		h.capture.onUp(onEntity(b.id, 180, 0, { button: 0 }));
 		assert.equal(h.model.all('link').length, 1, 'the left release ends the link normally');
-		assert.equal(h.model.linkBetween(a.id, b.id) ? 1 : 0, 1, 'between the two nodes dragged');
+		assert.equal(linkBetween(h.model, a.id, b.id) ? 1 : 0, 1, 'between the two nodes dragged');
 	} finally { h.restore(); }
 });
 
@@ -682,7 +683,7 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
 		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
 		h.model.put('zone', z);
-		const link = h.model.makeLink(a.id, b.id);
+		const link = makeLink(h.model, a.id, b.id);
 		h.model.put('link', link);
 
 		const built = [
@@ -1060,7 +1061,7 @@ test('B46: wrapSelection fits a zone to the selection, and yields nothing for a 
 		assert.ok(zone.x < 0 && zone.y < 0, 'the box snaps OUT past the nodes');
 		assert.ok(zone.x + zone.w > 180 && zone.y + zone.h > 180, 'and encloses the far one');
 
-		const link = h.model.makeLink(a.id, b.id);
+		const link = makeLink(h.model, a.id, b.id);
 		h.model.put('link', link);
 		assert.equal(commands.wrapSelection(h.model, [link.id]).entries.length, 0,
 			'a link has no x — nothing to wrap');
@@ -1132,7 +1133,7 @@ test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		const wp = makeWaypoint(h.model, { x: 180, y: 60 });
 		h.model.put('node', wp);
-		const link = { ...h.model.makeLink(a.id, b.id), via: [wp.id], closed: true };
+		const link = { ...makeLink(h.model, a.id, b.id), via: [wp.id], closed: true };
 		h.model.put('link', link);
 
 		const { clones } = commands.cloneSubgraph(h.model, [a.id, b.id]);
@@ -1319,13 +1320,13 @@ test('B80: linksBetween reports every link joining a pair, where linkBetween rep
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		const w = makeWaypoint(h.model, { x: 180, y: -40 }); h.model.put('node', w);
-		const straight = h.model.makeLink(a.id, b.id); h.model.put('link', straight);
-		const bent = h.model.makeLink(a.id, b.id); bent.via = [w.id]; h.model.put('link', bent);
+		const straight = makeLink(h.model, a.id, b.id); h.model.put('link', straight);
+		const bent = makeLink(h.model, a.id, b.id); bent.via = [w.id]; h.model.put('link', bent);
 
-		assert.equal(h.model.linksBetween(a.id, b.id).length, 2, 'both are reported');
-		assert.equal(h.model.linksBetween(b.id, a.id).length, 2, 'and the pair is unordered');
-		assert.ok(h.model.linkBetween(a.id, b.id), 'the singular still answers "are they connected"');
-		assert.equal(h.model.linksBetween(a.id, b.id).filter((l) => !l.via || !l.via.length).length, 1,
+		assert.equal(linksBetween(h.model, a.id, b.id).length, 2, 'both are reported');
+		assert.equal(linksBetween(h.model, b.id, a.id).length, 2, 'and the pair is unordered');
+		assert.ok(linkBetween(h.model, a.id, b.id), 'the singular still answers "are they connected"');
+		assert.equal(linksBetween(h.model, a.id, b.id).filter((l) => !l.via || !l.via.length).length, 1,
 			'which is the question the link gate actually needs to ask');
 	} finally { h.restore(); }
 });

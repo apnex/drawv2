@@ -1,3 +1,4 @@
+import { linksOf, linksAt, linkBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
 import { groupOf } from '../groups/group-of.mjs';   // O-c: the groups plugin's lookup
@@ -48,13 +49,13 @@ test('linksOf and linkBetween find connections both ways', () => {
 	const b = makeNode(model, 'router', { x: 60, y: 0 });
 	model.put('node', a);
 	model.put('node', b);
-	const link = model.makeLink(a.id, b.id);
+	const link = makeLink(model, a.id, b.id);
 	model.put('link', link);
 
-	assert.equal(model.linksOf(a.id).length, 1);
-	assert.equal(model.linksOf(b.id).length, 1);
-	assert.equal(model.linkBetween(b.id, a.id).id, link.id);
-	assert.equal(model.linkBetween(a.id, 'node-zzzzzz'), undefined);
+	assert.equal(linksOf(model, a.id).length, 1);
+	assert.equal(linksOf(model, b.id).length, 1);
+	assert.equal(linkBetween(model, b.id, a.id).id, link.id);
+	assert.equal(linkBetween(model, a.id, 'node-zzzzzz'), undefined);
 });
 
 test('nextName counts per prefix without collisions', () => {
@@ -84,7 +85,7 @@ test('toJSON/load roundtrip preserves the document', () => {
 	const b = makeNode(model, 'router', { x: 120, y: 60 });
 	model.put('node', a);
 	model.put('node', b);
-	model.put('link', model.makeLink(a.id, b.id));
+	model.put('link', makeLink(model, a.id, b.id));
 	model.put('zone', makeZone(model, { x: -90, y: -90, w: 240, h: 180 }));
 	model.put('group', makeGroup(model, [a.id, b.id]));
 	model.state.meta.name = 'demo';
@@ -146,7 +147,7 @@ test("a link's via:[waypointId] bend array survives toJSON/load", () => {
 	model.put('node', b);
 	const w = makeWaypoint(model, { x: 120, y: 60 });
 	model.put('node', w);
-	const link = model.makeLink(a.id, b.id);
+	const link = makeLink(model, a.id, b.id);
 	link.via = [w.id]; // route threads through the waypoint pivot
 	model.put('link', link);
 
@@ -154,15 +155,15 @@ test("a link's via:[waypointId] bend array survives toJSON/load", () => {
 	restored.load(model.toJSON());
 	assert.deepEqual(restored.get('link', link.id).via, [w.id], 'via[] preserved across round-trip');
 	// linksAt finds the link by its via-role reference to the waypoint
-	assert.equal(model.linksAt(w.id).length, 1);
-	assert.equal(model.linksAt(w.id)[0].id, link.id);
+	assert.equal(linksAt(model, w.id).length, 1);
+	assert.equal(linksAt(model, w.id)[0].id, link.id);
 });
 
 test('kindOf derives the kind from the id of each kind', () => {
 	const model = new Model();
 	const node = makeNode(model, 'host', { x: 0, y: 0 });
 	const wp = makeWaypoint(model, { x: 0, y: 0 });
-	const link = model.makeLink(node.id, wp.id);
+	const link = makeLink(model, node.id, wp.id);
 	const zone = makeZone(model, { x: 30, y: 30, w: 60, h: 60 });
 	const group = makeGroup(model, [node.id]);
 	assert.equal(kindOf(node.id), 'node');
@@ -199,31 +200,31 @@ const linked = () => {
 
 test('pathOf: a straight link is a two-point path', () => {
 	const { m, a, b } = linked();
-	const l = m.makeLink(a.id, b.id);
+	const l = makeLink(m, a.id, b.id);
 	m.put('link', l);
 	assert.deepEqual(m.pathOf(l), [[0, 0], [120, 0]]);
 });
 
 test('pathOf: a routed link threads its via anchors in order', () => {
 	const { m, a, b, w } = linked();
-	const l = { ...m.makeLink(a.id, b.id), via: [w.id] };
+	const l = { ...makeLink(m, a.id, b.id), via: [w.id] };
 	m.put('link', l);
 	assert.deepEqual(m.pathOf(l), [[0, 0], [60, 60], [120, 0]], 'src, then every bend, then dst');
 });
 
 test('pathOf: a waypoint may be an ENDPOINT, not only a bend', () => {
 	const { m, a, w } = linked();
-	const l = m.makeLink(a.id, w.id);
+	const l = makeLink(m, a.id, w.id);
 	m.put('link', l);
 	assert.deepEqual(m.pathOf(l), [[0, 0], [60, 60]], 'an anchor is an anchor — node or waypoint');
 });
 
 test('pathOf: a dangling route resolves to nothing, never a partial path', () => {
 	const { m, a } = linked();
-	const l = m.makeLink(a.id, 'node-dead01');
+	const l = makeLink(m, a.id, 'node-dead01');
 	m.put('link', l);
 	assert.equal(m.pathOf(l), null, 'half a path would render as a line to nowhere');
-	const l2 = { ...m.makeLink(a.id, a.id), via: ['node-dead1'] };
+	const l2 = { ...makeLink(m, a.id, a.id), via: ['node-dead1'] };
 	assert.equal(m.pathOf(l2), null, 'a missing BEND is as dangling as a missing end');
 });
 
@@ -245,7 +246,7 @@ test('B187: every factory mints a named entity, and the names do not collide', (
 	for (const e of made) assert.ok(typeof e.name === 'string' && e.name, `${e.id} was minted unnamed`);
 
 	m.put('node', made[0]); m.put('node', made[1]); m.put('zone', made[2]);
-	const link = m.makeLink(made[0].id, made[1].id);
+	const link = makeLink(m, made[0].id, made[1].id);
 	assert.ok(link.name, 'makeLink minted an unnamed link');
 	m.put('link', link);
 

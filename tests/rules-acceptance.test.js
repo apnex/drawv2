@@ -12,6 +12,7 @@ meant two things and decided which inside its handler:
 Behaviour is unchanged. What moved is WHERE the decision lives: two rows in the product's table, over the situation,
 and handlers that ask nothing.
 */
+import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
@@ -24,7 +25,7 @@ import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: th
 function board(bends) {
 	const h = makeInput();
 	const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-	const link = h.model.makeLink(a.id, b.id);
+	const link = makeLink(h.model, a.id, b.id);
 	if (bends) { const w = makeWaypoint(h.model, { x: 180, y: 120 }); h.model.put('node', w); link.via = [w.id]; }
 	h.model.put('link', link);
 	return { h, link };

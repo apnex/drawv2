@@ -57,16 +57,23 @@ test('B277: drawn, three links at a non-transiting waypoint take the endpoint ri
 
 test('B277: the roles in a model read its links and whether it declares transit off, so every reader asks one question', () => {
 	const links = SHAPES['three links'];
-	const model = (off) => ({ linksAt: (id) => (id === W ? links : []), stopsAt: (id) => off && id === W });
+	/*
+	RESTATED at K13d (H19.25): the doubles answered `linksAt` as a Model method, which no Model has now -- the links meeting an
+	anchor are the network's query over a Model's `all('link')` (network/link-queries.mjs). The doubles take that shape; what is
+	held is unchanged: the roles read the links and whether what arrives stops, and a model with no links has none.
+	*/
+	const holding = (ls, extra = {}) => ({ all: (kind) => (kind === 'link' ? ls : []), ...extra });
+	const model = (off) => holding(links, { stopsAt: (id) => off && id === W });
 	assert.deepEqual(waypointRolesIn(model(true), W), ['endpoint']);
 	assert.deepEqual(waypointRolesIn(model(false), W), ['junction']);
-	assert.deepEqual(waypointRolesIn({ linksAt: () => links }, W), ['junction'], 'a model with no network declares nothing');
-	assert.deepEqual(waypointRolesIn({}, W), [], 'and one with no incidence index has no links');
+	assert.deepEqual(waypointRolesIn(holding(links), W), ['junction'], 'a model with no network declares nothing');
+	assert.deepEqual(waypointRolesIn(holding([]), W), [], 'and one holding no links has none');
 });
 
 test('B278: the roles ask whether what arrives stops there, not whether the author declared it', () => {
 	const links = SHAPES['three links'];
-	const at = (stops, declared) => ({ linksAt: () => links, stopsAt: () => stops, declaresNoTransit: () => declared });
+	// RESTATED at K13d: a double holding the links, as the network's query reads them
+	const at = (stops, declared) => ({ all: (kind) => (kind === 'link' ? links : []), stopsAt: () => stops, declaresNoTransit: () => declared });
 	assert.deepEqual(waypointRolesIn(at(true, false), W), ['endpoint'], 'stops by its type, declaring nothing: an endpoint');
 	assert.deepEqual(waypointRolesIn(at(false, true), W), ['junction'], 'the declaration alone decides no role');
 });

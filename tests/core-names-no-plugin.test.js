@@ -8,7 +8,7 @@ which composes nothing and imports no plugin, and not in a reader (O-b1). The an
 read the grid, which model/ may not import (C9), so the product composes them onto it, as the planner did.
 
 What still names a plugin's kind in a core module is recorded below, each with its reason, and may only fall:
-  - model/model.mjs's link methods -- the Model's network debt, which K13d moves at the rebuild (tools/layers.mjs);
+  - (model/model.mjs's link methods were recorded here until K13d, H19.25, moved them to the network);
   - the kernel's drawing words for a zone and a group, and its drawing of a device's frame and content regions -- the
     canvas's half of B280, which B308 designs (O3).
 And one plugin field is read below the plugins, the occupancy index's `span` (engine/relations.mjs `cellsOf`), the network's
@@ -30,7 +30,7 @@ const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((
 
 // file -> [count, reason]; a count may only fall, and a file not here holds none
 const RECORD = {
-	'model/model.mjs': [7, 'the Model\'s link methods (`linksOf`, `linksAt`, `linkBetween`, `linksBetween`, `makeLink`) -- network debt that K13d moves at the rebuild'],
+	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
 	'kernel/geometry.mjs': [5, 'the canvas\'s zone grid and the zone and group drawing elements -- B308, the canvas\'s half'],
 };
 // and the device fields a core module reads, the same way

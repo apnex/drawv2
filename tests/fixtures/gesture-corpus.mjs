@@ -28,6 +28,7 @@ in the commit that makes it:
 
 	node tests/fixtures/gesture-corpus.mjs --write
 */
+import { makeLink } from '../../network/link-queries.mjs';   // K13d: the network's link queries
 import fs from 'node:fs';
 import { makeZone } from '../../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import { makeInput } from './client-harness.mjs';
@@ -58,7 +59,7 @@ function seed(h, board) {
 		if (kind === 'node') e = makeNode(h.model, 'host', { x: a[0], y: a[1] });
 		else if (kind === 'waypoint') e = makeWaypoint(h.model, { x: a[0], y: a[1] });
 		else if (kind === 'zone') e = makeZone(h.model, { x: a[0], y: a[1], w: a[2], h: a[3] });
-		else { e = h.model.makeLink(ids[a[0]], ids[a[1]]); if (a[2]) e.via = a[2].map((w) => ids[w]); }
+		else { e = makeLink(h.model, ids[a[0]], ids[a[1]]); if (a[2]) e.via = a[2].map((w) => ids[w]); }
 		h.model.put(kind === 'waypoint' ? 'node' : kind, e);   // a waypoint is a node with no type (F-c)
 		ids[alias] = e.id;
 	}
@@ -248,7 +249,7 @@ export function record(scenario, { withHarness = null } = {}) {
 			} else if (op === 'cancel') run(() => h.capture.onCancel(pointerEvent(ids, 0, 0, null, { up: true })));
 			else if (op === 'select') h.selection.set(a[0].map((x) => ids[x]));
 			else if (op === 'selectLast') h.selection.set([lastLink]);
-			else if (op === 'link') { const l = h.model.makeLink(ids[a[0]], ids[a[1]]); h.model.put('link', l); lastLink = l.id; }
+			else if (op === 'link') { const l = makeLink(h.model, ids[a[0]], ids[a[1]]); h.model.put('link', l); lastLink = l.id; }
 			else if (op === 'hand') h.tools.setHand(a[0]);
 			else if (op === 'readOnly') h.input.setReadOnly(true);
 			else if (op === 'mode') h.renderer.mode = a[0];

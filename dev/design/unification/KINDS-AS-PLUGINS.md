@@ -363,3 +363,11 @@ The planner composes nothing and imports no plugin, and its layer may import the
 B282's measure is corrected with it: none, 242 or 1,337 anchors to add, as one per device, one per corner or one per cell.
 
 **Deferred, each with its trigger (RU3):** the canvas plugin contract (B308, H19.23, next after this arc); the multi-anchor device and its migration (B282, H19.8); the Model's link methods (K13d, at the rebuild); the API's word "anchor" (B310, held for B282's design); the Model's questions to the network (`MODEL_READS`, recorded in B280's history).
+
+AMENDED 2026-10-08 -- **K13d's mechanical half done** (H19.25), the first deferred item after the arc.\
+The Model's five link methods are the network's functions, `network/link-queries.mjs`, answering from the relations index or by a scan, as the Model did; in a composition without the network the scan answers no links.\
+`model/model.mjs` leaves the record of `tests/core-names-no-plugin.test.js`: the core names no kind but the anchor.
+**Found in the build:** three callers asked the Model with an optional call -- `model.linksAt?.(id) || []` in the simulation's spawners, the network's roles and the renderer's waypoint layers -- and once the method left they answered no links instead of failing.
+The suite caught it (spawner order, roles, rings); they call the network's query now.\
+The same shape remains on the Model's questions to the network (`stopsAt?.`, `declaresNoTransit?.`), which H19.26's design must remove.
+**Held by:** `tests/link-queries.test.js` -- the core Model names no link and makes none; the network's queries answer from the index and the scan alike, in id order; a link made as the Model made it (the optional call put back, and a scan unordered, each fail -- both mutants killed).

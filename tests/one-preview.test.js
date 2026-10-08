@@ -1,6 +1,7 @@
 // P5 V-d (H18.28; PL-6, ruled PD-5) -- ONE PREVIEW: the browser plans its own view with the planner the server runs, sends only
 // what the author did, and keeps no copy of a planner rule. dev/design/unification/PAGE-COMPOSES-NETWORK.md, stage V-d.
 
+import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCENARIOS, record } from './fixtures/gesture-corpus.mjs';
@@ -62,10 +63,10 @@ test('V-d: a refused preview shows nothing and still sends the intent -- the ser
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.model.put('link', h.model.makeLink(a.id, b.id));
+		h.model.put('link', makeLink(h.model, a.id, b.id));
 		const before = entities(h.model);
 		// a second straight link on the pair: the planner refuses it (B81)
-		h.history.commit({ label: 'link', entries: [{ op: 'put', kind: 'link', entity: h.model.makeLink(b.id, a.id) }] });
+		h.history.commit({ label: 'link', entries: [{ op: 'put', kind: 'link', entity: makeLink(h.model, b.id, a.id) }] });
 		assert.equal(entities(h.model), before, 'the tab shows nothing');
 		assert.deepEqual([h.soleCommit().ops.length, h.soleCommit().applied], [1, []], 'and sends the intent, with nothing applied');
 	} finally { h.restore(); }
@@ -81,7 +82,7 @@ test('B221: deleting the third link at a waypoint shows the other two joined at 
 		const [a, b, c] = seedNodes(h.model, [[-360, 0], [360, 0], [0, 240]]);
 		const w = makeWaypoint(h.model, { x: 0, y: 0 });
 		h.model.put('node', w);
-		const l1 = h.model.makeLink(a.id, w.id), l2 = h.model.makeLink(w.id, b.id), l3 = h.model.makeLink(c.id, w.id);
+		const l1 = makeLink(h.model, a.id, w.id), l2 = makeLink(h.model, w.id, b.id), l3 = makeLink(h.model, c.id, w.id);
 		for (const l of [l1, l2, l3]) h.model.put('link', l);
 		h.selection.set([l3.id]);
 		h.capture.onKeyDown(key('Delete'));

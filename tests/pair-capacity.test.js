@@ -16,6 +16,7 @@ THE GUARD is the last test here. It copies the tree, raises `straightCapacity` t
 sites there: each must then admit a second straight link. It is the property T4 exists for -- one change, every site
 follows -- and it fails on any site that decides the limit for itself.
 */
+import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -75,7 +76,7 @@ test('replug: a straight link may be moved onto a pair with no straight link', (
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 360]]);
-		const l = h.model.makeLink(c.id, b.id); h.model.put('link', l);
+		const l = makeLink(h.model, c.id, b.id); h.model.put('link', l);
 		replug(h, l, 'src', a.x, a.y);
 		assert.equal(h.model.get('link', l.id).src, a.id, 'the gesture reaches the gate and commits');
 	} finally { h.restore(); }
@@ -85,8 +86,8 @@ test('replug: a straight link may NOT be moved onto a pair that already holds on
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 360]]);
-		const held = h.model.makeLink(a.id, b.id); h.model.put('link', held);
-		const l = h.model.makeLink(c.id, b.id); h.model.put('link', l);
+		const held = makeLink(h.model, a.id, b.id); h.model.put('link', held);
+		const l = makeLink(h.model, c.id, b.id); h.model.put('link', l);
 		replug(h, l, 'src', a.x, a.y);
 		assert.equal(h.model.get('link', l.id).src, c.id, 'it would render on top of the one already there');
 	} finally { h.restore(); }
@@ -97,8 +98,8 @@ test('replug: a ROUTED link may be moved onto a pair that holds a straight one',
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 360]]);
 		const w = makeWaypoint(h.model, { x: 180, y: 180 }); h.model.put('node', w);
-		const held = h.model.makeLink(a.id, b.id); h.model.put('link', held);
-		const l = h.model.makeLink(c.id, b.id); l.via = [w.id]; h.model.put('link', l);
+		const held = makeLink(h.model, a.id, b.id); h.model.put('link', held);
+		const l = makeLink(h.model, c.id, b.id); l.via = [w.id]; h.model.put('link', l);
 		replug(h, l, 'src', a.x, a.y);
 		assert.equal(h.model.get('link', l.id).src, a.id, 'its bend fans it out');
 	} finally { h.restore(); }
@@ -130,6 +131,7 @@ const STRIP = { links: linkTenant({ owner: 'the strip', keepsOrphan: () => false
 import { Log } from './planner/log.mjs';
 import { deleteSelection } from './app/src/commands.js';
 import { judgeDrag } from './network/guide.mjs';
+import { makeLink } from './network/link-queries.mjs';
 
 const P = 60, A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const out = {};
@@ -173,8 +175,8 @@ const out = {};
 { const h = makeInput();
   try {
     const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 360]]);
-    h.model.put('link', h.model.makeLink(a.id, b.id));
-    const l = h.model.makeLink(c.id, b.id); h.model.put('link', l);
+    h.model.put('link', makeLink(h.model, a.id, b.id));
+    const l = makeLink(h.model, c.id, b.id); h.model.put('link', l);
     h.selection.set([l.id]);
     h.capture.onDown(pointer(c.x, c.y, { target: { tagName: 'circle', classList: { contains: (k) => k === 'handle' }, dataset: { end: 'src' }, closest: () => null } }));
     h.capture.onMove(pointer(a.x, a.y)); h.capture.onUp(pointer(a.x, a.y));

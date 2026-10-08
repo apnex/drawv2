@@ -1370,9 +1370,9 @@ test('V-d: on the product page a deleted pin takes its link before the server an
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
 		// a waypoint, and a link pinned at it, through the server
-		await t.eval(`(async () => { const { makeWaypoint } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
+		await t.eval(`(async () => { const { makeWaypoint } = await import('/devices/make-node.mjs'); const { makeLink } = await import('/network/link-queries.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
 			const m = window.draw.model; const w = makeWaypoint(m, { x: 0, y: 360 });
-			window.draw.history.commit({ label: 'pin', entries: [{ op: 'put', kind: 'node', entity: w }, { op: 'put', kind: 'link', entity: { ...m.makeLink('node-ab00c1', 'node-ab00c2'), via: [w.id] } }] });
+			window.draw.history.commit({ label: 'pin', entries: [{ op: 'put', kind: 'node', entity: w }, { op: 'put', kind: 'link', entity: { ...makeLink(m, 'node-ab00c1', 'node-ab00c2'), via: [w.id] } }] });
 			window.__pin = w.id; return 1; })()`);
 		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		const pinned = await t.eval(`window.draw.model.all('link').find((l) => (l.via || []).includes(window.__pin))?.id ?? null`);

@@ -1,3 +1,4 @@
+import { linksAt, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
 import { groupOf } from '../groups/group-of.mjs';   // O-c: the groups plugin's lookup
@@ -29,7 +30,7 @@ function seeded() {
 	attachRelations(m, { cellOf });                      // inject px→cell; sets m.index = the maintained relations
 	const n = makeNode(m, 'router', { x: 120, y: -60 }); m.put('node', n);
 	const w = makeWaypoint(m, { x: 0, y: 180 });          m.put('node', w);
-	const l = m.makeLink(n.id, w.id);                    m.put('link', l);
+	const l = makeLink(m, n.id, w.id);                    m.put('link', l);
 	const z = makeZone(m, { x: 30, y: 30, w: 60, h: 60 }); m.put('zone', z);
 	const g = makeGroup(m, [n.id]);                       m.put('group', g);
 	return { m, n, w, l, z, g };
@@ -160,13 +161,13 @@ test('incidence snapshot-diff: a link via-change reroutes linksAt (index === sca
 	const n2 = makeNode(m, 'host', { x: 300, y: 0 }); m.put('node', n2);
 	const w1 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w1);
 	const w2 = makeWaypoint(m, { x: 120, y: 0 }); m.put('node', w2);
-	const l = { ...m.makeLink(n1.id, n2.id), via: [w1.id] }; m.put('link', l);
+	const l = { ...makeLink(m, n1.id, n2.id), via: [w1.id] }; m.put('link', l);
 	m.set('link', l.id, { via: [w2.id] });   // ONE set delivers only the new link — the snapshot-diff hard case
-	const idxW1 = m.linksAt(w1.id).map((x) => x.id), idxW2 = m.linksAt(w2.id).map((x) => x.id);   // index path
+	const idxW1 = linksAt(m, w1.id).map((x) => x.id), idxW2 = linksAt(m, w2.id).map((x) => x.id);   // index path
 	detach();                                                              // SAME model, same ids → scan path (the oracle)
 	assert.equal(m.index, null);
-	assert.deepEqual(idxW1, m.linksAt(w1.id).map((x) => x.id), 'linksAt(w1) index === scan');
-	assert.deepEqual(idxW2, m.linksAt(w2.id).map((x) => x.id), 'linksAt(w2) index === scan');
+	assert.deepEqual(idxW1, linksAt(m, w1.id).map((x) => x.id), 'linksAt(w1) index === scan');
+	assert.deepEqual(idxW2, linksAt(m, w2.id).map((x) => x.id), 'linksAt(w2) index === scan');
 	assert.deepEqual(idxW1, []);              // w1 lost the link (old ref removed by the diff)
 	assert.deepEqual(idxW2, [l.id]);         // w2 gained it (new ref added)
 });

@@ -21,6 +21,7 @@ that stops where transit is off, and a stranded pass. Production's classic tenan
 Network-layer code (tools/layers.mjs): it reads the model and the link invariants, and nothing of the planner. What it
 needs of the planner -- the check a requested write receives -- arrives in `ctx.refuses`.
 */
+import { linksAt } from './link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS, closeLoopIntoRing, areCutPieces } from './link-rules.mjs';
 import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 import { isLinkLoop } from './link-references.mjs';   // B300: a join may leave a loop
@@ -76,14 +77,14 @@ const WAYPOINT_LINKS = {
 		*/
 		const dying = new Set();
 		const stripped = [];
-		for (const link of doc.linksAt(id)) {
+		for (const link of linksAt(doc, id)) {
 			if (link.src === id || link.dst === id) dying.add(link.id);
 			else stripped.push(link);
 		}
 		// the document as the strip leaves it, judged by the one predicate (RULESET-AUDIT T4): a stripped link replaces
 		// itself here, and a deleted one leaves, so each strip is judged after the ones before it
 		let standing = doc.all('link').filter((l) => !dying.has(l.id));
-		for (const link of doc.linksAt(id)) if (dying.has(link.id)) ops.push({ op: 'del', kind: 'link', id: link.id });
+		for (const link of linksAt(doc, id)) if (dying.has(link.id)) ops.push({ op: 'del', kind: 'link', id: link.id });
 		for (const link of stripped) {
 			const remaining = link.via.filter((w) => w !== id);
 			const after = { ...link, via: remaining };

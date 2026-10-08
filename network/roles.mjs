@@ -1,11 +1,14 @@
 /*
-NETWORK ROLES -- what a waypoint or a link IS, derived from the links touching it. Pure: it imports nothing, reads only
+NETWORK ROLES -- what a waypoint or a link IS, derived from the links touching it. Pure: it imports only the network's link
+queries (K13d, H19.25), reads only
 what it is handed, and draws nothing.
 
 K13a (dev/design/h17/PLAN.md): split from kernel/geometry.mjs, whose core grid exported these network names (L5, L5p).
 Network layer, read by both renderers, the situation (engine/situation.mjs) and the export: one rule for what a waypoint
 is, so the canvas and the export cannot disagree.
 */
+
+import { linksAt } from './link-queries.mjs';   // which links meet an anchor (K13d)
 /*
 The bend/endpoint rule, in ONE place, because two renderers need the same answer.
 
@@ -172,7 +175,7 @@ nothing. The Model is read by shape -- `kernel/` imports no `model/` -- so a mod
 gets the transiting roles it always had.
 */
 export const waypointRolesIn = (model, id) =>
-	waypointRoles(id, model.linksAt?.(id) || [], { transit: !model.stopsAt?.(id) });
+	waypointRoles(id, linksAt(model, id), { transit: !model.stopsAt?.(id) });   // K13d: the links are the network's own query
 
 /*
 The single role, for callers that still ask for one. Derived from the set so there is one

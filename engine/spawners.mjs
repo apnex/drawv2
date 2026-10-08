@@ -19,6 +19,7 @@ route is reversed. A stored direction would be a twin of the link and wrong the 
 reversed.
 */
 
+import { linksAt } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { prepareSpawner } from './movers.mjs';
 import { BEND_R } from '../kernel/spec.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
@@ -34,7 +35,7 @@ export function spawnersOf(model) {
 	// B246: in id order, and from `linksAt`, which answers in id order -- so every peer arms the same link, in one order
 	for (const wp of [...bareAnchors(model)].sort(byId)) {
 		if (!wp.spawn) continue;
-		const links = model.linksAt?.(wp.id) || [];
+		const links = linksAt(model, wp.id);   // K13d: the network's query -- an optional call on the Model answered [] once it left
 		const link = links.find((l) => (l.src === wp.id || l.dst === wp.id) && !l.closed);
 		if (!link) continue;                       // a ring has no ends, so it emits nothing
 		/*

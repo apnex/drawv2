@@ -19,6 +19,7 @@ with the planner (app/src/changes.js), which is the one place a cascade, a strip
 disconnected browser previews with it as well, so it still never builds a document whose links dangle.
 */
 
+import { linkBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
 import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
@@ -250,8 +251,8 @@ export function linkNodes(model, nodeIds, star) {
 		: nodeIds.slice(0, -1).map((n, i) => [n, nodeIds[i + 1]]);
 	const created = [];
 	pairs.forEach(([a, b]) => {
-		if (a === b || scratch.linkBetween(a, b)) return;   // skip self + existing, INCLUDING this batch
-		const link = scratch.makeLink(a, b);
+		if (a === b || linkBetween(scratch, a, b)) return;   // skip self + existing, INCLUDING this batch
+		const link = makeLink(scratch, a, b);
 		scratch.put('link', link);
 		created.push(link);
 	});

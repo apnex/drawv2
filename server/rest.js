@@ -7,6 +7,7 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
+import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
@@ -98,7 +99,7 @@ function contextOf(model, kind, e) {
 	if (Object.keys(fields).length) out.fields = fields;
 	if (ANCHOR_KINDS.includes(kind)) {
 		out.at = { x: e.x, y: e.y };
-		const links = isBareEntity(kind, e) ? model.linksAt(e.id) : model.linksOf(e.id);
+		const links = isBareEntity(kind, e) ? linksAt(model, e.id) : linksOf(model, e.id);
 		out.links = links.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
 		out.neighbours = [...new Set(links.flatMap((l) => [l.src, l.dst]).filter((n) => n !== e.id))];
 		out.group = isBareEntity(kind, e) ? null : (groupOf(model, e.id)?.id ?? null);
@@ -119,7 +120,7 @@ function contextOf(model, kind, e) {
 		other. That is what `draw about <group>` did, four times in a row.
 		*/
 		const seen = new Set();
-		out.links = (e.members || []).flatMap((m) => model.linksOf(m))
+		out.links = (e.members || []).flatMap((m) => linksOf(model, m))
 			.filter((l) => !seen.has(l.id) && seen.add(l.id))
 			.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
 	}
@@ -207,7 +208,7 @@ function bodyRejected(req, res, value) {
 // (which mint the id/name); the planner then validates it like any other op
 function buildEntity(model, kind, d) {
 	if (kind === 'node') return makeNode(model, d.type, { x: d.x, y: d.y }, d.shape);
-	if (kind === 'link') return model.makeLink(d.src, d.dst);
+	if (kind === 'link') return makeLink(model, d.src, d.dst);
 	if (kind === 'zone') return makeZone(model, { x: d.x, y: d.y, w: d.w, h: d.h });
 	if (kind === 'group') return Array.isArray(d.members) ? makeGroup(model, d.members) : null;
 	// W-a: a pipe from its two ends, LAID BY HAND -- what a person lays with `g`, which outlives any link (2026-09-27); the id

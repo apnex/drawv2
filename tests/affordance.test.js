@@ -19,6 +19,7 @@ These assert BEHAVIOUR, not structure, so they survive the move:
 Nothing here reads `input.mode` or `input.ctx`; `tools/scan-writers.mjs` enforces that.
 */
 
+import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
@@ -69,7 +70,7 @@ test('a selected link shows an endpoint handle at each end, and only while selec
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
-		const l = h.model.makeLink(a.id, b.id);
+		const l = makeLink(h.model, a.id, b.id);
 		h.model.put('link', l);
 
 		h.selection.set([l.id]);

@@ -13,6 +13,7 @@ From the command line, a tally over many seeds:
 
 `--trace SEED` prints the full event log of one run, which is the replay.
 */
+import { makeLink } from '../../network/link-queries.mjs';   // K13d: the network's link queries
 import { loadCode, makeWorld, clock, shape, shapeDoc, diffDocs } from './sync-world.mjs';
 import path from 'node:path';
 import url from 'node:url';
@@ -136,7 +137,7 @@ async function runSeeded(seed, trace) {
 				if (nodes.length < 2) return;
 				const a = pick(nodes), b = pick(nodes); if (a === b) return;
 				const wp = makeWaypoint(m, cell());
-				const link = { ...m.makeLink(a.id, b.id), via: [wp.id] };
+				const link = { ...makeLink(m, a.id, b.id), via: [wp.id] };
 				selectOnly([link.id]);
 				t.changes.commit(C.routeLink([wp], link)); note = `${link.id} ${a.id}->${b.id} via ${wp.id}`; break;
 			}
@@ -187,7 +188,7 @@ async function runSeeded(seed, trace) {
 				const bent = links.filter((l) => (l.via ?? []).length); if (!bent.length || !nodes.length) return;
 				const l = pick(bent), at = pick(l.via), from = pick(nodes);
 				if (from.id === at) return;
-				const link = m.makeLink(from.id, at);
+				const link = makeLink(m, from.id, at);
 				t.changes.commit(C.createEntity('link', link)); note = `${link.id} ${from.id}->${at} on ${l.id}`; break;
 			}
 			case 'renameDoc': { const nm = 'doc' + int(100); t.sync.rename(nm); note = nm; break; }

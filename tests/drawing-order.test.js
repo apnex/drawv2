@@ -3,6 +3,7 @@ H18.6 (F-d) -- EVERY DRAWN ITEM STORES ITS DRAWING ORDER (ruled 2026-10-01, B249
 peer, stored with the format batch; B10, undo restores an item to its place; B259, a link's age is its order).
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
+import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
@@ -32,7 +33,7 @@ test('F-d: whoever creates an item stamps it one above the highest of its kind -
 	const m = new Model();
 	const a = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', a);
 	const w = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w);
-	const l = m.makeLink(a.id, w.id); m.put('link', l);
+	const l = makeLink(m, a.id, w.id); m.put('link', l);
 	const z = makeZone(m, { x: -90, y: -90, w: 180, h: 180 });
 	assert.deepEqual([a.order, w.order, l.order, z.order], [1, 2, 1, 1], 'nodes count together, typed or not; each kind its own');
 	assert.equal(nextOrder(m, 'node'), 3);

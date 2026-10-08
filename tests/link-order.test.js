@@ -10,6 +10,7 @@ that needed one would be stored state, which is the stored-format batch's busine
 holding one document inserted in opposite orders, with the relation index attached (as the client and the server run)
 and without it (the Model's own fallback), and every answer must be the same, in the same order.
 */
+import { linksOf, linksAt, linkBetween, linksBetween } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -49,10 +50,10 @@ function peer(order, indexed) {
 }
 const ids = (links) => (Array.isArray(links) ? links.map((l) => l.id) : links?.id);
 const answers = (m) => ({
-	linksOf: [N(1), N(2)].map((n) => ids(m.linksOf(n))),
-	linksAt: [W(3), W(4), W(5)].map((w) => ids(m.linksAt(w))),
-	linkBetween: ids(m.linkBetween(N(1), N(2))),
-	linksBetween: ids(m.linksBetween(N(1), N(2))),
+	linksOf: [N(1), N(2)].map((n) => ids(linksOf(m, n))),
+	linksAt: [W(3), W(4), W(5)].map((w) => ids(linksAt(m, w))),
+	linkBetween: ids(linkBetween(m, N(1), N(2))),
+	linksBetween: ids(linksBetween(m, N(1), N(2))),
 	spawnersOf: spawnersOf(m).map((s) => [s.id, s.link]),
 });
 

@@ -6,6 +6,7 @@ Draws nodes at their EXACT entity px (so live drag stays smooth); the committed 
 always on-grid. The kernel's resolve()/renderScene() remain the headless/export authority.
 */
 
+import { linksOf, linksAt } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { el, setAttrs } from './painter.js';
 import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { waypointRolesIn } from '../../network/roles.mjs';
@@ -500,7 +501,7 @@ export class Renderer {
 			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
 			const anchor = { transit: this.model.declaresNoTransit(entity.id) ? false : undefined };
 			// in run mode, the run picture -- what the download draws too, decided in one place (RUN_PICTURE, R-c)
-			for (const l of waypointLayers(roles, FE, this.model.linksAt?.(entity.id) || [], anchor, { run: this.mode === 'run' })) layerCircle(l, g);
+			for (const l of waypointLayers(roles, FE, linksAt(this.model, entity.id), anchor, { run: this.mode === 'run' })) layerCircle(l, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
 		}
 		// fresh DOM loses the 'selected' class — re-apply it if this entity is selected (undo/redo/load)
@@ -559,7 +560,7 @@ export class Renderer {
 			if ((dom.getAttribute('data-span') || null) !== sig || (dom.getAttribute('data-content') || null) !== csig) return this.render('node', entity);
 			// H15.9: the move, the glyph and its fit box, the frame's def or corner, the label and its pill -- the one look
 			applyLook(dom, nodeLook(entity), NODE_PARTS);
-			this.model.linksOf(entity.id).forEach((link) => this.update('link', link));
+			linksOf(this.model, entity.id).forEach((link) => this.update('link', link));
 			this.refreshRoutedThrough(entity.id);
 			const grp = groupOf(this.model, entity.id);
 			if (grp) this.update('group', grp);   // the hull hugs its members → follow the move
@@ -606,7 +607,7 @@ export class Renderer {
 		}
 		if (bare) {
 			applyLook(dom, waypointLook(entity));
-			this.model.linksAt(entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
+			linksAt(this.model, entity.id).forEach((l) => this.update('link', l));   // endpoint + via links
 			this.refreshRoutedThrough(entity.id);
 			const grp = groupOf(this.model, entity.id);
 			if (grp) this.update('group', grp);                                      // reflow a group it belongs to

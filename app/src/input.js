@@ -32,6 +32,7 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   Escape            cancel / clear / close overlay              ?       help overlay
 */
 
+import { linksBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { Overlay } from './overlay.js';
 import { RECOGNIZE, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
@@ -180,7 +181,7 @@ const GESTURES = {
 			const retargets = !!(link && target && target.id !== ctx.fixedId && target.id !== (ctx.end === 'src' ? ctx.before.src : ctx.before.dst));
 			const newSrc = retargets && ctx.end === 'src' ? target.id : link?.src;
 			const newDst = retargets && ctx.end === 'dst' ? target.id : link?.dst;
-			const admitted = retargets && !pairHolders({ ...link, src: newSrc, dst: newDst }, i.model.linksBetween(newSrc, newDst), i.model).length;
+			const admitted = retargets && !pairHolders({ ...link, src: newSrc, dst: newDst }, linksBetween(i.model, newSrc, newDst), i.model).length;
 			i.act(i.decide('replug', evt, { retargets, admitted }), { ctx, newSrc, newDst });
 			i.overlayUi.handles();   // handles ride the (possibly new) endpoints
 		},
@@ -259,7 +260,7 @@ const GESTURES = {
 			// order a person happened to draw in decide what they could have.
 			// judged on every stop DRAWN, pins and guides: with no drag judge they are the same, and with one the judge
 			// decides by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
-			const admitted = !pairHolders({ src: ctx.src.id, dst, via: route }, i.model.linksBetween(ctx.src.id, dst), i.model).length;
+			const admitted = !pairHolders({ src: ctx.src.id, dst, via: route }, linksBetween(i.model, ctx.src.id, dst), i.model).length;
 			/*
 			WHAT THE RELEASE MEANS is a row of app/src/releases.js LINK_RELEASES, chosen from these facts by the Rules engine:
 			commit, commit and chain, chain on, a click that retypes, toggles, selects or focuses, or discard. The actions do
@@ -941,7 +942,7 @@ export class Input {
 	*/
 	// `extra`: the entries a drag judge adds (N-c), after the drag's own
 	commitRoute(ctx, dstId, via, extra = []) {
-		const link = { ...this.model.makeLink(ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
+		const link = { ...makeLink(this.model, ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
 		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link), extra));
 		this.selection.set([link.id]);
 	}
@@ -1146,7 +1147,7 @@ export class Input {
 			const inner = new Set(stops.slice(bounds[k] + 1, bounds[k + 1]));
 			const pins = via.filter((p) => inner.has(p));
 			const a = stops[bounds[k]], b = stops[bounds[k + 1]];
-			links.push({ ...this.model.makeLink(a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
+			links.push({ ...makeLink(this.model, a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
 		}
 		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links), extra));
 		this.selection.set(links.map((l) => l.id));
@@ -1500,7 +1501,7 @@ export class Input {
 		const node = makeNode(this.model, type, snapped);
 		this.model.put('node', node);          // live, so the preview and the next segment can see it
 		const via = [...(this.ctx.via || [])];
-		const link = { ...this.model.makeLink(this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
+		const link = { ...makeLink(this.model, this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
 		/*
 		`chainHop`, not `routeLink` -- the kinds are named rather than assumed.
 

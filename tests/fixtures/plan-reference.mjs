@@ -2,6 +2,7 @@
 // commit f31ff79 and kept only as the differential oracle for planner/txn.mjs#plan. It is not
 // wired into anything. GR5: the old implementation is deleted only in the commit that lands its
 // own green differential, so the oracle must outlive the code it replaced.
+import { linksOf, linksAt } from '../../network/link-queries.mjs';   // K13d: the network's link queries
 import { groupAfterRemoval } from '../../groups/group-rules.mjs';   // the groups plugin's policy since O-c
 import { validateMutation } from '../../planner/validate.js';
 
@@ -34,11 +35,11 @@ function planMutation(model, mutation) {
 		// below are told apart by the stored node's shape where they were told apart by its kind; nothing else in the oracle moved
 		const bare = kind === 'node' && !!model.get('node', entity.id) && !model.get('node', entity.id).type;
 		if (kind === 'node' && !bare) {
-			model.linksOf(entity.id).forEach((link) => ops.push({ action: 'del', kind: 'link', id: link.id }));
+			linksOf(model, entity.id).forEach((link) => ops.push({ action: 'del', kind: 'link', id: link.id }));
 			trimGroupsHolding(entity.id);
 		}
 		if (bare) {
-			model.linksAt(entity.id).forEach((link) => {
+			linksAt(model, entity.id).forEach((link) => {
 				if (link.src === entity.id || link.dst === entity.id) ops.push({ action: 'del', kind: 'link', id: link.id });
 				else ops.push({ action: 'set', kind: 'link', id: link.id, patch: { via: link.via.filter((w) => w !== entity.id) } });
 			});

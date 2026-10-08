@@ -11,6 +11,7 @@ was measured against lives on in `Model#pathOf`, which `tests/model.test.js` hol
 `draw link path` route now exposes.
 */
 
+import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -25,7 +26,7 @@ function routed() {
 	const b = makeNode(m, 'host', { x: 120, y: 0 });
 	const w = makeWaypoint(m, { x: 60, y: 60 });
 	[['node', a], ['node', b], ['node', w]].forEach(([k, e]) => m.put(k, e));
-	const link = { ...m.makeLink(a.id, b.id), via: [w.id] };
+	const link = { ...makeLink(m, a.id, b.id), via: [w.id] };
 	m.put('link', link);
 	return { m, a, b, w, link };
 }
@@ -34,7 +35,7 @@ test('readout: a link between two nodes names both', () => {
 	const { m, a, b } = routed();
 	const sel = new Selection(m);
 	const r = new Readout({ model: m, selection: sel, elements: [] });
-	const l = m.makeLink(a.id, b.id);
+	const l = makeLink(m, a.id, b.id);
 	m.put('link', l);
 	sel.set([l.id]);
 	/*
@@ -54,7 +55,7 @@ test('B29: readout names a WAYPOINT endpoint instead of printing `?`', () => {
 	const { m, a, w } = routed();
 	const sel = new Selection(m);
 	const r = new Readout({ model: m, selection: sel, elements: [] });
-	const l = m.makeLink(a.id, w.id);
+	const l = makeLink(m, a.id, w.id);
 	m.put('link', l);
 	sel.set([l.id]);
 	const text = r.selectionText();

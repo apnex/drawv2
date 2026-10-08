@@ -199,21 +199,6 @@ export class Model {
 		return entity;
 	}
 
-	// ---- queries ----
-	linksOf(nodeId) {
-		if (this.index) return this.index.linksOf(nodeId);
-		return this.all('link').filter((l) => l.src === nodeId || l.dst === nodeId).sort(byId);
-	}
-
-	// every link referencing this waypoint in ANY role — endpoint (src/dst) or via bend. A waypoint
-	// belongs to at most one link (endpoint XOR via), so this is 0 or 1 links; used for occupancy
-	// ("free" = empty), reflow on move, and the delete cascade.
-	linksAt(waypointId) {
-		if (this.index) return this.index.linksAt(waypointId);
-		return this.all('link').filter((l) =>
-			l.src === waypointId || l.dst === waypointId || (Array.isArray(l.via) && l.via.includes(waypointId))).sort(byId);
-	}
-
 	// a link endpoint resolves to a node OR a waypoint — the single authority for "is this a live
 	// endpoint" (truthy = the entity, else undefined). Used by render/selection/group liveness.
 	endpointOf(id) {
@@ -299,22 +284,6 @@ export class Model {
 		return path;
 	}
 
-	// whether a and b are connected at all. Since B72 a pair may carry several links, so this
-	// returns AN endpoint-pair link and not THE one -- use linksBetween to reason about which.
-	// B246: the lowest id among them, so every peer names the same one
-	linkBetween(a, b) {
-		if (this.index) return this.index.linkBetween(a, b);
-		return this.linksBetween(a, b)[0];
-	}
-
-	// every link joining a and b (B80). One pair may hold a straight link and routed ones beside
-	// it, and a caller deciding whether to author another has to see them all to tell.
-	linksBetween(a, b) {
-		if (this.index) return this.index.linksBetween(a, b);
-		return this.all('link').filter((l) =>
-			(l.src === a && l.dst === b) || (l.src === b && l.dst === a)).sort(byId);
-	}
-
 	/*
 	O-c (H19.20) -- THE ENTITY THAT GATHERS AN ID: of the kinds whose row gathers a list field (model/shape.mjs `gathers`), the
 	one listing `id`, else undefined. It was `groupOf`, which named the group; the group asks it now (groups/group-of.mjs).
@@ -374,16 +343,6 @@ export class Model {
 		let n = 1;
 		while (taken.has(`${prefix}-${n}`)) n++;
 		return `${prefix}-${n}`;
-	}
-
-	// ---- entity factories ----
-	// a TEXT BOX (authoring A1): a node whose content is a single text region filling its footprint. No new
-	// kind — it's a node with span + content (W1/W2 render it). type 'text' is a sentinel (unused while
-	// content is present); name empty (the text IS its content). Authored on-canvas via hold-t + drag.
-	makeLink(src, dst) {
-		// B187 -- a link is named like everything else. Minted from its two ends rather than from a
-		// request for a named thing, so the name is generated.
-		return { id: newId('link', this.collection('link')), name: this.nextName('link'), order: this.nextOrder('link'), src, dst };
 	}
 
 	// a placeable ANCHOR — a cell-centre point a link's route can thread through and bend at
