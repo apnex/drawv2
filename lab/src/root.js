@@ -32,6 +32,7 @@ import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the ca
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { productKinds } from '../../product/kinds.mjs';
+import { PRODUCT_CANVAS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a)
 // the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
 // product page composes it
 import { routeLink } from '../../network/pipes.mjs';
@@ -69,7 +70,7 @@ this network. The lab holds no tools and no run mode; its drag judge is the atta
 because the network attaches to the parts composed here.
 */
 const { model, history, renderer, selection, input, listen } = composeCanvas({
-	svg, defs: document.getElementById('kdefs'), host: window, network, kinds,
+	svg, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
 	plugins: page.plugins,   // its own keys, and its judge of a drag (dev/RULES.md section 11)

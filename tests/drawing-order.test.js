@@ -3,6 +3,7 @@ H18.6 (F-d) -- EVERY DRAWN ITEM STORES ITS DRAWING ORDER (ruled 2026-10-01, B249
 peer, stored with the format batch; B10, undo restores an item to its place; B259, a link's age is its order).
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
 import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
@@ -99,10 +100,11 @@ test('F-d (B10): the canvas draws an item put back in its place, and a new one o
 	try {
 		const { Renderer } = await import('../app/src/renderer.js');
 		const m = new Model();
-		const r = new Renderer(m, svg);
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
 		const zone = (id, order) => ({ id, name: id, x: -90, y: -90, w: 180, h: 180, order });
 		for (const [id, order] of [['zone-00000a', 1], ['zone-00000b', 2], ['zone-00000c', 3]]) m.put('zone', zone(id, order));
-		const stack = () => r.layers.zones.children.map((c) => c.getAttribute('id'));
+		// RESTATED at C-a (H19.29): the zones layer is the zones plugin's painter's, read from the page rather than the renderer
+		const stack = () => svg.querySelector('#zones').children.map((c) => c.getAttribute('id'));
 		assert.deepEqual(stack(), ['zone-00000a', 'zone-00000b', 'zone-00000c']);
 		m.del('zone', 'zone-00000a');
 		m.put('zone', zone('zone-00000a', 1));     // what undo does

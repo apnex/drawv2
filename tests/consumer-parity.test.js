@@ -2,6 +2,7 @@
 // criterion 4 but for the product page, which is P5). One board, read through every door: the lab's tab, REST and the CLI,
 // the SVG download, `draw movers`; each held to the lab's derivation. dev/design/unification/CONSUMERS-ROUTE.md, stage R-e.
 
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
 import { pathOf, isLinkDown, blockersOf, networkOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
@@ -114,7 +115,7 @@ test('R-e: the download draws every link exactly as the lab\'s tab draws it, and
 	const { svg, restore } = makeRenderer();
 	let drawn;
 	try {
-		const tab = lab(), r = new Renderer(tab, svg);
+		const tab = lab(), r = new Renderer(tab, svg, { parts: PRODUCT_CANVAS });
 		for (const l of tab.all('link')) r.render('link', l);
 		drawn = Object.fromEntries(svg.byId['#links'].children.filter((c) => c.attrs.class === 'link').map((c) => [c.attrs.id, { d: c.attrs.d, down: 'data-down' in c.attrs }]));
 	} finally { restore(); }

@@ -9,6 +9,7 @@ render ran in the same document and repaired the element before the comparison r
 as it was and then takes the change as an UPDATE, as a live tab does; world B renders the changed entity FRESH. Each is
 serialized in its own document, and the two must be identical, element by element.
 */
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -27,7 +28,7 @@ function world(board, change) {
 	const { svg, restore } = makeRenderer();
 	try {
 		const m = new Model(); attachRelations(m, { cellOf });
-		new Renderer(m, svg);
+		new Renderer(m, svg, { parts: PRODUCT_CANVAS });
 		for (const [kind, e] of board) m.put(kind, structuredClone(e));
 		if (change) for (const [kind, id, patch] of change) m.set(kind, id, patch);
 		return snapshot(svg);

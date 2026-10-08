@@ -1262,6 +1262,9 @@ AMENDED 2026-10-08: H19.23's design is `dev/design/unification/CANVAS-PLUGINS.md
 AMENDED 2026-10-08: D1 and D2 ruled -- the whole canvas contract, gestures as rows for shared gestures; H19.23 done, its build H19.29 to H19.34.\
 Next H19.29, C-a, drawing.
 
+AMENDED 2026-10-08: C-a's first step done -- the painter seam, and the zones plugin's painter: the renderer draws no zone of its own.\
+Next: the group's, the devices', and the network's painters.
+
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
 ---

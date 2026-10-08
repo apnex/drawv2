@@ -195,6 +195,7 @@ export const ENTRIES = {
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
@@ -242,6 +243,7 @@ export const ENTRIES = {
 			'network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor

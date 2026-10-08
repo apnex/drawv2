@@ -149,3 +149,9 @@ Zones go first at every stage, as the smallest self-contained kind; the link goe
 
 AMENDED 2026-10-08 -- **D1 RULED: the whole contract; D2 RULED: rows for shared gestures** (`dev/DECISIONS.md`, "D1, D2").\
 The stages: C-a (H19.29), C-b (H19.30), C-c (H19.31), C-d (H19.32), C-e (H19.33), C-f (H19.34).
+
+AMENDED 2026-10-08 -- **C-a, step one: the painter seam, and the zone's painter** (H19.29 stays open until groups, devices and links are painted by their plugins).\
+A canvas part is `{ owner, painters }`; a painter is `{ kind, layer, stacked, create, update }`, handed a kit -- `el`, `applyLook`, `pillWidth` and its layer -- since a plugin imports no canvas code (`app/src/renderer.js` `composePainters`, `kit`).\
+The renderer draws, refreshes, stacks and fully re-renders a painted kind through its painter, the painted kinds first in the order the parts were composed; a malformed part, a layer the page lacks, or a kind painted twice is refused when the canvas is built, naming the owner.\
+The zones plugin brings the zone's painter (`zones/zone-painter.mjs` `ZONES_CANVAS`), building the elements the renderer built; `product/canvas.mjs` composes the product's parts, which the product page, the lab and the tests that build a renderer hand it.
+**Held by:** `tests/canvas-painters.test.js` -- the product's canvas draws a zone; a canvas composed without the zones plugin draws none; the renderer names no zone; malformed parts refused (a renderer that skips a painter fails it and two other files -- mutant killed); the page's DOM record, the matrix and every corpus unchanged.

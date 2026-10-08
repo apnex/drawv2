@@ -6,6 +6,7 @@ verified by eye or not at all. That is also why the W4 socket rule diverged: the
 the same visual rules and IS tested, so only one of the two was ever held to it -- B107's shape in
 a different substrate, a tested implementation standing in for the one that runs.
 */
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import fs from 'node:fs';
@@ -19,7 +20,7 @@ import { makeRenderer, classesIn } from './fixtures/client-harness.mjs';
 
 const withRenderer = (fn) => {
 	const { svg, restore } = makeRenderer();
-	try { fn({ svg, model: new Model(), Renderer, make: (m) => new Renderer(m, svg) }); } finally { restore(); }
+	try { fn({ svg, model: new Model(), Renderer, make: (m) => new Renderer(m, svg, { parts: PRODUCT_CANVAS }) }); } finally { restore(); }
 };
 
 test('W4: a plain node shows its socket in edit mode and not in view', () => {

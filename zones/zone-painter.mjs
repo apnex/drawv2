@@ -1,0 +1,41 @@
+/*
+THE ZONES PLUGIN'S PAINTER -- C-a (H19.29; dev/design/unification/CANVAS-PLUGINS.md, D1): how a zone is drawn on the page.
+
+A zone is a rounded rect with its name on a pill in the top-left corner, in the zones layer, stacked by drawing order (F-d).
+It was the renderer's own branch (app/src/renderer.js `draw`, `update`, `zoneLook`); it is the zones plugin's now, handed to
+the page in its canvas part and called by the renderer with a kit -- `el`, `applyLook`, `pillWidth` and the layer it draws
+into -- since a plugin imports no canvas code. The elements, their order and every attribute are what the renderer built:
+the K8 DOM corpus holds that.
+*/
+
+import { STD, L_STD } from '../kernel/spec.mjs';
+
+const ZONE_R = L_STD.zone.r;   // the zone's corner radius (14)
+
+// H15.9 -- every attribute that can change while the structure stays, in one call; create and update both apply it
+const zoneLook = (entity, pillWidth) => ({
+	rect: { x: entity.x, y: entity.y, width: entity.w, height: entity.h },
+	label: { x: entity.x + STD.zoneDx, y: entity.y + STD.zoneDy, text: entity.name || '' },   // the spec owns the offset
+	pill: { x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name) },
+});
+const ZONE_PARTS = { rect: (g) => g.querySelector('.zone-rect'), label: (g) => g.querySelector('.label'), pill: (g) => g.querySelector('.label-pill') };
+
+const ZONE_PAINTER = {
+	kind: 'zone',
+	layer: 'zones',
+	stacked: true,
+	create(entity, { el, applyLook, pillWidth, layer }) {
+		const g = el('g', { id: entity.id, class: 'zone' }, layer);
+		el('rect', { class: 'zone-rect', rx: ZONE_R }, g);
+		el('rect', { class: 'label-pill', rx: 4, height: STD.labelH }, g);
+		el('text', { class: 'label zone-label', 'font-size': STD.fontSize }, g);
+		applyLook(g, zoneLook(entity, pillWidth), ZONE_PARTS);
+		return g;
+	},
+	update(entity, dom, { applyLook, pillWidth }) {
+		applyLook(dom, zoneLook(entity, pillWidth), ZONE_PARTS);   // H15.9: the label offset is the spec's here as in create
+	},
+};
+
+// the zones plugin's canvas part: what it brings to the page (C-a: its painter; the later stages add to it)
+export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER] };

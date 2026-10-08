@@ -55,7 +55,7 @@ const ZONE_GRID_DOT = 5;
   help, now, plugins, runRules   handed to Input as they are
 Returns every part, and `listen()`, which starts event capture and answers the Capture.
 */
-export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
+export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs();
 	nodePoints().forEach((p) => el('circle', { cx: p.x, cy: p.y, r: gridDot().radius }, svg.querySelector('#grid-nodes')));
@@ -73,7 +73,7 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	*/
 	const preview = network && kinds ? (m, ops) => plan(m, ops, { links: network.links, kinds }) : null;
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
-	const renderer = new Renderer(model, svg);
+	const renderer = new Renderer(model, svg, { parts });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
 	const labels = new LabelEditor({ svg, model, history });
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl] }) : null;

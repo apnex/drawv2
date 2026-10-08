@@ -2,6 +2,7 @@
 // (network/appearance.mjs RUN_PICTURE): the canvas in run mode and the export draw the same picture, and the export
 // draws each link along its route, a down link with the canvas's down look (H1). CONSUMERS-ROUTE.md, stage R-c.
 
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
@@ -50,7 +51,7 @@ const canvasWaypoints = (mode) => {
 		// a Model that draws with the network, as the lab's does and the product page's will at P5 (G1) -- the transit ring is the
 		// network's answer (`declaresNoTransit`), so a Model without one draws none
 		const m = readModel(doc(), KINDS);
-		const r = new Renderer(m, svg);
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
 		r.renderAll?.();
 		for (const e of m.all('node')) if (!e.type) r.render('node', e);
 		r.setMode(mode);

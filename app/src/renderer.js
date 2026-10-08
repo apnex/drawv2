@@ -1,5 +1,5 @@
 /*
-Renderer — reconciles model state into the SVG layers (zones → links → nodes), incrementally.
+Renderer — reconciles model state into the SVG layers (a plugin's painted layers → links → nodes), incrementally.
 Same DOM shape + state-class interface the legacy renderer exposed (so input/selection/CSS port
 unchanged), but every geometry NUMBER and glyph def comes from the KERNEL — no hardcoded sizes.
 Draws nodes at their EXACT entity px (so live drag stays smooth); the committed positions are
@@ -24,7 +24,6 @@ import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-
 const FE = L_STD.frame.ext;            // node frame half-extent (20)
 const SOCKET = STD.socket;             // glyph box (26)
 const LINK_W = STD.linkW;              // link/path stroke width (6)
-const ZONE_R = L_STD.zone.r;           // zone corner radius (14)
 const NODE_LABEL_Y = FE + STD.labelDy; // label baseline below the frame -- B236, the spec owns the offset
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
 const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // unknown glyph → host fit-box (no crash)
@@ -115,12 +114,6 @@ const NODE_PARTS = {
 	pill: (g) => g.querySelector('.label-pill'),
 	label: (g) => g.querySelector('.label'),
 };
-const zoneLook = (entity) => ({
-	rect: { x: entity.x, y: entity.y, width: entity.w, height: entity.h },
-	label: { x: entity.x + STD.zoneDx, y: entity.y + STD.zoneDy, text: entity.name || '' },   // the spec owns the offset
-	pill: { x: entity.x + 6, y: entity.y + 9, width: pillWidth(entity.name) },
-});
-const ZONE_PARTS = { rect: (g) => g.querySelector('.zone-rect'), label: (g) => g.querySelector('.label'), pill: (g) => g.querySelector('.label-pill') };
 const groupLook = (box) => ({ hull: { x: box.x, y: box.y, width: box.w, height: box.h } });
 const GROUP_PARTS = { hull: (g) => g.querySelector('.group-hull') };
 const waypointLook = (entity) => ({ root: { transform: `translate(${entity.x},${entity.y})` } });
@@ -142,15 +135,40 @@ function pillWidth(name) {
 	return w > 0 ? w + 8 : 0;
 }
 
+/*
+C-a (H19.29; CANVAS-PLUGINS.md, D1) -- A CANVAS PART, a plugin's contribution to the page: `{ owner, painters }`. A painter is
+`{ kind, layer, stacked, create(entity, kit) -> element, update(entity, element, kit) -> 'rerender' | undefined }` -- the
+kind it draws, the id of the layer it draws into, whether that layer is stacked by drawing order (F-d), and how it builds and
+refreshes its kind's elements through the kit the renderer hands it, since a plugin imports no canvas code. Checked when the
+canvas is built: a painter missing a part, a layer the page lacks, or a kind painted twice is refused, naming the owner.
+*/
+const PAINTER_PARTS = ['create', 'update'];
+function composePainters(parts, svg) {
+	const painters = new Map();
+	for (const part of parts) {
+		if (!part || typeof part.owner !== 'string' || !Array.isArray(part.painters)) throw new Error('Renderer: a canvas part is { owner, painters }');
+		for (const p of part.painters) {
+			const missing = PAINTER_PARTS.filter((k) => typeof p?.[k] !== 'function');
+			if (missing.length) throw new Error(`Renderer: ${part.owner}'s painter for ${p?.kind} has no ${missing.join(', ')}`);
+			const layer = svg.querySelector(`#${p.layer}`);
+			if (!layer) throw new Error(`Renderer: ${part.owner}'s painter for ${p.kind} draws into #${p.layer}, which the page does not have`);
+			if (painters.has(p.kind)) throw new Error(`Renderer: ${p.kind} is painted by ${painters.get(p.kind).owner} and by ${part.owner}`);
+			painters.set(p.kind, { ...p, owner: part.owner, layerEl: layer });
+		}
+	}
+	return painters;
+}
+
 export class Renderer {
-	constructor(model, svg) {
+	constructor(model, svg, { parts = [] } = {}) {
+		// C-a: the kinds a plugin paints, from the canvas parts the page was composed with
+		this.painters = composePainters(parts, svg);
 		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
 		this.model = model;
 		this.svg = svg;
-		// declared back→front to mirror the DOM layer order (region decorations behind the graph):
-		// zones → groups → links → waypoints → nodes
+		// declared back→front to mirror the DOM layer order (region decorations behind the graph): groups → links → waypoints →
+		// nodes -- and behind them, each painter's own layer (C-a: the zones plugin's)
 		this.layers = {
-			zones: svg.querySelector('#zones'),
 			groups: svg.querySelector('#groups'),
 			links: svg.querySelector('#links'),
 			waypoints: svg.querySelector('#waypoints'),
@@ -331,9 +349,15 @@ export class Renderer {
 		// selection reconcile itself is owned by Model.load.
 		this.selectedSet.clear();
 		Object.values(this.layers).forEach((layer) => { layer.innerHTML = ''; });
+		for (const p of this.painters.values()) p.layerEl.innerHTML = '';
 		// each stacked kind in its drawing order, so every item lands on top of the ones before it (F-d)
 		const inOrder = (list) => [...list].sort(byDrawingOrder);
-		inOrder(this.model.all('zone')).forEach((z) => this.render('zone', z));
+		// C-a: the painted kinds first, in the order the canvas parts were composed -- the back of the page (the zones plugin's)
+		for (const p of this.painters.values()) {
+			if (!this.model.kinds.has(p.kind)) continue;
+			const all = this.model.all(p.kind);
+			(p.stacked ? inOrder(all) : all).forEach((e) => this.render(p.kind, e));
+		}
 		this.model.all('group').forEach((g) => this.render('group', g));
 		inOrder(this.model.all('link')).forEach((l) => this.render('link', l));
 		inOrder(bareAnchors(this.model)).forEach((w) => this.render(BARE_KIND, w));
@@ -382,7 +406,8 @@ export class Renderer {
 	// the layer a drawn kind is stacked in, or null for one that is not stacked (a group's hull)
 	stackOf(kind, entity) {
 		if (kind === 'link') return this.layers.links;
-		if (kind === 'zone') return this.layers.zones;
+		const painter = this.painters.get(kind);
+		if (painter) return painter.stacked ? painter.layerEl : null;   // C-a: a painted kind's own layer
 		if (kind === 'node') return isBareEntity(kind, entity) ? this.layers.waypoints : this.layers.nodes;
 		return null;
 	}
@@ -408,6 +433,9 @@ export class Renderer {
 
 	draw(kind, entity) {
 		this.remove(entity.id);             // put is create-or-replace
+		// C-a: a kind a plugin paints, its painter draws
+		const painter = this.painters.get(kind);
+		if (painter) { painter.create(entity, this.kit(painter)); return; }
 		const bare = isBareEntity(kind, entity);   // drawn as a waypoint, whatever kind stores it (model/anchors.mjs)
 		if (kind === 'node' && !bare) {
 			const g = el('g', { id: entity.id, class: 'node' }, this.layers.nodes);
@@ -456,13 +484,6 @@ export class Renderer {
 			el('path', { id: entity.id, class: 'link', fill: 'none', d, ...this.linkAppearanceOf(entity) }, this.layers.links);
 			el('path', { class: 'link-hit', 'data-link': entity.id, ...hitOf(d, this.linkAppearanceOf(entity)) }, this.layers.links);   // its click area (B268)
 			this.refreshWaypointsOf(entity);
-		}
-		if (kind === 'zone') {
-			const g = el('g', { id: entity.id, class: 'zone' }, this.layers.zones);
-			el('rect', { class: 'zone-rect', rx: ZONE_R }, g);
-			el('rect', { class: 'label-pill', rx: 4, height: STD.labelH }, g);
-			el('text', { class: 'label zone-label', 'font-size': STD.fontSize }, g);
-			applyLook(g, zoneLook(entity), ZONE_PARTS);
 		}
 		if (kind === 'group') {
 			const b = this.groupBox(entity);
@@ -553,6 +574,9 @@ export class Renderer {
 		if (!dom) return this.render(kind, entity);
 		// its drawing order changed -- the planner's order for a creation that came without one arrives as a set (F-d)
 		if (this.stackedAt.get(entity.id) !== entity.order) this.place(kind, entity);
+		// C-a: a kind a plugin paints, its painter refreshes -- or asks for a fresh render when its structure changed
+		const painter = this.painters.get(kind);
+		if (painter) { if (painter.update(entity, dom, this.kit(painter)) === 'rerender') this.render(kind, entity); return; }
 		const bare = isBareEntity(kind, entity);
 		if (kind === 'node' && !bare) {
 			// a footprint OR content change (resize, 1×1↔span, content set) → re-render (always correct); a
@@ -597,9 +621,6 @@ export class Renderer {
 			if (twin) setAttrs(twin, hitOf(dom.getAttribute('d'), want));
 			this.refreshWaypointsOf(entity);
 		}
-		if (kind === 'zone') {
-			applyLook(dom, zoneLook(entity), ZONE_PARTS);   // H15.9: the label offset is the spec's here as in create
-		}
 		if (kind === 'group') {
 			const b = this.groupBox(entity);
 			if (!b) return this.remove(entity.id);                 // shrank below a member → drop the hull
@@ -613,6 +634,11 @@ export class Renderer {
 			const grp = groupOf(this.model, entity.id);
 			if (grp) this.update('group', grp);                                      // reflow a group it belongs to
 		}
+	}
+
+	// C-a: what a painter is handed -- the canvas's element builder and look applier, the label pill's width, and its layer
+	kit(painter) {
+		return { el, applyLook, pillWidth, layer: painter.layerEl };
 	}
 
 	remove(id) {
