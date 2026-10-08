@@ -184,3 +184,14 @@ Section 3's "a painter per kind" covers neither a kind whose drawing several plu
   Cost: two painters for one kind, and the network's look on a device stays an exception.
 - **C -- the canvas keeps drawing anchors.** Zones, groups and links are painted by their plugins; the canvas draws devices and waypoints itself, calling the plugins' look functions as it does now.
   Cost: the canvas keeps naming whether a device is composed and the network's waypoint look, recorded in C-f's ratchet.
+
+CORRECTED 2026-10-09 -- **option A is the appearance pipeline's composition half, ruled and unbuilt.**\
+The director asked: "So this is the "unified appearance pipeline" we discussed earlier in our programme?" -- and it is.\
+Ruled 2026-09-22 ("How two derived appearances resolve", `dev/DECISIONS.md`): a pack declaring a derived appearance carries, per derived state, `composes` -- drawn alongside the others, priority the z order -- or not, competing so the highest priority alone is drawn; a router's glyph outranks the anchor's endpoint pad, which is not emitted rather than hidden; `.spawning` composes; session state decorates and is no pack.\
+The director, 2026-10-02: "a node is a composition of an anchor with a pipeline including capability packs, behaviours and appearance".\
+H15.9 built one look per kind applied by both create and update; the composition across packs is unbuilt (`dev/design/unification/REALITY-MAP.md`, the appearance pipeline row).
+
+**Option A, restated to the ruling:** the canvas keeps an anchor's element and the session decorations; each plugin brings appearances for a kind, each declaring per derived state whether it composes or competes, and its place in an ordered list of named layers -- the ruling's own caution against a bare integer priority, now that three plugins contribute.
+- The network's anchor marks (endpoint pad, junction rings) are offered for every anchor and compete low; the devices plugin's device competes high -- so on a device the marks are not emitted and on a bare anchor they are, today's drawing reached by the rule rather than by a branch on whether a device is composed.
+- The network's transit ring and the simulation's spawning mark compose.
+- An appearance names what else to redraw when its entity changes.
