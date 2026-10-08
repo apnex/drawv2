@@ -32,8 +32,9 @@ R-c (H18.21) -- the download is what run mode shows (ruled H2, refined): each li
 the canvas's down look (H1), and the waypoints in the run picture's layers (network/appearance.mjs RUN_PICTURE). The
 routes are the network's, read through its read composition; the kernel is handed them as data.
 */
-export function svgDocument(doc) {
-	const body = render(docToSchema(doc, { lines: linesOf(readModel(doc)) }));
+// O-b1: with the caller's kinds -- the export composes none (network/read-model.mjs)
+export function svgDocument(doc, kinds) {
+	const body = render(docToSchema(doc, { lines: linesOf(readModel(doc, kinds)) }));
 	// inject styles + defs immediately after the root tag, so the file stands alone
 	const at = body.indexOf('>') + 1;
 	return body.slice(0, at) + `\n<style>${KERNEL_CSS}</style>\n${sharedDefs()}\n` + body.slice(at);

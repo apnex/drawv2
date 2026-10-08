@@ -4,7 +4,8 @@ import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
 import { CANVAS, GAP, NODE_EXT, ZONE_EXT, spanExtent, snapNode, snapZone, resolveBox, pointInBox, dist, nodePoints } from '../app/src/snap.js';
-import { SURFACE, NODE_EXT as DOC_NODE_EXT, ZONE_EXT as DOC_ZONE_EXT } from '../model/surface.mjs';
+import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
+import { ZONE_EXT as DOC_ZONE_EXT } from '../zones/zone-extent.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
 
 // Grid math lives in app/src/snap.js (shipped). The center-origin geometry was ported from the
 // retired client/src/grid.js; as of CL3 the canvas surface + usable extents are single-sourced
@@ -70,7 +71,7 @@ test('CL3 single-source: snap re-exports the model/ surface + extents (no diverg
 	// identical object references prove snap.js does not own a parallel literal (cleanliness #2)
 	assert.equal(snap.CANVAS, SURFACE, 'CANVAS aliases the document SURFACE object');
 	assert.equal(snap.NODE_EXT, DOC_NODE_EXT, 'NODE_EXT is the document object');
-	assert.equal(snap.ZONE_EXT, DOC_ZONE_EXT, 'ZONE_EXT is the document object');
+	assert.equal(snap.ZONE_EXT, DOC_ZONE_EXT, 'ZONE_EXT is the zones plugin\'s object (O-b1), not a copy');
 	assert.deepEqual(snap.CANVAS, { w: 1920, h: 1080, hw: 960, hh: 540 });
 	assert.deepEqual(snap.NODE_EXT, { x: 900, y: 480 });
 	assert.deepEqual(snap.ZONE_EXT, { x: 930, y: 510 });

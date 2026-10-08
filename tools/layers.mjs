@@ -32,21 +32,24 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
 export const ALLOWED = {
 	core: ['core'],
 	network: ['core', 'network'],
-	planner: ['core', 'network', 'planner'],
-	canvas: ['core', 'network', 'planner', 'canvas'],
-	chrome: ['core', 'network', 'planner', 'canvas', 'simulation', 'export', 'chrome'],
+	zones: ['core', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; it imports the core and itself
+	planner: ['core', 'network', 'zones', 'planner'],
+	canvas: ['core', 'network', 'zones', 'planner', 'canvas'],
+	chrome: ['core', 'network', 'zones', 'planner', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'network', 'simulation'],
 	export: ['core', 'network', 'export'],
-	'server-only': ['core', 'network', 'planner', 'simulation', 'export', 'server-only', 'serve'],
+	'server-only': ['core', 'network', 'zones', 'planner', 'simulation', 'export', 'server-only', 'serve'],
 	serve: [],   // K9: it imports nothing but Node's own modules
-	cli: ['core', 'network', 'simulation', 'cli'],
-	lab: ['core', 'network', 'planner', 'canvas', 'lab', 'serve'],
-	tools: ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
-	tests: ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
+	// O-b1 (H19.19): `planner` is INTERIM -- the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`), which
+	// lives in planner/kinds.mjs until the node stage moves it below the planner (O-e), when this allowance goes
+	cli: ['core', 'network', 'zones', 'planner', 'simulation', 'cli'],
+	lab: ['core', 'network', 'zones', 'planner', 'canvas', 'lab', 'serve'],
+	tools: ['core', 'network', 'zones', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
+	tests: ['core', 'network', 'zones', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
 };
 
 // the layers that ship: what L7k calls "the product"
-export const PRODUCT_LAYERS = ['core', 'network', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
+export const PRODUCT_LAYERS = ['core', 'network', 'zones', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
 
 /*
 The folders scan-layers walks. A folder with a `layer` gives every module in it that layer, so a new
@@ -72,6 +75,7 @@ export const FOLDERS = [
 	*/
 	{ dir: 'planner', layer: 'planner' },   // K4 (H17-D5): the planner, served whole to the lab, never `server/`
 	{ dir: 'network', layer: 'network' },
+	{ dir: 'zones', layer: 'zones' },   // O-b1 (H19.19): the zones plugin (KINDS-AS-PLUGINS.md)
 	{ dir: 'lab', layer: 'lab' },   // K10: composition only, held to that by L8
 	{ dir: 'tools', layer: 'tools' },
 	// the fixture trees are synthetic repositories that break these rules on purpose
@@ -183,6 +187,7 @@ export const ENTRIES = {
 			'planner/txn.mjs', 'planner/validate.js', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/invariants.mjs',
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'planner/kinds.mjs',   // the product's rows, composed with the network's
+			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
@@ -224,6 +229,7 @@ export const ENTRIES = {
 			'model/surface.mjs', 'planner/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'network/link-reactions.mjs', 'planner/tenants.mjs',   // the planner's tenants (PL-3)
 			'planner/edges.mjs',   // the planner's edges (PL-4)
+			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 		],
 	},
 	planner: {
@@ -244,6 +250,7 @@ export const ENTRIES = {
 			// S-e (H18.15): the planner loads no network module -- the link's references and its straight-pair invariant are the
 			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
+			'zones/zone-kind.mjs', 'zones/zone-extent.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
 		],
 	},
 };
@@ -298,7 +305,8 @@ export const RULES = {
 	L7k: {
 		// F-c (H18.5, P-10): four -- a waypoint is a node with no type
 		// S-e (H18.15, G5): three -- the link is the network's kind (network/link-kind.mjs), composed by composing the network
-		kinds: ['node', 'zone', 'group'],
+		// O-b1 (H19.19, O1): two -- the zone is the zones plugin's (zones/zone-kind.mjs)
+		kinds: ['node', 'group'],
 		/*
 		AMENDED by H17.22 N-a (ruled 2026-10-02, amending C3): the id grammar is no longer a literal. Each kind's row carries
 		its id check and planner/validate.js builds the grammar from the composition's rows, so there is no regex here to
@@ -632,7 +640,8 @@ export const UNUSED_EXPORTS = {
 		arrived: ['network/link-reactions.mjs', 'planner/tenants.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js', 'planner/policy.mjs',
 			'planner/kinds.mjs',   // H17.22 N-a: the product's kind rows, split out of planner/validate.js
 			'model/anchors.mjs',   // H18.4 F-b: the bare anchor, asked in one place
-			'network/pair-capacity.mjs'],   // S-b: the pair rule's one home, split out of model/invariants.mjs
+			'network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
+			'zones/zone-kind.mjs', 'zones/zone-extent.mjs'],   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a
@@ -723,9 +732,9 @@ keeps the order it had in its scanner. L1 checks that every entry is a folder in
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network'],   // scan-dead PROD: where a consumer counts as production
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'zones'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
-	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
+	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'zones'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
 	twins: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner'],     // scan-twins ROOTS: where shared arithmetic is compared
 	writers: ['server', 'planner', 'model'],     // scan-writers ROOTS: where the one-writer rule is held
 };

@@ -12,20 +12,23 @@ checked kinds with `productKinds(...NETWORK_ROWS)` and gives each of its Models 
 */
 
 import { Model } from '../model/model.mjs';
-import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
-import { NETWORK_ROWS } from './kinds.mjs';
 import { createNetwork } from './network.mjs';
 import { createTransit } from './transit.mjs';
 
-// the kinds a reader's Model holds: the core's storage rows and the network's -- its link, its pipe and the transit field
-const READ_KINDS = composeKinds([...CORE_ROWS, ...NETWORK_ROWS], 'a reader');
+/*
+O-b1 (H19.19; O1) -- A READER COMPOSES NO KINDS OF ITS OWN. It composed the core's storage rows with the network's, a third
+way of composing kinds beside the core's default and the product's; with the zone the zones plugin's, that composition would
+have had to import every plugin, which the network does not. A reader is handed the kinds its caller composed -- the
+store's, the CLI's -- and holds every kind the document holds through them.
+*/
 
 // a network for one Model: its routes, down links and blockers, with transit as the network rules it
 export const readerNetwork = () => createNetwork(createTransit());
 
 // a stored or wire document, as a Model that draws with the network
-export function readModel(doc) {
-	const model = new Model({ kinds: READ_KINDS, network: readerNetwork() });
+export function readModel(doc, kinds) {
+	if (!kinds || !Array.isArray(kinds.list)) throw new Error('readModel: no kinds -- a reader is handed the composition its caller composed, productKinds(...NETWORK_ROWS) (O-b1)');
+	const model = new Model({ kinds, network: readerNetwork() });
 	model.load(doc);
 	return model;
 }

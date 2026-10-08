@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
@@ -25,7 +26,7 @@ function seeded() {
 	const n = m.makeNode('router', { x: 120, y: -60 }); m.put('node', n);
 	const w = m.makeWaypoint({ x: 0, y: 180 });          m.put('node', w);
 	const l = m.makeLink(n.id, w.id);                    m.put('link', l);
-	const z = m.makeZone({ x: 30, y: 30, w: 60, h: 60 }); m.put('zone', z);
+	const z = makeZone(m, { x: 30, y: 30, w: 60, h: 60 }); m.put('zone', z);
 	const g = m.makeGroup([n.id]);                       m.put('group', g);
 	return { m, n, w, l, z, g };
 }

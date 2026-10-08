@@ -1155,7 +1155,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.6 | A document carrying a collection its composition cannot hold is refused, never dropped -- the refusal B248's plugin list would make, held by the composition; the list itself re-held, its trigger not having fired | **B307** | S3 | `DONE` |
 | H19.7 | Design, for approval: node, zone and group become kinds a plugin brings, as the link did, so the core holds no kind -- `dev/design/unification/KINDS-AS-PLUGINS.md`; built at H19.18 to H19.22, where B280 closes | feature | S4 | `DONE` |
 | H19.18 | O-a: the group's rules off the planner and the core -- its tenant and its invariants ride its row; the planner appends no tenant | feature | S4 | `DONE` |
-| H19.19 | O-b: the zone plugin -- its row, checks, factory, gesture, commands, painter and grid in a folder of its own, composed by the page, the lab, the server and the reader | feature | S4 | `TODO` |
+| H19.19 | O-b: the zone plugin -- its row, checks, factory, gesture, commands, painter and grid in a folder of its own, composed by the page, the lab, the server and the reader; in three steps, O-b1 (the kind out of the core and the planner) done, O-b2 (the canvas) and O-b3 (export, REST, CLI) to come | feature | S4 | `TODO` |
 | H19.20 | O-c: the group plugin -- its row, tenant, invariants, factory, `groupOf`, the selection rule, its key and commands | feature | S4 | `TODO` |
 | H19.21 | O-e: the node plugin -- the core's anchor capability generic over the kinds that declare it; the network, zones and groups depending on the node plugin by reference | feature | S4 | `TODO` |
 | H19.22 | O-d: closed -- a layer rule that the core names no kind, the CLI's restatements held to the plugin rows, B280 closed | **B280** | S4 | `TODO` |
@@ -1215,6 +1215,9 @@ AMENDED 2026-10-08: O1 ruled -- full decoupling, the node last; the core keeps m
 AMENDED 2026-10-08: O2 ruled -- built now, staged (H19.18 to H19.22); H19.7's design approved and done.\
 O-a done: the group's tenant and invariants ride its row, and the planner appends no tenant.\
 Next H19.19, the zone plugin.
+
+AMENDED 2026-10-08: O-b1 done -- the zone is the zones plugin's kind (`zones/`), the core composes node and group, and the reader composes no kinds of its own.\
+Next O-b2, the zone's canvas.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

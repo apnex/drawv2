@@ -1268,18 +1268,19 @@ test('PL-5: the kind table is the one list of kinds, and what still states them 
 	const { list: KINDS, collection: COLLECTION, selectable: SELECTABLE_KINDS, optional: OPTIONAL, composite: COMPOSITE } = CORE_KINDS;
 	const { collectionCap } = await import('../planner/policy.mjs');
 	// three since S-e (H18.15): the link is the network's kind (network/link-kind.mjs), composed by composing the network
-	assert.deepEqual(KINDS, ['node', 'zone', 'group']);
+	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
+	assert.deepEqual(KINDS, ['node', 'group']);
 	const { LINK_ROW } = await import('../network/link-kind.mjs');
 	assert.equal(LINK_ROW.kind, 'link');
 	assert.equal(LINK_ROW.owner, 'the network');
 	for (const table of [COLLECTION, COMPOSITE, OPTIONAL]) assert.deepEqual(Object.keys(table), KINDS);
-	assert.deepEqual(SELECTABLE_KINDS, ['node', 'zone'], 'a group is never selected directly');
-	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, zoneExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
+	assert.deepEqual(SELECTABLE_KINDS, ['node'], 'a group is never selected directly');
+	assert.deepEqual(Object.keys(collectionCap({ nodeExt: { x: 60, y: 60 }, pitch: 60 })).sort(), [...KINDS].sort());
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's
 	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
-	assert.deepEqual(PRODUCT_KINDS.list, KINDS, 'the product composes exactly the table\'s kinds');
-	for (const k of KINDS) for (const other of KINDS) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
+	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group'], 'the product composes the table\'s kinds and the zones plugin\'s, between them');
+	for (const k of PRODUCT_KINDS.list) for (const other of PRODUCT_KINDS.list) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
 	// a Model's collections are the table's, in its order
 	const m = new Model();
 	assert.deepEqual(Object.keys(m.toJSON()).filter((k) => Object.values(COLLECTION).includes(k)), KINDS.map((k) => COLLECTION[k]));

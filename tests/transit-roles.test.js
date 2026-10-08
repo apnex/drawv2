@@ -9,6 +9,7 @@ every count, the endpoint ring, as the director ruled the same day ("Same endpoi
 The other half is that nothing changes where transit is on or undeclared -- which is every anchor production has.
 */
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import { waypointRoles, waypointRolesIn } from '../network/roles.mjs';
 import { waypointLayers } from '../network/appearance.mjs';
@@ -94,7 +95,7 @@ test('F-e: the export and the canvas give a waypoint whose transit is off the sa
 	assert.deepEqual(canvas, ['endpoint'], 'three links end there and transit is off: endpoints, never a junction');
 	const exported = resolve(docToSchema(m.toJSON())).scene.find((e) => e.id === W).roles;
 	assert.deepEqual(exported, canvas, 'the export reads the stored field and agrees');
-	const body = svgDocument(m.toJSON()).split('</defs>').pop();
+	const body = svgDocument(m.toJSON(), KINDS).split('</defs>').pop();
 	assert.match(body, new RegExp(`<g id="${W}"><g class="waypoint endpoint">[^]*?stroke-dasharray`), 'and draws the transit ring the canvas draws');
 	m.put('node', { id: W, name: 'w', x: 0, y: 0 });   // back on: the default, nothing stored
 	assert.deepEqual(resolve(docToSchema(m.toJSON())).scene.find((e) => e.id === W).roles, ['junction']);

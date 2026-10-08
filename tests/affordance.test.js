@@ -20,6 +20,7 @@ Nothing here reads `input.mode` or `input.ctx`; `tools/scan-writers.mjs` enforce
 */
 
 import { test } from 'node:test';
+import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 
@@ -82,7 +83,7 @@ test('a selected link shows an endpoint handle at each end, and only while selec
 test('a selected zone shows four corner resize handles', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: -30, y: -30, w: 120, h: 120 });
+		const z = makeZone(h.model, { x: -30, y: -30, w: 120, h: 120 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 		assert.equal(h.drawn('#overlay', 'handle').length, 4, 'one per corner');

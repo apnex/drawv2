@@ -3,6 +3,7 @@
 // draws each link along its route, a down link with the canvas's down look (H1). CONSUMERS-ROUTE.md, stage R-c.
 
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';
@@ -48,7 +49,7 @@ const canvasWaypoints = (mode) => {
 	try {
 		// a Model that draws with the network, as the lab's does and the product page's will at P5 (G1) -- the transit ring is the
 		// network's answer (`declaresNoTransit`), so a Model without one draws none
-		const m = readModel(doc());
+		const m = readModel(doc(), KINDS);
 		const r = new Renderer(m, svg);
 		r.renderAll?.();
 		for (const e of m.all('node')) if (!e.type) r.render('node', e);
@@ -59,7 +60,7 @@ const canvasWaypoints = (mode) => {
 	} finally { restore(); }
 };
 // and from the export's SVG
-const exportWaypoints = () => Object.fromEntries([...svgDocument(doc()).matchAll(/<g id="(node-[0-9a-f]{6})"><g class="waypoint[^"]*">(.*?)<\/g><\/g>/g)]
+const exportWaypoints = () => Object.fromEntries([...svgDocument(doc(), KINDS).matchAll(/<g id="(node-[0-9a-f]{6})"><g class="waypoint[^"]*">(.*?)<\/g><\/g>/g)]
 	.map(([, id, body]) => [id, [...body.matchAll(/<circle[^>]*?r="([\d.]+)"/g)].map((m) => Number(m[1]))]));
 
 test('R-c: the canvas in run mode and the download draw every waypoint alike -- one rendering', () => {
@@ -118,7 +119,7 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 	d.nodes.push({ id: 'node-0000f1', name: 'f', x: 0, y: -240 });
 	d.links.push({ id: 'link-000005', name: 'l5', src: 'node-0000a1', dst: 'node-0000a2' });   // a plain link: no pipe joins a and c
 	d.pipes.push(pipeEntity('node-0000a1', 'node-0000f1', 'hand'), pipeEntity('node-0000a2', 'node-0000f1', 'hand'));
-	const svg = svgDocument(d);
+	const svg = svgDocument(d, KINDS);
 	const pathOf = (id) => svg.match(new RegExp(`<g id="${id}"><path d="([^"]*)"([^>]*)/>`))?.slice(1);
 	const [routed, attrs] = pathOf('link-000005');
 	assert.match(routed, /^M-360 0 L.* Q0 -240 .* L360 0$/, 'l5 is drawn up through f, its route, turning at f -- not straight from a to c');
@@ -126,7 +127,7 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 	assert.match(attrs, new RegExp(`stroke="${TOKENS.link}"`));
 	// take f's pipes away: l5 has no way, so it is down -- drawn straight through its stops, dotted and orange
 	d.pipes = d.pipes.filter((p) => !p.id.includes('0000f1'));
-	const [down, downAttrs] = svgDocument(d).match(/<g id="link-000005"><path d="([^"]*)"([^>]*)\/>/).slice(1);
+	const [down, downAttrs] = svgDocument(d, KINDS).match(/<g id="link-000005"><path d="([^"]*)"([^>]*)\/>/).slice(1);
 	assert.equal(down, 'M-360 0 L360 0', 'drawn along its intent, straight');
 	assert.match(downAttrs, /stroke-dasharray="0 /, 'dotted');
 	assert.match(downAttrs, new RegExp(`stroke="${downStroke()}"`), 'and in the down colour, which the file carries itself');
@@ -143,5 +144,5 @@ test('R-c: a ring is drawn closed once -- its route\'s return to its start is th
 	};
 	const d = (svg) => svg.match(/<g id="link-000001"><path d="([^"]*)"/)[1];
 	// its route runs along its stops, so it is drawn exactly as its stops draw it
-	assert.equal(d(svgDocument(ring)), d(render(docToSchema(ring))));
+	assert.equal(d(svgDocument(ring, KINDS)), d(render(docToSchema(ring))));
 });

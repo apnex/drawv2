@@ -106,5 +106,5 @@ test('N-b: a composition without the network\'s rows refuses a pipe', async () =
 	const { Model: Bare } = await import('../model/model.mjs');
 	const { plan: bare } = await import('../planner/txn.mjs');
 	const { linkTenant } = await import('../network/link-reactions.mjs');
-	assert.equal(bare(new Bare(), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }), kinds: PRODUCT_KINDS }).error, 'unknown kind: pipe');
+	assert.equal(bare(new Bare({ kinds: PRODUCT_KINDS }), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }), kinds: PRODUCT_KINDS }).error, 'unknown kind: pipe');
 });

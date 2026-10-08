@@ -4,6 +4,7 @@ peer, stored with the format batch; B10, undo restores an item to its place; B25
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
 import { test } from 'node:test';
+import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { nextOrder } from '../model/order.mjs';
@@ -31,7 +32,7 @@ test('F-d: whoever creates an item stamps it one above the highest of its kind -
 	const a = m.makeNode('router', { x: 0, y: 0 }); m.put('node', a);
 	const w = m.makeWaypoint({ x: 60, y: 0 }); m.put('node', w);
 	const l = m.makeLink(a.id, w.id); m.put('link', l);
-	const z = m.makeZone({ x: -90, y: -90, w: 180, h: 180 });
+	const z = makeZone(m, { x: -90, y: -90, w: 180, h: 180 });
 	assert.deepEqual([a.order, w.order, l.order, z.order], [1, 2, 1, 1], 'nodes count together, typed or not; each kind its own');
 	assert.equal(nextOrder(m, 'node'), 3);
 });

@@ -28,7 +28,8 @@ const straight = (hex, a, b) => ({ id: `link-${hex}`, name: `l${hex}`, src: `nod
 // ---- who owns the link ----
 
 test('S-e: the product composes three kinds and names no link; the network brings it, as its own', () => {
-	assert.deepEqual(CORE_KINDS.list, ['node', 'zone', 'group']);
+	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
+	assert.deepEqual(CORE_KINDS.list, ['node', 'group']);
 	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group']);
 	assert.equal(LINK_ROW.owner, 'the network');
 	assert.ok(NETWORK_ROWS.includes(LINK_ROW), 'composing the network brings the link');

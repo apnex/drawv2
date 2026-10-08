@@ -413,9 +413,13 @@ as the Model always was, so the file still ships alone for every other verb (B13
 R-a (H18.19): the network's read composition (network/read-model.mjs), so the Model draws with the network -- movers run
 along each link's route -- and the CLI composes nothing by hand.
 */
+// O-b1 (H19.19): with the product's kinds, since the reader composes none -- an import of the planner's composition, held
+// as interim (tools/layers.mjs, cli) until the node stage moves the composition below the planner (O-e)
 async function modelOf(doc) {
 	const { readModel } = await import('../network/read-model.mjs');
-	return readModel(doc);
+	const { productKinds } = await import('../planner/kinds.mjs');
+	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
+	return readModel(doc, productKinds(...NETWORK_ROWS));
 }
 
 export const VERBS = [

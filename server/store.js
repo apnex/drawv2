@@ -8,7 +8,7 @@ server; everything is validated before it touches a model.
 import fs from 'node:fs';
 import path from 'node:path';
 import { Model, newId } from '../model/model.mjs';
-import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
+import { NODE_EXT } from '../model/surface.mjs';
 import { seedDoc } from './seed.js';
 import { validateDoc, validateSelectionIds, validPrincipal } from '../planner/validate.js';
 import crypto from 'node:crypto';

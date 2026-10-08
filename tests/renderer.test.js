@@ -7,6 +7,7 @@ the same visual rules and IS tested, so only one of the two was ever held to it 
 a different substrate, a tested implementation standing in for the one that runs.
 */
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -262,7 +263,7 @@ test('B275: the SVG export draws a node or zone name in the canvas label colour'
 	const { TOKENS } = await import('../kernel/theme.mjs');
 	const svg = svgDocument({ meta: { id: 'diagram-000001', name: 'x' }, links: [], groups: [],
 		nodes: [{ id: 'node-000001', name: 'edge-router', type: 'router', x: 0, y: 0, shape: 'circle' }],
-		zones: [{ id: 'zone-000002', name: 'dmz', x: -90, y: -90, w: 300, h: 240 }] });
+		zones: [{ id: 'zone-000002', name: 'dmz', x: -90, y: -90, w: 300, h: 240 }] }, KINDS);
 	for (const name of ['edge-router', 'dmz']) {
 		const text = svg.match(new RegExp(`<text[^>]*>${name}</text>`))?.[0];
 		assert.ok(text, `${name} is drawn`);

@@ -403,7 +403,7 @@ export function attach(world) {
 
 	// ROUTE (U-a): each tab reads every link as the server's document reads it -- path, route, down -- from the network
 	world.routes = () => {
-		const server = code.readModel(world.serverDoc());
+		const server = code.readModel(world.serverDoc(), kinds);   // a reader is handed its caller's kinds (O-b1)
 		const read = (m, l) => JSON.stringify(code.linkReading(m, l));
 		return world.tabs.map((t) => {
 			const wrong = server.all('link').filter((l) => { const mine = t.model.get('link', l.id); return !mine || read(t.model, mine) !== read(server, l); }).map((l) => l.id);

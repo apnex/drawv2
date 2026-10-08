@@ -1,6 +1,7 @@
 /*
 Model — pure entity store for one diagram. No DOM, no layout knowledge.
-Entities: node, link, zone, group (`docs/spec/API.md`). IDs are '<kind>-<6hex>' (graph lineage).
+Entities: whatever kinds the Model is composed with -- node and group the core's, zone the zones plugin's, link and pipe
+the network's (`docs/spec/API.md`). IDs are '<kind>-<6hex>' (graph lineage).
 Mutations are primitive (put/set/del); cascade semantics live in commands.js so that
 every committed change is capturable and undoable.
 
@@ -410,18 +411,6 @@ export class Model {
 		// from a request for a named thing, so the name is generated rather than asked for.
 		// a node with no type since F-c (P-10), named with the word people use (F4)
 		return { id: this.freshId(BARE_KIND), name: this.nextName('waypoint'), order: this.nextOrder(BARE_KIND), x: pos.x, y: pos.y };
-	}
-
-	makeZone(box) {
-		return {
-			id: newId('zone', this.collection('zone')),
-			name: this.nextName('zone'),
-			order: this.nextOrder('zone'),
-			x: box.x,
-			y: box.y,
-			w: box.w,
-			h: box.h
-		};
 	}
 
 	makeGroup(members) {

@@ -3,6 +3,7 @@
 // the SVG download, `draw movers`; each held to the lab's derivation. dev/design/unification/CONSUMERS-ROUTE.md, stage R-e.
 
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -84,7 +85,7 @@ test('R-e: the board is what it says -- one routed off its stops, one held, one 
 });
 
 test('R-e: the read composition answers every link as the lab\'s tab does -- path, route, down and blockers', () => {
-	const tab = lab(), read = readModel(board());
+	const tab = lab(), read = readModel(board(), KINDS);
 	for (const id of LINKS) assert.deepEqual(linkReading(read, read.get('link', id)), tabSays(tab, id), id);
 });
 
@@ -116,7 +117,7 @@ test('R-e: the download draws every link exactly as the lab\'s tab draws it, and
 		for (const l of tab.all('link')) r.render('link', l);
 		drawn = Object.fromEntries(svg.byId['#links'].children.filter((c) => c.attrs.class === 'link').map((c) => [c.attrs.id, { d: c.attrs.d, down: 'data-down' in c.attrs }]));
 	} finally { restore(); }
-	const file = svgDocument(board());
+	const file = svgDocument(board(), KINDS);
 	for (const id of LINKS) {
 		const m = file.match(new RegExp(`<g id="${id}"><path d="([^"]*)"([^>]*)/>`));
 		assert.ok(m, `${id} is in the download`);
@@ -125,7 +126,7 @@ test('R-e: the download draws every link exactly as the lab\'s tab draws it, and
 });
 
 test('R-e: movers run along the route the tab draws, and never along a down link', () => {
-	const tab = lab(), prepared = spawnersOf(readModel(board()));
+	const tab = lab(), prepared = spawnersOf(readModel(board(), KINDS));
 	assert.deepEqual(prepared.map((s) => s.link), ['link-0c0003']);
 	// armed runs s -> a: its route from its src end
 	const route = tab.pathOf(tab.get('link', 'link-0c0003'));
@@ -140,7 +141,7 @@ unchanged: the other one holds the pipe -- so what decides is the stored age, no
 */
 test('criterion 3: two peers and a reload derive the same route for every link, decided by stored ages', () => {
 	const reversed = () => { const d = board(); for (const k of ['nodes', 'links', 'pipes']) d[k].reverse(); return d; };
-	const peers = { reversed: readModel(reversed()), reloaded: readModel(parse(serialize(reversed(), null)).doc) };
+	const peers = { reversed: readModel(reversed(), KINDS), reloaded: readModel(parse(serialize(reversed(), null)).doc, KINDS) };
 	const tab = lab();
 	for (const [who, peer] of Object.entries(peers)) {
 		for (const id of LINKS) assert.deepEqual(linkReading(peer, peer.get('link', id)), tabSays(tab, id), `${who}: ${id} as the tab derives it`);
@@ -149,7 +150,7 @@ test('criterion 3: two peers and a reload derive the same route for every link, 
 	const swapped = board();
 	const [routed, held] = swapped.links;
 	[routed.order, held.order] = [held.order, routed.order];
-	const peer = readModel(parse(serialize(swapped, null)).doc);
+	const peer = readModel(parse(serialize(swapped, null)).doc, KINDS);
 	assert.equal(linkReading(peer, peer.get('link', 'link-0c0002')).down, false, 'with the ages swapped, the other link keeps the pipe');
 	assert.equal(linkReading(peer, peer.get('link', 'link-0c0001')).down, true, 'and the first is held');
 });

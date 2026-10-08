@@ -24,6 +24,8 @@ merged list would be wrong in both directions.
 
 Per kind, the table also holds the collection a document stores it under and whether it can be selected.
 
+AMENDED 2026-10-08 (O-b1, H19.19; O1): the core's kinds are two -- node and group; the zone is the zones plugin's
+(zones/zone-kind.mjs), composed between them (planner/kinds.mjs `productKinds`).
 AMENDED 2026-10-04 (S-e, H18.15; G5, B280): the product's kinds are three -- node, zone and group. The link is the network
 plugin's kind (network/link-kind.mjs), brought by composing the network, as every production composition does; the core
 names no link. `clone` copies every nested value now, so it no longer reads this table, and a plugin's kind may nest fields.
@@ -41,8 +43,9 @@ the cutover and the migration was deleted (B291), so a schema 1 document is refu
 */
 export const SCHEMA = 2;
 
-// the product's kinds, in the order a document lists its collections; a plugin's follow (the link is the network's, S-e)
-const KINDS = ['node', 'zone', 'group'];
+// the core's kinds, in the order a document lists its collections; a plugin's are composed among and after them -- the
+// zones plugin's between these two (O-b1), the network's after (S-e)
+const KINDS = ['node', 'group'];
 
 /*
   collection  the document key the kind is stored under
@@ -69,12 +72,10 @@ const TABLE = {
 	composition without the network refuses it.
 	*/
 	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'spawn', 'order'] },
-	// `order` (F-d, H18.6): the drawing order of every drawn kind, model/order.mjs; optional, so a hand-made board still loads
-	zone:     { collection: 'zones',     selectable: true,  composite: [],                  optional: ['order'] },
 	group:    { collection: 'groups',    selectable: false, composite: ['members'],         optional: [] },
 };
 
-// the rest of each of the three's storage half: every one is named (B187, N5), nodes are the anchors (N2), and groups point
+// the rest of each of the two's storage half: every one is named (B187, N5), nodes are the anchors (N2), and groups point
 // at them
 const REFERENCES = { group: ['node'] };
 const STORAGE = Object.fromEntries(KINDS.map((k) => [k, { ...TABLE[k], named: true, anchor: k === 'node', references: REFERENCES[k] ?? [] }]));

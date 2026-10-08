@@ -46,6 +46,7 @@ import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_REL
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
+import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { pairHolders } from '../../network/link-rules.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
@@ -1195,7 +1196,7 @@ export class Input {
 	}
 
 	createZoneFrom(box) {
-		const zone = this.model.makeZone(box);
+		const zone = makeZone(this.model, box);
 		this.history.commit(commands.createEntity('zone', zone));
 		this.selection.set([zone.id]);
 	}

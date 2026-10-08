@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { newId, kindOf } from '../model/model.mjs';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -81,7 +82,7 @@ test('toJSON/load roundtrip preserves the document', () => {
 	model.put('node', a);
 	model.put('node', b);
 	model.put('link', model.makeLink(a.id, b.id));
-	model.put('zone', model.makeZone({ x: -90, y: -90, w: 240, h: 180 }));
+	model.put('zone', makeZone(model, { x: -90, y: -90, w: 240, h: 180 }));
 	model.put('group', model.makeGroup([a.id, b.id]));
 	model.state.meta.name = 'demo';
 
@@ -159,7 +160,7 @@ test('kindOf derives the kind from the id of each kind', () => {
 	const node = model.makeNode('host', { x: 0, y: 0 });
 	const wp = model.makeWaypoint({ x: 0, y: 0 });
 	const link = model.makeLink(node.id, wp.id);
-	const zone = model.makeZone({ x: 30, y: 30, w: 60, h: 60 });
+	const zone = makeZone(model, { x: 30, y: 30, w: 60, h: 60 });
 	const group = model.makeGroup([node.id]);
 	assert.equal(kindOf(node.id), 'node');
 	assert.equal(kindOf(wp.id), 'node', 'a waypoint is a node with no type (F-c)');
@@ -236,7 +237,7 @@ test('B187: every factory mints a named entity, and the names do not collide', (
 	const made = [
 		m.makeNode('host', { x: 0, y: 0 }),
 		m.makeWaypoint({ x: 60, y: 0 }),
-		m.makeZone({ x: 30, y: 30, w: 120, h: 120 }),
+		makeZone(m, { x: 30, y: 30, w: 120, h: 120 }),
 	];
 	for (const e of made) assert.ok(typeof e.name === 'string' && e.name, `${e.id} was minted unnamed`);
 

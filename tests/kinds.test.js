@@ -47,7 +47,9 @@ test('N-a: a composition lists its kinds and what each opts into', () => {
 	assert.deepEqual(WITH_PROBE.anchors, ['node']);
 	assert.equal(WITH_PROBE.checked, true);
 	assert.equal(CORE_KINDS.checked, false, 'the core holds storage only; the checks are the planner\'s');
-	assert.deepEqual(CORE_KINDS.list, PRODUCT_KINDS.list);
+	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
+	assert.deepEqual(CORE_KINDS.list, ['node', 'group']);
+	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group']);
 });
 
 test('N-a: a composition is refused when built -- each way a row can be wrong, named', () => {
@@ -78,7 +80,7 @@ test('N-a: a Model composed with a plugin kind stores, round-trips and selects i
 	again.setSelection(['probe-00000b']);
 	assert.deepEqual([...again.state.selection], ['probe-00000b'], 'a selectable plugin kind joins the selection');
 	assert.equal(m.nextName('probe'), 'probe-1', 'an unnamed kind takes no part in the namespace');
-	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, zone, group\)/);
+	assert.throws(() => new Model().put('probe', { id: 'probe-00000b', at: NODE.id }), /Model: probe is not a kind this model was composed with \(node, group\)/);   // the core's Model: node and group (O-b1)
 	assert.throws(() => new Model({ kinds: { list: ['node'] } }), /Model: kinds is a composition/);
 });
 
@@ -97,7 +99,8 @@ test('N-a: the planner composed with the plugin kind validates it by its row -- 
 });
 
 test('N-a: the product\'s planner refuses the plugin kind, and a model and planner composed differently are refused by name', async () => {
-	const product = new Model();
+	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them -- so the product's Model is composed with the product's kinds, as every production Model is
+	const product = new Model({ kinds: PRODUCT_KINDS });
 	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }], { links: BARE, kinds: PRODUCT_KINDS }).error, 'unknown kind: probe');
 	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }], { links: BARE, kinds: PRODUCT_KINDS }),
 		/plan: the model is composed with kinds node, zone, group, probe and the planner with node, zone, group/);
@@ -132,7 +135,7 @@ test('N-a: a document with the plugin kind validates against its composition, an
 
 // F-c (H18.5): one anchor kind now, so N2's uniqueness is the node collection's own; held still, by the minting path
 test('N-a (N2): an anchor\'s 6-hex part is unique across both anchor kinds, and other kinds are free to repeat it', () => {
-	const m = new Model();
+	const m = new Model({ kinds: PRODUCT_KINDS });   // the product's kinds, which hold the zone since O-b1
 	m.put('node', { ...NODE, id: 'node-111111' });
 	const draws = [0x111111, 0x111111, 0x222222], real = Math.random;
 	const drawing = (fn) => { const seq = [...draws]; Math.random = () => (seq.shift() ?? 0x333333) / 0xffffff; try { return fn(); } finally { Math.random = real; } };
@@ -185,7 +188,7 @@ test('S-a: the network brings transit, and the product names none; a tenant read
 
 test('S-b: undo and redo replay only over a model composed with their kinds -- a mismatch is refused by name', async () => {
 	const { undo, redo } = await import('../planner/txn.mjs');
-	const product = new Model(), log = new Log();
+	const product = new Model({ kinds: PRODUCT_KINDS }), log = new Log();   // the product's kinds, which hold the zone since O-b1
 	assert.equal(commit(product, log, { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x', { links: BARE, kinds: PRODUCT_KINDS }).ok, true);
 	assert.throws(() => undo(product, log, null, { kinds: WITH_PROBE }), /undo: the model is composed with kinds/);
 	assert.throws(() => redo(product, log, { kinds: WITH_PROBE }), /redo: the model is composed with kinds/);

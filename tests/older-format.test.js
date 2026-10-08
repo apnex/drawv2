@@ -7,6 +7,7 @@ in the data directory, a document posted to `create`, a deleted diagram's older 
 is refused with one sentence naming the cutover, rather than the validator's bare "unsupported meta.schema".
 */
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -60,6 +61,6 @@ test('B291: the seed diagram is written complete -- valid, every item ordered, e
 	const doc = seedDoc();
 	assert.equal(validateDoc(doc), null, 'valid as it stands');
 	for (const k of ['nodes', 'links', 'zones']) assert.ok(doc[k].every((e) => Number.isInteger(e.order)), `every ${k.slice(0, -1)} has its drawing order`);
-	const m = readModel(doc);
+	const m = readModel(doc, KINDS);
 	assert.deepEqual(m.all('link').filter((l) => linkReading(m, l).down).map((l) => l.name), [], 'and no link is down');
 });

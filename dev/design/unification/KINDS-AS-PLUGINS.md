@@ -178,3 +178,25 @@ The network's tenant stays passed as `links`, since it is made with each network
 **What moved:** the group's tenant, from the planner's own list (`planner/txn.mjs`) to the group row; its two invariants, B82 and B85, from `model/invariants.mjs` to the group row, asking `planner/policy.mjs` itself rather than having each caller inject it -- a caller still passing the policy is refused, not ignored.
 `model/invariants.mjs` keeps the anchor capability's own rule, one occupant to an anchor (B112).
 **Held by:** `tests/tenant-from-row.test.js` -- a group row stripped of its rules runs none, and a planner appending the group tenant itself, or ignoring the rows' tenants, fails it (both mutants killed); the planner, gesture and matrix corpora and the generated reaction table are unchanged; one test restated (`tests/txn.test.js`, B85's policy).
+
+---
+
+## 13. O-b, in three steps; O-b1 done
+
+AMENDED 2026-10-08 -- **O-b is built in three steps**, each gated and deployed: O-b1, the zone kind out of the core and the planner; O-b2, the canvas -- the zone's gesture, commands and drawing; O-b3, the export, REST and the CLI.\
+The zone is named in 34 product modules, 280 lines of code, too many to move safely in one gate.
+
+AMENDED 2026-10-08 -- **O-b1 done** (H19.19 stays open until O-b3).
+**What moved:** the zone row, whole -- its storage facts, its checks and its cap -- to `zones/zone-kind.mjs`; its extent to `zones/zone-extent.mjs`; `makeZone` from the Model to `zones/make-zone.mjs`, minting through the Model's kind-blind `freshId`, `nextName` and `nextOrder`.
+The three files are apart so the planner entry loads the row and the extent and not the factory (`tools/layers.mjs` L10).\
+The core composes node and group; `planner/kinds.mjs` composes the product as node, the zones plugin's row, group, so a document lists its collections as before.\
+The cell count a positioned kind's cap derives from moved to the core's grid module (`model/surface.mjs` `anchorCellsWithin`), so the node's cap and the zone's derive one way.\
+**The reader composes no kinds of its own** -- the first of the three ways of composing kinds to go (section 11).\
+`readModel` refuses to run without its caller's kinds; the store and the export door hand it the store's, and the CLI the product's.
+**Two placements chosen in the build:**
+- **A top-level folder, `zones/`, beside `network/`**, its own layer importing only the core; served by the product's server and the lab's and copied into the image as the network's folder is.
+  Gathering the plugins under one folder was not taken: the network's folder would have to move with it, and every import of it change.
+- **The CLI may import the planner layer, as an interim:** its reader takes the product's composition, which lives in `planner/kinds.mjs` while the node's and the group's checks do. The allowance is marked in `tools/layers.mjs` and goes at O-e, when the composition no longer needs the planner.
+
+**Held by:** `tests/zone-plugin.test.js` -- the core composes no zone and names none; the product composes the plugin's row; `makeZone` mints as the Model did; a composition without the plugin refuses a zone at the validator, the planner and the Model; the reader composes none (a reader given its own composition back, and a Model given `makeZone` back, each fail it -- both mutants killed).
+Tests that pinned the core's list as three kinds, or paired a bare Model with the product's planner, restated, each saying why; every corpus unchanged.

@@ -117,6 +117,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const modelDir = path.resolve(root, '..', 'model'); // the model substrate ESM (mounted at /model)
 	const plannerDir = path.resolve(root, '..', 'planner'); // K4 (H17-D5): the planner, served whole (mounted at /planner); `server/` never is
 	const networkDir = path.resolve(root, '..', 'network'); // S-b (H18.12): the network plugin, which the product page composes (mounted at /network)
+	const zonesDir = path.resolve(root, '..', 'zones'); // O-b1 (H19.19): the zones plugin, which the product page composes (mounted at /zones)
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
 	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
@@ -216,6 +217,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const hasModel = fs.existsSync(modelDir);
 	const hasPlanner = fs.existsSync(plannerDir);
 	const hasNetwork = fs.existsSync(networkDir);
+	const hasZones = fs.existsSync(zonesDir);
 
 	const server = http.createServer(async (req, res) => {
 		req.url = throughTheAgentDoor(req.url);
@@ -251,7 +253,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 				res.writeHead(403, { 'Content-Type': 'application/json' });
 				return res.end(JSON.stringify({ error: 'forbidden: no access to this diagram', code: 'forbidden' }) + '\n');
 			}
-			const body = svgDocument(model.toJSON());
+			const body = svgDocument(model.toJSON(), model.kinds);
 			res.writeHead(200, {
 				'Content-Type': 'image/svg+xml; charset=utf-8',
 				'Cache-Control': 'no-store',
@@ -282,6 +284,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (hasModel && url.pathname.startsWith('/model/')) return serveFrom(req, res, modelDir, '/model');
 		if (hasPlanner && url.pathname.startsWith('/planner/')) return serveFrom(req, res, plannerDir, '/planner');
 		if (hasNetwork && url.pathname.startsWith('/network/')) return serveFrom(req, res, networkDir, '/network');
+		if (hasZones && url.pathname.startsWith('/zones/')) return serveFrom(req, res, zonesDir, '/zones');
 		if (!hasClient) {
 			res.writeHead(404, { 'Content-Type': 'application/json' });
 			return res.end(JSON.stringify({ error: 'API-only mode; editor client not bundled' }) + '\n');

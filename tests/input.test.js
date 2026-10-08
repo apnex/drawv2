@@ -14,6 +14,7 @@ its row, never asserted as correct and never written around.
 */
 
 import { test } from 'node:test';
+import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the network's kinds, as the server validates (S-e)
@@ -198,7 +199,7 @@ test('B14: a burst of nudges coalesces into ONE change', () => {
 test('B14: Shift+arrow resizes the lone selected zone', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: -30, y: -30, w: 120, h: 120 });
+		const z = makeZone(h.model, { x: -30, y: -30, w: 120, h: 120 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 		h.capture.onKeyDown(key('ArrowRight', { shiftKey: true }));
@@ -610,7 +611,7 @@ const handle = (corner, x, y) => pointer(x, y, {
 test('B43: a resize commit fires the gesture-end hook exactly once', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: -30, y: -30, w: 300, h: 300 });
+		const z = makeZone(h.model, { x: -30, y: -30, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
@@ -631,7 +632,7 @@ test('B43: a resize commit fires the gesture-end hook exactly once', () => {
 test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
@@ -678,7 +679,7 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
-		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
 		h.model.put('zone', z);
 		const link = h.model.makeLink(a.id, b.id);
 		h.model.put('link', link);
@@ -801,7 +802,7 @@ test('B36: Overlay and the held tools share ONE crosshair, so #snaplayer has a s
 test('B36: a zone resize pins the corner opposite the grabbed handle', () => {
 	const h = makeInput();
 	try {
-		const z = h.model.makeZone({ x: -30, y: -30, w: 300, h: 300 });
+		const z = makeZone(h.model, { x: -30, y: -30, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
@@ -1088,7 +1089,7 @@ test('B46: the two Shift+arrow builders self-guard, so exactly one ever acts', (
 	const h = makeInput();
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
-		const z = h.model.makeZone({ x: 0, y: 0, w: 300, h: 300 });
+		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
 		h.model.put('zone', z);
 
 		assert.equal(commands.resizeNodeStep(h.model, [z.id], 1, 0).entries.length, 0, 'zone selected: node builder is silent');

@@ -2,6 +2,7 @@
 // each of the store's Models drawing with a network of its own. dev/design/unification/CONSUMERS-ROUTE.md, stage R-a.
 
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,7 +28,7 @@ const detour = () => ({
 });
 
 test('R-a: readModel draws each link along its route over the pipes, not through its stops', () => {
-	const m = readModel(detour());
+	const m = readModel(detour(), KINDS);
 	const l = m.get('link', 'link-00000d');
 	assert.deepEqual(m.pathOf(l), [[0, 0], [180, 240], [360, 0]]);
 	assert.equal(m.isLinkDown(l), false);
@@ -35,14 +36,14 @@ test('R-a: readModel draws each link along its route over the pipes, not through
 
 test('R-a: readModel says a link with no way is down, and draws it along its intent', () => {
 	const doc = detour(); doc.pipes = [];
-	const m = readModel(doc);
+	const m = readModel(doc, KINDS);
 	const l = m.get('link', 'link-00000d');
 	assert.equal(m.isLinkDown(l), true);
 	assert.deepEqual(m.pathOf(l), [[0, 0], [360, 0]], 'its intent, straight between its ends (network/resolve.mjs)');
 });
 
 test('R-a: each reader gets a network of its own -- one per Model, since each caches one derivation per board', () => {
-	assert.notEqual(readModel(detour()).network, readModel(detour()).network);
+	assert.notEqual(readModel(detour(), KINDS).network, readModel(detour(), KINDS).network);
 	assert.notEqual(readerNetwork(), readerNetwork());
 });
 
@@ -53,7 +54,9 @@ source, as the incubator boundary is (tests/scan-layers.test.js).
 */
 test('R-a: no module outside the network composes the network but the store, the lab, the product page, the reaction table and the route inventory', () => {
 	// W-a (H18.31): the route inventory reads the collections the server composes, which REST serves
-	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs'];
+	// RESTATED at O-b1 (H19.19): the reader composes no kinds of its own, so the CLI hands it the product's composition, as the
+	// store hands it its own -- `productKinds(...NETWORK_ROWS)`, the one way, imported when combat or movers run (B138)
+	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs', 'cli/verbs.mjs'];
 	const found = [];
 	const walk = (dir) => {
 		for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
@@ -71,7 +74,7 @@ test('R-a: no module outside the network composes the network but the store, the
 
 test('R-a: a reader honours transit -- a route may not pass an anchor whose transit is off (TR-1)', () => {
 	const doc = detour(); doc.nodes[2].transit = false;
-	const m = readModel(doc);
+	const m = readModel(doc, KINDS);
 	assert.equal(m.isLinkDown(m.get('link', 'link-00000d')), true, 'its only way passes W, whose transit is off');
 });
 
@@ -99,7 +102,7 @@ test('R-d: a spawner at the end of a down link emits nothing, and does again onc
 		const doc = detour(); doc.pipes = pipes;
 		doc.nodes.push({ id: 'node-00000e', name: 's', x: -240, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: Date.now() } });
 		doc.links.push({ id: 'link-00000f', name: 'm', src: 'node-00000e', dst: 'node-00000a' });
-		return spawnersOf(readModel(doc));
+		return spawnersOf(readModel(doc, KINDS));
 	};
 	const heal = { id: 'pipe-00000a-00000e', a: 'node-00000a', b: 'node-00000e', laid: 'link' };
 	assert.deepEqual(armed(detour().pipes).map((s) => s.id), [], 'm has no pipe, so it is down, and its spawner is quiet');

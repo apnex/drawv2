@@ -6,6 +6,8 @@ applying idempotent mutations as the safety net). The first tenant of the engine
 cascade controller). Until then this is a small, behaviour-identical extraction.
 */
 
+import { anchorCellsWithin } from '../model/surface.mjs';   // the grid's cell count, the core's (O-b1)
+
 // A group after some members are removed: the survivors, and whether it must DISSOLVE
 // (< 2 members ⇒ no longer a group). The single authority for the dissolve/trim threshold,
 // shared by the delete cascade (client + server) and group-member stealing. `isRemoved` is a
@@ -33,11 +35,10 @@ backstop against a pathological document, not the real constraint.
 
 2000 stands for the unpositioned kinds, which have no anchors and for which it is still reachable.
 */
-const anchors = (ext, pitch) => (Math.floor(ext.x / pitch) * 2 + 1) * (Math.floor(ext.y / pitch) * 2 + 1);
-
-export function collectionCap({ nodeExt, zoneExt, pitch }) {
+// AMENDED 2026-10-08 (O-b1): the zone's cap is its row's own (zones/zone-kind.mjs), derived as the node's is
+export function collectionCap({ nodeExt, pitch }) {
 	return {
-		node: anchors(nodeExt, pitch), zone: anchors(zoneExt, pitch),   // one occupant per anchor cell, typed or not (F-c)
+		node: anchorCellsWithin(nodeExt, pitch),   // one occupant per anchor cell, typed or not (F-c)
 		group: 2000,   // the link's 2000 is the network's row's own since S-e (network/link-kind.mjs)
 	};
 }

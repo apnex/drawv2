@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import { collectionCap } from '../planner/policy.mjs';
 import { LINK_ROW } from '../network/link-kind.mjs';
-import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
+import { NODE_EXT } from '../model/surface.mjs';
+import { ZONE_EXT } from '../zones/zone-extent.mjs';
+import { ZONE_ROWS } from '../zones/zone-kind.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
@@ -197,7 +199,10 @@ B113 -- the number in the code is the number that binds, and the server bounds w
 Two separate claims, both previously unasserted, and a mutant walked through each.
 */
 test('B113: the positioned cap is DERIVED from the grid, not a flat constant', () => {
-	const cap = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: STD.pitch });
+	// RESTATED at O-b1 (H19.19): the zone's cap is its row's own, derived from its extent as the node's is from its own
+	const cap = collectionCap({ nodeExt: NODE_EXT, pitch: STD.pitch });
+	assert.equal(cap.zone, undefined, 'the zone is the zones plugin\'s kind, its cap its row\'s');
+	assert.equal(ZONE_ROWS[0].cap, (Math.floor(ZONE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(ZONE_EXT.y / STD.pitch) * 2 + 1), 'derived from the zone extent');
 	const anchors = (Math.floor(NODE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(NODE_EXT.y / STD.pitch) * 2 + 1);
 	assert.equal(cap.node, anchors, 'the node cap IS the number of node anchors');
 	assert.equal(cap.node, 527);
@@ -319,7 +324,9 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	assert.match(src, /kinds\.optional\[kind\]/, 'it reads the composition\'s one map');
 	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;
 	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
-	assert.deepEqual(PRODUCT_KINDS.optional, OPTIONAL, 'and the product\'s composition carries the table\'s map, unchanged');
+	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them: each core kind's map is the table's, the zone's its plugin row's
+	const { ZONE_ROWS: ZR } = await import('../zones/zone-kind.mjs');
+	assert.deepEqual(PRODUCT_KINDS.optional, { node: OPTIONAL.node, zone: new Set(ZR[0].optional), group: OPTIONAL.group }, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');

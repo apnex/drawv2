@@ -21,6 +21,7 @@ disconnected browser previews with it as well, so it still never builds a docume
 
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
+import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
 import { SPAN_MAX } from '../../model/limits.mjs';
 import { BARE_KIND, ANCHOR_KINDS, bareAnchor, isTypedEntity } from '../../model/anchors.mjs';
@@ -350,7 +351,7 @@ export function wrapSelection(model, ids) {
 	const y = Math.max(floorZ(minY - HALF), -ZONE_EXT.y);
 	const x2 = Math.min(ceilZ(maxX + HALF), ZONE_EXT.x);
 	const y2 = Math.min(ceilZ(maxY + HALF), ZONE_EXT.y);
-	return createEntity('zone', model.makeZone({ x, y, w: Math.max(x2 - x, GAP), h: Math.max(y2 - y, GAP) }));
+	return createEntity('zone', makeZone(model, { x, y, w: Math.max(x2 - x, GAP), h: Math.max(y2 - y, GAP) }));
 }
 
 // arrow keys — shift the movable part of the selection one cell, clamped so nothing leaves the canvas

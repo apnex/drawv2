@@ -10,6 +10,7 @@ exactly one side writes at a time.
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
+import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { ANCHOR_KINDS, isBareEntity } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
@@ -203,7 +204,7 @@ function bodyRejected(req, res, value) {
 function buildEntity(model, kind, d) {
 	if (kind === 'node') return model.makeNode(d.type, { x: d.x, y: d.y }, d.shape);
 	if (kind === 'link') return model.makeLink(d.src, d.dst);
-	if (kind === 'zone') return model.makeZone({ x: d.x, y: d.y, w: d.w, h: d.h });
+	if (kind === 'zone') return makeZone(model, { x: d.x, y: d.y, w: d.w, h: d.h });
 	if (kind === 'group') return Array.isArray(d.members) ? model.makeGroup(d.members) : null;
 	// W-a: a pipe from its two ends, LAID BY HAND -- what a person lays with `g`, which outlives any link (2026-09-27); the id
 	// and the order of its ends are the network's rule, never built here. A link's own pipes are laid with it (`--lay`, K1)

@@ -8,7 +8,8 @@ import { STD, L_STD } from '../../kernel/spec.mjs';
 import { spanExtent, LAYOUTS, snapLayout } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode/snapZone/grid-points reference NODE_EXT/ZONE_EXT locally.
-import { SURFACE, NODE_EXT, ZONE_EXT } from '../../model/surface.mjs';
+import { SURFACE, NODE_EXT } from '../../model/surface.mjs';
+import { ZONE_EXT } from '../../zones/zone-extent.mjs';   // the zones plugin's extent (O-b1)
 import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
 export const HALF = GAP / 2;

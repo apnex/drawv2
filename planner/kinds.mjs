@@ -18,7 +18,8 @@ AMENDED 2026-10-04 (S-e, H18.15; G5, B280): three kinds -- node, zone and group.
 composition is `productKinds(...NETWORK_ROWS)`, which brings it.
 */
 
-import { NODE_EXT, ZONE_EXT } from '../model/surface.mjs';
+import { NODE_EXT } from '../model/surface.mjs';
+import { ZONE_ROWS } from '../zones/zone-kind.mjs';   // the zones plugin's kind, composed between the node and the group (O-b1)
 import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX, SPAN_MAX, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
@@ -44,7 +45,6 @@ Magnitudes sourced from the document substrate; the num() bound CHECKS below sta
 boundary is never delegated).
 */
 const EXT = NODE_EXT;                          // nodes and waypoints keep a full margin cell
-const ZEXT = ZONE_EXT;                         // zones reach within half a cell
 
 /*
 B110 -- geometry is a RULE, enforced here, not a courtesy the browser performs.
@@ -76,7 +76,7 @@ const onGrid = (name, v) => onLayout(LAYOUTS[name], v);
 // B113: the cap has ONE owner. planner/policy.mjs already declares itself the authority for a
 // threshold (B85), and this was stated twice at 2000 -- here and in txn.mjs -- which is one number
 // too many the moment either becomes derived. Each row carries its own, from here.
-const CAP = collectionCap({ nodeExt: NODE_EXT, zoneExt: ZONE_EXT, pitch: PITCH });
+const CAP = collectionCap({ nodeExt: NODE_EXT, pitch: PITCH });
 
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -182,16 +182,6 @@ const FIELDS = {
 		*/
 		spawn: (v) => spawn(v)
 	},
-	zone: {
-		id: (v) => id(v, 'zone'),
-		name: (v) => str(v, NAME_MAX),
-		// the zone grid is offset by half a pitch: a zone bounds CELLS, so its edges fall between them
-		x: (v) => num(v, -ZEXT.x, ZEXT.x) && onGrid('zone', v),
-		y: (v) => num(v, -ZEXT.y, ZEXT.y) && onGrid('zone', v),
-		w: (v) => num(v, PITCH, 2 * ZEXT.x) && onGrid('node', v), // whole cells; minimum one — no degenerate zones
-		h: (v) => num(v, PITCH, 2 * ZEXT.y) && onGrid('node', v),
-		order: (v) => int(v, 1, ORDER_MAX)   // the drawing order (F-d)
-	},
 	group: {
 		id: (v) => id(v, 'group'),
 		name: (v) => str(v, NAME_MAX),
@@ -280,10 +270,13 @@ function groupInvariants(model, report) {
 // the rows that bring their own rules: a tenant the planner runs, and the invariants the backstop checks (O-a)
 const RULES = { group: { tenant: GROUPS, invariants: groupInvariants } };
 
-// the product's three, whole -- in the core's order, which is the order a document lists its collections
+// the core's two, whole (O-b1: the zone is the zones plugin's)
 const PRODUCT_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: FIELDS[row.kind], cap: CAP[row.kind], ...(REFERS[row.kind] ? { refers: REFERS[row.kind] } : {}), ...RULES[row.kind] }));
 /*
 The product's composition, and a plugin's rows after its five: the one way a composition with a plugin's kinds is built --
 the lab's, with the network's `pipe` (H17.22 N-c), and the product page's at promotion.
 */
-export const productKinds = (...pluginRows) => composeKinds([...PRODUCT_ROWS, ...pluginRows], pluginRows.length ? `the product with ${pluginRows.map((r) => r.kind).join(', ')}` : 'the product');
+// the shipped kinds in the order a document lists its collections: the node, the zones plugin's, the group (O-b1)
+const byKind = Object.fromEntries(PRODUCT_ROWS.map((r) => [r.kind, r]));
+const SHIPPED = [byKind.node, ...ZONE_ROWS, byKind.group];
+export const productKinds = (...pluginRows) => composeKinds([...SHIPPED, ...pluginRows], pluginRows.length ? `the product with ${pluginRows.map((r) => r.kind).join(', ')}` : 'the product');

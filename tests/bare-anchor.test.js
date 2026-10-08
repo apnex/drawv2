@@ -9,6 +9,7 @@ stored kind -- since F-c none is, so a new one is a reader naming a kind that no
 progress, written down here in the commit that makes it.
 */
 import { test } from 'node:test';
+import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -140,7 +141,7 @@ test('F-c: the export draws a waypoint as a waypoint, under its node id', async 
 	const doc = { meta: { id: 'diagram-000001', name: 'x' }, zones: [], groups: [],
 		nodes: [{ id: 'node-0000aa', name: 'a', type: 'host', x: 0, y: 0 }, { id: 'node-0000bb', name: 'b', type: 'host', x: 240, y: 0 }, { id: 'node-0000cc', name: 'w', x: 120, y: 60 }],
 		links: [{ id: 'link-0000dd', name: 'l', src: 'node-0000aa', dst: 'node-0000bb', via: ['node-0000cc'] }] };
-	const body = svgDocument(doc).split('</defs>').pop();
+	const body = svgDocument(doc, KINDS).split('</defs>').pop();
 	const count = (re) => (body.match(re) || []).length;
 	assert.equal(count(/<g id="node-[0-9a-f]{6}"><g class="waypoint\b/g), 1, 'one waypoint, drawn as one');
 	assert.equal(count(/<g id="node-[0-9a-f]{6}"/g), 3, 'beside the two typed nodes');
