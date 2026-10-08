@@ -1,8 +1,9 @@
-# Zones and groups become plugins -- H19.7 (DELTA, proposed)
+# Every kind becomes a plugin's -- zones, groups, then the node -- H19.7 (DELTA, proposed)
 
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-08 against `aa91ba0`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.
+> AMENDED 2026-10-08: O1 ruled -- full decoupling, the node last; the core keeps machinery and the anchor capability (section 11).
 
 ## 1. Status
 
@@ -139,3 +140,27 @@ Each stage is one gate and one lab deploy.
 **Closeout hooks:** acceptance tests 1 to 5; the deferred items recorded with their triggers (RU3).
 
 **Verdict: pass-with-guardrails** -- O1 and O2 ruled before O-a; the earned-exposure tension named, not hidden.
+
+---
+
+## 11. O1, ruled -- and what it changes here
+
+AMENDED 2026-10-08 -- **O1 RULED: full decoupling, the node last** (`dev/DECISIONS.md`, "O1").\
+The director, asked whether the node stays core: "I'm inclined to go full decoupling and move node to a plugin.\
+It is entirely feasible that different plugins may leverage other plugins going forward - and our system of imports and exports can broker this - like the kubernetes CRD+Controller model".
+
+**The to-state, amended:** the core holds no kind. It keeps what spans kinds and the anchor capability -- identity, position, occupancy and resolving a reference -- for any kind whose row declares itself an anchor; the node is the shipped plugin that declares it, and zones, groups and links are plugins beside it.
+
+**Why it unifies, measured:**
+- Kinds are composed three ways today: the core's default, unchecked, which `new Model()` takes (`model/shape.mjs:202`, `model/model.mjs:111`); the product's, checked (`planner/kinds.mjs:241`); and the reader's, the core's unchecked rows with the network's (`network/read-model.mjs:21`). With every kind a plugin's there is one: compose these plugins.
+- The anchor is hard-coded as a name: `anchor: k === 'node'` (`model/shape.mjs:80`), `BARE_KIND = 'node'`, and the anchor kinds bound once to the core's own composition (`model/anchors.mjs:34`), so another composition's anchors are invisible to them. Declared by each row, they are read from the composition in use -- the move H19.10 made for transit.
+- One kind depending on another is already brokered: a row's `references`, and a composition missing a referenced kind refused when built (`model/shape.mjs:156-158`). The network's link declares `references: ['node']`.
+
+**A stage added, after O-c:**
+
+| stage | what lands | proven by |
+|---|---|---|
+| **O-e** | **The node plugin:** its row and checks, its factories, typed and bare; the core's anchor capability generic over the kinds declaring it, read from the composition in use; the network, zones and groups depending on the node plugin through `references` | every corpus identical; the core composes no kind; a composition without the node plugin refuses a node, and refuses a plugin that references it, by name |
+
+O-d, the close-out, moves after O-e; its layer rule then holds that the core names no kind at all.
+**Acceptance test 1, amended:** the core composes no kind; production composes node, zone, group, link, pipe, in that order, from four plugins.

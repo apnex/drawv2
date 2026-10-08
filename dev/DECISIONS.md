@@ -1773,3 +1773,11 @@ Asked what becomes of the register now that production follows `main` on every p
 Shown that a tab's preview of an edit is never corrected when another writer's edit reached the server first and the server answered otherwise (18 runs in 300 of the sync fuzz, with only ordinary edits), the director chose the proposer's recommendation: "agree with refetch".
 - When an answer does not confirm every op the tab derived for its request -- a no-op answer included; an op it asked for that the server found already so proves nothing -- the tab fetches the document again and re-plans its own unanswered requests on top, as B251's ruling does for a lost answer.
 - Correcting in place, undoing the unconfirmed part without a fetch, was declined: more code in the most delicate part of sync.
+
+**O1 -- every kind a plugin, the node last; the core keeps machinery and the anchor capability -- 2026-10-08 (B280, H19.7).**\
+Asked against `dev/design/unification/KINDS-AS-PLUGINS.md` what the core keeps once zones and groups move out, with the node staying core recommended, the director answered: "I'm inclined to go full decoupling and move node to a plugin. It is entirely feasible that different plugins may leverage other plugins going forward - and our system of imports and exports can broker this - like the kubernetes CRD+Controller model - does this help us unify our code?"
+Shown that it does -- three ways of composing kinds become one; the anchor becomes a capability a kind declares rather than a name the core hard-codes; and one kind depending on another is already brokered, a composition missing a referenced kind refused when built -- the director chose "full decoupling, node last".
+- Every kind is a plugin's: zones, groups and the node, as the link already is.
+- The core keeps what spans kinds -- ids, selection, names, ops, undo, the log, the planner's phases, the document envelope, the grid -- and the anchor capability: identity, position, occupancy and resolving a reference, for any kind whose row declares itself an anchor. SD11b's "the core is anchors" is read as that capability.
+- A plugin may depend on another's kind, brokered at composition as `references` broker it today; a plugin-level requirement is added only as a plugin needs one.
+- The node moves last, once zones and groups have proven the contract.

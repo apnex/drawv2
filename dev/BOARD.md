@@ -1205,6 +1205,8 @@ Next H19.7, the B280 design.
 
 AMENDED 2026-10-08: H19.7's design is `dev/design/unification/KINDS-AS-PLUGINS.md`, proposed, with its M7 audit; its decisions O1 (what the core keeps) and O2 (when, and how far) go to the director one at a time.
 
+AMENDED 2026-10-08: O1 ruled -- full decoupling, the node last; the core keeps machinery and the anchor capability (`dev/DECISIONS.md`). Next O2, when and how far.
+
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
 ---
