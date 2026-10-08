@@ -1160,6 +1160,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.21 | O-e: the node plugin -- the core's anchor capability generic over the kinds that declare it; the network, zones and groups depending on the node plugin by reference | feature | S4 | `TODO` |
 | H19.22 | O-d: closed -- a layer rule that the core and the planner name no kind, B280 closed for them; the canvas's half is B308's | **B280** | S4 | `TODO` |
 | H19.23 | Design, for approval: a canvas plugin contract -- how a plugin's kind enters the page (press rows, gestures, releases, handles, picking, drawing, snapping, moving) -- for zone, group, node and the network's link together | **B308** | S4 | `TODO` |
+| H19.24 | A down link pinned through a device is drawn along its intent, as one through a waypoint is -- found writing O-e's design | **B309** | S2 | `DONE` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
 | H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |

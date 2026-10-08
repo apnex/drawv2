@@ -285,8 +285,13 @@ export class Model {
 		const src = at(link.src), dst = at(link.dst);
 		if (!src || !dst) return null;
 		const path = [[src.x, src.y]];
+		/*
+		B309 -- a via is ANY anchor: a waypoint, or a device the link is pinned through (H19.10, Z1). This accepted a bare
+		anchor alone, written when every pin was one, so a down link pinned through a device had no path -- drawn from null on
+		the canvas, `path: null` to REST and the CLI -- against H1's "drawn along its intent".
+		*/
 		for (const id of link.via || []) {
-			const w = bareAnchor(this, id);
+			const w = this.endpointOf(id);
 			if (!w) return null;                    // a missing BEND is as dangling as a missing end
 			path.push([w.x, w.y]);
 		}
