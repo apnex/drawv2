@@ -1157,7 +1157,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.18 | O-a: the group's rules off the planner and the core -- its tenant and its invariants ride its row; the planner appends no tenant | feature | S4 | `DONE` |
 | H19.19 | O-b: the zone plugin -- its row, checks, extent and factory in a folder of its own, composed by the page, the lab, the server and the CLI's reader, which composes no kinds of its own (O-b1); its canvas, export and CLI moved to H19.23 by O3, the canvas having no plugin seam (B308) | feature | S4 | `DONE` |
 | H19.20 | O-c: the group plugin -- its row, tenant, invariants, policy, factory and `groupOf` in a folder of its own; the selection rule and the index's membership read a row's `gathers`, naming no group; its canvas is H19.23's (O3) | feature | S4 | `DONE` |
-| H19.21 | O-e, re-shaped by O4: the core holds only the anchor -- the devices plugin composes type, shape, span and content onto it and owns the device vocabulary and factories, the simulation adds `spawn`; one exception recorded, the one-per-cell rule reading `span` until B282 -- design `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approval | feature | S4 | `TODO` |
+| H19.21 | O-e, re-shaped by O4: the core holds only the anchor -- the devices plugin composes type, shape, span and content onto it and owns the device vocabulary and factories, the simulation adds `spawn`; one exception recorded, the one-per-cell rule reading `span` until B282 -- design `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approval | feature | S4 | `DONE` |
 | H19.22 | O-d: closed -- a layer rule that the core and the planner name no kind, B280 closed for them; the canvas's half is B308's | **B280** | S4 | `TODO` |
 | H19.23 | Design, for approval: a canvas plugin contract -- how a plugin's kind enters the page (press rows, gestures, releases, handles, picking, drawing, snapping, moving) -- for zone, group, node and the network's link together | **B308** | S4 | `TODO` |
 | H19.24 | A down link pinned through a device is drawn along its intent, as one through a waypoint is -- found writing O-e's design | **B309** | S2 | `DONE` |
@@ -1233,6 +1233,9 @@ Next: the O-e design (section 16) for approval.
 
 AMENDED 2026-10-08: the O-e design approved; O-e1 done -- whether a device is composed on an anchor, the drawn word, the device factories and the device cell questions are the devices plugin's (`devices/`); the core's anchor module holds the anchor alone.\
 Next O-e2, the device fields off the core's row.
+
+AMENDED 2026-10-08: O-e2 done, and O-e with it -- the core holds only the anchor: the devices plugin composes type, shape, span and content onto it, the simulation `spawn`, the network `transit`; extensions may nest fields and bring cross-field rules.\
+Next H19.22, the close-out.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

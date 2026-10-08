@@ -329,7 +329,9 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	const PRODUCT_KINDS = (await import('../planner/kinds.mjs')).productKinds();
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them: each core kind's map is the table's, the zone's its plugin row's
 	const { ZONE_ROWS: ZR } = await import('../zones/zone-kind.mjs');
-	assert.deepEqual(PRODUCT_KINDS.optional, { node: OPTIONAL.node, zone: new Set(ZR[0].optional), group: new Set((await import('../groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
+	// RESTATED at O-e2 (H19.21): the node's optional fields are the anchor's (order) and those the devices plugin and the simulation compose on
+	const { DEVICE_FIELDS: DF } = await import('../devices/device-fields.mjs'), { SPAWN_FIELDS: SF } = await import('../engine/spawn-field.mjs');
+	assert.deepEqual(PRODUCT_KINDS.optional, { node: new Set([...OPTIONAL.node, ...DF.optional, ...SF.optional]), zone: new Set(ZR[0].optional), group: new Set((await import('../groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');

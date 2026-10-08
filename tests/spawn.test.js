@@ -13,6 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { CORE_KINDS } from '../model/shape.mjs';
+import { KINDS } from './fixtures/composed.mjs';   // the composition production runs, the simulation's field on it (O-e2)
 const OPTIONAL = CORE_KINDS.optional;   // the product's kinds (H17.22 N-a)
 import { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX, SPAWN_SPEED_MAX } from '../model/limits.mjs';
 import { Model } from '../model/model.mjs';
@@ -21,7 +22,10 @@ const wp = (extra) => ({ id: 'node-aaaaaa', name: 'node-aaaaaa', x: 0, y: 0, ...
 const armed = () => ({ interval: 1000, speed: 1.4, kind: 'packet', since: Date.now() });
 
 test('H12.5: a waypoint may carry spawn, and the two peers agree that it may', () => {
-	assert.ok(OPTIONAL.node.has('spawn'), 'the model must allow the field -- on a node with no type (F-c)');
+	// RESTATED at O-e2 (H19.21): `spawn` is the simulation's field, composed onto the anchor -- the core's map holds the anchor's alone
+	assert.equal(OPTIONAL.node.has('spawn'), false, 'the core\'s anchor declares no spawner');
+	assert.ok(KINDS.optional.node.has('spawn'), 'the composition allows the field -- on a node with no type (F-c)');
+	assert.equal(KINDS.contributed('node', 'spawn'), 'the simulation');
 	assert.equal(validateEntity('node', wp({ spawn: armed() })), null, 'the server must accept it');
 });
 

@@ -14,21 +14,22 @@ to this module by tests/bare-anchor.test.js.
 */
 
 import { BARE_KIND } from '../model/anchors.mjs';   // the anchor's stored kind, the core's
+import { hasDevice } from './device-fields.mjs';   // whether a device is composed: the one statement (O-e2)
 
 // whether an entity of a kind is a bare anchor: a node with no type
-export const isBareEntity = (kind, entity) => kind === BARE_KIND && !!entity && !entity.type;
+export const isBareEntity = (kind, entity) => kind === BARE_KIND && !!entity && !hasDevice(entity);
 
 // whether an entity of a kind is a typed node -- what draws a glyph, carries content, and is never a bend
-export const isTypedEntity = (kind, entity) => kind === 'node' && !!entity && !!entity.type;
+export const isTypedEntity = (kind, entity) => kind === BARE_KIND && hasDevice(entity);
 
 // the bare anchor with this id, or undefined
 export const bareAnchor = (model, id) => {
 	const e = model.get(BARE_KIND, id);
-	return e && !e.type ? e : undefined;
+	return e && !hasDevice(e) ? e : undefined;
 };
 
 // every bare anchor
-export const bareAnchors = (model) => model.all(BARE_KIND).filter((e) => !e.type);
+export const bareAnchors = (model) => model.all(BARE_KIND).filter((e) => !hasDevice(e));
 
 // every typed node
-export const typedNodes = (model) => model.all('node').filter((e) => !!e.type);
+export const typedNodes = (model) => model.all(BARE_KIND).filter(hasDevice);

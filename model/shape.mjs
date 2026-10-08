@@ -72,7 +72,8 @@ const TABLE = {
 	`transit` is not the product's: the network plugin contributes it to the node (S-a, H18.11, G3; network/kinds.mjs), so a
 	composition without the network refuses it.
 	*/
-	node:     { collection: 'nodes',     selectable: true,  composite: ['span', 'content'], optional: ['type', 'shape', 'span', 'content', 'spawn', 'order'] },
+	// O-e2 (H19.21; O4): the ANCHOR's -- a device's nested and optional fields are the devices plugin's, a spawner the simulation's
+	node:     { collection: 'nodes',     selectable: true,  composite: [],                  optional: ['order'] },
 };
 
 // the rest of the node's storage half: it is named (B187, N5), and nodes are the anchors (N2)
@@ -129,7 +130,13 @@ each field, every one optional, since a document written without the plugin must
 owner's row when the composition is built, so a reader sees one row; refused when the kind is not composed, when a field is
 already the owner's or another plugin's (both named), when a field is not optional, or when it carries anything else.
 */
-const EXTENSION_KEYS = ['kind', 'owner', 'extends', 'fields', 'optional'];
+/*
+O-e2 (H19.21; KINDS-AS-PLUGINS.md section 16.4) -- an extension may also declare which of its fields NEST (`composite`: a set
+compares them whole, planner/txn.mjs `narrow`) and bring a CROSS-FIELD RULE over the entity (`refers`, as a row's), run after
+the owner's and the earlier extensions' -- the first refusal is the answer. The devices plugin needs both for the device it
+composes onto the anchor: a footprint and content regions nest, and a device stays a device.
+*/
+const EXTENSION_KEYS = ['kind', 'owner', 'extends', 'fields', 'optional', 'composite', 'refers'];
 const DOCUMENT_KINDS = ['diagram', 'template'];   // document-level ids (planner/validate.js DOCUMENT_ID), never an entity kind
 
 export function composeKinds(given, who = 'a composition') {
@@ -179,6 +186,9 @@ export function composeKinds(given, who = 'a composition') {
 		if (!names.length) throw new Error(`${who}: ${ext.owner} adds no fields to ${ext.kind}`);
 		const unchecked = names.filter((f) => typeof ext.fields[f] !== 'function');
 		if (unchecked.length) throw new Error(`${who}: ${ext.owner}'s field ${unchecked.join(', ')} for ${ext.kind} has no check`);
+		const loose = (ext.composite ?? []).filter((f) => !names.includes(f));
+		if (loose.length) throw new Error(`${who}: ${ext.owner}'s composite field ${loose.join(', ')} for ${ext.kind} is not one of its fields`);
+		if (ext.refers !== undefined && typeof ext.refers !== 'function') throw new Error(`${who}: ${ext.owner}'s rule for ${ext.kind} is a function, (entity, access, patch, before)`);
 		const required = names.filter((f) => !(ext.optional ?? []).includes(f));
 		if (required.length) throw new Error(`${who}: ${ext.owner}'s field ${required.join(', ')} for ${ext.kind} must be optional -- a document written without ${ext.owner} is still valid with it`);
 		for (const f of names) {
@@ -186,7 +196,10 @@ export function composeKinds(given, who = 'a composition') {
 			if (claimed) throw new Error(`${who}: field ${ext.kind}.${f} is claimed by ${claimed} and by ${ext.owner} -- one owner brings a field`);
 			contributedBy.set(`${ext.kind}.${f}`, ext.owner);
 		}
-		byName.set(ext.kind, { ...base, ...(base.fields ? { fields: { ...base.fields, ...ext.fields } } : {}), optional: [...(base.optional ?? []), ...names] });
+		const owned = base.refers, added = ext.refers;
+		byName.set(ext.kind, { ...base, ...(base.fields ? { fields: { ...base.fields, ...ext.fields } } : {}), optional: [...(base.optional ?? []), ...names],
+			...(ext.composite ? { composite: [...(base.composite ?? []), ...ext.composite] } : {}),
+			...(added ? { refers: owned ? (...args) => owned(...args) ?? added(...args) : added } : {}) });
 	}
 	const list = rows.map((r) => r.kind);
 	const of = (fact) => Object.fromEntries(rows.map((r) => [r.kind, fact(byName.get(r.kind))]));   // the rows as merged (S-a)

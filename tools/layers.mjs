@@ -35,7 +35,7 @@ export const ALLOWED = {
 	zones: ['core', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; it imports the core and itself
 	groups: ['core', 'groups'],   // O-c (H19.20): the groups plugin -- the group kind and its rules; it imports the core and itself
 	devices: ['core', 'devices'],   // O-e1 (H19.21; O4): the devices plugin -- whether a device is composed on an anchor; it imports the core and itself
-	planner: ['core', 'network', 'zones', 'groups', 'planner'],
+	planner: ['core', 'devices', 'network', 'zones', 'groups', 'simulation', 'planner'],   // O-e2: the anchor's fields from devices and the simulation
 	canvas: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas'],
 	chrome: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'devices', 'network', 'simulation'],
@@ -142,6 +142,7 @@ export const LAYER = {
 	],
 	simulation: [
 		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs',
+		'engine/spawn-field.mjs',   // O-e2 (H19.21): the spawner's field, composed onto the anchor
 		'model/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
 	],
 	export: [
@@ -194,6 +195,7 @@ export const ENTRIES = {
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
+			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
 			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
@@ -238,6 +240,7 @@ export const ENTRIES = {
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
+			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
 		],
 	},
 	planner: {
@@ -259,6 +262,7 @@ export const ENTRIES = {
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
 			'groups/group-kind.mjs', 'groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules; its factory and lookup are not loaded
+			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, composed onto the anchor
 		],
 	},
 };
@@ -651,7 +655,8 @@ export const UNUSED_EXPORTS = {
 			'model/anchors.mjs',   // H18.4 F-b: the bare anchor, asked in one place
 			'network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
-			'groups/group-kind.mjs', 'groups/group-rules.mjs'],   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
+			'groups/group-kind.mjs', 'groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
+			'devices/device-fields.mjs', 'engine/spawn-field.mjs'],   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a

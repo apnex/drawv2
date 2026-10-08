@@ -276,7 +276,9 @@ Recorded as O4 (`dev/DECISIONS.md`); it amends O1's "the core holds no kind" to 
 
 The ruling's anchor occupies one cell; today's wide device is one anchor covering several.\
 Until B282 makes a wide device several anchors, the one-per-cell rule and its index keep reading the device's `span` -- the one place the core reads a plugin's field.\
-It is named in the layer rule that holds the core (O-d), so it cannot spread, and it ends in B282's build.
+It is named in the layer rule that holds the core (O-d), so it cannot spread, and it ends in B282's build.\
+CORRECTED 2026-10-08, building O-e2: the one-per-cell rule does not read `span` -- B112 compares anchor points (`model/invariants.mjs`), so a cell a wide device covers is guarded by the occupancy index alone (`engine/relations.mjs` `cellsOf`), a module of the network's rung, not the core's.\
+No core module reads `span`; the exception is the index's, and O-d names it there.
 
 ### 16.4 Two additions to the field contract
 
@@ -333,3 +335,12 @@ AMENDED 2026-10-08 -- **O-e1 done** (H19.21 stays open until O-e2).
 The node row's typed test in `planner/kinds.mjs` is restated locally, as a row's checks are, until O-e2 moves that rule to the devices plugin.
 **Held by:** `tests/devices-plugin.test.js` -- the core's anchor module holds the anchor alone and the core Model asks no device question; the plugin's factories mint as the Model did; its cell questions answer from the index and from the scan alike (a scan that counts any anchor as a device, and an index asked the wrong question, each fail it -- both mutants killed).
 In-page test strings that called the Model's factories import the plugin's from the served folder; tests that called the moved methods call the plugin's functions; every corpus unchanged.
+
+AMENDED 2026-10-08 -- **O-e2 done, and O-e with it** (H19.21).
+**What moved:** the node row's device fields -- `type`, `shape`, `span`, `content` -- from `planner/kinds.mjs` to the devices plugin's extension, `devices/device-fields.mjs` `DEVICE_FIELDS`, with their checks and the rule that a device stays a device and its fields are a device's alone; `spawn` to the simulation's, `engine/spawn-field.mjs` `SPAWN_FIELDS`, with its rule that a device carries no spawner.
+The anchor's row checks id, name, x, y and order, and the core's storage row declares `order` alone optional and nothing nested.\
+`hasDevice` (`devices/device-fields.mjs`) is the one statement of whether a device is composed; `devices/device-shapes.mjs` and the spawner's rule build on it.
+**The field contract, extended (section 16.4):** an extension may declare its nested fields (`composite`) and bring a cross-field rule (`refers`), checked when the composition is built and run after the owner's.
+Every message a writer meets is unchanged -- the type rule first, then the device's fields, then the spawner, as the one rule ran them.
+**Held by:** `tests/device-fields.test.js` -- the three refusals word for word; production's node fields owned by the devices plugin, the simulation and the network; an anchor composed without the devices plugin refusing a device field by name; an extension's malformed nesting or rule refused when built; an edit setting a nested field to what it holds writing nothing (an extension rule run before the owner's, and the nesting dropped, each fail it -- both mutants killed, the second only once the behaviour was tested rather than the declaration).
+Two tests that read the optional fields from the core's map restated; every corpus unchanged.
