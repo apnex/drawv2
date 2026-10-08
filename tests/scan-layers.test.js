@@ -697,7 +697,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 		// with its pipes, in the lab's composition, as the lab commits it (H17.22 N-c): a pipe between a node and a waypoint
 		// sharing their hex is no pipe, which the 'compare' board did until its waypoints were renumbered
 		const kinds = productKinds(...NETWORK_ROWS);
-		const model = new Model({ kinds, network: aNetwork() });
+		const model = new Model({ kinds, attached: { network: aNetwork() }});
 		attachRelations(model, { cellOf });
 		const pipeOps = createNetworkSession().seed(boards[name].pipes ?? [], []);
 		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds, links: createNetworkSession().network.links });   // the network's tenant, as the lab seeds (S-b)

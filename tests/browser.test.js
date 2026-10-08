@@ -1312,11 +1312,12 @@ test('V-b: the product page draws routes and pipes, says why a link is down, and
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
-		const state = () => t.eval(`JSON.stringify((() => { const m = window.draw.model, l = (id) => m.get('link', id);
-			return { routed: m.pathOf(l('link-ab0001')), downs: m.all('link').filter((x) => m.isLinkDown(x)).map((x) => x.id).sort(),
+		const state = () => t.eval(`(async () => { const { pathOf, isLinkDown } = await import('/network/network-queries.mjs');   // the network's questions, as the page serves them (Q-a)
+			return JSON.stringify((() => { const m = window.draw.model, l = (id) => m.get('link', id);
+			return { routed: pathOf(m, l('link-ab0001')), downs: m.all('link').filter((x) => isLinkDown(m, x)).map((x) => x.id).sort(),
 				under: document.querySelectorAll('#pipes .pipe-of.under').length, pipes: m.all('pipe').map((p) => p.id + ':' + p.laid).sort(),
 				downMark: document.getElementById('link-ab0002')?.hasAttribute('data-down') ?? null,
-				routedMark: document.getElementById('link-ab0001')?.hasAttribute('data-down') ?? null, fTransit: m.get('node', 'node-ab00f1').transit ?? null }; })())`).then(JSON.parse);
+				routedMark: document.getElementById('link-ab0001')?.hasAttribute('data-down') ?? null, fTransit: m.get('node', 'node-ab00f1').transit ?? null }; })()); })()`).then(JSON.parse);
 
 		let s = await state();
 		assert.deepEqual(s.routed, [[-360, 0], [0, -240], [360, 0]], 'the routed link is drawn up through f, its route');

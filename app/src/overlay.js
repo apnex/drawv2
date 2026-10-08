@@ -20,6 +20,7 @@ the gesture layer's to know, so `arm()` takes them rather than reaching for them
 not acquire an opinion about mutation, which is precisely the coupling that produced B18/B37/B42.
 ─────────────────────────────────────────────────────────────────────────────────────────────────*/
 
+import { pathOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { el } from './painter.js';
 import { CANVAS, GAP, NODE_R, dist, zoneCorners } from './snap.js';
 import { inFootprint } from './pick.js';
@@ -141,7 +142,7 @@ export class Overlay {
 		const id = ids[0];
 
 		if (kindOf(id) === 'link') {
-			const path = this.model.pathOf(this.model.get('link', id));
+			const path = pathOf(this.model, this.model.get('link', id));
 			if (!path) return;
 			// B29 — each handle sits on the route's OWN first/last segment, not on a straight line
 			// between the ends. On a routed link those are different directions entirely, and the

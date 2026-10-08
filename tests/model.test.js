@@ -1,3 +1,4 @@
+import { pathOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { linksOf, linksAt, linkBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
@@ -202,30 +203,30 @@ test('pathOf: a straight link is a two-point path', () => {
 	const { m, a, b } = linked();
 	const l = makeLink(m, a.id, b.id);
 	m.put('link', l);
-	assert.deepEqual(m.pathOf(l), [[0, 0], [120, 0]]);
+	assert.deepEqual(pathOf(m, l), [[0, 0], [120, 0]]);
 });
 
 test('pathOf: a routed link threads its via anchors in order', () => {
 	const { m, a, b, w } = linked();
 	const l = { ...makeLink(m, a.id, b.id), via: [w.id] };
 	m.put('link', l);
-	assert.deepEqual(m.pathOf(l), [[0, 0], [60, 60], [120, 0]], 'src, then every bend, then dst');
+	assert.deepEqual(pathOf(m, l), [[0, 0], [60, 60], [120, 0]], 'src, then every bend, then dst');
 });
 
 test('pathOf: a waypoint may be an ENDPOINT, not only a bend', () => {
 	const { m, a, w } = linked();
 	const l = makeLink(m, a.id, w.id);
 	m.put('link', l);
-	assert.deepEqual(m.pathOf(l), [[0, 0], [60, 60]], 'an anchor is an anchor — node or waypoint');
+	assert.deepEqual(pathOf(m, l), [[0, 0], [60, 60]], 'an anchor is an anchor — node or waypoint');
 });
 
 test('pathOf: a dangling route resolves to nothing, never a partial path', () => {
 	const { m, a } = linked();
 	const l = makeLink(m, a.id, 'node-dead01');
 	m.put('link', l);
-	assert.equal(m.pathOf(l), null, 'half a path would render as a line to nowhere');
+	assert.equal(pathOf(m, l), null, 'half a path would render as a line to nowhere');
 	const l2 = { ...makeLink(m, a.id, a.id), via: ['node-dead1'] };
-	assert.equal(m.pathOf(l2), null, 'a missing BEND is as dangling as a missing end');
+	assert.equal(pathOf(m, l2), null, 'a missing BEND is as dangling as a missing end');
 });
 
 test('B187: every factory mints a named entity, and the names do not collide', () => {

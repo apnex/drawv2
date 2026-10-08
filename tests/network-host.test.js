@@ -6,6 +6,7 @@ run in, which that outcome depends on and which moved out of the lab root with t
 the board settles; a drag that commits nothing settles at once; a refusal settles and says so. Since H17.22 N-c the host
 sweeps nothing -- the planner does, in the edit -- and paints the tab's own pipes. Each part is a recording stand-in.
 */
+import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { attachNetwork } from '../network/host.mjs';
@@ -100,7 +101,7 @@ F-e (H18.7) -- A TRANSIT CHANGE IS AN EDIT: the host commits the session's set o
 rule, that a cut asks whether what arrives stops rather than what was declared, is the cut reaction's, held below.
 */
 test('F-e: a transit change commits the session\'s edit as given, and no edit of the host\'s own', () => {
-	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetworkSession().network });   // V-e, J2
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: createNetworkSession().network }});   // V-e, J2
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
 	const commits = [];
 	let onTransit = null;
@@ -120,7 +121,7 @@ test('B278: the cut asks whether what arrives stops, whatever was declared', asy
 	const { plan } = await import('../planner/txn.mjs');
 	// a stand-in transit where the two questions differ: P stops what arrives, and nothing is declared
 	const [cut] = transitReactions({ stopsAt: (id) => id === 'node-000003' }).reactions;
-	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetworkSession().network });   // V-e, J2
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: createNetworkSession().network }});   // V-e, J2
 	model.put('node', { id: 'node-000001', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000002', name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	model.put('node', { id: 'node-000003', name: 'P', x: 120, y: -120 });
@@ -138,7 +139,7 @@ up down over a pipe another held; turning both back on could not rejoin them.
 */
 test('B283: turning transit off at two pins of one link at once makes three straight pieces, and turning them back on rejoins it whole', () => {
 	const session = createNetworkSession();
-	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), network: session.network });
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: session.network }});
 	attachRelations(model, { cellOf });
 	const [S, A, B, E] = ['node-00000a', 'node-00000b', 'node-00000c', 'node-00000d'];
 	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('node', { id, name: id, x, y }));
@@ -160,7 +161,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: (t) => said.push(t),
 	});
 	const anchors = [A, B].map((id) => ({ ...model.get('node', id), kind: 'node' }));
-	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${model.isLinkDown(l) ? ' down' : ''}`).sort();
+	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${isLinkDown(model, l) ? ' down' : ''}`).sort();
 
 	session.toggleTransit(anchors);
 	assert.equal(commits.length, 1, 'one edit');

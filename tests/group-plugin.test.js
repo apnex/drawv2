@@ -26,7 +26,7 @@ const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 const groups = async () => ({ ...(await import('../groups/group-kind.mjs')), ...(await import('../groups/make-group.mjs')), ...(await import('../groups/group-of.mjs')) });
 const node = (hex, x) => ({ id: `node-${hex}`, name: `n${hex}`, type: 'host', shape: 'circle', x, y: 0 });
 // with the relations index attached, as the page and the lab attach it (app/src/compose-canvas.js) -- a bare Model scans
-const model = (kinds = KINDS) => { const m = new Model({ kinds, network: createNetwork(createTransit()) }); attachRelations(m, { cellOf }); return m; };
+const model = (kinds = KINDS) => { const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }}); attachRelations(m, { cellOf }); return m; };
 const without = (field) => composeKinds(KINDS.list.map((k) => KINDS.row(k)).map((r) => {
 	if (r.kind !== 'group') return r;
 	const { [field]: _, ...rest } = r;
@@ -72,7 +72,7 @@ test('O-c: makeGroup and groupOf are the plugin\'s -- minting and finding as the
 	m.put('group', g);
 	assert.equal(groupOf(m, 'node-0c0002')?.id, g.id);
 	assert.equal(groupOf(m, 'node-0c0009'), undefined);
-	const bare = new Model({ kinds: KINDS, network: createNetwork(createTransit()) });
+	const bare = new Model({ kinds: KINDS, attached: { network: createNetwork(createTransit()) }});
 	bare.load(m.toJSON()); bare.index = null;   // the scan path, as a detached rollback reads it
 	assert.equal(groupOf(bare, 'node-0c0001')?.id, g.id, 'the scan agrees with the index');
 });

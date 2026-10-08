@@ -10,6 +10,7 @@ The lab's matrix rows PIPE-01 to PIPE-05 hold the whole gesture in real Chrome.
 
 None of the canvas's seams names a plugin kind; production, which draws no marks, is unchanged.
 */
+import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
@@ -29,7 +30,7 @@ const aNetwork = () => netFor(transitFor());   // a Model holding links is given
 
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 function board() {
-	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: aNetwork() });
+	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: aNetwork() }});
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });
@@ -118,7 +119,7 @@ network's derivation; a free pipe, and a down link's own legs, are drawn.
 test('the painter marks hidden every pipe an up link runs over, keeping it in the page, and no other', async () => {
 	const { createNetworkSession } = await import('../network/session.mjs');
 	const session = createNetworkSession();
-	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: session.network });
+	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: session.network }});
 	const C = 'node-00000d', D = 'node-00000e';
 	for (const [id, x] of [[A, -240], [B, 240], [C, -240], [D, 240]]) m.put('node', { id, name: id, type: 'router', x, y: id === C || id === D ? 240 : 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });
@@ -130,7 +131,7 @@ test('the painter marks hidden every pipe an up link runs over, keeping it in th
 		session, model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
 	}).paint();
-	assert.equal(m.isLinkDown(m.get('link', 'link-000002')), true);
+	assert.equal(isLinkDown(m, m.get('link', 'link-000002')), true);
 	const groups = f.all().filter((n) => n.attrs.class?.startsWith('pipe-of'));
 	assert.equal(groups.length, 3, 'every pipe has its element in the page');
 	const hidden = groups.filter((g) => g.attrs.class.includes('under')).map((g) => g.attrs['data-pipe']).sort();

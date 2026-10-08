@@ -1174,7 +1174,8 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	const createBranch = clientRenderer.slice(0, clientRenderer.indexOf('\tupdate(kind, entity)'));
 	assert.match(createBranch, /class: 'link'[^\n]*\.\.\.this\.linkAppearanceOf\(entity\)/, 'and CREATE must use it too, or the two can disagree');
 	const assembly = clientRenderer.slice(clientRenderer.indexOf('\tlinkAppearanceOf(entity)'));
-	assert.match(assembly.slice(0, assembly.indexOf('\n\t}')), /linkAppearance\(entity, LINK_W, \{ down: this\.model\.isLinkDown\(entity\) \}\)/,
+	assert.match(assembly.slice(0, assembly.indexOf('\n\t}')), /linkAppearance\(entity, LINK_W, \{ down: isLinkDown\(this\.model, entity\) \}\)/,   // RESTATED at Q-a: the network's question over the Model
+
 		'the assembly is the one derivation, fed the down state');
 	assert.match(updateBranch, /APPEARANCE_KEYS/,
 		'and iterate the DECLARED keys, so a key it no longer sets is removed rather than stranded');

@@ -167,7 +167,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	// network SESSION's, as the page's is (network/page.mjs), so the real drag judge below judges on the network the Model draws with
 	const session = createNetworkSession();
 	const pageNetwork = session.network;
-	const model = new Model({ kinds: PAGE_KINDS, network: pageNetwork });
+	const model = new Model({ kinds: PAGE_KINDS, attached: { network: pageNetwork }});
 	attachRelations(model, { cellOf });
 	const selection = new Selection(model);
 	// V-d (H18.28; PL-6): the commit boundary previews with the planner, composed as the product page composes it

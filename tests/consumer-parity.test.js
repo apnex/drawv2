@@ -2,6 +2,7 @@
 // criterion 4 but for the product page, which is P5). One board, read through every door: the lab's tab, REST and the CLI,
 // the SVG download, `draw movers`; each held to the lab's derivation. dev/design/unification/CONSUMERS-ROUTE.md, stage R-e.
 
+import { pathOf, isLinkDown, blockersOf, networkOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
@@ -65,23 +66,23 @@ const board = () => ({
 
 // THE LAB'S TAB: a Model composed as the lab composes it (lab/src/root.js), drawing with its network session
 const lab = () => {
-	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetworkSession().network });
+	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: createNetworkSession().network }});
 	m.load(board());
 	return m;
 };
 const LINKS = board().links.map((l) => l.id);
 // what the tab says about one link, asked of the tab itself -- not through linkReading, so the readers are held to the tab, not to themselves
 const tabSays = (tab, id) => {
-	const l = tab.get('link', id), down = tab.isLinkDown(l);
-	return { path: tab.pathOf(l), route: down ? null : tab.network.view.of(tab).route(id), down, blockers: down ? tab.blockersOf(l) : [] };
+	const l = tab.get('link', id), down = isLinkDown(tab, l);
+	return { path: pathOf(tab, l), route: down ? null : networkOf(tab).view.of(tab).route(id), down, blockers: down ? blockersOf(tab, l) : [] };
 };
 
 test('R-e: the board is what it says -- one routed off its stops, one held, one with no way, one ring', () => {
 	const m = lab(), get = (id) => m.get('link', id);
-	assert.deepEqual(m.pathOf(get('link-0c0001')), [[-360, 0], [0, -240], [360, 0]], 'routed through f');
-	assert.deepEqual([m.isLinkDown(get('link-0c0002')), m.blockersOf(get('link-0c0002'))], [true, ['link-0c0001']], 'held by the routed link');
-	assert.deepEqual([m.isLinkDown(get('link-0c0004')), m.blockersOf(get('link-0c0004'))], [true, []], 'no way at all');
-	assert.equal(m.isLinkDown(get('link-0c0005')), false, 'the ring is up');
+	assert.deepEqual(pathOf(m, get('link-0c0001')), [[-360, 0], [0, -240], [360, 0]], 'routed through f');
+	assert.deepEqual([isLinkDown(m, get('link-0c0002')), blockersOf(m, get('link-0c0002'))], [true, ['link-0c0001']], 'held by the routed link');
+	assert.deepEqual([isLinkDown(m, get('link-0c0004')), blockersOf(m, get('link-0c0004'))], [true, []], 'no way at all');
+	assert.equal(isLinkDown(m, get('link-0c0005')), false, 'the ring is up');
 });
 
 test('R-e: the read composition answers every link as the lab\'s tab does -- path, route, down and blockers', () => {
@@ -129,7 +130,7 @@ test('R-e: movers run along the route the tab draws, and never along a down link
 	const tab = lab(), prepared = spawnersOf(readModel(board(), KINDS));
 	assert.deepEqual(prepared.map((s) => s.link), ['link-0c0003']);
 	// armed runs s -> a: its route from its src end
-	const route = tab.pathOf(tab.get('link', 'link-0c0003'));
+	const route = pathOf(tab, tab.get('link', 'link-0c0003'));
 	assert.deepEqual(prepared[0].pts, route, 'along the tab\'s path, from the armed end');
 });
 

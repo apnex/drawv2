@@ -11,6 +11,7 @@ One function, so no reader composes the network by hand. A composition that PLAN
 checked kinds with `productKinds(...NETWORK_ROWS)` and gives each of its Models `readerNetwork()`, the same constructor.
 */
 
+import { pathOf, isLinkDown, blockersOf, networkOf } from './network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { Model } from '../model/model.mjs';
 import { createNetwork } from './network.mjs';
 import { createTransit } from './transit.mjs';
@@ -28,7 +29,7 @@ export const readerNetwork = () => createNetwork(createTransit());
 // a stored or wire document, as a Model that draws with the network
 export function readModel(doc, kinds) {
 	if (!kinds || !Array.isArray(kinds.list)) throw new Error('readModel: no kinds -- a reader is handed the composition its caller composed, productKinds(...NETWORK_ROWS) (O-b1)');
-	const model = new Model({ kinds, network: readerNetwork() });
+	const model = new Model({ kinds, attached: { network: readerNetwork() }});
 	model.load(doc);
 	return model;
 }
@@ -45,9 +46,9 @@ and through it by the CLI, so a door cannot tell an agent less than another.
   blockers  the ids of the links holding the way it would take -- empty unless it is down and held
 */
 export function linkReading(model, link) {
-	const down = model.isLinkDown(link);
-	const route = !down && model.network ? model.network.view.of(model).route(link.id) : null;
-	return { path: model.pathOf(link), route, down, blockers: down ? model.blockersOf(link) : [] };
+	const down = isLinkDown(model, link);
+	const route = !down && networkOf(model) ? networkOf(model).view.of(model).route(link.id) : null;
+	return { path: pathOf(model, link), route, down, blockers: down ? blockersOf(model, link) : [] };
 }
 
 /*

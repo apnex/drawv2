@@ -76,7 +76,7 @@ async function world(seed) {
 		status: 'open', subscribe: (fn) => { receive = fn; }, onStatus() {}, isOpen: () => true,
 		send: (cmd, body) => { up.push({ cmd, body: JSON.parse(JSON.stringify(body)) }); return true; },
 	};
-	const tab = new Model({ kinds: PAGE_KINDS, network: aNetwork() });   // the kinds the product page composes (S-b, G1)
+	const tab = new Model({ kinds: PAGE_KINDS, attached: { network: aNetwork() }});   // the kinds the product page composes (S-b, G1)
 	// a window that never closes by itself: the test closes it, standing in for the 600ms timer
 	const changes = new Changes(tab, { coalesceMs: 3_600_000 });
 	const sync = new Sync({ model: tab, net, history: changes, selection: { subscribe() {}, list: () => [], has: () => false, add() {} }, onState() {} });

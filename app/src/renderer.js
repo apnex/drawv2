@@ -6,6 +6,7 @@ Draws nodes at their EXACT entity px (so live drag stays smooth); the committed 
 always on-grid. The kernel's resolve()/renderScene() remain the headless/export authority.
 */
 
+import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksOf, linksAt } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { el, setAttrs } from './painter.js';
 import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
@@ -263,7 +264,7 @@ export class Renderer {
 		const blocking = new Set();
 		for (const id of this.selectedSet) {
 			const link = this.model.get('link', id);
-			if (link && this.model.isLinkDown(link)) for (const by of this.model.blockersOf(link)) blocking.add(by);
+			if (link && isLinkDown(this.model, link)) for (const by of blockersOf(this.model, link)) blocking.add(by);
 		}
 		for (const path of this.layers.links.querySelectorAll('path.link')) path.classList.toggle('blocking', blocking.has(path.id));
 	}
@@ -345,7 +346,7 @@ export class Renderer {
 	// src/dst corners too) — a multi-hop route turned into a ring.
 	// route → path → curve. `pathOf` resolves the anchors (document); `roundedPath` bends it (kernel).
 	linkPath(entity) {
-		const path = this.model.pathOf(entity);
+		const path = pathOf(this.model, entity);
 		return path && roundedPath(path, BEND_R, !!entity.closed);
 	}
 
@@ -356,7 +357,7 @@ export class Renderer {
 	assembling the same arguments is exactly how B228 shipped, one of them forgetting what the other set.
 	*/
 	linkAppearanceOf(entity) {
-		return linkAppearance(entity, LINK_W, { down: this.model.isLinkDown(entity) });
+		return linkAppearance(entity, LINK_W, { down: isLinkDown(this.model, entity) });
 	}
 
 	// group hull = the bbox of member node centres, padded to ±group.ext (the kernel spec).
@@ -439,7 +440,7 @@ export class Renderer {
 				el('use', { 'data-layer': 'glyph' }, fit);
 			}
 			// a node declaring transit off shows the same ring an anchor does, at its anchor point (TRANSIT.md section 12, X1)
-			if (this.model.declaresNoTransit(entity.id)) layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'), g);
+			if (declaresNoTransit(this.model, entity.id)) layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'), g);
 			el('path', { class: 'select-box', d: sig ? selBox(L_STD, sw, sh) : SELECT_BOX }, g);
 			if (!csig) {   // a content node (text box / panel) is self-labelled by its content — no name sub-title
 				el('rect', { class: 'label-pill', rx: 4, y: NODE_LABEL_Y - 13 + sh, height: STD.labelH }, g);
@@ -499,7 +500,7 @@ export class Renderer {
 			applyLook(g, waypointLook(entity));
 			// the anchor as drawn: whether it declares transit off comes from the network (the Model's `declaresNoTransit`),
 			// since the lab holds that choice in its session until promotion stores it (TRANSIT.md section 12, TR-7)
-			const anchor = { transit: this.model.declaresNoTransit(entity.id) ? false : undefined };
+			const anchor = { transit: declaresNoTransit(this.model, entity.id) ? false : undefined };
 			// in run mode, the run picture -- what the download draws too, decided in one place (RUN_PICTURE, R-c)
 			for (const l of waypointLayers(roles, FE, linksAt(this.model, entity.id), anchor, { run: this.mode === 'run' })) layerCircle(l, g);
 			el('path', { class: 'select-box', d: SELECT_BOX }, g);   // brackets when selected (like a node)
@@ -537,7 +538,7 @@ export class Renderer {
 	In production it answers nothing, so nothing extra is redrawn.
 	*/
 	refreshRoutedThrough(anchorId) {
-		for (const link of this.model.linksRoutedThrough?.(anchorId) ?? []) this.update('link', link);
+		for (const link of linksRoutedThrough(this.model, anchorId) ?? []) this.update('link', link);
 	}
 
 	refreshWaypointsOf(link) {

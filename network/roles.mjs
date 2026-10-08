@@ -8,6 +8,7 @@ Network layer, read by both renderers, the situation (engine/situation.mjs) and 
 is, so the canvas and the export cannot disagree.
 */
 
+import { stopsAt } from './network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksAt } from './link-queries.mjs';   // which links meet an anchor (K13d)
 /*
 The bend/endpoint rule, in ONE place, because two renderers need the same answer.
@@ -175,7 +176,7 @@ nothing. The Model is read by shape -- `kernel/` imports no `model/` -- so a mod
 gets the transiting roles it always had.
 */
 export const waypointRolesIn = (model, id) =>
-	waypointRoles(id, linksAt(model, id), { transit: !model.stopsAt?.(id) });   // K13d: the links are the network's own query
+	waypointRoles(id, linksAt(model, id), { transit: !stopsAt(model, id) });   // K13d: the links are the network's own query
 
 /*
 The single role, for callers that still ask for one. Derived from the set so there is one

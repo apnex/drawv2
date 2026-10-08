@@ -9,11 +9,14 @@ would work in one line and would be a fork wearing a patch: production code beha
 under the lab with no seam declaring it, which is exactly what G1 exists to stop.
 
 So the seam is declared: a Model may be constructed with a `network` -- ONE object whose methods carry the
-Model's own names (RULESET-AUDIT T1; it began as four separate hooks). The default is today's
+Model's own names (RULESET-AUDIT T1; it began as four separate hooks).
+AMENDED 2026-10-08 (Q-a, H19.27): the network is attached -- `{ attached: { network } }` -- and its questions are its own
+functions over a Model (network/network-queries.mjs); a Model with none gives the answers these tests hold. The default is today's
 behaviour. Production constructs `new Model()` and must be unchanged BYTE FOR BYTE in what it draws
 -- that is the property these tests exist to hold, and it is the one most likely to be broken
 casually, by someone "improving" the default while wiring the lab.
 */
+import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit, stopsAt } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
@@ -26,7 +29,8 @@ const seeded = (opts) => {
 	return m;
 };
 // a complete network whose answers are production's, so each test overrides only the method it is about
-const net = (over = {}) => ({ network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, stopsAt: () => false, ...over } });
+// RESTATED at Q-a (H19.27): the network is attached, `{ attached: { network } }`, and asked through its own functions
+const net = (over = {}) => ({ attached: { network: { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, stopsAt: () => false, ...over } } });
 const LINK = { id: 'link-00000d', name: 'l', src: 'node-00000a', dst: 'node-00000b', via: ['node-00000c'] };
 
 /*
@@ -35,22 +39,23 @@ via" -- is retired. Only the network draws a link: a Model holding links is give
 The straight polyline is what the network draws a DOWN link along, reached through the `straight` it is handed (below).
 */
 test('J2: a Model with no network draws no link -- the straight polyline is no fallback', () => {
-	assert.equal(seeded().pathOf(LINK), null);
-	assert.deepEqual(seeded({}).pathOf(LINK), seeded().pathOf(LINK), 'a Model with no options is one with an empty options object');
+	assert.equal(pathOf(seeded(), LINK), null);
+	assert.deepEqual(pathOf(seeded({}), LINK), pathOf(seeded(), LINK), 'a Model with no options is one with an empty options object');
 });
 
 test('J2: a Model whose composition holds a kind the network draws is refused without a network, naming it', async () => {
 	const { KINDS } = await import('./fixtures/composed.mjs');
-	assert.throws(() => new Model({ kinds: KINDS }), /Model: kind link is drawn by the network \(pathOf, .*\) -- a Model holding it is given one/);
+	// RESTATED at Q-a (H19.27): the link's row names the attachment it needs (`needs`), where it named the Model reads that draw it
+	assert.throws(() => new Model({ kinds: KINDS }), /Model: kind link needs network attached -- \{ attached: \{ network \} \}/);
 	assert.ok(new Model({ kinds: KINDS, ...net() }), 'and accepted with one');
 	const { composeKinds } = await import('../model/shape.mjs');
-	assert.throws(() => composeKinds([{ kind: 'probe', owner: 't', collection: 'probes', drawnBy: [] }], 't'), /drawnBy names the Model reads that draw it/);
+	assert.throws(() => composeKinds([{ kind: 'probe', owner: 't', collection: 'probes', needs: [] }], 't'), /needs names what a Model holding it must have attached/);
 });
 
 test('an injected resolver replaces the path, and receives the link and the model', () => {
 	let saw = null;
 	const m = seeded(net({ pathOf: (link, model) => { saw = { link, model }; return [[1, 2], [3, 4]]; } }));
-	assert.deepEqual(m.pathOf(LINK), [[1, 2], [3, 4]]);
+	assert.deepEqual(pathOf(m, LINK), [[1, 2], [3, 4]]);
 	assert.equal(saw.link, LINK, 'the resolver must be handed the link it is resolving');
 	assert.equal(saw.model, m, 'and the model, so it can resolve anchors without reaching for a global');
 });
@@ -59,7 +64,7 @@ test('the resolver can defer to the default, so an incubator can route some link
 	// the lab routes a link over pipes when pipes exist and falls back otherwise; the default must
 	// be reachable from inside an injected resolver, or every resolver has to re-implement it
 	const m = seeded(net({ pathOf: (link, model, fallback) => fallback(link) }));
-	assert.deepEqual(m.pathOf(LINK), [[0, 0], [120, -60], [240, 0]]);
+	assert.deepEqual(pathOf(m, LINK), [[0, 0], [120, -60], [240, 0]]);
 });
 
 /*
@@ -81,13 +86,13 @@ no network. Production composes the network everywhere now (P3 to P5), and a Mod
 they hold is the null network's answers on a Model that has none -- true, and no longer production.
 */
 test('a Model with no network: linksRoutedThrough is empty, so nothing extra is redrawn', () => {
-	assert.deepEqual(seeded().linksRoutedThrough('node-00000c'), []);
+	assert.deepEqual(linksRoutedThrough(seeded(), 'node-00000c'), []);
 });
 
 test('an injected linksRoutedThrough answers which links a moved anchor affects', () => {
 	let asked = null;
 	const m = seeded(net({ linksRoutedThrough: (id, model) => { asked = { id, model }; return [LINK]; } }));
-	assert.deepEqual(m.linksRoutedThrough('node-00000c'), [LINK]);
+	assert.deepEqual(linksRoutedThrough(m, 'node-00000c'), [LINK]);
 	assert.equal(asked.id, 'node-00000c');
 	assert.equal(asked.model, m, 'handed the model, like pathOf, so it can read the routes');
 });
@@ -102,13 +107,13 @@ over the pipes), known only to whatever routes; so the router's owner answers it
 the dependents. Absent in production, which has no notion of a route to lose.
 */
 test('a Model with no network: no link is ever down', () => {
-	assert.equal(seeded().isLinkDown(LINK), false);
+	assert.equal(isLinkDown(seeded(), LINK), false);
 });
 
 test('an injected isLinkDown answers, and is handed the link and the model', () => {
 	let asked = null;
 	const m = seeded(net({ isLinkDown: (link, model) => { asked = { link, model }; return true; } }));
-	assert.equal(m.isLinkDown(LINK), true);
+	assert.equal(isLinkDown(m, LINK), true);
 	assert.equal(asked.link, LINK);
 	assert.equal(asked.model, m);
 });
@@ -119,13 +124,13 @@ cannot be healed due to another link occupying my preferred path, also highlight
 Who holds which pipe is the router's owner's to say, so it is injected; production has no pipes to hold.
 */
 test('a Model with no network: no link is ever blocked', () => {
-	assert.deepEqual(seeded().blockersOf(LINK), []);
+	assert.deepEqual(blockersOf(seeded(), LINK), []);
 });
 
 test('an injected blockersOf answers, and is handed the link and the model', () => {
 	let asked = null;
 	const m = seeded(net({ blockersOf: (link, model) => { asked = { link, model }; return ['link-000009']; } }));
-	assert.deepEqual(m.blockersOf(LINK), ['link-000009']);
+	assert.deepEqual(blockersOf(m, LINK), ['link-000009']);
 	assert.equal(asked.link, LINK);
 	assert.equal(asked.model, m);
 });
@@ -136,13 +141,13 @@ section 12). The lab holds that choice in the network's session until promotion 
 production has no transit to declare.
 */
 test('a Model with no network: no anchor declares transit off', () => {
-	assert.equal(seeded().declaresNoTransit('node-00000c'), false);
+	assert.equal(declaresNoTransit(seeded(), 'node-00000c'), false);
 });
 
 test('an injected declaresNoTransit answers, and is handed the id and the model', () => {
 	let asked = null;
 	const m = seeded(net({ declaresNoTransit: (id, model) => { asked = { id, model }; return true; } }));
-	assert.equal(m.declaresNoTransit('node-00000c'), true);
+	assert.equal(declaresNoTransit(m, 'node-00000c'), true);
 	assert.deepEqual(asked, { id: 'node-00000c', model: m });
 });
 
@@ -152,13 +157,13 @@ one transit question every rule asks -- routing, the join refusal, the toggle's 
 above only draws the ring. Production has no transit: nothing stops.
 */
 test('a Model with no network: nothing stops at any anchor', () => {
-	assert.equal(seeded().stopsAt('node-00000c'), false);
-	assert.equal(seeded().stopsAt('node-00000a'), false);
+	assert.equal(stopsAt(seeded(), 'node-00000c'), false);
+	assert.equal(stopsAt(seeded(), 'node-00000a'), false);
 });
 
 test('an injected stopsAt answers, and is handed the id and the model', () => {
 	let asked = null;
 	const m = seeded(net({ stopsAt: (id, model) => { asked = { id, model }; return true; } }));
-	assert.equal(m.stopsAt('node-00000a'), true);
+	assert.equal(stopsAt(m, 'node-00000a'), true);
 	assert.deepEqual(asked, { id: 'node-00000a', model: m });
 });

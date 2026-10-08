@@ -2,6 +2,7 @@
 H18.12 (S-b; PROMOTION.md P3, SERVER-COMPOSES-NETWORK.md) -- THE SERVER COMPOSES THE NETWORK: the store's Models hold the
 network's rows, and every commit, undo and redo plans with its tenant.
 */
+import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -75,7 +76,7 @@ const nodes = [
 	{ op: 'put', kind: 'node', entity: { id: W, name: 'w', x: 0, y: -120 } },
 ];
 // the stored document, drawn by the network as the lab draws it: is the link up?
-const upIn = (doc, id) => { const m = new Model({ kinds: productKinds(...NETWORK_ROWS), network: createNetwork(createTransit()) }); m.load(doc); return !m.isLinkDown(m.get('link', id)); };
+const upIn = (doc, id) => { const m = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: createNetwork(createTransit()) }}); m.load(doc); return !isLinkDown(m, m.get('link', id)); };
 
 test('S-c: an agent\'s pinned link, with no pipes on the board, lays its legs and comes up', async () => {
 	const { store } = await fresh();

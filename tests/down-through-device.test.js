@@ -7,6 +7,7 @@ answered null for any other: written when every pin was a waypoint. H19.10 (Z1) 
 transit is on, so a down link through one had no path at all -- REST and the CLI answered `path: null`, and the canvas drew
 it from the same null. A via is any anchor now: the anchor's position is the intent, whether a device is composed on it.
 */
+import { pathOf, isLinkDown, straightPath } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model, KINDS } from './fixtures/composed.mjs';
@@ -24,14 +25,14 @@ const board = () => { const m = new Model(); for (const n of nodes) m.put('node'
 
 test('B309: a down link pinned through a waypoint is drawn along its intent -- the state under test', () => {
 	const m = board();
-	assert.equal(m.isLinkDown(viaBend), true, 'no pipes: down');
-	assert.deepEqual(m.pathOf(viaBend), [[0, 0], [120, 120], [240, 0]]);
+	assert.equal(isLinkDown(m, viaBend), true, 'no pipes: down');
+	assert.deepEqual(pathOf(m, viaBend), [[0, 0], [120, 120], [240, 0]]);
 });
 
 test('B309: a down link pinned through a device is drawn along its intent, through the device', () => {
 	const m = board();
-	assert.equal(m.isLinkDown(viaDevice), true, 'no pipes: down');
-	assert.deepEqual(m.pathOf(viaDevice), [[0, 0], [120, 0], [240, 0]], 'the canvas draws this path');
+	assert.equal(isLinkDown(m, viaDevice), true, 'no pipes: down');
+	assert.deepEqual(pathOf(m, viaDevice), [[0, 0], [120, 0], [240, 0]], 'the canvas draws this path');
 });
 
 test('B309: and REST and the CLI read it so -- its intent, no route, down', () => {
@@ -41,5 +42,5 @@ test('B309: and REST and the CLI read it so -- its intent, no route, down', () =
 
 test('B309: a via that is no anchor still leaves the link with no path -- a missing bend is as dangling as a missing end', () => {
 	const m = board();
-	assert.equal(m.straightPath({ ...viaDevice, via: ['node-0a00ff'] }), null);
+	assert.equal(straightPath(m, { ...viaDevice, via: ['node-0a00ff'] }), null);
 });

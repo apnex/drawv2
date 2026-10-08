@@ -34,7 +34,7 @@ function withoutGroupRules() {
 
 // four nodes, a group of the first three, then a second group of the last three -- overlapping on two
 function overlap(kinds) {
-	const m = new Model({ kinds, network: createNetwork(createTransit()) }), log = new Log(0);
+	const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }}), log = new Log(0);
 	const opts = { links: NETWORK.links, kinds };
 	commit(m, log, { ops: [-180, -60, 60, 180].map((x, i) => put('node', node(`node-ab000${i + 1}`, x))) }, 'server', 't', opts);
 	commit(m, log, { ops: [put('group', { id: 'group-ac0001', name: 'A', members: ['node-ab0001', 'node-ab0002', 'node-ab0003'] })] }, 'server', 't', opts);

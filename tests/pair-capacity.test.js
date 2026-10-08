@@ -137,13 +137,13 @@ const P = 60, A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const out = {};
 
 // the invariant: two straight links on one pair
-{ const m = new Model({ kinds: K, network: N() }); m.put('node', { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
+{ const m = new Model({ kinds: K, attached: { network: N() }}); m.put('node', { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' });
   m.put('node', { id: B, name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
   m.put('link', { id: 'link-000001', name: 'l', src: A, dst: B }); m.put('link', { id: 'link-000002', name: 'm', src: B, dst: A });
   out.invariant = !violations(m).some((v) => /straight links between/.test(v)); }
 
 // the planner's strip: deleting the only bend of a routed link on a pair that holds a straight one
-{ const m = new Model({ kinds: K, network: N() }); attachRelations(m, { cellOf }); const log = new Log();
+{ const m = new Model({ kinds: K, attached: { network: N() }}); attachRelations(m, { cellOf }); const log = new Log();
   const r0 = commit(m, log, { label: 'setup', ops: [
     { op: 'put', kind: 'node', entity: { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },
     { op: 'put', kind: 'node', entity: { id: B, name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' } },

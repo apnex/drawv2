@@ -1807,3 +1807,9 @@ The design: `dev/design/unification/KINDS-AS-PLUGINS.md` section 16, for approva
 AMENDED 2026-10-08 -- **O4, refined by the director**, approving O-d: "Just a note that a multi-cell node may have any number of anchors, and not strictly all cells will get them. I.e a large panel might just have anchors at corners".
 A wide device has as many anchors as it needs, at cells it chooses, not one per cell; which cells get anchors is B282's to design.
 The measure recorded with O4 (1,337 anchors to add) assumed one per cell; measured again, production's 144 wide devices would gain none with one anchor each, 242 with anchors at their corners, and 1,337 with one per cell.
+
+**Q1 -- a plugin's questions are asked of the plugin, not of the Model -- 2026-10-08 (K13d; H19.26).**\
+Asked against `dev/design/unification/PLUGIN-QUERIES.md` how a plugin's questions reach the code that asks them, the director chose "A, callers ask the plugin" (the proposer's recommendation) over "B, one generic door" (`model.ask`) and "C, keep the forwarding".
+- The six questions the Model forwarded to the network -- where a link is drawn, whether it is down, what blocks it, which links pass through an anchor, whether an anchor declares its transit off, whether what arrives stops -- are the network's functions over a Model, each giving the answer a Model with no network gave; with them the straight path a down link is drawn along.
+- The Model holds what a plugin attaches to it (`attached`) and reads none of it; a row names the attachment its kind needs (`needs`).
+- No caller asks with an optional call, which turned a moved method into a silent wrong answer at H19.25.

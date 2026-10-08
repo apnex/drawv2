@@ -55,6 +55,9 @@ test('B277: drawn, three links at a non-transiting waypoint take the endpoint ri
 	assert.deepEqual(drawn, ['wp-anchor', 'wp-ring', 'wp-transit', 'wp-dot']);
 });
 
+// a network double answering as production does but for what a test overrides -- checked whole when asked (Q-a)
+const answering = (over) => ({ pathOf: () => null, linksRoutedThrough: () => [], isLinkDown: () => false, blockersOf: () => [], declaresNoTransit: () => false, stopsAt: () => false, ...over });
+
 test('B277: the roles in a model read its links and whether it declares transit off, so every reader asks one question', () => {
 	const links = SHAPES['three links'];
 	/*
@@ -62,7 +65,8 @@ test('B277: the roles in a model read its links and whether it declares transit 
 	anchor are the network's query over a Model's `all('link')` (network/link-queries.mjs). The doubles take that shape; what is
 	held is unchanged: the roles read the links and whether what arrives stops, and a model with no links has none.
 	*/
-	const holding = (ls, extra = {}) => ({ all: (kind) => (kind === 'link' ? ls : []), ...extra });
+	// RESTATED at Q-a (H19.27): whether what arrives stops is asked of the network attached to the model, not of the model
+	const holding = (ls, network) => ({ all: (kind) => (kind === 'link' ? ls : []), ...(network ? { attached: { network: answering(network) } } : {}) });
 	const model = (off) => holding(links, { stopsAt: (id) => off && id === W });
 	assert.deepEqual(waypointRolesIn(model(true), W), ['endpoint']);
 	assert.deepEqual(waypointRolesIn(model(false), W), ['junction']);
@@ -73,7 +77,7 @@ test('B277: the roles in a model read its links and whether it declares transit 
 test('B278: the roles ask whether what arrives stops there, not whether the author declared it', () => {
 	const links = SHAPES['three links'];
 	// RESTATED at K13d: a double holding the links, as the network's query reads them
-	const at = (stops, declared) => ({ all: (kind) => (kind === 'link' ? links : []), stopsAt: () => stops, declaresNoTransit: () => declared });
+	const at = (stops, declared) => ({ all: (kind) => (kind === 'link' ? links : []), attached: { network: answering({ stopsAt: () => stops, declaresNoTransit: () => declared }) } });
 	assert.deepEqual(waypointRolesIn(at(true, false), W), ['endpoint'], 'stops by its type, declaring nothing: an endpoint');
 	assert.deepEqual(waypointRolesIn(at(false, true), W), ['junction'], 'the declaration alone decides no role');
 });
@@ -92,7 +96,7 @@ test('F-e: the export and the canvas give a waypoint whose transit is off the sa
 	const { resolve } = await import('../kernel/engine.mjs');
 	const { svgDocument } = await import('../server/svg.mjs');
 	const s = createNetworkSession();
-	const m = new Model({ network: s.network, kinds: productKinds(...NETWORK_ROWS) });
+	const m = new Model({ attached: { network: s.network }, kinds: productKinds(...NETWORK_ROWS) });
 	m.put('node', { id: W, name: 'w', x: 0, y: 0, transit: false });
 	[['node-00000a', -120, 0], ['node-00000b', 120, 0], ['node-00000c', 0, 120]].forEach(([id, x, y], i) => {
 		m.put('node', { id, name: id, type: 'router', x, y });

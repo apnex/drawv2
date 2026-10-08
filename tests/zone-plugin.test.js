@@ -44,7 +44,7 @@ test('O-b1: the core and the planner name no zone -- no literal, no factory, no 
 
 test('O-b1: makeZone is the plugin\'s, and mints a zone as the Model did -- a fresh id, the next name, the next order', async () => {
 	const { makeZone } = await zones();
-	const m = new Model({ kinds: KINDS, network: createNetwork(createTransit()) });
+	const m = new Model({ kinds: KINDS, attached: { network: createNetwork(createTransit()) }});
 	assert.equal(typeof m.makeZone, 'undefined', 'the Model makes no zone');
 	const z = makeZone(m, { x: 30, y: 30, w: 60, h: 60 });
 	assert.match(z.id, /^zone-[0-9a-f]{6}$/);
@@ -56,7 +56,7 @@ test('O-b1: a composition without the zones plugin refuses a zone by name -- val
 	const doc = { meta: { id: 'diagram-0e0001', name: 'd', version: 0, schema: 2 }, nodes: [], groups: [], links: [], pipes: [], selection: [] };
 	assert.equal(validateDoc(doc, { kinds }), null, 'the rest holds');
 	assert.match(validateDoc({ ...doc, zones: [] }, { kinds }), /unknown collection: zones/);
-	const m = new Model({ kinds, network: createNetwork(createTransit()) });
+	const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }});
 	const r = commit(m, new Log(0), { ops: [{ op: 'put', kind: 'zone', entity: { id: 'zone-0e0002', name: 'z', x: 30, y: 30, w: 60, h: 60 } }] }, 'server', 't', { links: NETWORK.links, kinds });
 	assert.equal(r.ok, false);
 	assert.match(r.error, /zone/);

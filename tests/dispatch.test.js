@@ -18,7 +18,7 @@ const aNetwork = () => netFor(transitFor());   // a Model holding links is given
 
 const P = 60, KINDS = productKinds(...NETWORK_ROWS);
 function board() {
-	const m = new Model({ kinds: KINDS, network: aNetwork() });
+	const m = new Model({ kinds: KINDS, attached: { network: aNetwork() }});
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000b', name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000e', name: 'E', x: 0, y: -2 * P });

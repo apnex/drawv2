@@ -2,6 +2,7 @@
 H18.8 (F-f; P-3, ruled 2026-10-03) -- A RING'S CLOSING LEG IS ROUTED LIKE ANY LEG, over a pipe laid with it.
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
+import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
@@ -21,7 +22,7 @@ const [A, B, W] = ['node-00000a', 'node-00000b', 'node-00000e'];
 
 // the lab's `bend` board: A to B, pinned at w above the middle, laid with its two legs
 function bend() {
-	const m = new Model({ network: NET, kinds: KINDS });
+	const m = new Model({ attached: { network: NET }, kinds: KINDS });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -360, y: 0 });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 360, y: 0 });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });
@@ -50,8 +51,8 @@ test('F-f: closing a link lays its closing pipe in the same edit, and the ring i
 	const r = close(m, true);
 	assert.deepEqual(r.ops.filter((o) => o.kind === 'pipe'), [{ op: 'put', kind: 'pipe', entity: pipeEntity(A, B, 'link') }]);
 	const ring = m.get('link', 'link-000001');
-	assert.equal(m.isLinkDown(ring), false);
-	assert.deepEqual(m.pathOf(ring), [[-360, 0], [0, -120], [360, 0]], 'the drawing closes itself from B back to A');
+	assert.equal(isLinkDown(m, ring), false);
+	assert.deepEqual(pathOf(m, ring), [[-360, 0], [0, -120], [360, 0]], 'the drawing closes itself from B back to A');
 });
 
 test('F-f: the closing pipe is kept while the ring runs over it, and swept when the ring is opened', () => {
@@ -61,7 +62,7 @@ test('F-f: the closing pipe is kept while the ring runs over it, and swept when 
 	assert.equal(unrelated.ops.some((o) => o.kind === 'pipe'), false, 'an edit elsewhere sweeps nothing: the ring is using it');
 	const opened = close(m, false);
 	assert.deepEqual(opened.ops.filter((o) => o.kind === 'pipe'), [{ op: 'del', kind: 'pipe', id: pipeId(A, B) }], 'opened, nothing runs over it');
-	assert.equal(m.isLinkDown(m.get('link', 'link-000001')), false);
+	assert.equal(isLinkDown(m, m.get('link', 'link-000001')), false);
 });
 
 test('F-f: a closing pair a pipe already joins lays nothing -- a hand pipe there carries the closing leg', () => {
@@ -69,7 +70,7 @@ test('F-f: a closing pair a pipe already joins lays nothing -- a hand pipe there
 	m.put('pipe', pipeEntity(A, B, 'hand'));
 	const r = close(m, true);
 	assert.equal(r.ops.some((o) => o.kind === 'pipe'), false);
-	assert.equal(m.isLinkDown(m.get('link', 'link-000001')), false);
+	assert.equal(isLinkDown(m, m.get('link', 'link-000001')), false);
 });
 
 test('F-f: undoing the close takes the closing pipe back with it', () => {
@@ -89,7 +90,7 @@ test('F-f: a down ring keeps the closing pipe it would heal onto, as a down link
 	const r = plan(m, [{ op: 'del', kind: 'pipe', id: pipeId(W, B) }], { links: NET.links, kinds: KINDS });
 	assert.equal(r.ok, true, r.error);
 	applyOps(m, r.ops);
-	assert.equal(m.isLinkDown(m.get('link', 'link-000001')), true);
+	assert.equal(isLinkDown(m, m.get('link', 'link-000001')), true);
 	assert.ok(m.get('pipe', pipeId(A, B)), 'its closing pipe stays: it is one of the legs the ring heals onto');
 });
 
@@ -100,12 +101,12 @@ test('F-f: a ring has first call on its closing pipe, ahead of an older link tha
 	m.put('node', { id: 'node-00000c', name: 'X', type: 'router', x: -360, y: 240 });
 	m.put('pipe', pipeEntity('node-00000c', A, 'hand'));
 	m.put('link', { id: 'link-000000', name: 'old', order: 0, src: 'node-00000c', dst: B });
-	assert.equal(m.isLinkDown(m.get('link', 'link-000001')), false, 'the ring keeps its closing leg (rule 2: first call on its own legs)');
-	assert.equal(m.isLinkDown(m.get('link', 'link-000000')), true, 'and the older link, with no other way, is down');
+	assert.equal(isLinkDown(m, m.get('link', 'link-000001')), false, 'the ring keeps its closing leg (rule 2: first call on its own legs)');
+	assert.equal(isLinkDown(m, m.get('link', 'link-000000')), true, 'and the older link, with no other way, is down');
 });
 
 test('S-c: link-legs reads what each change is (TG-3) -- a link renamed is not re-pinned, and lays nothing', () => {
-	const m = new Model({ network: NET, kinds: KINDS });
+	const m = new Model({ attached: { network: NET }, kinds: KINDS });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -360, y: 0 });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 360, y: 0 });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });

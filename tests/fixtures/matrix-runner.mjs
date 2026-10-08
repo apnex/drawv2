@@ -119,6 +119,7 @@ document through REST, and the notice from the header banner (ruled L1: the page
 */
 const snapshot = (prelude) => `(async () => {
 	${prelude}
+	const { isLinkDown, pathOf } = await import('/network/network-queries.mjs');   // the network's questions, as the page serves them (Q-a)
 	const drawn = (el) => {
 		const cs = getComputedStyle(el);
 		const dash = cs.strokeDasharray === 'none' ? [] : cs.strokeDasharray.split(/[ ,]+/).map(parseFloat);
@@ -128,7 +129,7 @@ const snapshot = (prelude) => `(async () => {
 	const shape = (l) => ({ id: l.id, src: l.src, dst: l.dst, via: l.via ?? [] });
 	return {
 		notice: H.notice(),
-		links: H.authority.all('link').map((l) => ({ ...shape(l), down: H.model.isLinkDown(l) })),
+		links: H.authority.all('link').map((l) => ({ ...shape(l), down: isLinkDown(H.model, l) })),
 		// how many links are control links (B284: a cut keeps the plane)
 		controls: H.authority.all('link').filter((l) => l.control).length,
 		tabLinks: H.model.all('link').map(shape),
@@ -159,8 +160,8 @@ const snapshot = (prelude) => `(async () => {
 			drawn: [...g.classList].filter((c) => c === 'endpoint' || c === 'junction'), junctionRing: !!g.querySelector('.wp-junction'),
 			endpointRing: !!g.querySelector('.wp-ring'), transitOff: !!g.querySelector('.wp-transit'), judged: H.input.situation(g.id).target?.roles ?? null })),
 		// every stretch an UP link is drawn along, as the pair of points it joins -- from what is drawn, not from the assignment
-		stretches: H.model.all('link').filter((l) => !H.model.isLinkDown(l)).map((l) => {
-			const pts = H.model.pathOf(l) ?? [];
+		stretches: H.model.all('link').filter((l) => !isLinkDown(H.model, l)).map((l) => {
+			const pts = pathOf(H.model, l) ?? [];
 			return { id: l.id, keys: pts.slice(1).map((q, i) => [pts[i].join(','), q.join(',')].sort().join('|')) };
 		}),
 		paths: Object.fromEntries([...document.querySelectorAll('#links path.link')].map((el) => [el.id, drawn(el)])),

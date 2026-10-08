@@ -61,6 +61,7 @@ const ALLOW = {
 	'network/appearance.mjs:waypointJunction': 'the junction mark, used by `waypointLayers` in this module. Exported for the same per-layer assertions.',
 	'network/appearance.mjs:waypointStyle': 'a waypoint ring by role, used by `waypointLayers` in this module. Exported for the same per-layer assertions.',
 	'network/roles.mjs:waypointRole': 'the single role of a waypoint, over `waypointRoles`. Moved, not deleted, by K13a when geometry splits (dev/design/h17/PLAN.md, condition C11); tests/span.test.js holds it until then.',
+	'network/network-queries.mjs:straightPath': 'a down link\'s intent -- src, each via, dst -- which `pathOf` in this module hands the network as its default; it was a public Model method until Q-a (H19.27), and the tests holding B309 (a via is any anchor) ask it directly',
 	'kernel/svg-scene.mjs:renderContentRegion': 'one content region as SVG, used by the node renderer in this module. Exported so tests/display.test.js and tests/span.test.js assert a region on its own.',
 	'kernel/svg-scene.mjs:renderElement': 'one resolved element as SVG -- the per-entity path app/src/palette.js names as the better design once a DOM shim exists. Tests render single elements through it.',
 	'server/sessionlog.mjs:OPENING_KEPT': 'the bound on how many of a session FIRST events are kept forever. Exported so tests/sessionlog.test.js asserts against the number the module uses; the property under test is that a flood cannot overwrite the opening, which the test can only check by knowing where the opening stops.',

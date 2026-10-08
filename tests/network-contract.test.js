@@ -8,7 +8,7 @@ draws links along routes but says none is down, a planner that shelters pipe anc
 link. Nothing said which hooks belonged together, because nothing declared them as one thing.
 
 T1 declares them as one: a `network` object. The Model reads four of its methods and the planner three, each method
-named as the question it answers -- the Model's under the Model's own method names, so `model.isLinkDown(link)` is
+named as the question it answers -- the Model's under the Model's own method names, so `isLinkDown(model, link)` is
 `network.isLinkDown(link, model)`. The plugin builds the object once (`network/network.mjs`) and the lab hands the
 same object to both.
 
@@ -23,6 +23,8 @@ These tests hold the two guardrails the audit set:
     fall-back to production's answer for that one question -- and so is a caller still using a retired hook name,
     which would otherwise be ignored and leave the plugin half-composed.
 */
+import * as queries from '../network/network-queries.mjs';   // Q-a: the network's questions, its own functions
+const { networkOf } = queries;
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
@@ -42,42 +44,51 @@ const without = (name) => { const n = complete(); delete n[name]; return n; };
 
 const request = { label: 'add', ops: [{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } }] };
 // a board with the network's kinds draws with a network (V-e, J2)
-const board = (kinds) => { const m = new Model(kinds ? { kinds, network: createNetwork() } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
+const board = (kinds) => { const m = new Model(kinds ? { kinds, attached: { network: createNetwork() } } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
 // the network's composition: the product's kinds and its pipe, which its tenant needs (H17.22 N-d)
 const KINDS = productKinds(...NETWORK_ROWS);
 // the product's own kinds, for a board with no network: a plan names its kinds since S-f, so a tenant error is the one met
 const PRODUCT = productKinds();
 
-test('the Model reads the network under its OWN method names', () => {
-	for (const name of MODEL_READS) assert.equal(typeof Model.prototype[name], 'function', `Model.${name} is the question network.${name} answers`);
+// RESTATED at Q-a (H19.27; PLUGIN-QUERIES.md, Q1 A): the questions were the Model's methods, forwarding to the network; they are the
+// network's functions over a Model, and the Model holds the network it is given without reading it
+test('the network\'s questions are its own functions, and the Model has none of them', () => {
+	for (const name of MODEL_READS) {
+		assert.equal(typeof Model.prototype[name], 'undefined', `the Model asks no ${name}`);
+		assert.equal(typeof queries[name], 'function', `the network answers ${name}`);
+	}
 });
 
-test('a network missing any method the Model reads is refused at construction, naming it', () => {
+// RESTATED at Q-a: refused when it is first asked rather than when it is attached -- the Model reads none of it
+test('a network missing any question is refused when it is first asked, naming it', () => {
 	for (const name of MODEL_READS) {
-		assert.throws(() => new Model({ network: without(name) }), new RegExp(name), `a network with no ${name} must not fall back to production's answer`);
+		const m = new Model({ attached: { network: without(name) } });
+		assert.throws(() => networkOf(m), new RegExp(name), `a network with no ${name} must not fall back to production's answer`);
 	}
 });
 
 test('a network member that is not a function is refused, not called later', () => {
-	assert.throws(() => new Model({ network: { ...complete(), isLinkDown: true } }), /isLinkDown/);
+	assert.throws(() => networkOf(new Model({ attached: { network: { ...complete(), isLinkDown: true } } })), /isLinkDown/);
 });
 
-test('the Model needs only its own six', () => {
-	const modelOnly = Object.fromEntries(MODEL_READS.map((k) => [k, () => undefined]));
-	assert.ok(new Model({ network: modelOnly }));
+test('the network needs only its six questions to be asked', () => {
+	const sixOnly = Object.fromEntries(MODEL_READS.map((k) => [k, () => undefined]));
+	assert.equal(networkOf(new Model({ attached: { network: sixOnly } })), sixOnly);
 });
 
 test('the retired Model hooks are refused, so an old composition cannot half-plug the network', () => {
 	for (const old of ['resolvePath', 'routedThrough', 'linkDown', 'blockedBy']) {
-		assert.throws(() => new Model({ [old]: () => null }), /network/, `${old} is retired, and must say what replaced it`);
+		assert.throws(() => new Model({ [old]: () => null }), new RegExp(`unknown option ${old} -- a plugin attaches as`), `${old} is retired, and must say what replaced it`);
 	}
+	// RESTATED at Q-a: and the `network` option itself, which a plugin's attachment replaced
+	assert.throws(() => new Model({ network: complete() }), /unknown option network -- a plugin attaches as \{ attached: \{ network \} \}/);
 	assert.throws(() => new Model({ netwrok: complete() }), /netwrok/, 'a misspelt option is an error, not an ignored key');
 });
 
 // RENAMED 2026-10-04 (P7 X-a): it read "no network is production"; production composes the network now (P3 to P5, J2)
-test('a Model with no network: new Model({ network: null }) is new Model()', () => {
-	assert.equal(new Model({ network: null }).network, null);
-	assert.equal(new Model().network, null);
+test('a Model with no network: new Model({ attached: { network: null }}) is new Model()', () => {
+	assert.equal(networkOf(new Model({ attached: { network: null } })), null);
+	assert.equal(networkOf(new Model()), null);
 });
 
 test('a malformed link tenant is refused by plan() and commit(), saying what is wrong, and nothing is written', () => {
@@ -121,8 +132,9 @@ test('the plugin builds ONE object: the Model reads it, and the planner takes it
 	const network = createNetwork();
 	for (const name of MODEL_READS) assert.equal(typeof network[name], 'function', `network.${name}`);
 	for (const old of RETIRED_PLANNER_HOOKS) assert.equal(network[old], undefined, `network.${old} is retired: the tenant holds it`);
-	const m = new Model({ network });
-	assert.equal(m.network, network, 'the Model holds the object it was given, not a copy of some of it');
+	const m = new Model({ attached: { network } });
+	assert.equal(m.attached.network, network, 'the Model holds the object it was given, not a copy of some of it');
+	assert.equal(networkOf(m), network);
 	assert.equal(network.links.owner, 'network links');
 	// the link tenant's five, then the pipes' own two (H17.22 N-b): an anchor's deletion takes its pipes, and the sweep follows the join
 	assert.deepEqual(network.links.reactions.map((r) => `${r.phase}:${r.id}`), ['clear:node-links', 'clear:waypoint-links', 'stranded:stranded-links', 'sweep:orphan-sweep', 'join:link-join', 'stranded:link-legs', 'reshape:junction-cut', 'clear:pipe-cascade', 'join:pipe-sweep']);

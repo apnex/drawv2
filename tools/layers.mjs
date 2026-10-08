@@ -199,6 +199,7 @@ export const ENTRIES = {
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
 			'network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
+			'network/network-queries.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
 			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
@@ -245,6 +246,7 @@ export const ENTRIES = {
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
 			'network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
+			'network/network-queries.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
 		],
 	},
 	planner: {

@@ -26,6 +26,7 @@
 **To** (option A, section 6):
 - **The six questions are the network's functions over a Model** -- `pathOf(model, link)`, `isLinkDown(model, link)`, `blockersOf(model, link)`, `linksRoutedThrough(model, id)`, `declaresNoTransit(model, id)`, `stopsAt(model, id)` -- as the link queries are since H19.25, with `straightPath` beside them.
   Each gives the no-network answer itself when the Model has no network attached: the straight path, not down, no blockers, nothing routed through, no declaration, nothing stops.
+  CORRECTED 2026-10-08, building Q-a: with no network a Model drew no link -- `pathOf` answered null, not the straight path (`model/model.mjs`, V-e, J2); the function gives null, and the straight path stays what the network draws a down link along.
   So no caller needs an optional call.
 - **The Model holds what a plugin attaches to it, per Model, without naming or asking it** -- `new Model({ kinds, attached: { network } })` -- since the network keeps one derivation per board and so one instance per Model (`network/read-model.mjs`).
   The network's functions read their own instance; the core reads nothing of it.
@@ -85,3 +86,17 @@
 | the rest | not materially implicated | nothing stored, deployed or perceived changes |
 
 **Verdict: pass** -- for A, or B with its stated cost; C passes A5 and leaves A3's privilege standing.
+
+---
+
+## 8. Ruled, and built
+
+AMENDED 2026-10-08 -- **Q1 RULED: A** (`dev/DECISIONS.md`, "Q1").
+
+AMENDED 2026-10-08 -- **Q-a done** (H19.27); K13d with it.
+**What moved:** `pathOf`, `linksRoutedThrough`, `isLinkDown`, `blockersOf`, `declaresNoTransit`, `stopsAt` and `straightPath` from the Model to `network/network-queries.mjs`, with `networkOf`, which reads the network attached to a Model and checks it whole once.
+The Model takes `attached` where it took `network`, holds it frozen and reads none of it; the retired option is refused, naming what replaced it.\
+The link's row declares `needs: ['network']` where it declared `drawnBy`, and a Model composed with the link and without the network is refused, naming the attachment.
+**Callers:** every production call re-pointed, the three optional calls among them; every construction attaches the network; in-page test strings import the functions from the served folder.\
+**Held by:** `tests/network-queries.test.js` -- the core Model names no network and no question; no module or test makes an optional call on one; each question's no-network answer; the attachment refused when a kind needs it and it is missing, and the retired option refused (a no-network answer changed, and the attachment check dropped, each fail it -- both mutants killed).
+Two test files that held the forwarding contract itself (`tests/path-injection.test.js`, `tests/network-contract.test.js`) restated to the attached one; the sync fuzz's planted route fault, which overwrote a Model method nothing reads now, plants it in the tab's network; every corpus unchanged.

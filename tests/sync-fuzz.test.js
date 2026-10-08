@@ -45,7 +45,8 @@ test('U-a: a change the tab committed and never had answered is reported', async
 });
 
 test('U-a: a converged tab drawing a link otherwise than the server is reported', async () => {
-	const res = await runSeed(3, { steps: 80, plant: (w) => { w.tabs[0].model.pathOf = () => [[0, 0], [60, 0]]; } });
+	// RESTATED at Q-a (H19.27): where a link is drawn is the network's answer, so the fault is planted in tab 0's network
+	const res = await runSeed(3, { steps: 80, plant: (w) => { w.tabs[0].network.pathOf = () => [[0, 0], [60, 0]]; } });
 	const r = res.all.find((v) => v.kind === 'ROUTE');
 	assert.ok(r, 'ROUTE reported');
 	assert.equal(r.tab, 0);

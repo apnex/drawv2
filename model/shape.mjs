@@ -98,8 +98,8 @@ Every kind is a ROW of one shape, whoever brings it -- the product's three or a 
   refers      its cross-entity check, `(entity, access, patch, before) -> error | null`, `before` the stored entity or
               null -- the planner's half too
   cap         the most of it one document may hold -- the planner's half too
-  drawnBy     the Model reads that draw it -- `['pathOf', ...]` -- answered only by a network the Model is given; a Model
-              composed with such a kind and no network is refused (V-e, H18.29; ruled J2: no Model draws links straight)
+  needs       what a Model holding the kind must have attached -- `['network']` for the network's link, which only the network
+              draws (V-e, J2); a Model without it is refused (Q-a, H19.27, where it was `drawnBy`, the Model reads that draw it)
   invariants  the properties every document holds about it, `(model, report)` -> calls `report(sentence, key, measure)` for each
               breach: checked on a transaction's result and reported at boot (model/invariants.mjs) -- the planner's half
               too. Added at S-e (H18.15) for the link's straight-pair rule, which the core had held for it.
@@ -121,7 +121,7 @@ O-c (H19.20) -- A ROW MAY GATHER: `gathers` names one of its list fields, and th
 -- found by the Model (`gathererOf`), and selecting the id selects the whole list. It is how the core does for a group what it
 did by name -- the 2026-10-02 ruling's "a group's membership is stated in those terms, not by naming kinds".
 */
-const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'drawnBy', 'tenant', 'gathers'];
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'needs', 'tenant', 'gathers'];
 /*
 S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
 whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
@@ -164,7 +164,7 @@ export function composeKinds(given, who = 'a composition') {
 			}
 			if (row.named && !names.includes('name')) throw new Error(`${who}: kind ${row.kind} is named but has no check for a name`);
 		}
-		if (row.drawnBy !== undefined && !(Array.isArray(row.drawnBy) && row.drawnBy.length && row.drawnBy.every((r) => typeof r === 'string'))) throw new Error(`${who}: kind ${row.kind}: drawnBy names the Model reads that draw it`);
+		if (row.needs !== undefined && !(Array.isArray(row.needs) && row.needs.length && row.needs.every((n) => typeof n === 'string'))) throw new Error(`${who}: kind ${row.kind}: needs names what a Model holding it must have attached -- ['network'] (Q-a)`);
 		if (row.invariants !== undefined && typeof row.invariants !== 'function') throw new Error(`${who}: kind ${row.kind}: its invariants are a function, (model, report)`);
 		if (row.tenant !== undefined && !(typeof row.tenant?.owner === 'string' && Array.isArray(row.tenant.reactions))) throw new Error(`${who}: kind ${row.kind}: its tenant is { owner, reactions } (O-a)`);
 		if (row.gathers !== undefined && !(row.composite ?? []).includes(row.gathers)) throw new Error(`${who}: kind ${row.kind} gathers ${row.gathers}, which is not one of its list fields (O-c)`);

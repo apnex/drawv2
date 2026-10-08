@@ -22,6 +22,7 @@ empty pipe layer is a board whose routes were REMOVED -- deleting the anchor the
 takes its last four -- and the exception drew those lost links as live. Measured, and removed.
 */
 
+import { isLinkDown, blockersOf } from './network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { preferredRoute } from './pipes.mjs';
 
 /*
@@ -101,9 +102,9 @@ What the notice says, read from the Model's own answers -- kept here so the lab'
 count after an edit. A down link is "ready to heal" either way: it comes back when a way returns or frees.
 */
 export function whyDown(model, ids, network = null) {
-	const down = ids.map((id) => model.get('link', id)).filter((l) => l && model.isLinkDown(l));
+	const down = ids.map((id) => model.get('link', id)).filter((l) => l && isLinkDown(model, l));
 	if (down.length !== 1) return null;
-	const by = model.blockersOf(down[0]);
+	const by = blockersOf(model, down[0]);
 	if (by.length) return `${down[0].id} is down: its way is held by ${by.join(', ')} -- a pipe carries one link, and the older link keeps it`;
 	// its way would pass an anchor whose transit is off (TR-1): name what the author can turn back on, or else the device
 	// whose type never passes a route
@@ -115,6 +116,6 @@ export function whyDown(model, ids, network = null) {
 }
 
 export function downSummary(model) {
-	const n = model.all('link').filter((l) => model.isLinkDown(l)).length;
+	const n = model.all('link').filter((l) => isLinkDown(model, l)).length;
 	return n ? ` -- ${n} link${n === 1 ? '' : 's'} down, ready to heal` : '';
 }

@@ -9,6 +9,7 @@ are the planner's (tests/network-pipe-kind.test.js), so nothing here lays or rem
 
 Held here as behaviour, in Node. The lab's browser suite and the matrix hold the same end to end.
 */
+import { isLinkDown, blockersOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
@@ -20,7 +21,7 @@ import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and
 const P = 60;
 const KINDS = productKinds(...NETWORK_ROWS);
 function board(ids, pipes = []) {
-	const m = new Model({ kinds: KINDS, network: createNetworkSession().network });   // V-e, J2
+	const m = new Model({ kinds: KINDS, attached: { network: createNetworkSession().network }});   // V-e, J2
 	ids.forEach((id, i) => m.put(id.startsWith('node') ? 'node' : 'waypoint', id.startsWith('node')
 		? { id, name: id, type: 'router', x: i * 2 * P, y: 0, shape: 'circle' } : { id, name: id, x: i * 2 * P, y: P }));
 	for (const [a, b, laid] of pipes) m.put('pipe', pipeEntity(a, b, laid));
@@ -85,10 +86,10 @@ test('the session\'s network reads the model\'s pipes and its links\' stored age
 	// link-000002 is the older by its drawing order, though its id sorts later (F-d)
 	m.put('link', { id: 'link-000001', name: 'l', order: 2, src: A, dst: B });
 	m.put('link', { id: 'link-000002', name: 'm', order: 1, src: B, dst: A });
-	const tab = new Model({ network: s.network, kinds: KINDS });
+	const tab = new Model({ attached: { network: s.network }, kinds: KINDS });
 	tab.load(m.toJSON());
-	assert.equal(tab.isLinkDown(tab.get('link', 'link-000002')), false, 'the older link keeps the one pipe');
-	assert.deepEqual(tab.blockersOf(tab.get('link', 'link-000001')), ['link-000002'], 'and the younger is held by it');
+	assert.equal(isLinkDown(tab, tab.get('link', 'link-000002')), false, 'the older link keeps the one pipe');
+	assert.deepEqual(blockersOf(tab, tab.get('link', 'link-000001')), ['link-000002'], 'and the younger is held by it');
 });
 
 /*
@@ -100,7 +101,7 @@ test('the drag judge ages links by their stored order: a g drag heals whichever 
 	const [a, b, c, d, t1, t2] = ['node-0000a1', 'node-0000b1', 'node-0000c1', 'node-0000d1', 'node-0000e1', 'node-0000e2'];
 	const judged = (lowerOrder) => {
 		const s = createNetworkSession();
-		const m = new Model({ kinds: KINDS, network: createNetworkSession().network });   // V-e, J2
+		const m = new Model({ kinds: KINDS, attached: { network: createNetworkSession().network }});   // V-e, J2
 		for (const [id, x, y] of [[a, -4 * P, -2 * P], [b, 4 * P, -2 * P], [c, -4 * P, 2 * P], [d, 4 * P, 2 * P]]) m.put('node', { id, name: id, type: 'router', x, y });
 		m.put('node', { id: t1, name: 't1', x: -2 * P, y: 0 }); m.put('node', { id: t2, name: 't2', x: 2 * P, y: 0 });
 		for (const [x, y] of [[a, t1], [c, t1], [t1, t2], [t2, b], [t2, d]]) m.put('pipe', pipeEntity(x, y, 'hand'));

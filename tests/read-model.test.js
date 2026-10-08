@@ -1,6 +1,7 @@
 // P4 R-a (H18.19) -- one read composition: a document as a Model that draws with the network, used by every reader, and
 // each of the store's Models drawing with a network of its own. dev/design/unification/CONSUMERS-ROUTE.md, stage R-a.
 
+import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
@@ -30,20 +31,20 @@ const detour = () => ({
 test('R-a: readModel draws each link along its route over the pipes, not through its stops', () => {
 	const m = readModel(detour(), KINDS);
 	const l = m.get('link', 'link-00000d');
-	assert.deepEqual(m.pathOf(l), [[0, 0], [180, 240], [360, 0]]);
-	assert.equal(m.isLinkDown(l), false);
+	assert.deepEqual(pathOf(m, l), [[0, 0], [180, 240], [360, 0]]);
+	assert.equal(isLinkDown(m, l), false);
 });
 
 test('R-a: readModel says a link with no way is down, and draws it along its intent', () => {
 	const doc = detour(); doc.pipes = [];
 	const m = readModel(doc, KINDS);
 	const l = m.get('link', 'link-00000d');
-	assert.equal(m.isLinkDown(l), true);
-	assert.deepEqual(m.pathOf(l), [[0, 0], [360, 0]], 'its intent, straight between its ends (network/resolve.mjs)');
+	assert.equal(isLinkDown(m, l), true);
+	assert.deepEqual(pathOf(m, l), [[0, 0], [360, 0]], 'its intent, straight between its ends (network/resolve.mjs)');
 });
 
 test('R-a: each reader gets a network of its own -- one per Model, since each caches one derivation per board', () => {
-	assert.notEqual(readModel(detour(), KINDS).network, readModel(detour(), KINDS).network);
+	assert.notEqual(readModel(detour(), KINDS).attached.network, readModel(detour(), KINDS).attached.network);   // RESTATED at Q-a: the network is attached
 	assert.notEqual(readerNetwork(), readerNetwork());
 });
 
@@ -75,7 +76,7 @@ test('R-a: no module outside the network composes the network but the store, the
 test('R-a: a reader honours transit -- a route may not pass an anchor whose transit is off (TR-1)', () => {
 	const doc = detour(); doc.nodes[2].transit = false;
 	const m = readModel(doc, KINDS);
-	assert.equal(m.isLinkDown(m.get('link', 'link-00000d')), true, 'its only way passes W, whose transit is off');
+	assert.equal(isLinkDown(m, m.get('link', 'link-00000d')), true, 'its only way passes W, whose transit is off');
 });
 
 test('R-a: a diagram the store boots from disk draws with the network, as one it creates does', async () => {
@@ -88,7 +89,7 @@ test('R-a: a diagram the store boots from disk draws with the network, as one it
 		const store = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await store.init();
 		const m = store.diagrams.get('diagram-000001').model;
-		assert.deepEqual(m.pathOf(m.get('link', 'link-00000d')), [[0, 0], [180, 240], [360, 0]]);
+		assert.deepEqual(pathOf(m, m.get('link', 'link-00000d')), [[0, 0], [180, 240], [360, 0]]);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

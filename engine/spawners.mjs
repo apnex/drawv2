@@ -19,6 +19,7 @@ route is reversed. A stored direction would be a twin of the link and wrong the 
 reversed.
 */
 
+import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksAt } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { prepareSpawner } from './movers.mjs';
 import { BEND_R } from '../kernel/spec.mjs';
@@ -43,8 +44,8 @@ export function spawnersOf(model) {
 		(H1), and a path along that intent is no way for a mover to take. So a spawner on it emits nothing until it heals, in
 		every door that derives spawners -- the page, `draw movers`, `draw combat`. A model with no network has no down link.
 		*/
-		if (model.isLinkDown?.(link)) continue;
-		const pts = model.pathOf(link);
+		if (isLinkDown(model, link)) continue;
+		const pts = pathOf(model, link);
 		if (!pts || pts.length < 2) continue;      // a dangling route resolves to nothing
 		out.push(prepareSpawner({
 			id: wp.id,

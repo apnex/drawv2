@@ -159,7 +159,7 @@ export async function makeWorld(code, { seed, tabs = 2, gestureCancelOnLoad = tr
 		};
 		// the page's composition (U-a): a Model drawing with the network, Changes previewing every commit with the planner
 		t.network = createPageNetwork().network;
-		t.model = new Model({ network: t.network, kinds });
+		t.model = new Model({ attached: { network: t.network }, kinds });
 		const selection = { subscribe() {}, list: () => [], set() {}, has: () => false };   // the minimum Sync and applyAnswer read
 		t.changes = new Changes(t.model, { coalesceMs: 3_600_000, preview: (m, ops) => plan(m, ops, { links: t.network.links, kinds }), apply: (ops) => applyAnswer(t.model, selection, ops) });
 		t.sync = new Sync({ model: t.model, net, history: t.changes, selection, onState() {} });
@@ -236,7 +236,7 @@ export function attach(world) {
 	// S + the tab's own unanswered requests, each PLANNED on S in order as the page's preview plans it (U-a); a request the
 	// planner refuses on S is shown as nothing, as a refused preview shows nothing (app/src/changes.js)
 	world.expected = (t) => {
-		const m = new Model({ network: oracleNetwork, kinds });
+		const m = new Model({ attached: { network: oracleNetwork }, kinds });
 		m.load(t.lastServer);
 		for (const u of t.units.filter((x) => x.state === 'window' || x.state === 'pending')) {
 			const r = plan(m, u.ops, { links: oracleNetwork.links, kinds });

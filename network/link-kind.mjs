@@ -79,6 +79,6 @@ export const LINK_ROW = {
 	refers: (entity, access) => linkReferential({ id: entity.id, src: entity.src, dst: entity.dst, via: entity.via ?? [], closed: !!entity.closed }, linkAccess(access)),
 	invariants: straightPairs,
 	// where a link is drawn, and whether it is down, are the network's answers: a Model holding links is given one (V-e, J2)
-	drawnBy: ['pathOf', 'isLinkDown', 'blockersOf', 'linksRoutedThrough'],
+	needs: ['network'],   // only the network draws a link (V-e, J2): a Model holding links has it attached (Q-a)
 	cap: LINK_CAP,
 };

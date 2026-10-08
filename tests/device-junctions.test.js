@@ -5,6 +5,7 @@ Ruled 2026-10-07: a device is an endpoint or a junction by what the network plug
 Z1, a device pin follows transit's rules only. One predicate, `nodeOffersTransit` (network/transit-offers.mjs), decides
 whether a node may be passed, in place of four rules each asking whether it was a bare waypoint.
 */
+import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateDoc } from './fixtures/composed.mjs';
@@ -52,7 +53,7 @@ const NET = createNetwork(createTransit());
 const H = 'node-00000c', W1 = 'node-0000f1', W2 = 'node-0000f2', W3 = 'node-0000f3';
 // hosts A and B, a router R between them; a link A -> R -> B pinned through R, over its legs' pipes
 function throughRouter() {
-	const m = new Model({ network: NET, kinds: KINDS });
+	const m = new Model({ attached: { network: NET }, kinds: KINDS });
 	m.put('node', { id: A, name: 'A', type: 'host', shape: 'circle', x: -240, y: 0 });
 	m.put('node', { id: B, name: 'B', type: 'host', shape: 'circle', x: 240, y: 0 });
 	m.put('node', { id: R, name: 'R', type: 'router', shape: 'circle', x: 0, y: -120 });
@@ -69,7 +70,7 @@ test('Z-b: transit off at a router a link is pinned through cuts it there -- two
 	const m = throughRouter();
 	edit(m, [off(R)]);
 	assert.deepEqual(shape(m), [`${A}  ${R}`, `${R}  ${B}`]);
-	assert.equal(m.all('link').filter((l) => m.isLinkDown(l)).length, 0, 'both up');
+	assert.equal(m.all('link').filter((l) => isLinkDown(m, l)).length, 0, 'both up');
 });
 
 test('Z-b: back on, one link through the router again; undo restores it exactly', () => {
@@ -103,7 +104,7 @@ test('Z-b (Z1): deleting one of three links ending at a router joins nothing', (
 });
 
 test('Z-b: transit off at a waypoint of a ring through a router opens the ring there, the router a pin of the loop; back on, whole', () => {
-	const m = new Model({ network: NET, kinds: KINDS });
+	const m = new Model({ attached: { network: NET }, kinds: KINDS });
 	m.put('node', { id: R, name: 'R', type: 'router', shape: 'circle', x: 0, y: 0 });
 	for (const [id, x, y] of [[W1, 240, -120], [W2, 360, 0], [W3, 240, 120]]) m.put('node', { id, name: id.slice(-2), x, y });
 	m.put('link', { id: 'link-000001', name: 'ring', order: 1, src: R, via: [W1, W2], dst: W3, closed: true });
@@ -111,7 +112,7 @@ test('Z-b: transit off at a waypoint of a ring through a router opens the ring t
 	edit(m, [off(W2)]);
 	const l = m.get('link', 'link-000001');
 	assert.deepEqual([l.src, l.via, l.dst, !!l.closed], [W2, [W3, R, W1], W2, false], 'opened at W2, R passed as a pin');
-	assert.equal(m.isLinkDown(l), false);
+	assert.equal(isLinkDown(m, l), false);
 	edit(m, [on(m, W2)]);
 	assert.equal(m.get('link', 'link-000001').closed, true, 'a ring again');
 });
@@ -123,7 +124,7 @@ test('Z-b: deleting a router deletes the links pinned through it, as a pin\'s de
 });
 
 test('Z-b (B303): a link written pinned through a waypoint whose transit is off arrives cut there, from any door', () => {
-	const m = new Model({ network: NET, kinds: KINDS });
+	const m = new Model({ attached: { network: NET }, kinds: KINDS });
 	m.put('node', { id: A, name: 'A', type: 'router', shape: 'circle', x: -240, y: 0 });
 	m.put('node', { id: B, name: 'B', type: 'router', shape: 'circle', x: 240, y: 0 });
 	m.put('node', { id: W1, name: 'P', x: 0, y: -120, transit: false });

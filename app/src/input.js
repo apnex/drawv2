@@ -32,6 +32,7 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   Escape            cancel / clear / close overlay              ?       help overlay
 */
 
+import { pathOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { Overlay } from './overlay.js';
 import { RECOGNIZE, DOUBLE_CLICKS } from './recognize.js';
@@ -929,7 +930,7 @@ export class Input {
 		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
 		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
 		// through every stop drawn so far, guides included, so the author sees the route they are drawing
-		const path = this.model.pathOf({ src: this.ctx.src, via: this.ctx.route ?? this.ctx.via, dst: end });
+		const path = pathOf(this.model, { src: this.ctx.src, via: this.ctx.route ?? this.ctx.via, dst: end });
 		if (path) this.ctx.path.update(roundedPath(path, BEND_R));
 	}
 

@@ -32,7 +32,7 @@ passes, paid at gesture rate on the client and per request on the server — nev
 rate, which is why the browser sends one request per command.
 */
 export function projection(model) {
-	const scratch = new Model({ kinds: model.kinds, network: model.network });   // the same kinds and network (J2), or a plugin's would not load into it
+	const scratch = new Model({ kinds: model.kinds, attached: model.attached });   // the same kinds and attachments (J2), or a plugin's would not load into it
 	scratch.load(model.toJSON());
 	return scratch;
 }
@@ -53,78 +53,46 @@ export function newId(kind, taken = {}) {
 export const kindOf = (id) => id.split('-')[0];
 
 /*
-THE NETWORK INTERFACE -- one object the network plugin plugs in through (RULESET-AUDIT T1, F9).
-
-The incubating network plugin (ruled 2026-09-28) needs the product to ask it seven questions: four the Model asks while
-drawing, and three the planner asks while judging an edit. They began as seven separate hooks, added one at a time, and
-nothing said they belonged together -- so a composition could pass some and forget others, drawing links along routes
-while saying none was down. Declared as ONE object, a plugin is either composed whole or refused.
-
-Each consumer names what it reads and checks only that; the plugin builds one object carrying all of it
-(network/network.mjs), and the lab hands the same object to both. Absent -- `network` null -- is production, and every
-answer is exactly what it always was.
-
-A HALF-PLUGIN IS AN ERROR, never a quiet fall-back: a network missing a method its consumer reads throws at
-construction, naming it, and so does an option under a retired hook name, which would otherwise be ignored.
+A HALF-COMPOSED MODEL IS AN ERROR, never a quiet fall-back: an option the Model does not read -- a retired one above all --
+is refused, naming it. A network is checked whole where it is read (network/network-queries.mjs `networkOf`, Q-a).
 */
-function requireNetwork(network, reads, who) {
-	if (network == null) return null;
-	const missing = reads.filter((name) => typeof network[name] !== 'function');
-	if (missing.length) throw new Error(`${who}: the network does not provide ${missing.join(', ')} -- a network is composed whole or not at all (RULESET-AUDIT T1)`);
-	return network;
-}
-
 // every option a consumer does not read is refused -- a retired hook name above all, which would leave the plugin half-composed
 function refuseStrayOptions(rest, who) {
 	const stray = Object.keys(rest);
-	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- the network plugs in as one object, { network } (RULESET-AUDIT T1)`);
+	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a plugin attaches as { attached: { ${stray.join(', ')} } } (Q-a, H19.27)`);
 }
 
 /*
-What the MODEL asks the network -- each under the Model's own method name, so `model.isLinkDown(link)` is answered by
-`network.isLinkDown(link, model)`:
-
-  pathOf(link, model, straight)   where a link is DRAWN. Production draws the straight polyline through `via`; the lab
-                                  draws along the link's ROUTE over pipes. Rather than patch `pathOf` in the lab -- a
-                                  fork wearing a patch, which G1 forbids -- the seam is declared here. Handed the
-                                  default as `straight`, so it can route some links and defer the rest.
-  linksRoutedThrough(id, model)   which links a moved anchor affects, from the same authority that draws them. Under
-                                  routing a link is drawn through an anchor it does not name, and the incidence index
-                                  never sees it -- the renderer left such a link standing when its anchor moved (the
-                                  director's report, 2026-09-29).
-  isLinkDown(link, model)         whether a link has no route, and so is drawn dotted and ready to heal (ruled
-                                  2026-09-25; the look, 2026-09-29). Down is derived, so only the router can say it.
-  blockersOf(link, model)         which links hold the way a down link would take -- pipes carry one link each (ruled
-                                  2026-09-30), and selecting a blocked link highlights its blockers.
+Q-a (H19.27; dev/design/unification/PLUGIN-QUERIES.md, Q1 ruled A): the Model asked a plugin named the network six questions
+under its own method names -- where a link is drawn, whether it is down, what blocks it, which links pass through an anchor,
+whether an anchor declares its transit off, whether what arrives stops there. They are the network's functions over a Model
+now (network/network-queries.mjs), with the straight path a down link is drawn along; the Model holds what a plugin attaches
+to it and reads none of it.
 */
-/*
-  declaresNoTransit(id, model)    whether the author declared this anchor's transit off -- what the transit ring marks
-                                  (ruled 2026-09-28; TRANSIT.md section 12). Only a declaration draws the ring: a type
-                                  that offers no choice declares nothing. Production has no transit: never.
-  stopsAt(id, model)              whether what arrives at this anchor stops there -- declared off, or of a type that offers
-                                  only off (B278). The ONE transit question the rules ask: the roles a waypoint takes, the
-                                  toggle's cut and join, the planner's join refusal; the declaration above only draws the
-                                  ring. Production has no transit: nothing stops.
-*/
-const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
 
 export class Model {
-	constructor({ network = null, kinds = CORE_KINDS, ...rest } = {}) {
+	constructor({ attached = {}, kinds = CORE_KINDS, ...rest } = {}) {
 		refuseStrayOptions(rest, 'Model');
 		// the kinds this model stores (H17.22 N-a): the core's three unless a composition brings its own (model/shape.mjs) --
 		// so no links without the network's rows (S-e)
 		if (!kinds || !Array.isArray(kinds.list) || typeof kinds.has !== 'function') throw new Error('Model: kinds is a composition -- composeKinds(rows) (model/shape.mjs)');
 		this.kinds = kinds;
-		// null in production, which draws, depends and never goes down exactly as it always has -- a test holds it byte for byte
-		this.network = requireNetwork(network, MODEL_READS, 'Model');
 		/*
-		V-e (H18.29; ruled J2) -- A KIND THE NETWORK DRAWS NEEDS THE NETWORK. A row says which of the Model's reads draw it
-		(`drawnBy`, model/shape.mjs) -- the network's link does -- and a Model composed with one and no network is refused, so
-		no Model draws such a kind by a fallback: the straight line through a link's stops is now only what the network draws a
-		DOWN link along (network/resolve.mjs). The core names no kind here; it reads the rows.
+		Q-a (H19.27) -- WHAT A PLUGIN ATTACHES TO THIS MODEL, held and never read: the network's instance, one per Model since it
+		keeps one derivation per board (network/read-model.mjs). The network's functions read their own (network/network-queries.mjs).
 		*/
-		const drawn = kinds.list.filter((k) => kinds.row(k).drawnBy?.length);
-		if (drawn.length && !this.network) throw new Error(`Model: kind ${drawn.join(', ')} is drawn by the network (${kinds.row(drawn[0]).drawnBy.join(', ')}) -- a Model holding it is given one, { network } (J2)`);
+		if (!attached || typeof attached !== 'object' || Array.isArray(attached)) throw new Error('Model: attached is an object, a plugin\'s name to what it attaches');
+		this.attached = Object.freeze({ ...attached });
+		/*
+		V-e (H18.29; ruled J2) -- A KIND THE NETWORK DRAWS NEEDS THE NETWORK: a Model holding one draws it by no fallback.
+		AMENDED Q-a (H19.27): a row names the attachment its kind needs (`needs`, model/shape.mjs) -- the network's link needs the
+		network -- and a Model composed with the kind and without the attachment is refused. The core names no plugin; it reads
+		the rows.
+		*/
+		for (const kind of kinds.list) {
+			const missing = (kinds.row(kind).needs ?? []).filter((name) => !this.attached[name]);
+			if (missing.length) throw new Error(`Model: kind ${kind} needs ${missing.join(', ')} attached -- { attached: { ${missing.join(', ')} } }`);
+		}
 		this.state = {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
@@ -217,72 +185,6 @@ export class Model {
 	tuples: two shapes, one rule, so the value hands straight to the kernel's `roundedPath` with no
 	conversion at any consumer. An anchor is a node OR a waypoint (`endpointOf`), and a `via` bend is
 	always a waypoint entity.
-
-	A route that cannot fully resolve returns null rather than a partial path — half a path renders
-	as a line to nowhere. This was hand-rolled at four sites before it had a name, and two of them
-	were wrong: the data view measured `dist(src, dst)` ignoring every bend, and re-plug handles were
-	placed on the straight src→dst line (B29).
-	*/
-	pathOf(link) {
-		if (!link) return null;
-		/*
-		V-e (H18.29; ruled J2): only the network draws a link. A Model holding links is given one (the constructor refuses
-		otherwise), so a Model with no network has no link to draw, and draws none: the straight line through a link's stops is
-		no fallback, only what the network draws a DOWN link along, through the `straight` it is handed here.
-		*/
-		return this.network ? this.network.pathOf(link, this, (l) => this.straightPath(l)) : null;
-	}
-
-	// the links drawn THROUGH an anchor they do not name -- empty unless a network is plugged in
-	linksRoutedThrough(id) {
-		return this.network ? this.network.linksRoutedThrough(id, this) : [];
-	}
-
-	// whether a link has no route right now, and so is drawn as ready to heal -- never, without a network
-	isLinkDown(link) {
-		return !!(link && this.network && this.network.isLinkDown(link, this));
-	}
-
-	// the links holding the way a down link would take -- never any, without a network
-	blockersOf(link) {
-		return link && this.network ? this.network.blockersOf(link, this) : [];
-	}
-
-	// whether the author declared this anchor's transit off -- never, without a network
-	declaresNoTransit(id) {
-		return !!(this.network && this.network.declaresNoTransit(id, this));
-	}
-
-	// whether what arrives at this anchor stops there (B278) -- never, without a network
-	stopsAt(id) {
-		return !!(this.network && this.network.stopsAt(id, this));
-	}
-
-	// the straight path: src, then each via's centre, then dst -- the polyline production drew until the network did. Since
-	// V-e (J2) it is no default: it is what the network draws a DOWN link along, handed to it by `pathOf` (MODEL_READS above)
-	straightPath(link) {
-		if (!link) return null;
-		// An anchor is an entity REFERENCE or a bare position. The kernel's resolveRoute already
-		// admits both (an entity id, or a cell coord as a free anchor); admitting the same here is
-		// what lets the LIVE link preview — whose final anchor is the cursor, not yet an entity —
-		// use this one resolver instead of hand-rolling a fourth copy.
-		const at = (ref) => (ref && typeof ref === 'object' ? ref : this.endpointOf(ref));
-		const src = at(link.src), dst = at(link.dst);
-		if (!src || !dst) return null;
-		const path = [[src.x, src.y]];
-		/*
-		B309 -- a via is ANY anchor: a waypoint, or a device the link is pinned through (H19.10, Z1). This accepted a bare
-		anchor alone, written when every pin was one, so a down link pinned through a device had no path -- drawn from null on
-		the canvas, `path: null` to REST and the CLI -- against H1's "drawn along its intent".
-		*/
-		for (const id of link.via || []) {
-			const w = this.endpointOf(id);
-			if (!w) return null;                    // a missing BEND is as dangling as a missing end
-			path.push([w.x, w.y]);
-		}
-		path.push([dst.x, dst.y]);
-		return path;
-	}
 
 	/*
 	O-c (H19.20) -- THE ENTITY THAT GATHERS AN ID: of the kinds whose row gathers a list field (model/shape.mjs `gathers`), the

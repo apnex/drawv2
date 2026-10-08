@@ -3,6 +3,7 @@ H18.6 (F-d) -- EVERY DRAWN ITEM STORES ITS DRAWING ORDER (ruled 2026-10-01, B249
 peer, stored with the format batch; B10, undo restores an item to its place; B259, a link's age is its order).
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
+import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
@@ -71,7 +72,7 @@ test('F-d (B10): undoing a delete puts the item back with its order -- in its pl
 test('F-d (B259): a link\'s age is its order -- the older keeps a contested pipe, whatever its id says', () => {
 	const kinds = productKinds(...NETWORK_ROWS);
 	const board = (olderId) => {
-		const m = new Model({ network: createNetwork(), kinds });
+		const m = new Model({ attached: { network: createNetwork() }, kinds });
 		for (const [id, x, y] of [['node-00000a', -240, 0], ['node-00000b', 240, 0], ['node-00000c', -240, 120], ['node-00000d', 240, 120]]) m.put('node', { id, name: id, type: 'router', x, y });
 		m.put('node', { id: 'node-000001', name: 't1', x: -120, y: 60 }); m.put('node', { id: 'node-000002', name: 't2', x: 120, y: 60 });
 		for (const [a, b] of [['node-00000a', 'node-000001'], ['node-00000c', 'node-000001'], ['node-000001', 'node-000002'], ['node-000002', 'node-00000b'], ['node-000002', 'node-00000d']]) m.put('pipe', pipeEntity(a, b, 'hand'));
@@ -80,8 +81,8 @@ test('F-d (B259): a link\'s age is its order -- the older keeps a contested pipe
 		return m;
 	};
 	const u = board('u'), l = board('l');
-	assert.equal(u.isLinkDown(u.get('link', 'link-00000l')), true, 'u older: l is down');
-	assert.equal(l.isLinkDown(l.get('link', 'link-00000u')), true, 'l older: u is down -- the order decides, not the id');
+	assert.equal(isLinkDown(u, u.get('link', 'link-00000l')), true, 'u older: l is down');
+	assert.equal(isLinkDown(l, l.get('link', 'link-00000u')), true, 'l older: u is down -- the order decides, not the id');
 });
 
 test('F-d: the export stacks by the order the canvas stacks by', () => {

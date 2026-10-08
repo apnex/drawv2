@@ -21,7 +21,7 @@ const KINDS = productKinds(...NETWORK_ROWS);
 const NET = createNetwork(createTransit());
 const A = 'node-00000a', B = 'node-00000b', P = 'node-0000f1';
 const board = () => {
-	const m = new Model({ network: NET, kinds: KINDS });
+	const m = new Model({ attached: { network: NET }, kinds: KINDS });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('node', { id: P, name: 'P', x: 0, y: -120 });

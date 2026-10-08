@@ -134,8 +134,8 @@ test('the lab boots, and a seeded board arrives through the planner', { skip: SK
 		assert.equal(await p.run('lab.authority.all("link").length'), 1, 'the AUTHORITY model must hold the board too -- the planner is what put it there');
 		// ONE network (RULESET-AUDIT T1): the tab's Model holds the very object whose link tenant the planner is handed
 		// (PL-3); AMENDED 2026-10-04 (V-e, J2): the authority holds it too -- a Model holding links is given the network
-		assert.equal(await p.run('lab.model.network === lab.network && lab.network.links.owner === "network links"'), true, 'the tab must draw from the network the planner judges with');
-		assert.equal(await p.run('lab.authority.network === lab.network'), true, 'and the authority holds the same one');
+		assert.equal(await p.run('lab.model.attached.network === lab.network && lab.network.links.owner === "network links"'), true, 'the tab must draw from the network the planner judges with');
+		assert.equal(await p.run('lab.authority.attached.network === lab.network'), true, 'and the authority holds the same one');
 	} finally { await p.close(); }
 });
 
@@ -176,7 +176,7 @@ test('on the cross board, an unpinned link is drawn along its route through the 
 	try {
 		// neither link pins the centre, yet the only pipes run through it -- so each is drawn as
 		// three points bending there, where a straight link would be two. This is what `g` stands on.
-		const path_ = await p.run(`lab.model.pathOf(lab.model.get('link', 'link-000001'))`);
+		const path_ = await p.run(`(async () => { const { pathOf } = await import('/network/network-queries.mjs'); return pathOf(lab.model, lab.model.get('link', 'link-000001')); })()`);
 		assert.equal(path_.length, 3, `the link was drawn straight, not routed over the pipes: ${JSON.stringify(path_)}`);
 		assert.deepEqual(path_[1], [0, 0], 'and its middle point is the centre anchor');
 		assert.equal(await p.run(`lab.model.get('link', 'link-000001').via`), undefined, 'while the link itself pins nothing');
@@ -216,7 +216,7 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 		for (const id of ['link-000003', 'link-000004']) {
 			const l = await p.run(`lab.authority.get('link', '${id}')`);
 			assert.ok(l, `${id} was cut -- a link that only passes a point is not connected to a landing there`);
-			const path_ = await p.run(`lab.model.pathOf(lab.model.get('link', '${id}'))`);
+			const path_ = await p.run(`(async () => { const { pathOf } = await import('/network/network-queries.mjs'); return pathOf(lab.model, lab.model.get('link', '${id}')); })()`);
 			assert.deepEqual(path_[1], [480, 0], `${id} still runs through the centre over the pipes`);
 		}
 	} finally { await p.close(); }
@@ -414,7 +414,7 @@ test('B257: an edit keeps the pipes a link is drawn on, whichever order ids sort
 		assert.equal(await p.run(pipesIn(`return ['node-00000c|node-0000f1', 'node-0000f1|node-0000f2', 'node-0000f2|node-00000d']
 			.filter((k) => has(...k.split('|'))).length;`)), 3, 'the pipes the younger link is drawn on survive the sweep');
 		assert.match(await p.run(`document.getElementById('link-000001').getAttribute('d')`), /Q-120 360/, 'and it is drawn over them, by age');
-		assert.equal(await p.run(`lab.model.isLinkDown(lab.model.get('link', 'link-0000ff'))`), false, 'while the older link keeps the free w pipe');
+		assert.equal(await p.run(`(async () => { const { isLinkDown } = await import('/network/network-queries.mjs'); return isLinkDown(lab.model, lab.model.get('link', 'link-0000ff')); })()`), false, 'while the older link keeps the free w pipe');
 	} finally { await p.close(); }
 });
 
